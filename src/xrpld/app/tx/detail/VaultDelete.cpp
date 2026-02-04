@@ -4,6 +4,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -47,14 +48,12 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
     }
 
     // Verify we can destroy MPTokenIssuance
-    auto const sleMPT =
-        ctx.view.read(keylet::mptIssuance(vault->at(sfShareMPTID)));
+    auto const sleMPT = ctx.view.read(keylet::mptIssuance(vault->at(sfShareMPTID)));
 
     if (!sleMPT)
     {
         // LCOV_EXCL_START
-        JLOG(ctx.j.error())
-            << "VaultDeposit: missing issuance of vault shares.";
+        JLOG(ctx.j.error()) << "VaultDeposit: missing issuance of vault shares.";
         return tecOBJECT_NOT_FOUND;
         // LCOV_EXCL_STOP
     }
@@ -85,8 +84,8 @@ VaultDelete::doApply()
 
     // Destroy the asset holding.
     auto asset = vault->at(sfAsset);
-    if (auto ter = removeEmptyHolding(view(), vault->at(sfAccount), asset, j_);
-        !isTesSuccess(ter))
+
+    if (auto ter = removeEmptyHolding(view(), vault->at(sfAccount), asset, j_); !isTesSuccess(ter))
         return ter;
 
     auto const& pseudoID = vault->at(sfAccount);
@@ -114,9 +113,7 @@ VaultDelete::doApply()
     // Try to remove MPToken for vault shares for the vault owner if it exists.
     if (auto const mptoken = view().peek(keylet::mptoken(shareMPTID, account_)))
     {
-        if (auto const ter =
-                removeEmptyHolding(view(), account_, MPTIssue(shareMPTID), j_);
-            !isTesSuccess(ter))
+        if (auto const ter = removeEmptyHolding(view(), account_, MPTIssue(shareMPTID), j_); !isTesSuccess(ter))
         {
             // LCOV_EXCL_START
             JLOG(j_.error())  //
@@ -129,8 +126,7 @@ VaultDelete::doApply()
         }
     }
 
-    if (!view().dirRemove(
-            keylet::ownerDir(pseudoID), (*mpt)[sfOwnerNode], mpt->key(), false))
+    if (!view().dirRemove(keylet::ownerDir(pseudoID), (*mpt)[sfOwnerNode], mpt->key(), false))
     {
         // LCOV_EXCL_START
         JLOG(j_.error()) << "VaultDelete: failed to delete issuance object.";
@@ -178,11 +174,7 @@ VaultDelete::doApply()
 
     // Remove the vault from its owner's directory.
     auto const ownerID = vault->at(sfOwner);
-    if (!view().dirRemove(
-            keylet::ownerDir(ownerID),
-            vault->at(sfOwnerNode),
-            vault->key(),
-            false))
+    if (!view().dirRemove(keylet::ownerDir(ownerID), vault->at(sfOwnerNode), vault->key(), false))
     {
         // LCOV_EXCL_START
         JLOG(j_.error()) << "VaultDelete: failed to delete vault object.";
@@ -204,6 +196,8 @@ VaultDelete::doApply()
 
     // Destroy the vault.
     view().erase(vault);
+
+    associateAsset(*vault, asset);
 
     return tesSUCCESS;
 }

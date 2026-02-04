@@ -35,8 +35,7 @@ Status
 handle(JsonContext& context, Object& object)
 {
     XRPL_ASSERT(
-        context.apiVersion >= HandlerImpl::minApiVer &&
-            context.apiVersion <= HandlerImpl::maxApiVer,
+        context.apiVersion >= HandlerImpl::minApiVer && context.apiVersion <= HandlerImpl::maxApiVer,
         "xrpl::RPC::handle : valid API version");
     HandlerImpl handler(context);
 
@@ -65,10 +64,7 @@ Handler const handlerArray[]{
     // Some handlers not specified here are added to the table via addHandler()
     // Request-response methods
     {"account_info", byRef(&doAccountInfo), Role::USER, NO_CONDITION},
-    {"account_currencies",
-     byRef(&doAccountCurrencies),
-     Role::USER,
-     NO_CONDITION},
+    {"account_currencies", byRef(&doAccountCurrencies), Role::USER, NO_CONDITION},
     {"account_lines", byRef(&doAccountLines), Role::USER, NO_CONDITION},
     {"account_channels", byRef(&doAccountChannels), Role::USER, NO_CONDITION},
     {"account_nfts", byRef(&doAccountNFTs), Role::USER, NO_CONDITION},
@@ -84,32 +80,17 @@ Handler const handlerArray[]{
     {"channel_verify", byRef(&doChannelVerify), Role::USER, NO_CONDITION},
     {"connect", byRef(&doConnect), Role::ADMIN, NO_CONDITION},
     {"consensus_info", byRef(&doConsensusInfo), Role::ADMIN, NO_CONDITION},
-    {"deposit_authorized",
-     byRef(&doDepositAuthorized),
-     Role::USER,
-     NO_CONDITION},
+    {"deposit_authorized", byRef(&doDepositAuthorized), Role::USER, NO_CONDITION},
     {"feature", byRef(&doFeature), Role::USER, NO_CONDITION},
     {"fee", byRef(&doFee), Role::USER, NEEDS_CURRENT_LEDGER},
     {"fetch_info", byRef(&doFetchInfo), Role::ADMIN, NO_CONDITION},
     {"gateway_balances", byRef(&doGatewayBalances), Role::USER, NO_CONDITION},
     {"get_counts", byRef(&doGetCounts), Role::ADMIN, NO_CONDITION},
-    {"get_aggregate_price",
-     byRef(&doGetAggregatePrice),
-     Role::USER,
-     NO_CONDITION},
-    {"ledger_accept",
-     byRef(&doLedgerAccept),
-     Role::ADMIN,
-     NEEDS_CURRENT_LEDGER},
-    {"ledger_cleaner",
-     byRef(&doLedgerCleaner),
-     Role::ADMIN,
-     NEEDS_NETWORK_CONNECTION},
+    {"get_aggregate_price", byRef(&doGetAggregatePrice), Role::USER, NO_CONDITION},
+    {"ledger_accept", byRef(&doLedgerAccept), Role::ADMIN, NEEDS_CURRENT_LEDGER},
+    {"ledger_cleaner", byRef(&doLedgerCleaner), Role::ADMIN, NEEDS_NETWORK_CONNECTION},
     {"ledger_closed", byRef(&doLedgerClosed), Role::USER, NEEDS_CLOSED_LEDGER},
-    {"ledger_current",
-     byRef(&doLedgerCurrent),
-     Role::USER,
-     NEEDS_CURRENT_LEDGER},
+    {"ledger_current", byRef(&doLedgerCurrent), Role::USER, NEEDS_CURRENT_LEDGER},
     {"ledger_data", byRef(&doLedgerData), Role::USER, NO_CONDITION},
     {"ledger_entry", byRef(&doLedgerEntry), Role::USER, NO_CONDITION},
     {"ledger_header", byRef(&doLedgerHeader), Role::USER, NO_CONDITION, 1, 1},
@@ -128,23 +109,11 @@ Handler const handlerArray[]{
     //      {   "profile",              byRef (&doProfile), Role::USER,
     //      NEEDS_CURRENT_LEDGER  },
     {"random", byRef(&doRandom), Role::USER, NO_CONDITION},
-    {"peer_reservations_add",
-     byRef(&doPeerReservationsAdd),
-     Role::ADMIN,
-     NO_CONDITION},
-    {"peer_reservations_del",
-     byRef(&doPeerReservationsDel),
-     Role::ADMIN,
-     NO_CONDITION},
-    {"peer_reservations_list",
-     byRef(&doPeerReservationsList),
-     Role::ADMIN,
-     NO_CONDITION},
+    {"peer_reservations_add", byRef(&doPeerReservationsAdd), Role::ADMIN, NO_CONDITION},
+    {"peer_reservations_del", byRef(&doPeerReservationsDel), Role::ADMIN, NO_CONDITION},
+    {"peer_reservations_list", byRef(&doPeerReservationsList), Role::ADMIN, NO_CONDITION},
     {"ripple_path_find", byRef(&doRipplePathFind), Role::USER, NO_CONDITION},
-    {"server_definitions",
-     byRef(&doServerDefinitions),
-     Role::USER,
-     NO_CONDITION},
+    {"server_definitions", byRef(&doServerDefinitions), Role::USER, NO_CONDITION},
     {"server_info", byRef(&doServerInfo), Role::USER, NO_CONDITION},
     {"server_state", byRef(&doServerState), Role::USER, NO_CONDITION},
     {"sign", byRef(&doSign), Role::USER, NO_CONDITION},
@@ -152,28 +121,19 @@ Handler const handlerArray[]{
     {"simulate", byRef(&doSimulate), Role::USER, NEEDS_CURRENT_LEDGER},
     {"stop", byRef(&doStop), Role::ADMIN, NO_CONDITION},
     {"submit", byRef(&doSubmit), Role::USER, NEEDS_CURRENT_LEDGER},
-    {"submit_multisigned",
-     byRef(&doSubmitMultiSigned),
-     Role::USER,
-     NEEDS_CURRENT_LEDGER},
+    {"submit_multisigned", byRef(&doSubmitMultiSigned), Role::USER, NEEDS_CURRENT_LEDGER},
     {"transaction_entry", byRef(&doTransactionEntry), Role::USER, NO_CONDITION},
     {"tx", byRef(&doTxJson), Role::USER, NEEDS_NETWORK_CONNECTION},
     {"tx_history", byRef(&doTxHistory), Role::USER, NO_CONDITION, 1, 1},
     {"tx_reduce_relay", byRef(&doTxReduceRelay), Role::USER, NO_CONDITION},
     {"unl_list", byRef(&doUnlList), Role::ADMIN, NO_CONDITION},
-    {"validation_create",
-     byRef(&doValidationCreate),
-     Role::ADMIN,
-     NO_CONDITION},
+    {"validation_create", byRef(&doValidationCreate), Role::ADMIN, NO_CONDITION},
     {"validators", byRef(&doValidators), Role::ADMIN, NO_CONDITION},
-    {"validator_list_sites",
-     byRef(&doValidatorListSites),
-     Role::ADMIN,
-     NO_CONDITION},
+    {"validator_list_sites", byRef(&doValidatorListSites), Role::ADMIN, NO_CONDITION},
     {"validator_info", byRef(&doValidatorInfo), Role::ADMIN, NO_CONDITION},
     {"vault_info", byRef(&doVaultInfo), Role::USER, NO_CONDITION},
     {"wallet_propose", byRef(&doWalletPropose), Role::ADMIN, NO_CONDITION},
-    // Evented methods
+    // Event methods
     {"subscribe", byRef(&doSubscribe), Role::USER, NO_CONDITION},
     {"unsubscribe", byRef(&doUnsubscribe), Role::USER, NO_CONDITION},
 };
@@ -191,19 +151,14 @@ private:
         unsigned minVer,
         unsigned maxVer)
     {
-        XRPL_ASSERT(
-            minVer <= maxVer,
-            "xrpl::RPC::HandlerTable : valid API version range");
-        XRPL_ASSERT(
-            maxVer <= RPC::apiMaximumValidVersion,
-            "xrpl::RPC::HandlerTable : valid max API version");
+        XRPL_ASSERT(minVer <= maxVer, "xrpl::RPC::HandlerTable : valid API version range");
+        XRPL_ASSERT(maxVer <= RPC::apiMaximumValidVersion, "xrpl::RPC::HandlerTable : valid max API version");
 
         return std::any_of(
             range.first,
             range.second,  //
             [minVer, maxVer](auto const& item) {
-                return item.second.minApiVer_ <= maxVer &&
-                    item.second.maxApiVer_ >= minVer;
+                return item.second.minApiVer_ <= maxVer && item.second.maxApiVer_ >= minVer;
             });
     }
 
@@ -212,13 +167,8 @@ private:
     {
         for (auto const& entry : entries)
         {
-            if (overlappingApiVersion(
-                    table_.equal_range(entry.name_),
-                    entry.minApiVer_,
-                    entry.maxApiVer_))
-                LogicError(
-                    std::string("Handler for ") + entry.name_ +
-                    " overlaps with an existing handler");
+            if (overlappingApiVersion(table_.equal_range(entry.name_), entry.minApiVer_, entry.maxApiVer_))
+                LogicError(std::string("Handler for ") + entry.name_ + " overlaps with an existing handler");
 
             table_.insert({entry.name_, entry});
         }
@@ -237,20 +187,16 @@ public:
     }
 
     [[nodiscard]] Handler const*
-    getHandler(unsigned version, bool betaEnabled, std::string const& name)
-        const
+    getHandler(unsigned version, bool betaEnabled, std::string const& name) const
     {
         if (version < RPC::apiMinimumSupportedVersion ||
-            version > (betaEnabled ? RPC::apiBetaVersion
-                                   : RPC::apiMaximumSupportedVersion))
+            version > (betaEnabled ? RPC::apiBetaVersion : RPC::apiMaximumSupportedVersion))
             return nullptr;
 
         auto const range = table_.equal_range(name);
-        auto const i = std::find_if(
-            range.first, range.second, [version](auto const& entry) {
-                return entry.second.minApiVer_ <= version &&
-                    version <= entry.second.maxApiVer_;
-            });
+        auto const i = std::find_if(range.first, range.second, [version](auto const& entry) {
+            return entry.second.minApiVer_ <= version && version <= entry.second.maxApiVer_;
+        });
 
         return i == range.second ? nullptr : &i->second;
     }
@@ -274,16 +220,11 @@ private:
     {
         static_assert(HandlerImpl::minApiVer <= HandlerImpl::maxApiVer);
         static_assert(HandlerImpl::maxApiVer <= RPC::apiMaximumValidVersion);
-        static_assert(
-            RPC::apiMinimumSupportedVersion <= HandlerImpl::minApiVer);
+        static_assert(RPC::apiMinimumSupportedVersion <= HandlerImpl::minApiVer);
 
         if (overlappingApiVersion(
-                table_.equal_range(HandlerImpl::name),
-                HandlerImpl::minApiVer,
-                HandlerImpl::maxApiVer))
-            LogicError(
-                std::string("Handler for ") + HandlerImpl::name +
-                " overlaps with an existing handler");
+                table_.equal_range(HandlerImpl::name), HandlerImpl::minApiVer, HandlerImpl::maxApiVer))
+            LogicError(std::string("Handler for ") + HandlerImpl::name + " overlaps with an existing handler");
 
         table_.insert({HandlerImpl::name, handlerFrom<HandlerImpl>()});
     }

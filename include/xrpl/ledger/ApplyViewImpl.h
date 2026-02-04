@@ -34,13 +34,7 @@ public:
         destructor.
     */
     std::optional<TxMeta>
-    apply(
-        OpenView& to,
-        STTx const& tx,
-        TER ter,
-        std::optional<uint256> parentBatchId,
-        bool isDryRun,
-        beast::Journal j);
+    apply(OpenView& to, STTx const& tx, TER ter, std::optional<uint256> parentBatchId, bool isDryRun, beast::Journal j);
 
     /** Set the amount of currency delivered.
 

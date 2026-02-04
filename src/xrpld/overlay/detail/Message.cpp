@@ -9,15 +9,13 @@ Message::Message(
     ::google::protobuf::Message const& message,
     protocol::MessageType type,
     std::optional<PublicKey> const& validator)
-    : category_(TrafficCount::categorize(message, type, false))
-    , validatorKey_(validator)
+    : category_(TrafficCount::categorize(message, type, false)), validatorKey_(validator)
 {
     using namespace xrpl::compression;
 
     auto const messageBytes = messageSize(message);
 
-    XRPL_ASSERT(
-        messageBytes, "xrpl::Message::Message : non-empty message input");
+    XRPL_ASSERT(messageBytes, "xrpl::Message::Message : non-empty message input");
 
     buffer_.resize(headerBytes + messageBytes);
 
@@ -26,9 +24,7 @@ Message::Message(
     if (messageBytes != 0)
         message.SerializeToArray(buffer_.data() + headerBytes, messageBytes);
 
-    XRPL_ASSERT(
-        getBufferSize() == totalSize(message),
-        "xrpl::Message::Message : message size matches the buffer");
+    XRPL_ASSERT(getBufferSize() == totalSize(message), "xrpl::Message::Message : message size matches the buffer");
 }
 
 // static
@@ -68,8 +64,8 @@ Message::compress()
             case protocol::mtGET_LEDGER:
             case protocol::mtLEDGER_DATA:
             case protocol::mtGET_OBJECTS:
-            case protocol::mtVALIDATORLIST:
-            case protocol::mtVALIDATORLISTCOLLECTION:
+            case protocol::mtVALIDATOR_LIST:
+            case protocol::mtVALIDATOR_LIST_COLLECTION:
             case protocol::mtREPLAY_DELTA_RESPONSE:
             case protocol::mtTRANSACTIONS:
                 return true;
@@ -100,16 +96,10 @@ Message::compress()
                 return (bufferCompressed_.data() + headerBytesCompressed);
             });
 
-        if (compressedSize <
-            (messageBytes - (headerBytesCompressed - headerBytes)))
+        if (compressedSize < (messageBytes - (headerBytesCompressed - headerBytes)))
         {
             bufferCompressed_.resize(headerBytesCompressed + compressedSize);
-            setHeader(
-                bufferCompressed_.data(),
-                compressedSize,
-                type,
-                Algorithm::LZ4,
-                messageBytes);
+            setHeader(bufferCompressed_.data(), compressedSize, type, Algorithm::LZ4, messageBytes);
         }
         else
             bufferCompressed_.resize(0);
@@ -162,8 +152,7 @@ Message::setHeader(
     auto h = in;
 
     auto pack = [](std::uint8_t*& in, std::uint32_t size) {
-        *in++ = static_cast<std::uint8_t>(
-            (size >> 24) & 0x0F);  // leftmost 4 are compression bits
+        *in++ = static_cast<std::uint8_t>((size >> 24) & 0x0F);  // leftmost 4 are compression bits
         *in++ = static_cast<std::uint8_t>((size >> 16) & 0xFF);
         *in++ = static_cast<std::uint8_t>((size >> 8) & 0xFF);
         *in++ = static_cast<std::uint8_t>(size & 0xFF);

@@ -19,9 +19,7 @@ namespace xrpl {
    @{
  */
 bool
-canHaveNFTokenOfferID(
-    std::shared_ptr<STTx const> const& serializedTx,
-    TxMeta const& transactionMeta);
+canHaveNFTokenOfferID(std::shared_ptr<STTx const> const& serializedTx, TxMeta const& transactionMeta);
 
 std::optional<uint256>
 getOfferIDFromCreatedOffer(TxMeta const& transactionMeta);

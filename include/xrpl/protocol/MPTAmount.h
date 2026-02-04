@@ -123,11 +123,7 @@ to_string(MPTAmount const& amount)
 }
 
 inline MPTAmount
-mulRatio(
-    MPTAmount const& amt,
-    std::uint32_t num,
-    std::uint32_t den,
-    bool roundUp)
+mulRatio(MPTAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundUp)
 {
     using namespace boost::multiprecision;
 

@@ -17,9 +17,7 @@ BookListeners::removeSubscriber(std::uint64_t seq)
 }
 
 void
-BookListeners::publish(
-    MultiApiJson const& jvObj,
-    hash_set<std::uint64_t>& havePublished)
+BookListeners::publish(MultiApiJson const& jvObj, hash_set<std::uint64_t>& havePublished)
 {
     std::lock_guard sl(mLock);
     auto it = mListeners.cbegin();
@@ -30,7 +28,7 @@ BookListeners::publish(
 
         if (p)
         {
-            // Only publish jvObj if this is the first occurence
+            // Only publish jvObj if this is the first occurrence
             if (havePublished.emplace(p->getSeq()).second)
             {
                 jvObj.visit(

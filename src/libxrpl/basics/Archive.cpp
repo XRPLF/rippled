@@ -14,17 +14,13 @@
 namespace xrpl {
 
 void
-extractTarLz4(
-    boost::filesystem::path const& src,
-    boost::filesystem::path const& dst)
+extractTarLz4(boost::filesystem::path const& src, boost::filesystem::path const& dst)
 {
     if (!is_regular_file(src))
         Throw<std::runtime_error>("Invalid source file");
 
-    using archive_ptr =
-        std::unique_ptr<struct archive, void (*)(struct archive*)>;
-    archive_ptr ar{
-        archive_read_new(), [](struct archive* a) { archive_read_free(a); }};
+    using archive_ptr = std::unique_ptr<struct archive, void (*)(struct archive*)>;
+    archive_ptr ar{archive_read_new(), [](struct archive* a) { archive_read_free(a); }};
     if (!ar)
         Throw<std::runtime_error>("Failed to allocate archive");
 
@@ -35,22 +31,18 @@ extractTarLz4(
         Throw<std::runtime_error>(archive_error_string(ar.get()));
 
     // Examples suggest this block size
-    if (archive_read_open_filename(ar.get(), src.string().c_str(), 10240) <
-        ARCHIVE_OK)
+    if (archive_read_open_filename(ar.get(), src.string().c_str(), 10240) < ARCHIVE_OK)
     {
         Throw<std::runtime_error>(archive_error_string(ar.get()));
     }
 
-    archive_ptr aw{archive_write_disk_new(), [](struct archive* a) {
-                       archive_write_free(a);
-                   }};
+    archive_ptr aw{archive_write_disk_new(), [](struct archive* a) { archive_write_free(a); }};
     if (!aw)
         Throw<std::runtime_error>("Failed to allocate archive");
 
     if (archive_write_disk_set_options(
-            aw.get(),
-            ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_PERM | ARCHIVE_EXTRACT_ACL |
-                ARCHIVE_EXTRACT_FFLAGS) < ARCHIVE_OK)
+            aw.get(), ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_PERM | ARCHIVE_EXTRACT_ACL | ARCHIVE_EXTRACT_FFLAGS) <
+        ARCHIVE_OK)
     {
         Throw<std::runtime_error>(archive_error_string(aw.get()));
     }
@@ -68,8 +60,7 @@ extractTarLz4(
         if (result < ARCHIVE_OK)
             Throw<std::runtime_error>(archive_error_string(ar.get()));
 
-        archive_entry_set_pathname(
-            entry, (dst / archive_entry_pathname(entry)).string().c_str());
+        archive_entry_set_pathname(entry, (dst / archive_entry_pathname(entry)).string().c_str());
         if (archive_write_header(aw.get(), entry) < ARCHIVE_OK)
             Throw<std::runtime_error>(archive_error_string(aw.get()));
 
@@ -86,8 +77,7 @@ extractTarLz4(
                 if (result < ARCHIVE_OK)
                     Throw<std::runtime_error>(archive_error_string(ar.get()));
 
-                if (archive_write_data_block(aw.get(), buf, sz, offset) <
-                    ARCHIVE_OK)
+                if (archive_write_data_block(aw.get(), buf, sz, offset) < ARCHIVE_OK)
                 {
                     Throw<std::runtime_error>(archive_error_string(aw.get()));
                 }

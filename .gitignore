@@ -1,4 +1,5 @@
 # .gitignore
+# cspell: disable
 
 # Macintosh Desktop Services Store files.
 .DS_Store
@@ -62,6 +63,9 @@ DerivedData
 # Microsoft Visual Studio IDE.
 /.vs/
 /.vscode/
+
+# zed IDE.
+/.zed/
 
 # AI tools.
 /.augment

@@ -89,13 +89,13 @@ setCommonHostFunctions(HostFunctions* hfs, ImportVec& i)
     // clang-format on
 }
 
-ImportVec
+std::shared_ptr<ImportVec>
 createWasmImport(HostFunctions& hfs)
 {
-    ImportVec i;
+    std::shared_ptr<ImportVec> i(std::make_shared<ImportVec>());
 
-    setCommonHostFunctions(&hfs, i);
-    WASM_IMPORT_FUNC2(i, updateData, "update_data", &hfs, 1000);
+    setCommonHostFunctions(&hfs, *i);
+    WASM_IMPORT_FUNC2(*i, updateData, "update_data", &hfs, 1000);
 
     return i;
 }
@@ -103,7 +103,7 @@ createWasmImport(HostFunctions& hfs)
 Expected<EscrowResult, TER>
 runEscrowWasm(
     Bytes const& wasmCode,
-    HostFunctions& hfs,
+    std::shared_ptr<HostFunctions> const& hfs,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
     int64_t gasLimit)
@@ -112,14 +112,7 @@ runEscrowWasm(
     auto& vm = WasmEngine::instance();
     // vm.initMaxPages(MAX_PAGES);
 
-    auto const ret = vm.run(
-        wasmCode,
-        funcName,
-        params,
-        createWasmImport(hfs),
-        &hfs,
-        gasLimit,
-        hfs.getJournal());
+    auto const ret = vm.run(wasmCode, funcName, params, createWasmImport(*hfs), hfs, gasLimit, hfs->getJournal());
 
     // std::cout << "runEscrowWasm, mod size: " << wasmCode.size()
     //           << ", gasLimit: " << gasLimit << ", funcName: " << funcName;
@@ -133,8 +126,7 @@ runEscrowWasm(
     }
 
 #ifdef DEBUG_OUTPUT
-    std::cout << ", ret: " << ret->result << ", gas spent: " << ret->cost
-              << std::endl;
+    std::cout << ", ret: " << ret->result << ", gas spent: " << ret->cost << std::endl;
 #endif
     return EscrowResult{ret->result, ret->cost};
 }
@@ -142,7 +134,7 @@ runEscrowWasm(
 NotTEC
 preflightEscrowWasm(
     Bytes const& wasmCode,
-    HostFunctions& hfs,
+    std::shared_ptr<HostFunctions> const& hfs,
     std::string_view funcName,
     std::vector<WasmParam> const& params)
 {
@@ -150,13 +142,7 @@ preflightEscrowWasm(
     auto& vm = WasmEngine::instance();
     // vm.initMaxPages(MAX_PAGES);
 
-    auto const ret = vm.check(
-        wasmCode,
-        funcName,
-        params,
-        createWasmImport(hfs),
-        &hfs,
-        hfs.getJournal());
+    auto const ret = vm.check(wasmCode, funcName, params, createWasmImport(*hfs), hfs, hfs->getJournal());
 
     return ret;
 }
@@ -179,8 +165,8 @@ WasmEngine::run(
     Bytes const& wasmCode,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
-    ImportVec const& imports,
-    HostFunctions* hfs,
+    std::shared_ptr<ImportVec> const& imports,
+    std::shared_ptr<HostFunctions> const& hfs,
     int64_t gasLimit,
     beast::Journal j)
 {
@@ -192,8 +178,8 @@ WasmEngine::check(
     Bytes const& wasmCode,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
-    ImportVec const& imports,
-    HostFunctions* hfs,
+    std::shared_ptr<ImportVec> const& imports,
+    std::shared_ptr<HostFunctions> const& hfs,
     beast::Journal j)
 {
     return impl->check(wasmCode, funcName, params, imports, hfs, j);

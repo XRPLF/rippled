@@ -37,6 +37,9 @@ public:
     bool
     native() const;
 
+    bool
+    integral() const;
+
     friend constexpr std::weak_ordering
     operator<=>(Issue const& lhs, Issue const& rhs);
 };
@@ -69,8 +72,7 @@ hash_append(Hasher& h, Issue const& r)
 [[nodiscard]] inline constexpr bool
 operator==(Issue const& lhs, Issue const& rhs)
 {
-    return (lhs.currency == rhs.currency) &&
-        (isXRP(lhs.currency) || lhs.account == rhs.account);
+    return (lhs.currency == rhs.currency) && (isXRP(lhs.currency) || lhs.account == rhs.account);
 }
 /** @} */
 

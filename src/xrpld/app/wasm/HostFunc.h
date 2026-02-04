@@ -44,6 +44,8 @@ HfErrorToInt(HostFunctionError e)
     return static_cast<int32_t>(e);
 }
 
+namespace wasm_float {
+
 std::string
 floatToString(Slice const& data);
 
@@ -80,13 +82,13 @@ floatPowerImpl(Slice const& x, int32_t n, int32_t mode);
 Expected<Bytes, HostFunctionError>
 floatLogImpl(Slice const& x, int32_t mode);
 
+}  // namespace wasm_float
+
 struct HostFunctions
 {
     beast::Journal j_;
 
-    HostFunctions(
-        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : j_(j)
+    HostFunctions(beast::Journal j = beast::Journal{beast::Journal::getNullSink()}) : j_(j)
     {
     }
 
@@ -241,10 +243,7 @@ struct HostFunctions
     }
 
     virtual Expected<int32_t, HostFunctionError>
-    checkSignature(
-        Slice const& message,
-        Slice const& signature,
-        Slice const& pubkey)
+    checkSignature(Slice const& message, Slice const& signature, Slice const& pubkey)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
@@ -274,10 +273,7 @@ struct HostFunctions
     }
 
     virtual Expected<Bytes, HostFunctionError>
-    credentialKeylet(
-        AccountID const& subject,
-        AccountID const& issuer,
-        Slice const& credentialType)
+    credentialKeylet(AccountID const& subject, AccountID const& issuer, Slice const& credentialType)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
@@ -307,10 +303,7 @@ struct HostFunctions
     }
 
     virtual Expected<Bytes, HostFunctionError>
-    lineKeylet(
-        AccountID const& account1,
-        AccountID const& account2,
-        Currency const& currency)
+    lineKeylet(AccountID const& account1, AccountID const& account2, Currency const& currency)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
@@ -346,10 +339,7 @@ struct HostFunctions
     }
 
     virtual Expected<Bytes, HostFunctionError>
-    paychanKeylet(
-        AccountID const& account,
-        AccountID const& destination,
-        std::uint32_t seq)
+    paychanKeylet(AccountID const& account, AccountID const& destination, std::uint32_t seq)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }

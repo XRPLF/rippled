@@ -8,9 +8,7 @@ namespace xrpl {
 bool
 Keylet::check(STLedgerEntry const& sle) const
 {
-    XRPL_ASSERT(
-        sle.getType() != ltANY || sle.getType() != ltCHILD,
-        "xrpl::Keylet::check : valid input type");
+    XRPL_ASSERT(sle.getType() != ltANY || sle.getType() != ltCHILD, "xrpl::Keylet::check : valid input type");
 
     if (type == ltANY)
         return true;

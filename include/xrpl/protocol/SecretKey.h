@@ -81,8 +81,7 @@ public:
 inline bool
 operator==(SecretKey const& lhs, SecretKey const& rhs)
 {
-    return lhs.size() == rhs.size() &&
-        std::memcmp(lhs.data(), rhs.data(), rhs.size()) == 0;
+    return lhs.size() == rhs.size() && std::memcmp(lhs.data(), rhs.data(), rhs.size()) == 0;
 }
 
 inline bool

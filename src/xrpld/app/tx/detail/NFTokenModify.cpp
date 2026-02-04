@@ -25,8 +25,7 @@ TER
 NFTokenModify::preclaim(PreclaimContext const& ctx)
 {
     AccountID const account = ctx.tx[sfAccount];
-    AccountID const owner =
-        ctx.tx[ctx.tx.isFieldPresent(sfOwner) ? sfOwner : sfAccount];
+    AccountID const owner = ctx.tx[ctx.tx.isFieldPresent(sfOwner) ? sfOwner : sfAccount];
 
     if (!nft::findToken(ctx.view, owner, ctx.tx[sfNFTokenID]))
         return tecNO_ENTRY;
@@ -36,8 +35,7 @@ NFTokenModify::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
 
     // Verify permissions for the issuer
-    if (AccountID const issuer = nft::getIssuer(ctx.tx[sfNFTokenID]);
-        issuer != account)
+    if (AccountID const issuer = nft::getIssuer(ctx.tx[sfNFTokenID]); issuer != account)
     {
         auto const sle = ctx.view.read(keylet::account(issuer));
         if (!sle)
@@ -53,8 +51,7 @@ TER
 NFTokenModify::doApply()
 {
     uint256 const nftokenID = ctx_.tx[sfNFTokenID];
-    AccountID const owner =
-        ctx_.tx[ctx_.tx.isFieldPresent(sfOwner) ? sfOwner : sfAccount];
+    AccountID const owner = ctx_.tx[ctx_.tx.isFieldPresent(sfOwner) ? sfOwner : sfAccount];
 
     return nft::changeTokenURI(view(), owner, nftokenID, ctx_.tx[~sfURI]);
 }

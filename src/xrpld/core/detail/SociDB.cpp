@@ -23,16 +23,11 @@ static auto checkpointPageCount = 1000;
 namespace detail {
 
 std::string
-getSociSqliteInit(
-    std::string const& name,
-    std::string const& dir,
-    std::string const& ext)
+getSociSqliteInit(std::string const& name, std::string const& dir, std::string const& ext)
 {
     if (name.empty())
     {
-        Throw<std::runtime_error>(
-            "Sqlite databases must specify a dir and a name. Name: " + name +
-            " Dir: " + dir);
+        Throw<std::runtime_error>("Sqlite databases must specify a dir and a name. Name: " + name + " Dir: " + dir);
     }
     boost::filesystem::path file(dir);
     if (is_directory(file))
@@ -50,8 +45,7 @@ getSociInit(BasicConfig const& config, std::string const& dbName)
         Throw<std::runtime_error>("Unsupported soci backend: " + backendName);
 
     auto const path = config.legacy("database_path");
-    auto const ext =
-        dbName == "validators" || dbName == "peerfinder" ? ".sqlite" : ".db";
+    auto const ext = dbName == "validators" || dbName == "peerfinder" ? ".sqlite" : ".db";
     return detail::getSociSqliteInit(dbName, path, ext);
 }
 
@@ -61,8 +55,7 @@ DBConfig::DBConfig(std::string const& dbPath) : connectionString_(dbPath)
 {
 }
 
-DBConfig::DBConfig(BasicConfig const& config, std::string const& dbName)
-    : DBConfig(detail::getSociInit(config, dbName))
+DBConfig::DBConfig(BasicConfig const& config, std::string const& dbName) : DBConfig(detail::getSociInit(config, dbName))
 {
 }
 
@@ -85,10 +78,7 @@ open(soci::session& s, BasicConfig const& config, std::string const& dbName)
 }
 
 void
-open(
-    soci::session& s,
-    std::string const& beName,
-    std::string const& connectionString)
+open(soci::session& s, std::string const& beName, std::string const& connectionString)
 {
     if (beName == "sqlite")
         s.open(soci::sqlite3, connectionString);
@@ -115,8 +105,7 @@ getKBUsedAll(soci::session& s)
 {
     if (!getConnection(s))
         Throw<std::logic_error>("No connection found.");
-    return static_cast<size_t>(
-        sqlite_api::sqlite3_memory_used() / kilobytes(1));
+    return static_cast<size_t>(sqlite_api::sqlite3_memory_used() / kilobytes(1));
 }
 
 std::uint32_t
@@ -126,8 +115,7 @@ getKBUsedDB(soci::session& s)
     if (auto conn = getConnection(s))
     {
         int cur = 0, hiw = 0;
-        sqlite_api::sqlite3_db_status(
-            conn, SQLITE_DBSTATUS_CACHE_USED, &cur, &hiw, 0);
+        sqlite_api::sqlite3_db_status(conn, SQLITE_DBSTATUS_CACHE_USED, &cur, &hiw, 0);
         return cur / kilobytes(1);
     }
     Throw<std::logic_error>("");
@@ -183,21 +171,13 @@ namespace {
 class WALCheckpointer : public Checkpointer
 {
 public:
-    WALCheckpointer(
-        std::uintptr_t id,
-        std::weak_ptr<soci::session> session,
-        JobQueue& q,
-        Logs& logs)
-        : id_(id)
-        , session_(std::move(session))
-        , jobQueue_(q)
-        , j_(logs.journal("WALCheckpointer"))
+    WALCheckpointer(std::uintptr_t id, std::weak_ptr<soci::session> session, JobQueue& q, Logs& logs)
+        : id_(id), session_(std::move(session)), jobQueue_(q), j_(logs.journal("WALCheckpointer"))
     {
         if (auto [conn, keepAlive] = getConnection(); conn)
         {
             (void)keepAlive;
-            sqlite_api::sqlite3_wal_hook(
-                conn, &sqliteWALHook, reinterpret_cast<void*>(id_));
+            sqlite_api::sqlite3_wal_hook(conn, &sqliteWALHook, reinterpret_cast<void*>(id_));
         }
     }
 
@@ -257,8 +237,7 @@ public:
             return;
 
         int log = 0, ckpt = 0;
-        int ret = sqlite3_wal_checkpoint_v2(
-            conn, nullptr, SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
+        int ret = sqlite3_wal_checkpoint_v2(conn, nullptr, SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
 
         auto fname = sqlite3_db_filename(conn, "main");
         if (ret != SQLITE_OK)
@@ -268,8 +247,7 @@ public:
         }
         else
         {
-            JLOG(j_.trace()) << "WAL(" << fname << "): frames=" << log
-                             << ", written=" << ckpt;
+            JLOG(j_.trace()) << "WAL(" << fname << "): frames=" << log << ", written=" << ckpt;
         }
 
         std::lock_guard lock(mutex_);
@@ -279,7 +257,7 @@ public:
 protected:
     std::uintptr_t const id_;
     // session is owned by the DatabaseCon parent that holds the checkpointer.
-    // It is possible (tho rare) for the DatabaseCon class to be destoryed
+    // It is possible (though rare) for the DatabaseCon class to be destroyed
     // before the checkpointer.
     std::weak_ptr<soci::session> session_;
     std::mutex mutex_;
@@ -289,16 +267,11 @@ protected:
     beast::Journal const j_;
 
     static int
-    sqliteWALHook(
-        void* cpId,
-        sqlite_api::sqlite3* conn,
-        char const* dbName,
-        int walSize)
+    sqliteWALHook(void* cpId, sqlite_api::sqlite3* conn, char const* dbName, int walSize)
     {
         if (walSize >= checkpointPageCount)
         {
-            if (auto checkpointer =
-                    checkpointerFromId(reinterpret_cast<std::uintptr_t>(cpId)))
+            if (auto checkpointer = checkpointerFromId(reinterpret_cast<std::uintptr_t>(cpId)))
             {
                 checkpointer->schedule();
             }
@@ -314,14 +287,9 @@ protected:
 }  // namespace
 
 std::shared_ptr<Checkpointer>
-makeCheckpointer(
-    std::uintptr_t id,
-    std::weak_ptr<soci::session> session,
-    JobQueue& queue,
-    Logs& logs)
+makeCheckpointer(std::uintptr_t id, std::weak_ptr<soci::session> session, JobQueue& queue, Logs& logs)
 {
-    return std::make_shared<WALCheckpointer>(
-        id, std::move(session), queue, logs);
+    return std::make_shared<WALCheckpointer>(id, std::move(session), queue, logs);
 }
 
 }  // namespace xrpl

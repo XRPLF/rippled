@@ -36,8 +36,7 @@ TOfferStreamBase<TIn, TOut>::TOfferStreamBase(
     , tip_(view, book_)
     , counter_(counter)
 {
-    XRPL_ASSERT(
-        validBook_, "xrpl::TOfferStreamBase::TOfferStreamBase : valid book");
+    XRPL_ASSERT(validBook_, "xrpl::TOfferStreamBase::TOfferStreamBase : valid book");
 }
 
 // Handle the case where a directory item with no corresponding ledger entry
@@ -54,8 +53,7 @@ TOfferStreamBase<TIn, TOut>::erase(ApplyView& view)
 
     if (p == nullptr)
     {
-        JLOG(j_.error()) << "Missing directory " << tip_.dir() << " for offer "
-                         << tip_.index();
+        JLOG(j_.error()) << "Missing directory " << tip_.dir() << " for offer " << tip_.index();
         return;
     }
 
@@ -64,8 +62,7 @@ TOfferStreamBase<TIn, TOut>::erase(ApplyView& view)
 
     if (it == v.end())
     {
-        JLOG(j_.error()) << "Missing offer " << tip_.index()
-                         << " for directory " << tip_.dir();
+        JLOG(j_.error()) << "Missing offer " << tip_.index() << " for directory " << tip_.dir();
         return;
     }
 
@@ -73,8 +70,7 @@ TOfferStreamBase<TIn, TOut>::erase(ApplyView& view)
     p->setFieldV256(sfIndexes, v);
     view.update(p);
 
-    JLOG(j_.trace()) << "Missing offer " << tip_.index()
-                     << " removed from directory " << tip_.dir();
+    JLOG(j_.trace()) << "Missing offer " << tip_.index() << " removed from directory " << tip_.dir();
 }
 
 static STAmount
@@ -102,8 +98,7 @@ accountFundsHelper(
         // self funded
         return amtDefault;
 
-    return toAmount<IOUAmount>(accountHolds(
-        view, id, issue.currency, issue.account, freezeHandling, j));
+    return toAmount<IOUAmount>(accountHolds(view, id, issue.currency, issue.account, freezeHandling, j));
 }
 
 static XRPAmount
@@ -115,8 +110,7 @@ accountFundsHelper(
     FreezeHandling freezeHandling,
     beast::Journal j)
 {
-    return toAmount<XRPAmount>(accountHolds(
-        view, id, issue.currency, issue.account, freezeHandling, j));
+    return toAmount<XRPAmount>(accountHolds(view, id, issue.currency, issue.account, freezeHandling, j));
 }
 
 template <class TIn, class TOut>
@@ -125,19 +119,13 @@ bool
 TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
 {
     static_assert(
-        std::is_same_v<TTakerPays, IOUAmount> ||
-            std::is_same_v<TTakerPays, XRPAmount>,
-        "STAmount is not supported");
+        std::is_same_v<TTakerPays, IOUAmount> || std::is_same_v<TTakerPays, XRPAmount>, "STAmount is not supported");
 
     static_assert(
-        std::is_same_v<TTakerGets, IOUAmount> ||
-            std::is_same_v<TTakerGets, XRPAmount>,
-        "STAmount is not supported");
+        std::is_same_v<TTakerGets, IOUAmount> || std::is_same_v<TTakerGets, XRPAmount>, "STAmount is not supported");
 
     static_assert(
-        !std::is_same_v<TTakerPays, XRPAmount> ||
-            !std::is_same_v<TTakerGets, XRPAmount>,
-        "Cannot have XRP/XRP offers");
+        !std::is_same_v<TTakerPays, XRPAmount> || !std::is_same_v<TTakerGets, XRPAmount>, "Cannot have XRP/XRP offers");
 
     // Consider removing the offer if:
     //  o `TakerPays` is XRP (because of XRP drops granularity) or
@@ -155,8 +143,7 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
     }
 
     TAmounts<TTakerPays, TTakerGets> const ofrAmts{
-        toAmount<TTakerPays>(offer_.amount().in),
-        toAmount<TTakerGets>(offer_.amount().out)};
+        toAmount<TTakerPays>(offer_.amount().in), toAmount<TTakerGets>(offer_.amount().out)};
 
     if constexpr (!inIsXRP && !outIsXRP)
     {
@@ -167,15 +154,13 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
     TTakerGets const ownerFunds = toAmount<TTakerGets>(*ownerFunds_);
 
     auto const effectiveAmounts = [&] {
-        if (offer_.owner() != offer_.issueOut().account &&
-            ownerFunds < ofrAmts.out)
+        if (offer_.owner() != offer_.issueOut().account && ownerFunds < ofrAmts.out)
         {
             // adjust the amounts by owner funds.
             //
             // It turns out we can prevent order book blocking by rounding down
             // the ceil_out() result.
-            return offer_.quality().ceil_out_strict(
-                ofrAmts, ownerFunds, /* roundUp */ false);
+            return offer_.quality().ceil_out_strict(ofrAmts, ownerFunds, /* roundUp */ false);
         }
         return ofrAmts;
     }();
@@ -226,8 +211,7 @@ TOfferStreamBase<TIn, TOut>::step()
         // Remove if expired
         using d = NetClock::duration;
         using tp = NetClock::time_point;
-        if (entry->isFieldPresent(sfExpiration) &&
-            tp{d{(*entry)[sfExpiration]}} <= expire_)
+        if (entry->isFieldPresent(sfExpiration) && tp{d{(*entry)[sfExpiration]}} <= expire_)
         {
             JLOG(j_.trace()) << "Removing expired offer " << entry->key();
             permRmOffer(entry->key());
@@ -247,39 +231,27 @@ TOfferStreamBase<TIn, TOut>::step()
             continue;
         }
 
-        bool const deepFrozen = isDeepFrozen(
-            view_,
-            offer_.owner(),
-            offer_.issueIn().currency,
-            offer_.issueIn().account);
+        bool const deepFrozen =
+            isDeepFrozen(view_, offer_.owner(), offer_.issueIn().currency, offer_.issueIn().account);
         if (deepFrozen)
         {
-            JLOG(j_.trace())
-                << "Removing deep frozen unfunded offer " << entry->key();
+            JLOG(j_.trace()) << "Removing deep frozen unfunded offer " << entry->key();
             permRmOffer(entry->key());
             offer_ = TOffer<TIn, TOut>{};
             continue;
         }
 
         if (entry->isFieldPresent(sfDomainID) &&
-            !permissioned_dex::offerInDomain(
-                view_, entry->key(), entry->getFieldH256(sfDomainID), j_))
+            !permissioned_dex::offerInDomain(view_, entry->key(), entry->getFieldH256(sfDomainID), j_))
         {
-            JLOG(j_.trace())
-                << "Removing offer no longer in domain " << entry->key();
+            JLOG(j_.trace()) << "Removing offer no longer in domain " << entry->key();
             permRmOffer(entry->key());
             offer_ = TOffer<TIn, TOut>{};
             continue;
         }
 
         // Calculate owner funds
-        ownerFunds_ = accountFundsHelper(
-            view_,
-            offer_.owner(),
-            amount.out,
-            offer_.issueOut(),
-            fhZERO_IF_FROZEN,
-            j_);
+        ownerFunds_ = accountFundsHelper(view_, offer_.owner(), amount.out, offer_.issueOut(), fhZERO_IF_FROZEN, j_);
 
         // Check for unfunded offer
         if (*ownerFunds_ <= beast::zero)
@@ -287,13 +259,8 @@ TOfferStreamBase<TIn, TOut>::step()
             // If the owner's balance in the pristine view is the same,
             // we haven't modified the balance and therefore the
             // offer is "found unfunded" versus "became unfunded"
-            auto const original_funds = accountFundsHelper(
-                cancelView_,
-                offer_.owner(),
-                amount.out,
-                offer_.issueOut(),
-                fhZERO_IF_FROZEN,
-                j_);
+            auto const original_funds =
+                accountFundsHelper(cancelView_, offer_.owner(), amount.out, offer_.issueOut(), fhZERO_IF_FROZEN, j_);
 
             if (original_funds == *ownerFunds_)
             {
@@ -302,8 +269,7 @@ TOfferStreamBase<TIn, TOut>::step()
             }
             else
             {
-                JLOG(j_.trace())
-                    << "Removing became unfunded offer " << entry->key();
+                JLOG(j_.trace()) << "Removing became unfunded offer " << entry->key();
             }
             offer_ = TOffer<TIn, TOut>{};
             // See comment at top of loop for how the offer is removed
@@ -321,27 +287,24 @@ TOfferStreamBase<TIn, TOut>::step()
                 // some cases, hence the `if constexpr` guard.
                 // Note that TIn can be XRPAmount or STAmount, and TOut can be
                 // IOUAmount or STAmount.
-                if constexpr (!(std::is_same_v<TIn, IOUAmount> ||
-                                std::is_same_v<TOut, XRPAmount>))
+                if constexpr (!(std::is_same_v<TIn, IOUAmount> || std::is_same_v<TOut, XRPAmount>))
                     return shouldRmSmallIncreasedQOffer<XRPAmount, IOUAmount>();
             }
             if (!inIsXRP && outIsXRP)
             {
                 // See comment above for `if constexpr` rationale
-                if constexpr (!(std::is_same_v<TIn, XRPAmount> ||
-                                std::is_same_v<TOut, IOUAmount>))
+                if constexpr (!(std::is_same_v<TIn, XRPAmount> || std::is_same_v<TOut, IOUAmount>))
                     return shouldRmSmallIncreasedQOffer<IOUAmount, XRPAmount>();
             }
             if (!inIsXRP && !outIsXRP)
             {
                 // See comment above for `if constexpr` rationale
-                if constexpr (!(std::is_same_v<TIn, XRPAmount> ||
-                                std::is_same_v<TOut, XRPAmount>))
+                if constexpr (!(std::is_same_v<TIn, XRPAmount> || std::is_same_v<TOut, XRPAmount>))
                     return shouldRmSmallIncreasedQOffer<IOUAmount, IOUAmount>();
             }
             // LCOV_EXCL_START
             UNREACHABLE(
-                "rippls::TOfferStreamBase::step::rmSmallIncreasedQOffer : XRP "
+                "xrpl::TOfferStreamBase::step::rmSmallIncreasedQOffer : XRP "
                 "vs XRP offer");
             return false;
             // LCOV_EXCL_STOP
@@ -349,20 +312,13 @@ TOfferStreamBase<TIn, TOut>::step()
 
         if (rmSmallIncreasedQOffer)
         {
-            auto const original_funds = accountFundsHelper(
-                cancelView_,
-                offer_.owner(),
-                amount.out,
-                offer_.issueOut(),
-                fhZERO_IF_FROZEN,
-                j_);
+            auto const original_funds =
+                accountFundsHelper(cancelView_, offer_.owner(), amount.out, offer_.issueOut(), fhZERO_IF_FROZEN, j_);
 
             if (original_funds == *ownerFunds_)
             {
                 permRmOffer(entry->key());
-                JLOG(j_.trace())
-                    << "Removing tiny offer due to reduced quality "
-                    << entry->key();
+                JLOG(j_.trace()) << "Removing tiny offer due to reduced quality " << entry->key();
             }
             else
             {

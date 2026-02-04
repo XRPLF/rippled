@@ -10,30 +10,23 @@
 namespace xrpl {
 
 [[nodiscard]] intr_ptr::SharedPtr<SHAMapLeafNode>
-makeTypedLeaf(
-    SHAMapNodeType type,
-    boost::intrusive_ptr<SHAMapItem const> item,
-    std::uint32_t owner)
+makeTypedLeaf(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t owner)
 {
     if (type == SHAMapNodeType::tnTRANSACTION_NM)
         return intr_ptr::make_shared<SHAMapTxLeafNode>(std::move(item), owner);
 
     if (type == SHAMapNodeType::tnTRANSACTION_MD)
-        return intr_ptr::make_shared<SHAMapTxPlusMetaLeafNode>(
-            std::move(item), owner);
+        return intr_ptr::make_shared<SHAMapTxPlusMetaLeafNode>(std::move(item), owner);
 
     if (type == SHAMapNodeType::tnACCOUNT_STATE)
-        return intr_ptr::make_shared<SHAMapAccountStateLeafNode>(
-            std::move(item), owner);
+        return intr_ptr::make_shared<SHAMapAccountStateLeafNode>(std::move(item), owner);
 
     LogicError(
         "Attempt to create leaf node of unknown type " +
-        std::to_string(
-            static_cast<std::underlying_type_t<SHAMapNodeType>>(type)));
+        std::to_string(static_cast<std::underlying_type_t<SHAMapNodeType>>(type)));
 }
 
-SHAMap::SHAMap(SHAMapType t, Family& f)
-    : f_(f), journal_(f.journal()), state_(SHAMapState::Modifying), type_(t)
+SHAMap::SHAMap(SHAMapType t, Family& f) : f_(f), journal_(f.journal()), state_(SHAMapState::Modifying), type_(t)
 {
     root_ = intr_ptr::make_shared<SHAMapInnerNode>(cowid_);
 }
@@ -59,8 +52,7 @@ SHAMap::SHAMap(SHAMap const& other, bool isMutable)
     , backed_(other.backed_)
 {
     // If either map may change, they cannot share nodes
-    if ((state_ != SHAMapState::Immutable) ||
-        (other.state_ != SHAMapState::Immutable))
+    if ((state_ != SHAMapState::Immutable) || (other.state_ != SHAMapState::Immutable))
     {
         unshare();
     }
@@ -73,10 +65,7 @@ SHAMap::snapShot(bool isMutable) const
 }
 
 void
-SHAMap::dirtyUp(
-    SharedPtrNodeStack& stack,
-    uint256 const& target,
-    intr_ptr::SharedPtr<SHAMapTreeNode> child)
+SHAMap::dirtyUp(SharedPtrNodeStack& stack, uint256 const& target, intr_ptr::SharedPtr<SHAMapTreeNode> child)
 {
     // walk the tree up from through the inner nodes to the root_
     // update hashes and links
@@ -84,16 +73,12 @@ SHAMap::dirtyUp(
     // child can be an inner node or a leaf
 
     XRPL_ASSERT(
-        (state_ != SHAMapState::Synching) && (state_ != SHAMapState::Immutable),
-        "xrpl::SHAMap::dirtyUp : valid state");
-    XRPL_ASSERT(
-        child && (child->cowid() == cowid_),
-        "xrpl::SHAMap::dirtyUp : valid child input");
+        (state_ != SHAMapState::Synching) && (state_ != SHAMapState::Immutable), "xrpl::SHAMap::dirtyUp : valid state");
+    XRPL_ASSERT(child && (child->cowid() == cowid_), "xrpl::SHAMap::dirtyUp : valid child input");
 
     while (!stack.empty())
     {
-        auto node =
-            intr_ptr::dynamic_pointer_cast<SHAMapInnerNode>(stack.top().first);
+        auto node = intr_ptr::dynamic_pointer_cast<SHAMapInnerNode>(stack.top().first);
         SHAMapNodeID nodeID = stack.top().second;
         stack.pop();
         XRPL_ASSERT(node, "xrpl::SHAMap::dirtyUp : non-null node");
@@ -111,9 +96,7 @@ SHAMap::dirtyUp(
 SHAMapLeafNode*
 SHAMap::walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack) const
 {
-    XRPL_ASSERT(
-        stack == nullptr || stack->empty(),
-        "xrpl::SHAMap::walkTowardsKey : empty stack input");
+    XRPL_ASSERT(stack == nullptr || stack->empty(), "xrpl::SHAMap::walkTowardsKey : empty stack input");
     auto inNode = root_;
     SHAMapNodeID nodeID;
 
@@ -122,8 +105,7 @@ SHAMap::walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack) const
         if (stack != nullptr)
             stack->push({inNode, nodeID});
 
-        auto const inner =
-            intr_ptr::static_pointer_cast<SHAMapInnerNode>(inNode);
+        auto const inner = intr_ptr::static_pointer_cast<SHAMapInnerNode>(inNode);
         auto const branch = selectBranch(nodeID, id);
         if (inner->isEmptyBranch(branch))
             return nullptr;
@@ -155,9 +137,7 @@ SHAMap::fetchNodeFromDB(SHAMapHash const& hash) const
 }
 
 intr_ptr::SharedPtr<SHAMapTreeNode>
-SHAMap::finishFetch(
-    SHAMapHash const& hash,
-    std::shared_ptr<NodeObject> const& object) const
+SHAMap::finishFetch(SHAMapHash const& hash, std::shared_ptr<NodeObject> const& object) const
 {
     XRPL_ASSERT(backed_, "xrpl::SHAMap::finishFetch : is backed");
 
@@ -173,8 +153,7 @@ SHAMap::finishFetch(
             return {};
         }
 
-        auto node =
-            SHAMapTreeNode::makeFromPrefix(makeSlice(object->getData()), hash);
+        auto node = SHAMapTreeNode::makeFromPrefix(makeSlice(object->getData()), hash);
         if (node)
             canonicalize(hash, node);
         return node;
@@ -185,8 +164,7 @@ SHAMap::finishFetch(
     }
     catch (...)
     {
-        JLOG(journal_.warn())
-            << "finishFetch exception: unknonw exception: " << hash;
+        JLOG(journal_.warn()) << "finishFetch exception: unknown exception: " << hash;
     }
 
     return {};
@@ -200,16 +178,10 @@ SHAMap::checkFilter(SHAMapHash const& hash, SHAMapSyncFilter* filter) const
     {
         try
         {
-            auto node =
-                SHAMapTreeNode::makeFromPrefix(makeSlice(*nodeData), hash);
+            auto node = SHAMapTreeNode::makeFromPrefix(makeSlice(*nodeData), hash);
             if (node)
             {
-                filter->gotNode(
-                    true,
-                    hash,
-                    ledgerSeq_,
-                    std::move(*nodeData),
-                    node->getType());
+                filter->gotNode(true, hash, ledgerSeq_, std::move(*nodeData), node->getType());
                 if (backed_)
                     canonicalize(hash, node);
             }
@@ -217,8 +189,7 @@ SHAMap::checkFilter(SHAMapHash const& hash, SHAMapSyncFilter* filter) const
         }
         catch (std::exception const& x)
         {
-            JLOG(f_.journal().warn())
-                << "Invalid node/data, hash=" << hash << ": " << x.what();
+            JLOG(f_.journal().warn()) << "Invalid node/data, hash=" << hash << ": " << x.what();
         }
     }
     return {};
@@ -301,8 +272,7 @@ SHAMap::descend(SHAMapInnerNode* parent, int branch) const
     if (ret || !backed_)
         return ret;
 
-    intr_ptr::SharedPtr<SHAMapTreeNode> node =
-        fetchNodeNT(parent->getChildHash(branch));
+    intr_ptr::SharedPtr<SHAMapTreeNode> node = fetchNodeNT(parent->getChildHash(branch));
     if (!node)
         return nullptr;
 
@@ -337,28 +307,18 @@ SHAMap::descendNoStore(SHAMapInnerNode& parent, int branch) const
 }
 
 std::pair<SHAMapTreeNode*, SHAMapNodeID>
-SHAMap::descend(
-    SHAMapInnerNode* parent,
-    SHAMapNodeID const& parentID,
-    int branch,
-    SHAMapSyncFilter* filter) const
+SHAMap::descend(SHAMapInnerNode* parent, SHAMapNodeID const& parentID, int branch, SHAMapSyncFilter* filter) const
 {
-    XRPL_ASSERT(
-        parent->isInner(), "xrpl::SHAMap::descend : valid parent input");
-    XRPL_ASSERT(
-        (branch >= 0) && (branch < branchFactor),
-        "xrpl::SHAMap::descend : valid branch input");
-    XRPL_ASSERT(
-        !parent->isEmptyBranch(branch),
-        "xrpl::SHAMap::descend : parent branch is non-empty");
+    XRPL_ASSERT(parent->isInner(), "xrpl::SHAMap::descend : valid parent input");
+    XRPL_ASSERT((branch >= 0) && (branch < branchFactor), "xrpl::SHAMap::descend : valid branch input");
+    XRPL_ASSERT(!parent->isEmptyBranch(branch), "xrpl::SHAMap::descend : parent branch is non-empty");
 
     SHAMapTreeNode* child = parent->getChildPointer(branch);
 
     if (!child)
     {
         auto const& childHash = parent->getChildHash(branch);
-        intr_ptr::SharedPtr<SHAMapTreeNode> childNode =
-            fetchNodeNT(childHash, filter);
+        intr_ptr::SharedPtr<SHAMapTreeNode> childNode = fetchNodeNT(childHash, filter);
 
         if (childNode)
         {
@@ -397,8 +357,7 @@ SHAMap::descendAsync(
             f_.db().asyncFetch(
                 hash.as_uint256(),
                 ledgerSeq_,
-                [this, hash, cb{std::move(callback)}](
-                    std::shared_ptr<NodeObject> const& object) {
+                [this, hash, cb{std::move(callback)}](std::shared_ptr<NodeObject> const& object) {
                     auto node = finishFetch(hash, object);
                     cb(node, hash);
                 });
@@ -418,15 +377,11 @@ intr_ptr::SharedPtr<Node>
 SHAMap::unshareNode(intr_ptr::SharedPtr<Node> node, SHAMapNodeID const& nodeID)
 {
     // make sure the node is suitable for the intended operation (copy on write)
-    XRPL_ASSERT(
-        node->cowid() <= cowid_,
-        "xrpl::SHAMap::unshareNode : node valid for cowid");
+    XRPL_ASSERT(node->cowid() <= cowid_, "xrpl::SHAMap::unshareNode : node valid for cowid");
     if (node->cowid() != cowid_)
     {
         // have a CoW
-        XRPL_ASSERT(
-            state_ != SHAMapState::Immutable,
-            "xrpl::SHAMap::unshareNode : not immutable");
+        XRPL_ASSERT(state_ != SHAMapState::Immutable, "xrpl::SHAMap::unshareNode : not immutable");
         node = intr_ptr::static_pointer_cast<Node>(node->clone(cowid_));
         if (nodeID.isRoot())
             root_ = node;
@@ -439,8 +394,7 @@ SHAMap::belowHelper(
     intr_ptr::SharedPtr<SHAMapTreeNode> node,
     SharedPtrNodeStack& stack,
     int branch,
-    std::tuple<int, std::function<bool(int)>, std::function<void(int&)>> const&
-        loopParams) const
+    std::tuple<int, std::function<bool(int)>, std::function<void(int&)>> const& loopParams) const
 {
     auto& [init, cmp, incr] = loopParams;
     if (node->isLeaf())
@@ -459,8 +413,7 @@ SHAMap::belowHelper(
         if (!inner->isEmptyBranch(i))
         {
             node.adopt(descendThrow(inner.get(), i));
-            XRPL_ASSERT(
-                !stack.empty(), "xrpl::SHAMap::belowHelper : non-empty stack");
+            XRPL_ASSERT(!stack.empty(), "xrpl::SHAMap::belowHelper : non-empty stack");
             if (node->isLeaf())
             {
                 auto n = intr_ptr::static_pointer_cast<SHAMapLeafNode>(node);
@@ -477,10 +430,7 @@ SHAMap::belowHelper(
     return nullptr;
 }
 SHAMapLeafNode*
-SHAMap::lastBelow(
-    intr_ptr::SharedPtr<SHAMapTreeNode> node,
-    SharedPtrNodeStack& stack,
-    int branch) const
+SHAMap::lastBelow(intr_ptr::SharedPtr<SHAMapTreeNode> node, SharedPtrNodeStack& stack, int branch) const
 {
     auto init = branchFactor - 1;
     auto cmp = [](int i) { return i >= 0; };
@@ -489,10 +439,7 @@ SHAMap::lastBelow(
     return belowHelper(node, stack, branch, {init, cmp, incr});
 }
 SHAMapLeafNode*
-SHAMap::firstBelow(
-    intr_ptr::SharedPtr<SHAMapTreeNode> node,
-    SharedPtrNodeStack& stack,
-    int branch) const
+SHAMap::firstBelow(intr_ptr::SharedPtr<SHAMapTreeNode> node, SharedPtrNodeStack& stack, int branch) const
 {
     auto init = 0;
     auto cmp = [](int i) { return i <= branchFactor; };
@@ -536,17 +483,14 @@ SHAMap::onlyBelow(SHAMapTreeNode* node) const
     // An inner node must have at least one leaf
     // below it, unless it's the root_
     auto const leaf = static_cast<SHAMapLeafNode const*>(node);
-    XRPL_ASSERT(
-        leaf->peekItem() || (leaf == root_.get()),
-        "xrpl::SHAMap::onlyBelow : valid inner node");
+    XRPL_ASSERT(leaf->peekItem() || (leaf == root_.get()), "xrpl::SHAMap::onlyBelow : valid inner node");
     return leaf->peekItem();
 }
 
 SHAMapLeafNode const*
 SHAMap::peekFirstItem(SharedPtrNodeStack& stack) const
 {
-    XRPL_ASSERT(
-        stack.empty(), "xrpl::SHAMap::peekFirstItem : empty stack input");
+    XRPL_ASSERT(stack.empty(), "xrpl::SHAMap::peekFirstItem : empty stack input");
     SHAMapLeafNode* node = firstBelow(root_, stack);
     if (!node)
     {
@@ -560,18 +504,13 @@ SHAMap::peekFirstItem(SharedPtrNodeStack& stack) const
 SHAMapLeafNode const*
 SHAMap::peekNextItem(uint256 const& id, SharedPtrNodeStack& stack) const
 {
-    XRPL_ASSERT(
-        !stack.empty(), "xrpl::SHAMap::peekNextItem : non-empty stack input");
-    XRPL_ASSERT(
-        stack.top().first->isLeaf(),
-        "xrpl::SHAMap::peekNextItem : stack starts with leaf");
+    XRPL_ASSERT(!stack.empty(), "xrpl::SHAMap::peekNextItem : non-empty stack input");
+    XRPL_ASSERT(stack.top().first->isLeaf(), "xrpl::SHAMap::peekNextItem : stack starts with leaf");
     stack.pop();
     while (!stack.empty())
     {
         auto [node, nodeID] = stack.top();
-        XRPL_ASSERT(
-            !node->isLeaf(),
-            "xrpl::SHAMap::peekNextItem : another node is not leaf");
+        XRPL_ASSERT(!node->isLeaf(), "xrpl::SHAMap::peekNextItem : another node is not leaf");
         auto inner = intr_ptr::static_pointer_cast<SHAMapInnerNode>(node);
         for (auto i = selectBranch(nodeID, id) + 1; i < branchFactor; ++i)
         {
@@ -581,9 +520,7 @@ SHAMap::peekNextItem(uint256 const& id, SharedPtrNodeStack& stack) const
                 auto leaf = firstBelow(node, stack, i);
                 if (!leaf)
                     Throw<SHAMapMissingNode>(type_, id);
-                XRPL_ASSERT(
-                    leaf->isLeaf(),
-                    "xrpl::SHAMap::peekNextItem : leaf is valid");
+                XRPL_ASSERT(leaf->isLeaf(), "xrpl::SHAMap::peekNextItem : leaf is valid");
                 return leaf;
             }
         }
@@ -628,15 +565,12 @@ SHAMap::upper_bound(uint256 const& id) const
         {
             auto leaf = static_cast<SHAMapLeafNode*>(node.get());
             if (leaf->peekItem()->key() > id)
-                return const_iterator(
-                    this, leaf->peekItem().get(), std::move(stack));
+                return const_iterator(this, leaf->peekItem().get(), std::move(stack));
         }
         else
         {
             auto inner = intr_ptr::static_pointer_cast<SHAMapInnerNode>(node);
-            for (auto branch = selectBranch(nodeID, id) + 1;
-                 branch < branchFactor;
-                 ++branch)
+            for (auto branch = selectBranch(nodeID, id) + 1; branch < branchFactor; ++branch)
             {
                 if (!inner->isEmptyBranch(branch))
                 {
@@ -644,8 +578,7 @@ SHAMap::upper_bound(uint256 const& id) const
                     auto leaf = firstBelow(node, stack, branch);
                     if (!leaf)
                         Throw<SHAMapMissingNode>(type_, id);
-                    return const_iterator(
-                        this, leaf->peekItem().get(), std::move(stack));
+                    return const_iterator(this, leaf->peekItem().get(), std::move(stack));
                 }
             }
         }
@@ -665,14 +598,12 @@ SHAMap::lower_bound(uint256 const& id) const
         {
             auto leaf = static_cast<SHAMapLeafNode*>(node.get());
             if (leaf->peekItem()->key() < id)
-                return const_iterator(
-                    this, leaf->peekItem().get(), std::move(stack));
+                return const_iterator(this, leaf->peekItem().get(), std::move(stack));
         }
         else
         {
             auto inner = intr_ptr::static_pointer_cast<SHAMapInnerNode>(node);
-            for (int branch = selectBranch(nodeID, id) - 1; branch >= 0;
-                 --branch)
+            for (int branch = selectBranch(nodeID, id) - 1; branch >= 0; --branch)
             {
                 if (!inner->isEmptyBranch(branch))
                 {
@@ -680,8 +611,7 @@ SHAMap::lower_bound(uint256 const& id) const
                     auto leaf = lastBelow(node, stack, branch);
                     if (!leaf)
                         Throw<SHAMapMissingNode>(type_, id);
-                    return const_iterator(
-                        this, leaf->peekItem().get(), std::move(stack));
+                    return const_iterator(this, leaf->peekItem().get(), std::move(stack));
                 }
             }
         }
@@ -701,9 +631,7 @@ bool
 SHAMap::delItem(uint256 const& id)
 {
     // delete the item with this ID
-    XRPL_ASSERT(
-        state_ != SHAMapState::Immutable,
-        "xrpl::SHAMap::delItem : not immutable");
+    XRPL_ASSERT(state_ != SHAMapState::Immutable, "xrpl::SHAMap::delItem : not immutable");
 
     SharedPtrNodeStack stack;
     walkTowardsKey(id, &stack);
@@ -711,8 +639,7 @@ SHAMap::delItem(uint256 const& id)
     if (stack.empty())
         Throw<SHAMapMissingNode>(type_, id);
 
-    auto leaf =
-        intr_ptr::dynamic_pointer_cast<SHAMapLeafNode>(stack.top().first);
+    auto leaf = intr_ptr::dynamic_pointer_cast<SHAMapLeafNode>(stack.top().first);
     stack.pop();
 
     if (!leaf || (leaf->peekItem()->key() != id))
@@ -726,8 +653,7 @@ SHAMap::delItem(uint256 const& id)
 
     while (!stack.empty())
     {
-        auto node =
-            intr_ptr::static_pointer_cast<SHAMapInnerNode>(stack.top().first);
+        auto node = intr_ptr::static_pointer_cast<SHAMapInnerNode>(stack.top().first);
         SHAMapNodeID nodeID = stack.top().second;
         stack.pop();
 
@@ -755,8 +681,7 @@ SHAMap::delItem(uint256 const& id)
                     {
                         if (!node->isEmptyBranch(i))
                         {
-                            node->setChild(
-                                i, intr_ptr::SharedPtr<SHAMapTreeNode>{});
+                            node->setChild(i, intr_ptr::SharedPtr<SHAMapTreeNode>{});
                             break;
                         }
                     }
@@ -780,16 +705,10 @@ SHAMap::delItem(uint256 const& id)
 }
 
 bool
-SHAMap::addGiveItem(
-    SHAMapNodeType type,
-    boost::intrusive_ptr<SHAMapItem const> item)
+SHAMap::addGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> item)
 {
-    XRPL_ASSERT(
-        state_ != SHAMapState::Immutable,
-        "xrpl::SHAMap::addGiveItem : not immutable");
-    XRPL_ASSERT(
-        type != SHAMapNodeType::tnINNER,
-        "xrpl::SHAMap::addGiveItem : valid type input");
+    XRPL_ASSERT(state_ != SHAMapState::Immutable, "xrpl::SHAMap::addGiveItem : not immutable");
+    XRPL_ASSERT(type != SHAMapNodeType::tnINNER, "xrpl::SHAMap::addGiveItem : valid type input");
 
     // add the specified item, does not update
     uint256 tag = item->key();
@@ -815,9 +734,7 @@ SHAMap::addGiveItem(
         // easy case, we end on an inner node
         auto inner = intr_ptr::static_pointer_cast<SHAMapInnerNode>(node);
         int branch = selectBranch(nodeID, tag);
-        XRPL_ASSERT(
-            inner->isEmptyBranch(branch),
-            "xrpl::SHAMap::addGiveItem : inner branch is empty");
+        XRPL_ASSERT(inner->isEmptyBranch(branch), "xrpl::SHAMap::addGiveItem : inner branch is empty");
         inner->setChild(branch, makeTypedLeaf(type, std::move(item), cowid_));
     }
     else
@@ -826,16 +743,13 @@ SHAMap::addGiveItem(
         // items
         auto leaf = intr_ptr::static_pointer_cast<SHAMapLeafNode>(node);
         auto otherItem = leaf->peekItem();
-        XRPL_ASSERT(
-            otherItem && (tag != otherItem->key()),
-            "xrpl::SHAMap::addGiveItem : non-null item");
+        XRPL_ASSERT(otherItem && (tag != otherItem->key()), "xrpl::SHAMap::addGiveItem : non-null item");
 
         node = intr_ptr::make_shared<SHAMapInnerNode>(node->cowid());
 
         unsigned int b1, b2;
 
-        while ((b1 = selectBranch(nodeID, tag)) ==
-               (b2 = selectBranch(nodeID, otherItem->key())))
+        while ((b1 = selectBranch(nodeID, tag)) == (b2 = selectBranch(nodeID, otherItem->key())))
         {
             stack.push({node, nodeID});
 
@@ -846,8 +760,7 @@ SHAMap::addGiveItem(
         }
 
         // we can add the two leaf nodes here
-        XRPL_ASSERT(
-            node->isInner(), "xrpl::SHAMap::addGiveItem : node is inner");
+        XRPL_ASSERT(node->isInner(), "xrpl::SHAMap::addGiveItem : node is inner");
 
         auto inner = static_cast<SHAMapInnerNode*>(node.get());
         inner->setChild(b1, makeTypedLeaf(type, std::move(item), cowid_));
@@ -859,9 +772,7 @@ SHAMap::addGiveItem(
 }
 
 bool
-SHAMap::addItem(
-    SHAMapNodeType type,
-    boost::intrusive_ptr<SHAMapItem const> item)
+SHAMap::addItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> item)
 {
     return addGiveItem(type, std::move(item));
 }
@@ -879,16 +790,12 @@ SHAMap::getHash() const
 }
 
 bool
-SHAMap::updateGiveItem(
-    SHAMapNodeType type,
-    boost::intrusive_ptr<SHAMapItem const> item)
+SHAMap::updateGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> item)
 {
     // can't change the tag but can change the hash
     uint256 tag = item->key();
 
-    XRPL_ASSERT(
-        state_ != SHAMapState::Immutable,
-        "xrpl::SHAMap::updateGiveItem : not immutable");
+    XRPL_ASSERT(state_ != SHAMapState::Immutable, "xrpl::SHAMap::updateGiveItem : not immutable");
 
     SharedPtrNodeStack stack;
     walkTowardsKey(tag, &stack);
@@ -896,8 +803,7 @@ SHAMap::updateGiveItem(
     if (stack.empty())
         Throw<SHAMapMissingNode>(type_, tag);
 
-    auto node =
-        intr_ptr::dynamic_pointer_cast<SHAMapLeafNode>(stack.top().first);
+    auto node = intr_ptr::dynamic_pointer_cast<SHAMapLeafNode>(stack.top().first);
     auto nodeID = stack.top().second;
     stack.pop();
 
@@ -950,9 +856,7 @@ SHAMap::fetchRoot(SHAMapHash const& hash, SHAMapSyncFilter* filter)
     if (newRoot)
     {
         root_ = newRoot;
-        XRPL_ASSERT(
-            root_->getHash() == hash,
-            "xrpl::SHAMap::fetchRoot : root hash do match");
+        XRPL_ASSERT(root_->getHash() == hash, "xrpl::SHAMap::fetchRoot : root hash do match");
         return true;
     }
 
@@ -972,19 +876,16 @@ SHAMap::fetchRoot(SHAMapHash const& hash, SHAMapSyncFilter* filter)
           first call SHAMapTreeNode::unshare().
  */
 intr_ptr::SharedPtr<SHAMapTreeNode>
-SHAMap::writeNode(NodeObjectType t, intr_ptr::SharedPtr<SHAMapTreeNode> node)
-    const
+SHAMap::writeNode(NodeObjectType t, intr_ptr::SharedPtr<SHAMapTreeNode> node) const
 {
-    XRPL_ASSERT(
-        node->cowid() == 0, "xrpl::SHAMap::writeNode : valid input node");
+    XRPL_ASSERT(node->cowid() == 0, "xrpl::SHAMap::writeNode : valid input node");
     XRPL_ASSERT(backed_, "xrpl::SHAMap::writeNode : is backed");
 
     canonicalize(node->getHash(), node);
 
     Serializer s;
     node->serializeWithPrefix(s);
-    f_.db().store(
-        t, std::move(s.modData()), node->getHash().as_uint256(), ledgerSeq_);
+    f_.db().store(t, std::move(s.modData()), node->getHash().as_uint256(), ledgerSeq_);
     return node;
 }
 
@@ -1091,8 +992,7 @@ SHAMap::walkSubTree(bool doWrite, NodeObjectType t)
                         // The semantics of this changes when we move to c++-20
                         // Right now no move will occur; With c++-20 child will
                         // be moved from.
-                        node = intr_ptr::static_pointer_cast<SHAMapInnerNode>(
-                            std::move(child));
+                        node = intr_ptr::static_pointer_cast<SHAMapInnerNode>(std::move(child));
                         pos = 0;
                     }
                     else
@@ -1123,8 +1023,7 @@ SHAMap::walkSubTree(bool doWrite, NodeObjectType t)
         node->unshare();
 
         if (doWrite)
-            node = intr_ptr::static_pointer_cast<SHAMapInnerNode>(
-                writeNode(t, std::move(node)));
+            node = intr_ptr::static_pointer_cast<SHAMapInnerNode>(writeNode(t, std::move(node)));
 
         ++flushed;
 
@@ -1136,9 +1035,7 @@ SHAMap::walkSubTree(bool doWrite, NodeObjectType t)
         stack.pop();
 
         // Hook this inner node to its parent
-        XRPL_ASSERT(
-            parent->cowid() == cowid_,
-            "xrpl::SHAMap::walkSubTree : parent cowid do match");
+        XRPL_ASSERT(parent->cowid() == cowid_, "xrpl::SHAMap::walkSubTree : parent cowid do match");
         parent->shareChild(pos, node);
 
         // Continue with parent's next child, if any
@@ -1183,8 +1080,7 @@ SHAMap::dump(bool hash) const
                     if (child)
                     {
                         XRPL_ASSERT(
-                            child->getHash() == inner->getChildHash(i),
-                            "xrpl::SHAMap::dump : child hash do match");
+                            child->getHash() == inner->getChildHash(i), "xrpl::SHAMap::dump : child hash do match");
                         stack.push({child, nodeID.getChildNodeID(i)});
                     }
                 }
@@ -1201,23 +1097,16 @@ intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMap::cacheLookup(SHAMapHash const& hash) const
 {
     auto ret = f_.getTreeNodeCache()->fetch(hash.as_uint256());
-    XRPL_ASSERT(
-        !ret || !ret->cowid(),
-        "xrpl::SHAMap::cacheLookup : not found or zero cowid");
+    XRPL_ASSERT(!ret || !ret->cowid(), "xrpl::SHAMap::cacheLookup : not found or zero cowid");
     return ret;
 }
 
 void
-SHAMap::canonicalize(
-    SHAMapHash const& hash,
-    intr_ptr::SharedPtr<SHAMapTreeNode>& node) const
+SHAMap::canonicalize(SHAMapHash const& hash, intr_ptr::SharedPtr<SHAMapTreeNode>& node) const
 {
     XRPL_ASSERT(backed_, "xrpl::SHAMap::canonicalize : is backed");
-    XRPL_ASSERT(
-        node->cowid() == 0, "xrpl::SHAMap::canonicalize : valid node input");
-    XRPL_ASSERT(
-        node->getHash() == hash,
-        "xrpl::SHAMap::canonicalize : node hash do match");
+    XRPL_ASSERT(node->cowid() == 0, "xrpl::SHAMap::canonicalize : valid node input");
+    XRPL_ASSERT(node->getHash() == hash, "xrpl::SHAMap::canonicalize : node hash do match");
 
     f_.getTreeNodeCache()->canonicalize_replace_client(hash.as_uint256(), node);
 }
@@ -1228,11 +1117,9 @@ SHAMap::invariants() const
     (void)getHash();  // update node hashes
     auto node = root_.get();
     XRPL_ASSERT(node, "xrpl::SHAMap::invariants : non-null root node");
-    XRPL_ASSERT(
-        !node->isLeaf(), "xrpl::SHAMap::invariants : root node is not leaf");
+    XRPL_ASSERT(!node->isLeaf(), "xrpl::SHAMap::invariants : root node is not leaf");
     SharedPtrNodeStack stack;
-    for (auto leaf = peekFirstItem(stack); leaf != nullptr;
-         leaf = peekNextItem(leaf->peekItem()->key(), stack))
+    for (auto leaf = peekFirstItem(stack); leaf != nullptr; leaf = peekNextItem(leaf->peekItem()->key(), stack))
         ;
     node->invariants(true);
 }

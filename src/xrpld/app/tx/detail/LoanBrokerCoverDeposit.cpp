@@ -2,6 +2,8 @@
 //
 #include <xrpld/app/misc/LendingHelpers.h>
 
+#include <xrpl/protocol/STTakesAsset.h>
+
 namespace xrpl {
 
 bool
@@ -61,8 +63,7 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
 
     auto const pseudoAccountID = sleBroker->at(sfAccount);
     // Cannot transfer a non-transferable Asset
-    if (auto const ret =
-            canTransfer(ctx.view, vaultAsset, account, pseudoAccountID))
+    if (auto const ret = canTransfer(ctx.view, vaultAsset, account, pseudoAccountID))
         return ret;
     // Cannot transfer a frozen Asset
     if (auto const ret = checkFrozen(ctx.view, account, vaultAsset))
@@ -71,8 +72,7 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
     if (auto const ret = checkDeepFrozen(ctx.view, pseudoAccountID, vaultAsset))
         return ret;
     // Cannot transfer unauthorized asset
-    if (auto const ret =
-            requireAuth(ctx.view, vaultAsset, account, AuthType::StrongAuth))
+    if (auto const ret = requireAuth(ctx.view, vaultAsset, account, AuthType::StrongAuth))
         return ret;
 
     if (accountHolds(
@@ -81,7 +81,8 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
             vaultAsset,
             FreezeHandling::fhZERO_IF_FROZEN,
             AuthHandling::ahZERO_IF_UNAUTHORIZED,
-            ctx.j) < amount)
+            ctx.j,
+            SpendableHandling::shFULL_BALANCE) < amount)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -99,21 +100,23 @@ LoanBrokerCoverDeposit::doApply()
     if (!broker)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
+    auto const vault = view().read(keylet::vault(broker->at(sfVaultID)));
+    if (!vault)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    auto const vaultAsset = vault->at(sfAsset);
+
     auto const brokerPseudoID = broker->at(sfAccount);
 
     // Transfer assets from depositor to pseudo-account.
-    if (auto ter = accountSend(
-            view(),
-            account_,
-            brokerPseudoID,
-            amount,
-            j_,
-            WaiveTransferFee::Yes))
+    if (auto ter = accountSend(view(), account_, brokerPseudoID, amount, j_, WaiveTransferFee::Yes))
         return ter;
 
     // Increase the LoanBroker's CoverAvailable by Amount
     broker->at(sfCoverAvailable) += amount;
     view().update(broker);
+
+    associateAsset(*broker, vaultAsset);
 
     return tesSUCCESS;
 }

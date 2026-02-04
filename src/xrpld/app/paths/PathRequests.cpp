@@ -16,9 +16,7 @@ namespace xrpl {
     Get the correct ledger to use.
 */
 std::shared_ptr<RippleLineCache>
-PathRequests::getLineCache(
-    std::shared_ptr<ReadView const> const& ledger,
-    bool authoritative)
+PathRequests::getLineCache(std::shared_ptr<ReadView const> const& ledger, bool authoritative)
 {
     std::lock_guard sl(mLock);
 
@@ -26,22 +24,18 @@ PathRequests::getLineCache(
 
     std::uint32_t const lineSeq = lineCache ? lineCache->getLedger()->seq() : 0;
     std::uint32_t const lgrSeq = ledger->seq();
-    JLOG(mJournal.debug()) << "getLineCache has cache for " << lineSeq
-                           << ", considering " << lgrSeq;
+    JLOG(mJournal.debug()) << "getLineCache has cache for " << lineSeq << ", considering " << lgrSeq;
 
-    if ((lineSeq == 0) ||                         // no ledger
-        (authoritative && (lgrSeq > lineSeq)) ||  // newer authoritative ledger
-        (authoritative &&
-         ((lgrSeq + 8) < lineSeq)) ||  // we jumped way back for some reason
-        (lgrSeq > (lineSeq + 8)))      // we jumped way forward for some reason
+    if ((lineSeq == 0) ||                               // no ledger
+        (authoritative && (lgrSeq > lineSeq)) ||        // newer authoritative ledger
+        (authoritative && ((lgrSeq + 8) < lineSeq)) ||  // we jumped way back for some reason
+        (lgrSeq > (lineSeq + 8)))                       // we jumped way forward for some reason
     {
-        JLOG(mJournal.debug())
-            << "getLineCache creating new cache for " << lgrSeq;
+        JLOG(mJournal.debug()) << "getLineCache creating new cache for " << lgrSeq;
         // Assign to the local before the member, because the member is a
         // weak_ptr, and will immediately discard it if there are no other
         // references.
-        lineCache_ = lineCache = std::make_shared<RippleLineCache>(
-            ledger, app_.journal("RippleLineCache"));
+        lineCache_ = lineCache = std::make_shared<RippleLineCache>(ledger, app_.journal("RippleLineCache"));
     }
     return lineCache;
 }
@@ -49,8 +43,7 @@ PathRequests::getLineCache(
 void
 PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 {
-    auto event =
-        app_.getJobQueue().makeLoadEvent(jtPATH_FIND, "PathRequest::updateAll");
+    auto event = app_.getJobQueue().makeLoadEvent(jtPATH_FIND, "PathRequest::updateAll");
 
     std::vector<PathRequest::wptr> requests;
     std::shared_ptr<RippleLineCache> cache;
@@ -65,15 +58,12 @@ PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
     bool newRequests = app_.getLedgerMaster().isNewPathRequest();
     bool mustBreak = false;
 
-    JLOG(mJournal.trace()) << "updateAll seq=" << cache->getLedger()->seq()
-                           << ", " << requests.size() << " requests";
+    JLOG(mJournal.trace()) << "updateAll seq=" << cache->getLedger()->seq() << ", " << requests.size() << " requests";
 
     int processed = 0, removed = 0;
 
-    auto getSubscriber =
-        [](PathRequest::pointer const& request) -> InfoSub::pointer {
-        if (auto ipSub = request->getSubscriber();
-            ipSub && ipSub->getRequest() == request)
+    auto getSubscriber = [](PathRequest::pointer const& request) -> InfoSub::pointer {
+        if (auto ipSub = request->getSubscriber(); ipSub && ipSub->getRequest() == request)
         {
             return ipSub;
         }
@@ -91,8 +81,7 @@ PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 
             auto request = wr.lock();
             bool remove = true;
-            JLOG(mJournal.trace())
-                << "updateAll request " << (request ? "" : "not ") << "found";
+            JLOG(mJournal.trace()) << "updateAll request " << (request ? "" : "not ") << "found";
 
             if (request)
             {
@@ -102,8 +91,7 @@ PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
                     // indicates that this request is no longer relevant.
                     return (bool)getSubscriber(request);
                 };
-                if (!request->needsUpdate(
-                        newRequests, cache->getLedger()->seq()))
+                if (!request->needsUpdate(newRequests, cache->getLedger()->seq()))
                     remove = false;
                 else
                 {
@@ -115,8 +103,7 @@ PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
                             // it can be freed if the client disconnects, and
                             // thus fail to lock later.
                             ipSub.reset();
-                            Json::Value update = request->doUpdate(
-                                cache, false, continueCallback);
+                            Json::Value update = request->doUpdate(cache, false, continueCallback);
                             request->updateComplete();
                             update[jss::type] = "path_find";
                             if ((ipSub = getSubscriber(request)))
@@ -143,23 +130,19 @@ PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 
                 // Remove any dangling weak pointers or weak
                 // pointers that refer to this path request.
-                auto ret = std::remove_if(
-                    requests_.begin(),
-                    requests_.end(),
-                    [&removed, &request](auto const& wl) {
-                        auto r = wl.lock();
+                auto ret = std::remove_if(requests_.begin(), requests_.end(), [&removed, &request](auto const& wl) {
+                    auto r = wl.lock();
 
-                        if (r && r != request)
-                            return false;
-                        ++removed;
-                        return true;
-                    });
+                    if (r && r != request)
+                        return false;
+                    ++removed;
+                    return true;
+                });
 
                 requests_.erase(ret, requests_.end());
             }
 
-            mustBreak =
-                !newRequests && app_.getLedgerMaster().isNewPathRequest();
+            mustBreak = !newRequests && app_.getLedgerMaster().isNewPathRequest();
 
             // We weren't handling new requests and then
             // there was a new request
@@ -197,8 +180,7 @@ PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
         }
     } while (!app_.getJobQueue().isStopping());
 
-    JLOG(mJournal.debug()) << "updateAll complete: " << processed
-                           << " processed and " << removed << " removed";
+    JLOG(mJournal.debug()) << "updateAll complete: " << processed << " processed and " << removed << " removed";
 }
 
 bool
@@ -215,13 +197,12 @@ PathRequests::insertPathRequest(PathRequest::pointer const& req)
 
     // Insert after any older unserviced requests but before
     // any serviced requests
-    auto ret =
-        std::find_if(requests_.begin(), requests_.end(), [](auto const& wl) {
-            auto r = wl.lock();
+    auto ret = std::find_if(requests_.begin(), requests_.end(), [](auto const& wl) {
+        auto r = wl.lock();
 
-            // We come before handled requests
-            return r && !r->isNew();
-        });
+        // We come before handled requests
+        return r && !r->isNew();
+    });
 
     requests_.emplace(ret, req);
 }
@@ -233,11 +214,9 @@ PathRequests::makePathRequest(
     std::shared_ptr<ReadView const> const& inLedger,
     Json::Value const& requestJson)
 {
-    auto req = std::make_shared<PathRequest>(
-        app_, subscriber, ++mLastIdentifier, *this, mJournal);
+    auto req = std::make_shared<PathRequest>(app_, subscriber, ++mLastIdentifier, *this, mJournal);
 
-    auto [valid, jvRes] =
-        req->doCreate(getLineCache(inLedger, false), requestJson);
+    auto [valid, jvRes] = req->doCreate(getLineCache(inLedger, false), requestJson);
 
     if (valid)
     {
@@ -259,8 +238,7 @@ PathRequests::makeLegacyPathRequest(
 {
     // This assignment must take place before the
     // completion function is called
-    req = std::make_shared<PathRequest>(
-        app_, completion, consumer, ++mLastIdentifier, *this, mJournal);
+    req = std::make_shared<PathRequest>(app_, completion, consumer, ++mLastIdentifier, *this, mJournal);
 
     auto [valid, jvRes] = req->doCreate(getLineCache(inLedger, false), request);
 
@@ -288,11 +266,9 @@ PathRequests::doLegacyPathRequest(
     std::shared_ptr<ReadView const> const& inLedger,
     Json::Value const& request)
 {
-    auto cache = std::make_shared<RippleLineCache>(
-        inLedger, app_.journal("RippleLineCache"));
+    auto cache = std::make_shared<RippleLineCache>(inLedger, app_.journal("RippleLineCache"));
 
-    auto req = std::make_shared<PathRequest>(
-        app_, [] {}, consumer, ++mLastIdentifier, *this, mJournal);
+    auto req = std::make_shared<PathRequest>(app_, [] {}, consumer, ++mLastIdentifier, *this, mJournal);
 
     auto [valid, jvRes] = req->doCreate(cache, request);
     if (valid)

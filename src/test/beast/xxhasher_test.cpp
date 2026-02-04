@@ -16,9 +16,7 @@ public:
         std::string objectToHash{"Hello, xxHash!"};
         hasher(objectToHash.data(), objectToHash.size());
 
-        BEAST_EXPECT(
-            static_cast<xxhasher::result_type>(hasher) ==
-            16042857369214894119ULL);
+        BEAST_EXPECT(static_cast<xxhasher::result_type>(hasher) == 16042857369214894119ULL);
     }
 
     void
@@ -31,28 +29,23 @@ public:
         std::string objectToHash{"Hello, xxHash!"};
         hasher(objectToHash.data(), objectToHash.size());
 
-        BEAST_EXPECT(
-            static_cast<xxhasher::result_type>(hasher) ==
-            14440132435660934800ULL);
+        BEAST_EXPECT(static_cast<xxhasher::result_type>(hasher) == 14440132435660934800ULL);
     }
 
     void
     testWithTwoSeeds()
     {
         testcase("With two seeds");
-        xxhasher hasher{
-            static_cast<std::uint32_t>(102), static_cast<std::uint32_t>(103)};
+        xxhasher hasher{static_cast<std::uint32_t>(102), static_cast<std::uint32_t>(103)};
 
         std::string objectToHash{"Hello, xxHash!"};
         hasher(objectToHash.data(), objectToHash.size());
 
-        BEAST_EXPECT(
-            static_cast<xxhasher::result_type>(hasher) ==
-            14440132435660934800ULL);
+        BEAST_EXPECT(static_cast<xxhasher::result_type>(hasher) == 14440132435660934800ULL);
     }
 
     void
-    testBigObjectWithMultiupleSmallUpdatesWithoutSeed()
+    testBigObjectWithMultipleSmallUpdatesWithoutSeed()
     {
         testcase("Big object with multiple small updates without seed");
         xxhasher hasher{};
@@ -63,13 +56,11 @@ public:
             hasher(objectToHash.data(), objectToHash.size());
         }
 
-        BEAST_EXPECT(
-            static_cast<xxhasher::result_type>(hasher) ==
-            15296278154063476002ULL);
+        BEAST_EXPECT(static_cast<xxhasher::result_type>(hasher) == 15296278154063476002ULL);
     }
 
     void
-    testBigObjectWithMultiupleSmallUpdatesWithSeed()
+    testBigObjectWithMultipleSmallUpdatesWithSeed()
     {
         testcase("Big object with multiple small updates with seed");
         xxhasher hasher{static_cast<std::uint32_t>(103)};
@@ -80,9 +71,7 @@ public:
             hasher(objectToHash.data(), objectToHash.size());
         }
 
-        BEAST_EXPECT(
-            static_cast<xxhasher::result_type>(hasher) ==
-            17285302196561698791ULL);
+        BEAST_EXPECT(static_cast<xxhasher::result_type>(hasher) == 17285302196561698791ULL);
     }
 
     void
@@ -101,9 +90,7 @@ public:
         hasher(bigObject.data(), bigObject.size());
         hasher(objectToHash.data(), objectToHash.size());
 
-        BEAST_EXPECT(
-            static_cast<xxhasher::result_type>(hasher) ==
-            1865045178324729219ULL);
+        BEAST_EXPECT(static_cast<xxhasher::result_type>(hasher) == 1865045178324729219ULL);
     }
 
     void
@@ -122,9 +109,7 @@ public:
         hasher(bigObject.data(), bigObject.size());
         hasher(objectToHash.data(), objectToHash.size());
 
-        BEAST_EXPECT(
-            static_cast<xxhasher::result_type>(hasher) ==
-            16189862915636005281ULL);
+        BEAST_EXPECT(static_cast<xxhasher::result_type>(hasher) == 16189862915636005281ULL);
     }
 
     void
@@ -140,9 +125,7 @@ public:
         }
         hasher(objectToHash.data(), objectToHash.size());
 
-        BEAST_EXPECT(
-            static_cast<xxhasher::result_type>(hasher) ==
-            15296278154063476002ULL);
+        BEAST_EXPECT(static_cast<xxhasher::result_type>(hasher) == 15296278154063476002ULL);
     }
 
     void
@@ -158,9 +141,7 @@ public:
         }
         hasher(objectToHash.data(), objectToHash.size());
 
-        BEAST_EXPECT(
-            static_cast<xxhasher::result_type>(hasher) ==
-            17285302196561698791ULL);
+        BEAST_EXPECT(static_cast<xxhasher::result_type>(hasher) == 17285302196561698791ULL);
     }
 
     void
@@ -199,8 +180,8 @@ public:
         testWithoutSeed();
         testWithSeed();
         testWithTwoSeeds();
-        testBigObjectWithMultiupleSmallUpdatesWithoutSeed();
-        testBigObjectWithMultiupleSmallUpdatesWithSeed();
+        testBigObjectWithMultipleSmallUpdatesWithoutSeed();
+        testBigObjectWithMultipleSmallUpdatesWithSeed();
         testBigObjectWithSmallAndBigUpdatesWithoutSeed();
         testBigObjectWithSmallAndBigUpdatesWithSeed();
         testBigObjectWithOneUpdateWithoutSeed();

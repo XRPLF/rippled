@@ -3,15 +3,10 @@
 namespace xrpl {
 
 void
-AccountStateSF::gotNode(
-    bool,
-    SHAMapHash const& nodeHash,
-    std::uint32_t ledgerSeq,
-    Blob&& nodeData,
-    SHAMapNodeType) const
+AccountStateSF::gotNode(bool, SHAMapHash const& nodeHash, std::uint32_t ledgerSeq, Blob&& nodeData, SHAMapNodeType)
+    const
 {
-    db_.store(
-        hotACCOUNT_NODE, std::move(nodeData), nodeHash.as_uint256(), ledgerSeq);
+    db_.store(hotACCOUNT_NODE, std::move(nodeData), nodeHash.as_uint256(), ledgerSeq);
 }
 
 std::optional<Blob>

@@ -33,7 +33,7 @@ public:
     {
         using namespace jtx;
         {
-            Account a("chenna");
+            Account a("chad");
             Account b(a);
             a = b;
             a = std::move(b);
@@ -61,18 +61,10 @@ public:
         PrettyAmount(0u);
         PrettyAmount(1u);
         PrettyAmount(-1);
-        static_assert(
-            !std::is_trivially_constructible<PrettyAmount, char>::value, "");
-        static_assert(
-            !std::is_trivially_constructible<PrettyAmount, unsigned char>::
-                value,
-            "");
-        static_assert(
-            !std::is_trivially_constructible<PrettyAmount, short>::value, "");
-        static_assert(
-            !std::is_trivially_constructible<PrettyAmount, unsigned short>::
-                value,
-            "");
+        static_assert(!std::is_trivially_constructible<PrettyAmount, char>::value, "");
+        static_assert(!std::is_trivially_constructible<PrettyAmount, unsigned char>::value, "");
+        static_assert(!std::is_trivially_constructible<PrettyAmount, short>::value, "");
+        static_assert(!std::is_trivially_constructible<PrettyAmount, unsigned short>::value, "");
 
         try
         {
@@ -139,11 +131,7 @@ public:
         // unfunded
         {
             Env env(*this);
-            env(pay("alice", "bob", XRP(1000)),
-                seq(1),
-                fee(10),
-                sig("alice"),
-                ter(terNO_ACCOUNT));
+            env(pay("alice", "bob", XRP(1000)), seq(1), fee(10), sig("alice"), ter(terNO_ACCOUNT));
         }
 
         // fund
@@ -162,8 +150,8 @@ public:
             // flags
             env.fund(n, noripple("xavier"));
             env.require(nflags("xavier", asfDefaultRipple));
-            env.fund(n, "yana");
-            env.require(flags("yana", asfDefaultRipple));
+            env.fund(n, "zachary");
+            env.require(flags("zachary", asfDefaultRipple));
         }
 
         // trust
@@ -187,8 +175,7 @@ public:
             env.trust(USD(1000), alice);
             env(pay(gw, alice, USD(10)));
             BEAST_EXPECT(to_string(env.balance("alice", USD)) == "10/USD(gw)");
-            BEAST_EXPECT(
-                to_string(env.balance(gw, alice["USD"])) == "-10/USD(alice)");
+            BEAST_EXPECT(to_string(env.balance(gw, alice["USD"])) == "-10/USD(alice)");
         }
 
         // seq
@@ -234,10 +221,8 @@ public:
         env(pay(gw, "alice", USD(10)), require(balance("alice", USD(10))));
 
         env.require(nflags("alice", asfRequireDest));
-        env(fset("alice", asfRequireDest),
-            require(flags("alice", asfRequireDest)));
-        env(fclear("alice", asfRequireDest),
-            require(nflags("alice", asfRequireDest)));
+        env(fset("alice", asfRequireDest), require(flags("alice", asfRequireDest)));
+        env(fclear("alice", asfRequireDest), require(nflags("alice", asfRequireDest)));
     }
 
     // Signing with secp256k1 and ed25519 keys
@@ -256,9 +241,7 @@ public:
         env(noop(alice));
         env(noop(bob));
         env(noop(alice), sig("alice"), ter(tefBAD_AUTH));
-        env(noop(alice),
-            sig(Account("alice", KeyType::secp256k1)),
-            ter(tefBAD_AUTH));
+        env(noop(alice), sig(Account("alice", KeyType::secp256k1)), ter(tefBAD_AUTH));
         env(noop(bob), sig(Account("bob", KeyType::ed25519)), ter(tefBAD_AUTH));
         env(noop(alice), sig(carol), ter(tefBAD_AUTH));
 
@@ -273,9 +256,7 @@ public:
         env(noop(alice));
         env(noop(alice), sig(bob));
         env(noop(alice), sig(alice), ter(tefMASTER_DISABLED));
-        env(fclear(alice, asfDisableMaster),
-            sig(alice),
-            ter(tefMASTER_DISABLED));
+        env(fclear(alice, asfDisableMaster), sig(alice), ter(tefMASTER_DISABLED));
         env(fclear(alice, asfDisableMaster), sig(bob));
         env(noop(alice), sig(alice));
     }
@@ -314,10 +295,7 @@ public:
 
         env(offer("carol", XRP(50), USD(50)), require(owners("carol", 2)));
         env(pay("alice", "bob", any(USD(10))), ter(tecPATH_DRY));
-        env(pay("alice", "bob", any(USD(10))),
-            paths(XRP),
-            sendmax(XRP(10)),
-            ter(tecPATH_PARTIAL));
+        env(pay("alice", "bob", any(USD(10))), paths(XRP), sendmax(XRP(10)), ter(tecPATH_PARTIAL));
         env(pay("alice", "bob", any(USD(10))), paths(XRP), sendmax(XRP(20)));
         env.require(balance("bob", USD(10)));
         env.require(balance("carol", USD(39.5)));
@@ -329,9 +307,7 @@ public:
         env(noop("alice"), sig("eric"));
         env(noop("alice"), sig("bob"), ter(tefBAD_AUTH));
         env(fset("alice", asfDisableMaster), ter(tecNEED_MASTER_KEY));
-        env(fset("alice", asfDisableMaster),
-            sig("eric"),
-            ter(tecNEED_MASTER_KEY));
+        env(fset("alice", asfDisableMaster), sig("eric"), ter(tecNEED_MASTER_KEY));
         env.require(nflags("alice", asfDisableMaster));
         env(fset("alice", asfDisableMaster), sig("alice"));
         env.require(flags("alice", asfDisableMaster));
@@ -341,9 +317,7 @@ public:
         env(noop("alice"), sig("eric"));
         env(noop("alice"), sig("bob"), ter(tefBAD_AUTH));
         env(fclear("alice", asfDisableMaster), sig("bob"), ter(tefBAD_AUTH));
-        env(fclear("alice", asfDisableMaster),
-            sig("alice"),
-            ter(tefMASTER_DISABLED));
+        env(fclear("alice", asfDisableMaster), sig("alice"), ter(tefMASTER_DISABLED));
         env(fclear("alice", asfDisableMaster));
         env.require(nflags("alice", asfDisableMaster));
         env(regkey("alice", disabled));
@@ -366,8 +340,7 @@ public:
         env.fund(XRP(10000), alice);
 
         auto const localTxCnt = env.app().getOPs().getLocalTxCount();
-        auto const queueTxCount =
-            env.app().getTxQ().getMetrics(*env.current()).txCount;
+        auto const queueTxCount = env.app().getTxQ().getMetrics(*env.current()).txCount;
         auto const openTxCount = env.current()->txCount();
         BEAST_EXPECT(localTxCnt == 2 && queueTxCount == 0 && openTxCount == 2);
 
@@ -387,46 +360,35 @@ public:
         auto jr = applyTxn(noop(alice), fee(1));
 
         BEAST_EXPECT(jr[jss::result][jss::engine_result] == "telINSUF_FEE_P");
-        BEAST_EXPECT(
-            env.app().getTxQ().getMetrics(*env.current()).txCount ==
-            queueTxCount);
+        BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == queueTxCount);
         BEAST_EXPECT(env.app().getOPs().getLocalTxCount() == localTxCnt);
         BEAST_EXPECT(env.current()->txCount() == openTxCount);
 
         jr = applyTxn(noop(alice), sig("bob"));
 
         BEAST_EXPECT(jr[jss::result][jss::engine_result] == "tefBAD_AUTH");
-        BEAST_EXPECT(
-            env.app().getTxQ().getMetrics(*env.current()).txCount ==
-            queueTxCount);
+        BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == queueTxCount);
         BEAST_EXPECT(env.app().getOPs().getLocalTxCount() == localTxCnt);
         BEAST_EXPECT(env.current()->txCount() == openTxCount);
 
         jr = applyTxn(noop(alice), seq(20));
 
         BEAST_EXPECT(jr[jss::result][jss::engine_result] == "terPRE_SEQ");
-        BEAST_EXPECT(
-            env.app().getTxQ().getMetrics(*env.current()).txCount ==
-            queueTxCount);
+        BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == queueTxCount);
         BEAST_EXPECT(env.app().getOPs().getLocalTxCount() == localTxCnt);
         BEAST_EXPECT(env.current()->txCount() == openTxCount);
 
         jr = applyTxn(offer(alice, XRP(1000), USD(1000)));
 
-        BEAST_EXPECT(
-            jr[jss::result][jss::engine_result] == "tecUNFUNDED_OFFER");
-        BEAST_EXPECT(
-            env.app().getTxQ().getMetrics(*env.current()).txCount ==
-            queueTxCount);
+        BEAST_EXPECT(jr[jss::result][jss::engine_result] == "tecUNFUNDED_OFFER");
+        BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == queueTxCount);
         BEAST_EXPECT(env.app().getOPs().getLocalTxCount() == localTxCnt);
         BEAST_EXPECT(env.current()->txCount() == openTxCount);
 
         jr = applyTxn(noop(alice), fee(drops(-10)));
 
         BEAST_EXPECT(jr[jss::result][jss::engine_result] == "temBAD_FEE");
-        BEAST_EXPECT(
-            env.app().getTxQ().getMetrics(*env.current()).txCount ==
-            queueTxCount);
+        BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == queueTxCount);
         BEAST_EXPECT(env.app().getOPs().getLocalTxCount() == localTxCnt);
         BEAST_EXPECT(env.current()->txCount() == openTxCount);
 
@@ -445,8 +407,7 @@ public:
 
         Env env(*this);
         env.fund(XRP(10000), "alice");
-        env(signers("alice", 1, {{"alice", 1}, {"bob", 2}}),
-            ter(temBAD_SIGNER));
+        env(signers("alice", 1, {{"alice", 1}, {"bob", 2}}), ter(temBAD_SIGNER));
         env(signers("alice", 1, {{"bob", 1}, {"carol", 2}}));
         env(noop("alice"));
 
@@ -454,10 +415,7 @@ public:
         env(noop("alice"), msig("bob"), fee(2 * baseFee));
         env(noop("alice"), msig("carol"), fee(2 * baseFee));
         env(noop("alice"), msig("bob", "carol"), fee(3 * baseFee));
-        env(noop("alice"),
-            msig("bob", "carol", "dilbert"),
-            fee(4 * baseFee),
-            ter(tefBAD_SIGNATURE));
+        env(noop("alice"), msig("bob", "carol", "dilbert"), fee(4 * baseFee), ter(tefBAD_SIGNATURE));
 
         env(signers("alice", none));
     }
@@ -472,10 +430,8 @@ public:
         {
             Env env(*this);
             env.fund(XRP(10000), "alice");
-            env(noop("alice"),
-                require(owners("alice", 0), tickets("alice", 0)));
-            env(ticket::create("alice", 1),
-                require(owners("alice", 1), tickets("alice", 1)));
+            env(noop("alice"), require(owners("alice", 0), tickets("alice", 0)));
+            env(ticket::create("alice", 1), require(owners("alice", 1), tickets("alice", 1)));
         }
     }
 
@@ -531,10 +487,7 @@ public:
         auto jt2 = env.jt(noop("alice"), prop<std::uint16_t>(-1));
         BEAST_EXPECT(jt2.get<std::uint16_t>());
         BEAST_EXPECT(*jt2.get<std::uint16_t>() == 65535);
-        auto jt3 = env.jt(
-            noop("alice"),
-            prop<std::string>("Hello, world!"),
-            prop<bool>(false));
+        auto jt3 = env.jt(noop("alice"), prop<std::string>("Hello, world!"), prop<bool>(false));
         BEAST_EXPECT(jt3.get<std::string>());
         BEAST_EXPECT(*jt3.get<std::string>() == "Hello, world!");
         BEAST_EXPECT(jt3.get<bool>());
@@ -596,16 +549,11 @@ public:
         using namespace jtx;
         Env env(*this);
         env.fund(XRP(10000), "alice");
-        env(noop("alice"), memodata("data"));
-        env(noop("alice"), memoformat("format"));
-        env(noop("alice"), memotype("type"));
-        env(noop("alice"), memondata("format", "type"));
-        env(noop("alice"), memonformat("data", "type"));
-        env(noop("alice"), memontype("data", "format"));
+        env(noop("alice"), memo_data("data"));
+        env(noop("alice"), memo_format("format"));
+        env(noop("alice"), memo_type("type"));
         env(noop("alice"), memo("data", "format", "type"));
-        env(noop("alice"),
-            memo("data1", "format1", "type1"),
-            memo("data2", "format2", "type2"));
+        env(noop("alice"), memo("data1", "format1", "type1"), memo("data2", "format2", "type2"));
     }
 
     void
@@ -617,12 +565,9 @@ public:
         memo("data", "format", "type")(env, jt);
 
         auto const& memo = jt.jv["Memos"][0u]["Memo"];
-        BEAST_EXPECT(
-            memo["MemoData"].asString() == strHex(std::string("data")));
-        BEAST_EXPECT(
-            memo["MemoFormat"].asString() == strHex(std::string("format")));
-        BEAST_EXPECT(
-            memo["MemoType"].asString() == strHex(std::string("type")));
+        BEAST_EXPECT(memo["MemoData"].asString() == strHex(std::string("data")));
+        BEAST_EXPECT(memo["MemoFormat"].asString() == strHex(std::string("format")));
+        BEAST_EXPECT(memo["MemoType"].asString() == strHex(std::string("type")));
     }
 
     void
@@ -687,8 +632,7 @@ public:
         std::uint32_t const aliceSeq = env.seq("alice");
 
         // Sign jsonNoop.
-        Json::Value jsonNoop =
-            env.json(noop("alice"), fee(baseFee), seq(aliceSeq), sig("alice"));
+        Json::Value jsonNoop = env.json(noop("alice"), fee(baseFee), seq(aliceSeq), sig("alice"));
         // Re-sign jsonNoop.
         JTx jt = env.jt(jsonNoop);
         env(jt);
@@ -737,15 +681,9 @@ public:
             params[jss::fee_mult_max] = 1;
             params[jss::fee_div_max] = 2;
 
-            auto const expectedErrorString = "Fee of " +
-                std::to_string(baseFee.drops()) +
-                " exceeds the requested tx limit of " +
-                std::to_string(baseFee.drops() / 2);
-            envs(
-                noop(alice),
-                fee(none),
-                seq(none),
-                rpc(rpcHIGH_FEE, expectedErrorString))(params);
+            auto const expectedErrorString = "Fee of " + std::to_string(baseFee.drops()) +
+                " exceeds the requested tx limit of " + std::to_string(baseFee.drops() / 2);
+            envs(noop(alice), fee(none), seq(none), rpc(rpcHIGH_FEE, expectedErrorString))(params);
 
             auto tx = env.tx();
             BEAST_EXPECT(!tx);
@@ -774,51 +712,40 @@ public:
 
         if (!neverSupportedFeat)
         {
-            log << "No unsupported features found - skipping test."
-                << std::endl;
+            log << "No unsupported features found - skipping test." << std::endl;
             pass();
             return;
         }
 
         auto hasFeature = [](Env& env, uint256 const& f) {
-            return (
-                env.app().config().features.find(f) !=
-                env.app().config().features.end());
+            return (env.app().config().features.find(f) != env.app().config().features.end());
         };
 
         {
             // default Env has all supported features
             Env env{*this};
-            BEAST_EXPECT(
-                supported.count() == env.app().config().features.size());
-            foreachFeature(supported, [&](uint256 const& f) {
-                this->BEAST_EXPECT(hasFeature(env, f));
-            });
+            BEAST_EXPECT(supported.count() == env.app().config().features.size());
+            foreachFeature(supported, [&](uint256 const& f) { this->BEAST_EXPECT(hasFeature(env, f)); });
         }
 
         {
             // a Env FeatureBitset has *only* those features
-            Env env{
-                *this, FeatureBitset{featureDynamicMPT | featureTokenEscrow}};
+            Env env{*this, FeatureBitset{featureDynamicMPT | featureTokenEscrow}};
             BEAST_EXPECT(env.app().config().features.size() == 2);
             foreachFeature(supported, [&](uint256 const& f) {
-                bool const has =
-                    (f == featureDynamicMPT || f == featureTokenEscrow);
+                bool const has = (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(has == hasFeature(env, f));
             });
         }
 
-        auto const missingSomeFeatures =
-            testable_amendments() - featureDynamicMPT - featureTokenEscrow;
+        auto const missingSomeFeatures = testable_amendments() - featureDynamicMPT - featureTokenEscrow;
         BEAST_EXPECT(missingSomeFeatures.count() == (supported.count() - 2));
         {
             // a Env supported_features_except is missing *only* those features
             Env env{*this, missingSomeFeatures};
-            BEAST_EXPECT(
-                env.app().config().features.size() == (supported.count() - 2));
+            BEAST_EXPECT(env.app().config().features.size() == (supported.count() - 2));
             foreachFeature(supported, [&](uint256 const& f) {
-                bool hasnot =
-                    (f == featureDynamicMPT || f == featureTokenEscrow);
+                bool hasnot = (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(hasnot != hasFeature(env, f));
             });
         }
@@ -828,12 +755,7 @@ public:
             // along with a list of explicit amendments
             // the unsupported feature should be enabled along with
             // the two supported ones
-            Env env{
-                *this,
-                FeatureBitset{
-                    featureDynamicMPT,
-                    featureTokenEscrow,
-                    *neverSupportedFeat}};
+            Env env{*this, FeatureBitset{featureDynamicMPT, featureTokenEscrow, *neverSupportedFeat}};
 
             // this app will have just 2 supported amendments and
             // one additional never supported feature flag
@@ -850,19 +772,14 @@ public:
             // add a feature that is NOT in the supported amendments list
             // and omit a few standard amendments
             // the unsupported features should be enabled
-            Env env{
-                *this,
-                missingSomeFeatures | FeatureBitset{*neverSupportedFeat}};
+            Env env{*this, missingSomeFeatures | FeatureBitset{*neverSupportedFeat}};
 
             // this app will have all supported amendments minus 2 and then the
             // one additional never supported feature flag
-            BEAST_EXPECT(
-                env.app().config().features.size() ==
-                (supported.count() - 2 + 1));
+            BEAST_EXPECT(env.app().config().features.size() == (supported.count() - 2 + 1));
             BEAST_EXPECT(hasFeature(env, *neverSupportedFeat));
             foreachFeature(supported, [&](uint256 const& f) {
-                bool hasnot =
-                    (f == featureDynamicMPT || f == featureTokenEscrow);
+                bool hasnot = (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(hasnot != hasFeature(env, f));
             });
         }
@@ -875,12 +792,9 @@ public:
 
             // this app will have all supported amendments and then the
             // one additional never supported feature flag
-            BEAST_EXPECT(
-                env.app().config().features.size() == (supported.count() + 1));
+            BEAST_EXPECT(env.app().config().features.size() == (supported.count() + 1));
             BEAST_EXPECT(hasFeature(env, *neverSupportedFeat));
-            foreachFeature(supported, [&](uint256 const& f) {
-                this->BEAST_EXPECT(hasFeature(env, f));
-            });
+            foreachFeature(supported, [&](uint256 const& f) { this->BEAST_EXPECT(hasFeature(env, f)); });
         }
     }
 

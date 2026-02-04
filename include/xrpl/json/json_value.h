@@ -44,7 +44,7 @@ enum ValueType {
 class StaticString
 {
 public:
-    constexpr explicit StaticString(char const* czstring) : str_(czstring)
+    constexpr explicit StaticString(char const* czString) : str_(czString)
     {
     }
 
@@ -148,11 +148,7 @@ private:
     class CZString
     {
     public:
-        enum DuplicationPolicy {
-            noDuplication = 0,
-            duplicate,
-            duplicateOnCopy
-        };
+        enum DuplicationPolicy { noDuplication = 0, duplicate, duplicateOnCopy };
         CZString(int index);
         CZString(char const* cstr, DuplicationPolicy allocate);
         CZString(CZString const& other);
@@ -682,4 +678,4 @@ public:
 
 }  // namespace Json
 
-#endif  // CPPTL_JSON_H_INCLUDED
+#endif  // XRPL_JSON_JSON_VALUE_H_INCLUDED

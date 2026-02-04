@@ -24,8 +24,7 @@ public:
         {
         }
 
-        test(bool pass_, std::string const& reason_)
-            : pass(pass_), reason(reason_)
+        test(bool pass_, std::string const& reason_) : pass(pass_), reason(reason_)
         {
         }
 

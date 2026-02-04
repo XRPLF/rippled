@@ -26,10 +26,7 @@ class HeartbeatTimer
     SimTime startSimTime_;
 
 public:
-    HeartbeatTimer(
-        Scheduler& sched,
-        SimDuration interval = std::chrono::seconds{60},
-        std::ostream& out = std::cerr)
+    HeartbeatTimer(Scheduler& sched, SimDuration interval = std::chrono::seconds{60}, std::ostream& out = std::cerr)
         : scheduler_{sched}
         , interval_{interval}
         , out_{out}
@@ -53,10 +50,8 @@ public:
 
         RealDuration realDuration = realTime - startRealTime_;
         SimDuration simDuration = simTime - startSimTime_;
-        out_ << "Heartbeat. Time Elapsed: {sim: "
-             << duration_cast<seconds>(simDuration).count()
-             << "s | real: " << duration_cast<seconds>(realDuration).count()
-             << "s}\n"
+        out_ << "Heartbeat. Time Elapsed: {sim: " << duration_cast<seconds>(simDuration).count()
+             << "s | real: " << duration_cast<seconds>(realDuration).count() << "s}\n"
              << std::flush;
 
         scheduler_.in(interval_, [this]() { beat(scheduler_.now()); });

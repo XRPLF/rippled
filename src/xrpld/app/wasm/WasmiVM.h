@@ -60,26 +60,13 @@ struct WasmVec
     }
 };
 
-using WasmValtypeVec = WasmVec<
-    wasm_valtype_vec_t,
-    &wasm_valtype_vec_new_uninitialized,
-    &wasm_valtype_vec_delete>;
-using WasmValVec = WasmVec<
-    wasm_val_vec_t,
-    &wasm_val_vec_new_uninitialized,
-    &wasm_val_vec_delete>;
-using WasmExternVec = WasmVec<
-    wasm_extern_vec_t,
-    &wasm_extern_vec_new_uninitialized,
-    &wasm_extern_vec_delete>;
-using WasmExporttypeVec = WasmVec<
-    wasm_exporttype_vec_t,
-    &wasm_exporttype_vec_new_uninitialized,
-    &wasm_exporttype_vec_delete>;
-using WasmImporttypeVec = WasmVec<
-    wasm_importtype_vec_t,
-    &wasm_importtype_vec_new_uninitialized,
-    &wasm_importtype_vec_delete>;
+using WasmValtypeVec = WasmVec<wasm_valtype_vec_t, &wasm_valtype_vec_new_uninitialized, &wasm_valtype_vec_delete>;
+using WasmValVec = WasmVec<wasm_val_vec_t, &wasm_val_vec_new_uninitialized, &wasm_val_vec_delete>;
+using WasmExternVec = WasmVec<wasm_extern_vec_t, &wasm_extern_vec_new_uninitialized, &wasm_extern_vec_delete>;
+using WasmExporttypeVec =
+    WasmVec<wasm_exporttype_vec_t, &wasm_exporttype_vec_new_uninitialized, &wasm_exporttype_vec_delete>;
+using WasmImporttypeVec =
+    WasmVec<wasm_importtype_vec_t, &wasm_importtype_vec_new_uninitialized, &wasm_importtype_vec_delete>;
 
 struct WasmiResult
 {
@@ -97,8 +84,7 @@ struct WasmiResult
 };
 
 using ModulePtr = std::unique_ptr<wasm_module_t, decltype(&wasm_module_delete)>;
-using InstancePtr =
-    std::unique_ptr<wasm_instance_t, decltype(&wasm_instance_delete)>;
+using InstancePtr = std::unique_ptr<wasm_instance_t, decltype(&wasm_instance_delete)>;
 using EnginePtr = std::unique_ptr<wasm_engine_t, decltype(&wasm_engine_delete)>;
 using StorePtr = std::unique_ptr<wasm_store_t, decltype(&wasm_store_delete)>;
 
@@ -108,17 +94,13 @@ struct InstanceWrapper
 {
     wasm_store_t* store_ = nullptr;
     WasmExternVec exports_;
+    mutable int memIdx_ = -1;
     InstancePtr instance_;
     beast::Journal j_ = beast::Journal(beast::Journal::getNullSink());
 
 private:
     static InstancePtr
-    init(
-        StorePtr& s,
-        ModulePtr& m,
-        WasmExternVec& expt,
-        WasmExternVec const& imports,
-        beast::Journal j);
+    init(StorePtr& s, ModulePtr& m, WasmExternVec& expt, WasmExternVec const& imports, beast::Journal j);
 
 public:
     InstanceWrapper();
@@ -128,19 +110,14 @@ public:
     InstanceWrapper&
     operator=(InstanceWrapper&& o);
 
-    InstanceWrapper(
-        StorePtr& s,
-        ModulePtr& m,
-        WasmExternVec const& imports,
-        beast::Journal j);
+    InstanceWrapper(StorePtr& s, ModulePtr& m, WasmExternVec const& imports, beast::Journal j);
 
     ~InstanceWrapper() = default;
 
     operator bool() const;
 
     FuncInfo
-    getFunc(std::string_view funcName, WasmExporttypeVec const& exportTypes)
-        const;
+    getFunc(std::string_view funcName, WasmExporttypeVec const& exportTypes) const;
 
     wmem
     getMem() const;
@@ -171,7 +148,7 @@ public:
         StorePtr& s,
         Bytes const& wasmBin,
         bool instantiate,
-        ImportVec const& imports,
+        std::shared_ptr<ImportVec> const& imports,
         beast::Journal j);
     ~ModuleWrapper() = default;
 
@@ -179,6 +156,10 @@ public:
 
     FuncInfo
     getFunc(std::string_view funcName) const;
+
+    wasm_functype_t*
+    getFuncType(std::string_view funcName) const;
+
     wmem
     getMem() const;
 
@@ -193,7 +174,7 @@ public:
 
 private:
     WasmExternVec
-    buildImports(StorePtr& s, ImportVec const& imports);
+    buildImports(StorePtr& s, std::shared_ptr<ImportVec> const& imports);
 };
 
 class WasmiEngine
@@ -204,6 +185,10 @@ class WasmiEngine
     beast::Journal j_ = beast::Journal(beast::Journal::getNullSink());
 
     std::mutex m_;  // 1 instance mutex
+
+    // to ensure lifetime during next executions with the same module
+    std::shared_ptr<ImportVec> imports_;
+    std::shared_ptr<HostFunctions> hfs_;
 
 public:
     WasmiEngine();
@@ -216,8 +201,8 @@ public:
     run(Bytes const& wasmCode,
         std::string_view funcName,
         std::vector<WasmParam> const& params,
-        ImportVec const& imports,
-        HostFunctions* hfs,
+        std::shared_ptr<ImportVec> const& imports,
+        std::shared_ptr<HostFunctions> const& hfs,
         int64_t gas,
         beast::Journal j);
 
@@ -226,8 +211,8 @@ public:
         Bytes const& wasmCode,
         std::string_view funcName,
         std::vector<WasmParam> const& params,
-        ImportVec const& imports,
-        HostFunctions* hfs,
+        std::shared_ptr<ImportVec> const& imports,
+        std::shared_ptr<HostFunctions> const& hfs,
         beast::Journal j);
 
     std::int64_t
@@ -251,27 +236,13 @@ private:
     allocate(int32_t size);
 
     Expected<WasmResult<int32_t>, TER>
-    runHlp(
-        Bytes const& wasmCode,
-        std::string_view funcName,
-        std::vector<WasmParam> const& params,
-        ImportVec const& imports,
-        HostFunctions* hfs,
-        int64_t gas);
+    runHlp(Bytes const& wasmCode, std::string_view funcName, std::vector<WasmParam> const& params, int64_t gas);
 
     NotTEC
-    checkHlp(
-        Bytes const& wasmCode,
-        std::string_view funcName,
-        std::vector<WasmParam> const& params,
-        ImportVec const& imports);
+    checkHlp(Bytes const& wasmCode, std::string_view funcName, std::vector<WasmParam> const& params);
 
     int
-    addModule(
-        Bytes const& wasmCode,
-        bool instantiate,
-        int64_t gas,
-        ImportVec const& imports);
+    addModule(Bytes const& wasmCode, bool instantiate, int64_t gas);
     void
     clearModules();
 
@@ -290,9 +261,7 @@ private:
     convertParams(std::vector<WasmParam> const& params);
 
     static int
-    compareParamTypes(
-        wasm_valtype_vec_t const* ftp,
-        std::vector<wasm_val_t> const& p);
+    compareParamTypes(wasm_valtype_vec_t const* ftp, std::vector<wasm_val_t> const& p);
 
     static void
     add_param(std::vector<wasm_val_t>& in, int32_t p);
@@ -313,36 +282,19 @@ private:
 
     template <int NR, class... Types>
     inline WasmiResult
-    call(
-        FuncInfo const& f,
-        std::vector<wasm_val_t>& in,
-        std::int32_t p,
-        Types&&... args);
+    call(FuncInfo const& f, std::vector<wasm_val_t>& in, std::int32_t p, Types&&... args);
 
     template <int NR, class... Types>
     inline WasmiResult
-    call(
-        FuncInfo const& f,
-        std::vector<wasm_val_t>& in,
-        std::int64_t p,
-        Types&&... args);
+    call(FuncInfo const& f, std::vector<wasm_val_t>& in, std::int64_t p, Types&&... args);
 
     template <int NR, class... Types>
     inline WasmiResult
-    call(
-        FuncInfo const& f,
-        std::vector<wasm_val_t>& in,
-        uint8_t const* d,
-        std::size_t sz,
-        Types&&... args);
+    call(FuncInfo const& f, std::vector<wasm_val_t>& in, uint8_t const* d, int32_t sz, Types&&... args);
 
     template <int NR, class... Types>
     inline WasmiResult
-    call(
-        FuncInfo const& f,
-        std::vector<wasm_val_t>& in,
-        Bytes const& p,
-        Types&&... args);
+    call(FuncInfo const& f, std::vector<wasm_val_t>& in, Bytes const& p, Types&&... args);
 };
 
 }  // namespace xrpl

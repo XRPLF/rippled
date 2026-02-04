@@ -7,14 +7,12 @@ namespace xrpl {
 namespace test {
 namespace jtx {
 
-qualityInPercent::qualityInPercent(double percent)
-    : qIn_(static_cast<std::uint32_t>((percent / 100) * QUALITY_ONE))
+qualityInPercent::qualityInPercent(double percent) : qIn_(static_cast<std::uint32_t>((percent / 100) * QUALITY_ONE))
 {
     assert(percent <= 400 && percent >= 0);
 }
 
-qualityOutPercent::qualityOutPercent(double percent)
-    : qOut_(static_cast<std::uint32_t>((percent / 100) * QUALITY_ONE))
+qualityOutPercent::qualityOutPercent(double percent) : qOut_(static_cast<std::uint32_t>((percent / 100) * QUALITY_ONE))
 {
     assert(percent <= 400 && percent >= 0);
 }

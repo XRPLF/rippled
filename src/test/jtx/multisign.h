@@ -22,20 +22,14 @@ struct signer
     Account account;
     std::optional<uint256> tag;
 
-    signer(
-        Account account_,
-        std::uint32_t weight_ = 1,
-        std::optional<uint256> tag_ = std::nullopt)
+    signer(Account account_, std::uint32_t weight_ = 1, std::optional<uint256> tag_ = std::nullopt)
         : weight(weight_), account(std::move(account_)), tag(std::move(tag_))
     {
     }
 };
 
 Json::Value
-signers(
-    Account const& account,
-    std::uint32_t quorum,
-    std::vector<signer> const& v);
+signers(Account const& account, std::uint32_t quorum, std::vector<signer> const& v);
 
 /** Remove a signer list. */
 Json::Value
@@ -57,14 +51,12 @@ public:
     /// a subfield.
     static constexpr SField* const topLevel = nullptr;
 
-    msig(SField const* subField_, std::vector<Reg> signers_)
-        : signers(std::move(signers_)), subField(subField_)
+    msig(SField const* subField_, std::vector<Reg> signers_) : signers(std::move(signers_)), subField(subField_)
     {
         sortSigners(signers);
     }
 
-    msig(SField const& subField_, std::vector<Reg> signers_)
-        : msig{&subField_, signers_}
+    msig(SField const& subField_, std::vector<Reg> signers_) : msig{&subField_, signers_}
     {
     }
 
@@ -75,35 +67,21 @@ public:
     template <class AccountType, class... Accounts>
         requires std::convertible_to<AccountType, Reg>
     explicit msig(SField const* subField_, AccountType&& a0, Accounts&&... aN)
-        : msig{
-              subField_,
-              std::vector<Reg>{
-                  std::forward<AccountType>(a0),
-                  std::forward<Accounts>(aN)...}}
+        : msig{subField_, std::vector<Reg>{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}}
     {
     }
 
     template <class AccountType, class... Accounts>
         requires std::convertible_to<AccountType, Reg>
     explicit msig(SField const& subField_, AccountType&& a0, Accounts&&... aN)
-        : msig{
-              &subField_,
-              std::vector<Reg>{
-                  std::forward<AccountType>(a0),
-                  std::forward<Accounts>(aN)...}}
+        : msig{&subField_, std::vector<Reg>{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}}
     {
     }
 
     template <class AccountType, class... Accounts>
-        requires(
-            std::convertible_to<AccountType, Reg> &&
-            !std::is_same_v<AccountType, SField*>)
+        requires(std::convertible_to<AccountType, Reg> && !std::is_same_v<AccountType, SField*>)
     explicit msig(AccountType&& a0, Accounts&&... aN)
-        : msig{
-              topLevel,
-              std::vector<Reg>{
-                  std::forward<AccountType>(a0),
-                  std::forward<Accounts>(aN)...}}
+        : msig{topLevel, std::vector<Reg>{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}}
     {
     }
 

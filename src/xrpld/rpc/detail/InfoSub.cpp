@@ -8,17 +8,16 @@ namespace xrpl {
 // should use this interface. The RPC code will primarily be a light wrapper
 // over this code.
 
-// Eventually, it will check the node's operating mode (synched, unsynched,
-// etectera) and defer to the correct means of processing. The current
-// code assumes this node is synched (and will continue to do so until
+// Eventually, it will check the node's operating mode (synced, unsynced,
+// etcetera) and defer to the correct means of processing. The current
+// code assumes this node is synced (and will continue to do so until
 // there's a functional network.
 
 InfoSub::InfoSub(Source& source) : m_source(source), mSeq(assign_id())
 {
 }
 
-InfoSub::InfoSub(Source& source, Consumer consumer)
-    : m_consumer(consumer), m_source(source), mSeq(assign_id())
+InfoSub::InfoSub(Source& source, Consumer consumer) : m_consumer(consumer), m_source(source), mSeq(assign_id())
 {
 }
 
@@ -125,8 +124,7 @@ InfoSub::setApiVersion(unsigned int apiVersion)
 unsigned int
 InfoSub::getApiVersion() const noexcept
 {
-    XRPL_ASSERT(
-        apiVersion_ > 0, "xrpl::InfoSub::getApiVersion : valid API version");
+    XRPL_ASSERT(apiVersion_ > 0, "xrpl::InfoSub::getApiVersion : valid API version");
     return apiVersion_;
 }
 

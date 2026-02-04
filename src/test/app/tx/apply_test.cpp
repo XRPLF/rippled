@@ -15,7 +15,7 @@ public:
     void
     run() override
     {
-        testcase("Require Fully Canonicial Signature");
+        testcase("Require Fully Canonical Signature");
         testFullyCanonicalSigs();
     }
 
@@ -36,8 +36,7 @@ public:
         STTx const tx = *std::make_shared<STTx const>(std::ref(sitTrans));
 
         {
-            test::jtx::Env fully_canonical(
-                *this, test::jtx::testable_amendments());
+            test::jtx::Env fully_canonical(*this, test::jtx::testable_amendments());
 
             Validity valid = checkValidity(
                                  fully_canonical.app().getHashRouter(),

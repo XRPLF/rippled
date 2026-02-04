@@ -44,27 +44,18 @@ struct RippleCalcTestParams
                 {
                     if (pe.isMember(jss::account))
                     {
-                        assert(
-                            !pe.isMember(jss::currency) &&
-                            !pe.isMember(jss::issuer));
+                        assert(!pe.isMember(jss::currency) && !pe.isMember(jss::issuer));
                         p.emplace_back(
-                            *parseBase58<AccountID>(
-                                pe[jss::account].asString()),
-                            std::nullopt,
-                            std::nullopt);
+                            *parseBase58<AccountID>(pe[jss::account].asString()), std::nullopt, std::nullopt);
                     }
-                    else if (
-                        pe.isMember(jss::currency) && pe.isMember(jss::issuer))
+                    else if (pe.isMember(jss::currency) && pe.isMember(jss::issuer))
                     {
-                        auto const currency =
-                            to_currency(pe[jss::currency].asString());
+                        auto const currency = to_currency(pe[jss::currency].asString());
                         std::optional<AccountID> issuer;
                         if (!isXRP(currency))
-                            issuer = *parseBase58<AccountID>(
-                                pe[jss::issuer].asString());
+                            issuer = *parseBase58<AccountID>(pe[jss::issuer].asString());
                         else
-                            assert(isXRP(*parseBase58<AccountID>(
-                                pe[jss::issuer].asString())));
+                            assert(isXRP(*parseBase58<AccountID>(pe[jss::issuer].asString())));
                         p.emplace_back(std::nullopt, currency, issuer);
                     }
                     else
@@ -112,20 +103,14 @@ class RandomAccountParams
             return;
 
         auto const percent = qualityPercentDist_(engine_);
-        auto const& field =
-            qDir == QualityDirection::in ? sfQualityIn : sfQualityOut;
-        auto const value =
-            static_cast<std::uint32_t>((percent / 100) * QUALITY_ONE);
+        auto const& field = qDir == QualityDirection::in ? sfQualityIn : sfQualityOut;
+        auto const value = static_cast<std::uint32_t>((percent / 100) * QUALITY_ONE);
         jv[field.jsonName] = value;
     };
 
     // Setup the trust amounts and in/out qualities (but not the balances)
     void
-    setupTrustLine(
-        jtx::Env& env,
-        jtx::Account const& acc,
-        jtx::Account const& peer,
-        Currency const& currency)
+    setupTrustLine(jtx::Env& env, jtx::Account const& acc, jtx::Account const& peer, Currency const& currency)
     {
         using namespace jtx;
         IOU const iou{peer, currency};
@@ -137,13 +122,9 @@ class RandomAccountParams
     };
 
 public:
-    explicit RandomAccountParams(
-        std::uint32_t trustAmount = 100,
-        std::uint32_t initialBalance = 50)
+    explicit RandomAccountParams(std::uint32_t trustAmount = 100, std::uint32_t initialBalance = 50)
         // Use a deterministic seed so the unit tests run in a reproducible way
-        : engine_{1977u}
-        , trustAmount_{trustAmount}
-        , initialBalance_{initialBalance} {};
+        : engine_{1977u}, trustAmount_{trustAmount}, initialBalance_{initialBalance} {};
 
     void
     maybeSetTransferRate(jtx::Env& env, jtx::Account const& acc)
@@ -154,29 +135,19 @@ public:
 
     // Set the initial balance, taking into account the qualities
     void
-    setInitialBalance(
-        jtx::Env& env,
-        jtx::Account const& acc,
-        jtx::Account const& peer,
-        Currency const& currency)
+    setInitialBalance(jtx::Env& env, jtx::Account const& acc, jtx::Account const& peer, Currency const& currency)
     {
         using namespace jtx;
         IOU const iou{acc, currency};
         // This payment sets the acc's balance to `initialBalance`.
         // Since input qualities complicate this payment, use `sendMax` with
         // `initialBalance` to make sure the balance is set correctly.
-        env(pay(peer, acc, iou(trustAmount_)),
-            sendmax(iou(initialBalance_)),
-            txflags(tfPartialPayment));
+        env(pay(peer, acc, iou(trustAmount_)), sendmax(iou(initialBalance_)), txflags(tfPartialPayment));
         env.close();
     }
 
     void
-    maybeSetInitialBalance(
-        jtx::Env& env,
-        jtx::Account const& acc,
-        jtx::Account const& peer,
-        Currency const& currency)
+    maybeSetInitialBalance(jtx::Env& env, jtx::Account const& acc, jtx::Account const& peer, Currency const& currency)
     {
         using namespace jtx;
         if (zeroOneDist_(engine_) > probRedeem_)
@@ -187,11 +158,7 @@ public:
     // Setup the trust amounts and in/out qualities (but not the balances) on
     // both sides of the trust line
     void
-    setupTrustLines(
-        jtx::Env& env,
-        jtx::Account const& acc1,
-        jtx::Account const& acc2,
-        Currency const& currency)
+    setupTrustLines(jtx::Env& env, jtx::Account const& acc1, jtx::Account const& acc2, Currency const& currency)
     {
         setupTrustLine(env, acc1, acc2, currency);
         setupTrustLine(env, acc2, acc1, currency);
@@ -270,20 +237,18 @@ class TheoreticalQuality_test : public beast::unit_test::suite
         for (auto const& strand : sr.second)
         {
             Quality const theoreticalQ = *qualityUpperBound(sb, strand);
-            auto const f = flow<IOUAmount, IOUAmount>(
-                sb, strand, IOUAmount(10, 0), IOUAmount(5, 0), dummyJ);
+            auto const f = flow<IOUAmount, IOUAmount>(sb, strand, IOUAmount(10, 0), IOUAmount(5, 0), dummyJ);
             BEAST_EXPECT(f.success);
             Quality const actualQ(f.out, f.in);
             if (actualQ != theoreticalQ && !compareClose(actualQ, theoreticalQ))
             {
                 BEAST_EXPECT(actualQ == theoreticalQ);  // get the failure
-                log << "\nAcutal != Theoretical\n";
+                log << "\nActual != Theoretical\n";
                 log << "\nTQ: " << prettyQuality(theoreticalQ) << "\n";
                 log << "AQ: " << prettyQuality(actualQ) << "\n";
                 logStrand(log, strand);
             }
-            if (expectedQ && expectedQ != theoreticalQ &&
-                !compareClose(*expectedQ, theoreticalQ))
+            if (expectedQ && expectedQ != theoreticalQ && !compareClose(*expectedQ, theoreticalQ))
             {
                 BEAST_EXPECT(expectedQ == theoreticalQ);  // get the failure
                 log << "\nExpected != Theoretical\n";
@@ -351,8 +316,7 @@ public:
             auto const carol = Account("carol" + iterAsStr);
             auto const dan = Account("dan" + iterAsStr);
             std::array<Account, numAccounts> accounts{{alice, bob, carol, dan}};
-            static_assert(
-                numAccounts == 4, "Path is only correct for four accounts");
+            static_assert(numAccounts == 4, "Path is only correct for four accounts");
             path const accountsPath(accounts[1], accounts[2]);
             env.fund(XRP(10000), alice, bob, carol, dan);
             env.close();
@@ -370,18 +334,14 @@ public:
                 if (j == numAccounts)
                     continue;
 
-                rndAccParams.setupTrustLines(
-                    env, accounts[ii], accounts[j], currency);
-                rndAccParams.maybeSetInitialBalance(
-                    env, accounts[ii], accounts[j], currency);
+                rndAccParams.setupTrustLines(env, accounts[ii], accounts[j], currency);
+                rndAccParams.maybeSetInitialBalance(env, accounts[ii], accounts[j], currency);
             }
 
             // Accounts are set up, make the payment
             IOU const iou{accounts.back(), currency};
             RippleCalcTestParams rcp{env.json(
-                pay(accounts.front(), accounts.back(), iou(paymentAmount)),
-                accountsPath,
-                txflags(tfNoRippleDirect))};
+                pay(accounts.front(), accounts.back(), iou(paymentAmount)), accountsPath, txflags(tfNoRippleDirect))};
 
             testCase(rcp, env.closed());
         }
@@ -427,8 +387,7 @@ public:
             auto const USDB = bob["USD"];
             auto const EURC = carol["EUR"];
             constexpr std::size_t const numAccounts = 5;
-            std::array<Account, numAccounts> accounts{
-                {alice, bob, carol, dan, oscar}};
+            std::array<Account, numAccounts> accounts{{alice, bob, carol, dan, oscar}};
 
             // sendmax should be in USDB and delivered amount should be in EURC
             // normalized path should be:
@@ -443,14 +402,10 @@ public:
 
             for (auto const& currency : {usdCurrency, eurCurrency})
             {
-                rndAccParams.setupTrustLines(
-                    env, alice, bob, currency);  // first step in payment
-                rndAccParams.setupTrustLines(
-                    env, carol, dan, currency);  // last step in payment
-                rndAccParams.setupTrustLines(
-                    env, oscar, bob, currency);  // offer owner
-                rndAccParams.setupTrustLines(
-                    env, oscar, carol, currency);  // offer owner
+                rndAccParams.setupTrustLines(env, alice, bob, currency);    // first step in payment
+                rndAccParams.setupTrustLines(env, carol, dan, currency);    // last step in payment
+                rndAccParams.setupTrustLines(env, oscar, bob, currency);    // offer owner
+                rndAccParams.setupTrustLines(env, oscar, carol, currency);  // offer owner
             }
 
             rndAccParams.maybeSetInitialBalance(env, alice, bob, usdCurrency);
@@ -479,8 +434,7 @@ public:
     {
         testcase("Relative quality distance");
 
-        auto toQuality = [](std::uint64_t mantissa,
-                            int exponent = 0) -> Quality {
+        auto toQuality = [](std::uint64_t mantissa, int exponent = 0) -> Quality {
             // The only way to construct a Quality from an STAmount is to take
             // their ratio. Set the denominator STAmount to `one` to easily
             // create a quality from a single amount
@@ -492,18 +446,14 @@ public:
         BEAST_EXPECT(relativeDistance(toQuality(100), toQuality(100)) == 0);
         BEAST_EXPECT(relativeDistance(toQuality(100), toQuality(100, 1)) == 9);
         BEAST_EXPECT(relativeDistance(toQuality(100), toQuality(110)) == .1);
-        BEAST_EXPECT(
-            relativeDistance(toQuality(100, 90), toQuality(110, 90)) == .1);
-        BEAST_EXPECT(
-            relativeDistance(toQuality(100, 90), toQuality(110, 91)) == 10);
-        BEAST_EXPECT(
-            relativeDistance(toQuality(100, 0), toQuality(100, 90)) == 1e90);
+        BEAST_EXPECT(relativeDistance(toQuality(100, 90), toQuality(110, 90)) == .1);
+        BEAST_EXPECT(relativeDistance(toQuality(100, 90), toQuality(110, 91)) == 10);
+        BEAST_EXPECT(relativeDistance(toQuality(100, 0), toQuality(100, 90)) == 1e90);
         // Make the mantissa in the smaller value bigger than the mantissa in
         // the larger value. Instead of checking the exact result, we check that
         // it's large. If the values did not compare correctly in
         // `relativeDistance`, then the returned value would be negative.
-        BEAST_EXPECT(
-            relativeDistance(toQuality(102, 0), toQuality(101, 90)) >= 1e89);
+        BEAST_EXPECT(relativeDistance(toQuality(102, 0), toQuality(101, 90)) >= 1e89);
     }
 
     void

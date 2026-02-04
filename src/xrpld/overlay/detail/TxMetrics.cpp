@@ -39,10 +39,7 @@ TxMetrics::addMetrics(protocol::MessageType type, std::uint32_t val)
 }
 
 void
-TxMetrics::addMetrics(
-    std::uint32_t selected,
-    std::uint32_t suppressed,
-    std::uint32_t notenabled)
+TxMetrics::addMetrics(std::uint32_t selected, std::uint32_t suppressed, std::uint32_t notenabled)
 {
     std::lock_guard lock(mutex);
     selectedPeers.addMetrics(selected);
@@ -77,17 +74,15 @@ SingleMetrics::addMetrics(std::uint32_t val)
     accum += val;
     N++;
     auto const timeElapsed = clock_type::now() - intervalStart;
-    auto const timeElapsedInSecs =
-        std::chrono::duration_cast<std::chrono::seconds>(timeElapsed);
+    auto const timeElapsedInSecs = std::chrono::duration_cast<std::chrono::seconds>(timeElapsed);
 
     if (timeElapsedInSecs >= 1s)
     {
         auto const avg = accum / (perTimeUnit ? timeElapsedInSecs.count() : N);
-        rollingAvgAggreg.push_back(avg);
+        rollingAvgAggregate.push_back(avg);
 
-        auto const total = std::accumulate(
-            rollingAvgAggreg.begin(), rollingAvgAggreg.end(), 0ull);
-        rollingAvg = total / rollingAvgAggreg.size();
+        auto const total = std::accumulate(rollingAvgAggregate.begin(), rollingAvgAggregate.end(), 0ull);
+        rollingAvg = total / rollingAvgAggregate.size();
 
         intervalStart = clock_type::now();
         accum = 0;

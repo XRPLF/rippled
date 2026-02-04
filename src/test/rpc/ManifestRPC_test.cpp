@@ -25,19 +25,16 @@ public:
         {
             // manifest with no public key
             auto const info = env.rpc("json", "manifest", "{ }");
-            BEAST_EXPECT(
-                info[jss::result][jss::error_message] ==
-                "Missing field 'public_key'.");
+            BEAST_EXPECT(info[jss::result][jss::error_message] == "Missing field 'public_key'.");
         }
         {
-            // manifest with manlformed public key
+            // manifest with malformed public key
             auto const info = env.rpc(
                 "json",
                 "manifest",
                 "{ \"public_key\": "
                 "\"abcdef12345\"}");
-            BEAST_EXPECT(
-                info[jss::result][jss::error_message] == "Invalid parameters.");
+            BEAST_EXPECT(info[jss::result][jss::error_message] == "Invalid parameters.");
         }
     }
 
@@ -47,8 +44,7 @@ public:
         testcase("Lookup");
 
         using namespace jtx;
-        std::string const key =
-            "n949f75evCHwgyP4fPVgaHqNHxUVN15PsJEZ3B3HnXPcPjcZAoy7";
+        std::string const key = "n949f75evCHwgyP4fPVgaHqNHxUVN15PsJEZ3B3HnXPcPjcZAoy7";
         Env env{*this, envconfig([&key](std::unique_ptr<Config> cfg) {
                     cfg->section(SECTION_VALIDATORS).append(key);
                     return cfg;

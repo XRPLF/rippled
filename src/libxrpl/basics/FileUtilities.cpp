@@ -45,9 +45,7 @@ getFileContents(
         return {};
     }
 
-    std::string const result{
-        std::istreambuf_iterator<char>{fileStream},
-        std::istreambuf_iterator<char>{}};
+    std::string const result{std::istreambuf_iterator<char>{fileStream}, std::istreambuf_iterator<char>{}};
 
     if (fileStream.bad())
     {
@@ -59,16 +57,12 @@ getFileContents(
 }
 
 void
-writeFileContents(
-    boost::system::error_code& ec,
-    boost::filesystem::path const& destPath,
-    std::string const& contents)
+writeFileContents(boost::system::error_code& ec, boost::filesystem::path const& destPath, std::string const& contents)
 {
     using namespace boost::filesystem;
     using namespace boost::system::errc;
 
-    std::ofstream fileStream(
-        destPath.string(), std::ios::out | std::ios::trunc);
+    std::ofstream fileStream(destPath.string(), std::ios::out | std::ios::trunc);
 
     if (!fileStream)
     {
