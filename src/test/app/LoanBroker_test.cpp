@@ -2031,6 +2031,16 @@ class LoanBroker_test : public beast::unit_test::Suite
         testRIPD4274MPT();
     }
 
+    void
+    testFixAmendmentEnabled()
+    {
+        using namespace jtx;
+        testcase("testFixAmendmentEnabled");
+        Env env{*this};
+
+        BEAST_EXPECT(env.enabled(fixLendingProtocolv1_1));
+    }
+
     // Exercises canApplyToBrokerCover (fixCleanup3_2_0): a deposit, withdraw,
     // or clawback whose amount rounds to zero at sfCoverAvailable's precision
     // scale must be rejected with tecPRECISION_LOSS once the amendment is on,
@@ -2244,6 +2254,7 @@ public:
     void
     run() override
     {
+        testFixAmendmentEnabled();
         testCoverPrecisionGuard();
 
         testLoanBrokerSetDebtMaximum();
