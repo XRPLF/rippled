@@ -1,5 +1,4 @@
-#ifndef XRPL_CORE_JOBTYPEDATA_H_INCLUDED
-#define XRPL_CORE_JOBTYPEDATA_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/insight/Collector.h>
@@ -75,5 +74,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

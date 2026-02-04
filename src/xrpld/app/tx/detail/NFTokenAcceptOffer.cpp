@@ -53,7 +53,17 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
                 return {nullptr, tecOBJECT_NOT_FOUND};
 
             if (hasExpired(ctx.view, (*offerSLE)[~sfExpiration]))
-                return {nullptr, tecEXPIRED};
+            {
+                // Before fixExpiredNFTokenOfferRemoval amendment, expired
+                // offers caused tecEXPIRED in preclaim, leaving them on ledger
+                // forever. After the amendment, we allow expired offers to
+                // reach doApply() where they get deleted and tecEXPIRED is
+                // returned.
+                if (!ctx.view.rules().enabled(fixExpiredNFTokenOfferRemoval))
+                    return {nullptr, tecEXPIRED};
+                // Amendment enabled: return the expired offer to be handled in
+                // doApply
+            }
 
             if ((*offerSLE)[sfAmount].negative())
                 return {nullptr, temBAD_OFFER};
@@ -299,7 +309,7 @@ NFTokenAcceptOffer::pay(AccountID const& from, AccountID const& to, STAmount con
 {
     // This should never happen, but it's easy and quick to check.
     if (amount < beast::zero)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const result = accountSend(view(), from, to, amount, j_);
 
@@ -409,6 +419,39 @@ NFTokenAcceptOffer::doApply()
 
     auto bo = loadToken(ctx_.tx[~sfNFTokenBuyOffer]);
     auto so = loadToken(ctx_.tx[~sfNFTokenSellOffer]);
+
+    // With fixExpiredNFTokenOfferRemoval amendment, check for expired offers
+    // and delete them, returning tecEXPIRED. This ensures expired offers
+    // are properly cleaned up from the ledger.
+    if (view().rules().enabled(fixExpiredNFTokenOfferRemoval))
+    {
+        bool foundExpired = false;
+
+        auto const deleteOfferIfExpired = [this, &foundExpired](std::shared_ptr<SLE> const& offer) -> TER {
+            if (offer && hasExpired(view(), (*offer)[~sfExpiration]))
+            {
+                JLOG(j_.trace()) << "Offer is expired, deleting: " << offer->key();
+                if (!nft::deleteTokenOffer(view(), offer))
+                {
+                    // LCOV_EXCL_START
+                    JLOG(j_.fatal()) << "Unable to delete expired offer '" << offer->key() << "': ignoring";
+                    return tecINTERNAL;
+                    // LCOV_EXCL_STOP
+                }
+                JLOG(j_.trace()) << "Deleted offer " << offer->key();
+                foundExpired = true;
+            }
+            return tesSUCCESS;
+        };
+
+        if (auto const r = deleteOfferIfExpired(bo); !isTesSuccess(r))
+            return r;
+        if (auto const r = deleteOfferIfExpired(so); !isTesSuccess(r))
+            return r;
+
+        if (foundExpired)
+            return tecEXPIRED;
+    }
 
     if (bo && !nft::deleteTokenOffer(view(), bo))
     {

@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_PROTOCOLVERSION_H_INCLUDED
-#define XRPL_OVERLAY_PROTOCOLVERSION_H_INCLUDED
+#pragma once
 
 #include <boost/beast/core/string.hpp>
 
@@ -59,5 +58,3 @@ bool
 isProtocolSupported(ProtocolVersion const& v);
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_PATHS_IMPL_FLAT_SETS_H_INCLUDED
-#define XRPL_APP_PATHS_IMPL_FLAT_SETS_H_INCLUDED
+#pragma once
 
 #include <boost/container/flat_set.hpp>
 
@@ -23,5 +22,3 @@ SetUnion(boost::container::flat_set<T>& dst, boost::container::flat_set<T> const
 }
 
 }  // namespace xrpl
-
-#endif

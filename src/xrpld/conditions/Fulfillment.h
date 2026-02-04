@@ -1,5 +1,4 @@
-#ifndef XRPL_CONDITIONS_FULFILLMENT_H
-#define XRPL_CONDITIONS_FULFILLMENT_H
+#pragma once
 
 #include <xrpld/conditions/Condition.h>
 
@@ -122,5 +121,3 @@ validate(Fulfillment const& f, Condition const& c);
 
 }  // namespace cryptoconditions
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_NODESTORE_BASE_H_INCLUDED
-#define XRPL_NODESTORE_BASE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/random.h>
@@ -197,5 +196,3 @@ public:
 
 }  // namespace NodeStore
 }  // namespace xrpl
-
-#endif

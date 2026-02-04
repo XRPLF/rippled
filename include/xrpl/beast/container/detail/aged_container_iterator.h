@@ -1,5 +1,4 @@
-#ifndef BEAST_CONTAINER_DETAIL_AGED_CONTAINER_ITERATOR_H_INCLUDED
-#define BEAST_CONTAINER_DETAIL_AGED_CONTAINER_ITERATOR_H_INCLUDED
+#pragma once
 
 #include <iterator>
 #include <type_traits>
@@ -146,5 +145,3 @@ private:
 }  // namespace detail
 
 }  // namespace beast
-
-#endif

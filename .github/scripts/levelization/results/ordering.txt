@@ -153,6 +153,7 @@ tests.libxrpl > xrpl.json
 tests.libxrpl > xrpl.net
 xrpl.core > xrpl.basics
 xrpl.core > xrpl.json
+xrpl.core > xrpl.ledger
 xrpl.json > xrpl.basics
 xrpl.ledger > xrpl.basics
 xrpl.ledger > xrpl.protocol

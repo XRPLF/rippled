@@ -1,5 +1,4 @@
-#ifndef XRPL_NET_HTTPCLIENTSSLCONTEXT_H_INCLUDED
-#define XRPL_NET_HTTPCLIENTSSLCONTEXT_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
@@ -148,5 +147,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

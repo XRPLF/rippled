@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_READVIEW_H_INCLUDED
-#define XRPL_LEDGER_READVIEW_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/hash/uhash.h>
@@ -253,5 +252,3 @@ makeRulesGivenLedger(DigestAwareReadView const& ledger, std::unordered_set<uint2
 }  // namespace xrpl
 
 #include <xrpl/ledger/detail/ReadViewFwdRange.ipp>
-
-#endif

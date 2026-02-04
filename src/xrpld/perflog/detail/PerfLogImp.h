@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_PERFLOGIMP_H
-#define XRPL_BASICS_PERFLOGIMP_H
+#pragma once
 
 #include <xrpld/rpc/detail/Handler.h>
 
@@ -175,5 +174,3 @@ public:
 
 }  // namespace perf
 }  // namespace xrpl
-
-#endif  // XRPL_BASICS_PERFLOGIMP_H

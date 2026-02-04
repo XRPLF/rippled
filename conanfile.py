@@ -23,7 +23,6 @@ class Xrpl(ConanFile):
         "shared": [True, False],
         "static": [True, False],
         "tests": [True, False],
-        "unity": [True, False],
         "xrpld": [True, False],
     }
 
@@ -32,7 +31,7 @@ class Xrpl(ConanFile):
         "grpc/1.72.0",
         "libarchive/3.8.1",
         "nudb/2.0.9",
-        "openssl/3.5.4",
+        "openssl/3.5.5",
         "secp256k1/0.7.0",
         "soci/4.0.3",
         "zlib/1.3.1",
@@ -55,7 +54,6 @@ class Xrpl(ConanFile):
         "shared": False,
         "static": True,
         "tests": False,
-        "unity": False,
         "xrpld": False,
         "date/*:header_only": True,
         "ed25519/*:shared": False,
@@ -168,7 +166,6 @@ class Xrpl(ConanFile):
         tc.variables["rocksdb"] = self.options.rocksdb
         tc.variables["BUILD_SHARED_LIBS"] = self.options.shared
         tc.variables["static"] = self.options.static
-        tc.variables["unity"] = self.options.unity
         tc.variables["xrpld"] = self.options.xrpld
         tc.generate()
 

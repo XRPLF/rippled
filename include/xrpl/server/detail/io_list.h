@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_IO_LIST_H_INCLUDED
-#define XRPL_SERVER_IO_LIST_H_INCLUDED
+#pragma once
 
 #include <boost/container/flat_map.hpp>
 
@@ -243,5 +242,3 @@ io_list::join()
 }
 
 }  // namespace xrpl
-
-#endif

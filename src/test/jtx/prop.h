@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_PROP_H_INCLUDED
-#define XRPL_TEST_JTX_PROP_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
@@ -30,5 +29,3 @@ struct prop
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

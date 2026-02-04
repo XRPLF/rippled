@@ -1,5 +1,4 @@
-#ifndef XRPL_PEERFINDER_TUNING_H_INCLUDED
-#define XRPL_PEERFINDER_TUNING_H_INCLUDED
+#pragma once
 
 #include <array>
 
@@ -115,5 +114,3 @@ std::chrono::seconds constexpr recentAttemptDuration(60);
 
 }  // namespace PeerFinder
 }  // namespace xrpl
-
-#endif

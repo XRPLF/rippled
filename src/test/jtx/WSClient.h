@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_WSCLIENT_H_INCLUDED
-#define XRPL_TEST_WSCLIENT_H_INCLUDED
+#pragma once
 
 #include <test/jtx/AbstractClient.h>
 
@@ -34,5 +33,3 @@ makeWSClient(
 
 }  // namespace test
 }  // namespace xrpl
-
-#endif

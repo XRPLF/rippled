@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_SERVER_H_INCLUDED
-#define XRPL_SERVER_SERVER_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/PropertyStream.h>
@@ -19,5 +18,3 @@ make_Server(Handler& handler, boost::asio::io_context& io_context, beast::Journa
 }
 
 }  // namespace xrpl
-
-#endif

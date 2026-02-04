@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_NOOP_H_INCLUDED
-#define XRPL_TEST_JTX_NOOP_H_INCLUDED
+#pragma once
 
 #include <test/jtx/flags.h>
 
@@ -17,5 +16,3 @@ noop(Account const& account)
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

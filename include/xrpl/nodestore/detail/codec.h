@@ -1,5 +1,4 @@
-#ifndef XRPL_NODESTORE_CODEC_H_INCLUDED
-#define XRPL_NODESTORE_CODEC_H_INCLUDED
+#pragma once
 
 // Disable lz4 deprecation warning due to incompatibility with clang attributes
 #define LZ4_DISABLE_DEPRECATE_WARNINGS
@@ -305,5 +304,3 @@ filter_inner(void* in, std::size_t in_size)
 
 }  // namespace NodeStore
 }  // namespace xrpl
-
-#endif

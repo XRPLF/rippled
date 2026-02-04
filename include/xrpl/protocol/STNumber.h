@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STNUMBER_H_INCLUDED
-#define XRPL_PROTOCOL_STNUMBER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/Number.h>
@@ -100,5 +99,3 @@ STNumber
 numberFromJson(SField const& field, Json::Value const& value);
 
 }  // namespace xrpl
-
-#endif

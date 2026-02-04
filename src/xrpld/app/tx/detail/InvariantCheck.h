@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_TX_INVARIANTCHECK_H_INCLUDED
-#define XRPL_APP_TX_INVARIANTCHECK_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -720,5 +719,3 @@ getInvariantChecks()
 }
 
 }  // namespace xrpl
-
-#endif

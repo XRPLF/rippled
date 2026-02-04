@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_ERRORCODES_H_INCLUDED
-#define XRPL_PROTOCOL_ERRORCODES_H_INCLUDED
+#pragma once
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
@@ -324,5 +323,3 @@ std::string
 rpcErrorString(Json::Value const& jv);
 
 }  // namespace xrpl
-
-#endif

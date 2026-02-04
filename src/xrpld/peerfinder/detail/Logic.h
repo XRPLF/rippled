@@ -1,5 +1,4 @@
-#ifndef XRPL_PEERFINDER_LOGIC_H_INCLUDED
-#define XRPL_PEERFINDER_LOGIC_H_INCLUDED
+#pragma once
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Bootcache.h>
@@ -1168,5 +1167,3 @@ Logic<Checker>::onRedirects(FwdIter first, FwdIter last, boost::asio::ip::tcp::e
 
 }  // namespace PeerFinder
 }  // namespace xrpl
-
-#endif

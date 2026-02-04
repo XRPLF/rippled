@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_CHECK_H_INCLUDED
-#define XRPL_TEST_JTX_CHECK_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -42,5 +41,3 @@ using checks = owner_count<ltCHECK>;
 
 }  // namespace test
 }  // namespace xrpl
-
-#endif
