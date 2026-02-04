@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STVALIDATION_H_INCLUDED
-#define XRPL_PROTOCOL_STVALIDATION_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -245,5 +244,3 @@ STValidation::setSeen(NetClock::time_point s)
 }
 
 }  // namespace xrpl
-
-#endif

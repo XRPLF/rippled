@@ -1,5 +1,4 @@
-#ifndef BEAST_CONTAINER_AGED_CONTAINER_H_INCLUDED
-#define BEAST_CONTAINER_AGED_CONTAINER_H_INCLUDED
+#pragma once
 
 #include <type_traits>
 
@@ -12,5 +11,3 @@ struct is_aged_container : std::false_type
 };
 
 }  // namespace beast
-
-#endif

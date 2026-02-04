@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_WSSESSION_H_INCLUDED
-#define XRPL_SERVER_WSSESSION_H_INCLUDED
+#pragma once
 
 #include <xrpl/server/Handoff.h>
 #include <xrpl/server/Port.h>
@@ -125,5 +124,3 @@ struct WSSession
 };
 
 }  // namespace xrpl
-
-#endif

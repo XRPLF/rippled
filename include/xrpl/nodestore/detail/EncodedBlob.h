@@ -1,5 +1,4 @@
-#ifndef XRPL_NODESTORE_ENCODEDBLOB_H_INCLUDED
-#define XRPL_NODESTORE_ENCODEDBLOB_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/nodestore/NodeObject.h>
@@ -107,5 +106,3 @@ public:
 
 }  // namespace NodeStore
 }  // namespace xrpl
-
-#endif

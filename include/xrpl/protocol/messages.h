@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_MESSAGES_H_INCLUDED
-#define XRPL_PROTOCOL_MESSAGES_H_INCLUDED
+#pragma once
 
 // Some versions of protobuf generate code that will produce errors during
 // compilation. See https://github.com/google/protobuf/issues/549 for more
@@ -13,5 +12,3 @@
 #endif
 
 #include <xrpl/proto/xrpl.pb.h>
-
-#endif

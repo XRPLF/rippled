@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_CONSENSUS_IMPL_DISPUTEDTX_H_INCLUDED
-#define XRPL_APP_CONSENSUS_IMPL_DISPUTEDTX_H_INCLUDED
+#pragma once
 
 #include <xrpld/consensus/ConsensusParms.h>
 
@@ -327,5 +326,3 @@ DisputedTx<Tx_t, NodeID_t>::getJson() const
 }
 
 }  // namespace xrpl
-
-#endif

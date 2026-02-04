@@ -1,5 +1,4 @@
-#ifndef XRPL_CORE_TIMEKEEPER_H_INCLUDED
-#define XRPL_CORE_TIMEKEEPER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/clock/abstract_clock.h>
@@ -97,5 +96,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_LEDGERTIMING_H_INCLUDED
-#define XRPL_APP_LEDGER_LEDGERTIMING_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -137,4 +136,3 @@ effCloseTime(
 }
 
 }  // namespace xrpl
-#endif

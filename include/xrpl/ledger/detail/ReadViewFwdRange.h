@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_READVIEWFWDRANGE_H_INCLUDED
-#define XRPL_LEDGER_READVIEWFWDRANGE_H_INCLUDED
+#pragma once
 
 #include <cstddef>
 #include <memory>
@@ -129,5 +128,3 @@ protected:
 
 }  // namespace detail
 }  // namespace xrpl
-
-#endif

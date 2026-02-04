@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_TESTSUITE_H_INCLUDED
-#define XRPL_BASICS_TESTSUITE_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/unit_test.h>
 
@@ -112,5 +111,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

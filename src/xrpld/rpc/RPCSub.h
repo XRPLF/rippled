@@ -1,5 +1,4 @@
-#ifndef XRPL_NET_RPCSUB_H_INCLUDED
-#define XRPL_NET_RPCSUB_H_INCLUDED
+#pragma once
 
 #include <xrpld/rpc/InfoSub.h>
 
@@ -34,5 +33,3 @@ make_RPCSub(
     Logs& logs);
 
 }  // namespace xrpl
-
-#endif

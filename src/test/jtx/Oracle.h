@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_ORACLE_H_INCLUDED
-#define XRPL_TEST_JTX_ORACLE_H_INCLUDED
+#pragma once
 
 #include <test/jtx.h>
 
@@ -181,5 +180,3 @@ public:
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif  // XRPL_TEST_JTX_ORACLE_H_INCLUDED

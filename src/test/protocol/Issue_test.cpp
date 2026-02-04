@@ -17,14 +17,6 @@
 #define STL_SET_HAS_EMPLACE 0
 #endif
 
-#ifndef XRPL_ASSETS_ENABLE_STD_HASH
-#if BEAST_MAC || BEAST_IOS
-#define XRPL_ASSETS_ENABLE_STD_HASH 0
-#else
-#define XRPL_ASSETS_ENABLE_STD_HASH 1
-#endif
-#endif
-
 namespace xrpl {
 
 class Issue_test : public beast::unit_test::suite

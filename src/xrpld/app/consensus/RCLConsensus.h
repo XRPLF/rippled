@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_CONSENSUS_RCLCONSENSUS_H_INCLUDED
-#define XRPL_APP_CONSENSUS_RCLCONSENSUS_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/consensus/RCLCensorshipDetector.h>
 #include <xrpld/app/consensus/RCLCxLedger.h>
@@ -524,5 +523,3 @@ public:
     }
 };
 }  // namespace xrpl
-
-#endif

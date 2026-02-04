@@ -1,5 +1,4 @@
-#ifndef BEAST_MODULE_CORE_TEXT_LEXICALCAST_H_INCLUDED
-#define BEAST_MODULE_CORE_TEXT_LEXICALCAST_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -208,5 +207,3 @@ lexicalCast(In in, Out defaultValue = Out())
 }
 
 }  // namespace beast
-
-#endif

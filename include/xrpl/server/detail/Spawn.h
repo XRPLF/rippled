@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_SPAWN_H_INCLUDED
-#define XRPL_SERVER_SPAWN_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 
@@ -79,5 +78,3 @@ spawn(Ctx&& ctx, F&& func)
 }
 
 }  // namespace xrpl::util
-
-#endif
