@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_SHAMAP_H_INCLUDED
-#define XRPL_SHAMAP_SHAMAP_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/UnorderedContainers.h>
@@ -678,5 +677,3 @@ SHAMap::end() const
 }
 
 }  // namespace xrpl
-
-#endif

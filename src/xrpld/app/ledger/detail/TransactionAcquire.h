@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_TRANSACTIONACQUIRE_H_INCLUDED
-#define XRPL_APP_LEDGER_TRANSACTIONACQUIRE_H_INCLUDED
+#pragma once
 
 #include <xrpld/overlay/PeerSet.h>
 
@@ -49,5 +48,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

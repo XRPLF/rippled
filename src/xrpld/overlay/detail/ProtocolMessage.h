@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_PROTOCOLMESSAGE_H_INCLUDED
-#define XRPL_OVERLAY_PROTOCOLMESSAGE_H_INCLUDED
+#pragma once
 
 #include <xrpld/overlay/Compression.h>
 #include <xrpld/overlay/Message.h>
@@ -424,5 +423,3 @@ invokeProtocolMessage(Buffers const& buffers, Handler& handler, std::size_t& hin
 }
 
 }  // namespace xrpl
-
-#endif

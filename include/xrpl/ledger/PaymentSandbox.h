@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_PAYMENTSANDBOX_H_INCLUDED
-#define XRPL_LEDGER_PAYMENTSANDBOX_H_INCLUDED
+#pragma once
 
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/Sandbox.h>
@@ -172,5 +171,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

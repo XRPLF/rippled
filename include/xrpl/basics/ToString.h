@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_TOSTRING_H_INCLUDED
-#define XRPL_BASICS_TOSTRING_H_INCLUDED
+#pragma once
 
 #include <string>
 #include <type_traits>
@@ -44,5 +43,3 @@ to_string(char const* s)
 }
 
 }  // namespace xrpl
-
-#endif

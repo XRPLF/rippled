@@ -1,5 +1,4 @@
-#ifndef XRPL_CORE_CONFIGSECTIONS_H_INCLUDED
-#define XRPL_CORE_CONFIGSECTIONS_H_INCLUDED
+#pragma once
 
 #include <string>
 
@@ -79,5 +78,3 @@ struct ConfigSection
 #define SECTION_WORKERS "workers"
 
 }  // namespace xrpl
-
-#endif

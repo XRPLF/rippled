@@ -1,5 +1,4 @@
-#ifndef TEST_UNIT_TEST_SUITE_JOURNAL_H
-#define TEST_UNIT_TEST_SUITE_JOURNAL_H
+#pragma once
 
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -133,5 +132,3 @@ public:
 
 }  // namespace test
 }  // namespace xrpl
-
-#endif

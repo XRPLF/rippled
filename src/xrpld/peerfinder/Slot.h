@@ -1,5 +1,4 @@
-#ifndef XRPL_PEERFINDER_SLOT_H_INCLUDED
-#define XRPL_PEERFINDER_SLOT_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -61,5 +60,3 @@ public:
 
 }  // namespace PeerFinder
 }  // namespace xrpl
-
-#endif

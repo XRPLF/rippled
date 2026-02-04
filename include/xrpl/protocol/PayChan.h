@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_PAYCHAN_H_INCLUDED
-#define XRPL_PROTOCOL_PAYCHAN_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/HashPrefix.h>
@@ -17,5 +16,3 @@ serializePayChanAuthorization(Serializer& msg, uint256 const& key, XRPAmount con
 }
 
 }  // namespace xrpl
-
-#endif

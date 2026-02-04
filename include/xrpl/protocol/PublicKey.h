@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_PUBLICKEY_H_INCLUDED
-#define XRPL_PROTOCOL_PUBLICKEY_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/beast/net/IPEndpoint.h>
@@ -279,5 +278,3 @@ getOrThrow(Json::Value const& v, xrpl::SField const& field)
     Throw<JsonTypeMismatchError>(field.getJsonName(), "PublicKey");
 }
 }  // namespace Json
-
-#endif

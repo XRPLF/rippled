@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_DELETEORACLE_H_INCLUDED
-#define XRPL_TX_DELETEORACLE_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
@@ -39,5 +38,3 @@ public:
 using OracleDelete = DeleteOracle;
 
 }  // namespace xrpl
-
-#endif  // XRPL_TX_DELETEORACLE_H_INCLUDED

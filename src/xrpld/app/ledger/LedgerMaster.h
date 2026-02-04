@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_LEDGERMASTER_H_INCLUDED
-#define XRPL_APP_LEDGER_LEDGERMASTER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/AbstractFetchPackContainer.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
@@ -391,5 +390,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

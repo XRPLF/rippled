@@ -1,5 +1,4 @@
-#ifndef BEAST_ASIO_IO_LATENCY_PROBE_H_INCLUDED
-#define BEAST_ASIO_IO_LATENCY_PROBE_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -226,5 +225,3 @@ private:
 };
 
 }  // namespace beast
-
-#endif

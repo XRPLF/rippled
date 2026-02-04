@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_PREDICATES_H_INCLUDED
-#define XRPL_OVERLAY_PREDICATES_H_INCLUDED
+#pragma once
 
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Peer.h>
@@ -155,5 +154,3 @@ struct peer_in_set
 };
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_RANDOM_H_INCLUDED
-#define XRPL_BASICS_RANDOM_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/beast/xor_shift_engine.h>
@@ -174,5 +173,3 @@ rand_bool()
 /** @} */
 
 }  // namespace xrpl
-
-#endif  // XRPL_BASICS_RANDOM_H_INCLUDED

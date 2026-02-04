@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_BASICNETWORK_H_INCLUDED
-#define XRPL_TEST_CSF_BASICNETWORK_H_INCLUDED
+#pragma once
 
 #include <test/csf/Digraph.h>
 #include <test/csf/Scheduler.h>
@@ -228,5 +227,3 @@ BasicNetwork<Peer>::send(Peer const& from, Peer const& to, Function&& f)
 }  // namespace csf
 }  // namespace test
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_DATA_DATABASECON_H_INCLUDED
-#define XRPL_APP_DATA_DATABASECON_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/DBInit.h>
 #include <xrpld/core/Config.h>
@@ -234,5 +233,3 @@ DatabaseCon::Setup
 setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j = std::nullopt);
 
 }  // namespace xrpl
-
-#endif
