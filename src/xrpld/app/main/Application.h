@@ -112,8 +112,6 @@ public:
 public:
     Application();
 
-    virtual ~Application() = default;
-
     virtual bool
     setup(boost::program_options::variables_map const& options) = 0;
 
@@ -127,8 +125,6 @@ public:
     checkSigs() const = 0;
     virtual void
     checkSigs(bool) = 0;
-    virtual bool
-    isStopping() const = 0;
 
     //
     // ---
@@ -138,13 +134,8 @@ public:
     virtual std::uint64_t
     instanceID() const = 0;
 
-    virtual Logs&
-    logs() = 0;
     virtual Config&
     config() = 0;
-
-    virtual boost::asio::io_context&
-    getIOContext() = 0;
 
     virtual std::pair<PublicKey, SecretKey> const&
     nodeIdentity() = 0;
@@ -157,9 +148,6 @@ public:
 
     virtual bool
     serverOkay(std::string& reason) = 0;
-
-    virtual beast::Journal
-    journal(std::string const& name) = 0;
 
     /* Returns the number of file descriptors the application needs */
     virtual int
