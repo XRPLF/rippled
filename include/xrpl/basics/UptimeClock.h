@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_UPTIMETIMER_H_INCLUDED
-#define XRPL_BASICS_UPTIMETIMER_H_INCLUDED
+#pragma once
 
 #include <atomic>
 #include <chrono>
@@ -46,5 +45,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

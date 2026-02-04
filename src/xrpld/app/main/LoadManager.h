@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MAIN_LOADMANAGER_H_INCLUDED
-#define XRPL_APP_MAIN_LOADMANAGER_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/Journal.h>
 
@@ -95,5 +94,3 @@ std::unique_ptr<LoadManager>
 make_LoadManager(Application& app, beast::Journal journal);
 
 }  // namespace xrpl
-
-#endif

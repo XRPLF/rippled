@@ -1,5 +1,4 @@
-#ifndef XRPL_COMPRESSIONALGORITHMS_H_INCLUDED
-#define XRPL_COMPRESSIONALGORITHMS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/contract.h>
 
@@ -133,5 +132,3 @@ lz4Decompress(InputStream& in, std::size_t inSize, std::uint8_t* decompressed, s
 }  // namespace compression_algorithms
 
 }  // namespace xrpl
-
-#endif  // XRPL_COMPRESSIONALGORITHMS_H_INCLUDED

@@ -1,5 +1,4 @@
-#ifndef XRPL_RESOURCE_LOGIC_H_INCLUDED
-#define XRPL_RESOURCE_LOGIC_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
@@ -548,5 +547,3 @@ public:
 
 }  // namespace Resource
 }  // namespace xrpl
-
-#endif

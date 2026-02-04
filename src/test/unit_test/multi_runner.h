@@ -1,5 +1,4 @@
-#ifndef TEST_UNIT_TEST_MULTI_RUNNER_H
-#define TEST_UNIT_TEST_MULTI_RUNNER_H
+#pragma once
 
 #include <xrpl/beast/unit_test/global_suites.h>
 #include <xrpl/beast/unit_test/runner.h>
@@ -334,5 +333,3 @@ multi_runner_child::run_multi(Pred pred)
 
 }  // namespace test
 }  // namespace xrpl
-
-#endif

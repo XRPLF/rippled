@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_FULLBELOWCACHE_H_INCLUDED
-#define XRPL_SHAMAP_FULLBELOWCACHE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/KeyCache.h>
 #include <xrpl/basics/TaggedCache.h>
@@ -129,5 +128,3 @@ private:
 using FullBelowCache = detail::BasicFullBelowCache;
 
 }  // namespace xrpl
-
-#endif

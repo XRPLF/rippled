@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STISSUE_H_INCLUDED
-#define XRPL_PROTOCOL_STISSUE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/Asset.h>
@@ -148,5 +147,3 @@ operator<=>(STIssue const& lhs, Asset const& rhs)
 }
 
 }  // namespace xrpl
-
-#endif

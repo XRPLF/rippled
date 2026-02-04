@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_MANUALTIMEKEEPER_H_INCLUDED
-#define XRPL_TEST_MANUALTIMEKEEPER_H_INCLUDED
+#pragma once
 
 #include <xrpld/core/TimeKeeper.h>
 
@@ -31,5 +30,3 @@ public:
 
 }  // namespace test
 }  // namespace xrpl
-
-#endif

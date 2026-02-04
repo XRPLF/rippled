@@ -1,5 +1,4 @@
-#ifndef XRPL_PATH_IMPL_PATHFINDERUTILS_H_INCLUDED
-#define XRPL_PATH_IMPL_PATHFINDERUTILS_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/STAmount.h>
 
@@ -30,5 +29,3 @@ convertAllCheck(STAmount const& a)
 }
 
 }  // namespace xrpl
-
-#endif

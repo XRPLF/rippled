@@ -1,5 +1,4 @@
-#ifndef XRPL_CORE_JOBQUEUE_H_INCLUDED
-#define XRPL_CORE_JOBQUEUE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/core/ClosureCounter.h>
@@ -402,5 +401,3 @@ JobQueue::postCoro(JobType t, std::string const& name, F&& f)
 }
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_DELIVEREDAMOUNT_H_INCLUDED
-#define XRPL_RPC_DELIVEREDAMOUNT_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STAmount.h>
@@ -55,5 +54,3 @@ getDeliveredAmount(
 
 }  // namespace RPC
 }  // namespace xrpl
-
-#endif

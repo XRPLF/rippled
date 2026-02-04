@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_TER_H_INCLUDED
-#define XRPL_PROTOCOL_TER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/json_value.h>
@@ -675,5 +674,3 @@ std::optional<TER>
 transCode(std::string const& token);
 
 }  // namespace xrpl
-
-#endif

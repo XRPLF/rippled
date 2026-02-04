@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_APIVERSION_H_INCLUDED
-#define XRPL_PROTOCOL_APIVERSION_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/core/SemanticVersion.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -151,5 +150,3 @@ forAllApiVersions(Fn const& fn, Args&&... args)
 }
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_IMPL_SIGNER_ENTRIES_H_INCLUDED
-#define XRPL_TX_IMPL_SIGNER_ENTRIES_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/tx/detail/Transactor.h>  // NotTEC
 
@@ -64,5 +63,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif  // XRPL_TX_IMPL_SIGNER_ENTRIES_H_INCLUDED

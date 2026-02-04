@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_HANDSHAKE_H_INCLUDED
-#define XRPL_OVERLAY_HANDSHAKE_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
@@ -217,5 +216,3 @@ makeFeaturesResponseHeader(
     bool vpReduceRelayEnabled);
 
 }  // namespace xrpl
-
-#endif

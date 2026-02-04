@@ -1,5 +1,4 @@
-#ifndef XRPL_NET_RPCCALL_H_INCLUDED
-#define XRPL_NET_RPCCALL_H_INCLUDED
+#pragma once
 
 #include <xrpld/core/Config.h>
 
@@ -59,5 +58,3 @@ rpcClient(
     std::unordered_map<std::string, std::string> const& headers = {});
 
 }  // namespace xrpl
-
-#endif

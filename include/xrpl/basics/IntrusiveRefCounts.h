@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_INTRUSIVEREFCOUNTS_H_INCLUDED
-#define XRPL_BASICS_INTRUSIVEREFCOUNTS_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -461,4 +460,3 @@ partialDestructorFinished(T** o)
 //------------------------------------------------------------------------------
 
 }  // namespace xrpl
-#endif

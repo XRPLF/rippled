@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_PROTOCOLMESSAGE_H_INCLUDED
-#define XRPL_OVERLAY_PROTOCOLMESSAGE_H_INCLUDED
+#pragma once
 
 #include <xrpld/overlay/Compression.h>
 #include <xrpld/overlay/Message.h>
@@ -490,5 +489,3 @@ hash_append(Hasher& h, TMLedgerData const& msg)
 }
 
 }  // namespace protocol
-
-#endif

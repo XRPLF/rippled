@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_RANDOM_H_INCLUDED
-#define XRPL_TEST_CSF_RANDOM_H_INCLUDED
+#pragma once
 
 #include <random>
 #include <vector>
@@ -153,5 +152,3 @@ public:
 }  // namespace csf
 }  // namespace test
 }  // namespace xrpl
-
-#endif
