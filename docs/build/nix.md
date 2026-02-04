@@ -21,7 +21,7 @@ Please follow [the official installation instructions of nix package manager](ht
 From the root of the xrpld repository, enter the default development shell:
 
 ```bash
-nix --experimental-features='nix-command flakes' develop
+nix --experimental-features 'nix-command flakes' develop
 ```
 
 This will:
@@ -29,12 +29,12 @@ This will:
 - Download and set up all required development tools (CMake, Ninja, Conan, etc.)
 - Configure the appropriate compiler for your platform:
   - **macOS**: Apple Clang (default system compiler)
-  - **Linux**: GCC 14
+  - **Linux**: GCC 15
 
 The first time you run this command, it will take a few minutes to download and build the environment. Subsequent runs will be much faster.
 
 > [!TIP]
-> To avoid typing `--experimental-features='nix-command flakes'` every time, you can permanently enable flakes by creating `~/.config/nix/nix.conf`:
+> To avoid typing `--experimental-features 'nix-command flakes'` every time, you can permanently enable flakes by creating `~/.config/nix/nix.conf`:
 >
 > ```bash
 > mkdir -p ~/.config/nix
@@ -44,7 +44,7 @@ The first time you run this command, it will take a few minutes to download and 
 > After this, you can simply use `nix develop` instead.
 
 > [!NOTE]
-> The examples below assume you've enabled flakes in your config. If you haven't, add `--experimental-features='nix-command flakes'` after each `nix` command.
+> The examples below assume you've enabled flakes in your config. If you haven't, add `--experimental-features 'nix-command flakes'` after each `nix` command.
 
 ### Choosing a different compiler
 
@@ -65,6 +65,13 @@ nix develop .#clang19
 # Use default for your platform
 nix develop
 ```
+### Using a different shell
+
+`nix develop` opens bash by default. If you want to use another shell this could be done by adding `-c` flag. For example:
+
+```bash
+nix develop -c zsh
+```
 
 ## Building xrpld with Nix
 
@@ -81,3 +88,7 @@ Please note that there is no guarantee that binaries from conan cache will work 
 ```bash
 conan install .. --output-folder . --build '*' --settings build_type=Release
 ```
+
+## Updating `flake.lock` file
+
+To update `flake.lock` to the latest revision use `nix flake update` command.

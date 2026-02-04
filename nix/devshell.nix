@@ -20,8 +20,8 @@ let
   clang_versions = pkgs.lib.range 18 21;
 
   default_compiler = if pkgs.stdenv.isDarwin then "apple-clang" else "gcc";
-  default_gcc_version = 14;
-  default_clang_version = 18;
+  default_gcc_version = pkgs.lib.last gcc_versions;
+  default_clang_version = pkgs.lib.last clang_versions;
 
   strToCompilerEnv =
     compiler: version:
