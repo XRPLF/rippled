@@ -8,20 +8,11 @@ std::unique_ptr<DatabaseCon>
 makeWasmTraceDB(DatabaseCon::Setup const& setup, beast::Journal j)
 {
     // WASM debug log database
-    return std::make_unique<DatabaseCon>(
-        setup,
-        WasmTraceDBName,
-        std::array<std::string, 0>(),
-        WasmTraceDBInit,
-        j);
+    return std::make_unique<DatabaseCon>(setup, WasmTraceDBName, std::array<std::string, 0>(), WasmTraceDBInit, j);
 }
 
 void
-addWasmTraceLogs(
-    soci::session& session,
-    TxID const& txId,
-    Keylet const& keylet,
-    std::vector<std::string> const& data)
+addWasmTraceLogs(soci::session& session, TxID const& txId, Keylet const& keylet, std::vector<std::string> const& data)
 {
     soci::transaction tr(session);
 

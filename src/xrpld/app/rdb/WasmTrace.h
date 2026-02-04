@@ -14,11 +14,7 @@ std::unique_ptr<DatabaseCon>
 makeWasmTraceDB(DatabaseCon::Setup const& setup, beast::Journal j);
 
 void
-addWasmTraceLogs(
-    soci::session& session,
-    TxID const& txId,
-    Keylet const& keylet,
-    std::vector<std::string> const& data);
+addWasmTraceLogs(soci::session& session, TxID const& txId, Keylet const& keylet, std::vector<std::string> const& data);
 
 std::map<uint256, std::vector<std::string>>
 getWasmTraceByTxID(soci::session& session, TxID const& txId);
