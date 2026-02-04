@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_AMMHELPERS_H_INCLUDED
-#define XRPL_APP_MISC_AMMHELPERS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
@@ -688,5 +687,3 @@ Number
 adjustFracByTokens(Rules const& rules, STAmount const& lptAMMBalance, STAmount const& tokens, Number const& frac);
 
 }  // namespace xrpl
-
-#endif  // XRPL_APP_MISC_AMMHELPERS_H_INCLUDED

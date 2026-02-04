@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_KNOWNFORMATS_H_INCLUDED
-#define XRPL_PROTOCOL_KNOWNFORMATS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/type_name.h>
@@ -180,5 +179,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

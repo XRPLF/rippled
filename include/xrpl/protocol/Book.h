@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_BOOK_H_INCLUDED
-#define XRPL_PROTOCOL_BOOK_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/base_uint.h>
@@ -171,5 +170,3 @@ struct hash<xrpl::Book> : std::hash<xrpl::Book>
 };
 
 }  // namespace boost
-
-#endif

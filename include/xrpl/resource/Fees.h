@@ -1,5 +1,4 @@
-#ifndef XRPL_RESOURCE_FEES_H_INCLUDED
-#define XRPL_RESOURCE_FEES_H_INCLUDED
+#pragma once
 
 #include <xrpl/resource/Charge.h>
 
@@ -41,5 +40,3 @@ extern Charge const feeDrop;              // The cost of being dropped for
 
 }  // namespace Resource
 }  // namespace xrpl
-
-#endif

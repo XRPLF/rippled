@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STINTEGER_H_INCLUDED
-#define XRPL_PROTOCOL_STINTEGER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/STBase.h>
@@ -141,5 +140,3 @@ inline STInteger<Integer>::operator Integer() const
 }
 
 }  // namespace xrpl
-
-#endif

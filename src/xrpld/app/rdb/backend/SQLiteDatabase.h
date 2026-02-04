@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_RDB_BACKEND_SQLITEDATABASE_H_INCLUDED
-#define XRPL_APP_RDB_BACKEND_SQLITEDATABASE_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/rdb/RelationalDatabase.h>
 
@@ -285,5 +284,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

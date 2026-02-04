@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_INTRUSIVEPOINTER_IPP_INCLUDED
-#define XRPL_BASICS_INTRUSIVEPOINTER_IPP_INCLUDED
+#pragma once
 
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/IntrusiveRefCounts.h>
@@ -703,4 +702,3 @@ SharedWeakUnion<T>::unsafeReleaseNoStore()
 }
 
 }  // namespace xrpl
-#endif

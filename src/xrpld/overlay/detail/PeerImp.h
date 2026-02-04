@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_PEERIMP_H_INCLUDED
-#define XRPL_OVERLAY_PEERIMP_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/ledger/detail/LedgerReplayMsgHandler.h>
@@ -864,5 +863,3 @@ PeerImp::sendEndpoints(FwdIt first, FwdIt last)
 }
 
 }  // namespace xrpl
-
-#endif

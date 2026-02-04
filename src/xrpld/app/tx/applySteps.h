@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_APPLYSTEPS_H_INCLUDED
-#define XRPL_TX_APPLYSTEPS_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
@@ -337,5 +336,3 @@ ApplyResult
 doApply(PreclaimResult const& preclaimResult, Application& app, OpenView& view);
 
 }  // namespace xrpl
-
-#endif

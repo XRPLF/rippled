@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_LEDGER_H_INCLUDED
-#define XRPL_APP_LEDGER_LEDGER_H_INCLUDED
+#pragma once
 
 #include <xrpld/core/Config.h>
 #include <xrpld/core/TimeKeeper.h>
@@ -444,5 +443,3 @@ uint256
 calculateLedgerHash(LedgerHeader const& info);
 
 }  // namespace xrpl
-
-#endif

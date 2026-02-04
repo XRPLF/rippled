@@ -1,5 +1,4 @@
-#ifndef BEAST_INSIGHT_STATSDCOLLECTOR_H_INCLUDED
-#define BEAST_INSIGHT_STATSDCOLLECTOR_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/net/IPEndpoint.h>
@@ -28,5 +27,3 @@ public:
 
 }  // namespace insight
 }  // namespace beast
-
-#endif

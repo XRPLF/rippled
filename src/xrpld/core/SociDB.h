@@ -1,5 +1,4 @@
-#ifndef XRPL_SOCIDB_H_INCLUDED
-#define XRPL_SOCIDB_H_INCLUDED
+#pragma once
 
 /** An embedded database wrapper with an intuitive, type-safe interface.
 
@@ -118,6 +117,4 @@ makeCheckpointer(std::uintptr_t id, std::weak_ptr<soci::session>, JobQueue&, Log
 
 #if defined(__clang__)
 #pragma clang diagnostic pop
-#endif
-
 #endif

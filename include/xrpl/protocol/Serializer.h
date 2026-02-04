@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_SERIALIZER_H_INCLUDED
-#define XRPL_PROTOCOL_SERIALIZER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Buffer.h>
@@ -447,5 +446,3 @@ SerialIter::getBitString()
 }
 
 }  // namespace xrpl
-
-#endif

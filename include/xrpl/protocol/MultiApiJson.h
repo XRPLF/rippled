@@ -1,5 +1,4 @@
-#ifndef XRPL_JSON_MULTIAPIJSON_H_INCLUDED
-#define XRPL_JSON_MULTIAPIJSON_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
@@ -173,5 +172,3 @@ struct MultiApiJson
 using MultiApiJson = detail::MultiApiJson<RPC::apiMinimumSupportedVersion, RPC::apiMaximumValidVersion>;
 
 }  // namespace xrpl
-
-#endif

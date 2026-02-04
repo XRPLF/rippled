@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_NFTTOKENMINT_H_INCLUDED
-#define XRPL_TX_NFTTOKENMINT_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/app/tx/detail/Transactor.h>
@@ -43,5 +42,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

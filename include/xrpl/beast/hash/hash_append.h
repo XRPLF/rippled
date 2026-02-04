@@ -1,5 +1,4 @@
-#ifndef BEAST_HASH_HASH_APPEND_H_INCLUDED
-#define BEAST_HASH_HASH_APPEND_H_INCLUDED
+#pragma once
 
 #include <boost/container/flat_set.hpp>
 #include <boost/endian/conversion.hpp>
@@ -440,5 +439,3 @@ hash_append(HashAlgorithm& h, std::error_code const& ec)
 }
 
 }  // namespace beast
-
-#endif

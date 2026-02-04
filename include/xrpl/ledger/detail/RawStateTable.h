@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_RAWSTATETABLE_H_INCLUDED
-#define XRPL_LEDGER_RAWSTATETABLE_H_INCLUDED
+#pragma once
 
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/ReadView.h>
@@ -109,5 +108,3 @@ private:
 
 }  // namespace detail
 }  // namespace xrpl
-
-#endif

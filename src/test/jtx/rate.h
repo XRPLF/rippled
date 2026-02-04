@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_RATE_H_INCLUDED
-#define XRPL_TEST_JTX_RATE_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 
@@ -16,5 +15,3 @@ rate(Account const& account, double multiplier);
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif
