@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_HANDLERS_GETCOUNTS_H_INCLUDED
-#define XRPL_RPC_HANDLERS_GETCOUNTS_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
 
@@ -9,5 +8,3 @@ Json::Value
 getCountsJson(Application& app, int minObjectCount);
 
 }
-
-#endif

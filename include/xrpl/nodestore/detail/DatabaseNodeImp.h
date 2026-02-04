@@ -1,5 +1,4 @@
-#ifndef XRPL_NODESTORE_DATABASENODEIMP_H_INCLUDED
-#define XRPL_NODESTORE_DATABASENODEIMP_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/chrono.h>
@@ -94,5 +93,3 @@ private:
 
 }  // namespace NodeStore
 }  // namespace xrpl
-
-#endif

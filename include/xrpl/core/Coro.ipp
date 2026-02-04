@@ -1,5 +1,4 @@
-#ifndef XRPL_CORE_COROINL_H_INCLUDED
-#define XRPL_CORE_COROINL_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/ByteUtilities.h>
 
@@ -120,5 +119,3 @@ JobQueue::Coro::join()
 }
 
 }  // namespace xrpl
-
-#endif

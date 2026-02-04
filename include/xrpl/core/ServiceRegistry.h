@@ -1,5 +1,4 @@
-#ifndef XRPL_CORE_SERVICEREGISTRY_H_INCLUDED
-#define XRPL_CORE_SERVICEREGISTRY_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/SHAMapHash.h>
@@ -198,5 +197,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

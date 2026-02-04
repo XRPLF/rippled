@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_DEPOSIT_H_INCLUDED
-#define XRPL_TEST_JTX_DEPOSIT_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -59,5 +58,3 @@ unauthCredentials(jtx::Account const& account, std::vector<AuthorizeCredentials>
 
 }  // namespace test
 }  // namespace xrpl
-
-#endif

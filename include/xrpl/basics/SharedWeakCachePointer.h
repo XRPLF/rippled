@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_SHAREDWEAKCACHEPOINTER_H_INCLUDED
-#define XRPL_BASICS_SHAREDWEAKCACHEPOINTER_H_INCLUDED
+#pragma once
 
 #include <memory>
 #include <variant>
@@ -113,4 +112,3 @@ private:
     std::variant<std::shared_ptr<T>, std::weak_ptr<T>> combo_;
 };
 }  // namespace xrpl
-#endif

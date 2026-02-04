@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_PEER_H_INCLUDED
-#define XRPL_OVERLAY_PEER_H_INCLUDED
+#pragma once
 
 #include <xrpld/overlay/Message.h>
 
@@ -120,5 +119,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

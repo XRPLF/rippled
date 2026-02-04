@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_ESCROW_H_INCLUDED
-#define XRPL_TEST_JTX_ESCROW_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -86,5 +85,3 @@ auto const fulfillment = JTxFieldWrapper<blobField>(sfFulfillment);
 
 }  // namespace test
 }  // namespace xrpl
-
-#endif

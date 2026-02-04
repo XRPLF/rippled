@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_HANDLER_H_INCLUDED
-#define XRPL_RPC_HANDLER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/NetworkOPs.h>
@@ -112,5 +111,3 @@ conditionMet(Condition condition_required, T& context)
 
 }  // namespace RPC
 }  // namespace xrpl
-
-#endif

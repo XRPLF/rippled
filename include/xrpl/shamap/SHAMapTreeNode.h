@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_SHAMAPTREENODE_H_INCLUDED
-#define XRPL_SHAMAP_SHAMAPTREENODE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/IntrusiveRefCounts.h>
@@ -168,5 +167,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

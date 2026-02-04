@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STLEDGERENTRY_H_INCLUDED
-#define XRPL_PROTOCOL_STLEDGERENTRY_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/STObject.h>
@@ -103,5 +102,3 @@ STLedgerEntry::getType() const
 }
 
 }  // namespace xrpl
-
-#endif

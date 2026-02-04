@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_STRINGUTILITIES_H_INCLUDED
-#define XRPL_BASICS_STRINGUTILITIES_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/strHex.h>
@@ -132,5 +131,3 @@ bool
 isProperlyFormedTomlDomain(std::string_view domain);
 
 }  // namespace xrpl
-
-#endif

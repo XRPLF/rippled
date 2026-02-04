@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_JSON_H_INCLUDED
-#define XRPL_TEST_JTX_JSON_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
@@ -41,5 +40,3 @@ public:
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

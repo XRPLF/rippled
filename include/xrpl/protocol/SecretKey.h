@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_SECRETKEY_H_INCLUDED
-#define XRPL_PROTOCOL_SECRETKEY_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
@@ -162,5 +161,3 @@ sign(KeyType type, SecretKey const& sk, Slice const& message)
 /** @} */
 
 }  // namespace xrpl
-
-#endif

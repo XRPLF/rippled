@@ -1,5 +1,4 @@
-#ifndef XRPL_WEBSOCKET_AUTOSOCKET_AUTOSOCKET_H_INCLUDED
-#define XRPL_WEBSOCKET_AUTOSOCKET_AUTOSOCKET_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
@@ -268,5 +267,3 @@ private:
     std::vector<char> mBuffer;
     beast::Journal j_;
 };
-
-#endif

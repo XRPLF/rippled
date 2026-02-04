@@ -1,5 +1,4 @@
-#ifndef BEAST_HASH_UHASH_H_INCLUDED
-#define BEAST_HASH_UHASH_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/beast/hash/xxhasher.h>
@@ -25,5 +24,3 @@ struct uhash
 };
 
 }  // namespace beast
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_INBOUNDTRANSACTIONS_H_INCLUDED
-#define XRPL_APP_LEDGER_INBOUNDTRANSACTIONS_H_INCLUDED
+#pragma once
 
 #include <xrpld/overlay/Peer.h>
 
@@ -73,5 +72,3 @@ make_InboundTransactions(
     std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet);
 
 }  // namespace xrpl
-
-#endif

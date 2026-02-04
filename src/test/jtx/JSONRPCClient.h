@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_HTTPCLIENT_H_INCLUDED
-#define XRPL_TEST_HTTPCLIENT_H_INCLUDED
+#pragma once
 
 #include <test/jtx/AbstractClient.h>
 
@@ -16,5 +15,3 @@ makeJSONRPCClient(Config const& cfg, unsigned rpc_version = 2);
 
 }  // namespace test
 }  // namespace xrpl
-
-#endif

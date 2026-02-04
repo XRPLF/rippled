@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_PROPOSAL_H_INCLUDED
-#define XRPL_TEST_CSF_PROPOSAL_H_INCLUDED
+#pragma once
 
 #include <test/csf/Tx.h>
 #include <test/csf/Validation.h>
@@ -18,5 +17,3 @@ using Proposal = ConsensusProposal<PeerID, Ledger::ID, TxSet::ID>;
 }  // namespace csf
 }  // namespace test
 }  // namespace xrpl
-
-#endif

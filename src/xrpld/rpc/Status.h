@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_STATUS_H_INCLUDED
-#define XRPL_RPC_STATUS_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -130,5 +129,3 @@ private:
 
 }  // namespace RPC
 }  // namespace xrpl
-
-#endif

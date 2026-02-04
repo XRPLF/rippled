@@ -1,5 +1,4 @@
-#ifndef XRPL_TXQ_H_INCLUDED
-#define XRPL_TXQ_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/tx/applySteps.h>
 
@@ -825,5 +824,3 @@ toFeeLevel(XRPAmount const& drops, XRPAmount const& baseFee)
 }
 
 }  // namespace xrpl
-
-#endif
