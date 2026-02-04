@@ -206,7 +206,10 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         # Enable unity build for Ubuntu Jammy using GCC 12 in Debug on
         # linux/amd64.
         if (
-            f"{os['distro_name']}-{os['distro_version']}" == "ubuntu-jammy"
+            (
+                f"{os['distro_name']}-{os['distro_version']}" == "ubuntu-jammy"
+                or os["distro_name"] in ["macos", "windows"]
+            )
             and f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-12"
             and build_type == "Debug"
             and architecture["platform"] == "linux/amd64"
