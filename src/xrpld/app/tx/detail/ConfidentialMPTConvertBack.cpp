@@ -74,8 +74,7 @@ verifyProofs(STTx const& tx, std::shared_ptr<SLE const> const& issuance, std::sh
     }
 
     // Use a pointer to parse each proof component
-    Buffer zkps = Buffer(tx[sfZKProof].data(), tx[sfZKProof].size());
-    std::uint8_t* ptr = zkps.data();
+    std::uint8_t const* ptr = reinterpret_cast<std::uint8_t const*>(tx[sfZKProof].data());
 
     // verify el gamal pedersen linkage
     {
