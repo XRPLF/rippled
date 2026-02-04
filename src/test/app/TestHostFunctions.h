@@ -35,7 +35,7 @@ public:
         return rt_;
     }
 
-    Expected<std::int32_t, HostFunctionError>
+    Expected<std::uint32_t, HostFunctionError>
     getLedgerSqn() override
     {
         return env_.current()->seq();
@@ -70,13 +70,13 @@ public:
         return rt_;
     }
 
-    Expected<std::int32_t, HostFunctionError>
+    Expected<std::uint32_t, HostFunctionError>
     getLedgerSqn() override
     {
         return 12345;
     }
 
-    Expected<std::int32_t, HostFunctionError>
+    Expected<std::uint32_t, HostFunctionError>
     getParentLedgerTime() override
     {
         return 67890;
@@ -88,7 +88,7 @@ public:
         return env_.current()->header().parentHash;
     }
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::uint32_t, HostFunctionError>
     getBaseFee() override
     {
         return 10;
@@ -295,6 +295,15 @@ public:
         if (issue1.holds<MPTIssue>() || issue2.holds<MPTIssue>())
             return Unexpected(HostFunctionError::INVALID_PARAMS);
         auto const keylet = keylet::amm(issue1, issue2);
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, HostFunctionError>
+    checkKeylet(AccountID const& account, std::uint32_t seq) override
+    {
+        if (!account)
+            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+        auto const keylet = keylet::check(account, seq);
         return Bytes{keylet.key.begin(), keylet.key.end()};
     }
 
@@ -538,22 +547,16 @@ struct PerfHostFunctions : public TestHostFunctions
     {
     }
 
-    Expected<std::int32_t, HostFunctionError>
+    Expected<std::uint32_t, HostFunctionError>
     getLedgerSqn() override
     {
-        auto seq = env_.current()->seq();
-        if (seq > std::numeric_limits<int32_t>::max())
-            return Unexpected(HostFunctionError::INTERNAL);  // LCOV_EXCL_LINE
-        return static_cast<int32_t>(seq);
+        return env_.current()->seq();
     }
 
-    Expected<std::int32_t, HostFunctionError>
+    Expected<std::uint32_t, HostFunctionError>
     getParentLedgerTime() override
     {
-        auto time = env_.current()->parentCloseTime().time_since_epoch().count();
-        if (time > std::numeric_limits<int32_t>::max())
-            return Unexpected(HostFunctionError::INTERNAL);
-        return static_cast<int32_t>(time);
+        return env_.current()->parentCloseTime().time_since_epoch().count();
     }
 
     Expected<Hash, HostFunctionError>
@@ -562,13 +565,10 @@ struct PerfHostFunctions : public TestHostFunctions
         return env_.current()->header().parentHash;
     }
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::uint32_t, HostFunctionError>
     getBaseFee() override
     {
-        auto fee = env_.current()->fees().base.drops();
-        if (fee > std::numeric_limits<int32_t>::max())
-            return Unexpected(HostFunctionError::INTERNAL);
-        return static_cast<int32_t>(fee);
+        return env_.current()->fees().base.drops();
     }
 
     Expected<int32_t, HostFunctionError>

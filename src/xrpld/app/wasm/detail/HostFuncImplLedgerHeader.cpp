@@ -9,22 +9,16 @@ namespace xrpl {
 // SECTION: LEDGER HEADER FUNCTIONS
 // =========================================================
 
-Expected<std::int32_t, HostFunctionError>
+Expected<std::uint32_t, HostFunctionError>
 WasmHostFunctionsImpl::getLedgerSqn()
 {
-    auto seq = ctx.view().seq();
-    if (seq > std::numeric_limits<int32_t>::max())
-        return Unexpected(HostFunctionError::INTERNAL);  // LCOV_EXCL_LINE
-    return static_cast<int32_t>(seq);
+    return ctx.view().seq();
 }
 
-Expected<std::int32_t, HostFunctionError>
+Expected<std::uint32_t, HostFunctionError>
 WasmHostFunctionsImpl::getParentLedgerTime()
 {
-    auto time = ctx.view().parentCloseTime().time_since_epoch().count();
-    if (time > std::numeric_limits<int32_t>::max())
-        return Unexpected(HostFunctionError::INTERNAL);
-    return static_cast<int32_t>(time);
+    return ctx.view().parentCloseTime().time_since_epoch().count();
 }
 
 Expected<Hash, HostFunctionError>
@@ -33,13 +27,10 @@ WasmHostFunctionsImpl::getParentLedgerHash()
     return ctx.view().header().parentHash;
 }
 
-Expected<int32_t, HostFunctionError>
+Expected<std::uint32_t, HostFunctionError>
 WasmHostFunctionsImpl::getBaseFee()
 {
-    auto fee = ctx.view().fees().base.drops();
-    if (fee > std::numeric_limits<int32_t>::max())
-        return Unexpected(HostFunctionError::INTERNAL);
-    return static_cast<int32_t>(fee);
+    return ctx.view().fees().base.drops();
 }
 
 Expected<int32_t, HostFunctionError>

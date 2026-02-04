@@ -91,16 +91,16 @@ public:
         return logs_;
     }
 
-    Expected<std::int32_t, HostFunctionError>
+    Expected<std::uint32_t, HostFunctionError>
     getLedgerSqn() override;
 
-    Expected<std::int32_t, HostFunctionError>
+    Expected<std::uint32_t, HostFunctionError>
     getParentLedgerTime() override;
 
     Expected<Hash, HostFunctionError>
     getParentLedgerHash() override;
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::uint32_t, HostFunctionError>
     getBaseFee() override;
 
     Expected<int32_t, HostFunctionError>
