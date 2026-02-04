@@ -112,7 +112,8 @@ MPTTester::MPTTester(MPTInitDef const& arg)
 {
 }
 
-MPTTester::operator MPT() const
+MPTTester::
+operator MPT() const
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
@@ -624,7 +625,8 @@ MPTTester::mpt(std::int64_t amount) const
     return xrpl::test::jtx::MPT(issuer_.name(), *id_)(amount);
 }
 
-MPTTester::operator Asset() const
+MPTTester::
+operator Asset() const
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
@@ -871,15 +873,52 @@ MPTTester::getConvertBackProof(
         return Buffer{};
 
     auto const holderPubKey = getPubKey(holder);
-    if (holderPubKey)
-    {
-        Buffer const pedersenProof = getBalanceLinkageProof(holder, contextHash, *holderPubKey, pcParams);
 
-        // todo: incoporate range proof
-        return pedersenProof;
+    if (!holderPubKey)
+        return Buffer{};
+
+    Buffer const pedersenProof = getBalanceLinkageProof(holder, contextHash, *holderPubKey, pcParams);
+
+    // Generate bulletproof for the remaining balance (balance - amount)
+    // The remaining balance must be non-negative
+    std::uint64_t const remainingBalance = pcParams.amt - amount;
+
+    // Get the H generator (pk_base for bulletproof)
+    secp256k1_pubkey pk_base;
+    if (secp256k1_mpt_get_h_generator(secp256k1Context(), &pk_base) != 1)
+        return Buffer{};
+
+    // Generate the bulletproof
+    // m = 1 (single commitment for the remaining balance)
+    Buffer bulletproof(ecSingleBulletproofLength);
+    // proofLen is an in/out parameter; initialize to a safe upper bound
+    std::size_t proofLen = 4096;
+
+    // The blinding factor for the remaining commitment is the same as the
+    // original balance commitment's blinding factor
+    if (secp256k1_bulletproof_prove_agg(
+            secp256k1Context(),
+            bulletproof.data(),
+            &proofLen,
+            &remainingBalance,
+            pcParams.blindingFactor.data(),
+            1,  // m = 1 commitment
+            &pk_base,
+            contextHash.data()) != 1)
+    {
+        return Buffer{};
     }
 
-    return Buffer{};
+    // Verify the proof length matches expected size for m = 1
+    if (proofLen != ecSingleBulletproofLength)
+        return Buffer{};
+
+    // Combine pedersen proof and bulletproof
+    Buffer combinedProof(pedersenProof.size() + proofLen);
+    std::memcpy(combinedProof.data(), pedersenProof.data(), pedersenProof.size());
+    std::memcpy(combinedProof.data() + pedersenProof.size(), bulletproof.data(), proofLen);
+
+    return combinedProof;
 }
 
 std::optional<Buffer>
