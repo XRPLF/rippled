@@ -2038,7 +2038,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         testcase("testFixAmendmentEnabled");
         Env env{*this};
 
-        BEAST_EXPECT(env.enabled(fixLendingProtocolv1_1));
+        BEAST_EXPECT(env.enabled(fixLendingProtocolV1_1));
     }
 
     // Exercises canApplyToBrokerCover (fixCleanup3_2_0): a deposit, withdraw,
