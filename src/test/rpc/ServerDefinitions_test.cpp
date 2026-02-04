@@ -1,5 +1,6 @@
 #include <test/jtx.h>
 
+#include <xrpl/SOtemplate.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/jss.h>
 
@@ -403,7 +404,7 @@ public:
     void
     run() override
     {
-        testServerDefinitions();  // TODO remove this comment later
+        testServerDefinitions();
     }
 };
 
