@@ -569,7 +569,7 @@ public:
     /** @{ */
     template <class... FN>
     Env&
-    operator()(WithSourceLocation<Json::Value> jv, FN const&... fN)
+    apply(WithSourceLocation<Json::Value> jv, FN const&... fN)
     {
         submit(jt(std::move(jv.value), fN...), jv.loc);
         return *this;
@@ -577,10 +577,24 @@ public:
 
     template <class... FN>
     Env&
-    operator()(WithSourceLocation<JTx> jv, FN const&... fN)
+    apply(WithSourceLocation<JTx> jv, FN const&... fN)
     {
         submit(jt(std::move(jv.value), fN...), jv.loc);
         return *this;
+    }
+
+    template <class... FN>
+    Env&
+    operator()(WithSourceLocation<Json::Value> jv, FN const&... fN)
+    {
+        return apply(std::move(jv), fN...);
+    }
+
+    template <class... FN>
+    Env&
+    operator()(WithSourceLocation<JTx> jv, FN const&... fN)
+    {
+        return apply(std::move(jv), fN...);
     }
     /** @} */
 
