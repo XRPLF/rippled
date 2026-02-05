@@ -37,36 +37,29 @@
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
-#include <variant>
 #include <vector>
 
 namespace xrpl {
 namespace test {
 namespace jtx {
 
-class Env;  // Forward declaration
-
 /** Wrapper that captures source_location when implicitly constructed.
     This solves the problem of combining std::source_location with variadic
     templates. The source_location default argument is evaluated at the
     call site when the wrapper is constructed via implicit conversion.
 
-    This is a non-template struct that uses std::variant to hold either
-    Json::Value or JTx, allowing implicit conversion without template
-    argument deduction issues.
+    This is a template struct that holds the value directly, allowing implicit
+    conversion without template argument deduction issues via CTAD.
 */
+template <class T>
 struct WithSourceLoc
 {
-    std::variant<Json::Value, JTx> value;
+    T value;
     std::source_location loc;
 
-    // Non-explicit constructors allow implicit conversion.
+    // Non-explicit constructor allows implicit conversion.
     // The default argument for loc is evaluated at the call site.
-    WithSourceLoc(Json::Value v, std::source_location l = std::source_location::current()) : value(std::move(v)), loc(l)
-    {
-    }
-
-    WithSourceLoc(JTx v, std::source_location l = std::source_location::current()) : value(std::move(v)), loc(l)
+    WithSourceLoc(T v, std::source_location l = std::source_location::current()) : value(std::move(v)), loc(l)
     {
     }
 };
@@ -576,17 +569,17 @@ public:
     /** @{ */
     template <class... FN>
     Env&
-    apply(WithSourceLoc jv, FN const&... fN)
+    operator()(WithSourceLoc<Json::Value> jv, FN const&... fN)
     {
-        std::visit([&](auto&& v) { submit(jt(std::move(v), fN...), jv.loc); }, std::move(jv.value));
+        submit(jt(std::move(jv.value), fN...), jv.loc);
         return *this;
     }
 
     template <class... FN>
     Env&
-    operator()(WithSourceLoc jv, FN const&... fN)
+    operator()(WithSourceLoc<JTx> jv, FN const&... fN)
     {
-        std::visit([&](auto&& v) { submit(jt(std::move(v), fN...), jv.loc); }, std::move(jv.value));
+        submit(jt(std::move(jv.value), fN...), jv.loc);
         return *this;
     }
     /** @} */

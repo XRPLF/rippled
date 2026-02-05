@@ -401,19 +401,19 @@ void
 Env::postconditions(JTx const& jt, ParsedResult const& parsed, Json::Value const& jr, std::source_location const& loc)
 {
     auto const line = jt.testLine ? " (" + to_string(*jt.testLine) + ")" : "";
-    auto const file = std::string("(") + loc.file_name() + ":" + to_string(loc.line()) + ")";
+    auto const locStr = std::string("(") + loc.file_name() + ":" + to_string(loc.line()) + ")";
     bool bad = !test.expect(parsed.ter, "apply: No ter result!" + line);
     bad =
         (jt.ter && parsed.ter &&
          !test.expect(
              *parsed.ter == *jt.ter,
-             "apply " + file + ": Got " + transToken(*parsed.ter) + " (" + transHuman(*parsed.ter) + "); Expected " +
+             "apply " + locStr + ": Got " + transToken(*parsed.ter) + " (" + transHuman(*parsed.ter) + "); Expected " +
                  transToken(*jt.ter) + " (" + transHuman(*jt.ter) + ")" + line));
     using namespace std::string_literals;
     bad = (jt.rpcCode &&
            !test.expect(
                parsed.rpcCode == jt.rpcCode->first && parsed.rpcMessage == jt.rpcCode->second,
-               "apply " + file + ": Got RPC result "s +
+               "apply " + locStr + ": Got RPC result "s +
                    (parsed.rpcCode ? RPC::get_error_info(*parsed.rpcCode).token.c_str() : "NO RESULT") + " (" +
                    parsed.rpcMessage + "); Expected " + RPC::get_error_info(jt.rpcCode->first).token.c_str() + " (" +
                    jt.rpcCode->second + ")" + line)) ||
@@ -421,13 +421,14 @@ Env::postconditions(JTx const& jt, ParsedResult const& parsed, Json::Value const
     // If we have an rpcCode (just checked), then the rpcException check is
     // optional - the 'error' field may not be defined, but if it is, it must
     // match rpcError.
-    bad = (jt.rpcException &&
-           !test.expect(
-               (jt.rpcCode && parsed.rpcError.empty()) ||
-                   (parsed.rpcError == jt.rpcException->first &&
-                    (!jt.rpcException->second || parsed.rpcException == *jt.rpcException->second)),
-               "apply " + file + ": Got RPC result "s + parsed.rpcError + " (" + parsed.rpcException + "); Expected " +
-                   jt.rpcException->first + " (" + jt.rpcException->second.value_or("n/a") + ")" + line)) ||
+    bad =
+        (jt.rpcException &&
+         !test.expect(
+             (jt.rpcCode && parsed.rpcError.empty()) ||
+                 (parsed.rpcError == jt.rpcException->first &&
+                  (!jt.rpcException->second || parsed.rpcException == *jt.rpcException->second)),
+             "apply " + locStr + ": Got RPC result "s + parsed.rpcError + " (" + parsed.rpcException + "); Expected " +
+                 jt.rpcException->first + " (" + jt.rpcException->second.value_or("n/a") + ")" + line)) ||
         bad;
     if (bad)
     {
