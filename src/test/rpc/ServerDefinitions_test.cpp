@@ -1,7 +1,7 @@
 #include <test/jtx.h>
 
-#include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/jss.h>
 
 namespace xrpl {
