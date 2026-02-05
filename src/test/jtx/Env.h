@@ -52,14 +52,14 @@ namespace jtx {
     conversion without template argument deduction issues via CTAD.
 */
 template <class T>
-struct WithSourceLoc
+struct WithSourceLocation
 {
     T value;
     std::source_location loc;
 
     // Non-explicit constructor allows implicit conversion.
     // The default argument for loc is evaluated at the call site.
-    WithSourceLoc(T v, std::source_location l = std::source_location::current()) : value(std::move(v)), loc(l)
+    WithSourceLocation(T v, std::source_location l = std::source_location::current()) : value(std::move(v)), loc(l)
     {
     }
 };
@@ -569,7 +569,7 @@ public:
     /** @{ */
     template <class... FN>
     Env&
-    operator()(WithSourceLoc<Json::Value> jv, FN const&... fN)
+    operator()(WithSourceLocation<Json::Value> jv, FN const&... fN)
     {
         submit(jt(std::move(jv.value), fN...), jv.loc);
         return *this;
@@ -577,7 +577,7 @@ public:
 
     template <class... FN>
     Env&
-    operator()(WithSourceLoc<JTx> jv, FN const&... fN)
+    operator()(WithSourceLocation<JTx> jv, FN const&... fN)
     {
         submit(jt(std::move(jv.value), fN...), jv.loc);
         return *this;
