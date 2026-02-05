@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_INTRUSIVEPOINTER_H_INCLUDED
-#define XRPL_BASICS_INTRUSIVEPOINTER_H_INCLUDED
+#pragma once
 
 #include <concepts>
 #include <cstdint>
@@ -485,4 +484,3 @@ dynamic_pointer_cast(TT const& v)
 }
 }  // namespace intr_ptr
 }  // namespace xrpl
-#endif

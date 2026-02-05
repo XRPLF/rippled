@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_LEDGERREPLAY_H_INCLUDED
-#define XRPL_APP_LEDGER_LEDGERREPLAY_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 
@@ -51,5 +50,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

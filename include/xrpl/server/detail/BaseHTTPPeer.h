@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_BASEHTTPPEER_H_INCLUDED
-#define XRPL_SERVER_BASEHTTPPEER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
@@ -457,5 +456,3 @@ BaseHTTPPeer<Handler, Impl>::close(bool graceful)
 }
 
 }  // namespace xrpl
-
-#endif

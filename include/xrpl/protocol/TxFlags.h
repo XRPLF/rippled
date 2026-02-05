@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_TXFLAGS_H_INCLUDED
-#define XRPL_PROTOCOL_TXFLAGS_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/LedgerFormats.h>
 
@@ -332,5 +331,3 @@ ACCOUNTSET_FLAGS(ACCOUNTSET_FLAG_TO_VALUE)
 static std::map<std::string, int> const asfFlagMap = {ACCOUNTSET_FLAGS(ACCOUNTSET_FLAG_TO_MAP)};
 
 }  // namespace xrpl
-
-#endif

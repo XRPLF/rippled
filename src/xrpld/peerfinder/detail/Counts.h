@@ -1,5 +1,4 @@
-#ifndef XRPL_PEERFINDER_COUNTS_H_INCLUDED
-#define XRPL_PEERFINDER_COUNTS_H_INCLUDED
+#pragma once
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/Slot.h>
@@ -319,5 +318,3 @@ private:
 
 }  // namespace PeerFinder
 }  // namespace xrpl
-
-#endif

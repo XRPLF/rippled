@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_BASICAPP_H_INCLUDED
-#define XRPL_APP_BASICAPP_H_INCLUDED
+#pragma once
 
 #include <boost/asio/io_context.hpp>
 
@@ -25,5 +24,3 @@ public:
         return io_context_;
     }
 };
-
-#endif

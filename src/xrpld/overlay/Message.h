@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_MESSAGE_H_INCLUDED
-#define XRPL_OVERLAY_MESSAGE_H_INCLUDED
+#pragma once
 
 #include <xrpld/overlay/Compression.h>
 
@@ -118,5 +117,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

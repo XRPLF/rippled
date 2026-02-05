@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_PORT_H_INCLUDED
-#define XRPL_SERVER_PORT_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/net/IPEndpoint.h>
@@ -105,5 +104,3 @@ void
 parse_Port(ParsedPort& port, Section const& section, std::ostream& log);
 
 }  // namespace xrpl
-
-#endif

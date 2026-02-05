@@ -85,7 +85,8 @@ registerSSLCerts(boost::asio::ssl::context& ctx, boost::system::error_code& ec, 
 // There is a very unpleasant interaction between <wincrypt> and
 // openssl x509 types (namely the former has macros that stomp
 // on the latter), these undefs allow this TU to be safely used in
-// unity builds without messing up subsequent TUs.
+// unity builds without messing up subsequent TUs. Although we
+// no longer use unity builds, leaving the undefs here does no harm.
 #if BOOST_OS_WINDOWS
 #undef X509_NAME
 #undef X509_EXTENSIONS

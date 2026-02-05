@@ -1,5 +1,4 @@
-#ifndef BEAST_RFC2616_HPP
-#define BEAST_RFC2616_HPP
+#pragma once
 
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/http/rfc7230.hpp>
@@ -363,5 +362,3 @@ is_keep_alive(boost::beast::http::message<isRequest, Body, Fields> const& m)
 
 }  // namespace rfc2616
 }  // namespace beast
-
-#endif

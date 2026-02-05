@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_JSONFIELDS_H_INCLUDED
-#define XRPL_PROTOCOL_JSONFIELDS_H_INCLUDED
+#pragma once
 
 #include <xrpl/json/json_value.h>
 
@@ -733,5 +732,3 @@ JSS(write_load);              // out: GetCounts
 
 }  // namespace jss
 }  // namespace xrpl
-
-#endif

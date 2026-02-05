@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_B58_UTILS_H_INCLUDED
-#define XRPL_PROTOCOL_B58_UTILS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -175,4 +174,3 @@ b58_10_to_b58_be(std::uint64_t input)
 #endif
 
 }  // namespace xrpl
-#endif  // XRPL_PROTOCOL_B58_UTILS_H_INCLUDED

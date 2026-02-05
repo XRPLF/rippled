@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_RDB_BACKEND_DETAIL_NODE_H_INCLUDED
-#define XRPL_APP_RDB_BACKEND_DETAIL_NODE_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/rdb/RelationalDatabase.h>
@@ -404,5 +403,3 @@ dbHasSpace(soci::session& session, Config const& config, beast::Journal j);
 
 }  // namespace detail
 }  // namespace xrpl
-
-#endif

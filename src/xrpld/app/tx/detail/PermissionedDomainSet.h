@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_PERMISSIONEDDOMAINSET_H_INCLUDED
-#define XRPL_TX_PERMISSIONEDDOMAINSET_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
@@ -29,5 +28,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

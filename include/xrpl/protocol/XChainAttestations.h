@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STXATTESTATIONS_H_INCLUDED
-#define XRPL_PROTOCOL_STXATTESTATIONS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Expected.h>
@@ -464,5 +463,3 @@ class XChainCreateAccountAttestations final : public XChainAttestationsBase<XCha
 };
 
 }  // namespace xrpl
-
-#endif  // STXCHAINATTESTATIONS_H_
