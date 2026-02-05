@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_RANDOM_H_INCLUDED
-#define XRPL_TEST_CSF_RANDOM_H_INCLUDED
+#pragma once
 
 #include <random>
 #include <vector>
@@ -72,11 +71,7 @@ public:
         @param w Vector of weights of size list-first
         @param g the pseudo-random number generator
     */
-    Selector(
-        RAIter first,
-        RAIter last,
-        std::vector<double> const& w,
-        Generator& g)
+    Selector(RAIter first, RAIter last, std::vector<double> const& w, Generator& g)
         : first_{first}, last_{last}, dd_{w.begin(), w.end()}, g_{g}
     {
         using tag = typename std::iterator_traits<RAIter>::iterator_category;
@@ -157,5 +152,3 @@ public:
 }  // namespace csf
 }  // namespace test
 }  // namespace xrpl
-
-#endif

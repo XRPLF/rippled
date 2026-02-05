@@ -65,11 +65,7 @@ public:
 
     template <typename T>
     void
-    doTest(
-        std::shared_ptr<T> proto,
-        protocol::MessageType mt,
-        uint16_t nbuffers,
-        std::string msg)
+    doTest(std::shared_ptr<T> proto, protocol::MessageType mt, uint16_t nbuffers, std::string msg)
     {
         testcase("Compress/Decompress: " + msg);
 
@@ -84,16 +80,13 @@ public:
         for (int i = 0; i < nbuffers; i++)
         {
             auto start = buffer.begin() + sz * i;
-            auto end = i < nbuffers - 1 ? (buffer.begin() + sz * (i + 1))
-                                        : buffer.end();
+            auto end = i < nbuffers - 1 ? (buffer.begin() + sz * (i + 1)) : buffer.end();
             std::vector<std::uint8_t> slice(start, end);
-            buffers.commit(boost::asio::buffer_copy(
-                buffers.prepare(slice.size()), boost::asio::buffer(slice)));
+            buffers.commit(boost::asio::buffer_copy(buffers.prepare(slice.size()), boost::asio::buffer(slice)));
         }
 
         boost::system::error_code ec;
-        auto header =
-            xrpl::detail::parseMessageHeader(ec, buffers.data(), buffer.size());
+        auto header = xrpl::detail::parseMessageHeader(ec, buffers.data(), buffer.size());
 
         BEAST_EXPECT(header);
 
@@ -103,27 +96,20 @@ public:
         std::vector<std::uint8_t> decompressed;
         decompressed.resize(header->uncompressed_size);
 
-        BEAST_EXPECT(
-            header->payload_wire_size == buffer.size() - header->header_size);
+        BEAST_EXPECT(header->payload_wire_size == buffer.size() - header->header_size);
 
         ZeroCopyInputStream stream(buffers.data());
         stream.Skip(header->header_size);
 
         auto decompressedSize = xrpl::compression::decompress(
-            stream,
-            header->payload_wire_size,
-            decompressed.data(),
-            header->uncompressed_size);
+            stream, header->payload_wire_size, decompressed.data(), header->uncompressed_size);
         BEAST_EXPECT(decompressedSize == header->uncompressed_size);
         auto const proto1 = std::make_shared<T>();
 
-        BEAST_EXPECT(
-            proto1->ParseFromArray(decompressed.data(), decompressedSize));
+        BEAST_EXPECT(proto1->ParseFromArray(decompressed.data(), decompressedSize));
         auto uncompressed = m.getBuffer(Compressed::Off);
         BEAST_EXPECT(std::equal(
-            uncompressed.begin() + xrpl::compression::headerBytes,
-            uncompressed.end(),
-            decompressed.begin()));
+            uncompressed.begin() + xrpl::compression::headerBytes, uncompressed.end(), decompressed.begin()));
     }
 
     std::shared_ptr<protocol::TMManifests>
@@ -139,20 +125,9 @@ public:
             st[sfSequence] = i;
             st[sfPublicKey] = std::get<0>(master);
             st[sfSigningPubKey] = std::get<0>(signing);
-            st[sfDomain] = makeSlice(
-                std::string("example") + std::to_string(i) +
-                std::string(".com"));
-            sign(
-                st,
-                HashPrefix::manifest,
-                KeyType::ed25519,
-                std::get<1>(master),
-                sfMasterSignature);
-            sign(
-                st,
-                HashPrefix::manifest,
-                KeyType::ed25519,
-                std::get<1>(signing));
+            st[sfDomain] = makeSlice(std::string("example") + std::to_string(i) + std::string(".com"));
+            sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(master), sfMasterSignature);
+            sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(signing));
             Serializer s;
             st.add(s);
             auto* manifest = manifests->add_list();
@@ -191,8 +166,7 @@ public:
         auto toBinary = [this](std::string const& text) {
             auto blob = strUnHex(text);
             BEAST_EXPECT(blob);
-            return std::string{
-                reinterpret_cast<char const*>(blob->data()), blob->size()};
+            return std::string{reinterpret_cast<char const*>(blob->data()), blob->size()};
         };
 
         std::string usdTxBlob = "";
@@ -200,12 +174,10 @@ public:
         {
             Json::Value jrequestUsd;
             jrequestUsd[jss::secret] = toBase58(generateSeed("bob"));
-            jrequestUsd[jss::tx_json] =
-                pay("bob", "alice", bob["USD"](fund / 2));
+            jrequestUsd[jss::tx_json] = pay("bob", "alice", bob["USD"](fund / 2));
             Json::Value jreply_usd = wsc->invoke("sign", jrequestUsd);
 
-            usdTxBlob =
-                toBinary(jreply_usd[jss::result][jss::tx_blob].asString());
+            usdTxBlob = toBinary(jreply_usd[jss::result][jss::tx_blob].asString());
         }
 
         auto transaction = std::make_shared<protocol::TMTransaction>();
@@ -266,8 +238,7 @@ public:
             parentHash = ledgerHash(info);
             Serializer nData;
             xrpl::addRaw(info, nData);
-            ledgerData->add_nodes()->set_nodedata(
-                nData.getDataPtr(), nData.getLength());
+            ledgerData->add_nodes()->set_nodedata(nData.getDataPtr(), nData.getLength());
         }
 
         return ledgerData;
@@ -278,8 +249,7 @@ public:
     {
         auto getObject = std::make_shared<protocol::TMGetObjectByHash>();
 
-        getObject->set_type(protocol::TMGetObjectByHash_ObjectType::
-                                TMGetObjectByHash_ObjectType_otTRANSACTION);
+        getObject->set_type(protocol::TMGetObjectByHash_ObjectType::TMGetObjectByHash_ObjectType_otTRANSACTION);
         getObject->set_query(true);
         getObject->set_seq(123456789);
         uint256 hash(xrpl::sha512Half(123456789));
@@ -311,20 +281,14 @@ public:
         st[sfPublicKey] = std::get<0>(master);
         st[sfSigningPubKey] = std::get<0>(signing);
         st[sfDomain] = makeSlice(std::string("example.com"));
-        sign(
-            st,
-            HashPrefix::manifest,
-            KeyType::ed25519,
-            std::get<1>(master),
-            sfMasterSignature);
+        sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(master), sfMasterSignature);
         sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(signing));
         Serializer s;
         st.add(s);
         list->set_manifest(s.data(), s.size());
         list->set_version(3);
         STObject signature(sfSignature);
-        xrpl::sign(
-            st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(signing));
+        xrpl::sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(signing));
         Serializer s1;
         st.add(s1);
         list->set_signature(s1.data(), s1.size());
@@ -344,20 +308,14 @@ public:
         st[sfPublicKey] = std::get<0>(master);
         st[sfSigningPubKey] = std::get<0>(signing);
         st[sfDomain] = makeSlice(std::string("example.com"));
-        sign(
-            st,
-            HashPrefix::manifest,
-            KeyType::ed25519,
-            std::get<1>(master),
-            sfMasterSignature);
+        sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(master), sfMasterSignature);
         sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(signing));
         Serializer s;
         st.add(s);
         list->set_manifest(s.data(), s.size());
         list->set_version(4);
         STObject signature(sfSignature);
-        xrpl::sign(
-            st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(signing));
+        xrpl::sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(signing));
         Serializer s1;
         st.add(s1);
         auto& blob = *list->add_blobs();
@@ -390,60 +348,24 @@ public:
         // 1.3KB
         doTest(buildEndpoints(100), protocol::mtENDPOINTS, 4, "TMEndpoints100");
         // 242B
-        doTest(
-            buildTransaction(*logs),
-            protocol::mtTRANSACTION,
-            1,
-            "TMTransaction");
+        doTest(buildTransaction(*logs), protocol::mtTRANSACTION, 1, "TMTransaction");
         // 87B
         doTest(buildGetLedger(), protocol::mtGET_LEDGER, 1, "TMGetLedger");
         // 61KB
-        doTest(
-            buildLedgerData(500, *logs),
-            protocol::mtLEDGER_DATA,
-            10,
-            "TMLedgerData500");
+        doTest(buildLedgerData(500, *logs), protocol::mtLEDGER_DATA, 10, "TMLedgerData500");
         // 122 KB
-        doTest(
-            buildLedgerData(1000, *logs),
-            protocol::mtLEDGER_DATA,
-            20,
-            "TMLedgerData1000");
+        doTest(buildLedgerData(1000, *logs), protocol::mtLEDGER_DATA, 20, "TMLedgerData1000");
         // 1.2MB
-        doTest(
-            buildLedgerData(10000, *logs),
-            protocol::mtLEDGER_DATA,
-            50,
-            "TMLedgerData10000");
+        doTest(buildLedgerData(10000, *logs), protocol::mtLEDGER_DATA, 50, "TMLedgerData10000");
         // 12MB
-        doTest(
-            buildLedgerData(100000, *logs),
-            protocol::mtLEDGER_DATA,
-            100,
-            "TMLedgerData100000");
+        doTest(buildLedgerData(100000, *logs), protocol::mtLEDGER_DATA, 100, "TMLedgerData100000");
         // 61MB
-        doTest(
-            buildLedgerData(500000, *logs),
-            protocol::mtLEDGER_DATA,
-            100,
-            "TMLedgerData500000");
+        doTest(buildLedgerData(500000, *logs), protocol::mtLEDGER_DATA, 100, "TMLedgerData500000");
         // 7.7KB
-        doTest(
-            buildGetObjectByHash(),
-            protocol::mtGET_OBJECTS,
-            4,
-            "TMGetObjectByHash");
+        doTest(buildGetObjectByHash(), protocol::mtGET_OBJECTS, 4, "TMGetObjectByHash");
         // 895B
-        doTest(
-            buildValidatorList(),
-            protocol::mtVALIDATOR_LIST,
-            4,
-            "TMValidatorList");
-        doTest(
-            buildValidatorListCollection(),
-            protocol::mtVALIDATOR_LIST_COLLECTION,
-            4,
-            "TMValidatorListCollection");
+        doTest(buildValidatorList(), protocol::mtVALIDATOR_LIST, 4, "TMValidatorList");
+        doTest(buildValidatorListCollection(), protocol::mtVALIDATOR_LIST_COLLECTION, 4, "TMValidatorListCollection");
     }
 
     void
@@ -460,13 +382,11 @@ public:
             c.loadFromString(str.str());
             auto env = std::make_shared<jtx::Env>(*this);
             env->app().config().COMPRESSION = c.COMPRESSION;
-            env->app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE =
-                c.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE;
+            env->app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = c.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE;
             return env;
         };
         auto handshake = [&](int outboundEnable, int inboundEnable) {
-            beast::IP::Address addr =
-                boost::asio::ip::make_address("172.1.1.100");
+            beast::IP::Address addr = boost::asio::ip::make_address("172.1.1.100");
 
             auto env = getEnv(outboundEnable);
             auto request = xrpl::makeRequest(
@@ -483,25 +403,15 @@ public:
             auto const peerEnabled = inboundEnable && outboundEnable;
             // inbound is enabled if the request's header has the feature
             // enabled and the peer's configuration is enabled
-            auto const inboundEnabled = peerFeatureEnabled(
-                http_request, FEATURE_COMPR, "lz4", inboundEnable);
+            auto const inboundEnabled = peerFeatureEnabled(http_request, FEATURE_COMPR, "lz4", inboundEnable);
             BEAST_EXPECT(!(peerEnabled ^ inboundEnabled));
 
             env.reset();
             env = getEnv(inboundEnable);
-            auto http_resp = xrpl::makeResponse(
-                true,
-                http_request,
-                addr,
-                addr,
-                uint256{1},
-                1,
-                {1, 0},
-                env->app());
+            auto http_resp = xrpl::makeResponse(true, http_request, addr, addr, uint256{1}, 1, {1, 0}, env->app());
             // outbound is enabled if the response's header has the feature
             // enabled and the peer's configuration is enabled
-            auto const outboundEnabled = peerFeatureEnabled(
-                http_resp, FEATURE_COMPR, "lz4", outboundEnable);
+            auto const outboundEnabled = peerFeatureEnabled(http_resp, FEATURE_COMPR, "lz4", outboundEnable);
             BEAST_EXPECT(!(peerEnabled ^ outboundEnabled));
         };
         handshake(1, 1);

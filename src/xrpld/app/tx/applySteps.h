@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_APPLYSTEPS_H_INCLUDED
-#define XRPL_TX_APPLYSTEPS_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
@@ -16,8 +15,7 @@ struct ApplyResult
     bool applied;
     std::optional<TxMeta> metadata;
 
-    ApplyResult(TER t, bool a, std::optional<TxMeta> m = std::nullopt)
-        : ter(t), applied(a), metadata(std::move(m))
+    ApplyResult(TER t, bool a, std::optional<TxMeta> m = std::nullopt) : ter(t), applied(a), metadata(std::move(m))
     {
     }
 };
@@ -161,9 +159,7 @@ public:
 
     /// Constructor
     template <class Context>
-    PreflightResult(
-        Context const& ctx_,
-        std::pair<NotTEC, TxConsequences> const& result)
+    PreflightResult(Context const& ctx_, std::pair<NotTEC, TxConsequences> const& result)
         : tx(ctx_.tx)
         , parentBatchId(ctx_.parentBatchId)
         , rules(ctx_.rules)
@@ -244,12 +240,7 @@ public:
 */
 /** @{ */
 PreflightResult
-preflight(
-    Application& app,
-    Rules const& rules,
-    STTx const& tx,
-    ApplyFlags flags,
-    beast::Journal j);
+preflight(Application& app, Rules const& rules, STTx const& tx, ApplyFlags flags, beast::Journal j);
 
 PreflightResult
 preflight(
@@ -290,10 +281,7 @@ preflight(
     this transaction.
 */
 PreclaimResult
-preclaim(
-    PreflightResult const& preflightResult,
-    Application& app,
-    OpenView const& view);
+preclaim(PreflightResult const& preflightResult, Application& app, OpenView const& view);
 
 /** Compute only the expected base fee for a transaction.
 
@@ -348,5 +336,3 @@ ApplyResult
 doApply(PreclaimResult const& preclaimResult, Application& app, OpenView& view);
 
 }  // namespace xrpl
-
-#endif

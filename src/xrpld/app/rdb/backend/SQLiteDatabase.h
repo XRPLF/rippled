@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_RDB_BACKEND_SQLITEDATABASE_H_INCLUDED
-#define XRPL_APP_RDB_BACKEND_SQLITEDATABASE_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/rdb/RelationalDatabase.h>
 
@@ -89,9 +88,7 @@ public:
      * @return True if saving was successful.
      */
     virtual bool
-    saveValidatedLedger(
-        std::shared_ptr<Ledger const> const& ledger,
-        bool current) = 0;
+    saveValidatedLedger(std::shared_ptr<Ledger const> const& ledger, bool current) = 0;
 
     /**
      * @brief getLimitedOldestLedgerInfo Returns the info of the oldest ledger
@@ -248,10 +245,7 @@ public:
      *         default error code is not changed.
      */
     virtual std::variant<AccountTx, TxSearched>
-    getTransaction(
-        uint256 const& id,
-        std::optional<ClosedInterval<uint32_t>> const& range,
-        error_code_i& ec) = 0;
+    getTransaction(uint256 const& id, std::optional<ClosedInterval<uint32_t>> const& range, error_code_i& ec) = 0;
 
     /**
      * @brief getKBUsedAll Returns the amount of space used by all databases.
@@ -290,5 +284,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

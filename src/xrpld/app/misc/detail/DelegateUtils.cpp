@@ -35,10 +35,8 @@ loadGranularPermission(
     for (auto const& permission : permissionArray)
     {
         auto const permissionValue = permission[sfPermissionValue];
-        auto const granularValue =
-            static_cast<GranularPermissionType>(permissionValue);
-        auto const& type =
-            Permission::getInstance().getGranularTxType(granularValue);
+        auto const granularValue = static_cast<GranularPermissionType>(permissionValue);
+        auto const& type = Permission::getInstance().getGranularTxType(granularValue);
         if (type && *type == txType)
             granularPermissions.insert(granularValue);
     }

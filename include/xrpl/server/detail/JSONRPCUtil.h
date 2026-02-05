@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_JSONRPCUTIL_H_INCLUDED
-#define XRPL_SERVER_JSONRPCUTIL_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/Output.h>
@@ -8,12 +7,6 @@
 namespace xrpl {
 
 void
-HTTPReply(
-    int nStatus,
-    std::string const& strMsg,
-    Json::Output const&,
-    beast::Journal j);
+HTTPReply(int nStatus, std::string const& strMsg, Json::Output const&, beast::Journal j);
 
 }  // namespace xrpl
-
-#endif

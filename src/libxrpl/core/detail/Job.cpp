@@ -11,17 +11,8 @@ Job::Job(JobType type, std::uint64_t index) : mType(type), mJobIndex(index)
 {
 }
 
-Job::Job(
-    JobType type,
-    std::string const& name,
-    std::uint64_t index,
-    LoadMonitor& lm,
-    std::function<void()> const& job)
-    : mType(type)
-    , mJobIndex(index)
-    , mJob(job)
-    , mName(name)
-    , m_queue_time(clock_type::now())
+Job::Job(JobType type, std::string const& name, std::uint64_t index, LoadMonitor& lm, std::function<void()> const& job)
+    : mType(type), mJobIndex(index), mJob(job), mName(name), m_queue_time(clock_type::now())
 {
     m_loadEvent = std::make_shared<LoadEvent>(std::ref(lm), name, false);
 }
@@ -41,7 +32,7 @@ Job::queue_time() const
 void
 Job::doJob()
 {
-    beast::setCurrentThreadName("doJob: " + mName);
+    beast::setCurrentThreadName("j:" + mName);
     m_loadEvent->start();
     m_loadEvent->setName(mName);
 

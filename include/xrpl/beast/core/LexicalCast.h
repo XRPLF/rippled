@@ -1,5 +1,4 @@
-#ifndef BEAST_MODULE_CORE_TEXT_LEXICALCAST_H_INCLUDED
-#define BEAST_MODULE_CORE_TEXT_LEXICALCAST_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -40,8 +39,7 @@ struct LexicalCast<std::string, In>
     std::enable_if_t<std::is_enum_v<Enumeration>, bool>
     operator()(std::string& out, Enumeration in)
     {
-        out = std::to_string(
-            static_cast<std::underlying_type_t<Enumeration>>(in));
+        out = std::to_string(static_cast<std::underlying_type_t<Enumeration>>(in));
         return true;
     }
 };
@@ -52,14 +50,10 @@ struct LexicalCast<Out, std::string_view>
 {
     explicit LexicalCast() = default;
 
-    static_assert(
-        std::is_integral_v<Out>,
-        "beast::LexicalCast can only be used with integral types");
+    static_assert(std::is_integral_v<Out>, "beast::LexicalCast can only be used with integral types");
 
     template <class Integral = Out>
-    std::enable_if_t<
-        std::is_integral_v<Integral> && !std::is_same_v<Integral, bool>,
-        bool>
+    std::enable_if_t<std::is_integral_v<Integral> && !std::is_same_v<Integral, bool>, bool>
     operator()(Integral& out, std::string_view in) const
     {
         auto first = in.data();
@@ -79,10 +73,9 @@ struct LexicalCast<Out, std::string_view>
         std::string result;
 
         // Convert the input to lowercase
-        std::transform(
-            in.begin(), in.end(), std::back_inserter(result), [](auto c) {
-                return std::tolower(static_cast<unsigned char>(c));
-            });
+        std::transform(in.begin(), in.end(), std::back_inserter(result), [](auto c) {
+            return std::tolower(static_cast<unsigned char>(c));
+        });
 
         if (result == "1" || result == "true")
         {
@@ -140,8 +133,7 @@ struct LexicalCast<Out, char const*>
     bool
     operator()(Out& out, char const* in) const
     {
-        XRPL_ASSERT(
-            in, "beast::detail::LexicalCast(char const*) : non-null input");
+        XRPL_ASSERT(in, "beast::detail::LexicalCast(char const*) : non-null input");
         return LexicalCast<Out, std::string_view>()(out, in);
     }
 };
@@ -215,5 +207,3 @@ lexicalCast(In in, Out defaultValue = Out())
 }
 
 }  // namespace beast
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_JSON_JSON_VALUE_H_INCLUDED
-#define XRPL_JSON_JSON_VALUE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/json/json_forwards.h>
@@ -148,11 +147,7 @@ private:
     class CZString
     {
     public:
-        enum DuplicationPolicy {
-            noDuplication = 0,
-            duplicate,
-            duplicateOnCopy
-        };
+        enum DuplicationPolicy { noDuplication = 0, duplicate, duplicateOnCopy };
         CZString(int index);
         CZString(char const* cstr, DuplicationPolicy allocate);
         CZString(CZString const& other);
@@ -681,5 +676,3 @@ public:
 };
 
 }  // namespace Json
-
-#endif  // XRPL_JSON_JSON_VALUE_H_INCLUDED

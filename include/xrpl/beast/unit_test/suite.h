@@ -2,8 +2,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_UNIT_TEST_SUITE_HPP
-#define BEAST_UNIT_TEST_SUITE_HPP
+#pragma once
 
 #include <xrpl/beast/unit_test/runner.h>
 
@@ -92,17 +91,13 @@ private:
         }
     };
 
-    template <
-        class CharT,
-        class Traits = std::char_traits<CharT>,
-        class Allocator = std::allocator<CharT>>
+    template <class CharT, class Traits = std::char_traits<CharT>, class Allocator = std::allocator<CharT>>
     class log_os : public std::basic_ostream<CharT, Traits>
     {
         log_buf<CharT, Traits, Allocator> buf_;
 
     public:
-        explicit log_os(suite& self)
-            : std::basic_ostream<CharT, Traits>(&buf_), buf_(self)
+        explicit log_os(suite& self) : std::basic_ostream<CharT, Traits>(&buf_), buf_(self)
         {
         }
     };
@@ -241,11 +236,7 @@ public:
 
     template <class Condition, class String>
     bool
-    expect(
-        Condition const& shouldBeTrue,
-        String const& reason,
-        char const* file,
-        int line);
+    expect(Condition const& shouldBeTrue, String const& reason, char const* file, int line);
     /** @} */
 
     //
@@ -349,8 +340,7 @@ public:
     }
 
     template <class T>
-    scoped_testcase(suite& self, std::stringstream& ss, T const& t)
-        : suite_(self), ss_(ss)
+    scoped_testcase(suite& self, std::stringstream& ss, T const& t) : suite_(self), ss_(ss)
     {
         ss_.clear();
         ss_.str({});
@@ -423,11 +413,7 @@ suite::expect(Condition const& shouldBeTrue, String const& reason)
 
 template <class Condition, class String>
 bool
-suite::expect(
-    Condition const& shouldBeTrue,
-    String const& reason,
-    char const* file,
-    int line)
+suite::expect(Condition const& shouldBeTrue, String const& reason, char const* file, int line)
 {
     if (shouldBeTrue)
     {
@@ -576,8 +562,7 @@ suite::run(runner& r)
 
     If the condition is false, the file and line number are reported.
 */
-#define BEAST_EXPECTS(cond, reason) \
-    ((cond) ? (pass(), true) : (fail((reason), __FILE__, __LINE__), false))
+#define BEAST_EXPECTS(cond, reason) ((cond) ? (pass(), true) : (fail((reason), __FILE__, __LINE__), false))
 #endif
 
 }  // namespace unit_test
@@ -587,11 +572,9 @@ suite::run(runner& r)
 
 // detail:
 // This inserts the suite with the given manual flag
-#define BEAST_DEFINE_TESTSUITE_INSERT(                          \
-    Class, Module, Library, manual, priority)                   \
-    static beast::unit_test::detail::insert_suite<Class##_test> \
-        Library##Module##Class##_test_instance(                 \
-            #Class, #Module, #Library, manual, priority)
+#define BEAST_DEFINE_TESTSUITE_INSERT(Class, Module, Library, manual, priority)                         \
+    static beast::unit_test::detail::insert_suite<Class##_test> Library##Module##Class##_test_instance( \
+        #Class, #Module, #Library, manual, priority)
 
 //------------------------------------------------------------------------------
 
@@ -646,8 +629,7 @@ suite::run(runner& r)
 
 #else
 #include <xrpl/beast/unit_test/global_suites.h>
-#define BEAST_DEFINE_TESTSUITE(Class, Module, Library) \
-    BEAST_DEFINE_TESTSUITE_INSERT(Class, Module, Library, false, 0)
+#define BEAST_DEFINE_TESTSUITE(Class, Module, Library) BEAST_DEFINE_TESTSUITE_INSERT(Class, Module, Library, false, 0)
 #define BEAST_DEFINE_TESTSUITE_MANUAL(Class, Module, Library) \
     BEAST_DEFINE_TESTSUITE_INSERT(Class, Module, Library, true, 0)
 #define BEAST_DEFINE_TESTSUITE_PRIO(Class, Module, Library, Priority) \
@@ -659,5 +641,3 @@ suite::run(runner& r)
 #endif
 
 //------------------------------------------------------------------------------
-
-#endif

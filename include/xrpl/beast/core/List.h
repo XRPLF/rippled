@@ -1,5 +1,4 @@
-#ifndef BEAST_INTRUSIVE_LIST_H_INCLUDED
-#define BEAST_INTRUSIVE_LIST_H_INCLUDED
+#pragma once
 
 #include <iterator>
 
@@ -55,8 +54,7 @@ class ListIterator
 {
 public:
     using iterator_category = std::bidirectional_iterator_tag;
-    using value_type =
-        typename beast::detail::CopyConst<N, typename N::value_type>::type;
+    using value_type = typename beast::detail::CopyConst<N, typename N::value_type>::type;
     using difference_type = std::ptrdiff_t;
     using pointer = value_type*;
     using reference = value_type&;
@@ -575,5 +573,3 @@ private:
 };
 
 }  // namespace beast
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_AMMOFFER_H_INCLUDED
-#define XRPL_APP_AMMOFFER_H_INCLUDED
+#pragma once
 
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
@@ -81,20 +80,14 @@ public:
      * current quality.
      */
     TAmounts<TIn, TOut>
-    limitOut(
-        TAmounts<TIn, TOut> const& offerAmount,
-        TOut const& limit,
-        bool roundUp) const;
+    limitOut(TAmounts<TIn, TOut> const& offerAmount, TOut const& limit, bool roundUp) const;
 
     /** Limit in of the provided offer. If one-path then swapIn
      * using current balances. If multi-path then ceil_in using
      * current quality.
      */
     TAmounts<TIn, TOut>
-    limitIn(
-        TAmounts<TIn, TOut> const& offerAmount,
-        TIn const& limit,
-        bool roundUp) const;
+    limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& limit, bool roundUp) const;
 
     QualityFunction
     getQualityFunc() const;
@@ -130,5 +123,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif  // XRPL_APP_AMMOFFER_H_INCLUDED

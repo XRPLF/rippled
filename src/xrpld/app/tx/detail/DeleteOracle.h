@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_DELETEORACLE_H_INCLUDED
-#define XRPL_TX_DELETEORACLE_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
@@ -33,15 +32,9 @@ public:
     doApply() override;
 
     static TER
-    deleteOracle(
-        ApplyView& view,
-        std::shared_ptr<SLE> const& sle,
-        AccountID const& account,
-        beast::Journal j);
+    deleteOracle(ApplyView& view, std::shared_ptr<SLE> const& sle, AccountID const& account, beast::Journal j);
 };
 
 using OracleDelete = DeleteOracle;
 
 }  // namespace xrpl
-
-#endif  // XRPL_TX_DELETEORACLE_H_INCLUDED

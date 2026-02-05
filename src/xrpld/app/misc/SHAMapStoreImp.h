@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_SHAMAPSTOREIMP_H_INCLUDED
-#define XRPL_APP_MISC_SHAMAPSTOREIMP_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/SHAMapStore.h>
@@ -100,16 +99,12 @@ private:
     static constexpr auto nodeStoreName_ = "NodeStore";
 
 public:
-    SHAMapStoreImp(
-        Application& app,
-        NodeStore::Scheduler& scheduler,
-        beast::Journal journal);
+    SHAMapStoreImp(Application& app, NodeStore::Scheduler& scheduler, beast::Journal journal);
 
     std::uint32_t
     clampFetchDepth(std::uint32_t fetch_depth) const override
     {
-        return deleteInterval_ ? std::min(fetch_depth, deleteInterval_)
-                               : fetch_depth;
+        return deleteInterval_ ? std::min(fetch_depth, deleteInterval_) : fetch_depth;
     }
 
     std::unique_ptr<NodeStore::Database>
@@ -176,8 +171,7 @@ private:
 
         for (auto const& key : cache.getKeys())
         {
-            dbRotating_->fetchNodeObject(
-                key, 0, NodeStore::FetchType::synchronous, true);
+            dbRotating_->fetchNodeObject(key, 0, NodeStore::FetchType::synchronous, true);
             if (!(++check % checkHealthInterval_) && healthWait() == stopping)
                 return true;
         }
@@ -226,5 +220,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

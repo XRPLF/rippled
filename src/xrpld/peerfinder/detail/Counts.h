@@ -1,5 +1,4 @@
-#ifndef XRPL_PEERFINDER_COUNTS_H_INCLUDED
-#define XRPL_PEERFINDER_COUNTS_H_INCLUDED
+#pragma once
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/Slot.h>
@@ -223,9 +222,8 @@ public:
     state_string() const
     {
         std::stringstream ss;
-        ss << m_out_active << "/" << m_out_max << " out, " << m_in_active << "/"
-           << m_in_max << " in, " << connectCount() << " connecting, "
-           << closingCount() << " closing";
+        ss << m_out_active << "/" << m_out_max << " out, " << m_in_active << "/" << m_in_max << " in, "
+           << connectCount() << " connecting, " << closingCount() << " closing";
         return ss.str();
     }
 
@@ -244,9 +242,7 @@ private:
         switch (s.state())
         {
             case Slot::accept:
-                XRPL_ASSERT(
-                    s.inbound(),
-                    "xrpl::PeerFinder::Counts::adjust : input is inbound");
+                XRPL_ASSERT(s.inbound(), "xrpl::PeerFinder::Counts::adjust : input is inbound");
                 m_acceptCount += n;
                 break;
 
@@ -278,8 +274,7 @@ private:
 
             // LCOV_EXCL_START
             default:
-                UNREACHABLE(
-                    "xrpl::PeerFinder::Counts::adjust : invalid input state");
+                UNREACHABLE("xrpl::PeerFinder::Counts::adjust : invalid input state");
                 break;
                 // LCOV_EXCL_STOP
         };
@@ -323,5 +318,3 @@ private:
 
 }  // namespace PeerFinder
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_ASSET_H_INCLUDED
-#define XRPL_PROTOCOL_ASSET_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -12,12 +11,10 @@ class Asset;
 class STAmount;
 
 template <typename TIss>
-concept ValidIssueType =
-    std::is_same_v<TIss, Issue> || std::is_same_v<TIss, MPTIssue>;
+concept ValidIssueType = std::is_same_v<TIss, Issue> || std::is_same_v<TIss, MPTIssue>;
 
 template <typename A>
-concept AssetType =
-    std::is_convertible_v<A, Asset> || std::is_convertible_v<A, Issue> ||
+concept AssetType = std::is_convertible_v<A, Asset> || std::is_convertible_v<A, Issue> ||
     std::is_convertible_v<A, MPTIssue> || std::is_convertible_v<A, MPTID>;
 
 /* Asset is an abstraction of three different issue types: XRP, IOU, MPT.
@@ -163,8 +160,7 @@ constexpr bool
 operator==(Asset const& lhs, Asset const& rhs)
 {
     return std::visit(
-        [&]<typename TLhs, typename TRhs>(
-            TLhs const& issLhs, TRhs const& issRhs) {
+        [&]<typename TLhs, typename TRhs>(TLhs const& issLhs, TRhs const& issRhs) {
             if constexpr (std::is_same_v<TLhs, TRhs>)
                 return issLhs == issRhs;
             else
@@ -178,12 +174,10 @@ constexpr std::weak_ordering
 operator<=>(Asset const& lhs, Asset const& rhs)
 {
     return std::visit(
-        []<ValidIssueType TLhs, ValidIssueType TRhs>(
-            TLhs const& lhs_, TRhs const& rhs_) {
+        []<ValidIssueType TLhs, ValidIssueType TRhs>(TLhs const& lhs_, TRhs const& rhs_) {
             if constexpr (std::is_same_v<TLhs, TRhs>)
                 return std::weak_ordering(lhs_ <=> rhs_);
-            else if constexpr (
-                std::is_same_v<TLhs, Issue> && std::is_same_v<TRhs, MPTIssue>)
+            else if constexpr (std::is_same_v<TLhs, Issue> && std::is_same_v<TRhs, MPTIssue>)
                 return std::weak_ordering::greater;
             else
                 return std::weak_ordering::less;
@@ -202,14 +196,10 @@ constexpr bool
 equalTokens(Asset const& lhs, Asset const& rhs)
 {
     return std::visit(
-        [&]<typename TLhs, typename TRhs>(
-            TLhs const& issLhs, TRhs const& issRhs) {
-            if constexpr (
-                std::is_same_v<TLhs, Issue> && std::is_same_v<TRhs, Issue>)
+        [&]<typename TLhs, typename TRhs>(TLhs const& issLhs, TRhs const& issRhs) {
+            if constexpr (std::is_same_v<TLhs, Issue> && std::is_same_v<TRhs, Issue>)
                 return issLhs.currency == issRhs.currency;
-            else if constexpr (
-                std::is_same_v<TLhs, MPTIssue> &&
-                std::is_same_v<TRhs, MPTIssue>)
+            else if constexpr (std::is_same_v<TLhs, MPTIssue> && std::is_same_v<TRhs, MPTIssue>)
                 return issLhs.getMptID() == issRhs.getMptID();
             else
                 return false;
@@ -234,5 +224,3 @@ Asset
 assetFromJson(Json::Value const& jv);
 
 }  // namespace xrpl
-
-#endif  // XRPL_PROTOCOL_ASSET_H_INCLUDED

@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_HASHROUTER_H_INCLUDED
-#define XRPL_APP_MISC_HASHROUTER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/UnorderedContainers.h>
@@ -154,9 +153,7 @@ private:
             last relay timestamp and return true.
         */
         bool
-        shouldRelay(
-            Stopwatch::time_point const& now,
-            std::chrono::seconds relayTime)
+        shouldRelay(Stopwatch::time_point const& now, std::chrono::seconds relayTime)
         {
             if (relayed_ && *relayed_ + relayTime > now)
                 return false;
@@ -183,8 +180,7 @@ private:
     };
 
 public:
-    HashRouter(Setup const& setup, Stopwatch& clock)
-        : setup_(setup), suppressionMap_(clock)
+    HashRouter(Setup const& setup, Stopwatch& clock) : setup_(setup), suppressionMap_(clock)
     {
     }
 
@@ -210,18 +206,11 @@ public:
     addSuppressionPeerWithStatus(uint256 const& key, PeerShortID peer);
 
     bool
-    addSuppressionPeer(
-        uint256 const& key,
-        PeerShortID peer,
-        HashRouterFlags& flags);
+    addSuppressionPeer(uint256 const& key, PeerShortID peer, HashRouterFlags& flags);
 
     // Add a peer suppression and return whether the entry should be processed
     bool
-    shouldProcess(
-        uint256 const& key,
-        PeerShortID peer,
-        HashRouterFlags& flags,
-        std::chrono::seconds tx_interval);
+    shouldProcess(uint256 const& key, PeerShortID peer, HashRouterFlags& flags, std::chrono::seconds tx_interval);
 
     /** Set the flags on a hash.
 
@@ -259,17 +248,10 @@ private:
     Setup const setup_;
 
     // Stores all suppressed hashes and their expiration time
-    beast::aged_unordered_map<
-        uint256,
-        Entry,
-        Stopwatch::clock_type,
-        hardened_hash<strong_hash>>
-        suppressionMap_;
+    beast::aged_unordered_map<uint256, Entry, Stopwatch::clock_type, hardened_hash<strong_hash>> suppressionMap_;
 };
 
 HashRouter::Setup
 setup_HashRouter(Config const&);
 
 }  // namespace xrpl
-
-#endif

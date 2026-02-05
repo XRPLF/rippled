@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_NFT_H_INCLUDED
-#define XRPL_TEST_JTX_NFT_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -104,10 +103,7 @@ burn(jtx::Account const& account, uint256 const& nftokenID);
 
 /** Create an NFTokenOffer. */
 Json::Value
-createOffer(
-    jtx::Account const& account,
-    uint256 const& nftokenID,
-    STAmount const& amount);
+createOffer(jtx::Account const& account, uint256 const& nftokenID, STAmount const& amount);
 
 /** Sets the optional Owner on an NFTokenOffer. */
 class owner
@@ -156,14 +152,10 @@ public:
 
 /** Cancel NFTokenOffers. */
 Json::Value
-cancelOffer(
-    jtx::Account const& account,
-    std::initializer_list<uint256> const& nftokenOffers = {});
+cancelOffer(jtx::Account const& account, std::initializer_list<uint256> const& nftokenOffers = {});
 
 Json::Value
-cancelOffer(
-    jtx::Account const& account,
-    std::vector<uint256> const& nftokenOffers);
+cancelOffer(jtx::Account const& account, std::vector<uint256> const& nftokenOffers);
 
 /** Sets the optional RootIndex field when canceling NFTokenOffers. */
 class rootIndex
@@ -190,10 +182,7 @@ acceptSellOffer(jtx::Account const& account, uint256 const& offerIndex);
 
 /** Broker two NFToken offers. */
 Json::Value
-brokerOffers(
-    jtx::Account const& account,
-    uint256 const& buyOfferIndex,
-    uint256 const& sellOfferIndex);
+brokerOffers(jtx::Account const& account, uint256 const& buyOfferIndex, uint256 const& sellOfferIndex);
 
 /** Sets the optional NFTokenBrokerFee field in a brokerOffer transaction. */
 class brokerFee
@@ -228,5 +217,3 @@ modify(jtx::Account const& account, uint256 const& nftokenID);
 
 }  // namespace test
 }  // namespace xrpl
-
-#endif  // XRPL_TEST_JTX_NFT_H_INCLUDED

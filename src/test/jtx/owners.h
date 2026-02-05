@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_OWNERS_H_INCLUDED
-#define XRPL_TEST_JTX_OWNERS_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
@@ -17,11 +16,7 @@ std::uint32_t
 owned_count_of(ReadView const& view, AccountID const& id, LedgerEntryType type);
 
 void
-owned_count_helper(
-    test::jtx::Env& env,
-    AccountID const& id,
-    LedgerEntryType type,
-    std::uint32_t value);
+owned_count_helper(test::jtx::Env& env, AccountID const& id, LedgerEntryType type, std::uint32_t value);
 
 }  // namespace detail
 
@@ -37,8 +32,7 @@ private:
     std::uint32_t value_;
 
 public:
-    owner_count(Account const& account, std::uint32_t value)
-        : account_(account), value_(value)
+    owner_count(Account const& account, std::uint32_t value) : account_(account), value_(value)
     {
     }
 
@@ -57,8 +51,7 @@ private:
     std::uint32_t value_;
 
 public:
-    owners(Account const& account, std::uint32_t value)
-        : account_(account), value_(value)
+    owners(Account const& account, std::uint32_t value) : account_(account), value_(value)
     {
     }
 
@@ -75,5 +68,3 @@ using offers = owner_count<ltOFFER>;
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

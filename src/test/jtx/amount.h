@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_AMOUNT_H_INCLUDED
-#define XRPL_TEST_JTX_AMOUNT_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/tags.h>
@@ -74,8 +73,7 @@ public:
     PrettyAmount&
     operator=(PrettyAmount const&) = default;
 
-    PrettyAmount(STAmount const& amount, std::string const& name)
-        : amount_(amount), name_(name)
+    PrettyAmount(STAmount const& amount, std::string const& name) : amount_(amount), name_(name)
     {
     }
 
@@ -83,20 +81,14 @@ public:
     template <class T>
     PrettyAmount(
         T v,
-        std::enable_if_t<
-            sizeof(T) >= sizeof(int) && std::is_integral_v<T> &&
-            std::is_signed_v<T>>* = nullptr)
+        std::enable_if_t<sizeof(T) >= sizeof(int) && std::is_integral_v<T> && std::is_signed_v<T>>* = nullptr)
         : amount_((v > 0) ? v : -v, v < 0)
     {
     }
 
     /** drops */
     template <class T>
-    PrettyAmount(
-        T v,
-        std::enable_if_t<sizeof(T) >= sizeof(int) && std::is_unsigned_v<T>>* =
-            nullptr)
-        : amount_(v)
+    PrettyAmount(T v, std::enable_if_t<sizeof(T) >= sizeof(int) && std::is_unsigned_v<T>>* = nullptr) : amount_(v)
     {
     }
 
@@ -166,13 +158,11 @@ private:
 public:
     template <typename A>
         requires std::convertible_to<A, Asset>
-    PrettyAsset(A const& asset, std::uint32_t scale = 1)
-        : PrettyAsset{Asset{asset}, scale}
+    PrettyAsset(A const& asset, std::uint32_t scale = 1) : PrettyAsset{Asset{asset}, scale}
     {
     }
 
-    PrettyAsset(Asset const& asset, std::uint32_t scale = 1)
-        : asset_(asset), scale_(scale)
+    PrettyAsset(Asset const& asset, std::uint32_t scale = 1) : asset_(asset), scale_(scale)
     {
     }
 
@@ -200,8 +190,7 @@ public:
     }
 
     PrettyAmount
-    operator()(Number v, Number::rounding_mode rounding = Number::getround())
-        const
+    operator()(Number v, Number::rounding_mode rounding = Number::getround()) const
     {
         NumberRoundModeGuard mg(rounding);
         STAmount amount{asset_, v * scale_};
@@ -241,8 +230,7 @@ struct BookSpec
     AccountID account;
     xrpl::Currency currency;
 
-    BookSpec(AccountID const& account_, xrpl::Currency const& currency_)
-        : account(account_), currency(currency_)
+    BookSpec(AccountID const& account_, xrpl::Currency const& currency_) : account(account_), currency(currency_)
     {
     }
 };
@@ -277,8 +265,7 @@ struct XRP_t
     PrettyAmount
     operator()(T v) const
     {
-        using TOut = std::
-            conditional_t<std::is_signed_v<T>, std::int64_t, std::uint64_t>;
+        using TOut = std::conditional_t<std::is_signed_v<T>, std::int64_t, std::uint64_t>;
         return {TOut{v} * dropsPerXRP};
     }
 
@@ -391,8 +378,7 @@ public:
     Account account;
     xrpl::Currency currency;
 
-    IOU(Account const& account_, xrpl::Currency const& currency_)
-        : account(account_), currency(currency_)
+    IOU(Account const& account_, xrpl::Currency const& currency_) : account(account_), currency(currency_)
     {
     }
 
@@ -426,10 +412,7 @@ public:
         return asset();
     }
 
-    template <
-        class T,
-        class = std::enable_if_t<
-            sizeof(T) >= sizeof(int) && std::is_arithmetic<T>::value>>
+    template <class T, class = std::enable_if_t<sizeof(T) >= sizeof(int) && std::is_arithmetic<T>::value>>
     PrettyAmount
     operator()(T v) const
     {
@@ -478,8 +461,7 @@ public:
     std::string name;
     xrpl::MPTID issuanceID;
 
-    MPT(std::string const& n, xrpl::MPTID const& issuanceID_)
-        : name(n), issuanceID(issuanceID_)
+    MPT(std::string const& n, xrpl::MPTID const& issuanceID_) : name(n), issuanceID(issuanceID_)
     {
     }
 
@@ -577,8 +559,7 @@ struct AnyAmount
     {
     }
 
-    AnyAmount(STAmount const& amount, any_t const*)
-        : is_any(true), value(amount)
+    AnyAmount(STAmount const& amount, any_t const*) : is_any(true), value(amount)
     {
     }
 
@@ -606,5 +587,3 @@ extern any_t const any;
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

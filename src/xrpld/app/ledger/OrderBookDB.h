@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_ORDERBOOKDB_H_INCLUDED
-#define XRPL_APP_LEDGER_ORDERBOOKDB_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/AcceptedLedgerTx.h>
 #include <xrpld/app/ledger/BookListeners.h>
@@ -29,16 +28,12 @@ public:
     /** @return a list of all orderbooks that want this issuerID and currencyID.
      */
     std::vector<Book>
-    getBooksByTakerPays(
-        Issue const&,
-        std::optional<Domain> const& domain = std::nullopt);
+    getBooksByTakerPays(Issue const&, std::optional<Domain> const& domain = std::nullopt);
 
     /** @return a count of all orderbooks that want this issuerID and
         currencyID. */
     int
-    getBookSize(
-        Issue const&,
-        std::optional<Domain> const& domain = std::nullopt);
+    getBookSize(Issue const&, std::optional<Domain> const& domain = std::nullopt);
 
     bool
     isBookToXRP(Issue const&, std::optional<Domain> domain = std::nullopt);
@@ -50,10 +45,7 @@ public:
 
     // see if this txn effects any orderbook
     void
-    processTxn(
-        std::shared_ptr<ReadView const> const& ledger,
-        AcceptedLedgerTx const& alTx,
-        MultiApiJson const& jvObj);
+    processTxn(std::shared_ptr<ReadView const> const& ledger, AcceptedLedgerTx const& alTx, MultiApiJson const& jvObj);
 
 private:
     Application& app_;
@@ -61,8 +53,7 @@ private:
     // Maps order books by "issue in" to "issue out":
     hardened_hash_map<Issue, hardened_hash_set<Issue>> allBooks_;
 
-    hardened_hash_map<std::pair<Issue, Domain>, hardened_hash_set<Issue>>
-        domainBooks_;
+    hardened_hash_map<std::pair<Issue, Domain>, hardened_hash_set<Issue>> domainBooks_;
 
     // does an order book to XRP exist
     hash_set<Issue> xrpBooks_;
@@ -82,5 +73,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

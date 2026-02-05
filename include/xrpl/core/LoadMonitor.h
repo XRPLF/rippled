@@ -1,5 +1,4 @@
-#ifndef XRPL_CORE_LOADMONITOR_H_INCLUDED
-#define XRPL_CORE_LOADMONITOR_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -27,9 +26,7 @@ public:
     addSamples(int count, std::chrono::milliseconds latency);
 
     void
-    setTargetLatency(
-        std::chrono::milliseconds avg,
-        std::chrono::milliseconds pk);
+    setTargetLatency(std::chrono::milliseconds avg, std::chrono::milliseconds pk);
 
     bool
     isOverTarget(std::chrono::milliseconds avg, std::chrono::milliseconds peak);
@@ -68,5 +65,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

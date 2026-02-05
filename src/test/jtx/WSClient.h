@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_WSCLIENT_H_INCLUDED
-#define XRPL_TEST_WSCLIENT_H_INCLUDED
+#pragma once
 
 #include <test/jtx/AbstractClient.h>
 
@@ -17,15 +16,11 @@ class WSClient : public AbstractClient
 public:
     /** Retrieve a message. */
     virtual std::optional<Json::Value>
-    getMsg(
-        std::chrono::milliseconds const& timeout = std::chrono::milliseconds{
-            0}) = 0;
+    getMsg(std::chrono::milliseconds const& timeout = std::chrono::milliseconds{0}) = 0;
 
     /** Retrieve a message that meets the predicate criteria. */
     virtual std::optional<Json::Value>
-    findMsg(
-        std::chrono::milliseconds const& timeout,
-        std::function<bool(Json::Value const&)> pred) = 0;
+    findMsg(std::chrono::milliseconds const& timeout, std::function<bool(Json::Value const&)> pred) = 0;
 };
 
 /** Returns a client operating through WebSockets/S. */
@@ -38,5 +33,3 @@ makeWSClient(
 
 }  // namespace test
 }  // namespace xrpl
-
-#endif

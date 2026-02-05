@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_OPENVIEW_H_INCLUDED
-#define XRPL_LEDGER_OPENVIEW_H_INCLUDED
+#pragma once
 
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/ReadView.h>
@@ -58,9 +57,7 @@ private:
         std::shared_ptr<Serializer const> meta;
 
         // Constructor needed for emplacement in std::map
-        txData(
-            std::shared_ptr<Serializer const> const& txn_,
-            std::shared_ptr<Serializer const> const& meta_)
+        txData(std::shared_ptr<Serializer const> const& txn_, std::shared_ptr<Serializer const> const& meta_)
             : txn(txn_), meta(meta_)
         {
         }
@@ -73,13 +70,11 @@ private:
         key_type,
         txData,
         std::less<key_type>,
-        boost::container::pmr::polymorphic_allocator<
-            std::pair<key_type const, txData>>>;
+        boost::container::pmr::polymorphic_allocator<std::pair<key_type const, txData>>>;
 
     // monotonic_resource_ must outlive `items_`. Make a pointer so it may be
     // easily moved.
-    std::unique_ptr<boost::container::pmr::monotonic_buffer_resource>
-        monotonic_resource_;
+    std::unique_ptr<boost::container::pmr::monotonic_buffer_resource> monotonic_resource_;
     txs_map txs_;
     Rules rules_;
     LedgerHeader header_;
@@ -135,16 +130,9 @@ public:
         The tx list starts empty and will contain
         all newly inserted tx.
     */
-    OpenView(
-        open_ledger_t,
-        ReadView const* base,
-        Rules const& rules,
-        std::shared_ptr<void const> hold = nullptr);
+    OpenView(open_ledger_t, ReadView const* base, Rules const& rules, std::shared_ptr<void const> hold = nullptr);
 
-    OpenView(
-        open_ledger_t,
-        Rules const& rules,
-        std::shared_ptr<ReadView const> const& base)
+    OpenView(open_ledger_t, Rules const& rules, std::shared_ptr<ReadView const> const& base)
         : OpenView(open_ledger, &*base, rules, base)
     {
     }
@@ -201,9 +189,7 @@ public:
     exists(Keylet const& k) const override;
 
     std::optional<key_type>
-    succ(
-        key_type const& key,
-        std::optional<key_type> const& last = std::nullopt) const override;
+    succ(key_type const& key, std::optional<key_type> const& last = std::nullopt) const override;
 
     std::shared_ptr<SLE const>
     read(Keylet const& k) const override;
@@ -253,5 +239,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

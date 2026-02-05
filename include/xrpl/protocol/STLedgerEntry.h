@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STLEDGERENTRY_H_INCLUDED
-#define XRPL_PROTOCOL_STLEDGERENTRY_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/STObject.h>
@@ -56,11 +55,7 @@ public:
     isThreadedType(Rules const& rules) const;
 
     bool
-    thread(
-        uint256 const& txID,
-        std::uint32_t ledgerSeq,
-        uint256& prevTxID,
-        std::uint32_t& prevLedgerID);
+    thread(uint256 const& txID, std::uint32_t ledgerSeq, uint256& prevTxID, std::uint32_t& prevLedgerID);
 
 private:
     /*  Make STObject comply with the template for this SLE type
@@ -82,13 +77,11 @@ private:
 
 using SLE = STLedgerEntry;
 
-inline STLedgerEntry::STLedgerEntry(LedgerEntryType type, uint256 const& key)
-    : STLedgerEntry(Keylet(type, key))
+inline STLedgerEntry::STLedgerEntry(LedgerEntryType type, uint256 const& key) : STLedgerEntry(Keylet(type, key))
 {
 }
 
-inline STLedgerEntry::STLedgerEntry(SerialIter&& sit, uint256 const& index)
-    : STLedgerEntry(sit, index)
+inline STLedgerEntry::STLedgerEntry(SerialIter&& sit, uint256 const& index) : STLedgerEntry(sit, index)
 {
 }
 
@@ -109,5 +102,3 @@ STLedgerEntry::getType() const
 }
 
 }  // namespace xrpl
-
-#endif

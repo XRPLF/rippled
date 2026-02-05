@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_DIGRAPH_H_INCLUDED
-#define XRPL_TEST_CSF_DIGRAPH_H_INCLUDED
+#pragma once
 
 #include <boost/container/flat_map.hpp>
 #include <boost/range/adaptor/transformed.hpp>
@@ -129,9 +128,7 @@ public:
     auto
     outVertices() const
     {
-        return boost::adaptors::transform(
-            graph_,
-            [](typename Graph::value_type const& v) { return v.first; });
+        return boost::adaptors::transform(graph_, [](typename Graph::value_type const& v) { return v.first; });
     }
 
     /** Range over target vertices
@@ -142,9 +139,7 @@ public:
     auto
     outVertices(Vertex source) const
     {
-        auto transform = [](typename Links::value_type const& link) {
-            return link.first;
-        };
+        auto transform = [](typename Links::value_type const& link) { return link.first; };
         auto it = graph_.find(source);
         if (it != graph_.end())
             return boost::adaptors::transform(it->second, transform);
@@ -232,4 +227,3 @@ public:
 }  // namespace csf
 }  // namespace test
 }  // namespace xrpl
-#endif

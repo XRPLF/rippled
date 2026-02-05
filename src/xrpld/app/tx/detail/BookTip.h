@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_BOOK_BOOKTIP_H_INCLUDED
-#define XRPL_APP_BOOK_BOOKTIP_H_INCLUDED
+#pragma once
 
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Indexes.h>
@@ -62,5 +61,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

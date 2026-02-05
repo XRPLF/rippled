@@ -3,10 +3,7 @@
 namespace xrpl {
 
 void
-initStateDB(
-    soci::session& session,
-    BasicConfig const& config,
-    std::string const& dbName)
+initStateDB(soci::session& session, BasicConfig const& config, std::string const& dbName)
 {
     open(session, config, dbName);
 
@@ -28,11 +25,9 @@ initStateDB(
     {
         // SOCI requires boost::optional (not std::optional) as the parameter.
         boost::optional<std::int64_t> countO;
-        session << "SELECT COUNT(Key) FROM DbState WHERE Key = 1;",
-            soci::into(countO);
+        session << "SELECT COUNT(Key) FROM DbState WHERE Key = 1;", soci::into(countO);
         if (!countO)
-            Throw<std::runtime_error>(
-                "Failed to fetch Key Count from DbState.");
+            Throw<std::runtime_error>("Failed to fetch Key Count from DbState.");
         count = *countO;
     }
 
@@ -44,11 +39,9 @@ initStateDB(
     {
         // SOCI requires boost::optional (not std::optional) as the parameter.
         boost::optional<std::int64_t> countO;
-        session << "SELECT COUNT(Key) FROM CanDelete WHERE Key = 1;",
-            soci::into(countO);
+        session << "SELECT COUNT(Key) FROM CanDelete WHERE Key = 1;", soci::into(countO);
         if (!countO)
-            Throw<std::runtime_error>(
-                "Failed to fetch Key Count from CanDelete.");
+            Throw<std::runtime_error>("Failed to fetch Key Count from CanDelete.");
         count = *countO;
     }
 
@@ -62,8 +55,7 @@ LedgerIndex
 getCanDelete(soci::session& session)
 {
     LedgerIndex seq;
-    session << "SELECT CanDeleteSeq FROM CanDelete WHERE Key = 1;",
-        soci::into(seq);
+    session << "SELECT CanDeleteSeq FROM CanDelete WHERE Key = 1;", soci::into(seq);
     ;
     return seq;
 }
@@ -71,8 +63,7 @@ getCanDelete(soci::session& session)
 LedgerIndex
 setCanDelete(soci::session& session, LedgerIndex canDelete)
 {
-    session << "UPDATE CanDelete SET CanDeleteSeq = :canDelete WHERE Key = 1;",
-        soci::use(canDelete);
+    session << "UPDATE CanDelete SET CanDeleteSeq = :canDelete WHERE Key = 1;", soci::use(canDelete);
     return canDelete;
 }
 
@@ -82,8 +73,7 @@ getSavedState(soci::session& session)
     SavedState state;
     session << "SELECT WritableDb, ArchiveDb, LastRotatedLedger"
                " FROM DbState WHERE Key = 1;",
-        soci::into(state.writableDb), soci::into(state.archiveDb),
-        soci::into(state.lastRotated);
+        soci::into(state.writableDb), soci::into(state.archiveDb), soci::into(state.lastRotated);
 
     return state;
 }
@@ -96,8 +86,7 @@ setSavedState(soci::session& session, SavedState const& state)
                " ArchiveDb = :archiveDb,"
                " LastRotatedLedger = :lastRotated"
                " WHERE Key = 1;",
-        soci::use(state.writableDb), soci::use(state.archiveDb),
-        soci::use(state.lastRotated);
+        soci::use(state.writableDb), soci::use(state.archiveDb), soci::use(state.lastRotated);
 }
 
 void

@@ -1,5 +1,4 @@
-#ifndef XRPL_CORE_JOBTYPES_H_INCLUDED
-#define XRPL_CORE_JOBTYPES_H_INCLUDED
+#pragma once
 
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobTypeInfo.h>
@@ -16,13 +15,7 @@ public:
     using const_iterator = Map::const_iterator;
 
 private:
-    JobTypes()
-        : m_unknown(
-              jtINVALID,
-              "invalid",
-              0,
-              std::chrono::milliseconds{0},
-              std::chrono::milliseconds{0})
+    JobTypes() : m_unknown(jtINVALID, "invalid", 0, std::chrono::milliseconds{0}, std::chrono::milliseconds{0})
     {
         using namespace std::chrono_literals;
         int maxLimit = std::numeric_limits<int>::max();
@@ -33,22 +26,17 @@ private:
                        int limit,
                        std::chrono::milliseconds avgLatency,
                        std::chrono::milliseconds peakLatency) {
-            XRPL_ASSERT(
-                m_map.find(jt) == m_map.end(),
-                "xrpl::JobTypes::JobTypes::add : unique job type input");
+            XRPL_ASSERT(m_map.find(jt) == m_map.end(), "xrpl::JobTypes::JobTypes::add : unique job type input");
 
             [[maybe_unused]] auto const inserted =
                 m_map
                     .emplace(
                         std::piecewise_construct,
                         std::forward_as_tuple(jt),
-                        std::forward_as_tuple(
-                            jt, name, limit, avgLatency, peakLatency))
+                        std::forward_as_tuple(jt, name, limit, avgLatency, peakLatency))
                     .second;
 
-            XRPL_ASSERT(
-                inserted == true,
-                "xrpl::JobTypes::JobTypes::add : input is inserted");
+            XRPL_ASSERT(inserted == true, "xrpl::JobTypes::JobTypes::add : input is inserted");
         };
 
         // clang-format off
@@ -171,5 +159,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

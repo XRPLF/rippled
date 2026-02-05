@@ -1,5 +1,4 @@
-#ifndef XRPL_CONDITIONS_FULFILLMENT_H
-#define XRPL_CONDITIONS_FULFILLMENT_H
+#pragma once
 
 #include <xrpld/conditions/Condition.h>
 
@@ -78,8 +77,7 @@ inline bool
 operator==(Fulfillment const& lhs, Fulfillment const& rhs)
 {
     // FIXME: for compound conditions, need to also check subtypes
-    return lhs.type() == rhs.type() && lhs.cost() == rhs.cost() &&
-        lhs.fingerprint() == rhs.fingerprint();
+    return lhs.type() == rhs.type() && lhs.cost() == rhs.cost() && lhs.fingerprint() == rhs.fingerprint();
 }
 
 inline bool
@@ -123,5 +121,3 @@ validate(Fulfillment const& f, Condition const& c);
 
 }  // namespace cryptoconditions
 }  // namespace xrpl
-
-#endif

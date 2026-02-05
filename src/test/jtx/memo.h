@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_MEMO_H_INCLUDED
-#define XRPL_TEST_JTX_MEMO_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
@@ -20,10 +19,7 @@ private:
     std::string type_;
 
 public:
-    memo(
-        std::string const& data,
-        std::string const& format,
-        std::string const& type)
+    memo(std::string const& data, std::string const& format, std::string const& type)
         : data_(data), format_(format), type_(type)
     {
     }
@@ -77,5 +73,3 @@ public:
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

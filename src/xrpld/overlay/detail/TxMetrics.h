@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_TXMETRICS_H_INCLUDED
-#define XRPL_OVERLAY_TXMETRICS_H_INCLUDED
+#pragma once
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/messages.h>
@@ -99,10 +98,7 @@ struct TxMetrics
        @param notEnabled number of peers with tx reduce-relay featured disabled
      */
     void
-    addMetrics(
-        std::uint32_t selected,
-        std::uint32_t suppressed,
-        std::uint32_t notEnabled);
+    addMetrics(std::uint32_t selected, std::uint32_t suppressed, std::uint32_t notEnabled);
     /** Add number of missing transactions that a node requested
        @param missing number of missing transactions
      */
@@ -118,5 +114,3 @@ struct TxMetrics
 }  // namespace metrics
 
 }  // namespace xrpl
-
-#endif

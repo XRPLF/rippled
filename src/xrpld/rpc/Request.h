@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_REQUEST_H_INCLUDED
-#define XRPL_RPC_REQUEST_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
@@ -14,16 +13,8 @@ namespace RPC {
 
 struct Request
 {
-    explicit Request(
-        beast::Journal journal_,
-        std::string const& method_,
-        Json::Value& params_,
-        Application& app_)
-        : journal(journal_)
-        , method(method_)
-        , params(params_)
-        , fee(Resource::feeReferenceRPC)
-        , app(app_)
+    explicit Request(beast::Journal journal_, std::string const& method_, Json::Value& params_, Application& app_)
+        : journal(journal_), method(method_), params(params_), fee(Resource::feeReferenceRPC), app(app_)
     {
     }
 
@@ -52,5 +43,3 @@ private:
 
 }  // namespace RPC
 }  // namespace xrpl
-
-#endif

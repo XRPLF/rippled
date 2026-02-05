@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_CONSENSUS_RCLCXTX_H_INCLUDED
-#define XRPL_APP_CONSENSUS_RCLCXTX_H_INCLUDED
+#pragma once
 
 #include <xrpl/shamap/SHAMap.h>
 
@@ -89,8 +88,7 @@ public:
     */
     RCLTxSet(std::shared_ptr<SHAMap> m) : map_{std::move(m)}
     {
-        XRPL_ASSERT(
-            map_, "xrpl::RCLTxSet::MutableTxSet::RCLTxSet : non-null input");
+        XRPL_ASSERT(map_, "xrpl::RCLTxSet::MutableTxSet::RCLTxSet : non-null input");
     }
 
     /** Constructor from a previously created MutableTxSet
@@ -157,8 +155,7 @@ public:
         for (auto const& [k, v] : delta)
         {
             XRPL_ASSERT(
-                (v.first && !v.second) || (v.second && !v.first),
-                "xrpl::RCLTxSet::compare : either side is set");
+                (v.first && !v.second) || (v.second && !v.first), "xrpl::RCLTxSet::compare : either side is set");
 
             ret[k] = static_cast<bool>(v.first);
         }
@@ -169,4 +166,3 @@ public:
     std::shared_ptr<SHAMap> map_;
 };
 }  // namespace xrpl
-#endif

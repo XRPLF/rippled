@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_BASICAPP_H_INCLUDED
-#define XRPL_APP_BASICAPP_H_INCLUDED
+#pragma once
 
 #include <boost/asio/io_context.hpp>
 
@@ -11,9 +10,7 @@
 class BasicApp
 {
 private:
-    std::optional<boost::asio::executor_work_guard<
-        boost::asio::io_context::executor_type>>
-        work_;
+    std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
     std::vector<std::thread> threads_;
     boost::asio::io_context io_context_;
 
@@ -27,5 +24,3 @@ public:
         return io_context_;
     }
 };
-
-#endif

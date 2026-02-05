@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_SHAMAPSYNCFILTER_H_INCLUDED
-#define XRPL_SHAMAP_SHAMAPSYNCFILTER_H_INCLUDED
+#pragma once
 
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
@@ -19,17 +18,11 @@ public:
 
     // Note that the nodeData is overwritten by this call
     virtual void
-    gotNode(
-        bool fromFilter,
-        SHAMapHash const& nodeHash,
-        std::uint32_t ledgerSeq,
-        Blob&& nodeData,
-        SHAMapNodeType type) const = 0;
+    gotNode(bool fromFilter, SHAMapHash const& nodeHash, std::uint32_t ledgerSeq, Blob&& nodeData, SHAMapNodeType type)
+        const = 0;
 
     virtual std::optional<Blob>
     getNode(SHAMapHash const& nodeHash) const = 0;
 };
 
 }  // namespace xrpl
-
-#endif

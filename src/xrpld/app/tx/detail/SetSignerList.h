@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_SETSIGNERLIST_H_INCLUDED
-#define XRPL_TX_SETSIGNERLIST_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/tx/detail/SignerEntries.h>
 #include <xrpld/app/tx/detail/Transactor.h>
@@ -45,18 +44,10 @@ public:
 
     // Interface used by DeleteAccount
     static TER
-    removeFromLedger(
-        Application& app,
-        ApplyView& view,
-        AccountID const& account,
-        beast::Journal j);
+    removeFromLedger(Application& app, ApplyView& view, AccountID const& account, beast::Journal j);
 
 private:
-    static std::tuple<
-        NotTEC,
-        std::uint32_t,
-        std::vector<SignerEntries::SignerEntry>,
-        Operation>
+    static std::tuple<NotTEC, std::uint32_t, std::vector<SignerEntries::SignerEntry>, Operation>
     determineOperation(STTx const& tx, ApplyFlags flags, beast::Journal j);
 
     static NotTEC
@@ -73,12 +64,9 @@ private:
     destroySignerList();
 
     void
-    writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t flags)
-        const;
+    writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t flags) const;
 };
 
 using SignerListSet = SetSignerList;
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_NETWORKOPS_H_INCLUDED
-#define XRPL_APP_MISC_NETWORKOPS_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/ledger/Ledger.h>
@@ -92,8 +91,7 @@ public:
     virtual OperatingMode
     getOperatingMode() const = 0;
     virtual std::string
-    strOperatingMode(OperatingMode const mode, bool const admin = false)
-        const = 0;
+    strOperatingMode(OperatingMode const mode, bool const admin = false) const = 0;
     virtual std::string
     strOperatingMode(bool const admin = false) const = 0;
 
@@ -116,11 +114,7 @@ public:
      * @param failType fail_hard setting from transaction submission.
      */
     virtual void
-    processTransaction(
-        std::shared_ptr<Transaction>& transaction,
-        bool bUnlimited,
-        bool bLocal,
-        FailHard failType) = 0;
+    processTransaction(std::shared_ptr<Transaction>& transaction, bool bUnlimited, bool bLocal, FailHard failType) = 0;
 
     /**
      * Process a set of transactions synchronously, and ensuring that they are
@@ -137,9 +131,7 @@ public:
     //
 
     virtual Json::Value
-    getOwnerInfo(
-        std::shared_ptr<ReadView const> lpLedger,
-        AccountID const& account) = 0;
+    getOwnerInfo(std::shared_ptr<ReadView const> lpLedger, AccountID const& account) = 0;
 
     //--------------------------------------------------------------------------
     //
@@ -163,18 +155,14 @@ public:
     processTrustedProposal(RCLCxPeerPos peerPos) = 0;
 
     virtual bool
-    recvValidation(
-        std::shared_ptr<STValidation> const& val,
-        std::string const& source) = 0;
+    recvValidation(std::shared_ptr<STValidation> const& val, std::string const& source) = 0;
 
     virtual void
     mapComplete(std::shared_ptr<SHAMap> const& map, bool fromAcquire) = 0;
 
     // network state machine
     virtual bool
-    beginConsensus(
-        uint256 const& netLCL,
-        std::unique_ptr<std::stringstream> const& clog) = 0;
+    beginConsensus(uint256 const& netLCL, std::unique_ptr<std::stringstream> const& clog) = 0;
     virtual void
     endConsensus(std::unique_ptr<std::stringstream> const& clog) = 0;
     virtual void
@@ -229,9 +217,7 @@ public:
         proposing being accepted.
     */
     virtual std::uint32_t
-    acceptLedger(
-        std::optional<std::chrono::milliseconds> consensusDelay =
-            std::nullopt) = 0;
+    acceptLedger(std::optional<std::chrono::milliseconds> consensusDelay = std::nullopt) = 0;
 
     virtual void
     reportFeeChange() = 0;
@@ -276,5 +262,3 @@ make_NetworkOPs(
     beast::insight::Collector::ptr const& collector);
 
 }  // namespace xrpl
-
-#endif

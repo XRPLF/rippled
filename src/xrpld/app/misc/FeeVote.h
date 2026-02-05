@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_FEEVOTE_H_INCLUDED
-#define XRPL_APP_MISC_FEEVOTE_H_INCLUDED
+#pragma once
 
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/STValidation.h>
@@ -19,10 +18,7 @@ public:
         @param baseValidation
     */
     virtual void
-    doValidation(
-        Fees const& lastFees,
-        Rules const& rules,
-        STValidation& val) = 0;
+    doValidation(Fees const& lastFees, Rules const& rules, STValidation& val) = 0;
 
     /** Cast our local vote on the fee.
 
@@ -45,5 +41,3 @@ std::unique_ptr<FeeVote>
 make_FeeVote(FeeSetup const& setup, beast::Journal journal);
 
 }  // namespace xrpl
-
-#endif

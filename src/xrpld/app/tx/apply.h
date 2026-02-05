@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_APPLY_H_INCLUDED
-#define XRPL_TX_APPLY_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/tx/applySteps.h>
 #include <xrpld/core/Config.h>
@@ -42,11 +41,7 @@ enum class Validity {
     @see Validity
 */
 std::pair<Validity, std::string>
-checkValidity(
-    HashRouter& router,
-    STTx const& tx,
-    Rules const& rules,
-    Config const& config);
+checkValidity(HashRouter& router, STTx const& tx, Rules const& rules, Config const& config);
 
 /** Sets the validity of a given transaction in the cache.
 
@@ -102,12 +97,7 @@ forceValidity(HashRouter& router, uint256 const& txid, Validity validity);
             whether or not the transaction was applied.
 */
 ApplyResult
-apply(
-    Application& app,
-    OpenView& view,
-    STTx const& tx,
-    ApplyFlags flags,
-    beast::Journal journal);
+apply(Application& app, OpenView& view, STTx const& tx, ApplyFlags flags, beast::Journal journal);
 
 /** Enum class for return value from `applyTransaction`
 
@@ -139,5 +129,3 @@ applyTransaction(
     beast::Journal journal);
 
 }  // namespace xrpl
-
-#endif

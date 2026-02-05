@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_XCHAINBRIDGE_H_INCLUDED
-#define XRPL_TX_XCHAINBRIDGE_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
@@ -176,8 +175,7 @@ public:
     // Blocker since we cannot accurately calculate the consequences
     static constexpr ConsequencesFactoryType ConsequencesFactory{Blocker};
 
-    explicit XChainAddAccountCreateAttestation(ApplyContext& ctx)
-        : Transactor(ctx)
+    explicit XChainAddAccountCreateAttestation(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
@@ -240,5 +238,3 @@ using XChainAccountCreateCommit = XChainCreateAccountCommit;
 //------------------------------------------------------------------------------
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_DELEGATESET_H_INCLUDED
-#define XRPL_TX_DELEGATESET_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
@@ -25,13 +24,7 @@ public:
 
     // Interface used by DeleteAccount
     static TER
-    deleteDelegate(
-        ApplyView& view,
-        std::shared_ptr<SLE> const& sle,
-        AccountID const& account,
-        beast::Journal j);
+    deleteDelegate(ApplyView& view, std::shared_ptr<SLE> const& sle, AccountID const& account, beast::Journal j);
 };
 
 }  // namespace xrpl
-
-#endif

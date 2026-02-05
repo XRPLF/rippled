@@ -18,18 +18,15 @@ SetAccount::makeTxConsequences(PreflightContext const& ctx)
     // The SetAccount may be a blocker, but only if it sets or clears
     // specific account flags.
     auto getTxConsequencesCategory = [](STTx const& tx) {
-        if (std::uint32_t const uTxFlags = tx.getFlags();
-            uTxFlags & (tfRequireAuth | tfOptionalAuth))
+        if (std::uint32_t const uTxFlags = tx.getFlags(); uTxFlags & (tfRequireAuth | tfOptionalAuth))
             return TxConsequences::blocker;
 
-        if (auto const uSetFlag = tx[~sfSetFlag]; uSetFlag &&
-            (*uSetFlag == asfRequireAuth || *uSetFlag == asfDisableMaster ||
-             *uSetFlag == asfAccountTxnID))
+        if (auto const uSetFlag = tx[~sfSetFlag];
+            uSetFlag && (*uSetFlag == asfRequireAuth || *uSetFlag == asfDisableMaster || *uSetFlag == asfAccountTxnID))
             return TxConsequences::blocker;
 
         if (auto const uClearFlag = tx[~sfClearFlag]; uClearFlag &&
-            (*uClearFlag == asfRequireAuth || *uClearFlag == asfDisableMaster ||
-             *uClearFlag == asfAccountTxnID))
+            (*uClearFlag == asfRequireAuth || *uClearFlag == asfDisableMaster || *uClearFlag == asfAccountTxnID))
             return TxConsequences::blocker;
 
         return TxConsequences::normal;
@@ -64,10 +61,8 @@ SetAccount::preflight(PreflightContext const& ctx)
     //
     // RequireAuth
     //
-    bool bSetRequireAuth =
-        (uTxFlags & tfRequireAuth) || (uSetFlag == asfRequireAuth);
-    bool bClearRequireAuth =
-        (uTxFlags & tfOptionalAuth) || (uClearFlag == asfRequireAuth);
+    bool bSetRequireAuth = (uTxFlags & tfRequireAuth) || (uSetFlag == asfRequireAuth);
+    bool bClearRequireAuth = (uTxFlags & tfOptionalAuth) || (uClearFlag == asfRequireAuth);
 
     if (bSetRequireAuth && bClearRequireAuth)
     {
@@ -78,10 +73,8 @@ SetAccount::preflight(PreflightContext const& ctx)
     //
     // RequireDestTag
     //
-    bool bSetRequireDest =
-        (uTxFlags & tfRequireDestTag) || (uSetFlag == asfRequireDest);
-    bool bClearRequireDest =
-        (uTxFlags & tfOptionalDestTag) || (uClearFlag == asfRequireDest);
+    bool bSetRequireDest = (uTxFlags & tfRequireDestTag) || (uSetFlag == asfRequireDest);
+    bool bClearRequireDest = (uTxFlags & tfOptionalDestTag) || (uClearFlag == asfRequireDest);
 
     if (bSetRequireDest && bClearRequireDest)
     {
@@ -92,10 +85,8 @@ SetAccount::preflight(PreflightContext const& ctx)
     //
     // DisallowXRP
     //
-    bool bSetDisallowXRP =
-        (uTxFlags & tfDisallowXRP) || (uSetFlag == asfDisallowXRP);
-    bool bClearDisallowXRP =
-        (uTxFlags & tfAllowXRP) || (uClearFlag == asfDisallowXRP);
+    bool bSetDisallowXRP = (uTxFlags & tfDisallowXRP) || (uSetFlag == asfDisallowXRP);
+    bool bClearDisallowXRP = (uTxFlags & tfAllowXRP) || (uClearFlag == asfDisallowXRP);
 
     if (bSetDisallowXRP && bClearDisallowXRP)
     {
@@ -110,15 +101,13 @@ SetAccount::preflight(PreflightContext const& ctx)
 
         if (uRate && (uRate < QUALITY_ONE))
         {
-            JLOG(j.trace())
-                << "Malformed transaction: Transfer rate too small.";
+            JLOG(j.trace()) << "Malformed transaction: Transfer rate too small.";
             return temBAD_TRANSFER_RATE;
         }
 
         if (uRate > 2 * QUALITY_ONE)
         {
-            JLOG(j.trace())
-                << "Malformed transaction: Transfer rate too large.";
+            JLOG(j.trace()) << "Malformed transaction: Transfer rate too large.";
             return temBAD_TRANSFER_RATE;
         }
     }
@@ -127,9 +116,7 @@ SetAccount::preflight(PreflightContext const& ctx)
     if (tx.isFieldPresent(sfTickSize))
     {
         auto uTickSize = tx[sfTickSize];
-        if (uTickSize &&
-            ((uTickSize < Quality::minTickSize) ||
-             (uTickSize > Quality::maxTickSize)))
+        if (uTickSize && ((uTickSize < Quality::minTickSize) || (uTickSize > Quality::maxTickSize)))
         {
             JLOG(j.trace()) << "Malformed transaction: Bad tick size.";
             return temBAD_TICK_SIZE;
@@ -145,20 +132,17 @@ SetAccount::preflight(PreflightContext const& ctx)
         }
     }
 
-    if (auto const domain = tx[~sfDomain];
-        domain && domain->size() > maxDomainLength)
+    if (auto const domain = tx[~sfDomain]; domain && domain->size() > maxDomainLength)
     {
         JLOG(j.trace()) << "domain too long";
         return telBAD_DOMAIN;
     }
 
     // Configure authorized minting account:
-    if (uSetFlag == asfAuthorizedNFTokenMinter &&
-        !tx.isFieldPresent(sfNFTokenMinter))
+    if (uSetFlag == asfAuthorizedNFTokenMinter && !tx.isFieldPresent(sfNFTokenMinter))
         return temMALFORMED;
 
-    if (uClearFlag == asfAuthorizedNFTokenMinter &&
-        tx.isFieldPresent(sfNFTokenMinter))
+    if (uClearFlag == asfAuthorizedNFTokenMinter && tx.isFieldPresent(sfNFTokenMinter))
         return temMALFORMED;
 
     return tesSUCCESS;
@@ -192,28 +176,22 @@ SetAccount::checkPermission(ReadView const& view, STTx const& tx)
     if (uSetFlag != 0 || uClearFlag != 0 || uTxFlags & tfUniversalMask)
         return terNO_DELEGATE_PERMISSION;
 
-    if (tx.isFieldPresent(sfEmailHash) &&
-        !granularPermissions.contains(AccountEmailHashSet))
+    if (tx.isFieldPresent(sfEmailHash) && !granularPermissions.contains(AccountEmailHashSet))
         return terNO_DELEGATE_PERMISSION;
 
-    if (tx.isFieldPresent(sfWalletLocator) ||
-        tx.isFieldPresent(sfNFTokenMinter))
+    if (tx.isFieldPresent(sfWalletLocator) || tx.isFieldPresent(sfNFTokenMinter))
         return terNO_DELEGATE_PERMISSION;
 
-    if (tx.isFieldPresent(sfMessageKey) &&
-        !granularPermissions.contains(AccountMessageKeySet))
+    if (tx.isFieldPresent(sfMessageKey) && !granularPermissions.contains(AccountMessageKeySet))
         return terNO_DELEGATE_PERMISSION;
 
-    if (tx.isFieldPresent(sfDomain) &&
-        !granularPermissions.contains(AccountDomainSet))
+    if (tx.isFieldPresent(sfDomain) && !granularPermissions.contains(AccountDomainSet))
         return terNO_DELEGATE_PERMISSION;
 
-    if (tx.isFieldPresent(sfTransferRate) &&
-        !granularPermissions.contains(AccountTransferRateSet))
+    if (tx.isFieldPresent(sfTransferRate) && !granularPermissions.contains(AccountTransferRateSet))
         return terNO_DELEGATE_PERMISSION;
 
-    if (tx.isFieldPresent(sfTickSize) &&
-        !granularPermissions.contains(AccountTickSizeSet))
+    if (tx.isFieldPresent(sfTickSize) && !granularPermissions.contains(AccountTickSizeSet))
         return terNO_DELEGATE_PERMISSION;
 
     return tesSUCCESS;
@@ -235,8 +213,7 @@ SetAccount::preclaim(PreclaimContext const& ctx)
     std::uint32_t const uSetFlag = ctx.tx.getFieldU32(sfSetFlag);
 
     // legacy AccountSet flags
-    bool bSetRequireAuth =
-        (uTxFlags & tfRequireAuth) || (uSetFlag == asfRequireAuth);
+    bool bSetRequireAuth = (uTxFlags & tfRequireAuth) || (uSetFlag == asfRequireAuth);
 
     //
     // RequireAuth
@@ -274,8 +251,7 @@ SetAccount::preclaim(PreclaimContext const& ctx)
             // Cannot set NoFreeze if clawback is enabled
             if (uFlagsIn & lsfAllowTrustLineClawback)
             {
-                JLOG(ctx.j.trace())
-                    << "Can't set NoFreeze if clawback is enabled";
+                JLOG(ctx.j.trace()) << "Can't set NoFreeze if clawback is enabled";
                 return tecNO_PERMISSION;
             }
         }
@@ -300,18 +276,12 @@ SetAccount::doApply()
 
     // legacy AccountSet flags
     std::uint32_t const uTxFlags{tx.getFlags()};
-    bool const bSetRequireDest{
-        (uTxFlags & tfRequireDestTag) || (uSetFlag == asfRequireDest)};
-    bool const bClearRequireDest{
-        (uTxFlags & tfOptionalDestTag) || (uClearFlag == asfRequireDest)};
-    bool const bSetRequireAuth{
-        (uTxFlags & tfRequireAuth) || (uSetFlag == asfRequireAuth)};
-    bool const bClearRequireAuth{
-        (uTxFlags & tfOptionalAuth) || (uClearFlag == asfRequireAuth)};
-    bool const bSetDisallowXRP{
-        (uTxFlags & tfDisallowXRP) || (uSetFlag == asfDisallowXRP)};
-    bool const bClearDisallowXRP{
-        (uTxFlags & tfAllowXRP) || (uClearFlag == asfDisallowXRP)};
+    bool const bSetRequireDest{(uTxFlags & tfRequireDestTag) || (uSetFlag == asfRequireDest)};
+    bool const bClearRequireDest{(uTxFlags & tfOptionalDestTag) || (uClearFlag == asfRequireDest)};
+    bool const bSetRequireAuth{(uTxFlags & tfRequireAuth) || (uSetFlag == asfRequireAuth)};
+    bool const bClearRequireAuth{(uTxFlags & tfOptionalAuth) || (uClearFlag == asfRequireAuth)};
+    bool const bSetDisallowXRP{(uTxFlags & tfDisallowXRP) || (uSetFlag == asfDisallowXRP)};
+    bool const bClearDisallowXRP{(uTxFlags & tfAllowXRP) || (uClearFlag == asfDisallowXRP)};
 
     bool const sigWithMaster{[&tx, &acct = account_]() {
         auto const spk = tx.getSigningPubKey();
@@ -382,8 +352,7 @@ SetAccount::doApply()
             return tecNEED_MASTER_KEY;
         }
 
-        if ((!sle->isFieldPresent(sfRegularKey)) &&
-            (!view().peek(keylet::signers(account_))))
+        if ((!sle->isFieldPresent(sfRegularKey)) && (!view().peek(keylet::signers(account_))))
         {
             // Account has no regular key or multi-signer signer list.
             return tecNO_ALTERNATIVE_KEY;
@@ -438,8 +407,7 @@ SetAccount::doApply()
     // If you have set NoFreeze, you may not clear GlobalFreeze
     // This prevents those who have set NoFreeze from using
     // GlobalFreeze strategically.
-    if ((uSetFlag != asfGlobalFreeze) && (uClearFlag == asfGlobalFreeze) &&
-        ((uFlagsOut & lsfNoFreeze) == 0))
+    if ((uSetFlag != asfGlobalFreeze) && (uClearFlag == asfGlobalFreeze) && ((uFlagsOut & lsfNoFreeze) == 0))
     {
         JLOG(j_.trace()) << "Clear GlobalFreeze flag";
         uFlagsOut &= ~lsfGlobalFreeze;
@@ -591,8 +559,7 @@ SetAccount::doApply()
     if (uSetFlag == asfAuthorizedNFTokenMinter)
         sle->setAccountID(sfNFTokenMinter, ctx_.tx[sfNFTokenMinter]);
 
-    if (uClearFlag == asfAuthorizedNFTokenMinter &&
-        sle->isFieldPresent(sfNFTokenMinter))
+    if (uClearFlag == asfAuthorizedNFTokenMinter && sle->isFieldPresent(sfNFTokenMinter))
         sle->makeFieldAbsent(sfNFTokenMinter);
 
     if (uSetFlag == asfDisallowIncomingNFTokenOffer)
@@ -625,8 +592,7 @@ SetAccount::doApply()
     }
 
     // Set flag for clawback
-    if (ctx_.view().rules().enabled(featureClawback) &&
-        uSetFlag == asfAllowTrustLineClawback)
+    if (ctx_.view().rules().enabled(featureClawback) && uSetFlag == asfAllowTrustLineClawback)
     {
         JLOG(j_.trace()) << "set allow clawback";
         uFlagsOut |= lsfAllowTrustLineClawback;

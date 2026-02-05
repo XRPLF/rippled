@@ -1,5 +1,4 @@
-#ifndef BEAST_ASIO_IO_LATENCY_PROBE_H_INCLUDED
-#define BEAST_ASIO_IO_LATENCY_PROBE_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -32,11 +31,7 @@ private:
 
 public:
     io_latency_probe(duration const& period, boost::asio::io_context& ios)
-        : m_count(1)
-        , m_period(period)
-        , m_ios(ios)
-        , m_timer(m_ios)
-        , m_cancel(false)
+        : m_count(1), m_period(period), m_ios(ios), m_timer(m_ios), m_cancel(false)
     {
     }
 
@@ -91,10 +86,7 @@ public:
         std::lock_guard lock(m_mutex);
         if (m_cancel)
             throw std::logic_error("io_latency_probe is canceled");
-        boost::asio::post(
-            m_ios,
-            sample_op<Handler>(
-                std::forward<Handler>(handler), Clock::now(), false, this));
+        boost::asio::post(m_ios, sample_op<Handler>(std::forward<Handler>(handler), Clock::now(), false, this));
     }
 
     /** Initiate continuous i/o latency sampling.
@@ -108,10 +100,7 @@ public:
         std::lock_guard lock(m_mutex);
         if (m_cancel)
             throw std::logic_error("io_latency_probe is canceled");
-        boost::asio::post(
-            m_ios,
-            sample_op<Handler>(
-                std::forward<Handler>(handler), Clock::now(), true, this));
+        boost::asio::post(m_ios, sample_op<Handler>(std::forward<Handler>(handler), Clock::now(), true, this));
     }
 
 private:
@@ -151,15 +140,8 @@ private:
         bool m_repeat;
         io_latency_probe* m_probe;
 
-        sample_op(
-            Handler const& handler,
-            time_point const& start,
-            bool repeat,
-            io_latency_probe* probe)
-            : m_handler(handler)
-            , m_start(start)
-            , m_repeat(repeat)
-            , m_probe(probe)
+        sample_op(Handler const& handler, time_point const& start, bool repeat, io_latency_probe* probe)
+            : m_handler(handler), m_start(start), m_repeat(repeat), m_probe(probe)
         {
             XRPL_ASSERT(
                 m_probe,
@@ -214,23 +196,19 @@ private:
                 // Calculate when we want to sample again, and
                 // adjust for the expected latency.
                 //
-                typename Clock::time_point const when(
-                    now + m_probe->m_period - 2 * elapsed);
+                typename Clock::time_point const when(now + m_probe->m_period - 2 * elapsed);
 
                 if (when <= now)
                 {
                     // The latency is too high to maintain the desired
                     // period so don't bother with a timer.
                     //
-                    boost::asio::post(
-                        m_probe->m_ios,
-                        sample_op<Handler>(m_handler, now, m_repeat, m_probe));
+                    boost::asio::post(m_probe->m_ios, sample_op<Handler>(m_handler, now, m_repeat, m_probe));
                 }
                 else
                 {
                     m_probe->m_timer.expires_after(when - now);
-                    m_probe->m_timer.async_wait(
-                        sample_op<Handler>(m_handler, now, m_repeat, m_probe));
+                    m_probe->m_timer.async_wait(sample_op<Handler>(m_handler, now, m_repeat, m_probe));
                 }
             }
         }
@@ -241,13 +219,9 @@ private:
             if (!m_probe)
                 return;
             typename Clock::time_point const now(Clock::now());
-            boost::asio::post(
-                m_probe->m_ios,
-                sample_op<Handler>(m_handler, now, m_repeat, m_probe));
+            boost::asio::post(m_probe->m_ios, sample_op<Handler>(m_handler, now, m_repeat, m_probe));
         }
     };
 };
 
 }  // namespace beast
-
-#endif

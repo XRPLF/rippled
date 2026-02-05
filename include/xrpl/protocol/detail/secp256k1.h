@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_SECP256K1_H_INCLUDED
-#define XRPL_PROTOCOL_SECP256K1_H_INCLUDED
+#pragma once
 
 #include <secp256k1.h>
 
@@ -12,9 +11,7 @@ secp256k1Context()
     struct holder
     {
         secp256k1_context* impl;
-        holder()
-            : impl(secp256k1_context_create(
-                  SECP256K1_CONTEXT_VERIFY | SECP256K1_CONTEXT_SIGN))
+        holder() : impl(secp256k1_context_create(SECP256K1_CONTEXT_VERIFY | SECP256K1_CONTEXT_SIGN))
         {
         }
 
@@ -28,5 +25,3 @@ secp256k1Context()
 }
 
 }  // namespace xrpl
-
-#endif

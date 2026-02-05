@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_TAGGEDCACHE_H_INCLUDED
-#define XRPL_BASICS_TAGGEDCACHE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/Log.h>
@@ -56,8 +55,7 @@ public:
         clock_type::duration expiration,
         clock_type& clock,
         beast::Journal journal,
-        beast::insight::Collector::ptr const& collector =
-            beast::insight::NullCollector::New());
+        beast::insight::Collector::ptr const& collector = beast::insight::NullCollector::New());
 
 public:
     /** Return the clock associated with the cache. */
@@ -114,15 +112,10 @@ public:
     */
     template <class R>
     bool
-    canonicalize(
-        key_type const& key,
-        SharedPointerType& data,
-        R&& replaceCallback);
+    canonicalize(key_type const& key, SharedPointerType& data, R&& replaceCallback);
 
     bool
-    canonicalize_replace_cache(
-        key_type const& key,
-        SharedPointerType const& data);
+    canonicalize_replace_cache(key_type const& key, SharedPointerType const& data);
 
     bool
     canonicalize_replace_client(key_type const& key, SharedPointerType& data);
@@ -136,8 +129,7 @@ public:
     */
     template <class ReturnType = bool>
     auto
-    insert(key_type const& key, T const& value)
-        -> std::enable_if_t<!IsKeyCache, ReturnType>;
+    insert(key_type const& key, T const& value) -> std::enable_if_t<!IsKeyCache, ReturnType>;
 
     template <class ReturnType = bool>
     auto
@@ -183,10 +175,7 @@ private:
     struct Stats
     {
         template <class Handler>
-        Stats(
-            std::string const& prefix,
-            Handler const& handler,
-            beast::insight::Collector::ptr const& collector)
+        Stats(std::string const& prefix, Handler const& handler, beast::insight::Collector::ptr const& collector)
             : hook(collector->make_hook(handler))
             , size(collector->make_gauge(prefix, "size"))
             , hit_rate(collector->make_gauge(prefix, "hit_rate"))
@@ -208,8 +197,7 @@ private:
     public:
         clock_type::time_point last_access;
 
-        explicit KeyOnlyEntry(clock_type::time_point const& last_access_)
-            : last_access(last_access_)
+        explicit KeyOnlyEntry(clock_type::time_point const& last_access_) : last_access(last_access_)
         {
         }
 
@@ -226,9 +214,7 @@ private:
         shared_weak_combo_pointer_type ptr;
         clock_type::time_point last_access;
 
-        ValueEntry(
-            clock_type::time_point const& last_access_,
-            shared_pointer_type const& ptr_)
+        ValueEntry(clock_type::time_point const& last_access_, shared_pointer_type const& ptr_)
             : ptr(ptr_), last_access(last_access_)
         {
         }
@@ -262,18 +248,13 @@ private:
         }
     };
 
-    typedef
-        typename std::conditional<IsKeyCache, KeyOnlyEntry, ValueEntry>::type
-            Entry;
+    typedef typename std::conditional<IsKeyCache, KeyOnlyEntry, ValueEntry>::type Entry;
 
-    using KeyOnlyCacheType =
-        hardened_partitioned_hash_map<key_type, KeyOnlyEntry, Hash, KeyEqual>;
+    using KeyOnlyCacheType = hardened_partitioned_hash_map<key_type, KeyOnlyEntry, Hash, KeyEqual>;
 
-    using KeyValueCacheType =
-        hardened_partitioned_hash_map<key_type, ValueEntry, Hash, KeyEqual>;
+    using KeyValueCacheType = hardened_partitioned_hash_map<key_type, ValueEntry, Hash, KeyEqual>;
 
-    using cache_type =
-        hardened_partitioned_hash_map<key_type, Entry, Hash, KeyEqual>;
+    using cache_type = hardened_partitioned_hash_map<key_type, Entry, Hash, KeyEqual>;
 
     [[nodiscard]] std::thread
     sweepHelper(
@@ -316,5 +297,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

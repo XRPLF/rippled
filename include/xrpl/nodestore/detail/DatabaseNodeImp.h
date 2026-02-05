@@ -1,5 +1,4 @@
-#ifndef XRPL_NODESTORE_DATABASENODEIMP_H_INCLUDED
-#define XRPL_NODESTORE_DATABASENODEIMP_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/chrono.h>
@@ -22,8 +21,7 @@ public:
         std::shared_ptr<Backend> backend,
         Section const& config,
         beast::Journal j)
-        : Database(scheduler, readThreads, config, j)
-        , backend_(std::move(backend))
+        : Database(scheduler, readThreads, config, j), backend_(std::move(backend))
     {
         std::optional<int> cacheSize, cacheAge;
 
@@ -32,8 +30,7 @@ public:
             cacheSize = get<int>(config, "cache_size");
             if (cacheSize.value() < 0)
             {
-                Throw<std::runtime_error>(
-                    "Specified negative value for cache_size");
+                Throw<std::runtime_error>("Specified negative value for cache_size");
             }
         }
 
@@ -42,19 +39,14 @@ public:
             cacheAge = get<int>(config, "cache_age");
             if (cacheAge.value() < 0)
             {
-                Throw<std::runtime_error>(
-                    "Specified negative value for cache_age");
+                Throw<std::runtime_error>("Specified negative value for cache_age");
             }
         }
 
         if (cacheSize != 0 || cacheAge != 0)
         {
             cache_ = std::make_shared<TaggedCache<uint256, NodeObject>>(
-                "DatabaseNodeImp",
-                cacheSize.value_or(0),
-                std::chrono::minutes(cacheAge.value_or(0)),
-                stopwatch(),
-                j);
+                "DatabaseNodeImp", cacheSize.value_or(0), std::chrono::minutes(cacheAge.value_or(0)), stopwatch(), j);
         }
 
         XRPL_ASSERT(
@@ -87,8 +79,7 @@ public:
     }
 
     void
-    store(NodeObjectType type, Blob&& data, uint256 const& hash, std::uint32_t)
-        override;
+    store(NodeObjectType type, Blob&& data, uint256 const& hash, std::uint32_t) override;
 
     bool
     isSameDB(std::uint32_t, std::uint32_t) override
@@ -110,8 +101,7 @@ public:
     asyncFetch(
         uint256 const& hash,
         std::uint32_t ledgerSeq,
-        std::function<void(std::shared_ptr<NodeObject> const&)>&& callback)
-        override;
+        std::function<void(std::shared_ptr<NodeObject> const&)>&& callback) override;
 
     void
     sweep() override;
@@ -124,11 +114,7 @@ private:
     std::shared_ptr<Backend> backend_;
 
     std::shared_ptr<NodeObject>
-    fetchNodeObject(
-        uint256 const& hash,
-        std::uint32_t,
-        FetchReport& fetchReport,
-        bool duplicate) override;
+    fetchNodeObject(uint256 const& hash, std::uint32_t, FetchReport& fetchReport, bool duplicate) override;
 
     void
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
@@ -139,5 +125,3 @@ private:
 
 }  // namespace NodeStore
 }  // namespace xrpl
-
-#endif
