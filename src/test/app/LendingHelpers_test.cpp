@@ -592,20 +592,18 @@ class LendingHelpers_test : public beast::unit_test::suite
         auto const periodicRate = loanPeriodicRate(loanInterestRate, paymentInterval);
         Number const overpaymentAmount{50};
 
-        ExtendedPaymentComponents const overpaymentComponents = computeOverpaymentComponents(
+        auto const overpaymentComponents = computeOverpaymentComponents(
             asset, loanScale, overpaymentAmount, TenthBips32(0), TenthBips32(0), managementFeeRate);
 
         auto const loanProperties = computeLoanProperties(
             asset, loanPrincipal, loanInterestRate, paymentInterval, paymentsRemaining, managementFeeRate, loanScale);
-
-        Number const periodicPayment = loanProperties.periodicPayment;
 
         auto const ret = tryOverpayment(
             asset,
             loanScale,
             overpaymentComponents,
             loanProperties.loanState,
-            periodicPayment,
+            loanProperties.periodicPayment,
             periodicRate,
             paymentsRemaining,
             managementFeeRate,
@@ -672,7 +670,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         std::uint32_t const paymentsRemaining = 10;
         auto const periodicRate = loanPeriodicRate(loanInterestRate, paymentInterval);
 
-        ExtendedPaymentComponents const overpaymentComponents = computeOverpaymentComponents(
+        auto const overpaymentComponents = computeOverpaymentComponents(
             asset,
             loanScale,
             Number{50, 0},
@@ -683,14 +681,12 @@ class LendingHelpers_test : public beast::unit_test::suite
         auto const loanProperties = computeLoanProperties(
             asset, loanPrincipal, loanInterestRate, paymentInterval, paymentsRemaining, managementFeeRate, loanScale);
 
-        Number const periodicPayment = loanProperties.periodicPayment;
-
         auto const ret = tryOverpayment(
             asset,
             loanScale,
             overpaymentComponents,
             loanProperties.loanState,
-            periodicPayment,
+            loanProperties.periodicPayment,
             periodicRate,
             paymentsRemaining,
             managementFeeRate,
@@ -758,7 +754,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         std::uint32_t const paymentsRemaining = 10;
         auto const periodicRate = loanPeriodicRate(loanInterestRate, paymentInterval);
 
-        ExtendedPaymentComponents const overpaymentComponents = computeOverpaymentComponents(
+        auto const overpaymentComponents = computeOverpaymentComponents(
             asset,
             loanScale,
             Number{50, 0},
@@ -769,14 +765,12 @@ class LendingHelpers_test : public beast::unit_test::suite
         auto const loanProperties = computeLoanProperties(
             asset, loanPrincipal, loanInterestRate, paymentInterval, paymentsRemaining, managementFeeRate, loanScale);
 
-        Number const periodicPayment = loanProperties.periodicPayment;
-
         auto const ret = tryOverpayment(
             asset,
             loanScale,
             overpaymentComponents,
             loanProperties.loanState,
-            periodicPayment,
+            loanProperties.periodicPayment,
             periodicRate,
             paymentsRemaining,
             managementFeeRate,
@@ -849,7 +843,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         std::uint32_t const paymentsRemaining = 10;
         auto const periodicRate = loanPeriodicRate(loanInterestRate, paymentInterval);
 
-        ExtendedPaymentComponents const overpaymentComponents = computeOverpaymentComponents(
+        auto const overpaymentComponents = computeOverpaymentComponents(
             asset,
             loanScale,
             Number{50, 0},
@@ -860,14 +854,12 @@ class LendingHelpers_test : public beast::unit_test::suite
         auto const loanProperties = computeLoanProperties(
             asset, loanPrincipal, loanInterestRate, paymentInterval, paymentsRemaining, managementFeeRate, loanScale);
 
-        Number const periodicPayment = loanProperties.periodicPayment;
-
         auto const ret = tryOverpayment(
             asset,
             loanScale,
             overpaymentComponents,
             loanProperties.loanState,
-            periodicPayment,
+            loanProperties.periodicPayment,
             periodicRate,
             paymentsRemaining,
             managementFeeRate,
@@ -947,7 +939,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         std::uint32_t const paymentsRemaining = 10;
         auto const periodicRate = loanPeriodicRate(loanInterestRate, paymentInterval);
 
-        ExtendedPaymentComponents const overpaymentComponents = computeOverpaymentComponents(
+        auto const overpaymentComponents = computeOverpaymentComponents(
             asset,
             loanScale,
             Number{50, 0},
@@ -958,19 +950,13 @@ class LendingHelpers_test : public beast::unit_test::suite
         auto const loanProperties = computeLoanProperties(
             asset, loanPrincipal, loanInterestRate, paymentInterval, paymentsRemaining, managementFeeRate, loanScale);
 
-        Number const periodicPayment = loanProperties.periodicPayment;
-
         auto const ret = tryOverpayment(
             asset,
             loanScale,
             overpaymentComponents,
             loanProperties.loanState,
-            periodicPayment,
-            periodicRate,
-            paymentsRemaining,
-            managementFeeRate,
+            loanProperties.periodicPayment,
             env.journal);
-
         BEAST_EXPECT(ret);
 
         auto const& [actualPaymentParts, newLoanProperties] = *ret;
@@ -1043,7 +1029,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         std::uint32_t const paymentsRemaining = 10;
         auto const periodicRate = loanPeriodicRate(loanInterestRate, paymentInterval);
 
-        ExtendedPaymentComponents const overpaymentComponents = computeOverpaymentComponents(
+        auto const overpaymentComponents = computeOverpaymentComponents(
             asset,
             loanScale,
             Number{50, 0},
@@ -1054,14 +1040,12 @@ class LendingHelpers_test : public beast::unit_test::suite
         auto const loanProperties = computeLoanProperties(
             asset, loanPrincipal, loanInterestRate, paymentInterval, paymentsRemaining, managementFeeRate, loanScale);
 
-        Number const periodicPayment = loanProperties.periodicPayment;
-
         auto const ret = tryOverpayment(
             asset,
             loanScale,
             overpaymentComponents,
             loanProperties.loanState,
-            periodicPayment,
+            loanProperties.periodicPayment,
             periodicRate,
             paymentsRemaining,
             managementFeeRate,
