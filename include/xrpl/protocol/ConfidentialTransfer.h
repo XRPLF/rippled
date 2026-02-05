@@ -366,7 +366,7 @@ verifyMultiCiphertextEqualityProof(
  * @param amount      The revealed plaintext amount.
  * @param proof       The zero-knowledge proof bytes.
  * @param pubKeySlice The issuer's ElGamal public key (64 bytes).
- * @param ciphertext  The holder's encrypted balance (66 bytes).
+ * @param ciphertext  The issuer's encrypted balance on the holder's account (66 bytes).
  * @param contextHash The 256-bit context hash binding the proof.
  * @return tesSUCCESS if the proof is valid, or an error code otherwise.
  */

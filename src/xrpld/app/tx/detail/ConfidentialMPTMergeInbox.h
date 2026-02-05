@@ -61,7 +61,7 @@ public:
      * @brief Validates transaction against current ledger state.
      *
      * Checks:
-     * - MPT Issuance exists and has privacy enabled.
+     * - MPTokenIssuance exists and has privacy enabled.
      * - Holder's MPToken exists with all required confidential fields
      *   (inbox, spending, and ElGamal public key).
      *

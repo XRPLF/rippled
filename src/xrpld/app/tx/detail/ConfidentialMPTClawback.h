@@ -23,7 +23,7 @@ namespace xrpl {
  * - Resets holder's confidential balances (inbox, spending, issuer-encrypted,
  *   and auditor-encrypted if applicable) to encrypted zeros.
  * - Decreases the global `ConfidentialOutstandingAmount` and
- *   `OutstandingAmount` on the MPT Issuance.
+ *   `OutstandingAmount` on the MPTokenIssuance.
  *
  * @par Requirements:
  * - Only the issuer can execute this transaction.
@@ -63,7 +63,7 @@ public:
      *
      * Checks:
      * - Sender and holder accounts exist.
-     * - MPT Issuance exists and has clawback permission.
+     * - MPTokenIssuance exists and has clawback permission.
      * - Issuer has registered ElGamal public key.
      * - Holder has confidential balances.
      * - Clawback amount doesn't exceed confidential outstanding amount.

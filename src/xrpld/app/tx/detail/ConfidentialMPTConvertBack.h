@@ -25,7 +25,7 @@ namespace xrpl {
  * @par Balance Updates:
  * - Increases the holder's public `MPTAmount` balance.
  * - Homomorphically subtracts the encrypted amounts from confidential balances.
- * - Decreases the global `ConfidentialOutstandingAmount` on the MPT Issuance.
+ * - Decreases the global `ConfidentialOutstandingAmount` on the MPTokenIssuance.
  * - Increments the holder's `ConfidentialBalanceVersion` to prevent replay.
  *
  * @par Requirements:
