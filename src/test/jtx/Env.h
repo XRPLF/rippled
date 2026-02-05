@@ -43,9 +43,9 @@ namespace xrpl {
 namespace test {
 namespace jtx {
 
-/** Wrapper that captures source_location when implicitly constructed.
+/** Wrapper that captures std::source_location when implicitly constructed.
     This solves the problem of combining std::source_location with variadic
-    templates. The source_location default argument is evaluated at the
+    templates. The std::source_location default argument is evaluated at the
     call site when the wrapper is constructed via implicit conversion.
 
     This is a template struct that holds the value directly, allowing implicit
