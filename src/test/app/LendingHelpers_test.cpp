@@ -956,7 +956,11 @@ class LendingHelpers_test : public beast::unit_test::suite
             overpaymentComponents,
             loanProperties.loanState,
             loanProperties.periodicPayment,
+            periodicRate,
+            paymentsRemaining,
+            managementFeeRate,
             env.journal);
+
         BEAST_EXPECT(ret);
 
         auto const& [actualPaymentParts, newLoanProperties] = *ret;
