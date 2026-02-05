@@ -479,6 +479,12 @@ public:
         PedersenProofParams const& params) const;
 
     Buffer
+    getBulletproof(
+        std::vector<std::uint64_t> const& values,
+        std::vector<Buffer> const& blindingFactors,
+        uint256 const& contextHash) const;
+
+    Buffer
     getPedersenCommitment(std::uint64_t const amount, Buffer const& pedersenBlindingFactor);
 
 private:

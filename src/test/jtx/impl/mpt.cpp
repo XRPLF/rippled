@@ -880,43 +880,16 @@ MPTTester::getConvertBackProof(
     Buffer const pedersenProof = getBalanceLinkageProof(holder, contextHash, *holderPubKey, pcParams);
 
     // Generate bulletproof for the remaining balance (balance - amount)
-    // The remaining balance must be non-negative
     std::uint64_t const remainingBalance = pcParams.amt - amount;
+    Buffer const bulletproof = getBulletproof({remainingBalance}, {pcParams.blindingFactor}, contextHash);
 
-    // Get the H generator (pk_base for bulletproof)
-    secp256k1_pubkey pk_base;
-    if (secp256k1_mpt_get_h_generator(secp256k1Context(), &pk_base) != 1)
-        return Buffer{};
-
-    // Generate the bulletproof
-    // m = 1 (single commitment for the remaining balance)
-    Buffer bulletproof(ecSingleBulletproofLength);
-    // proofLen is an in/out parameter; initialize to a safe upper bound
-    std::size_t proofLen = 4096;
-
-    // The blinding factor for the remaining commitment is the same as the
-    // original balance commitment's blinding factor
-    if (secp256k1_bulletproof_prove_agg(
-            secp256k1Context(),
-            bulletproof.data(),
-            &proofLen,
-            &remainingBalance,
-            pcParams.blindingFactor.data(),
-            1,  // m = 1 commitment
-            &pk_base,
-            contextHash.data()) != 1)
-    {
-        return Buffer{};
-    }
-
-    // Verify the proof length matches expected size for m = 1
-    if (proofLen != ecSingleBulletproofLength)
+    if (bulletproof.empty())
         return Buffer{};
 
     // Combine pedersen proof and bulletproof
-    Buffer combinedProof(pedersenProof.size() + proofLen);
+    Buffer combinedProof(pedersenProof.size() + bulletproof.size());
     std::memcpy(combinedProof.data(), pedersenProof.data(), pedersenProof.size());
-    std::memcpy(combinedProof.data() + pedersenProof.size(), bulletproof.data(), proofLen);
+    std::memcpy(combinedProof.data() + pedersenProof.size(), bulletproof.data(), bulletproof.size());
 
     return combinedProof;
 }
@@ -1862,6 +1835,55 @@ MPTTester::getBalanceLinkageProof(
         Throw<std::runtime_error>("Pedersen proof generation failed");
 
     return proof;
+}
+
+Buffer
+MPTTester::getBulletproof(
+    std::vector<std::uint64_t> const& values,
+    std::vector<Buffer> const& blindingFactors,
+    uint256 const& contextHash) const
+{
+    std::size_t const m = values.size();
+    if (m == 0 || m != blindingFactors.size())
+        return Buffer{};
+
+    // Validate all blinding factors have correct length
+    for (auto const& bf : blindingFactors)
+    {
+        if (bf.size() != ecBlindingFactorLength)
+            return Buffer{};
+    }
+
+    // Flatten blinding factors into contiguous memory (m * 32 bytes)
+    std::vector<unsigned char> blindingsFlat(m * ecBlindingFactorLength);
+    for (std::size_t i = 0; i < m; ++i)
+        std::memcpy(
+            blindingsFlat.data() + i * ecBlindingFactorLength, blindingFactors[i].data(), ecBlindingFactorLength);
+
+    secp256k1_pubkey pk_base;
+    if (secp256k1_mpt_get_h_generator(secp256k1Context(), &pk_base) != 1)
+        return Buffer{};
+
+    // Proof size scales with m; use safe upper bound
+    Buffer bulletproof(4096);
+    std::size_t proofLen = 4096;
+
+    if (secp256k1_bulletproof_prove_agg(
+            secp256k1Context(),
+            bulletproof.data(),
+            &proofLen,
+            values.data(),
+            blindingsFlat.data(),
+            m,
+            &pk_base,
+            contextHash.data()) != 1)
+    {
+        return Buffer{};
+    }
+
+    // Resize to actual proof length
+    bulletproof.alloc(proofLen);
+    return bulletproof;
 }
 
 }  // namespace jtx
