@@ -3417,8 +3417,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
         testXChainCommit();
         testXChainAddAttestation();
         testXChainAddClaimNonBatchAttestation();
-        testXChainAddAccountCreateNonBatchAttestation();  // cspell:
-                                                          // disable-line
+        testXChainAddAccountCreateNonBatchAttestation();  // cspell: disable-line
         testXChainClaim();
         testXChainCreateAccount();
         testFeeDipsIntoReserve();
