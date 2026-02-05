@@ -502,7 +502,7 @@ LoanPay::doApply()
         // LCOV_EXCL_STOP
     }
 
-#if !NDEBUG
+    // These three values are used to check that funds are conserved after the transfers
     auto const accountBalanceBefore =
         accountHolds(view, account_, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_, SpendableHandling::shFULL_BALANCE);
     auto const vaultBalanceBefore = account_ == vaultPseudoAccount
@@ -512,7 +512,6 @@ LoanPay::doApply()
     auto const brokerBalanceBefore = account_ == brokerPayee
         ? STAmount{asset, 0}
         : accountHolds(view, brokerPayee, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_, SpendableHandling::shFULL_BALANCE);
-#endif
 
     if (totalPaidToVaultRounded != beast::zero)
     {
@@ -546,13 +545,17 @@ LoanPay::doApply()
         return ter;
 
 #if !NDEBUG
-    Number const pseudoAccountBalanceAfter =
-        accountHolds(view, vaultPseudoAccount, asset, FreezeHandling::fhIGNORE_FREEZE, AuthHandling::ahIGNORE_AUTH, j_);
-    XRPL_ASSERT_PARTS(
-        assetsAvailableAfter == pseudoAccountBalanceAfter,
-        "xrpl::LoanPay::doApply",
-        "vault pseudo balance agrees after");
+    {
+        Number const pseudoAccountBalanceAfter = accountHolds(
+            view, vaultPseudoAccount, asset, FreezeHandling::fhIGNORE_FREEZE, AuthHandling::ahIGNORE_AUTH, j_);
+        XRPL_ASSERT_PARTS(
+            assetsAvailableAfter == pseudoAccountBalanceAfter,
+            "xrpl::LoanPay::doApply",
+            "vault pseudo balance agrees after");
+    }
+#endif
 
+    // Check that funds are conserved
     auto const accountBalanceAfter =
         accountHolds(view, account_, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_, SpendableHandling::shFULL_BALANCE);
     auto const vaultBalanceAfter = account_ == vaultPseudoAccount
@@ -663,7 +666,6 @@ LoanPay::doApply()
         vaultBalanceAfter > vaultBalanceBefore || brokerBalanceAfter > brokerBalanceBefore,
         "xrpl::LoanPay::doApply",
         "vault and/or broker balance increased");
-#endif
 
     return tesSUCCESS;
 }
