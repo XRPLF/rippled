@@ -13,6 +13,7 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include <string_view>
 #include <unordered_map>
 
 namespace xrpl {
@@ -48,13 +49,14 @@ public:
 std::string
 ServerDefinitions::translate(std::string const& inp)
 {
-    auto replace = [&](char const* oldStr, char const* newStr) -> std::string {
+    auto replace = [&](std::string_view oldStr, std::string_view newStr) -> std::string {
         std::string out = inp;
         boost::replace_all(out, oldStr, newStr);
         return out;
     };
 
-    auto contains = [&](char const* s) -> bool { return inp.find(s) != std::string::npos; };
+    // TODO: use string::contains with C++23
+    auto contains = [&](std::string_view s) -> bool { return inp.find(s) != std::string::npos; };
 
     if (contains("UINT"))
     {
@@ -65,7 +67,7 @@ ServerDefinitions::translate(std::string const& inp)
             return replace("UINT", "UInt");
     }
 
-    std::unordered_map<std::string, std::string> replacements{
+    static std::unordered_map<std::string_view, std::string_view> const replacements{
         {"OBJECT", "STObject"},
         {"ARRAY", "STArray"},
         {"ACCOUNT", "AccountID"},
@@ -78,7 +80,7 @@ ServerDefinitions::translate(std::string const& inp)
 
     if (auto const& it = replacements.find(inp); it != replacements.end())
     {
-        return it->second;
+        return std::string(it->second);
     }
 
     std::string out;
@@ -212,34 +214,33 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
         defs_[jss::FIELDS][i++] = a;
     }
 
-    for (auto const& [code, f] : xrpl::SField::getKnownCodeToField())
+    for (auto const& [code, field] : xrpl::SField::getKnownCodeToField())
     {
-        if (f->fieldName == "")
+        if (field->fieldName == "")
             continue;
 
         Json::Value innerObj = Json::objectValue;
 
-        uint32_t type = f->fieldType;
+        uint32_t type = field->fieldType;
 
-        innerObj[jss::nth] = f->fieldValue;
+        innerObj[jss::nth] = field->fieldValue;
 
-        // whether the field is variable-length encoded
-        // this means that the length is included before the content
+        // whether the field is variable-length encoded this means that the length is included before the content
         innerObj[jss::isVLEncoded] =
-            (type == 7U /* Blob       */ || type == 8U /* AccountID  */ || type == 19U /* Vector256  */);
+            (type == 7U /* Blob */ || type == 8U /* AccountID */ || type == 19U /* Vector256 */);
 
         // whether the field is included in serialization
         innerObj[jss::isSerialized] =
-            (type < 10000 && f->fieldName != "hash" && f->fieldName != "index"); /* hash, index, TRANSACTION,
-                                                                                   LEDGER_ENTRY, VALIDATION, METADATA */
+            (type < 10000 && field->fieldName != "hash" &&
+             field->fieldName != "index"); /* hash, index, TRANSACTION, LEDGER_ENTRY, VALIDATION, METADATA */
 
         // whether the field is included in serialization when signing
-        innerObj[jss::isSigningField] = f->shouldInclude(false);
+        innerObj[jss::isSigningField] = field->shouldInclude(false);
 
         innerObj[jss::type] = typeMap[type];
 
         Json::Value innerArray = Json::arrayValue;
-        innerArray[0U] = f->fieldName;
+        innerArray[0U] = field->fieldName;
         innerArray[1U] = innerObj;
 
         defs_[jss::FIELDS][i++] = innerArray;
