@@ -62,6 +62,11 @@ verifyProofs(STTx const& tx, std::shared_ptr<SLE const> const& issuance, std::sh
         auditor.emplace(ConfidentialRecipient{(*issuance)[sfAuditorElGamalPublicKey], tx[sfAuditorEncryptedAmount]});
     }
 
+    // Run all verifications before returning any error to prevent timing attacks
+    // that could reveal which proof failed.
+    bool valid = true;
+
+    // verify revealed amount
     if (auto const ter = verifyRevealedAmount(
             amount,
             blindingFactor,
@@ -70,7 +75,7 @@ verifyProofs(STTx const& tx, std::shared_ptr<SLE const> const& issuance, std::sh
             auditor);
         !isTesSuccess(ter))
     {
-        return ter;
+        valid = false;
     }
 
     // Use a pointer to parse each proof component
@@ -87,10 +92,9 @@ verifyProofs(STTx const& tx, std::shared_ptr<SLE const> const& issuance, std::sh
                 contextHash);
             !isTesSuccess(ter))
         {
-            return ter;
+            valid = false;
         }
 
-        // increment pointer
         ptr += ecPedersenProofLength;
     }
 
@@ -100,7 +104,7 @@ verifyProofs(STTx const& tx, std::shared_ptr<SLE const> const& issuance, std::sh
         Buffer pcRem;
         if (auto const ter = computeConvertBackRemainder(tx[sfBalanceCommitment], amount, pcRem); !isTesSuccess(ter))
         {
-            return ter;
+            valid = false;
         }
 
         Slice const bulletproofSlice{ptr, ecSingleBulletproofLength};
@@ -111,12 +115,14 @@ verifyProofs(STTx const& tx, std::shared_ptr<SLE const> const& issuance, std::sh
         if (auto const ter = verifyAggregatedBulletproof(bulletproofSlice, commitments, contextHash);
             !isTesSuccess(ter))
         {
-            return ter;
+            valid = false;
         }
 
-        // increment pointer
         ptr += ecSingleBulletproofLength;
     }
+
+    if (!valid)
+        return tecBAD_PROOF;
 
     return tesSUCCESS;
 }
