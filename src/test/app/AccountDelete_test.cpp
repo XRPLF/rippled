@@ -564,7 +564,7 @@ public:
 
         // Burn a chunk of alice's funds so she only has 1 XRP remaining in
         // her account.
-        env(noop(alice), fee(env.balance(alice) - XRP(1)));
+        env(noop(alice), fee(env.balance(alice) - XRP(1)), ter(telINSUF_FEE_P));
         env.close();
 
         auto const acctDelFee{drops(env.current()->fees().increment)};
