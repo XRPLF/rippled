@@ -1701,8 +1701,8 @@ private:
         // This removes no ripple for carol,
         // different from the original test
         fund(env, gw, {carol}, XRP(10'000), {}, Fund::Acct);
-        auto const AmmXrpPool = env.current()->fees().increment * 2;
-        env.fund(reserve(env, 5) + ammCrtFee(env) + AmmXrpPool, bob);
+        auto const ammXrpPool = env.current()->fees().increment * 2;
+        env.fund(reserve(env, 5) + ammCrtFee(env) + ammXrpPool, bob);
         env.close();
         env.trust(USD(1'000), alice, bob, carol);
         env.trust(EUR(1'000), alice, bob, carol);
@@ -1718,7 +1718,7 @@ private:
         // tecPATH_DRY, but the entire path should not be marked as dry.
         // This is the second error case to test (when flowV1 is used).
         env(offer(bob, EUR(50), XRP(50)));
-        AMM ammBob(env, bob, AmmXrpPool, USD(150));
+        AMM ammBob(env, bob, ammXrpPool, USD(150));
 
         env(pay(alice, carol, USD(1'000'000)),
             path(~XRP, ~USD),
