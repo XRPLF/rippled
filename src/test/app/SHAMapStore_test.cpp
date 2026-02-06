@@ -44,10 +44,10 @@ class SHAMapStore_test : public beast::unit_test::suite
 
         auto const seq = json[jss::result][jss::ledger_index].asUInt();
 
-        std::optional<LedgerHeader> oinfo = env.app().getRelationalDatabase().getLedgerInfoByIndex(seq);
-        if (!oinfo)
+        std::optional<LedgerHeader> outInfo = env.app().getRelationalDatabase().getLedgerInfoByIndex(seq);
+        if (!outInfo)
             return false;
-        LedgerHeader const& info = oinfo.value();
+        LedgerHeader const& info = outInfo.value();
 
         std::string const outHash = to_string(info.hash);
         LedgerIndex const outSeq = info.seq;

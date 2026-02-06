@@ -442,7 +442,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
         env(ledgerStateFix::nftPageLinks(daria, alice), fee(linkFixFee));
         env.close();
 
-        // alices's last page should now be present and include no links.
+        // alice's last page should now be present and include no links.
         {
             auto aliceLastNFTokenPage = env.le(keylet::nftpage_max(alice));
             if (!BEAST_EXPECT(aliceLastNFTokenPage))
