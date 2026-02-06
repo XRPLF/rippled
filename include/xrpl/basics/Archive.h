@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_ARCHIVE_H_INCLUDED
-#define XRPL_BASICS_ARCHIVE_H_INCLUDED
+#pragma once
 
 #include <boost/filesystem.hpp>
 
@@ -16,5 +15,3 @@ void
 extractTarLz4(boost::filesystem::path const& src, boost::filesystem::path const& dst);
 
 }  // namespace xrpl
-
-#endif

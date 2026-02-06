@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_SLICE_H_INCLUDED
-#define XRPL_BASICS_SLICE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
@@ -231,5 +230,3 @@ makeSlice(std::basic_string<char, Traits, Alloc> const& s)
 }
 
 }  // namespace xrpl
-
-#endif

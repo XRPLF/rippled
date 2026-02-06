@@ -1,5 +1,4 @@
-#ifndef XRPL_NODESTORE_DATABASEROTATINGIMP_H_INCLUDED
-#define XRPL_NODESTORE_DATABASEROTATINGIMP_H_INCLUDED
+#pragma once
 
 #include <xrpl/nodestore/DatabaseRotating.h>
 
@@ -73,5 +72,3 @@ private:
 
 }  // namespace NodeStore
 }  // namespace xrpl
-
-#endif

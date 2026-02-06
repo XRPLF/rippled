@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_ENV_H_INCLUDED
-#define XRPL_TEST_JTX_ENV_H_INCLUDED
+#pragma once
 
 #include <test/jtx/AbstractClient.h>
 #include <test/jtx/Account.h>
@@ -779,5 +778,3 @@ Env::rpc(std::string const& cmd, Args&&... args)
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

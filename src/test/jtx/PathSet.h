@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_TESTS_PATHSET_H_INCLUDED
-#define XRPL_LEDGER_TESTS_PATHSET_H_INCLUDED
+#pragma once
 
 #include <test/jtx.h>
 
@@ -159,5 +158,3 @@ private:
 
 }  // namespace test
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_PATHS_RIPPLECALC_H_INCLUDED
-#define XRPL_APP_PATHS_RIPPLECALC_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/PaymentSandbox.h>
@@ -108,5 +107,3 @@ public:
 
 }  // namespace path
 }  // namespace xrpl
-
-#endif

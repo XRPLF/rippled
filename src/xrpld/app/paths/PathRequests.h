@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_PATHS_PATHREQUESTS_H_INCLUDED
-#define XRPL_APP_PATHS_PATHREQUESTS_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/paths/PathRequest.h>
@@ -96,5 +95,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

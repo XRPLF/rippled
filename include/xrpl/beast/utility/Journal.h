@@ -1,5 +1,4 @@
-#ifndef BEAST_UTILITY_JOURNAL_H_INCLUDED
-#define BEAST_UTILITY_JOURNAL_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -431,5 +430,3 @@ using logstream = basic_logstream<char>;
 using logwstream = basic_logstream<wchar_t>;
 
 }  // namespace beast
-
-#endif

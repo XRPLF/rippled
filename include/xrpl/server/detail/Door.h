@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_DOOR_H_INCLUDED
-#define XRPL_SERVER_DOOR_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
@@ -424,5 +423,3 @@ Door<Handler>::should_throttle_for_fds()
 }
 
 }  // namespace xrpl
-
-#endif

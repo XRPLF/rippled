@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_NFTOKENID_H_INCLUDED
-#define XRPL_PROTOCOL_NFTOKENID_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_forwards.h>
@@ -34,5 +33,3 @@ insertNFTokenID(Json::Value& response, std::shared_ptr<STTx const> const& transa
 /** @} */
 
 }  // namespace xrpl
-
-#endif

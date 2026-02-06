@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_COLLECTOREF_H_INCLUDED
-#define XRPL_TEST_CSF_COLLECTOREF_H_INCLUDED
+#pragma once
 
 #include <test/csf/SimTime.h>
 #include <test/csf/events.h>
@@ -328,5 +327,3 @@ public:
 }  // namespace csf
 }  // namespace test
 }  // namespace xrpl
-
-#endif

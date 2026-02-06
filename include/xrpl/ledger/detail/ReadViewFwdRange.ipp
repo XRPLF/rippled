@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_READVIEWFWDRANGEINL_H_INCLUDED
-#define XRPL_LEDGER_READVIEWFWDRANGEINL_H_INCLUDED
+#pragma once
 
 namespace xrpl {
 namespace detail {
@@ -108,5 +107,3 @@ ReadViewFwdRange<ValueType>::iterator::operator++(int) -> iterator
 
 }  // namespace detail
 }  // namespace xrpl
-
-#endif

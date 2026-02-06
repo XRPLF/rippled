@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_CREATETICKET_H_INCLUDED
-#define XRPL_TX_CREATETICKET_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/tx/detail/Transactor.h>
@@ -66,5 +65,3 @@ public:
 using TicketCreate = CreateTicket;
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_CORE_LOADEVENT_H_INCLUDED
-#define XRPL_CORE_LOADEVENT_H_INCLUDED
+#pragma once
 
 #include <chrono>
 #include <string>
@@ -66,5 +65,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

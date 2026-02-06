@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_TRANSACTION_H_INCLUDED
-#define XRPL_APP_MISC_TRANSACTION_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/RangeSet.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -386,5 +385,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

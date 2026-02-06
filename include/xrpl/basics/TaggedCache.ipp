@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_TAGGEDCACHE_IPP_INCLUDED
-#define XRPL_BASICS_TAGGEDCACHE_IPP_INCLUDED
+#pragma once
 
 #include <xrpl/basics/IntrusivePointer.ipp>
 #include <xrpl/basics/TaggedCache.h>
@@ -784,5 +783,3 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 }
 
 }  // namespace xrpl
-
-#endif

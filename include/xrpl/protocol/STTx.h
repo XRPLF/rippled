@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STTX_H_INCLUDED
-#define XRPL_PROTOCOL_STTX_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Expected.h>
 #include <xrpl/protocol/Feature.h>
@@ -196,5 +195,3 @@ STTx::getTransactionID() const
 }
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_PATHS_IMPL_STEP_CHECKS_H_INCLUDED
-#define XRPL_APP_PATHS_IMPL_STEP_CHECKS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -84,5 +83,3 @@ checkNoRipple(
 }
 
 }  // namespace xrpl
-
-#endif

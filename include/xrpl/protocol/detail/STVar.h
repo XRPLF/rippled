@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STVAR_H_INCLUDED
-#define XRPL_PROTOCOL_STVAR_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
@@ -163,5 +162,3 @@ operator!=(STVar const& lhs, STVar const& rhs)
 
 }  // namespace detail
 }  // namespace xrpl
-
-#endif

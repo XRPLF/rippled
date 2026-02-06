@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_APPLYCONTEXT_H_INCLUDED
-#define XRPL_TX_APPLYCONTEXT_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
@@ -129,5 +128,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

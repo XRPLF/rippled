@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_BASEWSPEER_H_INCLUDED
-#define XRPL_SERVER_BASEWSPEER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -451,5 +450,3 @@ BaseWSPeer<Handler, Impl>::fail(error_code ec, String const& what)
 }
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_DETAIL_WORKPLAIN_H_INCLUDED
-#define XRPL_APP_MISC_DETAIL_WORKPLAIN_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/misc/detail/WorkBase.h>
 
@@ -60,5 +59,3 @@ WorkPlain::onConnect(error_code const& ec)
 }  // namespace detail
 
 }  // namespace xrpl
-
-#endif
