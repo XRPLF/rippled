@@ -44,42 +44,12 @@ public:
     {
     }
 
-    /**
-     * @brief Validates transaction fields before any ledger access.
-     *
-     * Checks:
-     * - Feature `featureConfidentialTransfer` is enabled.
-     * - Sender is not the MPT issuer.
-     *
-     * @param ctx The preflight context containing transaction and rules.
-     * @return tesSUCCESS if valid, or an appropriate error code.
-     */
     static NotTEC
     preflight(PreflightContext const& ctx);
 
-    /**
-     * @brief Validates transaction against current ledger state.
-     *
-     * Checks:
-     * - MPTokenIssuance exists and has privacy enabled.
-     * - Holder's MPToken exists with all required confidential fields
-     *   (inbox, spending, and ElGamal public key).
-     *
-     * @param ctx The preclaim context containing view and transaction.
-     * @return tesSUCCESS if valid, or an appropriate error code.
-     */
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    /**
-     * @brief Applies the inbox merge to the ledger.
-     *
-     * - Homomorphically adds inbox balance to spending balance.
-     * - Resets inbox to canonical zero encryption.
-     * - Increments confidential balance version.
-     *
-     * @return tesSUCCESS on success, or an appropriate error code.
-     */
     TER
     doApply() override;
 };

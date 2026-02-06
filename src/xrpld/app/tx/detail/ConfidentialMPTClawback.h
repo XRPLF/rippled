@@ -42,47 +42,12 @@ public:
     {
     }
 
-    /**
-     * @brief Validates transaction fields before any ledger access.
-     *
-     * Checks:
-     * - Feature `featureConfidentialTransfer` is enabled.
-     * - Sender is the MPT issuer.
-     * - Holder is not the issuer (cannot clawback from self).
-     * - Clawback amount is valid (non-zero and within max bounds).
-     * - ZKProof length matches expected equality proof size.
-     *
-     * @param ctx The preflight context containing transaction and rules.
-     * @return tesSUCCESS if valid, or an appropriate error code.
-     */
     static NotTEC
     preflight(PreflightContext const& ctx);
 
-    /**
-     * @brief Validates transaction against current ledger state.
-     *
-     * Checks:
-     * - Sender and holder accounts exist.
-     * - MPTokenIssuance exists and has clawback permission.
-     * - Issuer has registered ElGamal public key.
-     * - Holder has confidential balances.
-     * - Clawback amount doesn't exceed confidential outstanding amount.
-     * - Verifies the equality proof linking revealed amount to encrypted balance.
-     *
-     * @param ctx The preclaim context containing view and transaction.
-     * @return tesSUCCESS if valid, or an appropriate error code.
-     */
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    /**
-     * @brief Applies the clawback to the ledger.
-     *
-     * - Sets holder's all confidential balances to encrypted zeros.
-     * - Decreases global confidential and total outstanding amounts.
-     *
-     * @return tesSUCCESS on success, or an appropriate error code.
-     */
     TER
     doApply() override;
 };

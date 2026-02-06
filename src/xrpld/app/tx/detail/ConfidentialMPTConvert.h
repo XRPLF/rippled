@@ -46,52 +46,12 @@ public:
     {
     }
 
-    /**
-     * @brief Validates transaction fields before any ledger access.
-     *
-     * Checks:
-     * - Feature `featureConfidentialTransfer` is enabled.
-     * - Sender is not the MPT issuer.
-     * - Amount is within valid bounds.
-     * - Blinding factor is 32 bytes.
-     * - If registering new ElGamal public key, verifies key length and
-     *   requires Schnorr proof.
-     * - Encrypted amount formats are valid.
-     *
-     * @param ctx The preflight context containing transaction and rules.
-     * @return tesSUCCESS if valid, or an appropriate error code.
-     */
     static NotTEC
     preflight(PreflightContext const& ctx);
 
-    /**
-     * @brief Validates transaction against current ledger state.
-     *
-     * Checks:
-     * - MPTokenIssuance exists and has privacy enabled.
-     * - Issuer has registered ElGamal public key.
-     * - Auditor requirements match (present if and only if required).
-     * - Holder's MPToken exists with sufficient public balance.
-     * - ElGamal public key registration rules (new key or existing).
-     * - Schnorr proof for new key registration.
-     * - Revealed amount proof verification.
-     *
-     * @param ctx The preclaim context containing view and transaction.
-     * @return tesSUCCESS if valid, or an appropriate error code.
-     */
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    /**
-     * @brief Applies the conversion to the ledger.
-     *
-     * - Registers holder's ElGamal public key if provided.
-     * - Decreases public balance, increases confidential outstanding amount.
-     * - Homomorphically adds encrypted amounts to existing balances, or
-     *   initializes confidential fields if this is the first conversion.
-     *
-     * @return tesSUCCESS on success, or an appropriate error code.
-     */
     TER
     doApply() override;
 };

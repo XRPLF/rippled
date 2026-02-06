@@ -45,53 +45,12 @@ public:
     {
     }
 
-    /**
-     * @brief Validates transaction fields before any ledger access.
-     *
-     * Checks:
-     * - Feature `featureConfidentialTransfer` is enabled.
-     * - Sender is not the MPT issuer.
-     * - Amount is non-zero and within valid bounds.
-     * - Blinding factor is 32 bytes.
-     * - Balance commitment is 64 bytes.
-     * - Encrypted amount formats are valid.
-     *
-     * @param ctx The preflight context containing transaction and rules.
-     * @return tesSUCCESS if valid, or an appropriate error code.
-     */
     static NotTEC
     preflight(PreflightContext const& ctx);
 
-    /**
-     * @brief Validates transaction against current ledger state.
-     *
-     * Checks:
-     * - MPTokenIssuance exists and has privacy enabled.
-     * - Auditor requirements match.
-     * - Holder's MPToken exists with confidential spending balance.
-     * - Conversion amount doesn't exceed global confidential outstanding.
-     * - Account is not frozen and is authorized.
-     * - Verifies all zero-knowledge proofs:
-     *   - Revealed amount proof
-     *   - Pedersen linkage proof (balance commitment)
-     *   - Bulletproof range proof (remaining balance >= 0)
-     *
-     * @param ctx The preclaim context containing view and transaction.
-     * @return tesSUCCESS if valid, or an appropriate error code.
-     */
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    /**
-     * @brief Applies the conversion back to the ledger.
-     *
-     * - Increases public balance, decreases confidential outstanding amount.
-     * - Homomorphically subtracts encrypted amounts from all confidential
-     *   balances (holder, issuer, auditor if applicable).
-     * - Increments the confidential balance version.
-     *
-     * @return tesSUCCESS on success, or an appropriate error code.
-     */
     TER
     doApply() override;
 };

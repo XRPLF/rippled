@@ -56,55 +56,12 @@ public:
     {
     }
 
-    /**
-     * @brief Validates transaction fields before any ledger access.
-     *
-     * Checks:
-     * - Feature `featureConfidentialTransfer` is enabled.
-     * - Sender is not the MPT issuer.
-     * - Sender is not sending to themselves.
-     * - All encrypted amount fields are correct length (128 bytes each).
-     * - ZKProof length matches expected size for equality + linkage proofs.
-     * - Pedersen commitment lengths are correct (64 bytes each).
-     * - All ciphertexts have valid format (parseable as curve points).
-     *
-     * @param ctx The preflight context containing transaction and rules.
-     * @return tesSUCCESS if valid, or an appropriate error code.
-     */
     static NotTEC
     preflight(PreflightContext const& ctx);
 
-    /**
-     * @brief Validates transaction against current ledger state.
-     *
-     * Checks:
-     * - Sender and destination accounts exist.
-     * - MPTokenIssuance exists with transfer and privacy enabled.
-     * - Issuer has registered ElGamal public key.
-     * - Auditor requirements match.
-     * - Both sender and destination MPTokens exist with required fields.
-     * - Neither account is frozen or unauthorized.
-     * - Verifies all zero-knowledge proofs:
-     *   - Multi-ciphertext equality proof
-     *   - Amount Pedersen linkage proof
-     *   - Balance Pedersen linkage proof
-     *
-     * @param ctx The preclaim context containing view and transaction.
-     * @return tesSUCCESS if valid, or an appropriate error code.
-     */
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    /**
-     * @brief Applies the confidential transfer to the ledger.
-     *
-     * - Verifies deposit preauthorization for destination.
-     * - Subtracts encrypted amounts from sender's balances.
-     * - Adds encrypted amounts to destination's balances.
-     * - Increments version counters for both accounts.
-     *
-     * @return tesSUCCESS on success, or an appropriate error code.
-     */
     TER
     doApply() override;
 };
