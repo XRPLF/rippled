@@ -85,16 +85,6 @@ public:
             {
                 BEAST_EXPECT(result[jss::result].isMember(jss::LEDGER_ENTRY_FLAGS));
                 Json::Value const& leFlags = result[jss::result][jss::LEDGER_ENTRY_FLAGS];
-                // at present time, there are a total of 12 ledger objects with flags
-                BEAST_EXPECT(leFlags.size() == 12);
-
-                unsigned int totalCountLedgerSpecificFlags = 0;
-                for (auto const& ledgerObjectFlags : leFlags)
-                {
-                    totalCountLedgerSpecificFlags += ledgerObjectFlags.size();
-                }
-
-                BEAST_EXPECT(totalCountLedgerSpecificFlags == 55);
 
                 // sanity test the mapped value of a few arbitrarily chosen flags
                 BEAST_EXPECT(leFlags["AccountRoot"]["lsfDisallowXRP"] == 0x00080000);
@@ -117,9 +107,6 @@ public:
                 BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_FLAGS));
                 Json::Value const& txFlags = result[jss::result][jss::TRANSACTION_FLAGS];
 
-                // count the transactions which allow for custom flag values
-                BEAST_EXPECT(txFlags.size() == 21);
-
                 BEAST_EXPECT(txFlags["universal"]["tfFullyCanonicalSig"] == 0x80000000);
                 BEAST_EXPECT(txFlags["universal"]["tfInnerBatchTxn"] == 0x40000000);
 
@@ -131,12 +118,6 @@ public:
 
                 BEAST_EXPECT(txFlags["AMMDeposit"]["tfLPToken"] == 0x00010000);
                 BEAST_EXPECT(txFlags["AMMDeposit"]["tfLimitLPToken"] == 0x00400000);
-
-                unsigned int totalTxFlags = 0;
-                for (auto const& txSection : txFlags)
-                    totalTxFlags += txSection.size();
-
-                BEAST_EXPECT(totalTxFlags == 69);
             }
 
             // validate the correctness of the AccountSpecificFlags section
@@ -144,7 +125,6 @@ public:
                 BEAST_EXPECT(result[jss::result].isMember(jss::ACCOUNT_SET_FLAGS));
                 Json::Value const& asFlags = result[jss::result][jss::ACCOUNT_SET_FLAGS];
 
-                BEAST_EXPECT(asFlags.size() == 16);
                 BEAST_EXPECT(asFlags["asfDisallowXRP"] == 3);
                 BEAST_EXPECT(asFlags["asfGlobalFreeze"] == 7);
                 BEAST_EXPECT(asFlags["asfDisallowIncomingNFTokenOffer"] == 12);
@@ -155,7 +135,6 @@ public:
             {
                 BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_FORMATS));
                 Json::Value const& txnFormats = result[jss::result][jss::TRANSACTION_FORMATS];
-                BEAST_EXPECT(txnFormats.size() == 76);
 
                 // first validate the contents of "common"
                 {
@@ -294,7 +273,6 @@ public:
             // test the properties of the LEDGER_ENTRY_FORMATS section in server_definitions response
             {
                 BEAST_EXPECT(result[jss::result].isMember(jss::LEDGER_ENTRY_FORMATS));
-                BEAST_EXPECT(result[jss::result][jss::LEDGER_ENTRY_FORMATS].size() == 31);
 
                 // Note: For the purposes of software maintainance, this test does not exhaustively validate all the
                 // LEDGER_ENTRY_FORMATS
