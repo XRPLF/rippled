@@ -50,8 +50,7 @@ PermissionedDomainDelete::doApply()
         // LCOV_EXCL_STOP
     }
 
-    auto const owner = (*slePd)[sfOwner];
-    auto const ownerSle = view().peek(keylet::account(owner));
+    auto const ownerSle = view().peek(keylet::account(account_));
     XRPL_ASSERT(
         ownerSle && ownerSle->getFieldU32(sfOwnerCount) > 0,
         "xrpl::PermissionedDomainDelete::doApply : nonzero owner count");
