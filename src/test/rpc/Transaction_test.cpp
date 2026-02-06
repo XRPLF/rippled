@@ -512,7 +512,7 @@ class Transaction_test : public beast::unit_test::suite
     }
 
     void
-    testCtidRPC(FeatureBitset features)
+    testRPCforCTID(FeatureBitset features)
     {
         testcase("CTID RPC");
 
@@ -804,7 +804,7 @@ public:
         testRangeRequest(features);
         testRangeCTIDRequest(features);
         testCTIDValidation(features);
-        testCtidRPC(features);
+        testRPCsforCTID(features);
         forAllApiVersions(std::bind_front(&Transaction_test::testRequest, this, features));
     }
 };
