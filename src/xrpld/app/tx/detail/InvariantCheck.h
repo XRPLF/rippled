@@ -910,9 +910,7 @@ public:
 
     // Compute the coarsest scale required to represent all numbers
     [[nodiscard]] static std::int32_t
-    computeMinScale(
-        Asset const& asset,
-        std::initializer_list<DeltaInfo const> numbers);
+    computeMinScale(Asset const& asset, std::vector<DeltaInfo> const& numbers);
 };
 
 // additional invariant checks can be declared above and then added to this

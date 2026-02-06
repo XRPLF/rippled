@@ -3726,7 +3726,7 @@ ValidVault::finalize(
 [[nodiscard]] std::int32_t
 ValidVault::computeMinScale(
     Asset const& asset,
-    std::initializer_list<DeltaInfo const> numbers)
+    std::vector<DeltaInfo> const& numbers)
 {
     if (numbers.size() == 0)
         return 0;

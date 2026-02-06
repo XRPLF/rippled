@@ -3904,7 +3904,7 @@ class Invariants_test : public beast::unit_test::suite
         {
             std::string name;
             std::int32_t expectedMinScale;
-            std::initializer_list<ValidVault::DeltaInfo const> values;
+            std::vector<ValidVault::DeltaInfo> values;
         };
 
         NumberMantissaScaleGuard g{MantissaRange::large};
