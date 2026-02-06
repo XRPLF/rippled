@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_OVERLAY_H_INCLUDED
-#define XRPL_OVERLAY_OVERLAY_H_INCLUDED
+#pragma once
 
 #include <xrpld/overlay/Peer.h>
 
@@ -210,5 +209,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

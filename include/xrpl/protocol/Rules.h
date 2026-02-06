@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_RULES_H_INCLUDED
-#define XRPL_LEDGER_RULES_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/hash/uhash.h>
@@ -107,4 +106,3 @@ private:
 };
 
 }  // namespace xrpl
-#endif

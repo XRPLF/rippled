@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_TESTS_COMMON_H_INCLUDED
-#define XRPL_SHAMAP_TESTS_COMMON_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/nodestore/DummyScheduler.h>
@@ -100,5 +99,3 @@ public:
 
 }  // namespace tests
 }  // namespace xrpl
-
-#endif

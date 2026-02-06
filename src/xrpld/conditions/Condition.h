@@ -1,5 +1,4 @@
-#ifndef XRPL_CONDITIONS_CONDITION_H
-#define XRPL_CONDITIONS_CONDITION_H
+#pragma once
 
 #include <xrpld/conditions/detail/utils.h>
 
@@ -93,5 +92,3 @@ operator!=(Condition const& lhs, Condition const& rhs)
 }  // namespace cryptoconditions
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_PEERFINDER_CHECKER_H_INCLUDED
-#define XRPL_PEERFINDER_CHECKER_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/net/IPAddressConversion.h>
 
@@ -196,5 +195,3 @@ Checker<Protocol>::remove(basic_async_op& op)
 
 }  // namespace PeerFinder
 }  // namespace xrpl
-
-#endif

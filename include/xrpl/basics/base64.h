@@ -32,8 +32,7 @@
 
 */
 
-#ifndef XRPL_BASICS_BASE64_H_INCLUDED
-#define XRPL_BASICS_BASE64_H_INCLUDED
+#pragma once
 
 #include <cstdint>
 #include <string>
@@ -53,5 +52,3 @@ std::string
 base64_decode(std::string_view data);
 
 }  // namespace xrpl
-
-#endif

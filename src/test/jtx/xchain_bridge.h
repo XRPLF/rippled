@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_XCHAINBRIDGE_H_INCLUDED
-#define XRPL_TEST_JTX_XCHAINBRIDGE_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
@@ -219,5 +218,3 @@ struct XChainBridgeObjects
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

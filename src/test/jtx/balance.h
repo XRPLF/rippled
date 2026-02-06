@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_BALANCE_H_INCLUDED
-#define XRPL_TEST_JTX_BALANCE_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 #include <test/jtx/tags.h>
@@ -43,5 +42,3 @@ public:
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_SCHEDULER_H_INCLUDED
-#define XRPL_TEST_CSF_SCHEDULER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/beast/clock/manual_clock.h>
@@ -428,5 +427,3 @@ Scheduler::step_for(std::chrono::duration<Period, Rep> const& amount)
 }  // namespace csf
 }  // namespace test
 }  // namespace xrpl
-
-#endif

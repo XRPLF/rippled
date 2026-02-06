@@ -1,5 +1,4 @@
-#ifndef XRPL_PEERFINDER_BOOTCACHE_H_INCLUDED
-#define XRPL_PEERFINDER_BOOTCACHE_H_INCLUDED
+#pragma once
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Store.h>
@@ -172,5 +171,3 @@ private:
 
 }  // namespace PeerFinder
 }  // namespace xrpl
-
-#endif

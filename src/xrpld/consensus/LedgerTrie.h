@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_CONSENSUS_LEDGERS_TRIE_H_INCLUDED
-#define XRPL_APP_CONSENSUS_LEDGERS_TRIE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/ToString.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -809,4 +808,3 @@ public:
 };
 
 }  // namespace xrpl
-#endif

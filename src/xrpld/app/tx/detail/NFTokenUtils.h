@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_IMPL_DETAILS_NFTOKENUTILS_H_INCLUDED
-#define XRPL_TX_IMPL_DETAILS_NFTOKENUTILS_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
@@ -128,5 +127,3 @@ checkTrustlineDeepFrozen(ReadView const& view, AccountID const id, beast::Journa
 }  // namespace nft
 
 }  // namespace xrpl
-
-#endif  // XRPL_TX_IMPL_DETAILS_NFTOKENUTILS_H_INCLUDED

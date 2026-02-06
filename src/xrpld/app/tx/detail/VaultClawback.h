@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_VAULTCLAWBACK_H_INCLUDED
-#define XRPL_TX_VAULTCLAWBACK_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
@@ -33,5 +32,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

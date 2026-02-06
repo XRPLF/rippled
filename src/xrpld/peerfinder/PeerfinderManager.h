@@ -1,5 +1,4 @@
-#ifndef XRPL_PEERFINDER_MANAGER_H_INCLUDED
-#define XRPL_PEERFINDER_MANAGER_H_INCLUDED
+#pragma once
 
 #include <xrpld/core/Config.h>
 #include <xrpld/peerfinder/Slot.h>
@@ -281,5 +280,3 @@ public:
 
 }  // namespace PeerFinder
 }  // namespace xrpl
-
-#endif

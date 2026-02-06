@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_PEER_RESERVATION_TABLE_H_INCLUDED
-#define XRPL_OVERLAY_PEER_RESERVATION_TABLE_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/beast/hash/uhash.h>
@@ -97,5 +96,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_TESTHELPERS_H_INCLUDED
-#define XRPL_TEST_JTX_TESTHELPERS_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
@@ -735,5 +734,3 @@ pay(AccountID const& account, uint256 const& loanID, STAmount const& amount, std
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif  // XRPL_TEST_JTX_TESTHELPERS_H_INCLUDED
