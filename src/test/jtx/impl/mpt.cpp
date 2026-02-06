@@ -214,7 +214,7 @@ MPTTester::authorizeJV(MPTAuthorize const& arg)
 {
     Json::Value jv;
     if (!arg.account || !arg.id)
-        Throw<std::runtime_error>("MPTTester::authorizeJV: issuer/id is not set");
+        Throw<std::runtime_error>("MPTTester::authorizeJV: account/id is not set");
     jv[sfAccount] = arg.account->human();
     jv[sfMPTokenIssuanceID] = to_string(*arg.id);
     if (arg.holder)
