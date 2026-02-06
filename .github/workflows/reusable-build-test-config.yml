@@ -229,7 +229,17 @@ jobs:
         env:
           BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
         run: |
-          ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}"
+          ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee unittest.log
+          exit ${PIPESTATUS[0]}
+
+      - name: Show test failure summary
+        if: ${{ failure() && !inputs.build_only }}
+        working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
+        run: |
+          echo "========================================"
+          echo "         TEST FAILURE SUMMARY"
+          echo "========================================"
+          grep -E "failed" unittest.log || echo "No failure details found in log"
 
       - name: Debug failure (Linux)
         if: ${{ failure() && runner.os == 'Linux' && !inputs.build_only }}
