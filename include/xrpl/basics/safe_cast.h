@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_SAFE_CAST_H_INCLUDED
-#define XRPL_BASICS_SAFE_CAST_H_INCLUDED
+#pragma once
 
 #include <type_traits>
 
@@ -69,5 +68,3 @@ unsafe_cast(Src s) noexcept
 }
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_ACCEPTEDLEDGER_H_INCLUDED
-#define XRPL_APP_LEDGER_ACCEPTEDLEDGER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/AcceptedLedgerTx.h>
 
@@ -56,5 +55,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

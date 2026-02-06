@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_MAKE_OVERLAY_H_INCLUDED
-#define XRPL_OVERLAY_MAKE_OVERLAY_H_INCLUDED
+#pragma once
 
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/rpc/ServerHandler.h>
@@ -26,5 +25,3 @@ make_Overlay(
     beast::insight::Collector::ptr const& collector);
 
 }  // namespace xrpl
-
-#endif

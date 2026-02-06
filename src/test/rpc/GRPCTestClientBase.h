@@ -1,5 +1,4 @@
-#ifndef XRPL_GRPCTESTCLIENTBASE_H
-#define XRPL_GRPCTESTCLIENTBASE_H
+#pragma once
 
 #include <test/jtx/envconfig.h>
 
@@ -26,4 +25,3 @@ struct GRPCTestClientBase
 
 }  // namespace test
 }  // namespace xrpl
-#endif  // XRPL_GRPCTESTCLIENTBASE_H

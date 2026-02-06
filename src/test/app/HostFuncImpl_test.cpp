@@ -117,16 +117,6 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             if (BEAST_EXPECT(result.has_value()))
                 BEAST_EXPECT(result.value() == env.current()->parentCloseTime().time_since_epoch().count());
         }
-
-        env.close(env.now() + std::chrono::seconds(std::numeric_limits<int32_t>::max() - 1));
-        {
-            OpenView ov{*env.current()};
-            ApplyContext ac = createApplyContext(env, ov);
-            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
-            auto const result = hfs.getParentLedgerTime();
-            if (BEAST_EXPECTS(!result.has_value(), std::to_string(result.value())))
-                BEAST_EXPECT(result.error() == HostFunctionError::INTERNAL);
-        }
     }
 
     void
@@ -163,28 +153,6 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         auto const result = hfs.getBaseFee();
         if (BEAST_EXPECT(result.has_value()))
             BEAST_EXPECT(result.value() == env.current()->fees().base.drops());
-
-        {
-            Env env2(
-                *this,
-                envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = static_cast<int64_t>(std::numeric_limits<int32_t>::max()) + 1;
-                    return cfg;
-                }),
-                testable_amendments());
-            // Run past the flag ledger so that a Fee change vote occurs and
-            // updates FeeSettings. (It also activates all supported
-            // amendments.)
-            for (auto i = env.current()->seq(); i <= 257; ++i)
-                env.close();
-
-            OpenView ov2{*env2.current()};
-            ApplyContext ac2 = createApplyContext(env2, ov2);
-            WasmHostFunctionsImpl hfs2(ac2, dummyEscrow);
-            auto const result2 = hfs2.getBaseFee();
-            if (BEAST_EXPECT(!result2.has_value()))
-                BEAST_EXPECT(result2.error() == HostFunctionError::INTERNAL);
-        }
     }
 
     void

@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_SHAMAPMISSINGNODE_H_INCLUDED
-#define XRPL_SHAMAP_SHAMAPMISSINGNODE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
@@ -48,5 +47,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

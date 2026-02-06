@@ -1,5 +1,4 @@
-#ifndef XRPL_NET_RPCERR_H_INCLUDED
-#define XRPL_NET_RPCERR_H_INCLUDED
+#pragma once
 
 #include <xrpl/json/json_value.h>
 
@@ -12,5 +11,3 @@ Json::Value
 rpcError(error_code_i iError);
 
 }  // namespace xrpl
-
-#endif

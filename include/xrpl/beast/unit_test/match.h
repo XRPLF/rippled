@@ -2,8 +2,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_UNIT_TEST_MATCH_HPP
-#define BEAST_UNIT_TEST_MATCH_HPP
+#pragma once
 
 #include <xrpl/beast/unit_test/suite_info.h>
 
@@ -166,5 +165,3 @@ match_library(std::string const& name)
 
 }  // namespace unit_test
 }  // namespace beast
-
-#endif

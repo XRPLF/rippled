@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_PROTOCOL_H_INCLUDED
-#define XRPL_PROTOCOL_PROTOCOL_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/base_uint.h>
@@ -305,5 +304,3 @@ std::size_t constexpr permissionMaxSize = 10;
 std::size_t constexpr maxBatchTxCount = 8;
 
 }  // namespace xrpl
-
-#endif

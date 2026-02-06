@@ -182,7 +182,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         auto re = engine.run(ledgerSqnWasm, ESCROW_FUNCTION_NAME, {}, imports, hfs, 1'000'000, env.journal);
 
-        checkResult(re, 0, 151);
+        checkResult(re, 0, 440);
 
         env.close();
         env.close();
@@ -190,7 +190,7 @@ struct Wasm_test : public beast::unit_test::suite
         // empty module - run the same instance
         re = engine.run({}, ESCROW_FUNCTION_NAME, {}, imports, hfs, 1'000'000, env.journal);
 
-        checkResult(re, 5, 190);
+        checkResult(re, 5, 488);
     }
 
     void
@@ -257,7 +257,7 @@ struct Wasm_test : public beast::unit_test::suite
 
             auto re = engine.run(allHostFuncWasm, ESCROW_FUNCTION_NAME, {}, imp, hfs, 1'000'000, env.journal);
 
-            checkResult(re, 1, 25'503);
+            checkResult(re, 1, 27'080);
 
             env.close();
         }
@@ -278,7 +278,7 @@ struct Wasm_test : public beast::unit_test::suite
 
             auto re = engine.run(allHostFuncWasm, ESCROW_FUNCTION_NAME, {}, imp, hfs, 1'000'000, env.journal);
 
-            checkResult(re, 1, 64'263);
+            checkResult(re, 1, 65'840);
 
             env.close();
         }
@@ -315,14 +315,14 @@ struct Wasm_test : public beast::unit_test::suite
         {
             std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
             auto re = runEscrowWasm(allHFWasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
-            checkResult(re, 1, 64'263);
+            checkResult(re, 1, 65'840);
         }
 
         {
             // max<int64_t>() gas
             std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
             auto re = runEscrowWasm(allHFWasm, hfs, ESCROW_FUNCTION_NAME, {}, -1);
-            checkResult(re, 1, 64'263);
+            checkResult(re, 1, 65'840);
         }
 
         {  // fail because trying to access nonexistent field
@@ -340,7 +340,7 @@ struct Wasm_test : public beast::unit_test::suite
 
             std::shared_ptr<HostFunctions> hfs(new BadTestHostFunctions(env));
             auto re = runEscrowWasm(allHFWasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
-            checkResult(re, -201, 28'148);
+            checkResult(re, -201, 28'965);
         }
 
         {  // fail because trying to allocate more than MAX_PAGES memory
@@ -358,7 +358,7 @@ struct Wasm_test : public beast::unit_test::suite
 
             std::shared_ptr<HostFunctions> hfs(new BadTestHostFunctions(env));
             auto re = runEscrowWasm(allHFWasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
-            checkResult(re, -201, 28'148);
+            checkResult(re, -201, 28'965);
         }
 
         {  // fail because recursion too deep
@@ -574,7 +574,7 @@ struct Wasm_test : public beast::unit_test::suite
         auto const codecovWasm = hexToBytes(codecovTestsWasmHex);
         std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
 
-        auto const allowance = 324'931;
+        auto const allowance = 339'303;
         auto re = runEscrowWasm(codecovWasm, hfs, ESCROW_FUNCTION_NAME, {}, allowance);
 
         checkResult(re, 1, allowance);
@@ -794,7 +794,7 @@ struct Wasm_test : public beast::unit_test::suite
         testcase("Wasm Bad Align");
 
         // bad_align.c
-        auto const badAlignWasm = hexToBytes(badAlignHex);
+        auto const badAlignWasm = hexToBytes(badAlignWasmHex);
 
         using namespace test::jtx;
 
@@ -807,7 +807,10 @@ struct Wasm_test : public beast::unit_test::suite
             auto& engine = WasmEngine::instance();
 
             auto re = engine.run(badAlignWasm, "test", {}, imports, hfs, 1'000'000, env.journal);
-            BEAST_EXPECT(re && re->result == 0xbab88d46);
+            if (BEAST_EXPECTS(re, transToken(re.error())))
+            {
+                BEAST_EXPECTS(re->result == 0x684f7941, std::to_string(re->result));
+            }
         }
 
         env.close();

@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_CHECKMESSAGELOGS_H_INCLUDED
-#define XRPL_TEST_JTX_CHECKMESSAGELOGS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 
@@ -58,5 +57,3 @@ public:
 
 }  // namespace test
 }  // namespace xrpl
-
-#endif

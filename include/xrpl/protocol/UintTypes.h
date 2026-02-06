@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_UINTTYPES_H_INCLUDED
-#define XRPL_PROTOCOL_UINTTYPES_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
@@ -125,5 +124,3 @@ struct hash<xrpl::uint256> : xrpl::uint256::hasher
 };
 
 }  // namespace std
-
-#endif

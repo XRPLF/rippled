@@ -1,5 +1,4 @@
-#ifndef XRPL_CORE_LOADFEETRACK_H_INCLUDED
-#define XRPL_CORE_LOADFEETRACK_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -136,5 +135,3 @@ XRPAmount
 scaleFeeLoad(XRPAmount fee, LoadFeeTrack const& feeTrack, Fees const& fees, bool bUnlimited);
 
 }  // namespace xrpl
-
-#endif

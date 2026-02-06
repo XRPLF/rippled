@@ -1,5 +1,4 @@
-#ifndef XRPL_CORE_CONFIG_H_INCLUDED
-#define XRPL_CORE_CONFIG_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/base_uint.h>
@@ -366,5 +365,3 @@ FeeSetup
 setup_FeeVote(Section const& section);
 
 }  // namespace xrpl
-
-#endif

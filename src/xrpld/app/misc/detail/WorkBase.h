@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_DETAIL_WORKBASE_H_INCLUDED
-#define XRPL_APP_MISC_DETAIL_WORKBASE_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/misc/detail/Work.h>
 
@@ -258,5 +257,3 @@ WorkBase<Impl>::close()
 }  // namespace detail
 
 }  // namespace xrpl
-
-#endif

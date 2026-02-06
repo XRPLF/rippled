@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_CONSENSUS_RCLCXTX_H_INCLUDED
-#define XRPL_APP_CONSENSUS_RCLCXTX_H_INCLUDED
+#pragma once
 
 #include <xrpl/shamap/SHAMap.h>
 
@@ -167,4 +166,3 @@ public:
     std::shared_ptr<SHAMap> map_;
 };
 }  // namespace xrpl
-#endif

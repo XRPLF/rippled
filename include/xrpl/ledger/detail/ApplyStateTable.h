@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_APPLYSTATETABLE_H_INCLUDED
-#define XRPL_LEDGER_APPLYSTATETABLE_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/OpenView.h>
@@ -130,5 +129,3 @@ private:
 
 }  // namespace detail
 }  // namespace xrpl
-
-#endif
