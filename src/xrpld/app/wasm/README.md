@@ -183,6 +183,7 @@ WASM_IMPORT_FUNC2(i, myNewFunction, "my_new_function", hfs, 100);
 //                                   ^^ WASM name       ^^ gas cost
 ```
 
-> **Important**: New host functions MUST be amendment-gated in `WasmVM.cpp`.
+> [!IMPORTANT]
+> New host functions MUST be amendment-gated in `WasmVM.cpp`.
 > Wrap the registration in an amendment check to ensure the function is only
 > available after the corresponding amendment is enabled on the network.
