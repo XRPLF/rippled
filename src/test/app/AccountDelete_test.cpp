@@ -585,7 +585,7 @@ public:
 
         // alice again attempts to delete her account.  This time she specifies
         // her current balance in XRP.  Again the transaction fails.
-        BEAST_EXPECT(env.balance(alice) == XRP(1));
+        BEAST_EXPECT(env.balance(alice) == XRP(1000));
         env(acctdelete(alice, env.master), fee(XRP(1)), ter(telINSUF_FEE_P));
         env.close();
         {
