@@ -561,13 +561,11 @@ verifyAggregatedBulletproof(Slice const& proof, std::vector<Slice> const& commit
 TER
 computeRemainingCommitment(Slice const& commitment, std::uint64_t amount, Buffer& out)
 {
-    // Validate commitment length
     if (commitment.size() != ecPedersenCommitmentLength)
         return tecINTERNAL;
 
-    // Parse the commitment
-    secp256k1_pubkey pcm;
-    std::memcpy(pcm.data, commitment.data(), ecPedersenCommitmentLength);
+    secp256k1_pubkey pc_balance;
+    std::memcpy(pc_balance.data, commitment.data(), ecPedersenCommitmentLength);
 
     // If amount is 0, the remaining commitment is the same as the original
     if (amount == 0)
@@ -577,24 +575,30 @@ computeRemainingCommitment(Slice const& commitment, std::uint64_t amount, Buffer
         return tesSUCCESS;
     }
 
+    auto const ctx = secp256k1Context();
+
+    // Convert amount to 32-byte big-endian scalar
+    unsigned char m_scalar[32] = {0};
+    for (int i = 0; i < 8; i++)
+        m_scalar[31 - i] = (amount >> (i * 8)) & 0xFF;
+
     // Compute mG = amount * G
     secp256k1_pubkey mG;
-    if (compute_amount_point(secp256k1Context(), &mG, amount) != 1)
+    if (!secp256k1_ec_pubkey_create(ctx, &mG, m_scalar))
         return tecINTERNAL;
 
     // Negate mG to get -mG
-    if (secp256k1_ec_pubkey_negate(secp256k1Context(), &mG) != 1)
+    if (!secp256k1_ec_pubkey_negate(ctx, &mG))
         return tecINTERNAL;
 
-    // Compute PC_rem = PC + (-mG) = PC - mG
-    secp256k1_pubkey const* points[2] = {&pcm, &mG};
-    secp256k1_pubkey result;
-    if (secp256k1_ec_pubkey_combine(secp256k1Context(), &result, points, 2) != 1)
+    // Compute PC_rem = PC_balance + (-mG)
+    secp256k1_pubkey const* summands[2] = {&pc_balance, &mG};
+    secp256k1_pubkey pc_rem;
+    if (!secp256k1_ec_pubkey_combine(ctx, &pc_rem, summands, 2))
         return tecINTERNAL;
 
-    // Copy result to output buffer
     out.alloc(ecPedersenCommitmentLength);
-    std::memcpy(out.data(), result.data, ecPedersenCommitmentLength);
+    std::memcpy(out.data(), pc_rem.data, ecPedersenCommitmentLength);
 
     return tesSUCCESS;
 }
