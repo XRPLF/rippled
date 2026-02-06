@@ -1,5 +1,4 @@
-#ifndef XRPL_CORE_GRPCSERVER_H_INCLUDED
-#define XRPL_CORE_GRPCSERVER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/Context.h>
@@ -300,4 +299,3 @@ private:
     bool running_ = false;
 };
 }  // namespace xrpl
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_COMPRESSION_H_INCLUDED
-#define XRPL_COMPRESSION_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CompressionAlgorithms.h>
 #include <xrpl/basics/Log.h>
@@ -89,5 +88,3 @@ compress(void const* in, std::size_t inSize, BufferFactory&& bf, Algorithm algor
 }  // namespace compression
 
 }  // namespace xrpl
-
-#endif  // XRPL_COMPRESSION_H_INCLUDED

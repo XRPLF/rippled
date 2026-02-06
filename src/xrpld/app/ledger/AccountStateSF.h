@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_ACCOUNTSTATESF_H_INCLUDED
-#define XRPL_APP_LEDGER_ACCOUNTSTATESF_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/AbstractFetchPackContainer.h>
 
@@ -30,5 +29,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

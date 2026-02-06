@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_VALIDATORSITE_H_INCLUDED
-#define XRPL_APP_MISC_VALIDATORSITE_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/ValidatorList.h>
@@ -227,5 +226,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

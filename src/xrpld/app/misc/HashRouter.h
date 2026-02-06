@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_HASHROUTER_H_INCLUDED
-#define XRPL_APP_MISC_HASHROUTER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/UnorderedContainers.h>
@@ -256,5 +255,3 @@ HashRouter::Setup
 setup_HashRouter(Config const&);
 
 }  // namespace xrpl
-
-#endif

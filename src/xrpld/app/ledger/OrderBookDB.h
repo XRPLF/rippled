@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_ORDERBOOKDB_H_INCLUDED
-#define XRPL_APP_LEDGER_ORDERBOOKDB_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/AcceptedLedgerTx.h>
 #include <xrpld/app/ledger/BookListeners.h>
@@ -74,5 +73,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

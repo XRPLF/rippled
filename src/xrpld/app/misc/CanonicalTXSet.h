@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_CANONICALTXSET_H_INCLUDED
-#define XRPL_APP_MISC_CANONICALTXSET_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
@@ -156,5 +155,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

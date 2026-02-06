@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_UNL_H_INCLUDED
-#define XRPL_TEST_CSF_UNL_H_INCLUDED
+#pragma once
 
 #include <test/csf/random.h>
 
@@ -150,5 +149,3 @@ public:
 }  // namespace csf
 }  // namespace test
 }  // namespace xrpl
-
-#endif

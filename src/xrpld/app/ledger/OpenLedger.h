@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_OPENLEDGER_H_INCLUDED
-#define XRPL_APP_LEDGER_OPENLEDGER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/misc/CanonicalTXSet.h>
@@ -262,5 +261,3 @@ std::string
 debugTostr(std::shared_ptr<ReadView const> const& view);
 
 }  // namespace xrpl
-
-#endif

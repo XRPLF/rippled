@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_WSINFOSUB_H
-#define XRPL_RPC_WSINFOSUB_H
+#pragma once
 
 #include <xrpld/rpc/InfoSub.h>
 #include <xrpld/rpc/Role.h>
@@ -63,5 +62,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_PEER_H_INCLUDED
-#define XRPL_TEST_CSF_PEER_H_INCLUDED
+#pragma once
 
 #include <test/csf/CollectorRef.h>
 #include <test/csf/Scheduler.h>
@@ -937,4 +936,3 @@ struct Peer
 }  // namespace csf
 }  // namespace test
 }  // namespace xrpl
-#endif

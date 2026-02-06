@@ -1,5 +1,4 @@
-#ifndef XRPL_CONSENSUS_CONSENSUS_PARMS_H_INCLUDED
-#define XRPL_CONSENSUS_CONSENSUS_PARMS_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -174,4 +173,3 @@ getNeededWeight(
 }
 
 }  // namespace xrpl
-#endif

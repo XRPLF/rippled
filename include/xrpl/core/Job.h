@@ -1,5 +1,4 @@
-#ifndef XRPL_CORE_JOB_H_INCLUDED
-#define XRPL_CORE_JOB_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/core/ClosureCounter.h>
@@ -128,5 +127,3 @@ private:
 using JobCounter = ClosureCounter<void>;
 
 }  // namespace xrpl
-
-#endif

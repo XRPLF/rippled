@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_ACCOUNT_H_INCLUDED
-#define XRPL_TEST_JTX_ACCOUNT_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/protocol/KeyType.h>
@@ -147,5 +146,3 @@ operator<=>(Account const& lhs, Account const& rhs) noexcept
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif
