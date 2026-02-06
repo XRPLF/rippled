@@ -3,14 +3,14 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 
-#include <initializer_list>
+#include <vector>
 
 namespace xrpl {
 
-std::initializer_list<SOElement> const&
+std::vector<SOElement> const&
 TxFormats::getCommonFields()
 {
-    auto static const commonFields = std::initializer_list<SOElement>{
+    static auto const commonFields = std::vector<SOElement>{
         {sfTransactionType, soeREQUIRED},
         {sfFlags, soeOPTIONAL},
         {sfSourceTag, soeOPTIONAL},

@@ -5,16 +5,22 @@
 #include <cstddef>
 #include <initializer_list>
 #include <stdexcept>
+#include <vector>
 
 namespace xrpl {
 
 SOTemplate::SOTemplate(std::initializer_list<SOElement> uniqueFields, std::initializer_list<SOElement> commonFields)
+    : SOTemplate(std::vector(uniqueFields), std::vector(commonFields))
+{
+}
+
+SOTemplate::SOTemplate(std::vector<SOElement> uniqueFields, std::vector<SOElement> commonFields)
     : indices_(SField::getNumFields() + 1, -1)  // Unmapped indices == -1
 {
     // Add all SOElements.
     elements_.reserve(uniqueFields.size() + commonFields.size());
-    elements_.assign(uniqueFields);
-    elements_.insert(elements_.end(), commonFields);
+    elements_.assign(uniqueFields.begin(), uniqueFields.end());
+    elements_.insert(elements_.end(), commonFields.begin(), commonFields.end());
 
     // Validate and index elements_.
     for (std::size_t i = 0; i < elements_.size(); ++i)

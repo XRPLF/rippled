@@ -276,9 +276,9 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
         txCommonFields.insert(element.sField().getName());
     }
 
-    for (auto const& f : TxFormats::getInstance())
+    for (auto const& format : TxFormats::getInstance())
     {
-        auto const& soTemplate = f.getSOTemplate();
+        auto const& soTemplate = format.getSOTemplate();
         Json::Value templateArray = Json::arrayValue;
         for (auto const& element : soTemplate)
         {
@@ -289,7 +289,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
             elementObj[jss::optionality] = element.style();
             templateArray.append(elementObj);
         }
-        defs_[jss::TRANSACTION_FORMATS][f.getName()] = templateArray;
+        defs_[jss::TRANSACTION_FORMATS][format.getName()] = templateArray;
     }
 
     // populate LedgerFormats
@@ -304,9 +304,9 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
         defs_[jss::LEDGER_ENTRY_FORMATS][jss::common].append(elementObj);
         ledgerCommonFields.insert(element.sField().getName());
     }
-    for (auto const& f : LedgerFormats::getInstance())
+    for (auto const& format : LedgerFormats::getInstance())
     {
-        auto const& soTemplate = f.getSOTemplate();
+        auto const& soTemplate = format.getSOTemplate();
         Json::Value templateArray = Json::arrayValue;
         for (auto const& element : soTemplate)
         {
@@ -317,7 +317,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
             elementObj[jss::optionality] = element.style();
             templateArray.append(elementObj);
         }
-        defs_[jss::LEDGER_ENTRY_FORMATS][f.getName()] = templateArray;
+        defs_[jss::LEDGER_ENTRY_FORMATS][format.getName()] = templateArray;
     }
 
     defs_[jss::TRANSACTION_FLAGS] = Json::objectValue;

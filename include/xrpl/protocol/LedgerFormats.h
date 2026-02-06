@@ -3,6 +3,7 @@
 #include <xrpl/protocol/KnownFormats.h>
 
 #include <map>
+#include <vector>
 
 namespace xrpl {
 
@@ -265,7 +266,7 @@ public:
     getInstance();
 
     // Fields shared by all txFormats:
-    static std::initializer_list<SOElement> const&
+    static std::vector<SOElement> const&
     getCommonFields();
 };
 

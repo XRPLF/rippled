@@ -27,11 +27,7 @@ public:
     class Item
     {
     public:
-        Item(
-            char const* name,
-            KeyType type,
-            std::initializer_list<SOElement> uniqueFields,
-            std::initializer_list<SOElement> commonFields)
+        Item(char const* name, KeyType type, std::vector<SOElement> uniqueFields, std::vector<SOElement> commonFields)
             : soTemplate_(uniqueFields, commonFields), name_(name), type_(type)
         {
             // Verify that KeyType is appropriate.
@@ -141,16 +137,13 @@ protected:
 
         @param name The name of this format.
         @param type The type of this format.
-        @param uniqueFields An std::initializer_list of unique fields
-        @param commonFields An std::initializer_list of common fields
+        @param uniqueFields A std::vector of unique fields
+        @param commonFields A std::vector of common fields
 
         @return The created format.
     */
     Item const&
-    add(char const* name,
-        KeyType type,
-        std::initializer_list<SOElement> uniqueFields,
-        std::initializer_list<SOElement> commonFields = {})
+    add(char const* name, KeyType type, std::vector<SOElement> uniqueFields, std::vector<SOElement> commonFields = {})
     {
         if (auto const item = findByType(type))
         {

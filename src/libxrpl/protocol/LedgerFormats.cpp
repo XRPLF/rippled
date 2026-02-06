@@ -3,14 +3,14 @@
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/jss.h>
 
-#include <initializer_list>
+#include <vector>
 
 namespace xrpl {
 
-std::initializer_list<SOElement> const&
+std::vector<SOElement> const&
 LedgerFormats::getCommonFields()
 {
-    auto static const commonFields = std::initializer_list<SOElement>{
+    static auto const commonFields = std::vector<SOElement>{
         {sfLedgerIndex, soeOPTIONAL},
         {sfLedgerEntryType, soeREQUIRED},
         {sfFlags, soeREQUIRED},
