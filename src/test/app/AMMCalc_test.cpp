@@ -15,7 +15,7 @@ namespace test {
  *  - swapIn, find out given in. in can flow through multiple AMM/Offer steps.
  *  - swapOut, find in given out. out can flow through multiple AMM/Offer steps.
  *  - lptokens, find lptokens given pool composition.
- *  - changeSPQ, change AMM spot price (SP) quality. given AMM and Offer
+ *  - changespq, change AMM spot price (SP) quality. given AMM and Offer
  *      find out AMM offer, which changes AMM's SP quality to
  *      the Offer's quality.
  */
@@ -378,12 +378,12 @@ class AMMCalc_test : public beast::unit_test::suite
             // Change spot price quality - generates AMM offer such that
             // when consumed the updated AMM spot price quality is equal
             // to the CLOB offer quality
-            // changespq,A(XRP(1000),USD(1000)),O(XRP(100),USD(99)),10 // cspell: disable-line
+            // changespq,A(XRP(1000),USD(1000)),O(XRP(100),USD(99)),10
             //   where
             //     A(...) is AMM
             //     O(...) is CLOB offer
             //     10 is AMM trading fee
-            else if (*p == "changespq")  // cspell: disable-line
+            else if (*p == "changespq")
             {
                 Env env(*this);
                 if (auto const pool = getAmounts(++p))
