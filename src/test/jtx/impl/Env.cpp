@@ -402,7 +402,7 @@ Env::postconditions(JTx const& jt, ParsedResult const& parsed, Json::Value const
 {
     auto const line = jt.testLine ? " (" + to_string(*jt.testLine) + ")" : "";
     auto const locStr = std::string("(") + loc.file_name() + ":" + to_string(loc.line()) + ")";
-    bool bad = !test.expect(parsed.ter, "apply: No ter result!" + line);
+    bool bad = !test.expect(parsed.ter, "apply " + locStr + ": No ter result!" + line);
     bad =
         (jt.ter && parsed.ter &&
          !test.expect(
