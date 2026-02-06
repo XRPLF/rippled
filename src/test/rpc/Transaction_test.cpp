@@ -512,7 +512,7 @@ class Transaction_test : public beast::unit_test::suite
     }
 
     void
-    testRPCforCTID(FeatureBitset features)
+    testRPCsforCTID(FeatureBitset features)
     {
         testcase("CTID RPC");
 
