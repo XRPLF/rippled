@@ -862,10 +862,6 @@ MPTTester::getConvertBackProof(
     Account const& holder,
     std::uint64_t const amount,
     uint256 const& contextHash,
-    Buffer const& holderCiphertext,
-    Buffer const& issuerCiphertext,
-    std::optional<Buffer> const& auditorCiphertext,
-    Buffer const& blindingFactor,
     PedersenProofParams const& pcParams) const
 {
     auto const sleMptoken = env_.le(keylet::mptoken(*id_, holder.id()));
@@ -1676,10 +1672,6 @@ MPTTester::convertBack(MPTConvertBack const& arg)
                 *arg.account,
                 *arg.amt,
                 contextHash,
-                holderCiphertext,
-                issuerCiphertext,
-                auditorCiphertext,
-                blindingFactor,
                 {
                     .pedersenCommitment = pedersenCommitment,
                     .amt = *prevSpendingBalance,

@@ -455,10 +455,6 @@ public:
         Account const& holder,
         std::uint64_t const amount,
         uint256 const& contextHash,
-        Buffer const& holderCiphertext,
-        Buffer const& issuerCiphertext,
-        std::optional<Buffer> const& auditorCiphertext,
-        Buffer const& blindingFactor,
         PedersenProofParams const& pcParams) const;
 
     std::uint32_t

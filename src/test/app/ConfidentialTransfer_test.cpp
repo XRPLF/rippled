@@ -2821,10 +2821,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 bob,
                 amt,
                 contextHash,
-                bobCiphertext,
-                issuerCiphertext,
-                {},
-                blindingFactor,
                 {
                     .pedersenCommitment = badPedersenCommitment,  // bad pedersen commitment
                     .amt = *spendingBalance,
@@ -2855,10 +2851,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 bob,
                 amt,
                 contextHash,
-                bobCiphertext,
-                issuerCiphertext,
-                {},
-                blindingFactor,
                 {
                     .pedersenCommitment = pedersenCommitment,
                     .amt = *spendingBalance,
@@ -2888,10 +2880,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 bob,
                 amt,
                 contextHash,
-                bobCiphertext,
-                issuerCiphertext,
-                {},
-                blindingFactor,
                 {
                     .pedersenCommitment = pedersenCommitment,
                     .amt = 1,  // proof is generated using a wrong balance
@@ -2924,10 +2912,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 bob,
                 amt,
                 contextHash,
-                bobCiphertext,
-                issuerCiphertext,
-                {},
-                blindingFactor,
                 {
                     .pedersenCommitment = pedersenCommitment,
                     .amt = *spendingBalance,
@@ -2957,10 +2941,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 bob,
                 amt,
                 contextHash,
-                bobCiphertext,
-                issuerCiphertext,
-                {},
-                blindingFactor,
                 {
                     .pedersenCommitment = pedersenCommitment,
                     .amt = *spendingBalance,
