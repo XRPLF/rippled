@@ -1,5 +1,4 @@
-#ifndef XRPL_CORE_JOBTYPES_H_INCLUDED
-#define XRPL_CORE_JOBTYPES_H_INCLUDED
+#pragma once
 
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobTypeInfo.h>
@@ -161,5 +160,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_TX_AMMLIQUIDITY_H_INCLUDED
-#define XRPL_APP_TX_AMMLIQUIDITY_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
@@ -131,5 +130,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif  // XRPL_APP_TX_AMMLIQUIDITY_H_INCLUDED

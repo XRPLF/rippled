@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_SLOT_H_INCLUDED
-#define XRPL_OVERLAY_SLOT_H_INCLUDED
+#pragma once
 
 #include <xrpld/core/Config.h>
 #include <xrpld/overlay/Peer.h>
@@ -765,5 +764,3 @@ Slots<clock_type>::deleteIdlePeers()
 }  // namespace reduce_relay
 
 }  // namespace xrpl
-
-#endif  // XRPL_OVERLAY_SLOT_H_INCLUDED

@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_JSON_BODY_H
-#define XRPL_RPC_JSON_BODY_H
+#pragma once
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -85,5 +84,3 @@ struct json_body
 };
 
 }  // namespace xrpl
-
-#endif

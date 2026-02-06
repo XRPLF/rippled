@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_DELEGATEUTILS_H_INCLUDED
-#define XRPL_APP_MISC_DELEGATEUTILS_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -34,5 +33,3 @@ loadGranularPermission(
     std::unordered_set<GranularPermissionType>& granularPermissions);
 
 }  // namespace xrpl
-
-#endif  // XRPL_APP_MISC_DELEGATEUTILS_H_INCLUDED

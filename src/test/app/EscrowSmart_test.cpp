@@ -370,12 +370,11 @@ struct EscrowSmart_test : public beast::unit_test::suite
 
         // Tests whether the ledger index is >= 5
         // getLedgerSqn() >= 5}
-        auto const& wasmHex = ledgerSqnWasmHex;
-        std::uint32_t const allowance = 178;
+        std::uint32_t const allowance = 467;
         auto escrowCreate = escrow::create(alice, carol, XRP(1000));
         auto [createFee, finishFee] = [&]() {
             Env env(*this, features);
-            auto createFee = env.current()->fees().base * 10 + wasmHex.size() / 2 * 5;
+            auto createFee = env.current()->fees().base * 10 + ledgerSqnWasmHex.size() / 2 * 5;
             auto finishFee =
                 env.current()->fees().base + (allowance * env.current()->fees().gasPrice) / MICRO_DROPS_PER_DROP + 1;
             return std::make_pair(createFee, finishFee);
@@ -388,7 +387,10 @@ struct EscrowSmart_test : public beast::unit_test::suite
             env.fund(XRP(5000), alice, carol);
             auto const seq = env.seq(alice);
             BEAST_EXPECT(env.ownerCount(alice) == 0);
-            env(escrowCreate, escrow::finish_function(wasmHex), escrow::cancel_time(env.now() + 100s), fee(createFee));
+            env(escrowCreate,
+                escrow::finish_function(ledgerSqnWasmHex),
+                escrow::cancel_time(env.now() + 100s),
+                fee(createFee));
             env.close();
 
             if (BEAST_EXPECT(env.ownerCount(alice) == 2))
@@ -452,7 +454,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
             auto const seq = env.seq(alice);
             // create escrow
             env(escrowCreate,
-                escrow::finish_function(wasmHex),
+                escrow::finish_function(ledgerSqnWasmHex),
                 escrow::condition(escrow::cb1),
                 escrow::cancel_time(env.now() + 100s),
                 fee(createFee));
@@ -503,10 +505,11 @@ struct EscrowSmart_test : public beast::unit_test::suite
 
                 auto const txMeta = env.meta();
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfGasUsed)))
-                    BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == allowance);
+                    BEAST_EXPECTS(
+                        txMeta->getFieldU32(sfGasUsed) == allowance, std::to_string(txMeta->getFieldU32(sfGasUsed)));
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfWasmReturnCode)))
                     BEAST_EXPECTS(
-                        txMeta->getFieldI32(sfWasmReturnCode) == 6,
+                        txMeta->getFieldI32(sfWasmReturnCode) == 5,
                         std::to_string(txMeta->getFieldI32(sfWasmReturnCode)));
 
                 env.close();
@@ -523,7 +526,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
             BEAST_EXPECT(env.ownerCount(alice) == 0);
             auto const ts = env.now() + 97s;
             env(escrowCreate,
-                escrow::finish_function(wasmHex),
+                escrow::finish_function(ledgerSqnWasmHex),
                 escrow::finish_time(ts),
                 escrow::cancel_time(env.now() + 1000s),
                 fee(createFee));
@@ -557,7 +560,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
                     BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == allowance);
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfWasmReturnCode)))
                     BEAST_EXPECTS(
-                        txMeta->getFieldI32(sfWasmReturnCode) == 13,
+                        txMeta->getFieldI32(sfWasmReturnCode) == 5,
                         std::to_string(txMeta->getFieldI32(sfWasmReturnCode)));
 
                 BEAST_EXPECT(env.ownerCount(alice) == 0);
@@ -572,7 +575,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
             auto const seq = env.seq(alice);
             BEAST_EXPECT(env.ownerCount(alice) == 0);
             env(escrowCreate,
-                escrow::finish_function(wasmHex),
+                escrow::finish_function(ledgerSqnWasmHex),
                 escrow::finish_time(env.now() + 2s),
                 escrow::cancel_time(env.now() + 100s),
                 fee(createFee));
@@ -611,7 +614,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
                     BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == allowance);
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfWasmReturnCode)))
                     BEAST_EXPECTS(
-                        txMeta->getFieldI32(sfWasmReturnCode) == 6,
+                        txMeta->getFieldI32(sfWasmReturnCode) == 5,
                         std::to_string(txMeta->getFieldI32(sfWasmReturnCode)));
 
                 env.close();
@@ -629,8 +632,6 @@ struct EscrowSmart_test : public beast::unit_test::suite
         using namespace std::chrono;
 
         // wasm that always fails
-        static auto const wasmHex = updateDataWasmHex;
-
         Account const alice{"alice"};
         Account const carol{"carol"};
 
@@ -640,9 +641,9 @@ struct EscrowSmart_test : public beast::unit_test::suite
         auto const seq = env.seq(alice);
         BEAST_EXPECT(env.ownerCount(alice) == 0);
         auto escrowCreate = escrow::create(alice, alice, XRP(1000));
-        XRPAmount txnFees = env.current()->fees().base * 10 + wasmHex.size() / 2 * 5;
+        XRPAmount txnFees = env.current()->fees().base * 10 + updateDataWasmHex.size() / 2 * 5;
         env(escrowCreate,
-            escrow::finish_function(wasmHex),
+            escrow::finish_function(updateDataWasmHex),
             escrow::finish_time(env.now() + 2s),
             escrow::cancel_time(env.now() + 100s),
             fee(txnFees));
@@ -650,7 +651,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
         env.close();
         env.close();
 
-        if (BEAST_EXPECT(env.ownerCount(alice) == (1 + wasmHex.size() / 2 / 500)))
+        if (BEAST_EXPECT(env.ownerCount(alice) == (1 + updateDataWasmHex.size() / 2 / 500)))
         {
             env.require(balance(alice, XRP(4000) - txnFees));
 
@@ -692,12 +693,11 @@ struct EscrowSmart_test : public beast::unit_test::suite
 
         // Tests whether the ledger index is >= 5
         // getLedgerSqn() >= 5}
-        auto const& wasmHex = ledgerSqnWasmHex;
-        uint64_t const allowance = 178;
+        uint64_t const allowance = 467;
         auto escrowCreate = escrow::create(alice, carol, XRP(1000));
         auto createFee = [&]() {
             Env env(*this, features);
-            auto createFee = env.current()->fees().base * 10 + wasmHex.size() / 2 * 5;
+            auto createFee = env.current()->fees().base * 10 + ledgerSqnWasmHex.size() / 2 * 5;
             return createFee;
         }();
 
@@ -720,7 +720,10 @@ struct EscrowSmart_test : public beast::unit_test::suite
             env.fund(XRP(5000), alice, carol);
             auto const seq = env.seq(alice);
             BEAST_EXPECT(env.ownerCount(alice) == 0);
-            env(escrowCreate, escrow::finish_function(wasmHex), escrow::cancel_time(env.now() + 100s), fee(createFee));
+            env(escrowCreate,
+                escrow::finish_function(ledgerSqnWasmHex),
+                escrow::cancel_time(env.now() + 100s),
+                fee(createFee));
             env.close();
 
             if (BEAST_EXPECT(env.ownerCount(alice) == 2))
@@ -759,7 +762,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
                         txMeta->getFieldU32(sfGasUsed) == allowance, std::to_string(txMeta->getFieldU32(sfGasUsed)));
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfWasmReturnCode)))
                     BEAST_EXPECTS(
-                        txMeta->getFieldI32(sfWasmReturnCode) == 260,
+                        txMeta->getFieldI32(sfWasmReturnCode) == 5,
                         std::to_string(txMeta->getFieldI32(sfWasmReturnCode)));
 
                 BEAST_EXPECT(env.ownerCount(alice) == 0);
@@ -776,8 +779,6 @@ struct EscrowSmart_test : public beast::unit_test::suite
         using namespace std::chrono;
 
         // TODO: create wasm module for all host functions
-        static auto wasmHex = allHostFunctionsWasmHex;
-
         Account const alice{"alice"};
         Account const carol{"carol"};
 
@@ -788,16 +789,16 @@ struct EscrowSmart_test : public beast::unit_test::suite
             auto const seq = env.seq(alice);
             BEAST_EXPECT(env.ownerCount(alice) == 0);
             auto escrowCreate = escrow::create(alice, carol, XRP(1000));
-            XRPAmount txnFees = env.current()->fees().base * 10 + wasmHex.size() / 2 * 5;
+            XRPAmount txnFees = env.current()->fees().base * 10 + allHostFunctionsWasmHex.size() / 2 * 5;
             env(escrowCreate,
-                escrow::finish_function(wasmHex),
+                escrow::finish_function(allHostFunctionsWasmHex),
                 escrow::finish_time(env.now() + 11s),
                 escrow::cancel_time(env.now() + 100s),
                 escrow::data("1000000000"),  // 1000 XRP in drops
                 fee(txnFees));
             env.close();
 
-            if (BEAST_EXPECT(env.ownerCount(alice) == (1 + wasmHex.size() / 2 / 500)))
+            if (BEAST_EXPECT(env.ownerCount(alice) == (1 + allHostFunctionsWasmHex.size() / 2 / 500)))
             {
                 env.require(balance(alice, XRP(4000) - txnFees));
                 env.require(balance(carol, XRP(5000)));
@@ -828,7 +829,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
                 auto const txMeta = env.meta();
                 if (BEAST_EXPECT(txMeta && txMeta->isFieldPresent(sfGasUsed)))
                     BEAST_EXPECTS(
-                        txMeta->getFieldU32(sfGasUsed) == 62'715, std::to_string(txMeta->getFieldU32(sfGasUsed)));
+                        txMeta->getFieldU32(sfGasUsed) == 64'292, std::to_string(txMeta->getFieldU32(sfGasUsed)));
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfWasmReturnCode)))
                     BEAST_EXPECT(txMeta->getFieldI32(sfWasmReturnCode) == 1);
 
@@ -847,8 +848,6 @@ struct EscrowSmart_test : public beast::unit_test::suite
         using namespace std::chrono;
 
         // TODO: create wasm module for all host functions
-        static auto wasmHex = allKeyletsWasmHex;
-
         Account const alice{"alice"};
         Account const carol{"carol"};
 
@@ -894,9 +893,9 @@ struct EscrowSmart_test : public beast::unit_test::suite
             if (BEAST_EXPECTS(env.seq(alice) == 20, std::to_string(env.seq(alice))))
             {
                 auto const seq = env.seq(alice);
-                XRPAmount txnFees = env.current()->fees().base * 10 + wasmHex.size() / 2 * 5;
+                XRPAmount txnFees = env.current()->fees().base * 10 + allKeyletsWasmHex.size() / 2 * 5;
                 env(escrow::create(alice, carol, XRP(1000)),
-                    escrow::finish_function(wasmHex),
+                    escrow::finish_function(allKeyletsWasmHex),
                     escrow::finish_time(env.now() + 2s),
                     escrow::cancel_time(env.now() + 100s),
                     fee(txnFees));
@@ -904,7 +903,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
                 env.close();
                 env.close();
 
-                auto const allowance = 182'903;
+                auto const allowance = 184'444;
                 auto const finishFee = env.current()->fees().base +
                     (allowance * env.current()->fees().gasPrice) / MICRO_DROPS_PER_DROP + 1;
                 env(escrow::finish(carol, alice, seq), escrow::comp_allowance(allowance), fee(finishFee));

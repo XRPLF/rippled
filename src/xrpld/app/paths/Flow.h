@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_PATHS_FLOW_H_INCLUDED
-#define XRPL_APP_PATHS_FLOW_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/paths/RippleCalc.h>
 #include <xrpld/app/paths/detail/Steps.h>
@@ -52,5 +51,3 @@ flow(
     path::detail::FlowDebugInfo* flowDebugInfo = nullptr);
 
 }  // namespace xrpl
-
-#endif

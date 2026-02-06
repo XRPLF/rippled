@@ -1,5 +1,4 @@
-#ifndef XRPL_CONSENSUS_CONSENSUS_H_INCLUDED
-#define XRPL_CONSENSUS_CONSENSUS_H_INCLUDED
+#pragma once
 
 #include <xrpld/consensus/ConsensusParms.h>
 #include <xrpld/consensus/ConsensusProposal.h>
@@ -1774,5 +1773,3 @@ Consensus<Adaptor>::asCloseTime(NetClock::time_point raw) const
 }
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef BEAST_NET_IPADDRESSV4_H_INCLUDED
-#define BEAST_NET_IPADDRESSV4_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/hash/hash_append.h>
 
@@ -26,5 +25,3 @@ get_class(AddressV4 const& address);
 
 }  // namespace IP
 }  // namespace beast
-
-#endif

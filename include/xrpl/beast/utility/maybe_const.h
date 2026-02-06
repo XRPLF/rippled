@@ -1,5 +1,4 @@
-#ifndef BEAST_UTILITY_MAYBE_CONST_H_INCLUDED
-#define BEAST_UTILITY_MAYBE_CONST_H_INCLUDED
+#pragma once
 
 #include <type_traits>
 
@@ -19,5 +18,3 @@ template <bool IsConst, class T>
 using maybe_const_t = typename maybe_const<IsConst, T>::type;
 
 }  // namespace beast
-
-#endif

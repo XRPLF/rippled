@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_SIGN_H_INCLUDED
-#define XRPL_PROTOCOL_SIGN_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -59,5 +58,3 @@ finishMultiSigningData(AccountID const& signingID, Serializer& s)
 }
 
 }  // namespace xrpl
-
-#endif

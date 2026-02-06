@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_SYSTEMPARAMETERS_H_INCLUDED
-#define XRPL_PROTOCOL_SYSTEMPARAMETERS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -66,5 +65,3 @@ constexpr std::chrono::seconds const defaultAmendmentMajorityTime = weeks{2};
 
 /** Default peer port (IANA registered) */
 inline std::uint16_t constexpr DEFAULT_PEER_PORT{2459};
-
-#endif

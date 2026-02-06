@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_NFT_PAGE_MASK_H_INCLUDED
-#define XRPL_PROTOCOL_NFT_PAGE_MASK_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 
@@ -14,5 +13,3 @@ uint256 constexpr pageMask(std::string_view("00000000000000000000000000000000000
 
 }  // namespace nft
 }  // namespace xrpl
-
-#endif

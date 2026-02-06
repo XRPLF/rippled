@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_DATA_DBINIT_H_INCLUDED
-#define XRPL_APP_DATA_DBINIT_H_INCLUDED
+#pragma once
 
 #include <array>
 #include <cstdint>
@@ -131,5 +130,3 @@ inline constexpr std::array<char const*, 3> WasmTraceDBInit{
      "END TRANSACTION;"}};
 
 }  // namespace xrpl
-
-#endif

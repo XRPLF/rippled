@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_HASHPREFIX_H_INCLUDED
-#define XRPL_PROTOCOL_HASHPREFIX_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/hash/hash_append.h>
 
@@ -79,5 +78,3 @@ hash_append(Hasher& h, HashPrefix const& hp) noexcept
 }
 
 }  // namespace xrpl
-
-#endif

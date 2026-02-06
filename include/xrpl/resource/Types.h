@@ -1,5 +1,4 @@
-#ifndef XRPL_RESOURCE_TYPES_H_INCLUDED
-#define XRPL_RESOURCE_TYPES_H_INCLUDED
+#pragma once
 
 namespace xrpl {
 namespace Resource {
@@ -9,5 +8,3 @@ struct Entry;
 
 }  // namespace Resource
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_PEERFINDER_HANDOUTS_H_INCLUDED
-#define XRPL_PEERFINDER_HANDOUTS_H_INCLUDED
+#pragma once
 
 #include <xrpld/peerfinder/detail/SlotImp.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
@@ -331,5 +330,3 @@ ConnectHandouts::try_insert(beast::IP::Endpoint const& endpoint)
 
 }  // namespace PeerFinder
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_CACHEDVIEW_H_INCLUDED
-#define XRPL_LEDGER_CACHEDVIEW_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/ledger/CachedSLEs.h>
@@ -162,5 +161,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif
