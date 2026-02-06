@@ -236,9 +236,6 @@ jobs:
         if: ${{ failure() && !inputs.build_only }}
         working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
         run: |
-          echo "========================================"
-          echo "         TEST FAILURE SUMMARY"
-          echo "========================================"
           grep -E "failed" unittest.log || echo "No failure details found in log"
 
       - name: Debug failure (Linux)
