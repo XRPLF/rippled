@@ -378,12 +378,12 @@ class AMMCalc_test : public beast::unit_test::suite
             // Change spot price quality - generates AMM offer such that
             // when consumed the updated AMM spot price quality is equal
             // to the CLOB offer quality
-            // changeSPQ,A(XRP(1000),USD(1000)),O(XRP(100),USD(99)),10
+            // changespq,A(XRP(1000),USD(1000)),O(XRP(100),USD(99)),10 // cspell: disable-line
             //   where
             //     A(...) is AMM
             //     O(...) is CLOB offer
             //     10 is AMM trading fee
-            else if (*p == "changeSPQ")
+            else if (*p == "changespq")  // cspell: disable-line
             {
                 Env env(*this);
                 if (auto const pool = getAmounts(++p))
