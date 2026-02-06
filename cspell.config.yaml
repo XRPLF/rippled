@@ -7,7 +7,7 @@ ignorePaths:
   - cmake/**
   - LICENSE.md
 language: en
-allowCompoundWords: true # TODO: remove
+allowCompoundWords: true # TODO (#6334)
 ignoreRandomStrings: true
 minWordLength: 5
 dictionaries:
