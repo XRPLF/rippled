@@ -120,8 +120,8 @@ public:
                 // count the transactions which allow for custom flag values
                 BEAST_EXPECT(txFlags.size() == 21);
 
-                BEAST_EXPECT(txFlags["Universal"]["tfFullyCanonicalSig"] == 0x80000000);
-                BEAST_EXPECT(txFlags["Universal"]["tfInnerBatchTxn"] == 0x40000000);
+                BEAST_EXPECT(txFlags["universal"]["tfFullyCanonicalSig"] == 0x80000000);
+                BEAST_EXPECT(txFlags["universal"]["tfInnerBatchTxn"] == 0x40000000);
 
                 BEAST_EXPECT(txFlags["AccountSet"]["tfRequireAuth"] == 0x00040000);
                 BEAST_EXPECT(txFlags["AccountSet"]["tfAllowXRP"] == 0x00200000);

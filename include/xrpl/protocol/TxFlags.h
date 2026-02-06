@@ -219,7 +219,7 @@ FlagMap const UniversalFlags = {{"tfFullyCanonicalSig", tfFullyCanonicalSig}, {"
 // ...};
 #define ALL_TX_FLAGS(name, values) {#name, name##Flags},
 std::vector<std::pair<std::string, FlagMap>> const allTxFlags = {
-    {"Universal", UniversalFlags},
+    {"universal", UniversalFlags},
     XMACRO(ALL_TX_FLAGS, NULL_OUTPUT, NULL_OUTPUT)};
 
 #undef XMACRO
