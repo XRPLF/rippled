@@ -8,7 +8,7 @@
 
 #include <map>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -19,8 +19,7 @@ class DeferredCredits
 public:
     struct Adjustment
     {
-        Adjustment(STAmount const& d, STAmount const& c, STAmount const& b)
-            : debits(d), credits(c), origBalance(b)
+        Adjustment(STAmount const& d, STAmount const& c, STAmount const& b) : debits(d), credits(c), origBalance(b)
         {
         }
         STAmount debits;
@@ -31,10 +30,7 @@ public:
     // Get the adjustments for the balance between main and other.
     // Returns the debits, credits and the original balance
     std::optional<Adjustment>
-    adjustments(
-        AccountID const& main,
-        AccountID const& other,
-        Currency const& currency) const;
+    adjustments(AccountID const& main, AccountID const& other, Currency const& currency) const;
 
     void
     credit(
@@ -102,8 +98,7 @@ public:
 
     PaymentSandbox(PaymentSandbox&&) = default;
 
-    PaymentSandbox(ReadView const* base, ApplyFlags flags)
-        : ApplyViewBase(base, flags)
+    PaymentSandbox(ReadView const* base, ApplyFlags flags) : ApplyViewBase(base, flags)
     {
     }
 
@@ -125,39 +120,27 @@ public:
     //        or a PaymentSandbox-derived class, we MUST go through
     //        one of these constructors or invariants will be broken.
     /** @{ */
-    explicit PaymentSandbox(PaymentSandbox const* base)
-        : ApplyViewBase(base, base->flags()), ps_(base)
+    explicit PaymentSandbox(PaymentSandbox const* base) : ApplyViewBase(base, base->flags()), ps_(base)
     {
     }
 
-    explicit PaymentSandbox(PaymentSandbox* base)
-        : ApplyViewBase(base, base->flags()), ps_(base)
+    explicit PaymentSandbox(PaymentSandbox* base) : ApplyViewBase(base, base->flags()), ps_(base)
     {
     }
     /** @} */
 
     STAmount
-    balanceHook(
-        AccountID const& account,
-        AccountID const& issuer,
-        STAmount const& amount) const override;
+    balanceHook(AccountID const& account, AccountID const& issuer, STAmount const& amount) const override;
 
     void
-    creditHook(
-        AccountID const& from,
-        AccountID const& to,
-        STAmount const& amount,
-        STAmount const& preCreditBalance) override;
+    creditHook(AccountID const& from, AccountID const& to, STAmount const& amount, STAmount const& preCreditBalance)
+        override;
 
     void
-    adjustOwnerCountHook(
-        AccountID const& account,
-        std::uint32_t cur,
-        std::uint32_t next) override;
+    adjustOwnerCountHook(AccountID const& account, std::uint32_t cur, std::uint32_t next) override;
 
     std::uint32_t
-    ownerCountHook(AccountID const& account, std::uint32_t count)
-        const override;
+    ownerCountHook(AccountID const& account, std::uint32_t count) const override;
 
     /** Apply changes to base view.
 
@@ -188,6 +171,6 @@ private:
     PaymentSandbox const* ps_ = nullptr;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

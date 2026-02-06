@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -86,9 +86,7 @@ public:
     bool
     contains(PeerID id)
     {
-        return std::find_if(peers_.begin(), peers_.end(), [id](Peer const* p) {
-                   return p->id == id;
-               }) != peers_.end();
+        return std::find_if(peers_.begin(), peers_.end(), [id](Peer const* p) { return p->id == id; }) != peers_.end();
     }
 
     std::size_t
@@ -193,7 +191,7 @@ public:
     /** Establish network connections based on trust relations
 
         For each peers in this group, create outbound network connection
-        to the set of peers it trusts. If a coonnection already exists, it is
+        to the set of peers it trusts. If a connection already exists, it is
         not recreated.
 
         @param delay The fixed messaging delay for all established connections
@@ -217,11 +215,7 @@ public:
     {
         PeerGroup res;
         std::set_union(
-            a.peers_.begin(),
-            a.peers_.end(),
-            b.peers_.begin(),
-            b.peers_.end(),
-            std::back_inserter(res.peers_));
+            a.peers_.begin(), a.peers_.end(), b.peers_.begin(), b.peers_.end(), std::back_inserter(res.peers_));
         return res;
     }
 
@@ -232,11 +226,7 @@ public:
         PeerGroup res;
 
         std::set_difference(
-            a.peers_.begin(),
-            a.peers_.end(),
-            b.peers_.begin(),
-            b.peers_.end(),
-            std::back_inserter(res.peers_));
+            a.peers_.begin(), a.peers_.end(), b.peers_.begin(), b.peers_.end(), std::back_inserter(res.peers_));
 
         return res;
     }
@@ -313,8 +303,7 @@ randomRankedTrust(
     RandomNumberDistribution sizeDist,
     Generator& g)
 {
-    std::vector<PeerGroup> const groups =
-        randomRankedGroups(peers, ranks, numGroups, sizeDist, g);
+    std::vector<PeerGroup> const groups = randomRankedGroups(peers, ranks, numGroups, sizeDist, g);
 
     std::uniform_int_distribution<int> u(0, groups.size() - 1);
     for (auto& peer : peers)
@@ -338,8 +327,7 @@ randomRankedConnect(
     Generator& g,
     SimDuration delay)
 {
-    std::vector<PeerGroup> const groups =
-        randomRankedGroups(peers, ranks, numGroups, sizeDist, g);
+    std::vector<PeerGroup> const groups = randomRankedGroups(peers, ranks, numGroups, sizeDist, g);
 
     std::uniform_int_distribution<int> u(0, groups.size() - 1);
     for (auto& peer : peers)
@@ -351,5 +339,5 @@ randomRankedConnect(
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 #endif

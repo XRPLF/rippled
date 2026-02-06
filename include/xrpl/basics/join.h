@@ -3,7 +3,7 @@
 
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 template <class Stream, class Iter>
 Stream&
@@ -24,8 +24,7 @@ public:
     Collection const& collection;
     std::string const delimiter;
 
-    explicit CollectionAndDelimiter(Collection const& c, std::string delim)
-        : collection(c), delimiter(std::move(delim))
+    explicit CollectionAndDelimiter(Collection const& c, std::string delim) : collection(c), delimiter(std::move(delim))
     {
     }
 
@@ -33,11 +32,7 @@ public:
     friend Stream&
     operator<<(Stream& s, CollectionAndDelimiter const& cd)
     {
-        return join(
-            s,
-            std::begin(cd.collection),
-            std::end(cd.collection),
-            cd.delimiter);
+        return join(s, std::begin(cd.collection), std::end(cd.collection), cd.delimiter);
     }
 };
 
@@ -69,8 +64,7 @@ public:
     char const* collection;
     std::string const delimiter;
 
-    explicit CollectionAndDelimiter(char const c[N], std::string delim)
-        : collection(c), delimiter(std::move(delim))
+    explicit CollectionAndDelimiter(char const c[N], std::string delim) : collection(c), delimiter(std::move(delim))
     {
     }
 
@@ -85,6 +79,6 @@ public:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

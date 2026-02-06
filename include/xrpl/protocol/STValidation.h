@@ -12,7 +12,7 @@
 #include <optional>
 #include <sstream>
 
-namespace ripple {
+namespace xrpl {
 
 // Validation flags
 
@@ -54,10 +54,7 @@ public:
         @note Throws if the object is not valid
     */
     template <class LookupNodeID>
-    STValidation(
-        SerialIter& sit,
-        LookupNodeID&& lookupNodeID,
-        bool checkSignature);
+    STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, bool checkSignature);
 
     /** Construct, sign and trust a new STValidation issued by this node.
 
@@ -68,12 +65,7 @@ public:
         @param f callback function to "fill" the validation with necessary data
     */
     template <typename F>
-    STValidation(
-        NetClock::time_point signTime,
-        PublicKey const& pk,
-        SecretKey const& sk,
-        NodeID const& nodeID,
-        F&& f);
+    STValidation(NetClock::time_point signTime, PublicKey const& pk, SecretKey const& sk, NodeID const& nodeID, F&& f);
 
     // Hash of the validated ledger
     uint256
@@ -126,14 +118,10 @@ public:
     render() const
     {
         std::stringstream ss;
-        ss << "validation: " << " ledger_hash: " << getLedgerHash()
-           << " consensus_hash: " << getConsensusHash()
-           << " sign_time: " << to_string(getSignTime())
-           << " seen_time: " << to_string(getSeenTime())
-           << " signer_public_key: " << getSignerPublic()
-           << " node_id: " << getNodeID() << " is_valid: " << isValid()
-           << " is_full: " << isFull() << " is_trusted: " << isTrusted()
-           << " signing_hash: " << getSigningHash()
+        ss << "validation: " << " ledger_hash: " << getLedgerHash() << " consensus_hash: " << getConsensusHash()
+           << " sign_time: " << to_string(getSignTime()) << " seen_time: " << to_string(getSeenTime())
+           << " signer_public_key: " << getSignerPublic() << " node_id: " << getNodeID() << " is_valid: " << isValid()
+           << " is_full: " << isFull() << " is_trusted: " << isTrusted() << " signing_hash: " << getSigningHash()
            << " base58: " << toBase58(TokenType::NodePublic, getSignerPublic());
         return ss.str();
     }
@@ -151,10 +139,7 @@ private:
 };
 
 template <class LookupNodeID>
-STValidation::STValidation(
-    SerialIter& sit,
-    LookupNodeID&& lookupNodeID,
-    bool checkSignature)
+STValidation::STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, bool checkSignature)
     : STObject(validationFormat(), sit, sfValidation)
     , signingPubKey_([this]() {
         auto const spk = getFieldVL(sfSigningPubKey);
@@ -168,14 +153,11 @@ STValidation::STValidation(
 {
     if (checkSignature && !isValid())
     {
-        JLOG(debugLog().error()) << "Invalid signature in validation: "
-                                 << getJson(JsonOptions::none);
+        JLOG(debugLog().error()) << "Invalid signature in validation: " << getJson(JsonOptions::none);
         Throw<std::runtime_error>("Invalid signature in validation");
     }
 
-    XRPL_ASSERT(
-        nodeID_.isNonZero(),
-        "ripple::STValidation::STValidation(SerialIter) : nonzero node");
+    XRPL_ASSERT(nodeID_.isNonZero(), "xrpl::STValidation::STValidation(SerialIter) : nonzero node");
 }
 
 /** Construct, sign and trust a new STValidation issued by this node.
@@ -193,14 +175,11 @@ STValidation::STValidation(
     SecretKey const& sk,
     NodeID const& nodeID,
     F&& f)
-    : STObject(validationFormat(), sfValidation)
-    , signingPubKey_(pk)
-    , nodeID_(nodeID)
-    , seenTime_(signTime)
+    : STObject(validationFormat(), sfValidation), signingPubKey_(pk), nodeID_(nodeID), seenTime_(signTime)
 {
     XRPL_ASSERT(
         nodeID_.isNonZero(),
-        "ripple::STValidation::STValidation(PublicKey, SecretKey) : nonzero "
+        "xrpl::STValidation::STValidation(PublicKey, SecretKey) : nonzero "
         "node");
 
     // First, set our own public key:
@@ -222,9 +201,7 @@ STValidation::STValidation(
     for (auto const& e : validationFormat())
     {
         if (e.style() == soeREQUIRED && !isFieldPresent(e.sField()))
-            LogicError(
-                "Required field '" + e.sField().getName() +
-                "' missing from validation.");
+            LogicError("Required field '" + e.sField().getName() + "' missing from validation.");
     }
 
     // We just signed this, so it should be valid.
@@ -267,6 +244,6 @@ STValidation::setSeen(NetClock::time_point s)
     seenTime_ = s;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

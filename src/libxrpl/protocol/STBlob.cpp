@@ -9,10 +9,9 @@
 #include <string>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
-STBlob::STBlob(SerialIter& st, SField const& name)
-    : STBase(name), value_(st.getVLBuffer())
+STBlob::STBlob(SerialIter& st, SField const& name) : STBase(name), value_(st.getVLBuffer())
 {
 }
 
@@ -43,11 +42,10 @@ STBlob::getText() const
 void
 STBlob::add(Serializer& s) const
 {
-    XRPL_ASSERT(getFName().isBinary(), "ripple::STBlob::add : field is binary");
+    XRPL_ASSERT(getFName().isBinary(), "xrpl::STBlob::add : field is binary");
     XRPL_ASSERT(
-        (getFName().fieldType == STI_VL) ||
-            (getFName().fieldType == STI_ACCOUNT),
-        "ripple::STBlob::add : valid field type");
+        (getFName().fieldType == STI_VL) || (getFName().fieldType == STI_ACCOUNT),
+        "xrpl::STBlob::add : valid field type");
     s.addVL(value_.data(), value_.size());
 }
 
@@ -64,4 +62,4 @@ STBlob::isDefault() const
     return value_.empty();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

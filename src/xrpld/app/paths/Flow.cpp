@@ -1,23 +1,19 @@
 #include <xrpld/app/paths/AMMContext.h>
-#include <xrpld/app/paths/Credit.h>
 #include <xrpld/app/paths/Flow.h>
 #include <xrpld/app/paths/detail/AmountSpec.h>
 #include <xrpld/app/paths/detail/Steps.h>
 #include <xrpld/app/paths/detail/StrandFlow.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/Credit.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-namespace ripple {
+namespace xrpl {
 
 template <class FlowResult>
 static auto
-finishFlow(
-    PaymentSandbox& sb,
-    Issue const& srcIssue,
-    Issue const& dstIssue,
-    FlowResult&& f)
+finishFlow(PaymentSandbox& sb, Issue const& srcIssue, Issue const& dstIssue, FlowResult&& f)
 {
     path::RippleCalc::Output result;
     if (f.ter == tesSUCCESS)
@@ -94,8 +90,7 @@ flow(
 
     if (j.trace())
     {
-        j.trace() << "\nsrc: " << src << "\ndst: " << dst
-                  << "\nsrcIssue: " << srcIssue << "\ndstIssue: " << dstIssue;
+        j.trace() << "\nsrc: " << src << "\ndst: " << dst << "\nsrcIssue: " << srcIssue << "\ndstIssue: " << dstIssue;
         j.trace() << "\nNumStrands: " << strands.size();
         for (auto const& curStrand : strands)
         {
@@ -172,7 +167,7 @@ flow(
                 flowDebugInfo));
     }
 
-    XRPL_ASSERT(!srcIsXRP && !dstIsXRP, "ripple::flow : neither is XRP");
+    XRPL_ASSERT(!srcIsXRP && !dstIsXRP, "xrpl::flow : neither is XRP");
     return finishFlow(
         sb,
         srcIssue,
@@ -190,4 +185,4 @@ flow(
             flowDebugInfo));
 }
 
-}  // namespace ripple
+}  // namespace xrpl

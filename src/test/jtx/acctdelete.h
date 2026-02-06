@@ -6,7 +6,7 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -18,14 +18,11 @@ acctdelete(Account const& account, Account const& dest);
 // the account.  If margin is specified, close the ledger so `margin`
 // more closes are needed
 void
-incLgrSeqForAccDel(
-    jtx::Env& env,
-    jtx::Account const& acc,
-    std::uint32_t margin = 0);
+incLgrSeqForAccDel(jtx::Env& env, jtx::Account const& acc, std::uint32_t margin = 0);
 
 }  // namespace jtx
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

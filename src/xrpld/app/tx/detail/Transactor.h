@@ -9,7 +9,7 @@
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** State information when preflighting a tx. */
 struct PreflightContext
@@ -29,15 +29,9 @@ public:
         Rules const& rules_,
         ApplyFlags flags_,
         beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
-        : app(app_)
-        , tx(tx_)
-        , rules(rules_)
-        , flags(flags_)
-        , parentBatchId(parentBatchId_)
-        , j(j_)
+        : app(app_), tx(tx_), rules(rules_), flags(flags_), parentBatchId(parentBatchId_), j(j_)
     {
-        XRPL_ASSERT(
-            (flags_ & tapBATCH) == tapBATCH, "Batch apply flag should be set");
+        XRPL_ASSERT((flags_ & tapBATCH) == tapBATCH, "Batch apply flag should be set");
     }
 
     PreflightContext(
@@ -48,8 +42,7 @@ public:
         beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
         : app(app_), tx(tx_), rules(rules_), flags(flags_), j(j_)
     {
-        XRPL_ASSERT(
-            (flags_ & tapBATCH) == 0, "Batch apply flag should not be set");
+        XRPL_ASSERT((flags_ & tapBATCH) == 0, "Batch apply flag should not be set");
     }
 
     PreflightContext&
@@ -96,17 +89,9 @@ public:
         STTx const& tx_,
         ApplyFlags flags_,
         beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
-        : PreclaimContext(
-              app_,
-              view_,
-              preflightResult_,
-              tx_,
-              flags_,
-              std::nullopt,
-              j_)
+        : PreclaimContext(app_, view_, preflightResult_, tx_, flags_, std::nullopt, j_)
     {
-        XRPL_ASSERT(
-            (flags_ & tapBATCH) == 0, "Batch apply flag should not be set");
+        XRPL_ASSERT((flags_ & tapBATCH) == 0, "Batch apply flag should not be set");
     }
 
     PreclaimContext&
@@ -224,11 +209,7 @@ public:
 
     // Interface used by DeleteAccount
     static TER
-    ticketDelete(
-        ApplyView& view,
-        AccountID const& account,
-        uint256 const& ticketIndex,
-        beast::Journal j);
+    ticketDelete(ApplyView& view, AccountID const& account, uint256 const& ticketIndex, beast::Journal j);
 
 protected:
     TER
@@ -247,16 +228,12 @@ protected:
 
         @param app The application hosting the server
         @param baseFee The base fee of a candidate transaction
-            @see ripple::calculateBaseFee
+            @see xrpl::calculateBaseFee
         @param fees Fee settings from the current ledger
         @param flags Transaction processing fees
      */
     static XRPAmount
-    minimumFee(
-        Application& app,
-        XRPAmount baseFee,
-        Fees const& fees,
-        ApplyFlags flags);
+    minimumFee(Application& app, XRPAmount baseFee, Fees const& fees, ApplyFlags flags);
 
     // Returns the fee in fee units, not scaled for load.
     static XRPAmount
@@ -266,6 +243,7 @@ protected:
     checkSign(
         ReadView const& view,
         ApplyFlags flags,
+        std::optional<uint256 const> const& parentBatchId,
         AccountID const& idAccount,
         STObject const& sigObject,
         beast::Journal const j);
@@ -287,14 +265,24 @@ protected:
 
     template <class T>
     static bool
-    validNumericRange(std::optional<T> value, T max, T min = {});
+    validNumericRange(std::optional<T> value, T max, T min = T{});
 
     template <class T, class Unit>
     static bool
     validNumericRange(
         std::optional<T> value,
         unit::ValueUnit<Unit, T> max,
-        unit::ValueUnit<Unit, T> min = {});
+        unit::ValueUnit<Unit, T> min = unit::ValueUnit<Unit, T>{});
+
+    /// Minimum will usually be zero.
+    template <class T>
+    static bool
+    validNumericMinimum(std::optional<T> value, T min = T{});
+
+    /// Minimum will usually be zero.
+    template <class T, class Unit>
+    static bool
+    validNumericMinimum(std::optional<T> value, unit::ValueUnit<Unit, T> min = unit::ValueUnit<Unit, T>{});
 
 private:
     std::pair<TER, XRPAmount>
@@ -364,10 +352,7 @@ preflightCheckSigningKey(STObject const& sigObject, beast::Journal j);
  * Normally called from preflight2 with ctx.tx.
  */
 std::optional<NotTEC>
-preflightCheckSimulateKeys(
-    ApplyFlags flags,
-    STObject const& sigObject,
-    beast::Journal j);
+preflightCheckSimulateKeys(ApplyFlags flags, STObject const& sigObject, beast::Journal j);
 }  // namespace detail
 
 // Defined in Change.cpp
@@ -381,8 +366,7 @@ Transactor::invokePreflight(PreflightContext const& ctx)
 {
     // Using this lookup does NOT require checking the fixDelegateV1_1. The data
     // exists regardless of whether it is enabled.
-    auto const feature =
-        Permission::getInstance().getTxFeature(ctx.tx.getTxnType());
+    auto const feature = Permission::getInstance().getTxFeature(ctx.tx.getTxnType());
 
     if (feature && !ctx.rules.enabled(*feature))
         return temDISABLED;
@@ -413,14 +397,27 @@ Transactor::validNumericRange(std::optional<T> value, T max, T min)
 
 template <class T, class Unit>
 bool
-Transactor::validNumericRange(
-    std::optional<T> value,
-    unit::ValueUnit<Unit, T> max,
-    unit::ValueUnit<Unit, T> min)
+Transactor::validNumericRange(std::optional<T> value, unit::ValueUnit<Unit, T> max, unit::ValueUnit<Unit, T> min)
 {
     return validNumericRange(value, max.value(), min.value());
 }
 
-}  // namespace ripple
+template <class T>
+bool
+Transactor::validNumericMinimum(std::optional<T> value, T min)
+{
+    if (!value)
+        return true;
+    return value >= min;
+}
+
+template <class T, class Unit>
+bool
+Transactor::validNumericMinimum(std::optional<T> value, unit::ValueUnit<Unit, T> min)
+{
+    return validNumericMinimum(value, min.value());
+}
+
+}  // namespace xrpl
 
 #endif

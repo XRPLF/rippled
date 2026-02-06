@@ -17,16 +17,13 @@
 #include <optional>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 using socket_type = boost::beast::tcp_stream;
 using stream_type = boost::beast::ssl_stream<socket_type>;
-using request_type =
-    boost::beast::http::request<boost::beast::http::empty_body>;
-using http_request_type =
-    boost::beast::http::request<boost::beast::http::dynamic_body>;
-using http_response_type =
-    boost::beast::http::response<boost::beast::http::dynamic_body>;
+using request_type = boost::beast::http::request<boost::beast::http::empty_body>;
+using http_request_type = boost::beast::http::request<boost::beast::http::dynamic_body>;
+using http_response_type = boost::beast::http::response<boost::beast::http::dynamic_body>;
 
 /** Computes a shared value based on the SSL connection state.
 
@@ -136,9 +133,7 @@ static constexpr char DELIM_VALUE[] = ",";
       is found in the header, unseated optional otherwise
  */
 std::optional<std::string>
-getFeatureValue(
-    boost::beast::http::fields const& headers,
-    std::string const& feature);
+getFeatureValue(boost::beast::http::fields const& headers, std::string const& feature);
 
 /** Check if a feature's value is equal to the specified value
    @param headers request/response header
@@ -149,10 +144,7 @@ getFeatureValue(
    doesn't match or the feature is not found in the header
  */
 bool
-isFeatureValue(
-    boost::beast::http::fields const& headers,
-    std::string const& feature,
-    std::string const& value);
+isFeatureValue(boost::beast::http::fields const& headers, std::string const& feature, std::string const& value);
 
 /** Check if a feature is enabled
    @param headers request/response header
@@ -160,9 +152,7 @@ isFeatureValue(
    @return true if enabled
  */
 bool
-featureEnabled(
-    boost::beast::http::fields const& headers,
-    std::string const& feature);
+featureEnabled(boost::beast::http::fields const& headers, std::string const& feature);
 
 /** Check if a feature should be enabled for a peer. The feature
     is enabled if its configured value is true and the http header
@@ -176,11 +166,7 @@ featureEnabled(
  */
 template <typename headers>
 bool
-peerFeatureEnabled(
-    headers const& request,
-    std::string const& feature,
-    std::string value,
-    bool config)
+peerFeatureEnabled(headers const& request, std::string const& feature, std::string value, bool config)
 {
     return config && isFeatureValue(request, feature, value);
 }
@@ -188,10 +174,7 @@ peerFeatureEnabled(
 /** Wrapper for enable(1)/disable type(0) of feature */
 template <typename headers>
 bool
-peerFeatureEnabled(
-    headers const& request,
-    std::string const& feature,
-    bool config)
+peerFeatureEnabled(headers const& request, std::string const& feature, bool config)
 {
     return config && peerFeatureEnabled(request, feature, "1", config);
 }
@@ -233,6 +216,6 @@ makeFeaturesResponseHeader(
     bool txReduceRelayEnabled,
     bool vpReduceRelayEnabled);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

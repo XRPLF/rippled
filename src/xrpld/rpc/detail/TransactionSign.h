@@ -6,7 +6,7 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
-namespace ripple {
+namespace xrpl {
 
 // Forward declarations
 class Application;
@@ -65,20 +65,14 @@ checkFee(
     Application const& app);
 
 // Return a std::function<> that calls NetworkOPs::processTransaction.
-using ProcessTransactionFn = std::function<void(
-    std::shared_ptr<Transaction>& transaction,
-    bool bUnlimited,
-    bool bLocal,
-    NetworkOPs::FailHard failType)>;
+using ProcessTransactionFn = std::function<
+    void(std::shared_ptr<Transaction>& transaction, bool bUnlimited, bool bLocal, NetworkOPs::FailHard failType)>;
 
 inline ProcessTransactionFn
 getProcessTxnFn(NetworkOPs& netOPs)
 {
     return [&netOPs](
-               std::shared_ptr<Transaction>& transaction,
-               bool bUnlimited,
-               bool bLocal,
-               NetworkOPs::FailHard failType) {
+               std::shared_ptr<Transaction>& transaction, bool bUnlimited, bool bLocal, NetworkOPs::FailHard failType) {
         netOPs.processTransaction(transaction, bUnlimited, bLocal, failType);
     };
 }
@@ -126,6 +120,6 @@ transactionSubmitMultiSigned(
     ProcessTransactionFn const& processTransaction);
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

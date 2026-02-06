@@ -12,7 +12,7 @@
 #include <cstdint>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 class MPTAmount : private boost::totally_ordered<MPTAmount>,
                   private boost::additive<MPTAmount>,
@@ -123,11 +123,7 @@ to_string(MPTAmount const& amount)
 }
 
 inline MPTAmount
-mulRatio(
-    MPTAmount const& amt,
-    std::uint32_t num,
-    std::uint32_t den,
-    bool roundUp)
+mulRatio(MPTAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundUp)
 {
     using namespace boost::multiprecision;
 
@@ -150,6 +146,6 @@ mulRatio(
     return MPTAmount(r.convert_to<MPTAmount::value_type>());
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_BASICS_MPTAMOUNT_H_INCLUDED

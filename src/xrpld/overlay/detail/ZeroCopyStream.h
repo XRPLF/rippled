@@ -7,7 +7,7 @@
 
 #include <google/protobuf/io/zero_copy_stream.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Implements ZeroCopyInputStream around a buffer sequence.
     @tparam Buffers A type meeting the requirements of ConstBufferSequence.
@@ -49,9 +49,7 @@ public:
 
 template <class Buffers>
 ZeroCopyInputStream<Buffers>::ZeroCopyInputStream(Buffers const& buffers)
-    : last_(buffers.end())
-    , first_(buffers.begin())
-    , pos_((first_ != last_) ? *first_ : const_buffer(nullptr, 0))
+    : last_(buffers.end()), first_(buffers.begin()), pos_((first_ != last_) ? *first_ : const_buffer(nullptr, 0))
 {
 }
 
@@ -143,13 +141,8 @@ public:
 //------------------------------------------------------------------------------
 
 template <class Streambuf>
-ZeroCopyOutputStream<Streambuf>::ZeroCopyOutputStream(
-    Streambuf& streambuf,
-    std::size_t blockSize)
-    : streambuf_(streambuf)
-    , blockSize_(blockSize)
-    , buffers_(streambuf_.prepare(blockSize_))
-    , pos_(buffers_.begin())
+ZeroCopyOutputStream<Streambuf>::ZeroCopyOutputStream(Streambuf& streambuf, std::size_t blockSize)
+    : streambuf_(streambuf), blockSize_(blockSize), buffers_(streambuf_.prepare(blockSize_)), pos_(buffers_.begin())
 {
 }
 
@@ -187,14 +180,13 @@ template <class Streambuf>
 void
 ZeroCopyOutputStream<Streambuf>::BackUp(int count)
 {
-    XRPL_ASSERT(
-        count <= commit_, "ripple::ZeroCopyOutputStream::BackUp : valid input");
+    XRPL_ASSERT(count <= commit_, "xrpl::ZeroCopyOutputStream::BackUp : valid input");
     auto const n = commit_ - count;
     streambuf_.commit(n);
     count_ += n;
     commit_ = 0;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -14,7 +14,7 @@
 
 #include <tuple>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class Subscribe_test : public beast::unit_test::suite
@@ -36,10 +36,8 @@ public:
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(
-                    jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(
-                    jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -59,9 +57,7 @@ public:
             env.app().getOPs().reportFeeChange();
 
             // Check stream update
-            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::type] == "serverStatus";
-            }));
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) { return jv[jss::type] == "serverStatus"; }));
         }
 
         {
@@ -69,10 +65,8 @@ public:
             auto jv = wsc->invoke("unsubscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(
-                    jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(
-                    jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -107,16 +101,12 @@ public:
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(
-                    jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(
-                    jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::result][jss::ledger_index] == 2);
-            BEAST_EXPECT(
-                jv[jss::result][jss::network_id] ==
-                env.app().config().NETWORK_ID);
+            BEAST_EXPECT(jv[jss::result][jss::network_id] == env.app().config().NETWORK_ID);
         }
 
         {
@@ -125,8 +115,7 @@ public:
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::ledger_index] == 3 &&
-                    jv[jss::network_id] == env.app().config().NETWORK_ID;
+                return jv[jss::ledger_index] == 3 && jv[jss::network_id] == env.app().config().NETWORK_ID;
             }));
         }
 
@@ -136,8 +125,7 @@ public:
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::ledger_index] == 4 &&
-                    jv[jss::network_id] == env.app().config().NETWORK_ID;
+                return jv[jss::ledger_index] == 4 && jv[jss::network_id] == env.app().config().NETWORK_ID;
             }));
         }
 
@@ -145,10 +133,8 @@ public:
         auto jv = wsc->invoke("unsubscribe", stream);
         if (wsc->version() == 2)
         {
-            BEAST_EXPECT(
-                jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(
-                jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
             BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
         }
         BEAST_EXPECT(jv[jss::status] == "success");
@@ -171,10 +157,8 @@ public:
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(
-                    jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(
-                    jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -186,8 +170,7 @@ public:
 
             // Check stream update for payment transaction
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::meta]["AffectedNodes"][1u]["CreatedNode"]
-                         ["NewFields"][jss::Account]  //
+                return jv[jss::meta]["AffectedNodes"][1u]["CreatedNode"]["NewFields"][jss::Account]  //
                     == Account("alice").human() &&
                     jv[jss::transaction][jss::TransactionType]  //
                     == jss::Payment &&
@@ -201,8 +184,7 @@ public:
 
             // Check stream update for accountset transaction
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::meta]["AffectedNodes"][0u]["ModifiedNode"]
-                         ["FinalFields"][jss::Account] ==
+                return jv[jss::meta]["AffectedNodes"][0u]["ModifiedNode"]["FinalFields"][jss::Account] ==
                     Account("alice").human();
             }));
 
@@ -211,8 +193,7 @@ public:
 
             // Check stream update for payment transaction
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::meta]["AffectedNodes"][1u]["CreatedNode"]
-                         ["NewFields"][jss::Account]  //
+                return jv[jss::meta]["AffectedNodes"][1u]["CreatedNode"]["NewFields"][jss::Account]  //
                     == Account("bob").human() &&
                     jv[jss::transaction][jss::TransactionType]  //
                     == jss::Payment &&
@@ -226,8 +207,7 @@ public:
 
             // Check stream update for accountset transaction
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::meta]["AffectedNodes"][0u]["ModifiedNode"]
-                         ["FinalFields"][jss::Account] ==
+                return jv[jss::meta]["AffectedNodes"][0u]["ModifiedNode"]["FinalFields"][jss::Account] ==
                     Account("bob").human();
             }));
         }
@@ -237,10 +217,8 @@ public:
             auto jv = wsc->invoke("unsubscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(
-                    jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(
-                    jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -254,10 +232,8 @@ public:
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(
-                    jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(
-                    jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -275,14 +251,12 @@ public:
 
             // Check stream updates
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::meta]["AffectedNodes"][1u]["ModifiedNode"]
-                         ["FinalFields"][jss::Account] ==
+                return jv[jss::meta]["AffectedNodes"][1u]["ModifiedNode"]["FinalFields"][jss::Account] ==
                     Account("alice").human();
             }));
 
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::meta]["AffectedNodes"][1u]["CreatedNode"]
-                         ["NewFields"]["LowLimit"][jss::issuer] ==
+                return jv[jss::meta]["AffectedNodes"][1u]["CreatedNode"]["NewFields"]["LowLimit"][jss::issuer] ==
                     Account("alice").human();
             }));
         }
@@ -291,10 +265,8 @@ public:
         auto jv = wsc->invoke("unsubscribe", stream);
         if (wsc->version() == 2)
         {
-            BEAST_EXPECT(
-                jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(
-                jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
             BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
         }
         BEAST_EXPECT(jv[jss::status] == "success");
@@ -322,10 +294,8 @@ public:
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(
-                    jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(
-                    jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -337,8 +307,7 @@ public:
 
             // Check stream update for payment transaction
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::meta]["AffectedNodes"][1u]["CreatedNode"]
-                         ["NewFields"][jss::Account]  //
+                return jv[jss::meta]["AffectedNodes"][1u]["CreatedNode"]["NewFields"][jss::Account]  //
                     == Account("alice").human() &&
                     jv[jss::close_time_iso]  //
                     == "2000-01-01T00:00:10Z" &&
@@ -361,8 +330,7 @@ public:
 
             // Check stream update for accountset transaction
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::meta]["AffectedNodes"][0u]["ModifiedNode"]
-                         ["FinalFields"][jss::Account] ==
+                return jv[jss::meta]["AffectedNodes"][0u]["ModifiedNode"]["FinalFields"][jss::Account] ==
                     Account("alice").human();
             }));
         }
@@ -372,10 +340,8 @@ public:
             auto jv = wsc->invoke("unsubscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(
-                    jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(
-                    jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -397,10 +363,8 @@ public:
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(
-                    jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(
-                    jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -410,10 +374,8 @@ public:
         auto jv = wsc->invoke("unsubscribe", stream);
         if (wsc->version() == 2)
         {
-            BEAST_EXPECT(
-                jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(
-                jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
             BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
         }
         BEAST_EXPECT(jv[jss::status] == "success");
@@ -428,16 +390,13 @@ public:
         auto& cfg = env.app().config();
         if (!BEAST_EXPECT(cfg.section(SECTION_VALIDATION_SEED).empty()))
             return;
-        auto const parsedseed =
-            parseBase58<Seed>(cfg.section(SECTION_VALIDATION_SEED).values()[0]);
+        auto const parsedseed = parseBase58<Seed>(cfg.section(SECTION_VALIDATION_SEED).values()[0]);
         if (!BEAST_EXPECT(parsedseed))
             return;
 
         std::string const valPublicKey = toBase58(
             TokenType::NodePublic,
-            derivePublicKey(
-                KeyType::secp256k1,
-                generateSecretKey(KeyType::secp256k1, *parsedseed)));
+            derivePublicKey(KeyType::secp256k1, generateSecretKey(KeyType::secp256k1, *parsedseed)));
 
         auto wsc = makeWSClient(env.app().config());
         Json::Value stream;
@@ -449,10 +408,8 @@ public:
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(
-                    jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(
-                    jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -460,20 +417,17 @@ public:
 
         {
             // Lambda to check ledger validations from the stream.
-            auto validValidationFields = [&env, &valPublicKey](
-                                             Json::Value const& jv) {
+            auto validValidationFields = [&env, &valPublicKey](Json::Value const& jv) {
                 if (jv[jss::type] != "validationReceived")
                     return false;
 
                 if (jv[jss::validation_public_key].asString() != valPublicKey)
                     return false;
 
-                if (jv[jss::ledger_hash] !=
-                    to_string(env.closed()->info().hash))
+                if (jv[jss::ledger_hash] != to_string(env.closed()->header().hash))
                     return false;
 
-                if (jv[jss::ledger_index] !=
-                    std::to_string(env.closed()->info().seq))
+                if (jv[jss::ledger_index] != std::to_string(env.closed()->header().seq))
                     return false;
 
                 if (jv[jss::flags] != (vfFullyCanonicalSig | vfFullValidation))
@@ -498,13 +452,11 @@ public:
                     return false;
 
                 uint32_t netID = env.app().config().NETWORK_ID;
-                if (!jv.isMember(jss::network_id) ||
-                    jv[jss::network_id] != netID)
+                if (!jv.isMember(jss::network_id) || jv[jss::network_id] != netID)
                     return false;
 
                 // Certain fields are only added on a flag ledger.
-                bool const isFlagLedger =
-                    (env.closed()->info().seq + 1) % 256 == 0;
+                bool const isFlagLedger = (env.closed()->header().seq + 1) % 256 == 0;
 
                 if (jv.isMember(jss::server_version) != isFlagLedger)
                     return false;
@@ -520,7 +472,7 @@ public:
 
             // Check stream update.  Look at enough stream entries so we see
             // at least one flag ledger.
-            while (env.closed()->info().seq < 300)
+            while (env.closed()->header().seq < 300)
             {
                 env.close();
                 using namespace std::chrono_literals;
@@ -532,10 +484,8 @@ public:
         auto jv = wsc->invoke("unsubscribe", stream);
         if (wsc->version() == 2)
         {
-            BEAST_EXPECT(
-                jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(
-                jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
             BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
         }
         BEAST_EXPECT(jv[jss::status] == "success");
@@ -608,9 +558,7 @@ public:
             if (subscribe)
             {
                 BEAST_EXPECT(jr[jss::error] == "invalidParams");
-                BEAST_EXPECT(
-                    jr[jss::error_message] ==
-                    "Only http and https is supported.");
+                BEAST_EXPECT(jr[jss::error_message] == "Only http and https is supported.");
             }
         }
 
@@ -618,12 +566,9 @@ public:
             Env env_nonadmin{*this, no_admin(envconfig())};
             Json::Value jv;
             jv[jss::url] = "no-url";
-            auto jr =
-                env_nonadmin.rpc("json", method, to_string(jv))[jss::result];
+            auto jr = env_nonadmin.rpc("json", method, to_string(jv))[jss::result];
             BEAST_EXPECT(jr[jss::error] == "noPermission");
-            BEAST_EXPECT(
-                jr[jss::error_message] ==
-                "You don't have permission for this command.");
+            BEAST_EXPECT(jr[jss::error_message] == "You don't have permission for this command.");
         }
 
         std::initializer_list<Json::Value> const nonArrays{
@@ -681,8 +626,7 @@ public:
             jv[jss::books][0u][jss::taker_pays] = Json::objectValue;
             auto jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "srcCurMalformed");
-            BEAST_EXPECT(
-                jr[jss::error_message] == "Source currency is malformed.");
+            BEAST_EXPECT(jr[jss::error_message] == "Source currency is malformed.");
         }
 
         {
@@ -694,8 +638,7 @@ public:
             jv[jss::books][0u][jss::taker_pays][jss::currency] = "ZZZZ";
             auto jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "srcCurMalformed");
-            BEAST_EXPECT(
-                jr[jss::error_message] == "Source currency is malformed.");
+            BEAST_EXPECT(jr[jss::error_message] == "Source currency is malformed.");
         }
 
         {
@@ -708,8 +651,7 @@ public:
             jv[jss::books][0u][jss::taker_pays][jss::issuer] = 1;
             auto jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "srcIsrMalformed");
-            BEAST_EXPECT(
-                jr[jss::error_message] == "Source issuer is malformed.");
+            BEAST_EXPECT(jr[jss::error_message] == "Source issuer is malformed.");
         }
 
         {
@@ -719,12 +661,10 @@ public:
             jv[jss::books][0u][jss::taker_gets] = Json::objectValue;
             jv[jss::books][0u][jss::taker_pays] = Json::objectValue;
             jv[jss::books][0u][jss::taker_pays][jss::currency] = "USD";
-            jv[jss::books][0u][jss::taker_pays][jss::issuer] =
-                Account{"gateway"}.human() + "DEAD";
+            jv[jss::books][0u][jss::taker_pays][jss::issuer] = Account{"gateway"}.human() + "DEAD";
             auto jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "srcIsrMalformed");
-            BEAST_EXPECT(
-                jr[jss::error_message] == "Source issuer is malformed.");
+            BEAST_EXPECT(jr[jss::error_message] == "Source issuer is malformed.");
         }
 
         {
@@ -732,16 +672,13 @@ public:
             jv[jss::books] = Json::arrayValue;
             jv[jss::books][0u] = Json::objectValue;
             jv[jss::books][0u][jss::taker_pays] =
-                Account{"gateway"}["USD"](1).value().getJson(
-                    JsonOptions::include_date);
+                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::include_date);
             jv[jss::books][0u][jss::taker_gets] = Json::objectValue;
             auto jr = wsc->invoke(method, jv)[jss::result];
             // NOTE: this error is slightly incongruous with the
             // equivalent source currency error
             BEAST_EXPECT(jr[jss::error] == "dstAmtMalformed");
-            BEAST_EXPECT(
-                jr[jss::error_message] ==
-                "Destination amount/currency/issuer is malformed.");
+            BEAST_EXPECT(jr[jss::error_message] == "Destination amount/currency/issuer is malformed.");
         }
 
         {
@@ -749,16 +686,13 @@ public:
             jv[jss::books] = Json::arrayValue;
             jv[jss::books][0u] = Json::objectValue;
             jv[jss::books][0u][jss::taker_pays] =
-                Account{"gateway"}["USD"](1).value().getJson(
-                    JsonOptions::include_date);
+                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::include_date);
             jv[jss::books][0u][jss::taker_gets][jss::currency] = "ZZZZ";
             auto jr = wsc->invoke(method, jv)[jss::result];
             // NOTE: this error is slightly incongruous with the
             // equivalent source currency error
             BEAST_EXPECT(jr[jss::error] == "dstAmtMalformed");
-            BEAST_EXPECT(
-                jr[jss::error_message] ==
-                "Destination amount/currency/issuer is malformed.");
+            BEAST_EXPECT(jr[jss::error_message] == "Destination amount/currency/issuer is malformed.");
         }
 
         {
@@ -766,14 +700,12 @@ public:
             jv[jss::books] = Json::arrayValue;
             jv[jss::books][0u] = Json::objectValue;
             jv[jss::books][0u][jss::taker_pays] =
-                Account{"gateway"}["USD"](1).value().getJson(
-                    JsonOptions::include_date);
+                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::include_date);
             jv[jss::books][0u][jss::taker_gets][jss::currency] = "USD";
             jv[jss::books][0u][jss::taker_gets][jss::issuer] = 1;
             auto jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "dstIsrMalformed");
-            BEAST_EXPECT(
-                jr[jss::error_message] == "Destination issuer is malformed.");
+            BEAST_EXPECT(jr[jss::error_message] == "Destination issuer is malformed.");
         }
 
         {
@@ -781,15 +713,12 @@ public:
             jv[jss::books] = Json::arrayValue;
             jv[jss::books][0u] = Json::objectValue;
             jv[jss::books][0u][jss::taker_pays] =
-                Account{"gateway"}["USD"](1).value().getJson(
-                    JsonOptions::include_date);
+                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::include_date);
             jv[jss::books][0u][jss::taker_gets][jss::currency] = "USD";
-            jv[jss::books][0u][jss::taker_gets][jss::issuer] =
-                Account{"gateway"}.human() + "DEAD";
+            jv[jss::books][0u][jss::taker_gets][jss::issuer] = Account{"gateway"}.human() + "DEAD";
             auto jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "dstIsrMalformed");
-            BEAST_EXPECT(
-                jr[jss::error_message] == "Destination issuer is malformed.");
+            BEAST_EXPECT(jr[jss::error_message] == "Destination issuer is malformed.");
         }
 
         {
@@ -797,11 +726,9 @@ public:
             jv[jss::books] = Json::arrayValue;
             jv[jss::books][0u] = Json::objectValue;
             jv[jss::books][0u][jss::taker_pays] =
-                Account{"gateway"}["USD"](1).value().getJson(
-                    JsonOptions::include_date);
+                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::include_date);
             jv[jss::books][0u][jss::taker_gets] =
-                Account{"gateway"}["USD"](1).value().getJson(
-                    JsonOptions::include_date);
+                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::include_date);
             auto jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "badMarket");
             BEAST_EXPECT(jr[jss::error_message] == "No such market.");
@@ -854,8 +781,7 @@ public:
          * return true if the subscribe or unsubscribe result is a success
          */
         auto goodSubRPC = [](Json::Value const& subReply) -> bool {
-            return subReply.isMember(jss::result) &&
-                subReply[jss::result].isMember(jss::status) &&
+            return subReply.isMember(jss::result) && subReply[jss::result].isMember(jss::status) &&
                 subReply[jss::result][jss::status] == jss::success;
         };
 
@@ -864,9 +790,7 @@ public:
          * return {true, true} if received numReplies replies and also
          * received a tx with the account_history_tx_first == true
          */
-        auto getTxHash = [](WSClient& wsc,
-                            IdxHashVec& v,
-                            int numReplies) -> std::pair<bool, bool> {
+        auto getTxHash = [](WSClient& wsc, IdxHashVec& v, int numReplies) -> std::pair<bool, bool> {
             bool first_flag = false;
 
             for (int i = 0; i < numReplies; ++i)
@@ -882,12 +806,10 @@ public:
                         first_flag = true;
                     bool boundary = r.isMember(jss::account_history_boundary);
                     int ledger_idx = r[jss::ledger_index].asInt();
-                    if (r.isMember(jss::transaction) &&
-                        r[jss::transaction].isMember(jss::hash))
+                    if (r.isMember(jss::transaction) && r[jss::transaction].isMember(jss::hash))
                     {
                         auto t{r[jss::transaction]};
-                        v.emplace_back(
-                            idx, t[jss::hash].asString(), boundary, ledger_idx);
+                        v.emplace_back(idx, t[jss::hash].asString(), boundary, ledger_idx);
                         continue;
                     }
                 }
@@ -929,9 +851,7 @@ public:
          * and in the same order.
          * If sizeCompare is false, txHistoryVec is allowed to be larger.
          */
-        auto hashCompare = [](IdxHashVec const& accountVec,
-                              IdxHashVec const& txHistoryVec,
-                              bool sizeCompare) -> bool {
+        auto hashCompare = [](IdxHashVec const& accountVec, IdxHashVec const& txHistoryVec, bool sizeCompare) -> bool {
             if (accountVec.empty() || txHistoryVec.empty())
                 return false;
             if (sizeCompare && accountVec.size() != (txHistoryVec.size()))
@@ -957,8 +877,7 @@ public:
                 return false;
             for (std::size_t i = 1; i < accountVec.size(); ++i)
             {
-                if (auto idx = getHistoryIndex(i);
-                    !idx || *idx != *firstHistoryIndex + i)
+                if (auto idx = getHistoryIndex(i); !idx || *idx != *firstHistoryIndex + i)
                     return false;
             }
             return true;
@@ -999,8 +918,7 @@ public:
             for (size_t i = 0; i < num_tx; ++i)
             {
                 auto [idx, hash, boundary, ledger] = vec[i];
-                if ((i + 1 == num_tx || ledger != std::get<3>(vec[i + 1])) !=
-                    boundary)
+                if ((i + 1 == num_tx || ledger != std::get<3>(vec[i + 1])) != boundary)
                     return false;
             }
             return true;
@@ -1019,8 +937,7 @@ public:
             auto wscTxHistory = makeWSClient(env.app().config());
             Json::Value request;
             request[jss::account_history_tx_stream] = Json::objectValue;
-            request[jss::account_history_tx_stream][jss::account] =
-                alice.human();
+            request[jss::account_history_tx_stream][jss::account] = alice.human();
             auto jv = wscTxHistory->invoke("subscribe", request);
             if (!BEAST_EXPECT(goodSubRPC(jv)))
                 return;
@@ -1031,8 +948,7 @@ public:
             /*
              * unsubscribe history only, future txns should still be streamed
              */
-            request[jss::account_history_tx_stream][jss::stop_history_tx_only] =
-                true;
+            request[jss::account_history_tx_stream][jss::stop_history_tx_only] = true;
             jv = wscTxHistory->invoke("unsubscribe", request);
             if (!BEAST_EXPECT(goodSubRPC(jv)))
                 return;
@@ -1047,8 +963,7 @@ public:
             /*
              * unsubscribe, future txns should not be streamed
              */
-            request[jss::account_history_tx_stream][jss::stop_history_tx_only] =
-                false;
+            request[jss::account_history_tx_stream][jss::stop_history_tx_only] = false;
             jv = wscTxHistory->invoke("unsubscribe", request);
             BEAST_EXPECT(goodSubRPC(jv));
 
@@ -1065,14 +980,12 @@ public:
             auto wscTxHistory = makeWSClient(env.app().config());
             Json::Value request;
             request[jss::account_history_tx_stream] = Json::objectValue;
-            request[jss::account_history_tx_stream][jss::account] =
-                "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            request[jss::account_history_tx_stream][jss::account] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             auto jv = wscTxHistory->invoke("subscribe", request);
             if (!BEAST_EXPECT(goodSubRPC(jv)))
                 return;
             IdxHashVec genesisFullHistoryVec;
-            if (!BEAST_EXPECT(
-                    !getTxHash(*wscTxHistory, genesisFullHistoryVec, 1).first))
+            if (!BEAST_EXPECT(!getTxHash(*wscTxHistory, genesisFullHistoryVec, 1).first))
                 return;
 
             /*
@@ -1093,9 +1006,7 @@ public:
             r = getTxHash(*wscTxHistory, bobFullHistoryVec, 1);
             if (!BEAST_EXPECT(r.first && r.second))
                 return;
-            BEAST_EXPECT(
-                std::get<1>(bobFullHistoryVec.back()) ==
-                std::get<1>(genesisFullHistoryVec.back()));
+            BEAST_EXPECT(std::get<1>(bobFullHistoryVec.back()) == std::get<1>(genesisFullHistoryVec.back()));
 
             /*
              * unsubscribe to prepare next test
@@ -1103,8 +1014,7 @@ public:
             jv = wscTxHistory->invoke("unsubscribe", request);
             if (!BEAST_EXPECT(goodSubRPC(jv)))
                 return;
-            request[jss::account_history_tx_stream][jss::account] =
-                "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            request[jss::account_history_tx_stream][jss::account] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             jv = wscTxHistory->invoke("unsubscribe", request);
             BEAST_EXPECT(goodSubRPC(jv));
 
@@ -1118,21 +1028,16 @@ public:
             jv = wscTxHistory->invoke("subscribe", request);
 
             bobFullHistoryVec.clear();
-            BEAST_EXPECT(
-                getTxHash(*wscTxHistory, bobFullHistoryVec, 31).second);
+            BEAST_EXPECT(getTxHash(*wscTxHistory, bobFullHistoryVec, 31).second);
             jv = wscTxHistory->invoke("unsubscribe", request);
 
-            request[jss::account_history_tx_stream][jss::account] =
-                "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            request[jss::account_history_tx_stream][jss::account] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             jv = wscTxHistory->invoke("subscribe", request);
             genesisFullHistoryVec.clear();
-            BEAST_EXPECT(
-                getTxHash(*wscTxHistory, genesisFullHistoryVec, 31).second);
+            BEAST_EXPECT(getTxHash(*wscTxHistory, genesisFullHistoryVec, 31).second);
             jv = wscTxHistory->invoke("unsubscribe", request);
 
-            BEAST_EXPECT(
-                std::get<1>(bobFullHistoryVec.back()) ==
-                std::get<1>(genesisFullHistoryVec.back()));
+            BEAST_EXPECT(std::get<1>(bobFullHistoryVec.back()) == std::get<1>(genesisFullHistoryVec.back()));
         }
 
         {
@@ -1163,8 +1068,7 @@ public:
             // subscribe account tx history
             Json::Value request;
             request[jss::account_history_tx_stream] = Json::objectValue;
-            request[jss::account_history_tx_stream][jss::account] =
-                alice.human();
+            request[jss::account_history_tx_stream][jss::account] = alice.human();
             jv = wscTxHistory->invoke("subscribe", request);
 
             // compare historical txns
@@ -1182,8 +1086,7 @@ public:
             {
                 // take out all history txns from stream to prepare next test
                 IdxHashVec initFundTxns;
-                if (!BEAST_EXPECT(
-                        getTxHash(*wscTxHistory, initFundTxns, 10).second) ||
+                if (!BEAST_EXPECT(getTxHash(*wscTxHistory, initFundTxns, 10).second) ||
                     !BEAST_EXPECT(checkBoundary(initFundTxns, false)))
                     return;
             }
@@ -1229,8 +1132,7 @@ public:
             // subscribe
             Json::Value request;
             request[jss::account_history_tx_stream] = Json::objectValue;
-            request[jss::account_history_tx_stream][jss::account] =
-                carol.human();
+            request[jss::account_history_tx_stream][jss::account] = carol.human();
             auto ws = makeWSClient(env.app().config());
             auto jv = ws->invoke("subscribe", request);
             {
@@ -1256,15 +1158,12 @@ public:
             env.close();
 
             // many payments, and close lots of ledgers
-            auto oneRound = [&](int numPayments) {
-                return sendPayments(env, alice, carol, numPayments, 300);
-            };
+            auto oneRound = [&](int numPayments) { return sendPayments(env, alice, carol, numPayments, 300); };
 
             // subscribe
             Json::Value request;
             request[jss::account_history_tx_stream] = Json::objectValue;
-            request[jss::account_history_tx_stream][jss::account] =
-                carol.human();
+            request[jss::account_history_tx_stream][jss::account] = carol.human();
             auto wscLong = makeWSClient(env.app().config());
             auto jv = wscLong->invoke("subscribe", request);
             {
@@ -1301,8 +1200,7 @@ public:
         using namespace jtx;
         using namespace std::chrono_literals;
         FeatureBitset const all{
-            jtx::testable_amendments() | featurePermissionedDomains |
-            featureCredentials | featurePermissionedDEX};
+            jtx::testable_amendments() | featurePermissionedDomains | featureCredentials | featurePermissionedDEX};
 
         Env env(*this, all);
         PermissionedDEX permDex(env);
@@ -1322,15 +1220,10 @@ public:
         auto jv = wsc->invoke("subscribe", streams);
         if (!BEAST_EXPECT(jv[jss::status] == "success"))
             return;
-        env(offer(alice, XRP(10), USD(10)),
-            domain(domainID),
-            txflags(tfHybrid));
+        env(offer(alice, XRP(10), USD(10)), domain(domainID), txflags(tfHybrid));
         env.close();
 
-        env(pay(bob, carol, USD(5)),
-            path(~USD),
-            sendmax(XRP(5)),
-            domain(domainID));
+        env(pay(bob, carol, USD(5)), path(~USD), sendmax(XRP(5)), domain(domainID));
         env.close();
 
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
@@ -1338,12 +1231,9 @@ public:
                 return false;
 
             auto const jrOffer = jv[jss::changes][0u];
-            return (jv[jss::changes][0u][jss::domain]).asString() ==
-                strHex(domainID) &&
-                jrOffer[jss::currency_a].asString() == "XRP_drops" &&
-                jrOffer[jss::volume_a].asString() == "5000000" &&
-                jrOffer[jss::currency_b].asString() ==
-                "rHUKYAZyUFn8PCZWbPfwHfbVQXTYrYKkHb/USD" &&
+            return (jv[jss::changes][0u][jss::domain]).asString() == strHex(domainID) &&
+                jrOffer[jss::currency_a].asString() == "XRP_drops" && jrOffer[jss::volume_a].asString() == "5000000" &&
+                jrOffer[jss::currency_b].asString() == "rHUKYAZyUFn8PCZWbPfwHfbVQXTYrYKkHb/USD" &&
                 jrOffer[jss::volume_b].asString() == "5";
         }));
     }
@@ -1362,7 +1252,7 @@ public:
         //
         // The values of these fields are dependent on the NFTokenID/OfferID
         // changed in its corresponding transaction. We want to validate each
-        // response to make sure the synethic fields hold the right values.
+        // response to make sure the synthetic fields hold the right values.
 
         testcase("Test synthetic fields from Subscribe response");
 
@@ -1389,49 +1279,46 @@ public:
         auto verifyNFTokenID = [&](uint256 const& actualNftID) {
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 uint256 nftID;
-                BEAST_EXPECT(
-                    nftID.parseHex(jv[jss::meta][jss::nftoken_id].asString()));
+                BEAST_EXPECT(nftID.parseHex(jv[jss::meta][jss::nftoken_id].asString()));
                 return nftID == actualNftID;
             }));
         };
 
         // Verify `nftoken_ids` value equals to the NFTokenIDs that were
         // changed in the most recent NFTokenCancelOffer transaction
-        auto verifyNFTokenIDsInCancelOffer =
-            [&](std::vector<uint256> actualNftIDs) {
-                BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                    std::vector<uint256> metaIDs;
-                    std::transform(
-                        jv[jss::meta][jss::nftoken_ids].begin(),
-                        jv[jss::meta][jss::nftoken_ids].end(),
-                        std::back_inserter(metaIDs),
-                        [this](Json::Value id) {
-                            uint256 nftID;
-                            BEAST_EXPECT(nftID.parseHex(id.asString()));
-                            return nftID;
-                        });
-                    // Sort both array to prepare for comparison
-                    std::sort(metaIDs.begin(), metaIDs.end());
-                    std::sort(actualNftIDs.begin(), actualNftIDs.end());
+        auto verifyNFTokenIDsInCancelOffer = [&](std::vector<uint256> actualNftIDs) {
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+                std::vector<uint256> metaIDs;
+                std::transform(
+                    jv[jss::meta][jss::nftoken_ids].begin(),
+                    jv[jss::meta][jss::nftoken_ids].end(),
+                    std::back_inserter(metaIDs),
+                    [this](Json::Value id) {
+                        uint256 nftID;
+                        BEAST_EXPECT(nftID.parseHex(id.asString()));
+                        return nftID;
+                    });
+                // Sort both array to prepare for comparison
+                std::sort(metaIDs.begin(), metaIDs.end());
+                std::sort(actualNftIDs.begin(), actualNftIDs.end());
 
-                    // Make sure the expect number of NFTs is correct
-                    BEAST_EXPECT(metaIDs.size() == actualNftIDs.size());
+                // Make sure the expect number of NFTs is correct
+                BEAST_EXPECT(metaIDs.size() == actualNftIDs.size());
 
-                    // Check the value of NFT ID in the meta with the
-                    // actual values
-                    for (size_t i = 0; i < metaIDs.size(); ++i)
-                        BEAST_EXPECT(metaIDs[i] == actualNftIDs[i]);
-                    return true;
-                }));
-            };
+                // Check the value of NFT ID in the meta with the
+                // actual values
+                for (size_t i = 0; i < metaIDs.size(); ++i)
+                    BEAST_EXPECT(metaIDs[i] == actualNftIDs[i]);
+                return true;
+            }));
+        };
 
         // Verify `offer_id` value equals to the offerID that was
         // changed in the most recent NFTokenCreateOffer tx
         auto verifyNFTokenOfferID = [&](uint256 const& offerID) {
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 uint256 metaOfferID;
-                BEAST_EXPECT(metaOfferID.parseHex(
-                    jv[jss::meta][jss::offer_id].asString()));
+                BEAST_EXPECT(metaOfferID.parseHex(jv[jss::meta][jss::offer_id].asString()));
                 return metaOfferID == offerID;
             }));
         };
@@ -1440,14 +1327,12 @@ public:
         {
             // Alice mints 2 NFTs
             // Verify the NFTokenIDs are correct in the NFTokenMint tx meta
-            uint256 const nftId1{
-                token::getNextID(env, alice, 0u, tfTransferable)};
+            uint256 const nftId1{token::getNextID(env, alice, 0u, tfTransferable)};
             env(token::mint(alice, 0u), txflags(tfTransferable));
             env.close();
             verifyNFTokenID(nftId1);
 
-            uint256 const nftId2{
-                token::getNextID(env, alice, 0u, tfTransferable)};
+            uint256 const nftId2{token::getNextID(env, alice, 0u, tfTransferable)};
             env(token::mint(alice, 0u), txflags(tfTransferable));
             env.close();
             verifyNFTokenID(nftId2);
@@ -1455,32 +1340,26 @@ public:
             // Alice creates one sell offer for each NFT
             // Verify the offer indexes are correct in the NFTokenCreateOffer tx
             // meta
-            uint256 const aliceOfferIndex1 =
-                keylet::nftoffer(alice, env.seq(alice)).key;
-            env(token::createOffer(alice, nftId1, drops(1)),
-                txflags(tfSellNFToken));
+            uint256 const aliceOfferIndex1 = keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::createOffer(alice, nftId1, drops(1)), txflags(tfSellNFToken));
             env.close();
             verifyNFTokenOfferID(aliceOfferIndex1);
 
-            uint256 const aliceOfferIndex2 =
-                keylet::nftoffer(alice, env.seq(alice)).key;
-            env(token::createOffer(alice, nftId2, drops(1)),
-                txflags(tfSellNFToken));
+            uint256 const aliceOfferIndex2 = keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::createOffer(alice, nftId2, drops(1)), txflags(tfSellNFToken));
             env.close();
             verifyNFTokenOfferID(aliceOfferIndex2);
 
             // Alice cancels two offers she created
             // Verify the NFTokenIDs are correct in the NFTokenCancelOffer tx
             // meta
-            env(token::cancelOffer(
-                alice, {aliceOfferIndex1, aliceOfferIndex2}));
+            env(token::cancelOffer(alice, {aliceOfferIndex1, aliceOfferIndex2}));
             env.close();
             verifyNFTokenIDsInCancelOffer({nftId1, nftId2});
 
             // Bobs creates a buy offer for nftId1
             // Verify the offer id is correct in the NFTokenCreateOffer tx meta
-            auto const bobBuyOfferIndex =
-                keylet::nftoffer(bob, env.seq(bob)).key;
+            auto const bobBuyOfferIndex = keylet::nftoffer(bob, env.seq(bob)).key;
             env(token::createOffer(bob, nftId1, drops(1)), token::owner(alice));
             env.close();
             verifyNFTokenOfferID(bobBuyOfferIndex);
@@ -1495,31 +1374,25 @@ public:
         // Check `nftoken_ids` in brokered mode
         {
             // Alice mints a NFT
-            uint256 const nftId{
-                token::getNextID(env, alice, 0u, tfTransferable)};
+            uint256 const nftId{token::getNextID(env, alice, 0u, tfTransferable)};
             env(token::mint(alice, 0u), txflags(tfTransferable));
             env.close();
             verifyNFTokenID(nftId);
 
             // Alice creates sell offer and set broker as destination
-            uint256 const offerAliceToBroker =
-                keylet::nftoffer(alice, env.seq(alice)).key;
-            env(token::createOffer(alice, nftId, drops(1)),
-                token::destination(broker),
-                txflags(tfSellNFToken));
+            uint256 const offerAliceToBroker = keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::createOffer(alice, nftId, drops(1)), token::destination(broker), txflags(tfSellNFToken));
             env.close();
             verifyNFTokenOfferID(offerAliceToBroker);
 
             // Bob creates buy offer
-            uint256 const offerBobToBroker =
-                keylet::nftoffer(bob, env.seq(bob)).key;
+            uint256 const offerBobToBroker = keylet::nftoffer(bob, env.seq(bob)).key;
             env(token::createOffer(bob, nftId, drops(1)), token::owner(alice));
             env.close();
             verifyNFTokenOfferID(offerBobToBroker);
 
             // Check NFTokenID meta for NFTokenAcceptOffer in brokered mode
-            env(token::brokerOffers(
-                broker, offerBobToBroker, offerAliceToBroker));
+            env(token::brokerOffers(broker, offerBobToBroker, offerAliceToBroker));
             env.close();
             verifyNFTokenID(nftId);
         }
@@ -1528,39 +1401,32 @@ public:
         // multiple offers are cancelled for the same NFT
         {
             // Alice mints a NFT
-            uint256 const nftId{
-                token::getNextID(env, alice, 0u, tfTransferable)};
+            uint256 const nftId{token::getNextID(env, alice, 0u, tfTransferable)};
             env(token::mint(alice, 0u), txflags(tfTransferable));
             env.close();
             verifyNFTokenID(nftId);
 
             // Alice creates 2 sell offers for the same NFT
-            uint256 const aliceOfferIndex1 =
-                keylet::nftoffer(alice, env.seq(alice)).key;
-            env(token::createOffer(alice, nftId, drops(1)),
-                txflags(tfSellNFToken));
+            uint256 const aliceOfferIndex1 = keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::createOffer(alice, nftId, drops(1)), txflags(tfSellNFToken));
             env.close();
             verifyNFTokenOfferID(aliceOfferIndex1);
 
-            uint256 const aliceOfferIndex2 =
-                keylet::nftoffer(alice, env.seq(alice)).key;
-            env(token::createOffer(alice, nftId, drops(1)),
-                txflags(tfSellNFToken));
+            uint256 const aliceOfferIndex2 = keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::createOffer(alice, nftId, drops(1)), txflags(tfSellNFToken));
             env.close();
             verifyNFTokenOfferID(aliceOfferIndex2);
 
             // Make sure the metadata only has 1 nft id, since both offers are
             // for the same nft
-            env(token::cancelOffer(
-                alice, {aliceOfferIndex1, aliceOfferIndex2}));
+            env(token::cancelOffer(alice, {aliceOfferIndex1, aliceOfferIndex2}));
             env.close();
             verifyNFTokenIDsInCancelOffer({nftId});
         }
 
         if (features[featureNFTokenMintOffer])
         {
-            uint256 const aliceMintWithOfferIndex1 =
-                keylet::nftoffer(alice, env.seq(alice)).key;
+            uint256 const aliceMintWithOfferIndex1 = keylet::nftoffer(alice, env.seq(alice)).key;
             env(token::mint(alice), token::amount(XRP(0)));
             env.close();
             verifyNFTokenOfferID(aliceMintWithOfferIndex1);
@@ -1591,7 +1457,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Subscribe, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(Subscribe, rpc, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

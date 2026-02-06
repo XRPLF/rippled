@@ -7,7 +7,7 @@
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/protocol/Feature.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Apply_test : public beast::unit_test::suite
 {
@@ -15,7 +15,7 @@ public:
     void
     run() override
     {
-        testcase("Require Fully Canonicial Signature");
+        testcase("Require Fully Canonical Signature");
         testFullyCanonicalSigs();
     }
 
@@ -36,25 +36,7 @@ public:
         STTx const tx = *std::make_shared<STTx const>(std::ref(sitTrans));
 
         {
-            test::jtx::Env no_fully_canonical(
-                *this,
-                test::jtx::testable_amendments() -
-                    featureRequireFullyCanonicalSig);
-
-            Validity valid = checkValidity(
-                                 no_fully_canonical.app().getHashRouter(),
-                                 tx,
-                                 no_fully_canonical.current()->rules(),
-                                 no_fully_canonical.app().config())
-                                 .first;
-
-            if (valid != Validity::Valid)
-                fail("Non-Fully canonical signature was not permitted");
-        }
-
-        {
-            test::jtx::Env fully_canonical(
-                *this, test::jtx::testable_amendments());
+            test::jtx::Env fully_canonical(*this, test::jtx::testable_amendments());
 
             Validity valid = checkValidity(
                                  fully_canonical.app().getHashRouter(),
@@ -70,6 +52,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Apply, tx, ripple);
+BEAST_DEFINE_TESTSUITE(Apply, tx, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

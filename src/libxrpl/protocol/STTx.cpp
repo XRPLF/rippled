@@ -51,7 +51,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 static auto
 getTxFormat(TxType type)
@@ -61,8 +61,7 @@ getTxFormat(TxType type)
     if (format == nullptr)
     {
         Throw<std::runtime_error>(
-            "Invalid transaction type " +
-            std::to_string(safe_cast<std::underlying_type_t<TxType>>(type)));
+            "Invalid transaction type " + std::to_string(safe_cast<std::underlying_type_t<TxType>>(type)));
     }
 
     return format;
@@ -91,8 +90,7 @@ STTx::STTx(SerialIter& sit) : STObject(sfTransaction)
     tid_ = getHash(HashPrefix::transactionID);
 }
 
-STTx::STTx(TxType type, std::function<void(STObject&)> assembler)
-    : STObject(sfTransaction)
+STTx::STTx(TxType type, std::function<void(STObject&)> assembler) : STObject(sfTransaction)
 {
     auto format = getTxFormat(type);
 
@@ -148,9 +146,7 @@ STTx::getMentionedAccounts() const
     {
         if (auto sacc = dynamic_cast<STAccount const*>(&it))
         {
-            XRPL_ASSERT(
-                !sacc->isDefault(),
-                "ripple::STTx::getMentionedAccounts : account is set");
+            XRPL_ASSERT(!sacc->isDefault(), "xrpl::STTx::getMentionedAccounts : account is set");
             if (!sacc->isDefault())
                 list.insert(sacc->value());
         }
@@ -222,7 +218,7 @@ STTx::sign(
 {
     auto const data = getSigningData(*this);
 
-    auto const sig = ripple::sign(publicKey, secretKey, makeSlice(data));
+    auto const sig = xrpl::sign(publicKey, secretKey, makeSlice(data));
 
     if (signatureTarget)
     {
@@ -237,10 +233,7 @@ STTx::sign(
 }
 
 Expected<void, std::string>
-STTx::checkSign(
-    RequireFullyCanonicalSig requireCanonicalSig,
-    Rules const& rules,
-    STObject const& sigObject) const
+STTx::checkSign(Rules const& rules, STObject const& sigObject) const
 {
     try
     {
@@ -249,9 +242,7 @@ STTx::checkSign(
         // multi-signing.  Otherwise we're single-signing.
 
         Blob const& signingPubKey = sigObject.getFieldVL(sfSigningPubKey);
-        return signingPubKey.empty()
-            ? checkMultiSign(requireCanonicalSig, rules, sigObject)
-            : checkSingleSign(requireCanonicalSig, sigObject);
+        return signingPubKey.empty() ? checkMultiSign(rules, sigObject) : checkSingleSign(sigObject);
     }
     catch (std::exception const&)
     {
@@ -260,35 +251,26 @@ STTx::checkSign(
 }
 
 Expected<void, std::string>
-STTx::checkSign(
-    RequireFullyCanonicalSig requireCanonicalSig,
-    Rules const& rules) const
+STTx::checkSign(Rules const& rules) const
 {
-    if (auto const ret = checkSign(requireCanonicalSig, rules, *this); !ret)
+    if (auto const ret = checkSign(rules, *this); !ret)
         return ret;
 
-    /* Placeholder for field that will be added by Lending Protocol
     if (isFieldPresent(sfCounterpartySignature))
     {
         auto const counterSig = getFieldObject(sfCounterpartySignature);
-        if (auto const ret = checkSign(requireCanonicalSig, rules, counterSig);
-            !ret)
+        if (auto const ret = checkSign(rules, counterSig); !ret)
             return Unexpected("Counterparty: " + ret.error());
     }
-    */
     return {};
 }
 
 Expected<void, std::string>
-STTx::checkBatchSign(
-    RequireFullyCanonicalSig requireCanonicalSig,
-    Rules const& rules) const
+STTx::checkBatchSign(Rules const& rules) const
 {
     try
     {
-        XRPL_ASSERT(
-            getTxnType() == ttBATCH,
-            "STTx::checkBatchSign : not a batch transaction");
+        XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchSign : not a batch transaction");
         if (getTxnType() != ttBATCH)
         {
             JLOG(debugLog().fatal()) << "not a batch transaction";
@@ -298,9 +280,8 @@ STTx::checkBatchSign(
         for (auto const& signer : signers)
         {
             Blob const& signingPubKey = signer.getFieldVL(sfSigningPubKey);
-            auto const result = signingPubKey.empty()
-                ? checkBatchMultiSign(signer, requireCanonicalSig, rules)
-                : checkBatchSingleSign(signer, requireCanonicalSig);
+            auto const result =
+                signingPubKey.empty() ? checkBatchMultiSign(signer, rules) : checkBatchSingleSign(signer);
 
             if (!result)
                 return result;
@@ -309,8 +290,7 @@ STTx::checkBatchSign(
     }
     catch (std::exception const& e)
     {
-        JLOG(debugLog().error())
-            << "Batch signature check failed: " << e.what();
+        JLOG(debugLog().error()) << "Batch signature check failed: " << e.what();
     }
     return Unexpected("Internal batch signature check failure.");
 }
@@ -365,8 +345,7 @@ STTx::getMetaSQLInsertReplaceHeader()
 }
 
 std::string
-STTx::getMetaSQL(std::uint32_t inLedger, std::string const& escapedMetaData)
-    const
+STTx::getMetaSQL(std::uint32_t inLedger, std::string const& escapedMetaData) const
 {
     Serializer s;
     add(s);
@@ -375,30 +354,21 @@ STTx::getMetaSQL(std::uint32_t inLedger, std::string const& escapedMetaData)
 
 // VFALCO This could be a free function elsewhere
 std::string
-STTx::getMetaSQL(
-    Serializer rawTxn,
-    std::uint32_t inLedger,
-    char status,
-    std::string const& escapedMetaData) const
+STTx::getMetaSQL(Serializer rawTxn, std::uint32_t inLedger, char status, std::string const& escapedMetaData) const
 {
-    static boost::format bfTrans(
-        "('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
+    static boost::format bfTrans("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
     std::string rTxn = sqlBlobLiteral(rawTxn.peekData());
 
     auto format = TxFormats::getInstance().findByType(tx_type_);
-    XRPL_ASSERT(format, "ripple::STTx::getMetaSQL : non-null type format");
+    XRPL_ASSERT(format, "xrpl::STTx::getMetaSQL : non-null type format");
 
     return str(
-        boost::format(bfTrans) % to_string(getTransactionID()) %
-        format->getName() % toBase58(getAccountID(sfAccount)) %
+        boost::format(bfTrans) % to_string(getTransactionID()) % format->getName() % toBase58(getAccountID(sfAccount)) %
         getFieldU32(sfSequence) % inLedger % status % rTxn % escapedMetaData);
 }
 
 static Expected<void, std::string>
-singleSignHelper(
-    STObject const& sigObject,
-    Slice const& data,
-    bool const fullyCanonical)
+singleSignHelper(STObject const& sigObject, Slice const& data)
 {
     // We don't allow both a non-empty sfSigningPubKey and an sfSigners.
     // That would allow the transaction to be signed two ways.  So if both
@@ -413,11 +383,7 @@ singleSignHelper(
         if (publicKeyType(makeSlice(spk)))
         {
             Blob const signature = sigObject.getFieldVL(sfTxnSignature);
-            validSig = verify(
-                PublicKey(makeSlice(spk)),
-                data,
-                makeSlice(signature),
-                fullyCanonical);
+            validSig = verify(PublicKey(makeSlice(spk)), data, makeSlice(signature));
         }
     }
     catch (std::exception const&)
@@ -432,33 +398,24 @@ singleSignHelper(
 }
 
 Expected<void, std::string>
-STTx::checkSingleSign(
-    RequireFullyCanonicalSig requireCanonicalSig,
-    STObject const& sigObject) const
+STTx::checkSingleSign(STObject const& sigObject) const
 {
     auto const data = getSigningData(*this);
-    bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) ||
-        (requireCanonicalSig == STTx::RequireFullyCanonicalSig::yes);
-    return singleSignHelper(sigObject, makeSlice(data), fullyCanonical);
+    return singleSignHelper(sigObject, makeSlice(data));
 }
 
 Expected<void, std::string>
-STTx::checkBatchSingleSign(
-    STObject const& batchSigner,
-    RequireFullyCanonicalSig requireCanonicalSig) const
+STTx::checkBatchSingleSign(STObject const& batchSigner) const
 {
     Serializer msg;
     serializeBatch(msg, getFlags(), getBatchTransactionIDs());
-    bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) ||
-        (requireCanonicalSig == STTx::RequireFullyCanonicalSig::yes);
-    return singleSignHelper(batchSigner, msg.slice(), fullyCanonical);
+    return singleSignHelper(batchSigner, msg.slice());
 }
 
 Expected<void, std::string>
 multiSignHelper(
     STObject const& sigObject,
     std::optional<AccountID> txnAccountID,
-    bool const fullyCanonical,
     std::function<Serializer(AccountID const&)> makeMsg,
     Rules const& rules)
 {
@@ -475,8 +432,7 @@ multiSignHelper(
     STArray const& signers{sigObject.getFieldArray(sfSigners)};
 
     // There are well known bounds that the number of signers must be within.
-    if (signers.size() < STTx::minMultiSigners ||
-        signers.size() > STTx::maxMultiSigners)
+    if (signers.size() < STTx::minMultiSigners || signers.size() > STTx::maxMultiSigners)
         return Unexpected("Invalid Signers array size.");
 
     // Signers must be in sorted order by AccountID.
@@ -512,11 +468,7 @@ multiSignHelper(
             if (publicKeyType(makeSlice(spk)))
             {
                 Blob const signature = signer.getFieldVL(sfTxnSignature);
-                validSig = verify(
-                    PublicKey(makeSlice(spk)),
-                    makeMsg(accountID).slice(),
-                    makeSlice(signature),
-                    fullyCanonical);
+                validSig = verify(PublicKey(makeSlice(spk)), makeMsg(accountID).slice(), makeSlice(signature));
             }
         }
         catch (std::exception const& e)
@@ -527,22 +479,15 @@ multiSignHelper(
         }
         if (!validSig)
             return Unexpected(
-                std::string("Invalid signature on account ") +
-                toBase58(accountID) + errorWhat.value_or("") + ".");
+                std::string("Invalid signature on account ") + toBase58(accountID) + errorWhat.value_or("") + ".");
     }
     // All signatures verified.
     return {};
 }
 
 Expected<void, std::string>
-STTx::checkBatchMultiSign(
-    STObject const& batchSigner,
-    RequireFullyCanonicalSig requireCanonicalSig,
-    Rules const& rules) const
+STTx::checkBatchMultiSign(STObject const& batchSigner, Rules const& rules) const
 {
-    bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) ||
-        (requireCanonicalSig == RequireFullyCanonicalSig::yes);
-
     // We can ease the computational load inside the loop a bit by
     // pre-constructing part of the data that we hash.  Fill a Serializer
     // with the stuff that stays constant from signature to signature.
@@ -551,7 +496,6 @@ STTx::checkBatchMultiSign(
     return multiSignHelper(
         batchSigner,
         std::nullopt,
-        fullyCanonical,
         [&dataStart](AccountID const& accountID) -> Serializer {
             Serializer s = dataStart;
             finishMultiSigningData(accountID, s);
@@ -561,19 +505,11 @@ STTx::checkBatchMultiSign(
 }
 
 Expected<void, std::string>
-STTx::checkMultiSign(
-    RequireFullyCanonicalSig requireCanonicalSig,
-    Rules const& rules,
-    STObject const& sigObject) const
+STTx::checkMultiSign(Rules const& rules, STObject const& sigObject) const
 {
-    bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) ||
-        (requireCanonicalSig == RequireFullyCanonicalSig::yes);
-
     // Used inside the loop in multiSignHelper to enforce that
     // the account owner may not multisign for themselves.
-    auto const txnAccountID = &sigObject != this
-        ? std::nullopt
-        : std::optional<AccountID>(getAccountID(sfAccount));
+    auto const txnAccountID = &sigObject != this ? std::nullopt : std::optional<AccountID>(getAccountID(sfAccount));
 
     // We can ease the computational load inside the loop a bit by
     // pre-constructing part of the data that we hash.  Fill a Serializer
@@ -582,7 +518,6 @@ STTx::checkMultiSign(
     return multiSignHelper(
         sigObject,
         txnAccountID,
-        fullyCanonical,
         [&dataStart](AccountID const& accountID) -> Serializer {
             Serializer s = dataStart;
             finishMultiSigningData(accountID, s);
@@ -609,12 +544,8 @@ STTx::checkMultiSign(
 std::vector<uint256> const&
 STTx::getBatchTransactionIDs() const
 {
-    XRPL_ASSERT(
-        getTxnType() == ttBATCH,
-        "STTx::getBatchTransactionIDs : not a batch transaction");
-    XRPL_ASSERT(
-        getFieldArray(sfRawTransactions).size() != 0,
-        "STTx::getBatchTransactionIDs : empty raw transactions");
+    XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::getBatchTransactionIDs : not a batch transaction");
+    XRPL_ASSERT(getFieldArray(sfRawTransactions).size() != 0, "STTx::getBatchTransactionIDs : empty raw transactions");
 
     // The list of inner ids is built once, then reused on subsequent calls.
     // After the list is built, it must always have the same size as the array
@@ -667,8 +598,7 @@ isMemoOkay(STObject const& st, std::string& reason)
         {
             auto const& name = memoElement.getFName();
 
-            if (name != sfMemoType && name != sfMemoData &&
-                name != sfMemoFormat)
+            if (name != sfMemoType && name != sfMemoData && name != sfMemoFormat)
             {
                 reason =
                     "A memo may contain only MemoType, MemoData or "
@@ -744,18 +674,15 @@ invalidMPTAmountInTx(STObject const& tx)
     auto const txType = tx[~sfTransactionType];
     if (!txType)
         return false;
-    if (auto const* item =
-            TxFormats::getInstance().findByType(safe_cast<TxType>(*txType)))
+    if (auto const* item = TxFormats::getInstance().findByType(safe_cast<TxType>(*txType)))
     {
         for (auto const& e : item->getSOTemplate())
         {
             if (tx.isFieldPresent(e.sField()) && e.supportMPT() != soeMPTNone)
             {
                 if (auto const& field = tx.peekAtField(e.sField());
-                    (field.getSType() == STI_AMOUNT &&
-                     static_cast<STAmount const&>(field).holds<MPTIssue>()) ||
-                    (field.getSType() == STI_ISSUE &&
-                     static_cast<STIssue const&>(field).holds<MPTIssue>()))
+                    (field.getSType() == STI_AMOUNT && static_cast<STAmount const&>(field).holds<MPTIssue>()) ||
+                    (field.getSType() == STI_ISSUE && static_cast<STIssue const&>(field).holds<MPTIssue>()))
                 {
                     if (e.supportMPT() != soeMPTSupported)
                         return true;
@@ -772,8 +699,7 @@ isRawTransactionOkay(STObject const& st, std::string& reason)
     if (!st.isFieldPresent(sfRawTransactions))
         return true;
 
-    if (st.isFieldPresent(sfBatchSigners) &&
-        st.getFieldArray(sfBatchSigners).size() > maxBatchTxCount)
+    if (st.isFieldPresent(sfBatchSigners) && st.getFieldArray(sfBatchSigners).size() > maxBatchTxCount)
     {
         reason = "Batch Signers array exceeds max entries.";
         return false;
@@ -789,8 +715,7 @@ isRawTransactionOkay(STObject const& st, std::string& reason)
     {
         try
         {
-            TxType const tt =
-                safe_cast<TxType>(raw.getFieldU16(sfTransactionType));
+            TxType const tt = safe_cast<TxType>(raw.getFieldU16(sfTransactionType));
             if (tt == ttBATCH)
             {
                 reason = "Raw Transactions may not contain batch transactions.";
@@ -860,4 +785,4 @@ isPseudoTx(STObject const& tx)
     return tt == ttAMENDMENT || tt == ttFEE || tt == ttUNL_MODIFY;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

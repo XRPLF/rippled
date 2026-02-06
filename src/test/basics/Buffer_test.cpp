@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 struct Buffer_test : beast::unit_test::suite
@@ -21,10 +21,9 @@ struct Buffer_test : beast::unit_test::suite
     void
     run() override
     {
-        std::uint8_t const data[] = {
-            0xa8, 0xa1, 0x38, 0x45, 0x23, 0xec, 0xe4, 0x23, 0x71, 0x6d, 0x2a,
-            0x18, 0xb4, 0x70, 0xcb, 0xf5, 0xac, 0x2d, 0x89, 0x4d, 0x19, 0x9c,
-            0xf0, 0x2c, 0x15, 0xd1, 0xf9, 0x9b, 0x66, 0xd2, 0x30, 0xd3};
+        std::uint8_t const data[] = {0xa8, 0xa1, 0x38, 0x45, 0x23, 0xec, 0xe4, 0x23, 0x71, 0x6d, 0x2a,
+                                     0x18, 0xb4, 0x70, 0xcb, 0xf5, 0xac, 0x2d, 0x89, 0x4d, 0x19, 0x9c,
+                                     0xf0, 0x2c, 0x15, 0xd1, 0xf9, 0x9b, 0x66, 0xd2, 0x30, 0xd3};
 
         Buffer b0;
         BEAST_EXPECT(sane(b0));
@@ -100,8 +99,7 @@ struct Buffer_test : beast::unit_test::suite
         {
             testcase("Move Construction / Assignment");
 
-            static_assert(
-                std::is_nothrow_move_constructible<Buffer>::value, "");
+            static_assert(std::is_nothrow_move_constructible<Buffer>::value, "");
             static_assert(std::is_nothrow_move_assignable<Buffer>::value, "");
 
             {  // Move-construct from empty buf
@@ -261,7 +259,7 @@ struct Buffer_test : beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Buffer, basics, ripple);
+BEAST_DEFINE_TESTSUITE(Buffer, basics, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

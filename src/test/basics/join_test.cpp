@@ -3,7 +3,7 @@
 #include <xrpl/basics/join.h>
 #include <xrpl/beast/unit_test.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 struct join_test : beast::unit_test::suite
@@ -23,13 +23,9 @@ struct join_test : beast::unit_test::suite
         };
 
         // C++ array
-        test(
-            CollectionAndDelimiter(std::array<int, 4>{2, -1, 5, 10}, "/"),
-            "2/-1/5/10");
+        test(CollectionAndDelimiter(std::array<int, 4>{2, -1, 5, 10}, "/"), "2/-1/5/10");
         // One item C++ array edge case
-        test(
-            CollectionAndDelimiter(std::array<std::string, 1>{"test"}, " & "),
-            "test");
+        test(CollectionAndDelimiter(std::array<std::string, 1>{"test"}, " & "), "test");
         // Empty C++ array edge case
         test(CollectionAndDelimiter(std::array<int, 0>{}, ","), "");
         {
@@ -48,20 +44,13 @@ struct join_test : beast::unit_test::suite
             test(CollectionAndDelimiter(words, "\n"), "thing");
         }
         // Initializer list
-        test(
-            CollectionAndDelimiter(std::initializer_list<size_t>{19, 25}, "+"),
-            "19+25");
+        test(CollectionAndDelimiter(std::initializer_list<size_t>{19, 25}, "+"), "19+25");
         // vector
-        test(
-            CollectionAndDelimiter(std::vector<int>{0, 42}, std::to_string(99)),
-            "09942");
+        test(CollectionAndDelimiter(std::vector<int>{0, 42}, std::to_string(99)), "09942");
         {
             // vector with one item edge case
             using namespace jtx;
-            test(
-                CollectionAndDelimiter(
-                    std::vector<Account>{Account::master}, "xxx"),
-                Account::master.human());
+            test(CollectionAndDelimiter(std::vector<Account>{Account::master}, "xxx"), Account::master.human());
         }
         // empty vector edge case
         test(CollectionAndDelimiter(std::vector<uint256>{}, ","), "");
@@ -80,7 +69,7 @@ struct join_test : beast::unit_test::suite
     }
 };  // namespace test
 
-BEAST_DEFINE_TESTSUITE(join, basics, ripple);
+BEAST_DEFINE_TESTSUITE(join, basics, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

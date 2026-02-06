@@ -2,7 +2,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 class CollectorManagerImp : public CollectorManager
 {
@@ -11,19 +11,16 @@ public:
     beast::insight::Collector::ptr m_collector;
     std::unique_ptr<beast::insight::Groups> m_groups;
 
-    CollectorManagerImp(Section const& params, beast::Journal journal)
-        : m_journal(journal)
+    CollectorManagerImp(Section const& params, beast::Journal journal) : m_journal(journal)
     {
         std::string const& server = get(params, "server");
 
         if (server == "statsd")
         {
-            beast::IP::Endpoint const address(
-                beast::IP::Endpoint::from_string(get(params, "address")));
+            beast::IP::Endpoint const address(beast::IP::Endpoint::from_string(get(params, "address")));
             std::string const& prefix(get(params, "prefix"));
 
-            m_collector =
-                beast::insight::StatsDCollector::New(address, prefix, journal);
+            m_collector = beast::insight::StatsDCollector::New(address, prefix, journal);
         }
         else
         {
@@ -56,4 +53,4 @@ make_CollectorManager(Section const& params, beast::Journal journal)
     return std::make_unique<CollectorManagerImp>(params, journal);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

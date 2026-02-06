@@ -9,7 +9,7 @@
 
 #include <boost/filesystem.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 struct SavedState
 {
@@ -25,10 +25,7 @@ struct SavedState
  * @param dbName Name of the database.
  */
 void
-initStateDB(
-    soci::session& session,
-    BasicConfig const& config,
-    std::string const& dbName);
+initStateDB(soci::session& session, BasicConfig const& config, std::string const& dbName);
 
 /**
  * @brief getCanDelete Returns the ledger sequence which can be deleted.
@@ -74,6 +71,6 @@ setSavedState(soci::session& session, SavedState const& state);
 void
 setLastRotated(soci::session& session, LedgerIndex seq);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

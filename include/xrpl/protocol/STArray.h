@@ -4,7 +4,7 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/STObject.h>
 
-namespace ripple {
+namespace xrpl {
 
 class STArray final : public STBase, public CountedObject<STArray>
 {
@@ -24,16 +24,12 @@ public:
 
     template <
         class Iter,
-        class = std::enable_if_t<std::is_convertible_v<
-            typename std::iterator_traits<Iter>::reference,
-            STObject>>>
+        class = std::enable_if_t<std::is_convertible_v<typename std::iterator_traits<Iter>::reference, STObject>>>
     explicit STArray(Iter first, Iter last);
 
     template <
         class Iter,
-        class = std::enable_if_t<std::is_convertible_v<
-            typename std::iterator_traits<Iter>::reference,
-            STObject>>>
+        class = std::enable_if_t<std::is_convertible_v<typename std::iterator_traits<Iter>::reference, STObject>>>
     STArray(SField const& f, Iter first, Iter last);
 
     STArray&
@@ -153,8 +149,7 @@ STArray::STArray(Iter first, Iter last) : v_(first, last)
 }
 
 template <class Iter, class>
-STArray::STArray(SField const& f, Iter first, Iter last)
-    : STBase(f), v_(first, last)
+STArray::STArray(SField const& f, Iter first, Iter last) : STBase(f), v_(first, last)
 {
 }
 
@@ -291,6 +286,6 @@ STArray::erase(const_iterator first, const_iterator last)
     return v_.erase(first, last);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

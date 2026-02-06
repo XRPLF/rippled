@@ -21,7 +21,7 @@
 #include <mutex>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 class Peer;
 class Transaction;
@@ -89,10 +89,7 @@ public:
     storeLedger(std::shared_ptr<Ledger const> ledger);
 
     void
-    setFullLedger(
-        std::shared_ptr<Ledger const> const& ledger,
-        bool isSynchronous,
-        bool isCurrent);
+    setFullLedger(std::shared_ptr<Ledger const> const& ledger, bool isSynchronous, bool isCurrent);
 
     /** Check the sequence number and parent close time of a
         ledger against our clock and last validated ledger to
@@ -189,10 +186,7 @@ public:
     void
     checkAccept(uint256 const& hash, std::uint32_t seq);
     void
-    consensusBuilt(
-        std::shared_ptr<Ledger const> const& ledger,
-        uint256 const& consensusHash,
-        Json::Value consensus);
+    consensusBuilt(std::shared_ptr<Ledger const> const& ledger, uint256 const& consensusHash, Json::Value consensus);
 
     void
     setBuildingLedger(LedgerIndex index);
@@ -338,8 +332,7 @@ private:
     int mPathFindThread{0};  // Pathfinder jobs dispatched
     bool mPathFindNewRequest{false};
 
-    std::atomic_flag mGotFetchPackThread =
-        ATOMIC_FLAG_INIT;  // GotFetchPack jobs dispatched
+    std::atomic_flag mGotFetchPackThread = ATOMIC_FLAG_INIT;  // GotFetchPack jobs dispatched
 
     std::atomic<std::uint32_t> mPubLedgerClose{0};
     std::atomic<LedgerIndex> mPubLedgerSeq{0};
@@ -373,14 +366,10 @@ private:
     struct Stats
     {
         template <class Handler>
-        Stats(
-            Handler const& handler,
-            beast::insight::Collector::ptr const& collector)
+        Stats(Handler const& handler, beast::insight::Collector::ptr const& collector)
             : hook(collector->make_hook(handler))
-            , validatedLedgerAge(
-                  collector->make_gauge("LedgerMaster", "Validated_Ledger_Age"))
-            , publishedLedgerAge(
-                  collector->make_gauge("LedgerMaster", "Published_Ledger_Age"))
+            , validatedLedgerAge(collector->make_gauge("LedgerMaster", "Validated_Ledger_Age"))
+            , publishedLedgerAge(collector->make_gauge("LedgerMaster", "Published_Ledger_Age"))
         {
         }
 
@@ -401,6 +390,6 @@ private:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

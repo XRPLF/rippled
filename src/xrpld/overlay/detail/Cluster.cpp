@@ -9,7 +9,7 @@
 
 #include <boost/regex.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 Cluster::Cluster(beast::Journal j) : j_(j)
 {
@@ -35,11 +35,7 @@ Cluster::size() const
 }
 
 bool
-Cluster::update(
-    PublicKey const& identity,
-    std::string name,
-    std::uint32_t loadFee,
-    NetClock::time_point reportTime)
+Cluster::update(PublicKey const& identity, std::string name, std::uint32_t loadFee, NetClock::time_point reportTime)
 {
     std::lock_guard lock(mutex_);
 
@@ -93,8 +89,7 @@ Cluster::load(Section const& nodes)
             return false;
         }
 
-        auto const id =
-            parseBase58<PublicKey>(TokenType::NodePublic, match[1].str());
+        auto const id = parseBase58<PublicKey>(TokenType::NodePublic, match[1].str());
 
         if (!id)
         {
@@ -114,4 +109,4 @@ Cluster::load(Section const& nodes)
     return true;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

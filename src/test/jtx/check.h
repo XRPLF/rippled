@@ -5,7 +5,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/owners.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -27,10 +27,7 @@ struct DeliverMin
 
 /** Cash a check requiring that at least a minimum amount be delivered. */
 Json::Value
-cash(
-    jtx::Account const& dest,
-    uint256 const& checkId,
-    DeliverMin const& atLeast);
+cash(jtx::Account const& dest, uint256 const& checkId, DeliverMin const& atLeast);
 
 /** Cancel a check. */
 Json::Value
@@ -44,6 +41,6 @@ using checks = owner_count<ltCHECK>;
 }  // namespace jtx
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

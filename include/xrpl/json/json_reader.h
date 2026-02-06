@@ -1,8 +1,6 @@
 #ifndef XRPL_JSON_JSON_READER_H_INCLUDED
 #define XRPL_JSON_JSON_READER_H_INCLUDED
 
-#define CPPTL_JSON_READER_H_INCLUDED
-
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 
@@ -68,7 +66,7 @@ public:
      * error occurred during parsing.
      */
     std::string
-    getFormatedErrorMessages() const;
+    getFormattedErrorMessages() const;
 
     static constexpr unsigned nest_limit{25};
 
@@ -146,26 +144,15 @@ private:
     bool
     decodeDouble(Token& token);
     bool
-    decodeUnicodeCodePoint(
-        Token& token,
-        Location& current,
-        Location end,
-        unsigned int& unicode);
+    decodeUnicodeCodePoint(Token& token, Location& current, Location end, unsigned int& unicode);
     bool
-    decodeUnicodeEscapeSequence(
-        Token& token,
-        Location& current,
-        Location end,
-        unsigned int& unicode);
+    decodeUnicodeEscapeSequence(Token& token, Location& current, Location end, unsigned int& unicode);
     bool
     addError(std::string const& message, Token& token, Location extra = 0);
     bool
     recoverFromError(TokenType skipUntilToken);
     bool
-    addErrorAndRecover(
-        std::string const& message,
-        Token& token,
-        TokenType skipUntilToken);
+    addErrorAndRecover(std::string const& message, Token& token, TokenType skipUntilToken);
     void
     skipUntilSpace();
     Value&
@@ -231,4 +218,4 @@ operator>>(std::istream&, Value&);
 
 }  // namespace Json
 
-#endif  // CPPTL_JSON_READER_H_INCLUDED
+#endif  // XRPL_JSON_JSON_READER_H_INCLUDED

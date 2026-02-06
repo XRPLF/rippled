@@ -8,7 +8,7 @@
 #include <cstring>
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 /** Like std::vector<char> but better.
     Meets the requirements of BufferFactory.
@@ -25,8 +25,7 @@ public:
     Buffer() = default;
 
     /** Create an uninitialized buffer with the given size. */
-    explicit Buffer(std::size_t size)
-        : p_(size ? new std::uint8_t[size] : nullptr), size_(size)
+    explicit Buffer(std::size_t size) : p_(size ? new std::uint8_t[size] : nullptr), size_(size)
     {
     }
 
@@ -62,8 +61,7 @@ public:
     /** Move-construct.
         The other buffer is reset.
     */
-    Buffer(Buffer&& other) noexcept
-        : p_(std::move(other.p_)), size_(other.size_)
+    Buffer(Buffer&& other) noexcept : p_(std::move(other.p_)), size_(other.size_)
     {
         other.size_ = 0;
     }
@@ -94,9 +92,8 @@ public:
     {
         // Ensure the slice isn't a subset of the buffer.
         XRPL_ASSERT(
-            s.size() == 0 || size_ == 0 || s.data() < p_.get() ||
-                s.data() >= p_.get() + size_,
-            "ripple::Buffer::operator=(Slice) : input not a subset");
+            s.size() == 0 || size_ == 0 || s.data() < p_.get() || s.data() >= p_.get() + size_,
+            "xrpl::Buffer::operator=(Slice) : input not a subset");
 
         if (auto p = alloc(s.size()))
             std::memcpy(p, s.data(), s.size());
@@ -215,6 +212,6 @@ operator!=(Buffer const& lhs, Buffer const& rhs) noexcept
     return !(lhs == rhs);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

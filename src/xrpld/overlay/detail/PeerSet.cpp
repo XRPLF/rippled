@@ -1,9 +1,10 @@
 #include <xrpld/app/main/Application.h>
-#include <xrpld/core/JobQueue.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/PeerSet.h>
 
-namespace ripple {
+#include <xrpl/core/JobQueue.h>
+
+namespace xrpl {
 
 class PeerSetImpl : public PeerSet
 {
@@ -28,7 +29,7 @@ public:
 
 private:
     // Used in this class for access to boost::asio::io_context and
-    // ripple::Overlay.
+    // xrpl::Overlay.
     Application& app_;
     beast::Journal journal_;
 
@@ -36,8 +37,7 @@ private:
     std::set<Peer::id_t> peers_;
 };
 
-PeerSetImpl::PeerSetImpl(Application& app)
-    : app_(app), journal_(app.journal("PeerSet"))
+PeerSetImpl::PeerSetImpl(Application& app) : app_(app), journal_(app.journal("PeerSet"))
 {
 }
 
@@ -60,11 +60,7 @@ PeerSetImpl::addPeers(
     });
 
     std::sort(
-        pairs.begin(),
-        pairs.end(),
-        [](ScoredPeer const& lhs, ScoredPeer const& rhs) {
-            return lhs.first > rhs.first;
-        });
+        pairs.begin(), pairs.end(), [](ScoredPeer const& lhs, ScoredPeer const& rhs) { return lhs.first > rhs.first; });
 
     std::size_t accepted = 0;
     for (auto const& pair : pairs)
@@ -170,4 +166,4 @@ make_DummyPeerSet(Application& app)
     return std::make_unique<DummyPeerSet>(app);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

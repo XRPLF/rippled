@@ -22,7 +22,7 @@
 #include <string_view>
 #include <thread>
 
-namespace ripple {
+namespace xrpl {
 namespace Resource {
 
 class ManagerImp : public Manager
@@ -36,9 +36,7 @@ private:
     std::condition_variable cond_;
 
 public:
-    ManagerImp(
-        beast::insight::Collector::ptr const& collector,
-        beast::Journal journal)
+    ManagerImp(beast::insight::Collector::ptr const& collector, beast::Journal journal)
         : journal_(journal), logic_(collector, stopwatch(), journal)
     {
         thread_ = std::thread{&ManagerImp::run, this};
@@ -66,10 +64,7 @@ public:
     }
 
     Consumer
-    newInboundEndpoint(
-        beast::IP::Endpoint const& address,
-        bool const proxy,
-        std::string_view forwardedFor) override
+    newInboundEndpoint(beast::IP::Endpoint const& address, bool const proxy, std::string_view forwardedFor) override
     {
         if (!proxy)
             return newInboundEndpoint(address);
@@ -78,14 +73,11 @@ public:
         auto const proxiedIp = boost::asio::ip::make_address(forwardedFor, ec);
         if (ec)
         {
-            journal_.warn()
-                << "forwarded for (" << forwardedFor << ") from proxy "
-                << address.to_string()
-                << " doesn't convert to IP endpoint: " << ec.message();
+            journal_.warn() << "forwarded for (" << forwardedFor << ") from proxy " << address.to_string()
+                            << " doesn't convert to IP endpoint: " << ec.message();
             return newInboundEndpoint(address);
         }
-        return newInboundEndpoint(
-            beast::IPAddressConversion::from_asio(proxiedIp));
+        return newInboundEndpoint(beast::IPAddressConversion::from_asio(proxiedIp));
     }
 
     Consumer
@@ -140,7 +132,7 @@ private:
     void
     run()
     {
-        beast::setCurrentThreadName("Resource::Manager");
+        beast::setCurrentThreadName("Resource::Mngr");
         for (;;)
         {
             logic_.periodicActivity();
@@ -163,12 +155,10 @@ Manager::~Manager() = default;
 //------------------------------------------------------------------------------
 
 std::unique_ptr<Manager>
-make_Manager(
-    beast::insight::Collector::ptr const& collector,
-    beast::Journal journal)
+make_Manager(beast::insight::Collector::ptr const& collector, beast::Journal journal)
 {
     return std::make_unique<ManagerImp>(collector, journal);
 }
 
 }  // namespace Resource
-}  // namespace ripple
+}  // namespace xrpl

@@ -6,7 +6,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Holds transactions which were deferred to the next pass of consensus.
 
@@ -86,8 +86,7 @@ private:
     accountKey(AccountID const& account);
 
 public:
-    using const_iterator =
-        std::map<Key, std::shared_ptr<STTx const>>::const_iterator;
+    using const_iterator = std::map<Key, std::shared_ptr<STTx const>>::const_iterator;
 
 public:
     explicit CanonicalTXSet(LedgerHash const& saltHash) : salt_(saltHash)
@@ -156,6 +155,6 @@ private:
     uint256 salt_;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

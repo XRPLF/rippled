@@ -1,13 +1,10 @@
 #include <xrpl/nodestore/detail/BatchWriter.h>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 BatchWriter::BatchWriter(Callback& callback, Scheduler& scheduler)
-    : m_callback(callback)
-    , m_scheduler(scheduler)
-    , mWriteLoad(0)
-    , mWritePending(false)
+    : m_callback(callback), m_scheduler(scheduler), mWriteLoad(0), mWritePending(false)
 {
     mWriteSet.reserve(batchWritePreallocationSize);
 }
@@ -64,9 +61,7 @@ BatchWriter::writeBatch()
             std::lock_guard sl(mWriteMutex);
 
             mWriteSet.swap(set);
-            XRPL_ASSERT(
-                mWriteSet.empty(),
-                "ripple::NodeStore::BatchWriter::writeBatch : writes not set");
+            XRPL_ASSERT(mWriteSet.empty(), "xrpl::NodeStore::BatchWriter::writeBatch : writes not set");
             mWriteLoad = set.size();
 
             if (set.empty())
@@ -85,8 +80,8 @@ BatchWriter::writeBatch()
 
         m_callback.writeBatch(set);
 
-        report.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::steady_clock::now() - before);
+        report.elapsed =
+            std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - before);
 
         m_scheduler.onBatchWrite(report);
     }
@@ -102,4 +97,4 @@ BatchWriter::waitForWriting()
 }
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl

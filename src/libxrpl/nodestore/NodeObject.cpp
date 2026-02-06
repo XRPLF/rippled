@@ -2,15 +2,11 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 //------------------------------------------------------------------------------
 
-NodeObject::NodeObject(
-    NodeObjectType type,
-    Blob&& data,
-    uint256 const& hash,
-    PrivateAccess)
+NodeObject::NodeObject(NodeObjectType type, Blob&& data, uint256 const& hash, PrivateAccess)
     : mType(type), mHash(hash), mData(std::move(data))
 {
 }
@@ -18,8 +14,7 @@ NodeObject::NodeObject(
 std::shared_ptr<NodeObject>
 NodeObject::createObject(NodeObjectType type, Blob&& data, uint256 const& hash)
 {
-    return std::make_shared<NodeObject>(
-        type, std::move(data), hash, PrivateAccess());
+    return std::make_shared<NodeObject>(type, std::move(data), hash, PrivateAccess());
 }
 
 NodeObjectType
@@ -40,4 +35,4 @@ NodeObject::getData() const
     return mData;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

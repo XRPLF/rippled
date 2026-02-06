@@ -7,7 +7,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class RPCOverload_test : public beast::unit_test::suite
@@ -27,9 +27,8 @@ public:
         Account const bob{"bob"};
         env.fund(XRP(10000), alice, bob);
 
-        std::unique_ptr<AbstractClient> client = useWS
-            ? makeWSClient(env.app().config())
-            : makeJSONRPCClient(env.app().config());
+        std::unique_ptr<AbstractClient> client =
+            useWS ? makeWSClient(env.app().config()) : makeJSONRPCClient(env.app().config());
 
         Json::Value tx = Json::objectValue;
         tx[jss::tx_json] = pay(alice, bob, XRP(1));
@@ -47,8 +46,7 @@ public:
             // When booted, we just get a null json response
             if (jv.isNull())
                 booted = true;
-            else if (!(jv.isMember(jss::status) &&
-                       (jv[jss::status] == "success")))
+            else if (!(jv.isMember(jss::status) && (jv[jss::status] == "success")))
             {
                 // Don't use BEAST_EXPECT above b/c it will be called a
                 // non-deterministic number of times and the number of tests run
@@ -70,7 +68,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(RPCOverload, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(RPCOverload, rpc, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

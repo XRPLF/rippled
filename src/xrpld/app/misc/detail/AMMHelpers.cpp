@@ -1,16 +1,12 @@
 #include <xrpld/app/misc/AMMHelpers.h>
 
-namespace ripple {
+namespace xrpl {
 
 STAmount
-ammLPTokens(
-    STAmount const& asset1,
-    STAmount const& asset2,
-    Issue const& lptIssue)
+ammLPTokens(STAmount const& asset1, STAmount const& asset2, Issue const& lptIssue)
 {
     // AMM invariant: sqrt(asset1 * asset2) >= LPTokensBalance
-    auto const rounding =
-        isFeatureEnabled(fixAMMv1_3) ? Number::downward : Number::getround();
+    auto const rounding = isFeatureEnabled(fixAMMv1_3) ? Number::downward : Number::getround();
     NumberRoundModeGuard g(rounding);
     auto const tokens = root2(asset1 * asset2);
     return toSTAmount(lptIssue, tokens);
@@ -58,11 +54,7 @@ lpTokensOut(
  * (R/t2)**2 + R*(2*d/t2 - 1/f1) + d**2 - f2**2 = 0
  */
 STAmount
-ammAssetIn(
-    STAmount const& asset1Balance,
-    STAmount const& lptAMMBalance,
-    STAmount const& lpTokens,
-    std::uint16_t tfee)
+ammAssetIn(STAmount const& asset1Balance, STAmount const& lptAMMBalance, STAmount const& lpTokens, std::uint16_t tfee)
 {
     auto const f1 = feeMult(tfee);
     auto const f2 = feeMultHalf(tfee) / f1;
@@ -74,8 +66,7 @@ ammAssetIn(
     auto const c = d * d - f2 * f2;
     if (!isFeatureEnabled(fixAMMv1_3))
     {
-        return toSTAmount(
-            asset1Balance.issue(), asset1Balance * solveQuadraticEq(a, b, c));
+        return toSTAmount(asset1Balance.issue(), asset1Balance * solveQuadraticEq(a, b, c));
     }
     else
     {
@@ -123,11 +114,7 @@ lpTokensIn(
  * R = (t1**2 + t1*(f - 2)) / (t1*f - 1)
  */
 STAmount
-ammAssetOut(
-    STAmount const& assetBalance,
-    STAmount const& lptAMMBalance,
-    STAmount const& lpTokens,
-    std::uint16_t tfee)
+ammAssetOut(STAmount const& assetBalance, STAmount const& lptAMMBalance, STAmount const& lpTokens, std::uint16_t tfee)
 {
     auto const f = getFee(tfee);
     Number const t1 = lpTokens / lptAMMBalance;
@@ -151,10 +138,7 @@ square(Number const& n)
 }
 
 STAmount
-adjustLPTokens(
-    STAmount const& lptAMMBalance,
-    STAmount const& lpTokens,
-    IsDeposit isDeposit)
+adjustLPTokens(STAmount const& lptAMMBalance, STAmount const& lpTokens, IsDeposit isDeposit)
 {
     // Force rounding downward to ensure adjusted tokens are less or equal
     // to requested tokens.
@@ -178,21 +162,18 @@ adjustAmountsByLPTokens(
     if (isFeatureEnabled(fixAMMv1_3))
         return std::make_tuple(amount, amount2, lpTokens);
 
-    auto const lpTokensActual =
-        adjustLPTokens(lptAMMBalance, lpTokens, isDeposit);
+    auto const lpTokensActual = adjustLPTokens(lptAMMBalance, lpTokens, isDeposit);
 
     if (lpTokensActual == beast::zero)
     {
-        auto const amount2Opt =
-            amount2 ? std::make_optional(STAmount{}) : std::nullopt;
+        auto const amount2Opt = amount2 ? std::make_optional(STAmount{}) : std::nullopt;
         return std::make_tuple(STAmount{}, amount2Opt, lpTokensActual);
     }
 
     if (lpTokensActual < lpTokens)
     {
         bool const ammRoundingEnabled = [&]() {
-            if (auto const& rules = getCurrentTransactionRules();
-                rules && rules->enabled(fixAMMv1_1))
+            if (auto const& rules = getCurrentTransactionRules(); rules && rules->enabled(fixAMMv1_1))
                 return true;
             return false;
         }();
@@ -202,41 +183,33 @@ adjustAmountsByLPTokens(
         {
             Number const fr = lpTokensActual / lpTokens;
             auto const amountActual = toSTAmount(amount.issue(), fr * amount);
-            auto const amount2Actual =
-                toSTAmount(amount2->issue(), fr * *amount2);
+            auto const amount2Actual = toSTAmount(amount2->issue(), fr * *amount2);
             if (!ammRoundingEnabled)
                 return std::make_tuple(
                     amountActual < amount ? amountActual : amount,
                     amount2Actual < amount2 ? amount2Actual : amount2,
                     lpTokensActual);
             else
-                return std::make_tuple(
-                    amountActual, amount2Actual, lpTokensActual);
+                return std::make_tuple(amountActual, amount2Actual, lpTokensActual);
         }
 
         // Single trade
         auto const amountActual = [&]() {
             if (isDeposit == IsDeposit::Yes)
-                return ammAssetIn(
-                    amountBalance, lptAMMBalance, lpTokensActual, tfee);
+                return ammAssetIn(amountBalance, lptAMMBalance, lpTokensActual, tfee);
             else if (!ammRoundingEnabled)
-                return ammAssetOut(
-                    amountBalance, lptAMMBalance, lpTokens, tfee);
+                return ammAssetOut(amountBalance, lptAMMBalance, lpTokens, tfee);
             else
-                return ammAssetOut(
-                    amountBalance, lptAMMBalance, lpTokensActual, tfee);
+                return ammAssetOut(amountBalance, lptAMMBalance, lpTokensActual, tfee);
         }();
         if (!ammRoundingEnabled)
-            return amountActual < amount
-                ? std::make_tuple(amountActual, std::nullopt, lpTokensActual)
-                : std::make_tuple(amount, std::nullopt, lpTokensActual);
+            return amountActual < amount ? std::make_tuple(amountActual, std::nullopt, lpTokensActual)
+                                         : std::make_tuple(amount, std::nullopt, lpTokensActual);
         else
             return std::make_tuple(amountActual, std::nullopt, lpTokensActual);
     }
 
-    XRPL_ASSERT(
-        lpTokensActual == lpTokens,
-        "ripple::adjustAmountsByLPTokens : LP tokens match actual");
+    XRPL_ASSERT(lpTokensActual == lpTokens, "xrpl::adjustAmountsByLPTokens : LP tokens match actual");
 
     return {amount, amount2, lpTokensActual};
 }
@@ -289,11 +262,7 @@ getRoundedAsset(
 }
 
 STAmount
-getRoundedLPTokens(
-    Rules const& rules,
-    STAmount const& balance,
-    Number const& frac,
-    IsDeposit isDeposit)
+getRoundedLPTokens(Rules const& rules, STAmount const& balance, Number const& frac, IsDeposit isDeposit)
 {
     if (!rules.enabled(fixAMMv1_3))
         return toSTAmount(balance.issue(), balance * frac);
@@ -379,15 +348,11 @@ adjustAssetOutByTokens(
 }
 
 Number
-adjustFracByTokens(
-    Rules const& rules,
-    STAmount const& lptAMMBalance,
-    STAmount const& tokens,
-    Number const& frac)
+adjustFracByTokens(Rules const& rules, STAmount const& lptAMMBalance, STAmount const& tokens, Number const& frac)
 {
     if (!rules.enabled(fixAMMv1_3))
         return frac;
     return tokens / lptAMMBalance;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

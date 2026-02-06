@@ -5,7 +5,7 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class NetworkID_test : public beast::unit_test::suite
@@ -37,9 +37,7 @@ public:
 
         auto const alice = Account{"alice"};
 
-        auto const runTx = [&](test::jtx::Env& env,
-                               Json::Value const& jv,
-                               TER expectedOutcome) {
+        auto const runTx = [&](test::jtx::Env& env, Json::Value const& jv, TER expectedOutcome) {
             env.memoize(env.master);
             env.memoize(alice);
 
@@ -112,15 +110,12 @@ public:
                 jvn[jss::TransactionType] = jss::AccountSet;
                 jvn[jss::Fee] = to_string(env.current()->fees().base);
                 jvn[jss::Sequence] = env.seq(alice);
-                jvn[jss::LastLedgerSequence] = env.current()->info().seq + 2;
+                jvn[jss::LastLedgerSequence] = env.current()->header().seq + 2;
                 auto jt = env.jtnofill(jvn);
                 Serializer s;
                 jt.stx->add(s);
                 BEAST_EXPECT(
-                    env.rpc(
-                        "submit",
-                        strHex(s.slice()))[jss::result][jss::engine_result] ==
-                    "telREQUIRES_NETWORK_ID");
+                    env.rpc("submit", strHex(s.slice()))[jss::result][jss::engine_result] == "telREQUIRES_NETWORK_ID");
                 env.close();
             }
 
@@ -142,7 +137,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NetworkID, app, ripple);
+BEAST_DEFINE_TESTSUITE(NetworkID, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

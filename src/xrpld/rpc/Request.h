@@ -6,7 +6,7 @@
 #include <xrpl/resource/Charge.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Application;
 
@@ -14,16 +14,8 @@ namespace RPC {
 
 struct Request
 {
-    explicit Request(
-        beast::Journal journal_,
-        std::string const& method_,
-        Json::Value& params_,
-        Application& app_)
-        : journal(journal_)
-        , method(method_)
-        , params(params_)
-        , fee(Resource::feeReferenceRPC)
-        , app(app_)
+    explicit Request(beast::Journal journal_, std::string const& method_, Json::Value& params_, Application& app_)
+        : journal(journal_), method(method_), params(params_), fee(Resource::feeReferenceRPC), app(app_)
     {
     }
 
@@ -51,6 +43,6 @@ private:
 };
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

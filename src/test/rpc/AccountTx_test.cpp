@@ -9,7 +9,7 @@
 
 #include <boost/container/flat_set.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 
@@ -52,38 +52,26 @@ class AccountTx_test : public beast::unit_test::suite
     checkSanity(Json::Value const& txNode, NodeSanity const& sane)
     {
         BEAST_EXPECT(txNode[jss::validated].asBool() == true);
-        BEAST_EXPECT(
-            txNode[jss::tx][sfTransactionType.jsonName].asString() ==
-            sane.txType);
+        BEAST_EXPECT(txNode[jss::tx][sfTransactionType.jsonName].asString() == sane.txType);
 
         // Make sure all of the expected node types are present.
         boost::container::flat_set<std::string> createdNodes;
         boost::container::flat_set<std::string> deletedNodes;
         boost::container::flat_set<std::string> modifiedNodes;
 
-        for (Json::Value const& metaNode :
-             txNode[jss::meta][sfAffectedNodes.jsonName])
+        for (Json::Value const& metaNode : txNode[jss::meta][sfAffectedNodes.jsonName])
         {
             if (metaNode.isMember(sfCreatedNode.jsonName))
-                createdNodes.insert(
-                    metaNode[sfCreatedNode.jsonName][sfLedgerEntryType.jsonName]
-                        .asString());
+                createdNodes.insert(metaNode[sfCreatedNode.jsonName][sfLedgerEntryType.jsonName].asString());
 
             else if (metaNode.isMember(sfDeletedNode.jsonName))
-                deletedNodes.insert(
-                    metaNode[sfDeletedNode.jsonName][sfLedgerEntryType.jsonName]
-                        .asString());
+                deletedNodes.insert(metaNode[sfDeletedNode.jsonName][sfLedgerEntryType.jsonName].asString());
 
             else if (metaNode.isMember(sfModifiedNode.jsonName))
-                modifiedNodes.insert(metaNode[sfModifiedNode.jsonName]
-                                             [sfLedgerEntryType.jsonName]
-                                                 .asString());
+                modifiedNodes.insert(metaNode[sfModifiedNode.jsonName][sfLedgerEntryType.jsonName].asString());
 
             else
-                fail(
-                    "Unexpected or unlabeled node type in metadata.",
-                    __FILE__,
-                    __LINE__);
+                fail("Unexpected or unlabeled node type in metadata.", __FILE__, __LINE__);
         }
 
         BEAST_EXPECT(createdNodes == sane.created);
@@ -112,47 +100,34 @@ class AccountTx_test : public beast::unit_test::suite
             switch (apiVersion)
             {
                 case 1:
-                    return j.isMember(jss::result) &&
-                        (j[jss::result][jss::status] == "success") &&
+                    return j.isMember(jss::result) && (j[jss::result][jss::status] == "success") &&
                         (j[jss::result][jss::transactions].size() == 2) &&
-                        (j[jss::result][jss::transactions][0u][jss::tx]
-                          [jss::TransactionType] == jss::AccountSet) &&
-                        (j[jss::result][jss::transactions][1u][jss::tx]
-                          [jss::TransactionType] == jss::Payment) &&
-                        (j[jss::result][jss::transactions][1u][jss::tx]
-                          [jss::DeliverMax] == "10000000010") &&
-                        (j[jss::result][jss::transactions][1u][jss::tx]
-                          [jss::Amount] ==
-                         j[jss::result][jss::transactions][1u][jss::tx]
-                          [jss::DeliverMax]);
+                        (j[jss::result][jss::transactions][0u][jss::tx][jss::TransactionType] == jss::AccountSet) &&
+                        (j[jss::result][jss::transactions][1u][jss::tx][jss::TransactionType] == jss::Payment) &&
+                        (j[jss::result][jss::transactions][1u][jss::tx][jss::DeliverMax] == "10000000010") &&
+                        (j[jss::result][jss::transactions][1u][jss::tx][jss::Amount] ==
+                         j[jss::result][jss::transactions][1u][jss::tx][jss::DeliverMax]);
                 case 2:
                 case 3:
-                    if (j.isMember(jss::result) &&
-                        (j[jss::result][jss::status] == "success") &&
+                    if (j.isMember(jss::result) && (j[jss::result][jss::status] == "success") &&
                         (j[jss::result][jss::transactions].size() == 2) &&
-                        (j[jss::result][jss::transactions][0u][jss::tx_json]
-                          [jss::TransactionType] == jss::AccountSet))
+                        (j[jss::result][jss::transactions][0u][jss::tx_json][jss::TransactionType] == jss::AccountSet))
                     {
-                        auto const& payment =
-                            j[jss::result][jss::transactions][1u];
+                        auto const& payment = j[jss::result][jss::transactions][1u];
 
                         return (payment.isMember(jss::tx_json)) &&
-                            (payment[jss::tx_json][jss::TransactionType] ==
-                             jss::Payment) &&
-                            (payment[jss::tx_json][jss::DeliverMax] ==
-                             "10000000010") &&
+                            (payment[jss::tx_json][jss::TransactionType] == jss::Payment) &&
+                            (payment[jss::tx_json][jss::DeliverMax] == "10000000010") &&
                             (!payment[jss::tx_json].isMember(jss::Amount)) &&
                             (!payment[jss::tx_json].isMember(jss::hash)) &&
                             (payment[jss::hash] ==
                              "9F3085D85F472D1CC29627F260DF68EDE59D42D1D0C33E345"
                              "ECF0D4CE981D0A8") &&
-                            (payment[jss::validated] == true) &&
-                            (payment[jss::ledger_index] == 3) &&
+                            (payment[jss::validated] == true) && (payment[jss::ledger_index] == 3) &&
                             (payment[jss::ledger_hash] ==
                              "5476DCD816EA04CBBA57D47BBF1FC58A5217CC93A5ADD79CB"
                              "580A5AFDD727E33") &&
-                            (payment[jss::close_time_iso] ==
-                             "2000-01-01T00:00:10Z");
+                            (payment[jss::close_time_iso] == "2000-01-01T00:00:10Z");
                     }
                     else
                         return false;
@@ -163,117 +138,91 @@ class AccountTx_test : public beast::unit_test::suite
         };
 
         auto noTxs = [](Json::Value const& j) {
-            return j.isMember(jss::result) &&
-                (j[jss::result][jss::status] == "success") &&
+            return j.isMember(jss::result) && (j[jss::result][jss::status] == "success") &&
                 (j[jss::result][jss::transactions].size() == 0);
         };
 
         auto isErr = [](Json::Value const& j, error_code_i code) {
-            return j.isMember(jss::result) &&
-                j[jss::result].isMember(jss::error) &&
+            return j.isMember(jss::result) && j[jss::result].isMember(jss::error) &&
                 j[jss::result][jss::error] == RPC::get_error_info(code).token;
         };
 
         Json::Value jParams;
         jParams[jss::api_version] = apiVersion;
 
-        BEAST_EXPECT(isErr(
-            env.rpc("json", "account_tx", to_string(jParams)),
-            rpcINVALID_PARAMS));
+        BEAST_EXPECT(isErr(env.rpc("json", "account_tx", to_string(jParams)), rpcINVALID_PARAMS));
 
         jParams[jss::account] = "0xDEADBEEF";
 
-        BEAST_EXPECT(isErr(
-            env.rpc("json", "account_tx", to_string(jParams)),
-            rpcACT_MALFORMED));
+        BEAST_EXPECT(isErr(env.rpc("json", "account_tx", to_string(jParams)), rpcACT_MALFORMED));
 
         jParams[jss::account] = A1.human();
-        BEAST_EXPECT(hasTxs(
-            env.rpc(apiVersion, "json", "account_tx", to_string(jParams))));
+        BEAST_EXPECT(hasTxs(env.rpc(apiVersion, "json", "account_tx", to_string(jParams))));
 
         // Ledger min/max index
         {
             Json::Value p{jParams};
             p[jss::ledger_index_min] = -1;
             p[jss::ledger_index_max] = -1;
-            BEAST_EXPECT(hasTxs(
-                env.rpc(apiVersion, "json", "account_tx", to_string(p))));
+            BEAST_EXPECT(hasTxs(env.rpc(apiVersion, "json", "account_tx", to_string(p))));
 
             p[jss::ledger_index_min] = 0;
             p[jss::ledger_index_max] = 100;
             if (apiVersion < 2u)
-                BEAST_EXPECT(hasTxs(
-                    env.rpc(apiVersion, "json", "account_tx", to_string(p))));
+                BEAST_EXPECT(hasTxs(env.rpc(apiVersion, "json", "account_tx", to_string(p))));
             else
-                BEAST_EXPECT(isErr(
-                    env.rpc("json", "account_tx", to_string(p)),
-                    rpcLGR_IDX_MALFORMED));
+                BEAST_EXPECT(isErr(env.rpc("json", "account_tx", to_string(p)), rpcLGR_IDX_MALFORMED));
 
             p[jss::ledger_index_min] = 1;
             p[jss::ledger_index_max] = 2;
             if (apiVersion < 2u)
-                BEAST_EXPECT(
-                    noTxs(env.rpc("json", "account_tx", to_string(p))));
+                BEAST_EXPECT(noTxs(env.rpc("json", "account_tx", to_string(p))));
             else
-                BEAST_EXPECT(isErr(
-                    env.rpc("json", "account_tx", to_string(p)),
-                    rpcLGR_IDX_MALFORMED));
+                BEAST_EXPECT(isErr(env.rpc("json", "account_tx", to_string(p)), rpcLGR_IDX_MALFORMED));
 
             p[jss::ledger_index_min] = 2;
             p[jss::ledger_index_max] = 1;
             BEAST_EXPECT(isErr(
                 env.rpc("json", "account_tx", to_string(p)),
-                (apiVersion == 1 ? rpcLGR_IDXS_INVALID
-                                 : rpcINVALID_LGR_RANGE)));
+                (apiVersion == 1 ? rpcLGR_IDXS_INVALID : rpcINVALID_LGR_RANGE)));
         }
         // Ledger index min only
         {
             Json::Value p{jParams};
             p[jss::ledger_index_min] = -1;
-            BEAST_EXPECT(hasTxs(
-                env.rpc(apiVersion, "json", "account_tx", to_string(p))));
+            BEAST_EXPECT(hasTxs(env.rpc(apiVersion, "json", "account_tx", to_string(p))));
 
             p[jss::ledger_index_min] = 1;
             if (apiVersion < 2u)
-                BEAST_EXPECT(hasTxs(
-                    env.rpc(apiVersion, "json", "account_tx", to_string(p))));
+                BEAST_EXPECT(hasTxs(env.rpc(apiVersion, "json", "account_tx", to_string(p))));
             else
-                BEAST_EXPECT(isErr(
-                    env.rpc("json", "account_tx", to_string(p)),
-                    rpcLGR_IDX_MALFORMED));
+                BEAST_EXPECT(isErr(env.rpc("json", "account_tx", to_string(p)), rpcLGR_IDX_MALFORMED));
 
-            p[jss::ledger_index_min] = env.current()->info().seq;
+            p[jss::ledger_index_min] = env.current()->header().seq;
             BEAST_EXPECT(isErr(
                 env.rpc("json", "account_tx", to_string(p)),
-                (apiVersion == 1 ? rpcLGR_IDXS_INVALID
-                                 : rpcINVALID_LGR_RANGE)));
+                (apiVersion == 1 ? rpcLGR_IDXS_INVALID : rpcINVALID_LGR_RANGE)));
         }
 
         // Ledger index max only
         {
             Json::Value p{jParams};
             p[jss::ledger_index_max] = -1;
-            BEAST_EXPECT(hasTxs(
-                env.rpc(apiVersion, "json", "account_tx", to_string(p))));
+            BEAST_EXPECT(hasTxs(env.rpc(apiVersion, "json", "account_tx", to_string(p))));
 
-            p[jss::ledger_index_max] = env.current()->info().seq;
+            p[jss::ledger_index_max] = env.current()->header().seq;
             if (apiVersion < 2u)
-                BEAST_EXPECT(hasTxs(
-                    env.rpc(apiVersion, "json", "account_tx", to_string(p))));
+                BEAST_EXPECT(hasTxs(env.rpc(apiVersion, "json", "account_tx", to_string(p))));
             else
-                BEAST_EXPECT(isErr(
-                    env.rpc("json", "account_tx", to_string(p)),
-                    rpcLGR_IDX_MALFORMED));
+                BEAST_EXPECT(isErr(env.rpc("json", "account_tx", to_string(p)), rpcLGR_IDX_MALFORMED));
 
             p[jss::ledger_index_max] = 3;
-            BEAST_EXPECT(hasTxs(
-                env.rpc(apiVersion, "json", "account_tx", to_string(p))));
+            BEAST_EXPECT(hasTxs(env.rpc(apiVersion, "json", "account_tx", to_string(p))));
 
-            p[jss::ledger_index_max] = env.closed()->info().seq;
-            BEAST_EXPECT(hasTxs(
-                env.rpc(apiVersion, "json", "account_tx", to_string(p))));
+            p[jss::ledger_index_max] = env.closed()->header().seq;
+            BEAST_EXPECT(hasTxs(env.rpc(apiVersion, "json", "account_tx", to_string(p))));
 
-            p[jss::ledger_index_max] = env.closed()->info().seq - 1;
+            p[jss::ledger_index_max] = env.closed()->header().seq - 1;
             BEAST_EXPECT(noTxs(env.rpc("json", "account_tx", to_string(p))));
         }
 
@@ -281,32 +230,27 @@ class AccountTx_test : public beast::unit_test::suite
         {
             Json::Value p{jParams};
 
-            p[jss::ledger_index] = env.closed()->info().seq;
-            BEAST_EXPECT(hasTxs(
-                env.rpc(apiVersion, "json", "account_tx", to_string(p))));
+            p[jss::ledger_index] = env.closed()->header().seq;
+            BEAST_EXPECT(hasTxs(env.rpc(apiVersion, "json", "account_tx", to_string(p))));
 
-            p[jss::ledger_index] = env.closed()->info().seq - 1;
+            p[jss::ledger_index] = env.closed()->header().seq - 1;
             BEAST_EXPECT(noTxs(env.rpc("json", "account_tx", to_string(p))));
 
-            p[jss::ledger_index] = env.current()->info().seq;
-            BEAST_EXPECT(isErr(
-                env.rpc("json", "account_tx", to_string(p)),
-                rpcLGR_NOT_VALIDATED));
+            p[jss::ledger_index] = env.current()->header().seq;
+            BEAST_EXPECT(isErr(env.rpc("json", "account_tx", to_string(p)), rpcLGR_NOT_VALIDATED));
 
-            p[jss::ledger_index] = env.current()->info().seq + 1;
-            BEAST_EXPECT(isErr(
-                env.rpc("json", "account_tx", to_string(p)), rpcLGR_NOT_FOUND));
+            p[jss::ledger_index] = env.current()->header().seq + 1;
+            BEAST_EXPECT(isErr(env.rpc("json", "account_tx", to_string(p)), rpcLGR_NOT_FOUND));
         }
 
         // Ledger Hash
         {
             Json::Value p{jParams};
 
-            p[jss::ledger_hash] = to_string(env.closed()->info().hash);
-            BEAST_EXPECT(hasTxs(
-                env.rpc(apiVersion, "json", "account_tx", to_string(p))));
+            p[jss::ledger_hash] = to_string(env.closed()->header().hash);
+            BEAST_EXPECT(hasTxs(env.rpc(apiVersion, "json", "account_tx", to_string(p))));
 
-            p[jss::ledger_hash] = to_string(env.closed()->info().parentHash);
+            p[jss::ledger_hash] = to_string(env.closed()->header().parentHash);
             BEAST_EXPECT(noTxs(env.rpc("json", "account_tx", to_string(p))));
         }
 
@@ -322,36 +266,28 @@ class AccountTx_test : public beast::unit_test::suite
             p[jss::ledger_index] = -1;
 
             if (apiVersion < 2u)
-                BEAST_EXPECT(hasTxs(
-                    env.rpc(apiVersion, "json", "account_tx", to_string(p))));
+                BEAST_EXPECT(hasTxs(env.rpc(apiVersion, "json", "account_tx", to_string(p))));
             else
-                BEAST_EXPECT(isErr(
-                    env.rpc("json", "account_tx", to_string(p)),
-                    rpcINVALID_PARAMS));
+                BEAST_EXPECT(isErr(env.rpc("json", "account_tx", to_string(p)), rpcINVALID_PARAMS));
         }
 
         // Ledger index max only
         {
             Json::Value p{jParams};
-            p[jss::ledger_index_max] = env.current()->info().seq;
+            p[jss::ledger_index_max] = env.current()->header().seq;
             if (apiVersion < 2u)
-                BEAST_EXPECT(hasTxs(
-                    env.rpc(apiVersion, "json", "account_tx", to_string(p))));
+                BEAST_EXPECT(hasTxs(env.rpc(apiVersion, "json", "account_tx", to_string(p))));
             else
-                BEAST_EXPECT(isErr(
-                    env.rpc("json", "account_tx", to_string(p)),
-                    rpcLGR_IDX_MALFORMED));
+                BEAST_EXPECT(isErr(env.rpc("json", "account_tx", to_string(p)), rpcLGR_IDX_MALFORMED));
         }
         // test account non-string
         {
             auto testInvalidAccountParam = [&](auto const& param) {
                 Json::Value params;
                 params[jss::account] = param;
-                auto jrr = env.rpc(
-                    "json", "account_tx", to_string(params))[jss::result];
+                auto jrr = env.rpc("json", "account_tx", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
-                BEAST_EXPECT(
-                    jrr[jss::error_message] == "Invalid field 'account'.");
+                BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'account'.");
             };
 
             testInvalidAccountParam(1);
@@ -371,9 +307,7 @@ class AccountTx_test : public beast::unit_test::suite
                 BEAST_EXPECT(result[jss::result][jss::status] == "success");
             }
             else
-                BEAST_EXPECT(isErr(
-                    env.rpc("json", "account_tx", to_string(p)),
-                    rpcINVALID_PARAMS));
+                BEAST_EXPECT(isErr(env.rpc("json", "account_tx", to_string(p)), rpcINVALID_PARAMS));
 
             p[jss::binary] = true;
             Json::Value result{env.rpc("json", "account_tx", to_string(p))};
@@ -383,9 +317,7 @@ class AccountTx_test : public beast::unit_test::suite
             if (apiVersion < 2u)
                 BEAST_EXPECT(result[jss::result][jss::status] == "success");
             else
-                BEAST_EXPECT(isErr(
-                    env.rpc("json", "account_tx", to_string(p)),
-                    rpcINVALID_PARAMS));
+                BEAST_EXPECT(isErr(env.rpc("json", "account_tx", to_string(p)), rpcINVALID_PARAMS));
 
             p[jss::forward] = false;
             result = env.rpc("json", "account_tx", to_string(p));
@@ -397,90 +329,61 @@ class AccountTx_test : public beast::unit_test::suite
 
             // Test case: limit = 0 should fail (below minimum)
             p[jss::limit] = 0;
-            BEAST_EXPECT(isErr(
-                env.rpc("json", "account_tx", to_string(p)),
-                rpcINVALID_PARAMS));
+            BEAST_EXPECT(isErr(env.rpc("json", "account_tx", to_string(p)), rpcINVALID_PARAMS));
 
             // Test case: limit = 1.2 should fail (not an integer)
             p[jss::limit] = 1.2;
             BEAST_EXPECT(
-                env.rpc(
-                    "json",
-                    "account_tx",
-                    to_string(p))[jss::result][jss::error_message] ==
+                env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
                 RPC::expected_field_message(jss::limit, "unsigned integer"));
 
             // Test case: limit = "10" should fail (string instead of integer)
             p[jss::limit] = "10";
             BEAST_EXPECT(
-                env.rpc(
-                    "json",
-                    "account_tx",
-                    to_string(p))[jss::result][jss::error_message] ==
+                env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
                 RPC::expected_field_message(jss::limit, "unsigned integer"));
 
             // Test case: limit = true should fail (boolean instead of integer)
             p[jss::limit] = true;
             BEAST_EXPECT(
-                env.rpc(
-                    "json",
-                    "account_tx",
-                    to_string(p))[jss::result][jss::error_message] ==
+                env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
                 RPC::expected_field_message(jss::limit, "unsigned integer"));
 
             // Test case: limit = false should fail (boolean instead of integer)
             p[jss::limit] = false;
             BEAST_EXPECT(
-                env.rpc(
-                    "json",
-                    "account_tx",
-                    to_string(p))[jss::result][jss::error_message] ==
+                env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
                 RPC::expected_field_message(jss::limit, "unsigned integer"));
 
             // Test case: limit = -1 should fail (negative number)
             p[jss::limit] = -1;
             BEAST_EXPECT(
-                env.rpc(
-                    "json",
-                    "account_tx",
-                    to_string(p))[jss::result][jss::error_message] ==
+                env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
                 RPC::expected_field_message(jss::limit, "unsigned integer"));
 
             // Test case: limit = [] should fail (array instead of integer)
             p[jss::limit] = Json::Value(Json::arrayValue);
             BEAST_EXPECT(
-                env.rpc(
-                    "json",
-                    "account_tx",
-                    to_string(p))[jss::result][jss::error_message] ==
+                env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
                 RPC::expected_field_message(jss::limit, "unsigned integer"));
 
             // Test case: limit = {} should fail (object instead of integer)
             p[jss::limit] = Json::Value(Json::objectValue);
             BEAST_EXPECT(
-                env.rpc(
-                    "json",
-                    "account_tx",
-                    to_string(p))[jss::result][jss::error_message] ==
+                env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
                 RPC::expected_field_message(jss::limit, "unsigned integer"));
 
             // Test case: limit = "malformed" should fail (malformed string)
             p[jss::limit] = "malformed";
             BEAST_EXPECT(
-                env.rpc(
-                    "json",
-                    "account_tx",
-                    to_string(p))[jss::result][jss::error_message] ==
+                env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
                 RPC::expected_field_message(jss::limit, "unsigned integer"));
 
             // Test case: limit = ["limit"] should fail (array with string)
             p[jss::limit] = Json::Value(Json::arrayValue);
             p[jss::limit].append("limit");
             BEAST_EXPECT(
-                env.rpc(
-                    "json",
-                    "account_tx",
-                    to_string(p))[jss::result][jss::error_message] ==
+                env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
                 RPC::expected_field_message(jss::limit, "unsigned integer"));
 
             // Test case: limit = {"limit": 10} should fail (object with
@@ -488,19 +391,12 @@ class AccountTx_test : public beast::unit_test::suite
             p[jss::limit] = Json::Value(Json::objectValue);
             p[jss::limit][jss::limit] = 10;
             BEAST_EXPECT(
-                env.rpc(
-                    "json",
-                    "account_tx",
-                    to_string(p))[jss::result][jss::error_message] ==
+                env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
                 RPC::expected_field_message(jss::limit, "unsigned integer"));
 
             // Test case: limit = 10 should succeed (valid integer)
             p[jss::limit] = 10;
-            BEAST_EXPECT(
-                env.rpc(
-                    "json",
-                    "account_tx",
-                    to_string(p))[jss::result][jss::status] == "success");
+            BEAST_EXPECT(env.rpc("json", "account_tx", to_string(p))[jss::result][jss::status] == "success");
         }
     }
 
@@ -548,31 +444,26 @@ class AccountTx_test : public beast::unit_test::suite
         // Escrow
         {
             // Create an escrow.  Requires either a CancelAfter or FinishAfter.
-            auto escrow = [](Account const& account,
-                             Account const& to,
-                             STAmount const& amount) {
-                Json::Value escro;
-                escro[jss::TransactionType] = jss::EscrowCreate;
-                escro[jss::Account] = account.human();
-                escro[jss::Destination] = to.human();
-                escro[jss::Amount] = amount.getJson(JsonOptions::none);
-                return escro;
+            auto escrow = [](Account const& account, Account const& to, STAmount const& amount) {
+                Json::Value escrow;
+                escrow[jss::TransactionType] = jss::EscrowCreate;
+                escrow[jss::Account] = account.human();
+                escrow[jss::Destination] = to.human();
+                escrow[jss::Amount] = amount.getJson(JsonOptions::none);
+                return escrow;
             };
 
             NetClock::time_point const nextTime{env.now() + 2s};
 
             Json::Value escrowWithFinish{escrow(alice, alice, XRP(500))};
-            escrowWithFinish[sfFinishAfter.jsonName] =
-                nextTime.time_since_epoch().count();
+            escrowWithFinish[sfFinishAfter.jsonName] = nextTime.time_since_epoch().count();
 
             std::uint32_t const escrowFinishSeq{env.seq(alice)};
             env(escrowWithFinish, sig(alie));
 
             Json::Value escrowWithCancel{escrow(alice, alice, XRP(500))};
-            escrowWithCancel[sfFinishAfter.jsonName] =
-                nextTime.time_since_epoch().count();
-            escrowWithCancel[sfCancelAfter.jsonName] =
-                nextTime.time_since_epoch().count() + 1;
+            escrowWithCancel[sfFinishAfter.jsonName] = nextTime.time_since_epoch().count();
+            escrowWithCancel[sfCancelAfter.jsonName] = nextTime.time_since_epoch().count() + 1;
 
             std::uint32_t const escrowCancelSeq{env.seq(alice)};
             env(escrowWithCancel, sig(alie));
@@ -604,24 +495,20 @@ class AccountTx_test : public beast::unit_test::suite
             payChanCreate[jss::TransactionType] = jss::PaymentChannelCreate;
             payChanCreate[jss::Account] = alice.human();
             payChanCreate[jss::Destination] = gw.human();
-            payChanCreate[jss::Amount] =
-                XRP(500).value().getJson(JsonOptions::none);
-            payChanCreate[sfSettleDelay.jsonName] =
-                NetClock::duration{100s}.count();
+            payChanCreate[jss::Amount] = XRP(500).value().getJson(JsonOptions::none);
+            payChanCreate[sfSettleDelay.jsonName] = NetClock::duration{100s}.count();
             payChanCreate[sfPublicKey.jsonName] = strHex(alice.pk().slice());
             env(payChanCreate, sig(alie));
             env.close();
 
-            std::string const payChanIndex{
-                strHex(keylet::payChan(alice, gw, payChanSeq).key)};
+            std::string const payChanIndex{strHex(keylet::payChan(alice, gw, payChanSeq).key)};
 
             {
                 Json::Value payChanFund;
                 payChanFund[jss::TransactionType] = jss::PaymentChannelFund;
                 payChanFund[jss::Account] = alice.human();
                 payChanFund[sfChannel.jsonName] = payChanIndex;
-                payChanFund[jss::Amount] =
-                    XRP(200).value().getJson(JsonOptions::none);
+                payChanFund[jss::Amount] = XRP(200).value().getJson(JsonOptions::none);
                 env(payChanFund, sig(alie));
                 env.close();
             }
@@ -651,7 +538,7 @@ class AccountTx_test : public beast::unit_test::suite
             env.close();
         }
         {
-            // Deposit preauthorization with a Ticket.
+            // Deposit pre-authorization with a Ticket.
             std::uint32_t const tktSeq{env.seq(alice) + 1};
             env(ticket::create(alice, 1), sig(alie));
             env.close();
@@ -666,8 +553,7 @@ class AccountTx_test : public beast::unit_test::suite
         params[jss::ledger_index_min] = -1;
         params[jss::ledger_index_max] = -1;
 
-        Json::Value const result{
-            env.rpc("json", "account_tx", to_string(params))};
+        Json::Value const result{env.rpc("json", "account_tx", to_string(params))};
 
         BEAST_EXPECT(result[jss::result][jss::status] == "success");
         BEAST_EXPECT(result[jss::result][jss::transactions].isArray());
@@ -704,8 +590,7 @@ class AccountTx_test : public beast::unit_test::suite
         };
         // clang-format on
 
-        BEAST_EXPECT(
-            std::size(sanity) == result[jss::result][jss::transactions].size());
+        BEAST_EXPECT(std::size(sanity) == result[jss::result][jss::transactions].size());
 
         for (unsigned int index{0}; index < std::size(sanity); ++index)
         {
@@ -739,8 +624,7 @@ class AccountTx_test : public beast::unit_test::suite
         env(noop(becky));
 
         // Close enough ledgers to be able to delete becky's account.
-        std::uint32_t const ledgerCount{
-            env.current()->seq() + 257 - env.seq(becky)};
+        std::uint32_t const ledgerCount{env.current()->seq() + 257 - env.seq(becky)};
 
         for (std::uint32_t i = 0; i < ledgerCount; ++i)
             env.close();
@@ -781,35 +665,26 @@ class AccountTx_test : public beast::unit_test::suite
             params[jss::ledger_index_min] = -1;
             params[jss::ledger_index_max] = -1;
 
-            Json::Value const result{
-                env.rpc("json", "account_tx", to_string(params))};
+            Json::Value const result{env.rpc("json", "account_tx", to_string(params))};
 
             BEAST_EXPECT(result[jss::result][jss::status] == "success");
             BEAST_EXPECT(result[jss::result][jss::transactions].isArray());
 
             // The first two transactions listed in sanity haven't happened yet.
-            constexpr unsigned int beckyDeletedOffest = 2;
-            BEAST_EXPECT(
-                std::size(sanity) ==
-                result[jss::result][jss::transactions].size() +
-                    beckyDeletedOffest);
+            constexpr unsigned int beckyDeletedOffset = 2;
+            BEAST_EXPECT(std::size(sanity) == result[jss::result][jss::transactions].size() + beckyDeletedOffset);
 
             Json::Value const& txs{result[jss::result][jss::transactions]};
 
-            for (unsigned int index = beckyDeletedOffest;
-                 index < std::size(sanity);
-                 ++index)
+            for (unsigned int index = beckyDeletedOffset; index < std::size(sanity); ++index)
             {
-                checkSanity(txs[index - beckyDeletedOffest], sanity[index]);
+                checkSanity(txs[index - beckyDeletedOffset], sanity[index]);
             }
         }
 
         // All it takes is a large enough XRP payment to resurrect
         // becky's account.  Try too small a payment.
-        env(pay(alice,
-                becky,
-                drops(env.current()->fees().accountReserve(0)) - XRP(1)),
-            ter(tecNO_DST_INSUF_XRP));
+        env(pay(alice, becky, drops(env.current()->fees().accountReserve(0)) - XRP(1)), ter(tecNO_DST_INSUF_XRP));
         env.close();
 
         // Actually resurrect becky's account.
@@ -831,14 +706,12 @@ class AccountTx_test : public beast::unit_test::suite
         params[jss::ledger_index_min] = -1;
         params[jss::ledger_index_max] = -1;
 
-        Json::Value const result{
-            env.rpc("json", "account_tx", to_string(params))};
+        Json::Value const result{env.rpc("json", "account_tx", to_string(params))};
 
         BEAST_EXPECT(result[jss::result][jss::status] == "success");
         BEAST_EXPECT(result[jss::result][jss::transactions].isArray());
 
-        BEAST_EXPECT(
-            std::size(sanity) == result[jss::result][jss::transactions].size());
+        BEAST_EXPECT(std::size(sanity) == result[jss::result][jss::transactions].size());
 
         Json::Value const& txs{result[jss::result][jss::transactions]};
 
@@ -867,28 +740,23 @@ class AccountTx_test : public beast::unit_test::suite
         MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
 
         // check the latest mpt-related txn is in alice's account history
-        auto const checkAliceAcctTx = [&](size_t size,
-                                          Json::StaticString txType) {
+        auto const checkAliceAcctTx = [&](size_t size, Json::StaticString txType) {
             Json::Value params;
             params[jss::account] = alice.human();
             params[jss::limit] = 100;
-            auto const jv =
-                env.rpc("json", "account_tx", to_string(params))[jss::result];
+            auto const jv = env.rpc("json", "account_tx", to_string(params))[jss::result];
 
             BEAST_EXPECT(jv[jss::transactions].size() == size);
             auto const& tx0(jv[jss::transactions][0u][jss::tx]);
             BEAST_EXPECT(tx0[jss::TransactionType] == txType);
 
-            std::string const txHash{
-                env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
+            std::string const txHash{env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
             BEAST_EXPECT(tx0[jss::hash] == txHash);
         };
 
         // alice creates issuance
         mptAlice.create(
-            {.ownerCount = 1,
-             .holderCount = 0,
-             .flags = tfMPTCanClawback | tfMPTRequireAuth | tfMPTCanTransfer});
+            {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanClawback | tfMPTRequireAuth | tfMPTCanTransfer});
 
         checkAliceAcctTx(3, jss::MPTokenIssuanceCreate);
 
@@ -903,7 +771,7 @@ class AccountTx_test : public beast::unit_test::suite
         //
         // ledger hash should be fixed regardless any change to account history
         // BEAST_EXPECT(
-        //     to_string(env.closed()->info().hash) ==
+        //     to_string(env.closed()->header().hash) ==
         //     "0BD507BB87D3C0E73B462485E6E381798A8C82FC49BF17FE39C60E08A1AF035D");
 
         // alice authorizes bob
@@ -931,14 +799,13 @@ public:
     void
     run() override
     {
-        forAllApiVersions(
-            std::bind_front(&AccountTx_test::testParameters, this));
+        forAllApiVersions(std::bind_front(&AccountTx_test::testParameters, this));
         testContents();
         testAccountDelete();
         testMPT();
     }
 };
-BEAST_DEFINE_TESTSUITE(AccountTx, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(AccountTx, rpc, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -7,20 +7,16 @@
 #include <cstdint>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 Expected<std::vector<SignerEntries::SignerEntry>, NotTEC>
-SignerEntries::deserialize(
-    STObject const& obj,
-    beast::Journal journal,
-    std::string_view annotation)
+SignerEntries::deserialize(STObject const& obj, beast::Journal journal, std::string_view annotation)
 {
     std::pair<std::vector<SignerEntry>, NotTEC> s;
 
     if (!obj.isFieldPresent(sfSignerEntries))
     {
-        JLOG(journal.trace())
-            << "Malformed " << annotation << ": Need signer entry array.";
+        JLOG(journal.trace()) << "Malformed " << annotation << ": Need signer entry array.";
         return Unexpected(temMALFORMED);
     }
 
@@ -33,8 +29,7 @@ SignerEntries::deserialize(
         // Validate the SignerEntry.
         if (sEntry.getFName() != sfSignerEntry)
         {
-            JLOG(journal.trace())
-                << "Malformed " << annotation << ": Expected SignerEntry.";
+            JLOG(journal.trace()) << "Malformed " << annotation << ": Expected SignerEntry.";
             return Unexpected(temMALFORMED);
         }
 
@@ -48,4 +43,4 @@ SignerEntries::deserialize(
     return accountVec;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

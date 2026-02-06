@@ -11,13 +11,11 @@
 #include <boost/bimap.hpp>
 #include <boost/bimap/multiset_of.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 using namespace boost::bimaps;
 // sorted descending by lastUpdateTime, ascending by AssetPrice
-using Prices = bimap<
-    multiset_of<std::uint32_t, std::greater<std::uint32_t>>,
-    multiset_of<STAmount>>;
+using Prices = bimap<multiset_of<std::uint32_t, std::greater<std::uint32_t>>, multiset_of<STAmount>>;
 
 /** Calls callback "f" on the ledger-object sle and up to three previous
  * metadata objects. Stops early if the callback returns true.
@@ -88,10 +86,8 @@ iteratePriceData(
             if (isNew && history == 1)
                 return;
 
-            oracle = isNew
-                ? &static_cast<STObject const&>(node.peekAtField(sfNewFields))
-                : &static_cast<STObject const&>(
-                      node.peekAtField(sfFinalFields));
+            oracle = isNew ? &static_cast<STObject const&>(node.peekAtField(sfNewFields))
+                           : &static_cast<STObject const&>(node.peekAtField(sfFinalFields));
             break;
         }
     }
@@ -99,24 +95,18 @@ iteratePriceData(
 
 // Return avg, sd, data set size
 static std::tuple<STAmount, Number, std::uint16_t>
-getStats(
-    Prices::right_const_iterator const& begin,
-    Prices::right_const_iterator const& end)
+getStats(Prices::right_const_iterator const& begin, Prices::right_const_iterator const& end)
 {
     STAmount avg{noIssue(), 0, 0};
     Number sd{0};
     std::uint16_t const size = std::distance(begin, end);
-    avg = std::accumulate(
-        begin, end, avg, [&](STAmount const& acc, auto const& it) {
-            return acc + it.first;
-        });
+    avg = std::accumulate(begin, end, avg, [&](STAmount const& acc, auto const& it) { return acc + it.first; });
     avg = divide(avg, STAmount{noIssue(), size, 0}, noIssue());
     if (size > 1)
     {
-        sd = std::accumulate(
-            begin, end, sd, [&](Number const& acc, auto const& it) {
-                return acc + (it.first - avg) * (it.first - avg);
-            });
+        sd = std::accumulate(begin, end, sd, [&](Number const& acc, auto const& it) {
+            return acc + (it.first - avg) * (it.first - avg);
+        });
         sd = root2(sd / (size - 1));
     }
     return {avg, sd, size};
@@ -139,8 +129,7 @@ doGetAggregatePrice(RPC::JsonContext& context)
     constexpr std::uint16_t maxOracles = 200;
     if (!params.isMember(jss::oracles))
         return RPC::missing_field_error(jss::oracles);
-    if (!params[jss::oracles].isArray() || params[jss::oracles].size() == 0 ||
-        params[jss::oracles].size() > maxOracles)
+    if (!params[jss::oracles].isArray() || params[jss::oracles].size() == 0 || params[jss::oracles].size() > maxOracles)
     {
         RPC::inject_error(rpcORACLE_MALFORMED, result);
         return result;
@@ -154,8 +143,7 @@ doGetAggregatePrice(RPC::JsonContext& context)
 
     // Lambda to validate uint type
     // support positive int, uint, and a number represented as a string
-    auto validUInt = [](Json::Value const& params,
-                        Json::StaticString const& field) {
+    auto validUInt = [](Json::Value const& params, Json::StaticString const& field) {
         auto const& jv = params[field];
         std::uint32_t v;
         return jv.isUInt() || (jv.isInt() && jv.asInt() >= 0) ||
@@ -166,8 +154,7 @@ doGetAggregatePrice(RPC::JsonContext& context)
     // is not included in the input then a default value is returned.
     auto getField = [&params, &validUInt](
                         Json::StaticString const& field,
-                        unsigned int def =
-                            0) -> std::variant<std::uint32_t, error_code_i> {
+                        unsigned int def = 0) -> std::variant<std::uint32_t, error_code_i> {
         if (params.isMember(field))
         {
             if (!validUInt(params, field))
@@ -180,8 +167,7 @@ doGetAggregatePrice(RPC::JsonContext& context)
     // Lambda to get `base_asset` and `quote_asset`. The values have
     // to conform to the Currency type.
     auto getCurrency =
-        [&params](SField const& sField, Json::StaticString const& field)
-        -> std::variant<Json::Value, error_code_i> {
+        [&params](SField const& sField, Json::StaticString const& field) -> std::variant<Json::Value, error_code_i> {
         try
         {
             if (params[field].asString().empty())
@@ -201,9 +187,7 @@ doGetAggregatePrice(RPC::JsonContext& context)
         RPC::inject_error(std::get<error_code_i>(trim), result);
         return result;
     }
-    if (params.isMember(jss::trim) &&
-        (std::get<std::uint32_t>(trim) == 0 ||
-         std::get<std::uint32_t>(trim) > maxTrim))
+    if (params.isMember(jss::trim) && (std::get<std::uint32_t>(trim) == 0 || std::get<std::uint32_t>(trim) > maxTrim))
     {
         RPC::inject_error(rpcINVALID_PARAMS, result);
         return result;
@@ -234,8 +218,7 @@ doGetAggregatePrice(RPC::JsonContext& context)
     Prices prices;
     for (auto const& oracle : params[jss::oracles])
     {
-        if (!oracle.isMember(jss::oracle_document_id) ||
-            !oracle.isMember(jss::account))
+        if (!oracle.isMember(jss::oracle_document_id) || !oracle.isMember(jss::account))
         {
             RPC::inject_error(rpcORACLE_MALFORMED, result);
             return result;
@@ -243,8 +226,7 @@ doGetAggregatePrice(RPC::JsonContext& context)
         auto const documentID = validUInt(oracle, jss::oracle_document_id)
             ? std::make_optional(oracle[jss::oracle_document_id].asUInt())
             : std::nullopt;
-        auto const account =
-            parseBase58<AccountID>(oracle[jss::account].asString());
+        auto const account = parseBase58<AccountID>(oracle[jss::account].asString());
         if (!account || account->isZero() || !documentID)
         {
             RPC::inject_error(rpcINVALID_PARAMS, result);
@@ -264,21 +246,16 @@ doGetAggregatePrice(RPC::JsonContext& context)
                     series.begin(),
                     series.end(),
                     [&](STObject const& o) -> bool {
-                        return o.getFieldCurrency(sfBaseAsset).getText() ==
-                            std::get<Json::Value>(baseAsset) &&
-                            o.getFieldCurrency(sfQuoteAsset).getText() ==
-                            std::get<Json::Value>(quoteAsset) &&
+                        return o.getFieldCurrency(sfBaseAsset).getText() == std::get<Json::Value>(baseAsset) &&
+                            o.getFieldCurrency(sfQuoteAsset).getText() == std::get<Json::Value>(quoteAsset) &&
                             o.isFieldPresent(sfAssetPrice);
                     });
                 iter != series.end())
             {
                 auto const price = iter->getFieldU64(sfAssetPrice);
-                auto const scale = iter->isFieldPresent(sfScale)
-                    ? -static_cast<int>(iter->getFieldU8(sfScale))
-                    : 0;
-                prices.insert(Prices::value_type(
-                    node.getFieldU32(sfLastUpdateTime),
-                    STAmount{noIssue(), price, scale}));
+                auto const scale = iter->isFieldPresent(sfScale) ? -static_cast<int>(iter->getFieldU8(sfScale)) : 0;
+                prices.insert(
+                    Prices::value_type(node.getFieldU32(sfLastUpdateTime), STAmount{noIssue(), price, scale}));
                 return true;
             }
             return false;
@@ -300,11 +277,9 @@ doGetAggregatePrice(RPC::JsonContext& context)
         // {latestTime, latestTime - threshold}, the prices with lastUpdateTime
         // greater than (latestTime - threshold) are erased.
         auto const oldestTime = prices.left.rbegin()->first;
-        auto const upperBound =
-            latestTime > threshold ? (latestTime - threshold) : oldestTime;
+        auto const upperBound = latestTime > threshold ? (latestTime - threshold) : oldestTime;
         if (upperBound > oldestTime)
-            prices.left.erase(
-                prices.left.upper_bound(upperBound), prices.left.end());
+            prices.left.erase(prices.left.upper_bound(upperBound), prices.left.end());
 
         // At least one element should remain since upperBound is either
         // equal to oldestTime or is less than latestTime, in which case
@@ -320,8 +295,7 @@ doGetAggregatePrice(RPC::JsonContext& context)
     result[jss::time] = latestTime;
 
     // calculate stats
-    auto const [avg, sd, size] =
-        getStats(prices.right.begin(), prices.right.end());
+    auto const [avg, sd, size] = getStats(prices.right.begin(), prices.right.end());
     result[jss::entire_set][jss::mean] = avg.getText();
     result[jss::entire_set][jss::size] = size;
     result[jss::entire_set][jss::standard_deviation] = to_string(sd);
@@ -347,12 +321,10 @@ doGetAggregatePrice(RPC::JsonContext& context)
 
     if (std::get<std::uint32_t>(trim) != 0)
     {
-        auto const trimCount =
-            prices.size() * std::get<std::uint32_t>(trim) / 100;
+        auto const trimCount = prices.size() * std::get<std::uint32_t>(trim) / 100;
 
-        auto const [avg, sd, size] = getStats(
-            itAdvance(prices.right.begin(), trimCount),
-            itAdvance(prices.right.end(), -trimCount));
+        auto const [avg, sd, size] =
+            getStats(itAdvance(prices.right.begin(), trimCount), itAdvance(prices.right.end(), -trimCount));
         result[jss::trimmed_set][jss::mean] = avg.getText();
         result[jss::trimmed_set][jss::size] = size;
         result[jss::trimmed_set][jss::standard_deviation] = to_string(sd);
@@ -361,4 +333,4 @@ doGetAggregatePrice(RPC::JsonContext& context)
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

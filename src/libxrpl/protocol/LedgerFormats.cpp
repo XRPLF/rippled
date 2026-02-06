@@ -5,7 +5,7 @@
 
 #include <initializer_list>
 
-namespace ripple {
+namespace xrpl {
 
 LedgerFormats::LedgerFormats()
 {
@@ -22,8 +22,7 @@ LedgerFormats::LedgerFormats()
 #undef LEDGER_ENTRY
 
 #define UNWRAP(...) __VA_ARGS__
-#define LEDGER_ENTRY(tag, value, name, rpcName, fields) \
-    add(jss::name, tag, UNWRAP fields, commonFields);
+#define LEDGER_ENTRY(tag, value, name, rpcName, fields) add(jss::name, tag, UNWRAP fields, commonFields);
 
 #include <xrpl/protocol/detail/ledger_entries.macro>
 
@@ -40,4 +39,4 @@ LedgerFormats::getInstance()
     return instance;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

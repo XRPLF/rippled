@@ -14,7 +14,7 @@
 
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 
 // How many total extra passes we make
 // We must ensure we make at least one non-retriable pass
@@ -61,10 +61,7 @@ public:
 
         @param ledger A closed ledger
     */
-    explicit OpenLedger(
-        std::shared_ptr<Ledger const> const& ledger,
-        CachedSLEs& cache,
-        beast::Journal journal);
+    explicit OpenLedger(std::shared_ptr<Ledger const> const& ledger, CachedSLEs& cache, beast::Journal journal);
 
     /** Returns `true` if there are no transactions.
 
@@ -213,8 +210,7 @@ OpenLedger::apply(
         }
         catch (std::exception const& e)
         {
-            JLOG(j.error())
-                << "OpenLedger::apply: Caught exception: " << e.what();
+            JLOG(j.error()) << "OpenLedger::apply: Caught exception: " << e.what();
         }
     }
     bool retry = true;
@@ -246,8 +242,7 @@ OpenLedger::apply(
 
     // If there are any transactions left, we must have
     // tried them in at least one final pass
-    XRPL_ASSERT(
-        retries.empty() || !retry, "ripple::OpenLedger::apply : valid retries");
+    XRPL_ASSERT(retries.empty() || !retry, "xrpl::OpenLedger::apply : valid retries");
 }
 
 //------------------------------------------------------------------------------
@@ -266,6 +261,6 @@ debugTostr(SHAMap const& set);
 std::string
 debugTostr(std::shared_ptr<ReadView const> const& view);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

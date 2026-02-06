@@ -10,7 +10,7 @@
 #include <optional>
 #include <set>
 
-namespace ripple {
+namespace xrpl {
 
 enum class HashRouterFlags : std::uint16_t {
     // Public flags
@@ -154,9 +154,7 @@ private:
             last relay timestamp and return true.
         */
         bool
-        shouldRelay(
-            Stopwatch::time_point const& now,
-            std::chrono::seconds relayTime)
+        shouldRelay(Stopwatch::time_point const& now, std::chrono::seconds relayTime)
         {
             if (relayed_ && *relayed_ + relayTime > now)
                 return false;
@@ -183,8 +181,7 @@ private:
     };
 
 public:
-    HashRouter(Setup const& setup, Stopwatch& clock)
-        : setup_(setup), suppressionMap_(clock)
+    HashRouter(Setup const& setup, Stopwatch& clock) : setup_(setup), suppressionMap_(clock)
     {
     }
 
@@ -193,7 +190,7 @@ public:
 
     virtual ~HashRouter() = default;
 
-    // VFALCO TODO Replace "Supression" terminology with something more
+    // VFALCO TODO Replace "Suppression" terminology with something more
     // semantically meaningful.
     void
     addSuppression(uint256 const& key);
@@ -210,18 +207,11 @@ public:
     addSuppressionPeerWithStatus(uint256 const& key, PeerShortID peer);
 
     bool
-    addSuppressionPeer(
-        uint256 const& key,
-        PeerShortID peer,
-        HashRouterFlags& flags);
+    addSuppressionPeer(uint256 const& key, PeerShortID peer, HashRouterFlags& flags);
 
     // Add a peer suppression and return whether the entry should be processed
     bool
-    shouldProcess(
-        uint256 const& key,
-        PeerShortID peer,
-        HashRouterFlags& flags,
-        std::chrono::seconds tx_interval);
+    shouldProcess(uint256 const& key, PeerShortID peer, HashRouterFlags& flags, std::chrono::seconds tx_interval);
 
     /** Set the flags on a hash.
 
@@ -259,17 +249,12 @@ private:
     Setup const setup_;
 
     // Stores all suppressed hashes and their expiration time
-    beast::aged_unordered_map<
-        uint256,
-        Entry,
-        Stopwatch::clock_type,
-        hardened_hash<strong_hash>>
-        suppressionMap_;
+    beast::aged_unordered_map<uint256, Entry, Stopwatch::clock_type, hardened_hash<strong_hash>> suppressionMap_;
 };
 
 HashRouter::Setup
 setup_HashRouter(Config const&);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -7,19 +7,11 @@
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
-#include <xrpl/beast/core/SemanticVersion.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.pb.h>
-#include <xrpl/protocol/ApiVersion.h>
-#include <xrpl/protocol/SecretKey.h>
 
 #include <optional>
-#include <variant>
 
-namespace Json {
-class Value;
-}
-
-namespace ripple {
+namespace xrpl {
 
 class ReadView;
 class Transaction;
@@ -28,69 +20,156 @@ namespace RPC {
 
 struct JsonContext;
 
-/** Get ledger by hash
-    If there is no error in the return value, the ledger pointer will have
-    been filled
-*/
+enum class LedgerShortcut { Current, Closed, Validated };
+
+/**
+ * @brief Retrieves a ledger by its hash.
+ *
+ * This function attempts to find and fill the provided ledger pointer with the
+ * ledger corresponding to the specified hash. If the operation is successful,
+ * the ledger pointer will be set; otherwise, an error status is returned.
+ *
+ * @tparam T Type of the ledger pointer to be filled.
+ * @param ledger Reference to the ledger pointer to be filled.
+ * @param ledgerHash The hash of the ledger to retrieve.
+ * @param context The RPC context containing request parameters and environment.
+ * @return Status indicating success or failure of the operation.
+ */
 template <class T>
 Status
-getLedger(T& ledger, uint256 const& ledgerHash, Context& context);
+getLedger(T& ledger, uint256 const& ledgerHash, Context const& context);
 
-/** Get ledger by sequence
-    If there is no error in the return value, the ledger pointer will have
-    been filled
-*/
+/**
+ * @brief Retrieves a ledger by its sequence index.
+ *
+ * This function attempts to find and fill the provided ledger pointer with the
+ * ledger corresponding to the specified sequence index. If the operation is
+ * successful, the ledger pointer will be set; otherwise, an error status is
+ * returned.
+ *
+ * @tparam T Type of the ledger pointer to be filled.
+ * @param ledger Reference to the ledger pointer to be filled.
+ * @param ledgerIndex The sequence index of the ledger to retrieve.
+ * @param context The RPC context containing request parameters and environment.
+ * @return Status indicating success or failure of the operation.
+ */
 template <class T>
 Status
-getLedger(T& ledger, uint32_t ledgerIndex, Context& context);
+getLedger(T& ledger, uint32_t ledgerIndex, Context const& context);
 
-enum LedgerShortcut { CURRENT, CLOSED, VALIDATED };
-/** Get ledger specified in shortcut.
-    If there is no error in the return value, the ledger pointer will have
-    been filled
-*/
+/**
+ * @brief Retrieves a ledger specified by a `LedgerShortcut`.
+ *
+ * This function attempts to find and fill the provided ledger pointer with the
+ * ledger corresponding to the specified shortcut. If the operation is
+ * successful, the ledger pointer will be set; otherwise, an error status is
+ * returned.
+ *
+ * @tparam T Type of the ledger pointer to be filled.
+ * @param ledger Reference to the ledger pointer to be filled.
+ * @param shortcut The shortcut specifying which ledger to retrieve.
+ * @param context The RPC context containing request parameters and environment.
+ * @return Status indicating success or failure of the operation.
+ */
 template <class T>
 Status
-getLedger(T& ledger, LedgerShortcut shortcut, Context& context);
+getLedger(T& ledger, LedgerShortcut shortcut, Context const& context);
 
-/** Look up a ledger from a request and fill a Json::Result with either
-    an error, or data representing a ledger.
-
-    If there is no error in the return value, then the ledger pointer will have
-    been filled.
-*/
+/**
+ * @brief Looks up a ledger from a request and returns a Json::Value with either
+ * an error or ledger data.
+ *
+ * This function attempts to find a ledger based on the parameters in the given
+ * JsonContext. On success, the ledger pointer is filled and a Json::Value
+ * representing the ledger is returned. On failure, a Json::Value describing the
+ * error is returned.
+ *
+ * @param ledger Reference to a shared pointer to the ledger to be filled.
+ * @param context The RPC JsonContext containing request parameters and
+ * environment.
+ * @return Json::Value containing either the ledger data or an error
+ * description.
+ */
 Json::Value
-lookupLedger(std::shared_ptr<ReadView const>&, JsonContext&);
+lookupLedger(std::shared_ptr<ReadView const>&, JsonContext const&);
 
-/** Look up a ledger from a request and fill a Json::Result with the data
-    representing a ledger.
-
-    If the returned Status is OK, the ledger pointer will have been filled.
-*/
+/**
+ * @brief Looks up a ledger from a request and fills a Json::Value with ledger
+ * data.
+ *
+ * This function attempts to find a ledger based on the parameters in the given
+ * JsonContext. On success, the ledger pointer is filled and the result
+ * parameter is populated with ledger data. On failure, an error status is
+ * returned.
+ *
+ * @param ledger Reference to a shared pointer to the ledger to be filled.
+ * @param context The RPC JsonContext containing request parameters and
+ * environment.
+ * @param result Reference to a Json::Value to be filled with ledger data.
+ * @return Status indicating success or failure of the operation.
+ */
 Status
-lookupLedger(
-    std::shared_ptr<ReadView const>&,
-    JsonContext&,
-    Json::Value& result);
+lookupLedger(std::shared_ptr<ReadView const>&, JsonContext const&, Json::Value& result);
 
+/**
+ * @brief Retrieves a ledger from a gRPC request context.
+ *
+ * This function attempts to find and fill the provided ledger pointer based on
+ * the parameters in the given gRPC context. On success, the ledger pointer is
+ * filled.
+ *
+ * @tparam T Type of the ledger pointer to be filled.
+ * @tparam R Type of the gRPC request.
+ * @param ledger Reference to the ledger pointer to be filled.
+ * @param context The gRPC context containing request parameters and
+ * environment.
+ * @return Status indicating success or failure of the operation.
+ */
 template <class T, class R>
 Status
-ledgerFromRequest(T& ledger, GRPCContext<R>& context);
+ledgerFromRequest(T& ledger, GRPCContext<R> const& context);
 
+/**
+ * @brief Retrieves a ledger based on a LedgerSpecifier.
+ *
+ * This function attempts to find and fill the provided ledger pointer based on
+ * the specified LedgerSpecifier. On success, the ledger pointer is filled.
+ *
+ * @tparam T Type of the ledger pointer to be filled.
+ * @param ledger Reference to the ledger pointer to be filled.
+ * @param specifier The LedgerSpecifier describing which ledger to retrieve.
+ * @param context The RPC context containing request parameters and environment.
+ * @return Status indicating success or failure of the operation.
+ */
 template <class T>
 Status
-ledgerFromSpecifier(
-    T& ledger,
-    org::xrpl::rpc::v1::LedgerSpecifier const& specifier,
-    Context& context);
+ledgerFromSpecifier(T& ledger, org::xrpl::rpc::v1::LedgerSpecifier const& specifier, Context const& context);
 
-/** Return a ledger based on ledger_hash or ledger_index,
-    or an RPC error */
-std::variant<std::shared_ptr<Ledger const>, Json::Value>
-getLedgerByContext(RPC::JsonContext& context);
+/**
+ * @brief Retrieves or acquires a ledger based on the parameters provided in the
+ * given JsonContext.
+ *
+ * This function differs from the other ledger getter functions in this file in
+ * that it attempts to either retrieve an existing ledger or acquire it if it is
+ * not already available, based on the context of the RPC request. It returns an
+ * Expected containing either a shared pointer to the requested immutable Ledger
+ * object or a Json::Value describing an error. Unlike the other getLedger or
+ * lookupLedger functions, which typically fill a provided ledger pointer or
+ * result object and return a Status, this function encapsulates both the result
+ * and error in a single return value, making it easier to handle success and
+ * failure cases in a unified way.
+ *
+ * @param context The RPC JsonContext containing request parameters and
+ * environment.
+ * @return Expected<std::shared_ptr<Ledger const>, Json::Value>
+ *         On success, contains a shared pointer to the requested Ledger.
+ *         On failure, contains a Json::Value describing the error.
+ */
+Expected<std::shared_ptr<Ledger const>, Json::Value>
+getOrAcquireLedger(RPC::JsonContext const& context);
 
 }  // namespace RPC
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

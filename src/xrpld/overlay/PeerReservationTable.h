@@ -12,7 +12,7 @@
 #include <unordered_set>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 class DatabaseCon;
 
@@ -56,8 +56,7 @@ struct KeyEqual final
 class PeerReservationTable final
 {
 public:
-    explicit PeerReservationTable(
-        beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
+    explicit PeerReservationTable(beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
         : journal_(journal)
     {
     }
@@ -97,6 +96,6 @@ private:
     std::unordered_set<PeerReservation, beast::uhash<>, KeyEqual> table_;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

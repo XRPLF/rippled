@@ -18,7 +18,7 @@
 #include <optional>
 #include <unordered_set>
 
-namespace ripple {
+namespace xrpl {
 
 //------------------------------------------------------------------------------
 
@@ -31,8 +31,7 @@ namespace ripple {
 class ReadView
 {
 public:
-    using tx_type =
-        std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>;
+    using tx_type = std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>;
 
     using key_type = uint256;
 
@@ -80,8 +79,8 @@ public:
     }
 
     /** Returns information about the ledger. */
-    virtual LedgerInfo const&
-    info() const = 0;
+    virtual LedgerHeader const&
+    header() const = 0;
 
     /** Returns true if this reflects an open ledger. */
     virtual bool
@@ -91,14 +90,14 @@ public:
     NetClock::time_point
     parentCloseTime() const
     {
-        return info().parentCloseTime;
+        return header().parentCloseTime;
     }
 
     /** Returns the sequence number of the base ledger. */
     LedgerIndex
     seq() const
     {
-        return info().seq;
+        return header().seq;
     }
 
     /** Returns the fees for the base ledger. */
@@ -130,9 +129,7 @@ public:
         interval (key, last).
     */
     virtual std::optional<key_type>
-    succ(
-        key_type const& key,
-        std::optional<key_type> const& last = std::nullopt) const = 0;
+    succ(key_type const& key, std::optional<key_type> const& last = std::nullopt) const = 0;
 
     /** Return the state item associated with a key.
 
@@ -156,10 +153,7 @@ public:
     // balances so newly acquired assets are not counted toward the balance.
     // This is required to support PaymentSandbox.
     virtual STAmount
-    balanceHook(
-        AccountID const& account,
-        AccountID const& issuer,
-        STAmount const& amount) const
+    balanceHook(AccountID const& account, AccountID const& issuer, STAmount const& amount) const
     {
         return amount;
     }
@@ -254,11 +248,9 @@ Rules
 makeRulesGivenLedger(DigestAwareReadView const& ledger, Rules const& current);
 
 Rules
-makeRulesGivenLedger(
-    DigestAwareReadView const& ledger,
-    std::unordered_set<uint256, beast::uhash<>> const& presets);
+makeRulesGivenLedger(DigestAwareReadView const& ledger, std::unordered_set<uint256, beast::uhash<>> const& presets);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #include <xrpl/ledger/detail/ReadViewFwdRange.ipp>
 

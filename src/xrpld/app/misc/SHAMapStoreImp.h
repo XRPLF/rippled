@@ -13,7 +13,7 @@
 #include <chrono>
 #include <thread>
 
-namespace ripple {
+namespace xrpl {
 
 class NetworkOPs;
 
@@ -54,7 +54,7 @@ private:
     // name of state database
     std::string const dbName_ = "state";
     // prefix of on-disk nodestore backend instances
-    std::string const dbPrefix_ = "rippledb";
+    std::string const dbPrefix_ = "rippledb";  // cspell: disable-line
     // check health/stop status as records are copied
     std::uint64_t const checkHealthInterval_ = 1000;
     // minimum # of ledgers to maintain for health of network
@@ -87,7 +87,7 @@ private:
     /// If  the node is out of sync during an online_delete healthWait()
     /// call, sleep the thread for this time, and continue checking until
     /// recovery.
-    /// See also: "recovery_wait_seconds" in rippled-example.cfg
+    /// See also: "recovery_wait_seconds" in xrpld-example.cfg
     std::chrono::seconds recoveryWaitTime_{5};
 
     // these do not exist upon SHAMapStore creation, but do exist
@@ -100,16 +100,12 @@ private:
     static constexpr auto nodeStoreName_ = "NodeStore";
 
 public:
-    SHAMapStoreImp(
-        Application& app,
-        NodeStore::Scheduler& scheduler,
-        beast::Journal journal);
+    SHAMapStoreImp(Application& app, NodeStore::Scheduler& scheduler, beast::Journal journal);
 
     std::uint32_t
     clampFetchDepth(std::uint32_t fetch_depth) const override
     {
-        return deleteInterval_ ? std::min(fetch_depth, deleteInterval_)
-                               : fetch_depth;
+        return deleteInterval_ ? std::min(fetch_depth, deleteInterval_) : fetch_depth;
     }
 
     std::unique_ptr<NodeStore::Database>
@@ -176,8 +172,7 @@ private:
 
         for (auto const& key : cache.getKeys())
         {
-            dbRotating_->fetchNodeObject(
-                key, 0, NodeStore::FetchType::synchronous, true);
+            dbRotating_->fetchNodeObject(key, 0, NodeStore::FetchType::synchronous, true);
             if (!(++check % checkHealthInterval_) && healthWait() == stopping)
                 return true;
         }
@@ -225,6 +220,6 @@ public:
     stop() override;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

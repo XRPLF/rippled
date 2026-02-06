@@ -4,7 +4,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/UintTypes.h>
 
-namespace ripple {
+namespace xrpl {
 
 /* Adapt MPTID to provide the same interface as Issue. Enables using static
  * polymorphism by Asset and other classes. MPTID is a 192-bit concatenation
@@ -46,6 +46,12 @@ public:
     {
         return false;
     }
+
+    bool
+    integral() const
+    {
+        return true;
+    }
 };
 
 constexpr bool
@@ -77,6 +83,6 @@ to_string(MPTIssue const& mptIssue);
 MPTIssue
 mptIssueFromJson(Json::Value const& jv);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_PROTOCOL_MPTISSUE_H_INCLUDED

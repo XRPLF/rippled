@@ -3,7 +3,7 @@
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** AMMVote implements AMM vote Transactor.
  * This transactor allows for the TradingFee of the AMM instance be a votable
@@ -50,6 +50,6 @@ public:
     doApply() override;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_TX_AMMVOTE_H_INCLUDED

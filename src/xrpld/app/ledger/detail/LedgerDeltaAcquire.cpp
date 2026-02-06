@@ -4,10 +4,11 @@
 #include <xrpld/app/ledger/LedgerReplayer.h>
 #include <xrpld/app/ledger/detail/LedgerDeltaAcquire.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/core/JobQueue.h>
 #include <xrpld/overlay/PeerSet.h>
 
-namespace ripple {
+#include <xrpl/core/JobQueue.h>
+
+namespace xrpl {
 
 LedgerDeltaAcquire::LedgerDeltaAcquire(
     Application& app,
@@ -19,9 +20,7 @@ LedgerDeltaAcquire::LedgerDeltaAcquire(
           app,
           ledgerHash,
           LedgerReplayParameters::SUB_TASK_TIMEOUT,
-          {jtREPLAY_TASK,
-           "LedgerReplayDelta",
-           LedgerReplayParameters::MAX_QUEUED_TASKS},
+          {jtREPLAY_TASK, "LedReplDelta", LedgerReplayParameters::MAX_QUEUED_TASKS},
           app.journal("LedgerReplayDelta"))
     , inboundLedgers_(inboundLedgers)
     , ledgerSeq_(ledgerSeq)
@@ -63,26 +62,22 @@ LedgerDeltaAcquire::trigger(std::size_t limit, ScopedLockType& sl)
         peerSet_->addPeers(
             limit,
             [this](auto peer) {
-                return peer->supportsFeature(ProtocolFeature::LedgerReplay) &&
-                    peer->hasLedger(hash_, ledgerSeq_);
+                return peer->supportsFeature(ProtocolFeature::LedgerReplay) && peer->hasLedger(hash_, ledgerSeq_);
             },
             [this](auto peer) {
                 if (peer->supportsFeature(ProtocolFeature::LedgerReplay))
                 {
-                    JLOG(journal_.trace())
-                        << "Add a peer " << peer->id() << " for " << hash_;
+                    JLOG(journal_.trace()) << "Add a peer " << peer->id() << " for " << hash_;
                     protocol::TMReplayDeltaRequest request;
                     request.set_ledgerhash(hash_.data(), hash_.size());
                     peerSet_->sendRequest(request, peer);
                 }
                 else
                 {
-                    if (++noFeaturePeerCount >=
-                        LedgerReplayParameters::MAX_NO_FEATURE_PEER_COUNT)
+                    if (++noFeaturePeerCount >= LedgerReplayParameters::MAX_NO_FEATURE_PEER_COUNT)
                     {
                         JLOG(journal_.debug()) << "Fall back for " << hash_;
-                        timerInterval_ =
-                            LedgerReplayParameters::SUB_TASK_FALLBACK_TIMEOUT;
+                        timerInterval_ = LedgerReplayParameters::SUB_TASK_FALLBACK_TIMEOUT;
                         fallBack_ = true;
                     }
                 }
@@ -90,8 +85,7 @@ LedgerDeltaAcquire::trigger(std::size_t limit, ScopedLockType& sl)
     }
 
     if (fallBack_)
-        inboundLedgers_.acquire(
-            hash_, ledgerSeq_, InboundLedger::Reason::GENERIC);
+        inboundLedgers_.acquire(hash_, ledgerSeq_, InboundLedger::Reason::GENERIC);
 }
 
 void
@@ -118,7 +112,7 @@ LedgerDeltaAcquire::pmDowncast()
 
 void
 LedgerDeltaAcquire::processData(
-    LedgerInfo const& info,
+    LedgerHeader const& info,
     std::map<std::uint32_t, std::shared_ptr<STTx const>>&& orderedTxns)
 {
     ScopedLockType sl(mtx_);
@@ -129,8 +123,7 @@ LedgerDeltaAcquire::processData(
     if (info.seq == ledgerSeq_)
     {
         // create a temporary ledger for building a LedgerReplay object later
-        replayTemp_ =
-            std::make_shared<Ledger>(info, app_.config(), app_.getNodeFamily());
+        replayTemp_ = std::make_shared<Ledger>(info, app_.config(), app_.getNodeFamily());
         if (replayTemp_)
         {
             complete_ = true;
@@ -142,15 +135,12 @@ LedgerDeltaAcquire::processData(
     }
 
     failed_ = true;
-    JLOG(journal_.error())
-        << "failed to create a (info only) ledger from verified data " << hash_;
+    JLOG(journal_.error()) << "failed to create a (info only) ledger from verified data " << hash_;
     notify(sl);
 }
 
 void
-LedgerDeltaAcquire::addDataCallback(
-    InboundLedger::Reason reason,
-    OnDeltaDataCB&& cb)
+LedgerDeltaAcquire::addDataCallback(InboundLedger::Reason reason, OnDeltaDataCB&& cb)
 {
     ScopedLockType sl(mtx_);
     dataReadyCallbacks_.emplace_back(std::move(cb));
@@ -163,8 +153,7 @@ LedgerDeltaAcquire::addDataCallback(
 
     if (isDone())
     {
-        JLOG(journal_.debug())
-            << "task added to a finished LedgerDeltaAcquire " << hash_;
+        JLOG(journal_.debug()) << "task added to a finished LedgerDeltaAcquire " << hash_;
         notify(sl);
     }
 }
@@ -180,16 +169,14 @@ LedgerDeltaAcquire::tryBuild(std::shared_ptr<Ledger const> const& parent)
     if (failed_ || !complete_ || !replayTemp_)
         return {};
 
+    XRPL_ASSERT(parent->seq() + 1 == replayTemp_->seq(), "xrpl::LedgerDeltaAcquire::tryBuild : parent sequence match");
     XRPL_ASSERT(
-        parent->seq() + 1 == replayTemp_->seq(),
-        "ripple::LedgerDeltaAcquire::tryBuild : parent sequence match");
-    XRPL_ASSERT(
-        parent->info().hash == replayTemp_->info().parentHash,
-        "ripple::LedgerDeltaAcquire::tryBuild : parent hash match");
+        parent->header().hash == replayTemp_->header().parentHash,
+        "xrpl::LedgerDeltaAcquire::tryBuild : parent hash match");
     // build ledger
     LedgerReplay replayData(parent, replayTemp_, std::move(orderedTxns_));
     fullLedger_ = buildLedger(replayData, tapNONE, app_, journal_);
-    if (fullLedger_ && fullLedger_->info().hash == hash_)
+    if (fullLedger_ && fullLedger_->header().hash == hash_)
     {
         JLOG(journal_.info()) << "Built " << hash_;
         onLedgerBuilt(sl);
@@ -199,22 +186,17 @@ LedgerDeltaAcquire::tryBuild(std::shared_ptr<Ledger const> const& parent)
     {
         failed_ = true;
         complete_ = false;
-        JLOG(journal_.error()) << "tryBuild failed " << hash_ << " with parent "
-                               << parent->info().hash;
+        JLOG(journal_.error()) << "tryBuild failed " << hash_ << " with parent " << parent->header().hash;
         Throw<std::runtime_error>("Cannot replay ledger");
     }
 }
 
 void
-LedgerDeltaAcquire::onLedgerBuilt(
-    ScopedLockType& sl,
-    std::optional<InboundLedger::Reason> reason)
+LedgerDeltaAcquire::onLedgerBuilt(ScopedLockType& sl, std::optional<InboundLedger::Reason> reason)
 {
-    JLOG(journal_.debug()) << "onLedgerBuilt " << hash_
-                           << (reason ? " for a new reason" : "");
+    JLOG(journal_.debug()) << "onLedgerBuilt " << hash_ << (reason ? " for a new reason" : "");
 
-    std::vector<InboundLedger::Reason> reasons(
-        reasons_.begin(), reasons_.end());
+    std::vector<InboundLedger::Reason> reasons(reasons_.begin(), reasons_.end());
     bool firstTime = true;
     if (reason)  // small chance
     {
@@ -222,32 +204,29 @@ LedgerDeltaAcquire::onLedgerBuilt(
         reasons.push_back(*reason);
         firstTime = false;
     }
-    app_.getJobQueue().addJob(
-        jtREPLAY_TASK,
-        "onLedgerBuilt",
-        [=, ledger = this->fullLedger_, &app = this->app_]() {
-            for (auto reason : reasons)
+    app_.getJobQueue().addJob(jtREPLAY_TASK, "OnLedBuilt", [=, ledger = this->fullLedger_, &app = this->app_]() {
+        for (auto reason : reasons)
+        {
+            switch (reason)
             {
-                switch (reason)
-                {
-                    case InboundLedger::Reason::GENERIC:
-                        app.getLedgerMaster().storeLedger(ledger);
-                        break;
-                    default:
-                        // TODO for other use cases
-                        break;
-                }
+                case InboundLedger::Reason::GENERIC:
+                    app.getLedgerMaster().storeLedger(ledger);
+                    break;
+                default:
+                    // TODO for other use cases
+                    break;
             }
+        }
 
-            if (firstTime)
-                app.getLedgerMaster().tryAdvance();
-        });
+        if (firstTime)
+            app.getLedgerMaster().tryAdvance();
+    });
 }
 
 void
 LedgerDeltaAcquire::notify(ScopedLockType& sl)
 {
-    XRPL_ASSERT(isDone(), "ripple::LedgerDeltaAcquire::notify : is done");
+    XRPL_ASSERT(isDone(), "xrpl::LedgerDeltaAcquire::notify : is done");
     std::vector<OnDeltaDataCB> toCall;
     std::swap(toCall, dataReadyCallbacks_);
     auto const good = !failed_;
@@ -261,4 +240,4 @@ LedgerDeltaAcquire::notify(ScopedLockType& sl)
     sl.lock();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

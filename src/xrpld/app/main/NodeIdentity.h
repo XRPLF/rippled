@@ -8,7 +8,7 @@
 
 #include <boost/program_options.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 /** The cryptographic credentials identifying this server instance.
 
@@ -16,10 +16,8 @@ namespace ripple {
     @param cmdline The command line parameters passed into the application.
  */
 std::pair<PublicKey, SecretKey>
-getNodeIdentity(
-    Application& app,
-    boost::program_options::variables_map const& cmdline);
+getNodeIdentity(Application& app, boost::program_options::variables_map const& cmdline);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

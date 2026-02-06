@@ -16,7 +16,7 @@
 #include <cstring>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 
 class Serializer
 {
@@ -36,9 +36,7 @@ public:
 
         if (size)
         {
-            XRPL_ASSERT(
-                data,
-                "ripple::Serializer::Serializer(void const*) : non-null input");
+            XRPL_ASSERT(data, "xrpl::Serializer::Serializer(void const*) : non-null input");
             std::memcpy(mData.data(), data, size);
         }
     }
@@ -68,9 +66,7 @@ public:
     add16(std::uint16_t i);
 
     template <typename T>
-        requires(std::is_same_v<
-                 std::make_unsigned_t<std::remove_cv_t<T>>,
-                 std::uint32_t>)
+        requires(std::is_same_v<std::make_unsigned_t<std::remove_cv_t<T>>, std::uint32_t>)
     int
     add32(T i)
     {
@@ -86,9 +82,7 @@ public:
     add32(HashPrefix p);
 
     template <typename T>
-        requires(std::is_same_v<
-                 std::make_unsigned_t<std::remove_cv_t<T>>,
-                 std::uint64_t>)
+        requires(std::is_same_v<std::make_unsigned_t<std::remove_cv_t<T>>, std::uint64_t>)
     int
     add64(T i)
     {
@@ -314,8 +308,7 @@ Serializer::addVL(Iter begin, Iter end, int len)
         len -= begin->size();
 #endif
     }
-    XRPL_ASSERT(
-        len == 0, "ripple::Serializer::addVL : length matches distance");
+    XRPL_ASSERT(len == 0, "xrpl::Serializer::addVL : length matches distance");
     return ret;
 }
 
@@ -453,6 +446,6 @@ SerialIter::getBitString()
     return base_uint<Bits, Tag>::fromVoid(x);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

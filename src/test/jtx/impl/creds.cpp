@@ -3,17 +3,14 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
 namespace credentials {
 
 Json::Value
-create(
-    jtx::Account const& subject,
-    jtx::Account const& issuer,
-    std::string_view credType)
+create(jtx::Account const& subject, jtx::Account const& issuer, std::string_view credType)
 {
     Json::Value jv;
     jv[jss::TransactionType] = jss::CredentialCreate;
@@ -26,10 +23,7 @@ create(
 }
 
 Json::Value
-accept(
-    jtx::Account const& subject,
-    jtx::Account const& issuer,
-    std::string_view credType)
+accept(jtx::Account const& subject, jtx::Account const& issuer, std::string_view credType)
 {
     Json::Value jv;
     jv[jss::TransactionType] = jss::CredentialAccept;
@@ -40,11 +34,7 @@ accept(
 }
 
 Json::Value
-deleteCred(
-    jtx::Account const& acc,
-    jtx::Account const& subject,
-    jtx::Account const& issuer,
-    std::string_view credType)
+deleteCred(jtx::Account const& acc, jtx::Account const& subject, jtx::Account const& issuer, std::string_view credType)
 {
     Json::Value jv;
     jv[jss::TransactionType] = jss::CredentialDelete;
@@ -56,11 +46,7 @@ deleteCred(
 }
 
 Json::Value
-ledgerEntry(
-    jtx::Env& env,
-    jtx::Account const& subject,
-    jtx::Account const& issuer,
-    std::string_view credType)
+ledgerEntry(jtx::Env& env, jtx::Account const& subject, jtx::Account const& issuer, std::string_view credType)
 {
     Json::Value jvParams;
     jvParams[jss::ledger_index] = jss::validated;
@@ -84,4 +70,4 @@ ledgerEntry(jtx::Env& env, std::string const& credIdx)
 }  // namespace jtx
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

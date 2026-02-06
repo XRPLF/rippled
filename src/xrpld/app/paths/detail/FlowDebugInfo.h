@@ -13,7 +13,7 @@
 #include <optional>
 #include <sstream>
 
-namespace ripple {
+namespace xrpl {
 namespace path {
 namespace detail {
 // Track performance information of a single payment
@@ -21,15 +21,13 @@ struct FlowDebugInfo
 {
     using clock = std::chrono::high_resolution_clock;
     using time_point = clock::time_point;
-    boost::container::flat_map<std::string, std::pair<time_point, time_point>>
-        timePoints;
+    boost::container::flat_map<std::string, std::pair<time_point, time_point>> timePoints;
     boost::container::flat_map<std::string, std::size_t> counts;
 
     struct PassInfo
     {
         PassInfo() = delete;
-        PassInfo(bool nativeIn_, bool nativeOut_)
-            : nativeIn(nativeIn_), nativeOut(nativeOut_)
+        PassInfo(bool nativeIn_, bool nativeOut_) : nativeIn(nativeIn_), nativeOut(nativeOut_)
         {
         }
         bool const nativeIn;
@@ -58,10 +56,7 @@ struct FlowDebugInfo
         }
 
         void
-        push_back(
-            EitherAmount const& in_amt,
-            EitherAmount const& out_amt,
-            std::size_t active)
+        push_back(EitherAmount const& in_amt, EitherAmount const& out_amt, std::size_t active)
         {
             in.push_back(in_amt);
             out.push_back(out_amt);
@@ -73,7 +68,7 @@ struct FlowDebugInfo
         {
             XRPL_ASSERT(
                 !liquiditySrcIn.empty(),
-                "ripple::path::detail::FlowDebugInfo::pushLiquiditySrc : "
+                "xrpl::path::detail::FlowDebugInfo::pushLiquiditySrc : "
                 "non-empty liquidity source");
             liquiditySrcIn.back().push_back(eIn);
             liquiditySrcOut.back().push_back(eOut);
@@ -109,14 +104,13 @@ struct FlowDebugInfo
         {
             // LCOV_EXCL_START
             UNREACHABLE(
-                "ripple::path::detail::FlowDebugInfo::duration : timepoint not "
+                "xrpl::path::detail::FlowDebugInfo::duration : timepoint not "
                 "found");
             return std::chrono::duration<double>(0);
             // LCOV_EXCL_STOP
         }
         auto const& t = i->second;
-        return std::chrono::duration_cast<std::chrono::duration<double>>(
-            t.second - t.first);
+        return std::chrono::duration_cast<std::chrono::duration<double>>(t.second - t.first);
     }
 
     std::size_t
@@ -136,8 +130,7 @@ struct FlowDebugInfo
         {
             std::string tag;
             FlowDebugInfo* info;
-            Stopper(std::string name, FlowDebugInfo& pi)
-                : tag(std::move(name)), info(&pi)
+            Stopper(std::string name, FlowDebugInfo& pi) : tag(std::move(name)), info(&pi)
             {
                 auto const start = FlowDebugInfo::clock::now();
                 info->timePoints.emplace(tag, std::make_pair(start, start));
@@ -176,10 +169,7 @@ struct FlowDebugInfo
     }
 
     void
-    pushPass(
-        EitherAmount const& in,
-        EitherAmount const& out,
-        std::size_t activeStrands)
+    pushPass(EitherAmount const& in, EitherAmount const& out, std::size_t activeStrands)
     {
         passInfo.push_back(in, out, activeStrands);
     }
@@ -207,71 +197,54 @@ struct FlowDebugInfo
 
         if (writePassInfo)
         {
-            auto write_list =
-                [&ostr](auto const& vals, auto&& fun, char delim = ';') {
-                    ostr << '[';
-                    if (!vals.empty())
-                    {
-                        ostr << fun(vals[0]);
-                        for (size_t i = 1, e = vals.size(); i < e; ++i)
-                            ostr << delim << fun(vals[i]);
-                    }
-                    ostr << ']';
-                };
-            auto writeXrpAmtList = [&write_list](
-                                       std::vector<EitherAmount> const& amts,
-                                       char delim = ';') {
-                auto get_val = [](EitherAmount const& a) -> std::string {
-                    return ripple::to_string(a.xrp);
-                };
+            auto write_list = [&ostr](auto const& vals, auto&& fun, char delim = ';') {
+                ostr << '[';
+                if (!vals.empty())
+                {
+                    ostr << fun(vals[0]);
+                    for (size_t i = 1, e = vals.size(); i < e; ++i)
+                        ostr << delim << fun(vals[i]);
+                }
+                ostr << ']';
+            };
+            auto writeXrpAmtList = [&write_list](std::vector<EitherAmount> const& amts, char delim = ';') {
+                auto get_val = [](EitherAmount const& a) -> std::string { return xrpl::to_string(a.xrp); };
                 write_list(amts, get_val, delim);
             };
-            auto writeIouAmtList = [&write_list](
-                                       std::vector<EitherAmount> const& amts,
-                                       char delim = ';') {
-                auto get_val = [](EitherAmount const& a) -> std::string {
-                    return ripple::to_string(a.iou);
-                };
+            auto writeIouAmtList = [&write_list](std::vector<EitherAmount> const& amts, char delim = ';') {
+                auto get_val = [](EitherAmount const& a) -> std::string { return xrpl::to_string(a.iou); };
                 write_list(amts, get_val, delim);
             };
-            auto writeIntList = [&write_list](
-                                    std::vector<size_t> const& vals,
-                                    char delim = ';') {
-                auto get_val = [](size_t const& v) -> size_t const& {
-                    return v;
-                };
+            auto writeIntList = [&write_list](std::vector<size_t> const& vals, char delim = ';') {
+                auto get_val = [](size_t const& v) -> size_t const& { return v; };
                 write_list(vals, get_val);
             };
-            auto writeNestedIouAmtList =
-                [&ostr, &writeIouAmtList](
-                    std::vector<std::vector<EitherAmount>> const& amts) {
-                    ostr << '[';
-                    if (!amts.empty())
+            auto writeNestedIouAmtList = [&ostr, &writeIouAmtList](std::vector<std::vector<EitherAmount>> const& amts) {
+                ostr << '[';
+                if (!amts.empty())
+                {
+                    writeIouAmtList(amts[0], '|');
+                    for (size_t i = 1, e = amts.size(); i < e; ++i)
                     {
-                        writeIouAmtList(amts[0], '|');
-                        for (size_t i = 1, e = amts.size(); i < e; ++i)
-                        {
-                            ostr << ';';
-                            writeIouAmtList(amts[i], '|');
-                        }
+                        ostr << ';';
+                        writeIouAmtList(amts[i], '|');
                     }
-                    ostr << ']';
-                };
-            auto writeNestedXrpAmtList =
-                [&ostr, &writeXrpAmtList](
-                    std::vector<std::vector<EitherAmount>> const& amts) {
-                    ostr << '[';
-                    if (!amts.empty())
+                }
+                ostr << ']';
+            };
+            auto writeNestedXrpAmtList = [&ostr, &writeXrpAmtList](std::vector<std::vector<EitherAmount>> const& amts) {
+                ostr << '[';
+                if (!amts.empty())
+                {
+                    writeXrpAmtList(amts[0], '|');
+                    for (size_t i = 1, e = amts.size(); i < e; ++i)
                     {
-                        writeXrpAmtList(amts[0], '|');
-                        for (size_t i = 1, e = amts.size(); i < e; ++i)
-                        {
-                            ostr << ';';
-                            writeXrpAmtList(amts[i], '|');
-                        }
+                        ostr << ';';
+                        writeXrpAmtList(amts[i], '|');
                     }
-                    ostr << ']';
-                };
+                }
+                ostr << ']';
+            };
 
             ostr << ", in_pass: ";
             if (passInfo.nativeIn)
@@ -285,8 +258,7 @@ struct FlowDebugInfo
                 writeIouAmtList(passInfo.out);
             ostr << ", num_active: ";
             writeIntList(passInfo.numActive);
-            if (!passInfo.liquiditySrcIn.empty() &&
-                !passInfo.liquiditySrcIn.back().empty())
+            if (!passInfo.liquiditySrcIn.empty() && !passInfo.liquiditySrcIn.back().empty())
             {
                 ostr << ", l_src_in: ";
                 if (passInfo.nativeIn)
@@ -306,15 +278,12 @@ struct FlowDebugInfo
 };
 
 inline void
-writeDiffElement(
-    std::ostringstream& ostr,
-    std::pair<std::tuple<AccountID, AccountID, Currency>, STAmount> const& elem)
+writeDiffElement(std::ostringstream& ostr, std::pair<std::tuple<AccountID, AccountID, Currency>, STAmount> const& elem)
 {
     using namespace std;
     auto const k = elem.first;
     auto const v = elem.second;
-    ostr << '[' << get<0>(k) << '|' << get<1>(k) << '|' << get<2>(k) << '|' << v
-         << ']';
+    ostr << '[' << get<0>(k) << '|' << get<1>(k) << '|' << get<2>(k) << '|' << v << ']';
 };
 
 template <class Iter>
@@ -335,9 +304,7 @@ writeDiffs(std::ostringstream& ostr, Iter begin, Iter end)
     ostr << ']';
 };
 
-using BalanceDiffs = std::pair<
-    std::map<std::tuple<AccountID, AccountID, Currency>, STAmount>,
-    XRPAmount>;
+using BalanceDiffs = std::pair<std::map<std::tuple<AccountID, AccountID, Currency>, STAmount>, XRPAmount>;
 
 inline BalanceDiffs
 balanceDiffs(PaymentSandbox const& sb, ReadView const& rv)
@@ -361,5 +328,5 @@ balanceDiffsToString(std::optional<BalanceDiffs> const& bd)
 
 }  // namespace detail
 }  // namespace path
-}  // namespace ripple
+}  // namespace xrpl
 #endif

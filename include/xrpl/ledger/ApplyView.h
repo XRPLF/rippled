@@ -6,7 +6,7 @@
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/ReadView.h>
 
-namespace ripple {
+namespace xrpl {
 
 enum ApplyFlags : std::uint32_t {
     tapNONE = 0x00,
@@ -34,23 +34,17 @@ constexpr ApplyFlags
 operator|(ApplyFlags const& lhs, ApplyFlags const& rhs)
 {
     return safe_cast<ApplyFlags>(
-        safe_cast<std::underlying_type_t<ApplyFlags>>(lhs) |
-        safe_cast<std::underlying_type_t<ApplyFlags>>(rhs));
+        safe_cast<std::underlying_type_t<ApplyFlags>>(lhs) | safe_cast<std::underlying_type_t<ApplyFlags>>(rhs));
 }
 
-static_assert(
-    (tapFAIL_HARD | tapRETRY) == safe_cast<ApplyFlags>(0x30u),
-    "ApplyFlags operator |");
-static_assert(
-    (tapRETRY | tapFAIL_HARD) == safe_cast<ApplyFlags>(0x30u),
-    "ApplyFlags operator |");
+static_assert((tapFAIL_HARD | tapRETRY) == safe_cast<ApplyFlags>(0x30u), "ApplyFlags operator |");
+static_assert((tapRETRY | tapFAIL_HARD) == safe_cast<ApplyFlags>(0x30u), "ApplyFlags operator |");
 
 constexpr ApplyFlags
 operator&(ApplyFlags const& lhs, ApplyFlags const& rhs)
 {
     return safe_cast<ApplyFlags>(
-        safe_cast<std::underlying_type_t<ApplyFlags>>(lhs) &
-        safe_cast<std::underlying_type_t<ApplyFlags>>(rhs));
+        safe_cast<std::underlying_type_t<ApplyFlags>>(lhs) & safe_cast<std::underlying_type_t<ApplyFlags>>(rhs));
 }
 
 static_assert((tapFAIL_HARD & tapRETRY) == tapNONE, "ApplyFlags operator &");
@@ -59,13 +53,10 @@ static_assert((tapRETRY & tapFAIL_HARD) == tapNONE, "ApplyFlags operator &");
 constexpr ApplyFlags
 operator~(ApplyFlags const& flags)
 {
-    return safe_cast<ApplyFlags>(
-        ~safe_cast<std::underlying_type_t<ApplyFlags>>(flags));
+    return safe_cast<ApplyFlags>(~safe_cast<std::underlying_type_t<ApplyFlags>>(flags));
 }
 
-static_assert(
-    ~tapRETRY == safe_cast<ApplyFlags>(0xFFFFFFDFu),
-    "ApplyFlags operator ~");
+static_assert(~tapRETRY == safe_cast<ApplyFlags>(0xFFFFFFDFu), "ApplyFlags operator ~");
 
 inline ApplyFlags
 operator|=(ApplyFlags& lhs, ApplyFlags const& rhs)
@@ -221,21 +212,14 @@ public:
     // Called when a credit is made to an account
     // This is required to support PaymentSandbox
     virtual void
-    creditHook(
-        AccountID const& from,
-        AccountID const& to,
-        STAmount const& amount,
-        STAmount const& preCreditBalance)
+    creditHook(AccountID const& from, AccountID const& to, STAmount const& amount, STAmount const& preCreditBalance)
     {
     }
 
     // Called when the owner count changes
     // This is required to support PaymentSandbox
     virtual void
-    adjustOwnerCountHook(
-        AccountID const& account,
-        std::uint32_t cur,
-        std::uint32_t next)
+    adjustOwnerCountHook(AccountID const& account, std::uint32_t cur, std::uint32_t next)
     {
     }
 
@@ -267,7 +251,7 @@ public:
         {
             // LCOV_EXCL_START
             UNREACHABLE(
-                "ripple::ApplyView::dirAppend : only Offers are appended to "
+                "xrpl::ApplyView::dirAppend : only Offers are appended to "
                 "book directories");
             // Only Offers are appended to book directories. Call dirInsert()
             // instead
@@ -332,18 +316,10 @@ public:
     */
     /** @{ */
     bool
-    dirRemove(
-        Keylet const& directory,
-        std::uint64_t page,
-        uint256 const& key,
-        bool keepRoot);
+    dirRemove(Keylet const& directory, std::uint64_t page, uint256 const& key, bool keepRoot);
 
     bool
-    dirRemove(
-        Keylet const& directory,
-        std::uint64_t page,
-        Keylet const& key,
-        bool keepRoot)
+    dirRemove(Keylet const& directory, std::uint64_t page, Keylet const& key, bool keepRoot)
     {
         return dirRemove(directory, page, key.key, keepRoot);
     }
@@ -351,9 +327,7 @@ public:
 
     /** Remove the specified directory, invoking the callback for every node. */
     bool
-    dirDelete(
-        Keylet const& directory,
-        std::function<void(uint256 const&)> const&);
+    dirDelete(Keylet const& directory, std::function<void(uint256 const&)> const&);
 
     /** Remove the specified directory, if it is empty.
 
@@ -368,6 +342,45 @@ public:
     emptyDirDelete(Keylet const& directory);
 };
 
-}  // namespace ripple
+namespace directory {
+/** Helper functions for managing low-level directory operations.
+    These are not part of the ApplyView interface.
+
+    Don't use them unless you really, really know what you're doing.
+    Instead use dirAdd, dirInsert, etc.
+ */
+
+std::uint64_t
+createRoot(
+    ApplyView& view,
+    Keylet const& directory,
+    uint256 const& key,
+    std::function<void(std::shared_ptr<SLE> const&)> const& describe);
+
+auto
+findPreviousPage(ApplyView& view, Keylet const& directory, SLE::ref start);
+
+std::uint64_t
+insertKey(
+    ApplyView& view,
+    SLE::ref node,
+    std::uint64_t page,
+    bool preserveOrder,
+    STVector256& indexes,
+    uint256 const& key);
+
+std::optional<std::uint64_t>
+insertPage(
+    ApplyView& view,
+    std::uint64_t page,
+    SLE::pointer node,
+    std::uint64_t nextPage,
+    SLE::ref next,
+    uint256 const& key,
+    Keylet const& directory,
+    std::function<void(std::shared_ptr<SLE> const&)> const& describe);
+
+}  // namespace directory
+}  // namespace xrpl
 
 #endif

@@ -1,12 +1,10 @@
-// Copyright (c) 2020 Dev Null Productions
-
 #include <test/jtx.h>
 #include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
 
 #include <xrpld/app/misc/HashRouter.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class NetworkOPs_test : public beast::unit_test::suite
@@ -30,34 +28,27 @@ public:
         {
             using namespace jtx;
             auto const alice = Account{"alice"};
-            Env env{
-                *this,
-                envconfig(),
-                std::make_unique<CaptureLogs>(&logs),
-                beast::severities::kAll};
+            Env env{*this, envconfig(), std::make_unique<CaptureLogs>(&logs), beast::severities::kAll};
             env.memoize(env.master);
             env.memoize(alice);
 
             auto const jtx = env.jt(ticket::create(alice, 1), seq(1), fee(10));
 
-            auto transacionId = jtx.stx->getTransactionID();
-            env.app().getHashRouter().setFlags(
-                transacionId, HashRouterFlags::HELD);
+            auto transactionId = jtx.stx->getTransactionID();
+            env.app().getHashRouter().setFlags(transactionId, HashRouterFlags::HELD);
 
             env(jtx, json(jss::Sequence, 1), ter(terNO_ACCOUNT));
 
-            env.app().getHashRouter().setFlags(
-                transacionId, HashRouterFlags::BAD);
+            env.app().getHashRouter().setFlags(transactionId, HashRouterFlags::BAD);
 
             env.close();
         }
 
-        BEAST_EXPECT(
-            logs.find("No transaction to process!") != std::string::npos);
+        BEAST_EXPECT(logs.find("No transaction to process!") != std::string::npos);
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NetworkOPs, app, ripple);
+BEAST_DEFINE_TESTSUITE(NetworkOPs, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

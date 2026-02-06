@@ -134,10 +134,7 @@ public:
         auto t = stack_.top().type;
         if (t != type)
         {
-            check(
-                false,
-                "Not an " +
-                    ((type == array ? "array: " : "object: ") + message));
+            check(false, "Not an " + ((type == array ? "array: " : "object: ") + message));
         }
         if (stack_.top().isFirst)
             stack_.top().isFirst = false;
@@ -193,7 +190,7 @@ public:
     }
 
 private:
-    // JSON collections are either arrrays, or objects.
+    // JSON collections are either arrays, or objects.
     struct Collection
     {
         explicit Collection() = default;
@@ -263,14 +260,14 @@ Writer::output(Json::Value const& value)
 void
 Writer::output(float f)
 {
-    auto s = ripple::to_string(f);
+    auto s = xrpl::to_string(f);
     impl_->output({s.data(), lengthWithoutTrailingZeros(s)});
 }
 
 void
 Writer::output(double f)
 {
-    auto s = ripple::to_string(f);
+    auto s = xrpl::to_string(f);
     impl_->output({s.data(), lengthWithoutTrailingZeros(s)});
 }
 

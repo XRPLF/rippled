@@ -4,7 +4,7 @@
 #include <xrpld/app/main/Tuning.h>
 #include <xrpld/shamap/NodeFamily.h>
 
-namespace ripple {
+namespace xrpl {
 
 NodeFamily::NodeFamily(Application& app, CollectorManager& cm)
     : app_(app)
@@ -20,8 +20,7 @@ NodeFamily::NodeFamily(Application& app, CollectorManager& cm)
     , tnCache_(std::make_shared<TreeNodeCache>(
           "Node family tree node cache",
           app.config().getValueFor(SizedItem::treeCacheSize),
-          std::chrono::seconds(
-              app.config().getValueFor(SizedItem::treeCacheAge)),
+          std::chrono::seconds(app.config().getValueFor(SizedItem::treeCacheAge)),
           stopwatch(),
           j_))
 {
@@ -82,9 +81,8 @@ NodeFamily::acquire(uint256 const& hash, std::uint32_t seq)
     {
         JLOG(j_.error()) << "Missing node in " << to_string(hash);
 
-        app_.getInboundLedgers().acquire(
-            hash, seq, InboundLedger::Reason::GENERIC);
+        app_.getInboundLedgers().acquire(hash, seq, InboundLedger::Reason::GENERIC);
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

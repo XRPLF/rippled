@@ -16,7 +16,7 @@
 #include <cstddef>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 STBase*
 STValidation::copy(std::size_t n, void* buf) const
@@ -100,14 +100,10 @@ STValidation::isValid() const noexcept
     if (!valid_)
     {
         XRPL_ASSERT(
-            publicKeyType(getSignerPublic()) == KeyType::secp256k1,
-            "ripple::STValidation::isValid : valid key type");
+            publicKeyType(getSignerPublic()) == KeyType::secp256k1, "xrpl::STValidation::isValid : valid key type");
 
         valid_ = verifyDigest(
-            getSignerPublic(),
-            getSigningHash(),
-            makeSlice(getFieldVL(sfSignature)),
-            getFlags() & vfFullyCanonicalSig);
+            getSignerPublic(), getSigningHash(), makeSlice(getFieldVL(sfSignature)), getFlags() & vfFullyCanonicalSig);
     }
 
     return valid_.value();
@@ -133,4 +129,4 @@ STValidation::getSerialized() const
     return s.peekData();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

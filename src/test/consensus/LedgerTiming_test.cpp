@@ -2,7 +2,7 @@
 
 #include <xrpl/beast/unit_test.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class LedgerTiming_test : public beast::unit_test::suite
@@ -26,8 +26,7 @@ class LedgerTiming_test : public beast::unit_test::suite
                 std::uint32_t round = 0;
                 do
                 {
-                    nextCloseResolution = getNextLedgerTimeResolution(
-                        closeResolution, previousAgree, ++round);
+                    nextCloseResolution = getNextLedgerTimeResolution(closeResolution, previousAgree, ++round);
                     if (nextCloseResolution < closeResolution)
                         ++res.decrease;
                     else if (nextCloseResolution > closeResolution)
@@ -105,6 +104,6 @@ class LedgerTiming_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerTiming, consensus, ripple);
+BEAST_DEFINE_TESTSUITE(LedgerTiming, consensus, xrpl);
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -13,7 +13,7 @@
 #include <ostream>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 /** Persistent state information for a connection session.
     These values are preserved between calls for efficiency.
@@ -64,9 +64,7 @@ public:
     void
     write(BufferSequence const& buffers)
     {
-        for (typename BufferSequence::const_iterator iter(buffers.begin());
-             iter != buffers.end();
-             ++iter)
+        for (typename BufferSequence::const_iterator iter(buffers.begin()); iter != buffers.end(); ++iter)
         {
             typename BufferSequence::value_type const& buffer(*iter);
             write(buffer.data(), boost::asio::buffer_size(buffer));
@@ -111,6 +109,6 @@ public:
     websocketUpgrade() = 0;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

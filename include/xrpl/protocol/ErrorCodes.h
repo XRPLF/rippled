@@ -4,7 +4,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 // VFALCO NOTE These are outside the RPC namespace
 
@@ -142,8 +142,7 @@ enum error_code_i {
     rpcENTRY_NOT_FOUND = 98,
     rpcUNEXPECTED_LEDGER_TYPE = 99,
 
-    rpcLAST =
-        rpcUNEXPECTED_LEDGER_TYPE  // rpcLAST should always equal the last code.
+    rpcLAST = rpcUNEXPECTED_LEDGER_TYPE  // rpcLAST should always equal the last code.
 };
 
 /** Codes returned in the `warnings` array of certain RPC commands.
@@ -169,31 +168,17 @@ namespace RPC {
 struct ErrorInfo
 {
     // Default ctor needed to produce an empty std::array during constexpr eval.
-    constexpr ErrorInfo()
-        : code(rpcUNKNOWN)
-        , token("unknown")
-        , message("An unknown error code.")
-        , http_status(200)
+    constexpr ErrorInfo() : code(rpcUNKNOWN), token("unknown"), message("An unknown error code."), http_status(200)
     {
     }
 
-    constexpr ErrorInfo(
-        error_code_i code_,
-        char const* token_,
-        char const* message_)
+    constexpr ErrorInfo(error_code_i code_, char const* token_, char const* message_)
         : code(code_), token(token_), message(message_), http_status(200)
     {
     }
 
-    constexpr ErrorInfo(
-        error_code_i code_,
-        char const* token_,
-        char const* message_,
-        int http_status_)
-        : code(code_)
-        , token(token_)
-        , message(message_)
-        , http_status(http_status_)
+    constexpr ErrorInfo(error_code_i code_, char const* token_, char const* message_, int http_status_)
+        : code(code_), token(token_), message(message_), http_status(http_status_)
     {
     }
 
@@ -209,33 +194,11 @@ get_error_info(error_code_i code);
 
 /** Add or update the json update to reflect the error code. */
 /** @{ */
-template <class JsonValue>
 void
-inject_error(error_code_i code, JsonValue& json)
-{
-    ErrorInfo const& info(get_error_info(code));
-    json[jss::error] = info.token;
-    json[jss::error_code] = info.code;
-    json[jss::error_message] = info.message;
-}
+inject_error(error_code_i code, Json::Value& json);
 
-template <class JsonValue>
 void
-inject_error(int code, JsonValue& json)
-{
-    inject_error(error_code_i(code), json);
-}
-
-template <class JsonValue>
-void
-inject_error(error_code_i code, std::string const& message, JsonValue& json)
-{
-    ErrorInfo const& info(get_error_info(code));
-    json[jss::error] = info.token;
-    json[jss::error_code] = info.code;
-    json[jss::error_message] = message;
-}
-
+inject_error(error_code_i code, std::string const& message, Json::Value& json);
 /** @} */
 
 /** Returns a new json object that reflects the error code. */
@@ -360,6 +323,6 @@ error_code_http_status(error_code_i code);
 std::string
 rpcErrorString(Json::Value const& jv);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

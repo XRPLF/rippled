@@ -17,12 +17,9 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
-Logs::Sink::Sink(
-    std::string const& partition,
-    beast::severities::Severity thresh,
-    Logs& logs)
+Logs::Sink::Sink(std::string const& partition, beast::severities::Severity thresh, Logs& logs)
     : beast::Journal::Sink(thresh, false), logs_(logs), partition_(partition)
 {
 }
@@ -37,9 +34,7 @@ Logs::Sink::write(beast::severities::Severity level, std::string const& text)
 }
 
 void
-Logs::Sink::writeAlways(
-    beast::severities::Severity level,
-    std::string const& text)
+Logs::Sink::writeAlways(beast::severities::Severity level, std::string const& text)
 {
     logs_.write(level, partition_, text, console());
 }
@@ -64,8 +59,7 @@ Logs::File::open(boost::filesystem::path const& path)
     bool wasOpened = false;
 
     // VFALCO TODO Make this work with Unicode file paths
-    std::unique_ptr<std::ofstream> stream(
-        new std::ofstream(path.c_str(), std::fstream::app));
+    std::unique_ptr<std::ofstream> stream(new std::ofstream(path.c_str(), std::fstream::app));
 
     if (stream->good())
     {
@@ -112,8 +106,7 @@ Logs::File::writeln(char const* text)
 
 //------------------------------------------------------------------------------
 
-Logs::Logs(beast::severities::Severity thresh)
-    : thresh_(thresh)  // default severity
+Logs::Logs(beast::severities::Severity thresh) : thresh_(thresh)  // default severity
 {
 }
 
@@ -170,11 +163,7 @@ Logs::partition_severities() const
 }
 
 void
-Logs::write(
-    beast::severities::Severity level,
-    std::string const& partition,
-    std::string const& text,
-    bool console)
+Logs::write(beast::severities::Severity level, std::string const& partition, std::string const& text, bool console)
 {
     std::string s;
     format(s, text, level, partition);
@@ -222,7 +211,7 @@ Logs::fromSeverity(beast::severities::Severity level)
 
         // LCOV_EXCL_START
         default:
-            UNREACHABLE("ripple::Logs::fromSeverity : invalid severity");
+            UNREACHABLE("xrpl::Logs::fromSeverity : invalid severity");
             [[fallthrough]];
         // LCOV_EXCL_STOP
         case kFatal:
@@ -250,7 +239,7 @@ Logs::toSeverity(LogSeverity level)
             return kError;
         // LCOV_EXCL_START
         default:
-            UNREACHABLE("ripple::Logs::toSeverity : invalid severity");
+            UNREACHABLE("xrpl::Logs::toSeverity : invalid severity");
             [[fallthrough]];
         // LCOV_EXCL_STOP
         case lsFATAL:
@@ -279,7 +268,7 @@ Logs::toString(LogSeverity s)
             return "Fatal";
         // LCOV_EXCL_START
         default:
-            UNREACHABLE("ripple::Logs::toString : invalid severity");
+            UNREACHABLE("xrpl::Logs::toString : invalid severity");
             return "Unknown";
             // LCOV_EXCL_STOP
     }
@@ -297,8 +286,7 @@ Logs::fromString(std::string const& s)
     if (boost::iequals(s, "info") || boost::iequals(s, "information"))
         return lsINFO;
 
-    if (boost::iequals(s, "warn") || boost::iequals(s, "warning") ||
-        boost::iequals(s, "warnings"))
+    if (boost::iequals(s, "warn") || boost::iequals(s, "warning") || boost::iequals(s, "warnings"))
         return lsWARNING;
 
     if (boost::iequals(s, "error") || boost::iequals(s, "errors"))
@@ -345,7 +333,7 @@ Logs::format(
             break;
         // LCOV_EXCL_START
         default:
-            UNREACHABLE("ripple::Logs::format : invalid severity");
+            UNREACHABLE("xrpl::Logs::format : invalid severity");
             [[fallthrough]];
         // LCOV_EXCL_STOP
         case kFatal:
@@ -459,4 +447,4 @@ debugLog()
     return beast::Journal(debugSink().get());
 }
 
-}  // namespace ripple
+}  // namespace xrpl

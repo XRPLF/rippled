@@ -8,7 +8,7 @@
 
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 class Config;
 
@@ -26,13 +26,8 @@ public:
         SecretKey secretKey;
 
         Keys() = delete;
-        Keys(
-            PublicKey const& masterPublic_,
-            PublicKey const& public_,
-            SecretKey const& secret_)
-            : masterPublicKey(masterPublic_)
-            , publicKey(public_)
-            , secretKey(secret_)
+        Keys(PublicKey const& masterPublic_, PublicKey const& public_, SecretKey const& secret_)
+            : masterPublicKey(masterPublic_), publicKey(public_), secretKey(secret_)
         {
         }
     };
@@ -59,6 +54,6 @@ private:
     bool configInvalid_ = false;  //< Set to true if config was invalid
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

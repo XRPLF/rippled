@@ -7,7 +7,7 @@
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapItem.h>
 
-namespace ripple {
+namespace xrpl {
 namespace tests {
 
 class SHAMapSync_test : public beast::unit_test::suite
@@ -57,8 +57,7 @@ public:
 
         if (beforeHash != map.getHash())
         {
-            log << "Hashes do not match " << beforeHash << " " << map.getHash()
-                << std::endl;
+            log << "Hashes do not match " << beforeHash << " " << map.getHash() << std::endl;
             return false;
         }
 
@@ -106,16 +105,11 @@ public:
         {
             std::vector<std::pair<SHAMapNodeID, Blob>> a;
 
-            BEAST_EXPECT(source.getNodeFat(
-                SHAMapNodeID(), a, rand_bool(eng_), rand_int(eng_, 2)));
+            BEAST_EXPECT(source.getNodeFat(SHAMapNodeID(), a, rand_bool(eng_), rand_int(eng_, 2)));
 
             unexpected(a.size() < 1, "NodeSize");
 
-            BEAST_EXPECT(
-                destination
-                    .addRootNode(
-                        source.getHash(), makeSlice(a[0].second), nullptr)
-                    .isGood());
+            BEAST_EXPECT(destination.addRootNode(source.getHash(), makeSlice(a[0].second), nullptr).isGood());
         }
 
         do
@@ -136,8 +130,7 @@ public:
                 // Don't use BEAST_EXPECT here b/c it will be called a
                 // non-deterministic number of times and the number of tests run
                 // should be deterministic
-                if (!source.getNodeFat(
-                        it.first, b, rand_bool(eng_), rand_int(eng_, 2)))
+                if (!source.getNodeFat(it.first, b, rand_bool(eng_), rand_int(eng_, 2)))
                     fail("", __FILE__, __LINE__);
             }
 
@@ -152,10 +145,7 @@ public:
                 // Don't use BEAST_EXPECT here b/c it will be called a
                 // non-deterministic number of times and the number of tests run
                 // should be deterministic
-                if (!destination
-                         .addKnownNode(
-                             b[i].first, makeSlice(b[i].second), nullptr)
-                         .isUseful())
+                if (!destination.addKnownNode(b[i].first, makeSlice(b[i].second), nullptr).isUseful())
                     fail("", __FILE__, __LINE__);
             }
         } while (true);
@@ -168,7 +158,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(SHAMapSync, shamap, ripple);
+BEAST_DEFINE_TESTSUITE(SHAMapSync, shamap, xrpl);
 
 }  // namespace tests
-}  // namespace ripple
+}  // namespace xrpl

@@ -3,7 +3,7 @@
 
 #include <xrpld/app/ledger/AcceptedLedgerTx.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** A ledger that has become irrevocable.
 
@@ -24,9 +24,7 @@ namespace ripple {
 class AcceptedLedger : public CountedObject<AcceptedLedger>
 {
 public:
-    AcceptedLedger(
-        std::shared_ptr<ReadView const> const& ledger,
-        Application& app);
+    AcceptedLedger(std::shared_ptr<ReadView const> const& ledger, Application& app);
 
     std::shared_ptr<ReadView const> const&
     getLedger() const
@@ -57,6 +55,6 @@ private:
     std::vector<std::unique_ptr<AcceptedLedgerTx>> transactions_;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

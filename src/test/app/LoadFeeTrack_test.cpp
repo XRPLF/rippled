@@ -4,7 +4,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/ledger/ReadView.h>
 
-namespace ripple {
+namespace xrpl {
 
 class LoadFeeTrack_test : public beast::unit_test::suite
 {
@@ -23,13 +23,9 @@ public:
                 return f;
             }();
 
-            BEAST_EXPECT(
-                scaleFeeLoad(XRPAmount{0}, l, fees, false) == XRPAmount{0});
-            BEAST_EXPECT(
-                scaleFeeLoad(XRPAmount{10000}, l, fees, false) ==
-                XRPAmount{10000});
-            BEAST_EXPECT(
-                scaleFeeLoad(XRPAmount{1}, l, fees, false) == XRPAmount{1});
+            BEAST_EXPECT(scaleFeeLoad(XRPAmount{0}, l, fees, false) == XRPAmount{0});
+            BEAST_EXPECT(scaleFeeLoad(XRPAmount{10000}, l, fees, false) == XRPAmount{10000});
+            BEAST_EXPECT(scaleFeeLoad(XRPAmount{1}, l, fees, false) == XRPAmount{1});
         }
         {
             Fees const fees = [&]() {
@@ -40,13 +36,9 @@ public:
                 return f;
             }();
 
-            BEAST_EXPECT(
-                scaleFeeLoad(XRPAmount{0}, l, fees, false) == XRPAmount{0});
-            BEAST_EXPECT(
-                scaleFeeLoad(XRPAmount{10000}, l, fees, false) ==
-                XRPAmount{10000});
-            BEAST_EXPECT(
-                scaleFeeLoad(XRPAmount{1}, l, fees, false) == XRPAmount{1});
+            BEAST_EXPECT(scaleFeeLoad(XRPAmount{0}, l, fees, false) == XRPAmount{0});
+            BEAST_EXPECT(scaleFeeLoad(XRPAmount{10000}, l, fees, false) == XRPAmount{10000});
+            BEAST_EXPECT(scaleFeeLoad(XRPAmount{1}, l, fees, false) == XRPAmount{1});
         }
         {
             Fees const fees = [&]() {
@@ -57,17 +49,13 @@ public:
                 return f;
             }();
 
-            BEAST_EXPECT(
-                scaleFeeLoad(XRPAmount{0}, l, fees, false) == XRPAmount{0});
-            BEAST_EXPECT(
-                scaleFeeLoad(XRPAmount{10000}, l, fees, false) ==
-                XRPAmount{10000});
-            BEAST_EXPECT(
-                scaleFeeLoad(XRPAmount{1}, l, fees, false) == XRPAmount{1});
+            BEAST_EXPECT(scaleFeeLoad(XRPAmount{0}, l, fees, false) == XRPAmount{0});
+            BEAST_EXPECT(scaleFeeLoad(XRPAmount{10000}, l, fees, false) == XRPAmount{10000});
+            BEAST_EXPECT(scaleFeeLoad(XRPAmount{1}, l, fees, false) == XRPAmount{1});
         }
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LoadFeeTrack, app, ripple);
+BEAST_DEFINE_TESTSUITE(LoadFeeTrack, app, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

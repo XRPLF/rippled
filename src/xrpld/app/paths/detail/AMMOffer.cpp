@@ -3,7 +3,7 @@
 
 #include <xrpl/protocol/QualityFunction.h>
 
-namespace ripple {
+namespace xrpl {
 
 template <typename TIn, typename TOut>
 AMMOffer<TIn, TOut>::AMMOffer(
@@ -11,11 +11,7 @@ AMMOffer<TIn, TOut>::AMMOffer(
     TAmounts<TIn, TOut> const& amounts,
     TAmounts<TIn, TOut> const& balances,
     Quality const& quality)
-    : ammLiquidity_(ammLiquidity)
-    , amounts_(amounts)
-    , balances_(balances)
-    , quality_(quality)
-    , consumed_(false)
+    : ammLiquidity_(ammLiquidity), amounts_(amounts), balances_(balances), quality_(quality), consumed_(false)
 {
 }
 
@@ -42,9 +38,7 @@ AMMOffer<TIn, TOut>::amount() const
 
 template <typename TIn, typename TOut>
 void
-AMMOffer<TIn, TOut>::consume(
-    ApplyView& view,
-    TAmounts<TIn, TOut> const& consumed)
+AMMOffer<TIn, TOut>::consume(ApplyView& view, TAmounts<TIn, TOut> const& consumed)
 {
     // Consumed offer must be less or equal to the original
     if (consumed.in > amounts_.in || consumed.out > amounts_.out)
@@ -60,10 +54,7 @@ AMMOffer<TIn, TOut>::consume(
 
 template <typename TIn, typename TOut>
 TAmounts<TIn, TOut>
-AMMOffer<TIn, TOut>::limitOut(
-    TAmounts<TIn, TOut> const& offrAmt,
-    TOut const& limit,
-    bool roundUp) const
+AMMOffer<TIn, TOut>::limitOut(TAmounts<TIn, TOut> const& offerAmount, TOut const& limit, bool roundUp) const
 {
     // Change the offer size proportionally to the original offer quality
     // to keep the strands quality order unchanged. The taker pays slightly
@@ -75,7 +66,7 @@ AMMOffer<TIn, TOut>::limitOut(
     {
         // It turns out that the ceil_out implementation has some slop in
         // it, which ceil_out_strict removes.
-        return quality().ceil_out_strict(offrAmt, limit, roundUp);
+        return quality().ceil_out_strict(offerAmount, limit, roundUp);
     }
     // Change the offer size according to the conservation function. The offer
     // quality is increased in this case, but it doesn't matter since there is
@@ -85,19 +76,15 @@ AMMOffer<TIn, TOut>::limitOut(
 
 template <typename TIn, typename TOut>
 TAmounts<TIn, TOut>
-AMMOffer<TIn, TOut>::limitIn(
-    TAmounts<TIn, TOut> const& offrAmt,
-    TIn const& limit,
-    bool roundUp) const
+AMMOffer<TIn, TOut>::limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& limit, bool roundUp) const
 {
     // See the comments above in limitOut().
     if (ammLiquidity_.multiPath())
     {
-        if (auto const& rules = getCurrentTransactionRules();
-            rules && rules->enabled(fixReducedOffersV2))
-            return quality().ceil_in_strict(offrAmt, limit, roundUp);
+        if (auto const& rules = getCurrentTransactionRules(); rules && rules->enabled(fixReducedOffersV2))
+            return quality().ceil_in_strict(offerAmount, limit, roundUp);
 
-        return quality().ceil_in(offrAmt, limit);
+        return quality().ceil_in(offerAmount, limit);
     }
     return {limit, swapAssetIn(balances_, limit, ammLiquidity_.tradingFee())};
 }
@@ -108,45 +95,33 @@ AMMOffer<TIn, TOut>::getQualityFunc() const
 {
     if (ammLiquidity_.multiPath())
         return QualityFunction{quality(), QualityFunction::CLOBLikeTag{}};
-    return QualityFunction{
-        balances_, ammLiquidity_.tradingFee(), QualityFunction::AMMTag{}};
+    return QualityFunction{balances_, ammLiquidity_.tradingFee(), QualityFunction::AMMTag{}};
 }
 
 template <typename TIn, typename TOut>
 bool
-AMMOffer<TIn, TOut>::checkInvariant(
-    TAmounts<TIn, TOut> const& consumed,
-    beast::Journal j) const
+AMMOffer<TIn, TOut>::checkInvariant(TAmounts<TIn, TOut> const& consumed, beast::Journal j) const
 {
     if (consumed.in > amounts_.in || consumed.out > amounts_.out)
     {
-        JLOG(j.error()) << "AMMOffer::checkInvariant failed: consumed "
-                        << to_string(consumed.in) << " "
-                        << to_string(consumed.out) << " amounts "
-                        << to_string(amounts_.in) << " "
+        JLOG(j.error()) << "AMMOffer::checkInvariant failed: consumed " << to_string(consumed.in) << " "
+                        << to_string(consumed.out) << " amounts " << to_string(amounts_.in) << " "
                         << to_string(amounts_.out);
 
         return false;
     }
 
     Number const product = balances_.in * balances_.out;
-    auto const newBalances = TAmounts<TIn, TOut>{
-        balances_.in + consumed.in, balances_.out - consumed.out};
+    auto const newBalances = TAmounts<TIn, TOut>{balances_.in + consumed.in, balances_.out - consumed.out};
     Number const newProduct = newBalances.in * newBalances.out;
 
-    if (newProduct >= product ||
-        withinRelativeDistance(product, newProduct, Number{1, -7}))
+    if (newProduct >= product || withinRelativeDistance(product, newProduct, Number{1, -7}))
         return true;
 
-    JLOG(j.error()) << "AMMOffer::checkInvariant failed: balances "
-                    << to_string(balances_.in) << " "
-                    << to_string(balances_.out) << " new balances "
-                    << to_string(newBalances.in) << " "
-                    << to_string(newBalances.out) << " product/newProduct "
-                    << product << " " << newProduct << " diff "
-                    << (product != Number{0}
-                            ? to_string((product - newProduct) / product)
-                            : "undefined");
+    JLOG(j.error()) << "AMMOffer::checkInvariant failed: balances " << to_string(balances_.in) << " "
+                    << to_string(balances_.out) << " new balances " << to_string(newBalances.in) << " "
+                    << to_string(newBalances.out) << " product/newProduct " << product << " " << newProduct << " diff "
+                    << (product != Number{0} ? to_string((product - newProduct) / product) : "undefined");
     return false;
 }
 
@@ -155,4 +130,4 @@ template class AMMOffer<IOUAmount, IOUAmount>;
 template class AMMOffer<XRPAmount, IOUAmount>;
 template class AMMOffer<IOUAmount, XRPAmount>;
 
-}  // namespace ripple
+}  // namespace xrpl

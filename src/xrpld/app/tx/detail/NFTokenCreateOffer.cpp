@@ -5,7 +5,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 std::uint32_t
 NFTokenCreateOffer::getFlagsMask(PreflightContext const& ctx)
@@ -45,10 +45,7 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
     uint256 const nftokenID = ctx.tx[sfNFTokenID];
     std::uint32_t const txFlags = {ctx.tx.getFlags()};
 
-    if (!nft::findToken(
-            ctx.view,
-            ctx.tx[(txFlags & tfSellNFToken) ? sfAccount : sfOwner],
-            nftokenID))
+    if (!nft::findToken(ctx.view, ctx.tx[(txFlags & tfSellNFToken) ? sfAccount : sfOwner], nftokenID))
         return tecNO_ENTRY;
 
     // Use implementation shared with NFTokenMint
@@ -82,4 +79,4 @@ NFTokenCreateOffer::doApply()
         ctx_.tx.getFlags());
 }
 
-}  // namespace ripple
+}  // namespace xrpl

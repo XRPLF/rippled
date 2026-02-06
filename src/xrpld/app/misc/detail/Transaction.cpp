@@ -10,12 +10,9 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
-Transaction::Transaction(
-    std::shared_ptr<STTx const> const& stx,
-    std::string& reason,
-    Application& app) noexcept
+Transaction::Transaction(std::shared_ptr<STTx const> const& stx, std::string& reason, Application& app) noexcept
     : mTransaction(stx), mApp(app), j_(app.journal("Ledger"))
 {
     try
@@ -71,7 +68,7 @@ Transaction::sqlTransactionStatus(boost::optional<std::string> const& status)
 
     XRPL_ASSERT(
         c == txnSqlUnknown,
-        "ripple::Transaction::sqlTransactionStatus : unknown transaction "
+        "xrpl::Transaction::sqlTransactionStatus : unknown transaction "
         "status");
     return INVALID;
 }
@@ -83,8 +80,7 @@ Transaction::transactionFromSQL(
     Blob const& rawTxn,
     Application& app)
 {
-    std::uint32_t const inLedger =
-        rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0));
+    std::uint32_t const inLedger = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0));
 
     SerialIter it(makeSlice(rawTxn));
     auto txn = std::make_shared<STTx const>(it);
@@ -96,31 +92,21 @@ Transaction::transactionFromSQL(
     return tr;
 }
 
-std::variant<
-    std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-    TxSearched>
+std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
 Transaction::load(uint256 const& id, Application& app, error_code_i& ec)
 {
     return load(id, app, std::nullopt, ec);
 }
 
-std::variant<
-    std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-    TxSearched>
-Transaction::load(
-    uint256 const& id,
-    Application& app,
-    ClosedInterval<uint32_t> const& range,
-    error_code_i& ec)
+std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
+Transaction::load(uint256 const& id, Application& app, ClosedInterval<uint32_t> const& range, error_code_i& ec)
 {
     using op = std::optional<ClosedInterval<uint32_t>>;
 
     return load(id, app, op{range}, ec);
 }
 
-std::variant<
-    std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-    TxSearched>
+std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
 Transaction::load(
     uint256 const& id,
     Application& app,
@@ -142,8 +128,7 @@ Json::Value
 Transaction::getJson(JsonOptions options, bool binary) const
 {
     // Note, we explicitly suppress `include_date` option here
-    Json::Value ret(
-        mTransaction->getJson(options & ~JsonOptions::include_date, binary));
+    Json::Value ret(mTransaction->getJson(options & ~JsonOptions::include_date, binary));
 
     // NOTE Binary STTx::getJson output might not be a JSON object
     if (ret.isObject() && mLedgerIndex)
@@ -173,8 +158,7 @@ Transaction::getJson(JsonOptions options, bool binary) const
 
         if (mTxnSeq && netID)
         {
-            std::optional<std::string> const ctid =
-                RPC::encodeCTID(mLedgerIndex, *mTxnSeq, *netID);
+            std::optional<std::string> const ctid = RPC::encodeCTID(mLedgerIndex, *mTxnSeq, *netID);
             if (ctid)
                 ret[jss::ctid] = *ctid;
         }
@@ -183,4 +167,4 @@ Transaction::getJson(JsonOptions options, bool binary) const
     return ret;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

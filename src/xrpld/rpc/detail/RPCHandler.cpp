@@ -4,8 +4,6 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/JobQueue.h>
-#include <xrpld/perflog/PerfLog.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/InfoSub.h>
 #include <xrpld/rpc/RPCHandler.h>
@@ -14,6 +12,8 @@
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/core/JobQueue.h>
+#include <xrpl/core/PerfLog.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
@@ -22,7 +22,7 @@
 #include <atomic>
 #include <chrono>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 
 namespace {
@@ -121,25 +121,20 @@ fillHandler(JsonContext& context, Handler const*& result)
         }
     }
 
-    if (!context.params.isMember(jss::command) &&
-        !context.params.isMember(jss::method))
+    if (!context.params.isMember(jss::command) && !context.params.isMember(jss::method))
         return rpcCOMMAND_MISSING;
-    if (context.params.isMember(jss::command) &&
-        context.params.isMember(jss::method))
+    if (context.params.isMember(jss::command) && context.params.isMember(jss::method))
     {
-        if (context.params[jss::command].asString() !=
-            context.params[jss::method].asString())
+        if (context.params[jss::command].asString() != context.params[jss::method].asString())
             return rpcUNKNOWN_COMMAND;
     }
 
-    std::string strCommand = context.params.isMember(jss::command)
-        ? context.params[jss::command].asString()
-        : context.params[jss::method].asString();
+    std::string strCommand = context.params.isMember(jss::command) ? context.params[jss::command].asString()
+                                                                   : context.params[jss::method].asString();
 
     JLOG(context.j.trace()) << "COMMAND:" << strCommand;
     JLOG(context.j.trace()) << "REQUEST:" << context.params;
-    auto handler = getHandler(
-        context.apiVersion, context.app.config().BETA_RPC_API, strCommand);
+    auto handler = getHandler(context.apiVersion, context.app.config().BETA_RPC_API, strCommand);
 
     if (!handler)
         return rpcUNKNOWN_COMMAND;
@@ -159,11 +154,7 @@ fillHandler(JsonContext& context, Handler const*& result)
 
 template <class Object, class Method>
 Status
-callMethod(
-    JsonContext& context,
-    Method method,
-    std::string const& name,
-    Object& result)
+callMethod(JsonContext& context, Method method, std::string const& name, Object& result)
 {
     static std::atomic<std::uint64_t> requestId{0};
     auto& perfLog = context.app.getPerfLog();
@@ -171,16 +162,14 @@ callMethod(
     try
     {
         perfLog.rpcStart(name, curId);
-        auto v =
-            context.app.getJobQueue().makeLoadEvent(jtGENERIC, "cmd:" + name);
+        auto v = context.app.getJobQueue().makeLoadEvent(jtGENERIC, "cmd:" + name);
 
         auto start = std::chrono::system_clock::now();
         auto ret = method(context, result);
         auto end = std::chrono::system_clock::now();
 
-        JLOG(context.j.debug())
-            << "RPC call " << name << " completed in "
-            << ((end - start).count() / 1000000000.0) << "seconds";
+        JLOG(context.j.debug()) << "RPC call " << name << " completed in " << ((end - start).count() / 1000000000.0)
+                                << "seconds";
         perfLog.rpcFinish(name, curId);
         return ret;
     }
@@ -211,20 +200,15 @@ doCommand(RPC::JsonContext& context, Json::Value& result)
 
     if (auto method = handler->valueMethod_)
     {
-        if (!context.headers.user.empty() ||
-            !context.headers.forwardedFor.empty())
+        if (!context.headers.user.empty() || !context.headers.forwardedFor.empty())
         {
-            JLOG(context.j.debug())
-                << "start command: " << handler->name_
-                << ", user: " << context.headers.user
-                << ", forwarded for: " << context.headers.forwardedFor;
+            JLOG(context.j.debug()) << "start command: " << handler->name_ << ", user: " << context.headers.user
+                                    << ", forwarded for: " << context.headers.forwardedFor;
 
             auto ret = callMethod(context, method, handler->name_, result);
 
-            JLOG(context.j.debug())
-                << "finish command: " << handler->name_
-                << ", user: " << context.headers.user
-                << ", forwarded for: " << context.headers.forwardedFor;
+            JLOG(context.j.debug()) << "finish command: " << handler->name_ << ", user: " << context.headers.user
+                                    << ", forwarded for: " << context.headers.forwardedFor;
 
             return ret;
         }
@@ -250,4 +234,4 @@ roleRequired(unsigned int version, bool betaEnabled, std::string const& method)
 }
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl

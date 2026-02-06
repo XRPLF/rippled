@@ -5,7 +5,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 // {
 //   tx_json: <object>,
@@ -17,8 +17,7 @@ doSignFor(RPC::JsonContext& context)
 {
     if (context.role != Role::ADMIN && !context.app.config().canSign())
     {
-        return RPC::make_error(
-            rpcNOT_SUPPORTED, "Signing is not supported by this server.");
+        return RPC::make_error(rpcNOT_SUPPORTED, "Signing is not supported by this server.");
     }
 
     context.loadType = Resource::feeHeavyBurdenRPC;
@@ -40,4 +39,4 @@ doSignFor(RPC::JsonContext& context)
     return ret;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

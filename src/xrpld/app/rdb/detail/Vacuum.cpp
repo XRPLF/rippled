@@ -2,7 +2,7 @@
 
 #include <boost/format.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 doVacuumDB(DatabaseCon::Setup const& setup, beast::Journal j)
@@ -10,22 +10,18 @@ doVacuumDB(DatabaseCon::Setup const& setup, beast::Journal j)
     boost::filesystem::path dbPath = setup.dataDir / TxDBName;
 
     uintmax_t const dbSize = file_size(dbPath);
-    XRPL_ASSERT(
-        dbSize != static_cast<uintmax_t>(-1),
-        "ripple:doVacuumDB : file_size succeeded");
+    XRPL_ASSERT(dbSize != static_cast<uintmax_t>(-1), "ripple:doVacuumDB : file_size succeeded");
 
-    if (auto available = space(dbPath.parent_path()).available;
-        available < dbSize)
+    if (auto available = space(dbPath.parent_path()).available; available < dbSize)
     {
         std::cerr << "The database filesystem must have at least as "
                      "much free space as the size of "
-                  << dbPath.string() << ", which is " << dbSize
-                  << " bytes. Only " << available << " bytes are available.\n";
+                  << dbPath.string() << ", which is " << dbSize << " bytes. Only " << available
+                  << " bytes are available.\n";
         return false;
     }
 
-    auto txnDB = std::make_unique<DatabaseCon>(
-        setup, TxDBName, setup.txPragma, TxDBInit, j);
+    auto txnDB = std::make_unique<DatabaseCon>(setup, TxDBName, setup.txPragma, TxDBInit, j);
     auto& session = txnDB->getSession();
     std::uint32_t pageSize;
 
@@ -38,8 +34,7 @@ doVacuumDB(DatabaseCon::Setup const& setup, beast::Journal j)
     std::cout << "VACUUM beginning. page_size: " << pageSize << std::endl;
 
     session << "VACUUM;";
-    XRPL_ASSERT(
-        setup.globalPragma, "ripple:doVacuumDB : non-null global pragma");
+    XRPL_ASSERT(setup.globalPragma, "ripple:doVacuumDB : non-null global pragma");
     for (auto const& p : *setup.globalPragma)
         session << p;
     session << "PRAGMA page_size;", soci::into(pageSize);
@@ -49,4 +44,4 @@ doVacuumDB(DatabaseCon::Setup const& setup, beast::Journal j)
     return true;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

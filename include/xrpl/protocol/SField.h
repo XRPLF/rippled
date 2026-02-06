@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <map>
 
-namespace ripple {
+namespace xrpl {
 
 /*
 
@@ -120,24 +120,26 @@ field_code(int id, int index)
     SFields are created at compile time.
 
     Each SField, once constructed, lives until program termination, and there
-    is only one instance per fieldType/fieldValue pair which serves the entire
-    application.
+    is only one instance per fieldType/fieldValue pair which serves the
+    entire application.
 */
 class SField
 {
 public:
     enum {
         sMD_Never = 0x00,
-        sMD_ChangeOrig = 0x01,   // original value when it changes
-        sMD_ChangeNew = 0x02,    // new value when it changes
-        sMD_DeleteFinal = 0x04,  // final value when it is deleted
-        sMD_Create = 0x08,       // value when it's created
-        sMD_Always = 0x10,   // value when node containing it is affected at all
-        sMD_BaseTen = 0x20,  // value is treated as base 10, overriding behavior
+        sMD_ChangeOrig = 0x01,     // original value when it changes
+        sMD_ChangeNew = 0x02,      // new value when it changes
+        sMD_DeleteFinal = 0x04,    // final value when it is deleted
+        sMD_Create = 0x08,         // value when it's created
+        sMD_Always = 0x10,         // value when node containing it is affected at all
+        sMD_BaseTen = 0x20,        // value is treated as base 10, overriding behavior
         sMD_PseudoAccount = 0x40,  // if this field is set in an ACCOUNT_ROOT
-        // _only_, then it is a pseudo-account
-        sMD_Default =
-            sMD_ChangeOrig | sMD_ChangeNew | sMD_DeleteFinal | sMD_Create
+                                   // _only_, then it is a pseudo-account
+        sMD_NeedsAsset = 0x80,     // This field needs to be associated with an
+                                   // asset before it is serialized as a ledger
+                                   // object. Intended for STNumber.
+        sMD_Default = sMD_ChangeOrig | sMD_ChangeNew | sMD_DeleteFinal | sMD_Create
     };
 
     enum class IsSigning : unsigned char { no, yes };
@@ -264,8 +266,7 @@ public:
     bool
     shouldInclude(bool withSigningField) const
     {
-        return (fieldValue < 256) &&
-            (withSigningField || (signingField == IsSigning::yes));
+        return (fieldValue < 256) && (withSigningField || (signingField == IsSigning::yes));
     }
 
     bool
@@ -359,10 +360,8 @@ using SF_XCHAIN_BRIDGE = TypedField<STXChainBridge>;
 #pragma push_macro("TYPED_SFIELD")
 #undef TYPED_SFIELD
 
-#define UNTYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) \
-    extern SField const sfName;
-#define TYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) \
-    extern SF_##stiSuffix const sfName;
+#define UNTYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) extern SField const sfName;
+#define TYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) extern SF_##stiSuffix const sfName;
 
 extern SField const sfInvalid;
 extern SField const sfGeneric;
@@ -374,6 +373,6 @@ extern SField const sfGeneric;
 #undef UNTYPED_SFIELD
 #pragma pop_macro("UNTYPED_SFIELD")
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

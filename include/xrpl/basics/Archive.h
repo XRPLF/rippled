@@ -3,7 +3,7 @@
 
 #include <boost/filesystem.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 /** Extract a tar archive compressed with lz4
 
@@ -13,10 +13,8 @@ namespace ripple {
     @throws runtime_error
 */
 void
-extractTarLz4(
-    boost::filesystem::path const& src,
-    boost::filesystem::path const& dst);
+extractTarLz4(boost::filesystem::path const& src, boost::filesystem::path const& dst);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

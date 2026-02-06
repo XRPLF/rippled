@@ -10,7 +10,7 @@
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace {
 
@@ -32,19 +32,11 @@ isBinary(LedgerFill const& fill)
     return fill.options & LedgerFill::binary;
 }
 
-template <class Object>
 void
-fillJson(
-    Object& json,
-    bool closed,
-    LedgerInfo const& info,
-    bool bFull,
-    unsigned apiVersion)
+fillJson(Json::Value& json, bool closed, LedgerHeader const& info, bool bFull, unsigned apiVersion)
 {
     json[jss::parent_hash] = to_string(info.parentHash);
-    json[jss::ledger_index] = (apiVersion > 1)
-        ? Json::Value(info.seq)
-        : Json::Value(std::to_string(info.seq));
+    json[jss::ledger_index] = (apiVersion > 1) ? Json::Value(info.seq) : Json::Value(std::to_string(info.seq));
 
     if (closed)
     {
@@ -64,8 +56,7 @@ fillJson(
     json[jss::close_flags] = info.closeFlags;
 
     // Always show fields that contribute to the ledger hash
-    json[jss::parent_close_time] =
-        info.parentCloseTime.time_since_epoch().count();
+    json[jss::parent_close_time] = info.parentCloseTime.time_since_epoch().count();
     json[jss::close_time] = info.closeTime.time_since_epoch().count();
     json[jss::close_time_resolution] = info.closeTimeResolution.count();
 
@@ -78,9 +69,8 @@ fillJson(
     }
 }
 
-template <class Object>
 void
-fillJsonBinary(Object& json, bool closed, LedgerInfo const& info)
+fillJsonBinary(Json::Value& json, bool closed, LedgerHeader const& info)
 {
     if (!closed)
         json[jss::closed] = false;
@@ -113,19 +103,15 @@ fillJsonTx(
         if (fill.context->apiVersion > 1)
             txJson[jss::hash] = to_string(txn->getTransactionID());
 
-        auto const json_meta =
-            (fill.context->apiVersion > 1 ? jss::meta_blob : jss::meta);
+        auto const json_meta = (fill.context->apiVersion > 1 ? jss::meta_blob : jss::meta);
         if (stMeta)
             txJson[json_meta] = serializeHex(*stMeta);
     }
     else if (fill.context->apiVersion > 1)
     {
-        copyFrom(
-            txJson[jss::tx_json],
-            txn->getJson(JsonOptions::disable_API_prior_V2, false));
+        copyFrom(txJson[jss::tx_json], txn->getJson(JsonOptions::disable_API_prior_V2, false));
         txJson[jss::hash] = to_string(txn->getTransactionID());
-        RPC::insertDeliverMax(
-            txJson[jss::tx_json], txnType, fill.context->apiVersion);
+        RPC::insertDeliverMax(txJson[jss::tx_json], txnType, fill.context->apiVersion);
 
         if (stMeta)
         {
@@ -134,23 +120,16 @@ fillJsonTx(
             // If applicable, insert delivered amount
             if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
                 RPC::insertDeliveredAmount(
-                    txJson[jss::meta],
-                    fill.ledger,
-                    txn,
-                    {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
+                    txJson[jss::meta], fill.ledger, txn, {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
 
             // If applicable, insert mpt issuance id
-            RPC::insertMPTokenIssuanceID(
-                txJson[jss::meta],
-                txn,
-                {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
+            RPC::insertMPTokenIssuanceID(txJson[jss::meta], txn, {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
         }
 
         if (!fill.ledger.open())
-            txJson[jss::ledger_hash] = to_string(fill.ledger.info().hash);
+            txJson[jss::ledger_hash] = to_string(fill.ledger.header().hash);
 
-        bool const validated =
-            fill.context->ledgerMaster.isValidated(fill.ledger);
+        bool const validated = fill.context->ledgerMaster.isValidated(fill.ledger);
         txJson[jss::validated] = validated;
         if (validated)
         {
@@ -171,21 +150,15 @@ fillJsonTx(
             // If applicable, insert delivered amount
             if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
                 RPC::insertDeliveredAmount(
-                    txJson[jss::metaData],
-                    fill.ledger,
-                    txn,
-                    {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
+                    txJson[jss::metaData], fill.ledger, txn, {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
 
             // If applicable, insert mpt issuance id
             RPC::insertMPTokenIssuanceID(
-                txJson[jss::metaData],
-                txn,
-                {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
+                txJson[jss::metaData], txn, {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
         }
     }
 
-    if ((fill.options & LedgerFill::ownerFunds) &&
-        txn->getTxnType() == ttOFFER_CREATE)
+    if ((fill.options & LedgerFill::ownerFunds) && txn->getTxnType() == ttOFFER_CREATE)
     {
         auto const account = txn->getAccountID(sfAccount);
         auto const amount = txn->getFieldAmount(sfTakerGets);
@@ -195,11 +168,7 @@ fillJsonTx(
         if (account != amount.getIssuer())
         {
             auto const ownerFunds = accountFunds(
-                fill.ledger,
-                account,
-                amount,
-                fhIGNORE_FREEZE,
-                beast::Journal{beast::Journal::getNullSink()});
+                fill.ledger, account, amount, fhIGNORE_FREEZE, beast::Journal{beast::Journal::getNullSink()});
             txJson[jss::owner_funds] = ownerFunds.getText();
         }
     }
@@ -207,11 +176,10 @@ fillJsonTx(
     return txJson;
 }
 
-template <class Object>
 void
-fillJsonTx(Object& json, LedgerFill const& fill)
+fillJsonTx(Json::Value& json, LedgerFill const& fill)
 {
-    auto&& txns = setArray(json, jss::transactions);
+    auto& txns = json[jss::transactions] = Json::arrayValue;
     auto bBinary = isBinary(fill);
     auto bExpanded = isExpanded(fill);
 
@@ -220,8 +188,7 @@ fillJsonTx(Object& json, LedgerFill const& fill)
         auto appendAll = [&](auto const& txs) {
             for (auto& i : txs)
             {
-                txns.append(
-                    fillJsonTx(fill, bBinary, bExpanded, i.first, i.second));
+                txns.append(fillJsonTx(fill, bBinary, bExpanded, i.first, i.second));
             }
         };
 
@@ -232,18 +199,16 @@ fillJsonTx(Object& json, LedgerFill const& fill)
         // Nothing the user can do about this.
         if (fill.context)
         {
-            JLOG(fill.context->j.error())
-                << "Exception in " << __func__ << ": " << ex.what();
+            JLOG(fill.context->j.error()) << "Exception in " << __func__ << ": " << ex.what();
         }
     }
 }
 
-template <class Object>
 void
-fillJsonState(Object& json, LedgerFill const& fill)
+fillJsonState(Json::Value& json, LedgerFill const& fill)
 {
     auto& ledger = fill.ledger;
-    auto&& array = Json::setArray(json, jss::accountState);
+    auto& array = json[jss::accountState] = Json::arrayValue;
     auto expanded = isExpanded(fill);
     auto binary = isBinary(fill);
 
@@ -251,7 +216,7 @@ fillJsonState(Object& json, LedgerFill const& fill)
     {
         if (binary)
         {
-            auto&& obj = appendObject(array);
+            auto& obj = array.append(Json::objectValue);
             obj[jss::hash] = to_string(sle->key());
             obj[jss::tx_blob] = serializeHex(*sle);
         }
@@ -262,24 +227,22 @@ fillJsonState(Object& json, LedgerFill const& fill)
     }
 }
 
-template <class Object>
 void
-fillJsonQueue(Object& json, LedgerFill const& fill)
+fillJsonQueue(Json::Value& json, LedgerFill const& fill)
 {
-    auto&& queueData = Json::setArray(json, jss::queue_data);
+    auto& queueData = json[jss::queue_data] = Json::arrayValue;
     auto bBinary = isBinary(fill);
     auto bExpanded = isExpanded(fill);
 
     for (auto const& tx : fill.txQueue)
     {
-        auto&& txJson = appendObject(queueData);
+        auto& txJson = queueData.append(Json::objectValue);
         txJson[jss::fee_level] = to_string(tx.feeLevel);
         if (tx.lastValid)
             txJson[jss::LastLedgerSequence] = *tx.lastValid;
 
         txJson[jss::fee] = to_string(tx.consequences.fee());
-        auto const spend =
-            tx.consequences.potentialSpend() + tx.consequences.fee();
+        auto const spend = tx.consequences.potentialSpend() + tx.consequences.fee();
         txJson[jss::max_spend_drops] = to_string(spend);
         txJson[jss::auth_change] = tx.consequences.isBlocker();
 
@@ -297,23 +260,21 @@ fillJsonQueue(Object& json, LedgerFill const& fill)
     }
 }
 
-template <class Object>
 void
-fillJson(Object& json, LedgerFill const& fill)
+fillJson(Json::Value& json, LedgerFill const& fill)
 {
     // TODO: what happens if bBinary and bExtracted are both set?
     // Is there a way to report this back?
     auto bFull = isFull(fill);
     if (isBinary(fill))
-        fillJsonBinary(json, !fill.ledger.open(), fill.ledger.info());
+        fillJsonBinary(json, !fill.ledger.open(), fill.ledger.header());
     else
         fillJson(
             json,
             !fill.ledger.open(),
-            fill.ledger.info(),
+            fill.ledger.header(),
             bFull,
-            (fill.context ? fill.context->apiVersion
-                          : RPC::apiMaximumSupportedVersion));
+            (fill.context ? fill.context->apiVersion : RPC::apiMaximumSupportedVersion));
 
     if (bFull || fill.options & LedgerFill::dumpTxrp)
         fillJsonTx(json, fill);
@@ -327,7 +288,7 @@ fillJson(Object& json, LedgerFill const& fill)
 void
 addJson(Json::Value& json, LedgerFill const& fill)
 {
-    auto&& object = Json::addObject(json, jss::ledger);
+    auto& object = json[jss::ledger] = Json::objectValue;
     fillJson(object, fill);
 
     if ((fill.options & LedgerFill::dumpQueue) && !fill.txQueue.empty())
@@ -342,4 +303,20 @@ getJson(LedgerFill const& fill)
     return json;
 }
 
-}  // namespace ripple
+void
+copyFrom(Json::Value& to, Json::Value const& from)
+{
+    if (!to)  // Short circuit this very common case.
+        to = from;
+    else
+    {
+        // TODO: figure out if there is a way to remove this clause
+        // or check that it does/needs to do a deep copy
+        XRPL_ASSERT(from.isObjectOrNull(), "copyFrom : invalid input type");
+        auto const members = from.getMemberNames();
+        for (auto const& m : members)
+            to[m] = from[m];
+    }
+}
+
+}  // namespace xrpl

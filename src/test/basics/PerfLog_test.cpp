@@ -1,12 +1,12 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 
-#include <xrpld/perflog/PerfLog.h>
 #include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/PerfLog.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/protocol/jss.h>
 
@@ -18,7 +18,7 @@
 
 //------------------------------------------------------------------------------
 
-namespace ripple {
+namespace xrpl {
 
 class PerfLog_test : public beast::unit_test::suite
 {
@@ -28,11 +28,7 @@ class PerfLog_test : public beast::unit_test::suite
 
     // We're only using Env for its Journal.  That Journal gives better
     // coverage in unit tests.
-    test::jtx::Env env_{
-        *this,
-        test::jtx::envconfig(),
-        nullptr,
-        beast::severities::kDisabled};
+    test::jtx::Env env_{*this, test::jtx::envconfig(), nullptr, beast::severities::kDisabled};
     beast::Journal j_{env_.app().journal("PerfLog_test")};
 
     struct Fixture
@@ -89,10 +85,8 @@ class PerfLog_test : public beast::unit_test::suite
         std::unique_ptr<perf::PerfLog>
         perfLog(WithFile withFile)
         {
-            perf::PerfLog::Setup const setup{
-                withFile == WithFile::no ? "" : logFile(), logInterval()};
-            return perf::make_PerfLog(
-                setup, app_, j_, [this]() { return signalStop(); });
+            perf::PerfLog::Setup const setup{withFile == WithFile::no ? "" : logFile(), logInterval()};
+            return perf::make_PerfLog(setup, app_, j_, [this]() { return signalStop(); });
         }
 
         // Block until the log file has grown in size, indicating that the
@@ -156,20 +150,16 @@ class PerfLog_test : public beast::unit_test::suite
         {
             currents.emplace_back(
                 jsonToUint64(cur[jss::duration_us]),
-                cur.isMember(jss::job) ? cur[jss::job].asString()
-                                       : cur[jss::method].asString());
+                cur.isMember(jss::job) ? cur[jss::job].asString() : cur[jss::method].asString());
         }
 
         // Note that the longest durations should be at the front of the
         // vector since they were started first.
-        std::sort(
-            currents.begin(),
-            currents.end(),
-            [](Cur const& lhs, Cur const& rhs) {
-                if (lhs.dur != rhs.dur)
-                    return (rhs.dur < lhs.dur);
-                return (lhs.name < rhs.name);
-            });
+        std::sort(currents.begin(), currents.end(), [](Cur const& lhs, Cur const& rhs) {
+            if (lhs.dur != rhs.dur)
+                return (rhs.dur < lhs.dur);
+            return (lhs.name < rhs.name);
+        });
         return currents;
     }
 
@@ -200,8 +190,7 @@ public:
             {
                 // Make a file that prevents PerfLog from creating its file.
                 std::ofstream nastyFile;
-                nastyFile.open(
-                    fixture.logDir().c_str(), std::ios::out | std::ios::app);
+                nastyFile.open(fixture.logDir().c_str(), std::ios::out | std::ios::app);
                 if (!BEAST_EXPECT(nastyFile))
                     return;
                 nastyFile.close();
@@ -239,24 +228,20 @@ public:
                 return;
 
             auto fileWriteable = [](boost::filesystem::path const& p) -> bool {
-                return std::ofstream{p.c_str(), std::ios::out | std::ios::app}
-                    .is_open();
+                return std::ofstream{p.c_str(), std::ios::out | std::ios::app}.is_open();
             };
 
             if (!BEAST_EXPECT(fileWriteable(fixture.logFile())))
                 return;
 
             boost::filesystem::permissions(
-                fixture.logFile(),
-                perms::remove_perms | perms::owner_write | perms::others_write |
-                    perms::group_write);
+                fixture.logFile(), perms::remove_perms | perms::owner_write | perms::others_write | perms::group_write);
 
             // If the test is running as root, then the write protect may have
             // no effect.  Make sure write protect worked before proceeding.
             if (fileWriteable(fixture.logFile()))
             {
-                log << "Unable to write protect file.  Test skipped."
-                    << std::endl;
+                log << "Unable to write protect file.  Test skipped." << std::endl;
                 return;
             }
 
@@ -275,9 +260,7 @@ public:
 
             // Fix file permissions so the file can be cleaned up.
             boost::filesystem::permissions(
-                fixture.logFile(),
-                perms::add_perms | perms::owner_write | perms::others_write |
-                    perms::group_write);
+                fixture.logFile(), perms::add_perms | perms::owner_write | perms::others_write | perms::group_write);
         }
     }
 
@@ -292,8 +275,7 @@ public:
 
         // Get the all the labels we can use for RPC interfaces without
         // causing an assert.
-        std::vector<char const*> labels =
-            test::jtx::make_vector(ripple::RPC::getHandlerNames());
+        std::vector<char const*> labels = test::jtx::make_vector(xrpl::RPC::getHandlerNames());
         std::shuffle(labels.begin(), labels.end(), default_prng());
 
         // Get two IDs to associate with each label.  Errors tend to happen at
@@ -302,15 +284,11 @@ public:
         std::vector<std::uint64_t> ids;
         ids.reserve(labels.size() * 2);
         std::generate_n(
-            std::back_inserter(ids),
-            labels.size(),
-            [i = std::numeric_limits<std::uint64_t>::min()]() mutable {
+            std::back_inserter(ids), labels.size(), [i = std::numeric_limits<std::uint64_t>::min()]() mutable {
                 return i++;
             });
         std::generate_n(
-            std::back_inserter(ids),
-            labels.size(),
-            [i = std::numeric_limits<std::uint64_t>::max()]() mutable {
+            std::back_inserter(ids), labels.size(), [i = std::numeric_limits<std::uint64_t>::max()]() mutable {
                 return i--;
             });
         std::shuffle(ids.begin(), ids.end(), default_prng());
@@ -322,8 +300,7 @@ public:
             for (int idIndex = 0; idIndex < 2; ++idIndex)
             {
                 std::this_thread::sleep_for(std::chrono::microseconds(10));
-                perfLog->rpcStart(
-                    labels[labelIndex], ids[(labelIndex * 2) + idIndex]);
+                perfLog->rpcStart(labels[labelIndex], ids[(labelIndex * 2) + idIndex]);
             }
         }
         {
@@ -350,8 +327,7 @@ public:
             // Verify that every entry in labels appears twice in currents.
             // If we sort by duration_us they should be in the order the
             // rpcStart() call was made.
-            std::vector<Cur> const currents{
-                getSortedCurrent(perfLog->currentJson()[jss::methods])};
+            std::vector<Cur> const currents{getSortedCurrent(perfLog->currentJson()[jss::methods])};
             BEAST_EXPECT(currents.size() == labels.size() * 2);
 
             std::uint64_t prevDur = std::numeric_limits<std::uint64_t>::max();
@@ -376,8 +352,7 @@ public:
         perfLog->rpcFinish(labels[0], ids[0 + 1]);
         // Note that label[0] id[0] is intentionally left unfinished.
 
-        auto validateFinalCounters = [this, &labels](
-                                         Json::Value const& countersJson) {
+        auto validateFinalCounters = [this, &labels](Json::Value const& countersJson) {
             {
                 Json::Value const& jobQueue = countersJson[jss::job_queue];
                 BEAST_EXPECT(jobQueue.isObject());
@@ -404,8 +379,7 @@ public:
             for (int i = 1; i < labels.size(); ++i)
             {
                 Json::Value const& counter{rpc[labels[i]]};
-                std::uint64_t const dur{
-                    jsonToUint64(counter[jss::duration_us])};
+                std::uint64_t const dur{jsonToUint64(counter[jss::duration_us])};
                 BEAST_EXPECT(dur != 0 && dur < prevDur);
                 prevDur = dur;
                 BEAST_EXPECT(counter[jss::errored] == "1");
@@ -416,15 +390,12 @@ public:
             // Check "total"
             Json::Value const& total{rpc[jss::total]};
             BEAST_EXPECT(total[jss::duration_us] != "0");
-            BEAST_EXPECT(
-                jsonToUint64(total[jss::errored]) == labels.size() - 1);
+            BEAST_EXPECT(jsonToUint64(total[jss::errored]) == labels.size() - 1);
             BEAST_EXPECT(jsonToUint64(total[jss::finished]) == labels.size());
-            BEAST_EXPECT(
-                jsonToUint64(total[jss::started]) == labels.size() * 2);
+            BEAST_EXPECT(jsonToUint64(total[jss::started]) == labels.size() * 2);
         };
 
-        auto validateFinalCurrent = [this,
-                                     &labels](Json::Value const& currentJson) {
+        auto validateFinalCurrent = [this, &labels](Json::Value const& currentJson) {
             {
                 Json::Value const& job_queue = currentJson[jss::jobs];
                 BEAST_EXPECT(job_queue.isArray());
@@ -503,8 +474,7 @@ public:
             JobType type;
             std::string typeName;
 
-            JobName(JobType t, std::string name)
-                : type(t), typeName(std::move(name))
+            JobName(JobType t, std::string name) : type(t), typeName(std::move(name))
             {
             }
         };
@@ -525,8 +495,7 @@ public:
         for (int i = 0; i < jobs.size(); ++i)
         {
             perfLog->jobQueue(jobs[i].type);
-            Json::Value const jq_counters{
-                perfLog->countersJson()[jss::job_queue]};
+            Json::Value const jq_counters{perfLog->countersJson()[jss::job_queue]};
 
             BEAST_EXPECT(jq_counters.size() == i + 2);
             for (int j = 0; j <= i; ++j)
@@ -573,18 +542,15 @@ public:
         // be half as many queued as started...
         for (int i = 0; i < jobs.size(); ++i)
         {
-            perfLog->jobStart(
-                jobs[i].type, microseconds{i + 1}, steady_clock::now(), i * 2);
+            perfLog->jobStart(jobs[i].type, microseconds{i + 1}, steady_clock::now(), i * 2);
             std::this_thread::sleep_for(microseconds(10));
 
             // Check each jobType counter entry.
-            Json::Value const jq_counters{
-                perfLog->countersJson()[jss::job_queue]};
+            Json::Value const jq_counters{perfLog->countersJson()[jss::job_queue]};
             for (int j = 0; j < jobs.size(); ++j)
             {
                 Json::Value const& counter{jq_counters[jobs[j].typeName]};
-                std::uint64_t const queued_dur_us{
-                    jsonToUint64(counter[jss::queued_duration_us])};
+                std::uint64_t const queued_dur_us{jsonToUint64(counter[jss::queued_duration_us])};
                 if (j < i)
                 {
                     BEAST_EXPECT(counter[jss::started] == "2");
@@ -613,24 +579,17 @@ public:
                 BEAST_EXPECT(total[jss::finished] == "0");
 
                 // Total queued duration is triangle number of (i + 1).
-                BEAST_EXPECT(
-                    jsonToUint64(total[jss::queued_duration_us]) ==
-                    (((i * i) + 3 * i + 2) / 2));
+                BEAST_EXPECT(jsonToUint64(total[jss::queued_duration_us]) == (((i * i) + 3 * i + 2) / 2));
                 BEAST_EXPECT(total[jss::running_duration_us] == "0");
             }
 
-            perfLog->jobStart(
-                jobs[i].type,
-                microseconds{0},
-                steady_clock::now(),
-                (i * 2) + 1);
+            perfLog->jobStart(jobs[i].type, microseconds{0}, steady_clock::now(), (i * 2) + 1);
             std::this_thread::sleep_for(microseconds{10});
 
             // Verify that every entry in jobs appears twice in currents.
             // If we sort by duration_us they should be in the order the
             // rpcStart() call was made.
-            std::vector<Cur> const currents{
-                getSortedCurrent(perfLog->currentJson()[jss::jobs])};
+            std::vector<Cur> const currents{getSortedCurrent(perfLog->currentJson()[jss::jobs])};
             BEAST_EXPECT(currents.size() == (i + 1) * 2);
 
             std::uint64_t prevDur = std::numeric_limits<std::uint64_t>::max();
@@ -652,17 +611,14 @@ public:
             // A number of the computations in this loop care about the
             // number of jobs that have finished.  Make that available.
             int const finished = ((jobs.size() - i) * 2) - 1;
-            perfLog->jobFinish(
-                jobs[i].type, microseconds(finished), (i * 2) + 1);
+            perfLog->jobFinish(jobs[i].type, microseconds(finished), (i * 2) + 1);
             std::this_thread::sleep_for(microseconds(10));
 
-            Json::Value const jq_counters{
-                perfLog->countersJson()[jss::job_queue]};
+            Json::Value const jq_counters{perfLog->countersJson()[jss::job_queue]};
             for (int j = 0; j < jobs.size(); ++j)
             {
                 Json::Value const& counter{jq_counters[jobs[j].typeName]};
-                std::uint64_t const running_dur_us{
-                    jsonToUint64(counter[jss::running_duration_us])};
+                std::uint64_t const running_dur_us{jsonToUint64(counter[jss::running_duration_us])};
                 if (j < i)
                 {
                     BEAST_EXPECT(counter[jss::finished] == "0");
@@ -679,8 +635,7 @@ public:
                     BEAST_EXPECT(running_dur_us == ((jobs.size() - j) * 4) - 1);
                 }
 
-                std::uint64_t const queued_dur_us{
-                    jsonToUint64(counter[jss::queued_duration_us])};
+                std::uint64_t const queued_dur_us{jsonToUint64(counter[jss::queued_duration_us])};
                 BEAST_EXPECT(queued_dur_us == j + 1);
                 BEAST_EXPECT(counter[jss::queued] == "1");
                 BEAST_EXPECT(counter[jss::started] == "2");
@@ -689,31 +644,25 @@ public:
                 // Verify values in jss::total are what we expect.
                 Json::Value const& total{jq_counters[jss::total]};
                 BEAST_EXPECT(jsonToUint64(total[jss::queued]) == jobs.size());
-                BEAST_EXPECT(
-                    jsonToUint64(total[jss::started]) == jobs.size() * 2);
+                BEAST_EXPECT(jsonToUint64(total[jss::started]) == jobs.size() * 2);
                 BEAST_EXPECT(jsonToUint64(total[jss::finished]) == finished);
 
                 // Total queued duration should be triangle number of
                 // jobs.size().
                 int const queuedDur = ((jobs.size() * (jobs.size() + 1)) / 2);
-                BEAST_EXPECT(
-                    jsonToUint64(total[jss::queued_duration_us]) == queuedDur);
+                BEAST_EXPECT(jsonToUint64(total[jss::queued_duration_us]) == queuedDur);
 
                 // Total running duration should be triangle number of finished.
                 int const runningDur = ((finished * (finished + 1)) / 2);
-                BEAST_EXPECT(
-                    jsonToUint64(total[jss::running_duration_us]) ==
-                    runningDur);
+                BEAST_EXPECT(jsonToUint64(total[jss::running_duration_us]) == runningDur);
             }
 
-            perfLog->jobFinish(
-                jobs[i].type, microseconds(finished + 1), (i * 2));
+            perfLog->jobFinish(jobs[i].type, microseconds(finished + 1), (i * 2));
             std::this_thread::sleep_for(microseconds(10));
 
             // Verify that the two jobs we just finished no longer appear in
             // currents.
-            std::vector<Cur> const currents{
-                getSortedCurrent(perfLog->currentJson()[jss::jobs])};
+            std::vector<Cur> const currents{getSortedCurrent(perfLog->currentJson()[jss::jobs])};
             BEAST_EXPECT(currents.size() == i * 2);
 
             std::uint64_t prevDur = std::numeric_limits<std::uint64_t>::max();
@@ -730,8 +679,7 @@ public:
         }
 
         // Validate the final results.
-        auto validateFinalCounters = [this,
-                                      &jobs](Json::Value const& countersJson) {
+        auto validateFinalCounters = [this, &jobs](Json::Value const& countersJson) {
             {
                 Json::Value const& rpc = countersJson[jss::rpc];
                 BEAST_EXPECT(rpc.isObject());
@@ -742,12 +690,10 @@ public:
             for (int i = jobs.size() - 1; i >= 0; --i)
             {
                 Json::Value const& counter{jobQueue[jobs[i].typeName]};
-                std::uint64_t const running_dur_us{
-                    jsonToUint64(counter[jss::running_duration_us])};
+                std::uint64_t const running_dur_us{jsonToUint64(counter[jss::running_duration_us])};
                 BEAST_EXPECT(running_dur_us == ((jobs.size() - i) * 4) - 1);
 
-                std::uint64_t const queued_dur_us{
-                    jsonToUint64(counter[jss::queued_duration_us])};
+                std::uint64_t const queued_dur_us{jsonToUint64(counter[jss::queued_duration_us])};
                 BEAST_EXPECT(queued_dur_us == i + 1);
 
                 BEAST_EXPECT(counter[jss::queued] == "1");
@@ -765,13 +711,11 @@ public:
             // Total queued duration should be triangle number of
             // jobs.size().
             int const queuedDur = ((jobs.size() * (jobs.size() + 1)) / 2);
-            BEAST_EXPECT(
-                jsonToUint64(total[jss::queued_duration_us]) == queuedDur);
+            BEAST_EXPECT(jsonToUint64(total[jss::queued_duration_us]) == queuedDur);
 
             // Total running duration should be triangle number of finished.
             int const runningDur = ((finished * (finished + 1)) / 2);
-            BEAST_EXPECT(
-                jsonToUint64(total[jss::running_duration_us]) == runningDur);
+            BEAST_EXPECT(jsonToUint64(total[jss::running_duration_us]) == runningDur);
         };
 
         auto validateFinalCurrent = [this](Json::Value const& currentJson) {
@@ -861,37 +805,31 @@ public:
         perfLog->resizeJobs(1);
 
         // Lambda to validate countersJson for this test.
-        auto verifyCounters = [this, jobTypeName](
-                                  Json::Value const& countersJson,
-                                  int started,
-                                  int finished,
-                                  int queued_us,
-                                  int running_us) {
-            BEAST_EXPECT(countersJson.isObject());
-            BEAST_EXPECT(countersJson.size() == 2);
+        auto verifyCounters =
+            [this, jobTypeName](
+                Json::Value const& countersJson, int started, int finished, int queued_us, int running_us) {
+                BEAST_EXPECT(countersJson.isObject());
+                BEAST_EXPECT(countersJson.size() == 2);
 
-            BEAST_EXPECT(countersJson.isMember(jss::rpc));
-            BEAST_EXPECT(countersJson[jss::rpc].isObject());
-            BEAST_EXPECT(countersJson[jss::rpc].size() == 0);
+                BEAST_EXPECT(countersJson.isMember(jss::rpc));
+                BEAST_EXPECT(countersJson[jss::rpc].isObject());
+                BEAST_EXPECT(countersJson[jss::rpc].size() == 0);
 
-            BEAST_EXPECT(countersJson.isMember(jss::job_queue));
-            BEAST_EXPECT(countersJson[jss::job_queue].isObject());
-            BEAST_EXPECT(countersJson[jss::job_queue].size() == 1);
-            {
-                Json::Value const& job{
-                    countersJson[jss::job_queue][jobTypeName]};
+                BEAST_EXPECT(countersJson.isMember(jss::job_queue));
+                BEAST_EXPECT(countersJson[jss::job_queue].isObject());
+                BEAST_EXPECT(countersJson[jss::job_queue].size() == 1);
+                {
+                    Json::Value const& job{countersJson[jss::job_queue][jobTypeName]};
 
-                BEAST_EXPECT(job.isObject());
-                BEAST_EXPECT(jsonToUint64(job[jss::queued]) == 0);
-                BEAST_EXPECT(jsonToUint64(job[jss::started]) == started);
-                BEAST_EXPECT(jsonToUint64(job[jss::finished]) == finished);
+                    BEAST_EXPECT(job.isObject());
+                    BEAST_EXPECT(jsonToUint64(job[jss::queued]) == 0);
+                    BEAST_EXPECT(jsonToUint64(job[jss::started]) == started);
+                    BEAST_EXPECT(jsonToUint64(job[jss::finished]) == finished);
 
-                BEAST_EXPECT(
-                    jsonToUint64(job[jss::queued_duration_us]) == queued_us);
-                BEAST_EXPECT(
-                    jsonToUint64(job[jss::running_duration_us]) == running_us);
-            }
-        };
+                    BEAST_EXPECT(jsonToUint64(job[jss::queued_duration_us]) == queued_us);
+                    BEAST_EXPECT(jsonToUint64(job[jss::running_duration_us]) == running_us);
+                }
+            };
 
         // Lambda to validate currentJson (always empty) for this test.
         auto verifyEmptyCurrent = [this](Json::Value const& currentJson) {
@@ -1042,6 +980,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(PerfLog, basics, ripple);
+BEAST_DEFINE_TESTSUITE(PerfLog, basics, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

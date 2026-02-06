@@ -17,16 +17,12 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 DeleteAccount::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureDeletableAccounts))
-        return false;
-
-    if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
-        !ctx.rules.enabled(featureCredentials))
+    if (ctx.tx.isFieldPresent(sfCredentialIDs) && !ctx.rules.enabled(featureCredentials))
         return false;
 
     return true;
@@ -39,8 +35,7 @@ DeleteAccount::preflight(PreflightContext const& ctx)
         // An account cannot be deleted and give itself the resulting XRP.
         return temDST_IS_SRC;
 
-    if (auto const err = credentials::checkFields(ctx.tx, ctx.j);
-        !isTesSuccess(err))
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.j); !isTesSuccess(err))
         return err;
 
     return tesSUCCESS;
@@ -223,8 +218,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
         return tecDST_TAG_NEEDED;
 
     // If credentials are provided - check them anyway
-    if (auto const err = credentials::valid(ctx.tx, ctx.view, account, ctx.j);
-        !isTesSuccess(err))
+    if (auto const err = credentials::valid(ctx.tx, ctx.view, account, ctx.j); !isTesSuccess(err))
         return err;
 
     // if credentials then postpone auth check to doApply, to check for expired
@@ -240,8 +234,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     }
 
     auto sleAccount = ctx.view.read(keylet::account(account));
-    XRPL_ASSERT(
-        sleAccount, "ripple::DeleteAccount::preclaim : non-null account");
+    XRPL_ASSERT(sleAccount, "xrpl::DeleteAccount::preclaim : non-null account");
     if (!sleAccount)
         return terNO_ACCOUNT;
 
@@ -254,9 +247,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     Keylet const first = keylet::nftpage_min(account);
     Keylet const last = keylet::nftpage_max(account);
 
-    auto const cp = ctx.view.read(Keylet(
-        ltNFTOKEN_PAGE,
-        ctx.view.succ(first.key, last.key.next()).value_or(last.key)));
+    auto const cp = ctx.view.read(Keylet(ltNFTOKEN_PAGE, ctx.view.succ(first.key, last.key.next()).value_or(last.key)));
     if (cp)
         return tecHAS_OBLIGATIONS;
 
@@ -281,8 +272,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     // their account and mints a NFToken, it is possible that the
     // NFTokenSequence of this NFToken is the same as the one that the
     // authorized minter minted in a previous ledger.
-    if ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) +
-            (*sleAccount)[~sfMintedNFTokens].value_or(0) + seqDelta >
+    if ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) + (*sleAccount)[~sfMintedNFTokens].value_or(0) + seqDelta >
         ctx.view.seq())
         return tecTOO_SOON;
 
@@ -298,8 +288,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
 
     // Account has no directory at all.  This _should_ have been caught
     // by the dirIsEmpty() check earlier, but it's okay to catch it here.
-    if (!cdirFirst(
-            ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
+    if (!cdirFirst(ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
         return tesSUCCESS;
 
     std::int32_t deletableDirEntryCount{0};
@@ -312,16 +301,13 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
         {
             // Directory node has an invalid index.  Bail out.
             // LCOV_EXCL_START
-            JLOG(ctx.j.fatal())
-                << "DeleteAccount: directory node in ledger " << ctx.view.seq()
-                << " has index to object that is missing: "
-                << to_string(dirEntry);
+            JLOG(ctx.j.fatal()) << "DeleteAccount: directory node in ledger " << ctx.view.seq()
+                                << " has index to object that is missing: " << to_string(dirEntry);
             return tefBAD_LEDGER;
             // LCOV_EXCL_STOP
         }
 
-        LedgerEntryType const nodeType{
-            safe_cast<LedgerEntryType>((*sleItem)[sfLedgerEntryType])};
+        LedgerEntryType const nodeType{safe_cast<LedgerEntryType>((*sleItem)[sfLedgerEntryType])};
 
         if (!nonObligationDeleter(nodeType))
             return tecHAS_OBLIGATIONS;
@@ -331,8 +317,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
         if (++deletableDirEntryCount > maxDeletableDirEntries)
             return tefTOO_BIG;
 
-    } while (cdirNext(
-        ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
+    } while (cdirNext(ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
 
     return tesSUCCESS;
 }
@@ -341,21 +326,18 @@ TER
 DeleteAccount::doApply()
 {
     auto src = view().peek(keylet::account(account_));
-    XRPL_ASSERT(
-        src, "ripple::DeleteAccount::doApply : non-null source account");
+    XRPL_ASSERT(src, "xrpl::DeleteAccount::doApply : non-null source account");
 
     auto const dstID = ctx_.tx[sfDestination];
     auto dst = view().peek(keylet::account(dstID));
-    XRPL_ASSERT(
-        dst, "ripple::DeleteAccount::doApply : non-null destination account");
+    XRPL_ASSERT(dst, "xrpl::DeleteAccount::doApply : non-null destination account");
 
     if (!src || !dst)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     if (ctx_.tx.isFieldPresent(sfCredentialIDs))
     {
-        if (auto err = verifyDepositPreauth(
-                ctx_.tx, ctx_.view(), account_, dstID, dst, ctx_.journal);
+        if (auto err = verifyDepositPreauth(ctx_.tx, ctx_.view(), account_, dstID, dst, ctx_.journal);
             !isTesSuccess(err))
             return err;
     }
@@ -369,15 +351,14 @@ DeleteAccount::doApply()
             std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
             if (auto deleter = nonObligationDeleter(nodeType))
             {
-                TER const result{
-                    deleter(ctx_.app, view(), account_, dirEntry, sleItem, j_)};
+                TER const result{deleter(ctx_.app, view(), account_, dirEntry, sleItem, j_)};
 
                 return {result, SkipEntry::No};
             }
 
             // LCOV_EXCL_START
             UNREACHABLE(
-                "ripple::DeleteAccount::doApply : undeletable item not found "
+                "xrpl::DeleteAccount::doApply : undeletable item not found "
                 "in preclaim");
             JLOG(j_.error()) << "DeleteAccount undeletable item not "
                                 "found in preclaim.";
@@ -393,16 +374,13 @@ DeleteAccount::doApply()
     (*src)[sfBalance] = (*src)[sfBalance] - mSourceBalance;
     ctx_.deliver(mSourceBalance);
 
-    XRPL_ASSERT(
-        (*src)[sfBalance] == XRPAmount(0),
-        "ripple::DeleteAccount::doApply : source balance is zero");
+    XRPL_ASSERT((*src)[sfBalance] == XRPAmount(0), "xrpl::DeleteAccount::doApply : source balance is zero");
 
     // If there's still an owner directory associated with the source account
     // delete it.
     if (view().exists(ownerDirKeylet) && !view().emptyDirDelete(ownerDirKeylet))
     {
-        JLOG(j_.error()) << "DeleteAccount cannot delete root dir node of "
-                         << toBase58(account_);
+        JLOG(j_.error()) << "DeleteAccount cannot delete root dir node of " << toBase58(account_);
         return tecHAS_OBLIGATIONS;
     }
 
@@ -416,4 +394,4 @@ DeleteAccount::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

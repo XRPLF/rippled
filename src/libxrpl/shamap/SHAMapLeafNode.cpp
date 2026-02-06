@@ -1,27 +1,22 @@
 #include <xrpl/shamap/SHAMapLeafNode.h>
 
-namespace ripple {
+namespace xrpl {
 
-SHAMapLeafNode::SHAMapLeafNode(
-    boost::intrusive_ptr<SHAMapItem const> item,
-    std::uint32_t cowid)
+SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t cowid)
     : SHAMapTreeNode(cowid), item_(std::move(item))
 {
     XRPL_ASSERT(
         item_->size() >= 12,
-        "ripple::SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<"
+        "xrpl::SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<"
         "SHAMapItem const>, std::uint32_t) : minimum input size");
 }
 
-SHAMapLeafNode::SHAMapLeafNode(
-    boost::intrusive_ptr<SHAMapItem const> item,
-    std::uint32_t cowid,
-    SHAMapHash const& hash)
+SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t cowid, SHAMapHash const& hash)
     : SHAMapTreeNode(cowid, hash), item_(std::move(item))
 {
     XRPL_ASSERT(
         item_->size() >= 12,
-        "ripple::SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<"
+        "xrpl::SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<"
         "SHAMapItem const>, std::uint32_t, SHAMapHash const&) : minimum input "
         "size");
 }
@@ -35,7 +30,7 @@ SHAMapLeafNode::peekItem() const
 bool
 SHAMapLeafNode::setItem(boost::intrusive_ptr<SHAMapItem const> item)
 {
-    XRPL_ASSERT(cowid_, "ripple::SHAMapLeafNode::setItem : nonzero cowid");
+    XRPL_ASSERT(cowid_, "xrpl::SHAMapLeafNode::setItem : nonzero cowid");
     item_ = std::move(item);
 
     auto const oldHash = hash_;
@@ -73,9 +68,8 @@ SHAMapLeafNode::getString(SHAMapNodeID const& id) const
 void
 SHAMapLeafNode::invariants(bool) const
 {
-    XRPL_ASSERT(
-        hash_.isNonZero(), "ripple::SHAMapLeafNode::invariants : nonzero hash");
-    XRPL_ASSERT(item_, "ripple::SHAMapLeafNode::invariants : non-null item");
+    XRPL_ASSERT(hash_.isNonZero(), "xrpl::SHAMapLeafNode::invariants : nonzero hash");
+    XRPL_ASSERT(item_, "xrpl::SHAMapLeafNode::invariants : non-null item");
 }
 
-}  // namespace ripple
+}  // namespace xrpl

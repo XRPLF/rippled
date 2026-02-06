@@ -8,7 +8,7 @@
 #include <array>
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 struct Expected_test : beast::unit_test::suite
@@ -18,9 +18,7 @@ struct Expected_test : beast::unit_test::suite
     {
         // Test non-error const construction.
         {
-            auto const expected = []() -> Expected<std::string, TER> {
-                return "Valid value";
-            }();
+            auto const expected = []() -> Expected<std::string, TER> { return "Valid value"; }();
             BEAST_EXPECT(expected);
             BEAST_EXPECT(expected.has_value());
             BEAST_EXPECT(expected.value() == "Valid value");
@@ -42,9 +40,7 @@ struct Expected_test : beast::unit_test::suite
         }
         // Test non-error non-const construction.
         {
-            auto expected = []() -> Expected<std::string, TER> {
-                return "Valid value";
-            }();
+            auto expected = []() -> Expected<std::string, TER> { return "Valid value"; }();
             BEAST_EXPECT(expected);
             BEAST_EXPECT(expected.has_value());
             BEAST_EXPECT(expected.value() == "Valid value");
@@ -68,9 +64,7 @@ struct Expected_test : beast::unit_test::suite
         }
         // Test non-error overlapping type construction.
         {
-            auto expected = []() -> Expected<std::uint32_t, std::uint16_t> {
-                return 1;
-            }();
+            auto expected = []() -> Expected<std::uint32_t, std::uint16_t> { return 1; }();
             BEAST_EXPECT(expected);
             BEAST_EXPECT(expected.has_value());
             BEAST_EXPECT(expected.value() == 1);
@@ -91,9 +85,7 @@ struct Expected_test : beast::unit_test::suite
         }
         // Test error construction from rvalue.
         {
-            auto const expected = []() -> Expected<std::string, TER> {
-                return Unexpected(telLOCAL_ERROR);
-            }();
+            auto const expected = []() -> Expected<std::string, TER> { return Unexpected(telLOCAL_ERROR); }();
             BEAST_EXPECT(!expected);
             BEAST_EXPECT(!expected.has_value());
             BEAST_EXPECT(expected.error() == telLOCAL_ERROR);
@@ -114,9 +106,7 @@ struct Expected_test : beast::unit_test::suite
         // Test error construction from lvalue.
         {
             auto const err(telLOCAL_ERROR);
-            auto expected = [&err]() -> Expected<std::string, TER> {
-                return Unexpected(err);
-            }();
+            auto expected = [&err]() -> Expected<std::string, TER> { return Unexpected(err); }();
             BEAST_EXPECT(!expected);
             BEAST_EXPECT(!expected.has_value());
             BEAST_EXPECT(expected.error() == telLOCAL_ERROR);
@@ -136,19 +126,14 @@ struct Expected_test : beast::unit_test::suite
         }
         // Test error construction from const char*.
         {
-            auto const expected = []() -> Expected<int, char const*> {
-                return Unexpected("Not what is expected!");
-            }();
+            auto const expected = []() -> Expected<int, char const*> { return Unexpected("Not what is expected!"); }();
             BEAST_EXPECT(!expected);
             BEAST_EXPECT(!expected.has_value());
-            BEAST_EXPECT(
-                expected.error() == std::string("Not what is expected!"));
+            BEAST_EXPECT(expected.error() == std::string("Not what is expected!"));
         }
         // Test error construction of string from const char*.
         {
-            auto expected = []() -> Expected<int, std::string> {
-                return Unexpected("Not what is expected!");
-            }();
+            auto expected = []() -> Expected<int, std::string> { return Unexpected("Not what is expected!"); }();
             BEAST_EXPECT(!expected);
             BEAST_EXPECT(!expected.has_value());
             BEAST_EXPECT(expected.error() == "Not what is expected!");
@@ -157,9 +142,7 @@ struct Expected_test : beast::unit_test::suite
         }
         // Test non-error const construction of Expected<void, T>.
         {
-            auto const expected = []() -> Expected<void, std::string> {
-                return {};
-            }();
+            auto const expected = []() -> Expected<void, std::string> { return {}; }();
             BEAST_EXPECT(expected);
             bool throwOccurred = false;
             try
@@ -176,9 +159,7 @@ struct Expected_test : beast::unit_test::suite
         }
         // Test non-error non-const construction of Expected<void, T>.
         {
-            auto expected = []() -> Expected<void, std::string> {
-                return {};
-            }();
+            auto expected = []() -> Expected<void, std::string> { return {}; }();
             BEAST_EXPECT(expected);
             bool throwOccurred = false;
             try
@@ -195,17 +176,13 @@ struct Expected_test : beast::unit_test::suite
         }
         // Test error const construction of Expected<void, T>.
         {
-            auto const expected = []() -> Expected<void, std::string> {
-                return Unexpected("Not what is expected!");
-            }();
+            auto const expected = []() -> Expected<void, std::string> { return Unexpected("Not what is expected!"); }();
             BEAST_EXPECT(!expected);
             BEAST_EXPECT(expected.error() == "Not what is expected!");
         }
         // Test error non-const construction of Expected<void, T>.
         {
-            auto expected = []() -> Expected<void, std::string> {
-                return Unexpected("Not what is expected!");
-            }();
+            auto expected = []() -> Expected<void, std::string> { return Unexpected("Not what is expected!"); }();
             BEAST_EXPECT(!expected);
             BEAST_EXPECT(expected.error() == "Not what is expected!");
             std::string const s(std::move(expected.error()));
@@ -224,7 +201,7 @@ struct Expected_test : beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Expected, basics, ripple);
+BEAST_DEFINE_TESTSUITE(Expected, basics, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

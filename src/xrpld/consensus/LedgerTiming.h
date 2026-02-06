@@ -6,7 +6,7 @@
 
 #include <chrono>
 
-namespace ripple {
+namespace xrpl {
 
 /**  Possible ledger close time resolutions.
 
@@ -58,24 +58,16 @@ auto constexpr decreaseLedgerTimeResolutionEvery = 1;
 */
 template <class Rep, class Period, class Seq>
 std::chrono::duration<Rep, Period>
-getNextLedgerTimeResolution(
-    std::chrono::duration<Rep, Period> previousResolution,
-    bool previousAgree,
-    Seq ledgerSeq)
+getNextLedgerTimeResolution(std::chrono::duration<Rep, Period> previousResolution, bool previousAgree, Seq ledgerSeq)
 {
-    XRPL_ASSERT(
-        ledgerSeq != Seq{0},
-        "ripple:getNextLedgerTimeResolution : valid ledger sequence");
+    XRPL_ASSERT(ledgerSeq != Seq{0}, "ripple:getNextLedgerTimeResolution : valid ledger sequence");
 
     using namespace std::chrono;
     // Find the current resolution:
     auto iter = std::find(
-        std::begin(ledgerPossibleTimeResolutions),
-        std::end(ledgerPossibleTimeResolutions),
-        previousResolution);
+        std::begin(ledgerPossibleTimeResolutions), std::end(ledgerPossibleTimeResolutions), previousResolution);
     XRPL_ASSERT(
-        iter != std::end(ledgerPossibleTimeResolutions),
-        "ripple:getNextLedgerTimeResolution : found time resolution");
+        iter != std::end(ledgerPossibleTimeResolutions), "ripple:getNextLedgerTimeResolution : found time resolution");
 
     // This should never happen, but just as a precaution
     if (iter == std::end(ledgerPossibleTimeResolutions))
@@ -83,8 +75,7 @@ getNextLedgerTimeResolution(
 
     // If we did not previously agree, we try to decrease the resolution to
     // improve the chance that we will agree now.
-    if (!previousAgree &&
-        (ledgerSeq % Seq{decreaseLedgerTimeResolutionEvery} == Seq{0}))
+    if (!previousAgree && (ledgerSeq % Seq{decreaseLedgerTimeResolutionEvery} == Seq{0}))
     {
         if (++iter != std::end(ledgerPossibleTimeResolutions))
             return *iter;
@@ -92,8 +83,7 @@ getNextLedgerTimeResolution(
 
     // If we previously agreed, we try to increase the resolution to determine
     // if we can continue to agree.
-    if (previousAgree &&
-        (ledgerSeq % Seq{increaseLedgerTimeResolutionEvery} == Seq{0}))
+    if (previousAgree && (ledgerSeq % Seq{increaseLedgerTimeResolutionEvery} == Seq{0}))
     {
         if (iter-- != std::begin(ledgerPossibleTimeResolutions))
             return *iter;
@@ -111,9 +101,7 @@ getNextLedgerTimeResolution(
 */
 template <class Clock, class Duration, class Rep, class Period>
 std::chrono::time_point<Clock, Duration>
-roundCloseTime(
-    std::chrono::time_point<Clock, Duration> closeTime,
-    std::chrono::duration<Rep, Period> closeResolution)
+roundCloseTime(std::chrono::time_point<Clock, Duration> closeTime, std::chrono::duration<Rep, Period> closeResolution)
 {
     using time_point = decltype(closeTime);
     if (closeTime == time_point{})
@@ -145,9 +133,8 @@ effCloseTime(
     if (closeTime == time_point{})
         return closeTime;
 
-    return std::max<time_point>(
-        roundCloseTime(closeTime, resolution), (priorCloseTime + 1s));
+    return std::max<time_point>(roundCloseTime(closeTime, resolution), (priorCloseTime + 1s));
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 #endif

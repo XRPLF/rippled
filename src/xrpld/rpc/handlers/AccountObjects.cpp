@@ -15,7 +15,7 @@
 
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 /** General RPC command that can retrieve objects in the account root.
     {
@@ -73,9 +73,7 @@ doAccountNFTs(RPC::JsonContext& context)
     auto const first = keylet::nftpage(keylet::nftpage_min(accountID), marker);
     auto const last = keylet::nftpage_max(accountID);
 
-    auto cp = ledger->read(Keylet(
-        ltNFTOKEN_PAGE,
-        ledger->succ(first.key, last.key.next()).value_or(last.key)));
+    auto cp = ledger->read(Keylet(ltNFTOKEN_PAGE, ledger->succ(first.key, last.key.next()).value_or(last.key)));
 
     std::uint32_t cnt = 0;
     auto& nfts = (result[jss::account_nfts] = Json::arrayValue);
@@ -130,8 +128,7 @@ doAccountNFTs(RPC::JsonContext& context)
                 // Pull out the components of the nft ID.
                 obj[sfFlags.jsonName] = nft::getFlags(nftokenID);
                 obj[sfIssuer.jsonName] = to_string(nft::getIssuer(nftokenID));
-                obj[sfNFTokenTaxon.jsonName] =
-                    nft::toUInt32(nft::getTaxon(nftokenID));
+                obj[sfNFTokenTaxon.jsonName] = nft::toUInt32(nft::getTaxon(nftokenID));
                 obj[jss::nft_serial] = nft::getSerial(nftokenID);
                 if (std::uint16_t xferFee = {nft::getTransferFee(nftokenID)})
                     obj[sfTransferFee.jsonName] = xferFee;
@@ -159,6 +156,15 @@ doAccountNFTs(RPC::JsonContext& context)
     return result;
 }
 
+/** Gathers all objects for an account in a ledger.
+    @param ledger Ledger to search account objects.
+    @param account AccountID to find objects for.
+    @param typeFilter Gathers objects of these types. empty gathers all types.
+    @param dirIndex Begin gathering account objects from this directory.
+    @param entryIndex Begin gathering objects from this directory node.
+    @param limit Maximum number of objects to find.
+    @param jvResult A JSON result that holds the request objects.
+*/
 bool
 getAccountObjects(
     ReadView const& ledger,
@@ -173,8 +179,7 @@ getAccountObjects(
     if (!dirIndex.isZero() && !ledger.read({ltDIR_NODE, dirIndex}))
         return false;
 
-    auto typeMatchesFilter = [](std::vector<LedgerEntryType> const& typeFilter,
-                                LedgerEntryType ledgerType) {
+    auto typeMatchesFilter = [](std::vector<LedgerEntryType> const& typeFilter, LedgerEntryType ledgerType) {
         auto it = std::find(typeFilter.begin(), typeFilter.end(), ledgerType);
         return it != typeFilter.end();
     };
@@ -182,9 +187,7 @@ getAccountObjects(
     // if dirIndex != 0, then all NFTs have already been returned.  only
     // iterate NFT pages if the filter says so AND dirIndex == 0
     bool iterateNFTPages =
-        (!typeFilter.has_value() ||
-         typeMatchesFilter(typeFilter.value(), ltNFTOKEN_PAGE)) &&
-        dirIndex == beast::zero;
+        (!typeFilter.has_value() || typeMatchesFilter(typeFilter.value(), ltNFTOKEN_PAGE)) && dirIndex == beast::zero;
 
     Keylet const firstNFTPage = keylet::nftpage_min(account);
 
@@ -207,9 +210,7 @@ getAccountObjects(
     // iterate NFTokenPages preferentially
     if (iterateNFTPages)
     {
-        Keylet const first = entryIndex == beast::zero
-            ? firstNFTPage
-            : Keylet{ltNFTOKEN_PAGE, entryIndex};
+        Keylet const first = entryIndex == beast::zero ? firstNFTPage : Keylet{ltNFTOKEN_PAGE, entryIndex};
 
         Keylet const last = keylet::nftpage_max(account);
 
@@ -298,8 +299,7 @@ getAccountObjects(
         if (i == mlimit && mlimit < limit)
         {
             jvResult[jss::limit] = limit;
-            jvResult[jss::marker] =
-                to_string(dirIndex) + ',' + to_string(*iter);
+            jvResult[jss::marker] = to_string(dirIndex) + ',' + to_string(*iter);
             return true;
         }
 
@@ -307,8 +307,7 @@ getAccountObjects(
         {
             auto const sleNode = ledger.read(keylet::child(*iter));
 
-            if (!typeFilter.has_value() ||
-                typeMatchesFilter(typeFilter.value(), sleNode->getType()))
+            if (!typeFilter.has_value() || typeMatchesFilter(typeFilter.value(), sleNode->getType()))
             {
                 jvObjects.append(sleNode->getJson(JsonOptions::none));
             }
@@ -318,8 +317,7 @@ getAccountObjects(
                 if (++iter != entries.end())
                 {
                     jvResult[jss::limit] = limit;
-                    jvResult[jss::marker] =
-                        to_string(dirIndex) + ',' + to_string(*iter);
+                    jvResult[jss::marker] = to_string(dirIndex) + ',' + to_string(*iter);
                     return true;
                 }
 
@@ -342,8 +340,7 @@ getAccountObjects(
             if (!e.empty())
             {
                 jvResult[jss::limit] = limit;
-                jvResult[jss::marker] =
-                    to_string(dirIndex) + ',' + to_string(*e.begin());
+                jvResult[jss::marker] = to_string(dirIndex) + ',' + to_string(*e.begin());
             }
 
             return true;
@@ -379,8 +376,7 @@ doAccountObjects(RPC::JsonContext& context)
 
     std::optional<std::vector<LedgerEntryType>> typeFilter;
 
-    if (params.isMember(jss::deletion_blockers_only) &&
-        params[jss::deletion_blockers_only].asBool())
+    if (params.isMember(jss::deletion_blockers_only) && params[jss::deletion_blockers_only].asBool())
     {
         struct
         {
@@ -393,8 +389,7 @@ doAccountObjects(RPC::JsonContext& context)
             {jss::payment_channel, ltPAYCHAN},
             {jss::state, ltRIPPLE_STATE},
             {jss::xchain_owned_claim_id, ltXCHAIN_OWNED_CLAIM_ID},
-            {jss::xchain_owned_create_account_claim_id,
-             ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
+            {jss::xchain_owned_create_account_claim_id, ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
             {jss::bridge, ltBRIDGE},
             {jss::mpt_issuance, ltMPTOKEN_ISSUANCE},
             {jss::mptoken, ltMPTOKEN},
@@ -458,14 +453,7 @@ doAccountObjects(RPC::JsonContext& context)
             return RPC::invalid_field_error(jss::marker);
     }
 
-    if (!getAccountObjects(
-            *ledger,
-            accountID,
-            typeFilter,
-            dirIndex,
-            entryIndex,
-            limit,
-            result))
+    if (!getAccountObjects(*ledger, accountID, typeFilter, dirIndex, entryIndex, limit, result))
         return RPC::invalid_field_error(jss::marker);
 
     result[jss::account] = toBase58(accountID);
@@ -473,4 +461,4 @@ doAccountObjects(RPC::JsonContext& context)
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

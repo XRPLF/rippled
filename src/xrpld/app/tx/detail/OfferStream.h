@@ -11,7 +11,7 @@
 
 #include <boost/container/flat_set.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 template <class TIn, class TOut>
 class TOfferStreamBase
@@ -25,8 +25,7 @@ public:
         beast::Journal j_;
 
     public:
-        StepCounter(std::uint32_t limit, beast::Journal j)
-            : limit_(limit), count_(0), j_(j)
+        StepCounter(std::uint32_t limit, beast::Journal j) : limit_(limit), count_(0), j_(j)
         {
         }
 
@@ -174,6 +173,6 @@ public:
         return permToRemove_;
     }
 };
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

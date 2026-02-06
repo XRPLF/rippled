@@ -7,7 +7,7 @@
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/st.h>
 
-namespace ripple {
+namespace xrpl {
 
 class STParsedJSON_test : public beast::unit_test::suite
 {
@@ -260,9 +260,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
             BEAST_EXPECT(obj.object->isFieldPresent(sfIndexNext));
-            BEAST_EXPECT(
-                obj.object->getFieldU64(sfIndexNext) ==
-                18446744073709551615ull);
+            BEAST_EXPECT(obj.object->getFieldU64(sfIndexNext) == 18446744073709551615ull);
         }
 
         // Test min value for uint64
@@ -338,24 +336,8 @@ class STParsedJSON_test : public beast::unit_test::suite
             BEAST_EXPECT(obj.object->isFieldPresent(sfEmailHash));
             BEAST_EXPECT(obj.object->getFieldH128(sfEmailHash).size() == 16);
             std::array<uint8_t, 16> expected = {
-                0x01,
-                0x23,
-                0x45,
-                0x67,
-                0x89,
-                0xAB,
-                0xCD,
-                0xEF,
-                0x01,
-                0x23,
-                0x45,
-                0x67,
-                0x89,
-                0xAB,
-                0xCD,
-                0xEF};
-            BEAST_EXPECT(
-                obj.object->getFieldH128(sfEmailHash) == uint128{expected});
+                0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF};
+            BEAST_EXPECT(obj.object->getFieldH128(sfEmailHash) == uint128{expected});
         }
 
         // Valid lowercase hex string for UInt128
@@ -377,8 +359,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             BEAST_EXPECT(obj.object->isFieldPresent(sfEmailHash));
             auto const& h128 = obj.object->getFieldH128(sfEmailHash);
             BEAST_EXPECT(h128.size() == 16);
-            bool allZero = std::all_of(
-                h128.begin(), h128.end(), [](auto b) { return b == 0; });
+            bool allZero = std::all_of(h128.begin(), h128.end(), [](auto b) { return b == 0; });
             BEAST_EXPECT(allZero);
         }
 
@@ -441,14 +422,10 @@ class STParsedJSON_test : public beast::unit_test::suite
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
             BEAST_EXPECT(obj.object->isFieldPresent(sfTakerPaysCurrency));
-            BEAST_EXPECT(
-                obj.object->getFieldH160(sfTakerPaysCurrency).size() == 20);
-            std::array<uint8_t, 20> expected = {
-                0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23,
-                0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67};
-            BEAST_EXPECT(
-                obj.object->getFieldH160(sfTakerPaysCurrency) ==
-                uint160{expected});
+            BEAST_EXPECT(obj.object->getFieldH160(sfTakerPaysCurrency).size() == 20);
+            std::array<uint8_t, 20> expected = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23,
+                                                0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67};
+            BEAST_EXPECT(obj.object->getFieldH160(sfTakerPaysCurrency) == uint160{expected});
         }
         // Valid lowercase hex string for UInt160
         {
@@ -457,8 +434,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
             BEAST_EXPECT(obj.object->isFieldPresent(sfTakerPaysCurrency));
-            BEAST_EXPECT(
-                obj.object->getFieldH160(sfTakerPaysCurrency).size() == 20);
+            BEAST_EXPECT(obj.object->getFieldH160(sfTakerPaysCurrency).size() == 20);
         }
 
         // Empty string for UInt160 (should be valid, all zero)
@@ -470,8 +446,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             BEAST_EXPECT(obj.object->isFieldPresent(sfTakerPaysCurrency));
             auto const& h160 = obj.object->getFieldH160(sfTakerPaysCurrency);
             BEAST_EXPECT(h160.size() == 20);
-            bool allZero = std::all_of(
-                h160.begin(), h160.end(), [](auto b) { return b == 0; });
+            bool allZero = std::all_of(h160.begin(), h160.end(), [](auto b) { return b == 0; });
             BEAST_EXPECT(allZero);
         }
 
@@ -494,8 +469,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         // Hex string too long for UInt160 (should fail)
         {
             Json::Value j;
-            j[sfTakerPaysCurrency] =
-                "0123456789ABCDEF0123456789ABCDEF0123456789";
+            j[sfTakerPaysCurrency] = "0123456789ABCDEF0123456789ABCDEF0123456789";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -523,32 +497,24 @@ class STParsedJSON_test : public beast::unit_test::suite
         testcase("UInt192");
         {
             Json::Value j;
-            j[sfMPTokenIssuanceID] =
-                "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+            j[sfMPTokenIssuanceID] = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
             BEAST_EXPECT(obj.object->isFieldPresent(sfMPTokenIssuanceID));
-            BEAST_EXPECT(
-                obj.object->getFieldH192(sfMPTokenIssuanceID).size() == 24);
-            std::array<uint8_t, 24> expected = {
-                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-            BEAST_EXPECT(
-                obj.object->getFieldH192(sfMPTokenIssuanceID) ==
-                uint192{expected});
+            BEAST_EXPECT(obj.object->getFieldH192(sfMPTokenIssuanceID).size() == 24);
+            std::array<uint8_t, 24> expected = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                                                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+            BEAST_EXPECT(obj.object->getFieldH192(sfMPTokenIssuanceID) == uint192{expected});
         }
 
         // Valid lowercase hex string for UInt192
         {
             Json::Value j;
-            j[sfMPTokenIssuanceID] =
-                "ffffffffffffffffffffffffffffffffffffffffffffffff";
+            j[sfMPTokenIssuanceID] = "ffffffffffffffffffffffffffffffffffffffffffffffff";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
             BEAST_EXPECT(obj.object->isFieldPresent(sfMPTokenIssuanceID));
-            BEAST_EXPECT(
-                obj.object->getFieldH192(sfMPTokenIssuanceID).size() == 24);
+            BEAST_EXPECT(obj.object->getFieldH192(sfMPTokenIssuanceID).size() == 24);
         }
 
         // Empty string for UInt192 (should be valid, all zero)
@@ -560,16 +526,14 @@ class STParsedJSON_test : public beast::unit_test::suite
             BEAST_EXPECT(obj.object->isFieldPresent(sfMPTokenIssuanceID));
             auto const& h192 = obj.object->getFieldH192(sfMPTokenIssuanceID);
             BEAST_EXPECT(h192.size() == 24);
-            bool allZero = std::all_of(
-                h192.begin(), h192.end(), [](auto b) { return b == 0; });
+            bool allZero = std::all_of(h192.begin(), h192.end(), [](auto b) { return b == 0; });
             BEAST_EXPECT(allZero);
         }
 
         // Odd-length hex string for UInt192 (should fail)
         {
             Json::Value j;
-            j[sfMPTokenIssuanceID] =
-                "0123456789ABCDEF0123456789ABCDEF0123456789ABCDE";
+            j[sfMPTokenIssuanceID] = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDE";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -593,8 +557,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         // Hex string too long for UInt192 (should fail)
         {
             Json::Value j;
-            j[sfMPTokenIssuanceID] =
-                "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF00";
+            j[sfMPTokenIssuanceID] = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF00";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -630,13 +593,10 @@ class STParsedJSON_test : public beast::unit_test::suite
             BEAST_EXPECT(obj.object.has_value());
             BEAST_EXPECT(obj.object->isFieldPresent(sfLedgerHash));
             BEAST_EXPECT(obj.object->getFieldH256(sfLedgerHash).size() == 32);
-            std::array<uint8_t, 32> expected = {
-                0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
-                0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
-                0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
-                0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF};
-            BEAST_EXPECT(
-                obj.object->getFieldH256(sfLedgerHash) == uint256{expected});
+            std::array<uint8_t, 32> expected = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45,
+                                                0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB,
+                                                0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF};
+            BEAST_EXPECT(obj.object->getFieldH256(sfLedgerHash) == uint256{expected});
         }
         // Valid lowercase hex string for UInt256
         {
@@ -659,8 +619,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             BEAST_EXPECT(obj.object->isFieldPresent(sfLedgerHash));
             auto const& h256 = obj.object->getFieldH256(sfLedgerHash);
             BEAST_EXPECT(h256.size() == 32);
-            bool allZero = std::all_of(
-                h256.begin(), h256.end(), [](auto b) { return b == 0; });
+            bool allZero = std::all_of(h256.begin(), h256.end(), [](auto b) { return b == 0; });
             BEAST_EXPECT(allZero);
         }
 
@@ -724,63 +683,60 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             int const minInt32 = -2147483648;
-            j[sfDummyInt32] = minInt32;
+            j[sfLoanScale] = minInt32;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
-            if (BEAST_EXPECT(obj.object->isFieldPresent(sfDummyInt32)))
-                BEAST_EXPECT(obj.object->getFieldI32(sfDummyInt32) == minInt32);
+            if (BEAST_EXPECT(obj.object->isFieldPresent(sfLoanScale)))
+                BEAST_EXPECT(obj.object->getFieldI32(sfLoanScale) == minInt32);
         }
 
         // max value
         {
             Json::Value j;
             int const maxInt32 = 2147483647;
-            j[sfDummyInt32] = maxInt32;
+            j[sfLoanScale] = maxInt32;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
-            if (BEAST_EXPECT(obj.object->isFieldPresent(sfDummyInt32)))
-                BEAST_EXPECT(obj.object->getFieldI32(sfDummyInt32) == maxInt32);
+            if (BEAST_EXPECT(obj.object->isFieldPresent(sfLoanScale)))
+                BEAST_EXPECT(obj.object->getFieldI32(sfLoanScale) == maxInt32);
         }
 
         // max uint value
         {
             Json::Value j;
             unsigned int const maxUInt32 = 2147483647u;
-            j[sfDummyInt32] = maxUInt32;
+            j[sfLoanScale] = maxUInt32;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
-            if (BEAST_EXPECT(obj.object->isFieldPresent(sfDummyInt32)))
-                BEAST_EXPECT(
-                    obj.object->getFieldI32(sfDummyInt32) ==
-                    static_cast<int32_t>(maxUInt32));
+            if (BEAST_EXPECT(obj.object->isFieldPresent(sfLoanScale)))
+                BEAST_EXPECT(obj.object->getFieldI32(sfLoanScale) == static_cast<int32_t>(maxUInt32));
         }
 
         // Test with string value
         {
             Json::Value j;
-            j[sfDummyInt32] = "2147483647";
+            j[sfLoanScale] = "2147483647";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
-            if (BEAST_EXPECT(obj.object->isFieldPresent(sfDummyInt32)))
-                BEAST_EXPECT(
-                    obj.object->getFieldI32(sfDummyInt32) == 2147483647u);
+            if (BEAST_EXPECT(obj.object->isFieldPresent(sfLoanScale)))
+                BEAST_EXPECT(obj.object->getFieldI32(sfLoanScale) == 2147483647u);
         }
 
         // Test with string negative value
         {
             Json::Value j;
             int value = -2147483648;
-            j[sfDummyInt32] = std::to_string(value);
+            j[sfLoanScale] = std::to_string(value);
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
-            if (BEAST_EXPECT(obj.object->isFieldPresent(sfDummyInt32)))
-                BEAST_EXPECT(obj.object->getFieldI32(sfDummyInt32) == value);
+            if (BEAST_EXPECT(obj.object->isFieldPresent(sfLoanScale)))
+                BEAST_EXPECT(obj.object->getFieldI32(sfLoanScale) == value);
         }
 
         // Test out of range value for int32 (negative)
         {
             Json::Value j;
-            j[sfDummyInt32] = "-2147483649";
+            j[sfLoanScale] = "-2147483649";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -788,7 +744,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         // Test out of range value for int32 (positive)
         {
             Json::Value j;
-            j[sfDummyInt32] = 2147483648u;
+            j[sfLoanScale] = 2147483648u;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -796,7 +752,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         // Test string value out of range
         {
             Json::Value j;
-            j[sfDummyInt32] = "2147483648";
+            j[sfLoanScale] = "2147483648";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -804,7 +760,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         // Test bad_type (arrayValue)
         {
             Json::Value j;
-            j[sfDummyInt32] = Json::Value(Json::arrayValue);
+            j[sfLoanScale] = Json::Value(Json::arrayValue);
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -812,7 +768,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         // Test bad_type (objectValue)
         {
             Json::Value j;
-            j[sfDummyInt32] = Json::Value(Json::objectValue);
+            j[sfLoanScale] = Json::Value(Json::objectValue);
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -987,8 +943,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             BEAST_EXPECT(obj.object->isFieldPresent(sfAccount));
             auto const& acct = obj.object->getAccountID(sfAccount);
             BEAST_EXPECT(acct.size() == 20);
-            BEAST_EXPECT(
-                toBase58(acct) == "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
+            BEAST_EXPECT(toBase58(acct) == "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
         }
 
         // Valid hex string for AccountID
@@ -1172,9 +1127,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
             BEAST_EXPECT(obj.object->isFieldPresent(sfAmount));
-            BEAST_EXPECT(
-                obj.object->getFieldAmount(sfAmount) ==
-                STAmount(100000000000000000ull));
+            BEAST_EXPECT(obj.object->getFieldAmount(sfAmount) == STAmount(100000000000000000ull));
         }
 
         // Test with int value for Amount
@@ -1184,8 +1137,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
             BEAST_EXPECT(obj.object->isFieldPresent(sfAmount));
-            BEAST_EXPECT(
-                obj.object->getFieldAmount(sfAmount) == STAmount(4294967295u));
+            BEAST_EXPECT(obj.object->getFieldAmount(sfAmount) == STAmount(4294967295u));
         }
 
         // Test with decimal string for Amount (should fail)
@@ -1245,15 +1197,9 @@ class STParsedJSON_test : public beast::unit_test::suite
                 BEAST_EXPECT(!ps.empty());
                 BEAST_EXPECT(ps.size() == 1);
                 BEAST_EXPECT(ps[0].size() == 1);
-                BEAST_EXPECT(
-                    ps[0][0].getAccountID() ==
-                    parseBase58<AccountID>(
-                        "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"));
+                BEAST_EXPECT(ps[0][0].getAccountID() == parseBase58<AccountID>("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"));
                 BEAST_EXPECT(to_string(ps[0][0].getCurrency()) == "USD");
-                BEAST_EXPECT(
-                    ps[0][0].getIssuerID() ==
-                    parseBase58<AccountID>(
-                        "rPT1Sjq2YGrBMTttX4GZHjKu9dyfzbpAYe"));
+                BEAST_EXPECT(ps[0][0].getIssuerID() == parseBase58<AccountID>("rPT1Sjq2YGrBMTttX4GZHjKu9dyfzbpAYe"));
             }
         }
 
@@ -1428,10 +1374,7 @@ class STParsedJSON_test : public beast::unit_test::suite
                 BEAST_EXPECT(issue.currency.size() == 20);
                 BEAST_EXPECT(to_string(issue.currency) == "USD");
                 BEAST_EXPECT(issue.account.size() == 20);
-                BEAST_EXPECT(
-                    issue.account ==
-                    parseBase58<AccountID>(
-                        "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"));
+                BEAST_EXPECT(issue.account == parseBase58<AccountID>("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"));
             }
         }
 
@@ -1457,8 +1400,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             Json::Value issueJson(Json::objectValue);
-            issueJson["mpt_issuance_id"] =
-                "0000000000000000000000004D5054494431323334234234";
+            issueJson["mpt_issuance_id"] = "0000000000000000000000004D5054494431323334234234";
             j[sfAsset] = issueJson;
             STParsedJSONObject obj("Test", j);
             if (BEAST_EXPECT(obj.object.has_value()))
@@ -1567,10 +1509,8 @@ class STParsedJSON_test : public beast::unit_test::suite
             {
                 BEAST_EXPECT(obj.object->isFieldPresent(sfXChainBridge));
                 auto const& bridgeField = (*obj.object)[sfXChainBridge];
-                BEAST_EXPECT(
-                    bridgeField->lockingChainIssue().currency.size() == 20);
-                BEAST_EXPECT(
-                    bridgeField->issuingChainIssue().currency.size() == 20);
+                BEAST_EXPECT(bridgeField->lockingChainIssue().currency.size() == 20);
+                BEAST_EXPECT(bridgeField->issuingChainIssue().currency.size() == 20);
             }
         }
 
@@ -1579,12 +1519,10 @@ class STParsedJSON_test : public beast::unit_test::suite
             Json::Value j;
             Json::Value bridge(Json::objectValue);
             Json::Value issuingChainIssue(Json::objectValue);
-            issuingChainIssue["currency"] =
-                "0123456789ABCDEF01230123456789ABCDEF0123";
+            issuingChainIssue["currency"] = "0123456789ABCDEF01230123456789ABCDEF0123";
             issuingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             Json::Value lockingChainIssue(Json::objectValue);
-            lockingChainIssue["currency"] =
-                "0123456789ABCDEF01230123456789ABCDEF0123";
+            lockingChainIssue["currency"] = "0123456789ABCDEF01230123456789ABCDEF0123";
             lockingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             bridge["LockingChainIssue"] = lockingChainIssue;
             bridge["IssuingChainIssue"] = issuingChainIssue;
@@ -1596,10 +1534,8 @@ class STParsedJSON_test : public beast::unit_test::suite
             {
                 BEAST_EXPECT(obj.object->isFieldPresent(sfXChainBridge));
                 auto const& bridgeField = (*obj.object)[sfXChainBridge];
-                BEAST_EXPECT(
-                    bridgeField->lockingChainIssue().currency.size() == 20);
-                BEAST_EXPECT(
-                    bridgeField->issuingChainIssue().currency.size() == 20);
+                BEAST_EXPECT(bridgeField->lockingChainIssue().currency.size() == 20);
+                BEAST_EXPECT(bridgeField->issuingChainIssue().currency.size() == 20);
             }
         }
 
@@ -1749,9 +1685,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
             BEAST_EXPECT(obj.object->isFieldPresent(sfNumber));
-            BEAST_EXPECT(
-                obj.object->getFieldNumber(sfNumber).value() ==
-                Number(12345, 0));
+            BEAST_EXPECT(obj.object->getFieldNumber(sfNumber).value() == Number(12345, 0));
         }
 
         // Valid uint value for STNumber
@@ -1761,9 +1695,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
             BEAST_EXPECT(obj.object->isFieldPresent(sfNumber));
-            BEAST_EXPECT(
-                obj.object->getFieldNumber(sfNumber).value() ==
-                Number(12345, 0));
+            BEAST_EXPECT(obj.object->getFieldNumber(sfNumber).value() == Number(12345, 0));
         }
 
         // Valid string integer value for STNumber
@@ -1773,9 +1705,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
             BEAST_EXPECT(obj.object->isFieldPresent(sfNumber));
-            BEAST_EXPECT(
-                obj.object->getFieldNumber(sfNumber).value() ==
-                Number(67890, 0));
+            BEAST_EXPECT(obj.object->getFieldNumber(sfNumber).value() == Number(67890, 0));
         }
 
         // Valid negative integer value for STNumber
@@ -1785,8 +1715,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
             BEAST_EXPECT(obj.object->isFieldPresent(sfNumber));
-            BEAST_EXPECT(
-                obj.object->getFieldNumber(sfNumber).value() == Number(-42, 0));
+            BEAST_EXPECT(obj.object->getFieldNumber(sfNumber).value() == Number(-42, 0));
         }
 
         // Valid string negative integer value for STNumber
@@ -1796,9 +1725,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
             BEAST_EXPECT(obj.object->isFieldPresent(sfNumber));
-            BEAST_EXPECT(
-                obj.object->getFieldNumber(sfNumber).value() ==
-                Number(-123, 0));
+            BEAST_EXPECT(obj.object->getFieldNumber(sfNumber).value() == Number(-123, 0));
         }
 
         // Valid floating point value for STNumber
@@ -1809,9 +1736,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             if (BEAST_EXPECT(obj.object.has_value()))
             {
                 BEAST_EXPECT(obj.object->isFieldPresent(sfNumber));
-                BEAST_EXPECT(
-                    obj.object->getFieldNumber(sfNumber).value() ==
-                    Number(314159, -5));
+                BEAST_EXPECT(obj.object->getFieldNumber(sfNumber).value() == Number(314159, -5));
             }
         }
 
@@ -1861,8 +1786,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
             BEAST_EXPECT(obj.object->isFieldPresent(sfTransactionMetaData));
-            auto const& result =
-                obj.object->peekFieldObject(sfTransactionMetaData);
+            auto const& result = obj.object->peekFieldObject(sfTransactionMetaData);
             BEAST_EXPECT(result.getFieldU8(sfTransactionResult) == 1);
         }
 
@@ -2063,8 +1987,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             catch (std::runtime_error& e)
             {
                 std::string what(e.what());
-                unexpected(
-                    what.find("First level children of `Template`") != 0);
+                unexpected(what.find("First level children of `Template`") != 0);
             }
         }
     }
@@ -2089,20 +2012,17 @@ class STParsedJSON_test : public beast::unit_test::suite
                 STParsedJSONObject parsed("test", jv);
                 if (BEAST_EXPECT(parsed.object))
                 {
-                    std::string const& serialized(
-                        to_string(parsed.object->getJson(JsonOptions::none)));
+                    std::string const& serialized(to_string(parsed.object->getJson(JsonOptions::none)));
                     BEAST_EXPECT(serialized == goodJson);
                 }
             }
         }
 
         {
-            std::string const goodJson(
-                R"({"CloseResolution":19,"Method":"250",)"
-                R"("TransactionResult":"tecFROZEN"})");
-            std::string const expectedJson(
-                R"({"CloseResolution":19,"Method":250,)"
-                R"("TransactionResult":"tecFROZEN"})");
+            std::string const goodJson(R"({"CloseResolution":19,"Method":"250",)"
+                                       R"("TransactionResult":"tecFROZEN"})");
+            std::string const expectedJson(R"({"CloseResolution":19,"Method":250,)"
+                                           R"("TransactionResult":"tecFROZEN"})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(goodJson, jv)))
@@ -2113,20 +2033,17 @@ class STParsedJSON_test : public beast::unit_test::suite
                 STParsedJSONObject parsed("test", jv);
                 if (BEAST_EXPECT(parsed.object))
                 {
-                    std::string const& serialized(
-                        to_string(parsed.object->getJson(JsonOptions::none)));
+                    std::string const& serialized(to_string(parsed.object->getJson(JsonOptions::none)));
                     BEAST_EXPECT(serialized == expectedJson);
                 }
             }
         }
 
         {
-            std::string const goodJson(
-                R"({"CloseResolution":"19","Method":"250",)"
-                R"("TransactionResult":"tecFROZEN"})");
-            std::string const expectedJson(
-                R"({"CloseResolution":19,"Method":250,)"
-                R"("TransactionResult":"tecFROZEN"})");
+            std::string const goodJson(R"({"CloseResolution":"19","Method":"250",)"
+                                       R"("TransactionResult":"tecFROZEN"})");
+            std::string const expectedJson(R"({"CloseResolution":19,"Method":250,)"
+                                           R"("TransactionResult":"tecFROZEN"})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(goodJson, jv)))
@@ -2137,8 +2054,7 @@ class STParsedJSON_test : public beast::unit_test::suite
                 STParsedJSONObject parsed("test", jv);
                 if (BEAST_EXPECT(parsed.object))
                 {
-                    std::string const& serialized(
-                        to_string(parsed.object->getJson(JsonOptions::none)));
+                    std::string const& serialized(to_string(parsed.object->getJson(JsonOptions::none)));
                     BEAST_EXPECT(serialized == expectedJson);
                 }
             }
@@ -2155,9 +2071,7 @@ class STParsedJSON_test : public beast::unit_test::suite
                 BEAST_EXPECT(!parsed.object);
                 BEAST_EXPECT(parsed.error);
                 BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
-                BEAST_EXPECT(
-                    parsed.error[jss::error_message] ==
-                    "Field 'test.TransactionResult' is out of range.");
+                BEAST_EXPECT(parsed.error[jss::error_message] == "Field 'test.TransactionResult' is out of range.");
             }
         }
 
@@ -2172,16 +2086,13 @@ class STParsedJSON_test : public beast::unit_test::suite
                 BEAST_EXPECT(!parsed.object);
                 BEAST_EXPECT(parsed.error);
                 BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
-                BEAST_EXPECT(
-                    parsed.error[jss::error_message] ==
-                    "Field 'test.Method' has bad type.");
+                BEAST_EXPECT(parsed.error[jss::error_message] == "Field 'test.Method' has bad type.");
             }
         }
 
         {
-            std::string const json(
-                R"({"CloseResolution":19,"Method":3294967296,)"
-                R"("TransactionResult":"tesSUCCESS"})");
+            std::string const json(R"({"CloseResolution":19,"Method":3294967296,)"
+                                   R"("TransactionResult":"tesSUCCESS"})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(json, jv)))
@@ -2190,9 +2101,7 @@ class STParsedJSON_test : public beast::unit_test::suite
                 BEAST_EXPECT(!parsed.object);
                 BEAST_EXPECT(parsed.error);
                 BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
-                BEAST_EXPECT(
-                    parsed.error[jss::error_message] ==
-                    "Field 'test.Method' is out of range.");
+                BEAST_EXPECT(parsed.error[jss::error_message] == "Field 'test.Method' is out of range.");
             }
         }
 
@@ -2207,16 +2116,13 @@ class STParsedJSON_test : public beast::unit_test::suite
                 BEAST_EXPECT(!parsed.object);
                 BEAST_EXPECT(parsed.error);
                 BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
-                BEAST_EXPECT(
-                    parsed.error[jss::error_message] ==
-                    "Field 'test.CloseResolution' is out of range.");
+                BEAST_EXPECT(parsed.error[jss::error_message] == "Field 'test.CloseResolution' is out of range.");
             }
         }
 
         {
-            std::string const json(
-                R"({"CloseResolution":19,"Method":3.141592653,)"
-                R"("TransactionResult":"tesSUCCESS"})");
+            std::string const json(R"({"CloseResolution":19,"Method":3.141592653,)"
+                                   R"("TransactionResult":"tesSUCCESS"})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(json, jv)))
@@ -2225,18 +2131,15 @@ class STParsedJSON_test : public beast::unit_test::suite
                 BEAST_EXPECT(!parsed.object);
                 BEAST_EXPECT(parsed.error);
                 BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
-                BEAST_EXPECT(
-                    parsed.error[jss::error_message] ==
-                    "Field 'test.Method' has bad type.");
+                BEAST_EXPECT(parsed.error[jss::error_message] == "Field 'test.Method' has bad type.");
             }
         }
 
         {
             std::string const goodJson(R"({"CloseResolution":19,"Method":250,)"
                                        R"("TransferFee":"65535"})");
-            std::string const expectedJson(
-                R"({"CloseResolution":19,"Method":250,)"
-                R"("TransferFee":65535})");
+            std::string const expectedJson(R"({"CloseResolution":19,"Method":250,)"
+                                           R"("TransferFee":65535})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(goodJson, jv)))
@@ -2244,8 +2147,7 @@ class STParsedJSON_test : public beast::unit_test::suite
                 STParsedJSONObject parsed("test", jv);
                 if (BEAST_EXPECT(parsed.object))
                 {
-                    std::string const& serialized(
-                        to_string(parsed.object->getJson(JsonOptions::none)));
+                    std::string const& serialized(to_string(parsed.object->getJson(JsonOptions::none)));
                     BEAST_EXPECT(serialized == expectedJson);
                 }
             }
@@ -2262,9 +2164,7 @@ class STParsedJSON_test : public beast::unit_test::suite
                 BEAST_EXPECT(!parsed.object);
                 BEAST_EXPECT(parsed.error);
                 BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
-                BEAST_EXPECT(
-                    parsed.error[jss::error_message] ==
-                    "Field 'test.TransferFee' has invalid data.");
+                BEAST_EXPECT(parsed.error[jss::error_message] == "Field 'test.TransferFee' has invalid data.");
             }
         }
 
@@ -2279,9 +2179,7 @@ class STParsedJSON_test : public beast::unit_test::suite
                 BEAST_EXPECT(!parsed.object);
                 BEAST_EXPECT(parsed.error);
                 BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
-                BEAST_EXPECT(
-                    parsed.error[jss::error_message] ==
-                    "Field 'test.TransferFee' has invalid data.");
+                BEAST_EXPECT(parsed.error[jss::error_message] == "Field 'test.TransferFee' has invalid data.");
             }
         }
 
@@ -2296,9 +2194,7 @@ class STParsedJSON_test : public beast::unit_test::suite
                 BEAST_EXPECT(!parsed.object);
                 BEAST_EXPECT(parsed.error);
                 BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
-                BEAST_EXPECT(
-                    parsed.error[jss::error_message] ==
-                    "Field 'test.TransferFee' has bad type.");
+                BEAST_EXPECT(parsed.error[jss::error_message] == "Field 'test.TransferFee' has bad type.");
             }
         }
     }
@@ -2332,6 +2228,6 @@ class STParsedJSON_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(STParsedJSON, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(STParsedJSON, protocol, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

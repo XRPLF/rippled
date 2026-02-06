@@ -11,7 +11,7 @@
 
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class View_test : public beast::unit_test::suite
@@ -60,8 +60,7 @@ class View_test : public beast::unit_test::suite
                 next = view.succ(*next);
                 if (!next)
                     break;
-                view.rawErase(std::make_shared<SLE>(
-                    *view.read(keylet::unchecked(*next))));
+                view.rawErase(std::make_shared<SLE>(*view.read(keylet::unchecked(*next))));
             }
             return true;
         });
@@ -78,17 +77,13 @@ class View_test : public beast::unit_test::suite
             next = ledger.succ(*next);
             if (!next)
                 break;
-            ledger.rawErase(
-                std::make_shared<SLE>(*ledger.read(keylet::unchecked(*next))));
+            ledger.rawErase(std::make_shared<SLE>(*ledger.read(keylet::unchecked(*next))));
         }
     }
 
     // Test succ correctness
     void
-    succ(
-        ReadView const& v,
-        std::uint32_t id,
-        std::optional<std::uint32_t> answer)
+    succ(ReadView const& v, std::uint32_t id, std::optional<std::uint32_t> answer)
     {
         auto const next = v.succ(k(id).key);
         if (answer)
@@ -118,13 +113,9 @@ class View_test : public beast::unit_test::suite
         using namespace jtx;
         Env env(*this);
         Config config;
-        std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
-            create_genesis,
-            config,
-            std::vector<uint256>{},
-            env.app().getNodeFamily());
-        auto const ledger = std::make_shared<Ledger>(
-            *genesis, env.app().timeKeeper().closeTime());
+        std::shared_ptr<Ledger const> const genesis =
+            std::make_shared<Ledger>(create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
+        auto const ledger = std::make_shared<Ledger>(*genesis, env.app().timeKeeper().closeTime());
         wipe(*ledger);
         ReadView& v = *ledger;
         succ(v, 0, std::nullopt);
@@ -385,13 +376,9 @@ class View_test : public beast::unit_test::suite
         using namespace jtx;
         Env env(*this);
         Config config;
-        std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
-            create_genesis,
-            config,
-            std::vector<uint256>{},
-            env.app().getNodeFamily());
-        auto const ledger = std::make_shared<Ledger>(
-            *genesis, env.app().timeKeeper().closeTime());
+        std::shared_ptr<Ledger const> const genesis =
+            std::make_shared<Ledger>(create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
+        auto const ledger = std::make_shared<Ledger>(*genesis, env.app().timeKeeper().closeTime());
 
         auto setup = [&ledger](std::vector<int> const& vec) {
             wipe(*ledger);
@@ -500,9 +487,8 @@ class View_test : public beast::unit_test::suite
         }
         {
             // some full trees, some empty trees, etc
-            setup({0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12,
-                   13, 14, 15, 16, 20, 25, 30, 32, 33, 34, 35, 36, 37,
-                   38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 66, 100});
+            setup({0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16, 20, 25, 30,
+                   32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 66, 100});
             BEAST_EXPECT(
                 sles(*ledger) ==
                 list(
@@ -549,98 +535,38 @@ class View_test : public beast::unit_test::suite
             auto e = ledger->stateMap().end();
             BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(0)) == e);
             BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(1)) == b);
-            BEAST_EXPECT(
-                ledger->stateMap().lower_bound(uint256(5))->key() ==
-                uint256(4));
-            BEAST_EXPECT(
-                ledger->stateMap().lower_bound(uint256(15))->key() ==
-                uint256(14));
-            BEAST_EXPECT(
-                ledger->stateMap().lower_bound(uint256(16))->key() ==
-                uint256(15));
-            BEAST_EXPECT(
-                ledger->stateMap().lower_bound(uint256(19))->key() ==
-                uint256(16));
-            BEAST_EXPECT(
-                ledger->stateMap().lower_bound(uint256(20))->key() ==
-                uint256(16));
-            BEAST_EXPECT(
-                ledger->stateMap().lower_bound(uint256(24))->key() ==
-                uint256(20));
-            BEAST_EXPECT(
-                ledger->stateMap().lower_bound(uint256(31))->key() ==
-                uint256(30));
-            BEAST_EXPECT(
-                ledger->stateMap().lower_bound(uint256(32))->key() ==
-                uint256(30));
-            BEAST_EXPECT(
-                ledger->stateMap().lower_bound(uint256(40))->key() ==
-                uint256(39));
-            BEAST_EXPECT(
-                ledger->stateMap().lower_bound(uint256(47))->key() ==
-                uint256(46));
-            BEAST_EXPECT(
-                ledger->stateMap().lower_bound(uint256(48))->key() ==
-                uint256(47));
-            BEAST_EXPECT(
-                ledger->stateMap().lower_bound(uint256(64))->key() ==
-                uint256(48));
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(5))->key() == uint256(4));
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(15))->key() == uint256(14));
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(16))->key() == uint256(15));
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(19))->key() == uint256(16));
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(20))->key() == uint256(16));
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(24))->key() == uint256(20));
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(31))->key() == uint256(30));
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(32))->key() == uint256(30));
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(40))->key() == uint256(39));
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(47))->key() == uint256(46));
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(48))->key() == uint256(47));
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(64))->key() == uint256(48));
 
-            BEAST_EXPECT(
-                ledger->stateMap().lower_bound(uint256(90))->key() ==
-                uint256(66));
-            BEAST_EXPECT(
-                ledger->stateMap().lower_bound(uint256(96))->key() ==
-                uint256(66));
-            BEAST_EXPECT(
-                ledger->stateMap().lower_bound(uint256(100))->key() ==
-                uint256(66));
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(90))->key() == uint256(66));
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(96))->key() == uint256(66));
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(100))->key() == uint256(66));
 
-            BEAST_EXPECT(
-                ledger->stateMap().upper_bound(uint256(0))->key() ==
-                uint256(1));
-            BEAST_EXPECT(
-                ledger->stateMap().upper_bound(uint256(5))->key() ==
-                uint256(6));
-            BEAST_EXPECT(
-                ledger->stateMap().upper_bound(uint256(15))->key() ==
-                uint256(16));
-            BEAST_EXPECT(
-                ledger->stateMap().upper_bound(uint256(16))->key() ==
-                uint256(20));
-            BEAST_EXPECT(
-                ledger->stateMap().upper_bound(uint256(18))->key() ==
-                uint256(20));
-            BEAST_EXPECT(
-                ledger->stateMap().upper_bound(uint256(20))->key() ==
-                uint256(25));
-            BEAST_EXPECT(
-                ledger->stateMap().upper_bound(uint256(31))->key() ==
-                uint256(32));
-            BEAST_EXPECT(
-                ledger->stateMap().upper_bound(uint256(32))->key() ==
-                uint256(33));
-            BEAST_EXPECT(
-                ledger->stateMap().upper_bound(uint256(47))->key() ==
-                uint256(48));
-            BEAST_EXPECT(
-                ledger->stateMap().upper_bound(uint256(48))->key() ==
-                uint256(66));
-            BEAST_EXPECT(
-                ledger->stateMap().upper_bound(uint256(53))->key() ==
-                uint256(66));
-            BEAST_EXPECT(
-                ledger->stateMap().upper_bound(uint256(66))->key() ==
-                uint256(100));
-            BEAST_EXPECT(
-                ledger->stateMap().upper_bound(uint256(70))->key() ==
-                uint256(100));
-            BEAST_EXPECT(
-                ledger->stateMap().upper_bound(uint256(85))->key() ==
-                uint256(100));
-            BEAST_EXPECT(
-                ledger->stateMap().upper_bound(uint256(98))->key() ==
-                uint256(100));
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(0))->key() == uint256(1));
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(5))->key() == uint256(6));
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(15))->key() == uint256(16));
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(16))->key() == uint256(20));
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(18))->key() == uint256(20));
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(20))->key() == uint256(25));
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(31))->key() == uint256(32));
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(32))->key() == uint256(33));
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(47))->key() == uint256(48));
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(48))->key() == uint256(66));
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(53))->key() == uint256(66));
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(66))->key() == uint256(100));
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(70))->key() == uint256(100));
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(85))->key() == uint256(100));
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(98))->key() == uint256(100));
             BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(100)) == e);
             BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(155)) == e);
         }
@@ -654,13 +580,9 @@ class View_test : public beast::unit_test::suite
         using namespace jtx;
         Env env(*this);
         Config config;
-        std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
-            create_genesis,
-            config,
-            std::vector<uint256>{},
-            env.app().getNodeFamily());
-        auto const ledger = std::make_shared<Ledger>(
-            *genesis, env.app().timeKeeper().closeTime());
+        std::shared_ptr<Ledger const> const genesis =
+            std::make_shared<Ledger>(create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
+        auto const ledger = std::make_shared<Ledger>(*genesis, env.app().timeKeeper().closeTime());
         auto setup123 = [&ledger, this]() {
             // erase middle element
             wipe(*ledger);
@@ -810,15 +732,7 @@ class View_test : public beast::unit_test::suite
             env.close();
 
             // Alice's USD balance should be zero if frozen.
-            BEAST_EXPECT(
-                USD(0) ==
-                accountHolds(
-                    *env.closed(),
-                    alice,
-                    USD.currency,
-                    gw,
-                    fhZERO_IF_FROZEN,
-                    env.journal));
+            BEAST_EXPECT(USD(0) == accountHolds(*env.closed(), alice, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
 
             // Thaw gw and try again.
             env(fclear(gw, asfGlobalFreeze));
@@ -835,28 +749,12 @@ class View_test : public beast::unit_test::suite
             env.close();
 
             // Bob's balance should be zero if frozen.
-            BEAST_EXPECT(
-                USD(0) ==
-                accountHolds(
-                    *env.closed(),
-                    bob,
-                    USD.currency,
-                    gw,
-                    fhZERO_IF_FROZEN,
-                    env.journal));
+            BEAST_EXPECT(USD(0) == accountHolds(*env.closed(), bob, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
 
             // gw thaws bob's trust line.  bob gets his money back.
             env(trust(gw, USD(100), bob, tfClearFreeze));
             env.close();
-            BEAST_EXPECT(
-                USD(50) ==
-                accountHolds(
-                    *env.closed(),
-                    bob,
-                    USD.currency,
-                    gw,
-                    fhZERO_IF_FROZEN,
-                    env.journal));
+            BEAST_EXPECT(USD(50) == accountHolds(*env.closed(), bob, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
         }
         {
             // accountHolds().
@@ -864,35 +762,15 @@ class View_test : public beast::unit_test::suite
             env.close();
 
             // carol has no EUR.
-            BEAST_EXPECT(
-                EUR(0) ==
-                accountHolds(
-                    *env.closed(),
-                    carol,
-                    EUR.currency,
-                    gw,
-                    fhZERO_IF_FROZEN,
-                    env.journal));
+            BEAST_EXPECT(EUR(0) == accountHolds(*env.closed(), carol, EUR.currency, gw, fhZERO_IF_FROZEN, env.journal));
 
             // But carol does have USD.
             BEAST_EXPECT(
-                USD(50) ==
-                accountHolds(
-                    *env.closed(),
-                    carol,
-                    USD.currency,
-                    gw,
-                    fhZERO_IF_FROZEN,
-                    env.journal));
+                USD(50) == accountHolds(*env.closed(), carol, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
 
             // carol's XRP balance should be her holdings minus her reserve.
-            auto const carolsXRP = accountHolds(
-                *env.closed(),
-                carol,
-                xrpCurrency(),
-                xrpAccount(),
-                fhZERO_IF_FROZEN,
-                env.journal);
+            auto const carolsXRP =
+                accountHolds(*env.closed(), carol, xrpCurrency(), xrpAccount(), fhZERO_IF_FROZEN, env.journal);
             // carol's XRP balance:              10000
             // base reserve:                      -200
             // 1 trust line times its reserve: 1 * -50
@@ -907,37 +785,26 @@ class View_test : public beast::unit_test::suite
 
             // carol's XRP balance should now show as zero.
             BEAST_EXPECT(
-                XRP(0) ==
-                accountHolds(
-                    *env.closed(),
-                    carol,
-                    xrpCurrency(),
-                    gw,
-                    fhZERO_IF_FROZEN,
-                    env.journal));
+                XRP(0) == accountHolds(*env.closed(), carol, xrpCurrency(), gw, fhZERO_IF_FROZEN, env.journal));
         }
         {
             // accountFunds().
             // Gateways have whatever funds they claim to have.
-            auto const gwUSD = accountFunds(
-                *env.closed(), gw, USD(314159), fhZERO_IF_FROZEN, env.journal);
+            auto const gwUSD = accountFunds(*env.closed(), gw, USD(314159), fhZERO_IF_FROZEN, env.journal);
             BEAST_EXPECT(gwUSD == USD(314159));
 
             // carol has funds from the gateway.
-            auto carolsUSD = accountFunds(
-                *env.closed(), carol, USD(0), fhZERO_IF_FROZEN, env.journal);
+            auto carolsUSD = accountFunds(*env.closed(), carol, USD(0), fhZERO_IF_FROZEN, env.journal);
             BEAST_EXPECT(carolsUSD == USD(50));
 
             // If carol's funds are frozen she has no funds...
             env(fset(gw, asfGlobalFreeze));
             env.close();
-            carolsUSD = accountFunds(
-                *env.closed(), carol, USD(0), fhZERO_IF_FROZEN, env.journal);
+            carolsUSD = accountFunds(*env.closed(), carol, USD(0), fhZERO_IF_FROZEN, env.journal);
             BEAST_EXPECT(carolsUSD == USD(0));
 
             // ... unless the query ignores the FROZEN state.
-            carolsUSD = accountFunds(
-                *env.closed(), carol, USD(0), fhIGNORE_FREEZE, env.journal);
+            carolsUSD = accountFunds(*env.closed(), carol, USD(0), fhIGNORE_FREEZE, env.journal);
             BEAST_EXPECT(carolsUSD == USD(50));
 
             // Just to be tidy, thaw gw.
@@ -1019,8 +886,8 @@ class View_test : public beast::unit_test::suite
 
         // Try the other interface.
         // Note that the different interface has different outcomes.
-        auto const& iA3 = rdViewA3->info();
-        auto const& iA4 = rdViewA4->info();
+        auto const& iA3 = rdViewA3->header();
+        auto const& iA4 = rdViewA4->header();
 
         BEAST_EXPECT(areCompatible(iA3.hash, iA3.seq, *rdViewA4, jStream, ""));
         BEAST_EXPECT(areCompatible(iA4.hash, iA4.seq, *rdViewA3, jStream, ""));
@@ -1044,13 +911,8 @@ class View_test : public beast::unit_test::suite
             Env env(*this);
             Config config;
             std::shared_ptr<Ledger const> const genesis =
-                std::make_shared<Ledger>(
-                    create_genesis,
-                    config,
-                    std::vector<uint256>{},
-                    env.app().getNodeFamily());
-            auto const ledger = std::make_shared<Ledger>(
-                *genesis, env.app().timeKeeper().closeTime());
+                std::make_shared<Ledger>(create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
+            auto const ledger = std::make_shared<Ledger>(*genesis, env.app().timeKeeper().closeTime());
             wipe(*ledger);
             ledger->rawInsert(sle(1));
             ReadView& v0 = *ledger;
@@ -1114,10 +976,10 @@ class GetAmendments_test : public beast::unit_test::suite
                 break;
         }
 
-        // There should be at least 5 amendments.  Don't do exact comparison
+        // There should be at least 3 amendments.  Don't do exact comparison
         // to avoid maintenance as more amendments are added in the future.
         BEAST_EXPECT(i == 254);
-        BEAST_EXPECT(majorities.size() >= 5);
+        BEAST_EXPECT(majorities.size() >= 2);
 
         // None of the amendments should be enabled yet.
         auto enableds = getEnabledAmendments(*env.closed());
@@ -1135,7 +997,7 @@ class GetAmendments_test : public beast::unit_test::suite
                 break;
         }
         BEAST_EXPECT(i == 255);
-        BEAST_EXPECT(enableds.size() >= 5);
+        BEAST_EXPECT(enableds.size() >= 2);
     }
 
     void
@@ -1145,8 +1007,8 @@ class GetAmendments_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(View, ledger, ripple);
-BEAST_DEFINE_TESTSUITE(GetAmendments, ledger, ripple);
+BEAST_DEFINE_TESTSUITE(View, ledger, xrpl);
+BEAST_DEFINE_TESTSUITE(GetAmendments, ledger, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

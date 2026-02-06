@@ -6,16 +6,10 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/STTx.h>
 
-namespace ripple {
+namespace xrpl {
 
 TransactionMaster::TransactionMaster(Application& app)
-    : mApp(app)
-    , mCache(
-          "TransactionCache",
-          65536,
-          std::chrono::minutes{30},
-          stopwatch(),
-          mApp.journal("TaggedCache"))
+    : mApp(app), mCache("TransactionCache", 65536, std::chrono::minutes{30}, stopwatch(), mApp.journal("TaggedCache"))
 {
 }
 
@@ -41,13 +35,10 @@ TransactionMaster::fetch_from_cache(uint256 const& txnID)
     return mCache.fetch(txnID);
 }
 
-std::variant<
-    std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-    TxSearched>
+std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
 TransactionMaster::fetch(uint256 const& txnID, error_code_i& ec)
 {
-    using TxPair =
-        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
+    using TxPair = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
 
     if (auto txn = fetch_from_cache(txnID); txn && !txn->isValidated())
         return std::pair{std::move(txn), nullptr};
@@ -65,16 +56,10 @@ TransactionMaster::fetch(uint256 const& txnID, error_code_i& ec)
     return std::pair{std::move(txn), std::move(txnMeta)};
 }
 
-std::variant<
-    std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-    TxSearched>
-TransactionMaster::fetch(
-    uint256 const& txnID,
-    ClosedInterval<uint32_t> const& range,
-    error_code_i& ec)
+std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
+TransactionMaster::fetch(uint256 const& txnID, ClosedInterval<uint32_t> const& range, error_code_i& ec)
 {
-    using TxPair =
-        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
+    using TxPair = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
 
     if (auto txn = fetch_from_cache(txnID); txn && !txn->isValidated())
         return std::pair{std::move(txn), nullptr};
@@ -93,10 +78,7 @@ TransactionMaster::fetch(
 }
 
 std::shared_ptr<STTx const>
-TransactionMaster::fetch(
-    boost::intrusive_ptr<SHAMapItem> const& item,
-    SHAMapNodeType type,
-    std::uint32_t uCommitLedger)
+TransactionMaster::fetch(boost::intrusive_ptr<SHAMapItem> const& item, SHAMapNodeType type, std::uint32_t uCommitLedger)
 {
     std::shared_ptr<STTx const> txn;
     auto iTx = fetch_from_cache(item->key());
@@ -111,8 +93,7 @@ TransactionMaster::fetch(
         else if (type == SHAMapNodeType::tnTRANSACTION_MD)
         {
             auto blob = SerialIter{item->slice()}.getVL();
-            txn = std::make_shared<STTx const>(
-                SerialIter{blob.data(), blob.size()});
+            txn = std::make_shared<STTx const>(SerialIter{blob.data(), blob.size()});
         }
     }
     else
@@ -151,4 +132,4 @@ TransactionMaster::getCache()
     return mCache;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

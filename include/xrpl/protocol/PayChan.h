@@ -6,19 +6,16 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-namespace ripple {
+namespace xrpl {
 
 inline void
-serializePayChanAuthorization(
-    Serializer& msg,
-    uint256 const& key,
-    XRPAmount const& amt)
+serializePayChanAuthorization(Serializer& msg, uint256 const& key, XRPAmount const& amt)
 {
     msg.add32(HashPrefix::paymentChannelClaim);
     msg.addBitString(key);
     msg.add64(amt.drops());
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

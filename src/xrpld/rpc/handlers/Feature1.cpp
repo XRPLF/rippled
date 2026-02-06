@@ -7,7 +7,7 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 // {
 //   feature : <feature>
@@ -40,8 +40,7 @@ doFeature(RPC::JsonContext& context)
 
         for (auto const& [h, t] : majorities)
         {
-            features[to_string(h)][jss::majority] =
-                t.time_since_epoch().count();
+            features[to_string(h)][jss::majority] = t.time_since_epoch().count();
         }
 
         Json::Value jvReply = Json::objectValue;
@@ -78,4 +77,4 @@ doFeature(RPC::JsonContext& context)
     return jvReply;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,11 +1,10 @@
 #include <xrpl/ledger/Dir.h>
 
-namespace ripple {
+namespace xrpl {
 
 using const_iterator = Dir::const_iterator;
 
-Dir::Dir(ReadView const& view, Keylet const& key)
-    : view_(&view), root_(key), sle_(view_->read(root_))
+Dir::Dir(ReadView const& view, Keylet const& key) : view_(&view), root_(key), sle_(view_->read(root_))
 {
     if (sle_ != nullptr)
         indexes_ = &sle_->getFieldV256(sfIndexes);
@@ -43,16 +42,14 @@ const_iterator::operator==(const_iterator const& other) const
 
     XRPL_ASSERT(
         view_ == other.view_ && root_.key == other.root_.key,
-        "ripple::const_iterator::operator== : views and roots are matching");
+        "xrpl::const_iterator::operator== : views and roots are matching");
     return page_.key == other.page_.key && index_ == other.index_;
 }
 
 const_iterator::reference
 const_iterator::operator*() const
 {
-    XRPL_ASSERT(
-        index_ != beast::zero,
-        "ripple::const_iterator::operator* : nonzero index");
+    XRPL_ASSERT(index_ != beast::zero, "xrpl::const_iterator::operator* : nonzero index");
     if (!cache_)
         cache_ = view_->read(keylet::child(index_));
     return *cache_;
@@ -61,9 +58,7 @@ const_iterator::operator*() const
 const_iterator&
 const_iterator::operator++()
 {
-    XRPL_ASSERT(
-        index_ != beast::zero,
-        "ripple::const_iterator::operator++ : nonzero index");
+    XRPL_ASSERT(index_ != beast::zero, "xrpl::const_iterator::operator++ : nonzero index");
     if (++it_ != std::end(*indexes_))
     {
         index_ = *it_;
@@ -77,9 +72,7 @@ const_iterator::operator++()
 const_iterator
 const_iterator::operator++(int)
 {
-    XRPL_ASSERT(
-        index_ != beast::zero,
-        "ripple::const_iterator::operator++(int) : nonzero index");
+    XRPL_ASSERT(index_ != beast::zero, "xrpl::const_iterator::operator++(int) : nonzero index");
     const_iterator tmp(*this);
     ++(*this);
     return tmp;
@@ -98,7 +91,7 @@ const_iterator::next_page()
     {
         page_ = keylet::page(root_, next);
         sle_ = view_->read(page_);
-        XRPL_ASSERT(sle_, "ripple::const_iterator::next_page : non-null SLE");
+        XRPL_ASSERT(sle_, "xrpl::const_iterator::next_page : non-null SLE");
         indexes_ = &sle_->getFieldV256(sfIndexes);
         if (indexes_->empty())
         {
@@ -120,4 +113,4 @@ const_iterator::page_size()
     return indexes_->size();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

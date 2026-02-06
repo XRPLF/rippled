@@ -4,7 +4,7 @@
 
 #include <algorithm>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 DecodedBlob::DecodedBlob(void const* key, void const* value, int valueBytes)
@@ -54,9 +54,7 @@ DecodedBlob::DecodedBlob(void const* key, void const* value, int valueBytes)
 std::shared_ptr<NodeObject>
 DecodedBlob::createObject()
 {
-    XRPL_ASSERT(
-        m_success,
-        "ripple::NodeStore::DecodedBlob::createObject : valid object type");
+    XRPL_ASSERT(m_success, "xrpl::NodeStore::DecodedBlob::createObject : valid object type");
 
     std::shared_ptr<NodeObject> object;
 
@@ -64,12 +62,11 @@ DecodedBlob::createObject()
     {
         Blob data(m_objectData, m_objectData + m_dataBytes);
 
-        object = NodeObject::createObject(
-            m_objectType, std::move(data), uint256::fromVoid(m_key));
+        object = NodeObject::createObject(m_objectType, std::move(data), uint256::fromVoid(m_key));
     }
 
     return object;
 }
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl

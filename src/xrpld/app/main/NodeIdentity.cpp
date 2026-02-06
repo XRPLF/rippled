@@ -4,12 +4,10 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
-namespace ripple {
+namespace xrpl {
 
 std::pair<PublicKey, SecretKey>
-getNodeIdentity(
-    Application& app,
-    boost::program_options::variables_map const& cmdline)
+getNodeIdentity(Application& app, boost::program_options::variables_map const& cmdline)
 {
     std::optional<Seed> seed;
 
@@ -22,12 +20,10 @@ getNodeIdentity(
     }
     else if (app.config().exists(SECTION_NODE_SEED))
     {
-        seed = parseBase58<Seed>(
-            app.config().section(SECTION_NODE_SEED).lines().front());
+        seed = parseBase58<Seed>(app.config().section(SECTION_NODE_SEED).lines().front());
 
         if (!seed)
-            Throw<std::runtime_error>("Invalid [" SECTION_NODE_SEED
-                                      "] in configuration file");
+            Throw<std::runtime_error>("Invalid [" SECTION_NODE_SEED "] in configuration file");
     }
 
     if (seed)
@@ -46,4 +42,4 @@ getNodeIdentity(
     return getNodeIdentity(*db);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -10,7 +10,7 @@
 #include <memory>
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 
 class CheckpointersCollection
 {
@@ -20,8 +20,7 @@ class CheckpointersCollection
     // Each checkpointer is given a unique id. All the checkpointers that are
     // part of a DatabaseCon are part of this collection. When the DatabaseCon
     // is destroyed, its checkpointer is removed from the collection
-    std::unordered_map<std::uintptr_t, std::shared_ptr<Checkpointer>>
-        checkpointers_;
+    std::unordered_map<std::uintptr_t, std::shared_ptr<Checkpointer>> checkpointers_;
 
 public:
     std::shared_ptr<Checkpointer>
@@ -42,10 +41,7 @@ public:
     }
 
     std::shared_ptr<Checkpointer>
-    create(
-        std::shared_ptr<soci::session> const& session,
-        JobQueue& jobQueue,
-        Logs& logs)
+    create(std::shared_ptr<soci::session> const& session, JobQueue& jobQueue, Logs& logs)
     {
         std::lock_guard lock{mutex_};
         auto const id = nextId_++;
@@ -123,43 +119,35 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
                 }
                 else if (!boost::iequals(safety_level, "high"))
                 {
-                    Throw<std::runtime_error>(
-                        "Invalid safety_level value: " + safety_level);
+                    Throw<std::runtime_error>("Invalid safety_level value: " + safety_level);
                 }
             }
 
             {
                 // #journal_mode Valid values : delete, truncate, persist,
                 // memory, wal, off
-                if (set(journal_mode, "journal_mode", sqlite) &&
-                    !safety_level.empty())
+                if (set(journal_mode, "journal_mode", sqlite) && !safety_level.empty())
                 {
                     Throw<std::runtime_error>(
                         "Configuration file may not define both "
                         "\"safety_level\" and \"journal_mode\"");
                 }
-                bool higherRisk = boost::iequals(journal_mode, "memory") ||
-                    boost::iequals(journal_mode, "off");
+                bool higherRisk = boost::iequals(journal_mode, "memory") || boost::iequals(journal_mode, "off");
                 showRiskWarning = showRiskWarning || higherRisk;
-                if (higherRisk || boost::iequals(journal_mode, "delete") ||
-                    boost::iequals(journal_mode, "truncate") ||
-                    boost::iequals(journal_mode, "persist") ||
-                    boost::iequals(journal_mode, "wal"))
+                if (higherRisk || boost::iequals(journal_mode, "delete") || boost::iequals(journal_mode, "truncate") ||
+                    boost::iequals(journal_mode, "persist") || boost::iequals(journal_mode, "wal"))
                 {
-                    result->emplace_back(boost::str(
-                        boost::format(CommonDBPragmaJournal) % journal_mode));
+                    result->emplace_back(boost::str(boost::format(CommonDBPragmaJournal) % journal_mode));
                 }
                 else
                 {
-                    Throw<std::runtime_error>(
-                        "Invalid journal_mode value: " + journal_mode);
+                    Throw<std::runtime_error>("Invalid journal_mode value: " + journal_mode);
                 }
             }
 
             {
                 // #synchronous Valid values : off, normal, full, extra
-                if (set(synchronous, "synchronous", sqlite) &&
-                    !safety_level.empty())
+                if (set(synchronous, "synchronous", sqlite) && !safety_level.empty())
                 {
                     Throw<std::runtime_error>(
                         "Configuration file may not define both "
@@ -167,24 +155,20 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
                 }
                 bool higherRisk = boost::iequals(synchronous, "off");
                 showRiskWarning = showRiskWarning || higherRisk;
-                if (higherRisk || boost::iequals(synchronous, "normal") ||
-                    boost::iequals(synchronous, "full") ||
+                if (higherRisk || boost::iequals(synchronous, "normal") || boost::iequals(synchronous, "full") ||
                     boost::iequals(synchronous, "extra"))
                 {
-                    result->emplace_back(boost::str(
-                        boost::format(CommonDBPragmaSync) % synchronous));
+                    result->emplace_back(boost::str(boost::format(CommonDBPragmaSync) % synchronous));
                 }
                 else
                 {
-                    Throw<std::runtime_error>(
-                        "Invalid synchronous value: " + synchronous);
+                    Throw<std::runtime_error>("Invalid synchronous value: " + synchronous);
                 }
             }
 
             {
                 // #temp_store Valid values : default, file, memory
-                if (set(temp_store, "temp_store", sqlite) &&
-                    !safety_level.empty())
+                if (set(temp_store, "temp_store", sqlite) && !safety_level.empty())
                 {
                     Throw<std::runtime_error>(
                         "Configuration file may not define both "
@@ -192,39 +176,32 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
                 }
                 bool higherRisk = boost::iequals(temp_store, "memory");
                 showRiskWarning = showRiskWarning || higherRisk;
-                if (higherRisk || boost::iequals(temp_store, "default") ||
-                    boost::iequals(temp_store, "file"))
+                if (higherRisk || boost::iequals(temp_store, "default") || boost::iequals(temp_store, "file"))
                 {
-                    result->emplace_back(boost::str(
-                        boost::format(CommonDBPragmaTemp) % temp_store));
+                    result->emplace_back(boost::str(boost::format(CommonDBPragmaTemp) % temp_store));
                 }
                 else
                 {
-                    Throw<std::runtime_error>(
-                        "Invalid temp_store value: " + temp_store);
+                    Throw<std::runtime_error>("Invalid temp_store value: " + temp_store);
                 }
             }
 
             if (showRiskWarning && j && c.LEDGER_HISTORY > SQLITE_TUNING_CUTOFF)
             {
-                JLOG(j->warn())
-                    << "reducing the data integrity guarantees from the "
-                       "default [sqlite] behavior is not recommended for "
-                       "nodes storing large amounts of history, because of the "
-                       "difficulty inherent in rebuilding corrupted data.";
+                JLOG(j->warn()) << "reducing the data integrity guarantees from the "
+                                   "default [sqlite] behavior is not recommended for "
+                                   "nodes storing large amounts of history, because of the "
+                                   "difficulty inherent in rebuilding corrupted data.";
             }
-            XRPL_ASSERT(
-                result->size() == 3,
-                "ripple::setup_DatabaseCon::globalPragma : result size is 3");
+            XRPL_ASSERT(result->size() == 3, "xrpl::setup_DatabaseCon::globalPragma : result size is 3");
             return result;
         }();
     }
     setup.useGlobalPragma = true;
 
-    auto setPragma =
-        [](std::string& pragma, std::string const& key, int64_t value) {
-            pragma = "PRAGMA " + key + "=" + std::to_string(value) + ";";
-        };
+    auto setPragma = [](std::string& pragma, std::string const& key, int64_t value) {
+        pragma = "PRAGMA " + key + "=" + std::to_string(value) + ";";
+    };
 
     // Lgr Pragma
     setPragma(setup.lgrPragma[0], "journal_size_limit", 1582080);
@@ -238,12 +215,10 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
         set(journal_size_limit, "journal_size_limit", s);
         set(page_size, "page_size", s);
         if (page_size < 512 || page_size > 65536)
-            Throw<std::runtime_error>(
-                "Invalid page_size. Must be between 512 and 65536.");
+            Throw<std::runtime_error>("Invalid page_size. Must be between 512 and 65536.");
 
         if (page_size & (page_size - 1))
-            Throw<std::runtime_error>(
-                "Invalid page_size. Must be a power of 2.");
+            Throw<std::runtime_error>("Invalid page_size. Must be a power of 2.");
     }
 
     setPragma(setup.txPragma[0], "page_size", page_size);
@@ -254,8 +229,7 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
     return setup;
 }
 
-std::unique_ptr<std::vector<std::string> const>
-    DatabaseCon::Setup::globalPragma;
+std::unique_ptr<std::vector<std::string> const> DatabaseCon::Setup::globalPragma;
 
 void
 DatabaseCon::setupCheckpointing(JobQueue* q, Logs& l)
@@ -265,4 +239,4 @@ DatabaseCon::setupCheckpointing(JobQueue* q, Logs& l)
     checkpointer_ = checkpointers.create(session_, *q, l);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

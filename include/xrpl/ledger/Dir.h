@@ -4,7 +4,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Indexes.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** A class that simplifies iterating ledger directory pages
 
@@ -108,6 +108,6 @@ private:
     std::vector<uint256>::const_iterator it_;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

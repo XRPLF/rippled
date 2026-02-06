@@ -7,7 +7,7 @@
 #include <regex>
 #include <sstream>
 
-namespace ripple {
+namespace xrpl {
 
 namespace RPC {
 
@@ -37,17 +37,14 @@ encodeCTID(uint32_t ledgerSeq, uint32_t txnIndex, uint32_t networkID) noexcept
     constexpr uint32_t maxTxnIndex = 0xFFFF;
     constexpr uint32_t maxNetworkID = 0xFFFF;
 
-    if (ledgerSeq > maxLedgerSeq || txnIndex > maxTxnIndex ||
-        networkID > maxNetworkID)
+    if (ledgerSeq > maxLedgerSeq || txnIndex > maxTxnIndex || networkID > maxNetworkID)
         return std::nullopt;
 
-    uint64_t ctidValue =
-        ((0xC000'0000ULL + static_cast<uint64_t>(ledgerSeq)) << 32) |
+    uint64_t ctidValue = ((0xC000'0000ULL + static_cast<uint64_t>(ledgerSeq)) << 32) |
         ((static_cast<uint64_t>(txnIndex) << 16) | networkID);
 
     std::stringstream buffer;
-    buffer << std::hex << std::uppercase << std::setfill('0') << std::setw(16)
-           << ctidValue;
+    buffer << std::hex << std::uppercase << std::setfill('0') << std::setw(16) << ctidValue;
     return buffer.str();
 }
 
@@ -66,8 +63,8 @@ decodeCTID(T const ctid) noexcept
     uint64_t ctidValue = 0;
 
     if constexpr (
-        std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view> ||
-        std::is_same_v<T, char*> || std::is_same_v<T, char const*>)
+        std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view> || std::is_same_v<T, char*> ||
+        std::is_same_v<T, char const*>)
     {
         std::string const ctidString(ctid);
 
@@ -113,6 +110,6 @@ decodeCTID(T const ctid) noexcept
 }
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

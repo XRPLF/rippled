@@ -5,20 +5,16 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/owners.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
 namespace credentials {
 
 inline Keylet
-keylet(
-    test::jtx::Account const& subject,
-    test::jtx::Account const& issuer,
-    std::string_view credType)
+keylet(test::jtx::Account const& subject, test::jtx::Account const& issuer, std::string_view credType)
 {
-    return keylet::credential(
-        subject.id(), issuer.id(), Slice(credType.data(), credType.size()));
+    return keylet::credential(subject.id(), issuer.id(), Slice(credType.data(), credType.size()));
 }
 
 // Sets the optional URI.
@@ -60,30 +56,16 @@ public:
 };
 
 Json::Value
-create(
-    jtx::Account const& subject,
-    jtx::Account const& issuer,
-    std::string_view credType);
+create(jtx::Account const& subject, jtx::Account const& issuer, std::string_view credType);
 
 Json::Value
-accept(
-    jtx::Account const& subject,
-    jtx::Account const& issuer,
-    std::string_view credType);
+accept(jtx::Account const& subject, jtx::Account const& issuer, std::string_view credType);
 
 Json::Value
-deleteCred(
-    jtx::Account const& acc,
-    jtx::Account const& subject,
-    jtx::Account const& issuer,
-    std::string_view credType);
+deleteCred(jtx::Account const& acc, jtx::Account const& subject, jtx::Account const& issuer, std::string_view credType);
 
 Json::Value
-ledgerEntry(
-    jtx::Env& env,
-    jtx::Account const& subject,
-    jtx::Account const& issuer,
-    std::string_view credType);
+ledgerEntry(jtx::Env& env, jtx::Account const& subject, jtx::Account const& issuer, std::string_view credType);
 
 Json::Value
 ledgerEntry(jtx::Env& env, std::string const& credIdx);
@@ -91,6 +73,6 @@ ledgerEntry(jtx::Env& env, std::string const& credIdx);
 }  // namespace credentials
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

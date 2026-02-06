@@ -3,7 +3,7 @@
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 class LedgerData_test : public beast::unit_test::suite
 {
@@ -12,8 +12,7 @@ public:
     static bool
     checkMarker(Json::Value const& val)
     {
-        return val.isMember(jss::marker) && val[jss::marker].isString() &&
-            val[jss::marker].asString().size() > 0;
+        return val.isMember(jss::marker) && val[jss::marker].isString() && val[jss::marker].asString().size() > 0;
     }
 
     void
@@ -43,11 +42,8 @@ public:
         jvParams[jss::ledger_index] = "current";
         jvParams[jss::binary] = false;
         {
-            auto const jrr = env.rpc(
-                "json", "ledger_data", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(
-                jrr[jss::ledger_current_index].isIntegral() &&
-                jrr[jss::ledger_current_index].asInt() > 0);
+            auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::ledger_current_index].isIntegral() && jrr[jss::ledger_current_index].asInt() > 0);
             BEAST_EXPECT(checkMarker(jrr));
             BEAST_EXPECT(checkArraySize(jrr[jss::state], max_limit));
         }
@@ -56,11 +52,8 @@ public:
         for (auto delta = -1; delta <= 1; delta++)
         {
             jvParams[jss::limit] = max_limit + delta;
-            auto const jrr = env.rpc(
-                "json", "ledger_data", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(checkArraySize(
-                jrr[jss::state],
-                (delta > 0 && !asAdmin) ? max_limit : max_limit + delta));
+            auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(checkArraySize(jrr[jss::state], (delta > 0 && !asAdmin) ? max_limit : max_limit + delta));
         }
     }
 
@@ -86,11 +79,8 @@ public:
         Json::Value jvParams;
         jvParams[jss::ledger_index] = "current";
         jvParams[jss::binary] = true;
-        auto const jrr =
-            env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
-        BEAST_EXPECT(
-            jrr[jss::ledger_current_index].isIntegral() &&
-            jrr[jss::ledger_current_index].asInt() > 0);
+        auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
+        BEAST_EXPECT(jrr[jss::ledger_current_index].isIntegral() && jrr[jss::ledger_current_index].asInt() > 0);
         BEAST_EXPECT(!jrr.isMember(jss::marker));
         BEAST_EXPECT(checkArraySize(jrr[jss::state], num_accounts + 4));
     }
@@ -111,47 +101,37 @@ public:
             // bad limit
             Json::Value jvParams;
             jvParams[jss::limit] = "0";  // NOT an integer
-            auto const jrr = env.rpc(
-                "json", "ledger_data", to_string(jvParams))[jss::result];
+            auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::status] == "error");
-            BEAST_EXPECT(
-                jrr[jss::error_message] ==
-                "Invalid field 'limit', not integer.");
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'limit', not integer.");
         }
 
         {
             // invalid marker
             Json::Value jvParams;
             jvParams[jss::marker] = "NOT_A_MARKER";
-            auto const jrr = env.rpc(
-                "json", "ledger_data", to_string(jvParams))[jss::result];
+            auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::status] == "error");
-            BEAST_EXPECT(
-                jrr[jss::error_message] ==
-                "Invalid field 'marker', not valid.");
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'marker', not valid.");
         }
 
         {
             // invalid marker - not a string
             Json::Value jvParams;
             jvParams[jss::marker] = 1;
-            auto const jrr = env.rpc(
-                "json", "ledger_data", to_string(jvParams))[jss::result];
+            auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::status] == "error");
-            BEAST_EXPECT(
-                jrr[jss::error_message] ==
-                "Invalid field 'marker', not valid.");
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'marker', not valid.");
         }
 
         {
             // ask for a bad ledger index
             Json::Value jvParams;
             jvParams[jss::ledger_index] = 10u;
-            auto const jrr = env.rpc(
-                "json", "ledger_data", to_string(jvParams))[jss::result];
+            auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "lgrNotFound");
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "ledgerNotFound");
@@ -180,8 +160,7 @@ public:
         Json::Value jvParams;
         jvParams[jss::ledger_index] = "current";
         jvParams[jss::binary] = false;
-        auto jrr =
-            env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
+        auto jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
         auto const total_count = jrr[jss::state].size();
 
         // now make request with a limit and loop until we get all
@@ -192,8 +171,7 @@ public:
         while (jrr.isMember(jss::marker))
         {
             jvParams[jss::marker] = jrr[jss::marker];
-            jrr = env.rpc(
-                "json", "ledger_data", to_string(jvParams))[jss::result];
+            jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
             running_total += jrr[jss::state].size();
         }
         BEAST_EXPECT(running_total == total_count);
@@ -212,24 +190,19 @@ public:
             // Closed ledger with non binary form
             Json::Value jvParams;
             jvParams[jss::ledger_index] = "closed";
-            auto jrr = env.rpc(
-                "json", "ledger_data", to_string(jvParams))[jss::result];
+            auto jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
             if (BEAST_EXPECT(jrr.isMember(jss::ledger)))
-                BEAST_EXPECT(
-                    jrr[jss::ledger][jss::ledger_hash] ==
-                    to_string(env.closed()->info().hash));
+                BEAST_EXPECT(jrr[jss::ledger][jss::ledger_hash] == to_string(env.closed()->header().hash));
         }
         {
             // Closed ledger with binary form
             Json::Value jvParams;
             jvParams[jss::ledger_index] = "closed";
             jvParams[jss::binary] = true;
-            auto jrr = env.rpc(
-                "json", "ledger_data", to_string(jvParams))[jss::result];
+            auto jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
             if (BEAST_EXPECT(jrr.isMember(jss::ledger)))
             {
-                auto data =
-                    strUnHex(jrr[jss::ledger][jss::ledger_data].asString());
+                auto data = strUnHex(jrr[jss::ledger][jss::ledger_data].asString());
                 if (BEAST_EXPECT(data))
                 {
                     Serializer s(data->data(), data->size());
@@ -243,8 +216,7 @@ public:
             // Current ledger with binary form
             Json::Value jvParams;
             jvParams[jss::binary] = true;
-            auto jrr = env.rpc(
-                "json", "ledger_data", to_string(jvParams))[jss::result];
+            auto jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr.isMember(jss::ledger));
             BEAST_EXPECT(!jrr[jss::ledger].isMember(jss::ledger_data));
         }
@@ -258,8 +230,7 @@ public:
 
         // Make sure fixInnerObjTemplate2 doesn't break amendments.
         for (FeatureBitset const& features :
-             {testable_amendments() - fixInnerObjTemplate2,
-              testable_amendments() | fixInnerObjTemplate2})
+             {testable_amendments() - fixInnerObjTemplate2, testable_amendments() | fixInnerObjTemplate2})
         {
             using namespace std::chrono;
             Env env{*this, envconfig(validator, ""), features};
@@ -272,8 +243,7 @@ public:
                 Json::Value jvParams;
                 jvParams[jss::ledger_index] = "current";
                 jvParams[jss::type] = type;
-                return env.rpc(
-                    "json", "ledger_data", to_string(jvParams))[jss::result];
+                return env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
             };
 
             // Assert that state is an empty array.
@@ -312,10 +282,7 @@ public:
                     break;
             }
 
-            env(signers(
-                Account{"bob0"},
-                1,
-                {{Account{"bob1"}, 1}, {Account{"bob2"}, 1}}));
+            env(signers(Account{"bob0"}, 1, {{Account{"bob1"}, 1}, {Account{"bob2"}, 1}}));
             env(ticket::create(env.master, 1));
 
             {
@@ -324,10 +291,7 @@ public:
                 jv[jss::Account] = Account{"bob5"}.human();
                 jv[jss::Destination] = Account{"bob6"}.human();
                 jv[jss::Amount] = XRP(50).value().getJson(JsonOptions::none);
-                jv[sfFinishAfter.fieldName] =
-                    NetClock::time_point{env.now() + 10s}
-                        .time_since_epoch()
-                        .count();
+                jv[sfFinishAfter.fieldName] = NetClock::time_point{env.now() + 10s}.time_since_epoch().count();
                 env(jv);
             }
 
@@ -338,12 +302,8 @@ public:
                 jv[jss::Destination] = Account{"bob7"}.human();
                 jv[jss::Amount] = XRP(100).value().getJson(JsonOptions::none);
                 jv[jss::SettleDelay] = NetClock::duration{10s}.count();
-                jv[sfPublicKey.fieldName] =
-                    strHex(Account{"bob6"}.pk().slice());
-                jv[sfCancelAfter.fieldName] =
-                    NetClock::time_point{env.now() + 300s}
-                        .time_since_epoch()
-                        .count();
+                jv[sfPublicKey.fieldName] = strHex(Account{"bob6"}.pk().slice());
+                jv[sfCancelAfter.fieldName] = NetClock::time_point{env.now() + 300s}.time_since_epoch().count();
                 env(jv);
             }
 
@@ -451,8 +411,7 @@ public:
                 Json::Value jvParams;
                 jvParams[jss::ledger_index] = "current";
                 jvParams[jss::type] = "misspelling";
-                auto const jrr = env.rpc(
-                    "json", "ledger_data", to_string(jvParams))[jss::result];
+                auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
                 BEAST_EXPECT(jrr.isMember("error"));
                 BEAST_EXPECT(jrr["error"] == "invalidParams");
                 BEAST_EXPECT(jrr["error_message"] == "Invalid field 'type'.");
@@ -473,6 +432,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(LedgerData, rpc, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(LedgerData, rpc, xrpl, 1);
 
-}  // namespace ripple
+}  // namespace xrpl

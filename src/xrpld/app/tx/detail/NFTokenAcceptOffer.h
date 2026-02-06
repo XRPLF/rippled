@@ -3,7 +3,7 @@
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
-namespace ripple {
+namespace xrpl {
 
 class NFTokenAcceptOffer : public Transactor
 {
@@ -15,15 +15,10 @@ private:
     acceptOffer(std::shared_ptr<SLE> const& offer);
 
     TER
-    bridgeOffers(
-        std::shared_ptr<SLE> const& buy,
-        std::shared_ptr<SLE> const& sell);
+    bridgeOffers(std::shared_ptr<SLE> const& buy, std::shared_ptr<SLE> const& sell);
 
     TER
-    transferNFToken(
-        AccountID const& buyer,
-        AccountID const& seller,
-        uint256 const& nfTokenID);
+    transferNFToken(AccountID const& buyer, AccountID const& seller, uint256 const& nfTokenID);
 
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
@@ -45,6 +40,6 @@ public:
     doApply() override;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

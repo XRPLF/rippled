@@ -7,7 +7,7 @@
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
 
-namespace ripple {
+namespace xrpl {
 
 class STIssue final : public STBase, CountedObject<STIssue>
 {
@@ -83,12 +83,10 @@ private:
 };
 
 template <AssetType A>
-STIssue::STIssue(SField const& name, A const& asset)
-    : STBase{name}, asset_{asset}
+STIssue::STIssue(SField const& name, A const& asset) : STBase{name}, asset_{asset}
 {
     if (holds<Issue>() && !isConsistent(asset_.get<Issue>()))
-        Throw<std::runtime_error>(
-            "Invalid asset: currency and account native mismatch");
+        Throw<std::runtime_error>("Invalid asset: currency and account native mismatch");
 }
 
 STIssue
@@ -120,8 +118,7 @@ inline void
 STIssue::setIssue(Asset const& asset)
 {
     if (holds<Issue>() && !isConsistent(asset_.get<Issue>()))
-        Throw<std::runtime_error>(
-            "Invalid asset: currency and account native mismatch");
+        Throw<std::runtime_error>("Invalid asset: currency and account native mismatch");
 
     asset_ = asset;
 }
@@ -150,6 +147,6 @@ operator<=>(STIssue const& lhs, Asset const& rhs)
     return lhs.asset_ <=> rhs;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

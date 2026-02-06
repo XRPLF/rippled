@@ -9,14 +9,13 @@
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 DepositPreauth::checkExtraFeatures(PreflightContext const& ctx)
 {
     bool const authArrPresent = ctx.tx.isFieldPresent(sfAuthorizeCredentials);
-    bool const unauthArrPresent =
-        ctx.tx.isFieldPresent(sfUnauthorizeCredentials);
+    bool const unauthArrPresent = ctx.tx.isFieldPresent(sfUnauthorizeCredentials);
     bool const authCredPresent = authArrPresent || unauthArrPresent;
 
     if (authCredPresent && !ctx.rules.enabled(featureCredentials))
@@ -29,22 +28,18 @@ NotTEC
 DepositPreauth::preflight(PreflightContext const& ctx)
 {
     bool const authArrPresent = ctx.tx.isFieldPresent(sfAuthorizeCredentials);
-    bool const unauthArrPresent =
-        ctx.tx.isFieldPresent(sfUnauthorizeCredentials);
-    int const authCredPresent =
-        static_cast<int>(authArrPresent) + static_cast<int>(unauthArrPresent);
+    bool const unauthArrPresent = ctx.tx.isFieldPresent(sfUnauthorizeCredentials);
+    int const authCredPresent = static_cast<int>(authArrPresent) + static_cast<int>(unauthArrPresent);
 
     auto const optAuth = ctx.tx[~sfAuthorize];
     auto const optUnauth = ctx.tx[~sfUnauthorize];
-    int const authPresent = static_cast<int>(optAuth.has_value()) +
-        static_cast<int>(optUnauth.has_value());
+    int const authPresent = static_cast<int>(optAuth.has_value()) + static_cast<int>(optUnauth.has_value());
 
     if (authPresent + authCredPresent != 1)
     {
         // There can only be 1 field out of 4 or the transaction is malformed.
-        JLOG(ctx.j.trace())
-            << "Malformed transaction: "
-               "Invalid Authorize and Unauthorize field combination.";
+        JLOG(ctx.j.trace()) << "Malformed transaction: "
+                               "Invalid Authorize and Unauthorize field combination.";
         return temMALFORMED;
     }
 
@@ -54,26 +49,22 @@ DepositPreauth::preflight(PreflightContext const& ctx)
         AccountID const& target(optAuth ? *optAuth : *optUnauth);
         if (!target)
         {
-            JLOG(ctx.j.trace())
-                << "Malformed transaction: Authorized or Unauthorized "
-                   "field zeroed.";
+            JLOG(ctx.j.trace()) << "Malformed transaction: Authorized or Unauthorized "
+                                   "field zeroed.";
             return temINVALID_ACCOUNT_ID;
         }
 
         // An account may not preauthorize itself.
         if (optAuth && (target == ctx.tx[sfAccount]))
         {
-            JLOG(ctx.j.trace())
-                << "Malformed transaction: Attempting to DepositPreauth self.";
+            JLOG(ctx.j.trace()) << "Malformed transaction: Attempting to DepositPreauth self.";
             return temCANNOT_PREAUTH_SELF;
         }
     }
     else
     {
         if (auto err = credentials::checkArray(
-                ctx.tx.getFieldArray(
-                    authArrPresent ? sfAuthorizeCredentials
-                                   : sfUnauthorizeCredentials),
+                ctx.tx.getFieldArray(authArrPresent ? sfAuthorizeCredentials : sfUnauthorizeCredentials),
                 maxCredentialsArraySize,
                 ctx.j);
             !isTesSuccess(err))
@@ -104,8 +95,7 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
     else if (ctx.tx.isFieldPresent(sfUnauthorize))
     {
         // Verify that the Preauth entry they asked to remove is in the ledger.
-        if (!ctx.view.exists(
-                keylet::depositPreauth(account, ctx.tx[sfUnauthorize])))
+        if (!ctx.view.exists(keylet::depositPreauth(account, ctx.tx[sfUnauthorize])))
             return tecNO_ENTRY;
     }
     else if (ctx.tx.isFieldPresent(sfAuthorizeCredentials))
@@ -131,9 +121,7 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
     {
         // Verify that the Preauth entry is in the ledger.
         if (!ctx.view.exists(keylet::depositPreauth(
-                account,
-                credentials::makeSorted(
-                    ctx.tx.getFieldArray(sfUnauthorizeCredentials)))))
+                account, credentials::makeSorted(ctx.tx.getFieldArray(sfUnauthorizeCredentials)))))
             return tecNO_ENTRY;
     }
     return tesSUCCESS;
@@ -152,8 +140,7 @@ DepositPreauth::doApply()
         // check the starting balance because we want to allow dipping into the
         // reserve to pay fees.
         {
-            STAmount const reserve{view().fees().accountReserve(
-                sleOwner->getFieldU32(sfOwnerCount) + 1)};
+            STAmount const reserve{view().fees().accountReserve(sleOwner->getFieldU32(sfOwnerCount) + 1)};
 
             if (mPriorBalance < reserve)
                 return tecINSUFFICIENT_RESERVE;
@@ -169,13 +156,9 @@ DepositPreauth::doApply()
         slePreauth->setAccountID(sfAuthorize, auth);
         view().insert(slePreauth);
 
-        auto const page = view().dirInsert(
-            keylet::ownerDir(account_),
-            preauthKeylet,
-            describeOwnerDir(account_));
+        auto const page = view().dirInsert(keylet::ownerDir(account_), preauthKeylet, describeOwnerDir(account_));
 
-        JLOG(j_.trace()) << "Adding DepositPreauth to owner directory "
-                         << to_string(preauthKeylet.key) << ": "
+        JLOG(j_.trace()) << "Adding DepositPreauth to owner directory " << to_string(preauthKeylet.key) << ": "
                          << (page ? "success" : "failure");
 
         if (!page)
@@ -188,8 +171,7 @@ DepositPreauth::doApply()
     }
     else if (ctx_.tx.isFieldPresent(sfUnauthorize))
     {
-        auto const preauth =
-            keylet::depositPreauth(account_, ctx_.tx[sfUnauthorize]);
+        auto const preauth = keylet::depositPreauth(account_, ctx_.tx[sfUnauthorize]);
 
         return DepositPreauth::removeFromLedger(view(), preauth.key, j_);
     }
@@ -203,8 +185,7 @@ DepositPreauth::doApply()
         // check the starting balance because we want to allow dipping into the
         // reserve to pay fees.
         {
-            STAmount const reserve{view().fees().accountReserve(
-                sleOwner->getFieldU32(sfOwnerCount) + 1)};
+            STAmount const reserve{view().fees().accountReserve(sleOwner->getFieldU32(sfOwnerCount) + 1)};
 
             if (mPriorBalance < reserve)
                 return tecINSUFFICIENT_RESERVE;
@@ -213,8 +194,7 @@ DepositPreauth::doApply()
         // Preclaim already verified that the Preauth entry does not yet exist.
         // Create and populate the Preauth entry.
 
-        auto const sortedTX = credentials::makeSorted(
-            ctx_.tx.getFieldArray(sfAuthorizeCredentials));
+        auto const sortedTX = credentials::makeSorted(ctx_.tx.getFieldArray(sfAuthorizeCredentials));
         STArray sortedLE(sfAuthorizeCredentials, sortedTX.size());
         for (auto const& p : sortedTX)
         {
@@ -230,16 +210,13 @@ DepositPreauth::doApply()
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
         slePreauth->setAccountID(sfAccount, account_);
-        slePreauth->peekFieldArray(sfAuthorizeCredentials) =
-            std::move(sortedLE);
+        slePreauth->peekFieldArray(sfAuthorizeCredentials) = std::move(sortedLE);
 
         view().insert(slePreauth);
 
-        auto const page = view().dirInsert(
-            keylet::ownerDir(account_), preauthKey, describeOwnerDir(account_));
+        auto const page = view().dirInsert(keylet::ownerDir(account_), preauthKey, describeOwnerDir(account_));
 
-        JLOG(j_.trace()) << "Adding DepositPreauth to owner directory "
-                         << to_string(preauthKey.key) << ": "
+        JLOG(j_.trace()) << "Adding DepositPreauth to owner directory " << to_string(preauthKey.key) << ": "
                          << (page ? "success" : "failure");
 
         if (!page)
@@ -252,10 +229,8 @@ DepositPreauth::doApply()
     }
     else if (ctx_.tx.isFieldPresent(sfUnauthorizeCredentials))
     {
-        auto const preauthKey = keylet::depositPreauth(
-            account_,
-            credentials::makeSorted(
-                ctx_.tx.getFieldArray(sfUnauthorizeCredentials)));
+        auto const preauthKey =
+            keylet::depositPreauth(account_, credentials::makeSorted(ctx_.tx.getFieldArray(sfUnauthorizeCredentials)));
         return DepositPreauth::removeFromLedger(view(), preauthKey.key, j_);
     }
 
@@ -263,10 +238,7 @@ DepositPreauth::doApply()
 }
 
 TER
-DepositPreauth::removeFromLedger(
-    ApplyView& view,
-    uint256 const& preauthIndex,
-    beast::Journal j)
+DepositPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, beast::Journal j)
 {
     // Existence already checked in preclaim and DeleteAccount
     auto const slePreauth{view.peek(keylet::depositPreauth(preauthIndex))};
@@ -299,4 +271,4 @@ DepositPreauth::removeFromLedger(
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

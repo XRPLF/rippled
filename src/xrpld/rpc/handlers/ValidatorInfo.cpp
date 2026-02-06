@@ -9,7 +9,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 Json::Value
 doValidatorInfo(RPC::JsonContext& context)
 {
@@ -21,8 +21,7 @@ doValidatorInfo(RPC::JsonContext& context)
     Json::Value ret;
 
     // assume validationPK is ephemeral key, get master key
-    auto const mk =
-        context.app.validatorManifests().getMasterKey(*validationPK);
+    auto const mk = context.app.validatorManifests().getMasterKey(*validationPK);
     ret[jss::master_key] = toBase58(TokenType::NodePublic, mk);
 
     // validationPK is master key, this implies that there is no ephemeral
@@ -43,4 +42,4 @@ doValidatorInfo(RPC::JsonContext& context)
 
     return ret;
 }
-}  // namespace ripple
+}  // namespace xrpl

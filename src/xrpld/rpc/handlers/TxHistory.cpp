@@ -11,7 +11,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 // {
 //   start: <index>
@@ -41,12 +41,11 @@ doTxHistory(RPC::JsonContext& context)
     for (auto const& t : trans)
     {
         Json::Value tx_json = t->getJson(JsonOptions::none);
-        RPC::insertDeliverMax(
-            tx_json, t->getSTransaction()->getTxnType(), context.apiVersion);
+        RPC::insertDeliverMax(tx_json, t->getSTransaction()->getTxnType(), context.apiVersion);
         txs.append(tx_json);
     }
 
     return obj;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

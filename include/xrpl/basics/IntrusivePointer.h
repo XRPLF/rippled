@@ -6,7 +6,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 //------------------------------------------------------------------------------
 
@@ -45,8 +45,8 @@ struct SharedIntrusiveAdoptNoIncrementTag
 //
 
 template <class T>
-concept CAdoptTag = std::is_same_v<T, SharedIntrusiveAdoptIncrementStrongTag> ||
-    std::is_same_v<T, SharedIntrusiveAdoptNoIncrementTag>;
+concept CAdoptTag =
+    std::is_same_v<T, SharedIntrusiveAdoptIncrementStrongTag> || std::is_same_v<T, SharedIntrusiveAdoptNoIncrementTag>;
 
 //------------------------------------------------------------------------------
 
@@ -58,7 +58,7 @@ concept CAdoptTag = std::is_same_v<T, SharedIntrusiveAdoptIncrementStrongTag> ||
     When the strong pointer count goes to zero, the "partialDestructor" is
     called. This can be used to destroy as much of the object as possible while
     still retaining the reference counts. For example, for SHAMapInnerNodes the
-    children may be reset in that function. Note that std::shared_poiner WILL
+    children may be reset in that function. Note that std::shared_pointer WILL
     run the destructor when the strong count reaches zero, but may not free the
     memory used by the object until the weak count reaches zero. In rippled, we
     typically allocate shared pointers with the `make_shared` function. When
@@ -122,9 +122,7 @@ public:
         controlled by the rhs param.
     */
     template <class TT>
-    SharedIntrusive(
-        StaticCastTagSharedIntrusive,
-        SharedIntrusive<TT> const& rhs);
+    SharedIntrusive(StaticCastTagSharedIntrusive, SharedIntrusive<TT> const& rhs);
 
     /** Create a new SharedIntrusive by statically casting the pointer
        controlled by the rhs param.
@@ -136,9 +134,7 @@ public:
        controlled by the rhs param.
     */
     template <class TT>
-    SharedIntrusive(
-        DynamicCastTagSharedIntrusive,
-        SharedIntrusive<TT> const& rhs);
+    SharedIntrusive(DynamicCastTagSharedIntrusive, SharedIntrusive<TT> const& rhs);
 
     /** Create a new SharedIntrusive by dynamically casting the pointer
        controlled by the rhs param.
@@ -304,9 +300,7 @@ class SharedWeakUnion
     // Tagged pointer. Low bit determines if this is a strong or a weak
     // pointer. The low bit must be masked to zero when converting back to a
     // pointer. If the low bit is '1', this is a weak pointer.
-    static_assert(
-        alignof(T) >= 2,
-        "Bad alignment: Combo pointer requires low bit to be zero");
+    static_assert(alignof(T) >= 2, "Bad alignment: Combo pointer requires low bit to be zero");
 
 public:
     SharedWeakUnion() = default;
@@ -450,9 +444,7 @@ make_SharedIntrusive(Args&&... args)
     auto p = new TT(std::forward<Args>(args)...);
 
     static_assert(
-        noexcept(SharedIntrusive<TT>(
-            std::declval<TT*>(),
-            std::declval<SharedIntrusiveAdoptNoIncrementTag>())),
+        noexcept(SharedIntrusive<TT>(std::declval<TT*>(), std::declval<SharedIntrusiveAdoptNoIncrementTag>())),
         "SharedIntrusive constructor should not throw or this can leak "
         "memory");
 
@@ -492,5 +484,5 @@ dynamic_pointer_cast(TT const& v)
     return SharedPtr<T>(DynamicCastTagSharedIntrusive{}, v);
 }
 }  // namespace intr_ptr
-}  // namespace ripple
+}  // namespace xrpl
 #endif

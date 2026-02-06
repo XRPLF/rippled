@@ -3,13 +3,12 @@
 
 #include <xrpld/app/misc/detail/WorkBase.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
 // Work over TCP/IP
-class WorkPlain : public WorkBase<WorkPlain>,
-                  public std::enable_shared_from_this<WorkPlain>
+class WorkPlain : public WorkBase<WorkPlain>, public std::enable_shared_from_this<WorkPlain>
 {
     friend class WorkBase<WorkPlain>;
 
@@ -60,6 +59,6 @@ WorkPlain::onConnect(error_code const& ec)
 
 }  // namespace detail
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif
