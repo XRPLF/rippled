@@ -559,46 +559,41 @@ verifyAggregatedBulletproof(Slice const& proof, std::vector<Slice> const& commit
 }
 
 TER
-computeRemainingCommitment(Slice const& commitment, std::uint64_t amount, Buffer& out)
+computeConvertBackRemainder(Slice const& commitment, std::uint64_t amount, Buffer& out)
 {
     if (commitment.size() != ecPedersenCommitmentLength)
         return tecINTERNAL;
 
-    secp256k1_pubkey pc_balance;
-    std::memcpy(pc_balance.data, commitment.data(), ecPedersenCommitmentLength);
-
-    // If amount is 0, the remaining commitment is the same as the original
     if (amount == 0)
-    {
-        out.alloc(ecPedersenCommitmentLength);
-        std::memcpy(out.data(), commitment.data(), ecPedersenCommitmentLength);
-        return tesSUCCESS;
-    }
+        return tecINTERNAL;
+
+    secp256k1_pubkey pcBalance;
+    std::memcpy(pcBalance.data, commitment.data(), ecPedersenCommitmentLength);
 
     auto const ctx = secp256k1Context();
 
     // Convert amount to 32-byte big-endian scalar
-    unsigned char m_scalar[32] = {0};
+    unsigned char mScalar[32] = {0};
     for (int i = 0; i < 8; i++)
-        m_scalar[31 - i] = (amount >> (i * 8)) & 0xFF;
+        mScalar[31 - i] = (amount >> (i * 8)) & 0xFF;
 
     // Compute mG = amount * G
     secp256k1_pubkey mG;
-    if (!secp256k1_ec_pubkey_create(ctx, &mG, m_scalar))
+    if (!secp256k1_ec_pubkey_create(ctx, &mG, mScalar))
         return tecINTERNAL;
 
     // Negate mG to get -mG
     if (!secp256k1_ec_pubkey_negate(ctx, &mG))
         return tecINTERNAL;
 
-    // Compute PC_rem = PC_balance + (-mG)
-    secp256k1_pubkey const* summands[2] = {&pc_balance, &mG};
-    secp256k1_pubkey pc_rem;
-    if (!secp256k1_ec_pubkey_combine(ctx, &pc_rem, summands, 2))
+    // Compute pcRem = pcBalance + (-mG)
+    secp256k1_pubkey const* summands[2] = {&pcBalance, &mG};
+    secp256k1_pubkey pcRem;
+    if (!secp256k1_ec_pubkey_combine(ctx, &pcRem, summands, 2))
         return tecINTERNAL;
 
     out.alloc(ecPedersenCommitmentLength);
-    std::memcpy(out.data(), pc_rem.data, ecPedersenCommitmentLength);
+    std::memcpy(out.data(), pcRem.data, ecPedersenCommitmentLength);
 
     return tesSUCCESS;
 }

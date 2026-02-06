@@ -215,18 +215,18 @@ TER
 verifyAggregatedBulletproof(Slice const& proof, std::vector<Slice> const& commitments, uint256 const& contextHash);
 
 /**
- * @brief Computes the remaining commitment after subtracting an amount.
+ * @brief Computes the remainder commitment for ConvertBack.
  *
  * Given a Pedersen commitment PC = m*G + rho*H, this function computes
  * PC_rem = PC - amount*G = (m - amount)*G + rho*H
  *
  * @param commitment The original Pedersen commitment (64 bytes).
- * @param amount     The amount to subtract.
+ * @param amount     The amount to subtract (must be non-zero).
  * @param out        Output buffer for the resulting commitment (64 bytes).
- * @return tesSUCCESS on success, tecINTERNAL on failure.
+ * @return tesSUCCESS on success, tecINTERNAL on failure or if amount is 0.
  */
 TER
-computeRemainingCommitment(Slice const& commitment, std::uint64_t amount, Buffer& out);
+computeConvertBackRemainder(Slice const& commitment, std::uint64_t amount, Buffer& out);
 
 // The following functions belong to the mpt-crypto library,
 // they will be finally removed and we will use conan2 to manage the dependency.

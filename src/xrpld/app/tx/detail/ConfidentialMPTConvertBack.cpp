@@ -98,7 +98,7 @@ verifyProofs(STTx const& tx, std::shared_ptr<SLE const> const& issuance, std::sh
     {
         // Compute PC_rem = PC_balance - mG (the commitment to the remaining balance)
         Buffer pcRem;
-        if (auto const ter = computeRemainingCommitment(tx[sfBalanceCommitment], amount, pcRem); !isTesSuccess(ter))
+        if (auto const ter = computeConvertBackRemainder(tx[sfBalanceCommitment], amount, pcRem); !isTesSuccess(ter))
         {
             return ter;
         }
