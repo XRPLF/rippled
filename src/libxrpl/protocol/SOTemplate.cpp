@@ -18,11 +18,12 @@ SOTemplate::SOTemplate(std::vector<SOElement> uniqueFields, std::vector<SOElemen
     : indices_(SField::getNumFields() + 1, -1)  // Unmapped indices == -1
 {
     // Add all SOElements.
-    elements_.reserve(uniqueFields.size() + commonFields.size());
-    elements_.assign(uniqueFields.begin(), uniqueFields.end());
-    elements_.insert(elements_.end(), commonFields.begin(), commonFields.end());
+    //
+    elements_ = std::move(uniqueFields);
+    std::ranges::move(commonFields, std::back_inserter(elements_));
 
     // Validate and index elements_.
+    //
     for (std::size_t i = 0; i < elements_.size(); ++i)
     {
         SField const& sField{elements_[i].sField()};
