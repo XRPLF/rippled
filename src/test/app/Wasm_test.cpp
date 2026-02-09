@@ -924,6 +924,43 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
+    testManyParams()
+    {
+        // many_par.c_code / many_par_1001.c_code
+        // extension renamed to exclude from processing by CI hooks
+        testcase("Wasm Many params");
+
+        auto const Params1k = hexToBytes(thousandParamsHex);
+        auto const Params1k1 = hexToBytes(thousand1ParamsHex);
+
+        using namespace test::jtx;
+
+        Env env{*this};
+        std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
+        auto imports = createWasmImport(*hfs);
+
+        // add 1k parameter (max that wasmi support)
+        std::vector<WasmParam> params;
+        for (int i = 0; i < 1000; ++i)
+            params.push_back({.type = WT_I32, .of = {.i32 = 2 * i}});
+
+        auto& engine = WasmEngine::instance();
+        {
+            auto re = engine.run(Params1k, "test", params, imports, hfs, 1'000'000, env.journal);
+            BEAST_EXPECT(re && re->result == 999000);
+        }
+
+        // add 1 more parameter, module can't be created now
+        params.push_back({.type = WT_I32, .of = {.i32 = 2 * 1000}});
+        {
+            auto re = engine.run(Params1k1, "test", params, imports, hfs, 1'000'000, env.journal);
+            BEAST_EXPECT(!re);
+        }
+
+        env.close();
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -956,6 +993,7 @@ struct Wasm_test : public beast::unit_test::suite
         testBadAlign();
         testReturnType();
         testSwapBytes();
+        testManyParams();
 
         // perfTest();
     }

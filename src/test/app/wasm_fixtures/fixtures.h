@@ -85,3 +85,6 @@ extern std::string const startLoopHex;
 
 extern std::string const badAllocHex;
 extern std::string const badAlignWasmHex;
+
+extern std::string const thousandParamsHex;
+extern std::string const thousand1ParamsHex;
