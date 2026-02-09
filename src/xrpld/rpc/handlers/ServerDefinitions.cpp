@@ -13,6 +13,7 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include <set>
 #include <string_view>
 #include <unordered_map>
 

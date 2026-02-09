@@ -4,6 +4,7 @@
 #include <xrpl/protocol/SField.h>
 
 #include <functional>
+#include <initializer_list>
 #include <stdexcept>
 #include <vector>
 

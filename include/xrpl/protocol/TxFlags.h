@@ -3,6 +3,10 @@
 #include <xrpl/protocol/LedgerFormats.h>
 
 #include <cstdint>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 

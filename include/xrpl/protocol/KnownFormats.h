@@ -28,7 +28,7 @@ public:
     {
     public:
         Item(char const* name, KeyType type, std::vector<SOElement> uniqueFields, std::vector<SOElement> commonFields)
-            : soTemplate_(uniqueFields, commonFields), name_(name), type_(type)
+            : soTemplate_(std::move(uniqueFields), std::move(commonFields)), name_(name), type_(type)
         {
             // Verify that KeyType is appropriate.
             static_assert(
@@ -150,7 +150,7 @@ protected:
             LogicError(std::string("Duplicate key for item '") + name + "': already maps to " + item->getName());
         }
 
-        formats_.emplace_front(name, type, uniqueFields, commonFields);
+        formats_.emplace_front(name, type, std::move(uniqueFields), std::move(commonFields));
         Item const& item{formats_.front()};
 
         names_[name] = &item;
