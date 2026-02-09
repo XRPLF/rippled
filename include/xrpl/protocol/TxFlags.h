@@ -32,8 +32,6 @@ namespace xrpl {
     @ingroup protocol
 */
 
-// Formatting equals sign aligned 4 spaces after longest prefix, except for wrapped lines
-
 // Universal Transaction flags:
 constexpr std::uint32_t tfFullyCanonicalSig = 0x80000000;
 constexpr std::uint32_t tfInnerBatchTxn = 0x40000000;
@@ -49,6 +47,7 @@ constexpr std::uint32_t tfUniversalMask = ~tfUniversal;
 #pragma push_macro("TO_MASK")
 #pragma push_macro("VALUE_TO_MASK")
 #pragma push_macro("ALL_TX_FLAGS")
+#pragma push_macro("NULL_MASK_ADJ")
 
 #undef XMACRO
 #undef TO_VALUE
@@ -58,30 +57,43 @@ constexpr std::uint32_t tfUniversalMask = ~tfUniversal;
 #undef TO_MAP
 #undef TO_MASK
 #undef VALUE_TO_MASK
+#undef NULL_MASK_ADJ
 
 // clang-format off
 #undef ALL_TX_FLAGS
 
-#define XMACRO(TRANSACTION, TF_FLAG, TF_FLAG2)                                                                                                                 \
+// XMACRO parameters:
+// - TRANSACTION: handles the transaction name, its flags, and mask adjustment
+// - TF_FLAG: defines a new flag constant
+// - TF_FLAG2: references an existing flag constant (no new definition)
+// - MASK_ADJ: specifies flags to add back to the mask (making them invalid for this tx type)
+//
+// Note: MASK_ADJ is used when a universal flag should be invalid for a specific transaction.
+// For example, Batch uses MASK_ADJ(tfInnerBatchTxn) because the outer Batch transaction
+// must not have tfInnerBatchTxn set (only inner transactions should have it).
+#define XMACRO(TRANSACTION, TF_FLAG, TF_FLAG2, MASK_ADJ)                                                                                                       \
     TRANSACTION(AccountSet,                                                                                                                                    \
         TF_FLAG(tfRequireDestTag, 0x00010000)                                                                                                                  \
         TF_FLAG(tfOptionalDestTag, 0x00020000)                                                                                                                 \
         TF_FLAG(tfRequireAuth, 0x00040000)                                                                                                                     \
         TF_FLAG(tfOptionalAuth, 0x00080000)                                                                                                                    \
         TF_FLAG(tfDisallowXRP, 0x00100000)                                                                                                                     \
-        TF_FLAG(tfAllowXRP, 0x00200000))                                                                                                                       \
+        TF_FLAG(tfAllowXRP, 0x00200000),                                                                                                                       \
+        MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(OfferCreate,                                                                                                                                   \
         TF_FLAG(tfPassive, 0x00010000)                                                                                                                         \
         TF_FLAG(tfImmediateOrCancel, 0x00020000)                                                                                                               \
         TF_FLAG(tfFillOrKill, 0x00040000)                                                                                                                      \
         TF_FLAG(tfSell, 0x00080000)                                                                                                                            \
-        TF_FLAG(tfHybrid, 0x00100000))                                                                                                                         \
+        TF_FLAG(tfHybrid, 0x00100000),                                                                                                                         \
+        MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(Payment,                                                                                                                                       \
         TF_FLAG(tfNoRippleDirect, 0x00010000)                                                                                                                  \
         TF_FLAG(tfPartialPayment, 0x00020000)                                                                                                                  \
-        TF_FLAG(tfLimitQuality, 0x00040000))                                                                                                                   \
+        TF_FLAG(tfLimitQuality, 0x00040000),                                                                                                                   \
+        MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(TrustSet,                                                                                                                                      \
         TF_FLAG(tfSetfAuth, 0x00010000)                                                                                                                        \
@@ -90,22 +102,26 @@ constexpr std::uint32_t tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfSetFreeze, 0x00100000)                                                                                                                       \
         TF_FLAG(tfClearFreeze, 0x00200000)                                                                                                                     \
         TF_FLAG(tfSetDeepFreeze, 0x00400000)                                                                                                                   \
-        TF_FLAG(tfClearDeepFreeze, 0x00800000))                                                                                                                \
+        TF_FLAG(tfClearDeepFreeze, 0x00800000),                                                                                                                \
+        MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(EnableAmendment,                                                                                                                               \
         TF_FLAG(tfGotMajority, 0x00010000)                                                                                                                     \
-        TF_FLAG(tfLostMajority, 0x00020000))                                                                                                                   \
+        TF_FLAG(tfLostMajority, 0x00020000),                                                                                                                   \
+        MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(PaymentChannelClaim,                                                                                                                           \
         TF_FLAG(tfRenew, 0x00010000)                                                                                                                           \
-        TF_FLAG(tfClose, 0x00020000))                                                                                                                          \
+        TF_FLAG(tfClose, 0x00020000),                                                                                                                          \
+        MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(NFTokenMint,                                                                                                                                   \
         TF_FLAG(tfBurnable, 0x00000001)                                                                                                                        \
         TF_FLAG(tfOnlyXRP, 0x00000002)                                                                                                                         \
         /* deprecated TF_FLAG(tfTrustLine, 0x00000004) */                                                                                                      \
         TF_FLAG(tfTransferable, 0x00000008)                                                                                                                    \
-        TF_FLAG(tfMutable, 0x00000010))                                                                                                                        \
+        TF_FLAG(tfMutable, 0x00000010),                                                                                                                        \
+        MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(MPTokenIssuanceCreate,                                                                                                                         \
         /* Note: tf/lsfMPTLocked is intentionally omitted since this transaction is not allowed to modify it. */                                               \
@@ -114,17 +130,21 @@ constexpr std::uint32_t tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfMPTCanEscrow, lsfMPTCanEscrow)                                                                                                               \
         TF_FLAG(tfMPTCanTrade, lsfMPTCanTrade)                                                                                                                 \
         TF_FLAG(tfMPTCanTransfer, lsfMPTCanTransfer)                                                                                                           \
-        TF_FLAG(tfMPTCanClawback, lsfMPTCanClawback))                                                                                                          \
+        TF_FLAG(tfMPTCanClawback, lsfMPTCanClawback),                                                                                                          \
+        MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(MPTokenAuthorize,                                                                                                                              \
-        TF_FLAG(tfMPTUnauthorize, 0x00000001))                                                                                                                 \
+        TF_FLAG(tfMPTUnauthorize, 0x00000001),                                                                                                                 \
+        MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(MPTokenIssuanceSet,                                                                                                                            \
         TF_FLAG(tfMPTLock, 0x00000001)                                                                                                                         \
-        TF_FLAG(tfMPTUnlock, 0x00000002))                                                                                                                      \
+        TF_FLAG(tfMPTUnlock, 0x00000002),                                                                                                                      \
+        MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(NFTokenCreateOffer,                                                                                                                            \
-        TF_FLAG(tfSellNFToken, 0x00000001))                                                                                                                    \
+        TF_FLAG(tfSellNFToken, 0x00000001),                                                                                                                    \
+        MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(AMMDeposit,                                                                                                                                    \
         TF_FLAG(tfLPToken, 0x00010000)                                                                                                                         \
@@ -132,7 +152,8 @@ constexpr std::uint32_t tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfTwoAsset, 0x00100000)                                                                                                                        \
         TF_FLAG(tfOneAssetLPToken, 0x00200000)                                                                                                                 \
         TF_FLAG(tfLimitLPToken, 0x00400000)                                                                                                                    \
-        TF_FLAG(tfTwoAssetIfEmpty, 0x00800000))                                                                                                                \
+        TF_FLAG(tfTwoAssetIfEmpty, 0x00800000),                                                                                                                \
+        MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(AMMWithdraw,                                                                                                                                   \
         TF_FLAG2(tfLPToken, 0x00010000)                                                                                                                        \
@@ -141,26 +162,32 @@ constexpr std::uint32_t tfUniversalMask = ~tfUniversal;
         TF_FLAG2(tfSingleAsset, 0x00080000)                                                                                                                    \
         TF_FLAG2(tfTwoAsset, 0x00100000)                                                                                                                       \
         TF_FLAG2(tfOneAssetLPToken, 0x00200000)                                                                                                                \
-        TF_FLAG2(tfLimitLPToken, 0x00400000))                                                                                                                  \
+        TF_FLAG2(tfLimitLPToken, 0x00400000),                                                                                                                  \
+        MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(AMMClawback,                                                                                                                                   \
-        TF_FLAG(tfClawTwoAssets, 0x00000001))                                                                                                                  \
+        TF_FLAG(tfClawTwoAssets, 0x00000001),                                                                                                                  \
+        MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(XChainModifyBridge,                                                                                                                            \
-        TF_FLAG(tfClearAccountCreateAmount, 0x00010000))                                                                                                       \
+        TF_FLAG(tfClearAccountCreateAmount, 0x00010000),                                                                                                       \
+        MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(VaultCreate,                                                                                                                                   \
         TF_FLAG(tfVaultPrivate, lsfVaultPrivate)                                                                                                               \
-        TF_FLAG(tfVaultShareNonTransferable, 0x00020000))                                                                                                      \
+        TF_FLAG(tfVaultShareNonTransferable, 0x00020000),                                                                                                      \
+        MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(Batch,                                                                                                                                         \
         TF_FLAG(tfAllOrNothing, 0x00010000)                                                                                                                    \
         TF_FLAG(tfOnlyOne, 0x00020000)                                                                                                                         \
         TF_FLAG(tfUntilFailure, 0x00040000)                                                                                                                    \
-        TF_FLAG(tfIndependent, 0x00080000))                                                                                                                    \
+        TF_FLAG(tfIndependent, 0x00080000),                                                                                                                    \
+        MASK_ADJ(tfInnerBatchTxn))                      /* Batch must reject tfInnerBatchTxn - only inner transactions should have this flag */                \
                                                                                                                                                                \
     TRANSACTION(LoanSet,                                /* True indicates the loan supports overpayments */                                                    \
-        TF_FLAG(tfLoanOverpayment, 0x00010000))                                                                                                                \
+        TF_FLAG(tfLoanOverpayment, 0x00010000),                                                                                                                \
+        MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(LoanPay,                                /* True indicates any excess in this payment can be used as an overpayment. */                         \
                                                         /* False: no overpayments will be taken. */                                                            \
@@ -168,14 +195,16 @@ constexpr std::uint32_t tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfLoanFullPayment, 0x00020000)          /* True indicates that the payment is an early full payment. */                                        \
                                                         /* It must pay the entire loan including close interest and fees, or it will fail. */                  \
                                                         /* False: Not a full payment. */                                                                       \
-        TF_FLAG(tfLoanLatePayment, 0x00040000))         /* True indicates that the payment is late, and includes late interest and fees. */                    \
+        TF_FLAG(tfLoanLatePayment, 0x00040000),         /* True indicates that the payment is late, and includes late interest and fees. */                    \
                                                         /* If the loan is not late, it will fail. */                                                           \
                                                         /* False: not a late payment. If the current payment is overdue, the transaction will fail.*/          \
+        MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(LoanManage,                                                                                                                                    \
         TF_FLAG(tfLoanDefault, 0x00010000)                                                                                                                     \
         TF_FLAG(tfLoanImpair, 0x00020000)                                                                                                                      \
-        TF_FLAG(tfLoanUnimpair, 0x00040000))
+        TF_FLAG(tfLoanUnimpair, 0x00040000),                                                                                                                   \
+        MASK_ADJ(0))
 
 // clang-format on
 
@@ -185,18 +214,23 @@ constexpr std::uint32_t tfUniversalMask = ~tfUniversal;
 // constexpr std::uint32_t tfAccountSetRequireDestTag = 0x00010000;
 using FlagValue = std::uint32_t;
 #define TO_VALUE(name, value) constexpr FlagValue name = value;
-#define NULL_NAME(name, values) values
+#define NULL_NAME(name, values, maskAdj) values
 #define NULL_OUTPUT(name, value)
-XMACRO(NULL_NAME, TO_VALUE, NULL_OUTPUT)
+#define NULL_MASK_ADJ(value)
+XMACRO(NULL_NAME, TO_VALUE, NULL_OUTPUT, NULL_MASK_ADJ)
 
 // Create masks for each transaction type that has flags.
 //
 // example:
 // constexpr std::uint32_t tfAccountSetMask = ~(tfUniversal | tfRequireDestTag |
 //     tfOptionalDestTag | tfRequireAuth | tfOptionalAuth | tfDisallowXRP | tfAllowXRP);
-#define TO_MASK(name, values) constexpr std::uint32_t tf##name##Mask = ~(tfUniversal values);
+//
+// The mask adjustment (maskAdj) allows adding flags back to the mask, making them invalid.
+// For example, Batch uses MASK_ADJ(tfInnerBatchTxn) to reject tfInnerBatchTxn on outer Batch.
+#define TO_MASK(name, values, maskAdj) constexpr std::uint32_t tf##name##Mask = ~(tfUniversal values) | maskAdj;
 #define VALUE_TO_MASK(name, value) | name
-XMACRO(TO_MASK, VALUE_TO_MASK, VALUE_TO_MASK)
+#define MASK_ADJ_TO_MASK(value) value
+XMACRO(TO_MASK, VALUE_TO_MASK, VALUE_TO_MASK, MASK_ADJ_TO_MASK)
 
 // Create maps for each set of flags.
 // This is used below in `ALL_TX_FLAGS` to generate the server_definitions RPC
@@ -209,8 +243,8 @@ XMACRO(TO_MASK, VALUE_TO_MASK, VALUE_TO_MASK)
 // ...};
 using FlagMap = std::map<std::string, FlagValue>;
 #define VALUE_TO_MAP(name, value) {#name, value},
-#define TO_MAP(name, values) FlagMap const name##Flags = {values};
-XMACRO(TO_MAP, VALUE_TO_MAP, VALUE_TO_MAP)
+#define TO_MAP(name, values, maskAdj) FlagMap const name##Flags = {values};
+XMACRO(TO_MAP, VALUE_TO_MAP, VALUE_TO_MAP, NULL_MASK_ADJ)
 
 FlagMap const UniversalFlags = {{"tfFullyCanonicalSig", tfFullyCanonicalSig}, {"tfInnerBatchTxn", tfInnerBatchTxn}};
 
@@ -221,10 +255,10 @@ FlagMap const UniversalFlags = {{"tfFullyCanonicalSig", tfFullyCanonicalSig}, {"
 // std::vector<std::pair<std::string, FlagMap> const allTxFlags = {
 //     {"AccountSet", AccountSetFlags},
 // ...};
-#define ALL_TX_FLAGS(name, values) {#name, name##Flags},
+#define ALL_TX_FLAGS(name, values, maskAdj) {#name, name##Flags},
 std::vector<std::pair<std::string, FlagMap>> const allTxFlags = {
     {"universal", UniversalFlags},
-    XMACRO(ALL_TX_FLAGS, NULL_OUTPUT, NULL_OUTPUT)};
+    XMACRO(ALL_TX_FLAGS, NULL_OUTPUT, NULL_OUTPUT, NULL_MASK_ADJ)};
 
 #undef XMACRO
 #undef TO_VALUE
@@ -235,6 +269,8 @@ std::vector<std::pair<std::string, FlagMap>> const allTxFlags = {
 #undef TO_MASK
 #undef VALUE_TO_MASK
 #undef ALL_TX_FLAGS
+#undef NULL_MASK_ADJ
+#undef MASK_ADJ_TO_MASK
 
 #pragma pop_macro("XMACRO")
 #pragma pop_macro("TO_VALUE")
@@ -245,6 +281,7 @@ std::vector<std::pair<std::string, FlagMap>> const allTxFlags = {
 #pragma pop_macro("TO_MASK")
 #pragma pop_macro("VALUE_TO_MASK")
 #pragma pop_macro("ALL_TX_FLAGS")
+#pragma pop_macro("NULL_MASK_ADJ")
 
 // Additional transaction masks and combos
 constexpr std::uint32_t tfMPTPaymentMask = ~(tfUniversal | tfPartialPayment);
