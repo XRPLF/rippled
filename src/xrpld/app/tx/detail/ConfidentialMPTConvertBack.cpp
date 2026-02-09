@@ -43,7 +43,20 @@ ConfidentialMPTConvertBack::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+/**
+ * Verifies the cryptographic proofs for a ConvertBack transaction.
+ *
+ * This function verifies three proofs:
+ * 1. Revealed amount proof: verifies the encrypted amounts (holder, issuer,
+ *    auditor) all encrypt the same revealed amount using the blinding factor.
+ * 2. Pedersen linkage proof: verifies the balance commitment is derived from
+ *    the holder's encrypted spending balance.
+ * 3. Bulletproof (range proof): verifies the remaining balance (balance - amount)
+ *    is non-negative, preventing overdrafts.
+ *
+ * All proofs are verified before returning any error to prevent timing attacks.
+ */
+static TER
 verifyProofs(STTx const& tx, std::shared_ptr<SLE const> const& issuance, std::shared_ptr<SLE const> const& mptoken)
 {
     if (!mptoken->isFieldPresent(sfHolderElGamalPublicKey))

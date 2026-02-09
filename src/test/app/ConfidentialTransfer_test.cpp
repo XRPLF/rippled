@@ -2812,6 +2812,17 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // unit test correctly. But we still test a few cases since it's easy to
         // do.
 
+        // Helper to combine pedersen proof and bulletproof
+        auto const combineProofs = [](Buffer const& pedersenProof, Buffer const& bulletproof) {
+            Buffer combinedProof(pedersenProof.size() + bulletproof.size());
+            std::memcpy(combinedProof.data(), pedersenProof.data(), pedersenProof.size());
+            std::memcpy(combinedProof.data() + pedersenProof.size(), bulletproof.data(), bulletproof.size());
+            return combinedProof;
+        };
+
+        auto const holderPubKey = mptAlice.getPubKey(bob);
+        BEAST_EXPECT(holderPubKey.has_value());
+
         // generate a proof using a pedersen commitment using the wrong value
         {
             uint256 const contextHash =
@@ -2930,10 +2941,249 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .err = tecBAD_PROOF});
         }
 
+        // generate a proof using a wrong context hash for pedersen proof
+        {
+            uint256 const contextHash =
+                getConvertBackContextHash(bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
+
+            // Generate pedersen proof with wrong context hash
+            uint256 const badContextHash{1};
+            Buffer const pedersenProof = mptAlice.getBalanceLinkageProof(
+                bob,
+                badContextHash,  // wrong context hash
+                *holderPubKey,
+                {
+                    .pedersenCommitment = pedersenCommitment,
+                    .amt = *spendingBalance,
+                    .encryptedAmt = *encryptedSpendingBalance,
+                    .blindingFactor = pcBlindingFactor,
+                });
+
+            // Generate bulletproof with correct context hash
+            Buffer const bulletproof =
+                mptAlice.getBulletproof({*spendingBalance - amt}, {pcBlindingFactor}, contextHash);
+
+            Buffer const proof = combineProofs(pedersenProof, bulletproof);
+
+            mptAlice.convertBack(
+                {.account = bob,
+                 .amt = amt,
+                 .proof = proof,
+                 .holderEncryptedAmt = bobCiphertext,
+                 .issuerEncryptedAmt = issuerCiphertext,
+                 .blindingFactor = blindingFactor,
+                 .pedersenCommitment = pedersenCommitment,
+                 .err = tecBAD_PROOF});
+        }
+
         // a correct proof
         {
             // generate the context hash again because bob's sequence
             // incremented from prev txn
+            uint256 const contextHash =
+                getConvertBackContextHash(bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
+
+            Buffer const proof = mptAlice.getConvertBackProof(
+                bob,
+                amt,
+                contextHash,
+                {
+                    .pedersenCommitment = pedersenCommitment,
+                    .amt = *spendingBalance,
+                    .encryptedAmt = *encryptedSpendingBalance,
+                    .blindingFactor = pcBlindingFactor,
+                });
+
+            mptAlice.convertBack({
+                .account = bob,
+                .amt = amt,
+                .proof = proof,
+                .holderEncryptedAmt = bobCiphertext,
+                .issuerEncryptedAmt = issuerCiphertext,
+                .blindingFactor = blindingFactor,
+                .pedersenCommitment = pedersenCommitment,
+            });
+        }
+    }
+
+    void
+    testConvertBackBulletproof(FeatureBitset features)
+    {
+        testcase("Convert back bulletproof");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+        // --------------- Setup test --------------- //
+        mptAlice.create(
+            {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+
+        mptAlice.authorize({.account = bob});
+        mptAlice.pay(alice, bob, 100);
+
+        mptAlice.generateKeyPair(alice);
+
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+        mptAlice.generateKeyPair(bob);
+
+        mptAlice.convert({
+            .account = bob,
+            .amt = 40,
+            .holderPubKey = mptAlice.getPubKey(bob),
+        });
+
+        mptAlice.mergeInbox({
+            .account = bob,
+        });
+
+        // for ease of understanding, generate all the fields here instead of
+        // autofilling
+        uint64_t const amt = 10;
+        Buffer const blindingFactor = generateBlindingFactor();
+        Buffer const pcBlindingFactor = generateBlindingFactor();
+
+        auto const spendingBalance = mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+        BEAST_EXPECT(spendingBalance.has_value());
+        auto const encryptedSpendingBalance = mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+        BEAST_EXPECT(encryptedSpendingBalance.has_value() && !encryptedSpendingBalance->empty());
+
+        Buffer const pedersenCommitment = mptAlice.getPedersenCommitment(*spendingBalance, pcBlindingFactor);
+        Buffer const issuerCiphertext = mptAlice.encryptAmount(alice, amt, blindingFactor);
+        Buffer const bobCiphertext = mptAlice.encryptAmount(bob, amt, blindingFactor);
+        auto const version = mptAlice.getMPTokenVersion(bob);
+
+        // --------------- Finish setup --------------- //
+
+        // There are several tests that use bad params to generate the
+        // bulletproof (range proof). These test scenarios where the pedersen
+        // proof is correct but the bulletproof has bad parameters.
+
+        // Helper to combine pedersen proof and bulletproof
+        auto const combineProofs = [](Buffer const& pedersenProof, Buffer const& bulletproof) {
+            Buffer combinedProof(pedersenProof.size() + bulletproof.size());
+            std::memcpy(combinedProof.data(), pedersenProof.data(), pedersenProof.size());
+            std::memcpy(combinedProof.data() + pedersenProof.size(), bulletproof.data(), bulletproof.size());
+            return combinedProof;
+        };
+
+        auto const holderPubKey = mptAlice.getPubKey(bob);
+        BEAST_EXPECT(holderPubKey.has_value());
+
+        // generate a proof using a wrong remaining balance for bulletproof
+        {
+            uint256 const contextHash =
+                getConvertBackContextHash(bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
+
+            // Generate correct pedersen proof
+            Buffer const pedersenProof = mptAlice.getBalanceLinkageProof(
+                bob,
+                contextHash,
+                *holderPubKey,
+                {
+                    .pedersenCommitment = pedersenCommitment,
+                    .amt = *spendingBalance,
+                    .encryptedAmt = *encryptedSpendingBalance,
+                    .blindingFactor = pcBlindingFactor,
+                });
+
+            // Generate bulletproof with wrong remaining balance
+            Buffer const bulletproof = mptAlice.getBulletproof(
+                {1},  // wrong remaining balance
+                {pcBlindingFactor},
+                contextHash);
+
+            Buffer const proof = combineProofs(pedersenProof, bulletproof);
+
+            mptAlice.convertBack(
+                {.account = bob,
+                 .amt = amt,
+                 .proof = proof,
+                 .holderEncryptedAmt = bobCiphertext,
+                 .issuerEncryptedAmt = issuerCiphertext,
+                 .blindingFactor = blindingFactor,
+                 .pedersenCommitment = pedersenCommitment,
+                 .err = tecBAD_PROOF});
+        }
+
+        // generate a proof using a wrong blinding factor for bulletproof
+        {
+            uint256 const contextHash =
+                getConvertBackContextHash(bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
+
+            // Generate correct pedersen proof
+            Buffer const pedersenProof = mptAlice.getBalanceLinkageProof(
+                bob,
+                contextHash,
+                *holderPubKey,
+                {
+                    .pedersenCommitment = pedersenCommitment,
+                    .amt = *spendingBalance,
+                    .encryptedAmt = *encryptedSpendingBalance,
+                    .blindingFactor = pcBlindingFactor,
+                });
+
+            // Generate bulletproof with wrong blinding factor
+            Buffer const bulletproof = mptAlice.getBulletproof(
+                {*spendingBalance - amt},
+                {generateBlindingFactor()},  // wrong blinding factor
+                contextHash);
+
+            Buffer const proof = combineProofs(pedersenProof, bulletproof);
+
+            mptAlice.convertBack(
+                {.account = bob,
+                 .amt = amt,
+                 .proof = proof,
+                 .holderEncryptedAmt = bobCiphertext,
+                 .issuerEncryptedAmt = issuerCiphertext,
+                 .blindingFactor = blindingFactor,
+                 .pedersenCommitment = pedersenCommitment,
+                 .err = tecBAD_PROOF});
+        }
+
+        // generate a proof using a wrong context hash for bulletproof
+        {
+            uint256 const contextHash =
+                getConvertBackContextHash(bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
+
+            // Generate correct pedersen proof
+            Buffer const pedersenProof = mptAlice.getBalanceLinkageProof(
+                bob,
+                contextHash,
+                *holderPubKey,
+                {
+                    .pedersenCommitment = pedersenCommitment,
+                    .amt = *spendingBalance,
+                    .encryptedAmt = *encryptedSpendingBalance,
+                    .blindingFactor = pcBlindingFactor,
+                });
+
+            // Generate bulletproof with wrong context hash
+            uint256 const badContextHash{1};
+            Buffer const bulletproof = mptAlice.getBulletproof(
+                {*spendingBalance - amt},
+                {pcBlindingFactor},
+                badContextHash);  // wrong context hash
+
+            Buffer const proof = combineProofs(pedersenProof, bulletproof);
+
+            mptAlice.convertBack(
+                {.account = bob,
+                 .amt = amt,
+                 .proof = proof,
+                 .holderEncryptedAmt = bobCiphertext,
+                 .issuerEncryptedAmt = issuerCiphertext,
+                 .blindingFactor = blindingFactor,
+                 .pedersenCommitment = pedersenCommitment,
+                 .err = tecBAD_PROOF});
+        }
+
+        // a correct proof to verify setup is valid
+        {
             uint256 const contextHash =
                 getConvertBackContextHash(bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
 
@@ -2995,6 +3245,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testConvertBackPreclaim(features);
         testConvertBackWithAuditor(features);
         testConvertBackPedersenProof(features);
+        testConvertBackBulletproof(features);
 
         testMutatePrivacy(features);
     }
