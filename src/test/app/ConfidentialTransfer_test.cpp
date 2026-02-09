@@ -2806,11 +2806,11 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         // --------------- Finish setup --------------- //
 
-        // There are several tests that use bad params to generate the
-        // pedersen linkage proof. These don't really need to be tested in
-        // rippled, as this is mainly the responsibility of the crypto lib to
-        // unit test correctly. But we still test a few cases since it's easy to
-        // do.
+        // These tests verify that the pedersen linkage proof validation
+        // correctly rejects proofs generated with incorrect parameters.
+        // The pedersen linkage proof proves that the balance commitment
+        // PC = balance*G + rho*H is derived from the holder's encrypted
+        // spending balance.
 
         // Helper to combine pedersen proof and bulletproof
         auto const combineProofs = [](Buffer const& pedersenProof, Buffer const& bulletproof) {
@@ -2823,7 +2823,9 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         auto const holderPubKey = mptAlice.getPubKey(bob);
         BEAST_EXPECT(holderPubKey.has_value());
 
-        // generate a proof using a pedersen commitment using the wrong value
+        // Test 1: Proof generated with wrong pedersen commitment value.
+        // The proof uses PC(1, rho) but the transaction submits PC(balance, rho).
+        // Verification fails because the proof doesn't match the submitted commitment.
         {
             uint256 const contextHash =
                 getConvertBackContextHash(bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
@@ -2833,7 +2835,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 amt,
                 contextHash,
                 {
-                    .pedersenCommitment = badPedersenCommitment,  // bad pedersen commitment
+                    .pedersenCommitment = badPedersenCommitment,  // wrong pedersen commitment
                     .amt = *spendingBalance,
                     .encryptedAmt = *encryptedSpendingBalance,
                     .blindingFactor = pcBlindingFactor,
@@ -2850,11 +2852,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .err = tecBAD_PROOF});
         }
 
-        // the pc blinding factor for generating the pc is different from the
-        // one used to generate pedersen proof
+        // Test 2: Proof generated with wrong blinding factor (rho).
+        // The pedersen commitment PC = balance*G + rho*H requires the same rho
+        // used in proof generation. Using a different rho breaks the linkage.
         {
-            // generate the context hash again because bob's sequence
-            // incremented from prev txn
             uint256 const contextHash =
                 getConvertBackContextHash(bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
 
@@ -2866,7 +2867,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                     .pedersenCommitment = pedersenCommitment,
                     .amt = *spendingBalance,
                     .encryptedAmt = *encryptedSpendingBalance,
-                    .blindingFactor = generateBlindingFactor(),  // bad blinding factor
+                    .blindingFactor = generateBlindingFactor(),  // wrong blinding factor
                 });
 
             mptAlice.convertBack(
@@ -2880,10 +2881,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .err = tecBAD_PROOF});
         }
 
-        // the balance for pedersen proof is wrong
+        // Test 3: Proof generated with wrong balance value.
+        // The proof claims balance=1 but the encrypted spending balance contains
+        // the actual balance. Verification fails because the values don't match.
         {
-            // generate the context hash again because bob's sequence
-            // incremented from prev txn
             uint256 const contextHash =
                 getConvertBackContextHash(bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
 
@@ -2893,7 +2894,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 contextHash,
                 {
                     .pedersenCommitment = pedersenCommitment,
-                    .amt = 1,  // proof is generated using a wrong balance
+                    .amt = 1,  // wrong balance
                     .encryptedAmt = *encryptedSpendingBalance,
                     .blindingFactor = pcBlindingFactor,
                 });
@@ -2909,15 +2910,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .err = tecBAD_PROOF});
         }
 
-        // test when the pedersen commitment is wrong while the proof is
-        // right
+        // Test 4: Correct proof but wrong pedersen commitment in transaction.
+        // The proof is generated correctly, but the transaction submits a
+        // different pedersen commitment. Verification fails because the
+        // submitted commitment doesn't match what the proof was generated for.
         {
-            // generate the context hash again because bob's sequence
-            // incremented from prev txn
             uint256 const contextHash =
                 getConvertBackContextHash(bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
-
-            // pc is generated using a wrong balance
             Buffer const badPedersenCommitment = mptAlice.getPedersenCommitment(1, pcBlindingFactor);
             Buffer const proof = mptAlice.getConvertBackProof(
                 bob,
@@ -2937,16 +2936,17 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .holderEncryptedAmt = bobCiphertext,
                  .issuerEncryptedAmt = issuerCiphertext,
                  .blindingFactor = blindingFactor,
-                 .pedersenCommitment = badPedersenCommitment,  // wrong pc used here
+                 .pedersenCommitment = badPedersenCommitment,  // wrong pedersen commitment
                  .err = tecBAD_PROOF});
         }
 
-        // generate a proof using a wrong context hash for pedersen proof
+        // Test 5: Proof generated with wrong context hash.
+        // The context hash binds the proof to a specific transaction (account,
+        // sequence, issuanceID, amount, version). Using a different context hash
+        // makes the proof invalid for this transaction, preventing replay attacks.
         {
             uint256 const contextHash =
                 getConvertBackContextHash(bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
-
-            // Generate pedersen proof with wrong context hash
             uint256 const badContextHash{1};
             Buffer const pedersenProof = mptAlice.getBalanceLinkageProof(
                 bob,
@@ -2959,7 +2959,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                     .blindingFactor = pcBlindingFactor,
                 });
 
-            // Generate bulletproof with correct context hash
+            // Bulletproof uses correct context hash so only pedersen proof fails
             Buffer const bulletproof =
                 mptAlice.getBulletproof({*spendingBalance - amt}, {pcBlindingFactor}, contextHash);
 
@@ -2976,10 +2976,9 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .err = tecBAD_PROOF});
         }
 
-        // a correct proof
+        // Test 6: Correct proof to verify the test setup is valid.
+        // All parameters are correct, so the transaction should succeed.
         {
-            // generate the context hash again because bob's sequence
-            // incremented from prev txn
             uint256 const contextHash =
                 getConvertBackContextHash(bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
 
@@ -3058,9 +3057,11 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         // --------------- Finish setup --------------- //
 
-        // There are several tests that use bad params to generate the
-        // bulletproof (range proof). These test scenarios where the pedersen
-        // proof is correct but the bulletproof has bad parameters.
+        // These tests verify that the bulletproof (range proof) validation
+        // correctly rejects proofs generated with incorrect parameters.
+        // The bulletproof proves that the remaining balance (balance - amount)
+        // is non-negative, i.e., in the range [0, 2^64-1]. This prevents
+        // overdrafts where a user tries to convert back more than they have.
 
         // Helper to combine pedersen proof and bulletproof
         auto const combineProofs = [](Buffer const& pedersenProof, Buffer const& bulletproof) {
@@ -3073,12 +3074,14 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         auto const holderPubKey = mptAlice.getPubKey(bob);
         BEAST_EXPECT(holderPubKey.has_value());
 
-        // generate a proof using a wrong remaining balance for bulletproof
+        // Test 1: Bulletproof generated with wrong remaining balance.
+        // The bulletproof claims remaining balance is 1, but the pedersen
+        // commitment was created with (balance - amount). The verifier computes
+        // PC_rem = PC - amount*G and checks if the bulletproof matches, which fails.
         {
             uint256 const contextHash =
                 getConvertBackContextHash(bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
 
-            // Generate correct pedersen proof
             Buffer const pedersenProof = mptAlice.getBalanceLinkageProof(
                 bob,
                 contextHash,
@@ -3090,7 +3093,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                     .blindingFactor = pcBlindingFactor,
                 });
 
-            // Generate bulletproof with wrong remaining balance
             Buffer const bulletproof = mptAlice.getBulletproof(
                 {1},  // wrong remaining balance
                 {pcBlindingFactor},
@@ -3109,12 +3111,14 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .err = tecBAD_PROOF});
         }
 
-        // generate a proof using a wrong blinding factor for bulletproof
+        // Test 2: Bulletproof generated with wrong blinding factor.
+        // The bulletproof must use the same blinding factor (rho) as the pedersen
+        // commitment PC = (balance - amount)*G + rho*H. Using a different rho
+        // creates a commitment mismatch and verification fails.
         {
             uint256 const contextHash =
                 getConvertBackContextHash(bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
 
-            // Generate correct pedersen proof
             Buffer const pedersenProof = mptAlice.getBalanceLinkageProof(
                 bob,
                 contextHash,
@@ -3126,7 +3130,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                     .blindingFactor = pcBlindingFactor,
                 });
 
-            // Generate bulletproof with wrong blinding factor
             Buffer const bulletproof = mptAlice.getBulletproof(
                 {*spendingBalance - amt},
                 {generateBlindingFactor()},  // wrong blinding factor
@@ -3145,12 +3148,15 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .err = tecBAD_PROOF});
         }
 
-        // generate a proof using a wrong context hash for bulletproof
+        // Test 3: Bulletproof generated with wrong context hash.
+        // The context hash binds the proof to a specific transaction (account,
+        // sequence, issuanceID, amount, version). Using a different context hash
+        // makes the proof invalid for this transaction, preventing replay attacks.
         {
             uint256 const contextHash =
                 getConvertBackContextHash(bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
 
-            // Generate correct pedersen proof
+            // Pedersen proof uses correct context hash so only bulletproof fails
             Buffer const pedersenProof = mptAlice.getBalanceLinkageProof(
                 bob,
                 contextHash,
@@ -3162,7 +3168,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                     .blindingFactor = pcBlindingFactor,
                 });
 
-            // Generate bulletproof with wrong context hash
             uint256 const badContextHash{1};
             Buffer const bulletproof = mptAlice.getBulletproof(
                 {*spendingBalance - amt},
@@ -3182,7 +3187,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .err = tecBAD_PROOF});
         }
 
-        // a correct proof to verify setup is valid
+        // Test 4: Correct proof to verify the test setup is valid.
+        // All parameters are correct, so the transaction should succeed.
         {
             uint256 const contextHash =
                 getConvertBackContextHash(bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
