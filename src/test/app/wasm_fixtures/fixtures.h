@@ -88,3 +88,5 @@ extern std::string const badAlignWasmHex;
 
 extern std::string const thousandParamsHex;
 extern std::string const thousand1ParamsHex;
+extern std::string const locals10kHex;
+

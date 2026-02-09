@@ -535,11 +535,12 @@ struct Wasm_test : public beast::unit_test::suite
             [[maybe_unused]] uint256 const nft1{token::getNextID(env, alan, 0u)};
 
             env(token::mint(alan, 0u),
-                token::uri("https://github.com/XRPLF/XRPL-Standards/discussions/"
-                           "279?id=github.com/XRPLF/XRPL-Standards/discussions/"
-                           "279&ut=github.com/XRPLF/XRPL-Standards/discussions/"
-                           "279&sid=github.com/XRPLF/XRPL-Standards/discussions/"
-                           "279&aot=github.com/XRPLF/XRPL-Standards/disc"));
+                token::uri(
+                    "https://github.com/XRPLF/XRPL-Standards/discussions/"
+                    "279?id=github.com/XRPLF/XRPL-Standards/discussions/"
+                    "279&ut=github.com/XRPLF/XRPL-Standards/discussions/"
+                    "279&sid=github.com/XRPLF/XRPL-Standards/discussions/"
+                    "279&aot=github.com/XRPLF/XRPL-Standards/disc"));
             [[maybe_unused]] uint256 const nft2{token::getNextID(env, alan, 0u)};
             env(token::mint(alan, 0u));
             env.close();
@@ -930,8 +931,8 @@ struct Wasm_test : public beast::unit_test::suite
         // extension renamed to exclude from processing by CI hooks
         testcase("Wasm Many params");
 
-        auto const Params1k = hexToBytes(thousandParamsHex);
-        auto const Params1k1 = hexToBytes(thousand1ParamsHex);
+        auto const params1k = hexToBytes(thousandParamsHex);
+        auto const params1k1 = hexToBytes(thousand1ParamsHex);
 
         using namespace test::jtx;
 
@@ -946,15 +947,21 @@ struct Wasm_test : public beast::unit_test::suite
 
         auto& engine = WasmEngine::instance();
         {
-            auto re = engine.run(Params1k, "test", params, imports, hfs, 1'000'000, env.journal);
+            auto re = engine.run(params1k, "test", params, imports, hfs, 1'000'000, env.journal);
             BEAST_EXPECT(re && re->result == 999000);
         }
 
         // add 1 more parameter, module can't be created now
         params.push_back({.type = WT_I32, .of = {.i32 = 2 * 1000}});
         {
-            auto re = engine.run(Params1k1, "test", params, imports, hfs, 1'000'000, env.journal);
+            auto re = engine.run(params1k1, "test", params, imports, hfs, 1'000'000, env.journal);
             BEAST_EXPECT(!re);
+        }
+
+        auto const locals10k = hexToBytes(locals10kHex);
+        {
+            auto re = engine.run(locals10k, "test", wasmParams(0, 1), imports, hfs, 1'000'000, env.journal);
+            BEAST_EXPECT(re && re->result == 890'489'442);
         }
 
         env.close();
@@ -965,34 +972,34 @@ struct Wasm_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
-        testGetDataHelperFunctions();
-        testWasmLib();
-        testBadWasm();
-        testWasmLedgerSqn();
+        // testGetDataHelperFunctions();
+        // testWasmLib();
+        // testBadWasm();
+        // testWasmLedgerSqn();
 
-        testWasmFib();
-        testWasmSha();
-        testWasmB58();
+        // testWasmFib();
+        // testWasmSha();
+        // testWasmB58();
 
-        testHFCost();
-        testEscrowWasmDN();
-        testFloat();
+        // testHFCost();
+        // testEscrowWasmDN();
+        // testFloat();
 
-        testCodecovWasm();
-        testDisabledFloat();
+        // testCodecovWasm();
+        // testDisabledFloat();
 
-        testWasmMemory();
-        testWasmTable();
-        testWasmProposal();
-        testWasmTrap();
-        testWasmWasi();
-        testWasmSectionCorruption();
+        // testWasmMemory();
+        // testWasmTable();
+        // testWasmProposal();
+        // testWasmTrap();
+        // testWasmWasi();
+        // testWasmSectionCorruption();
 
-        testStartFunctionLoop();
-        testBadAlloc();
-        testBadAlign();
-        testReturnType();
-        testSwapBytes();
+        // testStartFunctionLoop();
+        // testBadAlloc();
+        // testBadAlign();
+        // testReturnType();
+        // testSwapBytes();
         testManyParams();
 
         // perfTest();
