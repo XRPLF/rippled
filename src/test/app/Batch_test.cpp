@@ -3618,7 +3618,7 @@ class Batch_test : public beast::unit_test::suite
         // another transaction is part of the batch, the batch might fail
         // because the sequence is out of order. This is because the canonical
         // order of transactions is determined by the account first. So in this
-        // case, alice's batch comes after bobs self submitted transaction even
+        // case, alice's batch comes after bob's self submitted transaction even
         // though the payment was submitted after the batch.
 
         using namespace test::jtx;

@@ -38,8 +38,8 @@ public:
 
             // Check no-ripple flag on sender 'gateway'
             Json::Value lines{env.rpc("json", "account_lines", to_string(account_gw))};
-            auto const& gline0 = lines[jss::result][jss::lines][0u];
-            BEAST_EXPECT(gline0[jss::no_ripple].asBool() == SetOrClear);
+            auto const& gwLine0 = lines[jss::result][jss::lines][0u];
+            BEAST_EXPECT(gwLine0[jss::no_ripple].asBool() == SetOrClear);
 
             // Check no-ripple peer flag on destination 'alice'
             lines = env.rpc("json", "account_lines", to_string(account_alice));

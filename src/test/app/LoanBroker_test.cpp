@@ -905,7 +905,7 @@ class LoanBroker_test : public beast::unit_test::suite
 
             if (asset.holds<Issue>())
             {
-                // preclaim: AllowTrustLineClaback is not set
+                // preclaim: AllowTrustLineClawback is not set
                 env(coverClawback(issuer),
                     loanBrokerID(brokerKeylet.key),
                     amount(vaultInfo.asset(2)),
