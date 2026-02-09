@@ -61,17 +61,10 @@ repos:
     hooks:
       - id: nix-fmt
         name: Format Nix files
-        entry: |
-          bash -c '
-            if command -v nix &> /dev/null; then
-              nix fmt "$@"
-            else
-              echo "nix command not found, skipping Nix formatting"
-              exit 0
-            fi
-          ' --
+        entry: nix fmt "$@"
         language: system
-        files: \.nix$
+        types:
+          - nix
         pass_filenames: true
 
 exclude: |

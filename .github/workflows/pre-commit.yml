@@ -14,4 +14,4 @@ jobs:
     uses: XRPLF/actions/.github/workflows/pre-commit.yml@320be44621ca2a080f05aeb15817c44b84518108
     with:
       runs_on: ubuntu-latest
-      container: '{ "image": "ghcr.io/xrplf/ci/tools-rippled-pre-commit:sha-ab4d1f0" }'
+      container: '{ "image": "ghcr.io/xrplf/ci/tools-rippled-pre-commit:sha-41ec7c1" }'
