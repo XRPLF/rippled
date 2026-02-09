@@ -61,7 +61,7 @@ repos:
     hooks:
       - id: nix-fmt
         name: Format Nix files
-        entry: nix fmt "$@"
+        entry: nix --extra-experimental-features 'nix-command flakes' fmt
         language: system
         types:
           - nix
