@@ -864,23 +864,24 @@ MPTTester::getConvertBackProof(
     uint256 const& contextHash,
     PedersenProofParams const& pcParams) const
 {
+    // Expected total proof length: pedersen proof + single bulletproof
+    std::size_t constexpr expectedProofLength = ecPedersenProofLength + ecSingleBulletproofLength;
+
     auto const sleMptoken = env_.le(keylet::mptoken(*id_, holder.id()));
     if (!sleMptoken || !sleMptoken->isFieldPresent(sfConfidentialBalanceSpending))
-        return Buffer{};
+        return Buffer(expectedProofLength);
 
     auto const holderPubKey = getPubKey(holder);
 
     if (!holderPubKey)
-        return Buffer{};
+        return Buffer(expectedProofLength);
 
     Buffer const pedersenProof = getBalanceLinkageProof(holder, contextHash, *holderPubKey, pcParams);
 
     // Generate bulletproof for the remaining balance (balance - amount)
+    // Use the same blinding factor as the one used to generate the PC_balance
     std::uint64_t const remainingBalance = pcParams.amt - amount;
     Buffer const bulletproof = getBulletproof({remainingBalance}, {pcParams.blindingFactor}, contextHash);
-
-    if (bulletproof.empty())
-        return Buffer{};
 
     // Combine pedersen proof and bulletproof
     Buffer combinedProof(pedersenProof.size() + bulletproof.size());
@@ -1798,7 +1799,7 @@ MPTTester::getBalanceLinkageProof(
         !secp256k1_ec_pubkey_parse(
             ctx, &c2, params.encryptedAmt.data() + ecGamalEncryptedLength, ecGamalEncryptedLength))
     {
-        return Buffer();
+        return Buffer(ecPedersenProofLength);
     }
 
     secp256k1_pubkey pk;
@@ -1836,14 +1837,24 @@ MPTTester::getBulletproof(
     uint256 const& contextHash) const
 {
     std::size_t const m = values.size();
-    if (m == 0 || m != blindingFactors.size())
-        return Buffer{};
+
+    // Helper to get expected bulletproof length based on number of commitments
+    auto const expectedLength = [](std::size_t numCommitments) -> std::size_t {
+        if (numCommitments == 1)
+            return ecSingleBulletproofLength;
+        // numCommitments == 2
+        return ecDoubleBulletproofLength;
+    };
+
+    // Invalid input is a programming error
+    if (m == 0 || m > 2 || m != blindingFactors.size())
+        Throw<std::runtime_error>("getBulletproof: invalid input parameters");
 
     // Validate all blinding factors have correct length
     for (auto const& bf : blindingFactors)
     {
         if (bf.size() != ecBlindingFactorLength)
-            return Buffer{};
+            return Buffer(expectedLength(m));
     }
 
     // Flatten blinding factors into contiguous memory (m * 32 bytes)
@@ -1854,7 +1865,7 @@ MPTTester::getBulletproof(
 
     secp256k1_pubkey pk_base;
     if (secp256k1_mpt_get_h_generator(secp256k1Context(), &pk_base) != 1)
-        return Buffer{};
+        return Buffer(expectedLength(m));
 
     // Proof size scales with m; use safe upper bound
     Buffer bulletproof(4096);
@@ -1870,8 +1881,12 @@ MPTTester::getBulletproof(
             &pk_base,
             contextHash.data()) != 1)
     {
-        return Buffer{};
+        return Buffer(expectedLength(m));
     }
+
+    // Verify proof length matches expected size
+    if (proofLen != expectedLength(m))
+        return Buffer(expectedLength(m));
 
     // Resize to actual proof length
     bulletproof.alloc(proofLen);

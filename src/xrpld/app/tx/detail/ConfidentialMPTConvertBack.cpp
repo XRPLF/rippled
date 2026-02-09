@@ -36,6 +36,10 @@ ConfidentialMPTConvertBack::preflight(PreflightContext const& ctx)
     if (auto const res = checkEncryptedAmountFormat(ctx.tx); !isTesSuccess(res))
         return res;
 
+    // ConvertBack proof = pedersen linkage proof + single bulletproof
+    if (ctx.tx[sfZKProof].size() != ecPedersenProofLength + ecSingleBulletproofLength)
+        return temMALFORMED;
+
     return tesSUCCESS;
 }
 
@@ -221,7 +225,7 @@ ConfidentialMPTConvertBack::doApply()
         if (TER const ter = homomorphicSubtract(
                 (*sleMptoken)[sfConfidentialBalanceSpending], ctx_.tx[sfHolderEncryptedAmount], res);
             !isTesSuccess(ter))
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
 
         (*sleMptoken)[sfConfidentialBalanceSpending] = res;
     }
@@ -232,7 +236,7 @@ ConfidentialMPTConvertBack::doApply()
         if (TER const ter =
                 homomorphicSubtract((*sleMptoken)[sfIssuerEncryptedBalance], ctx_.tx[sfIssuerEncryptedAmount], res);
             !isTesSuccess(ter))
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
 
         (*sleMptoken)[sfIssuerEncryptedBalance] = res;
     }
@@ -243,7 +247,7 @@ ConfidentialMPTConvertBack::doApply()
         if (TER const ter =
                 homomorphicSubtract((*sleMptoken)[sfAuditorEncryptedBalance], ctx_.tx[sfAuditorEncryptedAmount], res);
             !isTesSuccess(ter))
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
 
         (*sleMptoken)[sfAuditorEncryptedBalance] = res;
     }

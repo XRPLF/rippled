@@ -327,8 +327,11 @@ std::size_t constexpr ecPedersenProofLength = 195;
 /** Length of Pedersen Commitment proof in bytes */
 std::size_t constexpr ecPedersenCommitmentLength = 64;
 
-/** Length of Pedersen Commitment proof in bytes */
+/** Length of single bulletproof (range proof for 1 commitment) in bytes */
 std::size_t constexpr ecSingleBulletproofLength = 688;
+
+/** Length of double bulletproof (range proof for 2 commitments) in bytes */
+std::size_t constexpr ecDoubleBulletproofLength = 754;
 
 }  // namespace xrpl
 

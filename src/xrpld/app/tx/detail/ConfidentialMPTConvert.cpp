@@ -187,7 +187,7 @@ ConfidentialMPTConvert::doApply()
             Buffer sum(ecGamalEncryptedTotalLength);
             if (TER const ter = homomorphicAdd(holderEc, (*sleMptoken)[sfConfidentialBalanceInbox], sum);
                 !isTesSuccess(ter))
-                return tecINTERNAL;
+                return tecINTERNAL;  // LCOV_EXCL_LINE
 
             (*sleMptoken)[sfConfidentialBalanceInbox] = sum;
         }
@@ -197,7 +197,7 @@ ConfidentialMPTConvert::doApply()
             Buffer sum(ecGamalEncryptedTotalLength);
             if (TER const ter = homomorphicAdd(issuerEc, (*sleMptoken)[sfIssuerEncryptedBalance], sum);
                 !isTesSuccess(ter))
-                return tecINTERNAL;
+                return tecINTERNAL;  // LCOV_EXCL_LINE
 
             (*sleMptoken)[sfIssuerEncryptedBalance] = sum;
         }
@@ -208,7 +208,7 @@ ConfidentialMPTConvert::doApply()
             Buffer sum(ecGamalEncryptedTotalLength);
             if (TER const ter = homomorphicAdd(*auditorEc, (*sleMptoken)[sfAuditorEncryptedBalance], sum);
                 !isTesSuccess(ter))
-                return tecINTERNAL;
+                return tecINTERNAL;  // LCOV_EXCL_LINE
 
             (*sleMptoken)[sfAuditorEncryptedBalance] = sum;
         }
