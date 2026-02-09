@@ -1,5 +1,4 @@
-#ifndef XRPL_PEERFINDER_STORESQDB_H_INCLUDED
-#define XRPL_PEERFINDER_STORESQDB_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/rdb/PeerFinder.h>
 #include <xrpld/core/SociDB.h>
@@ -86,5 +85,3 @@ private:
 
 }  // namespace PeerFinder
 }  // namespace xrpl
-
-#endif

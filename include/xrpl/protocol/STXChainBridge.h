@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STXCHAINBRIDGE_H_INCLUDED
-#define XRPL_PROTOCOL_STXCHAINBRIDGE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/STAccount.h>
@@ -197,5 +196,3 @@ STXChainBridge::dstChain(bool wasLockingChainSend)
 }
 
 }  // namespace xrpl
-
-#endif

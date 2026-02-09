@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_DECAYINGSAMPLE_H_INCLUDED
-#define XRPL_BASICS_DECAYINGSAMPLE_H_INCLUDED
+#pragma once
 
 #include <chrono>
 #include <cmath>
@@ -130,5 +129,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

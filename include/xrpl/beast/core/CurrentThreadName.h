@@ -2,8 +2,7 @@
 // Copyright (c) 2013 - Raw Material Software Ltd.
 // Please visit http://www.juce.com
 
-#ifndef BEAST_CORE_CURRENT_THREAD_NAME_H_INCLUDED
-#define BEAST_CORE_CURRENT_THREAD_NAME_H_INCLUDED
+#pragma once
 
 #include <boost/predef.h>
 
@@ -53,5 +52,3 @@ std::string
 getCurrentThreadName();
 
 }  // namespace beast
-
-#endif

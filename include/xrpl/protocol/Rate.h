@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_RATE_H_INCLUDED
-#define XRPL_PROTOCOL_RATE_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/STAmount.h>
@@ -76,5 +75,3 @@ transferFeeAsRate(std::uint16_t fee);
 extern Rate const parityRate;
 
 }  // namespace xrpl
-
-#endif

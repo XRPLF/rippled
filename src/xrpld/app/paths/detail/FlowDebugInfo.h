@@ -1,5 +1,4 @@
-#ifndef XRPL_PATH_IMPL_FLOWDEBUGINFO_H_INCLUDED
-#define XRPL_PATH_IMPL_FLOWDEBUGINFO_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/paths/detail/AmountSpec.h>
 
@@ -329,4 +328,3 @@ balanceDiffsToString(std::optional<BalanceDiffs> const& bd)
 }  // namespace detail
 }  // namespace path
 }  // namespace xrpl
-#endif

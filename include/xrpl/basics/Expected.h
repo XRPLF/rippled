@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_EXPECTED_H_INCLUDED
-#define XRPL_BASICS_EXPECTED_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/contract.h>
 
@@ -229,5 +228,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif  // XRPL_BASICS_EXPECTED_H_INCLUDED

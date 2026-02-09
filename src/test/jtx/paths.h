@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_PATHS_H_INCLUDED
-#define XRPL_TEST_JTX_PATHS_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
@@ -94,5 +93,3 @@ path::append(T const& t, Args const&... args)
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

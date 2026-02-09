@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_HANDOFF_H_INCLUDED
-#define XRPL_SERVER_HANDOFF_H_INCLUDED
+#pragma once
 
 #include <xrpl/server/Writer.h>
 
@@ -35,5 +34,3 @@ struct Handoff
 };
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_VAULT_H_INCLUDED
-#define XRPL_TEST_JTX_VAULT_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
@@ -86,5 +85,3 @@ struct Vault
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

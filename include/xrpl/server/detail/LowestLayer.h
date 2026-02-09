@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_LOWESTLAYER_H_INCLUDED
-#define XRPL_SERVER_LOWESTLAYER_H_INCLUDED
+#pragma once
 
 #if BOOST_VERSION >= 107000
 #include <boost/beast/core/stream_traits.hpp>
@@ -22,5 +21,3 @@ get_lowest_layer(T& t) noexcept
 }
 
 }  // namespace xrpl
-
-#endif

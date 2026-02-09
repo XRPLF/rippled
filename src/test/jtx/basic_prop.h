@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_BASIC_PROP_H_INCLUDED
-#define XRPL_TEST_JTX_BASIC_PROP_H_INCLUDED
+#pragma once
 
 #include <memory>
 
@@ -42,5 +41,3 @@ struct prop_type : basic_prop
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

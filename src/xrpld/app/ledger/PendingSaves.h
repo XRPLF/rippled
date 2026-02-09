@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_PENDINGSAVES_H_INCLUDED
-#define XRPL_APP_PENDINGSAVES_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/Protocol.h>
 
@@ -125,5 +124,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

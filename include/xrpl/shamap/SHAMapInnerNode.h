@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_SHAMAPINNERNODE_H_INCLUDED
-#define XRPL_SHAMAP_SHAMAPINNERNODE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
@@ -200,4 +199,3 @@ SHAMapInnerNode::setFullBelowGen(std::uint32_t gen)
 }
 
 }  // namespace xrpl
-#endif

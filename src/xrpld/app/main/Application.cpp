@@ -909,10 +909,6 @@ public:
                                     << "; size after: " << masterTxCache.size();
         }
         {
-            // Does not appear to have an associated cache.
-            getNodeStore().sweep();
-        }
-        {
             std::size_t const oldLedgerMasterCacheSize = getLedgerMaster().getFetchPackCacheSize();
 
             getLedgerMaster().sweep();

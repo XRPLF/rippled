@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_AMENDMENTTABLE_H_INCLUDED
-#define XRPL_APP_MISC_AMENDMENTTABLE_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/core/ConfigSections.h>
@@ -172,5 +171,3 @@ make_AmendmentTable(
     beast::Journal journal);
 
 }  // namespace xrpl
-
-#endif

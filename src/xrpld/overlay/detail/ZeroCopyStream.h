@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_ZEROCOPYSTREAM_H_INCLUDED
-#define XRPL_OVERLAY_ZEROCOPYSTREAM_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -188,5 +187,3 @@ ZeroCopyOutputStream<Streambuf>::BackUp(int count)
 }
 
 }  // namespace xrpl
-
-#endif

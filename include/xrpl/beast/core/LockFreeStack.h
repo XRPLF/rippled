@@ -1,5 +1,4 @@
-#ifndef BEAST_INTRUSIVE_LOCKFREESTACK_H_INCLUDED
-#define BEAST_INTRUSIVE_LOCKFREESTACK_H_INCLUDED
+#pragma once
 
 #include <atomic>
 #include <iterator>
@@ -268,5 +267,3 @@ private:
 };
 
 }  // namespace beast
-
-#endif

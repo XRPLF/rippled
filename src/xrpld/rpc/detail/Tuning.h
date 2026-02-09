@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_TUNING_H_INCLUDED
-#define XRPL_RPC_TUNING_H_INCLUDED
+#pragma once
 
 namespace xrpl {
 namespace RPC {
@@ -72,5 +71,3 @@ static int constexpr max_auto_src_cur = 88;
 
 }  // namespace RPC
 }  // namespace xrpl
-
-#endif

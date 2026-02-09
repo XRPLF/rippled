@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_PEERS_CLUSTERNODESTATUS_H_INCLUDED
-#define XRPL_APP_PEERS_CLUSTERNODESTATUS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -55,5 +54,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif
