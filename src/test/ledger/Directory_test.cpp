@@ -164,7 +164,7 @@ struct Directory_test : public beast::unit_test::suite
             return c;
         }();
 
-        // First, Alices creates a lot of trustlines, and then
+        // First, Alice creates a lot of trustlines, and then
         // deletes them in a different order:
         {
             auto cl = currencies;
