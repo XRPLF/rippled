@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_RDB_WALLET_H_INCLUDED
-#define XRPL_APP_RDB_WALLET_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/misc/Manifest.h>
 #include <xrpld/core/Config.h>
@@ -145,5 +144,3 @@ void
 voteAmendment(soci::session& session, uint256 const& amendment, std::string const& name, AmendmentVote vote);
 
 }  // namespace xrpl
-
-#endif

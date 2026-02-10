@@ -1,5 +1,4 @@
-#ifndef BEAST_NUDB_VARINT_H_INCLUDED
-#define BEAST_NUDB_VARINT_H_INCLUDED
+#pragma once
 
 #include <nudb/detail/stream.hpp>
 
@@ -119,5 +118,3 @@ write(nudb::detail::ostream& os, std::size_t t)
 
 }  // namespace NodeStore
 }  // namespace xrpl
-
-#endif

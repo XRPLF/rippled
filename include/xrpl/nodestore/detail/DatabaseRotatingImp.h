@@ -1,5 +1,4 @@
-#ifndef XRPL_NODESTORE_DATABASEROTATINGIMP_H_INCLUDED
-#define XRPL_NODESTORE_DATABASEROTATINGIMP_H_INCLUDED
+#pragma once
 
 #include <xrpl/nodestore/DatabaseRotating.h>
 
@@ -56,9 +55,6 @@ public:
     void
     sync() override;
 
-    void
-    sweep() override;
-
 private:
     std::shared_ptr<Backend> writableBackend_;
     std::shared_ptr<Backend> archiveBackend_;
@@ -73,5 +69,3 @@ private:
 
 }  // namespace NodeStore
 }  // namespace xrpl
-
-#endif

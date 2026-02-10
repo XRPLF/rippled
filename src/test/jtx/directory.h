@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_DIRECTORY_H_INCLUDED
-#define XRPL_TEST_JTX_DIRECTORY_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
@@ -57,5 +56,3 @@ maximumPageIndex(Env const& env) -> std::uint64_t
 }  // namespace directory
 
 }  // namespace xrpl::test::jtx
-
-#endif

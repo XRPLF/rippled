@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STPATHSET_H_INCLUDED
-#define XRPL_PROTOCOL_STPATHSET_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -484,5 +483,3 @@ STPathSet::emplace_back(Args&&... args)
 }
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_RESOLVER_H_INCLUDED
-#define XRPL_BASICS_RESOLVER_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/net/IPEndpoint.h>
 
@@ -45,5 +44,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

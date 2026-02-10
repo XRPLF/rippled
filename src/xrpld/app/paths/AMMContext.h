@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_PATHS_AMMCONTEXT_H_INCLUDED
-#define XRPL_APP_PATHS_AMMCONTEXT_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/AccountID.h>
 
@@ -95,5 +94,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif  // XRPL_APP_PATHS_AMMCONTEXT_H_INCLUDED

@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_DELETEACCOUNT_H_INCLUDED
-#define XRPL_TX_DELETEACCOUNT_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
@@ -33,5 +32,3 @@ public:
 using AccountDelete = DeleteAccount;
 
 }  // namespace xrpl
-
-#endif

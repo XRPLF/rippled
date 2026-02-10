@@ -1,7 +1,6 @@
 // Copyright (c) 2022, Nikolaos D. Bougalis <nikb@bougalis.net>
 
-#ifndef XRPL_BASICS_SPINLOCK_H_INCLUDED
-#define XRPL_BASICS_SPINLOCK_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -201,5 +200,3 @@ public:
 /** @} */
 
 }  // namespace xrpl
-
-#endif

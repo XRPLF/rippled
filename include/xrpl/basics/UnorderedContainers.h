@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_UNORDEREDCONTAINERS_H_INCLUDED
-#define XRPL_BASICS_UNORDEREDCONTAINERS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/basics/partitioned_unordered_map.h>
@@ -99,5 +98,3 @@ template <
 using hardened_hash_multiset = std::unordered_multiset<Value, Hash, Pred, Allocator>;
 
 }  // namespace xrpl
-
-#endif

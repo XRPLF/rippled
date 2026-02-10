@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_OVERLAYIMPL_H_INCLUDED
-#define XRPL_OVERLAY_OVERLAYIMPL_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/Message.h>
@@ -592,5 +591,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

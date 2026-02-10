@@ -99,10 +99,10 @@ MPTTester::operator MPT() const
 }
 
 Json::Value
-MPTTester::createjv(MPTCreate const& arg)
+MPTTester::createJV(MPTCreate const& arg)
 {
     if (!arg.issuer)
-        Throw<std::runtime_error>("MPTTester::createjv: issuer is not set");
+        Throw<std::runtime_error>("MPTTester::createJV: issuer is not set");
     Json::Value jv;
     jv[sfAccount] = arg.issuer->human();
     if (arg.assetScale)
@@ -128,7 +128,7 @@ MPTTester::create(MPTCreate const& arg)
     if (id_)
         Throw<std::runtime_error>("MPT can't be reused");
     id_ = makeMptID(env_.seq(issuer_), issuer_);
-    Json::Value jv = createjv(
+    Json::Value jv = createJV(
         {.issuer = issuer_,
          .maxAmt = arg.maxAmt,
          .assetScale = arg.assetScale,
@@ -179,11 +179,11 @@ MPTTester::create(MPTCreate const& arg)
 }
 
 Json::Value
-MPTTester::destroyjv(MPTDestroy const& arg)
+MPTTester::destroyJV(MPTDestroy const& arg)
 {
     Json::Value jv;
     if (!arg.issuer || !arg.id)
-        Throw<std::runtime_error>("MPTTester::destroyjv: issuer/id is not set");
+        Throw<std::runtime_error>("MPTTester::destroyJV: issuer/id is not set");
     jv[sfAccount] = arg.issuer->human();
     jv[sfMPTokenIssuanceID] = to_string(*arg.id);
     jv[sfTransactionType] = jss::MPTokenIssuanceDestroy;
@@ -196,7 +196,7 @@ MPTTester::destroy(MPTDestroy const& arg)
 {
     if (!arg.id && !id_)
         Throw<std::runtime_error>("MPT has not been created");
-    Json::Value jv = destroyjv({.issuer = arg.issuer ? arg.issuer : issuer_, .id = arg.id ? arg.id : id_});
+    Json::Value jv = destroyJV({.issuer = arg.issuer ? arg.issuer : issuer_, .id = arg.id ? arg.id : id_});
     submit(arg, jv);
 }
 
@@ -210,11 +210,11 @@ MPTTester::holder(std::string const& holder_) const
 }
 
 Json::Value
-MPTTester::authorizejv(MPTAuthorize const& arg)
+MPTTester::authorizeJV(MPTAuthorize const& arg)
 {
     Json::Value jv;
     if (!arg.account || !arg.id)
-        Throw<std::runtime_error>("MPTTester::authorizejv: issuer/id is not set");
+        Throw<std::runtime_error>("MPTTester::authorizeJV: account/id is not set");
     jv[sfAccount] = arg.account->human();
     jv[sfMPTokenIssuanceID] = to_string(*arg.id);
     if (arg.holder)
@@ -229,7 +229,7 @@ MPTTester::authorize(MPTAuthorize const& arg)
 {
     if (!arg.id && !id_)
         Throw<std::runtime_error>("MPT has not been created");
-    Json::Value jv = authorizejv({
+    Json::Value jv = authorizeJV({
         .account = arg.account ? arg.account : issuer_,
         .holder = arg.holder,
         .id = arg.id ? arg.id : id_,
@@ -289,11 +289,11 @@ MPTTester::authorizeHolders(Holders const& holders)
 }
 
 Json::Value
-MPTTester::setjv(MPTSet const& arg)
+MPTTester::setJV(MPTSet const& arg)
 {
     Json::Value jv;
     if (!arg.account || !arg.id)
-        Throw<std::runtime_error>("MPTTester::setjv: issuer/id is not set");
+        Throw<std::runtime_error>("MPTTester::setJV: account and/or id is not set");
     jv[sfAccount] = arg.account->human();
     jv[sfMPTokenIssuanceID] = to_string(*arg.id);
     if (arg.holder)
@@ -328,7 +328,7 @@ MPTTester::set(MPTSet const& arg)
 {
     if (!arg.id && !id_)
         Throw<std::runtime_error>("MPT has not been created");
-    Json::Value jv = setjv(
+    Json::Value jv = setJV(
         {.account = arg.account ? arg.account : issuer_,
          .holder = arg.holder,
          .id = arg.id ? arg.id : id_,
@@ -476,7 +476,7 @@ MPTTester::pay(
         Throw<std::runtime_error>("MPT has not been created");
     auto const srcAmt = getBalance(src);
     auto const destAmt = getBalance(dest);
-    auto const outstnAmt = getBalance(issuer_);
+    auto const outstandingAmt = getBalance(issuer_);
 
     if (credentials)
         env_(jtx::pay(src, dest, mpt(amount)), ter(err.value_or(tesSUCCESS)), credentials::ids(*credentials));
@@ -505,7 +505,7 @@ MPTTester::pay(
         env_.require(mptbalance(*this, src, srcAmt - actual));
         env_.require(mptbalance(*this, dest, destAmt + amount));
         // Outstanding amount is reduced by the transfer fee if any
-        env_.require(mptbalance(*this, issuer_, outstnAmt - (actual - amount)));
+        env_.require(mptbalance(*this, issuer_, outstandingAmt - (actual - amount)));
     }
 }
 

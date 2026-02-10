@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_ACCOUNTID_H_INCLUDED
-#define XRPL_PROTOCOL_ACCOUNTID_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/tokens.h>
 // VFALCO Uncomment when the header issues are resolved
@@ -133,5 +132,3 @@ struct hash<xrpl::AccountID> : xrpl::AccountID::hasher
 };
 
 }  // namespace std
-
-#endif

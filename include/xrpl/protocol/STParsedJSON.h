@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STPARSEDJSON_H_INCLUDED
-#define XRPL_PROTOCOL_STPARSEDJSON_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/STArray.h>
 
@@ -36,5 +35,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

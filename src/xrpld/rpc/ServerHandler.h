@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_SERVERHANDLER_H_INCLUDED
-#define XRPL_RPC_SERVERHANDLER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/CollectorManager.h>
@@ -200,5 +199,3 @@ make_ServerHandler(
     CollectorManager& cm);
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_LOCALVALUE_H_INCLUDED
-#define XRPL_BASICS_LOCALVALUE_H_INCLUDED
+#pragma once
 
 #include <boost/thread/tss.hpp>
 
@@ -107,5 +106,3 @@ LocalValue<T>::operator*()
         lvs->values.emplace(this, std::make_unique<detail::LocalValues::Value<T>>(t_)).first->second->get());
 }
 }  // namespace xrpl
-
-#endif

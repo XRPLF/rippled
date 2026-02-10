@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_HANDLERS_LEDGER_H_INCLUDED
-#define XRPL_RPC_HANDLERS_LEDGER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
@@ -59,5 +58,3 @@ private:
 
 }  // namespace RPC
 }  // namespace xrpl
-
-#endif
