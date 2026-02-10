@@ -501,7 +501,7 @@ class LedgerEntry_test : public beast::unit_test::suite
             accountRootIndex = jrr[jss::index].asString();
         }
         {
-            constexpr char alicesAcctRootBinary[]{
+            constexpr char aliceAcctRootBinary[]{
                 "1100612200800000240000000425000000032D00000000559CE54C3B934E4"
                 "73A995B477E92EC229F99CED5B62BF4D2ACE4DC42719103AE2F6240000002"
                 "540BE4008114AE123A8556F3CF91154711376AFB0F894F832B3D"};
@@ -513,7 +513,7 @@ class LedgerEntry_test : public beast::unit_test::suite
             jvParams[jss::ledger_hash] = ledgerHash;
             Json::Value const jrr = env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr.isMember(jss::node_binary));
-            BEAST_EXPECT(jrr[jss::node_binary] == alicesAcctRootBinary);
+            BEAST_EXPECT(jrr[jss::node_binary] == aliceAcctRootBinary);
         }
         {
             // Request alice's account root using the index.

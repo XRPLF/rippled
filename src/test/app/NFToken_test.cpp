@@ -1383,28 +1383,28 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         // Set flagOnlyXRP and offers using IOUs are rejected.
         {
-            uint256 const nftOnlyXRPID{token::getNextID(env, alice, 0u, tfOnlyXRP | tfTransferable)};
+            uint256 const nftOnlyXrpID{token::getNextID(env, alice, 0u, tfOnlyXRP | tfTransferable)};
             env(token::mint(alice, 0u), txflags(tfOnlyXRP | tfTransferable));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 2);
-            env(token::createOffer(alice, nftOnlyXRPID, gwAUD(50)), txflags(tfSellNFToken), ter(temBAD_AMOUNT));
+            env(token::createOffer(alice, nftOnlyXrpID, gwAUD(50)), txflags(tfSellNFToken), ter(temBAD_AMOUNT));
             env.close();
             BEAST_EXPECT(ownerCount(env, alice) == 2);
 
             BEAST_EXPECT(ownerCount(env, buyer) == 1);
-            env(token::createOffer(buyer, nftOnlyXRPID, gwAUD(50)), token::owner(alice), ter(temBAD_AMOUNT));
+            env(token::createOffer(buyer, nftOnlyXrpID, gwAUD(50)), token::owner(alice), ter(temBAD_AMOUNT));
             env.close();
             BEAST_EXPECT(ownerCount(env, buyer) == 1);
 
             // However offers for XRP are okay.
             BEAST_EXPECT(ownerCount(env, alice) == 2);
-            env(token::createOffer(alice, nftOnlyXRPID, XRP(60)), txflags(tfSellNFToken));
+            env(token::createOffer(alice, nftOnlyXrpID, XRP(60)), txflags(tfSellNFToken));
             env.close();
             BEAST_EXPECT(ownerCount(env, alice) == 3);
 
             BEAST_EXPECT(ownerCount(env, buyer) == 1);
-            env(token::createOffer(buyer, nftOnlyXRPID, XRP(60)), token::owner(alice));
+            env(token::createOffer(buyer, nftOnlyXrpID, XRP(60)), token::owner(alice));
             env.close();
             BEAST_EXPECT(ownerCount(env, buyer) == 2);
         }
@@ -5155,8 +5155,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // bob now has a buy offer and a sell offer on the books.  A broker
         // spots this and swoops in to make a profit.
         BEAST_EXPECT(nftCount(env, bob) == 1);
-        auto const bobsPriorBalance = env.balance(bob);
-        auto const brokersPriorBalance = env.balance(broker);
+        auto const bobPriorBalance = env.balance(bob);
+        auto const brokerPriorBalance = env.balance(broker);
         env(token::brokerOffers(broker, bobBuyOfferIndex, bobSellOfferIndex),
             token::brokerFee(XRP(1)),
             ter(tecCANT_ACCEPT_OWN_NFTOKEN_OFFER));
@@ -5165,8 +5165,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // A tec result was returned, so no state should change other
         // than the broker burning their transaction fee.
         BEAST_EXPECT(nftCount(env, bob) == 1);
-        BEAST_EXPECT(env.balance(bob) == bobsPriorBalance);
-        BEAST_EXPECT(env.balance(broker) == brokersPriorBalance - baseFee);
+        BEAST_EXPECT(env.balance(bob) == bobPriorBalance);
+        BEAST_EXPECT(env.balance(broker) == brokerPriorBalance - baseFee);
     }
 
     void
