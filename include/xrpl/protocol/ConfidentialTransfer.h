@@ -281,10 +281,12 @@ verifyElGamalEncryption(
  * @brief Validates the format of encrypted amount fields in a transaction.
  *
  * Checks that all ciphertext fields in the transaction object have the
- * correct length and contain valid EC points.
+ * correct length and contain valid EC points. This function is only used
+ * by ConfidentialMPTConvert and ConfidentialMPTConvertBack transactions.
  *
  * @param object The transaction object containing encrypted amount fields.
- * @return tesSUCCESS if all formats are valid, or an error code otherwise.
+ * @return tesSUCCESS if all formats are valid, temMALFORMED if required fields
+ *         are missing, or temBAD_CIPHERTEXT if format validation fails.
  */
 NotTEC
 checkEncryptedAmountFormat(STObject const& object);

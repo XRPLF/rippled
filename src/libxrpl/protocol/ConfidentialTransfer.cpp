@@ -381,6 +381,9 @@ verifyClawbackEqualityProof(
 NotTEC
 checkEncryptedAmountFormat(STObject const& object)
 {
+    if (!object.isFieldPresent(sfHolderEncryptedAmount) || !object.isFieldPresent(sfIssuerEncryptedAmount))
+        return temMALFORMED;  // LCOV_EXCL_LINE
+
     if (object[sfHolderEncryptedAmount].length() != ecGamalEncryptedTotalLength ||
         object[sfIssuerEncryptedAmount].length() != ecGamalEncryptedTotalLength)
         return temBAD_CIPHERTEXT;
