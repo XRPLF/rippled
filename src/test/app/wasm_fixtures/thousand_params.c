@@ -1,3 +1,4 @@
+// clang-format off
 
 #include <stdint.h>
 
@@ -127,7 +128,6 @@ int32_t test(
 , int32_t p976, int32_t p977, int32_t p978, int32_t p979, int32_t p980, int32_t p981, int32_t p982, int32_t p983
 , int32_t p984, int32_t p985, int32_t p986, int32_t p987, int32_t p988, int32_t p989, int32_t p990, int32_t p991
 , int32_t p992, int32_t p993, int32_t p994, int32_t p995, int32_t p996, int32_t p997, int32_t p998, int32_t p999
-, int32_t p1000
 )
 {
     int32_t x;
@@ -255,8 +255,8 @@ int32_t test(
  + p968 + p969 + p970 + p971 + p972 + p973 + p974 + p975
  + p976 + p977 + p978 + p979 + p980 + p981 + p982 + p983
  + p984 + p985 + p986 + p987 + p988 + p989 + p990 + p991
- + p992 + p993 + p994 + p995 + p996 + p997 + p998 + p999
- + p1000;
+ + p992 + p993 + p994 + p995 + p996 + p997 + p998 + p999;
     return x;
 }
 
+// clang-format on

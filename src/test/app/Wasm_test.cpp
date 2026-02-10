@@ -535,12 +535,11 @@ struct Wasm_test : public beast::unit_test::suite
             [[maybe_unused]] uint256 const nft1{token::getNextID(env, alan, 0u)};
 
             env(token::mint(alan, 0u),
-                token::uri(
-                    "https://github.com/XRPLF/XRPL-Standards/discussions/"
-                    "279?id=github.com/XRPLF/XRPL-Standards/discussions/"
-                    "279&ut=github.com/XRPLF/XRPL-Standards/discussions/"
-                    "279&sid=github.com/XRPLF/XRPL-Standards/discussions/"
-                    "279&aot=github.com/XRPLF/XRPL-Standards/disc"));
+                token::uri("https://github.com/XRPLF/XRPL-Standards/discussions/"
+                           "279?id=github.com/XRPLF/XRPL-Standards/discussions/"
+                           "279&ut=github.com/XRPLF/XRPL-Standards/discussions/"
+                           "279&sid=github.com/XRPLF/XRPL-Standards/discussions/"
+                           "279&aot=github.com/XRPLF/XRPL-Standards/disc"));
             [[maybe_unused]] uint256 const nft2{token::getNextID(env, alan, 0u)};
             env(token::mint(alan, 0u));
             env.close();
@@ -927,8 +926,6 @@ struct Wasm_test : public beast::unit_test::suite
     void
     testManyParams()
     {
-        // many_par.c_code / many_par_1001.c_code
-        // extension renamed to exclude from processing by CI hooks
         testcase("Wasm Many params");
 
         auto const params1k = hexToBytes(thousandParamsHex);
@@ -958,10 +955,18 @@ struct Wasm_test : public beast::unit_test::suite
             BEAST_EXPECT(!re);
         }
 
+        // functin that create 10k local variables
         auto const locals10k = hexToBytes(locals10kHex);
         {
             auto re = engine.run(locals10k, "test", wasmParams(0, 1), imports, hfs, 1'000'000, env.journal);
             BEAST_EXPECT(re && re->result == 890'489'442);
+        }
+
+        // module has 5k functions
+        auto const functions5k = hexToBytes(functions5kHex);
+        {
+            auto re = engine.run(functions5k, "test0001", wasmParams(2, 3), imports, hfs, 1'000'000, env.journal);
+            BEAST_EXPECT(re && re->result == 5);
         }
 
         env.close();
@@ -972,34 +977,34 @@ struct Wasm_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
-        // testGetDataHelperFunctions();
-        // testWasmLib();
-        // testBadWasm();
-        // testWasmLedgerSqn();
+        testGetDataHelperFunctions();
+        testWasmLib();
+        testBadWasm();
+        testWasmLedgerSqn();
 
-        // testWasmFib();
-        // testWasmSha();
-        // testWasmB58();
+        testWasmFib();
+        testWasmSha();
+        testWasmB58();
 
-        // testHFCost();
-        // testEscrowWasmDN();
-        // testFloat();
+        testHFCost();
+        testEscrowWasmDN();
+        testFloat();
 
-        // testCodecovWasm();
-        // testDisabledFloat();
+        testCodecovWasm();
+        testDisabledFloat();
 
-        // testWasmMemory();
-        // testWasmTable();
-        // testWasmProposal();
-        // testWasmTrap();
-        // testWasmWasi();
-        // testWasmSectionCorruption();
+        testWasmMemory();
+        testWasmTable();
+        testWasmProposal();
+        testWasmTrap();
+        testWasmWasi();
+        testWasmSectionCorruption();
 
-        // testStartFunctionLoop();
-        // testBadAlloc();
-        // testBadAlign();
-        // testReturnType();
-        // testSwapBytes();
+        testStartFunctionLoop();
+        testBadAlloc();
+        testBadAlign();
+        testReturnType();
+        testSwapBytes();
         testManyParams();
 
         // perfTest();
