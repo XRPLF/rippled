@@ -69,6 +69,7 @@ XRPL_FEATURE(Clawback,                   Supported::yes, VoteBehavior::DefaultNo
 XRPL_FIX    (UniversalNumber,            Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(XRPFees,                    Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (RemoveNFTokenAutoTrustLine, Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FEATURE(NestedMultiSign,            Supported::yes, VoteBehavior::DefaultNo)
 
 // The following amendments are obsolete, but must remain supported
 // because they could potentially get enabled.
