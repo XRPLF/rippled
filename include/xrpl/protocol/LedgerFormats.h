@@ -170,6 +170,8 @@ enum LedgerSpecificFlags {
     lsfMPTCanClawback = 0x00000040,
     lsfMPTCanPrivacy = 0x00000080,
 
+    // Mutable flags (lsmf prefix) control whether the issuer can change
+    // corresponding feature flags after issuance via MPTokenIssuanceSet.
     lsmfMPTCanMutateCanLock = 0x00000002,
     lsmfMPTCanMutateRequireAuth = 0x00000004,
     lsmfMPTCanMutateCanEscrow = 0x00000008,
@@ -178,7 +180,11 @@ enum LedgerSpecificFlags {
     lsmfMPTCanMutateCanClawback = 0x00000040,
     lsmfMPTCanMutateMetadata = 0x00010000,
     lsmfMPTCanMutateTransferFee = 0x00020000,
-    // if set, lsfMPTCanPrivacy can not be mutated
+    // Controls mutability of lsfMPTCanPrivacy. Note the inverted naming:
+    // - Other mutable flags: "CanMutate" means issuer CAN change the setting
+    // - This flag: "CannotMutate" means issuer CANNOT change the setting
+    // By default (flag not set), issuer can toggle lsfMPTCanPrivacy on/off.
+    // If set, lsfMPTCanPrivacy is permanently locked to its creation value.
     lsmfMPTCannotMutatePrivacy = 0x00040000,
 
     // ltMPTOKEN
