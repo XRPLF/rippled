@@ -1,3 +1,4 @@
+# cspell: disable
 import os
 import sys
 import subprocess
