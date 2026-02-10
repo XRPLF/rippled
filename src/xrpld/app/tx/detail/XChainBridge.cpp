@@ -556,7 +556,7 @@ struct FinalizeClaimHelperResult
             the fields mean. The individual ters need to be returned instead of
             an overall ter because the caller needs this information if the
             attestation list changed or not.
- */
+*/
 
 FinalizeClaimHelperResult
 finalizeClaimHelper(
