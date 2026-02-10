@@ -229,8 +229,8 @@ struct Wasm_test : public beast::unit_test::suite
         Bytes outb;
         outb.resize(1024);
 
-        auto const minsz = std::min(static_cast<std::uint32_t>(512), static_cast<std::uint32_t>(b58WasmHex.size()));
-        auto const s = std::string_view(b58WasmHex.c_str(), minsz);
+        auto const minSize = std::min(static_cast<std::uint32_t>(512), static_cast<std::uint32_t>(b58WasmHex.size()));
+        auto const s = std::string_view(b58WasmHex.c_str(), minSize);
 
         auto const re = engine.run(b58Wasm, "b58enco", wasmParams(outb, s));
 
@@ -802,7 +802,7 @@ struct Wasm_test : public beast::unit_test::suite
         std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
         auto imports = createWasmImport(*hfs);
 
-        {  // Calls float_from_uint with bad aligment.
+        {  // Calls float_from_uint with bad alignment.
            // Can be checked through codecov
             auto& engine = WasmEngine::instance();
 

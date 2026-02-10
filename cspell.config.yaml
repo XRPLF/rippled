@@ -6,6 +6,8 @@ ignorePaths:
   - docs/**/*.puml
   - cmake/**
   - LICENSE.md
+  - src/test/app/wasm_fixtures/**/*.wat
+  - src/test/app/wasm_fixtures/*.c
 language: en
 allowCompoundWords: true # TODO (#6334)
 ignoreRandomStrings: true
@@ -59,6 +61,7 @@ words:
   - Britto
   - Btrfs
   - canonicality
+  - cdylib
   - changespq
   - checkme
   - choco

@@ -564,13 +564,13 @@ pub extern "C" fn finish() -> i32 {
             "amm_keylet_len_wrong_non_xrp_currency_len",
         )
     });
-    let xrpissue: &[u8] = &[0; 40]; // 40 bytes
+    let xrp_issue: &[u8] = &[0; 40]; // 40 bytes
     with_buffer::<32, _, _>(|ptr, len| {
         check_result(
             unsafe {
                 host::amm_keylet(
-                    xrpissue.as_ptr(),
-                    xrpissue.len(),
+                    xrp_issue.as_ptr(),
+                    xrp_issue.len(),
                     asset1_bytes.as_ptr(),
                     asset1_bytes.len(),
                     ptr,
@@ -1265,7 +1265,7 @@ pub extern "C" fn finish() -> i32 {
         check_result(
             unsafe { host::account_keylet(locator.as_ptr(), locator.len(), ptr, len) },
             error_codes::INVALID_PARAMS,
-            "account_keylet_wrong_size_accountid",
+            "account_keylet_wrong_size_account_id",
         )
     });
     let seq: i32 = 1;
@@ -1283,7 +1283,7 @@ pub extern "C" fn finish() -> i32 {
                 )
             },
             error_codes::INVALID_PARAMS,
-            "check_keylet_wrong_size_accountid",
+            "check_keylet_wrong_size_account_id",
         )
     });
     with_buffer::<2, _, _>(|ptr, len| {
@@ -1301,7 +1301,7 @@ pub extern "C" fn finish() -> i32 {
                 )
             },
             error_codes::INVALID_PARAMS,
-            "credential_keylet_wrong_size_accountid1",
+            "credential_keylet_wrong_size_account_id1",
         )
     });
     with_buffer::<2, _, _>(|ptr, len| {
@@ -1319,7 +1319,7 @@ pub extern "C" fn finish() -> i32 {
                 )
             },
             error_codes::INVALID_PARAMS,
-            "credential_keylet_wrong_size_accountid2",
+            "credential_keylet_wrong_size_account_id2",
         )
     });
     with_buffer::<2, _, _>(|ptr, len| {
@@ -1335,7 +1335,7 @@ pub extern "C" fn finish() -> i32 {
                 )
             },
             error_codes::INVALID_PARAMS,
-            "delegate_keylet_wrong_size_accountid1",
+            "delegate_keylet_wrong_size_account_id1",
         )
     });
     with_buffer::<2, _, _>(|ptr, len| {
@@ -1351,7 +1351,7 @@ pub extern "C" fn finish() -> i32 {
                 )
             },
             error_codes::INVALID_PARAMS,
-            "delegate_keylet_wrong_size_accountid2",
+            "delegate_keylet_wrong_size_account_id2",
         )
     });
     with_buffer::<2, _, _>(|ptr, len| {
@@ -1367,7 +1367,7 @@ pub extern "C" fn finish() -> i32 {
                 )
             },
             error_codes::INVALID_PARAMS,
-            "deposit_preauth_keylet_wrong_size_accountid1",
+            "deposit_preauth_keylet_wrong_size_account_id1",
         )
     });
     with_buffer::<2, _, _>(|ptr, len| {
@@ -1383,14 +1383,14 @@ pub extern "C" fn finish() -> i32 {
                 )
             },
             error_codes::INVALID_PARAMS,
-            "deposit_preauth_keylet_wrong_size_accountid2",
+            "deposit_preauth_keylet_wrong_size_account_id2",
         )
     });
     with_buffer::<2, _, _>(|ptr, len| {
         check_result(
             unsafe { host::did_keylet(locator.as_ptr(), locator.len(), ptr, len) },
             error_codes::INVALID_PARAMS,
-            "did_keylet_wrong_size_accountid",
+            "did_keylet_wrong_size_account_id",
         )
     });
     with_buffer::<2, _, _>(|ptr, len| {
@@ -1406,7 +1406,7 @@ pub extern "C" fn finish() -> i32 {
                 )
             },
             error_codes::INVALID_PARAMS,
-            "escrow_keylet_wrong_size_accountid",
+            "escrow_keylet_wrong_size_account_id",
         )
     });
     with_buffer::<2, _, _>(|ptr, len| {
@@ -1424,7 +1424,7 @@ pub extern "C" fn finish() -> i32 {
                 )
             },
             error_codes::INVALID_PARAMS,
-            "line_keylet_wrong_size_accountid1",
+            "line_keylet_wrong_size_account_id1",
         )
     });
     with_buffer::<2, _, _>(|ptr, len| {
@@ -1442,7 +1442,7 @@ pub extern "C" fn finish() -> i32 {
                 )
             },
             error_codes::INVALID_PARAMS,
-            "line_keylet_wrong_size_accountid2",
+            "line_keylet_wrong_size_account_id2",
         )
     });
     with_buffer::<2, _, _>(|ptr, len| {
@@ -1458,7 +1458,7 @@ pub extern "C" fn finish() -> i32 {
                 )
             },
             error_codes::INVALID_PARAMS,
-            "mpt_issuance_keylet_wrong_size_accountid",
+            "mpt_issuance_keylet_wrong_size_account_id",
         )
     });
     with_buffer::<2, _, _>(|ptr, len| {
@@ -1474,7 +1474,7 @@ pub extern "C" fn finish() -> i32 {
                 )
             },
             error_codes::INVALID_PARAMS,
-            "mptoken_keylet_wrong_size_accountid",
+            "mptoken_keylet_wrong_size_account_id",
         )
     });
     with_buffer::<2, _, _>(|ptr, len| {
@@ -1490,7 +1490,7 @@ pub extern "C" fn finish() -> i32 {
                 )
             },
             error_codes::INVALID_PARAMS,
-            "nft_offer_keylet_wrong_size_accountid",
+            "nft_offer_keylet_wrong_size_account_id",
         )
     });
     with_buffer::<2, _, _>(|ptr, len| {
@@ -1506,7 +1506,7 @@ pub extern "C" fn finish() -> i32 {
                 )
             },
             error_codes::INVALID_PARAMS,
-            "offer_keylet_wrong_size_accountid",
+            "offer_keylet_wrong_size_account_id",
         )
     });
     with_buffer::<2, _, _>(|ptr, len| {
@@ -1522,7 +1522,7 @@ pub extern "C" fn finish() -> i32 {
                 )
             },
             error_codes::INVALID_PARAMS,
-            "oracle_keylet_wrong_size_accountid",
+            "oracle_keylet_wrong_size_account_id",
         )
     });
     with_buffer::<2, _, _>(|ptr, len| {
@@ -1540,7 +1540,7 @@ pub extern "C" fn finish() -> i32 {
                 )
             },
             error_codes::INVALID_PARAMS,
-            "paychan_keylet_wrong_size_accountid1",
+            "paychan_keylet_wrong_size_account_id1",
         )
     });
     with_buffer::<2, _, _>(|ptr, len| {
@@ -1558,7 +1558,7 @@ pub extern "C" fn finish() -> i32 {
                 )
             },
             error_codes::INVALID_PARAMS,
-            "paychan_keylet_wrong_size_accountid2",
+            "paychan_keylet_wrong_size_account_id2",
         )
     });
     with_buffer::<2, _, _>(|ptr, len| {
@@ -1574,14 +1574,14 @@ pub extern "C" fn finish() -> i32 {
                 )
             },
             error_codes::INVALID_PARAMS,
-            "permissioned_domain_keylet_wrong_size_accountid",
+            "permissioned_domain_keylet_wrong_size_account_id",
         )
     });
     with_buffer::<2, _, _>(|ptr, len| {
         check_result(
             unsafe { host::signers_keylet(locator.as_ptr(), locator.len(), ptr, len) },
             error_codes::INVALID_PARAMS,
-            "signers_keylet_wrong_size_accountid",
+            "signers_keylet_wrong_size_account_id",
         )
     });
     with_buffer::<2, _, _>(|ptr, len| {
@@ -1597,7 +1597,7 @@ pub extern "C" fn finish() -> i32 {
                 )
             },
             error_codes::INVALID_PARAMS,
-            "ticket_keylet_wrong_size_accountid",
+            "ticket_keylet_wrong_size_account_id",
         )
     });
     with_buffer::<2, _, _>(|ptr, len| {
@@ -1613,7 +1613,7 @@ pub extern "C" fn finish() -> i32 {
                 )
             },
             error_codes::INVALID_PARAMS,
-            "vault_keylet_wrong_size_accountid",
+            "vault_keylet_wrong_size_account_id",
         )
     });
     let uint256: &[u8] = b"00000000000000000000000000000001";
@@ -1630,7 +1630,7 @@ pub extern "C" fn finish() -> i32 {
                 )
             },
             error_codes::INVALID_PARAMS,
-            "get_nft_wrong_size_accountid",
+            "get_nft_wrong_size_account_id",
         )
     });
     check_result(
@@ -1643,7 +1643,7 @@ pub extern "C" fn finish() -> i32 {
             )
         },
         error_codes::INVALID_PARAMS,
-        "trace_account_wrong_size_accountid",
+        "trace_account_wrong_size_account_id",
     );
 
     // invalid Currency was already tested above
