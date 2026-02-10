@@ -955,7 +955,7 @@ struct Wasm_test : public beast::unit_test::suite
             BEAST_EXPECT(!re);
         }
 
-        // functin that create 10k local variables
+        // function that create 10k local variables
         auto const locals10k = hexToBytes(locals10kHex);
         {
             auto re = engine.run(locals10k, "test", wasmParams(0, 1), imports, hfs, 1'000'000, env.journal);
