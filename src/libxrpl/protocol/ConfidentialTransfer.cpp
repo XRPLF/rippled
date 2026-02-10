@@ -381,6 +381,9 @@ verifyClawbackEqualityProof(
 NotTEC
 checkEncryptedAmountFormat(STObject const& object)
 {
+    // Current usage of this function is only for ConfidentialMPTConvert and
+    // ConfidentialMPTConvertBack transactions, which already enforce that these fields
+    // are present.
     if (!object.isFieldPresent(sfHolderEncryptedAmount) || !object.isFieldPresent(sfIssuerEncryptedAmount))
         return temMALFORMED;  // LCOV_EXCL_LINE
 
