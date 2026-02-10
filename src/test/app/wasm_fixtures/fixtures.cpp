@@ -23,13 +23,11 @@ pushLeb128(std::vector<uint8_t>& buf, uint32_t val)
 }
 
 // Helper: append bytes from a C-style array to a vector
-// Uses a loop to avoid GCC false positive -Werror=stringop-overflow with insert()
 template <std::size_t N>
 void
 appendBytes(std::vector<uint8_t>& buf, uint8_t const (&arr)[N])
 {
-    for (std::size_t i = 0; i < N; ++i)
-        buf.push_back(arr[i]);
+    buf.insert(buf.end(), &arr[0], &arr[N]);
 }
 
 // Helper: append bytes from a vector to a vector
@@ -59,6 +57,7 @@ std::vector<uint8_t>
 generateCodeBlob(uint32_t num_instructions)
 {
     std::vector<uint8_t> wasm;
+    wasm.reserve(sizeof(WASM_HEADER) + sizeof(TYPE_EMPTY_FUNC) + sizeof(FUNC_TYPE0) + sizeof(EXPORT_FINISH));
     appendBytes(wasm, WASM_HEADER);
     appendBytes(wasm, TYPE_EMPTY_FUNC);
     appendBytes(wasm, FUNC_TYPE0);
@@ -82,6 +81,7 @@ std::vector<uint8_t>
 generateDataBlob(uint32_t data_size)
 {
     std::vector<uint8_t> wasm;
+    wasm.reserve(sizeof(WASM_HEADER) + sizeof(TYPE_EMPTY_FUNC) + sizeof(FUNC_TYPE0));
     appendBytes(wasm, WASM_HEADER);
     appendBytes(wasm, TYPE_EMPTY_FUNC);
     appendBytes(wasm, FUNC_TYPE0);

@@ -200,12 +200,32 @@ EscrowCreate::preflight(PreflightContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfFinishFunction))
     {
+        if (ctx.app.config().FEES.extension_size_limit == 0 || ctx.app.config().FEES.extension_compute_limit == 0)
+        {
+            JLOG(ctx.j.debug()) << "WASM runtime deactivated by fee voting";
+            return temTEMP_DISABLED;
+        }
+
         auto const code = ctx.tx.getFieldVL(sfFinishFunction);
         if (code.size() == 0 || code.size() > ctx.app.config().FEES.extension_size_limit)
         {
             JLOG(ctx.j.debug()) << "EscrowCreate.FinishFunction bad size " << code.size();
             return temMALFORMED;
         }
+        // actual validity of WASM code happens in `preflightSigValidated`
+        // (after the signature is checked)
+    }
+
+    return tesSUCCESS;
+}
+
+NotTEC
+EscrowCreate::preflightSigValidated(PreflightContext const& ctx)
+{
+    if (ctx.tx.isFieldPresent(sfFinishFunction))
+    {
+        auto const code = ctx.tx.getFieldVL(sfFinishFunction);
+        // basic checks happen in `preflight`
 
         auto mock(std::make_shared<HostFunctions>(ctx.j));
         auto const re = preflightEscrowWasm(code, mock, ESCROW_FUNCTION_NAME);
@@ -625,6 +645,27 @@ EscrowFinish::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
+    if (auto const allowance = ctx.tx[~sfComputationAllowance]; allowance)
+    {
+        if (ctx.app.config().FEES.extension_compute_limit == 0)
+        {
+            JLOG(ctx.j.debug()) << "WASM runtime deactivated by fee voting";
+            return temTEMP_DISABLED;
+        }
+        if (*allowance == 0)
+        {
+            return temBAD_LIMIT;
+        }
+        if (*allowance > ctx.app.config().FEES.extension_compute_limit)
+        {
+            JLOG(ctx.j.debug()) << "ComputationAllowance too large: " << *allowance;
+            return temBAD_LIMIT;
+        }
+    }
+
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.j); !isTesSuccess(err))
+        return err;
+
     return tesSUCCESS;
 }
 
@@ -652,22 +693,6 @@ EscrowFinish::preflightSigValidated(PreflightContext const& ctx)
                 router.setFlags(id, SF_CF_INVALID);
         }
     }
-
-    if (auto const allowance = ctx.tx[~sfComputationAllowance]; allowance)
-    {
-        if (*allowance == 0)
-        {
-            return temBAD_LIMIT;
-        }
-        if (*allowance > ctx.app.config().FEES.extension_compute_limit)
-        {
-            JLOG(ctx.j.debug()) << "ComputationAllowance too large: " << *allowance;
-            return temBAD_LIMIT;
-        }
-    }
-
-    if (auto const err = credentials::checkFields(ctx.tx, ctx.j); !isTesSuccess(err))
-        return err;
 
     return tesSUCCESS;
 }
