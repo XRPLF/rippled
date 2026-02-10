@@ -55,14 +55,14 @@ ConfidentialMPTMergeInbox::doApply()
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
     auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, account_));
     if (!sleMptoken)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // sanity check
     if (!sleMptoken->isFieldPresent(sfConfidentialBalanceSpending) ||
         !sleMptoken->isFieldPresent(sfConfidentialBalanceInbox) ||
         !sleMptoken->isFieldPresent(sfHolderElGamalPublicKey))
     {
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
     // homomorphically add holder's encrypted balance
@@ -70,7 +70,7 @@ ConfidentialMPTMergeInbox::doApply()
     if (TER const ter = homomorphicAdd(
             (*sleMptoken)[sfConfidentialBalanceSpending], (*sleMptoken)[sfConfidentialBalanceInbox], sum);
         !isTesSuccess(ter))
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     (*sleMptoken)[sfConfidentialBalanceSpending] = sum;
 

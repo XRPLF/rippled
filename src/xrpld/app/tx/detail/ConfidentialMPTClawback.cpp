@@ -105,7 +105,7 @@ ConfidentialMPTClawback::doApply()
     auto sleHolderMPToken = view().peek(keylet::mptoken(mptIssuanceID, holder));
 
     if (!sleIssuance || !sleHolderMPToken)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const clawAmount = ctx_.tx[sfMPTAmount];
 

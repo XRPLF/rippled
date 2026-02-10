@@ -270,7 +270,7 @@ ConfidentialMPTSend::doApply()
     auto sleDestAcct = view().peek(keylet::account(destination));
 
     if (!sleSenderMPToken || !sleDestinationMPToken || !sleDestAcct)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     if (auto err = verifyDepositPreauth(ctx_.tx, ctx_.view(), account_, destination, sleDestAcct, ctx_.journal);
         !isTesSuccess(err))
@@ -288,7 +288,7 @@ ConfidentialMPTSend::doApply()
         Buffer newSpending(ecGamalEncryptedTotalLength);
 
         if (TER const ter = homomorphicSubtract(curSpending, senderEc, newSpending); !isTesSuccess(ter))
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
 
         (*sleSenderMPToken)[sfConfidentialBalanceSpending] = newSpending;
     }
@@ -299,7 +299,7 @@ ConfidentialMPTSend::doApply()
         Buffer newIssuerEnc(ecGamalEncryptedTotalLength);
 
         if (TER const ter = homomorphicSubtract(curIssuerEnc, issuerEc, newIssuerEnc); !isTesSuccess(ter))
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
 
         (*sleSenderMPToken)[sfIssuerEncryptedBalance] = newIssuerEnc;
     }
@@ -311,7 +311,7 @@ ConfidentialMPTSend::doApply()
         Buffer newAuditorEnc(ecGamalEncryptedTotalLength);
 
         if (TER const ter = homomorphicSubtract(curAuditorEnc, *auditorEc, newAuditorEnc); !isTesSuccess(ter))
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
 
         (*sleSenderMPToken)[sfAuditorEncryptedBalance] = newAuditorEnc;
     }
@@ -322,7 +322,7 @@ ConfidentialMPTSend::doApply()
         Buffer newInbox(ecGamalEncryptedTotalLength);
 
         if (TER const ter = homomorphicAdd(curInbox, destEc, newInbox); !isTesSuccess(ter))
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
 
         (*sleDestinationMPToken)[sfConfidentialBalanceInbox] = newInbox;
     }
@@ -333,7 +333,7 @@ ConfidentialMPTSend::doApply()
         Buffer newIssuerEnc(ecGamalEncryptedTotalLength);
 
         if (TER const ter = homomorphicAdd(curIssuerEnc, issuerEc, newIssuerEnc); !isTesSuccess(ter))
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
 
         (*sleDestinationMPToken)[sfIssuerEncryptedBalance] = newIssuerEnc;
     }
@@ -345,7 +345,7 @@ ConfidentialMPTSend::doApply()
         Buffer newAuditorEnc(ecGamalEncryptedTotalLength);
 
         if (TER const ter = homomorphicAdd(curAuditorEnc, *auditorEc, newAuditorEnc); !isTesSuccess(ter))
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
 
         (*sleDestinationMPToken)[sfAuditorEncryptedBalance] = newAuditorEnc;
     }
