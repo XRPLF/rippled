@@ -226,6 +226,8 @@ ConfidentialMPTConvertBack::doApply()
     auto const amtToConvertBack = ctx_.tx[sfMPTAmount];
     auto const amt = (*sleMptoken)[~sfMPTAmount].value_or(0);
 
+    // Converting back increases regular balance and decreases confidential
+    // outstanding. This is the inverse of Convert.
     (*sleMptoken)[sfMPTAmount] = amt + amtToConvertBack;
     (*sleIssuance)[sfConfidentialOutstandingAmount] =
         (*sleIssuance)[sfConfidentialOutstandingAmount] - amtToConvertBack;
@@ -265,7 +267,6 @@ ConfidentialMPTConvertBack::doApply()
         (*sleMptoken)[sfAuditorEncryptedBalance] = res;
     }
 
-    // increment version
     incrementConfidentialVersion(*sleMptoken);
 
     view().update(sleIssuance);
