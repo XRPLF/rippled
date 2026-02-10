@@ -499,11 +499,11 @@ verifyAggregatedBulletproof(Slice const& proof, std::vector<Slice> const& commit
     // 1. Validate Aggregation Factor (m)
     std::size_t const m = commitments.size();
     if (m == 0)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // Bulletproofs require m to be a power of 2
     if ((m & (m - 1)) != 0)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // 2. Prepare Pedersen Commitments, use memcpy
     std::vector<secp256k1_pubkey> commitmentPts(m);
@@ -511,7 +511,7 @@ verifyAggregatedBulletproof(Slice const& proof, std::vector<Slice> const& commit
     {
         // Sanity check length
         if (commitments[i].size() != ecPedersenCommitmentLength)
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
 
         std::memcpy(commitmentPts[i].data, commitments[i].data(), ecPedersenCommitmentLength);
     }
@@ -525,19 +525,19 @@ verifyAggregatedBulletproof(Slice const& proof, std::vector<Slice> const& commit
     // Retrieve deterministic generators "G" and "H"
     if (secp256k1_mpt_get_generator_vector(secp256k1Context(), G_vec.data(), n, (unsigned char const*)"G", 1) != 1)
     {
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
     if (secp256k1_mpt_get_generator_vector(secp256k1Context(), H_vec.data(), n, (unsigned char const*)"H", 1) != 1)
     {
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
     // 4. Prepare Base Generator (pk_base / H)
     secp256k1_pubkey pk_base;
     if (secp256k1_mpt_get_h_generator(secp256k1Context(), &pk_base) != 1)
     {
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
     // 5. Verify the Proof
@@ -580,17 +580,17 @@ computeConvertBackRemainder(Slice const& commitment, std::uint64_t amount, Buffe
     // Compute mG = amount * G
     secp256k1_pubkey mG;
     if (!secp256k1_ec_pubkey_create(ctx, &mG, mScalar))
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // Negate mG to get -mG
     if (!secp256k1_ec_pubkey_negate(ctx, &mG))
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // Compute pcRem = pcBalance + (-mG)
     secp256k1_pubkey const* summands[2] = {&pcBalance, &mG};
     secp256k1_pubkey pcRem;
     if (!secp256k1_ec_pubkey_combine(ctx, &pcRem, summands, 2))
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     out.alloc(ecPedersenCommitmentLength);
     std::memcpy(out.data(), pcRem.data, ecPedersenCommitmentLength);
