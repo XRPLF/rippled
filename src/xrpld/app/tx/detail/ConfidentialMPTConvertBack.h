@@ -22,18 +22,6 @@ namespace xrpl {
  * - **Bulletproof Range Proof**: Verifies that the remaining balance (after
  *   conversion) is non-negative, ensuring the holder has sufficient funds.
  *
- * @par Balance Updates:
- * - Increases the holder's public `MPTAmount` balance.
- * - Homomorphically subtracts the encrypted amounts from confidential balances.
- * - Decreases the global `ConfidentialOutstandingAmount` on the MPTokenIssuance.
- * - Increments the holder's `ConfidentialBalanceVersion` to prevent replay.
- *
- * @par Requirements:
- * - The MPTokenIssuance must have `lsfMPTCanPrivacy` flag set.
- * - Holder must have sufficient confidential spending balance.
- * - If auditing is enabled, auditor ciphertext must be provided.
- * - The holder's account must not be frozen or unauthorized.
- *
  * @see ConfidentialMPTConvert, ConfidentialMPTSend
  */
 class ConfidentialMPTConvertBack : public Transactor

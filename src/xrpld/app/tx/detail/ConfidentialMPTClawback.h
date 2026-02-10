@@ -19,18 +19,6 @@ namespace xrpl {
  *   amount matches the holder's encrypted balance using the issuer's
  *   ElGamal private key.
  *
- * @par Balance Updates:
- * - Resets holder's confidential balances (inbox, spending, issuer-encrypted,
- *   and auditor-encrypted if applicable) to encrypted zeros.
- * - Decreases the global `ConfidentialOutstandingAmount` and
- *   `OutstandingAmount` on the MPTokenIssuance.
- *
- * @par Requirements:
- * - Only the issuer can execute this transaction.
- * - The MPTokenIssuance must have `lsfMPTCanClawback` flag set.
- * - The issuer must have registered their ElGamal public key.
- * - The holder must have confidential balances to claw back.
- *
  * @see ConfidentialMPTSend, ConfidentialMPTConvert
  */
 class ConfidentialMPTClawback : public Transactor

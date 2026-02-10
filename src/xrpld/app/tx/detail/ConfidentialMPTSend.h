@@ -24,22 +24,6 @@ namespace xrpl {
  * - **Bulletproof Range Proof**: Verifies remaining balance and
  *   transfer amount are non-negative.
  *
- * @par Balance Updates:
- * - **Sender**: Homomorphically subtracts from spending balance and issuer/
- *   auditor encrypted balances.
- * - **Destination**: Homomorphically adds to inbox balance and issuer/auditor
- *   encrypted balances.
- * - Increments both sender's and destination's `ConfidentialBalanceVersion`.
- *
- * @par Requirements:
- * - The MPTokenIssuance must have `lsfMPTCanTransfer` and `lsfMPTCanPrivacy`
- *   flags set.
- * - The issuer must have registered their ElGamal public key.
- * - Both sender and destination must have initialized confidential balances.
- * - Neither sender nor destination can be frozen or unauthorized.
- * - If auditing is enabled, auditor ciphertext must be provided.
- * - Deposit preauthorization rules apply for the destination.
- *
  * @note Funds are deposited into the destination's inbox, not spending
  *       balance. The recipient must call ConfidentialMPTMergeInbox to make
  *       received funds spendable.

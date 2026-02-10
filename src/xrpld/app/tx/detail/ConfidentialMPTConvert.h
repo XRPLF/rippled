@@ -21,20 +21,6 @@ namespace xrpl {
  *   amounts (for holder, issuer, and optionally auditor) all encrypt the
  *   same plaintext amount using the provided blinding factor.
  *
- * @par Balance Updates:
- * - Decreases the holder's public `MPTAmount` balance.
- * - Increases the holder's encrypted balances (inbox or spending).
- * - Increases the global `ConfidentialOutstandingAmount` on the MPTokenIssuance.
- * - If this is the first conversion, initializes all confidential balance
- *   fields and sets spending balance to encrypted zero.
- *
- * @par Requirements:
- * - The MPTokenIssuance must have `lsfMPTCanPrivacy` flag set.
- * - The issuer must have registered their ElGamal public key.
- * - Holder must have sufficient public balance to convert.
- * - If auditing is enabled on the issuance, auditor ciphertext must be
- *   provided.
- *
  * @see ConfidentialMPTConvertBack, ConfidentialMPTSend
  */
 class ConfidentialMPTConvert : public Transactor

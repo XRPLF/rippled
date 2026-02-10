@@ -19,16 +19,6 @@ namespace xrpl {
  *   encrypted spending balance using ElGamal homomorphic properties.
  * - **Zero Encryption**: Resets the inbox to an encryption of zero.
  *
- * @par Balance Updates:
- * - Homomorphically adds inbox balance to spending balance.
- * - Resets inbox balance to encrypted zero (canonical zero encryption).
- * - Increments the `ConfidentialBalanceVersion` to prevent replay attacks.
- *
- * @par Requirements:
- * - The MPTokenIssuance must have `lsfMPTCanPrivacy` flag set.
- * - Holder must have initialized confidential balances (inbox, spending,
- *   and ElGamal public key).
- *
  * @note This transaction requires no zero-knowledge proofs because it only
  *       combines encrypted values that the holder already owns. The
  *       homomorphic properties of ElGamal encryption ensure correctness.
