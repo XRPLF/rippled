@@ -277,7 +277,39 @@ Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
 
     // Each signer adds one more baseFee to the minimum required fee
     // for the transaction.
-    std::size_t const signerCount = tx.isFieldPresent(sfSigners) ? tx.getFieldArray(sfSigners).size() : 0;
+    std::size_t signerCount = 0;
+    if (tx.isFieldPresent(sfSigners))
+    {
+        // Define recursive lambda to count all leaf signers
+        std::function<std::size_t(STArray const&)> countSigners;
+
+        countSigners = [&](STArray const& signers) -> std::size_t {
+            std::size_t count = 0;
+
+            for (auto const& signer : signers)
+            {
+                if (signer.isFieldPresent(sfSigners))
+                {
+                    // This is a nested signer - recursively count its signers
+                    count += countSigners(signer.getFieldArray(sfSigners));
+                }
+                else
+                {
+                    // This is a leaf signer (one who actually signs)
+                    // Count it only if it has signing fields (not just a
+                    // placeholder)
+                    if (signer.isFieldPresent(sfSigningPubKey) && signer.isFieldPresent(sfTxnSignature))
+                    {
+                        count += 1;
+                    }
+                }
+            }
+
+            return count;
+        };
+
+        signerCount = countSigners(tx.getFieldArray(sfSigners));
+    }
 
     return baseFee + (signerCount * baseFee);
 }
@@ -354,8 +386,8 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 
     if (balance < feePaid)
     {
-        JLOG(ctx.j.trace()) << "Insufficient balance:" << " balance=" << to_string(balance)
-                            << " paid=" << to_string(feePaid);
+        JLOG(ctx.j.trace()) << "Insufficient balance:"
+                            << " balance=" << to_string(balance) << " paid=" << to_string(feePaid);
 
         if ((balance > beast::zero) && !ctx.view.open())
         {

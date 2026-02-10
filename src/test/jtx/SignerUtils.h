@@ -2,6 +2,7 @@
 
 #include <test/jtx/Account.h>
 
+#include <optional>
 #include <vector>
 
 namespace xrpl {
@@ -11,7 +12,8 @@ namespace jtx {
 struct Reg
 {
     Account acct;
-    Account sig;
+    std::optional<Account> sig;
+    std::vector<std::shared_ptr<Reg>> nested;  // For nested signers
 
     Reg(Account const& masterSig) : acct(masterSig), sig(masterSig)
     {
@@ -29,6 +31,23 @@ struct Reg
     {
     }
 
+    // Nested signer constructor
+    Reg(Account const& acct_, std::vector<std::shared_ptr<Reg>> nested_) : acct(acct_), nested(std::move(nested_))
+    {
+    }
+
+    bool
+    isNested() const
+    {
+        return !nested.empty();
+    }
+
+    AccountID
+    id() const
+    {
+        return acct.id();
+    }
+
     bool
     operator<(Reg const& rhs) const
     {
@@ -41,6 +60,14 @@ inline void
 sortSigners(std::vector<Reg>& signers)
 {
     std::sort(signers.begin(), signers.end(), [](Reg const& lhs, Reg const& rhs) { return lhs.acct < rhs.acct; });
+}
+
+inline void
+sortSigners(std::vector<std::shared_ptr<Reg>>& signers)
+{
+    std::sort(signers.begin(), signers.end(), [](std::shared_ptr<Reg> const& lhs, std::shared_ptr<Reg> const& rhs) {
+        return lhs->acct < rhs->acct;
+    });
 }
 
 }  // namespace jtx
