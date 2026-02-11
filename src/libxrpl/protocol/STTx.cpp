@@ -432,16 +432,12 @@ multiSignHelper(
     STArray const& signers{sigObject.getFieldArray(sfSigners)};
 
     // Set max depth based on feature flag
-    int const maxDepth = rules.enabled(featureNestedMultiSign)
-        ? nestedMultiSignMaxDepth
-        : legacyMultiSignMaxDepth;
+    int const maxDepth = rules.enabled(featureNestedMultiSign) ? nestedMultiSignMaxDepth : legacyMultiSignMaxDepth;
 
     // Define recursive lambda for checking signatures at any depth
     // parentAccountID identifies which account the signers are signing for
     // (used for context in recursive calls, not currently validated against)
-    std::function<Expected<void, std::string>(
-        STArray const&, AccountID const&, int)>
-        checkSignersArray;
+    std::function<Expected<void, std::string>(STArray const&, AccountID const&, int)> checkSignersArray;
 
     checkSignersArray = [&](STArray const& signersArray,
                             [[maybe_unused]] AccountID const& parentAccountID,
@@ -489,8 +485,7 @@ multiSignHelper(
 
                 // Recursively check nested signers
                 STArray const& nestedSigners = signer.getFieldArray(sfSigners);
-                auto result =
-                    checkSignersArray(nestedSigners, accountID, depth + 1);
+                auto result = checkSignersArray(nestedSigners, accountID, depth + 1);
                 if (!result)
                     return result;
             }
@@ -515,16 +510,12 @@ multiSignHelper(
                     validSig = false;
                 }
                 if (!validSig)
-                    return Unexpected(
-                        std::string("Invalid signature on account ") +
-                        toBase58(accountID) + ".");
+                    return Unexpected(std::string("Invalid signature on account ") + toBase58(accountID) + ".");
             }
             else
             {
                 // Neither a valid leaf nor nested signer
-                return Unexpected(
-                    std::string("Malformed signer entry for account ") +
-                    toBase58(accountID) + ".");
+                return Unexpected(std::string("Malformed signer entry for account ") + toBase58(accountID) + ".");
             }
         }
 
@@ -532,8 +523,7 @@ multiSignHelper(
     };
 
     // Start the recursive check at depth 1
-    return checkSignersArray(
-        signers, txnAccountID.value_or(AccountID{}), 1);
+    return checkSignersArray(signers, txnAccountID.value_or(AccountID{}), 1);
 }
 
 Expected<void, std::string>

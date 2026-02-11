@@ -232,10 +232,8 @@ countPresentFields(STObject const& obj)
 inline bool
 isLeafSigner(STObject const& signer)
 {
-    return signer.isFieldPresent(sfAccount) &&
-        signer.isFieldPresent(sfSigningPubKey) &&
-        signer.isFieldPresent(sfTxnSignature) &&
-        !signer.isFieldPresent(sfSigners) && countPresentFields(signer) == 3;
+    return signer.isFieldPresent(sfAccount) && signer.isFieldPresent(sfSigningPubKey) &&
+        signer.isFieldPresent(sfTxnSignature) && !signer.isFieldPresent(sfSigners) && countPresentFields(signer) == 3;
 }
 
 /** Check if a signer entry is a nested signer (delegates to sub-signers).
@@ -245,10 +243,8 @@ isLeafSigner(STObject const& signer)
 inline bool
 isNestedSigner(STObject const& signer)
 {
-    return signer.isFieldPresent(sfAccount) &&
-        signer.isFieldPresent(sfSigners) &&
-        !signer.isFieldPresent(sfSigningPubKey) &&
-        !signer.isFieldPresent(sfTxnSignature) &&
+    return signer.isFieldPresent(sfAccount) && signer.isFieldPresent(sfSigners) &&
+        !signer.isFieldPresent(sfSigningPubKey) && !signer.isFieldPresent(sfTxnSignature) &&
         countPresentFields(signer) == 2;
 }
 

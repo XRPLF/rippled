@@ -2191,9 +2191,7 @@ public:
 
             // Fee = baseFee + (2 leaf signers * baseFee) = 3 * baseFee
             std::uint32_t aliceSeq = env.seq(alice);
-            env(noop(alice),
-                msig({msigner(becky, msigner(bogie), msigner(demon))}),
-                fee(3 * baseFee));
+            env(noop(alice), msig({msigner(becky, msigner(bogie), msigner(demon))}), fee(3 * baseFee));
             env.close();
             BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
@@ -2215,13 +2213,7 @@ public:
             // Fee = baseFee + (3 leaf signers * baseFee) = 4 * baseFee
             aliceSeq = env.seq(alice);
             env(noop(alice),
-                msig({msigner(
-                    becky,
-                    msigner(
-                        cheri,
-                        msigner(bogie),
-                        msigner(demon),
-                        msigner(ghost)))}),
+                msig({msigner(becky, msigner(cheri, msigner(bogie), msigner(demon), msigner(ghost)))}),
                 fee(4 * baseFee));
             env.close();
             BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
@@ -2229,13 +2221,7 @@ public:
             // Fee too low: 3 * baseFee not enough for 3 leaf signers
             aliceSeq = env.seq(alice);
             env(noop(alice),
-                msig({msigner(
-                    becky,
-                    msigner(
-                        cheri,
-                        msigner(bogie),
-                        msigner(demon),
-                        msigner(ghost)))}),
+                msig({msigner(becky, msigner(cheri, msigner(bogie), msigner(demon), msigner(ghost)))}),
                 fee((4 * baseFee) - 1),
                 ter(telINSUF_FEE_P));
             env.close();
@@ -2259,20 +2245,14 @@ public:
 
             // Fee = baseFee + (3 leaf signers * baseFee) = 4 * baseFee
             std::uint32_t aliceSeq = env.seq(alice);
-            env(noop(alice),
-                msig(
-                    {msigner(becky, msigner(bogie), msigner(demon)),
-                     msigner(daria)}),
-                fee(4 * baseFee));
+            env(noop(alice), msig({msigner(becky, msigner(bogie), msigner(demon)), msigner(daria)}), fee(4 * baseFee));
             env.close();
             BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
             // Fee too low
             aliceSeq = env.seq(alice);
             env(noop(alice),
-                msig(
-                    {msigner(becky, msigner(bogie), msigner(demon)),
-                     msigner(daria)}),
+                msig({msigner(becky, msigner(bogie), msigner(demon)), msigner(daria)}),
                 fee((4 * baseFee) - 1),
                 ter(telINSUF_FEE_P));
             env.close();

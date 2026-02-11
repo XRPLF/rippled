@@ -1293,8 +1293,7 @@ transactionSubmitMultiSigned(
             // If nested, recursively validate the nested Signers array
             if (isNestedSigner(signer))
             {
-                if (!validateSignersRecursive(
-                        signer.getFieldArray(sfSigners), depth + 1))
+                if (!validateSignersRecursive(signer.getFieldArray(sfSigners), depth + 1))
                     return false;
             }
         }
@@ -1303,8 +1302,7 @@ transactionSubmitMultiSigned(
 
     if (!validateSignersRecursive(signers, 1))
     {
-        return RPC::make_param_error(
-            "Signers array may only contain valid Signer entries.");
+        return RPC::make_param_error("Signers array may only contain valid Signer entries.");
     }
 
     // The array must be sorted and validated.
