@@ -24,7 +24,7 @@ namespace {
 bool
 getRusageThread(struct rusage& ru)
 {
-    return ::getrusage(RUSAGE_THREAD, &ru) == 0;
+    return ::getrusage(RUSAGE_THREAD, &ru) == 0; // LCOV_EXCL_LINE
 }
 
 }  // namespace
@@ -69,6 +69,8 @@ parseStatmRSSkB(std::string const& statm)
 MallocTrimReport
 mallocTrim([[maybe_unused]] std::optional<std::string> const& tag, beast::Journal journal)
 {
+    // LCOV_EXCL_START
+
     MallocTrimReport report;
 
 #if !(defined(__GLIBC__) && BOOST_OS_LINUX)
@@ -157,6 +159,8 @@ mallocTrim([[maybe_unused]] std::optional<std::string> const& tag, beast::Journa
 #endif
 
     return report;
+
+    // LCOV_EXCL_STOP
 }
 
 }  // namespace xrpl
