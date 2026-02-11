@@ -109,10 +109,20 @@ mallocTrim([[maybe_unused]] std::optional<std::string> const& tag, beast::Journa
     if (journal.debug())
     {
         auto readFile = [](std::string const& path) -> std::string {
-            std::ifstream ifs(path);
+            std::ifstream ifs(path, std::ios::binary);
             if (!ifs.is_open())
                 return {};
-            return std::string(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>());
+
+            ifs.seekg(0, std::ios::end);
+            auto const size = ifs.tellg();
+            if (size < 0)
+                return {};
+
+            ifs.seekg(0, std::ios::beg);
+            std::string result(static_cast<std::size_t>(size), '\0');
+            ifs.read(result.data(), size);
+
+            return result;
         };
 
         std::string const tagStr = tag.value_or("default");
