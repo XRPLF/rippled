@@ -380,7 +380,7 @@ public:
         BEAST_EXPECT(aliceLines2[jss::result][jss::lines].size() == 1);
         BEAST_EXPECT(!aliceLines2[jss::result].isMember(jss::marker));
 
-        // Get account lines for beckys account, using alices SignerList as a
+        // Get account lines for becky's account, using alice's SignerList as a
         // marker. This should cause an error.
         Json::Value beckyLinesParams;
         beckyLinesParams[jss::account] = becky.human();

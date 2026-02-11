@@ -1878,14 +1878,14 @@ public:
             BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "49.96666666666667");
 
             jrr = ledgerEntryState(env, bob, gw, "USD");
-            Json::Value const bobsUSD = jrr[jss::node][sfBalance.fieldName][jss::value];
+            Json::Value const bobUSD = jrr[jss::node][sfBalance.fieldName][jss::value];
             if (!NumberSwitchOver)
             {
-                BEAST_EXPECT(bobsUSD == "-0.966500000033334");
+                BEAST_EXPECT(bobUSD == "-0.966500000033334");
             }
             else
             {
-                BEAST_EXPECT(bobsUSD == "-0.9665000000333333");
+                BEAST_EXPECT(bobUSD == "-0.9665000000333333");
             }
         }
     }
@@ -2265,8 +2265,8 @@ public:
         // The scenario:
         //   o alice has USD but wants XRP.
         //   o bob has XRP but wants USD.
-        auto const alicesXRP = env.balance(alice);
-        auto const bobsXRP = env.balance(bob);
+        auto const aliceXRP = env.balance(alice);
+        auto const bobXRP = env.balance(bob);
 
         env(offer(alice, xrpOffer, usdOffer));
         env.close();
@@ -2276,8 +2276,8 @@ public:
         env.require(
             balance(alice, USD(0)),
             balance(bob, usdOffer),
-            balance(alice, alicesXRP + xrpOffer - fee),
-            balance(bob, bobsXRP - xrpOffer - fee),
+            balance(alice, aliceXRP + xrpOffer - fee),
+            balance(bob, bobXRP - xrpOffer - fee),
             offers(alice, 0),
             offers(bob, 0));
 
@@ -2293,13 +2293,13 @@ public:
         env.require(offers(alice, 0));
         verifyDefaultTrustline(env, bob, USD(1));
         {
-            auto const bobsOffers = offersOnAccount(env, bob);
-            BEAST_EXPECT(bobsOffers.size() == 1);
-            auto const& bobsOffer = *(bobsOffers.front());
+            auto const bobOffers = offersOnAccount(env, bob);
+            BEAST_EXPECT(bobOffers.size() == 1);
+            auto const& bobOffer = *(bobOffers.front());
 
-            BEAST_EXPECT(bobsOffer[sfLedgerEntryType] == ltOFFER);
-            BEAST_EXPECT(bobsOffer[sfTakerGets] == USD(1));
-            BEAST_EXPECT(bobsOffer[sfTakerPays] == XRP(1));
+            BEAST_EXPECT(bobOffer[sfLedgerEntryType] == ltOFFER);
+            BEAST_EXPECT(bobOffer[sfTakerGets] == USD(1));
+            BEAST_EXPECT(bobOffer[sfTakerPays] == XRP(1));
         }
     }
 
@@ -2375,13 +2375,13 @@ public:
         env.require(balance(bob, EUR(999)));
 
         {
-            auto bobsOffers = offersOnAccount(env, bob);
-            if (BEAST_EXPECT(bobsOffers.size() == 1))
+            auto bobOffers = offersOnAccount(env, bob);
+            if (BEAST_EXPECT(bobOffers.size() == 1))
             {
-                auto const& bobsOffer = *(bobsOffers.front());
+                auto const& bobOffer = *(bobOffers.front());
 
-                BEAST_EXPECT(bobsOffer[sfTakerGets] == USD(1));
-                BEAST_EXPECT(bobsOffer[sfTakerPays] == EUR(1));
+                BEAST_EXPECT(bobOffer[sfTakerGets] == USD(1));
+                BEAST_EXPECT(bobOffer[sfTakerPays] == EUR(1));
             }
         }
 
@@ -2470,22 +2470,22 @@ public:
         verifyDefaultTrustline(env, bob, EUR(400));
         verifyDefaultTrustline(env, carol, USD(400));
         {
-            auto const alicesOffers = offersOnAccount(env, alice);
-            BEAST_EXPECT(alicesOffers.size() == 1);
-            auto const& alicesOffer = *(alicesOffers.front());
+            auto const aliceOffers = offersOnAccount(env, alice);
+            BEAST_EXPECT(aliceOffers.size() == 1);
+            auto const& aliceOffer = *(aliceOffers.front());
 
-            BEAST_EXPECT(alicesOffer[sfLedgerEntryType] == ltOFFER);
-            BEAST_EXPECT(alicesOffer[sfTakerGets] == USD(600));
-            BEAST_EXPECT(alicesOffer[sfTakerPays] == XRP(600));
+            BEAST_EXPECT(aliceOffer[sfLedgerEntryType] == ltOFFER);
+            BEAST_EXPECT(aliceOffer[sfTakerGets] == USD(600));
+            BEAST_EXPECT(aliceOffer[sfTakerPays] == XRP(600));
         }
         {
-            auto const bobsOffers = offersOnAccount(env, bob);
-            BEAST_EXPECT(bobsOffers.size() == 1);
-            auto const& bobsOffer = *(bobsOffers.front());
+            auto const bobOffers = offersOnAccount(env, bob);
+            BEAST_EXPECT(bobOffers.size() == 1);
+            auto const& bobOffer = *(bobOffers.front());
 
-            BEAST_EXPECT(bobsOffer[sfLedgerEntryType] == ltOFFER);
-            BEAST_EXPECT(bobsOffer[sfTakerGets] == XRP(600));
-            BEAST_EXPECT(bobsOffer[sfTakerPays] == EUR(600));
+            BEAST_EXPECT(bobOffer[sfLedgerEntryType] == ltOFFER);
+            BEAST_EXPECT(bobOffer[sfTakerGets] == XRP(600));
+            BEAST_EXPECT(bobOffer[sfTakerPays] == EUR(600));
         }
 
         // carol makes an offer that exactly consumes alice and bob's offers.
@@ -2503,15 +2503,15 @@ public:
         verifyDefaultTrustline(env, carol, USD(1000));
 
         // In pre-flow code alice's offer is left empty in the ledger.
-        auto const alicesOffers = offersOnAccount(env, alice);
-        if (alicesOffers.size() != 0)
+        auto const aliceOffers = offersOnAccount(env, alice);
+        if (aliceOffers.size() != 0)
         {
-            BEAST_EXPECT(alicesOffers.size() == 1);
-            auto const& alicesOffer = *(alicesOffers.front());
+            BEAST_EXPECT(aliceOffers.size() == 1);
+            auto const& aliceOffer = *(aliceOffers.front());
 
-            BEAST_EXPECT(alicesOffer[sfLedgerEntryType] == ltOFFER);
-            BEAST_EXPECT(alicesOffer[sfTakerGets] == USD(0));
-            BEAST_EXPECT(alicesOffer[sfTakerPays] == XRP(0));
+            BEAST_EXPECT(aliceOffer[sfLedgerEntryType] == ltOFFER);
+            BEAST_EXPECT(aliceOffer[sfTakerGets] == USD(0));
+            BEAST_EXPECT(aliceOffer[sfTakerPays] == XRP(0));
         }
     }
 
@@ -3679,16 +3679,16 @@ public:
 
         // Place alice's tiny offer in the book first.  Let's see what happens
         // when a reasonable offer crosses it.
-        STAmount const alicesCnyOffer{
+        STAmount const aliceCnyOffer{
             CNY.issue(), std::uint64_t(4926000000000000), -23};
 
-        env(offer(alice, alicesCnyOffer, drops(1), tfPassive));
+        env(offer(alice, aliceCnyOffer, drops(1), tfPassive));
         env.close();
 
         // bob places an ordinary offer
-        STAmount const bobsCnyStartBalance{
+        STAmount const bobCnyStartBalance{
             CNY.issue(), std::uint64_t(3767479960090235), -15};
-        env(pay(gw, bob, bobsCnyStartBalance));
+        env(pay(gw, bob, bobCnyStartBalance));
         env.close();
 
         env(offer(
@@ -3697,9 +3697,9 @@ public:
             STAmount{CNY.issue(), std::uint64_t(1000000000000000), -20}));
         env.close();
 
-        env.require(balance(alice, alicesCnyOffer));
+        env.require(balance(alice, aliceCnyOffer));
         env.require(balance(alice, startXrpBalance - fee - drops(1)));
-        env.require(balance(bob, bobsCnyStartBalance - alicesCnyOffer));
+        env.require(balance(bob, bobCnyStartBalance - aliceCnyOffer));
         env.require(balance(bob, startXrpBalance - (fee * 2) + drops(1)));
     }
 
