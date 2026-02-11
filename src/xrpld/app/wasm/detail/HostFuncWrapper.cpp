@@ -1355,6 +1355,10 @@ trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     {
         return hfResult(results, asHex.error());  // LCOV_EXCL_LINE
     }
+    if (*asHex != 0 && *asHex != 1)
+    {
+        return hfResult(results, HostFunctionError::INVALID_PARAMS);
+    }
 
     return returnResult(runtime, params, results, hf->trace(*msg, *data, *asHex), index);
 }
