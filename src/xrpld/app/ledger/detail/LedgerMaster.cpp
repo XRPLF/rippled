@@ -14,7 +14,6 @@
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/paths/PathRequests.h>
-#include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/Peer.h>
@@ -29,6 +28,7 @@
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/resource/Fees.h>
 
 #include <algorithm>
