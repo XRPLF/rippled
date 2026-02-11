@@ -587,6 +587,15 @@ SQLiteDatabase::SQLiteDatabase(ServiceRegistry& registry, Config const& config, 
     }
 }
 
+SQLiteDatabase::SQLiteDatabase(SQLiteDatabase&& rhs) noexcept
+    : registry_(rhs.registry_)
+    , useTxTables_(rhs.useTxTables_)
+    , j_(rhs.j_)
+    , ledgerDb_(std::move(rhs.ledgerDb_))
+    , txdb_(std::move(rhs.txdb_))
+{
+}
+
 SQLiteDatabase
 setup_RelationalDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue)
 {
