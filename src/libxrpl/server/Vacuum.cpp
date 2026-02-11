@@ -1,6 +1,8 @@
-#include <xrpld/app/rdb/Vacuum.h>
+#include <xrpl/server/Vacuum.h>
 
 #include <boost/format.hpp>
+
+#include <iostream>
 
 namespace xrpl {
 
