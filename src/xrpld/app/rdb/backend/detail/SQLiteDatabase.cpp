@@ -499,6 +499,15 @@ SQLiteDatabase::getTransaction(
     return TxSearched::unknown;
 }
 
+SQLiteDatabase::SQLiteDatabase(SQLiteDatabase&& rhs) noexcept
+    : registry_(rhs.registry_)
+    , useTxTables_(rhs.useTxTables_)
+    , j_(rhs.j_)
+    , ledgerDb_(std::move(rhs.ledgerDb_))
+    , txdb_(std::move(rhs.txdb_))
+{
+}
+
 bool
 SQLiteDatabase::ledgerDbHasSpace(Config const& config)
 {
@@ -574,10 +583,23 @@ SQLiteDatabase::closeTransactionDB()
     txdb_.reset();
 }
 
-std::unique_ptr<SQLiteDatabase>
+SQLiteDatabase::SQLiteDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue)
+    : registry_(registry), useTxTables_(config.useTxTables()), j_(registry.journal("SQLiteDatabase"))
+{
+    DatabaseCon::Setup const setup = setup_DatabaseCon(config, j_);
+    if (!makeLedgerDBs(config, setup, DatabaseCon::CheckpointerSetup{&jobQueue, &registry_.logs()}))
+    {
+        std::string_view constexpr error = "Failed to create ledger databases";
+
+        JLOG(j_.fatal()) << error;
+        Throw<std::runtime_error>(error.data());
+    }
+}
+
+SQLiteDatabase
 setup_RelationalDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue)
 {
-    return std::make_unique<SQLiteDatabase>(registry, config, jobQueue);
+    return {registry, config, jobQueue};
 }
 
 }  // namespace xrpl

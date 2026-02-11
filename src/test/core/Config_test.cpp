@@ -634,8 +634,8 @@ nHBu9PTL9dn2GuZtdW4U2WzBwffyX9qsQCd9CNU4Z5YG3PQfViM8
             Config c;
             std::string toLoad(R"xrpldConfig(
 [validator_list_sites]
-xrplvalidators.com
-trustthesevalidators.gov
+xrpl-validators.com
+trust-these-validators.gov
 
 [validator_list_keys]
 021A99A537FDEBC34E4FCA03B39BEADD04299BB19E85097EC92B15A3518801E566
@@ -645,8 +645,8 @@ trustthesevalidators.gov
 )xrpldConfig");
             c.loadFromString(toLoad);
             BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_SITES).values().size() == 2);
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_SITES).values()[0] == "xrplvalidators.com");
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_SITES).values()[1] == "trustthesevalidators.gov");
+            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_SITES).values()[0] == "xrpl-validators.com");
+            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_SITES).values()[1] == "trust-these-validators.gov");
             BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_KEYS).values().size() == 1);
             BEAST_EXPECT(
                 c.section(SECTION_VALIDATOR_LIST_KEYS).values()[0] ==
@@ -661,8 +661,8 @@ trustthesevalidators.gov
             Config c;
             std::string toLoad(R"xrpldConfig(
 [validator_list_sites]
-xrplvalidators.com
-trustthesevalidators.gov
+xrpl-validators.com
+trust-these-validators.gov
 
 [validator_list_keys]
 021A99A537FDEBC34E4FCA03B39BEADD04299BB19E85097EC92B15A3518801E566
@@ -672,8 +672,8 @@ trustthesevalidators.gov
 )xrpldConfig");
             c.loadFromString(toLoad);
             BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_SITES).values().size() == 2);
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_SITES).values()[0] == "xrplvalidators.com");
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_SITES).values()[1] == "trustthesevalidators.gov");
+            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_SITES).values()[0] == "xrpl-validators.com");
+            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_SITES).values()[1] == "trust-these-validators.gov");
             BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_KEYS).values().size() == 1);
             BEAST_EXPECT(
                 c.section(SECTION_VALIDATOR_LIST_KEYS).values()[0] ==
@@ -689,8 +689,8 @@ trustthesevalidators.gov
             Config c;
             std::string toLoad(R"xrpldConfig(
 [validator_list_sites]
-xrplvalidators.com
-trustthesevalidators.gov
+xrpl-validators.com
+trust-these-validators.gov
 
 [validator_list_keys]
 021A99A537FDEBC34E4FCA03B39BEADD04299BB19E85097EC92B15A3518801E566
@@ -718,8 +718,8 @@ trustthesevalidators.gov
             Config c;
             std::string toLoad(R"xrpldConfig(
 [validator_list_sites]
-xrplvalidators.com
-trustthesevalidators.gov
+xrpl-validators.com
+trust-these-validators.gov
 
 [validator_list_keys]
 021A99A537FDEBC34E4FCA03B39BEADD04299BB19E85097EC92B15A3518801E566
@@ -747,8 +747,8 @@ value = 2
             Config c;
             std::string toLoad(R"xrpldConfig(
 [validator_list_sites]
-xrplvalidators.com
-trustthesevalidators.gov
+xrpl-validators.com
+trust-these-validators.gov
 
 [validator_list_keys]
 021A99A537FDEBC34E4FCA03B39BEADD04299BB19E85097EC92B15A3518801E566
@@ -774,8 +774,8 @@ trustthesevalidators.gov
             Config c;
             std::string toLoad(R"xrpldConfig(
 [validator_list_sites]
-xrplvalidators.com
-trustthesevalidators.gov
+xrpl-validators.com
+trust-these-validators.gov
 )xrpldConfig");
             std::string error;
             auto const expectedError = "[validator_list_keys] config section is missing";
@@ -887,8 +887,8 @@ nHB1X37qrniVugfQcuBTAjswphC1drx7QjFFojJPZwKHHnt8kU7v
 nHUkAWDR4cB8AgPg7VXMX6et8xRTQb2KJfgv1aBEXozwrawRKgMB
 
 [validator_list_sites]
-xrplvalidators.com
-trustthesevalidators.gov
+xrpl-validators.com
+trust-these-validators.gov
 
 [validator_list_keys]
 021A99A537FDEBC34E4FCA03B39BEADD04299BB19E85097EC92B15A3518801E566
