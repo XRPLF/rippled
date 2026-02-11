@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_TOMLCONFIG_H_INCLUDED
-#define XRPL_BASICS_TOMLCONFIG_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -72,5 +71,3 @@ bool
 isTomlFile(boost::filesystem::path const& path);
 
 }  // namespace xrpl
-
-#endif
