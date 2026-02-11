@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MAIN_APPLICATION_H_INCLUDED
-#define XRPL_APP_MAIN_APPLICATION_H_INCLUDED
+#pragma once
 
 #include <xrpld/core/Config.h>
 #include <xrpld/overlay/PeerReservationTable.h>
@@ -183,5 +182,3 @@ std::unique_ptr<Application>
 make_Application(std::unique_ptr<Config> config, std::unique_ptr<Logs> logs, std::unique_ptr<TimeKeeper> timeKeeper);
 
 }  // namespace xrpl
-
-#endif

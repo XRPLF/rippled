@@ -1,5 +1,4 @@
-#ifndef XRPL_CRYPTO_RFC1751_H_INCLUDED
-#define XRPL_CRYPTO_RFC1751_H_INCLUDED
+#pragma once
 
 #include <string>
 #include <vector>
@@ -43,5 +42,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

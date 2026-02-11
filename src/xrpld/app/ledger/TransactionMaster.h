@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_TRANSACTIONMASTER_H_INCLUDED
-#define XRPL_APP_LEDGER_TRANSACTIONMASTER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/misc/Transaction.h>
 
@@ -64,5 +63,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

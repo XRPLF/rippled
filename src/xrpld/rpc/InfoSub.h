@@ -1,5 +1,4 @@
-#ifndef XRPL_NET_INFOSUB_H_INCLUDED
-#define XRPL_NET_INFOSUB_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/misc/Manifest.h>
 
@@ -223,5 +222,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

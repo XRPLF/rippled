@@ -2,8 +2,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_UNIT_TEST_SUITE_INFO_HPP
-#define BEAST_UNIT_TEST_SUITE_INFO_HPP
+#pragma once
 
 #include <cstring>
 #include <functional>
@@ -100,5 +99,3 @@ make_suite_info(std::string name, std::string module, std::string library, bool 
 
 }  // namespace unit_test
 }  // namespace beast
-
-#endif

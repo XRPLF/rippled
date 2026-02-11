@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_BOOKCHANGES_H_INCLUDED
-#define XRPL_RPC_BOOKCHANGES_H_INCLUDED
+#pragma once
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -193,5 +192,3 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
 
 }  // namespace RPC
 }  // namespace xrpl
-
-#endif

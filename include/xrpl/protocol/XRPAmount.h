@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_XRPAMOUNT_H_INCLUDED
-#define XRPL_PROTOCOL_XRPAMOUNT_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
@@ -282,5 +281,3 @@ mulRatio(XRPAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundU
 }
 
 }  // namespace xrpl
-
-#endif  // XRPL_BASICS_XRPAMOUNT_H_INCLUDED

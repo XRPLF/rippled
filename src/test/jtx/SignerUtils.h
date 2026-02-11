@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_SIGNERUTILS_H_INCLUDED
-#define XRPL_TEST_JTX_SIGNERUTILS_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 
@@ -74,5 +73,3 @@ sortSigners(std::vector<std::shared_ptr<Reg>>& signers)
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

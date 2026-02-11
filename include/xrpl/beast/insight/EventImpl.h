@@ -1,5 +1,4 @@
-#ifndef BEAST_INSIGHT_EVENTIMPL_H_INCLUDED
-#define BEAST_INSIGHT_EVENTIMPL_H_INCLUDED
+#pragma once
 
 #include <chrono>
 #include <memory>
@@ -21,5 +20,3 @@ public:
 
 }  // namespace insight
 }  // namespace beast
-
-#endif

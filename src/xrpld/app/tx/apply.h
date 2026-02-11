@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_APPLY_H_INCLUDED
-#define XRPL_TX_APPLY_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/tx/applySteps.h>
 #include <xrpld/core/Config.h>
@@ -130,5 +129,3 @@ applyTransaction(
     beast::Journal journal);
 
 }  // namespace xrpl
-
-#endif

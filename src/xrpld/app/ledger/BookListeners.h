@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_BOOKLISTENERS_H_INCLUDED
-#define XRPL_APP_LEDGER_BOOKLISTENERS_H_INCLUDED
+#pragma once
 
 #include <xrpld/rpc/InfoSub.h>
 
@@ -51,5 +50,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

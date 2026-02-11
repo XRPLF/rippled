@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_RDB_VACUUM_H_INCLUDED
-#define XRPL_APP_RDB_VACUUM_H_INCLUDED
+#pragma once
 
 #include <xrpld/core/DatabaseCon.h>
 
@@ -15,5 +14,3 @@ bool
 doVacuumDB(DatabaseCon::Setup const& setup, beast::Journal j);
 
 }  // namespace xrpl
-
-#endif

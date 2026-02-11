@@ -1,5 +1,4 @@
-#ifndef XRPL_DEBUGSINK_H
-#define XRPL_DEBUGSINK_H
+#pragma once
 
 #include <xrpl/beast/utility/Journal.h>
 
@@ -23,4 +22,3 @@ public:
     writeAlways(beast::severities::Severity level, std::string const& text) override;
 };
 }  // namespace xrpl
-#endif  // XRPL_DEBUGSINK_H

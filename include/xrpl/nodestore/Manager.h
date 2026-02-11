@@ -1,5 +1,4 @@
-#ifndef XRPL_NODESTORE_MANAGER_H_INCLUDED
-#define XRPL_NODESTORE_MANAGER_H_INCLUDED
+#pragma once
 
 #include <xrpl/nodestore/DatabaseRotating.h>
 #include <xrpl/nodestore/Factory.h>
@@ -80,5 +79,3 @@ public:
 
 }  // namespace NodeStore
 }  // namespace xrpl
-
-#endif

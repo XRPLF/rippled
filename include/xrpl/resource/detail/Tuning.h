@@ -1,5 +1,4 @@
-#ifndef XRPL_RESOURCE_TUNING_H_INCLUDED
-#define XRPL_RESOURCE_TUNING_H_INCLUDED
+#pragma once
 
 #include <chrono>
 
@@ -33,5 +32,3 @@ std::chrono::seconds constexpr gossipExpirationSeconds{30};
 
 }  // namespace Resource
 }  // namespace xrpl
-
-#endif

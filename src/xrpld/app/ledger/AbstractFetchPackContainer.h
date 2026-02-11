@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_ABSTRACTFETCHPACKCONTAINER_H_INCLUDED
-#define XRPL_APP_LEDGER_ABSTRACTFETCHPACKCONTAINER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/base_uint.h>
@@ -27,5 +26,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

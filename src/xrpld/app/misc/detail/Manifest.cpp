@@ -459,6 +459,10 @@ ManifestCache::applyManifest(Manifest m)
 
         auto masterKey = m.masterKey;
         map_.emplace(std::move(masterKey), std::move(m));
+
+        // Something has changed. Keep track of it.
+        seq_++;
+
         return ManifestDisposition::accepted;
     }
 

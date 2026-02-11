@@ -1,5 +1,4 @@
-#ifndef XRPL_CONSENSUS_VALIDATIONS_H_INCLUDED
-#define XRPL_CONSENSUS_VALIDATIONS_H_INCLUDED
+#pragma once
 
 #include <xrpld/consensus/LedgerTrie.h>
 
@@ -1093,4 +1092,3 @@ public:
 };
 
 }  // namespace xrpl
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STVECTOR256_H_INCLUDED
-#define XRPL_PROTOCOL_STVECTOR256_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/STBase.h>
@@ -232,5 +231,3 @@ STVector256::clear() noexcept
 }
 
 }  // namespace xrpl
-
-#endif
