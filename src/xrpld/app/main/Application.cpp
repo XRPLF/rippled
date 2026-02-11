@@ -11,7 +11,6 @@
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/BasicApp.h>
-#include <xrpld/app/main/DBInit.h>
 #include <xrpld/app/main/GRPCServer.h>
 #include <xrpld/app/main/LoadManager.h>
 #include <xrpld/app/main/NodeIdentity.h>
@@ -26,11 +25,8 @@
 #include <xrpld/app/misc/ValidatorSite.h>
 #include <xrpld/app/paths/PathRequests.h>
 #include <xrpld/app/rdb/RelationalDatabase.h>
-#include <xrpld/app/rdb/Wallet.h>
 #include <xrpld/app/tx/apply.h>
-#include <xrpld/core/DatabaseCon.h>
 #include <xrpld/overlay/Cluster.h>
-#include <xrpld/overlay/PeerReservationTable.h>
 #include <xrpld/overlay/PeerSet.h>
 #include <xrpld/overlay/make_Overlay.h>
 #include <xrpld/shamap/NodeFamily.h>
@@ -40,6 +36,7 @@
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/asio/io_latency_probe.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/core/PeerReservationTable.h>
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/crypto/csprng.h>
 #include <xrpl/json/json_reader.h>
@@ -49,7 +46,9 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/server/Wallet.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/steady_timer.hpp>
@@ -1021,6 +1020,12 @@ private:
 
     void
     setMaxDisallowedLedger();
+
+    Application&
+    app() override
+    {
+        return *this;
+    }
 };
 
 //------------------------------------------------------------------------------
@@ -1116,18 +1121,21 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
     auto const startUp = config_->START_UP;
     JLOG(m_journal.debug()) << "startUp: " << startUp;
-    if (startUp == Config::FRESH)
+    if (startUp == StartUpType::FRESH)
     {
         JLOG(m_journal.info()) << "Starting new Ledger";
 
         startGenesisLedger();
     }
-    else if (startUp == Config::LOAD || startUp == Config::LOAD_FILE || startUp == Config::REPLAY)
+    else if (startUp == StartUpType::LOAD || startUp == StartUpType::LOAD_FILE || startUp == StartUpType::REPLAY)
     {
         JLOG(m_journal.info()) << "Loading specified Ledger";
 
         if (!loadOldLedger(
-                config_->START_LEDGER, startUp == Config::REPLAY, startUp == Config::LOAD_FILE, config_->TRAP_TX_HASH))
+                config_->START_LEDGER,
+                startUp == StartUpType::REPLAY,
+                startUp == StartUpType::LOAD_FILE,
+                config_->TRAP_TX_HASH))
         {
             JLOG(m_journal.error()) << "The specified ledger could not be loaded.";
             if (config_->FAST_LOAD)
@@ -1142,7 +1150,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             }
         }
     }
-    else if (startUp == Config::NETWORK)
+    else if (startUp == StartUpType::NETWORK)
     {
         // This should probably become the default once we have a stable
         // network.
@@ -1529,7 +1537,7 @@ void
 ApplicationImp::startGenesisLedger()
 {
     std::vector<uint256> const initialAmendments =
-        (config_->START_UP == Config::FRESH) ? m_amendmentTable->getDesired() : std::vector<uint256>{};
+        (config_->START_UP == StartUpType::FRESH) ? m_amendmentTable->getDesired() : std::vector<uint256>{};
 
     std::shared_ptr<Ledger> const genesis =
         std::make_shared<Ledger>(create_genesis, *config_, initialAmendments, nodeFamily_);
