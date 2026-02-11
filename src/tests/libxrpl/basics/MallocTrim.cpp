@@ -6,6 +6,8 @@
 
 using namespace xrpl;
 
+// cSpell:ignore statm
+
 #if defined(__GLIBC__) && BOOST_OS_LINUX
 namespace xrpl::detail {
 long
