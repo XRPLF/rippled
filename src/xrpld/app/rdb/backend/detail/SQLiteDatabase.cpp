@@ -574,6 +574,19 @@ SQLiteDatabase::closeTransactionDB()
     txdb_.reset();
 }
 
+SQLiteDatabase::SQLiteDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue)
+    : registry_(registry), useTxTables_(config.useTxTables()), j_(registry.journal("SQLiteDatabase"))
+{
+    DatabaseCon::Setup const setup = setup_DatabaseCon(config, j_);
+    if (!makeLedgerDBs(config, setup, DatabaseCon::CheckpointerSetup{&jobQueue, &registry_.logs()}))
+    {
+        std::string_view constexpr error = "Failed to create ledger databases";
+
+        JLOG(j_.fatal()) << error;
+        Throw<std::runtime_error>(error.data());
+    }
+}
+
 std::unique_ptr<SQLiteDatabase>
 setup_RelationalDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue)
 {
