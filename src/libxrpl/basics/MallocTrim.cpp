@@ -7,7 +7,6 @@
 #include <cstdio>
 #include <fstream>
 #include <sstream>
-// #include <thread>
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
 #include <sys/resource.h>
@@ -73,14 +72,10 @@ mallocTrim([[maybe_unused]] std::optional<std::string> const& tag, beast::Journa
 #if !(defined(__GLIBC__) && BOOST_OS_LINUX)
     JLOG(journal.debug()) << "malloc_trim not supported on this platform";
 #else
-
-    constexpr std::size_t KB = 1024;
-    constexpr std::size_t MB = 1024 * KB;
-
-    constexpr std::size_t TRIM_PAD = 256 * KB;
-    // constexpr std::size_t TRIM_PAD = 1 * MB;
-    // constexpr std::size_t TRIM_PAD = 16 * MB;
-    // constexpr std::size_t TRIM_PAD = 0;
+    // Keep glibc malloc_trim padding at 0 (default): 12h Mainnet tests across 0/256KB/1MB/16MB
+    // showed no clear, consistent benefit from custom padding—0 provided the best overall balance
+    // of RSS reduction and trim-latency stability without adding a tuning surface.
+    constexpr std::size_t TRIM_PAD = 0;
 
     report.supported = true;
 
