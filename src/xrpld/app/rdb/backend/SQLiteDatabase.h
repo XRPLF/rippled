@@ -460,9 +460,9 @@ private:
  * @param registry The service registry.
  * @param config Config object.
  * @param jobQueue JobQueue object.
- * @return Unique pointer to the SQLiteDatabase implementation.
+ * @return SQLiteDatabase instance.
  */
-std::unique_ptr<SQLiteDatabase>
+SQLiteDatabase
 setup_RelationalDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue);
 
 }  // namespace xrpl

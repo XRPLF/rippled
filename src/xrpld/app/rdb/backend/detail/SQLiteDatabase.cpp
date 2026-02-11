@@ -587,10 +587,10 @@ SQLiteDatabase::SQLiteDatabase(ServiceRegistry& registry, Config const& config, 
     }
 }
 
-std::unique_ptr<SQLiteDatabase>
+SQLiteDatabase
 setup_RelationalDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue)
 {
-    return std::make_unique<SQLiteDatabase>(registry, config, jobQueue);
+    return {registry, config, jobQueue};
 }
 
 }  // namespace xrpl
