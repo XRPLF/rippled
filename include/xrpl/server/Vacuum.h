@@ -1,6 +1,6 @@
 #pragma once
 
-#include <xrpld/core/DatabaseCon.h>
+#include <xrpl/rdb/DatabaseCon.h>
 
 namespace xrpl {
 
