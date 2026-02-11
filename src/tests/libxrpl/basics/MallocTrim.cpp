@@ -9,7 +9,7 @@ using namespace xrpl;
 #if defined(__GLIBC__) && BOOST_OS_LINUX
 namespace xrpl::detail {
 long
-parseVmRSSkB(std::string const& status);
+parseStatmRSSkB(std::string const& statm);
 }  // namespace xrpl::detail
 #endif
 
@@ -40,96 +40,73 @@ TEST(MallocTrimReport, structure)
 }
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
-TEST(parseVmRSSkB, standard_format)
+TEST(parseStatmRSSkB, standard_format)
 {
-    using xrpl::detail::parseVmRSSkB;
+    using xrpl::detail::parseStatmRSSkB;
 
-    // Test standard format
+    // Test standard format: size resident shared text lib data dt
+    // Assuming 4KB page size: resident=1000 pages = 4000 KB
     {
-        std::string status = "VmRSS:      123456 kB\n";
-        long result = parseVmRSSkB(status);
-        EXPECT_EQ(result, 123456);
+        std::string statm = "25365 1000 2377 0 0 5623 0";
+        long result = parseStatmRSSkB(statm);
+        // Note: actual result depends on system page size
+        // On most systems it's 4KB, so 1000 pages = 4000 KB
+        EXPECT_GT(result, 0);
     }
 
-    // Test with multiple lines
+    // Test with newline
     {
-        std::string status =
-            "Name:   xrpld\n"
-            "VmPeak:  1234567 kB\n"
-            "VmSize:  1234567 kB\n"
-            "VmRSS:      987654 kB\n"
-            "VmData:   123456 kB\n";
-        long result = parseVmRSSkB(status);
-        EXPECT_EQ(result, 987654);
-    }
-
-    // Test with minimal whitespace
-    {
-        std::string status = "VmRSS: 42 kB";
-        long result = parseVmRSSkB(status);
-        EXPECT_EQ(result, 42);
-    }
-
-    // Test with extra whitespace
-    {
-        std::string status = "VmRSS:          999999 kB";
-        long result = parseVmRSSkB(status);
-        EXPECT_EQ(result, 999999);
+        std::string statm = "12345 2000 1234 0 0 3456 0\n";
+        long result = parseStatmRSSkB(statm);
+        EXPECT_GT(result, 0);
     }
 
     // Test with tabs
     {
-        std::string status = "VmRSS:\t\t12345 kB";
-        long result = parseVmRSSkB(status);
-        // Note: tabs are not explicitly handled as spaces, this documents
-        // current behavior
-        EXPECT_EQ(result, 12345);
+        std::string statm = "12345\t2000\t1234\t0\t0\t3456\t0";
+        long result = parseStatmRSSkB(statm);
+        EXPECT_GT(result, 0);
     }
 
-    // Test zero value
+    // Test zero resident pages
     {
-        std::string status = "VmRSS:      0 kB\n";
-        long result = parseVmRSSkB(status);
+        std::string statm = "25365 0 2377 0 0 5623 0";
+        long result = parseStatmRSSkB(statm);
         EXPECT_EQ(result, 0);
     }
 
-    // Test missing VmRSS
+    // Test with extra whitespace
     {
-        std::string status =
-            "Name:   xrpld\n"
-            "VmPeak:  1234567 kB\n"
-            "VmSize:  1234567 kB\n";
-        long result = parseVmRSSkB(status);
-        EXPECT_EQ(result, -1);
+        std::string statm = "  25365   1000   2377  ";
+        long result = parseStatmRSSkB(statm);
+        EXPECT_GT(result, 0);
     }
 
     // Test empty string
     {
-        std::string status = "";
-        long result = parseVmRSSkB(status);
+        std::string statm = "";
+        long result = parseStatmRSSkB(statm);
         EXPECT_EQ(result, -1);
     }
 
-    // Test malformed data (VmRSS but no number)
+    // Test malformed data (only one field)
     {
-        std::string status = "VmRSS:      \n";
-        long result = parseVmRSSkB(status);
-        // sscanf should fail to parse and return -1 unchanged
+        std::string statm = "25365";
+        long result = parseStatmRSSkB(statm);
         EXPECT_EQ(result, -1);
     }
 
-    // Test malformed data (VmRSS but invalid number)
+    // Test malformed data (non-numeric)
     {
-        std::string status = "VmRSS:      abc kB\n";
-        long result = parseVmRSSkB(status);
-        // sscanf should fail and return -1 unchanged
+        std::string statm = "abc def ghi";
+        long result = parseStatmRSSkB(statm);
         EXPECT_EQ(result, -1);
     }
 
-    // Test partial match (should not match "NotVmRSS:")
+    // Test malformed data (second field non-numeric)
     {
-        std::string status = "NotVmRSS:      123456 kB\n";
-        long result = parseVmRSSkB(status);
+        std::string statm = "25365 abc 2377";
+        long result = parseStatmRSSkB(statm);
         EXPECT_EQ(result, -1);
     }
 }
