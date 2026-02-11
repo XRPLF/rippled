@@ -34,6 +34,8 @@ namespace xrpl {
 
 namespace detail {
 
+// cSpell:ignore statm
+
 #if defined(__GLIBC__) && BOOST_OS_LINUX
 
 inline int
