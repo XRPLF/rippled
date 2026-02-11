@@ -70,7 +70,6 @@ DatabaseNodeImp::fetchBatch(std::vector<uint256> const& hashes)
         results.size() == hashes.size() || results.empty(),
         "number of output objects either matches number of input hashes or is empty");
     results.resize(hashes.size());
-
     for (size_t i = 0; i < results.size(); ++i)
     {
         if (!results[i])
