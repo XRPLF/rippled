@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_TX_INVARIANTCHECK_H_INCLUDED
-#define XRPL_APP_TX_INVARIANTCHECK_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -450,9 +449,11 @@ class ValidPermissionedDomain
     struct SleStatus
     {
         std::size_t credentialsSize_{0};
-        bool isSorted_ = false, isUnique_ = false;
+        bool isSorted_ = false;
+        bool isUnique_ = false;
+        bool isDelete_ = false;
     };
-    std::optional<SleStatus> sleStatus_[2];
+    std::vector<SleStatus> sleStatus_;
 
 public:
     void
@@ -720,5 +721,3 @@ getInvariantChecks()
 }
 
 }  // namespace xrpl
-
-#endif

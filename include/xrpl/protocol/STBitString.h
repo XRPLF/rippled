@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STBITSTRING_H_INCLUDED
-#define XRPL_PROTOCOL_STBITSTRING_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -183,5 +182,3 @@ STBitString<Bits>::isDefault() const
 }
 
 }  // namespace xrpl
-
-#endif

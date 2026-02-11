@@ -1,5 +1,4 @@
-#ifndef XRPL_NODESTORE_BACKEND_H_INCLUDED
-#define XRPL_NODESTORE_BACKEND_H_INCLUDED
+#pragma once
 
 #include <xrpl/nodestore/Types.h>
 
@@ -142,5 +141,3 @@ public:
 
 }  // namespace NodeStore
 }  // namespace xrpl
-
-#endif

@@ -36,7 +36,7 @@ jobs:
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Get number of processors
-        uses: XRPLF/actions/get-nproc@2ece4ec6ab7de266859a6f053571425b2bd684b6
+        uses: XRPLF/actions/get-nproc@cf0433aa74563aead044a1e395610c96d65a37cf
         id: nproc
         with:
           subtract: ${{ env.NPROC_SUBTRACT }}

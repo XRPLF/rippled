@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_NETWORKOPS_H_INCLUDED
-#define XRPL_APP_MISC_NETWORKOPS_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/ledger/Ledger.h>
@@ -263,5 +262,3 @@ make_NetworkOPs(
     beast::insight::Collector::ptr const& collector);
 
 }  // namespace xrpl
-
-#endif

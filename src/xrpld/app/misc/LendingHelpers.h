@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_LENDINGHELPERS_H_INCLUDED
-#define XRPL_APP_MISC_LENDINGHELPERS_H_INCLUDED
+#pragma once
 
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/st.h>
@@ -466,5 +465,3 @@ loanMakePayment(
     beast::Journal j);
 
 }  // namespace xrpl
-
-#endif  // XRPL_APP_MISC_LENDINGHELPERS_H_INCLUDED

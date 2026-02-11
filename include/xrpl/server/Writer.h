@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_WRITER_H_INCLUDED
-#define XRPL_SERVER_WRITER_H_INCLUDED
+#pragma once
 
 #include <boost/asio/buffer.hpp>
 
@@ -38,5 +37,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

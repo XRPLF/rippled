@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_CONSENSUS_RCLCENSORSHIPDETECTOR_H_INCLUDED
-#define XRPL_APP_CONSENSUS_RCLCENSORSHIPDETECTOR_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/algorithm.h>
 #include <xrpl/shamap/SHAMap.h>
@@ -122,5 +121,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

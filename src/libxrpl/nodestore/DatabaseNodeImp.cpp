@@ -21,11 +21,6 @@ DatabaseNodeImp::asyncFetch(
     Database::asyncFetch(hash, ledgerSeq, std::move(callback));
 }
 
-void
-DatabaseNodeImp::sweep()
-{
-}
-
 std::shared_ptr<NodeObject>
 DatabaseNodeImp::fetchNodeObject(uint256 const& hash, std::uint32_t, FetchReport& fetchReport, bool duplicate)
 {
@@ -67,8 +62,15 @@ DatabaseNodeImp::fetchBatch(std::vector<uint256> const& hashes)
     using namespace std::chrono;
     auto const before = steady_clock::now();
 
-    std::vector<std::shared_ptr<NodeObject>> results{hashes.size()};
-    results = backend_->fetchBatch(hashes).first;
+    // Get the node objects that match the hashes from the backend. To protect
+    // against the backends returning fewer or more results than expected, the
+    // container is resized to the number of hashes.
+    auto results = backend_->fetchBatch(hashes).first;
+    XRPL_ASSERT(
+        results.size() == hashes.size() || results.empty(),
+        "number of output objects either matches number of input hashes or is empty");
+    results.resize(hashes.size());
+
     for (size_t i = 0; i < results.size(); ++i)
     {
         if (!results[i])

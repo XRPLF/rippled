@@ -1,5 +1,4 @@
-#ifndef XRPL_PEERFINDER_IOSFORMAT_H_INCLUDED
-#define XRPL_PEERFINDER_IOSFORMAT_H_INCLUDED
+#pragma once
 
 #include <ostream>
 #include <sstream>
@@ -174,5 +173,3 @@ rField(T const& t, int width = 8, int pad = 0)
 /** @} */
 
 }  // namespace beast
-
-#endif

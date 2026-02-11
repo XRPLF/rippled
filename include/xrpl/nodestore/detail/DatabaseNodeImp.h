@@ -1,5 +1,4 @@
-#ifndef XRPL_NODESTORE_DATABASENODEIMP_H_INCLUDED
-#define XRPL_NODESTORE_DATABASENODEIMP_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/chrono.h>
@@ -78,9 +77,6 @@ public:
         std::uint32_t ledgerSeq,
         std::function<void(std::shared_ptr<NodeObject> const&)>&& callback) override;
 
-    void
-    sweep() override;
-
 private:
     // Persistent key/value storage
     std::shared_ptr<Backend> backend_;
@@ -97,5 +93,3 @@ private:
 
 }  // namespace NodeStore
 }  // namespace xrpl
-
-#endif

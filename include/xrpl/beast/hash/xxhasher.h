@@ -1,5 +1,4 @@
-#ifndef BEAST_HASH_XXHASHER_H_INCLUDED
-#define BEAST_HASH_XXHASHER_H_INCLUDED
+#pragma once
 
 #include <boost/endian/conversion.hpp>
 
@@ -152,5 +151,3 @@ public:
 };
 
 }  // namespace beast
-
-#endif

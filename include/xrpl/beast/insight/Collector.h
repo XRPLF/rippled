@@ -1,5 +1,4 @@
-#ifndef BEAST_INSIGHT_COLLECTOR_H_INCLUDED
-#define BEAST_INSIGHT_COLLECTOR_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/insight/Counter.h>
 #include <xrpl/beast/insight/Event.h>
@@ -120,5 +119,3 @@ public:
 
 }  // namespace insight
 }  // namespace beast
-
-#endif

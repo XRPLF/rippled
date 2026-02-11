@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_APPLYVIEWBASE_H_INCLUDED
-#define XRPL_LEDGER_APPLYVIEWBASE_H_INCLUDED
+#pragma once
 
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
@@ -105,5 +104,3 @@ protected:
 
 }  // namespace detail
 }  // namespace xrpl
-
-#endif

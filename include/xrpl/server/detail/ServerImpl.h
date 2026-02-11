@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_SERVERIMPL_H_INCLUDED
-#define XRPL_SERVER_SERVERIMPL_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/core/List.h>
@@ -180,5 +179,3 @@ ServerImpl<Handler>::closed()
     return ios_.closed();
 }
 }  // namespace xrpl
-
-#endif

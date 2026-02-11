@@ -1,13 +1,13 @@
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/SHAMapStoreImp.h>
-#include <xrpld/app/rdb/State.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
+#include <xrpl/server/State.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -480,12 +480,19 @@ void
 SHAMapStoreImp::clearCaches(LedgerIndex validatedSeq)
 {
     ledgerMaster_->clearLedgerCachePrior(validatedSeq);
+    // Also clear the FullBelowCache so its generation counter is bumped.
+    // This prevents stale "full below" markers from persisting across
+    // backend rotation/online deletion and interfering with SHAMap sync.
+    app_.getNodeFamily().getFullBelowCache()->clear();
 }
 
 void
 SHAMapStoreImp::freshenCaches()
 {
-    freshenCache(*app_.getNodeFamily().getTreeNodeCache()) && freshenCache(app_.getMasterTransaction().getCache());
+    if (freshenCache(*app_.getNodeFamily().getTreeNodeCache()))
+        return;
+
+    freshenCache(app_.getMasterTransaction().getCache());
 }
 
 void

@@ -1,13 +1,12 @@
-#ifndef XRPL_APP_MISC_SHAMAPSTOREIMP_H_INCLUDED
-#define XRPL_APP_MISC_SHAMAPSTOREIMP_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/SHAMapStore.h>
-#include <xrpld/app/rdb/State.h>
-#include <xrpld/core/DatabaseCon.h>
 
 #include <xrpl/nodestore/DatabaseRotating.h>
 #include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/rdb/DatabaseCon.h>
+#include <xrpl/server/State.h>
 
 #include <atomic>
 #include <chrono>
@@ -219,5 +218,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

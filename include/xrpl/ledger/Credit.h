@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_CREDIT_H_INCLUDED
-#define XRPL_LEDGER_CREDIT_H_INCLUDED
+#pragma once
 
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/IOUAmount.h>
@@ -34,5 +33,3 @@ creditBalance(ReadView const& view, AccountID const& account, AccountID const& i
 /** @} */
 
 }  // namespace xrpl
-
-#endif

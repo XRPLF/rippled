@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MAIN_COLLECTORMANAGER_H_INCLUDED
-#define XRPL_APP_MAIN_COLLECTORMANAGER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/insight/Insight.h>
@@ -23,5 +22,3 @@ std::unique_ptr<CollectorManager>
 make_CollectorManager(Section const& params, beast::Journal journal);
 
 }  // namespace xrpl
-
-#endif

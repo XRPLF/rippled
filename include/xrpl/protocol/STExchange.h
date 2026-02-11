@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STEXCHANGE_H_INCLUDED
-#define XRPL_PROTOCOL_STEXCHANGE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Buffer.h>
@@ -152,5 +151,3 @@ erase(STObject& st, TypedField<U> const& f)
 }
 
 }  // namespace xrpl
-
-#endif

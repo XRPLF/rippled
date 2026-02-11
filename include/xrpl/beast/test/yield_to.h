@@ -2,8 +2,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_TEST_YIELD_TO_HPP
-#define BEAST_TEST_YIELD_TO_HPP
+#pragma once
 
 #include <boost/asio/executor_work_guard.hpp>
 #include <boost/asio/io_context.hpp>
@@ -127,5 +126,3 @@ enable_yield_to::spawn(F0&& f, FN&&... fn)
 
 }  // namespace test
 }  // namespace beast
-
-#endif

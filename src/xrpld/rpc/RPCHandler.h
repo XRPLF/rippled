@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_RPCHANDLER_H_INCLUDED
-#define XRPL_RPC_RPCHANDLER_H_INCLUDED
+#pragma once
 
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Status.h>
@@ -18,5 +17,3 @@ roleRequired(unsigned int version, bool betaEnabled, std::string const& method);
 
 }  // namespace RPC
 }  // namespace xrpl
-
-#endif

@@ -2,8 +2,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_UNIT_TEST_SUITE_HPP
-#define BEAST_UNIT_TEST_SUITE_HPP
+#pragma once
 
 #include <xrpl/beast/unit_test/runner.h>
 
@@ -642,5 +641,3 @@ suite::run(runner& r)
 #endif
 
 //------------------------------------------------------------------------------
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_BATCH_H_INCLUDED
-#define XRPL_TEST_JTX_BATCH_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -133,5 +132,3 @@ public:
 
 }  // namespace test
 }  // namespace xrpl
-
-#endif

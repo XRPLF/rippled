@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_APPLYVIEW_H_INCLUDED
-#define XRPL_LEDGER_APPLYVIEW_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -382,5 +381,3 @@ insertPage(
 
 }  // namespace directory
 }  // namespace xrpl
-
-#endif

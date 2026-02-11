@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_SSLHTTPPEER_H_INCLUDED
-#define XRPL_SERVER_SSLHTTPPEER_H_INCLUDED
+#pragma once
 
 #include <xrpl/server/detail/BaseHTTPPeer.h>
 #include <xrpl/server/detail/SSLWSPeer.h>
@@ -175,5 +174,3 @@ SSLHTTPPeer<Handler>::on_shutdown(error_code ec)
 }
 
 }  // namespace xrpl
-
-#endif

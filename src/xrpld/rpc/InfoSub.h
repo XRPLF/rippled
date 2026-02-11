@@ -1,13 +1,11 @@
-#ifndef XRPL_NET_INFOSUB_H_INCLUDED
-#define XRPL_NET_INFOSUB_H_INCLUDED
-
-#include <xrpld/app/misc/Manifest.h>
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/resource/Consumer.h>
+#include <xrpl/server/Manifest.h>
 
 namespace xrpl {
 
@@ -223,5 +221,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

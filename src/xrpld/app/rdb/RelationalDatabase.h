@@ -1,14 +1,13 @@
-#ifndef XRPL_APP_RDB_RELATIONALDATABASE_H_INCLUDED
-#define XRPL_APP_RDB_RELATIONALDATABASE_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/Ledger.h>
-#include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/DatabaseCon.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/rdb/DatabaseCon.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/variant.hpp>
@@ -94,13 +93,13 @@ public:
     /**
      * @brief init Creates and returns an appropriate RelationalDatabase
      *        instance based on configuration.
-     * @param app Application object.
+     * @param registry The service registry.
      * @param config Config object.
      * @param jobQueue JobQueue object.
      * @return Unique pointer to the interface.
      */
     static std::unique_ptr<RelationalDatabase>
-    init(Application& app, Config const& config, JobQueue& jobQueue);
+    init(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue);
 
     virtual ~RelationalDatabase() = default;
 
@@ -225,5 +224,3 @@ rangeCheckedCast(C c)
 }
 
 }  // namespace xrpl
-
-#endif
