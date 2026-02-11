@@ -513,6 +513,38 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 {.account = bob, .amt = 10, .holderPubKey = mptAlice.getPubKey(bob), .err = tecOBJECT_NOT_FOUND});
         }
 
+        // Verification of Issuer and and holder ciphertexts
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+
+            mptAlice.authorize({.account = bob});
+            mptAlice.pay(alice, bob, 100);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.convert(
+                {.account = bob,
+                 .amt = 10,
+                 .holderPubKey = mptAlice.getPubKey(bob),
+                 .holderEncryptedAmt = getTrivialCiphertext(),
+                 .err = tecBAD_PROOF});
+
+            mptAlice.convert(
+                {.account = bob,
+                 .amt = 10,
+                 .holderPubKey = mptAlice.getPubKey(bob),
+                 .issuerEncryptedAmt = getTrivialCiphertext(),
+                 .err = tecBAD_PROOF});
+        }
+
         // trying to convert more than what bob has
         {
             Env env{*this, features};
@@ -2035,6 +2067,34 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .amt = 10,
             });
+        }
+
+        // Verification of holder and issuer ciphertexts during convertBack
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+            mptAlice.authorize({.account = bob});
+            mptAlice.pay(alice, bob, 100);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.convert({.account = bob, .amt = 50, .holderPubKey = mptAlice.getPubKey(bob)});
+            mptAlice.mergeInbox({.account = bob});
+
+            // Holder encrypted amount is valid format but mathematically incorrect for this convertBack
+            mptAlice.convertBack(
+                {.account = bob, .amt = 10, .holderEncryptedAmt = getTrivialCiphertext(), .err = tecBAD_PROOF});
+
+            // Issuer encrypted amount is valid format but mathematically incorrect for this convertBack
+            mptAlice.convertBack(
+                {.account = bob, .amt = 10, .issuerEncryptedAmt = getTrivialCiphertext(), .err = tecBAD_PROOF});
         }
 
         // Alice has NOT set an auditor key, but Bob provides
