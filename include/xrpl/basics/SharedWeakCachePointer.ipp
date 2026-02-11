@@ -63,7 +63,8 @@ SharedWeakCachePointer<T>::getStrong() const
 }
 
 template <class T>
-SharedWeakCachePointer<T>::operator bool() const noexcept
+SharedWeakCachePointer<T>::
+operator bool() const noexcept
 {
     return !!std::get_if<std::shared_ptr<T>>(&combo_);
 }

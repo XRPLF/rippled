@@ -969,13 +969,14 @@ class Vault_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
-        auto testCase = [this](std::function<void(
-                                   Env & env,
-                                   Account const& issuer,
-                                   Account const& owner,
-                                   Account const& depositor,
-                                   Asset const& asset,
-                                   Vault& vault)> test) {
+        auto testCase = [this](
+                            std::function<void(
+                                Env & env,
+                                Account const& issuer,
+                                Account const& owner,
+                                Account const& depositor,
+                                Asset const& asset,
+                                Vault& vault)> test) {
             Env env{*this, testable_amendments() | featureSingleAssetVault};
             Account issuer{"issuer"};
             Account owner{"owner"};
@@ -1255,13 +1256,14 @@ class Vault_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
-        auto testCase = [this](std::function<void(
-                                   Env & env,
-                                   Account const& issuer,
-                                   Account const& owner,
-                                   Account const& depositor,
-                                   Asset const& asset,
-                                   Vault& vault)> test) {
+        auto testCase = [this](
+                            std::function<void(
+                                Env & env,
+                                Account const& issuer,
+                                Account const& owner,
+                                Account const& depositor,
+                                Asset const& asset,
+                                Vault& vault)> test) {
             Env env{*this, testable_amendments() | featureSingleAssetVault};
             Account issuer{"issuer"};
             Account owner{"owner"};

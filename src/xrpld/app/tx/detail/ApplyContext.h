@@ -90,11 +90,12 @@ public:
 
     /** Visit unapplied changes. */
     void
-    visit(std::function<void(
-              uint256 const& key,
-              bool isDelete,
-              std::shared_ptr<SLE const> const& before,
-              std::shared_ptr<SLE const> const& after)> const& func);
+    visit(
+        std::function<void(
+            uint256 const& key,
+            bool isDelete,
+            std::shared_ptr<SLE const> const& before,
+            std::shared_ptr<SLE const> const& after)> const& func);
 
     void
     destroyXRP(XRPAmount const& fee)

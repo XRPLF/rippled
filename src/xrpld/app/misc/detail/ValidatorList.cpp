@@ -1595,13 +1595,14 @@ ValidatorList::for_each_listed(std::function<void(PublicKey const&, bool)> func)
 }
 
 void
-ValidatorList::for_each_available(std::function<void(
-                                      std::string const& manifest,
-                                      std::uint32_t version,
-                                      std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
-                                      PublicKey const& pubKey,
-                                      std::size_t maxSequence,
-                                      uint256 const& hash)> func) const
+ValidatorList::for_each_available(
+    std::function<void(
+        std::string const& manifest,
+        std::uint32_t version,
+        std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
+        PublicKey const& pubKey,
+        std::size_t maxSequence,
+        uint256 const& hash)> func) const
 {
     std::shared_lock read_lock{mutex_};
 
