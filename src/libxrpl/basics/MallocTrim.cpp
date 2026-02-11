@@ -6,6 +6,7 @@
 #include <chrono>
 #include <cstdio>
 #include <fstream>
+#include <sstream>
 // #include <thread>
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
@@ -20,7 +21,6 @@
 #endif
 
 namespace {
-pid_t const cachedPid = ::getpid();
 
 bool
 getRusageThread(struct rusage& ru)
@@ -44,43 +44,21 @@ mallocTrimWithPad(std::size_t padBytes)
 }
 
 long
-parseVmRSSkB(std::string const& status)
+parseStatmRSSkB(std::string const& statm)
 {
-    std::istringstream iss(status);
-    std::string line;
-
-    while (std::getline(iss, line))
-    {
-        // Allow leading spaces/tabs before the key.
-        auto const firstNonWs = line.find_first_not_of(" \t");
-        if (firstNonWs == std::string::npos)
-            continue;
-
-        constexpr char key[] = "VmRSS:";
-        constexpr auto keyLen = sizeof(key) - 1;
-
-        // Require the line (after leading whitespace) to start with "VmRSS:".
-        // Check if we have enough characters and the substring matches.
-        if (firstNonWs + keyLen > line.size() || line.substr(firstNonWs, keyLen) != key)
-            continue;
-
-        // Move past "VmRSS:" and any following whitespace.
-        auto pos = firstNonWs + keyLen;
-        while (pos < line.size() && std::isspace(static_cast<unsigned char>(line[pos])))
-        {
-            ++pos;
-        }
-
-        long value = -1;
-        if (std::sscanf(line.c_str() + pos, "%ld", &value) == 1)
-            return value;
-
-        // Found the key but couldn't parse a number.
+    // /proc/self/statm format: size resident shared text lib data dt
+    // We want the second field (resident) which is in pages
+    std::istringstream iss(statm);
+    long size, resident;
+    if (!(iss >> size >> resident))
         return -1;
-    }
 
-    // No VmRSS line found.
-    return -1;
+    // Convert pages to KB
+    long const pageSize = ::sysconf(_SC_PAGESIZE);
+    if (pageSize <= 0)
+        return -1;
+
+    return (resident * pageSize) / 1024;
 }
 
 #endif  // __GLIBC__ && BOOST_OS_LINUX
@@ -126,10 +104,10 @@ mallocTrim([[maybe_unused]] std::optional<std::string> const& tag, beast::Journa
         };
 
         std::string const tagStr = tag.value_or("default");
-        std::string const statusPath = "/proc/" + std::to_string(cachedPid) + "/status";
+        std::string const statmPath = "/proc/self/statm";
 
-        auto const statusBefore = readFile(statusPath);
-        long const rssBeforeKB = detail::parseVmRSSkB(statusBefore);
+        auto const statmBefore = readFile(statmPath);
+        long const rssBeforeKB = detail::parseStatmRSSkB(statmBefore);
 
         struct rusage ru0
         {
@@ -147,8 +125,8 @@ mallocTrim([[maybe_unused]] std::optional<std::string> const& tag, beast::Journa
         };
         bool const have_ru1 = getRusageThread(ru1);
 
-        auto const statusAfter = readFile(statusPath);
-        long const rssAfterKB = detail::parseVmRSSkB(statusAfter);
+        auto const statmAfter = readFile(statmPath);
+        long const rssAfterKB = detail::parseStatmRSSkB(statmAfter);
 
         // Populate report fields
         report.rssBeforeKB = rssBeforeKB;
