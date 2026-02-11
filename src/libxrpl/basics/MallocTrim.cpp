@@ -24,7 +24,7 @@ namespace {
 bool
 getRusageThread(struct rusage& ru)
 {
-    return ::getrusage(RUSAGE_THREAD, &ru) == 0; // LCOV_EXCL_LINE
+    return ::getrusage(RUSAGE_THREAD, &ru) == 0;  // LCOV_EXCL_LINE
 }
 
 }  // namespace
