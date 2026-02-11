@@ -102,8 +102,14 @@ add_module(xrpl conditions)
 target_link_libraries(xrpl.libxrpl.conditions PUBLIC xrpl.libxrpl.server)
 
 add_module(xrpl ledger)
-target_link_libraries(xrpl.libxrpl.ledger PUBLIC xrpl.libxrpl.basics xrpl.libxrpl.json xrpl.libxrpl.protocol
-                                                 xrpl.libxrpl.rdb xrpl.libxrpl.conditions)
+target_link_libraries(
+    xrpl.libxrpl.ledger
+    PUBLIC xrpl.libxrpl.basics
+           xrpl.libxrpl.json
+           xrpl.libxrpl.protocol
+           xrpl.libxrpl.rdb
+           xrpl.libxrpl.server
+           xrpl.libxrpl.conditions)
 
 add_library(xrpl.libxrpl)
 set_target_properties(xrpl.libxrpl PROPERTIES OUTPUT_NAME xrpl)

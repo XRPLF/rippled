@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpld/app/tx/applySteps.h>
+#include <xrpld/core/Config.h>
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/View.h>
