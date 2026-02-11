@@ -4,7 +4,12 @@
 
 include(target_protobuf_sources)
 
+# Protocol buffers cannot participate in a unity build,
+# because all the generated sources
+# define a bunch of `static const` variables with the same names,
+# so we just build them as a separate library.
 add_library(xrpl.libpb)
+set_target_properties(xrpl.libpb PROPERTIES UNITY_BUILD OFF)
 target_protobuf_sources(xrpl.libpb xrpl/proto LANGUAGE cpp IMPORT_DIRS include/xrpl/proto
                         PROTOS include/xrpl/proto/xrpl.proto)
 
