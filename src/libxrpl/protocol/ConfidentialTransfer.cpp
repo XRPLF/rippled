@@ -117,12 +117,8 @@ serializeEcPair(secp256k1_pubkey const& in1, secp256k1_pubkey const& in2, Buffer
 bool
 isValidCiphertext(Slice const& buffer)
 {
-    // Local/temporary variables to pass to makeEcPair.
-    // Their contents will be discarded when the function returns.
     secp256k1_pubkey key1;
     secp256k1_pubkey key2;
-
-    // Call makeEcPair and return its result.
     return makeEcPair(buffer, key1, key2);
 }
 
@@ -193,22 +189,16 @@ generateBlindingFactor()
 std::optional<Buffer>
 encryptAmount(uint64_t const amt, Slice const& pubKeySlice, Slice const& blindingFactor)
 {
-    Buffer buf(ecGamalEncryptedTotalLength);
-
-    // Allocate ciphertext placeholders
-    secp256k1_pubkey c1, c2;
-    secp256k1_pubkey pubKey;
-
     if (blindingFactor.size() != ecBlindingFactorLength)
         return std::nullopt;
 
+    secp256k1_pubkey c1, c2, pubKey;
     std::memcpy(pubKey.data, pubKeySlice.data(), ecPubKeyLength);
 
-    // Encrypt the amount
     if (!secp256k1_elgamal_encrypt(secp256k1Context(), &c1, &c2, &pubKey, amt, blindingFactor.data()))
         return std::nullopt;
 
-    // Serialize the ciphertext pair into the buffer
+    Buffer buf(ecGamalEncryptedTotalLength);
     if (!serializeEcPair(c1, c2, buf))
         return std::nullopt;
 
@@ -221,18 +211,13 @@ encryptCanonicalZeroAmount(Slice const& pubKeySlice, AccountID const& account, M
     if (pubKeySlice.size() != ecPubKeyLength)
         return std::nullopt;  // LCOV_EXCL_LINE
 
-    secp256k1_pubkey c1, c2;
-    secp256k1_pubkey pubKey;
-
+    secp256k1_pubkey c1, c2, pubKey;
     std::memcpy(pubKey.data, pubKeySlice.data(), ecPubKeyLength);
 
-    // Encrypt the amount
     if (!generate_canonical_encrypted_zero(secp256k1Context(), &c1, &c2, &pubKey, account.data(), mptId.data()))
         return std::nullopt;
 
     Buffer buf(ecGamalEncryptedTotalLength);
-
-    // Serialize the ciphertext pair into the buffer
     if (!serializeEcPair(c1, c2, buf))
         return std::nullopt;
 
@@ -242,20 +227,16 @@ encryptCanonicalZeroAmount(Slice const& pubKeySlice, AccountID const& account, M
 TER
 verifySchnorrProof(Slice const& pubKeySlice, Slice const& proofSlice, uint256 const& contextHash)
 {
-    // sanity check proof length
     if (proofSlice.size() != ecSchnorrProofLength)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    // sanity check public key length
     if (pubKeySlice.size() != ecPubKeyLength)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     secp256k1_pubkey pubKey;
     std::memcpy(pubKey.data, pubKeySlice.data(), ecPubKeyLength);
 
-    int result = secp256k1_mpt_pok_sk_verify(secp256k1Context(), proofSlice.data(), &pubKey, contextHash.data());
-
-    if (result != 1)
+    if (secp256k1_mpt_pok_sk_verify(secp256k1Context(), proofSlice.data(), &pubKey, contextHash.data()) != 1)
         return tecBAD_PROOF;
 
     return tesSUCCESS;
@@ -268,11 +249,9 @@ verifyElGamalEncryption(
     Slice const& pubKeySlice,
     Slice const& ciphertext)
 {
-    // sanity check blinding factor length
     if (blindingFactor.size() != ecBlindingFactorLength)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    // sanity check public key length
     if (pubKeySlice.size() != ecPubKeyLength)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -283,13 +262,8 @@ verifyElGamalEncryption(
     if (!makeEcPair(ciphertext, c1, c2))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    int result =
-        secp256k1_elgamal_verify_encryption(secp256k1Context(), &c1, &c2, &pubKey, amount, blindingFactor.data());
-
-    if (result != 1)
-    {
+    if (secp256k1_elgamal_verify_encryption(secp256k1Context(), &c1, &c2, &pubKey, amount, blindingFactor.data()) != 1)
         return tecBAD_PROOF;
-    }
 
     return tesSUCCESS;
 }
@@ -392,6 +366,9 @@ verifyClawbackEqualityProof(
     secp256k1_pubkey pubKey;
     std::memcpy(pubKey.data, pubKeySlice.data(), ecPubKeyLength);
 
+    // Note: c2, c1 order - the proof is generated with c2 first (the encrypted
+    // message component) because the equality proof structure expects the
+    // message-containing term before the blinding term.
     if (secp256k1_equality_plaintext_verify(
             secp256k1Context(), proof.data(), &pubKey, &c2, &c1, amount, contextHash.data()) != 1)
     {
@@ -484,6 +461,8 @@ verifyBalancePcmLinkage(
     std::memcpy(pubKey.data, pubKeySlice.data(), ecPubKeyLength);
     std::memcpy(pcm.data, pcmSlice.data(), ecPubKeyLength);
 
+    // Note: c2, c1 order - the linkage proof expects the message-containing
+    // component (c2 = m*G + r*Pk) before the blinding component (c1 = r*G).
     if (secp256k1_elgamal_pedersen_link_verify(
             secp256k1Context(), proof.data(), &pubKey, &c2, &c1, &pcm, contextHash.data()) != 1)
     {
@@ -517,7 +496,6 @@ secp256k1_elgamal_generate_keypair(secp256k1_context const* ctx, unsigned char* 
     return 1;  // Success
 }
 
-// ... implementation of secp256k1_elgamal_encrypt ...
 int
 secp256k1_elgamal_encrypt(
     secp256k1_context const* ctx,
@@ -579,7 +557,6 @@ secp256k1_elgamal_encrypt(
     return 1;  // Success
 }
 
-// ... implementation of secp256k1_elgamal_decrypt ...
 int
 secp256k1_elgamal_decrypt(
     secp256k1_context const* ctx,
