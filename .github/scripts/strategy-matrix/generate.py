@@ -195,12 +195,18 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
 
         # Enable code coverage for Debian Bookworm using GCC 15 in Debug on
         # linux/amd64
-        if (
+        isMac = (
+            f"{os['distro_name']}" == "macos"
+            and build_type == "Debug"
+            and architecture["platform"] == "macos/arm64"
+        )
+        isGccCov = (
             f"{os['distro_name']}-{os['distro_version']}" == "debian-bookworm"
             and f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-15"
             and build_type == "Debug"
             and architecture["platform"] == "linux/amd64"
-        ):
+        )
+        if isGccCov or isMac:
             cmake_args = f"{cmake_args} -Dcoverage=ON -Dcoverage_format=xml -DCODE_COVERAGE_VERBOSE=ON -DCMAKE_C_FLAGS=-O0 -DCMAKE_CXX_FLAGS=-O0"
 
         # Enable unity build for Ubuntu Jammy using GCC 12 in Debug on
