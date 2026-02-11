@@ -1,5 +1,4 @@
-#ifndef XRPL_CORE_CLOSURE_COUNTER_H_INCLUDED
-#define XRPL_CORE_CLOSURE_COUNTER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 
@@ -198,5 +197,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif  // XRPL_CORE_CLOSURE_COUNTER_H_INCLUDED

@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_DETAIL_WORKFILE_H_INCLUDED
-#define XRPL_APP_MISC_DETAIL_WORKFILE_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/misc/detail/Work.h>
 
@@ -80,5 +79,3 @@ WorkFile::cancel()
 }  // namespace detail
 
 }  // namespace xrpl
-
-#endif

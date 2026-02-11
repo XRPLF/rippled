@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_NUMBER_H_INCLUDED
-#define XRPL_BASICS_NUMBER_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -819,5 +818,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif  // XRPL_BASICS_NUMBER_H_INCLUDED

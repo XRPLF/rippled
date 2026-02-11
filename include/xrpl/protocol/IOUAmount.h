@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_IOUAMOUNT_H_INCLUDED
-#define XRPL_BASICS_IOUAMOUNT_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Number.h>
@@ -208,5 +207,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

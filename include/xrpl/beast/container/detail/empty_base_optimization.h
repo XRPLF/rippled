@@ -4,8 +4,7 @@
 // Official repository: https://github.com/boostorg/beast
 //
 
-#ifndef BEAST_CONTAINER_DETAIL_EMPTY_BASE_OPTIMIZATION_H_INCLUDED
-#define BEAST_CONTAINER_DETAIL_EMPTY_BASE_OPTIMIZATION_H_INCLUDED
+#pragma once
 
 #include <boost/type_traits/is_final.hpp>
 
@@ -89,5 +88,3 @@ public:
 
 }  // namespace detail
 }  // namespace beast
-
-#endif

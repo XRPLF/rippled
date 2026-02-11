@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_TRAFFIC_H_INCLUDED
-#define XRPL_OVERLAY_TRAFFIC_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/messages.h>
@@ -350,4 +349,3 @@ protected:
 };
 
 }  // namespace xrpl
-#endif

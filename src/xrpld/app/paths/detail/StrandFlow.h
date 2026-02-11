@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_PATHS_IMPL_STRANDFLOW_H_INCLUDED
-#define XRPL_APP_PATHS_IMPL_STRANDFLOW_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/paths/AMMContext.h>
@@ -784,5 +783,3 @@ flow(
 }
 
 }  // namespace xrpl
-
-#endif

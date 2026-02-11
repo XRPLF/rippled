@@ -368,6 +368,36 @@ The workaround for this error is to add two lines to your profile:
 tools.build:cxxflags=['-DBOOST_ASIO_DISABLE_CONCEPTS']
 ```
 
+### Set Up Ccache
+
+To speed up repeated compilations, we recommend that you install
+[ccache](https://ccache.dev), a tool that wraps your compiler so that it can
+cache build objects locally.
+
+#### Linux
+
+You can install it using the package manager, e.g. `sudo apt install ccache`
+(Ubuntu) or `sudo dnf install ccache` (RHEL).
+
+#### macOS
+
+You can install it using Homebrew, i.e. `brew install ccache`.
+
+#### Windows
+
+You can install it using Chocolatey, i.e. `choco install ccache`. If you already
+have Ccache installed, then `choco upgrade ccache` will update it to the latest
+version. However, if you see an error such as:
+
+```
+terminate called after throwing an instance of 'std::bad_alloc'
+      what():  std::bad_alloc
+C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppCommon.targets(617,5): error MSB6006: "cl.exe" exited with code 3.
+```
+
+then please install a specific version of Ccache that we know works, via: `choco
+install ccache --version 4.11.3 --allow-downgrade`.
+
 ### Build and Test
 
 1. Create a build directory and move into it.
@@ -550,10 +580,10 @@ See [Sanitizers docs](./docs/build/sanitizers.md) for more details.
 | `werr`     | OFF           | Treat compilation warnings as errors                           |
 | `wextra`   | OFF           | Enable additional compilation warnings                         |
 
-[Unity builds][5] may be faster for the first build
-(at the cost of much more memory) since they concatenate sources into fewer
-translation units. Non-unity builds may be faster for incremental builds,
-and can be helpful for detecting `#include` omissions.
+[Unity builds][5] may be faster for the first build (at the cost of much more
+memory) since they concatenate sources into fewer translation units. Non-unity
+builds may be faster for incremental builds, and can be helpful for detecting
+`#include` omissions.
 
 ## Troubleshooting
 

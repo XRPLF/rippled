@@ -160,12 +160,4 @@ if (xrpld)
         # antithesis_instrumentation.h, which is not exported as INTERFACE
         target_include_directories(xrpld PRIVATE ${CMAKE_SOURCE_DIR}/external/antithesis-sdk)
     endif ()
-
-    # any files that don't play well with unity should be added here
-    if (tests)
-        set_source_files_properties(
-            # these two seem to produce conflicts in beast teardown template methods
-            src/test/rpc/ValidatorRPC_test.cpp src/test/ledger/Invariants_test.cpp PROPERTIES SKIP_UNITY_BUILD_INCLUSION
-                                                                                              TRUE)
-    endif ()
 endif ()

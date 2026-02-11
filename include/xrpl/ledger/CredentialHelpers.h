@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_CREDENTIALHELPERS_H_INCLUDED
-#define XRPL_APP_MISC_CREDENTIALHELPERS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
@@ -79,5 +78,3 @@ verifyDepositPreauth(
     beast::Journal j);
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_LEDGERREPLAYER_H_INCLUDED
-#define XRPL_APP_LEDGER_LEDGERREPLAYER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerReplayTask.h>
@@ -132,5 +131,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

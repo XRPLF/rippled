@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_RDB_STATE_H_INCLUDED
-#define XRPL_APP_RDB_STATE_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/misc/Manifest.h>
@@ -72,5 +71,3 @@ void
 setLastRotated(soci::session& session, LedgerIndex seq);
 
 }  // namespace xrpl
-
-#endif

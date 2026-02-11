@@ -1,5 +1,4 @@
-#ifndef XRPL_NET_REGISTER_SSL_CERTS_H_INCLUDED
-#define XRPL_NET_REGISTER_SSL_CERTS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 
@@ -17,5 +16,3 @@ void
 registerSSLCerts(boost::asio::ssl::context&, boost::system::error_code&, beast::Journal j);
 
 }  // namespace xrpl
-
-#endif

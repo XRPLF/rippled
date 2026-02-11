@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_LOG_H_INCLUDED
-#define XRPL_BASICS_LOG_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -258,5 +257,3 @@ beast::Journal
 debugLog();
 
 }  // namespace xrpl
-
-#endif

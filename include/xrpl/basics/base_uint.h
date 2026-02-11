@@ -3,8 +3,7 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef XRPL_BASICS_BASE_UINT_H_INCLUDED
-#define XRPL_BASICS_BASE_UINT_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Slice.h>
@@ -644,5 +643,3 @@ struct is_uniquely_represented<xrpl::base_uint<Bits, Tag>> : public std::true_ty
 };
 
 }  // namespace beast
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_SUBMITTERS_H_INCLUDED
-#define XRPL_TEST_CSF_SUBMITTERS_H_INCLUDED
+#pragma once
 
 #include <test/csf/Peer.h>
 #include <test/csf/Scheduler.h>
@@ -97,5 +96,3 @@ makeSubmitter(Distribution dist, SimTime start, SimTime end, Selector& sel, Sche
 }  // namespace csf
 }  // namespace test
 }  // namespace xrpl
-
-#endif

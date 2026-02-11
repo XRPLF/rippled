@@ -4578,7 +4578,7 @@ class Vault_test : public beast::unit_test::suite
             {
                 testcase("VaultClawback (asset) - " + prefix + " issuer XRP clawback fails");
                 auto [vault, vaultKeylet] = setupVault(asset, owner, depositor, issuer);
-                // If the asset is XRP, clawback with amount fails as malfored
+                // If the asset is XRP, clawback with amount fails as malformed
                 // when asset is specified.
                 env(vault.clawback({
                         .issuer = issuer,

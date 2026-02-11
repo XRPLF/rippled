@@ -1,5 +1,4 @@
-#ifndef XRPL_NET_HTTPCLIENT_H_INCLUDED
-#define XRPL_NET_HTTPCLIENT_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -69,5 +68,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

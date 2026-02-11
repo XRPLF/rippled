@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_RPCLEDGERHELPERS_H_INCLUDED
-#define XRPL_RPC_RPCLEDGERHELPERS_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/TxQ.h>
@@ -171,5 +170,3 @@ getOrAcquireLedger(RPC::JsonContext const& context);
 }  // namespace RPC
 
 }  // namespace xrpl
-
-#endif
