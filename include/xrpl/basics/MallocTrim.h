@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_MALLOCTRIM_H_INCLUDED
-#define XRPL_BASICS_MALLOCTRIM_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/Journal.h>
 
@@ -71,5 +70,3 @@ MallocTrimReport
 mallocTrim(std::optional<std::string> const& tag, beast::Journal journal);
 
 }  // namespace xrpl
-
-#endif
