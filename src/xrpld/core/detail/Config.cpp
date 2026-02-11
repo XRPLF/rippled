@@ -1054,107 +1054,105 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
 
     if (!setup.globalPragma)
     {
-        setup.globalPragma = [&c, &j]() {
-            auto const& sqlite = c.section("sqlite");
-            auto result = std::make_unique<std::vector<std::string>>();
-            result->reserve(3);
+        auto const& sqlite = c.section("sqlite");
+        auto result = std::make_unique<std::vector<std::string>>();
+        result->reserve(3);
 
-            // defaults
-            std::string safety_level;
-            std::string journal_mode = "wal";
-            std::string synchronous = "normal";
-            std::string temp_store = "file";
-            bool showRiskWarning = false;
+        // defaults
+        std::string safety_level;
+        std::string journal_mode = "wal";
+        std::string synchronous = "normal";
+        std::string temp_store = "file";
+        bool showRiskWarning = false;
 
-            if (set(safety_level, "safety_level", sqlite))
+        if (set(safety_level, "safety_level", sqlite))
+        {
+            if (boost::iequals(safety_level, "low"))
             {
-                if (boost::iequals(safety_level, "low"))
-                {
-                    // low safety defaults
-                    journal_mode = "memory";
-                    synchronous = "off";
-                    temp_store = "memory";
-                    showRiskWarning = true;
-                }
-                else if (!boost::iequals(safety_level, "high"))
-                {
-                    Throw<std::runtime_error>("Invalid safety_level value: " + safety_level);
-                }
+                // low safety defaults
+                journal_mode = "memory";
+                synchronous = "off";
+                temp_store = "memory";
+                showRiskWarning = true;
             }
-
+            else if (!boost::iequals(safety_level, "high"))
             {
-                // #journal_mode Valid values : delete, truncate, persist,
-                // memory, wal, off
-                if (set(journal_mode, "journal_mode", sqlite) && !safety_level.empty())
-                {
-                    Throw<std::runtime_error>(
-                        "Configuration file may not define both "
-                        "\"safety_level\" and \"journal_mode\"");
-                }
-                bool higherRisk = boost::iequals(journal_mode, "memory") || boost::iequals(journal_mode, "off");
-                showRiskWarning = showRiskWarning || higherRisk;
-                if (higherRisk || boost::iequals(journal_mode, "delete") || boost::iequals(journal_mode, "truncate") ||
-                    boost::iequals(journal_mode, "persist") || boost::iequals(journal_mode, "wal"))
-                {
-                    result->emplace_back(boost::str(boost::format(CommonDBPragmaJournal) % journal_mode));
-                }
-                else
-                {
-                    Throw<std::runtime_error>("Invalid journal_mode value: " + journal_mode);
-                }
+                Throw<std::runtime_error>("Invalid safety_level value: " + safety_level);
             }
+        }
 
+        {
+            // #journal_mode Valid values : delete, truncate, persist,
+            // memory, wal, off
+            if (set(journal_mode, "journal_mode", sqlite) && !safety_level.empty())
             {
-                // #synchronous Valid values : off, normal, full, extra
-                if (set(synchronous, "synchronous", sqlite) && !safety_level.empty())
-                {
-                    Throw<std::runtime_error>(
-                        "Configuration file may not define both "
-                        "\"safety_level\" and \"synchronous\"");
-                }
-                bool higherRisk = boost::iequals(synchronous, "off");
-                showRiskWarning = showRiskWarning || higherRisk;
-                if (higherRisk || boost::iequals(synchronous, "normal") || boost::iequals(synchronous, "full") ||
-                    boost::iequals(synchronous, "extra"))
-                {
-                    result->emplace_back(boost::str(boost::format(CommonDBPragmaSync) % synchronous));
-                }
-                else
-                {
-                    Throw<std::runtime_error>("Invalid synchronous value: " + synchronous);
-                }
+                Throw<std::runtime_error>(
+                    "Configuration file may not define both "
+                    "\"safety_level\" and \"journal_mode\"");
             }
+            bool higherRisk = boost::iequals(journal_mode, "memory") || boost::iequals(journal_mode, "off");
+            showRiskWarning = showRiskWarning || higherRisk;
+            if (higherRisk || boost::iequals(journal_mode, "delete") || boost::iequals(journal_mode, "truncate") ||
+                boost::iequals(journal_mode, "persist") || boost::iequals(journal_mode, "wal"))
+            {
+                result->emplace_back(boost::str(boost::format(CommonDBPragmaJournal) % journal_mode));
+            }
+            else
+            {
+                Throw<std::runtime_error>("Invalid journal_mode value: " + journal_mode);
+            }
+        }
 
+        {
+            // #synchronous Valid values : off, normal, full, extra
+            if (set(synchronous, "synchronous", sqlite) && !safety_level.empty())
             {
-                // #temp_store Valid values : default, file, memory
-                if (set(temp_store, "temp_store", sqlite) && !safety_level.empty())
-                {
-                    Throw<std::runtime_error>(
-                        "Configuration file may not define both "
-                        "\"safety_level\" and \"temp_store\"");
-                }
-                bool higherRisk = boost::iequals(temp_store, "memory");
-                showRiskWarning = showRiskWarning || higherRisk;
-                if (higherRisk || boost::iequals(temp_store, "default") || boost::iequals(temp_store, "file"))
-                {
-                    result->emplace_back(boost::str(boost::format(CommonDBPragmaTemp) % temp_store));
-                }
-                else
-                {
-                    Throw<std::runtime_error>("Invalid temp_store value: " + temp_store);
-                }
+                Throw<std::runtime_error>(
+                    "Configuration file may not define both "
+                    "\"safety_level\" and \"synchronous\"");
             }
+            bool higherRisk = boost::iequals(synchronous, "off");
+            showRiskWarning = showRiskWarning || higherRisk;
+            if (higherRisk || boost::iequals(synchronous, "normal") || boost::iequals(synchronous, "full") ||
+                boost::iequals(synchronous, "extra"))
+            {
+                result->emplace_back(boost::str(boost::format(CommonDBPragmaSync) % synchronous));
+            }
+            else
+            {
+                Throw<std::runtime_error>("Invalid synchronous value: " + synchronous);
+            }
+        }
 
-            if (showRiskWarning && j && c.LEDGER_HISTORY > SQLITE_TUNING_CUTOFF)
+        {
+            // #temp_store Valid values : default, file, memory
+            if (set(temp_store, "temp_store", sqlite) && !safety_level.empty())
             {
-                JLOG(j->warn()) << "reducing the data integrity guarantees from the "
-                                   "default [sqlite] behavior is not recommended for "
-                                   "nodes storing large amounts of history, because of the "
-                                   "difficulty inherent in rebuilding corrupted data.";
+                Throw<std::runtime_error>(
+                    "Configuration file may not define both "
+                    "\"safety_level\" and \"temp_store\"");
             }
-            XRPL_ASSERT(result->size() == 3, "xrpl::setup_DatabaseCon::globalPragma : result size is 3");
-            return result;
-        }();
+            bool higherRisk = boost::iequals(temp_store, "memory");
+            showRiskWarning = showRiskWarning || higherRisk;
+            if (higherRisk || boost::iequals(temp_store, "default") || boost::iequals(temp_store, "file"))
+            {
+                result->emplace_back(boost::str(boost::format(CommonDBPragmaTemp) % temp_store));
+            }
+            else
+            {
+                Throw<std::runtime_error>("Invalid temp_store value: " + temp_store);
+            }
+        }
+
+        if (showRiskWarning && j && c.LEDGER_HISTORY > SQLITE_TUNING_CUTOFF)
+        {
+            JLOG(j->warn()) << "reducing the data integrity guarantees from the "
+                               "default [sqlite] behavior is not recommended for "
+                               "nodes storing large amounts of history, because of the "
+                               "difficulty inherent in rebuilding corrupted data.";
+        }
+        XRPL_ASSERT(result->size() == 3, "xrpl::setup_DatabaseCon::globalPragma : result size is 3");
+        setup.globalPragma = std::move(result);
     }
     setup.useGlobalPragma = true;
 

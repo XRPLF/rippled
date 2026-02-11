@@ -372,6 +372,14 @@ public:
 
     SQLiteDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue);
 
+    SQLiteDatabase(SQLiteDatabase const&) = delete;
+    SQLiteDatabase(SQLiteDatabase&& rhs) noexcept;
+
+    SQLiteDatabase&
+    operator=(SQLiteDatabase const&) = delete;
+    SQLiteDatabase&
+    operator=(SQLiteDatabase&& rhs) = delete;
+
     /**
      * @brief ledgerDbHasSpace Checks if the ledger database has available
      *        space.
