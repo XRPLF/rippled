@@ -924,6 +924,55 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
+    testManyParams()
+    {
+        testcase("Wasm Many params");
+
+        auto const params1k = hexToBytes(thousandParamsHex);
+        auto const params1k1 = hexToBytes(thousand1ParamsHex);
+
+        using namespace test::jtx;
+
+        Env env{*this};
+        std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
+        auto imports = createWasmImport(*hfs);
+
+        // add 1k parameter (max that wasmi support)
+        std::vector<WasmParam> params;
+        for (int i = 0; i < 1000; ++i)
+            params.push_back({.type = WT_I32, .of = {.i32 = 2 * i}});
+
+        auto& engine = WasmEngine::instance();
+        {
+            auto re = engine.run(params1k, "test", params, imports, hfs, 1'000'000, env.journal);
+            BEAST_EXPECT(re && re->result == 999000);
+        }
+
+        // add 1 more parameter, module can't be created now
+        params.push_back({.type = WT_I32, .of = {.i32 = 2 * 1000}});
+        {
+            auto re = engine.run(params1k1, "test", params, imports, hfs, 1'000'000, env.journal);
+            BEAST_EXPECT(!re);
+        }
+
+        // function that create 10k local variables
+        auto const locals10k = hexToBytes(locals10kHex);
+        {
+            auto re = engine.run(locals10k, "test", wasmParams(0, 1), imports, hfs, 1'000'000, env.journal);
+            BEAST_EXPECT(re && re->result == 890'489'442);
+        }
+
+        // module has 5k functions
+        auto const functions5k = hexToBytes(functions5kHex);
+        {
+            auto re = engine.run(functions5k, "test0001", wasmParams(2, 3), imports, hfs, 1'000'000, env.journal);
+            BEAST_EXPECT(re && re->result == 5);
+        }
+
+        env.close();
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -956,6 +1005,7 @@ struct Wasm_test : public beast::unit_test::suite
         testBadAlign();
         testReturnType();
         testSwapBytes();
+        testManyParams();
 
         // perfTest();
     }
