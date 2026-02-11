@@ -302,7 +302,7 @@ function (setup_target_for_coverage_gcovr)
     endif ()
 
     if (NOT GCOVR_PATH)
-        message(FATAL_ERROR "Could not find gcovr tool! Aborting...")
+        message(WARNING "Could not find gcovr tool! The '${Coverage_NAME}' target will fail at build time.")
     endif ()
 
     # Set base directory (as absolute path), or default to PROJECT_SOURCE_DIR
