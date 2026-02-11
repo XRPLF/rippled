@@ -524,7 +524,6 @@ public:
                         std::shared_ptr<NodeObject> result;
                         auto const j = older_(gen_);
                         obj = seq1_.obj(j);
-                        std::shared_ptr<NodeObject> result1;
                         backend_.fetch(obj->getHash(), &result);
                         suite_.expect(result != nullptr);
                         suite_.expect(isSame(result, obj));
