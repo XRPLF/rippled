@@ -13,7 +13,7 @@ setup_HashRouter(Config const& config)
     HashRouter::Setup setup;
     auto const& section = config.section("hashrouter");
 
-    std::int32_t tmp;
+    std::int32_t tmp{};
 
     if (set(tmp, "hold_time", section))
     {
