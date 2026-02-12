@@ -1,10 +1,9 @@
 #pragma once
 
-#include <xrpld/app/main/DBInit.h>
-#include <xrpld/core/Config.h>
-#include <xrpld/core/SociDB.h>
-
 #include <xrpl/core/PerfLog.h>
+#include <xrpl/core/StartUpType.h>
+#include <xrpl/rdb/DBInit.h>
+#include <xrpl/rdb/SociDB.h>
 
 #include <boost/filesystem/path.hpp>
 
@@ -68,7 +67,7 @@ public:
     {
         explicit Setup() = default;
 
-        Config::StartUpType startUp = Config::NORMAL;
+        StartUpType startUp = StartUpType::NORMAL;
         bool standAlone = false;
         boost::filesystem::path dataDir;
         // Indicates whether or not to return the `globalPragma`
@@ -105,8 +104,8 @@ public:
         beast::Journal journal)
         // Use temporary files or regular DB files?
         : DatabaseCon(
-              setup.standAlone && setup.startUp != Config::LOAD && setup.startUp != Config::LOAD_FILE &&
-                      setup.startUp != Config::REPLAY
+              setup.standAlone && setup.startUp != StartUpType::LOAD && setup.startUp != StartUpType::LOAD_FILE &&
+                      setup.startUp != StartUpType::REPLAY
                   ? ""
                   : (setup.dataDir / dbName),
               setup.commonPragma(),
@@ -228,8 +227,5 @@ private:
 // nullptr is returned
 std::shared_ptr<Checkpointer>
 checkpointerFromId(std::uintptr_t id);
-
-DatabaseCon::Setup
-setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j = std::nullopt);
 
 }  // namespace xrpl

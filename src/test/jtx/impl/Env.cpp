@@ -10,7 +10,6 @@
 #include <test/jtx/utility.h>
 
 #include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/rpc/RPCCall.h>
 
 #include <xrpl/basics/Slice.h>
@@ -25,6 +24,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/NetworkOPs.h>
 
 #include <memory>
 #include <source_location>
