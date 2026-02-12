@@ -1,8 +1,7 @@
 #pragma once
 
-#include <xrpld/rpc/InfoSub.h>
-
 #include <xrpl/protocol/MultiApiJson.h>
+#include <xrpl/server/InfoSub.h>
 
 #include <memory>
 #include <mutex>

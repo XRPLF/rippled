@@ -1,6 +1,5 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/paths/AccountCurrencies.h>
 #include <xrpld/app/paths/PathRequest.h>
 #include <xrpld/app/paths/PathRequests.h>
@@ -14,6 +13,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/server/NetworkOPs.h>
 
 #include <optional>
 #include <tuple>

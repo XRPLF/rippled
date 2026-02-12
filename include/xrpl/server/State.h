@@ -1,10 +1,8 @@
 #pragma once
 
-#include <xrpld/app/ledger/Ledger.h>
-#include <xrpld/app/misc/Manifest.h>
-#include <xrpld/core/Config.h>
-#include <xrpld/core/DatabaseCon.h>
-#include <xrpld/peerfinder/detail/Store.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/rdb/DatabaseCon.h>
+#include <xrpl/server/Manifest.h>
 
 #include <boost/filesystem.hpp>
 

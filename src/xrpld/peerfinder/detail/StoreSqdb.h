@@ -1,8 +1,9 @@
 #pragma once
 
 #include <xrpld/app/rdb/PeerFinder.h>
-#include <xrpld/core/SociDB.h>
 #include <xrpld/peerfinder/detail/Store.h>
+
+#include <xrpl/rdb/SociDB.h>
 
 namespace xrpl {
 namespace PeerFinder {
