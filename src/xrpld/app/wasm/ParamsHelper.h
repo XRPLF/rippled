@@ -11,6 +11,8 @@
 #include <string>
 #include <vector>
 
+// #define WASM_PERF_TESTS 1
+
 namespace bft = boost::function_types;
 
 namespace xrpl {
@@ -173,6 +175,8 @@ wasmParamsHlp(std::vector<WasmParam>& v, std::int64_t p, Types&&... args)
 //     wasmParamsHlp(v, std::forward<Types>(args)...);
 // }
 
+#ifdef WASM_PERF_TESTS
+
 template <class... Types>
 inline void
 wasmParamsHlp(std::vector<WasmParam>& v, std::uint8_t const* dt, std::int32_t sz, Types&&... args)
@@ -218,6 +222,8 @@ wasmParamsHlp(std::vector<WasmParam>& v, std::string const& p, Types&&... args)
         static_cast<std::int32_t>(p.size()),
         std::forward<Types>(args)...);
 }
+
+#endif
 
 inline void
 wasmParamsHlp(std::vector<WasmParam>& v)

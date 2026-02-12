@@ -36,7 +36,7 @@ public:
     }
 
     Expected<std::uint32_t, HostFunctionError>
-    getLedgerSqn() override
+    getLedgerSqn() const override
     {
         return env_.current()->seq();
     }
@@ -71,37 +71,37 @@ public:
     }
 
     Expected<std::uint32_t, HostFunctionError>
-    getLedgerSqn() override
+    getLedgerSqn() const override
     {
         return 12345;
     }
 
     Expected<std::uint32_t, HostFunctionError>
-    getParentLedgerTime() override
+    getParentLedgerTime() const override
     {
         return 67890;
     }
 
     Expected<Hash, HostFunctionError>
-    getParentLedgerHash() override
+    getParentLedgerHash() const override
     {
         return env_.current()->header().parentHash;
     }
 
     Expected<std::uint32_t, HostFunctionError>
-    getBaseFee() override
+    getBaseFee() const override
     {
         return 10;
     }
 
     Expected<int32_t, HostFunctionError>
-    isAmendmentEnabled(uint256 const& amendmentId) override
+    isAmendmentEnabled(uint256 const& amendmentId) const override
     {
         return 1;
     }
 
     Expected<int32_t, HostFunctionError>
-    isAmendmentEnabled(std::string_view const& amendmentName) override
+    isAmendmentEnabled(std::string_view const& amendmentName) const override
     {
         return 1;
     }
@@ -113,7 +113,7 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
-    getTxField(SField const& fname) override
+    getTxField(SField const& fname) const override
     {
         if (fname == sfAccount)
             return Bytes(accountID_.begin(), accountID_.end());
@@ -137,7 +137,7 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
-    getCurrentLedgerObjField(SField const& fname) override
+    getCurrentLedgerObjField(SField const& fname) const override
     {
         auto const& sn = fname.getName();
         if (sn == "Destination" || sn == "Account")
@@ -155,7 +155,7 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
-    getLedgerObjField(int32_t cacheIdx, SField const& fname) override
+    getLedgerObjField(int32_t cacheIdx, SField const& fname) const override
     {
         if (fname == sfBalance)
         {
@@ -171,7 +171,7 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
-    getTxNestedField(Slice const& locator) override
+    getTxNestedField(Slice const& locator) const override
     {
         if (locator.size() == 4)
         {
@@ -189,7 +189,7 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
-    getCurrentLedgerObjNestedField(Slice const& locator) override
+    getCurrentLedgerObjNestedField(Slice const& locator) const override
     {
         if (locator.size() == 4)
         {
@@ -207,7 +207,7 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
-    getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator) override
+    getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator) const override
     {
         if (locator.size() == 4)
         {
@@ -225,37 +225,37 @@ public:
     }
 
     Expected<int32_t, HostFunctionError>
-    getTxArrayLen(SField const& fname) override
+    getTxArrayLen(SField const& fname) const override
     {
         return 32;
     }
 
     Expected<int32_t, HostFunctionError>
-    getCurrentLedgerObjArrayLen(SField const& fname) override
+    getCurrentLedgerObjArrayLen(SField const& fname) const override
     {
         return 32;
     }
 
     Expected<int32_t, HostFunctionError>
-    getLedgerObjArrayLen(int32_t cacheIdx, SField const& fname) override
+    getLedgerObjArrayLen(int32_t cacheIdx, SField const& fname) const override
     {
         return 32;
     }
 
     Expected<int32_t, HostFunctionError>
-    getTxNestedArrayLen(Slice const& locator) override
+    getTxNestedArrayLen(Slice const& locator) const override
     {
         return 32;
     }
 
     Expected<int32_t, HostFunctionError>
-    getCurrentLedgerObjNestedArrayLen(Slice const& locator) override
+    getCurrentLedgerObjNestedArrayLen(Slice const& locator) const override
     {
         return 32;
     }
 
     Expected<int32_t, HostFunctionError>
-    getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator) override
+    getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator) const override
     {
         return 32;
     }
@@ -267,19 +267,19 @@ public:
     }
 
     Expected<int32_t, HostFunctionError>
-    checkSignature(Slice const& message, Slice const& signature, Slice const& pubkey) override
+    checkSignature(Slice const& message, Slice const& signature, Slice const& pubkey) const override
     {
         return 1;
     }
 
     Expected<Hash, HostFunctionError>
-    computeSha512HalfHash(Slice const& data) override
+    computeSha512HalfHash(Slice const& data) const override
     {
         return env_.current()->header().parentHash;
     }
 
     Expected<Bytes, HostFunctionError>
-    accountKeylet(AccountID const& account) override
+    accountKeylet(AccountID const& account) const override
     {
         if (!account)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -288,7 +288,7 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
-    ammKeylet(Asset const& issue1, Asset const& issue2) override
+    ammKeylet(Asset const& issue1, Asset const& issue2) const override
     {
         if (issue1 == issue2)
             return Unexpected(HostFunctionError::INVALID_PARAMS);
@@ -299,7 +299,7 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
-    checkKeylet(AccountID const& account, std::uint32_t seq) override
+    checkKeylet(AccountID const& account, std::uint32_t seq) const override
     {
         if (!account)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -308,7 +308,7 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
-    credentialKeylet(AccountID const& subject, AccountID const& issuer, Slice const& credentialType) override
+    credentialKeylet(AccountID const& subject, AccountID const& issuer, Slice const& credentialType) const override
     {
         if (!subject || !issuer || credentialType.empty() || credentialType.size() > maxCredentialTypeLength)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -317,7 +317,7 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
-    escrowKeylet(AccountID const& account, std::uint32_t seq) override
+    escrowKeylet(AccountID const& account, std::uint32_t seq) const override
     {
         if (!account)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -326,7 +326,7 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
-    oracleKeylet(AccountID const& account, std::uint32_t documentId) override
+    oracleKeylet(AccountID const& account, std::uint32_t documentId) const override
     {
         if (!account)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -335,7 +335,7 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
-    getNFT(AccountID const& account, uint256 const& nftId) override
+    getNFT(AccountID const& account, uint256 const& nftId) const override
     {
         if (!account || !nftId)
         {
@@ -347,38 +347,38 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
-    getNFTIssuer(uint256 const& nftId) override
+    getNFTIssuer(uint256 const& nftId) const override
     {
         return Bytes(accountID_.begin(), accountID_.end());
     }
 
     Expected<std::uint32_t, HostFunctionError>
-    getNFTTaxon(uint256 const& nftId) override
+    getNFTTaxon(uint256 const& nftId) const override
     {
         return 4;
     }
 
     Expected<int32_t, HostFunctionError>
-    getNFTFlags(uint256 const& nftId) override
+    getNFTFlags(uint256 const& nftId) const override
     {
         return 8;
     }
 
     Expected<int32_t, HostFunctionError>
-    getNFTTransferFee(uint256 const& nftId) override
+    getNFTTransferFee(uint256 const& nftId) const override
     {
         return 10;
     }
 
     Expected<std::uint32_t, HostFunctionError>
-    getNFTSerial(uint256 const& nftId) override
+    getNFTSerial(uint256 const& nftId) const override
     {
         return 4;
     }
 
     template <typename F>
     void
-    log(std::string_view const& msg, F&& dataFn)
+    log(std::string_view const& msg, F&& dataFn) const
     {
 #ifdef DEBUG_OUTPUT
         auto& j = std::cerr;
@@ -395,7 +395,7 @@ public:
     }
 
     Expected<int32_t, HostFunctionError>
-    trace(std::string_view const& msg, Slice const& data, bool asHex) override
+    trace(std::string_view const& msg, Slice const& data, bool asHex) const override
     {
         if (!asHex)
         {
@@ -415,95 +415,95 @@ public:
     }
 
     Expected<int32_t, HostFunctionError>
-    traceNum(std::string_view const& msg, int64_t data) override
+    traceNum(std::string_view const& msg, int64_t data) const override
     {
         log(msg, [data] { return data; });
         return 0;
     }
 
     Expected<int32_t, HostFunctionError>
-    traceAccount(std::string_view const& msg, AccountID const& account) override
+    traceAccount(std::string_view const& msg, AccountID const& account) const override
     {
         log(msg, [&account] { return toBase58(account); });
         return 0;
     }
 
     Expected<int32_t, HostFunctionError>
-    traceFloat(std::string_view const& msg, Slice const& data) override
+    traceFloat(std::string_view const& msg, Slice const& data) const override
     {
         log(msg, [&data] { return wasm_float::floatToString(data); });
         return 0;
     }
 
     Expected<int32_t, HostFunctionError>
-    traceAmount(std::string_view const& msg, STAmount const& amount) override
+    traceAmount(std::string_view const& msg, STAmount const& amount) const override
     {
         log(msg, [&amount] { return amount.getFullText(); });
         return 0;
     }
 
     Expected<Bytes, HostFunctionError>
-    floatFromInt(int64_t x, int32_t mode) override
+    floatFromInt(int64_t x, int32_t mode) const override
     {
         return wasm_float::floatFromIntImpl(x, mode);
     }
 
     Expected<Bytes, HostFunctionError>
-    floatFromUint(uint64_t x, int32_t mode) override
+    floatFromUint(uint64_t x, int32_t mode) const override
     {
         return wasm_float::floatFromUintImpl(x, mode);
     }
 
     Expected<Bytes, HostFunctionError>
-    floatSet(int64_t mantissa, int32_t exponent, int32_t mode) override
+    floatSet(int64_t mantissa, int32_t exponent, int32_t mode) const override
     {
         return wasm_float::floatSetImpl(mantissa, exponent, mode);
     }
 
     Expected<int32_t, HostFunctionError>
-    floatCompare(Slice const& x, Slice const& y) override
+    floatCompare(Slice const& x, Slice const& y) const override
     {
         return wasm_float::floatCompareImpl(x, y);
     }
 
     Expected<Bytes, HostFunctionError>
-    floatAdd(Slice const& x, Slice const& y, int32_t mode) override
+    floatAdd(Slice const& x, Slice const& y, int32_t mode) const override
     {
         return wasm_float::floatAddImpl(x, y, mode);
     }
 
     Expected<Bytes, HostFunctionError>
-    floatSubtract(Slice const& x, Slice const& y, int32_t mode) override
+    floatSubtract(Slice const& x, Slice const& y, int32_t mode) const override
     {
         return wasm_float::floatSubtractImpl(x, y, mode);
     }
 
     Expected<Bytes, HostFunctionError>
-    floatMultiply(Slice const& x, Slice const& y, int32_t mode) override
+    floatMultiply(Slice const& x, Slice const& y, int32_t mode) const override
     {
         return wasm_float::floatMultiplyImpl(x, y, mode);
     }
 
     Expected<Bytes, HostFunctionError>
-    floatDivide(Slice const& x, Slice const& y, int32_t mode) override
+    floatDivide(Slice const& x, Slice const& y, int32_t mode) const override
     {
         return wasm_float::floatDivideImpl(x, y, mode);
     }
 
     Expected<Bytes, HostFunctionError>
-    floatRoot(Slice const& x, int32_t n, int32_t mode) override
+    floatRoot(Slice const& x, int32_t n, int32_t mode) const override
     {
         return wasm_float::floatRootImpl(x, n, mode);
     }
 
     Expected<Bytes, HostFunctionError>
-    floatPower(Slice const& x, int32_t n, int32_t mode) override
+    floatPower(Slice const& x, int32_t n, int32_t mode) const override
     {
         return wasm_float::floatPowerImpl(x, n, mode);
     }
 
     Expected<Bytes, HostFunctionError>
-    floatLog(Slice const& x, int32_t mode) override
+    floatLog(Slice const& x, int32_t mode) const override
     {
         return wasm_float::floatLogImpl(x, mode);
     }
@@ -528,14 +528,14 @@ public:
     }
 };
 
+#ifdef WASM_PERF_TESTS
 struct PerfHostFunctions : public TestHostFunctions
 {
-    Keylet leKey;
-    std::shared_ptr<SLE const> currentLedgerObj = nullptr;
-    bool isLedgerObjCached = false;
+    Keylet leKey_;
+    mutable std::optional<std::shared_ptr<SLE const>> currentLedgerObj_;
 
     static int constexpr MAX_CACHE = 256;
-    std::array<std::shared_ptr<SLE const>, MAX_CACHE> cache;
+    mutable std::array<std::shared_ptr<SLE const>, MAX_CACHE> cache_;
     // std::optional<Bytes> data_; // deferred data update, not used in
     // performance
     std::shared_ptr<STTx const> tx_;
@@ -543,42 +543,42 @@ struct PerfHostFunctions : public TestHostFunctions
     void const* rt_ = nullptr;
 
     PerfHostFunctions(test::jtx::Env& env, Keylet const& k, std::shared_ptr<STTx const>&& tx)
-        : TestHostFunctions(env), leKey(k), tx_(std::move(tx))
+        : TestHostFunctions(env), leKey_(k), tx_(std::move(tx))
     {
     }
 
     Expected<std::uint32_t, HostFunctionError>
-    getLedgerSqn() override
+    getLedgerSqn() const override
     {
         return env_.current()->seq();
     }
 
     Expected<std::uint32_t, HostFunctionError>
-    getParentLedgerTime() override
+    getParentLedgerTime() const override
     {
         return env_.current()->parentCloseTime().time_since_epoch().count();
     }
 
     Expected<Hash, HostFunctionError>
-    getParentLedgerHash() override
+    getParentLedgerHash() const override
     {
         return env_.current()->header().parentHash;
     }
 
     Expected<std::uint32_t, HostFunctionError>
-    getBaseFee() override
+    getBaseFee() const override
     {
         return env_.current()->fees().base.drops();
     }
 
     Expected<int32_t, HostFunctionError>
-    isAmendmentEnabled(uint256 const& amendmentId) override
+    isAmendmentEnabled(uint256 const& amendmentId) const override
     {
         return env_.current()->rules().enabled(amendmentId);
     }
 
     Expected<int32_t, HostFunctionError>
-    isAmendmentEnabled(std::string_view const& amendmentName) override
+    isAmendmentEnabled(std::string_view const& amendmentName) const override
     {
         auto const& table = env_.app().getAmendmentTable();
         auto const amendment = table.find(std::string(amendmentName));
@@ -586,43 +586,40 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<std::shared_ptr<SLE const>, HostFunctionError>
-    getCurrentLedgerObj()
+    getCurrentLedgerObj() const
     {
-        if (!isLedgerObjCached)
-        {
-            isLedgerObjCached = true;
-            currentLedgerObj = env_.le(leKey);
-        }
-        if (currentLedgerObj)
-            return currentLedgerObj;
+        if (!currentLedgerObj_)
+            currentLedgerObj_ = env_.le(leKey_);
+        if (*currentLedgerObj_)
+            return *currentLedgerObj_;
         return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
     }
 
     Expected<std::shared_ptr<SLE const>, HostFunctionError>
-    peekCurrentLedgerObj(int32_t cacheIdx)
+    peekCurrentLedgerObj(int32_t cacheIdx) const
     {
         --cacheIdx;
         if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
             return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
 
-        if (!cache[cacheIdx])
+        if (!cache_[cacheIdx])
         {  // return Unexpected(HostFunctionError::INVALID_SLOT);
             auto const r = getCurrentLedgerObj();
             if (!r)
                 return Unexpected(r.error());
-            cache[cacheIdx] = *r;
+            cache_[cacheIdx] = *r;
         }
 
-        return cache[cacheIdx];
+        return cache_[cacheIdx];
     }
 
     Expected<int32_t, HostFunctionError>
-    normalizeCacheIndex(int32_t cacheIdx)
+    normalizeCacheIndex(int32_t cacheIdx) const
     {
         --cacheIdx;
         if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
             return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
-        if (!cache[cacheIdx])
+        if (!cache_[cacheIdx])
             return Unexpected(HostFunctionError::EMPTY_SLOT);
         return cacheIdx;
     }
@@ -640,7 +637,7 @@ struct PerfHostFunctions : public TestHostFunctions
         if (!cacheIdx)
         {
             for (cacheIdx = 0; cacheIdx < MAX_CACHE; ++cacheIdx)
-                if (!cache[cacheIdx])
+                if (!cache_[cacheIdx])
                     break;
             if (cacheIdx >= MAX_CACHE)
                 cacheIdx = intIdx++ % MAX_CACHE;
@@ -651,8 +648,8 @@ struct PerfHostFunctions : public TestHostFunctions
         if (cacheIdx >= MAX_CACHE)
             return Unexpected(HostFunctionError::SLOTS_FULL);
 
-        cache[cacheIdx] = env_.le(leKey);
-        if (!cache[cacheIdx])
+        cache_[cacheIdx] = env_.le(leKey_);
+        if (!cache_[cacheIdx])
             return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
         return cacheIdx + 1;
     }
@@ -732,13 +729,13 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    getTxField(SField const& fname) override
+    getTxField(SField const& fname) const override
     {
         return getAnyFieldData(tx_->peekAtPField(fname));
     }
 
     Expected<Bytes, HostFunctionError>
-    getCurrentLedgerObjField(SField const& fname) override
+    getCurrentLedgerObjField(SField const& fname) const override
     {
         auto const sle = getCurrentLedgerObj();
         if (!sle)
@@ -747,7 +744,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    getLedgerObjField(int32_t cacheIdx, SField const& fname) override
+    getLedgerObjField(int32_t cacheIdx, SField const& fname) const override
     {
         auto const sle = peekCurrentLedgerObj(cacheIdx);
         if (!sle)
@@ -819,7 +816,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    getTxNestedField(Slice const& locator) override
+    getTxNestedField(Slice const& locator) const override
     {
         // std::cout << tx_->getJson(JsonOptions::none).toStyledString() <<
         // std::endl;
@@ -830,7 +827,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    getCurrentLedgerObjNestedField(Slice const& locator) override
+    getCurrentLedgerObjNestedField(Slice const& locator) const override
     {
         auto const sle = getCurrentLedgerObj();
         if (!sle)
@@ -844,7 +841,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator) override
+    getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator) const override
     {
         auto const sle = peekCurrentLedgerObj(cacheIdx);
         if (!sle)
@@ -858,7 +855,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<int32_t, HostFunctionError>
-    getTxArrayLen(SField const& fname) override
+    getTxArrayLen(SField const& fname) const override
     {
         if (fname.fieldType != STI_ARRAY)
             return Unexpected(HostFunctionError::NO_ARRAY);
@@ -875,7 +872,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<int32_t, HostFunctionError>
-    getCurrentLedgerObjArrayLen(SField const& fname) override
+    getCurrentLedgerObjArrayLen(SField const& fname) const override
     {
         if (fname.fieldType != STI_ARRAY)
             return Unexpected(HostFunctionError::NO_ARRAY);
@@ -896,7 +893,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<int32_t, HostFunctionError>
-    getLedgerObjArrayLen(int32_t cacheIdx, SField const& fname) override
+    getLedgerObjArrayLen(int32_t cacheIdx, SField const& fname) const override
     {
         if (fname.fieldType != STI_ARRAY)
             return Unexpected(HostFunctionError::NO_ARRAY);
@@ -917,7 +914,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<int32_t, HostFunctionError>
-    getTxNestedArrayLen(Slice const& locator) override
+    getTxNestedArrayLen(Slice const& locator) const override
     {
         auto const r = locateField(*tx_, locator);
         if (!r)
@@ -932,7 +929,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<int32_t, HostFunctionError>
-    getCurrentLedgerObjNestedArrayLen(Slice const& locator) override
+    getCurrentLedgerObjNestedArrayLen(Slice const& locator) const override
     {
         auto const sle = getCurrentLedgerObj();
         if (!sle)
@@ -951,7 +948,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<int32_t, HostFunctionError>
-    getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator) override
+    getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator) const override
     {
         auto const sle = peekCurrentLedgerObj(cacheIdx);
         if (!sle)
@@ -978,7 +975,7 @@ struct PerfHostFunctions : public TestHostFunctions
 
         xrpl::detail::ApplyViewBase v(env_.app().openLedger().current().get(), tapNONE);
 
-        auto sle = v.peek(leKey);
+        auto sle = v.peek(leKey_);
         if (!sle)
             return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
 
@@ -989,7 +986,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<int32_t, HostFunctionError>
-    checkSignature(Slice const& message, Slice const& signature, Slice const& pubkey) override
+    checkSignature(Slice const& message, Slice const& signature, Slice const& pubkey) const override
     {
         if (!publicKeyType(pubkey))
             return Unexpected(HostFunctionError::INVALID_PARAMS);
@@ -999,14 +996,14 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Hash, HostFunctionError>
-    computeSha512HalfHash(Slice const& data) override
+    computeSha512HalfHash(Slice const& data) const override
     {
         auto const hash = sha512Half(data);
         return hash;
     }
 
     Expected<Bytes, HostFunctionError>
-    accountKeylet(AccountID const& account) override
+    accountKeylet(AccountID const& account) const override
     {
         if (!account)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -1015,7 +1012,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    ammKeylet(Asset const& issue1, Asset const& issue2) override
+    ammKeylet(Asset const& issue1, Asset const& issue2) const override
     {
         if (issue1 == issue2)
             return Unexpected(HostFunctionError::INVALID_PARAMS);
@@ -1029,7 +1026,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    checkKeylet(AccountID const& account, std::uint32_t seq) override
+    checkKeylet(AccountID const& account, std::uint32_t seq) const override
     {
         if (!account)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -1038,7 +1035,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    credentialKeylet(AccountID const& subject, AccountID const& issuer, Slice const& credentialType) override
+    credentialKeylet(AccountID const& subject, AccountID const& issuer, Slice const& credentialType) const override
     {
         if (!subject || !issuer)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -1052,7 +1049,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    didKeylet(AccountID const& account) override
+    didKeylet(AccountID const& account) const override
     {
         if (!account)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -1061,7 +1058,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    delegateKeylet(AccountID const& account, AccountID const& authorize) override
+    delegateKeylet(AccountID const& account, AccountID const& authorize) const override
     {
         if (!account || !authorize)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -1072,7 +1069,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    depositPreauthKeylet(AccountID const& account, AccountID const& authorize) override
+    depositPreauthKeylet(AccountID const& account, AccountID const& authorize) const override
     {
         if (!account || !authorize)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -1083,7 +1080,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    escrowKeylet(AccountID const& account, std::uint32_t seq) override
+    escrowKeylet(AccountID const& account, std::uint32_t seq) const override
     {
         if (!account)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -1092,7 +1089,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    lineKeylet(AccountID const& account1, AccountID const& account2, Currency const& currency) override
+    lineKeylet(AccountID const& account1, AccountID const& account2, Currency const& currency) const override
     {
         if (!account1 || !account2)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -1106,7 +1103,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    mptIssuanceKeylet(AccountID const& issuer, std::uint32_t seq) override
+    mptIssuanceKeylet(AccountID const& issuer, std::uint32_t seq) const override
     {
         if (!issuer)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -1116,7 +1113,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    mptokenKeylet(MPTID const& mptid, AccountID const& holder) override
+    mptokenKeylet(MPTID const& mptid, AccountID const& holder) const override
     {
         if (!mptid)
             return Unexpected(HostFunctionError::INVALID_PARAMS);
@@ -1128,7 +1125,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    nftOfferKeylet(AccountID const& account, std::uint32_t seq) override
+    nftOfferKeylet(AccountID const& account, std::uint32_t seq) const override
     {
         if (!account)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -1137,7 +1134,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    offerKeylet(AccountID const& account, std::uint32_t seq) override
+    offerKeylet(AccountID const& account, std::uint32_t seq) const override
     {
         if (!account)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -1146,7 +1143,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    oracleKeylet(AccountID const& account, std::uint32_t documentId) override
+    oracleKeylet(AccountID const& account, std::uint32_t documentId) const override
     {
         if (!account)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -1155,7 +1152,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    paychanKeylet(AccountID const& account, AccountID const& destination, std::uint32_t seq) override
+    paychanKeylet(AccountID const& account, AccountID const& destination, std::uint32_t seq) const override
     {
         if (!account || !destination)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -1166,7 +1163,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    permissionedDomainKeylet(AccountID const& account, std::uint32_t seq) override
+    permissionedDomainKeylet(AccountID const& account, std::uint32_t seq) const override
     {
         if (!account)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -1175,7 +1172,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    signersKeylet(AccountID const& account) override
+    signersKeylet(AccountID const& account) const override
     {
         if (!account)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -1184,7 +1181,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    ticketKeylet(AccountID const& account, std::uint32_t seq) override
+    ticketKeylet(AccountID const& account, std::uint32_t seq) const override
     {
         if (!account)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -1193,7 +1190,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    vaultKeylet(AccountID const& account, std::uint32_t seq) override
+    vaultKeylet(AccountID const& account, std::uint32_t seq) const override
     {
         if (!account)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -1202,7 +1199,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    getNFT(AccountID const& account, uint256 const& nftId) override
+    getNFT(AccountID const& account, uint256 const& nftId) const override
     {
         if (!account || !nftId)
         {
@@ -1226,7 +1223,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    getNFTIssuer(uint256 const& nftId) override
+    getNFTIssuer(uint256 const& nftId) const override
     {
         auto const issuer = nft::getIssuer(nftId);
         if (!issuer)
@@ -1236,29 +1233,31 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<std::uint32_t, HostFunctionError>
-    getNFTTaxon(uint256 const& nftId) override
+    getNFTTaxon(uint256 const& nftId) const override
     {
         return nft::toUInt32(nft::getTaxon(nftId));
     }
 
     Expected<int32_t, HostFunctionError>
-    getNFTFlags(uint256 const& nftId) override
+    getNFTFlags(uint256 const& nftId) const override
     {
         return nft::getFlags(nftId);
     }
 
     Expected<int32_t, HostFunctionError>
-    getNFTTransferFee(uint256 const& nftId) override
+    getNFTTransferFee(uint256 const& nftId) const override
     {
         return nft::getTransferFee(nftId);
     }
 
     Expected<std::uint32_t, HostFunctionError>
-    getNFTSerial(uint256 const& nftId) override
+    getNFTSerial(uint256 const& nftId) const override
     {
         return nft::getSerial(nftId);
     }
 };
+
+#endif
 
 }  // namespace test
 }  // namespace xrpl

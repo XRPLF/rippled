@@ -6,7 +6,7 @@
 namespace xrpl {
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::accountKeylet(AccountID const& account)
+WasmHostFunctionsImpl::accountKeylet(AccountID const& account) const
 {
     if (!account)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -15,7 +15,7 @@ WasmHostFunctionsImpl::accountKeylet(AccountID const& account)
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::ammKeylet(Asset const& issue1, Asset const& issue2)
+WasmHostFunctionsImpl::ammKeylet(Asset const& issue1, Asset const& issue2) const
 {
     if (issue1 == issue2)
         return Unexpected(HostFunctionError::INVALID_PARAMS);
@@ -29,7 +29,7 @@ WasmHostFunctionsImpl::ammKeylet(Asset const& issue1, Asset const& issue2)
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::checkKeylet(AccountID const& account, std::uint32_t seq)
+WasmHostFunctionsImpl::checkKeylet(AccountID const& account, std::uint32_t seq) const
 {
     if (!account)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -39,6 +39,7 @@ WasmHostFunctionsImpl::checkKeylet(AccountID const& account, std::uint32_t seq)
 
 Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::credentialKeylet(AccountID const& subject, AccountID const& issuer, Slice const& credentialType)
+    const
 {
     if (!subject || !issuer)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -52,7 +53,7 @@ WasmHostFunctionsImpl::credentialKeylet(AccountID const& subject, AccountID cons
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::didKeylet(AccountID const& account)
+WasmHostFunctionsImpl::didKeylet(AccountID const& account) const
 {
     if (!account)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -61,7 +62,7 @@ WasmHostFunctionsImpl::didKeylet(AccountID const& account)
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::delegateKeylet(AccountID const& account, AccountID const& authorize)
+WasmHostFunctionsImpl::delegateKeylet(AccountID const& account, AccountID const& authorize) const
 {
     if (!account || !authorize)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -72,7 +73,7 @@ WasmHostFunctionsImpl::delegateKeylet(AccountID const& account, AccountID const&
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::depositPreauthKeylet(AccountID const& account, AccountID const& authorize)
+WasmHostFunctionsImpl::depositPreauthKeylet(AccountID const& account, AccountID const& authorize) const
 {
     if (!account || !authorize)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -83,7 +84,7 @@ WasmHostFunctionsImpl::depositPreauthKeylet(AccountID const& account, AccountID 
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::escrowKeylet(AccountID const& account, std::uint32_t seq)
+WasmHostFunctionsImpl::escrowKeylet(AccountID const& account, std::uint32_t seq) const
 {
     if (!account)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -92,7 +93,7 @@ WasmHostFunctionsImpl::escrowKeylet(AccountID const& account, std::uint32_t seq)
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::lineKeylet(AccountID const& account1, AccountID const& account2, Currency const& currency)
+WasmHostFunctionsImpl::lineKeylet(AccountID const& account1, AccountID const& account2, Currency const& currency) const
 {
     if (!account1 || !account2)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -106,7 +107,7 @@ WasmHostFunctionsImpl::lineKeylet(AccountID const& account1, AccountID const& ac
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::mptIssuanceKeylet(AccountID const& issuer, std::uint32_t seq)
+WasmHostFunctionsImpl::mptIssuanceKeylet(AccountID const& issuer, std::uint32_t seq) const
 {
     if (!issuer)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -116,7 +117,7 @@ WasmHostFunctionsImpl::mptIssuanceKeylet(AccountID const& issuer, std::uint32_t 
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::mptokenKeylet(MPTID const& mptid, AccountID const& holder)
+WasmHostFunctionsImpl::mptokenKeylet(MPTID const& mptid, AccountID const& holder) const
 {
     if (!mptid)
         return Unexpected(HostFunctionError::INVALID_PARAMS);
@@ -128,7 +129,7 @@ WasmHostFunctionsImpl::mptokenKeylet(MPTID const& mptid, AccountID const& holder
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::nftOfferKeylet(AccountID const& account, std::uint32_t seq)
+WasmHostFunctionsImpl::nftOfferKeylet(AccountID const& account, std::uint32_t seq) const
 {
     if (!account)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -137,7 +138,7 @@ WasmHostFunctionsImpl::nftOfferKeylet(AccountID const& account, std::uint32_t se
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::offerKeylet(AccountID const& account, std::uint32_t seq)
+WasmHostFunctionsImpl::offerKeylet(AccountID const& account, std::uint32_t seq) const
 {
     if (!account)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -146,7 +147,7 @@ WasmHostFunctionsImpl::offerKeylet(AccountID const& account, std::uint32_t seq)
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::oracleKeylet(AccountID const& account, std::uint32_t documentId)
+WasmHostFunctionsImpl::oracleKeylet(AccountID const& account, std::uint32_t documentId) const
 {
     if (!account)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -155,7 +156,7 @@ WasmHostFunctionsImpl::oracleKeylet(AccountID const& account, std::uint32_t docu
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::paychanKeylet(AccountID const& account, AccountID const& destination, std::uint32_t seq)
+WasmHostFunctionsImpl::paychanKeylet(AccountID const& account, AccountID const& destination, std::uint32_t seq) const
 {
     if (!account || !destination)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -166,7 +167,7 @@ WasmHostFunctionsImpl::paychanKeylet(AccountID const& account, AccountID const& 
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::permissionedDomainKeylet(AccountID const& account, std::uint32_t seq)
+WasmHostFunctionsImpl::permissionedDomainKeylet(AccountID const& account, std::uint32_t seq) const
 {
     if (!account)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -175,7 +176,7 @@ WasmHostFunctionsImpl::permissionedDomainKeylet(AccountID const& account, std::u
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::signersKeylet(AccountID const& account)
+WasmHostFunctionsImpl::signersKeylet(AccountID const& account) const
 {
     if (!account)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -184,7 +185,7 @@ WasmHostFunctionsImpl::signersKeylet(AccountID const& account)
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::ticketKeylet(AccountID const& account, std::uint32_t seq)
+WasmHostFunctionsImpl::ticketKeylet(AccountID const& account, std::uint32_t seq) const
 {
     if (!account)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -193,7 +194,7 @@ WasmHostFunctionsImpl::ticketKeylet(AccountID const& account, std::uint32_t seq)
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::vaultKeylet(AccountID const& account, std::uint32_t seq)
+WasmHostFunctionsImpl::vaultKeylet(AccountID const& account, std::uint32_t seq) const
 {
     if (!account)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);

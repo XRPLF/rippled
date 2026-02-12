@@ -25,7 +25,7 @@ WasmHostFunctionsImpl::updateData(Slice const& data)
 // =========================================================
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::checkSignature(Slice const& message, Slice const& signature, Slice const& pubkey)
+WasmHostFunctionsImpl::checkSignature(Slice const& message, Slice const& signature, Slice const& pubkey) const
 {
     if (!publicKeyType(pubkey))
         return Unexpected(HostFunctionError::INVALID_PARAMS);
@@ -35,7 +35,7 @@ WasmHostFunctionsImpl::checkSignature(Slice const& message, Slice const& signatu
 }
 
 Expected<Hash, HostFunctionError>
-WasmHostFunctionsImpl::computeSha512HalfHash(Slice const& data)
+WasmHostFunctionsImpl::computeSha512HalfHash(Slice const& data) const
 {
     auto const hash = sha512Half(data);
     return hash;

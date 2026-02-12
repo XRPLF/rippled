@@ -24,7 +24,7 @@ class WasmiEngine;
 
 class WasmEngine
 {
-    std::unique_ptr<WasmiEngine> const impl;
+    std::unique_ptr<WasmiEngine> const impl_;
 
     WasmEngine();
 
@@ -43,20 +43,20 @@ public:
 
     Expected<WasmResult<int32_t>, TER>
     run(Bytes const& wasmCode,
+        HostFunctions& hfs,
         std::string_view funcName = {},
         std::vector<WasmParam> const& params = {},
-        std::shared_ptr<ImportVec> const& imports = {},
-        std::shared_ptr<HostFunctions> const& hfs = {},
+        ImportVec const& imports = {},
         int64_t gasLimit = -1,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
     NotTEC
     check(
         Bytes const& wasmCode,
+        HostFunctions& hfs,
         std::string_view funcName,
         std::vector<WasmParam> const& params = {},
-        std::shared_ptr<ImportVec> const& imports = {},
-        std::shared_ptr<HostFunctions> const& hfs = {},
+        ImportVec const& imports = {},
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
     // Host functions helper functionality
@@ -69,13 +69,13 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-std::shared_ptr<ImportVec>
+ImportVec
 createWasmImport(HostFunctions& hfs);
 
 Expected<EscrowResult, TER>
 runEscrowWasm(
     Bytes const& wasmCode,
-    std::shared_ptr<HostFunctions> const& hfs,
+    HostFunctions& hfs,
     std::string_view funcName = ESCROW_FUNCTION_NAME,
     std::vector<WasmParam> const& params = {},
     int64_t gasLimit = -1);
@@ -83,7 +83,7 @@ runEscrowWasm(
 NotTEC
 preflightEscrowWasm(
     Bytes const& wasmCode,
-    std::shared_ptr<HostFunctions> const& hfs,
+    HostFunctions& hfs,
     std::string_view funcName = ESCROW_FUNCTION_NAME,
     std::vector<WasmParam> const& params = {});
 

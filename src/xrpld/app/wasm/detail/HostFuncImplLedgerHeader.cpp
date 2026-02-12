@@ -10,41 +10,41 @@ namespace xrpl {
 // =========================================================
 
 Expected<std::uint32_t, HostFunctionError>
-WasmHostFunctionsImpl::getLedgerSqn()
+WasmHostFunctionsImpl::getLedgerSqn() const
 {
-    return ctx.view().seq();
+    return ctx_.view().seq();
 }
 
 Expected<std::uint32_t, HostFunctionError>
-WasmHostFunctionsImpl::getParentLedgerTime()
+WasmHostFunctionsImpl::getParentLedgerTime() const
 {
-    return ctx.view().parentCloseTime().time_since_epoch().count();
+    return ctx_.view().parentCloseTime().time_since_epoch().count();
 }
 
 Expected<Hash, HostFunctionError>
-WasmHostFunctionsImpl::getParentLedgerHash()
+WasmHostFunctionsImpl::getParentLedgerHash() const
 {
-    return ctx.view().header().parentHash;
+    return ctx_.view().header().parentHash;
 }
 
 Expected<std::uint32_t, HostFunctionError>
-WasmHostFunctionsImpl::getBaseFee()
+WasmHostFunctionsImpl::getBaseFee() const
 {
-    return ctx.view().fees().base.drops();
+    return ctx_.view().fees().base.drops();
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::isAmendmentEnabled(uint256 const& amendmentId)
+WasmHostFunctionsImpl::isAmendmentEnabled(uint256 const& amendmentId) const
 {
-    return ctx.view().rules().enabled(amendmentId);
+    return ctx_.view().rules().enabled(amendmentId);
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::isAmendmentEnabled(std::string_view const& amendmentName)
+WasmHostFunctionsImpl::isAmendmentEnabled(std::string_view const& amendmentName) const
 {
-    auto const& table = ctx.registry.getAmendmentTable();
+    auto const& table = ctx_.registry.getAmendmentTable();
     auto const amendment = table.find(std::string(amendmentName));
-    return ctx.view().rules().enabled(amendment);
+    return ctx_.view().rules().enabled(amendment);
 }
 
 }  // namespace xrpl

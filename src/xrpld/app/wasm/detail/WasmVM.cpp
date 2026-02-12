@@ -89,21 +89,21 @@ setCommonHostFunctions(HostFunctions* hfs, ImportVec& i)
     // clang-format on
 }
 
-std::shared_ptr<ImportVec>
+ImportVec
 createWasmImport(HostFunctions& hfs)
 {
-    std::shared_ptr<ImportVec> i(std::make_shared<ImportVec>());
+    ImportVec import;
 
-    setCommonHostFunctions(&hfs, *i);
-    WASM_IMPORT_FUNC2(*i, updateData, "update_data", &hfs, 1000);
+    setCommonHostFunctions(&hfs, import);
+    WASM_IMPORT_FUNC2(import, updateData, "update_data", &hfs, 1000);
 
-    return i;
+    return import;
 }
 
 Expected<EscrowResult, TER>
 runEscrowWasm(
     Bytes const& wasmCode,
-    std::shared_ptr<HostFunctions> const& hfs,
+    HostFunctions& hfs,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
     int64_t gasLimit)
@@ -112,7 +112,7 @@ runEscrowWasm(
     auto& vm = WasmEngine::instance();
     // vm.initMaxPages(MAX_PAGES);
 
-    auto const ret = vm.run(wasmCode, funcName, params, createWasmImport(*hfs), hfs, gasLimit, hfs->getJournal());
+    auto const ret = vm.run(wasmCode, hfs, funcName, params, createWasmImport(hfs), gasLimit, hfs.getJournal());
 
     // std::cout << "runEscrowWasm, mod size: " << wasmCode.size()
     //           << ", gasLimit: " << gasLimit << ", funcName: " << funcName;
@@ -134,7 +134,7 @@ runEscrowWasm(
 NotTEC
 preflightEscrowWasm(
     Bytes const& wasmCode,
-    std::shared_ptr<HostFunctions> const& hfs,
+    HostFunctions& hfs,
     std::string_view funcName,
     std::vector<WasmParam> const& params)
 {
@@ -142,14 +142,14 @@ preflightEscrowWasm(
     auto& vm = WasmEngine::instance();
     // vm.initMaxPages(MAX_PAGES);
 
-    auto const ret = vm.check(wasmCode, funcName, params, createWasmImport(*hfs), hfs, hfs->getJournal());
+    auto const ret = vm.check(wasmCode, hfs, funcName, params, createWasmImport(hfs), hfs.getJournal());
 
     return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-WasmEngine::WasmEngine() : impl(std::make_unique<WasmiEngine>())
+WasmEngine::WasmEngine() : impl_(std::make_unique<WasmiEngine>())
 {
 }
 
@@ -163,39 +163,39 @@ WasmEngine::instance()
 Expected<WasmResult<int32_t>, TER>
 WasmEngine::run(
     Bytes const& wasmCode,
+    HostFunctions& hfs,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
-    std::shared_ptr<ImportVec> const& imports,
-    std::shared_ptr<HostFunctions> const& hfs,
+    ImportVec const& imports,
     int64_t gasLimit,
     beast::Journal j)
 {
-    return impl->run(wasmCode, funcName, params, imports, hfs, gasLimit, j);
+    return impl_->run(wasmCode, hfs, funcName, params, imports, gasLimit, j);
 }
 
 NotTEC
 WasmEngine::check(
     Bytes const& wasmCode,
+    HostFunctions& hfs,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
-    std::shared_ptr<ImportVec> const& imports,
-    std::shared_ptr<HostFunctions> const& hfs,
+    ImportVec const& imports,
     beast::Journal j)
 {
-    return impl->check(wasmCode, funcName, params, imports, hfs, j);
+    return impl_->check(wasmCode, hfs, funcName, params, imports, j);
 }
 
 void*
 WasmEngine::newTrap(std::string const& msg)
 {
-    return impl->newTrap(msg);
+    return impl_->newTrap(msg);
 }
 
 // LCOV_EXCL_START
 beast::Journal
 WasmEngine::getJournal() const
 {
-    return impl->getJournal();
+    return impl_->getJournal();
 }
 // LCOV_EXCL_STOP
 

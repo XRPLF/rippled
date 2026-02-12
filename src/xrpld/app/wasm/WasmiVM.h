@@ -145,12 +145,7 @@ public:
     ModuleWrapper(ModuleWrapper&& o);
     ModuleWrapper&
     operator=(ModuleWrapper&& o);
-    ModuleWrapper(
-        StorePtr& s,
-        Bytes const& wasmBin,
-        bool instantiate,
-        std::shared_ptr<ImportVec> const& imports,
-        beast::Journal j);
+    ModuleWrapper(StorePtr& s, Bytes const& wasmBin, bool instantiate, ImportVec const& imports, beast::Journal j);
     ~ModuleWrapper() = default;
 
     operator bool() const;
@@ -175,7 +170,7 @@ public:
 
 private:
     WasmExternVec
-    buildImports(StorePtr& s, std::shared_ptr<ImportVec> const& imports);
+    buildImports(StorePtr& s, ImportVec const& imports);
 };
 
 class WasmiEngine
@@ -187,10 +182,6 @@ class WasmiEngine
 
     std::mutex m_;  // 1 instance mutex
 
-    // to ensure lifetime during next executions with the same module
-    std::shared_ptr<ImportVec> imports_;
-    std::shared_ptr<HostFunctions> hfs_;
-
 public:
     WasmiEngine();
     ~WasmiEngine() = default;
@@ -200,24 +191,24 @@ public:
 
     Expected<WasmResult<int32_t>, TER>
     run(Bytes const& wasmCode,
+        HostFunctions& hfs,
         std::string_view funcName,
         std::vector<WasmParam> const& params,
-        std::shared_ptr<ImportVec> const& imports,
-        std::shared_ptr<HostFunctions> const& hfs,
+        ImportVec const& imports,
         int64_t gas,
         beast::Journal j);
 
     NotTEC
     check(
         Bytes const& wasmCode,
+        HostFunctions& hfs,
         std::string_view funcName,
         std::vector<WasmParam> const& params,
-        std::shared_ptr<ImportVec> const& imports,
-        std::shared_ptr<HostFunctions> const& hfs,
+        ImportVec const& imports,
         beast::Journal j);
 
     std::int64_t
-    getGas();
+    getGas() const;
 
     // Host functions helper functionality
     wasm_trap_t*
@@ -228,7 +219,7 @@ public:
 
 private:
     InstanceWrapper const&
-    getRT(int m = 0, int i = 0);
+    getRT(int m = 0, int i = 0) const;
 
     wmem
     getMem() const;
@@ -237,13 +228,24 @@ private:
     allocate(int32_t size);
 
     Expected<WasmResult<int32_t>, TER>
-    runHlp(Bytes const& wasmCode, std::string_view funcName, std::vector<WasmParam> const& params, int64_t gas);
+    runHlp(
+        Bytes const& wasmCode,
+        HostFunctions& hfs,
+        std::string_view funcName,
+        std::vector<WasmParam> const& params,
+        ImportVec const& imports,
+        int64_t gas);
 
     NotTEC
-    checkHlp(Bytes const& wasmCode, std::string_view funcName, std::vector<WasmParam> const& params);
+    checkHlp(
+        Bytes const& wasmCode,
+        HostFunctions& hfs,
+        std::string_view funcName,
+        std::vector<WasmParam> const& params,
+        ImportVec const& imports);
 
     int
-    addModule(Bytes const& wasmCode, bool instantiate, int64_t gas);
+    addModule(Bytes const& wasmCode, bool instantiate, ImportVec const& imports, int64_t gas);
     void
     clearModules();
 
@@ -256,7 +258,7 @@ private:
     makeModule(Bytes const& wasmCode, WasmExternVec const& imports = {});
 
     FuncInfo
-    getFunc(std::string_view funcName);
+    getFunc(std::string_view funcName) const;
 
     std::vector<wasm_val_t>
     convertParams(std::vector<WasmParam> const& params);

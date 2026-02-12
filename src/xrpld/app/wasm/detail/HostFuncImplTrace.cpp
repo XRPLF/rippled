@@ -10,7 +10,7 @@
 namespace xrpl {
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::trace(std::string_view const& msg, Slice const& data, bool asHex)
+WasmHostFunctionsImpl::trace(std::string_view const& msg, Slice const& data, bool asHex) const
 {
     if (!asHex)
     {
@@ -30,28 +30,28 @@ WasmHostFunctionsImpl::trace(std::string_view const& msg, Slice const& data, boo
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::traceNum(std::string_view const& msg, int64_t data)
+WasmHostFunctionsImpl::traceNum(std::string_view const& msg, int64_t data) const
 {
     log(msg, [data] { return data; });
     return 0;
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::traceAccount(std::string_view const& msg, AccountID const& account)
+WasmHostFunctionsImpl::traceAccount(std::string_view const& msg, AccountID const& account) const
 {
     log(msg, [&account] { return toBase58(account); });
     return 0;
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::traceFloat(std::string_view const& msg, Slice const& data)
+WasmHostFunctionsImpl::traceFloat(std::string_view const& msg, Slice const& data) const
 {
     log(msg, [&data] { return wasm_float::floatToString(data); });
     return 0;
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::traceAmount(std::string_view const& msg, STAmount const& amount)
+WasmHostFunctionsImpl::traceAmount(std::string_view const& msg, STAmount const& amount) const
 {
     log(msg, [&amount] { return amount.getFullText(); });
     return 0;
