@@ -2937,7 +2937,7 @@ public:
 
                 // Fee = baseFee * (1 + 65) = 66 * baseFee
                 std::uint32_t aliceSeq = env.seq(alice);
-                env(noop(alice), msig({beckyReg, cheriReg, dariaReg}), fee(66 * baseFee), ter(temMALFORMED));
+                env(noop(alice), msig({beckyReg, cheriReg, dariaReg}), fee(66 * baseFee), ter(telENV_RPC_FAILED));
                 env.close();
                 BEAST_EXPECT(env.seq(alice) == aliceSeq);
             }
