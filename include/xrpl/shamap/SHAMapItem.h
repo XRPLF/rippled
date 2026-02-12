@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_SHAMAPITEM_H_INCLUDED
-#define XRPL_SHAMAP_SHAMAPITEM_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/CountedObject.h>
@@ -163,5 +162,3 @@ make_shamapitem(SHAMapItem const& other)
 }
 
 }  // namespace xrpl
-
-#endif

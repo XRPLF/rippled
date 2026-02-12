@@ -73,11 +73,11 @@ equal(std::unique_ptr<Step> const& s1, DirectStepInfo const& dsi)
 }
 
 bool
-equal(std::unique_ptr<Step> const& s1, XRPEndpointStepInfo const& xrpsi)
+equal(std::unique_ptr<Step> const& s1, XRPEndpointStepInfo const& xrpStepInfo)
 {
     if (!s1)
         return false;
-    return test::xrpEndpointStepEqual(*s1, xrpsi.acc);
+    return test::xrpEndpointStepEqual(*s1, xrpStepInfo.acc);
 }
 
 bool
@@ -970,7 +970,7 @@ struct PayStrand_test : public beast::unit_test::suite
 
             Path const p = [&] {
                 Path result;
-                result.push_back(allpe(gw, bob["USD"]));
+                result.push_back(allPathElements(gw, bob["USD"]));
                 result.push_back(cpe(EUR.currency));
                 return result;
             }();

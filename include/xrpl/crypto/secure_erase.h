@@ -1,5 +1,4 @@
-#ifndef XRPL_CRYPTO_SECURE_ERASE_H_INCLUDED
-#define XRPL_CRYPTO_SECURE_ERASE_H_INCLUDED
+#pragma once
 
 #include <cstddef>
 
@@ -23,5 +22,3 @@ void
 secure_erase(void* dest, std::size_t bytes);
 
 }  // namespace xrpl
-
-#endif

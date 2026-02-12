@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_PATHS_RIPPLESTATE_H_INCLUDED
-#define XRPL_APP_PATHS_RIPPLESTATE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/ledger/View.h>
@@ -217,5 +216,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

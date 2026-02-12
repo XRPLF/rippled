@@ -31,18 +31,6 @@ repos:
     hooks:
       - id: cmake-format
         additional_dependencies: [PyYAML]
-        exclude: |
-          (?x)^(
-              cmake/CodeCoverage.cmake|
-              cmake/XrplCore.cmake|
-              cmake/XrplDocs.cmake|
-              cmake/XrplInstall.cmake|
-              cmake/add_module.cmake|
-              cmake/isolate_headers.cmake|
-              cmake/target_link_modules.cmake|
-              cmake/target_protobuf_sources.cmake|
-              tests/conan/CMakeLists.txt
-          )$
 
   - repo: https://github.com/rbubley/mirrors-prettier
     rev: 5ba47274f9b181bce26a5150a725577f3c336011 # frozen: v3.6.2

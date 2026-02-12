@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_RPCHELPERS_H_INCLUDED
-#define XRPL_RPC_RPCHELPERS_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/TxQ.h>
@@ -152,5 +151,3 @@ keypairForSignature(Json::Value const& params, Json::Value& error, unsigned int 
 }  // namespace RPC
 
 }  // namespace xrpl
-
-#endif

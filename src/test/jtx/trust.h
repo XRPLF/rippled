@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_TRUST_H_INCLUDED
-#define XRPL_TEST_JTX_TRUST_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 
@@ -24,5 +23,3 @@ claw(Account const& account, STAmount const& amount, std::optional<Account> cons
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

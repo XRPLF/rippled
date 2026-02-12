@@ -1,5 +1,4 @@
-#ifndef XRPL_JSON_JSON_VALUE_H_INCLUDED
-#define XRPL_JSON_JSON_VALUE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/json/json_forwards.h>
@@ -677,5 +676,3 @@ public:
 };
 
 }  // namespace Json
-
-#endif  // XRPL_JSON_JSON_VALUE_H_INCLUDED

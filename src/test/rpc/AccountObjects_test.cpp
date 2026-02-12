@@ -17,7 +17,7 @@
 namespace xrpl {
 namespace test {
 
-static char const* bobs_account_objects[] = {
+static char const* bob_account_objects[] = {
     R"json({
   "Account" : "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
   "BookDirectory" : "50AD0A9E54D2B381288D535EB724E4275FFBF41580D28A925D038D7EA4C68000",
@@ -254,7 +254,7 @@ public:
 
         Json::Value bobj[4];
         for (int i = 0; i < 4; ++i)
-            Json::Reader{}.parse(bobs_account_objects[i], bobj[i]);
+            Json::Reader{}.parse(bob_account_objects[i], bobj[i]);
 
         // test 'unstepped'
         // i.e. request account objects without explicit limit/marker paging

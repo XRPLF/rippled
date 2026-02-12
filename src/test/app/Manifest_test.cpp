@@ -1,15 +1,15 @@
 #include <test/jtx.h>
 
-#include <xrpld/app/main/DBInit.h>
-#include <xrpld/app/misc/Manifest.h>
 #include <xrpld/app/misc/ValidatorList.h>
-#include <xrpld/app/rdb/Wallet.h>
 
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/STExchange.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Sign.h>
+#include <xrpl/rdb/DBInit.h>
+#include <xrpl/server/Manifest.h>
+#include <xrpl/server/Wallet.h>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
@@ -827,8 +827,13 @@ public:
 
             // applyManifest should accept new manifests with
             // higher sequence numbers
+            auto const seq0 = cache.sequence();
             BEAST_EXPECT(cache.applyManifest(clone(s_a0)) == ManifestDisposition::accepted);
+            BEAST_EXPECT(cache.sequence() > seq0);
+
+            auto const seq1 = cache.sequence();
             BEAST_EXPECT(cache.applyManifest(clone(s_a0)) == ManifestDisposition::stale);
+            BEAST_EXPECT(cache.sequence() == seq1);
 
             BEAST_EXPECT(cache.applyManifest(clone(s_a1)) == ManifestDisposition::accepted);
             BEAST_EXPECT(cache.applyManifest(clone(s_a1)) == ManifestDisposition::stale);

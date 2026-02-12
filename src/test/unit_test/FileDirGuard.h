@@ -1,5 +1,4 @@
-#ifndef TEST_UNIT_TEST_DIRGUARD_H
-#define TEST_UNIT_TEST_DIRGUARD_H
+#pragma once
 
 #include <test/jtx/TestSuite.h>
 
@@ -154,5 +153,3 @@ public:
 
 }  // namespace detail
 }  // namespace xrpl
-
-#endif  // TEST_UNIT_TEST_DIRGUARD_H

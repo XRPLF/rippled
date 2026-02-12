@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_CONSENSUSS_VALIDATIONS_H_INCLUDED
-#define XRPL_APP_CONSENSUSS_VALIDATIONS_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/consensus/Validations.h>
@@ -237,5 +236,3 @@ handleNewValidation(
     std::optional<beast::Journal> j = std::nullopt);
 
 }  // namespace xrpl
-
-#endif

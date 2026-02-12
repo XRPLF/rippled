@@ -108,8 +108,7 @@ class Transaction_test : public beast::unit_test::suite
         auto const deletedLedger = (startLegSeq + endLegSeq) / 2;
         {
             // Remove one of the ledgers from the database directly
-            dynamic_cast<SQLiteDatabase*>(&env.app().getRelationalDatabase())
-                ->deleteTransactionByLedgerSeq(deletedLedger);
+            env.app().getRelationalDatabase().deleteTransactionByLedgerSeq(deletedLedger);
         }
 
         for (int deltaEndSeq = 0; deltaEndSeq < 2; ++deltaEndSeq)
@@ -320,8 +319,7 @@ class Transaction_test : public beast::unit_test::suite
         auto const deletedLedger = (startLegSeq + endLegSeq) / 2;
         {
             // Remove one of the ledgers from the database directly
-            dynamic_cast<SQLiteDatabase*>(&env.app().getRelationalDatabase())
-                ->deleteTransactionByLedgerSeq(deletedLedger);
+            env.app().getRelationalDatabase().deleteTransactionByLedgerSeq(deletedLedger);
         }
 
         for (int deltaEndSeq = 0; deltaEndSeq < 2; ++deltaEndSeq)
@@ -512,7 +510,7 @@ class Transaction_test : public beast::unit_test::suite
     }
 
     void
-    testCTIDRPC(FeatureBitset features)
+    testRPCsForCTID(FeatureBitset features)
     {
         testcase("CTID RPC");
 
@@ -804,7 +802,7 @@ public:
         testRangeRequest(features);
         testRangeCTIDRequest(features);
         testCTIDValidation(features);
-        testCTIDRPC(features);
+        testRPCsForCTID(features);
         forAllApiVersions(std::bind_front(&Transaction_test::testRequest, this, features));
     }
 };

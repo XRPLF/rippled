@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_MANIFEST_H_INCLUDED
-#define XRPL_APP_MISC_MANIFEST_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -427,5 +426,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

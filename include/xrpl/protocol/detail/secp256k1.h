@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_SECP256K1_H_INCLUDED
-#define XRPL_PROTOCOL_SECP256K1_H_INCLUDED
+#pragma once
 
 #include <secp256k1.h>
 
@@ -26,5 +25,3 @@ secp256k1Context()
 }
 
 }  // namespace xrpl
-
-#endif

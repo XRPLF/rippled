@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_MPT_H_INCLUDED
-#define XRPL_TEST_JTX_MPT_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -296,19 +295,19 @@ public:
     create(MPTCreate const& arg = MPTCreate{});
 
     static Json::Value
-    createjv(MPTCreate const& arg = MPTCreate{});
+    createJV(MPTCreate const& arg = MPTCreate{});
 
     void
     destroy(MPTDestroy const& arg = MPTDestroy{});
 
     static Json::Value
-    destroyjv(MPTDestroy const& arg = MPTDestroy{});
+    destroyJV(MPTDestroy const& arg = MPTDestroy{});
 
     void
     authorize(MPTAuthorize const& arg = MPTAuthorize{});
 
     static Json::Value
-    authorizejv(MPTAuthorize const& arg = MPTAuthorize{});
+    authorizeJV(MPTAuthorize const& arg = MPTAuthorize{});
 
     void
     authorizeHolders(Holders const& holders);
@@ -317,7 +316,7 @@ public:
     set(MPTSet const& set = {});
 
     static Json::Value
-    setjv(MPTSet const& set = {});
+    setJV(MPTSet const& set = {});
 
     void
     convert(MPTConvert const& arg = MPTConvert{});
@@ -525,5 +524,3 @@ private:
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif
