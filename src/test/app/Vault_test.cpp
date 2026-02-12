@@ -4978,7 +4978,7 @@ class Vault_test : public beast::unit_test::suite
             {
                 tx[sfAssetsMaximum] = "18446744073709551617e5";  // uint64 max + 1
                 env(tx, THISLINE);
-                BEAST_EXPECT(false, "Expected parse_error for mantissa larger than uint64 max");
+                BEAST_EXPECTS(false, "Expected parse_error for mantissa larger than uint64 max");
             }
             catch (parse_error const& e)
             {
