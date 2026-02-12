@@ -2,13 +2,13 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/app/misc/Transaction.h>
-#include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Role.h>
 
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/resource/Fees.h>
 
 namespace xrpl {
