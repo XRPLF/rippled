@@ -245,7 +245,7 @@ public:
         Status status(ok);
 
         rocksdb::ReadOptions const options;
-        rocksdb::Slice const slice(reinterpret_cast<char const*>(hash.data()), m_keyBytes);
+        rocksdb::Slice const slice(std::bit_cast<char const*>(hash.data()), m_keyBytes);
 
         std::string string;
 
