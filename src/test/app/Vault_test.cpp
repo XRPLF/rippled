@@ -5024,7 +5024,7 @@ class Vault_test : public beast::unit_test::suite
                 "fixLendingProtocolV1_1 disabled",
                 all - fixLendingProtocolV1_1,
                 std::string(maxDataPayloadLength, 'A'),
-                tesSUCCESS);
+                temDISABLED);
         }
 
         {
