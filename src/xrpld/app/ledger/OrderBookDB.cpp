@@ -2,12 +2,12 @@
 #include <xrpld/app/ledger/OrderBookDB.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/AMMUtils.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/server/NetworkOPs.h>
 
 namespace xrpl {
 

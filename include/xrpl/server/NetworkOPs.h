@@ -1,13 +1,13 @@
 #pragma once
 
-#include <xrpld/app/consensus/RCLCxPeerPos.h>
-#include <xrpld/app/ledger/Ledger.h>
-#include <xrpld/rpc/InfoSub.h>
-
 #include <xrpl/core/JobQueue.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/STValidation.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/messages.h>
+#include <xrpl/server/InfoSub.h>
+#include <xrpl/shamap/SHAMap.h>
 
 #include <boost/asio.hpp>
 
@@ -23,6 +23,7 @@ class LedgerMaster;
 class Transaction;
 class ValidatorKeys;
 class CanonicalTXSet;
+class RCLCxPeerPos;
 
 // This is the primary interface into the "client" portion of the program.
 // Code that wants to do normal operations on the network such as
@@ -244,21 +245,5 @@ public:
     virtual void
     stateAccounting(Json::Value& obj) = 0;
 };
-
-//------------------------------------------------------------------------------
-
-std::unique_ptr<NetworkOPs>
-make_NetworkOPs(
-    Application& app,
-    NetworkOPs::clock_type& clock,
-    bool standalone,
-    std::size_t minPeerCount,
-    bool start_valid,
-    JobQueue& job_queue,
-    LedgerMaster& ledgerMaster,
-    ValidatorKeys const& validatorKeys,
-    boost::asio::io_context& io_svc,
-    beast::Journal journal,
-    beast::insight::Collector::ptr const& collector);
 
 }  // namespace xrpl
