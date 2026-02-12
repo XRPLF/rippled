@@ -195,7 +195,7 @@ STTx::getTransactionID() const
 }
 
 //------------------------------------------------------------------------------
-// Multi-sign depth limits
+// Multi-sign depth and leaf limits
 //------------------------------------------------------------------------------
 
 /** Maximum nesting depth for nested multi-signing (featureNestedMultiSign). */
@@ -203,6 +203,13 @@ constexpr int nestedMultiSignMaxDepth = 4;
 
 /** Maximum nesting depth when nested multi-signing is disabled (flat only). */
 constexpr int legacyMultiSignMaxDepth = 1;
+
+/** Maximum total leaf signers across the entire nested tree.
+    Bounds worst-case signature verification cost.
+    Only enforced when featureNestedMultiSign is enabled
+    (flat signing is already capped at maxMultiSigners per array).
+*/
+constexpr std::size_t nestedMultiSignMaxLeafSigners = 64;
 
 //------------------------------------------------------------------------------
 // Multi-sign signer entry helpers

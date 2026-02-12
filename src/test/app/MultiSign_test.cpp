@@ -2353,7 +2353,7 @@ public:
         // 1. STTx::checkSign → multiSignHelper (local signature &
         //    structure checks: depth, sort order, leaf/nested shape,
         //    cryptographic validity).
-        //    Tests: 1, 2, 3, 5, 6, 8.
+        //    Tests: 1, 2, 3, 5, 6, 8, 11, 12.
         //
         // 2. Transactor::checkMultiSign → validateSigners (ledger-
         //    level checks: signer list lookup, phantom/regular key,
@@ -2869,6 +2869,119 @@ public:
                 BEAST_EXPECT(jrr[jss::result][jss::status] == "error");
                 BEAST_EXPECT(
                     jrr[jss::result][jss::error_message] == "Signers array may only contain valid Signer entries.");
+            }
+        }
+
+        // Tests 11–12: Leaf cap enforcement
+        // (nestedMultiSignMaxLeafSigners = 64).
+        // Both tests share 65 funded leaf accounts.
+        {
+            std::vector<Account> leaves;
+            leaves.reserve(65);
+            for (int i = 0; i < 65; ++i)
+                leaves.emplace_back("leaf" + std::to_string(i), KeyType::secp256k1);
+            for (auto const& leaf : leaves)
+                env.fund(XRP(1000), leaf);
+            env.close();
+
+            // Test 11: Leaf cap exceeded (65 > 64).
+            // 3-way nested tree: becky(22) + cheri(22) + daria(21)
+            // = 65 leaf signers.  multiSignHelper's leaf counter
+            // rejects with "Too many leaf signers." at preflight.
+            {
+                testcase("Nested Leaf Cap Exceeded");
+
+                // alice -> becky, cheri, daria (quorum 3)
+                env(signers(alice, 3, {{becky, 1}, {cheri, 1}, {daria, 1}}));
+
+                // becky -> leaves 0..21 (22 signers)
+                {
+                    std::vector<signer> list;
+                    for (int i = 0; i < 22; ++i)
+                        list.emplace_back(leaves[i], 1);
+                    env(signers(becky, 1, list));
+                }
+
+                // cheri -> leaves 22..43 (22 signers)
+                {
+                    std::vector<signer> list;
+                    for (int i = 22; i < 44; ++i)
+                        list.emplace_back(leaves[i], 1);
+                    env(signers(cheri, 1, list));
+                }
+
+                // daria -> leaves 44..64 (21 signers)
+                {
+                    std::vector<signer> list;
+                    for (int i = 44; i < 65; ++i)
+                        list.emplace_back(leaves[i], 1);
+                    env(signers(daria, 1, list));
+                }
+                env.close();
+
+                // Build nested msig: 22 + 22 + 21 = 65 leaf signers
+                std::vector<std::shared_ptr<Reg>> beckyChildren;
+                for (int i = 0; i < 22; ++i)
+                    beckyChildren.push_back(msigner(leaves[i]));
+                auto beckyReg = std::make_shared<Reg>(becky, std::move(beckyChildren));
+
+                std::vector<std::shared_ptr<Reg>> cheriChildren;
+                for (int i = 22; i < 44; ++i)
+                    cheriChildren.push_back(msigner(leaves[i]));
+                auto cheriReg = std::make_shared<Reg>(cheri, std::move(cheriChildren));
+
+                std::vector<std::shared_ptr<Reg>> dariaChildren;
+                for (int i = 44; i < 65; ++i)
+                    dariaChildren.push_back(msigner(leaves[i]));
+                auto dariaReg = std::make_shared<Reg>(daria, std::move(dariaChildren));
+
+                // Fee = baseFee * (1 + 65) = 66 * baseFee
+                std::uint32_t aliceSeq = env.seq(alice);
+                env(noop(alice), msig({beckyReg, cheriReg, dariaReg}), fee(66 * baseFee), ter(temMALFORMED));
+                env.close();
+                BEAST_EXPECT(env.seq(alice) == aliceSeq);
+            }
+
+            // Test 12: At leaf cap succeeds (exactly 64).
+            // 2-way nested tree: becky(32) + cheri(32) = 64.
+            // Each nested signer is within the per-array cap of 32.
+            {
+                testcase("Nested Leaf Cap At Limit Succeeds");
+
+                // Reconfigure: alice -> becky, cheri (quorum 2)
+                env(signers(alice, 2, {{becky, 1}, {cheri, 1}}));
+
+                // becky -> leaves 0..31 (32 signers)
+                {
+                    std::vector<signer> list;
+                    for (int i = 0; i < 32; ++i)
+                        list.emplace_back(leaves[i], 1);
+                    env(signers(becky, 1, list));
+                }
+
+                // cheri -> leaves 32..63 (32 signers)
+                {
+                    std::vector<signer> list;
+                    for (int i = 32; i < 64; ++i)
+                        list.emplace_back(leaves[i], 1);
+                    env(signers(cheri, 1, list));
+                }
+                env.close();
+
+                // Build nested msig: 32 + 32 = 64 leaf signers
+                std::vector<std::shared_ptr<Reg>> beckyLeaves;
+                for (int i = 0; i < 32; ++i)
+                    beckyLeaves.push_back(msigner(leaves[i]));
+                auto beckyReg2 = std::make_shared<Reg>(becky, std::move(beckyLeaves));
+
+                std::vector<std::shared_ptr<Reg>> cheriLeaves;
+                for (int i = 32; i < 64; ++i)
+                    cheriLeaves.push_back(msigner(leaves[i]));
+                auto cheriReg2 = std::make_shared<Reg>(cheri, std::move(cheriLeaves));
+
+                // Fee = baseFee * (1 + 64) = 65 * baseFee
+                env(noop(alice), msig({beckyReg2, cheriReg2}), fee(65 * baseFee), ter(tesSUCCESS));
+                env.close();
             }
         }
     }

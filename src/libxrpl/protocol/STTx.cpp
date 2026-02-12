@@ -431,8 +431,11 @@ multiSignHelper(
 
     STArray const& signers{sigObject.getFieldArray(sfSigners)};
 
-    // Set max depth based on feature flag
-    int const maxDepth = rules.enabled(featureNestedMultiSign) ? nestedMultiSignMaxDepth : legacyMultiSignMaxDepth;
+    // Set max depth and leaf cap based on feature flag
+    bool const nested = rules.enabled(featureNestedMultiSign);
+    int const maxDepth = nested ? nestedMultiSignMaxDepth : legacyMultiSignMaxDepth;
+    std::size_t const maxLeafSigners = nested ? nestedMultiSignMaxLeafSigners : STTx::maxMultiSigners;
+    std::size_t totalLeafSigners = 0;
 
     // Define recursive lambda for checking signatures at any depth
     // parentAccountID identifies which account the signers are signing for
@@ -492,6 +495,8 @@ multiSignHelper(
             else if (isLeafSigner(signer))
             {
                 // This is a leaf signer - verify the signature
+                if (++totalLeafSigners > maxLeafSigners)
+                    return Unexpected(std::string("Too many leaf signers."));
 
                 // Verify the signature
                 bool validSig = false;
