@@ -1,14 +1,15 @@
 ignorePaths:
   - build/**
   - src/libxrpl/crypto
-  - src/test/** # Will be removed in the future
   - CMakeUserPresets.json
   - Doxyfile
   - docs/**/*.puml
   - cmake/**
   - LICENSE.md
+  - src/test/app/wasm_fixtures/**/*.wat
+  - src/test/app/wasm_fixtures/*.c
 language: en
-allowCompoundWords: true
+allowCompoundWords: true # TODO (#6334)
 ignoreRandomStrings: true
 minWordLength: 5
 dictionaries:
@@ -16,20 +17,29 @@ dictionaries:
   - en_US
   - en_GB
 ignoreRegExpList:
-  - /[rs][1-9A-HJ-NP-Za-km-z]{25,34}/g # addresses and seeds
-  - /(XRPL|BEAST)_[A-Z_0-9]+_H_INCLUDED+/g # include guards
-  - /(XRPL|BEAST)_[A-Z_0-9]+_H+/g # include guards
+  - /\b[rs][1-9A-HJ-NP-Za-km-z]{25,34}/g # addresses and seeds
+  - /\bC[A-Z0-9]{15}/g # CTIDs
+  - /\b(XRPL|BEAST)_[A-Z_0-9]+_H_INCLUDED+/g # include guards
+  - /\b(XRPL|BEAST)_[A-Z_0-9]+_H+/g # include guards
   - /::[a-z:_]+/g # things from other namespaces
-  - /lib[a-z]+/g # libraries
-  - /[0-9]{4}-[0-9]{2}-[0-9]{2}[,:][A-Za-zÀ-ÖØ-öø-ÿ.\s]+/g # copyright dates
-  - /[0-9]{4}[,:]?\s*[A-Za-zÀ-ÖØ-öø-ÿ.\s]+/g # copyright years
+  - /\blib[a-z]+/g # libraries
+  - /\b[0-9]{4}-[0-9]{2}-[0-9]{2}[,:][A-Za-zÀ-ÖØ-öø-ÿ.\s]+/g # copyright dates
+  - /\b[0-9]{4}[,:]?\s*[A-Za-zÀ-ÖØ-öø-ÿ.\s]+/g # copyright years
   - /\[[A-Za-z0-9-]+\]\(https:\/\/github.com\/[A-Za-z0-9-]+\)/g # Github usernames
   - /-[DWw][a-zA-Z0-9_-]+=/g # compile flags
   - /[\['"`]-[DWw][a-zA-Z0-9_-]+['"`\]]/g # compile flags
+  - ABCDEFGHIJKLMNOPQRSTUVWXYZ
+  - ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
+overrides:
+  - filename: "**/*_test.cpp" # all test files
+    ignoreRegExpList:
+      - /"[^"]*"/g # double-quoted strings
+      - /'[^']*'/g # single-quoted strings
+      - /`[^`]*`/g # backtick strings
 suggestWords:
   - xprl->xrpl
-  - xprld->xrpld
-  - unsynched->unsynced
+  - xprld->xrpld # cspell: disable-line not sure what this problem is....
+  - unsynched->unsynced # cspell: disable-line not sure what this problem is....
   - synched->synced
   - synch->sync
 words:
@@ -51,6 +61,8 @@ words:
   - Britto
   - Btrfs
   - canonicality
+  - cdylib
+  - changespq
   - checkme
   - choco
   - chrono
@@ -106,12 +118,14 @@ words:
   - inequation
   - insuf
   - insuff
+  - invasively
   - iou
   - ious
   - isrdc
   - itype
   - jemalloc
   - jlog
+  - jtnofill
   - keylet
   - keylets
   - keyvadb
@@ -138,6 +152,7 @@ words:
   - Metafuncton
   - misprediction
   - mptbalance
+  - MPTDEX
   - mptflags
   - mptid
   - mptissuance
@@ -147,6 +162,7 @@ words:
   - mptokenissuance
   - mptokens
   - mpts
+  - mtgox
   - multisig
   - multisign
   - multisigned
@@ -174,6 +190,7 @@ words:
   - perminute
   - permissioned
   - pointee
+  - populator
   - preauth
   - preauthorization
   - preauthorize
@@ -182,6 +199,7 @@ words:
   - protobuf
   - protos
   - ptrs
+  - pushd
   - pyenv
   - qalloc
   - queuable
