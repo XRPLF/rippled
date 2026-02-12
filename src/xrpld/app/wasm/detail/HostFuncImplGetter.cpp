@@ -58,7 +58,7 @@ getAnyFieldData(STBase const* obj)
                 auto const& mptID = mptIssue.getMptID();
                 return Bytes{mptID.cbegin(), mptID.cend()};
             }
-            break;  // Fall through to serializer
+            break;  // Use serializer
         }
 
         case STI_VL: {
@@ -92,7 +92,7 @@ getAnyFieldData(STBase const* obj)
 
         case STI_AMOUNT:
         default:
-            break;  // Fall through to serializer
+            break;  // Use serializer
     }
 
     Serializer msg;
