@@ -1,5 +1,4 @@
-#ifndef XRPLD_APP_MISC_MAKE_NETWORKOPS_H_INCLUDED
-#define XRPLD_APP_MISC_MAKE_NETWORKOPS_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/insight/Insight.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -31,5 +30,3 @@ make_NetworkOPs(
     beast::insight::Collector::ptr const& collector);
 
 }  // namespace xrpl
-
-#endif
