@@ -2341,6 +2341,539 @@ public:
     }
 
     void
+    testNestedMultiSignEdgeCases(FeatureBitset features)
+    {
+        using namespace jtx;
+
+        if (!features[featureNestedMultiSign])
+            return;
+
+        // Three validation layers for nested multi-sign, in order:
+        //
+        // 1. STTx::checkSign → multiSignHelper (local signature &
+        //    structure checks: depth, sort order, leaf/nested shape,
+        //    cryptographic validity).
+        //    Tests: 1, 2, 3, 5, 6, 8.
+        //
+        // 2. Transactor::checkMultiSign → validateSigners (ledger-
+        //    level checks: signer list lookup, phantom/regular key,
+        //    cycle detection, quorum).
+        //    Tests: 4 (fee/countSigners), 7, 9.
+        //
+        // 3. transactionSubmitMultiSigned → validateSignersRecursive
+        //    (RPC-level JSON shape validation, depth limit).
+        //    Test: 10.
+        //
+        // Many Transactor paths are unreachable because multiSignHelper
+        // catches the same structural errors first.
+
+        Env env{*this, envconfig(), features};
+
+        Account const alice{"alice", KeyType::secp256k1};
+        Account const becky{"becky", KeyType::ed25519};
+        Account const cheri{"cheri", KeyType::secp256k1};
+        Account const daria{"daria", KeyType::ed25519};
+        Account const edgar{"edgar", KeyType::secp256k1};
+        Account const fiona{"fiona", KeyType::ed25519};
+        env.fund(XRP(1000), alice, becky, cheri, daria, edgar, fiona);
+        env.close();
+
+        auto const baseFee = env.current()->fees().base;
+
+        // lambda that submits an STTx and returns the resulting JSON.
+        auto submitSTTx = [&env](STTx const& stx) {
+            Json::Value jvResult;
+            jvResult[jss::tx_blob] = strHex(stx.getSerializer().slice());
+            return env.rpc("json", "submit", to_string(jvResult));
+        };
+
+        // Test 1: Depth overflow in multiSignHelper's checkSignersArray.
+        // Build nested signer tree at depth 5 via the env() path.
+        // The depth-exceeded check triggers temMALFORMED at preflight.
+        {
+            testcase("Nested Depth Overflow in STTx");
+
+            env(signers(alice, 1, {{becky, 1}}));
+            env(signers(becky, 1, {{cheri, 1}}));
+            env(signers(cheri, 1, {{daria, 1}}));
+            env(signers(daria, 1, {{edgar, 1}}));
+            env(signers(edgar, 1, {{bogie, 1}}));
+            env.close();
+
+            // Depth 5: alice(1)->becky(2)->cheri(3)->daria(4)->edgar(5)->bogie
+            // This exceeds max depth of 4.  Also verify via local submit path.
+            std::uint32_t aliceSeq = env.seq(alice);
+            env(noop(alice),
+                msig({msigner(becky, msigner(cheri, msigner(daria, msigner(edgar, msigner(bogie)))))}),
+                fee(3 * baseFee),
+                ter(temMALFORMED));
+            env.close();
+            BEAST_EXPECT(env.seq(alice) == aliceSeq);
+
+            // Also exercise multiSignHelper's depth check
+            // directly via checkSign.
+            //
+            // env.jt() can't build depth-5 directly (returns null
+            // stx), so start from a valid depth-2 STTx and manually
+            // add nesting levels to create depth 5.
+            //
+            // Structure after modification:
+            //   outerSigners (depth 1): [{becky: nested}]
+            //     beckySigners (depth 2): [{cheri: nested *}]
+            //       cheriChildren (depth 3): [{daria: nested}]
+            //         dariaChildren (depth 4): [{edgar: nested}]
+            //           edgarChildren (depth 5): -> EXCEEDS MAX
+            //
+            // * cheri converted from leaf to nested via
+            //   makeFieldAbsent(SPK/TxnSig) + setFieldArray(Signers)
+            //
+            // multiSignHelper enters checkSignersArray at depth 1
+            // and recurses: 1->2->3->4->5. At depth 5 the check
+            // `depth > maxDepth(4)` fires, returning
+            // "Multi-signing depth limit exceeded."
+            {
+                JTx tx = env.jt(noop(alice), fee(3 * baseFee), msig({msigner(becky, msigner(cheri))}));
+                BEAST_EXPECT(tx.stx);
+                if (tx.stx)
+                {
+                    STTx local = *(tx.stx);
+                    auto& outerSigners = local.peekFieldArray(sfSigners);
+                    auto& beckySigners = outerSigners.back().peekFieldArray(sfSigners);
+
+                    // Convert cheri from leaf to nested:
+                    //   remove SPK + TxnSig, add Signers array.
+                    auto& cheriSigner = beckySigners.back();
+                    cheriSigner.makeFieldAbsent(sfSigningPubKey);
+                    cheriSigner.makeFieldAbsent(sfTxnSignature);
+
+                    // Verify cheri is now a nested signer.
+                    BEAST_EXPECT(!isLeafSigner(cheriSigner));
+
+                    // Build 3 nested levels: daria->edgar->fiona
+                    STObject fionaSigner(sfSigner);
+                    fionaSigner.setAccountID(sfAccount, fiona.id());
+                    fionaSigner.setFieldVL(sfSigningPubKey, Blob(33, 0x02));
+                    fionaSigner.setFieldVL(sfTxnSignature, Blob(64, 0xAA));
+                    fionaSigner.applyTemplateFromSField(sfSigner);
+                    BEAST_EXPECT(isLeafSigner(fionaSigner));
+
+                    STObject edgarSigner(sfSigner);
+                    edgarSigner.setAccountID(sfAccount, edgar.id());
+                    STArray edgarChildren;
+                    edgarChildren.push_back(fionaSigner);
+                    edgarSigner.setFieldArray(sfSigners, edgarChildren);
+                    edgarSigner.applyTemplateFromSField(sfSigner);
+                    BEAST_EXPECT(isNestedSigner(edgarSigner));
+
+                    STObject dariaSigner(sfSigner);
+                    dariaSigner.setAccountID(sfAccount, daria.id());
+                    STArray dariaChildren;
+                    dariaChildren.push_back(edgarSigner);
+                    dariaSigner.setFieldArray(sfSigners, dariaChildren);
+                    dariaSigner.applyTemplateFromSField(sfSigner);
+                    BEAST_EXPECT(isNestedSigner(dariaSigner));
+
+                    // Attach daria under cheri.
+                    STArray cheriChildren;
+                    cheriChildren.push_back(dariaSigner);
+                    cheriSigner.setFieldArray(sfSigners, cheriChildren);
+                    BEAST_EXPECT(isNestedSigner(cheriSigner));
+
+                    // Call checkSign directly to verify the depth
+                    // error without any serialization concerns.
+                    auto const rules = env.current()->rules();
+                    auto const result = local.checkSign(rules);
+                    BEAST_EXPECT(!result);
+                    BEAST_EXPECT(result.error().find("depth limit exceeded") != std::string::npos);
+
+                    // Note: blob submit is not tested here. The
+                    // manually-built structure fails somewhere in
+                    // the serialize/deserialize roundtrip (possibly
+                    // template reapplication during STTx
+                    // construction from SerialIter). The direct
+                    // checkSign call above already covers the
+                    // depth-exceeded path in checkSignersArray.
+                }
+            }
+        }
+
+        // Test 2: Invalid signature via corrupted SigningPubKey in
+        // multiSignHelper's leaf verification (the catch/validSig path).
+        // Corrupt a nested signer's SigningPubKey to malformed size/content.
+        {
+            testcase("Nested Corrupt SigningPubKey Exception");
+
+            env(signers(alice, 1, {{becky, 1}}));
+            env(signers(becky, 1, {{bogie, 1}}));
+            env.close();
+
+            JTx tx = env.jt(noop(alice), fee(3 * baseFee), msig({msigner(becky, msigner(bogie))}));
+            BEAST_EXPECT(tx.stx);
+            if (tx.stx)
+            {
+                STTx local = *(tx.stx);
+
+                // Corrupt the nested signer's SigningPubKey to an invalid
+                // size that fails the publicKeyType check and validSig
+                // stays false.
+                auto& outerSigners = local.peekFieldArray(sfSigners);
+                auto& nestedSigners = outerSigners.back().peekFieldArray(sfSigners);
+                // Set to 1 byte - too short for any valid key type.
+                nestedSigners.back().setFieldVL(sfSigningPubKey, Blob(1, 0xFF));
+                auto const info = submitSTTx(local);
+                BEAST_EXPECT(
+                    info[jss::result][jss::error_exception].asString().find("Invalid signature on account r") !=
+                    std::string::npos);
+            }
+        }
+
+        // Test 3: Malformed signer entry shape in multiSignHelper.
+        // Construct nested signer entry with both Signers and
+        // TxnSignature/SigningPubKey — fails isLeafSigner and
+        // isNestedSigner, hitting the "Malformed signer entry" path.
+        {
+            testcase("Nested Malformed Signer Entry Shape");
+
+            env(signers(alice, 1, {{becky, 1}}));
+            env(signers(becky, 1, {{bogie, 1}}));
+            env.close();
+
+            JTx tx = env.jt(noop(alice), fee(3 * baseFee), msig({msigner(becky, msigner(bogie))}));
+            BEAST_EXPECT(tx.stx);
+            if (tx.stx)
+            {
+                STTx local = *(tx.stx);
+
+                // Add both signature fields AND Signers array to the
+                // nested signer, making it neither leaf nor nested.
+                auto& outerSigners = local.peekFieldArray(sfSigners);
+                auto& nestedSigners = outerSigners.back().peekFieldArray(sfSigners);
+                auto& leafSigner = nestedSigners.back();
+                // It's currently a leaf signer. Add a Signers array too.
+                leafSigner.setFieldArray(sfSigners, STArray{});
+                auto const info = submitSTTx(local);
+                BEAST_EXPECT(
+                    info[jss::result][jss::error_exception].asString().find("Malformed signer entry for account r") !=
+                    std::string::npos);
+            }
+        }
+
+        // Test 4: Fee calculation via calculateBaseFee / countSigners.
+        // Verify that fee is correct for a max-depth (4) nested tx,
+        // and that an insufficient fee is rejected.
+        {
+            testcase("Nested Fee Depth Guard");
+
+            env(signers(alice, 1, {{becky, 1}}));
+            env(signers(becky, 1, {{cheri, 1}}));
+            env(signers(cheri, 1, {{daria, 1}}));
+            env(signers(daria, 1, {{bogie, 1}}));
+            env.close();
+
+            // Depth 4 (max): alice->becky->cheri->daria->bogie (1 leaf)
+            // Fee should be baseFee + 1*baseFee = 2*baseFee
+            std::uint32_t aliceSeq = env.seq(alice);
+            env(noop(alice), msig({msigner(becky, msigner(cheri, msigner(daria, msigner(bogie))))}), fee(2 * baseFee));
+            env.close();
+            BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
+
+            // Fee too low should fail
+            aliceSeq = env.seq(alice);
+            env(noop(alice),
+                msig({msigner(becky, msigner(cheri, msigner(daria, msigner(bogie))))}),
+                fee((2 * baseFee) - 1),
+                ter(telINSUF_FEE_P));
+            env.close();
+            BEAST_EXPECT(env.seq(alice) == aliceSeq);
+        }
+
+        // Test 5: Unsorted nested signers.
+        // Reversing the nested signer order triggers the sort check
+        // in multiSignHelper's checkSignersArray.
+        {
+            testcase("Nested Unsorted Signers in STTx");
+
+            env(signers(alice, 1, {{becky, 1}}));
+            env(signers(becky, 1, {{bogie, 1}, {demon, 1}}));
+            env.close();
+
+            // Build a valid nested tx, then unsort the nested signers
+            JTx tx = env.jt(noop(alice), fee(4 * baseFee), msig({msigner(becky, msigner(bogie), msigner(demon))}));
+            BEAST_EXPECT(tx.stx);
+            if (tx.stx)
+            {
+                STTx local = *(tx.stx);
+
+                // Reverse the nested signers to make them unsorted
+                auto& outerSigners = local.peekFieldArray(sfSigners);
+                auto& nestedSigners = outerSigners.back().peekFieldArray(sfSigners);
+                std::reverse(nestedSigners.begin(), nestedSigners.end());
+
+                // The local STTx check (multiSignHelper) catches unsorted
+                // arrays, so we get a local-check failure.
+                auto const info = submitSTTx(local);
+                BEAST_EXPECT(info[jss::result][jss::error_exception] == "fails local checks: Unsorted Signers array.");
+            }
+        }
+
+        // Test 6: Unknown pubkey type in nested leaf.
+        // Set nested signer SigningPubKey to invalid type prefix;
+        // multiSignHelper's leaf verification rejects it.
+        {
+            testcase("Nested Unknown PubKey Type");
+
+            env(signers(alice, 1, {{becky, 1}}));
+            env(signers(becky, 1, {{bogie, 1}}));
+            env.close();
+
+            JTx tx = env.jt(noop(alice), fee(3 * baseFee), msig({msigner(becky, msigner(bogie))}));
+            BEAST_EXPECT(tx.stx);
+            if (tx.stx)
+            {
+                STTx local = *(tx.stx);
+
+                // Replace the nested signer's SigningPubKey with a
+                // valid-length but unknown type prefix (0x05 is not
+                // secp256k1 or ed25519)
+                auto& outerSigners = local.peekFieldArray(sfSigners);
+                auto& nestedSigners = outerSigners.back().peekFieldArray(sfSigners);
+                Blob invalidPK(33, 0x00);
+                invalidPK[0] = 0x05;  // invalid type prefix
+                nestedSigners.back().setFieldVL(sfSigningPubKey, invalidPK);
+
+                // The local STTx check catches this first (invalid
+                // signature).
+                auto const info = submitSTTx(local);
+                BEAST_EXPECT(
+                    info[jss::result][jss::error_exception].asString().find("Invalid signature on account r") !=
+                    std::string::npos);
+            }
+
+            // For the Transactor path, we need the tx to pass local checks
+            // but fail at Transactor level. A signer account with
+            // a mismatched pubkey will hit this via the regular key path.
+            // This is covered by test 7 below.
+        }
+
+        // Test 7: Non-phantom signer without account root.
+        // Use signer in nested tree that doesn't exist in ledger but
+        // whose pubkey hashes to a different account (non-phantom
+        // path in Transactor::checkMultiSign's validateSigners).
+        {
+            testcase("Nested Non-Phantom Without Account Root");
+
+            // bogie is a phantom (no account root). Use a Reg with a
+            // different signing key to make pubkey hash mismatch.
+            // This makes signingAcctIDFromPubKey != txSignerAcctID (bogie),
+            // so it's not phantom. Then sleTxSignerRoot is null ->
+            // tefBAD_SIGNATURE.
+            env(signers(alice, 1, {{becky, 1}}));
+            env(signers(becky, 1, {{bogie, 1}}));
+            env.close();
+
+            // Sign with demon's key for bogie's account.
+            // msigner(bogie, demon) creates leaf Reg(acct=bogie, sig=demon).
+            // STTx check passes (signature is cryptographically valid).
+            // Transactor: calcAccountID(demon.pk()) != bogie → non-phantom
+            // path, but bogie has no account root → tefBAD_SIGNATURE.
+            std::uint32_t aliceSeq = env.seq(alice);
+            env(noop(alice), msig({msigner(becky, msigner(bogie, demon))}), fee(3 * baseFee), ter(tefBAD_SIGNATURE));
+            env.close();
+            BEAST_EXPECT(env.seq(alice) == aliceSeq);
+        }
+
+        // Test 8: Malformed signer entry in multiSignHelper.
+        // Craft signer entry with Account + SigningPubKey but no
+        // TxnSignature and no Signers — fails both isLeafSigner
+        // (needs TxnSignature) and isNestedSigner (needs Signers),
+        // hitting the "Malformed signer entry" path.
+        {
+            testcase("Nested Malformed Signer Missing TxnSig");
+
+            env(signers(alice, 1, {{becky, 1}}));
+            env(signers(becky, 1, {{bogie, 1}}));
+            env.close();
+
+            JTx tx = env.jt(noop(alice), fee(3 * baseFee), msig({msigner(becky, msigner(bogie))}));
+            BEAST_EXPECT(tx.stx);
+            if (tx.stx)
+            {
+                STTx local = *(tx.stx);
+
+                // Remove TxnSignature from the nested leaf signer,
+                // leaving Account + SigningPubKey (2 present fields).
+                // This is neither a leaf (needs 3: Account+SPK+TxnSig)
+                // nor nested (needs Account+Signers).
+                auto& outerSigners = local.peekFieldArray(sfSigners);
+                auto& nestedSigners = outerSigners.back().peekFieldArray(sfSigners);
+                auto& leafSigner = nestedSigners.back();
+                leafSigner.makeFieldAbsent(sfTxnSignature);
+                auto const info = submitSTTx(local);
+                BEAST_EXPECT(
+                    info[jss::result][jss::error_exception].asString().find("Malformed signer entry for account r") !=
+                    std::string::npos);
+            }
+        }
+
+        // Test 9: effectiveQuorum == 0 path in
+        // Transactor::checkMultiSign's validateSigners.
+        // Build scenario where ALL signers at a level are cyclic
+        // with no non-cyclic alternative.
+        {
+            testcase("Nested effectiveQuorum Zero");
+
+            // Structure: alice -> becky -> cheri -> {becky}
+            // cheri's ONLY signer is becky, who is already an ancestor
+            // in the signing chain. At cheri's level:
+            //   ancestors = {alice, becky, cheri}
+            //   cheri's signer list = {becky: weight 1}
+            //   becky is in ancestors → cyclicWeight = 1
+            //   totalWeight = 1, maxAchievable = 0 < quorum(1)
+            //   effectiveQuorum = 0 → tefBAD_QUORUM
+            //
+            // Note: we can't use alice as the cyclic signer because
+            // STTx rejects txnAccountID as a multisigner at any depth.
+            env(signers(alice, jtx::none));
+            env(signers(becky, jtx::none));
+            env(signers(cheri, jtx::none));
+            env.close();
+
+            env(signers(alice, 1, {{becky, 1}}));
+            env(signers(becky, 1, {{cheri, 1}}));
+            // cheri's only signer is becky (which will be cyclic)
+            env(signers(cheri, 1, {{becky, 1}}));
+            env.close();
+
+            // Transaction: alice -> becky(nested) -> cheri(nested) ->
+            // becky(leaf)
+            // STTx check passes (becky != alice, signature valid)
+            // Transactor: at cheri's level, becky is ancestor → skipped
+            // All signers cyclic → effectiveQuorum = 0 → tefBAD_QUORUM
+            std::uint32_t aliceSeq = env.seq(alice);
+            env(noop(alice),
+                msig({msigner(becky, msigner(cheri, msigner(becky)))}),
+                fee(3 * baseFee),
+                ter(tefBAD_QUORUM));
+            env.close();
+            BEAST_EXPECT(env.seq(alice) == aliceSeq);
+        }
+
+        // Test 10: RPC recursive validator negatives.
+        // Exercise validateSignersRecursive in
+        // transactionSubmitMultiSigned.
+        {
+            testcase("Nested RPC Validator Negatives");
+
+            env(signers(alice, 1, {{becky, 1}}));
+            env(signers(becky, 1, {{bogie, 1}}));
+            env.close();
+
+            // 10a: isValidSignerEntry rejects a signer with both
+            // leaf fields (SPK/TxnSig) AND a nested Signers array.
+            {
+                Json::Value jv;
+                jv[jss::tx_json][jss::Account] = alice.human();
+                jv[jss::tx_json][jss::TransactionType] = jss::AccountSet;
+                jv[jss::tx_json][jss::Fee] = (3 * baseFee).jsonClipped();
+                jv[jss::tx_json][jss::Sequence] = env.seq(alice);
+                jv[jss::tx_json][jss::SigningPubKey] = "";
+
+                // Build a signer with both SPK/TxnSig AND Signers
+                auto& signersList = jv[jss::tx_json][sfSigners.getJsonName()];
+                auto& signer0 = signersList[0u][sfSigner.getJsonName()];
+                signer0[jss::Account] = becky.human();
+                signer0[jss::SigningPubKey] = strHex(becky.pk().slice());
+                signer0[sfTxnSignature.getJsonName()] = "DEADBEEF";
+                // Also add a nested Signers array
+                auto& nestedSigners = signer0[sfSigners.getJsonName()];
+                auto& nested0 = nestedSigners[0u][sfSigner.getJsonName()];
+                nested0[jss::Account] = bogie.human();
+                nested0[jss::SigningPubKey] = strHex(bogie.pk().slice());
+                nested0[sfTxnSignature.getJsonName()] = "DEADBEEF";
+
+                auto jrr = env.rpc("json", "submit_multisigned", to_string(jv));
+                BEAST_EXPECT(jrr[jss::result][jss::status] == "error");
+                BEAST_EXPECT(
+                    jrr[jss::result][jss::error_message] == "Signers array may only contain valid Signer entries.");
+            }
+
+            // 10b: depth check in validateSignersRecursive rejects
+            // a depth-5 nested tree (exceeds nestedMultiSignMaxDepth).
+            {
+                Json::Value jv;
+                jv[jss::tx_json][jss::Account] = alice.human();
+                jv[jss::tx_json][jss::TransactionType] = jss::AccountSet;
+                jv[jss::tx_json][jss::Fee] = (3 * baseFee).jsonClipped();
+                jv[jss::tx_json][jss::Sequence] = env.seq(alice);
+                jv[jss::tx_json][jss::SigningPubKey] = "";
+
+                // Build depth-5 nested structure
+                // Level 1: becky (nested)
+                auto& signersList = jv[jss::tx_json][sfSigners.getJsonName()];
+                auto* current = &signersList[0u][sfSigner.getJsonName()];
+                (*current)[jss::Account] = becky.human();
+
+                // Levels 2-4: cheri, daria, edgar (all nested)
+                Account const accts[] = {cheri, daria, edgar};
+                for (auto const& acct : accts)
+                {
+                    auto& nested = (*current)[sfSigners.getJsonName()];
+                    current = &nested[0u][sfSigner.getJsonName()];
+                    (*current)[jss::Account] = acct.human();
+                }
+
+                // Level 5: fiona (nested - exceeds max depth 4)
+                {
+                    auto& nested = (*current)[sfSigners.getJsonName()];
+                    current = &nested[0u][sfSigner.getJsonName()];
+                    (*current)[jss::Account] = fiona.human();
+
+                    // Level 6: bogie as leaf at bottom
+                    auto& deepNested = (*current)[sfSigners.getJsonName()];
+                    auto& leaf = deepNested[0u][sfSigner.getJsonName()];
+                    leaf[jss::Account] = bogie.human();
+                    leaf[jss::SigningPubKey] = strHex(bogie.pk().slice());
+                    leaf[sfTxnSignature.getJsonName()] = "DEADBEEF";
+                }
+
+                auto jrr = env.rpc("json", "submit_multisigned", to_string(jv));
+                BEAST_EXPECT(jrr[jss::result][jss::status] == "error");
+                BEAST_EXPECT(
+                    jrr[jss::result][jss::error_message] == "Signers array may only contain valid Signer entries.");
+            }
+
+            // 10c: isValidSignerEntry rejects a nested child with
+            // Account + TxnSignature but no SPK and no Signers.
+            {
+                Json::Value jv;
+                jv[jss::tx_json][jss::Account] = alice.human();
+                jv[jss::tx_json][jss::TransactionType] = jss::AccountSet;
+                jv[jss::tx_json][jss::Fee] = (3 * baseFee).jsonClipped();
+                jv[jss::tx_json][jss::Sequence] = env.seq(alice);
+                jv[jss::tx_json][jss::SigningPubKey] = "";
+
+                // Valid outer nested signer
+                auto& signersList = jv[jss::tx_json][sfSigners.getJsonName()];
+                auto& signer0 = signersList[0u][sfSigner.getJsonName()];
+                signer0[jss::Account] = becky.human();
+
+                // Invalid nested child: has Account + TxnSignature but
+                // no SigningPubKey (neither leaf nor nested)
+                auto& nestedSigners = signer0[sfSigners.getJsonName()];
+                auto& nested0 = nestedSigners[0u][sfSigner.getJsonName()];
+                nested0[jss::Account] = bogie.human();
+                nested0[sfTxnSignature.getJsonName()] = "DEADBEEF";
+                // Intentionally omit SigningPubKey and Signers
+
+                auto jrr = env.rpc("json", "submit_multisigned", to_string(jv));
+                BEAST_EXPECT(jrr[jss::result][jss::status] == "error");
+                BEAST_EXPECT(
+                    jrr[jss::result][jss::error_message] == "Signers array may only contain valid Signer entries.");
+            }
+        }
+    }
+
+    void
     test_countPresentFields()
     {
         testcase("countPresentFields vs getCount");
@@ -2444,6 +2977,9 @@ public:
 
         testAll(all - featureNestedMultiSign);
         testAll(all);
+
+        testNestedMultiSignEdgeCases(all - featureNestedMultiSign);
+        testNestedMultiSignEdgeCases(all);
 
         testSignerListSetFlags(all - fixInvalidTxFlags);
         testSignerListSetFlags(all);
