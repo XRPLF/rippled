@@ -1,8 +1,9 @@
 #pragma once
 
 #include <xrpld/app/ledger/Ledger.h>
-#include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/core/Config.h>
+
+#include <xrpl/rdb/RelationalDatabase.h>
 
 namespace xrpl {
 namespace detail {
