@@ -875,19 +875,20 @@ Transactor::checkMultiSign(
             }
             prevSigner = signer;
 
-            // Skip cyclic signers - they cannot contribute at this level
-            if (ancestors.count(signer))
-            {
-                JLOG(j.trace()) << "checkMultiSign: Skipping cyclic signer: " << signer;
-                continue;
-            }
-
             // Lookup signer in authorized set
             auto const weightIt = signerWeights.find(signer);
             if (weightIt == signerWeights.end())
             {
                 JLOG(j.trace()) << "checkMultiSign: Invalid signer " << signer << " not in signer list for " << acc;
                 return tefBAD_SIGNATURE;
+            }
+
+            // Skip cyclic signers - they cannot contribute at this level
+            // (checked after auth so unauthorized cyclic entries are rejected)
+            if (ancestors.count(signer))
+            {
+                JLOG(j.trace()) << "checkMultiSign: Skipping cyclic signer: " << signer;
+                continue;
             }
             uint16_t const weight = weightIt->second;
 

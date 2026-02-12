@@ -1111,6 +1111,33 @@ public:
             auto const info = submitSTTx(local);
             BEAST_EXPECT(info[jss::result][jss::error_exception] == "fails local checks: Unsorted Signers array.");
         }
+
+        if (features[featureNestedMultiSign])
+        {
+            Account const becky{"becky", KeyType::secp256k1};
+            {
+                // Nested multisign with an empty nested Signers array should
+                // fail.
+                JTx tx = env.jt(noop(alice), fee(3 * baseFee), msig({msigner(becky, msigner(demon))}));
+                STTx local = *(tx.stx);
+                auto& nested = local.peekFieldArray(sfSigners).back().peekFieldArray(sfSigners);
+                nested.clear();
+                auto const info = submitSTTx(local);
+                BEAST_EXPECT(
+                    info[jss::result][jss::error_exception] == "fails local checks: Invalid Signers array size.");
+            }
+            {
+                // Nested multisign with too many nested signers should fail.
+                JTx tx = env.jt(noop(alice), fee(3 * baseFee), msig({msigner(becky, msigner(demon))}));
+                STTx local = *(tx.stx);
+                auto& nested = local.peekFieldArray(sfSigners).back().peekFieldArray(sfSigners);
+                while (nested.size() <= STTx::maxMultiSigners)
+                    nested.push_back(nested.back());
+                auto const info = submitSTTx(local);
+                BEAST_EXPECT(
+                    info[jss::result][jss::error_exception] == "fails local checks: Invalid Signers array size.");
+            }
+        }
     }
 
     void
@@ -1832,6 +1859,59 @@ public:
             // Test that direct signer still works normally
             aliceSeq = env.seq(alice);
             env(noop(alice), msig({msigner(bogie)}), L(), fee(3 * baseFee));
+            env.close();
+            BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
+        }
+
+        // Test Case 6b: Unauthorized cyclic nested signer must be rejected.
+        // Validates auth check happens before cycle skipping.
+        {
+            testcase("Cycle Detection - Unauthorized Cyclic Signer Rejected");
+
+            env(signers(alice, jtx::none));
+            env(signers(becky, jtx::none));
+            env(signers(cheri, jtx::none));
+            env.close();
+
+            // alice can be signed by becky.
+            env(signers(alice, 1, {{becky, 1}}));
+            // becky can be signed by cheri.
+            env(signers(becky, 1, {{cheri, 1}}));
+            // cheri can only be signed by demon. becky is NOT authorized here.
+            env(signers(cheri, 1, {{demon, 1}}));
+            env.close();
+
+            std::uint32_t aliceSeq = env.seq(alice);
+            env(noop(alice),
+                msig({msigner(becky, msigner(cheri, msigner(becky), msigner(demon)))}),
+                L(),
+                fee(4 * baseFee),
+                ter(tefBAD_SIGNATURE));
+            env.close();
+            BEAST_EXPECT(env.seq(alice) == aliceSeq);
+        }
+
+        // Test Case 6c: Authorized cyclic nested signer is ignored and valid
+        // non-cyclic path may still satisfy quorum.
+        {
+            testcase("Cycle Detection - Authorized Cyclic Signer Ignored");
+
+            env(signers(alice, jtx::none));
+            env(signers(becky, jtx::none));
+            env(signers(cheri, jtx::none));
+            env.close();
+
+            env(signers(alice, 1, {{becky, 1}}));
+            env(signers(becky, 1, {{cheri, 1}}));
+            // becky is cyclic but authorized; demon is the usable signer.
+            env(signers(cheri, 1, {{becky, 1}, {demon, 1}}));
+            env.close();
+
+            std::uint32_t aliceSeq = env.seq(alice);
+            env(noop(alice),
+                msig({msigner(becky, msigner(cheri, msigner(becky), msigner(demon)))}),
+                L(),
+                fee(4 * baseFee));
             env.close();
             BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
         }

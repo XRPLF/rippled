@@ -448,7 +448,7 @@ multiSignHelper(
 
         // There are well known bounds that the number of signers must be
         // within.
-        if (signers.size() < STTx::minMultiSigners || signers.size() > STTx::maxMultiSigners)
+        if (signersArray.size() < STTx::minMultiSigners || signersArray.size() > STTx::maxMultiSigners)
             return Unexpected("Invalid Signers array size.");
 
         // Signers must be in sorted order by AccountID.
