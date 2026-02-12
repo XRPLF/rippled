@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_PATHS_IMPL_PAYSTEPS_H_INCLUDED
-#define XRPL_APP_PATHS_IMPL_PAYSTEPS_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/paths/detail/AmountSpec.h>
 
@@ -591,5 +590,3 @@ isDirectXrpToXrp(Strand const& strand);
 /// @endcond
 
 }  // namespace xrpl
-
-#endif

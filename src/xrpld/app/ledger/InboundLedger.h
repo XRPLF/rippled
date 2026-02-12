@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_INBOUNDLEDGER_H_INCLUDED
-#define XRPL_APP_LEDGER_INBOUNDLEDGER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
@@ -173,5 +172,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

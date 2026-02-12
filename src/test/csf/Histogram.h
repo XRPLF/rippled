@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_HISTOGRAM_H_INCLUDED
-#define XRPL_TEST_CSF_HISTOGRAM_H_INCLUDED
+#pragma once
 
 #include <algorithm>
 #include <cassert>
@@ -112,5 +111,3 @@ public:
 }  // namespace csf
 }  // namespace test
 }  // namespace xrpl
-
-#endif

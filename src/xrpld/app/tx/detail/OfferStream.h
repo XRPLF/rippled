@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_BOOK_OFFERSTREAM_H_INCLUDED
-#define XRPL_APP_BOOK_OFFERSTREAM_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/tx/detail/BookTip.h>
 #include <xrpld/app/tx/detail/Offer.h>
@@ -174,5 +173,3 @@ public:
     }
 };
 }  // namespace xrpl
-
-#endif

@@ -15,8 +15,9 @@
 
 // Add new amendments to the top of this list.
 // Keep it sorted in reverse chronological order.
-
 XRPL_FEATURE(ConfidentialTransfer,       Supported::no,  VoteBehavior::DefaultNo)
+XRPL_FIX   (PermissionedDomainInvariant, Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (ExpiredNFTokenOfferRemoval, Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (BatchInnerSigs,             Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(LendingProtocol,            Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(PermissionDelegationV1_1,   Supported::no,  VoteBehavior::DefaultNo)

@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_TXMETRICS_H_INCLUDED
-#define XRPL_OVERLAY_TXMETRICS_H_INCLUDED
+#pragma once
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/messages.h>
@@ -115,5 +114,3 @@ struct TxMetrics
 }  // namespace metrics
 
 }  // namespace xrpl
-
-#endif

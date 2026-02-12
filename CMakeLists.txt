@@ -98,6 +98,7 @@ find_package(ed25519 REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(LibArchive REQUIRED)
 find_package(lz4 REQUIRED)
+find_package(mpt-crypto REQUIRED)
 find_package(nudb REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(secp256k1 REQUIRED)
@@ -109,6 +110,7 @@ target_link_libraries(
     xrpl_libs
     INTERFACE ed25519::ed25519
               lz4::lz4
+              mpt-crypto::mpt-crypto
               OpenSSL::Crypto
               OpenSSL::SSL
               secp256k1::secp256k1

@@ -1,5 +1,4 @@
-#ifndef XRPL_NODESTORE_NODEOBJECT_H_INCLUDED
-#define XRPL_NODESTORE_NODEOBJECT_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/CountedObject.h>
@@ -78,5 +77,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

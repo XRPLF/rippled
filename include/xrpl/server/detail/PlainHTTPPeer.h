@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_PLAINHTTPPEER_H_INCLUDED
-#define XRPL_SERVER_PLAINHTTPPEER_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/rfc2616.h>
 #include <xrpl/server/detail/BaseHTTPPeer.h>
@@ -140,5 +139,3 @@ PlainHTTPPeer<Handler>::do_close()
 }
 
 }  // namespace xrpl
-
-#endif

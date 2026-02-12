@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_QUALITY_H_INCLUDED
-#define XRPL_PROTOCOL_QUALITY_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/IOUAmount.h>
@@ -358,5 +357,3 @@ Quality
 composed_quality(Quality const& lhs, Quality const& rhs);
 
 }  // namespace xrpl
-
-#endif

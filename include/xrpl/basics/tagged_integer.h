@@ -1,7 +1,6 @@
 // Copyright (c) 2014, Nikolaos D. Bougalis <nikb@bougalis.net>
 
-#ifndef BEAST_UTILITY_TAGGED_INTEGER_H_INCLUDED
-#define BEAST_UTILITY_TAGGED_INTEGER_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/hash/hash_append.h>
 
@@ -202,4 +201,3 @@ struct is_contiguously_hashable<xrpl::tagged_integer<Int, Tag>, HashAlgorithm>
 };
 
 }  // namespace beast
-#endif

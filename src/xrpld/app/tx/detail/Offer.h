@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_BOOK_OFFER_H_INCLUDED
-#define XRPL_APP_BOOK_OFFER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
@@ -301,5 +300,3 @@ operator<<(std::ostream& os, TOffer<TIn, TOut> const& offer)
 }
 
 }  // namespace xrpl
-
-#endif

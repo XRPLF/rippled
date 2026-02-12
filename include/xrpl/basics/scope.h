@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_SCOPE_H_INCLUDED
-#define XRPL_BASICS_SCOPE_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -220,5 +219,3 @@ template <class Mutex>
 scope_unlock(std::unique_lock<Mutex>&) -> scope_unlock<Mutex>;
 
 }  // namespace xrpl
-
-#endif

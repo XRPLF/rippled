@@ -1,12 +1,12 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/AmendmentTable.h>
-#include <xrpld/app/rdb/Wallet.h>
 #include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/Wallet.h>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>

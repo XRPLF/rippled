@@ -1,7 +1,6 @@
-#ifndef XRPL_APP_MISC_IMPL_ACCOUNTTXPAGING_H_INCLUDED
-#define XRPL_APP_MISC_IMPL_ACCOUNTTXPAGING_H_INCLUDED
+#pragma once
 
-#include <xrpld/app/rdb/RelationalDatabase.h>
+#include <xrpl/rdb/RelationalDatabase.h>
 
 #include <cstdint>
 
@@ -22,5 +21,3 @@ void
 saveLedgerAsync(Application& app, std::uint32_t seq);
 
 }  // namespace xrpl
-
-#endif

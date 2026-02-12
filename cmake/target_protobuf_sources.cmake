@@ -35,28 +35,20 @@ find_package(Protobuf REQUIRED)
 #     This prefix should appear at the start of all your consumer includes.
 # ARGN:
 #     A list of .proto files.
-function(target_protobuf_sources target prefix)
-  set(dir "${CMAKE_CURRENT_BINARY_DIR}/pb-${target}")
-  file(MAKE_DIRECTORY "${dir}/${prefix}")
+function (target_protobuf_sources target prefix)
+    set(dir "${CMAKE_CURRENT_BINARY_DIR}/pb-${target}")
+    file(MAKE_DIRECTORY "${dir}/${prefix}")
 
-  protobuf_generate(
-    TARGET ${target}
-    PROTOC_OUT_DIR "${dir}/${prefix}"
-    "${ARGN}"
-  )
-  target_include_directories(${target} SYSTEM PUBLIC
-    # Allows #include <package/path/to/file.proto> used by consumer files.
-    $<BUILD_INTERFACE:${dir}>
-    # Allows #include "path/to/file.proto" used by generated files.
-    $<BUILD_INTERFACE:${dir}/${prefix}>
-    # Allows #include <package/path/to/file.proto> used by consumer files.
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-    # Allows #include "path/to/file.proto" used by generated files.
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${prefix}>
-  )
-  install(
-    DIRECTORY ${dir}/
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    FILES_MATCHING PATTERN "*.h"
-  )
-endfunction()
+    protobuf_generate(TARGET ${target} PROTOC_OUT_DIR "${dir}/${prefix}" "${ARGN}")
+    target_include_directories(
+        ${target} SYSTEM
+        PUBLIC # Allows #include <package/path/to/file.proto> used by consumer files.
+               $<BUILD_INTERFACE:${dir}>
+               # Allows #include "path/to/file.proto" used by generated files.
+               $<BUILD_INTERFACE:${dir}/${prefix}>
+               # Allows #include <package/path/to/file.proto> used by consumer files.
+               $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+               # Allows #include "path/to/file.proto" used by generated files.
+               $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${prefix}>)
+    install(DIRECTORY ${dir}/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} FILES_MATCHING PATTERN "*.h")
+endfunction ()

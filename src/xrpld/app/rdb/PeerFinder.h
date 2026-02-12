@@ -1,9 +1,9 @@
-#ifndef XRPL_APP_RDB_PEERFINDER_H_INCLUDED
-#define XRPL_APP_RDB_PEERFINDER_H_INCLUDED
+#pragma once
 
 #include <xrpld/core/Config.h>
-#include <xrpld/core/DatabaseCon.h>
 #include <xrpld/peerfinder/detail/Store.h>
+
+#include <xrpl/rdb/DatabaseCon.h>
 
 namespace xrpl {
 
@@ -43,5 +43,3 @@ void
 savePeerFinderDB(soci::session& session, std::vector<PeerFinder::Store::Entry> const& v);
 
 }  // namespace xrpl
-
-#endif

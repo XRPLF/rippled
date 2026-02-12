@@ -1,5 +1,4 @@
-#ifndef XRPL_RESOURCE_KIND_H_INCLUDED
-#define XRPL_RESOURCE_KIND_H_INCLUDED
+#pragma once
 
 namespace xrpl {
 namespace Resource {
@@ -16,5 +15,3 @@ enum Kind { kindInbound, kindOutbound, kindUnlimited };
 
 }  // namespace Resource
 }  // namespace xrpl
-
-#endif

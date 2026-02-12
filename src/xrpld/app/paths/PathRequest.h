@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_PATHS_PATHREQUEST_H_INCLUDED
-#define XRPL_APP_PATHS_PATHREQUEST_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/paths/Pathfinder.h>
@@ -155,5 +154,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

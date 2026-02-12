@@ -671,7 +671,7 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
             if (!features[featureSingleAssetVault])
             {
-                // Delete bobs' mptoken even though it is locked
+                // Delete bob's mptoken even though it is locked
                 mptAlice.authorize({.account = bob, .flags = tfMPTUnauthorize});
 
                 mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTUnlock, .err = tecOBJECT_NOT_FOUND});

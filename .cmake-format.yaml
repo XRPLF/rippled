@@ -2,6 +2,17 @@ _help_parse: Options affecting listfile parsing
 parse:
   _help_additional_commands:
     - Specify structure for custom cmake functions
+  additional_commands:
+    target_protobuf_sources:
+      pargs:
+        - target
+        - prefix
+      kwargs:
+        PROTOS: "*"
+        LANGUAGE: cpp
+        IMPORT_DIRS: "*"
+        GENERATE_EXTENSIONS: "*"
+        PLUGIN: "*"
   _help_override_spec:
     - Override configurations per-command where available
   override_spec: {}
@@ -159,7 +170,7 @@ markup:
   canonicalize_hashrulers: true
   _help_enable_markup:
     - enable comment markup parsing and reflow
-  enable_markup: true
+  enable_markup: false
 _help_lint: Options affecting the linter
 lint:
   _help_disabled_codes:

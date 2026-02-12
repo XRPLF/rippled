@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_TICKET_H_INCLUDED
-#define XRPL_TEST_JTX_TICKET_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -48,5 +47,3 @@ using tickets = owner_count<ltTICKET>;
 
 }  // namespace test
 }  // namespace xrpl
-
-#endif

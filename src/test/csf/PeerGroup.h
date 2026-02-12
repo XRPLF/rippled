@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_PEERGROUP_H_INCLUDED
-#define XRPL_TEST_CSF_PEERGROUP_H_INCLUDED
+#pragma once
 
 #include <test/csf/Peer.h>
 #include <test/csf/random.h>
@@ -340,4 +339,3 @@ randomRankedConnect(
 }  // namespace csf
 }  // namespace test
 }  // namespace xrpl
-#endif

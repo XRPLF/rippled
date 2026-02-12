@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_COLLECTORS_H_INCLUDED
-#define XRPL_TEST_CSF_COLLECTORS_H_INCLUDED
+#pragma once
 
 #include <test/csf/Histogram.h>
 #include <test/csf/SimTime.h>
@@ -641,5 +640,3 @@ struct JumpCollector
 }  // namespace csf
 }  // namespace test
 }  // namespace xrpl
-
-#endif

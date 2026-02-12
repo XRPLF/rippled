@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_LOANSET_H_INCLUDED
-#define XRPL_TX_LOANSET_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/misc/LendingHelpers.h>
 #include <xrpld/app/tx/detail/Transactor.h>
@@ -55,5 +54,3 @@ public:
 //------------------------------------------------------------------------------
 
 }  // namespace xrpl
-
-#endif

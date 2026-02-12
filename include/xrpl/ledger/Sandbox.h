@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_SANDBOX_H_INCLUDED
-#define XRPL_LEDGER_SANDBOX_H_INCLUDED
+#pragma once
 
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/detail/ApplyViewBase.h>
@@ -40,5 +39,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif
