@@ -4990,6 +4990,56 @@ class Vault_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testVaultDeleteData()
+    {
+        using namespace test::jtx;
+
+        auto const test =
+            [&](std::string const& prefix, FeatureBitset features, std::string const& pl, TER expectedCode) {
+                Env env{*this, features};
+                testcase("VaultDelete data " + prefix);
+                Account const owner{"owner"};
+
+                Vault vault{env};
+                env.fund(XRP(1'000'000), owner);
+                env.close();
+
+                PrettyAsset const xrpAsset = xrpIssue();
+
+                auto const [tx, keylet] = vault.create({.owner = owner, .asset = xrpAsset});
+                env(tx, ter(tesSUCCESS), THISLINE);
+
+                auto delTx = vault.del({.owner = owner, .id = keylet.key});
+                env(delTx, data(pl), ter(expectedCode), THISLINE);
+
+                env.close();
+            };
+
+        auto const all = testable_amendments();
+        {
+            // Test VaultDelete with fixLendingProtocolV1_1 disabled
+            // Transaction succeeds even if the data field is provided
+            test(
+                "fixLendingProtocolV1_1 disabled",
+                all - fixLendingProtocolV1_1,
+                std::string(maxDataPayloadLength, 'A'),
+                tesSUCCESS);
+        }
+
+        {
+            // Transaction fails if the data field is too large
+            test(
+                "fixLendingProtocolV1_1 enabled data too large",
+                all,
+                std::string(maxDataPayloadLength + 1, 'A'),
+                temMALFORMED);
+            // Transaction fails if the data field is set, but is empty
+            test("fixLendingProtocolV1_1 enabled data empty", all, std::string(0, 'A'), temMALFORMED);
+            test("fixLendingProtocolV1_1 enabled data valid", all, std::string(maxDataPayloadLength, 'A'), tesSUCCESS);
+        }
+    }
+
 public:
     void
     run() override
@@ -5011,6 +5061,7 @@ public:
         testVaultClawbackBurnShares();
         testVaultClawbackAssets();
         testAssetsMaximum();
+        testVaultDeleteData();
     }
 };
 
