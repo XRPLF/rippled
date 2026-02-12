@@ -547,12 +547,11 @@ struct Wasm_test : public beast::unit_test::suite
             [[maybe_unused]] uint256 const nft1{token::getNextID(env, alan, 0u)};
 
             env(token::mint(alan, 0u),
-                token::uri(
-                    "https://github.com/XRPLF/XRPL-Standards/discussions/"
-                    "279?id=github.com/XRPLF/XRPL-Standards/discussions/"
-                    "279&ut=github.com/XRPLF/XRPL-Standards/discussions/"
-                    "279&sid=github.com/XRPLF/XRPL-Standards/discussions/"
-                    "279&aot=github.com/XRPLF/XRPL-Standards/disc"));
+                token::uri("https://github.com/XRPLF/XRPL-Standards/discussions/"
+                           "279?id=github.com/XRPLF/XRPL-Standards/discussions/"
+                           "279&ut=github.com/XRPLF/XRPL-Standards/discussions/"
+                           "279&sid=github.com/XRPLF/XRPL-Standards/discussions/"
+                           "279&aot=github.com/XRPLF/XRPL-Standards/disc"));
             [[maybe_unused]] uint256 const nft2{token::getNextID(env, alan, 0u)};
             env(token::mint(alan, 0u));
             env.close();
@@ -756,28 +755,28 @@ struct Wasm_test : public beast::unit_test::suite
         }
 
         {  // return 0 whithout calling wasm
-            std::vector<WasmParam> params = {{.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 0} } }};
+            std::vector<WasmParam> params = {{.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 0 } } }};
             auto& engine = WasmEngine::instance();
             auto re = engine.run(badAllocWasm, hfs, "test", params, {}, 1'000'000, env.journal);
             BEAST_EXPECT(!re) && BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
         }
 
         {  // forged "allocate" return 8Mb (which is more than memory limit)
-            std::vector<WasmParam> params = {{.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 1} } }};
+            std::vector<WasmParam> params = {{.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 1 } } }};
             auto& engine = WasmEngine::instance();
             auto re = engine.run(badAllocWasm, hfs, "test", params, {}, 1'000'000, env.journal);
             BEAST_EXPECT(!re) && BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
         }
 
         {  // forged "allocate" return 0
-            std::vector<WasmParam> params = {{.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 2} } }};
+            std::vector<WasmParam> params = {{.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 2 } } }};
             auto& engine = WasmEngine::instance();
             auto re = engine.run(badAllocWasm, hfs, "test", params, {}, 1'000'000, env.journal);
             BEAST_EXPECT(!re) && BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
         }
 
         {  // forged "allocate" return -1
-            std::vector<WasmParam> params = {{.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 3} } }};
+            std::vector<WasmParam> params = {{.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 3 } } }};
             auto& engine = WasmEngine::instance();
             auto re = engine.run(badAllocWasm, hfs, "test", params, {}, 1'000'000, env.journal);
 
@@ -1594,7 +1593,7 @@ struct Wasm_test : public beast::unit_test::suite
         testOpcodes();
 
 #ifdef WASM_PERF_TESTS
-        // only perormance testing can pass buffer to Wasm (and call exported "allocate" function)
+        // only performance tests can pass buffer to Wasm (and call exported "allocate" function)
         testWasmSha();
         testWasmB58();
         testBadAlloc();

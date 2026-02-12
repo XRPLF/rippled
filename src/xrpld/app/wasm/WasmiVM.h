@@ -125,8 +125,7 @@ public:
     std::int64_t
     getGas() const;
 
-    std::int64_t
-    setGas(std::int64_t) const;
+    std::int64_t setGas(std::int64_t) const;
 };
 
 struct ModuleWrapper
