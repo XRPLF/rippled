@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpld/app/misc/Manifest.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/overlay/Message.h>
 
@@ -9,6 +8,7 @@
 #include <xrpl/crypto/csprng.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/server/Manifest.h>
 
 #include <boost/thread/shared_mutex.hpp>
 
