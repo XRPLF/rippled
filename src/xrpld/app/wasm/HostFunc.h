@@ -110,6 +110,12 @@ struct HostFunctions
         return j_;
     }
 
+    virtual bool
+    checkSelf() const
+    {
+        return true;
+    }
+
     virtual Expected<std::uint32_t, HostFunctionError>
     getLedgerSqn() const
     {

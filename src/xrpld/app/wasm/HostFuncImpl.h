@@ -75,6 +75,13 @@ public:
         return rt_;
     }
 
+    virtual bool
+    checkSelf() const override
+    {
+        return !currentLedgerObj_ && !data_ &&
+            std::ranges::find_if(cache_, [](auto& p) { return !!p; }) == cache_.end();
+    }
+
     std::optional<Bytes> const&
     getData() const
     {

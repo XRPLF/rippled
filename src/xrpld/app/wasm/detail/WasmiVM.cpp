@@ -784,6 +784,8 @@ WasmiEngine::runHlp(
 #ifndef WASM_PERF_TESTS
     if (wasmCode.empty())
         throw std::runtime_error("empty module");
+    if (!hfs.checkSelf())
+        throw std::runtime_error("hfs isn't clean");
 #else
     // re-using module only for perf tests
     if (!wasmCode.empty())
