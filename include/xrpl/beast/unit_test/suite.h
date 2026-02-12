@@ -11,7 +11,6 @@
 #include <boost/throw_exception.hpp>
 
 #include <ostream>
-#include <source_location>
 #include <sstream>
 #include <string>
 
@@ -196,7 +195,7 @@ public:
 
     template <class = void>
     void
-    fail(std::string const& reason = "", std::source_location const& loc = std::source_location::current());
+    fail(std::string const& reason = "");
     /** @} */
 
     /** Evaluate a test condition.
@@ -501,7 +500,7 @@ suite::pass()
 // ::fail
 template <class>
 void
-suite::fail(std::string const& reason, std::source_location const& loc)
+suite::fail(std::string const& reason)
 {
     propagate_abort();
     runner_->fail(reason);
