@@ -93,7 +93,12 @@ public:
     makeNumber(int64_t mantissa, int32_t exponent)
     {
         if (mantissa < 0)
-            return Number(true, -static_cast<uint64_t>(mantissa), exponent, Number::normalized());
+        {
+            // Safe conversion: avoid UB when mantissa == INT64_MIN
+            // Two's complement: -x == ~x + 1
+            auto const absMantissa = static_cast<uint64_t>(~mantissa) + 1u;
+            return Number(true, absMantissa, exponent, Number::normalized());
+        }
         return Number(false, mantissa, exponent, Number::normalized());
     }
 
