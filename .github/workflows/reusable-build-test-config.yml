@@ -229,8 +229,8 @@ jobs:
         env:
           BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
         run: |
+          set -o pipefail
           ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee unittest.log
-          exit ${PIPESTATUS[0]}
 
       - name: Show test failure summary
         if: ${{ failure() && !inputs.build_only }}
