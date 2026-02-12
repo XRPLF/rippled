@@ -837,8 +837,11 @@ Transactor::checkMultiSign(
         // We have plans to support multiple SignerLists in the future.  The
         // presence and defaulted value of the SignerListID field will enable
         // that.
-        assert(sleAllowedSigners->isFieldPresent(sfSignerListID));
-        assert(sleAllowedSigners->getFieldU32(sfSignerListID) == 0);
+        XRPL_ASSERT(
+            sleAllowedSigners->isFieldPresent(sfSignerListID), "xrpl::Transactor::checkMultiSign : has signer list ID");
+        XRPL_ASSERT(
+            sleAllowedSigners->getFieldU32(sfSignerListID) == 0,
+            "xrpl::Transactor::checkMultiSign : signer list ID is 0");
 
         uint32_t const quorum = sleAllowedSigners->getFieldU32(sfSignerQuorum);
         uint32_t sum{0};
