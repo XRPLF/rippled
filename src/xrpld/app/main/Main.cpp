@@ -323,7 +323,7 @@ run(int argc, char** argv)
 {
     using namespace std;
 
-    beast::setCurrentThreadName("main");
+    beast::setCurrentThreadName("xrpld-main");
 
     po::variables_map vm;
 

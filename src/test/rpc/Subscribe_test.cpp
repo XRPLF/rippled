@@ -851,8 +851,7 @@ public:
             {
                 auto& from = (i % 2 == 0) ? a : b;
                 auto& to = (i % 2 == 0) ? b : a;
-                env.apply(
-                    pay(from, to, jtx::XRP(numXRP)),
+                env(pay(from, to, jtx::XRP(numXRP)),
                     jtx::seq(jtx::autofill),
                     jtx::fee(jtx::autofill),
                     jtx::sig(jtx::autofill));

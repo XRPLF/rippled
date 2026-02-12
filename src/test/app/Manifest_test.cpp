@@ -827,8 +827,13 @@ public:
 
             // applyManifest should accept new manifests with
             // higher sequence numbers
+            auto const seq0 = cache.sequence();
             BEAST_EXPECT(cache.applyManifest(clone(s_a0)) == ManifestDisposition::accepted);
+            BEAST_EXPECT(cache.sequence() > seq0);
+
+            auto const seq1 = cache.sequence();
             BEAST_EXPECT(cache.applyManifest(clone(s_a0)) == ManifestDisposition::stale);
+            BEAST_EXPECT(cache.sequence() == seq1);
 
             BEAST_EXPECT(cache.applyManifest(clone(s_a1)) == ManifestDisposition::accepted);
             BEAST_EXPECT(cache.applyManifest(clone(s_a1)) == ManifestDisposition::stale);

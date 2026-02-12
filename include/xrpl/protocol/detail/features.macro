@@ -17,6 +17,7 @@
 // Keep it sorted in reverse chronological order.
 
 XRPL_FEATURE(SmartEscrow,                Supported::no,  VoteBehavior::DefaultNo)
+XRPL_FIX    (PermissionedDomainInvariant, Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (ExpiredNFTokenOfferRemoval, Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (BatchInnerSigs,             Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(LendingProtocol,            Supported::yes, VoteBehavior::DefaultNo)
@@ -33,7 +34,7 @@ XRPL_FIX    (EnforceNFTokenTrustlineV2,  Supported::yes, VoteBehavior::DefaultNo
 XRPL_FIX    (AMMv1_3,                    Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(PermissionedDEX,            Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(Batch,                      Supported::yes, VoteBehavior::DefaultNo)
-XRPL_FEATURE(SingleAssetVault,           Supported::yes,  VoteBehavior::DefaultNo)
+XRPL_FEATURE(SingleAssetVault,           Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (PayChanCancelAfter,         Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (InvalidTxFlags,             Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (FrozenLPTokenTransfer,      Supported::yes, VoteBehavior::DefaultNo)

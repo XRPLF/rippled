@@ -196,11 +196,22 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         # Enable code coverage for Debian Bookworm using GCC 15 in Debug on
         # linux/amd64
         if (
-            f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-15"
+            f"{os['distro_name']}-{os['distro_version']}" == "debian-bookworm"
+            and f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-15"
             and build_type == "Debug"
             and architecture["platform"] == "linux/amd64"
         ):
-            cmake_args = f"-Dcoverage=ON -Dcoverage_format=xml -DCODE_COVERAGE_VERBOSE=ON -DCMAKE_C_FLAGS=-O0 -DCMAKE_CXX_FLAGS=-O0 {cmake_args}"
+            cmake_args = f"{cmake_args} -Dcoverage=ON -Dcoverage_format=xml -DCODE_COVERAGE_VERBOSE=ON -DCMAKE_C_FLAGS=-O0 -DCMAKE_CXX_FLAGS=-O0"
+
+        # Enable unity build for Ubuntu Jammy using GCC 12 in Debug on
+        # linux/amd64.
+        if (
+            f"{os['distro_name']}-{os['distro_version']}" == "ubuntu-jammy"
+            and f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-12"
+            and build_type == "Debug"
+            and architecture["platform"] == "linux/amd64"
+        ):
+            cmake_args = f"{cmake_args} -Dunity=ON"
 
         # Generate a unique name for the configuration, e.g. macos-arm64-debug
         # or debian-bookworm-gcc-12-amd64-release.
@@ -217,6 +228,8 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         config_name += f"-{build_type.lower()}"
         if "-Dcoverage=ON" in cmake_args:
             config_name += "-coverage"
+        if "-Dunity=ON" in cmake_args:
+            config_name += "-unity"
 
         # Add the configuration to the list, with the most unique fields first,
         # so that they are easier to identify in the GitHub Actions UI, as long
