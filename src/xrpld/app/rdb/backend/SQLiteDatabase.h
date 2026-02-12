@@ -468,7 +468,9 @@ private:
 
 /**
  * @brief setup_RelationalDatabase Creates and returns a SQLiteDatabase
- *        instance based on configuration.
+ *        instance based on configuration. It's recommended to use it as
+ *        a singleton, but it's not enforced (e.g. if you have more than one
+ *        database).
  * @param registry The service registry.
  * @param config Config object.
  * @param jobQueue JobQueue object.
