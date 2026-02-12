@@ -504,7 +504,7 @@ void
 suite::fail(std::string const& reason, std::source_location const& loc)
 {
     propagate_abort();
-    runner_->fail(reason, loc.file_name(), loc.line());
+    runner_->fail(reason);
     if (abort_)
     {
         aborted_ = true;
