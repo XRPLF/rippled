@@ -2,7 +2,11 @@
 
 #include <xrpl/rdb/RelationalDatabase.h>
 
+#include <map>
 #include <memory>
+#include <optional>
+#include <variant>
+#include <vector>
 
 namespace xrpl {
 
@@ -378,7 +382,7 @@ public:
     SQLiteDatabase&
     operator=(SQLiteDatabase const&) = delete;
     SQLiteDatabase&
-    operator=(SQLiteDatabase&& rhs) = delete;
+    operator=(SQLiteDatabase&&) = delete;
 
     /**
      * @brief ledgerDbHasSpace Checks if the ledger database has available
@@ -400,7 +404,7 @@ public:
 
 private:
     ServiceRegistry& registry_;
-    bool const useTxTables_;
+    bool useTxTables_;
     beast::Journal j_;
     std::unique_ptr<DatabaseCon> ledgerDb_, txdb_;
 
