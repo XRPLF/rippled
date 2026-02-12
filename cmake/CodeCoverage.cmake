@@ -469,8 +469,11 @@ function (add_code_coverage_to_target name scope)
     target_link_libraries(
         ${name}
         ${scope}
-        $<$<LINK_LANGUAGE:CXX>:${COVERAGE_CXX_LINKER_FLAGS}
-        gcov>
-        $<$<LINK_LANGUAGE:C>:${COVERAGE_C_LINKER_FLAGS}
-        gcov>)
+        $<$<LINK_LANGUAGE:CXX>:${COVERAGE_CXX_LINKER_FLAGS}>
+        $<$<LINK_LANGUAGE:C>:${COVERAGE_C_LINKER_FLAGS}>)
+    # GCC requires explicit libgcov linkage; Clang/AppleClang handles
+    # coverage via --coverage without a separate library.
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        target_link_libraries(${name} ${scope} gcov)
+    endif ()
 endfunction () # add_code_coverage_to_target
