@@ -107,6 +107,14 @@ jobs:
     if: ${{ needs.should-run.outputs.go == 'true' }}
     uses: ./.github/workflows/reusable-check-rename.yml
 
+  clang-tidy-check:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-clang-tidy-check.yml
+    with:
+      check_all_files: false
+      create_issue_on_failure: false
+
   build-test:
     needs: should-run
     if: ${{ needs.should-run.outputs.go == 'true' }}
@@ -156,6 +164,7 @@ jobs:
     needs:
       - check-levelization
       - check-rename
+      - clang-tidy-check
       - build-test
       - upload-recipe
       - notify-clio

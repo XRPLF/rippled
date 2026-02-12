@@ -60,6 +60,12 @@ defaults:
     shell: bash
 
 jobs:
+  clang-tidy-check:
+    uses: ./.github/workflows/reusable-clang-tidy-check.yml
+    with:
+      check_all_files: true
+      create_issue_on_failure: ${{ github.event_name == 'schedule' }}
+
   build-test:
     uses: ./.github/workflows/reusable-build-test.yml
     strategy:
