@@ -1,48 +1,130 @@
 #pragma once
 
-#include <xrpl/rdb/RelationalDatabase.h>
+#include <xrpl/basics/RangeSet.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/LedgerShortcut.h>
+#include <xrpl/protocol/TxMeta.h>
+#include <xrpl/protocol/TxSearched.h>
+#include <xrpl/rdb/DatabaseCon.h>
 
-#include <memory>
+#include <boost/filesystem.hpp>
+#include <boost/variant.hpp>
 
 namespace xrpl {
 
-class Config;
-class JobQueue;
-class ServiceRegistry;
+class Transaction;
+class Ledger;
 
-class SQLiteDatabase final : public RelationalDatabase
+struct LedgerHashPair
+{
+    uint256 ledgerHash;
+    uint256 parentHash;
+};
+
+struct LedgerRange
+{
+    uint32_t min;
+    uint32_t max;
+};
+
+class RelationalDatabase
 {
 public:
+    struct CountMinMax
+    {
+        std::size_t numberOfRows;
+        LedgerIndex minLedgerSequence;
+        LedgerIndex maxLedgerSequence;
+    };
+
+    struct AccountTxMarker
+    {
+        std::uint32_t ledgerSeq = 0;
+        std::uint32_t txnSeq = 0;
+    };
+
+    struct AccountTxOptions
+    {
+        AccountID const& account;
+        std::uint32_t minLedger;
+        std::uint32_t maxLedger;
+        std::uint32_t offset;
+        std::uint32_t limit;
+        bool bUnlimited;
+    };
+
+    struct AccountTxPageOptions
+    {
+        AccountID const& account;
+        std::uint32_t minLedger;
+        std::uint32_t maxLedger;
+        std::optional<AccountTxMarker> marker;
+        std::uint32_t limit;
+        bool bAdmin;
+    };
+
+    using AccountTx = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
+    using AccountTxs = std::vector<AccountTx>;
+    using txnMetaLedgerType = std::tuple<Blob, Blob, std::uint32_t>;
+    using MetaTxsList = std::vector<txnMetaLedgerType>;
+
+    using LedgerSequence = uint32_t;
+    using LedgerHash = uint256;
+    using LedgerSpecifier = std::variant<LedgerRange, LedgerShortcut, LedgerSequence, LedgerHash>;
+
+    struct AccountTxArgs
+    {
+        AccountID account;
+        std::optional<LedgerSpecifier> ledger;
+        bool binary = false;
+        bool forward = false;
+        uint32_t limit = 0;
+        std::optional<AccountTxMarker> marker;
+    };
+
+    struct AccountTxResult
+    {
+        std::variant<AccountTxs, MetaTxsList> transactions;
+        LedgerRange ledgerRange;
+        uint32_t limit;
+        std::optional<AccountTxMarker> marker;
+    };
+
+    virtual ~RelationalDatabase() = default;
+
     /**
      * @brief getMinLedgerSeq Returns the minimum ledger sequence in the Ledgers
      *        table.
      * @return Ledger sequence or no value if no ledgers exist.
      */
-    std::optional<LedgerIndex>
-    getMinLedgerSeq() override;
+    virtual std::optional<LedgerIndex>
+    getMinLedgerSeq() = 0;
 
     /**
      * @brief getMaxLedgerSeq Returns the maximum ledger sequence in the Ledgers
      *        table.
      * @return Ledger sequence or none if no ledgers exist.
      */
-    std::optional<LedgerIndex>
-    getMaxLedgerSeq() override;
+    virtual std::optional<LedgerIndex>
+    getMaxLedgerSeq() = 0;
 
     /**
      * @brief getLedgerInfoByIndex Returns a ledger by its sequence.
      * @param ledgerSeq Ledger sequence.
      * @return The ledger if found, otherwise no value.
      */
-    std::optional<LedgerHeader>
-    getLedgerInfoByIndex(LedgerIndex ledgerSeq) override;
+    virtual std::optional<LedgerHeader>
+    getLedgerInfoByIndex(LedgerIndex ledgerSeq) = 0;
 
     /**
      * @brief getNewestLedgerInfo Returns the info of the newest saved ledger.
      * @return Ledger info if found, otherwise no value.
      */
-    std::optional<LedgerHeader>
-    getNewestLedgerInfo() override;
+    virtual std::optional<LedgerHeader>
+    getNewestLedgerInfo() = 0;
 
     /**
      * @brief getLedgerInfoByHash Returns the info of the ledger with given
@@ -50,8 +132,8 @@ public:
      * @param ledgerHash Hash of the ledger.
      * @return Ledger if found, otherwise no value.
      */
-    std::optional<LedgerHeader>
-    getLedgerInfoByHash(uint256 const& ledgerHash) override;
+    virtual std::optional<LedgerHeader>
+    getLedgerInfoByHash(uint256 const& ledgerHash) = 0;
 
     /**
      * @brief getHashByIndex Returns the hash of the ledger with the given
@@ -59,8 +141,8 @@ public:
      * @param ledgerIndex Ledger sequence.
      * @return Hash of the ledger.
      */
-    uint256
-    getHashByIndex(LedgerIndex ledgerIndex) override;
+    virtual uint256
+    getHashByIndex(LedgerIndex ledgerIndex) = 0;
 
     /**
      * @brief getHashesByIndex Returns the hashes of the ledger and its parent
@@ -69,8 +151,8 @@ public:
      * @return Struct LedgerHashPair which contains hashes of the ledger and
      *         its parent.
      */
-    std::optional<LedgerHashPair>
-    getHashesByIndex(LedgerIndex ledgerIndex) override;
+    virtual std::optional<LedgerHashPair>
+    getHashesByIndex(LedgerIndex ledgerIndex) = 0;
 
     /**
      * @brief getHashesByIndex Returns hashes of each ledger and its parent for
@@ -81,8 +163,8 @@ public:
      *         struct LedgerHashPair which contains the hashes of the ledger and
      *         its parent.
      */
-    std::map<LedgerIndex, LedgerHashPair>
-    getHashesByIndex(LedgerIndex minSeq, LedgerIndex maxSeq) override;
+    virtual std::map<LedgerIndex, LedgerHashPair>
+    getHashesByIndex(LedgerIndex minSeq, LedgerIndex maxSeq) = 0;
 
     /**
      * @brief getTxHistory Returns the 20 most recent transactions starting from
@@ -91,40 +173,40 @@ public:
      * @return Vector of shared pointers to transactions sorted in
      *         descending order by ledger sequence.
      */
-    std::vector<std::shared_ptr<Transaction>>
-    getTxHistory(LedgerIndex startIndex) override;
+    virtual std::vector<std::shared_ptr<Transaction>>
+    getTxHistory(LedgerIndex startIndex) = 0;
 
     /**
      * @brief getTransactionsMinLedgerSeq Returns the minimum ledger sequence
      *        stored in the Transactions table.
      * @return Ledger sequence or no value if no ledgers exist.
      */
-    std::optional<LedgerIndex>
-    getTransactionsMinLedgerSeq() override;
+    virtual std::optional<LedgerIndex>
+    getTransactionsMinLedgerSeq() = 0;
 
     /**
      * @brief getAccountTransactionsMinLedgerSeq Returns the minimum ledger
      *        sequence stored in the AccountTransactions table.
      * @return Ledger sequence or no value if no ledgers exist.
      */
-    std::optional<LedgerIndex>
-    getAccountTransactionsMinLedgerSeq() override;
+    virtual std::optional<LedgerIndex>
+    getAccountTransactionsMinLedgerSeq() = 0;
 
     /**
      * @brief deleteTransactionByLedgerSeq Deletes transactions from the ledger
      *        with the given sequence.
      * @param ledgerSeq Ledger sequence.
      */
-    void
-    deleteTransactionByLedgerSeq(LedgerIndex ledgerSeq) override;
+    virtual void
+    deleteTransactionByLedgerSeq(LedgerIndex ledgerSeq) = 0;
 
     /**
      * @brief deleteBeforeLedgerSeq Deletes all ledgers with a sequence number
      *        less than or equal to the given ledger sequence.
      * @param ledgerSeq Ledger sequence.
      */
-    void
-    deleteBeforeLedgerSeq(LedgerIndex ledgerSeq) override;
+    virtual void
+    deleteBeforeLedgerSeq(LedgerIndex ledgerSeq) = 0;
 
     /**
      * @brief deleteTransactionsBeforeLedgerSeq Deletes all transactions with
@@ -132,8 +214,8 @@ public:
      *        sequence.
      * @param ledgerSeq Ledger sequence.
      */
-    void
-    deleteTransactionsBeforeLedgerSeq(LedgerIndex ledgerSeq) override;
+    virtual void
+    deleteTransactionsBeforeLedgerSeq(LedgerIndex ledgerSeq) = 0;
 
     /**
      * @brief deleteAccountTransactionsBeforeLedgerSeq Deletes all account
@@ -141,23 +223,23 @@ public:
      *        given ledger sequence.
      * @param ledgerSeq Ledger sequence.
      */
-    void
-    deleteAccountTransactionsBeforeLedgerSeq(LedgerIndex ledgerSeq) override;
+    virtual void
+    deleteAccountTransactionsBeforeLedgerSeq(LedgerIndex ledgerSeq) = 0;
 
     /**
      * @brief getTransactionCount Returns the number of transactions.
      * @return Number of transactions.
      */
-    std::size_t
-    getTransactionCount() override;
+    virtual std::size_t
+    getTransactionCount() = 0;
 
     /**
      * @brief getAccountTransactionCount Returns the number of account
      *        transactions.
      * @return Number of account transactions.
      */
-    std::size_t
-    getAccountTransactionCount() override;
+    virtual std::size_t
+    getAccountTransactionCount() = 0;
 
     /**
      * @brief getLedgerCountMinMax Returns the minimum ledger sequence,
@@ -165,8 +247,8 @@ public:
      * @return Struct CountMinMax which contains the minimum sequence,
      *         maximum sequence and number of ledgers.
      */
-    CountMinMax
-    getLedgerCountMinMax() override;
+    virtual struct CountMinMax
+    getLedgerCountMinMax() = 0;
 
     /**
      * @brief saveValidatedLedger Saves a ledger into the database.
@@ -174,8 +256,8 @@ public:
      * @param current True if the ledger is current.
      * @return True if saving was successful.
      */
-    bool
-    saveValidatedLedger(std::shared_ptr<Ledger const> const& ledger, bool current) override;
+    virtual bool
+    saveValidatedLedger(std::shared_ptr<Ledger const> const& ledger, bool current) = 0;
 
     /**
      * @brief getLimitedOldestLedgerInfo Returns the info of the oldest ledger
@@ -184,8 +266,8 @@ public:
      * @param ledgerFirstIndex Minimum ledger sequence.
      * @return Ledger info if found, otherwise no value.
      */
-    std::optional<LedgerHeader>
-    getLimitedOldestLedgerInfo(LedgerIndex ledgerFirstIndex) override;
+    virtual std::optional<LedgerHeader>
+    getLimitedOldestLedgerInfo(LedgerIndex ledgerFirstIndex) = 0;
 
     /**
      * @brief getLimitedNewestLedgerInfo Returns the info of the newest ledger
@@ -194,8 +276,8 @@ public:
      * @param ledgerFirstIndex Minimum ledger sequence.
      * @return Ledger info if found, otherwise no value.
      */
-    std::optional<LedgerHeader>
-    getLimitedNewestLedgerInfo(LedgerIndex ledgerFirstIndex) override;
+    virtual std::optional<LedgerHeader>
+    getLimitedNewestLedgerInfo(LedgerIndex ledgerFirstIndex) = 0;
 
     /**
      * @brief getOldestAccountTxs Returns the oldest transactions for the
@@ -208,8 +290,8 @@ public:
      * @return Vector of pairs of found transactions and their metadata
      *         sorted in ascending order by account sequence.
      */
-    AccountTxs
-    getOldestAccountTxs(AccountTxOptions const& options) override;
+    virtual AccountTxs
+    getOldestAccountTxs(AccountTxOptions const& options) = 0;
 
     /**
      * @brief getNewestAccountTxs Returns the newest transactions for the
@@ -222,8 +304,8 @@ public:
      * @return Vector of pairs of found transactions and their metadata
      *         sorted in descending order by account sequence.
      */
-    AccountTxs
-    getNewestAccountTxs(AccountTxOptions const& options) override;
+    virtual AccountTxs
+    getNewestAccountTxs(AccountTxOptions const& options) = 0;
 
     /**
      * @brief getOldestAccountTxsB Returns the oldest transactions in binary
@@ -236,8 +318,8 @@ public:
      * @return Vector of tuples of found transactions, their metadata and
      *         account sequences sorted in ascending order by account sequence.
      */
-    MetaTxsList
-    getOldestAccountTxsB(AccountTxOptions const& options) override;
+    virtual MetaTxsList
+    getOldestAccountTxsB(AccountTxOptions const& options) = 0;
 
     /**
      * @brief getNewestAccountTxsB Returns the newest transactions in binary
@@ -251,8 +333,8 @@ public:
      *         account sequences sorted in descending order by account
      *         sequence.
      */
-    MetaTxsList
-    getNewestAccountTxsB(AccountTxOptions const& options) override;
+    virtual MetaTxsList
+    getNewestAccountTxsB(AccountTxOptions const& options) = 0;
 
     /**
      * @brief oldestAccountTxPage Returns the oldest transactions for the
@@ -266,8 +348,8 @@ public:
      *         sorted in ascending order by account sequence and a marker
      *         for the next search if the search was not finished.
      */
-    std::pair<AccountTxs, std::optional<AccountTxMarker>>
-    oldestAccountTxPage(AccountTxPageOptions const& options) override;
+    virtual std::pair<AccountTxs, std::optional<AccountTxMarker>>
+    oldestAccountTxPage(AccountTxPageOptions const& options) = 0;
 
     /**
      * @brief newestAccountTxPage Returns the newest transactions for the
@@ -281,8 +363,8 @@ public:
      *         sorted in descending order by account sequence and a marker
      *         for the next search if the search was not finished.
      */
-    std::pair<AccountTxs, std::optional<AccountTxMarker>>
-    newestAccountTxPage(AccountTxPageOptions const& options) override;
+    virtual std::pair<AccountTxs, std::optional<AccountTxMarker>>
+    newestAccountTxPage(AccountTxPageOptions const& options) = 0;
 
     /**
      * @brief oldestAccountTxPageB Returns the oldest transactions in binary
@@ -297,8 +379,8 @@ public:
      *         sequence and a marker for the next search if the search was not
      *         finished.
      */
-    std::pair<MetaTxsList, std::optional<AccountTxMarker>>
-    oldestAccountTxPageB(AccountTxPageOptions const& options) override;
+    virtual std::pair<MetaTxsList, std::optional<AccountTxMarker>>
+    oldestAccountTxPageB(AccountTxPageOptions const& options) = 0;
 
     /**
      * @brief newestAccountTxPageB Returns the newest transactions in binary
@@ -313,8 +395,8 @@ public:
      *         sequence and a marker for the next search if the search was not
      *         finished.
      */
-    std::pair<MetaTxsList, std::optional<AccountTxMarker>>
-    newestAccountTxPageB(AccountTxPageOptions const& options) override;
+    virtual std::pair<MetaTxsList, std::optional<AccountTxMarker>>
+    newestAccountTxPageB(AccountTxPageOptions const& options) = 0;
 
     /**
      * @brief getTransaction Returns the transaction with the given hash. If a
@@ -331,146 +413,63 @@ public:
      *         error code is returned via the ec parameter, in other cases the
      *         default error code is not changed.
      */
-    std::variant<AccountTx, TxSearched>
-    getTransaction(uint256 const& id, std::optional<ClosedInterval<std::uint32_t>> const& range, error_code_i& ec)
-        override;
+    virtual std::variant<AccountTx, TxSearched>
+    getTransaction(uint256 const& id, std::optional<ClosedInterval<uint32_t>> const& range, error_code_i& ec) = 0;
 
     /**
      * @brief getKBUsedAll Returns the amount of space used by all databases.
      * @return Space in kilobytes.
      */
-    std::uint32_t
-    getKBUsedAll() override;
+    virtual uint32_t
+    getKBUsedAll() = 0;
 
     /**
      * @brief getKBUsedLedger Returns the amount of space space used by the
      *        ledger database.
      * @return Space in kilobytes.
      */
-    std::uint32_t
-    getKBUsedLedger() override;
+    virtual uint32_t
+    getKBUsedLedger() = 0;
 
     /**
      * @brief getKBUsedTransaction Returns the amount of space used by the
      *        transaction database.
      * @return Space in kilobytes.
      */
-    std::uint32_t
-    getKBUsedTransaction() override;
+    virtual uint32_t
+    getKBUsedTransaction() = 0;
 
     /**
      * @brief Closes the ledger database
      */
-    void
-    closeLedgerDB() override;
+    virtual void
+    closeLedgerDB() = 0;
 
     /**
      * @brief Closes the transaction database
      */
-    void
-    closeTransactionDB() override;
-
-    SQLiteDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue);
-
-    SQLiteDatabase(SQLiteDatabase const&) = delete;
-    SQLiteDatabase(SQLiteDatabase&& rhs) noexcept;
-
-    SQLiteDatabase&
-    operator=(SQLiteDatabase const&) = delete;
-    SQLiteDatabase&
-    operator=(SQLiteDatabase&& rhs) = delete;
-
-    /**
-     * @brief ledgerDbHasSpace Checks if the ledger database has available
-     *        space.
-     * @param config Config object.
-     * @return True if space is available.
-     */
-    bool
-    ledgerDbHasSpace(Config const& config);
-
-    /**
-     * @brief transactionDbHasSpace Checks if the transaction database has
-     *        available space.
-     * @param config Config object.
-     * @return True if space is available.
-     */
-    bool
-    transactionDbHasSpace(Config const& config);
-
-private:
-    ServiceRegistry& registry_;
-    bool const useTxTables_;
-    beast::Journal j_;
-    std::unique_ptr<DatabaseCon> ledgerDb_, txdb_;
-
-    /**
-     * @brief makeLedgerDBs Opens ledger and transaction databases for the node
-     *        store, and stores their descriptors in private member variables.
-     * @param config Config object.
-     * @param setup Path to the databases and other opening parameters.
-     * @param checkpointerSetup Checkpointer parameters.
-     * @return True if node databases opened successfully.
-     */
-    bool
-    makeLedgerDBs(
-        Config const& config,
-        DatabaseCon::Setup const& setup,
-        DatabaseCon::CheckpointerSetup const& checkpointerSetup);
-
-    /**
-     * @brief existsLedger Checks if the node store ledger database exists.
-     * @return True if the node store ledger database exists.
-     */
-    bool
-    existsLedger()
-    {
-        return static_cast<bool>(ledgerDb_);
-    }
-
-    /**
-     * @brief existsTransaction Checks if the node store transaction database
-     *        exists.
-     * @return True if the node store transaction database exists.
-     */
-    bool
-    existsTransaction()
-    {
-        return static_cast<bool>(txdb_);
-    }
-
-    /**
-     * @brief checkoutTransaction Checks out and returns node store ledger
-     *        database.
-     * @return Session to the node store ledger database.
-     */
-    auto
-    checkoutLedger()
-    {
-        return ledgerDb_->checkoutDb();
-    }
-
-    /**
-     * @brief checkoutTransaction Checks out and returns the node store
-     *        transaction database.
-     * @return Session to the node store transaction database.
-     */
-    auto
-    checkoutTransaction()
-    {
-        return txdb_->checkoutDb();
-    }
+    virtual void
+    closeTransactionDB() = 0;
 };
 
-/**
- * @brief setup_RelationalDatabase Creates and returns a SQLiteDatabase
- *        instance based on configuration.
- * @param registry The service registry.
- * @param config Config object.
- * @param jobQueue JobQueue object.
- * @return SQLiteDatabase instance.
- */
-SQLiteDatabase
-setup_RelationalDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue);
+template <class T, class C>
+T
+rangeCheckedCast(C c)
+{
+    if ((c > std::numeric_limits<T>::max()) || (!std::numeric_limits<T>::is_signed && c < 0) ||
+        (std::numeric_limits<T>::is_signed && std::numeric_limits<C>::is_signed &&
+         c < std::numeric_limits<T>::lowest()))
+    {
+        // This should never happen
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::rangeCheckedCast : domain error");
+        JLOG(debugLog().error()) << "rangeCheckedCast domain error:"
+                                 << " value = " << c << " min = " << std::numeric_limits<T>::lowest()
+                                 << " max: " << std::numeric_limits<T>::max();
+        // LCOV_EXCL_STOP
+    }
+
+    return static_cast<T>(c);
+}
 
 }  // namespace xrpl

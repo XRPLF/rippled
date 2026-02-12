@@ -3,14 +3,14 @@
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/ledger/PendingSaves.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
-#include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/app/rdb/backend/detail/Node.h>
-#include <xrpld/core/DatabaseCon.h>
-#include <xrpld/core/SociDB.h>
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/rdb/DatabaseCon.h>
+#include <xrpl/rdb/RelationalDatabase.h>
+#include <xrpl/rdb/SociDB.h>
 
 #include <boost/range/adaptor/transformed.hpp>
 
@@ -64,8 +64,8 @@ makeLedgerDBs(
         tx->getSession() << boost::str(
             boost::format("PRAGMA cache_size=-%d;") % kilobytes(config.getValueFor(SizedItem::txnDBCache)));
 
-        if (!setup.standAlone || setup.startUp == Config::LOAD || setup.startUp == Config::LOAD_FILE ||
-            setup.startUp == Config::REPLAY)
+        if (!setup.standAlone || setup.startUp == StartUpType::LOAD || setup.startUp == StartUpType::LOAD_FILE ||
+            setup.startUp == StartUpType::REPLAY)
         {
             // Check if AccountTransactions has primary key
             std::string cid, name, type;
