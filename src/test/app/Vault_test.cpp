@@ -5017,7 +5017,7 @@ class Vault_test : public beast::unit_test::suite
             };
 
         auto const all = testable_amendments();
-        
+
         // Test VaultDelete with fixLendingProtocolV1_1 disabled
         // Transaction fails if the data field is provided
         test(
@@ -5025,17 +5025,16 @@ class Vault_test : public beast::unit_test::suite
             all - fixLendingProtocolV1_1,
             std::string(maxDataPayloadLength, 'A'),
             temDISABLED);
-        
+
         // Transaction fails if the data field is too large
         test(
             "fixLendingProtocolV1_1 enabled data too large",
             all,
             std::string(maxDataPayloadLength + 1, 'A'),
             temMALFORMED);
-        
+
         // Transaction fails if the data field is set, but is empty
         test("fixLendingProtocolV1_1 enabled data empty", all, std::string(0, 'A'), temMALFORMED);
-        
         test("fixLendingProtocolV1_1 enabled data valid", all, std::string(maxDataPayloadLength, 'A'), tesSUCCESS);
     }
 
