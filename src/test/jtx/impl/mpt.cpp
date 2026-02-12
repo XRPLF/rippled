@@ -1888,9 +1888,8 @@ MPTTester::getBulletproof(
     if (proofLen != expectedLength(m))
         return Buffer(expectedLength(m));
 
-    // Resize to actual proof length
-    bulletproof.alloc(proofLen);
-    return bulletproof;
+    // Return a new buffer with just the proof data (correct length)
+    return Buffer(bulletproof.data(), proofLen);
 }
 
 }  // namespace jtx
