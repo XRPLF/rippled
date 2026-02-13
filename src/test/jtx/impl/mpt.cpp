@@ -875,7 +875,7 @@ MPTTester::getConvertBackProof(
     {
         Buffer const pedersenProof = getBalanceLinkageProof(holder, contextHash, *holderPubKey, pcParams);
 
-        // todo: incoporate range proof
+        // todo: incorporate range proof
         return pedersenProof;
     }
 

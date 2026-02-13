@@ -86,6 +86,7 @@ words:
   - daria
   - dcmake
   - dearmor
+  - decryptor
   - deleteme
   - demultiplexer
   - deserializaton
@@ -95,6 +96,7 @@ words:
   - distro
   - doxyfile
   - dxrpl
+  - elgamal
   - endmacro
   - exceptioned
   - Falco

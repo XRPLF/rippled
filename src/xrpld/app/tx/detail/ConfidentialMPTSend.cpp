@@ -110,7 +110,7 @@ verifySendProofs(
     if (remainingLength != 0)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    // Prepare receipient list
+    // Prepare recipient list
     std::vector<ConfidentialRecipient> recipients;
     recipients.reserve(recipientCount);
 
