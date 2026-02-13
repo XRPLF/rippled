@@ -188,4 +188,4 @@ Checks: "-*,
 #   misc-include-cleaner.IgnoreHeaders: '.*/(detail|impl)/.*;.*(expected|unexpected).*;.*ranges_lower_bound\.h;time.h;stdlib.h;__chrono/.*;fmt/chrono.h;boost/uuid/uuid_hash.hpp'
 #
 # HeaderFilterRegex: '^.*/(src|tests)/.*\.(h|hpp)$'
-# WarningsAsErrors: "*"
+WarningsAsErrors: "*"

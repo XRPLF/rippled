@@ -1,12 +1,12 @@
-name: Clang-tidy check
+name: Run clang-tidy on files
 
 on:
   workflow_call:
     inputs:
-      check_all_files:
-        description: "Check all files in the repository. If false, checks only changed files in PR."
-        type: boolean
-        default: true
+      files:
+        description: "List of files to check (empty means check all files)"
+        type: string
+        default: ""
       create_issue_on_failure:
         description: "Whether to create an issue if the check failed"
         type: boolean
@@ -31,60 +31,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
-      - name: Get changed C++ files
-        if: ${{ !inputs.check_all_files }}
-        id: changed_files
-        uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c # v46.0.5
-        with:
-          files: |
-            **/*.cpp
-            **/*.cc
-            **/*.cxx
-            **/*.c++
-            **/*.h
-            **/*.hpp
-            **/*.hxx
-            **/*.h++
-            **/*.ipp
-          separator: " "
-
-      - name: Check if we should continue
-        id: should_continue
-        run: |
-          if [ "${{ inputs.check_all_files }}" = "true" ]; then
-            echo "continue=true" >> $GITHUB_OUTPUT
-            echo "Checking all files"
-          elif [ "${{ steps.changed_files.outputs.any_changed }}" = "true" ]; then
-            echo "continue=true" >> $GITHUB_OUTPUT
-            echo "Found changed C++ files: ${{ steps.changed_files.outputs.all_changed_files }}"
-          else
-            echo "continue=false" >> $GITHUB_OUTPUT
-            echo "No C++ files changed, skipping clang-tidy"
-          fi
-
       - name: Prepare runner
-        if: steps.should_continue.outputs.continue == 'true'
         uses: XRPLF/actions/prepare-runner@2cbf481018d930656e9276fcc20dc0e3a0be5b6d
         with:
           enable_ccache: false
 
       - name: Print build environment
-        if: steps.should_continue.outputs.continue == 'true'
         uses: ./.github/actions/print-env
 
       - name: Get number of processors
-        if: steps.should_continue.outputs.continue == 'true'
         uses: XRPLF/actions/get-nproc@cf0433aa74563aead044a1e395610c96d65a37cf
         id: nproc
         with:
           subtract: ${{ inputs.nproc_subtract }}
 
       - name: Setup Conan
-        if: steps.should_continue.outputs.continue == 'true'
         uses: ./.github/actions/setup-conan
 
       - name: Build dependencies
-        if: steps.should_continue.outputs.continue == 'true'
         uses: ./.github/actions/build-deps
         with:
           build_nproc: ${{ steps.nproc.outputs.nproc }}
@@ -94,7 +58,6 @@ jobs:
           log_verbosity: ${{ runner.os == 'Windows' && 'quiet' || 'verbose' }}
 
       - name: Configure CMake
-        if: steps.should_continue.outputs.continue == 'true'
         working-directory: ${{ env.BUILD_DIR }}
         run: |
           cmake \
@@ -107,28 +70,14 @@ jobs:
             -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
             ..
 
-      - name: Set files to check
-        if: steps.should_continue.outputs.continue == 'true'
-        id: get_files
-        run: |
-          if [ "${{ inputs.check_all_files }}" = "true" ]; then
-            # Check all files - leave empty for run-clang-tidy to discover
-            echo "files=" >> $GITHUB_OUTPUT
-          else
-            # Use the changed C++ files from the action
-            echo "files=${{ steps.changed_files.outputs.all_changed_files }}" >> $GITHUB_OUTPUT
-          fi
-
       - name: Run clang tidy
-        if: steps.should_continue.outputs.continue == 'true'
         id: run_clang_tidy
         continue-on-error: true
         run: |
-          run-clang-tidy -j ${{steps.nproc.outputs.nproc }} -p "$BUILD_DIR" ${{ steps.get_files.outputs.files }} 2>&1 | tee clang-tidy-output.txt
+          run-clang-tidy -j ${{steps.nproc.outputs.nproc }} -p "$BUILD_DIR" ${{ inputs.files }} 2>&1 | tee clang-tidy-output.txt
           echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
 
       - name: Check clang-tidy results
-        if: steps.should_continue.outputs.continue == 'true'
         id: check_results
         run: |
           if [ "${{ steps.run_clang_tidy.outputs.exit_code }}" -ne 0 ]; then

@@ -1,0 +1,53 @@
+name: Clang-tidy check
+
+on:
+  workflow_call:
+    inputs:
+      check_all_files:
+        description: "Check all files in the repository. If false, checks only changed files in PR."
+        type: boolean
+        default: true
+      create_issue_on_failure:
+        description: "Whether to create an issue if the check failed"
+        type: boolean
+        default: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  determine-files:
+    name: Determine files to check
+    if: ${{ !inputs.check_all_files }}
+    runs-on: ubuntu-latest
+    outputs:
+      any_changed: ${{ steps.changed_files.outputs.any_changed }}
+      all_changed_files: ${{ steps.changed_files.outputs.all_changed_files }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Get changed C++ files
+        id: changed_files
+        uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c # v46.0.5
+        with:
+          files: |
+            **/*.cpp
+            **/*.cc
+            **/*.cxx
+            **/*.c++
+            **/*.h
+            **/*.hpp
+            **/*.hxx
+            **/*.h++
+            **/*.ipp
+          separator: " "
+
+  run-clang-tidy:
+    needs: determine-files
+    if: ${{ always() && (inputs.check_all_files || needs.determine-files.outputs.any_changed == 'true') }}
+    uses: ./.github/workflows/reusable-clang-tidy-files.yml
+    with:
+      files: ${{ inputs.check_all_files && '' || needs.determine-files.outputs.all_changed_files }}
+      create_issue_on_failure: ${{ inputs.create_issue_on_failure }}
