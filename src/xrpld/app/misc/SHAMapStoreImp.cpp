@@ -1,13 +1,13 @@
 #include <xrpld/app/ledger/TransactionMaster.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/SHAMapStoreImp.h>
-#include <xrpld/app/rdb/State.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
+#include <xrpl/server/NetworkOPs.h>
+#include <xrpl/server/State.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -507,16 +507,13 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
     if (healthWait() == stopping)
         return;
 
-    SQLiteDatabase* const db = dynamic_cast<SQLiteDatabase*>(&app_.getRelationalDatabase());
-
-    if (!db)
-        Throw<std::runtime_error>("Failed to get relational database");
+    auto& db = app_.getRelationalDatabase();
 
     clearSql(
         lastRotated,
         "Ledgers",
-        [db]() -> std::optional<LedgerIndex> { return db->getMinLedgerSeq(); },
-        [db](LedgerIndex min) -> void { db->deleteBeforeLedgerSeq(min); });
+        [&db]() -> std::optional<LedgerIndex> { return db.getMinLedgerSeq(); },
+        [&db](LedgerIndex min) -> void { db.deleteBeforeLedgerSeq(min); });
     if (healthWait() == stopping)
         return;
 
@@ -526,16 +523,16 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
     clearSql(
         lastRotated,
         "Transactions",
-        [&db]() -> std::optional<LedgerIndex> { return db->getTransactionsMinLedgerSeq(); },
-        [&db](LedgerIndex min) -> void { db->deleteTransactionsBeforeLedgerSeq(min); });
+        [&db]() -> std::optional<LedgerIndex> { return db.getTransactionsMinLedgerSeq(); },
+        [&db](LedgerIndex min) -> void { db.deleteTransactionsBeforeLedgerSeq(min); });
     if (healthWait() == stopping)
         return;
 
     clearSql(
         lastRotated,
         "AccountTransactions",
-        [&db]() -> std::optional<LedgerIndex> { return db->getAccountTransactionsMinLedgerSeq(); },
-        [&db](LedgerIndex min) -> void { db->deleteAccountTransactionsBeforeLedgerSeq(min); });
+        [&db]() -> std::optional<LedgerIndex> { return db.getAccountTransactionsMinLedgerSeq(); },
+        [&db](LedgerIndex min) -> void { db.deleteAccountTransactionsBeforeLedgerSeq(min); });
     if (healthWait() == stopping)
         return;
 }
