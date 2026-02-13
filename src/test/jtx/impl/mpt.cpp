@@ -1063,7 +1063,7 @@ MPTTester::convert(MPTConvert const& arg)
             auto const postAuditorBalance = getDecryptedBalance(*arg.account, AUDITOR_ENCRYPTED_BALANCE);
 
             if (!postAuditorBalance)
-                Throw<std::runtime_error>("Failed to get post-convert balance");
+                Throw<std::runtime_error>("Failed to get post-convert auditor balance");
 
             // auditor's encrypted balance is updated correctly
             env_.require(requireAny([&]() -> bool { return *prevAuditorBalance + *arg.amt == *postAuditorBalance; }));

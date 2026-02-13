@@ -1736,6 +1736,11 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.convertBack(
                 {.account = bob, .amt = 30, .auditorEncryptedAmt = getBadCiphertext(), .err = temBAD_CIPHERTEXT});
+
+            // invalid proof length
+            mptAlice.convertBack({.account = bob, .amt = 30, .proof = Buffer{}, .err = temMALFORMED});
+
+            mptAlice.convertBack({.account = bob, .amt = 30, .proof = Buffer(100), .err = temMALFORMED});
         }
     }
 
