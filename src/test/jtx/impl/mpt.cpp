@@ -1666,7 +1666,7 @@ MPTTester::convertBack(MPTConvertBack const& arg)
         // generate a dummy proof if no encrypted amount field, so that other
         // preflight/preclaim are checked
         if (!prevEncryptedSpendingBalance)
-            proof = Buffer();
+            proof = Buffer(ecPedersenProofLength + ecSingleBulletproofLength);
         else
         {
             proof = getConvertBackProof(
