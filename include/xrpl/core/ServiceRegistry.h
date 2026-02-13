@@ -3,14 +3,9 @@
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/TaggedCache.h>
-#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/CachedSLEs.h>
-#include <xrpl/protocol/Protocol.h>
 
-#include <boost/asio/io_context.hpp>
-
-#include <cstdint>
-#include <memory>
+#include <boost/asio.hpp>
 
 namespace xrpl {
 
@@ -31,10 +26,8 @@ class Application;
 // Forward declarations
 class AcceptedLedger;
 class AmendmentTable;
-class Application;
 class Cluster;
 class CollectorManager;
-class Config;
 class DatabaseCon;
 class Family;
 class HashRouter;
