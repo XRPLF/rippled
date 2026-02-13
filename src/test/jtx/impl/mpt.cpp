@@ -1844,7 +1844,7 @@ MPTTester::getBulletproof(
     for (auto const& bf : blindingFactors)
     {
         if (bf.size() != ecBlindingFactorLength)
-            Throw<std::runtime_error>("getBulletproof: invalid blinding factor length");
+            Throw<std::runtime_error>("Invalid blinding factor length");
     }
 
     // Flatten blinding factors into contiguous memory (m * 32 bytes)
@@ -1855,7 +1855,7 @@ MPTTester::getBulletproof(
 
     secp256k1_pubkey pk_base;
     if (secp256k1_mpt_get_h_generator(secp256k1Context(), &pk_base) != 1)
-        Throw<std::runtime_error>("getBulletproof: failed to get H generator");
+        Throw<std::runtime_error>("Failed to get H generator");
 
     // Proof size scales with m; use safe upper bound
     Buffer bulletproof(4096);
@@ -1871,12 +1871,12 @@ MPTTester::getBulletproof(
             &pk_base,
             contextHash.data()) != 1)
     {
-        Throw<std::runtime_error>("getBulletproof: proof generation failed");
+        Throw<std::runtime_error>("Bulletproof generation failed");
     }
 
     std::size_t const expectedLen = (m == 1) ? ecSingleBulletproofLength : ecDoubleBulletproofLength;
     if (proofLen != expectedLen)
-        Throw<std::runtime_error>("getBulletproof: unexpected proof length");
+        Throw<std::runtime_error>("Unexpected bulletproof length");
 
     return Buffer(bulletproof.data(), proofLen);
 }
