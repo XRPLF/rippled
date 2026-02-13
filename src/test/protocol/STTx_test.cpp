@@ -1286,10 +1286,20 @@ public:
         }
         {
             // Test case 2.  Omit sfSigningPubKey from SigningAccount.
+            // With featureNestedMultiSign, sfSigningPubKey is optional in the
+            // template so serialization succeeds. But the validation layer
+            // (isValidSignerEntry) correctly rejects {Account + TxnSignature}
+            // as neither a valid leaf nor nested signer.
             STObject soTest2(sfSigner);
             soTest2.setAccountID(sfAccount, id2);
             soTest2.setFieldVL(sfTxnSignature, saMultiSignature);
-            testMalformedSigningAccount(soTest2, false);
+            testMalformedSigningAccount(soTest2, true);  // serializes OK now
+
+            // But validation-layer helpers reject it
+            soTest2.applyTemplateFromSField(sfSigner);
+            BEAST_EXPECT(!isLeafSigner(soTest2));
+            BEAST_EXPECT(!isNestedSigner(soTest2));
+            BEAST_EXPECT(!isValidSignerEntry(soTest2));
         }
         {
             // Test case 3.  Extra sfAmount in SigningAccount.

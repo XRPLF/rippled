@@ -43,19 +43,43 @@ signers(Account const& account, none_t)
 
 //------------------------------------------------------------------------------
 
+static void
+sortSignersRecursive(std::vector<std::shared_ptr<Reg>>& signers)
+{
+    std::sort(signers.begin(), signers.end(), [](auto const& lhs, auto const& rhs) { return lhs->id() < rhs->id(); });
+
+    for (auto& signer : signers)
+        if (signer->isNested())
+            sortSignersRecursive(signer->nested);
+}
+
+// Primary constructor — everything delegates here
+msig::msig(SField const* subField_, std::vector<std::shared_ptr<Reg>> signers_)
+    : signers(std::move(signers_)), subField(subField_)
+{
+    sortSignersRecursive(signers);
+}
+
+msig::msig(SField const* subField_, std::vector<Reg> signers_) : subField(subField_)
+{
+    signers.reserve(signers_.size());
+    for (auto& s : signers_)
+        signers.push_back(std::make_shared<Reg>(s));
+    sortSignersRecursive(signers);
+}
+
 void
 msig::operator()(Env& env, JTx& jt) const
 {
     auto const mySigners = signers;
     auto callback = [subField = subField, mySigners, &env](Env&, JTx& jtx) {
-        // Where to put the signature. Supports sfCounterPartySignature.
         auto& sigObject = subField ? jtx[*subField] : jtx.jv;
 
-        // The signing pub key is only required at the top level.
         if (!subField)
             sigObject[sfSigningPubKey] = "";
         else if (sigObject.isNull())
             sigObject = Json::Value(Json::objectValue);
+
         std::optional<STObject> st;
         try
         {
@@ -66,19 +90,39 @@ msig::operator()(Env& env, JTx& jt) const
             env.test.log << pretty(jtx.jv) << std::endl;
             Rethrow();
         }
+
+        std::function<Json::Value(std::shared_ptr<Reg> const&)> buildSignerJson;
+        buildSignerJson = [&](std::shared_ptr<Reg> const& signer) -> Json::Value {
+            Json::Value jo;
+            jo[jss::Account] = signer->acct.human();
+
+            if (signer->isNested())
+            {
+                auto& subJs = jo[sfSigners.getJsonName()];
+                for (std::size_t i = 0; i < signer->nested.size(); ++i)
+                {
+                    subJs[i][sfSigner.getJsonName()] = buildSignerJson(signer->nested[i]);
+                }
+            }
+            else
+            {
+                jo[jss::SigningPubKey] = strHex(signer->sig->pk().slice());
+
+                Serializer ss{buildMultiSigningData(*st, signer->acct.id())};
+                auto const sig = xrpl::sign(*publicKeyType(signer->sig->pk().slice()), signer->sig->sk(), ss.slice());
+                jo[sfTxnSignature.getJsonName()] = strHex(Slice{sig.data(), sig.size()});
+            }
+
+            return jo;
+        };
+
         auto& js = sigObject[sfSigners];
         for (std::size_t i = 0; i < mySigners.size(); ++i)
         {
-            auto const& e = mySigners[i];
-            auto& jo = js[i][sfSigner.getJsonName()];
-            jo[jss::Account] = e.acct.human();
-            jo[jss::SigningPubKey] = strHex(e.sig.pk().slice());
-
-            Serializer ss{buildMultiSigningData(*st, e.acct.id())};
-            auto const sig = xrpl::sign(*publicKeyType(e.sig.pk().slice()), e.sig.sk(), ss.slice());
-            jo[sfTxnSignature.getJsonName()] = strHex(Slice{sig.data(), sig.size()});
+            js[i][sfSigner.getJsonName()] = buildSignerJson(mySigners[i]);
         }
     };
+
     if (!subField)
         jt.mainSigners.emplace_back(callback);
     else

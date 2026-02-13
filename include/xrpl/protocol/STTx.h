@@ -194,4 +194,73 @@ STTx::getTransactionID() const
     return tid_;
 }
 
+//------------------------------------------------------------------------------
+// Multi-sign depth and leaf limits
+//------------------------------------------------------------------------------
+
+/** Maximum nesting depth for nested multi-signing (featureNestedMultiSign). */
+constexpr int nestedMultiSignMaxDepth = 4;
+
+/** Maximum nesting depth when nested multi-signing is disabled (flat only). */
+constexpr int legacyMultiSignMaxDepth = 1;
+
+/** Maximum total leaf signers across the entire nested tree.
+    Bounds worst-case signature verification cost.
+    Only enforced when featureNestedMultiSign is enabled
+    (flat signing is already capped at maxMultiSigners per array).
+*/
+constexpr std::size_t nestedMultiSignMaxLeafSigners = 64;
+
+//------------------------------------------------------------------------------
+// Multi-sign signer entry helpers
+//------------------------------------------------------------------------------
+
+/** Count the number of present (non-STI_NOTPRESENT) fields in an STObject.
+    STObject::getCount() returns v_.size() which includes template slots for
+    optional fields that aren't set. This helper counts only populated fields.
+*/
+inline std::size_t
+countPresentFields(STObject const& obj)
+{
+    std::size_t count = 0;
+    for (auto const& field : obj)
+    {
+        if (field.getSType() != STI_NOTPRESENT)
+            ++count;
+    }
+    return count;
+}
+
+/** Check if a signer entry is a leaf signer (has signature fields).
+    A leaf signer has exactly 3 present fields:
+    Account + SigningPubKey + TxnSignature (no nested Signers).
+*/
+inline bool
+isLeafSigner(STObject const& signer)
+{
+    return signer.isFieldPresent(sfAccount) && signer.isFieldPresent(sfSigningPubKey) &&
+        signer.isFieldPresent(sfTxnSignature) && !signer.isFieldPresent(sfSigners) && countPresentFields(signer) == 3;
+}
+
+/** Check if a signer entry is a nested signer (delegates to sub-signers).
+    A nested signer has exactly 2 present fields:
+    Account + Signers (no SigningPubKey/TxnSignature).
+*/
+inline bool
+isNestedSigner(STObject const& signer)
+{
+    return signer.isFieldPresent(sfAccount) && signer.isFieldPresent(sfSigners) &&
+        !signer.isFieldPresent(sfSigningPubKey) && !signer.isFieldPresent(sfTxnSignature) &&
+        countPresentFields(signer) == 2;
+}
+
+/** Check if a signer entry has valid structure for multi-signing.
+    Returns true if the entry is either a valid leaf or nested signer.
+*/
+inline bool
+isValidSignerEntry(STObject const& signer)
+{
+    return isLeafSigner(signer) || isNestedSigner(signer);
+}
+
 }  // namespace xrpl
