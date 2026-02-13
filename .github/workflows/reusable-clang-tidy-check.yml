@@ -172,19 +172,19 @@ jobs:
           if [ -f clang-tidy-output.txt ]; then
             # Extract lines containing 'error:' or '|' (code snippet markers)
             grep -E '(error:|\|)' clang-tidy-output.txt > filtered-output.txt || true
-            
+
             # If filtered output is empty, use original (might be a different error format)
             if [ ! -s filtered-output.txt ]; then
               cp clang-tidy-output.txt filtered-output.txt
             fi
-            
+
             # Truncate if too large
             head -c 60000 filtered-output.txt >> issue.md
             if [ $(wc -c < filtered-output.txt) -gt 60000 ]; then
               echo "" >> issue.md
               echo "... (output truncated, see artifacts for full output)" >> issue.md
             fi
-            
+
             rm filtered-output.txt
           else
             echo "No output file found" >> issue.md
