@@ -214,6 +214,13 @@ public:
     virtual Logs&
     logs() = 0;
 
+    virtual std::optional<uint256> const&
+    trapTxID() const = 0;
+
+    /** Retrieve the "wallet database" */
+    virtual DatabaseCon&
+    getWalletDB() = 0;
+
     // Temporary: Get the underlying Application for functions that haven't
     // been migrated yet. This should be removed once all code is migrated.
     virtual Application&

@@ -1,4 +1,6 @@
 libxrpl.basics > xrpl.basics
+libxrpl.conditions > xrpl.basics
+libxrpl.conditions > xrpl.conditions
 libxrpl.core > xrpl.basics
 libxrpl.core > xrpl.core
 libxrpl.crypto > xrpl.basics
@@ -56,7 +58,7 @@ test.basics > xrpl.json
 test.basics > xrpl.protocol
 test.beast > xrpl.basics
 test.conditions > xrpl.basics
-test.conditions > xrpld.conditions
+test.conditions > xrpl.conditions
 test.consensus > test.csf
 test.consensus > test.toplevel
 test.consensus > test.unit_test
@@ -137,6 +139,7 @@ test.rpc > xrpld.rpc
 test.rpc > xrpl.json
 test.rpc > xrpl.protocol
 test.rpc > xrpl.resource
+test.rpc > xrpl.server
 test.server > test.jtx
 test.server > test.toplevel
 test.server > test.unit_test
@@ -157,6 +160,8 @@ test.unit_test > xrpl.basics
 tests.libxrpl > xrpl.basics
 tests.libxrpl > xrpl.json
 tests.libxrpl > xrpl.net
+xrpl.conditions > xrpl.basics
+xrpl.conditions > xrpl.protocol
 xrpl.core > xrpl.basics
 xrpl.core > xrpl.json
 xrpl.core > xrpl.ledger
@@ -164,6 +169,7 @@ xrpl.core > xrpl.protocol
 xrpl.json > xrpl.basics
 xrpl.ledger > xrpl.basics
 xrpl.ledger > xrpl.protocol
+xrpl.ledger > xrpl.server
 xrpl.net > xrpl.basics
 xrpl.nodestore > xrpl.basics
 xrpl.nodestore > xrpl.protocol
@@ -180,13 +186,15 @@ xrpl.server > xrpl.core
 xrpl.server > xrpl.json
 xrpl.server > xrpl.protocol
 xrpl.server > xrpl.rdb
+xrpl.server > xrpl.resource
+xrpl.server > xrpl.shamap
 xrpl.shamap > xrpl.basics
 xrpl.shamap > xrpl.nodestore
 xrpl.shamap > xrpl.protocol
 xrpld.app > test.unit_test
 xrpld.app > xrpl.basics
+xrpld.app > xrpl.conditions
 xrpld.app > xrpl.core
-xrpld.app > xrpld.conditions
 xrpld.app > xrpld.consensus
 xrpld.app > xrpld.core
 xrpld.app > xrpl.json
@@ -198,8 +206,6 @@ xrpld.app > xrpl.rdb
 xrpld.app > xrpl.resource
 xrpld.app > xrpl.server
 xrpld.app > xrpl.shamap
-xrpld.conditions > xrpl.basics
-xrpld.conditions > xrpl.protocol
 xrpld.consensus > xrpl.basics
 xrpld.consensus > xrpl.json
 xrpld.consensus > xrpl.protocol

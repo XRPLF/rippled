@@ -1,7 +1,7 @@
-#include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/AmendmentTable.h>
 #include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -400,7 +400,7 @@ private:
 
 public:
     AmendmentTableImpl(
-        Application& app,
+        ServiceRegistry& registry,
         std::chrono::seconds majorityTime,
         std::vector<FeatureInfo> const& supported,
         Section const& enabled,
@@ -461,13 +461,17 @@ public:
 //------------------------------------------------------------------------------
 
 AmendmentTableImpl::AmendmentTableImpl(
-    Application& app,
+    ServiceRegistry& registry,
     std::chrono::seconds majorityTime,
     std::vector<FeatureInfo> const& supported,
     Section const& enabled,
     Section const& vetoed,
     beast::Journal journal)
-    : lastUpdateSeq_(0), majorityTime_(majorityTime), unsupportedEnabled_(false), j_(journal), db_(app.getWalletDB())
+    : lastUpdateSeq_(0)
+    , majorityTime_(majorityTime)
+    , unsupportedEnabled_(false)
+    , j_(journal)
+    , db_(registry.getWalletDB())
 {
     std::lock_guard lock(mutex_);
 
@@ -957,14 +961,14 @@ AmendmentTableImpl::getJson(uint256 const& amendmentID, bool isAdmin) const
 
 std::unique_ptr<AmendmentTable>
 make_AmendmentTable(
-    Application& app,
+    ServiceRegistry& registry,
     std::chrono::seconds majorityTime,
     std::vector<AmendmentTable::FeatureInfo> const& supported,
     Section const& enabled,
     Section const& vetoed,
     beast::Journal journal)
 {
-    return std::make_unique<AmendmentTableImpl>(app, majorityTime, supported, enabled, vetoed, journal);
+    return std::make_unique<AmendmentTableImpl>(registry, majorityTime, supported, enabled, vetoed, journal);
 }
 
 }  // namespace xrpl
