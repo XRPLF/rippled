@@ -2,7 +2,6 @@
 
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/messages.h>
@@ -19,6 +18,8 @@ namespace xrpl {
 // Master operational handler, server sequencer, network tracker
 
 class Peer;
+class STTx;
+class ReadView;
 class LedgerMaster;
 class Transaction;
 class ValidatorKeys;
