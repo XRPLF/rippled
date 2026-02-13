@@ -223,9 +223,6 @@ private:
     wmem
     getMem() const;
 
-    int32_t
-    allocate(int32_t size);
-
     Expected<WasmResult<int32_t>, TER>
     runHlp(
         Bytes const& wasmCode,

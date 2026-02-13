@@ -556,25 +556,6 @@ WasmiEngine::convertParams(std::vector<WasmParam> const& params)
             case WT_I64:
                 v.push_back(WASM_I64_VAL(p.of.i64));
                 break;
-                // LCOV_EXCL_STOP
-
-#ifdef WASM_PERF_TESTS
-
-            case WT_U8V: {
-                auto mem = getMem();
-                if (!mem.s)
-                    throw std::runtime_error("no memory exported");  // LCOV_EXCL_LINE
-                auto const sz = p.of.u8v.sz;
-                auto const ptr = allocate(sz);
-                memcpy(mem.p + ptr, p.of.u8v.d, sz);
-                v.push_back(WASM_I32_VAL(ptr));
-                v.push_back(WASM_I32_VAL(sz));
-            }
-            break;
-
-#endif
-
-            // LCOV_EXCL_START
             default:
                 throw std::runtime_error("unknown parameter type: " + std::to_string(p.type));
                 break;
@@ -701,27 +682,6 @@ WasmiEngine::call(FuncInfo const& f, std::vector<wasm_val_t>& in, std::int64_t p
     return call<NR>(f, in, std::forward<Types>(args)...);
 }
 
-#ifdef WASM_PERF_TESTS
-
-// passing vector only for tests
-template <int NR, class... Types>
-WasmiResult
-WasmiEngine::call(FuncInfo const& f, std::vector<wasm_val_t>& in, uint8_t const* d, int32_t sz, Types&&... args)
-{
-    auto mem = getMem();
-    if (!mem.s)
-        throw std::runtime_error("no memory exported");  // LCOV_EXCL_LINE
-
-    auto const ptr = allocate(sz);
-    memcpy(mem.p + ptr, d, sz);
-
-    add_param(in, ptr);
-    add_param(in, static_cast<int32_t>(sz));
-    return call<NR>(f, in, std::forward<Types>(args)...);
-}
-
-#endif
-
 template <int NR, class... Types>
 WasmiResult
 WasmiEngine::call(FuncInfo const& f, std::vector<wasm_val_t>& in, Bytes const& p, Types&&... args)
@@ -781,19 +741,13 @@ WasmiEngine::runHlp(
     // currently only 1 module support, possible parallel UT run
     std::lock_guard<decltype(m_)> lg(m_);
 
-#ifndef WASM_PERF_TESTS
     if (wasmCode.empty())
         throw std::runtime_error("empty module");
     if (!hfs.checkSelf())
         throw std::runtime_error("hfs isn't clean");
-#else
-    // re-using module only for perf tests
-    if (!wasmCode.empty())
-#endif
-    {
-        // Create and instantiate the module.
-        [[maybe_unused]] int const m = addModule(wasmCode, true, imports, gas);
-    }
+
+    // Create and instantiate the module.
+    [[maybe_unused]] int const m = addModule(wasmCode, true, imports, gas);
 
     if (!moduleWrap_ || !moduleWrap_->instanceWrap_)
         throw std::runtime_error("no instance");  // LCOV_EXCL_LINE
@@ -916,29 +870,6 @@ WasmiEngine::getRT(int m, int i) const
     if (!moduleWrap_)
         throw std::runtime_error("no module");
     return moduleWrap_->getInstance(i);
-}
-
-int32_t
-WasmiEngine::allocate(int32_t sz)
-{
-#ifndef WASM_PERF_TESTS
-    throw std::runtime_error("allocate not implemented");  // LCOV_EXCL_LINE
-#else
-    if (sz <= 0)
-        throw std::runtime_error("can't allocate memory, " + std::to_string(sz) + " bytes");
-
-    auto res = call<1>(W_ALLOC, sz);
-
-    if (res.f || !res.r.vec_.size || (res.r.vec_.data[0].kind != WASM_I32))
-        throw std::runtime_error("can't allocate memory, " + std::to_string(sz) + " bytes");  // LCOV_EXCL_LINE
-
-    int32_t const p = res.r.vec_.data[0].of.i32;
-    auto const mem = getMem();
-    if (p <= 0 || p + sz > mem.s)
-        throw std::runtime_error("invalid memory allocation, " + std::to_string(sz) + " bytes");
-
-    return p;
-#endif
 }
 
 wasm_trap_t*

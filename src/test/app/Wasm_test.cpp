@@ -189,13 +189,9 @@ struct Wasm_test : public beast::unit_test::suite
         env.close();
         env.close();
 
-        // empty module - run the same instance
+        // empty module, throwing exception
         re = engine.run({}, hfs, ESCROW_FUNCTION_NAME, {}, imports, 1'000'000, env.journal);
-#ifdef WASM_PERF_TESTS
-        checkResult(re, 5, 488);
-#else
         BEAST_EXPECT(!re);
-#endif
         env.close();
     }
 
@@ -212,41 +208,6 @@ struct Wasm_test : public beast::unit_test::suite
 
         checkResult(re, 55, 1'137);
     }
-
-#ifdef WASM_PERF_TESTS
-    void
-    testWasmSha()
-    {
-        testcase("Wasm sha");
-
-        auto const sha512Wasm = hexToBytes(sha512PureWasmHex);
-        auto& engine = WasmEngine::instance();
-        HostFunctions hfs;
-
-        auto const re = engine.run(sha512Wasm, hfs, "sha512_process", wasmParams(sha512PureWasmHex));
-
-        checkResult(re, 34'432, 151'155);
-    }
-
-    void
-    testWasmB58()
-    {
-        testcase("Wasm base58");
-        auto const b58Wasm = hexToBytes(b58WasmHex);
-        auto& engine = WasmEngine::instance();
-        HostFunctions hfs;
-
-        Bytes outb;
-        outb.resize(1024);
-
-        auto const minSize = std::min(static_cast<std::uint32_t>(512), static_cast<std::uint32_t>(b58WasmHex.size()));
-        auto const s = std::string_view(b58WasmHex.c_str(), minSize);
-
-        auto const re = engine.run(b58Wasm, hfs, "b58enco", wasmParams(outb, s));
-
-        checkResult(re, 700, 2'886'069);
-    }
-#endif
 
     void
     testHFCost()
@@ -485,96 +446,6 @@ struct Wasm_test : public beast::unit_test::suite
         }
     }
 
-#ifdef WASM_PERF_TESTS
-    void
-    perfTest()
-    {
-        testcase("Perf test host functions");
-
-        using namespace jtx;
-        using namespace std::chrono;
-
-        // std::string const funcName("test");
-        auto const perfWasm = hexToBytes(hfPerfTest);
-
-        // std::string const credType = "abcde";
-        // std::string const credType2 = "fghijk";
-        // std::string const credType3 = "0123456";
-        // char const uri[] = "uri";
-
-        Account const alan{"alan"};
-        Account const bob{"bob"};
-        Account const issuer{"issuer"};
-
-        {
-            Env env(*this);
-            // Env env(*this, envconfig(), {}, nullptr,
-            // beast::severities::kTrace);
-            env.fund(XRP(5000), alan, bob, issuer);
-            env.close();
-
-            // // create escrow
-            // auto const seq = env.seq(alan);
-            // auto const k = keylet::escrow(alan, seq);
-            // // auto const allowance = 3'600;
-            // auto escrowCreate = escrow::create(alan, bob, XRP(1000));
-            // XRPAmount txnFees = env.current()->fees().base + 1000;
-            // env(escrowCreate,
-            //     escrow::finish_function(wasmHex),
-            //     escrow::finish_time(env.now() + 11s),
-            //     escrow::cancel_time(env.now() + 100s),
-            //     escrow::data("1000000000"),  // 1000 XRP in drops
-            //     memodata("memo1234567"),
-            //     memodata("2memo1234567"),
-            //     fee(txnFees));
-
-            // // create depositPreauth
-            // auto const k = keylet::depositPreauth(
-            //     bob,
-            //     {{issuer.id(), makeSlice(credType)},
-            //      {issuer.id(), makeSlice(credType2)},
-            //      {issuer.id(), makeSlice(credType3)}});
-            // env(deposit::authCredentials(
-            //     bob,
-            //     {{issuer, credType},
-            //      {issuer, credType2},
-            //      {issuer, credType3}}));
-
-            // create nft
-            [[maybe_unused]] uint256 const nft0{token::getNextID(env, alan, 0u)};
-            env(token::mint(alan, 0u));
-            auto const k = keylet::nftoffer(alan, 0);
-            [[maybe_unused]] uint256 const nft1{token::getNextID(env, alan, 0u)};
-
-            env(token::mint(alan, 0u),
-                token::uri("https://github.com/XRPLF/XRPL-Standards/discussions/"
-                           "279?id=github.com/XRPLF/XRPL-Standards/discussions/"
-                           "279&ut=github.com/XRPLF/XRPL-Standards/discussions/"
-                           "279&sid=github.com/XRPLF/XRPL-Standards/discussions/"
-                           "279&aot=github.com/XRPLF/XRPL-Standards/disc"));
-            [[maybe_unused]] uint256 const nft2{token::getNextID(env, alan, 0u)};
-            env(token::mint(alan, 0u));
-            env.close();
-
-            PerfHostFunctions hfs(env, k, env.tx());
-
-            auto re = runEscrowWasm(perfWasm, hfs, ESCROW_FUNCTION_NAME);
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECT(re->result);
-                std::cout << "Res: " << re->result << " cost: " << re->cost << std::endl;
-            }
-
-            // env(escrow::finish(alan, alan, seq),
-            //     escrow::comp_allowance(allowance),
-            //     fee(txnFees),
-            //     ter(tesSUCCESS));
-
-            env.close();
-        }
-    }
-#endif
-
     void
     testCodecovWasm()
     {
@@ -726,81 +597,6 @@ struct Wasm_test : public beast::unit_test::suite
         auto re = engine.run(startLoopWasm, hfs, ESCROW_FUNCTION_NAME, {}, imports, 1'000'000, env.journal);
         BEAST_EXPECTS(re.error() == tecFAILED_PROCESSING, std::to_string(TERtoInt(re.error())));
     }
-
-#ifdef WASM_PERF_TESTS
-    void
-    testBadAlloc()
-    {
-        testcase("Wasm Bad Alloc");
-
-        // bad_alloc.c
-        auto const badAllocWasm = hexToBytes(badAllocHex);
-
-        using namespace test::jtx;
-
-        Env env{*this};
-        TestLedgerDataProvider hfs(env);
-
-        uint8_t buf1[8] = {7, 8, 9, 10, 11, 12, 13, 14};
-        {  // forged "allocate" return valid address
-            std::vector<WasmParam> params = {{.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = sizeof(buf1) } } }};
-            auto& engine = WasmEngine::instance();
-
-            auto re = engine.run(badAllocWasm, hfs, "test", params, {}, 1'000'000, env.journal);
-            if (BEAST_EXPECT(re))
-            {
-                BEAST_EXPECTS(re->result == 7, std::to_string(re->result));
-                BEAST_EXPECTS(re->cost == 430, std::to_string(re->cost));
-            }
-        }
-
-        {  // return 0 whithout calling wasm
-            std::vector<WasmParam> params = {{.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 0 } } }};
-            auto& engine = WasmEngine::instance();
-            auto re = engine.run(badAllocWasm, hfs, "test", params, {}, 1'000'000, env.journal);
-            BEAST_EXPECT(!re) && BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
-        }
-
-        {  // forged "allocate" return 8Mb (which is more than memory limit)
-            std::vector<WasmParam> params = {{.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 1 } } }};
-            auto& engine = WasmEngine::instance();
-            auto re = engine.run(badAllocWasm, hfs, "test", params, {}, 1'000'000, env.journal);
-            BEAST_EXPECT(!re) && BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
-        }
-
-        {  // forged "allocate" return 0
-            std::vector<WasmParam> params = {{.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 2 } } }};
-            auto& engine = WasmEngine::instance();
-            auto re = engine.run(badAllocWasm, hfs, "test", params, {}, 1'000'000, env.journal);
-            BEAST_EXPECT(!re) && BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
-        }
-
-        {  // forged "allocate" return -1
-            std::vector<WasmParam> params = {{.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 3 } } }};
-            auto& engine = WasmEngine::instance();
-            auto re = engine.run(badAllocWasm, hfs, "test", params, {}, 1'000'000, env.journal);
-
-            BEAST_EXPECT(!re) && BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
-        }
-
-        {
-            std::string what;
-            try
-            {
-                char const test[] = "test";
-                std::size_t sz = std::numeric_limits<int32_t>::max() + 1ull;
-                auto p = wasmParams(std::string_view(test, sz));
-            }
-            catch (std::exception const& e)
-            {
-                what = e.what();
-            }
-            BEAST_EXPECT(what.find("can't allocate memory, size: 2147483648") != std::string::npos);
-        }
-
-        env.close();
-    }
-#endif
 
     void
     testBadAlign()
@@ -1591,14 +1387,6 @@ struct Wasm_test : public beast::unit_test::suite
         testParameterType();
 
         testOpcodes();
-
-#ifdef WASM_PERF_TESTS
-        // only performance tests can pass buffer to Wasm (and call exported "allocate" function)
-        testWasmSha();
-        testWasmB58();
-        testBadAlloc();
-        // perfTest();
-#endif
     }
 };
 
