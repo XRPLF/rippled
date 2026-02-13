@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_APPLYVIEW_H_INCLUDED
-#define XRPL_LEDGER_APPLYVIEW_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -34,23 +33,17 @@ constexpr ApplyFlags
 operator|(ApplyFlags const& lhs, ApplyFlags const& rhs)
 {
     return safe_cast<ApplyFlags>(
-        safe_cast<std::underlying_type_t<ApplyFlags>>(lhs) |
-        safe_cast<std::underlying_type_t<ApplyFlags>>(rhs));
+        safe_cast<std::underlying_type_t<ApplyFlags>>(lhs) | safe_cast<std::underlying_type_t<ApplyFlags>>(rhs));
 }
 
-static_assert(
-    (tapFAIL_HARD | tapRETRY) == safe_cast<ApplyFlags>(0x30u),
-    "ApplyFlags operator |");
-static_assert(
-    (tapRETRY | tapFAIL_HARD) == safe_cast<ApplyFlags>(0x30u),
-    "ApplyFlags operator |");
+static_assert((tapFAIL_HARD | tapRETRY) == safe_cast<ApplyFlags>(0x30u), "ApplyFlags operator |");
+static_assert((tapRETRY | tapFAIL_HARD) == safe_cast<ApplyFlags>(0x30u), "ApplyFlags operator |");
 
 constexpr ApplyFlags
 operator&(ApplyFlags const& lhs, ApplyFlags const& rhs)
 {
     return safe_cast<ApplyFlags>(
-        safe_cast<std::underlying_type_t<ApplyFlags>>(lhs) &
-        safe_cast<std::underlying_type_t<ApplyFlags>>(rhs));
+        safe_cast<std::underlying_type_t<ApplyFlags>>(lhs) & safe_cast<std::underlying_type_t<ApplyFlags>>(rhs));
 }
 
 static_assert((tapFAIL_HARD & tapRETRY) == tapNONE, "ApplyFlags operator &");
@@ -59,13 +52,10 @@ static_assert((tapRETRY & tapFAIL_HARD) == tapNONE, "ApplyFlags operator &");
 constexpr ApplyFlags
 operator~(ApplyFlags const& flags)
 {
-    return safe_cast<ApplyFlags>(
-        ~safe_cast<std::underlying_type_t<ApplyFlags>>(flags));
+    return safe_cast<ApplyFlags>(~safe_cast<std::underlying_type_t<ApplyFlags>>(flags));
 }
 
-static_assert(
-    ~tapRETRY == safe_cast<ApplyFlags>(0xFFFFFFDFu),
-    "ApplyFlags operator ~");
+static_assert(~tapRETRY == safe_cast<ApplyFlags>(0xFFFFFFDFu), "ApplyFlags operator ~");
 
 inline ApplyFlags
 operator|=(ApplyFlags& lhs, ApplyFlags const& rhs)
@@ -221,21 +211,14 @@ public:
     // Called when a credit is made to an account
     // This is required to support PaymentSandbox
     virtual void
-    creditHook(
-        AccountID const& from,
-        AccountID const& to,
-        STAmount const& amount,
-        STAmount const& preCreditBalance)
+    creditHook(AccountID const& from, AccountID const& to, STAmount const& amount, STAmount const& preCreditBalance)
     {
     }
 
     // Called when the owner count changes
     // This is required to support PaymentSandbox
     virtual void
-    adjustOwnerCountHook(
-        AccountID const& account,
-        std::uint32_t cur,
-        std::uint32_t next)
+    adjustOwnerCountHook(AccountID const& account, std::uint32_t cur, std::uint32_t next)
     {
     }
 
@@ -332,18 +315,10 @@ public:
     */
     /** @{ */
     bool
-    dirRemove(
-        Keylet const& directory,
-        std::uint64_t page,
-        uint256 const& key,
-        bool keepRoot);
+    dirRemove(Keylet const& directory, std::uint64_t page, uint256 const& key, bool keepRoot);
 
     bool
-    dirRemove(
-        Keylet const& directory,
-        std::uint64_t page,
-        Keylet const& key,
-        bool keepRoot)
+    dirRemove(Keylet const& directory, std::uint64_t page, Keylet const& key, bool keepRoot)
     {
         return dirRemove(directory, page, key.key, keepRoot);
     }
@@ -351,9 +326,7 @@ public:
 
     /** Remove the specified directory, invoking the callback for every node. */
     bool
-    dirDelete(
-        Keylet const& directory,
-        std::function<void(uint256 const&)> const&);
+    dirDelete(Keylet const& directory, std::function<void(uint256 const&)> const&);
 
     /** Remove the specified directory, if it is empty.
 
@@ -408,5 +381,3 @@ insertPage(
 
 }  // namespace directory
 }  // namespace xrpl
-
-#endif

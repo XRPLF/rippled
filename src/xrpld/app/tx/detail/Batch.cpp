@@ -35,8 +35,7 @@ namespace xrpl {
 XRPAmount
 Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    XRPAmount const maxAmount{
-        std::numeric_limits<XRPAmount::value_type>::max()};
+    XRPAmount const maxAmount{std::numeric_limits<XRPAmount::value_type>::max()};
 
     // batchBase: view.fees().base for batch processing + default base fee
     XRPAmount const baseFee = Transactor::calculateBaseFee(view, tx);
@@ -60,8 +59,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
         // LCOV_EXCL_START
         if (txns.size() > maxBatchTxCount)
         {
-            JLOG(debugLog().error())
-                << "BatchTrace: Raw Transactions array exceeds max entries.";
+            JLOG(debugLog().error()) << "BatchTrace: Raw Transactions array exceeds max entries.";
             return XRPAmount{INITIAL_XRP};
         }
         // LCOV_EXCL_STOP
@@ -73,8 +71,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
             // LCOV_EXCL_START
             if (stx.getTxnType() == ttBATCH)
             {
-                JLOG(debugLog().error())
-                    << "BatchTrace: Inner Batch transaction found.";
+                JLOG(debugLog().error()) << "BatchTrace: Inner Batch transaction found.";
                 return XRPAmount{INITIAL_XRP};
             }
             // LCOV_EXCL_STOP
@@ -83,8 +80,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
             // LCOV_EXCL_START
             if (txnFees > maxAmount - fee)
             {
-                JLOG(debugLog().error())
-                    << "BatchTrace: XRPAmount overflow in txnFees calculation.";
+                JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in txnFees calculation.";
                 return XRPAmount{INITIAL_XRP};
             }
             // LCOV_EXCL_STOP
@@ -101,8 +97,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
         // LCOV_EXCL_START
         if (signers.size() > maxBatchTxCount)
         {
-            JLOG(debugLog().error())
-                << "BatchTrace: Batch Signers array exceeds max entries.";
+            JLOG(debugLog().error()) << "BatchTrace: Batch Signers array exceeds max entries.";
             return XRPAmount{INITIAL_XRP};
         }
         // LCOV_EXCL_STOP
@@ -119,8 +114,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     // LCOV_EXCL_START
     if (signerCount > 0 && view.fees().base > maxAmount / signerCount)
     {
-        JLOG(debugLog().error())
-            << "BatchTrace: XRPAmount overflow in signerCount calculation.";
+        JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in signerCount calculation.";
         return XRPAmount{INITIAL_XRP};
     }
     // LCOV_EXCL_STOP
@@ -130,14 +124,12 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     // LCOV_EXCL_START
     if (signerFees > maxAmount - txnFees)
     {
-        JLOG(debugLog().error())
-            << "BatchTrace: XRPAmount overflow in signerFees calculation.";
+        JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in signerFees calculation.";
         return XRPAmount{INITIAL_XRP};
     }
     if (txnFees + signerFees > maxAmount - batchBase)
     {
-        JLOG(debugLog().error())
-            << "BatchTrace: XRPAmount overflow in total fee calculation.";
+        JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in total fee calculation.";
         return XRPAmount{INITIAL_XRP};
     }
     // LCOV_EXCL_STOP
@@ -191,9 +183,7 @@ Batch::preflight(PreflightContext const& ctx)
     auto const parentBatchId = ctx.tx.getTransactionID();
     auto const flags = ctx.tx.getFlags();
 
-    if (std::popcount(
-            flags &
-            (tfAllOrNothing | tfOnlyOne | tfUntilFailure | tfIndependent)) != 1)
+    if (std::popcount(flags & (tfAllOrNothing | tfOnlyOne | tfUntilFailure | tfIndependent)) != 1)
     {
         JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]:"
                             << "too many flags.";
@@ -217,36 +207,30 @@ Batch::preflight(PreflightContext const& ctx)
 
     // Validation Inner Batch Txns
     std::unordered_set<uint256> uniqueHashes;
-    std::unordered_map<AccountID, std::unordered_set<std::uint32_t>>
-        accountSeqTicket;
+    std::unordered_map<AccountID, std::unordered_set<std::uint32_t>> accountSeqTicket;
     auto checkSignatureFields = [&parentBatchId, &j = ctx.j](
-                                    STObject const& sig,
-                                    uint256 const& hash,
-                                    char const* label = "") -> NotTEC {
+                                    STObject const& sig, uint256 const& hash, char const* label = "") -> NotTEC {
         if (sig.isFieldPresent(sfTxnSignature))
         {
-            JLOG(j.debug())
-                << "BatchTrace[" << parentBatchId << "]: "
-                << "inner txn " << label << "cannot include TxnSignature. "
-                << "txID: " << hash;
+            JLOG(j.debug()) << "BatchTrace[" << parentBatchId << "]: "
+                            << "inner txn " << label << "cannot include TxnSignature. "
+                            << "txID: " << hash;
             return temBAD_SIGNATURE;
         }
 
         if (sig.isFieldPresent(sfSigners))
         {
-            JLOG(j.debug())
-                << "BatchTrace[" << parentBatchId << "]: "
-                << "inner txn " << label << " cannot include Signers. "
-                << "txID: " << hash;
+            JLOG(j.debug()) << "BatchTrace[" << parentBatchId << "]: "
+                            << "inner txn " << label << " cannot include Signers. "
+                            << "txID: " << hash;
             return temBAD_SIGNER;
         }
 
         if (!sig.getFieldVL(sfSigningPubKey).empty())
         {
-            JLOG(j.debug())
-                << "BatchTrace[" << parentBatchId << "]: "
-                << "inner txn " << label << " SigningPubKey must be empty. "
-                << "txID: " << hash;
+            JLOG(j.debug()) << "BatchTrace[" << parentBatchId << "]: "
+                            << "inner txn " << label << " SigningPubKey must be empty. "
+                            << "txID: " << hash;
             return temBAD_REGKEY;
         }
 
@@ -273,20 +257,18 @@ Batch::preflight(PreflightContext const& ctx)
             return temINVALID;
         }
 
-        if (std::any_of(
-                disabledTxTypes.begin(),
-                disabledTxTypes.end(),
-                [txType](auto const& disabled) { return txType == disabled; }))
+        if (std::any_of(disabledTxTypes.begin(), disabledTxTypes.end(), [txType](auto const& disabled) {
+                return txType == disabled;
+            }))
         {
             return temINVALID_INNER_BATCH;
         }
 
         if (!(stx.getFlags() & tfInnerBatchTxn))
         {
-            JLOG(ctx.j.debug())
-                << "BatchTrace[" << parentBatchId << "]: "
-                << "inner txn must have the tfInnerBatchTxn flag. "
-                << "txID: " << hash;
+            JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
+                                << "inner txn must have the tfInnerBatchTxn flag. "
+                                << "txID: " << hash;
             return temINVALID_FLAG;
         }
 
@@ -297,18 +279,15 @@ Batch::preflight(PreflightContext const& ctx)
         // included, but if it is, ensure it doesn't contain a signature.
         if (stx.isFieldPresent(sfCounterpartySignature))
         {
-            auto const counterpartySignature =
-                stx.getFieldObject(sfCounterpartySignature);
-            if (auto const ret = checkSignatureFields(
-                    counterpartySignature, hash, "counterparty signature "))
+            auto const counterpartySignature = stx.getFieldObject(sfCounterpartySignature);
+            if (auto const ret = checkSignatureFields(counterpartySignature, hash, "counterparty signature "))
             {
                 return ret;
             }
         }
 
         // Check that the Fee is native asset (XRP) and zero
-        if (auto const fee = stx.getFieldAmount(sfFee);
-            !fee.native() || fee.xrp() != beast::zero)
+        if (auto const fee = stx.getFieldAmount(sfFee); !fee.native() || fee.xrp() != beast::zero)
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                                 << "inner txn must have a fee of 0. "
@@ -317,32 +296,27 @@ Batch::preflight(PreflightContext const& ctx)
         }
 
         auto const innerAccount = stx.getAccountID(sfAccount);
-        if (auto const preflightResult = xrpl::preflight(
-                ctx.registry, ctx.rules, parentBatchId, stx, tapBATCH, ctx.j);
+        if (auto const preflightResult = xrpl::preflight(ctx.registry, ctx.rules, parentBatchId, stx, tapBATCH, ctx.j);
             preflightResult.ter != tesSUCCESS)
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                << "inner txn preflight failed: "
-                                << transHuman(preflightResult.ter) << " "
+                                << "inner txn preflight failed: " << transHuman(preflightResult.ter) << " "
                                 << "txID: " << hash;
             return temINVALID_INNER_BATCH;
         }
 
         // Check that Sequence and TicketSequence are not both present
-        if (stx.isFieldPresent(sfTicketSequence) &&
-            stx.getFieldU32(sfSequence) != 0)
+        if (stx.isFieldPresent(sfTicketSequence) && stx.getFieldU32(sfSequence) != 0)
         {
-            JLOG(ctx.j.debug())
-                << "BatchTrace[" << parentBatchId << "]: "
-                << "inner txn must have exactly one of Sequence and "
-                   "TicketSequence. "
-                << "txID: " << hash;
+            JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
+                                << "inner txn must have exactly one of Sequence and "
+                                   "TicketSequence. "
+                                << "txID: " << hash;
             return temSEQ_AND_TICKET;
         }
 
         // Verify that either Sequence or TicketSequence is present
-        if (!stx.isFieldPresent(sfTicketSequence) &&
-            stx.getFieldU32(sfSequence) == 0)
+        if (!stx.isFieldPresent(sfTicketSequence) && stx.getFieldU32(sfSequence) == 0)
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                                 << "inner txn must have either Sequence or "
@@ -358,10 +332,9 @@ Batch::preflight(PreflightContext const& ctx)
             {
                 if (!accountSeqTicket[innerAccount].insert(seq).second)
                 {
-                    JLOG(ctx.j.debug())
-                        << "BatchTrace[" << parentBatchId << "]: "
-                        << "duplicate sequence found: "
-                        << "txID: " << hash;
+                    JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
+                                        << "duplicate sequence found: "
+                                        << "txID: " << hash;
                     return temREDUNDANT;
                 }
             }
@@ -371,10 +344,9 @@ Batch::preflight(PreflightContext const& ctx)
                 if (auto const ticket = stx.getFieldU32(sfTicketSequence);
                     !accountSeqTicket[innerAccount].insert(ticket).second)
                 {
-                    JLOG(ctx.j.debug())
-                        << "BatchTrace[" << parentBatchId << "]: "
-                        << "duplicate ticket found: "
-                        << "txID: " << hash;
+                    JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
+                                        << "duplicate ticket found: "
+                                        << "txID: " << hash;
                     return temREDUNDANT;
                 }
             }
@@ -403,8 +375,7 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
             requiredSigners.insert(innerAccount);
         // Some transactions have a Counterparty, who must also sign the
         // transaction if they are not the outer account
-        if (auto const counterparty = rb.at(~sfCounterparty);
-            counterparty && counterparty != outerAccount)
+        if (auto const counterparty = rb.at(~sfCounterparty); counterparty && counterparty != outerAccount)
             requiredSigners.insert(*counterparty);
     }
 
@@ -432,17 +403,15 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
             AccountID const signerAccount = signer.getAccountID(sfAccount);
             if (signerAccount == outerAccount)
             {
-                JLOG(ctx.j.debug())
-                    << "BatchTrace[" << parentBatchId << "]: "
-                    << "signer cannot be the outer account: " << signerAccount;
+                JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
+                                    << "signer cannot be the outer account: " << signerAccount;
                 return temBAD_SIGNER;
             }
 
             if (!batchSigners.insert(signerAccount).second)
             {
-                JLOG(ctx.j.debug())
-                    << "BatchTrace[" << parentBatchId << "]: "
-                    << "duplicate signer found: " << signerAccount;
+                JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
+                                    << "duplicate signer found: " << signerAccount;
                 return temREDUNDANT;
             }
 
@@ -461,9 +430,8 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
 
         if (!sigResult)
         {
-            JLOG(ctx.j.debug())
-                << "BatchTrace[" << parentBatchId << "]: "
-                << "invalid batch txn signature: " << sigResult.error();
+            JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
+                                << "invalid batch txn signature: " << sigResult.error();
             return temBAD_SIGNATURE;
         }
     }

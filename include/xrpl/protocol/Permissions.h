@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_PERMISSION_H_INCLUDED
-#define XRPL_PROTOCOL_PERMISSION_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/TER.h>
@@ -40,8 +39,7 @@ private:
 
     std::unordered_map<std::uint16_t, Delegation> delegableTx_;
 
-    std::unordered_map<std::string, GranularPermissionType>
-        granularPermissionMap_;
+    std::unordered_map<std::string, GranularPermissionType> granularPermissionMap_;
 
     std::unordered_map<GranularPermissionType, std::string> granularNameMap_;
 
@@ -83,5 +81,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

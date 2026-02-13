@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_B58_UTILS_H_INCLUDED
-#define XRPL_PROTOCOL_B58_UTILS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -118,15 +117,12 @@ inplace_bigint_div_rem(std::span<uint64_t> numerator, std::uint64_t divisor)
         // LCOV_EXCL_STOP
     }
 
-    auto to_u128 = [](std::uint64_t high,
-                      std::uint64_t low) -> unsigned __int128 {
+    auto to_u128 = [](std::uint64_t high, std::uint64_t low) -> unsigned __int128 {
         unsigned __int128 const high128 = high;
         unsigned __int128 const low128 = low;
         return ((high128 << 64) | low128);
     };
-    auto div_rem_64 =
-        [](unsigned __int128 num,
-           std::uint64_t denom) -> std::tuple<std::uint64_t, std::uint64_t> {
+    auto div_rem_64 = [](unsigned __int128 num, std::uint64_t denom) -> std::tuple<std::uint64_t, std::uint64_t> {
         unsigned __int128 const denom128 = denom;
         unsigned __int128 const d = num / denom128;
         unsigned __int128 const r = num - (denom128 * d);
@@ -143,8 +139,7 @@ inplace_bigint_div_rem(std::span<uint64_t> numerator, std::uint64_t divisor)
 
     std::uint64_t prev_rem = 0;
     int const last_index = numerator.size() - 1;
-    std::tie(numerator[last_index], prev_rem) =
-        div_rem(numerator[last_index], divisor);
+    std::tie(numerator[last_index], prev_rem) = div_rem(numerator[last_index], divisor);
     for (int i = last_index - 1; i >= 0; --i)
     {
         unsigned __int128 const cur_num = to_u128(prev_rem, numerator[i]);
@@ -159,11 +154,8 @@ inplace_bigint_div_rem(std::span<uint64_t> numerator, std::uint64_t divisor)
 [[nodiscard]] inline std::array<std::uint8_t, 10>
 b58_10_to_b58_be(std::uint64_t input)
 {
-    [[maybe_unused]] static constexpr std::uint64_t B_58_10 =
-        430804206899405824;  // 58^10;
-    XRPL_ASSERT(
-        input < B_58_10,
-        "xrpl::b58_fast::detail::b58_10_to_b58_be : valid input");
+    [[maybe_unused]] static constexpr std::uint64_t B_58_10 = 430804206899405824;  // 58^10;
+    XRPL_ASSERT(input < B_58_10, "xrpl::b58_fast::detail::b58_10_to_b58_be : valid input");
     constexpr std::size_t resultSize = 10;
     std::array<std::uint8_t, resultSize> result{};
     int i = 0;
@@ -182,4 +174,3 @@ b58_10_to_b58_be(std::uint64_t input)
 #endif
 
 }  // namespace xrpl
-#endif  // XRPL_PROTOCOL_B58_UTILS_H_INCLUDED

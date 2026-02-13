@@ -11,9 +11,7 @@ RCLCxPeerPos::RCLCxPeerPos(
     Slice const& signature,
     uint256 const& suppression,
     Proposal&& proposal)
-    : publicKey_(publicKey)
-    , suppression_(suppression)
-    , proposal_(std::move(proposal))
+    : publicKey_(publicKey), suppression_(suppression), proposal_(std::move(proposal))
 {
     // The maximum allowed size of a signature is 72 bytes; we verify
     // this elsewhere, but we want to be extra careful here:
@@ -28,8 +26,7 @@ RCLCxPeerPos::RCLCxPeerPos(
 bool
 RCLCxPeerPos::checkSign() const
 {
-    return verifyDigest(
-        publicKey(), proposal_.signingHash(), signature(), false);
+    return verifyDigest(publicKey(), proposal_.signingHash(), signature(), false);
 }
 
 Json::Value

@@ -112,6 +112,7 @@ test.overlay > xrpl.basics
 test.overlay > xrpld.app
 test.overlay > xrpld.overlay
 test.overlay > xrpld.peerfinder
+test.overlay > xrpl.nodestore
 test.overlay > xrpl.protocol
 test.overlay > xrpl.shamap
 test.peerfinder > test.beast
@@ -194,6 +195,7 @@ xrpld.app > xrpl.basics
 xrpld.app > xrpl.conditions
 xrpld.app > xrpl.core
 xrpld.app > xrpld.consensus
+xrpld.app > xrpld.core
 xrpld.app > xrpl.json
 xrpld.app > xrpl.ledger
 xrpld.app > xrpl.net

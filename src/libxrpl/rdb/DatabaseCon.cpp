@@ -19,8 +19,7 @@ class CheckpointersCollection
     // Each checkpointer is given a unique id. All the checkpointers that are
     // part of a DatabaseCon are part of this collection. When the DatabaseCon
     // is destroyed, its checkpointer is removed from the collection
-    std::unordered_map<std::uintptr_t, std::shared_ptr<Checkpointer>>
-        checkpointers_;
+    std::unordered_map<std::uintptr_t, std::shared_ptr<Checkpointer>> checkpointers_;
 
 public:
     std::shared_ptr<Checkpointer>
@@ -41,10 +40,7 @@ public:
     }
 
     std::shared_ptr<Checkpointer>
-    create(
-        std::shared_ptr<soci::session> const& session,
-        JobQueue& jobQueue,
-        Logs& logs)
+    create(std::shared_ptr<soci::session> const& session, JobQueue& jobQueue, Logs& logs)
     {
         std::lock_guard lock{mutex_};
         auto const id = nextId_++;
@@ -83,8 +79,7 @@ DatabaseCon::~DatabaseCon()
     }
 }
 
-std::unique_ptr<std::vector<std::string> const>
-    DatabaseCon::Setup::globalPragma;
+std::unique_ptr<std::vector<std::string> const> DatabaseCon::Setup::globalPragma;
 
 void
 DatabaseCon::setupCheckpointing(JobQueue* q, Logs& l)

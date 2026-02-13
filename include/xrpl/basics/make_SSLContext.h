@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_MAKE_SSLCONTEXT_H_INCLUDED
-#define XRPL_BASICS_MAKE_SSLCONTEXT_H_INCLUDED
+#pragma once
 
 #include <boost/asio/ssl/context.hpp>
 
@@ -20,5 +19,3 @@ make_SSLContextAuthed(
     std::string const& cipherList);
 
 }  // namespace xrpl
-
-#endif

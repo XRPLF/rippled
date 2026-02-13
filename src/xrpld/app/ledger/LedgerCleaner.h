@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_LEDGERCLEANER_H_INCLUDED
-#define XRPL_APP_LEDGER_LEDGERCLEANER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
 
@@ -44,5 +43,3 @@ std::unique_ptr<LedgerCleaner>
 make_LedgerCleaner(Application& app, beast::Journal journal);
 
 }  // namespace xrpl
-
-#endif

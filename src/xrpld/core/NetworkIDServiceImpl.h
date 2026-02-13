@@ -1,5 +1,4 @@
-#ifndef XRPLD_CORE_NETWORK_ID_SERVICE_IMPL_H_INCLUDED
-#define XRPLD_CORE_NETWORK_ID_SERVICE_IMPL_H_INCLUDED
+#pragma once
 
 #include <xrpl/core/NetworkIDService.h>
 
@@ -31,5 +30,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

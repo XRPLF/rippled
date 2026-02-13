@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_TX_H_INCLUDED
-#define XRPL_TEST_CSF_TX_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/beast/hash/uhash.h>
@@ -145,11 +144,7 @@ public:
         auto populate_diffs = [&res](auto const& a, auto const& b, bool s) {
             auto populator = [&](auto const& tx) { res[tx.id()] = s; };
             std::set_difference(
-                a.begin(),
-                a.end(),
-                b.begin(),
-                b.end(),
-                boost::make_function_output_iterator(std::ref(populator)));
+                a.begin(), a.end(), b.begin(), b.end(), boost::make_function_output_iterator(std::ref(populator)));
         };
 
         populate_diffs(txs_, other.txs_, true);
@@ -211,5 +206,3 @@ hash_append(Hasher& h, Tx const& tx)
 }  // namespace csf
 }  // namespace test
 }  // namespace xrpl
-
-#endif

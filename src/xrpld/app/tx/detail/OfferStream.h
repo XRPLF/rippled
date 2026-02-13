@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_BOOK_OFFERSTREAM_H_INCLUDED
-#define XRPL_APP_BOOK_OFFERSTREAM_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/tx/detail/BookTip.h>
 #include <xrpld/app/tx/detail/Offer.h>
@@ -25,8 +24,7 @@ public:
         beast::Journal j_;
 
     public:
-        StepCounter(std::uint32_t limit, beast::Journal j)
-            : limit_(limit), count_(0), j_(j)
+        StepCounter(std::uint32_t limit, beast::Journal j) : limit_(limit), count_(0), j_(j)
         {
         }
 
@@ -175,5 +173,3 @@ public:
     }
 };
 }  // namespace xrpl
-
-#endif

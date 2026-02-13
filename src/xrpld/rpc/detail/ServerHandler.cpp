@@ -46,15 +46,12 @@ class CanonicalTXSet;
 static bool
 isStatusRequest(http_request_type const& request)
 {
-    return request.version() >= 11 && request.target() == "/" &&
-        request.body().size() == 0 &&
+    return request.version() >= 11 && request.target() == "/" && request.body().size() == 0 &&
         request.method() == boost::beast::http::verb::get;
 }
 
 static Handoff
-statusRequestResponse(
-    http_request_type const& request,
-    boost::beast::http::status status)
+statusRequestResponse(http_request_type const& request, boost::beast::http::status status)
 {
     using namespace boost::beast::http;
     Handoff handoff;
@@ -132,9 +129,7 @@ ServerHandler::setup(Setup const& setup, beast::Journal journal)
             if (!port.port)
                 port.port = endpointPort;
 
-            if (!setup_.client.port &&
-                (port.protocol.count("http") > 0 ||
-                 port.protocol.count("https") > 0))
+            if (!setup_.client.port && (port.protocol.count("http") > 0 || port.protocol.count("https") > 0))
                 setup_.client.port = endpointPort;
 
             if (!setup_.overlay.port() && (port.protocol.count("peer") > 0))
@@ -158,9 +153,7 @@ ServerHandler::stop()
 //------------------------------------------------------------------------------
 
 bool
-ServerHandler::onAccept(
-    Session& session,
-    boost::asio::ip::tcp::endpoint endpoint)
+ServerHandler::onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoint)
 {
     auto const& port = session.port();
 
@@ -171,8 +164,7 @@ ServerHandler::onAccept(
 
     if (port.limit && c >= port.limit)
     {
-        JLOG(m_journal.trace())
-            << port.name << " is full; dropping " << endpoint;
+        JLOG(m_journal.trace()) << port.name << " is full; dropping " << endpoint;
         return false;
     }
 
@@ -188,9 +180,7 @@ ServerHandler::onHandoff(
 {
     using namespace boost::beast;
     auto const& p{session.port().protocol};
-    bool const is_ws{
-        p.count("ws") > 0 || p.count("ws2") > 0 || p.count("wss") > 0 ||
-        p.count("wss2") > 0};
+    bool const is_ws{p.count("ws") > 0 || p.count("ws2") > 0 || p.count("wss") > 0 || p.count("wss2") > 0};
 
     if (websocket::is_upgrade(request))
     {
@@ -204,24 +194,16 @@ ServerHandler::onHandoff(
         }
         catch (std::exception const& e)
         {
-            JLOG(m_journal.error())
-                << "Exception upgrading websocket: " << e.what() << "\n";
-            return statusRequestResponse(
-                request, http::status::internal_server_error);
+            JLOG(m_journal.error()) << "Exception upgrading websocket: " << e.what() << "\n";
+            return statusRequestResponse(request, http::status::internal_server_error);
         }
 
         auto is{std::make_shared<WSInfoSub>(m_networkOPs, ws)};
-        auto const beast_remote_address =
-            beast::IPAddressConversion::from_asio(remote_address);
+        auto const beast_remote_address = beast::IPAddressConversion::from_asio(remote_address);
         is->getConsumer() = requestInboundEndpoint(
             m_resourceManager,
             beast_remote_address,
-            requestRole(
-                Role::GUEST,
-                session.port(),
-                Json::Value(),
-                beast_remote_address,
-                is->user()),
+            requestRole(Role::GUEST, session.port(), Json::Value(), beast_remote_address, is->user()),
             is->user(),
             is->forwarded_for());
         ws->appDefined = std::move(is);
@@ -233,8 +215,7 @@ ServerHandler::onHandoff(
     }
 
     if (bundle && p.count("peer") > 0)
-        return app_.overlay().onHandoff(
-            std::move(bundle), std::move(request), remote_address);
+        return app_.overlay().onHandoff(std::move(bundle), std::move(request), remote_address);
 
     if (is_ws && isStatusRequest(request))
         return statusResponse(request);
@@ -246,9 +227,7 @@ ServerHandler::onHandoff(
 static inline Json::Output
 makeOutput(Session& session)
 {
-    return [&](boost::beast::string_view const& b) {
-        session.write(b.data(), b.size());
-    };
+    return [&](boost::beast::string_view const& b) { session.write(b.data(), b.size()); };
 }
 
 static std::map<std::string, std::string>
@@ -260,9 +239,8 @@ build_map(boost::beast::http::fields const& h)
         // key cannot be a std::string_view because it needs to be used in
         // map and along with iterators
         std::string key(e.name_string());
-        std::transform(key.begin(), key.end(), key.begin(), [](auto kc) {
-            return std::tolower(static_cast<unsigned char>(kc));
-        });
+        std::transform(
+            key.begin(), key.end(), key.begin(), [](auto kc) { return std::tolower(static_cast<unsigned char>(kc)); });
         c[key] = e.value();
     }
     return c;
@@ -286,8 +264,7 @@ void
 ServerHandler::onRequest(Session& session)
 {
     // Make sure RPC is enabled on the port
-    if (session.port().protocol.count("http") == 0 &&
-        session.port().protocol.count("https") == 0)
+    if (session.port().protocol.count("http") == 0 && session.port().protocol.count("https") == 0)
     {
         HTTPReply(403, "Forbidden", makeOutput(session), app_.journal("RPC"));
         session.close(true);
@@ -303,34 +280,25 @@ ServerHandler::onRequest(Session& session)
     }
 
     std::shared_ptr<Session> detachedSession = session.detach();
-    auto const postResult = m_jobQueue.postCoro(
-        jtCLIENT_RPC,
-        "RPC-Client",
-        [this, detachedSession](std::shared_ptr<JobQueue::Coro> coro) {
+    auto const postResult =
+        m_jobQueue.postCoro(jtCLIENT_RPC, "RPC-Client", [this, detachedSession](std::shared_ptr<JobQueue::Coro> coro) {
             processSession(detachedSession, coro);
         });
     if (postResult == nullptr)
     {
         // The coroutine was rejected, probably because we're shutting down.
-        HTTPReply(
-            503,
-            "Service Unavailable",
-            makeOutput(*detachedSession),
-            app_.journal("RPC"));
+        HTTPReply(503, "Service Unavailable", makeOutput(*detachedSession), app_.journal("RPC"));
         detachedSession->close(true);
         return;
     }
 }
 
 void
-ServerHandler::onWSMessage(
-    std::shared_ptr<WSSession> session,
-    std::vector<boost::asio::const_buffer> const& buffers)
+ServerHandler::onWSMessage(std::shared_ptr<WSSession> session, std::vector<boost::asio::const_buffer> const& buffers)
 {
     Json::Value jv;
     auto const size = boost::asio::buffer_size(buffers);
-    if (size > RPC::Tuning::maxRequestSize ||
-        !Json::Reader{}.parse(jv, buffers) || !jv.isObject())
+    if (size > RPC::Tuning::maxRequestSize || !Json::Reader{}.parse(jv, buffers) || !jv.isObject())
     {
         Json::Value jvResult(Json::objectValue);
         jvResult[jss::type] = jss::error;
@@ -338,12 +306,10 @@ ServerHandler::onWSMessage(
         jvResult[jss::value] = buffers_to_string(buffers);
         boost::beast::multi_buffer sb;
         Json::stream(jvResult, [&sb](auto const p, auto const n) {
-            sb.commit(boost::asio::buffer_copy(
-                sb.prepare(n), boost::asio::buffer(p, n)));
+            sb.commit(boost::asio::buffer_copy(sb.prepare(n), boost::asio::buffer(p, n)));
         });
         JLOG(m_journal.trace()) << "Websocket sending '" << jvResult << "'";
-        session->send(
-            std::make_shared<StreambufWSMsg<decltype(sb)>>(std::move(sb)));
+        session->send(std::make_shared<StreambufWSMsg<decltype(sb)>>(std::move(sb)));
         session->complete();
         return;
     }
@@ -353,16 +319,13 @@ ServerHandler::onWSMessage(
     auto const postResult = m_jobQueue.postCoro(
         jtCLIENT_WEBSOCKET,
         "WS-Client",
-        [this, session, jv = std::move(jv)](
-            std::shared_ptr<JobQueue::Coro> const& coro) {
+        [this, session, jv = std::move(jv)](std::shared_ptr<JobQueue::Coro> const& coro) {
             auto const jr = this->processSession(session, coro, jv);
             auto const s = to_string(jr);
             auto const n = s.length();
             boost::beast::multi_buffer sb(n);
-            sb.commit(boost::asio::buffer_copy(
-                sb.prepare(n), boost::asio::buffer(s.c_str(), n)));
-            session->send(
-                std::make_shared<StreambufWSMsg<decltype(sb)>>(std::move(sb)));
+            sb.commit(boost::asio::buffer_copy(sb.prepare(n), boost::asio::buffer(s.c_str(), n)));
+            session->send(std::make_shared<StreambufWSMsg<decltype(sb)>>(std::move(sb)));
             session->complete();
         });
     if (postResult == nullptr)
@@ -391,20 +354,13 @@ ServerHandler::onStopped(Server&)
 
 template <class T>
 void
-logDuration(
-    Json::Value const& request,
-    T const& duration,
-    beast::Journal& journal)
+logDuration(Json::Value const& request, T const& duration, beast::Journal& journal)
 {
     using namespace std::chrono_literals;
-    auto const level = (duration >= 10s) ? journal.error()
-        : (duration >= 1s)               ? journal.warn()
-                                         : journal.debug();
+    auto const level = (duration >= 10s) ? journal.error() : (duration >= 1s) ? journal.warn() : journal.debug();
 
     JLOG(level) << "RPC request processing duration = "
-                << std::chrono::duration_cast<std::chrono::microseconds>(
-                       duration)
-                       .count()
+                << std::chrono::duration_cast<std::chrono::microseconds>(duration).count()
                 << " microseconds. request = " << request;
 }
 
@@ -417,8 +373,7 @@ ServerHandler::processSession(
     auto is = std::static_pointer_cast<WSInfoSub>(session->appDefined);
     if (is->getConsumer().disconnect(m_journal))
     {
-        session->close(
-            {boost::beast::websocket::policy_error, "threshold exceeded"});
+        session->close({boost::beast::websocket::policy_error, "threshold exceeded"});
         // FIX: This rpcError is not delivered since the session
         // was just closed.
         return rpcError(rpcSLOW_DOWN);
@@ -429,10 +384,8 @@ ServerHandler::processSession(
     Resource::Charge loadType = Resource::feeReferenceRPC;
     try
     {
-        auto apiVersion =
-            RPC::getAPIVersionNumber(jv, app_.config().BETA_RPC_API);
-        if (apiVersion == RPC::apiInvalidVersion ||
-            (!jv.isMember(jss::command) && !jv.isMember(jss::method)) ||
+        auto apiVersion = RPC::getAPIVersionNumber(jv, app_.config().BETA_RPC_API);
+        if (apiVersion == RPC::apiInvalidVersion || (!jv.isMember(jss::command) && !jv.isMember(jss::method)) ||
             (jv.isMember(jss::command) && !jv[jss::command].isString()) ||
             (jv.isMember(jss::method) && !jv[jss::method].isString()) ||
             (jv.isMember(jss::command) && jv.isMember(jss::method) &&
@@ -440,9 +393,7 @@ ServerHandler::processSession(
         {
             jr[jss::type] = jss::response;
             jr[jss::status] = jss::error;
-            jr[jss::error] = apiVersion == RPC::apiInvalidVersion
-                ? jss::invalid_API_version
-                : jss::missingCommand;
+            jr[jss::error] = apiVersion == RPC::apiInvalidVersion ? jss::invalid_API_version : jss::missingCommand;
             jr[jss::request] = jv;
             if (jv.isMember(jss::id))
                 jr[jss::id] = jv[jss::id];
@@ -460,14 +411,9 @@ ServerHandler::processSession(
         auto required = RPC::roleRequired(
             apiVersion,
             app_.config().BETA_RPC_API,
-            jv.isMember(jss::command) ? jv[jss::command].asString()
-                                      : jv[jss::method].asString());
+            jv.isMember(jss::command) ? jv[jss::command].asString() : jv[jss::method].asString());
         auto role = requestRole(
-            required,
-            session->port(),
-            jv,
-            beast::IP::from_asio(session->remote_endpoint().address()),
-            is->user());
+            required, session->port(), jv, beast::IP::from_asio(session->remote_endpoint().address()), is->user());
         if (Role::FORBID == role)
         {
             loadType = Resource::feeMalformedRPC;
@@ -499,9 +445,8 @@ ServerHandler::processSession(
     {
         // LCOV_EXCL_START
         jr[jss::result] = RPC::make_error(rpcINTERNAL);
-        JLOG(m_journal.error())
-            << "Exception while processing WS: " << ex.what() << "\n"
-            << "Input JSON: " << Json::Compact{Json::Value{jv}};
+        JLOG(m_journal.error()) << "Exception while processing WS: " << ex.what() << "\n"
+                                << "Input JSON: " << Json::Compact{Json::Value{jv}};
         // LCOV_EXCL_STOP
     }
 
@@ -537,8 +482,7 @@ ServerHandler::processSession(
     }
     else
     {
-        if (jr[jss::result].isMember("forwarded") &&
-            jr[jss::result]["forwarded"])
+        if (jr[jss::result].isMember("forwarded") && jr[jss::result]["forwarded"])
             jr = jr[jss::result];
         jr[jss::status] = jss::success;
     }
@@ -558,9 +502,7 @@ ServerHandler::processSession(
 
 // Run as a coroutine.
 void
-ServerHandler::processSession(
-    std::shared_ptr<Session> const& session,
-    std::shared_ptr<JobQueue::Coro> coro)
+ServerHandler::processSession(std::shared_ptr<Session> const& session, std::shared_ptr<JobQueue::Coro> coro)
 {
     processRequest(
         session->port(),
@@ -613,16 +555,10 @@ ServerHandler::processRequest(
     Json::Value jsonOrig;
     {
         Json::Reader reader;
-        if ((request.size() > RPC::Tuning::maxRequestSize) ||
-            !reader.parse(request, jsonOrig) || !jsonOrig ||
+        if ((request.size() > RPC::Tuning::maxRequestSize) || !reader.parse(request, jsonOrig) || !jsonOrig ||
             !jsonOrig.isObject())
         {
-            HTTPReply(
-                400,
-                "Unable to parse request: " +
-                    reader.getFormattedErrorMessages(),
-                output,
-                rpcJ);
+            HTTPReply(400, "Unable to parse request: " + reader.getFormattedErrorMessages(), output, rpcJ);
             return;
         }
     }
@@ -644,34 +580,28 @@ ServerHandler::processRequest(
     auto const start(std::chrono::high_resolution_clock::now());
     for (unsigned i = 0; i < size; ++i)
     {
-        Json::Value const& jsonRPC =
-            batch ? jsonOrig[jss::params][i] : jsonOrig;
+        Json::Value const& jsonRPC = batch ? jsonOrig[jss::params][i] : jsonOrig;
 
         if (!jsonRPC.isObject())
         {
             Json::Value r(Json::objectValue);
             r[jss::request] = jsonRPC;
-            r[jss::error] =
-                make_json_error(method_not_found, "Method not found");
+            r[jss::error] = make_json_error(method_not_found, "Method not found");
             reply.append(r);
             continue;
         }
 
         unsigned apiVersion = RPC::apiVersionIfUnspecified;
-        if (jsonRPC.isMember(jss::params) && jsonRPC[jss::params].isArray() &&
-            jsonRPC[jss::params].size() > 0 &&
+        if (jsonRPC.isMember(jss::params) && jsonRPC[jss::params].isArray() && jsonRPC[jss::params].size() > 0 &&
             jsonRPC[jss::params][0u].isObject())
         {
-            apiVersion = RPC::getAPIVersionNumber(
-                jsonRPC[jss::params][Json::UInt(0)],
-                app_.config().BETA_RPC_API);
+            apiVersion = RPC::getAPIVersionNumber(jsonRPC[jss::params][Json::UInt(0)], app_.config().BETA_RPC_API);
         }
 
         if (apiVersion == RPC::apiVersionIfUnspecified && batch)
         {
             // for batch request, api_version may be at a different level
-            apiVersion =
-                RPC::getAPIVersionNumber(jsonRPC, app_.config().BETA_RPC_API);
+            apiVersion = RPC::getAPIVersionNumber(jsonRPC, app_.config().BETA_RPC_API);
         }
 
         if (apiVersion == RPC::apiInvalidVersion)
@@ -683,8 +613,7 @@ ServerHandler::processRequest(
             }
             Json::Value r(Json::objectValue);
             r[jss::request] = jsonRPC;
-            r[jss::error] = make_json_error(
-                wrong_version, jss::invalid_API_version.c_str());
+            r[jss::error] = make_json_error(wrong_version, jss::invalid_API_version.c_str());
             reply.append(r);
             continue;
         }
@@ -693,26 +622,16 @@ ServerHandler::processRequest(
         auto role = Role::FORBID;
         auto required = Role::FORBID;
         if (jsonRPC.isMember(jss::method) && jsonRPC[jss::method].isString())
-            required = RPC::roleRequired(
-                apiVersion,
-                app_.config().BETA_RPC_API,
-                jsonRPC[jss::method].asString());
+            required = RPC::roleRequired(apiVersion, app_.config().BETA_RPC_API, jsonRPC[jss::method].asString());
 
-        if (jsonRPC.isMember(jss::params) && jsonRPC[jss::params].isArray() &&
-            jsonRPC[jss::params].size() > 0 &&
+        if (jsonRPC.isMember(jss::params) && jsonRPC[jss::params].isArray() && jsonRPC[jss::params].size() > 0 &&
             jsonRPC[jss::params][Json::UInt(0)].isObjectOrNull())
         {
-            role = requestRole(
-                required,
-                port,
-                jsonRPC[jss::params][Json::UInt(0)],
-                remoteIPAddress,
-                user);
+            role = requestRole(required, port, jsonRPC[jss::params][Json::UInt(0)], remoteIPAddress, user);
         }
         else
         {
-            role = requestRole(
-                required, port, Json::objectValue, remoteIPAddress, user);
+            role = requestRole(required, port, Json::objectValue, remoteIPAddress, user);
         }
 
         Resource::Consumer usage;
@@ -722,8 +641,7 @@ ServerHandler::processRequest(
         }
         else
         {
-            usage = m_resourceManager.newInboundEndpoint(
-                remoteIPAddress, role == Role::PROXY, forwardedFor);
+            usage = m_resourceManager.newInboundEndpoint(remoteIPAddress, role == Role::PROXY, forwardedFor);
             if (usage.disconnect(m_journal))
             {
                 if (!batch)
@@ -732,8 +650,7 @@ ServerHandler::processRequest(
                     return;
                 }
                 Json::Value r = jsonRPC;
-                r[jss::error] =
-                    make_json_error(server_overloaded, "Server is overloaded");
+                r[jss::error] = make_json_error(server_overloaded, "Server is overloaded");
                 reply.append(r);
                 continue;
             }
@@ -777,8 +694,7 @@ ServerHandler::processRequest(
                 return;
             }
             Json::Value r = jsonRPC;
-            r[jss::error] =
-                make_json_error(method_not_found, "method is not string");
+            r[jss::error] = make_json_error(method_not_found, "method is not string");
             reply.append(r);
             continue;
         }
@@ -793,8 +709,7 @@ ServerHandler::processRequest(
                 return;
             }
             Json::Value r = jsonRPC;
-            r[jss::error] =
-                make_json_error(method_not_found, "method is empty");
+            r[jss::error] = make_json_error(method_not_found, "method is empty");
             reply.append(r);
             continue;
         }
@@ -847,8 +762,7 @@ ServerHandler::processRequest(
                 }
 
                 Json::Value r = jsonRPC;
-                r[jss::error] = make_json_error(
-                    method_not_found, "ripplerpc is not a string");
+                r[jss::error] = make_json_error(method_not_found, "ripplerpc is not a string");
                 reply.append(r);
                 continue;
             }
@@ -869,8 +783,7 @@ ServerHandler::processRequest(
 
         // Provide the JSON-RPC method as the field "command" in the request.
         params[jss::command] = strMethod;
-        JLOG(m_journal.trace())
-            << "doRpcCommand:" << strMethod << ":" << params;
+        JLOG(m_journal.trace()) << "doRpcCommand:" << strMethod << ":" << params;
 
         Resource::Charge loadType = Resource::feeReferenceRPC;
 
@@ -900,8 +813,7 @@ ServerHandler::processRequest(
             // LCOV_EXCL_START
             result = RPC::make_error(rpcINTERNAL);
             JLOG(m_journal.error()) << "Internal error : " << ex.what()
-                                    << " when processing request: "
-                                    << Json::Compact{Json::Value{params}};
+                                    << " when processing request: " << Json::Compact{Json::Value{params}};
             // LCOV_EXCL_STOP
         }
 
@@ -922,8 +834,7 @@ ServerHandler::processRequest(
                 result["code"] = result[jss::error_code];
                 result["message"] = result[jss::error_message];
                 result.removeMember(jss::error_message);
-                JLOG(m_journal.debug()) << "rpcError: " << result[jss::error]
-                                        << ": " << result[jss::error_message];
+                JLOG(m_journal.debug()) << "rpcError: " << result[jss::error] << ": " << result[jss::error_message];
                 r[jss::error] = std::move(result);
             }
             else
@@ -955,8 +866,7 @@ ServerHandler::processRequest(
                 result[jss::status] = jss::error;
                 result[jss::request] = rq;
 
-                JLOG(m_journal.debug()) << "rpcError: " << result[jss::error]
-                                        << ": " << result[jss::error_message];
+                JLOG(m_journal.debug()) << "rpcError: " << result[jss::error] << ": " << result[jss::error_message];
             }
             else
             {
@@ -976,8 +886,7 @@ ServerHandler::processRequest(
         else
             reply = std::move(r);
 
-        if (reply.isMember(jss::result) &&
-            reply[jss::result].isMember(jss::result))
+        if (reply.isMember(jss::result) && reply[jss::result].isMember(jss::result))
         {
             reply = reply[jss::result];
             if (reply.isMember(jss::status))
@@ -992,18 +901,15 @@ ServerHandler::processRequest(
     int const httpStatus = [&reply]() {
         // This feature is enabled with ripplerpc version 3.0 and above.
         // Before ripplerpc version 3.0 always return 200.
-        if (reply.isMember(jss::ripplerpc) &&
-            reply[jss::ripplerpc].isString() &&
+        if (reply.isMember(jss::ripplerpc) && reply[jss::ripplerpc].isString() &&
             reply[jss::ripplerpc].asString() >= "3.0")
         {
             // If there's an error_code, use that to determine the HTTP Status.
-            if (reply.isMember(jss::error) &&
-                reply[jss::error].isMember(jss::error_code) &&
+            if (reply.isMember(jss::error) && reply[jss::error].isMember(jss::error_code) &&
                 reply[jss::error][jss::error_code].isInt())
             {
                 int const errCode = reply[jss::error][jss::error_code].asInt();
-                return RPC::error_code_http_status(
-                    static_cast<error_code_i>(errCode));
+                return RPC::error_code_http_status(static_cast<error_code_i>(errCode));
             }
         }
         // Return OK.
@@ -1012,8 +918,8 @@ ServerHandler::processRequest(
 
     auto response = to_string(reply);
 
-    rpc_time_.notify(std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::high_resolution_clock::now() - start));
+    rpc_time_.notify(
+        std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start));
     ++rpc_requests_;
     rpc_size_.notify(beast::insight::Event::value_type{response.size()});
 
@@ -1055,8 +961,7 @@ ServerHandler::statusResponse(http_request_type const& request) const
     else
     {
         msg.result(boost::beast::http::status::internal_server_error);
-        msg.body() = "<HTML><BODY>Server cannot accept clients: " + reason +
-            "</BODY></HTML>";
+        msg.body() = "<HTML><BODY>Server cannot accept clients: " + reason + "</BODY></HTML>";
     }
     msg.version(request.version());
     msg.insert("Server", BuildInfo::getFullVersionString());
@@ -1079,13 +984,11 @@ ServerHandler::Setup::makeContexts()
             if (p.ssl_key.empty() && p.ssl_cert.empty() && p.ssl_chain.empty())
                 p.context = make_SSLContext(p.ssl_ciphers);
             else
-                p.context = make_SSLContextAuthed(
-                    p.ssl_key, p.ssl_cert, p.ssl_chain, p.ssl_ciphers);
+                p.context = make_SSLContextAuthed(p.ssl_key, p.ssl_cert, p.ssl_chain, p.ssl_ciphers);
         }
         else
         {
-            p.context = std::make_shared<boost::asio::ssl::context>(
-                boost::asio::ssl::context::sslv23);
+            p.context = std::make_shared<boost::asio::ssl::context>(boost::asio::ssl::context::sslv23);
         }
     }
 }
@@ -1189,9 +1092,7 @@ parse_Ports(Config const& config, std::ostream& log)
     else
     {
         auto const count =
-            std::count_if(result.cbegin(), result.cend(), [](Port const& p) {
-                return p.protocol.count("peer") != 0;
-            });
+            std::count_if(result.cbegin(), result.cend(), [](Port const& p) { return p.protocol.count("peer") != 0; });
 
         if (count > 1)
         {
@@ -1212,17 +1113,15 @@ setup_Client(ServerHandler::Setup& setup)
 {
     decltype(setup.ports)::const_iterator iter;
     for (iter = setup.ports.cbegin(); iter != setup.ports.cend(); ++iter)
-        if (iter->protocol.count("http") > 0 ||
-            iter->protocol.count("https") > 0)
+        if (iter->protocol.count("http") > 0 || iter->protocol.count("https") > 0)
             break;
     if (iter == setup.ports.cend())
         return;
     setup.client.secure = iter->protocol.count("https") > 0;
-    setup.client.ip = beast::IP::is_unspecified(iter->ip)
-        ?
-        // VFALCO HACK! to make localhost work
+    setup.client.ip = beast::IP::is_unspecified(iter->ip) ?
+                                                          // VFALCO HACK! to make localhost work
         (iter->ip.is_v6() ? "::1" : "127.0.0.1")
-        : iter->ip.to_string();
+                                                          : iter->ip.to_string();
     setup.client.port = iter->port;
     setup.client.user = iter->user;
     setup.client.password = iter->password;
@@ -1235,9 +1134,7 @@ static void
 setup_Overlay(ServerHandler::Setup& setup)
 {
     auto const iter = std::find_if(
-        setup.ports.cbegin(), setup.ports.cend(), [](Port const& port) {
-            return port.protocol.count("peer") != 0;
-        });
+        setup.ports.cbegin(), setup.ports.cend(), [](Port const& port) { return port.protocol.count("peer") != 0; });
     if (iter == setup.ports.cend())
     {
         setup.overlay = {};
@@ -1268,13 +1165,7 @@ make_ServerHandler(
     CollectorManager& cm)
 {
     return std::make_unique<ServerHandler>(
-        ServerHandler::ServerHandlerCreator(),
-        app,
-        io_context,
-        jobQueue,
-        networkOPs,
-        resourceManager,
-        cm);
+        ServerHandler::ServerHandlerCreator(), app, io_context, jobQueue, networkOPs, resourceManager, cm);
 }
 
 }  // namespace xrpl

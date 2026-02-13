@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_CREDIT_H_INCLUDED
-#define XRPL_LEDGER_CREDIT_H_INCLUDED
+#pragma once
 
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/IOUAmount.h>
@@ -16,18 +15,10 @@ namespace xrpl {
 */
 /** @{ */
 STAmount
-creditLimit(
-    ReadView const& view,
-    AccountID const& account,
-    AccountID const& issuer,
-    Currency const& currency);
+creditLimit(ReadView const& view, AccountID const& account, AccountID const& issuer, Currency const& currency);
 
 IOUAmount
-creditLimit2(
-    ReadView const& v,
-    AccountID const& acc,
-    AccountID const& iss,
-    Currency const& cur);
+creditLimit2(ReadView const& v, AccountID const& acc, AccountID const& iss, Currency const& cur);
 /** @} */
 
 /** Returns the amount of IOUs issued by issuer that are held by an account
@@ -38,13 +29,7 @@ creditLimit2(
 */
 /** @{ */
 STAmount
-creditBalance(
-    ReadView const& view,
-    AccountID const& account,
-    AccountID const& issuer,
-    Currency const& currency);
+creditBalance(ReadView const& view, AccountID const& account, AccountID const& issuer, Currency const& currency);
 /** @} */
 
 }  // namespace xrpl
-
-#endif

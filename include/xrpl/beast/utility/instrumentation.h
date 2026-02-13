@@ -1,5 +1,4 @@
-#ifndef BEAST_UTILITY_INSTRUMENTATION_H_INCLUDED
-#define BEAST_UTILITY_INSTRUMENTATION_H_INCLUDED
+#pragma once
 
 #include <cassert>
 
@@ -20,8 +19,7 @@
 #endif
 
 #define XRPL_ASSERT ALWAYS_OR_UNREACHABLE
-#define XRPL_ASSERT_PARTS(cond, function, description, ...) \
-    XRPL_ASSERT(cond, function " : " description)
+#define XRPL_ASSERT_PARTS(cond, function, description, ...) XRPL_ASSERT(cond, function " : " description)
 
 // How to use the instrumentation macros:
 //
@@ -52,5 +50,3 @@
 // instrumentation macros - its name describes the condition which was _not_
 // meant to happen, while name in other macros describes the condition that is
 // meant to happen (e.g. as in "assert that this happens").
-
-#endif

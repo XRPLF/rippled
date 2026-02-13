@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_LEDGERS_H_INCLUDED
-#define XRPL_TEST_CSF_LEDGERS_H_INCLUDED
+#pragma once
 
 #include <test/csf/Tx.h>
 
@@ -94,14 +93,7 @@ private:
         auto
         asTie() const
         {
-            return std::tie(
-                seq,
-                txs,
-                closeTimeResolution,
-                closeTime,
-                closeTimeAgree,
-                parentID,
-                parentCloseTime);
+            return std::tie(seq, txs, closeTimeResolution, closeTime, closeTimeAgree, parentID, parentCloseTime);
         }
 
         friend bool
@@ -267,11 +259,7 @@ public:
     accept(Ledger const& curr, Tx tx)
     {
         using namespace std::chrono_literals;
-        return accept(
-            curr,
-            TxSetType{tx},
-            curr.closeTimeResolution(),
-            curr.closeTime() + 1s);
+        return accept(curr, TxSetType{tx}, curr.closeTimeResolution(), curr.closeTime() + 1s);
     }
 
     /** Determine the number of distinct branches for the set of ledgers.
@@ -334,13 +322,10 @@ struct LedgerHistoryHelper
         assert(seen.emplace(s.back()).second);
 
         Ledger const& parent = (*this)[s.substr(0, s.size() - 1)];
-        return ledgers.emplace(s, oracle.accept(parent, Tx{++nextTx}))
-            .first->second;
+        return ledgers.emplace(s, oracle.accept(parent, Tx{++nextTx})).first->second;
     }
 };
 
 }  // namespace csf
 }  // namespace test
 }  // namespace xrpl
-
-#endif

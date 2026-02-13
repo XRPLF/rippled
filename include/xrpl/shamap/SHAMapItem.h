@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_SHAMAPITEM_H_INCLUDED
-#define XRPL_SHAMAP_SHAMAPITEM_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/CountedObject.h>
@@ -43,13 +42,9 @@ private:
     // the only way to properly create one is to first allocate enough memory
     // so we limit this constructor to codepaths that do this right and limit
     // arbitrary construction.
-    SHAMapItem(uint256 const& tag, Slice data)
-        : tag_(tag), size_(static_cast<std::uint32_t>(data.size()))
+    SHAMapItem(uint256 const& tag, Slice data) : tag_(tag), size_(static_cast<std::uint32_t>(data.size()))
     {
-        std::memcpy(
-            reinterpret_cast<std::uint8_t*>(this) + sizeof(*this),
-            data.data(),
-            data.size());
+        std::memcpy(reinterpret_cast<std::uint8_t*>(this) + sizeof(*this), data.data(), data.size());
     }
 
 public:
@@ -141,9 +136,7 @@ intrusive_ptr_release(SHAMapItem const* x)
 inline boost::intrusive_ptr<SHAMapItem>
 make_shamapitem(uint256 const& tag, Slice data)
 {
-    XRPL_ASSERT(
-        data.size() <= megabytes<std::size_t>(16),
-        "xrpl::make_shamapitem : maximum input size");
+    XRPL_ASSERT(data.size() <= megabytes<std::size_t>(16), "xrpl::make_shamapitem : maximum input size");
 
     std::uint8_t* raw = detail::slabber.allocate(data.size());
 
@@ -169,5 +162,3 @@ make_shamapitem(SHAMapItem const& other)
 }
 
 }  // namespace xrpl
-
-#endif

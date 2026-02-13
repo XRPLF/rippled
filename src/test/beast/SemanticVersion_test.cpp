@@ -196,15 +196,9 @@ public:
         checkValues("1.2.3-rc1.debug.asm", 1, 2, 3, ids("rc1", "debug", "asm"));
         checkValues("1.2.3+full", 1, 2, 3, ids(), ids("full"));
         checkValues("1.2.3+full.prod", 1, 2, 3, ids(), ids("full", "prod"));
+        checkValues("1.2.3+full.prod.x86", 1, 2, 3, ids(), ids("full", "prod", "x86"));
         checkValues(
-            "1.2.3+full.prod.x86", 1, 2, 3, ids(), ids("full", "prod", "x86"));
-        checkValues(
-            "1.2.3-rc1.debug.asm+full.prod.x86",
-            1,
-            2,
-            3,
-            ids("rc1", "debug", "asm"),
-            ids("full", "prod", "x86"));
+            "1.2.3-rc1.debug.asm+full.prod.x86", 1, 2, 3, ids("rc1", "debug", "asm"), ids("full", "prod", "x86"));
     }
 
     // makes sure the left version is less than the right

@@ -1,5 +1,4 @@
-#ifndef XRPL_RESOURCE_IMPORT_H_INCLUDED
-#define XRPL_RESOURCE_IMPORT_H_INCLUDED
+#pragma once
 
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/detail/Entry.h>
@@ -32,5 +31,3 @@ struct Import
 
 }  // namespace Resource
 }  // namespace xrpl
-
-#endif

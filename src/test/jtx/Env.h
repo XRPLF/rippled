@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_ENV_H_INCLUDED
-#define XRPL_TEST_JTX_ENV_H_INCLUDED
+#pragma once
 
 #include <test/jtx/AbstractClient.h>
 #include <test/jtx/Account.h>
@@ -32,6 +31,7 @@
 #include <xrpl/protocol/STTx.h>
 
 #include <functional>
+#include <source_location>
 #include <string>
 #include <tuple>
 #include <type_traits>
@@ -42,6 +42,27 @@
 namespace xrpl {
 namespace test {
 namespace jtx {
+
+/** Wrapper that captures std::source_location when implicitly constructed.
+    This solves the problem of combining std::source_location with variadic
+    templates. The std::source_location default argument is evaluated at the
+    call site when the wrapper is constructed via implicit conversion.
+
+    This is a template struct that holds the value directly, allowing implicit
+    conversion without template argument deduction issues via CTAD.
+*/
+template <class T>
+struct WithSourceLocation
+{
+    T value;
+    std::source_location loc;
+
+    // Non-explicit constructor allows implicit conversion.
+    // The default argument for loc is evaluated at the call site.
+    WithSourceLocation(T v, std::source_location l = std::source_location::current()) : value(std::move(v)), loc(l)
+    {
+    }
+};
 
 /** Designate accounts as no-ripple in Env::fund */
 template <class... Args>
@@ -64,8 +85,7 @@ testable_amendments()
             if (auto const f = getRegisteredFeature(s))
                 feats.push_back(*f);
             else
-                Throw<std::runtime_error>(
-                    "Unknown feature: " + s + "  in allAmendments.");
+                Throw<std::runtime_error>("Unknown feature: " + s + "  in allAmendments.");
         }
         return FeatureBitset(feats);
     }();
@@ -79,17 +99,14 @@ class SuiteLogs : public Logs
     beast::unit_test::suite& suite_;
 
 public:
-    explicit SuiteLogs(beast::unit_test::suite& suite)
-        : Logs(beast::severities::kError), suite_(suite)
+    explicit SuiteLogs(beast::unit_test::suite& suite) : Logs(beast::severities::kError), suite_(suite)
     {
     }
 
     ~SuiteLogs() override = default;
 
     std::unique_ptr<beast::Journal::Sink>
-    makeSink(
-        std::string const& partition,
-        beast::severities::Severity threshold) override
+    makeSink(std::string const& partition, beast::severities::Severity threshold) override
     {
         return std::make_unique<SuiteJournalSink>(partition, threshold, suite_);
     }
@@ -173,10 +190,7 @@ public:
     {
         memoize(Account::master);
         Pathfinder::initPathTable();
-        foreachFeature(
-            features, [&appFeats = app().config().features](uint256 const& f) {
-                appFeats.insert(f);
-            });
+        foreachFeature(features, [&appFeats = app().config().features](uint256 const& f) { appFeats.insert(f); });
     }
 
     /**
@@ -192,9 +206,7 @@ public:
      * @param args collection of features
      *
      */
-    Env(beast::unit_test::suite& suite_,
-        FeatureBitset features,
-        std::unique_ptr<Logs> logs = nullptr)
+    Env(beast::unit_test::suite& suite_, FeatureBitset features, std::unique_ptr<Logs> logs = nullptr)
         : Env(suite_, envconfig(), features, std::move(logs))
     {
     }
@@ -215,11 +227,7 @@ public:
         std::unique_ptr<Config> config,
         std::unique_ptr<Logs> logs = nullptr,
         beast::severities::Severity thresh = beast::severities::kError)
-        : Env(suite_,
-              std::move(config),
-              testable_amendments(),
-              std::move(logs),
-              thresh)
+        : Env(suite_, std::move(config), testable_amendments(), std::move(logs), thresh)
     {
     }
 
@@ -232,8 +240,7 @@ public:
      *
      * @param suite_ the current unit_test::suite
      */
-    Env(beast::unit_test::suite& suite_,
-        beast::severities::Severity thresh = beast::severities::kError)
+    Env(beast::unit_test::suite& suite_, beast::severities::Severity thresh = beast::severities::kError)
         : Env(suite_, envconfig(), nullptr, thresh)
     {
     }
@@ -294,9 +301,7 @@ public:
 
     template <class... Args>
     Json::Value
-    rpc(std::unordered_map<std::string, std::string> const& headers,
-        std::string const& cmd,
-        Args&&... args);
+    rpc(std::unordered_map<std::string, std::string> const& headers, std::string const& cmd, Args&&... args);
 
     template <class... Args>
     Json::Value
@@ -346,9 +351,7 @@ public:
         @return true if no error, false if error
     */
     bool
-    close(
-        NetClock::time_point closeTime,
-        std::optional<std::chrono::milliseconds> consensusDelay = std::nullopt);
+    close(NetClock::time_point closeTime, std::optional<std::chrono::milliseconds> consensusDelay = std::nullopt);
 
     /** Close and advance the ledger.
 
@@ -541,13 +544,16 @@ public:
         This calls postconditions.
     */
     virtual void
-    submit(JTx const& jt);
+    submit(JTx const& jt, std::source_location const& loc = std::source_location::current());
 
     /** Use the submit RPC command with a provided JTx object.
         This calls postconditions.
     */
     void
-    sign_and_submit(JTx const& jt, Json::Value params = Json::nullValue);
+    sign_and_submit(
+        JTx const& jt,
+        Json::Value params = Json::nullValue,
+        std::source_location const& loc = std::source_location::current());
 
     /** Check expected postconditions
         of JTx submission.
@@ -556,23 +562,39 @@ public:
     postconditions(
         JTx const& jt,
         ParsedResult const& parsed,
-        Json::Value const& jr = Json::Value());
+        Json::Value const& jr = Json::Value(),
+        std::source_location const& loc = std::source_location::current());
 
     /** Apply funclets and submit. */
     /** @{ */
-    template <class JsonValue, class... FN>
+    template <class... FN>
     Env&
-    apply(JsonValue&& jv, FN const&... fN)
+    apply(WithSourceLocation<Json::Value> jv, FN const&... fN)
     {
-        submit(jt(std::forward<JsonValue>(jv), fN...));
+        submit(jt(std::move(jv.value), fN...), jv.loc);
         return *this;
     }
 
-    template <class JsonValue, class... FN>
+    template <class... FN>
     Env&
-    operator()(JsonValue&& jv, FN const&... fN)
+    apply(WithSourceLocation<JTx> jv, FN const&... fN)
     {
-        return apply(std::forward<JsonValue>(jv), fN...);
+        submit(jt(std::move(jv.value), fN...), jv.loc);
+        return *this;
+    }
+
+    template <class... FN>
+    Env&
+    operator()(WithSourceLocation<Json::Value> jv, FN const&... fN)
+    {
+        return apply(std::move(jv), fN...);
+    }
+
+    template <class... FN>
+    Env&
+    operator()(WithSourceLocation<JTx> jv, FN const&... fN)
+    {
+        return apply(std::move(jv), fN...);
     }
     /** @} */
 
@@ -700,11 +722,7 @@ public:
 
     template <class... Accounts>
     void
-    trust(
-        STAmount const& amount,
-        Account const& to0,
-        Account const& to1,
-        Accounts const&... toN)
+    trust(STAmount const& amount, Account const& to0, Account const& to1, Accounts const&... toN)
     {
         trust(amount, to0);
         trust(amount, to1, toN...);
@@ -777,48 +795,30 @@ Env::rpc(
     std::string const& cmd,
     Args&&... args)
 {
-    return do_rpc(
-        apiVersion,
-        std::vector<std::string>{cmd, std::forward<Args>(args)...},
-        headers);
+    return do_rpc(apiVersion, std::vector<std::string>{cmd, std::forward<Args>(args)...}, headers);
 }
 
 template <class... Args>
 Json::Value
 Env::rpc(unsigned apiVersion, std::string const& cmd, Args&&... args)
 {
-    return rpc(
-        apiVersion,
-        std::unordered_map<std::string, std::string>(),
-        cmd,
-        std::forward<Args>(args)...);
+    return rpc(apiVersion, std::unordered_map<std::string, std::string>(), cmd, std::forward<Args>(args)...);
 }
 
 template <class... Args>
 Json::Value
-Env::rpc(
-    std::unordered_map<std::string, std::string> const& headers,
-    std::string const& cmd,
-    Args&&... args)
+Env::rpc(std::unordered_map<std::string, std::string> const& headers, std::string const& cmd, Args&&... args)
 {
-    return do_rpc(
-        RPC::apiCommandLineVersion,
-        std::vector<std::string>{cmd, std::forward<Args>(args)...},
-        headers);
+    return do_rpc(RPC::apiCommandLineVersion, std::vector<std::string>{cmd, std::forward<Args>(args)...}, headers);
 }
 
 template <class... Args>
 Json::Value
 Env::rpc(std::string const& cmd, Args&&... args)
 {
-    return rpc(
-        std::unordered_map<std::string, std::string>(),
-        cmd,
-        std::forward<Args>(args)...);
+    return rpc(std::unordered_map<std::string, std::string>(), cmd, std::forward<Args>(args)...);
 }
 
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

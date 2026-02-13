@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_APPLYCONTEXT_H_INCLUDED
-#define XRPL_TX_APPLYCONTEXT_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -33,18 +32,9 @@ public:
         XRPAmount baseFee,
         ApplyFlags flags,
         beast::Journal journal = beast::Journal{beast::Journal::getNullSink()})
-        : ApplyContext(
-              registry,
-              base,
-              std::nullopt,
-              tx,
-              preclaimResult,
-              baseFee,
-              flags,
-              journal)
+        : ApplyContext(registry, base, std::nullopt, tx, preclaimResult, baseFee, flags, journal)
     {
-        XRPL_ASSERT(
-            (flags & tapBATCH) == 0, "Batch apply flag should not be set");
+        XRPL_ASSERT((flags & tapBATCH) == 0, "Batch apply flag should not be set");
     }
 
     ServiceRegistry& registry;
@@ -125,10 +115,7 @@ private:
 
     template <std::size_t... Is>
     TER
-    checkInvariantsHelper(
-        TER const result,
-        XRPAmount const fee,
-        std::index_sequence<Is...>);
+    checkInvariantsHelper(TER const result, XRPAmount const fee, std::index_sequence<Is...>);
 
     OpenView& base_;
     ApplyFlags flags_;
@@ -139,5 +126,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

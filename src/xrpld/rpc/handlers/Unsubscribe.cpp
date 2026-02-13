@@ -66,9 +66,7 @@ doUnsubscribe(RPC::JsonContext& context)
             {
                 context.netOps.unsubTransactions(ispSub->getSeq());
             }
-            else if (
-                streamName == "transactions_proposed" ||
-                streamName == "rt_transactions")  // DEPRECATED
+            else if (streamName == "transactions_proposed" || streamName == "rt_transactions")  // DEPRECATED
             {
                 context.netOps.unsubRTTransactions(ispSub->getSeq());
             }
@@ -91,9 +89,8 @@ doUnsubscribe(RPC::JsonContext& context)
         }
     }
 
-    auto accountsProposed = context.params.isMember(jss::accounts_proposed)
-        ? jss::accounts_proposed
-        : jss::rt_accounts;  // DEPRECATED
+    auto accountsProposed =
+        context.params.isMember(jss::accounts_proposed) ? jss::accounts_proposed : jss::rt_accounts;  // DEPRECATED
     if (context.params.isMember(accountsProposed))
     {
         if (!context.params[accountsProposed].isArray())
@@ -135,9 +132,8 @@ doUnsubscribe(RPC::JsonContext& context)
         }
         context.netOps.unsubAccountHistory(ispSub, *id, stopHistoryOnly);
 
-        JLOG(context.j.debug())
-            << "doUnsubscribe: account_history_tx_stream: " << toBase58(*id)
-            << " stopHistoryOnly=" << (stopHistoryOnly ? "true" : "false");
+        JLOG(context.j.debug()) << "doUnsubscribe: account_history_tx_stream: " << toBase58(*id)
+                                << " stopHistoryOnly=" << (stopHistoryOnly ? "true" : "false");
     }
 
     if (context.params.isMember(jss::books))
@@ -147,10 +143,8 @@ doUnsubscribe(RPC::JsonContext& context)
 
         for (auto& jv : context.params[jss::books])
         {
-            if (!jv.isObject() || !jv.isMember(jss::taker_pays) ||
-                !jv.isMember(jss::taker_gets) ||
-                !jv[jss::taker_pays].isObjectOrNull() ||
-                !jv[jss::taker_gets].isObjectOrNull())
+            if (!jv.isObject() || !jv.isMember(jss::taker_pays) || !jv.isMember(jss::taker_gets) ||
+                !jv[jss::taker_pays].isObjectOrNull() || !jv[jss::taker_gets].isObjectOrNull())
             {
                 return rpcError(rpcINVALID_PARAMS);
             }
@@ -162,8 +156,7 @@ doUnsubscribe(RPC::JsonContext& context)
 
             // Parse mandatory currency.
             if (!taker_pays.isMember(jss::currency) ||
-                !to_currency(
-                    book.in.currency, taker_pays[jss::currency].asString()))
+                !to_currency(book.in.currency, taker_pays[jss::currency].asString()))
             {
                 JLOG(context.j.info()) << "Bad taker_pays currency.";
                 return rpcError(rpcSRC_CUR_MALFORMED);
@@ -172,8 +165,7 @@ doUnsubscribe(RPC::JsonContext& context)
             else if (
                 ((taker_pays.isMember(jss::issuer)) &&
                  (!taker_pays[jss::issuer].isString() ||
-                  !to_issuer(
-                      book.in.account, taker_pays[jss::issuer].asString())))
+                  !to_issuer(book.in.account, taker_pays[jss::issuer].asString())))
                 // Don't allow illegal issuers.
                 || !isConsistent(book.in) || noAccount() == book.in.account)
             {
@@ -184,8 +176,7 @@ doUnsubscribe(RPC::JsonContext& context)
 
             // Parse mandatory currency.
             if (!taker_gets.isMember(jss::currency) ||
-                !to_currency(
-                    book.out.currency, taker_gets[jss::currency].asString()))
+                !to_currency(book.out.currency, taker_gets[jss::currency].asString()))
             {
                 JLOG(context.j.info()) << "Bad taker_gets currency.";
 
@@ -195,8 +186,7 @@ doUnsubscribe(RPC::JsonContext& context)
             else if (
                 ((taker_gets.isMember(jss::issuer)) &&
                  (!taker_gets[jss::issuer].isString() ||
-                  !to_issuer(
-                      book.out.account, taker_gets[jss::issuer].asString())))
+                  !to_issuer(book.out.account, taker_gets[jss::issuer].asString())))
                 // Don't allow illegal issuers.
                 || !isConsistent(book.out) || noAccount() == book.out.account)
             {
@@ -214,8 +204,7 @@ doUnsubscribe(RPC::JsonContext& context)
             if (jv.isMember(jss::domain))
             {
                 uint256 domain;
-                if (!jv[jss::domain].isString() ||
-                    !domain.parseHex(jv[jss::domain].asString()))
+                if (!jv[jss::domain].isString() || !domain.parseHex(jv[jss::domain].asString()))
                 {
                     return rpcError(rpcDOMAIN_MALFORMED);
                 }

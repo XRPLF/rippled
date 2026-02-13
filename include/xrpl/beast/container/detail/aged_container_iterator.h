@@ -1,5 +1,4 @@
-#ifndef BEAST_CONTAINER_DETAIL_AGED_CONTAINER_ITERATOR_H_INCLUDED
-#define BEAST_CONTAINER_DETAIL_AGED_CONTAINER_ITERATOR_H_INCLUDED
+#pragma once
 
 #include <iterator>
 #include <type_traits>
@@ -16,14 +15,12 @@ template <bool is_const, class Iterator>
 class aged_container_iterator
 {
 public:
-    using iterator_category =
-        typename std::iterator_traits<Iterator>::iterator_category;
+    using iterator_category = typename std::iterator_traits<Iterator>::iterator_category;
     using value_type = typename std::conditional<
         is_const,
         typename Iterator::value_type::stashed::value_type const,
         typename Iterator::value_type::stashed::value_type>::type;
-    using difference_type =
-        typename std::iterator_traits<Iterator>::difference_type;
+    using difference_type = typename std::iterator_traits<Iterator>::difference_type;
     using pointer = value_type*;
     using reference = value_type&;
     using time_point = typename Iterator::value_type::stashed::time_point;
@@ -38,31 +35,22 @@ public:
         class = typename std::enable_if<
             (other_is_const == false || is_const == true) &&
             std::is_same<Iterator, OtherIterator>::value == false>::type>
-    explicit aged_container_iterator(
-        aged_container_iterator<other_is_const, OtherIterator> const& other)
+    explicit aged_container_iterator(aged_container_iterator<other_is_const, OtherIterator> const& other)
         : m_iter(other.m_iter)
     {
     }
 
     // Disable constructing a const_iterator from a non-const_iterator.
-    template <
-        bool other_is_const,
-        class = typename std::enable_if<
-            other_is_const == false || is_const == true>::type>
-    aged_container_iterator(
-        aged_container_iterator<other_is_const, Iterator> const& other)
-        : m_iter(other.m_iter)
+    template <bool other_is_const, class = typename std::enable_if<other_is_const == false || is_const == true>::type>
+    aged_container_iterator(aged_container_iterator<other_is_const, Iterator> const& other) : m_iter(other.m_iter)
     {
     }
 
     // Disable assigning a const_iterator to a non-const iterator
     template <bool other_is_const, class OtherIterator>
     auto
-    operator=(
-        aged_container_iterator<other_is_const, OtherIterator> const& other) ->
-        typename std::enable_if<
-            other_is_const == false || is_const == true,
-            aged_container_iterator&>::type
+    operator=(aged_container_iterator<other_is_const, OtherIterator> const& other) ->
+        typename std::enable_if<other_is_const == false || is_const == true, aged_container_iterator&>::type
     {
         m_iter = other.m_iter;
         return *this;
@@ -70,16 +58,14 @@ public:
 
     template <bool other_is_const, class OtherIterator>
     bool
-    operator==(aged_container_iterator<other_is_const, OtherIterator> const&
-                   other) const
+    operator==(aged_container_iterator<other_is_const, OtherIterator> const& other) const
     {
         return m_iter == other.m_iter;
     }
 
     template <bool other_is_const, class OtherIterator>
     bool
-    operator!=(aged_container_iterator<other_is_const, OtherIterator> const&
-                   other) const
+    operator!=(aged_container_iterator<other_is_const, OtherIterator> const& other) const
     {
         return m_iter != other.m_iter;
     }
@@ -159,5 +145,3 @@ private:
 }  // namespace detail
 
 }  // namespace beast
-
-#endif

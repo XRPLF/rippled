@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_AMMCORE_H_INCLUDED
-#define XRPL_PROTOCOL_AMMCORE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/AccountID.h>
@@ -18,8 +17,7 @@ std::uint16_t constexpr AUCTION_SLOT_MAX_AUTH_ACCOUNTS = 4;
 std::uint32_t constexpr AUCTION_SLOT_FEE_SCALE_FACTOR = 100000;
 std::uint32_t constexpr AUCTION_SLOT_DISCOUNTED_FEE_FRACTION = 10;
 std::uint32_t constexpr AUCTION_SLOT_MIN_FEE_FRACTION = 25;
-std::uint32_t constexpr AUCTION_SLOT_INTERVAL_DURATION =
-    TOTAL_TIME_SLOT_SECS / AUCTION_SLOT_TIME_INTERVALS;
+std::uint32_t constexpr AUCTION_SLOT_INTERVAL_DURATION = TOTAL_TIME_SLOT_SECS / AUCTION_SLOT_TIME_INTERVALS;
 
 // Votes
 std::uint16_t constexpr VOTE_MAX_SLOTS = 8;
@@ -37,10 +35,7 @@ ammLPTCurrency(Currency const& cur1, Currency const& cur2);
 /** Calculate LPT Issue from AMM asset pair.
  */
 Issue
-ammLPTIssue(
-    Currency const& cur1,
-    Currency const& cur2,
-    AccountID const& ammAccountID);
+ammLPTIssue(Currency const& cur1, Currency const& cur2, AccountID const& ammAccountID);
 
 /** Validate the amount.
  * If validZero is false and amount is beast::zero then invalid amount.
@@ -54,9 +49,7 @@ invalidAMMAmount(
     bool validZero = false);
 
 NotTEC
-invalidAMMAsset(
-    Issue const& issue,
-    std::optional<std::pair<Issue, Issue>> const& pair = std::nullopt);
+invalidAMMAsset(Issue const& issue, std::optional<std::pair<Issue, Issue>> const& pair = std::nullopt);
 
 NotTEC
 invalidAMMAssetPair(
@@ -103,5 +96,3 @@ feeMultHalf(std::uint16_t tfee)
 }
 
 }  // namespace xrpl
-
-#endif  // XRPL_PROTOCOL_AMMCORE_H_INCLUDED

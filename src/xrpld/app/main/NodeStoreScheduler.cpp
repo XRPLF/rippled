@@ -12,9 +12,7 @@ NodeStoreScheduler::scheduleTask(NodeStore::Task& task)
     if (jobQueue_.isStopped())
         return;
 
-    if (!jobQueue_.addJob(jtWRITE, "NodeObject::store", [&task]() {
-            task.performScheduledTask();
-        }))
+    if (!jobQueue_.addJob(jtWRITE, "NObjStore", [&task]() { task.performScheduledTask(); }))
     {
         // Job not added, presumably because we're shutting down.
         // Recover by executing the task synchronously.
@@ -29,10 +27,7 @@ NodeStoreScheduler::onFetch(NodeStore::FetchReport const& report)
         return;
 
     jobQueue_.addLoadEvents(
-        report.fetchType == NodeStore::FetchType::async ? jtNS_ASYNC_READ
-                                                        : jtNS_SYNC_READ,
-        1,
-        report.elapsed);
+        report.fetchType == NodeStore::FetchType::async ? jtNS_ASYNC_READ : jtNS_SYNC_READ, 1, report.elapsed);
 }
 
 void

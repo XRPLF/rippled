@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_RDB_RELATIONALDATABASE_H_INCLUDED
-#define XRPL_APP_RDB_RELATIONALDATABASE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/RangeSet.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -67,16 +66,14 @@ public:
         bool bAdmin;
     };
 
-    using AccountTx =
-        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
+    using AccountTx = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
     using AccountTxs = std::vector<AccountTx>;
     using txnMetaLedgerType = std::tuple<Blob, Blob, std::uint32_t>;
     using MetaTxsList = std::vector<txnMetaLedgerType>;
 
     using LedgerSequence = uint32_t;
     using LedgerHash = uint256;
-    using LedgerSpecifier =
-        std::variant<LedgerRange, LedgerShortcut, LedgerSequence, LedgerHash>;
+    using LedgerSpecifier = std::variant<LedgerRange, LedgerShortcut, LedgerSequence, LedgerHash>;
 
     struct AccountTxArgs
     {
@@ -260,9 +257,7 @@ public:
      * @return True if saving was successful.
      */
     virtual bool
-    saveValidatedLedger(
-        std::shared_ptr<Ledger const> const& ledger,
-        bool current) = 0;
+    saveValidatedLedger(std::shared_ptr<Ledger const> const& ledger, bool current) = 0;
 
     /**
      * @brief getLimitedOldestLedgerInfo Returns the info of the oldest ledger
@@ -419,10 +414,7 @@ public:
      *         default error code is not changed.
      */
     virtual std::variant<AccountTx, TxSearched>
-    getTransaction(
-        uint256 const& id,
-        std::optional<ClosedInterval<uint32_t>> const& range,
-        error_code_i& ec) = 0;
+    getTransaction(uint256 const& id, std::optional<ClosedInterval<uint32_t>> const& range, error_code_i& ec) = 0;
 
     /**
      * @brief getKBUsedAll Returns the amount of space used by all databases.
@@ -464,19 +456,16 @@ template <class T, class C>
 T
 rangeCheckedCast(C c)
 {
-    if ((c > std::numeric_limits<T>::max()) ||
-        (!std::numeric_limits<T>::is_signed && c < 0) ||
-        (std::numeric_limits<T>::is_signed &&
-         std::numeric_limits<C>::is_signed &&
+    if ((c > std::numeric_limits<T>::max()) || (!std::numeric_limits<T>::is_signed && c < 0) ||
+        (std::numeric_limits<T>::is_signed && std::numeric_limits<C>::is_signed &&
          c < std::numeric_limits<T>::lowest()))
     {
         // This should never happen
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::rangeCheckedCast : domain error");
-        JLOG(debugLog().error())
-            << "rangeCheckedCast domain error:"
-            << " value = " << c << " min = " << std::numeric_limits<T>::lowest()
-            << " max: " << std::numeric_limits<T>::max();
+        JLOG(debugLog().error()) << "rangeCheckedCast domain error:"
+                                 << " value = " << c << " min = " << std::numeric_limits<T>::lowest()
+                                 << " max: " << std::numeric_limits<T>::max();
         // LCOV_EXCL_STOP
     }
 
@@ -484,5 +473,3 @@ rangeCheckedCast(C c)
 }
 
 }  // namespace xrpl
-
-#endif

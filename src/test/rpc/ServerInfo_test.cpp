@@ -13,8 +13,7 @@ namespace xrpl {
 namespace test {
 
 namespace validator_data {
-static auto const public_key =
-    "nHBt9fsb4849WmZiCds4r5TXyBeQjqnH5kzPtqgMAQMgi39YZRPa";
+static auto const public_key = "nHBt9fsb4849WmZiCds4r5TXyBeQjqnH5kzPtqgMAQMgi39YZRPa";
 
 static auto const token =
     "eyJ2YWxpZGF0aW9uX3NlY3JldF9rZXkiOiI5ZWQ0NWY4NjYyNDFjYzE4YTI3NDdiNT\n"
@@ -52,8 +51,7 @@ protocol = wss2
 admin = 127.0.0.1
 )rippleConfig");
 
-        p->loadFromString(boost::str(
-            toLoad % validator_data::token % validator_data::public_key));
+        p->loadFromString(boost::str(toLoad % validator_data::token % validator_data::public_key));
 
         setupConfigForUnitTests(*p);
 
@@ -81,16 +79,12 @@ admin = 127.0.0.1
             if (info.isMember(jss::git))
             {
                 auto const& git = info[jss::git];
+                BEAST_EXPECT(git.isMember(jss::hash) || git.isMember(jss::branch));
                 BEAST_EXPECT(
-                    git.isMember(jss::hash) || git.isMember(jss::branch));
-                BEAST_EXPECT(
-                    !git.isMember(jss::hash) ||
-                    (git[jss::hash].isString() &&
-                     git[jss::hash].asString().size() == 40));
+                    !git.isMember(jss::hash) || (git[jss::hash].isString() && git[jss::hash].asString().size() == 40));
                 BEAST_EXPECT(
                     !git.isMember(jss::branch) ||
-                    (git[jss::branch].isString() &&
-                     git[jss::branch].asString().size() != 0));
+                    (git[jss::branch].isString() && git[jss::branch].asString().size() != 0));
             }
         }
 
@@ -98,8 +92,7 @@ admin = 127.0.0.1
             Env env(*this);
 
             // Call NetworkOPs directly and set the admin flag to false.
-            auto const result =
-                env.app().getOPs().getServerInfo(true, false, 0);
+            auto const result = env.app().getOPs().getServerInfo(true, false, 0);
             // Expect that the admin ports are not included in the result.
             auto const& ports = result[jss::ports];
             BEAST_EXPECT(ports.isArray() && ports.size() == 0);
@@ -112,8 +105,7 @@ admin = 127.0.0.1
             auto const& config = env.app().config();
 
             auto const rpc_port = config["port_rpc"].get<unsigned int>("port");
-            auto const grpc_port =
-                config[SECTION_PORT_GRPC].get<unsigned int>("port");
+            auto const grpc_port = config[SECTION_PORT_GRPC].get<unsigned int>("port");
             auto const ws_port = config["port_ws"].get<unsigned int>("port");
             BEAST_EXPECT(grpc_port);
             BEAST_EXPECT(rpc_port);
@@ -123,9 +115,7 @@ admin = 127.0.0.1
             BEAST_EXPECT(!result[jss::result].isMember(jss::error));
             BEAST_EXPECT(result[jss::result][jss::status] == "success");
             BEAST_EXPECT(result[jss::result].isMember(jss::info));
-            BEAST_EXPECT(
-                result[jss::result][jss::info][jss::pubkey_validator] ==
-                validator_data::public_key);
+            BEAST_EXPECT(result[jss::result][jss::info][jss::pubkey_validator] == validator_data::public_key);
 
             auto const& ports = result[jss::result][jss::info][jss::ports];
             BEAST_EXPECT(ports.isArray() && ports.size() == 3);

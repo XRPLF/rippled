@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_CANCELCHECK_H_INCLUDED
-#define XRPL_TX_CANCELCHECK_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
@@ -27,5 +26,3 @@ public:
 using CheckCancel = CancelCheck;
 
 }  // namespace xrpl
-
-#endif

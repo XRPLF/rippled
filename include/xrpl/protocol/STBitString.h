@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STBITSTRING_H_INCLUDED
-#define XRPL_PROTOCOL_STBITSTRING_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -79,14 +78,12 @@ inline STBitString<Bits>::STBitString(value_type const& v) : value_(v)
 }
 
 template <int Bits>
-inline STBitString<Bits>::STBitString(SField const& n, value_type const& v)
-    : STBase(n), value_(v)
+inline STBitString<Bits>::STBitString(SField const& n, value_type const& v) : STBase(n), value_(v)
 {
 }
 
 template <int Bits>
-inline STBitString<Bits>::STBitString(SerialIter& sit, SField const& name)
-    : STBitString(name, sit.getBitString<Bits>())
+inline STBitString<Bits>::STBitString(SerialIter& sit, SField const& name) : STBitString(name, sit.getBitString<Bits>())
 {
 }
 
@@ -151,11 +148,8 @@ template <int Bits>
 void
 STBitString<Bits>::add(Serializer& s) const
 {
-    XRPL_ASSERT(
-        getFName().isBinary(), "xrpl::STBitString::add : field is binary");
-    XRPL_ASSERT(
-        getFName().fieldType == getSType(),
-        "xrpl::STBitString::add : field type match");
+    XRPL_ASSERT(getFName().isBinary(), "xrpl::STBitString::add : field is binary");
+    XRPL_ASSERT(getFName().fieldType == getSType(), "xrpl::STBitString::add : field type match");
     s.addBitString<Bits>(value_);
 }
 
@@ -188,5 +182,3 @@ STBitString<Bits>::isDefault() const
 }
 
 }  // namespace xrpl
-
-#endif

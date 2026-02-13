@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_PLAINWSPEER_H_INCLUDED
-#define XRPL_SERVER_PLAINWSPEER_H_INCLUDED
+#pragma once
 
 #include <xrpl/server/detail/BaseWSPeer.h>
 
@@ -59,5 +58,3 @@ PlainWSPeer<Handler>::PlainWSPeer(
 }
 
 }  // namespace xrpl
-
-#endif

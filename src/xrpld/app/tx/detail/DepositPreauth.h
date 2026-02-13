@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_DEPOSIT_PREAUTH_H_INCLUDED
-#define XRPL_TX_DEPOSIT_PREAUTH_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
@@ -28,12 +27,7 @@ public:
 
     // Interface used by DeleteAccount
     static TER
-    removeFromLedger(
-        ApplyView& view,
-        uint256 const& delIndex,
-        beast::Journal j);
+    removeFromLedger(ApplyView& view, uint256 const& delIndex, beast::Journal j);
 };
 
 }  // namespace xrpl
-
-#endif

@@ -1,37 +1,29 @@
-#ifndef XRPL_LEDGER_READVIEWFWDRANGEINL_H_INCLUDED
-#define XRPL_LEDGER_READVIEWFWDRANGEINL_H_INCLUDED
+#pragma once
 
 namespace xrpl {
 namespace detail {
 
 template <class ValueType>
 ReadViewFwdRange<ValueType>::iterator::iterator(iterator const& other)
-    : view_(other.view_)
-    , impl_(other.impl_ ? other.impl_->copy() : nullptr)
-    , cache_(other.cache_)
+    : view_(other.view_), impl_(other.impl_ ? other.impl_->copy() : nullptr), cache_(other.cache_)
 {
 }
 
 template <class ValueType>
 ReadViewFwdRange<ValueType>::iterator::iterator(iterator&& other) noexcept
-    : view_(other.view_)
-    , impl_(std::move(other.impl_))
-    , cache_(std::move(other.cache_))
+    : view_(other.view_), impl_(std::move(other.impl_)), cache_(std::move(other.cache_))
 {
 }
 
 template <class ValueType>
-ReadViewFwdRange<ValueType>::iterator::iterator(
-    ReadView const* view,
-    std::unique_ptr<iter_base> impl)
+ReadViewFwdRange<ValueType>::iterator::iterator(ReadView const* view, std::unique_ptr<iter_base> impl)
     : view_(view), impl_(std::move(impl))
 {
 }
 
 template <class ValueType>
 auto
-ReadViewFwdRange<ValueType>::iterator::operator=(iterator const& other)
-    -> iterator&
+ReadViewFwdRange<ValueType>::iterator::operator=(iterator const& other) -> iterator&
 {
     if (this != &other)
     {
@@ -44,8 +36,7 @@ ReadViewFwdRange<ValueType>::iterator::operator=(iterator const& other)
 
 template <class ValueType>
 auto
-ReadViewFwdRange<ValueType>::iterator::operator=(iterator&& other) noexcept
-    -> iterator&
+ReadViewFwdRange<ValueType>::iterator::operator=(iterator&& other) noexcept -> iterator&
 {
     if (this != &other)
     {
@@ -116,5 +107,3 @@ ReadViewFwdRange<ValueType>::iterator::operator++(int) -> iterator
 
 }  // namespace detail
 }  // namespace xrpl
-
-#endif

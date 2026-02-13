@@ -3,8 +3,7 @@
 namespace xrpl {
 namespace detail {
 
-ApplyViewBase::ApplyViewBase(ReadView const* base, ApplyFlags flags)
-    : flags_(flags), base_(base)
+ApplyViewBase::ApplyViewBase(ReadView const* base, ApplyFlags flags) : flags_(flags), base_(base)
 {
 }
 
@@ -41,8 +40,7 @@ ApplyViewBase::exists(Keylet const& k) const
 }
 
 auto
-ApplyViewBase::succ(key_type const& key, std::optional<key_type> const& last)
-    const -> std::optional<key_type>
+ApplyViewBase::succ(key_type const& key, std::optional<key_type> const& last) const -> std::optional<key_type>
 {
     return items_.succ(*base_, key, last);
 }
@@ -66,8 +64,7 @@ ApplyViewBase::slesEnd() const -> std::unique_ptr<sles_type::iter_base>
 }
 
 auto
-ApplyViewBase::slesUpperBound(uint256 const& key) const
-    -> std::unique_ptr<sles_type::iter_base>
+ApplyViewBase::slesUpperBound(uint256 const& key) const -> std::unique_ptr<sles_type::iter_base>
 {
     return base_->slesUpperBound(key);
 }

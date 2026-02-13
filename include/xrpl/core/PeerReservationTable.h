@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_PEER_RESERVATION_TABLE_H_INCLUDED
-#define XRPL_OVERLAY_PEER_RESERVATION_TABLE_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/beast/hash/uhash.h>
@@ -56,8 +55,7 @@ struct KeyEqual final
 class PeerReservationTable final
 {
 public:
-    explicit PeerReservationTable(
-        beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
+    explicit PeerReservationTable(beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
         : journal_(journal)
     {
     }
@@ -98,5 +96,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

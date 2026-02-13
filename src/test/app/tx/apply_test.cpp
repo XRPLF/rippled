@@ -36,14 +36,10 @@ public:
         STTx const tx = *std::make_shared<STTx const>(std::ref(sitTrans));
 
         {
-            test::jtx::Env fully_canonical(
-                *this, test::jtx::testable_amendments());
+            test::jtx::Env fully_canonical(*this, test::jtx::testable_amendments());
 
-            Validity valid = checkValidity(
-                                 fully_canonical.app().getHashRouter(),
-                                 tx,
-                                 fully_canonical.current()->rules())
-                                 .first;
+            Validity valid =
+                checkValidity(fully_canonical.app().getHashRouter(), tx, fully_canonical.current()->rules()).first;
             if (valid == Validity::Valid)
                 fail("Non-Fully canonical signature was permitted");
         }

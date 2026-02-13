@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_BLOB_H_INCLUDED
-#define XRPL_BASICS_BLOB_H_INCLUDED
+#pragma once
 
 #include <vector>
 
@@ -11,5 +10,3 @@ namespace xrpl {
 using Blob = std::vector<unsigned char>;
 
 }  // namespace xrpl
-
-#endif

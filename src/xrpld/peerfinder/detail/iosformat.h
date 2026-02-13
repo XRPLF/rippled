@@ -1,5 +1,4 @@
-#ifndef XRPL_PEERFINDER_IOSFORMAT_H_INCLUDED
-#define XRPL_PEERFINDER_IOSFORMAT_H_INCLUDED
+#pragma once
 
 #include <ostream>
 #include <sstream>
@@ -30,10 +29,7 @@ struct leftw
 /** Produce a section heading and fill the rest of the line with dashes. */
 template <class CharT, class Traits, class Allocator>
 std::basic_string<CharT, Traits, Allocator>
-heading(
-    std::basic_string<CharT, Traits, Allocator> title,
-    int width = 80,
-    CharT fill = CharT('-'))
+heading(std::basic_string<CharT, Traits, Allocator> title, int width = 80, CharT fill = CharT('-'))
 {
     title.reserve(width);
     title.push_back(CharT(' '));
@@ -45,8 +41,7 @@ heading(
 struct divider
 {
     using CharT = char;
-    explicit divider(int width_ = 80, CharT fill_ = CharT('-'))
-        : width(width_), fill(fill_)
+    explicit divider(int width_ = 80, CharT fill_ = CharT('-')) : width(width_), fill(fill_)
     {
     }
     int const width;
@@ -63,8 +58,7 @@ struct divider
 /** Creates a padded field with an optional fill character. */
 struct fpad
 {
-    explicit fpad(int width_, int pad_ = 0, char fill_ = ' ')
-        : width(width_ + pad_), fill(fill_)
+    explicit fpad(int width_, int pad_ = 0, char fill_ = ' ') : width(width_ + pad_), fill(fill_)
     {
     }
     int const width;
@@ -95,10 +89,7 @@ to_string(T const& t)
 
 /** Justifies a field at the specified width. */
 /** @{ */
-template <
-    class CharT,
-    class Traits = std::char_traits<CharT>,
-    class Allocator = std::allocator<CharT>>
+template <class CharT, class Traits = std::char_traits<CharT>, class Allocator = std::allocator<CharT>>
 class field_t
 {
 public:
@@ -113,24 +104,20 @@ public:
     bool const right;
     template <class CharT2, class Traits2>
     friend std::basic_ostream<CharT2, Traits2>&
-    operator<<(
-        std::basic_ostream<CharT2, Traits2>& os,
-        field_t<CharT, Traits, Allocator> const& f)
+    operator<<(std::basic_ostream<CharT2, Traits2>& os, field_t<CharT, Traits, Allocator> const& f)
     {
         std::size_t const length(f.text.length());
         if (f.right)
         {
             if (length < f.width)
-                os << std::basic_string<CharT2, Traits2>(
-                    f.width - length, CharT2(' '));
+                os << std::basic_string<CharT2, Traits2>(f.width - length, CharT2(' '));
             os << f.text;
         }
         else
         {
             os << f.text;
             if (length < f.width)
-                os << std::basic_string<CharT2, Traits2>(
-                    f.width - length, CharT2(' '));
+                os << std::basic_string<CharT2, Traits2>(f.width - length, CharT2(' '));
         }
         if (f.pad != 0)
             os << string_t(f.pad, CharT(' '));
@@ -140,11 +127,7 @@ public:
 
 template <class CharT, class Traits, class Allocator>
 field_t<CharT, Traits, Allocator>
-field(
-    std::basic_string<CharT, Traits, Allocator> const& text,
-    int width = 8,
-    int pad = 0,
-    bool right = false)
+field(std::basic_string<CharT, Traits, Allocator> const& text, int width = 8, int pad = 0, bool right = false)
 {
     return field_t<CharT, Traits, Allocator>(text, width, pad, right);
 }
@@ -154,12 +137,7 @@ field_t<CharT>
 field(CharT const* text, int width = 8, int pad = 0, bool right = false)
 {
     return field_t<CharT, std::char_traits<CharT>, std::allocator<CharT>>(
-        std::
-            basic_string<CharT, std::char_traits<CharT>, std::allocator<CharT>>(
-                text),
-        width,
-        pad,
-        right);
+        std::basic_string<CharT, std::char_traits<CharT>, std::allocator<CharT>>(text), width, pad, right);
 }
 
 template <typename T>
@@ -172,10 +150,7 @@ field(T const& t, int width = 8, int pad = 0, bool right = false)
 
 template <class CharT, class Traits, class Allocator>
 field_t<CharT, Traits, Allocator>
-rField(
-    std::basic_string<CharT, Traits, Allocator> const& text,
-    int width = 8,
-    int pad = 0)
+rField(std::basic_string<CharT, Traits, Allocator> const& text, int width = 8, int pad = 0)
 {
     return field_t<CharT, Traits, Allocator>(text, width, pad, true);
 }
@@ -185,12 +160,7 @@ field_t<CharT>
 rField(CharT const* text, int width = 8, int pad = 0)
 {
     return field_t<CharT, std::char_traits<CharT>, std::allocator<CharT>>(
-        std::
-            basic_string<CharT, std::char_traits<CharT>, std::allocator<CharT>>(
-                text),
-        width,
-        pad,
-        true);
+        std::basic_string<CharT, std::char_traits<CharT>, std::allocator<CharT>>(text), width, pad, true);
 }
 
 template <typename T>
@@ -203,5 +173,3 @@ rField(T const& t, int width = 8, int pad = 0)
 /** @} */
 
 }  // namespace beast
-
-#endif

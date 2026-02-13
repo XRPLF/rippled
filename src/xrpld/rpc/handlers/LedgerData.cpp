@@ -65,8 +65,7 @@ doLedgerData(RPC::JsonContext& context)
     if (!isMarker)
     {
         // Return base ledger data on first query
-        jvResult[jss::ledger] = getJson(LedgerFill(
-            *lpLedger, &context, isBinary ? LedgerFill::Options::binary : 0));
+        jvResult[jss::ledger] = getJson(LedgerFill(*lpLedger, &context, isBinary ? LedgerFill::Options::binary : 0));
     }
 
     auto [rpcStatus, type] = RPC::chooseLedgerEntryType(params);
@@ -104,8 +103,7 @@ doLedgerData(RPC::JsonContext& context)
             }
             else
             {
-                Json::Value& entry =
-                    nodes.append(sle->getJson(JsonOptions::none));
+                Json::Value& entry = nodes.append(sle->getJson(JsonOptions::none));
                 entry[jss::index] = to_string(sle->key());
             }
         }
@@ -115,8 +113,7 @@ doLedgerData(RPC::JsonContext& context)
 }
 
 std::pair<org::xrpl::rpc::v1::GetLedgerDataResponse, grpc::Status>
-doLedgerDataGrpc(
-    RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& context)
+doLedgerDataGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& context)
 {
     org::xrpl::rpc::v1::GetLedgerDataRequest& request = context.params;
     org::xrpl::rpc::v1::GetLedgerDataResponse response;
@@ -128,13 +125,11 @@ doLedgerDataGrpc(
         grpc::Status errorStatus;
         if (status.toErrorCode() == rpcINVALID_PARAMS)
         {
-            errorStatus = grpc::Status(
-                grpc::StatusCode::INVALID_ARGUMENT, status.message());
+            errorStatus = grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, status.message());
         }
         else
         {
-            errorStatus =
-                grpc::Status(grpc::StatusCode::NOT_FOUND, status.message());
+            errorStatus = grpc::Status(grpc::StatusCode::NOT_FOUND, status.message());
         }
         return {response, errorStatus};
     }
@@ -146,8 +141,7 @@ doLedgerDataGrpc(
     }
     else if (request.marker().size() != 0)
     {
-        grpc::Status errorStatus{
-            grpc::StatusCode::INVALID_ARGUMENT, "marker malformed"};
+        grpc::Status errorStatus{grpc::StatusCode::INVALID_ARGUMENT, "marker malformed"};
         return {response, errorStatus};
     }
 
@@ -157,15 +151,10 @@ doLedgerDataGrpc(
         auto const key = uint256::fromVoidChecked(request.end_marker());
 
         if (!key)
-            return {
-                response,
-                {grpc::StatusCode::INVALID_ARGUMENT, "end marker malformed"}};
+            return {response, {grpc::StatusCode::INVALID_ARGUMENT, "end marker malformed"}};
 
         if (*key < startKey)
-            return {
-                response,
-                {grpc::StatusCode::INVALID_ARGUMENT,
-                 "end marker out of range"}};
+            return {response, {grpc::StatusCode::INVALID_ARGUMENT, "end marker out of range"}};
 
         e = ledger->sles.upper_bound(*key);
     }

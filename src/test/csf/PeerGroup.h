@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_PEERGROUP_H_INCLUDED
-#define XRPL_TEST_CSF_PEERGROUP_H_INCLUDED
+#pragma once
 
 #include <test/csf/Peer.h>
 #include <test/csf/random.h>
@@ -86,9 +85,7 @@ public:
     bool
     contains(PeerID id)
     {
-        return std::find_if(peers_.begin(), peers_.end(), [id](Peer const* p) {
-                   return p->id == id;
-               }) != peers_.end();
+        return std::find_if(peers_.begin(), peers_.end(), [id](Peer const* p) { return p->id == id; }) != peers_.end();
     }
 
     std::size_t
@@ -217,11 +214,7 @@ public:
     {
         PeerGroup res;
         std::set_union(
-            a.peers_.begin(),
-            a.peers_.end(),
-            b.peers_.begin(),
-            b.peers_.end(),
-            std::back_inserter(res.peers_));
+            a.peers_.begin(), a.peers_.end(), b.peers_.begin(), b.peers_.end(), std::back_inserter(res.peers_));
         return res;
     }
 
@@ -232,11 +225,7 @@ public:
         PeerGroup res;
 
         std::set_difference(
-            a.peers_.begin(),
-            a.peers_.end(),
-            b.peers_.begin(),
-            b.peers_.end(),
-            std::back_inserter(res.peers_));
+            a.peers_.begin(), a.peers_.end(), b.peers_.begin(), b.peers_.end(), std::back_inserter(res.peers_));
 
         return res;
     }
@@ -313,8 +302,7 @@ randomRankedTrust(
     RandomNumberDistribution sizeDist,
     Generator& g)
 {
-    std::vector<PeerGroup> const groups =
-        randomRankedGroups(peers, ranks, numGroups, sizeDist, g);
+    std::vector<PeerGroup> const groups = randomRankedGroups(peers, ranks, numGroups, sizeDist, g);
 
     std::uniform_int_distribution<int> u(0, groups.size() - 1);
     for (auto& peer : peers)
@@ -338,8 +326,7 @@ randomRankedConnect(
     Generator& g,
     SimDuration delay)
 {
-    std::vector<PeerGroup> const groups =
-        randomRankedGroups(peers, ranks, numGroups, sizeDist, g);
+    std::vector<PeerGroup> const groups = randomRankedGroups(peers, ranks, numGroups, sizeDist, g);
 
     std::uniform_int_distribution<int> u(0, groups.size() - 1);
     for (auto& peer : peers)
@@ -352,4 +339,3 @@ randomRankedConnect(
 }  // namespace csf
 }  // namespace test
 }  // namespace xrpl
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_DEPOSIT_H_INCLUDED
-#define XRPL_TEST_JTX_DEPOSIT_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -48,14 +47,10 @@ struct AuthorizeCredentials
 };
 
 Json::Value
-authCredentials(
-    jtx::Account const& account,
-    std::vector<AuthorizeCredentials> const& auth);
+authCredentials(jtx::Account const& account, std::vector<AuthorizeCredentials> const& auth);
 
 Json::Value
-unauthCredentials(
-    jtx::Account const& account,
-    std::vector<AuthorizeCredentials> const& auth);
+unauthCredentials(jtx::Account const& account, std::vector<AuthorizeCredentials> const& auth);
 
 }  // namespace deposit
 
@@ -63,5 +58,3 @@ unauthCredentials(
 
 }  // namespace test
 }  // namespace xrpl
-
-#endif

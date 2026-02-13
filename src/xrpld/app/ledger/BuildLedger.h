@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_BUILD_LEDGER_H_INCLUDED
-#define XRPL_APP_LEDGER_BUILD_LEDGER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -51,11 +50,6 @@ buildLedger(
     @return The newly built ledger
  */
 std::shared_ptr<Ledger>
-buildLedger(
-    LedgerReplay const& replayData,
-    ApplyFlags applyFlags,
-    Application& app,
-    beast::Journal j);
+buildLedger(LedgerReplay const& replayData, ApplyFlags applyFlags, Application& app, beast::Journal j);
 
 }  // namespace xrpl
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_MANIFEST_H_INCLUDED
-#define XRPL_APP_MISC_MANIFEST_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -86,11 +85,7 @@ struct Manifest
         std::optional<PublicKey> const& signingKey_,
         std::uint32_t seq,
         std::string const& domain_)
-        : serialized(serialized_)
-        , masterKey(masterKey_)
-        , signingKey(signingKey_)
-        , sequence(seq)
-        , domain(domain_)
+        : serialized(serialized_), masterKey(masterKey_), signingKey(signingKey_), sequence(seq), domain(domain_)
     {
     }
 
@@ -146,21 +141,14 @@ std::optional<Manifest>
 deserializeManifest(Slice s, beast::Journal journal);
 
 inline std::optional<Manifest>
-deserializeManifest(
-    std::string const& s,
-    beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
+deserializeManifest(std::string const& s, beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
 {
     return deserializeManifest(makeSlice(s), journal);
 }
 
-template <
-    class T,
-    class = std::enable_if_t<
-        std::is_same<T, char>::value || std::is_same<T, unsigned char>::value>>
+template <class T, class = std::enable_if_t<std::is_same<T, char>::value || std::is_same<T, unsigned char>::value>>
 std::optional<Manifest>
-deserializeManifest(
-    std::vector<T> const& v,
-    beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
+deserializeManifest(std::vector<T> const& v, beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
 {
     return deserializeManifest(makeSlice(v), journal);
 }
@@ -171,9 +159,8 @@ operator==(Manifest const& lhs, Manifest const& rhs)
 {
     // In theory, comparing the two serialized strings should be
     // sufficient.
-    return lhs.sequence == rhs.sequence && lhs.masterKey == rhs.masterKey &&
-        lhs.signingKey == rhs.signingKey && lhs.domain == rhs.domain &&
-        lhs.serialized == rhs.serialized;
+    return lhs.sequence == rhs.sequence && lhs.masterKey == rhs.masterKey && lhs.signingKey == rhs.signingKey &&
+        lhs.domain == rhs.domain && lhs.serialized == rhs.serialized;
 }
 
 inline bool
@@ -248,9 +235,7 @@ private:
     std::atomic<std::uint32_t> seq_{0};
 
 public:
-    explicit ManifestCache(
-        beast::Journal j = beast::Journal(beast::Journal::getNullSink()))
-        : j_(j)
+    explicit ManifestCache(beast::Journal j = beast::Journal(beast::Journal::getNullSink())) : j_(j)
     {
     }
 
@@ -383,10 +368,7 @@ public:
         May be called concurrently
     */
     void
-    save(
-        DatabaseCon& dbCon,
-        std::string const& dbTable,
-        std::function<bool(PublicKey const&)> const& isTrusted);
+    save(DatabaseCon& dbCon, std::string const& dbTable, std::function<bool(PublicKey const&)> const& isTrusted);
 
     /** Invokes the callback once for every populated manifest.
 
@@ -444,5 +426,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

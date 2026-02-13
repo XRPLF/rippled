@@ -1,5 +1,5 @@
-#ifndef XRPL_STARTUPTYPE_H
-#define XRPL_STARTUPTYPE_H
+#pragma once
+
 #include <iosfwd>
 #include <type_traits>
 
@@ -14,5 +14,3 @@ operator<<(std::ostream& os, StartUpType const& type)
 }
 
 }  // namespace xrpl
-
-#endif  // XRPL_STARTUPTYPE_H

@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_CANONICALTXSET_H_INCLUDED
-#define XRPL_APP_MISC_CANONICALTXSET_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
@@ -86,8 +85,7 @@ private:
     accountKey(AccountID const& account);
 
 public:
-    using const_iterator =
-        std::map<Key, std::shared_ptr<STTx const>>::const_iterator;
+    using const_iterator = std::map<Key, std::shared_ptr<STTx const>>::const_iterator;
 
 public:
     explicit CanonicalTXSet(LedgerHash const& saltHash) : salt_(saltHash)
@@ -157,5 +155,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

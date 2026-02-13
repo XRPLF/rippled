@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STEXCHANGE_H_INCLUDED
-#define XRPL_PROTOCOL_STEXCHANGE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Buffer.h>
@@ -124,8 +123,7 @@ template <class U, class T>
 void
 set(STObject& st, TypedField<U> const& f, T&& t)
 {
-    st.set(STExchange<U, typename std::decay<T>::type>::set(
-        f, std::forward<T>(t)));
+    st.set(STExchange<U, typename std::decay<T>::type>::set(f, std::forward<T>(t)));
 }
 
 /** Set a blob field using an init function. */
@@ -139,10 +137,7 @@ set(STObject& st, TypedField<STBlob> const& f, std::size_t size, Init&& init)
 /** Set a blob field from data. */
 template <class = void>
 void
-set(STObject& st,
-    TypedField<STBlob> const& f,
-    void const* data,
-    std::size_t size)
+set(STObject& st, TypedField<STBlob> const& f, void const* data, std::size_t size)
 {
     st.set(std::make_unique<STBlob>(f, data, size));
 }
@@ -156,5 +151,3 @@ erase(STObject& st, TypedField<U> const& f)
 }
 
 }  // namespace xrpl
-
-#endif

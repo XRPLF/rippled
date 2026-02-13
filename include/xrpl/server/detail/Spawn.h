@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_SPAWN_H_INCLUDED
-#define XRPL_SERVER_SPAWN_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 
@@ -13,9 +12,7 @@ namespace xrpl::util {
 namespace impl {
 
 template <typename T>
-concept IsStrand = std::same_as<
-    std::decay_t<T>,
-    boost::asio::strand<typename std::decay_t<T>::inner_executor_type>>;
+concept IsStrand = std::same_as<std::decay_t<T>, boost::asio::strand<typename std::decay_t<T>::inner_executor_type>>;
 
 /**
  * @brief A completion handler that restores `boost::asio::spawn`'s behaviour
@@ -69,21 +66,15 @@ spawn(Ctx&& ctx, F&& func)
 {
     if constexpr (impl::IsStrand<Ctx>)
     {
-        boost::asio::spawn(
-            std::forward<Ctx>(ctx),
-            std::forward<F>(func),
-            impl::kPROPAGATE_EXCEPTIONS);
+        boost::asio::spawn(std::forward<Ctx>(ctx), std::forward<F>(func), impl::kPROPAGATE_EXCEPTIONS);
     }
     else
     {
         boost::asio::spawn(
-            boost::asio::make_strand(
-                boost::asio::get_associated_executor(std::forward<Ctx>(ctx))),
+            boost::asio::make_strand(boost::asio::get_associated_executor(std::forward<Ctx>(ctx))),
             std::forward<F>(func),
             impl::kPROPAGATE_EXCEPTIONS);
     }
 }
 
 }  // namespace xrpl::util
-
-#endif

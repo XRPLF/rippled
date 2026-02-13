@@ -1,5 +1,4 @@
-#ifndef XRPL_CORE_NETWORKIDSERVICE_H_INCLUDED
-#define XRPL_CORE_NETWORKIDSERVICE_H_INCLUDED
+#pragma once
 
 #include <cstdint>
 
@@ -32,5 +31,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_LEDGERHISTORY_H_INCLUDED
-#define XRPL_APP_LEDGER_LEDGERHISTORY_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/main/Application.h>
@@ -17,9 +16,7 @@ namespace xrpl {
 class LedgerHistory
 {
 public:
-    LedgerHistory(
-        beast::insight::Collector::ptr const& collector,
-        Application& app);
+    LedgerHistory(beast::insight::Collector::ptr const& collector, Application& app);
 
     /** Track a ledger
         @return `true` if the ledger was already tracked
@@ -62,16 +59,11 @@ public:
 
     /** Report that we have locally built a particular ledger */
     void
-    builtLedger(
-        std::shared_ptr<Ledger const> const&,
-        uint256 const& consensusHash,
-        Json::Value);
+    builtLedger(std::shared_ptr<Ledger const> const&, uint256 const& consensusHash, Json::Value);
 
     /** Report that we have validated a particular ledger */
     void
-    validatedLedger(
-        std::shared_ptr<Ledger const> const&,
-        std::optional<uint256> const& consensusHash);
+    validatedLedger(std::shared_ptr<Ledger const> const&, std::optional<uint256> const& consensusHash);
 
     /** Repair a hash to index mapping
         @param ledgerIndex The index whose mapping is to be repaired
@@ -136,5 +128,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

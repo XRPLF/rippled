@@ -10,6 +10,7 @@
 #include <xrpld/rpc/Status.h>
 
 #include <xrpl/basics/ToString.h>
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -69,26 +70,22 @@ doTxHelp(RPC::Context& context, TxArgs args)
         if (args.ledgerRange->second - args.ledgerRange->first > MAX_RANGE)
             return {result, rpcEXCESSIVE_LGR_RANGE};
 
-        range = ClosedInterval<uint32_t>(
-            args.ledgerRange->first, args.ledgerRange->second);
+        range = ClosedInterval<uint32_t>(args.ledgerRange->first, args.ledgerRange->second);
     }
 
     auto ec{rpcSUCCESS};
 
-    using TxPair =
-        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
+    using TxPair = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
 
     result.searchedAll = TxSearched::unknown;
     std::variant<TxPair, TxSearched> v;
 
     if (args.ctid)
     {
-        args.hash = context.app.getLedgerMaster().txnIdFromIndex(
-            args.ctid->first, args.ctid->second);
+        args.hash = context.app.getLedgerMaster().txnIdFromIndex(args.ctid->first, args.ctid->second);
 
         if (args.hash)
-            range =
-                ClosedInterval<uint32_t>(args.ctid->first, args.ctid->second);
+            range = ClosedInterval<uint32_t>(args.ctid->first, args.ctid->second);
     }
 
     if (!args.hash)
@@ -127,8 +124,7 @@ doTxHelp(RPC::Context& context, TxArgs args)
         return {result, rpcSUCCESS};
     }
 
-    std::shared_ptr<Ledger const> ledger =
-        context.ledgerMaster.getLedgerBySeq(txn->getLedger());
+    std::shared_ptr<Ledger const> ledger = context.ledgerMaster.getLedgerBySeq(txn->getLedger());
 
     if (ledger && !ledger->open())
         result.ledgerHash = ledger->header().hash;
@@ -143,23 +139,19 @@ doTxHelp(RPC::Context& context, TxArgs args)
         {
             result.meta = meta;
         }
-        result.validated = isValidated(
-            context.ledgerMaster, ledger->header().seq, ledger->header().hash);
+        result.validated = isValidated(context.ledgerMaster, ledger->header().seq, ledger->header().hash);
         if (result.validated)
-            result.closeTime =
-                context.ledgerMaster.getCloseTimeBySeq(txn->getLedger());
+            result.closeTime = context.ledgerMaster.getCloseTimeBySeq(txn->getLedger());
 
         // compute outgoing CTID
         if (meta->getAsObject().isFieldPresent(sfTransactionIndex))
         {
             uint32_t lgrSeq = ledger->header().seq;
-            uint32_t txnIdx =
-                meta->getAsObject().getFieldU32(sfTransactionIndex);
-            uint32_t netID = context.app.config().NETWORK_ID;
+            uint32_t txnIdx = meta->getAsObject().getFieldU32(sfTransactionIndex);
+            uint32_t netID = context.app.getNetworkIDService().getNetworkID();
 
             if (txnIdx <= 0xFFFFU && netID < 0xFFFFU && lgrSeq < 0x0FFF'FFFFUL)
-                result.ctid =
-                    RPC::encodeCTID(lgrSeq, (uint32_t)txnIdx, (uint32_t)netID);
+                result.ctid = RPC::encodeCTID(lgrSeq, (uint32_t)txnIdx, (uint32_t)netID);
         }
     }
 
@@ -167,10 +159,7 @@ doTxHelp(RPC::Context& context, TxArgs args)
 }
 
 Json::Value
-populateJsonResponse(
-    std::pair<TxResult, RPC::Status> const& res,
-    TxArgs const& args,
-    RPC::JsonContext const& context)
+populateJsonResponse(std::pair<TxResult, RPC::Status> const& res, TxArgs const& args, RPC::JsonContext const& context)
 {
     Json::Value response;
     RPC::Status const& error = res.second;
@@ -178,12 +167,10 @@ populateJsonResponse(
     // handle errors
     if (error.toErrorCode() != rpcSUCCESS)
     {
-        if (error.toErrorCode() == rpcTXN_NOT_FOUND &&
-            result.searchedAll != TxSearched::unknown)
+        if (error.toErrorCode() == rpcTXN_NOT_FOUND && result.searchedAll != TxSearched::unknown)
         {
             response = Json::Value(Json::objectValue);
-            response[jss::searched_all] =
-                (result.searchedAll == TxSearched::all);
+            response[jss::searched_all] = (result.searchedAll == TxSearched::all);
             error.inject(response);
         }
         else
@@ -197,17 +184,13 @@ populateJsonResponse(
         auto const& sttx = result.txn->getSTransaction();
         if (context.apiVersion > 1)
         {
-            constexpr auto optionsJson =
-                JsonOptions::include_date | JsonOptions::disable_API_prior_V2;
+            constexpr auto optionsJson = JsonOptions::include_date | JsonOptions::disable_API_prior_V2;
             if (args.binary)
                 response[jss::tx_blob] = result.txn->getJson(optionsJson, true);
             else
             {
                 response[jss::tx_json] = result.txn->getJson(optionsJson);
-                RPC::insertDeliverMax(
-                    response[jss::tx_json],
-                    sttx->getTxnType(),
-                    context.apiVersion);
+                RPC::insertDeliverMax(response[jss::tx_json], sttx->getTxnType(), context.apiVersion);
             }
 
             // Note, result.ledgerHash is only set in a closed or validated
@@ -220,26 +203,21 @@ populateJsonResponse(
             {
                 response[jss::ledger_index] = result.txn->getLedger();
                 if (result.closeTime)
-                    response[jss::close_time_iso] =
-                        to_string_iso(*result.closeTime);
+                    response[jss::close_time_iso] = to_string_iso(*result.closeTime);
             }
         }
         else
         {
-            response =
-                result.txn->getJson(JsonOptions::include_date, args.binary);
+            response = result.txn->getJson(JsonOptions::include_date, args.binary);
             if (!args.binary)
-                RPC::insertDeliverMax(
-                    response, sttx->getTxnType(), context.apiVersion);
+                RPC::insertDeliverMax(response, sttx->getTxnType(), context.apiVersion);
         }
 
         // populate binary metadata
         if (auto blob = std::get_if<Blob>(&result.meta))
         {
-            XRPL_ASSERT(
-                args.binary, "xrpl::populateJsonResponse : binary is set");
-            auto json_meta =
-                (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
+            XRPL_ASSERT(args.binary, "xrpl::populateJsonResponse : binary is set");
+            auto json_meta = (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
             response[json_meta] = strHex(makeSlice(*blob));
         }
         // populate meta data
@@ -249,8 +227,7 @@ populateJsonResponse(
             if (meta)
             {
                 response[jss::meta] = meta->getJson(JsonOptions::none);
-                insertDeliveredAmount(
-                    response[jss::meta], context, result.txn, *meta);
+                insertDeliveredAmount(response[jss::meta], context, result.txn, *meta);
                 RPC::insertNFTSyntheticInJson(response, sttx, *meta);
                 RPC::insertMPTokenIssuanceID(response[jss::meta], sttx, *meta);
             }
@@ -273,8 +250,7 @@ doTxJson(RPC::JsonContext& context)
 
     TxArgs args;
 
-    if (context.params.isMember(jss::transaction) &&
-        context.params.isMember(jss::ctid))
+    if (context.params.isMember(jss::transaction) && context.params.isMember(jss::ctid))
         // specifying both is ambiguous
         return rpcError(rpcINVALID_PARAMS);
 
@@ -292,7 +268,7 @@ doTxJson(RPC::JsonContext& context)
             return rpcError(rpcINVALID_PARAMS);
 
         auto const [lgr_seq, txn_idx, net_id] = *ctid;
-        if (net_id != context.app.config().NETWORK_ID)
+        if (net_id != context.app.getNetworkIDService().getNetworkID())
         {
             std::stringstream out;
             out << "Wrong network. You should submit this request to a node "
@@ -305,17 +281,14 @@ doTxJson(RPC::JsonContext& context)
     else
         return rpcError(rpcINVALID_PARAMS);
 
-    args.binary = context.params.isMember(jss::binary) &&
-        context.params[jss::binary].asBool();
+    args.binary = context.params.isMember(jss::binary) && context.params[jss::binary].asBool();
 
-    if (context.params.isMember(jss::min_ledger) &&
-        context.params.isMember(jss::max_ledger))
+    if (context.params.isMember(jss::min_ledger) && context.params.isMember(jss::max_ledger))
     {
         try
         {
-            args.ledgerRange = std::make_pair(
-                context.params[jss::min_ledger].asUInt(),
-                context.params[jss::max_ledger].asUInt());
+            args.ledgerRange =
+                std::make_pair(context.params[jss::min_ledger].asUInt(), context.params[jss::max_ledger].asUInt());
         }
         catch (...)
         {

@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_ORDERBOOKDB_H_INCLUDED
-#define XRPL_LEDGER_ORDERBOOKDB_H_INCLUDED
+#pragma once
 
 #include <xrpl/ledger/AcceptedLedgerTx.h>
 #include <xrpl/ledger/BookListeners.h>
@@ -59,9 +58,7 @@ public:
         @return Vector of books that want this issue
     */
     virtual std::vector<Book>
-    getBooksByTakerPays(
-        Issue const& issue,
-        std::optional<Domain> const& domain = std::nullopt) = 0;
+    getBooksByTakerPays(Issue const& issue, std::optional<Domain> const& domain = std::nullopt) = 0;
 
     /** Get the count of order books that want a specific issue.
 
@@ -70,9 +67,7 @@ public:
         @return Number of books that want this issue
     */
     virtual int
-    getBookSize(
-        Issue const& issue,
-        std::optional<Domain> const& domain = std::nullopt) = 0;
+    getBookSize(Issue const& issue, std::optional<Domain> const& domain = std::nullopt) = 0;
 
     /** Check if an order book to XRP exists for the given issue.
 
@@ -81,9 +76,7 @@ public:
         @return true if a book from this issue to XRP exists
     */
     virtual bool
-    isBookToXRP(
-        Issue const& issue,
-        std::optional<Domain> domain = std::nullopt) = 0;
+    isBookToXRP(Issue const& issue, std::optional<Domain> domain = std::nullopt) = 0;
 
     virtual void
     processTxn(
@@ -98,5 +91,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

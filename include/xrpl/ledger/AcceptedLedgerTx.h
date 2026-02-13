@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_ACCEPTEDLEDGERTX_H_INCLUDED
-#define XRPL_LEDGER_ACCEPTEDLEDGERTX_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/ledger/ReadView.h>
@@ -86,5 +85,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

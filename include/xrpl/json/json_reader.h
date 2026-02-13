@@ -1,5 +1,4 @@
-#ifndef XRPL_JSON_JSON_READER_H_INCLUDED
-#define XRPL_JSON_JSON_READER_H_INCLUDED
+#pragma once
 
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
@@ -144,26 +143,15 @@ private:
     bool
     decodeDouble(Token& token);
     bool
-    decodeUnicodeCodePoint(
-        Token& token,
-        Location& current,
-        Location end,
-        unsigned int& unicode);
+    decodeUnicodeCodePoint(Token& token, Location& current, Location end, unsigned int& unicode);
     bool
-    decodeUnicodeEscapeSequence(
-        Token& token,
-        Location& current,
-        Location end,
-        unsigned int& unicode);
+    decodeUnicodeEscapeSequence(Token& token, Location& current, Location end, unsigned int& unicode);
     bool
     addError(std::string const& message, Token& token, Location extra = 0);
     bool
     recoverFromError(TokenType skipUntilToken);
     bool
-    addErrorAndRecover(
-        std::string const& message,
-        Token& token,
-        TokenType skipUntilToken);
+    addErrorAndRecover(std::string const& message, Token& token, TokenType skipUntilToken);
     void
     skipUntilSpace();
     Value&
@@ -228,5 +216,3 @@ std::istream&
 operator>>(std::istream&, Value&);
 
 }  // namespace Json
-
-#endif  // XRPL_JSON_JSON_READER_H_INCLUDED

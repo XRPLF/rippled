@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_PROTOCOL_H_INCLUDED
-#define XRPL_PROTOCOL_PROTOCOL_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/base_uint.h>
@@ -115,8 +114,7 @@ namespace Lending {
 
     Valid values are between 0 and 10% inclusive.
 */
-TenthBips16 constexpr maxManagementFeeRate(
-    unsafe_cast<std::uint16_t>(percentageToTenthBips(10).value()));
+TenthBips16 constexpr maxManagementFeeRate(unsafe_cast<std::uint16_t>(percentageToTenthBips(10).value()));
 static_assert(maxManagementFeeRate == TenthBips16(std::uint16_t(10'000u)));
 
 /** The maximum coverage rate required of a loan broker in 1/10 bips.
@@ -299,5 +297,3 @@ std::size_t constexpr permissionMaxSize = 10;
 std::size_t constexpr maxBatchTxCount = 8;
 
 }  // namespace xrpl
-
-#endif
