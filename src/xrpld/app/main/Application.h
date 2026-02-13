@@ -153,17 +153,10 @@ public:
     virtual int
     fdRequired() const = 0;
 
-    /** Retrieve the "wallet database" */
-    virtual DatabaseCon&
-    getWalletDB() = 0;
-
     /** Ensure that a newly-started validator does not sign proposals older
      * than the last ledger it persisted. */
     virtual LedgerIndex
     getMaxDisallowedLedger() = 0;
-
-    virtual std::optional<uint256> const&
-    trapTxID() const = 0;
 };
 
 std::unique_ptr<Application>
