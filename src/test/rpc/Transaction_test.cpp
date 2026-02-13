@@ -5,6 +5,7 @@
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/rpc/CTID.h>
 
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/jss.h>
