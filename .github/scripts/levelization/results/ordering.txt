@@ -183,7 +183,6 @@ xrpl.resource > xrpl.protocol
 xrpl.server > xrpl.basics
 xrpl.server > xrpl.core
 xrpl.server > xrpl.json
-xrpl.server > xrpl.ledger
 xrpl.server > xrpl.protocol
 xrpl.server > xrpl.rdb
 xrpl.server > xrpl.resource
