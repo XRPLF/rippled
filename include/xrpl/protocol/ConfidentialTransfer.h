@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_CONFIDENTIALTRANSFER_H_INCLUDED
-#define XRPL_PROTOCOL_CONFIDENTIALTRANSFER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/protocol/Indexes.h>
@@ -439,5 +438,3 @@ verifyBalancePcmLinkage(
     uint256 const& contextHash);
 
 }  // namespace xrpl
-
-#endif
