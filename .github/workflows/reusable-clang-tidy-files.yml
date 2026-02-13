@@ -27,6 +27,9 @@ jobs:
     name: Run clang tidy
     runs-on: ["self-hosted", "Linux", "X64", "heavy"]
     container: "ghcr.io/xrplf/ci/debian-trixie:clang-21-sha-53033a2"
+    permissions:
+      issues: write
+      contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
@@ -42,8 +45,6 @@ jobs:
       - name: Get number of processors
         uses: XRPLF/actions/get-nproc@cf0433aa74563aead044a1e395610c96d65a37cf
         id: nproc
-        with:
-          subtract: ${{ inputs.nproc_subtract }}
 
       - name: Setup Conan
         uses: ./.github/actions/setup-conan
@@ -53,9 +54,7 @@ jobs:
         with:
           build_nproc: ${{ steps.nproc.outputs.nproc }}
           build_type: ${{ env.BUILD_TYPE }}
-          # Set the verbosity to "quiet" for Windows to avoid an excessive
-          # amount of logs. For other OSes, the "verbose" logs are more useful.
-          log_verbosity: ${{ runner.os == 'Windows' && 'quiet' || 'verbose' }}
+          log_verbosity: verbose
 
       - name: Configure CMake
         working-directory: ${{ env.BUILD_DIR }}
@@ -81,36 +80,24 @@ jobs:
         continue-on-error: true
         run: |
           run-clang-tidy -j ${{ steps.nproc.outputs.nproc }} -p "$BUILD_DIR" ${{ inputs.files }} 2>&1 | tee clang-tidy-output.txt
-          echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
-
-      - name: Check clang-tidy results
-        id: check_results
-        run: |
-          if [ "${{ steps.run_clang_tidy.outputs.exit_code }}" -ne 0 ]; then
-            echo "Clang-tidy found issues!"
-            echo "failed=true" >> $GITHUB_OUTPUT
-          else
-            echo "Clang-tidy passed!"
-            echo "failed=false" >> $GITHUB_OUTPUT
-          fi
 
       - name: Upload clang-tidy output
-        if: steps.check_results.outputs.failed == 'true'
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        if: steps.run_clang_tidy.outcome != 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: clang-tidy-results
           path: clang-tidy-output.txt
           retention-days: 30
 
       - name: Create an issue
-        if: steps.check_results.outputs.failed == 'true' && inputs.create_issue_on_failure
+        if: steps.run_clang_tidy.outcome != 'success' && inputs.create_issue_on_failure
         id: create_issue
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           # Prepare issue body with clang-tidy output
-          cat > issue.md <<'EOF'
+          cat > issue.md <<EOF
           ## Clang-tidy Check Failed
 
           **Workflow:** ${{ github.workflow }}
@@ -120,7 +107,7 @@ jobs:
           **Triggered by:** ${{ github.actor }}
 
           ### Clang-tidy Output:
-          ```
+          \`\`\`
           EOF
 
           # Append clang-tidy output (filter for errors and code snippets)
@@ -135,7 +122,7 @@ jobs:
 
             # Truncate if too large
             head -c 60000 filtered-output.txt >> issue.md
-            if [ $(wc -c < filtered-output.txt) -gt 60000 ]; then
+            if [ \$(wc -c < filtered-output.txt) -gt 60000 ]; then
               echo "" >> issue.md
               echo "... (output truncated, see artifacts for full output)" >> issue.md
             fi
@@ -145,8 +132,8 @@ jobs:
             echo "No output file found" >> issue.md
           fi
 
-          cat >> issue.md <<'EOF'
-          ```
+          cat >> issue.md <<EOF
+          \`\`\`
 
           **Workflow run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
@@ -168,7 +155,7 @@ jobs:
           rm create_issue.log issue.md
 
       - name: Fail the workflow if clang-tidy failed
-        if: steps.check_results.outputs.failed == 'true'
+        if: steps.run_clang_tidy.outcome != 'success'
         run: |
           echo "Clang-tidy check failed!"
           exit 1
