@@ -18,6 +18,7 @@ namespace xrpl {
 // Master operational handler, server sequencer, network tracker
 
 class Peer;
+class STTx;
 class ReadView;
 class LedgerMaster;
 class Transaction;
