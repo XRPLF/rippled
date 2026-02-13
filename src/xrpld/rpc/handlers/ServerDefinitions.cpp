@@ -233,7 +233,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
         // whether the field is included in serialization
         innerObj[jss::isSerialized] =
             (type < 10000 && field->fieldName != "hash" &&
-             field->fieldName != "index"); /* hash, index, TRANSACTION, LEDGER_ENTRY, VALIDATION, METADATA */
+             field->fieldName != "index");  // hash, index, TRANSACTION, LEDGER_ENTRY, VALIDATION, METADATA
 
         // whether the field is included in serialization when signing
         innerObj[jss::isSigningField] = field->shouldInclude(false);

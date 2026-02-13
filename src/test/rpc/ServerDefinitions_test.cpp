@@ -1,7 +1,9 @@
 #include <test/jtx.h>
 
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SOTemplate.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
 namespace xrpl {
@@ -340,6 +342,62 @@ public:
                 }
             }
 
+            // Exhaustive test: verify all transaction flags from allTxFlags appear in the output
+            {
+                Json::Value const& txFlags = result[jss::result][jss::TRANSACTION_FLAGS];
+
+                for (auto const& [txName, flagMap] : allTxFlags)
+                {
+                    BEAST_EXPECT(txFlags.isMember(txName));
+                    if (txFlags.isMember(txName))
+                    {
+                        for (auto const& [flagName, flagValue] : flagMap)
+                        {
+                            BEAST_EXPECT(txFlags[txName].isMember(flagName));
+                            if (txFlags[txName].isMember(flagName))
+                            {
+                                BEAST_EXPECT(txFlags[txName][flagName].asUInt() == flagValue);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Exhaustive test: verify all ledger entry flags from allLedgerFlags appear in the output
+            {
+                Json::Value const& leFlags = result[jss::result][jss::LEDGER_ENTRY_FLAGS];
+
+                for (auto const& [ledgerType, flagMap] : allLedgerFlags)
+                {
+                    BEAST_EXPECT(leFlags.isMember(ledgerType));
+                    if (leFlags.isMember(ledgerType))
+                    {
+                        for (auto const& [flagName, flagValue] : flagMap)
+                        {
+                            BEAST_EXPECT(leFlags[ledgerType].isMember(flagName));
+                            if (leFlags[ledgerType].isMember(flagName))
+                            {
+                                BEAST_EXPECT(leFlags[ledgerType][flagName].asUInt() == flagValue);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Exhaustive test: verify all AccountSet flags from asfFlagMap appear in the output
+            {
+                Json::Value const& asFlags = result[jss::result][jss::ACCOUNT_SET_FLAGS];
+
+                for (auto const& [flagName, flagValue] : asfFlagMap)
+                {
+                    BEAST_EXPECT(asFlags.isMember(flagName));
+                    if (asFlags.isMember(flagName))
+                    {
+                        BEAST_EXPECT(asFlags[flagName].asInt() == flagValue);
+                    }
+                }
+            }
+
             // test providing the same hash
             {
                 Env env(*this);
@@ -352,8 +410,12 @@ public:
                 BEAST_EXPECT(result[jss::result][jss::status] == "success");
                 BEAST_EXPECT(!result[jss::result].isMember(jss::FIELDS));
                 BEAST_EXPECT(!result[jss::result].isMember(jss::LEDGER_ENTRY_TYPES));
+                BEAST_EXPECT(!result[jss::result].isMember(jss::LEDGER_ENTRY_FLAGS));
+                BEAST_EXPECT(!result[jss::result].isMember(jss::LEDGER_ENTRY_FORMATS));
                 BEAST_EXPECT(!result[jss::result].isMember(jss::TRANSACTION_RESULTS));
                 BEAST_EXPECT(!result[jss::result].isMember(jss::TRANSACTION_TYPES));
+                BEAST_EXPECT(!result[jss::result].isMember(jss::TRANSACTION_FLAGS));
+                BEAST_EXPECT(!result[jss::result].isMember(jss::TRANSACTION_FORMATS));
                 BEAST_EXPECT(!result[jss::result].isMember(jss::TYPES));
                 BEAST_EXPECT(result[jss::result].isMember(jss::hash));
             }
@@ -371,8 +433,12 @@ public:
                 BEAST_EXPECT(result[jss::result][jss::status] == "success");
                 BEAST_EXPECT(result[jss::result].isMember(jss::FIELDS));
                 BEAST_EXPECT(result[jss::result].isMember(jss::LEDGER_ENTRY_TYPES));
+                BEAST_EXPECT(result[jss::result].isMember(jss::LEDGER_ENTRY_FLAGS));
+                BEAST_EXPECT(result[jss::result].isMember(jss::LEDGER_ENTRY_FORMATS));
                 BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_RESULTS));
                 BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_TYPES));
+                BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_FLAGS));
+                BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_FORMATS));
                 BEAST_EXPECT(result[jss::result].isMember(jss::TYPES));
                 BEAST_EXPECT(result[jss::result].isMember(jss::hash));
             }
