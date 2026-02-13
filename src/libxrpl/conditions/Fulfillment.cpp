@@ -1,9 +1,8 @@
-#include <xrpld/conditions/Condition.h>
-#include <xrpld/conditions/Fulfillment.h>
-#include <xrpld/conditions/detail/PreimageSha256.h>
-#include <xrpld/conditions/detail/utils.h>
-
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/conditions/Condition.h>
+#include <xrpl/conditions/Fulfillment.h>
+#include <xrpl/conditions/detail/PreimageSha256.h>
+#include <xrpl/conditions/detail/utils.h>
 
 namespace xrpl {
 namespace cryptoconditions {

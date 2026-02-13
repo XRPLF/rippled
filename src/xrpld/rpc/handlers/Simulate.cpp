@@ -12,6 +12,7 @@
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 
+#include <xrpl/core/HashRouter.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/RPCErr.h>

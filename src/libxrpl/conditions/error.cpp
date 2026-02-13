@@ -1,6 +1,5 @@
-#include <xrpld/conditions/detail/error.h>
-
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/conditions/detail/error.h>
 
 #include <string>
 

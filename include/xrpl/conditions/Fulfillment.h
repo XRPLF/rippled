@@ -1,9 +1,8 @@
 #pragma once
 
-#include <xrpld/conditions/Condition.h>
-
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/conditions/Condition.h>
 
 namespace xrpl {
 namespace cryptoconditions {
