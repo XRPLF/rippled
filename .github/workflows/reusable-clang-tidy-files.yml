@@ -26,7 +26,7 @@ jobs:
   run-clang-tidy:
     name: Run clang tidy
     runs-on: ["self-hosted", "Linux", "X64", "heavy"]
-    container: "ghcr.io/xrplf/ci/ubuntu-noble:clang-18"
+    container: "ghcr.io/xrplf/ci/debian-trixie:clang-21-sha-53033a2"
     steps:
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
@@ -70,11 +70,16 @@ jobs:
             -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
             ..
 
+      - name: Build libxrpl.libpb
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          ninja -j ${{ steps.nproc.outputs.nproc }}
+
       - name: Run clang tidy
         id: run_clang_tidy
         continue-on-error: true
         run: |
-          run-clang-tidy -j ${{steps.nproc.outputs.nproc }} -p "$BUILD_DIR" ${{ inputs.files }} 2>&1 | tee clang-tidy-output.txt
+          run-clang-tidy -j ${{ steps.nproc.outputs.nproc }} -p "$BUILD_DIR" ${{ inputs.files }} 2>&1 | tee clang-tidy-output.txt
           echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
 
       - name: Check clang-tidy results
