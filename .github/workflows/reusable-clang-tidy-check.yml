@@ -26,49 +26,10 @@ jobs:
   run-clang-tidy:
     name: Run clang tidy
     runs-on: ["self-hosted", "Linux", "X64", "heavy"]
-    container: "ghcr.io/xrplf/ci/ubuntu-noble:clang-20-sha-3c1da1d"
+    container: "ghcr.io/xrplf/ci/ubuntu-noble:clang-18"
     steps:
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
-
-      - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@2cbf481018d930656e9276fcc20dc0e3a0be5b6d
-        with:
-          enable_ccache: false
-
-      - name: Print build environment
-        uses: ./.github/actions/print-env
-
-      - name: Get number of processors
-        uses: XRPLF/actions/get-nproc@cf0433aa74563aead044a1e395610c96d65a37cf
-        id: nproc
-        with:
-          subtract: ${{ inputs.nproc_subtract }}
-
-      - name: Setup Conan
-        uses: ./.github/actions/setup-conan
-
-      - name: Build dependencies
-        uses: ./.github/actions/build-deps
-        with:
-          build_nproc: ${{ steps.nproc.outputs.nproc }}
-          build_type: ${{ env.BUILD_TYPE }}
-          # Set the verbosity to "quiet" for Windows to avoid an excessive
-          # amount of logs. For other OSes, the "verbose" logs are more useful.
-          log_verbosity: ${{ runner.os == 'Windows' && 'quiet' || 'verbose' }}
-
-      - name: Configure CMake
-        working-directory: ${{ env.BUILD_DIR }}
-        run: |
-          cmake \
-            -G 'Ninja' \
-            -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
-            -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
-            -Dtests=ON \
-            -Dwerr=ON \
-            -Dxrpld=ON \
-            -DCMAKE_EXPORT_COMPILE_COMMANDS=1
-            ..
 
       - name: Get changed C++ files
         if: ${{ !inputs.check_all_files }}
@@ -87,7 +48,67 @@ jobs:
             **/*.ipp
           separator: " "
 
+      - name: Check if we should continue
+        id: should_continue
+        run: |
+          if [ "${{ inputs.check_all_files }}" = "true" ]; then
+            echo "continue=true" >> $GITHUB_OUTPUT
+            echo "Checking all files"
+          elif [ "${{ steps.changed_files.outputs.any_changed }}" = "true" ]; then
+            echo "continue=true" >> $GITHUB_OUTPUT
+            echo "Found changed C++ files: ${{ steps.changed_files.outputs.all_changed_files }}"
+          else
+            echo "continue=false" >> $GITHUB_OUTPUT
+            echo "No C++ files changed, skipping clang-tidy"
+          fi
+
+      - name: Prepare runner
+        if: steps.should_continue.outputs.continue == 'true'
+        uses: XRPLF/actions/prepare-runner@2cbf481018d930656e9276fcc20dc0e3a0be5b6d
+        with:
+          enable_ccache: false
+
+      - name: Print build environment
+        if: steps.should_continue.outputs.continue == 'true'
+        uses: ./.github/actions/print-env
+
+      - name: Get number of processors
+        if: steps.should_continue.outputs.continue == 'true'
+        uses: XRPLF/actions/get-nproc@cf0433aa74563aead044a1e395610c96d65a37cf
+        id: nproc
+        with:
+          subtract: ${{ inputs.nproc_subtract }}
+
+      - name: Setup Conan
+        if: steps.should_continue.outputs.continue == 'true'
+        uses: ./.github/actions/setup-conan
+
+      - name: Build dependencies
+        if: steps.should_continue.outputs.continue == 'true'
+        uses: ./.github/actions/build-deps
+        with:
+          build_nproc: ${{ steps.nproc.outputs.nproc }}
+          build_type: ${{ env.BUILD_TYPE }}
+          # Set the verbosity to "quiet" for Windows to avoid an excessive
+          # amount of logs. For other OSes, the "verbose" logs are more useful.
+          log_verbosity: ${{ runner.os == 'Windows' && 'quiet' || 'verbose' }}
+
+      - name: Configure CMake
+        if: steps.should_continue.outputs.continue == 'true'
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          cmake \
+            -G 'Ninja' \
+            -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
+            -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
+            -Dtests=ON \
+            -Dwerr=ON \
+            -Dxrpld=ON \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+            ..
+
       - name: Set files to check
+        if: steps.should_continue.outputs.continue == 'true'
         id: get_files
         run: |
           if [ "${{ inputs.check_all_files }}" = "true" ]; then
@@ -99,6 +120,7 @@ jobs:
           fi
 
       - name: Run clang tidy
+        if: steps.should_continue.outputs.continue == 'true'
         id: run_clang_tidy
         continue-on-error: true
         run: |
@@ -106,6 +128,7 @@ jobs:
           echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
 
       - name: Check clang-tidy results
+        if: steps.should_continue.outputs.continue == 'true'
         id: check_results
         run: |
           if [ "${{ steps.run_clang_tidy.outputs.exit_code }}" -ne 0 ]; then
