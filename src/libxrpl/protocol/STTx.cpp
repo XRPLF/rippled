@@ -431,20 +431,27 @@ multiSignHelper(
 
     STArray const& signers{sigObject.getFieldArray(sfSigners)};
 
-    // Set max depth based on feature flag
-    int const maxDepth = rules.enabled(featureNestedMultiSign) ? 4 : 1;
+    // Set max depth and leaf cap based on feature flag
+    bool const nested = rules.enabled(featureNestedMultiSign);
+    int const maxDepth = nested ? nestedMultiSignMaxDepth : legacyMultiSignMaxDepth;
+    std::size_t const maxLeafSigners = nested ? nestedMultiSignMaxLeafSigners : STTx::maxMultiSigners;
+    std::size_t totalLeafSigners = 0;
 
     // Define recursive lambda for checking signatures at any depth
-    std::function<Expected<void, std::string>(STArray const&, int)> checkSignersArray;
+    // parentAccountID identifies which account the signers are signing for
+    // (used for context in recursive calls, not currently validated against)
+    std::function<Expected<void, std::string>(STArray const&, AccountID const&, int)> checkSignersArray;
 
-    checkSignersArray = [&](STArray const& signersArray, int depth) -> Expected<void, std::string> {
+    checkSignersArray = [&](STArray const& signersArray,
+                            [[maybe_unused]] AccountID const& parentAccountID,
+                            int depth) -> Expected<void, std::string> {
         // Check depth limit
         if (depth > maxDepth)
             return Unexpected("Multi-signing depth limit exceeded.");
 
         // There are well known bounds that the number of signers must be
         // within.
-        if (signers.size() < STTx::minMultiSigners || signers.size() > STTx::maxMultiSigners)
+        if (signersArray.size() < STTx::minMultiSigners || signersArray.size() > STTx::maxMultiSigners)
             return Unexpected("Invalid Signers array size.");
 
         // Signers must be in sorted order by AccountID.
@@ -469,39 +476,30 @@ multiSignHelper(
             // The next signature must be greater than this one.
             lastAccountID = accountID;
 
-            // Check if this signer has nested signers
-            if (signer.isFieldPresent(sfSigners))
+            // Check signer type using helpers
+            if (isNestedSigner(signer))
             {
-                // This is a nested multi-signer
+                // This is a nested multi-signer (has Signers, no signature)
                 if (maxDepth == 1)
                 {
-                    // amendment is not enabled, this is an error
+                    // Amendment is not enabled
                     return Unexpected("FeatureNestedMultiSign is disabled");
                 }
 
-                // Ensure it doesn't also have signature fields
-                if (signer.isFieldPresent(sfSigningPubKey) || signer.isFieldPresent(sfTxnSignature))
-                    return Unexpected(
-                        "Signer cannot have both nested signers and signature "
-                        "fields.");
-
                 // Recursively check nested signers
                 STArray const& nestedSigners = signer.getFieldArray(sfSigners);
-                auto result = checkSignersArray(nestedSigners, depth + 1);
+                auto result = checkSignersArray(nestedSigners, accountID, depth + 1);
                 if (!result)
                     return result;
             }
-            else
+            else if (isLeafSigner(signer))
             {
-                // This is a leaf node - must have signature
-                if (!signer.isFieldPresent(sfSigningPubKey) || !signer.isFieldPresent(sfTxnSignature))
-                    return Unexpected(
-                        "Leaf signer must have SigningPubKey and "
-                        "TxnSignature.");
+                // This is a leaf signer - verify the signature
+                if (++totalLeafSigners > maxLeafSigners)
+                    return Unexpected(std::string("Too many leaf signers."));
 
                 // Verify the signature
                 bool validSig = false;
-                std::optional<std::string> errorWhat;
                 try
                 {
                     auto spk = signer.getFieldVL(sfSigningPubKey);
@@ -511,16 +509,18 @@ multiSignHelper(
                         validSig = verify(PublicKey(makeSlice(spk)), makeMsg(accountID).slice(), makeSlice(signature));
                     }
                 }
-                catch (std::exception const& e)
+                catch (std::exception const&)
                 {
                     // We assume any problem lies with the signature.
                     validSig = false;
-                    errorWhat = e.what();
                 }
                 if (!validSig)
-                    return Unexpected(
-                        std::string("Invalid signature on account ") + toBase58(accountID) + errorWhat.value_or("") +
-                        ".");
+                    return Unexpected(std::string("Invalid signature on account ") + toBase58(accountID) + ".");
+            }
+            else
+            {
+                // Neither a valid leaf nor nested signer
+                return Unexpected(std::string("Malformed signer entry for account ") + toBase58(accountID) + ".");
             }
         }
 
@@ -528,7 +528,7 @@ multiSignHelper(
     };
 
     // Start the recursive check at depth 1
-    return checkSignersArray(signers, 1);
+    return checkSignersArray(signers, txnAccountID.value_or(AccountID{}), 1);
 }
 
 Expected<void, std::string>
