@@ -71,3 +71,5 @@ DerivedData
 /.augment
 /.claude
 /CLAUDE.md
+
+/.cache
