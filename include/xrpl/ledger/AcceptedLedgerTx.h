@@ -1,14 +1,14 @@
 #pragma once
 
-#include <xrpld/app/ledger/Ledger.h>
-
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TxMeta.h>
 
 #include <boost/container/flat_set.hpp>
 
 namespace xrpl {
-
-class Logs;
 
 /**
     A transaction that is in a closed ledger.
