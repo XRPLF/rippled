@@ -35,77 +35,69 @@ getAnyFieldData(STBase const* obj)
         case STI_UNKNOWN:
         case STI_NOTPRESENT:
             return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
-            break;
-        // LCOV_EXCL_STOP
+            // LCOV_EXCL_STOP
+
         case STI_OBJECT:
         case STI_ARRAY:
         case STI_VECTOR256:
             return Unexpected(HostFunctionError::NOT_LEAF_FIELD);
-            break;
+
         case STI_ACCOUNT: {
             auto const* account(static_cast<STAccount const*>(obj));
             auto const& data = account->value();
             return Bytes{data.begin(), data.end()};
         }
-        break;
-        case STI_AMOUNT:
-            // will be processed by serializer
-            break;
+
         case STI_ISSUE: {
             auto const* issue(static_cast<STIssue const*>(obj));
             Asset const& asset(issue->value());
             // XRP and IOU will be processed by serializer
             if (asset.holds<MPTIssue>())
             {
-                // MPT
                 auto const& mptIssue = asset.get<MPTIssue>();
                 auto const& mptID = mptIssue.getMptID();
                 return Bytes{mptID.cbegin(), mptID.cend()};
             }
+            break;  // Use serializer
         }
-        break;
+
         case STI_VL: {
             auto const* vl(static_cast<STBlob const*>(obj));
             auto const& data = vl->value();
             return Bytes{data.begin(), data.end()};
         }
-        break;
-        case STI_UINT16: {
+
+        case STI_UINT16:
             return getIntBytes<std::uint16_t>(obj);
-        }
-        break;
-        case STI_UINT32: {
+
+        case STI_UINT32:
             return getIntBytes<std::uint32_t>(obj);
-        }
+
         // LCOV_EXCL_START
-        case STI_UINT64: {
+        case STI_UINT64:
             return getIntBytes<std::uint64_t>(obj);
-        }
-        break;
-        case STI_INT32: {
+
+        case STI_INT32:
             return getIntBytes<std::int32_t>(obj);
-        }
-        break;
-        case STI_INT64: {
+
+        case STI_INT64:
             return getIntBytes<std::int64_t>(obj);
-        }
-        // LCOV_EXCL_STOP
-        break;
+            // LCOV_EXCL_STOP
+
         case STI_UINT256: {
             auto const* uint256Obj(static_cast<STUInt256 const*>(obj));
             auto const& data = uint256Obj->value();
             return Bytes{data.begin(), data.end()};
         }
-        break;
+
+        case STI_AMOUNT:
         default:
-            break;  // default to serializer
+            break;  // Use serializer
     }
 
     Serializer msg;
     obj->add(msg);
-    auto const data = msg.getData();
-
-    return data;
+    return msg.getData();
 }
 
 static Expected<Bytes, HostFunctionError>
