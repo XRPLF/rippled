@@ -15,7 +15,7 @@ class Config;
     the network ID from the application Config. It caches the
     network ID at construction time.
 */
-class NetworkIDServiceImpl : public NetworkIDService
+class NetworkIDServiceImpl final : public NetworkIDService
 {
 public:
     explicit NetworkIDServiceImpl(Config const& config);
@@ -23,7 +23,7 @@ public:
     ~NetworkIDServiceImpl() override = default;
 
     std::uint32_t
-    getNetworkID() const override;
+    getNetworkID() const noexcept override;
 
 private:
     std::uint32_t networkID_;

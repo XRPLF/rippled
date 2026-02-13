@@ -8,7 +8,7 @@ NetworkIDServiceImpl::NetworkIDServiceImpl(Config const& config) : networkID_(co
 }
 
 std::uint32_t
-NetworkIDServiceImpl::getNetworkID() const
+NetworkIDServiceImpl::getNetworkID() const noexcept
 {
     return networkID_;
 }

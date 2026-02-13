@@ -27,7 +27,7 @@ public:
      * @return The network ID this server is configured for
      */
     virtual std::uint32_t
-    getNetworkID() const = 0;
+    getNetworkID() const noexcept = 0;
 };
 
 }  // namespace xrpl
