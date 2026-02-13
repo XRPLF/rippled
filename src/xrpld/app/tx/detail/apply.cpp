@@ -1,8 +1,9 @@
-#include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/app/tx/applySteps.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/core/HashRouter.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 
