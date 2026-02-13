@@ -20,6 +20,7 @@ install(TARGETS common
                 xrpl.libxrpl
                 xrpl.libxrpl.basics
                 xrpl.libxrpl.beast
+                xrpl.libxrpl.conditions
                 xrpl.libxrpl.core
                 xrpl.libxrpl.crypto
                 xrpl.libxrpl.json

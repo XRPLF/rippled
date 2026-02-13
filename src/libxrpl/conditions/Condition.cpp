@@ -1,6 +1,6 @@
-#include <xrpld/conditions/Condition.h>
-#include <xrpld/conditions/detail/PreimageSha256.h>
-#include <xrpld/conditions/detail/utils.h>
+#include <xrpl/conditions/Condition.h>
+#include <xrpl/conditions/detail/PreimageSha256.h>
+#include <xrpl/conditions/detail/utils.h>
 
 namespace xrpl {
 namespace cryptoconditions {
