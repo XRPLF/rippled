@@ -557,6 +557,9 @@ STTx::checkMultiSign(Rules const& rules, STObject const& sigObject) const
     // the account owner may not multisign for themselves.
     auto const txnAccountID = &sigObject != this ? std::nullopt : std::optional<AccountID>(getAccountID(sfAccount));
 
+    // Set max depth based on feature flag
+    int const maxDepth = rules.enabled(featureNestedMultiSign) ? 4 : 1;
+
     // We can ease the computational load inside the loop a bit by
     // pre-constructing part of the data that we hash.  Fill a Serializer
     // with the stuff that stays constant from signature to signature.

@@ -95,7 +95,8 @@ add_module(xrpl rdb)
 target_link_libraries(xrpl.libxrpl.rdb PUBLIC xrpl.libxrpl.basics xrpl.libxrpl.core)
 
 add_module(xrpl server)
-target_link_libraries(xrpl.libxrpl.server PUBLIC xrpl.libxrpl.protocol xrpl.libxrpl.core xrpl.libxrpl.rdb)
+target_link_libraries(xrpl.libxrpl.server PUBLIC xrpl.libxrpl.protocol xrpl.libxrpl.core xrpl.libxrpl.rdb
+                                                 xrpl.libxrpl.resource)
 
 add_module(xrpl ledger)
 target_link_libraries(xrpl.libxrpl.ledger PUBLIC xrpl.libxrpl.basics xrpl.libxrpl.json xrpl.libxrpl.protocol
