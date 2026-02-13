@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/tx/detail/Transactor.h>
 
 namespace xrpl {

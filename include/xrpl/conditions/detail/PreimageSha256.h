@@ -1,11 +1,10 @@
 #pragma once
 
-#include <xrpld/conditions/Condition.h>
-#include <xrpld/conditions/Fulfillment.h>
-#include <xrpld/conditions/detail/error.h>
-
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/conditions/Condition.h>
+#include <xrpl/conditions/Fulfillment.h>
+#include <xrpl/conditions/detail/error.h>
 #include <xrpl/protocol/digest.h>
 
 #include <memory>
