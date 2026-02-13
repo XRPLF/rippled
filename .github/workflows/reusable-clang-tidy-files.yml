@@ -70,10 +70,11 @@ jobs:
             -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
             ..
 
+      # clang-tidy needs headers generated from proto files
       - name: Build libxrpl.libpb
         working-directory: ${{ env.BUILD_DIR }}
         run: |
-          ninja -j ${{ steps.nproc.outputs.nproc }}
+          ninja -j ${{ steps.nproc.outputs.nproc }} xrpl.libpb
 
       - name: Run clang tidy
         id: run_clang_tidy
