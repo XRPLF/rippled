@@ -1838,23 +1838,13 @@ MPTTester::getBulletproof(
 {
     std::size_t const m = values.size();
 
-    // Helper to get expected bulletproof length based on number of commitments
-    auto const expectedLength = [](std::size_t numCommitments) -> std::size_t {
-        if (numCommitments == 1)
-            return ecSingleBulletproofLength;
-        // numCommitments == 2
-        return ecDoubleBulletproofLength;
-    };
-
-    // Invalid input is a programming error
     if (m == 0 || m > 2 || m != blindingFactors.size())
         Throw<std::runtime_error>("getBulletproof: invalid input parameters");
 
-    // Validate all blinding factors have correct length
     for (auto const& bf : blindingFactors)
     {
         if (bf.size() != ecBlindingFactorLength)
-            return Buffer(expectedLength(m));
+            Throw<std::runtime_error>("getBulletproof: invalid blinding factor length");
     }
 
     // Flatten blinding factors into contiguous memory (m * 32 bytes)
@@ -1865,7 +1855,7 @@ MPTTester::getBulletproof(
 
     secp256k1_pubkey pk_base;
     if (secp256k1_mpt_get_h_generator(secp256k1Context(), &pk_base) != 1)
-        return Buffer(expectedLength(m));
+        Throw<std::runtime_error>("getBulletproof: failed to get H generator");
 
     // Proof size scales with m; use safe upper bound
     Buffer bulletproof(4096);
@@ -1881,14 +1871,13 @@ MPTTester::getBulletproof(
             &pk_base,
             contextHash.data()) != 1)
     {
-        return Buffer(expectedLength(m));
+        Throw<std::runtime_error>("getBulletproof: proof generation failed");
     }
 
-    // Verify proof length matches expected size
-    if (proofLen != expectedLength(m))
-        return Buffer(expectedLength(m));
+    std::size_t const expectedLen = (m == 1) ? ecSingleBulletproofLength : ecDoubleBulletproofLength;
+    if (proofLen != expectedLen)
+        Throw<std::runtime_error>("getBulletproof: unexpected proof length");
 
-    // Return a new buffer with just the proof data (correct length)
     return Buffer(bulletproof.data(), proofLen);
 }
 
