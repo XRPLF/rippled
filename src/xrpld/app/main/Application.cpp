@@ -6,7 +6,7 @@
 #include <xrpld/app/ledger/LedgerReplayer.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/ledger/OpenLedger.h>
-#include <xrpld/app/ledger/OrderBookDB.h>
+#include <xrpld/app/ledger/OrderBookDBImpl.h>
 #include <xrpld/app/ledger/PendingSaves.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/main/Application.h>
@@ -16,15 +16,15 @@
 #include <xrpld/app/main/NodeIdentity.h>
 #include <xrpld/app/main/NodeStoreScheduler.h>
 #include <xrpld/app/misc/AmendmentTable.h>
-#include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/misc/ValidatorKeys.h>
 #include <xrpld/app/misc/ValidatorSite.h>
+#include <xrpld/app/misc/make_NetworkOPs.h>
+#include <xrpld/app/misc/setup_HashRouter.h>
 #include <xrpld/app/paths/PathRequests.h>
-#include <xrpld/app/rdb/RelationalDatabase.h>
+#include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/PeerSet.h>
@@ -36,6 +36,7 @@
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/asio/io_latency_probe.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/core/HashRouter.h>
 #include <xrpl/core/PeerReservationTable.h>
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/crypto/csprng.h>
@@ -164,8 +165,7 @@ public:
 
     std::unique_ptr<NodeStore::Database> m_nodeStore;
     NodeFamily nodeFamily_;
-    // VFALCO TODO Make OrderBookDB abstract
-    OrderBookDB m_orderBookDB;
+    std::unique_ptr<OrderBookDB> m_orderBookDB;
     std::unique_ptr<PathRequests> m_pathRequests;
     std::unique_ptr<LedgerMaster> m_ledgerMaster;
     std::unique_ptr<LedgerCleaner> ledgerCleaner_;
@@ -191,7 +191,7 @@ public:
     boost::asio::steady_timer sweepTimer_;
     boost::asio::steady_timer entropyTimer_;
 
-    std::unique_ptr<RelationalDatabase> mRelationalDatabase;
+    std::optional<SQLiteDatabase> relationalDatabase_;
     std::unique_ptr<DatabaseCon> mWalletDB;
     std::unique_ptr<Overlay> overlay_;
     std::optional<uint256> trapTxID_;
@@ -296,7 +296,7 @@ public:
 
         , nodeFamily_(*this, *m_collectorManager)
 
-        , m_orderBookDB(*this)
+        , m_orderBookDB(make_OrderBookDB(*this, {config_->PATH_SEARCH_MAX, config_->standalone()}))
 
         , m_pathRequests(
               std::make_unique<PathRequests>(*this, logs_->journal("PathRequest"), m_collectorManager->collector()))
@@ -613,7 +613,7 @@ public:
     OrderBookDB&
     getOrderBookDB() override
     {
-        return m_orderBookDB;
+        return *m_orderBookDB;
     }
 
     PathRequests&
@@ -730,10 +730,10 @@ public:
     getRelationalDatabase() override
     {
         XRPL_ASSERT(
-            mRelationalDatabase,
+            relationalDatabase_,
             "xrpl::ApplicationImp::getRelationalDatabase : non-null "
             "relational database");
-        return *mRelationalDatabase;
+        return *relationalDatabase_;
     }
 
     DatabaseCon&
@@ -761,7 +761,7 @@ public:
 
         try
         {
-            mRelationalDatabase = RelationalDatabase::init(*this, *config_, *m_jobQueue);
+            relationalDatabase_.emplace(setup_RelationalDatabase(*this, *config_, *m_jobQueue));
 
             // wallet database
             auto setup = setup_DatabaseCon(*config_, m_journal);
@@ -872,7 +872,8 @@ public:
     void
     doSweep()
     {
-        if (!config_->standalone() && !getRelationalDatabase().transactionDbHasSpace(*config_))
+        XRPL_ASSERT(relationalDatabase_, "xrpl::ApplicationImp::doSweep : non-null relational database");
+        if (!config_->standalone() && !relationalDatabase_->transactionDbHasSpace(*config_))
         {
             signalStop("Out of transaction DB space");
         }
@@ -1169,7 +1170,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         m_ledgerMaster->setLedgerRangePresent(forcedRange->first, forcedRange->second);
     }
 
-    m_orderBookDB.setup(getLedgerMaster().getCurrentLedger());
+    m_orderBookDB->setup(getLedgerMaster().getCurrentLedger());
 
     nodeIdentity_ = getNodeIdentity(*this, cmdline);
 

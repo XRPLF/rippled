@@ -91,8 +91,7 @@ class SHAMapStore_test : public beast::unit_test::suite
     void
     ledgerCheck(jtx::Env& env, int const rows, int const first)
     {
-        auto const [actualRows, actualFirst, actualLast] =
-            dynamic_cast<SQLiteDatabase*>(&env.app().getRelationalDatabase())->getLedgerCountMinMax();
+        auto const [actualRows, actualFirst, actualLast] = env.app().getRelationalDatabase().getLedgerCountMinMax();
 
         BEAST_EXPECT(actualRows == rows);
         BEAST_EXPECT(actualFirst == first);
@@ -102,14 +101,13 @@ class SHAMapStore_test : public beast::unit_test::suite
     void
     transactionCheck(jtx::Env& env, int const rows)
     {
-        BEAST_EXPECT(dynamic_cast<SQLiteDatabase*>(&env.app().getRelationalDatabase())->getTransactionCount() == rows);
+        BEAST_EXPECT(env.app().getRelationalDatabase().getTransactionCount() == rows);
     }
 
     void
     accountTransactionCheck(jtx::Env& env, int const rows)
     {
-        BEAST_EXPECT(
-            dynamic_cast<SQLiteDatabase*>(&env.app().getRelationalDatabase())->getAccountTransactionCount() == rows);
+        BEAST_EXPECT(env.app().getRelationalDatabase().getAccountTransactionCount() == rows);
     }
 
     int
