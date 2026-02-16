@@ -66,6 +66,11 @@ private:
 
     std::vector<boost::asio::ip::address> secureGatewayIPs_;
 
+    // TLS certificate paths
+    std::optional<std::string> sslCertPath_;
+    std::optional<std::string> sslKeyPath_;
+    std::optional<std::string> sslChainPath_;
+
     beast::Journal journal_;
 
     // typedef for function to bind a listener
@@ -121,6 +126,10 @@ public:
     getEndpoint() const;
 
 private:
+    // Create server credentials (TLS or insecure) based on configuration
+    std::shared_ptr<grpc::ServerCredentials>
+    createServerCredentials();
+
     // Class encompassing the state and logic needed to serve a request.
     template <class Request, class Response>
     class CallData : public Processor, public std::enable_shared_from_this<CallData<Request, Response>>

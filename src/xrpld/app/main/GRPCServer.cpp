@@ -1,9 +1,12 @@
 #include <xrpld/app/main/GRPCServer.h>
 #include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/FileUtilities.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/resource/Fees.h>
+
+#include <boost/filesystem.hpp>
 
 namespace xrpl {
 
@@ -328,6 +331,22 @@ GRPCServerImpl::GRPCServerImpl(Application& app) : app_(app), journal_(app_.jour
                 Throw<std::runtime_error>("Error parsing secure_gateway section");
             }
         }
+
+        // Read TLS certificate configuration (optional)
+        sslCertPath_ = section.get("ssl_cert");
+        sslKeyPath_ = section.get("ssl_key");
+        sslChainPath_ = section.get("ssl_chain");
+
+        // If cert or key is specified, both must be specified
+        if (sslCertPath_.has_value() || sslKeyPath_.has_value())
+        {
+            if (!sslCertPath_.has_value() || !sslKeyPath_.has_value())
+            {
+                JLOG(journal_.error()) << "Both ssl_cert and ssl_key must be specified for gRPC TLS";
+                Throw<std::runtime_error>("Incomplete TLS configuration for gRPC");
+            }
+            JLOG(journal_.info()) << "gRPC TLS enabled with certificate: " << *sslCertPath_;
+        }
     }
 }
 
@@ -430,60 +449,128 @@ GRPCServerImpl::setupListeners()
     {
         using cd = CallData<org::xrpl::rpc::v1::GetLedgerRequest, org::xrpl::rpc::v1::GetLedgerResponse>;
 
-        addToRequests(std::make_shared<cd>(
-            service_,
-            *cq_,
-            app_,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedger,
-            doLedgerGrpc,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedger,
-            RPC::NO_CONDITION,
-            Resource::feeMediumBurdenRPC,
-            secureGatewayIPs_));
+        addToRequests(
+            std::make_shared<cd>(
+                service_,
+                *cq_,
+                app_,
+                &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedger,
+                doLedgerGrpc,
+                &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedger,
+                RPC::NO_CONDITION,
+                Resource::feeMediumBurdenRPC,
+                secureGatewayIPs_));
     }
     {
         using cd = CallData<org::xrpl::rpc::v1::GetLedgerDataRequest, org::xrpl::rpc::v1::GetLedgerDataResponse>;
 
-        addToRequests(std::make_shared<cd>(
-            service_,
-            *cq_,
-            app_,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedgerData,
-            doLedgerDataGrpc,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerData,
-            RPC::NO_CONDITION,
-            Resource::feeMediumBurdenRPC,
-            secureGatewayIPs_));
+        addToRequests(
+            std::make_shared<cd>(
+                service_,
+                *cq_,
+                app_,
+                &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedgerData,
+                doLedgerDataGrpc,
+                &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerData,
+                RPC::NO_CONDITION,
+                Resource::feeMediumBurdenRPC,
+                secureGatewayIPs_));
     }
     {
         using cd = CallData<org::xrpl::rpc::v1::GetLedgerDiffRequest, org::xrpl::rpc::v1::GetLedgerDiffResponse>;
 
-        addToRequests(std::make_shared<cd>(
-            service_,
-            *cq_,
-            app_,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedgerDiff,
-            doLedgerDiffGrpc,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerDiff,
-            RPC::NO_CONDITION,
-            Resource::feeMediumBurdenRPC,
-            secureGatewayIPs_));
+        addToRequests(
+            std::make_shared<cd>(
+                service_,
+                *cq_,
+                app_,
+                &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedgerDiff,
+                doLedgerDiffGrpc,
+                &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerDiff,
+                RPC::NO_CONDITION,
+                Resource::feeMediumBurdenRPC,
+                secureGatewayIPs_));
     }
     {
         using cd = CallData<org::xrpl::rpc::v1::GetLedgerEntryRequest, org::xrpl::rpc::v1::GetLedgerEntryResponse>;
 
-        addToRequests(std::make_shared<cd>(
-            service_,
-            *cq_,
-            app_,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedgerEntry,
-            doLedgerEntryGrpc,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerEntry,
-            RPC::NO_CONDITION,
-            Resource::feeMediumBurdenRPC,
-            secureGatewayIPs_));
+        addToRequests(
+            std::make_shared<cd>(
+                service_,
+                *cq_,
+                app_,
+                &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedgerEntry,
+                doLedgerEntryGrpc,
+                &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerEntry,
+                RPC::NO_CONDITION,
+                Resource::feeMediumBurdenRPC,
+                secureGatewayIPs_));
     }
     return requests;
+}
+
+std::shared_ptr<grpc::ServerCredentials>
+GRPCServerImpl::createServerCredentials()
+{
+    if (sslCertPath_.has_value() && sslKeyPath_.has_value())
+    {
+        JLOG(journal_.info()) << "Configuring gRPC server with TLS";
+
+        try
+        {
+            boost::system::error_code ec;
+
+            std::string certContents = getFileContents(ec, *sslCertPath_);
+            if (ec)
+            {
+                JLOG(journal_.error()) << "Failed to read gRPC SSL certificate file: " << *sslCertPath_ << " - "
+                                       << ec.message();
+                return nullptr;
+            }
+
+            std::string keyContents = getFileContents(ec, *sslKeyPath_);
+            if (ec)
+            {
+                JLOG(journal_.error()) << "Failed to read gRPC SSL key file: " << *sslKeyPath_ << " - " << ec.message();
+                return nullptr;
+            }
+
+            std::string chainContents;
+            if (sslChainPath_.has_value())
+            {
+                chainContents = getFileContents(ec, *sslChainPath_);
+                if (ec)
+                {
+                    JLOG(journal_.error())
+                        << "Failed to read gRPC SSL chain file: " << *sslChainPath_ << " - " << ec.message();
+                    return nullptr;
+                }
+            }
+
+            grpc::SslServerCredentialsOptions::PemKeyCertPair keyCertPair;
+            keyCertPair.private_key = keyContents;
+            keyCertPair.cert_chain = certContents;
+
+            grpc::SslServerCredentialsOptions sslOpts;
+            sslOpts.pem_key_cert_pairs.push_back(keyCertPair);
+
+            if (!chainContents.empty())
+                sslOpts.pem_root_certs = chainContents;
+
+            JLOG(journal_.info()) << "gRPC TLS credentials configured successfully";
+            return grpc::SslServerCredentials(sslOpts);
+        }
+        catch (std::exception const& e)
+        {
+            JLOG(journal_.error()) << "Exception while configuring gRPC TLS: " << e.what();
+            return nullptr;
+        }
+    }
+    else
+    {
+        JLOG(journal_.info()) << "Configuring gRPC server without TLS";
+        return grpc::InsecureServerCredentials();
+    }
 }
 
 bool
@@ -493,23 +580,33 @@ GRPCServerImpl::start()
     if (serverAddress_.empty())
         return false;
 
-    JLOG(journal_.info()) << "Starting gRPC server at " << serverAddress_;
-
     grpc::ServerBuilder builder;
-
-    // Listen on the given address without any authentication mechanism.
-    // Actually binded port will be returned into "port" variable.
     int port = 0;
-    builder.AddListeningPort(serverAddress_, grpc::InsecureServerCredentials(), &port);
+
+    // Create credentials (TLS or insecure) based on configuration
+    auto credentials = createServerCredentials();
+    if (!credentials)
+        return false;
+
+    // Add listening port with appropriate credentials
+    builder.AddListeningPort(serverAddress_, credentials, &port);
+
     // Register "service_" as the instance through which we'll communicate with
     // clients. In this case it corresponds to an *asynchronous* service.
     builder.RegisterService(&service_);
+
     // Get hold of the completion queue used for the asynchronous communication
     // with the gRPC runtime.
     cq_ = builder.AddCompletionQueue();
+
     // Finally assemble the server.
     server_ = builder.BuildAndStart();
     serverPort_ = static_cast<std::uint16_t>(port);
+
+    if (serverPort_)
+    {
+        JLOG(journal_.info()) << "gRPC server started successfully on port " << serverPort_;
+    }
 
     return static_cast<bool>(serverPort_);
 }
