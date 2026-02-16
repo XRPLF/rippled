@@ -46,7 +46,7 @@ jobs:
 
   run-clang-tidy:
     needs: [determine-files]
-    if: ${{ !cancelled() && (inputs.check_all_files || needs.determine-files.outputs.any_changed == 'true') }}
+    if: ${{ always() && !cancelled() && (inputs.check_all_files || needs.determine-files.outputs.any_changed == 'true') }}
     uses: ./.github/workflows/reusable-clang-tidy-files.yml
     with:
       files: ${{ inputs.check_all_files && '' || needs.determine-files.outputs.all_changed_files }}
