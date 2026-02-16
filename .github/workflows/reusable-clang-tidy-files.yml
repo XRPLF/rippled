@@ -124,7 +124,7 @@ jobs:
 
             # Truncate if too large
             head -c 60000 filtered-output.txt >> issue.md
-            if [ $(wc -c < filtered-output.txt) -gt 60000 ]; then
+            if [ "$(wc -c < filtered-output.txt)" -gt 60000 ]; then
               echo "" >> issue.md
               echo "... (output truncated, see artifacts for full output)" >> issue.md
             fi
