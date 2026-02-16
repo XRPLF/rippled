@@ -114,6 +114,9 @@ jobs:
     needs: should-run
     if: ${{ needs.should-run.outputs.go == 'true' }}
     uses: ./.github/workflows/reusable-clang-tidy.yml
+    permissions:
+      issues: write
+      contents: read
     with:
       check_all_files: false
       create_issue_on_failure: false

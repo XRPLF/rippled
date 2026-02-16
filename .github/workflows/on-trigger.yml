@@ -65,6 +65,9 @@ defaults:
 jobs:
   clang-tidy:
     uses: ./.github/workflows/reusable-clang-tidy.yml
+    permissions:
+      issues: write
+      contents: read
     with:
       check_all_files: true
       create_issue_on_failure: ${{ github.event_name == 'schedule' }}

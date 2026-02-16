@@ -78,8 +78,10 @@ jobs:
       - name: Run clang tidy
         id: run_clang_tidy
         continue-on-error: true
+        env:
+          FILES: ${{ inputs.files }}
         run: |
-          run-clang-tidy -j ${{ steps.nproc.outputs.nproc }} -p "$BUILD_DIR" ${{ inputs.files }} 2>&1 | tee clang-tidy-output.txt
+          run-clang-tidy -j ${{ steps.nproc.outputs.nproc }} -p "$BUILD_DIR" $FILES 2>&1 | tee clang-tidy-output.txt
 
       - name: Upload clang-tidy output
         if: steps.run_clang_tidy.outcome != 'success'
@@ -110,10 +112,10 @@ jobs:
           \`\`\`
           EOF
 
-          # Append clang-tidy output (filter for errors and code snippets)
+          # Append clang-tidy output (filter for errors and warnings)
           if [ -f clang-tidy-output.txt ]; then
-            # Extract lines containing 'error:' or '|' (code snippet markers)
-            grep -E '(error:|\|)' clang-tidy-output.txt > filtered-output.txt || true
+            # Extract lines containing 'error:', 'warning:', or 'note:'
+            grep -E '(error:|warning:|note:)' clang-tidy-output.txt > filtered-output.txt || true
 
             # If filtered output is empty, use original (might be a different error format)
             if [ ! -s filtered-output.txt ]; then
@@ -122,7 +124,7 @@ jobs:
 
             # Truncate if too large
             head -c 60000 filtered-output.txt >> issue.md
-            if [ \$(wc -c < filtered-output.txt) -gt 60000 ]; then
+            if [ $(wc -c < filtered-output.txt) -gt 60000 ]; then
               echo "" >> issue.md
               echo "... (output truncated, see artifacts for full output)" >> issue.md
             fi
@@ -152,7 +154,7 @@ jobs:
           echo "created_issue=$created_issue" >> $GITHUB_OUTPUT
           echo "Created issue #$created_issue"
 
-          rm create_issue.log issue.md
+          rm -f create_issue.log issue.md clang-tidy-output.txt
 
       - name: Fail the workflow if clang-tidy failed
         if: steps.run_clang_tidy.outcome != 'success'
