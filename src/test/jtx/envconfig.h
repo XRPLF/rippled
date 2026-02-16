@@ -105,6 +105,33 @@ std::unique_ptr<Config> addGrpcConfig(std::unique_ptr<Config>);
 std::unique_ptr<Config>
 addGrpcConfigWithSecureGateway(std::unique_ptr<Config>, std::string const& secureGateway);
 
+/// @brief add a grpc address, port and TLS certificate/key paths to config
+///
+/// This is intended for use with envconfig, for tests that require a grpc
+/// server with TLS enabled.
+///
+/// @param cfg config instance to be modified
+/// @param certPath path to SSL certificate file
+/// @param keyPath path to SSL private key file
+std::unique_ptr<Config>
+addGrpcConfigWithTLS(std::unique_ptr<Config>, std::string const& certPath, std::string const& keyPath);
+
+/// @brief add a grpc address, port and TLS certificate/key/chain paths to config
+///
+/// This is intended for use with envconfig, for tests that require a grpc
+/// server with TLS enabled and a certificate chain.
+///
+/// @param cfg config instance to be modified
+/// @param certPath path to SSL certificate file
+/// @param keyPath path to SSL private key file
+/// @param chainPath path to SSL certificate chain file
+std::unique_ptr<Config>
+addGrpcConfigWithTLSAndChain(
+    std::unique_ptr<Config>,
+    std::string const& certPath,
+    std::string const& keyPath,
+    std::string const& chainPath);
+
 std::unique_ptr<Config>
 makeConfig(std::map<std::string, std::string> extraTxQ = {}, std::map<std::string, std::string> extraVoting = {});
 

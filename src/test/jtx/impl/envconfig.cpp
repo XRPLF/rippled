@@ -119,6 +119,31 @@ addGrpcConfigWithSecureGateway(std::unique_ptr<Config> cfg, std::string const& s
 }
 
 std::unique_ptr<Config>
+addGrpcConfigWithTLS(std::unique_ptr<Config> cfg, std::string const& certPath, std::string const& keyPath)
+{
+    (*cfg)[SECTION_PORT_GRPC].set("ip", getEnvLocalhostAddr());
+    (*cfg)[SECTION_PORT_GRPC].set("port", "0");
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", certPath);
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_key", keyPath);
+    return cfg;
+}
+
+std::unique_ptr<Config>
+addGrpcConfigWithTLSAndChain(
+    std::unique_ptr<Config> cfg,
+    std::string const& certPath,
+    std::string const& keyPath,
+    std::string const& chainPath)
+{
+    (*cfg)[SECTION_PORT_GRPC].set("ip", getEnvLocalhostAddr());
+    (*cfg)[SECTION_PORT_GRPC].set("port", "0");
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", certPath);
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_key", keyPath);
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_chain", chainPath);
+    return cfg;
+}
+
+std::unique_ptr<Config>
 makeConfig(std::map<std::string, std::string> extraTxQ, std::map<std::string, std::string> extraVoting)
 {
     auto p = test::jtx::envconfig();
