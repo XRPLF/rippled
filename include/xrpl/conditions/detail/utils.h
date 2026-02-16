@@ -1,9 +1,8 @@
 #pragma once
 
-#include <xrpld/conditions/detail/error.h>
-
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/conditions/detail/error.h>
 
 #include <boost/dynamic_bitset.hpp>
 

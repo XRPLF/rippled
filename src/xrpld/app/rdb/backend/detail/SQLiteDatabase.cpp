@@ -499,6 +499,13 @@ SQLiteDatabase::getTransaction(
     return TxSearched::unknown;
 }
 
+SQLiteDatabase::SQLiteDatabase(SQLiteDatabase&& rhs) noexcept
+    : registry_(rhs.registry_), useTxTables_(rhs.useTxTables_), j_(rhs.j_)
+{
+    std::exchange(ledgerDb_, std::move(rhs.ledgerDb_));
+    std::exchange(txdb_, std::move(rhs.txdb_));
+}
+
 bool
 SQLiteDatabase::ledgerDbHasSpace(Config const& config)
 {
@@ -585,15 +592,6 @@ SQLiteDatabase::SQLiteDatabase(ServiceRegistry& registry, Config const& config, 
         JLOG(j_.fatal()) << error;
         Throw<std::runtime_error>(error.data());
     }
-}
-
-SQLiteDatabase::SQLiteDatabase(SQLiteDatabase&& rhs) noexcept
-    : registry_(rhs.registry_)
-    , useTxTables_(rhs.useTxTables_)
-    , j_(rhs.j_)
-    , ledgerDb_(std::move(rhs.ledgerDb_))
-    , txdb_(std::move(rhs.txdb_))
-{
 }
 
 SQLiteDatabase

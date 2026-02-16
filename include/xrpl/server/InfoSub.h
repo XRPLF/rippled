@@ -131,6 +131,7 @@ public:
 
         virtual bool
         subPeerStatus(ref ispListener) = 0;
+
         virtual bool
         unsubPeerStatus(std::uint64_t uListener) = 0;
         virtual void
