@@ -109,6 +109,8 @@ words:
   - Gnutella
   - gpgcheck
   - gpgkey
+  - grpc
+  - grpcs
   - hotwallet
   - hwrap
   - ifndef
