@@ -6,8 +6,6 @@
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/resource/Fees.h>
 
-#include <boost/filesystem.hpp>
-
 namespace xrpl {
 
 namespace {
