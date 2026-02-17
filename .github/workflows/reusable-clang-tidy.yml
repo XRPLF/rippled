@@ -34,13 +34,7 @@ jobs:
         with:
           files: |
             **/*.cpp
-            **/*.cc
-            **/*.cxx
-            **/*.c++
             **/*.h
-            **/*.hpp
-            **/*.hxx
-            **/*.h++
             **/*.ipp
           separator: " "
 

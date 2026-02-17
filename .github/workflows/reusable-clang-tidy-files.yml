@@ -66,7 +66,6 @@ jobs:
             -Dtests=ON \
             -Dwerr=ON \
             -Dxrpld=ON \
-            -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
             ..
 
       # clang-tidy needs headers generated from proto files
@@ -145,8 +144,8 @@ jobs:
 
           # Create the issue
           gh issue create \
-            --label "clang-tidy,automated,bug" \
-            --title "Clang-tidy check failed in ${{ github.workflow }} workflow" \
+            --label "Bug,Clang-tidy" \
+            --title "Clang-tidy check failed" \
             --body-file ./issue.md \
             > create_issue.log
 
