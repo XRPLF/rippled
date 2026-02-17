@@ -238,10 +238,7 @@ public:
         using namespace jtx;
 
         // Test with just server cert and key (no client verification)
-        auto cfg = envconfig(
-            addGrpcConfigWithTLS,
-            getServerCertPath().string(),
-            getServerKeyPath().string());
+        auto cfg = envconfig(addGrpcConfigWithTLS, getServerCertPath().string(), getServerKeyPath().string());
         Env env(*this, std::move(cfg));
 
         // Verify the server actually started by checking the port
