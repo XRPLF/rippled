@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_CONFIDENTIALTRANSFER_H_INCLUDED
-#define XRPL_PROTOCOL_CONFIDENTIALTRANSFER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/protocol/Indexes.h>
@@ -469,5 +468,3 @@ verifyAggregatedBulletproof(Slice const& proof, std::vector<Slice> const& commit
 TER
 computeConvertBackRemainder(Slice const& commitment, std::uint64_t amount, Buffer& out);
 }  // namespace xrpl
-
-#endif

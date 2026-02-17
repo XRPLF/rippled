@@ -251,7 +251,7 @@ struct MPTConfidentialClawback
 };
 
 /**
- * @brief Stores the parameterss that are exclusively used to generate a
+ * @brief Stores the parameters that are exclusively used to generate a
  * pedersen linkage proof
  */
 struct PedersenProofParams

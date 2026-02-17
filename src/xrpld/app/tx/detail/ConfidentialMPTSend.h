@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_CONFIDENTIALSEND_H_INCLUDED
-#define XRPL_TX_CONFIDENTIALSEND_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
@@ -51,5 +50,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

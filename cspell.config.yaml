@@ -86,6 +86,7 @@ words:
   - daria
   - dcmake
   - dearmor
+  - decryptor
   - deleteme
   - demultiplexer
   - deserializaton
@@ -95,6 +96,7 @@ words:
   - distro
   - doxyfile
   - dxrpl
+  - elgamal
   - endmacro
   - exceptioned
   - Falco
@@ -103,6 +105,7 @@ words:
   - fmtdur
   - fsanitize
   - funclets
+  - Gamal
   - gcov
   - gcovr
   - ghead
@@ -183,6 +186,7 @@ words:
   - partitioner
   - paychan
   - paychans
+  - Pedersen
   - permdex
   - perminute
   - permissioned
@@ -218,6 +222,7 @@ words:
   - sahyadri
   - Satoshi
   - scons
+  - Schnorr
   - secp
   - sendq
   - seqit
