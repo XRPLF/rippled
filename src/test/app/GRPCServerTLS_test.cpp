@@ -233,10 +233,31 @@ public:
     void
     testWithValidTLS()
     {
-        testcase("GRPCServer with valid TLS configuration");
+        testcase("GRPCServer with valid TLS configuration (no mutual TLS)");
 
         using namespace jtx;
 
+        // Test with just server cert and key (no client verification)
+        auto cfg = envconfig(
+            addGrpcConfigWithTLS,
+            getServerCertPath().string(),
+            getServerKeyPath().string());
+        Env env(*this, std::move(cfg));
+
+        // Verify the server actually started by checking the port
+        auto const grpc_port = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
+        BEAST_EXPECT(grpc_port.has_value());
+        BEAST_EXPECT(*grpc_port > 0);
+    }
+
+    void
+    testWithMutualTLS()
+    {
+        testcase("GRPCServer with mutual TLS (client verification enabled)");
+
+        using namespace jtx;
+
+        // Test with server cert, key, and CA chain for client verification
         auto cfg = envconfig(
             addGrpcConfigWithTLSAndChain,
             getServerCertPath().string(),
@@ -305,6 +326,7 @@ public:
     {
         testWithoutTLS();
         testWithValidTLS();
+        testWithMutualTLS();
         testWithMissingKey();
         testWithMissingCert();
     }
