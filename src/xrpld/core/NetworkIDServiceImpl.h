@@ -18,7 +18,7 @@ class Config;
 class NetworkIDServiceImpl final : public NetworkIDService
 {
 public:
-    explicit NetworkIDServiceImpl(Config const& config);
+    explicit NetworkIDServiceImpl(std::uint32_t networkID);
 
     ~NetworkIDServiceImpl() override = default;
 

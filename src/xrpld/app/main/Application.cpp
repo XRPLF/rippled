@@ -290,7 +290,7 @@ public:
 
         , cachedSLEs_("Cached SLEs", 0, std::chrono::minutes(1), stopwatch(), logs_->journal("CachedSLEs"))
 
-        , networkIDService_(std::make_unique<NetworkIDServiceImpl>(*config_))
+        , networkIDService_(std::make_unique<NetworkIDServiceImpl>(config_->NETWORK_ID))
 
         , validatorKeys_(*config_, m_journal)
 

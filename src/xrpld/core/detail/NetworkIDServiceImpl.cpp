@@ -3,7 +3,7 @@
 
 namespace xrpl {
 
-NetworkIDServiceImpl::NetworkIDServiceImpl(Config const& config) : networkID_(config.NETWORK_ID)
+NetworkIDServiceImpl::NetworkIDServiceImpl(std::uint32_t networkID) : networkID_(networkID)
 {
 }
 
