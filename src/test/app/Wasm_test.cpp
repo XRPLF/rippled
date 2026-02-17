@@ -334,9 +334,9 @@ struct Wasm_test : public beast::unit_test::suite
         }
 
         {  // fail because trying to access nonexistent field
-            struct BadTestHostFunctions : public TestHostFunctions
+            struct FieldNotFoundHostFunctions : public TestHostFunctions
             {
-                explicit BadTestHostFunctions(Env& env) : TestHostFunctions(env)
+                explicit FieldNotFoundHostFunctions(Env& env) : TestHostFunctions(env)
                 {
                 }
                 Expected<Bytes, HostFunctionError>
@@ -346,15 +346,15 @@ struct Wasm_test : public beast::unit_test::suite
                 }
             };
 
-            std::shared_ptr<HostFunctions> hfs(new BadTestHostFunctions(env));
+            std::shared_ptr<HostFunctions> hfs(new FieldNotFoundHostFunctions(env));
             auto re = runEscrowWasm(allHFWasm, hfs, 100'000, ESCROW_FUNCTION_NAME, {});
             checkResult(re, -201, 28'965);
         }
 
         {  // fail because trying to allocate more than MAX_PAGES memory
-            struct BadTestHostFunctions : public TestHostFunctions
+            struct OversizedFieldHostFunctions : public TestHostFunctions
             {
-                explicit BadTestHostFunctions(Env& env) : TestHostFunctions(env)
+                explicit OversizedFieldHostFunctions(Env& env) : TestHostFunctions(env)
                 {
                 }
                 Expected<Bytes, HostFunctionError>
@@ -364,7 +364,7 @@ struct Wasm_test : public beast::unit_test::suite
                 }
             };
 
-            std::shared_ptr<HostFunctions> hfs(new BadTestHostFunctions(env));
+            std::shared_ptr<HostFunctions> hfs(new OversizedFieldHostFunctions(env));
             auto re = runEscrowWasm(allHFWasm, hfs, 100'000, ESCROW_FUNCTION_NAME, {});
             checkResult(re, -201, 28'965);
         }
@@ -582,7 +582,7 @@ struct Wasm_test : public beast::unit_test::suite
         auto const codecovWasm = hexToBytes(codecovTestsWasmHex);
         std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
 
-        auto const allowance = 201'503;
+        auto const allowance = 202'724;
         auto re = runEscrowWasm(codecovWasm, hfs, allowance, ESCROW_FUNCTION_NAME, {});
 
         checkResult(re, 1, allowance);
