@@ -954,13 +954,17 @@ private:
         // Equal deposit limit, tokens rounded to 0
         testAMM(
             [&](AMM& amm, Env& env) {
-                amm.deposit(DepositArg{
-                    .asset1In = STAmount{USD, 1, -15}, .asset2In = XRPAmount{1}, .err = ter(tecAMM_INVALID_TOKENS)});
+                amm.deposit(
+                    DepositArg{
+                        .asset1In = STAmount{USD, 1, -15},
+                        .asset2In = XRPAmount{1},
+                        .err = ter(tecAMM_INVALID_TOKENS)});
             },
             {.pool = {{USD(1'000'000), XRP(1'000'000)}}, .features = {features - fixAMMv1_3}});
         testAMM([&](AMM& amm, Env& env) {
-            amm.deposit(DepositArg{
-                .asset1In = STAmount{USD, 1, -15}, .asset2In = XRPAmount{1}, .err = ter(tecAMM_INVALID_TOKENS)});
+            amm.deposit(
+                DepositArg{
+                    .asset1In = STAmount{USD, 1, -15}, .asset2In = XRPAmount{1}, .err = ter(tecAMM_INVALID_TOKENS)});
         });
 
         // Single deposit by asset, tokens rounded to 0
@@ -970,14 +974,18 @@ private:
 
         // Single deposit by tokens, tokens rounded to 0
         testAMM([&](AMM& amm, Env& env) {
-            amm.deposit(DepositArg{
-                .tokens = IOUAmount{1, -10}, .asset1In = STAmount{USD, 1, -15}, .err = ter(tecAMM_INVALID_TOKENS)});
+            amm.deposit(
+                DepositArg{
+                    .tokens = IOUAmount{1, -10}, .asset1In = STAmount{USD, 1, -15}, .err = ter(tecAMM_INVALID_TOKENS)});
         });
 
         // Single deposit with EPrice, tokens rounded to 0
         testAMM([&](AMM& amm, Env& env) {
-            amm.deposit(DepositArg{
-                .asset1In = STAmount{USD, 1, -15}, .maxEP = STAmount{USD, 1, -1}, .err = ter(tecAMM_INVALID_TOKENS)});
+            amm.deposit(
+                DepositArg{
+                    .asset1In = STAmount{USD, 1, -15},
+                    .maxEP = STAmount{USD, 1, -1},
+                    .err = ter(tecAMM_INVALID_TOKENS)});
         });
     }
 
@@ -1555,10 +1563,14 @@ private:
             ammAlice.withdraw(carol, std::nullopt, STAmount{USD, 1, -9}, std::nullopt, ter(tecAMM_INVALID_TOKENS));
             ammAlice.withdraw(carol, std::nullopt, XRPAmount{1}, std::nullopt, ter(tecAMM_INVALID_TOKENS));
             ammAlice.withdraw(WithdrawArg{.tokens = IOUAmount{1, -10}, .err = ter(tecAMM_INVALID_TOKENS)});
-            ammAlice.withdraw(WithdrawArg{
-                .asset1Out = STAmount{USD, 1, -15}, .asset2Out = XRPAmount{1}, .err = ter(tecAMM_INVALID_TOKENS)});
-            ammAlice.withdraw(WithdrawArg{
-                .tokens = IOUAmount{1, -10}, .asset1Out = STAmount{USD, 1, -15}, .err = ter(tecAMM_INVALID_TOKENS)});
+            ammAlice.withdraw(
+                WithdrawArg{
+                    .asset1Out = STAmount{USD, 1, -15}, .asset2Out = XRPAmount{1}, .err = ter(tecAMM_INVALID_TOKENS)});
+            ammAlice.withdraw(
+                WithdrawArg{
+                    .tokens = IOUAmount{1, -10},
+                    .asset1Out = STAmount{USD, 1, -15},
+                    .err = ter(tecAMM_INVALID_TOKENS)});
         });
     }
 
@@ -6149,11 +6161,12 @@ private:
         // tfTwoAsset withdraw mode
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                ammAlice.withdraw(WithdrawArg{
-                    .account = alice,
-                    .asset1Out = STAmount{GBP, 3'500},
-                    .asset2Out = STAmount{EUR, 15'000},
-                    .flags = tfTwoAsset});
+                ammAlice.withdraw(
+                    WithdrawArg{
+                        .account = alice,
+                        .asset1Out = STAmount{GBP, 3'500},
+                        .asset2Out = STAmount{EUR, 15'000},
+                        .flags = tfTwoAsset});
                 invariant(ammAlice, env, "with3", false);
             },
             {{GBP(7'000), EUR(30'000)}},
@@ -6197,8 +6210,12 @@ private:
         // tfOneAssetLPToken mode
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                ammAlice.withdraw(WithdrawArg{
-                    .account = alice, .tokens = 1'000, .asset1Out = STAmount{GBP, 100}, .flags = tfOneAssetLPToken});
+                ammAlice.withdraw(
+                    WithdrawArg{
+                        .account = alice,
+                        .tokens = 1'000,
+                        .asset1Out = STAmount{GBP, 100},
+                        .flags = tfOneAssetLPToken});
                 invariant(ammAlice, env, "with6", false);
             },
             {{GBP(7'000), EUR(30'000)}},
@@ -6209,8 +6226,12 @@ private:
         // tfLimitLPToken mode
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                ammAlice.withdraw(WithdrawArg{
-                    .account = alice, .asset1Out = STAmount{GBP, 100}, .maxEP = IOUAmount{2}, .flags = tfLimitLPToken});
+                ammAlice.withdraw(
+                    WithdrawArg{
+                        .account = alice,
+                        .asset1Out = STAmount{GBP, 100},
+                        .maxEP = IOUAmount{2},
+                        .flags = tfLimitLPToken});
                 invariant(ammAlice, env, "with7", true);
             },
             {{GBP(7'000), EUR(30'000)}},

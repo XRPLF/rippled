@@ -328,23 +328,24 @@ doPayment(
         "xrpl::detail::doPayment",
         "fee outstanding stays valid");
 
-    return LoanPaymentParts{// Principal paid is straightforward - it's the tracked delta
-                            .principalPaid = payment.trackedPrincipalDelta,
+    return LoanPaymentParts{
+        // Principal paid is straightforward - it's the tracked delta
+        .principalPaid = payment.trackedPrincipalDelta,
 
-                            // Interest paid combines:
-                            // 1. Tracked interest from the amortization schedule
-                            //    (derived from the tracked deltas)
-                            // 2. Untracked interest (e.g., late payment penalties)
-                            .interestPaid = payment.trackedInterestPart() + payment.untrackedInterest,
+        // Interest paid combines:
+        // 1. Tracked interest from the amortization schedule
+        //    (derived from the tracked deltas)
+        // 2. Untracked interest (e.g., late payment penalties)
+        .interestPaid = payment.trackedInterestPart() + payment.untrackedInterest,
 
-                            // Value change represents how the loan's total value changed beyond
-                            // normal amortization.
-                            .valueChange = payment.untrackedInterest,
+        // Value change represents how the loan's total value changed beyond
+        // normal amortization.
+        .valueChange = payment.untrackedInterest,
 
-                            // Fee paid combines:
-                            // 1. Tracked management fees from the amortization schedule
-                            // 2. Untracked fees (e.g., late payment fees, service fees)
-                            .feePaid = payment.trackedManagementFeeDelta + payment.untrackedManagementFee};
+        // Fee paid combines:
+        // 1. Tracked management fees from the amortization schedule
+        // 2. Untracked fees (e.g., late payment fees, service fees)
+        .feePaid = payment.trackedManagementFeeDelta + payment.untrackedManagementFee};
 }
 
 /* Simulates an overpayment to validate it won't break the loan's amortization.
