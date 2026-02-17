@@ -93,7 +93,8 @@ MPTAmount::operator=(beast::Zero)
 }
 
 /** Returns true if the amount is not zero */
-constexpr MPTAmount::operator bool() const noexcept
+constexpr MPTAmount::
+operator bool() const noexcept
 {
     return value_ != 0;
 }

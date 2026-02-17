@@ -430,58 +430,62 @@ GRPCServerImpl::setupListeners()
     {
         using cd = CallData<org::xrpl::rpc::v1::GetLedgerRequest, org::xrpl::rpc::v1::GetLedgerResponse>;
 
-        addToRequests(std::make_shared<cd>(
-            service_,
-            *cq_,
-            app_,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedger,
-            doLedgerGrpc,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedger,
-            RPC::NO_CONDITION,
-            Resource::feeMediumBurdenRPC,
-            secureGatewayIPs_));
+        addToRequests(
+            std::make_shared<cd>(
+                service_,
+                *cq_,
+                app_,
+                &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedger,
+                doLedgerGrpc,
+                &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedger,
+                RPC::NO_CONDITION,
+                Resource::feeMediumBurdenRPC,
+                secureGatewayIPs_));
     }
     {
         using cd = CallData<org::xrpl::rpc::v1::GetLedgerDataRequest, org::xrpl::rpc::v1::GetLedgerDataResponse>;
 
-        addToRequests(std::make_shared<cd>(
-            service_,
-            *cq_,
-            app_,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedgerData,
-            doLedgerDataGrpc,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerData,
-            RPC::NO_CONDITION,
-            Resource::feeMediumBurdenRPC,
-            secureGatewayIPs_));
+        addToRequests(
+            std::make_shared<cd>(
+                service_,
+                *cq_,
+                app_,
+                &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedgerData,
+                doLedgerDataGrpc,
+                &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerData,
+                RPC::NO_CONDITION,
+                Resource::feeMediumBurdenRPC,
+                secureGatewayIPs_));
     }
     {
         using cd = CallData<org::xrpl::rpc::v1::GetLedgerDiffRequest, org::xrpl::rpc::v1::GetLedgerDiffResponse>;
 
-        addToRequests(std::make_shared<cd>(
-            service_,
-            *cq_,
-            app_,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedgerDiff,
-            doLedgerDiffGrpc,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerDiff,
-            RPC::NO_CONDITION,
-            Resource::feeMediumBurdenRPC,
-            secureGatewayIPs_));
+        addToRequests(
+            std::make_shared<cd>(
+                service_,
+                *cq_,
+                app_,
+                &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedgerDiff,
+                doLedgerDiffGrpc,
+                &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerDiff,
+                RPC::NO_CONDITION,
+                Resource::feeMediumBurdenRPC,
+                secureGatewayIPs_));
     }
     {
         using cd = CallData<org::xrpl::rpc::v1::GetLedgerEntryRequest, org::xrpl::rpc::v1::GetLedgerEntryResponse>;
 
-        addToRequests(std::make_shared<cd>(
-            service_,
-            *cq_,
-            app_,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedgerEntry,
-            doLedgerEntryGrpc,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerEntry,
-            RPC::NO_CONDITION,
-            Resource::feeMediumBurdenRPC,
-            secureGatewayIPs_));
+        addToRequests(
+            std::make_shared<cd>(
+                service_,
+                *cq_,
+                app_,
+                &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedgerEntry,
+                doLedgerEntryGrpc,
+                &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerEntry,
+                RPC::NO_CONDITION,
+                Resource::feeMediumBurdenRPC,
+                secureGatewayIPs_));
     }
     return requests;
 }

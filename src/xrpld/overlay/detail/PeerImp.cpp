@@ -532,8 +532,7 @@ void
 PeerImp::fail(std::string const& reason)
 {
     if (!strand_.running_in_this_thread())
-        return post(
-            strand_, std::bind((void(Peer::*)(std::string const&)) & PeerImp::fail, shared_from_this(), reason));
+        return post(strand_, std::bind((void (Peer::*)(std::string const&))&PeerImp::fail, shared_from_this(), reason));
 
     if (!socket_.is_open())
         return;

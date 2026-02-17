@@ -180,8 +180,9 @@ ConnectAttempt::setTimer(ConnectionStep step)
         try
         {
             timer_.expires_after(connectTimeout);
-            timer_.async_wait(boost::asio::bind_executor(
-                strand_, std::bind(&ConnectAttempt::onTimer, shared_from_this(), std::placeholders::_1)));
+            timer_.async_wait(
+                boost::asio::bind_executor(
+                    strand_, std::bind(&ConnectAttempt::onTimer, shared_from_this(), std::placeholders::_1)));
         }
         catch (std::exception const& ex)
         {
@@ -218,8 +219,9 @@ ConnectAttempt::setTimer(ConnectionStep step)
 
         // call to expires_after cancels previous timer
         stepTimer_.expires_after(stepTimeout);
-        stepTimer_.async_wait(boost::asio::bind_executor(
-            strand_, std::bind(&ConnectAttempt::onTimer, shared_from_this(), std::placeholders::_1)));
+        stepTimer_.async_wait(
+            boost::asio::bind_executor(
+                strand_, std::bind(&ConnectAttempt::onTimer, shared_from_this(), std::placeholders::_1)));
 
         JLOG(journal_.trace()) << "setTimer: " << stepToString(step) << " timeout=" << stepTimeout.count() << "s";
     }

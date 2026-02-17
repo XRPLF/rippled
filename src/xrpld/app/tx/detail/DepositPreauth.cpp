@@ -120,8 +120,9 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
     else if (ctx.tx.isFieldPresent(sfUnauthorizeCredentials))
     {
         // Verify that the Preauth entry is in the ledger.
-        if (!ctx.view.exists(keylet::depositPreauth(
-                account, credentials::makeSorted(ctx.tx.getFieldArray(sfUnauthorizeCredentials)))))
+        if (!ctx.view.exists(
+                keylet::depositPreauth(
+                    account, credentials::makeSorted(ctx.tx.getFieldArray(sfUnauthorizeCredentials)))))
             return tecNO_ENTRY;
     }
     return tesSUCCESS;
