@@ -23,7 +23,7 @@
 #include <xrpld/app/misc/setup_HashRouter.h>
 #include <xrpld/app/paths/PathRequests.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
-#include <xrpld/app/tx/apply.h>
+#include <xrpld/core/ConfigSections.h>
 #include <xrpld/core/NetworkIDServiceImpl.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/PeerSet.h>
