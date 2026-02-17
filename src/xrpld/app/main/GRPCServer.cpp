@@ -347,6 +347,14 @@ GRPCServerImpl::GRPCServerImpl(Application& app) : app_(app), journal_(app_.jour
             }
             JLOG(journal_.info()) << "gRPC TLS enabled with certificate: " << *sslCertPath_;
         }
+
+        // Validate TLS configuration consistency: ssl_chain only makes sense when TLS is enabled
+        if (sslChainPath_.has_value() && (!sslCertPath_.has_value() || !sslKeyPath_.has_value()))
+        {
+            JLOG(journal_.error()) << "ssl_chain specified for gRPC without both ssl_cert and ssl_key; "
+                                   << "this is an invalid TLS configuration";
+            Throw<std::runtime_error>("Invalid gRPC TLS configuration: ssl_chain requires both ssl_cert and ssl_key");
+        }
     }
 }
 
@@ -551,7 +559,11 @@ GRPCServerImpl::createServerCredentials()
             sslOpts.pem_key_cert_pairs.push_back(keyCertPair);
 
             if (!chainContents.empty())
+            {
                 sslOpts.pem_root_certs = chainContents;
+                sslOpts.client_certificate_request = GRPC_SSL_REQUEST_AND_REQUIRE_CLIENT_CERTIFICATE_AND_VERIFY;
+                JLOG(journal_.info()) << "gRPC mutual TLS enabled - client certificates will be required and verified";
+            }
 
             JLOG(journal_.info()) << "gRPC TLS credentials configured successfully";
             return grpc::SslServerCredentials(sslOpts);

@@ -4,6 +4,10 @@
 
 #include <xrpl/beast/unit_test.h>
 
+#include <boost/filesystem.hpp>
+
+#include <filesystem>
+
 namespace {
 
 constexpr std::string_view kCA_CERT_CONTENT =
@@ -145,7 +149,8 @@ public:
     TemporaryTLSCertificates()
     {
         auto tmpDir = std::filesystem::temp_directory_path();
-        tempDir_ = tmpDir / (std::string(kCERTS_DIR_PREFIX) + std::to_string(std::time(nullptr)));
+        auto uniqueDirName = boost::filesystem::unique_path(std::string(kCERTS_DIR_PREFIX) + "%%%%%%%%");
+        tempDir_ = tmpDir / uniqueDirName.string();
         std::filesystem::create_directories(tempDir_);
 
         writeFile(tempDir_ / kCA_CERT_FILENAME, kCA_CERT_CONTENT);
