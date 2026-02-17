@@ -5,7 +5,7 @@ Loop: test.jtx test.unit_test
   test.unit_test == test.jtx
 
 Loop: xrpld.app xrpld.overlay
-  xrpld.overlay > xrpld.app
+  xrpld.overlay ~= xrpld.app
 
 Loop: xrpld.app xrpld.peerfinder
   xrpld.peerfinder == xrpld.app

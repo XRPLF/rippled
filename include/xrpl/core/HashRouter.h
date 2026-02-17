@@ -251,7 +251,4 @@ private:
     beast::aged_unordered_map<uint256, Entry, Stopwatch::clock_type, hardened_hash<strong_hash>> suppressionMap_;
 };
 
-HashRouter::Setup
-setup_HashRouter(Config const&);
-
 }  // namespace xrpl

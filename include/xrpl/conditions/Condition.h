@@ -1,9 +1,8 @@
 #pragma once
 
-#include <xrpld/conditions/detail/utils.h>
-
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/conditions/detail/utils.h>
 
 #include <cstdint>
 #include <set>

@@ -203,7 +203,7 @@ saveValidatedLedger(
         aLedger = app.getAcceptedLedgerCache().fetch(ledger->header().hash);
         if (!aLedger)
         {
-            aLedger = std::make_shared<AcceptedLedger>(ledger, app);
+            aLedger = std::make_shared<AcceptedLedger>(ledger);
             app.getAcceptedLedgerCache().canonicalize_replace_client(ledger->header().hash, aLedger);
         }
     }
@@ -555,8 +555,9 @@ std::pair<std::vector<std::shared_ptr<Transaction>>, int>
 getTxHistory(soci::session& session, Application& app, LedgerIndex startIndex, int quantity)
 {
     std::string sql = boost::str(
-        boost::format("SELECT LedgerSeq, Status, RawTxn "
-                      "FROM Transactions ORDER BY LedgerSeq DESC LIMIT %u,%u;") %
+        boost::format(
+            "SELECT LedgerSeq, Status, RawTxn "
+            "FROM Transactions ORDER BY LedgerSeq DESC LIMIT %u,%u;") %
         startIndex % quantity);
 
     std::vector<std::shared_ptr<Transaction>> txs;
@@ -658,18 +659,20 @@ transactionsSQL(
 
     if (count)
         sql = boost::str(
-            boost::format("SELECT %s FROM AccountTransactions "
-                          "WHERE Account = '%s' %s %s LIMIT %u, %u;") %
+            boost::format(
+                "SELECT %s FROM AccountTransactions "
+                "WHERE Account = '%s' %s %s LIMIT %u, %u;") %
             selection % toBase58(options.account) % maxClause % minClause % options.offset % numberOfResults);
     else
         sql = boost::str(
-            boost::format("SELECT %s FROM "
-                          "AccountTransactions INNER JOIN Transactions "
-                          "ON Transactions.TransID = AccountTransactions.TransID "
-                          "WHERE Account = '%s' %s %s "
-                          "ORDER BY AccountTransactions.LedgerSeq %s, "
-                          "AccountTransactions.TxnSeq %s, AccountTransactions.TransID %s "
-                          "LIMIT %u, %u;") %
+            boost::format(
+                "SELECT %s FROM "
+                "AccountTransactions INNER JOIN Transactions "
+                "ON Transactions.TransID = AccountTransactions.TransID "
+                "WHERE Account = '%s' %s %s "
+                "ORDER BY AccountTransactions.LedgerSeq %s, "
+                "AccountTransactions.TxnSeq %s, AccountTransactions.TransID %s "
+                "LIMIT %u, %u;") %
             selection % toBase58(options.account) % maxClause % minClause % (descending ? "DESC" : "ASC") %
             (descending ? "DESC" : "ASC") % (descending ? "DESC" : "ASC") % options.offset % numberOfResults);
     JLOG(j.trace()) << "txSQL query: " << sql;
