@@ -3,10 +3,15 @@
 #include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
 
 #include <boost/filesystem.hpp>
 
+#include <grpcpp/grpcpp.h>
+
+#include <chrono>
 #include <filesystem>
+#include <fstream>
 
 namespace {
 
@@ -132,6 +137,94 @@ constexpr std::string_view kSERVER_KEY_CONTENT =
     "5dPKrvLYFOCfSjtu7qDDs9AH7FOo0VI=\n"
     "-----END PRIVATE KEY-----\n";
 
+constexpr std::string_view kCLIENT_CERT_CONTENT =
+    "-----BEGIN CERTIFICATE-----\n"
+    "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\n"
+    "V2wsqVh+F0f/gaeGgT34h2FOriyE\n"
+    "-----END CERTIFICATE-----\n";
+
+constexpr std::string_view kCLIENT_KEY_CONTENT =
+    "-----BEGIN PRIVATE KEY-----\n"
+    "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\n"
+    "exqnVXngZ0T1FlADEiBdV2qJR+hbMA==\n"
+    "-----END PRIVATE KEY-----\n";
+
 /**
  * RAII helper for managing temporary TLS certificates in tests.
  *
@@ -144,6 +237,8 @@ public:
     static constexpr std::string_view kCA_CERT_FILENAME = "ca.pem";
     static constexpr std::string_view kSERVER_CERT_FILENAME = "server_cert.pem";
     static constexpr std::string_view kSERVER_KEY_FILENAME = "server_key.pem";
+    static constexpr std::string_view kCLIENT_CERT_FILENAME = "client_cert.pem";
+    static constexpr std::string_view kCLIENT_KEY_FILENAME = "client_key.pem";
     static constexpr std::string_view kCERTS_DIR_PREFIX = "grpc_tls_test_";
 
     TemporaryTLSCertificates()
@@ -156,6 +251,8 @@ public:
         writeFile(tempDir_ / kCA_CERT_FILENAME, kCA_CERT_CONTENT);
         writeFile(tempDir_ / kSERVER_CERT_FILENAME, kSERVER_CERT_CONTENT);
         writeFile(tempDir_ / kSERVER_KEY_FILENAME, kSERVER_KEY_CONTENT);
+        writeFile(tempDir_ / kCLIENT_CERT_FILENAME, kCLIENT_CERT_CONTENT);
+        writeFile(tempDir_ / kCLIENT_KEY_FILENAME, kCLIENT_KEY_CONTENT);
     }
 
     virtual ~TemporaryTLSCertificates()
@@ -190,6 +287,18 @@ public:
     }
 
     [[nodiscard]] std::filesystem::path
+    getClientCertPath() const
+    {
+        return tempDir_ / kCLIENT_CERT_FILENAME;
+    }
+
+    [[nodiscard]] std::filesystem::path
+    getClientKeyPath() const
+    {
+        return tempDir_ / kCLIENT_KEY_FILENAME;
+    }
+
+    [[nodiscard]] std::filesystem::path
     getTempDir() const
     {
         return tempDir_;
@@ -214,6 +323,23 @@ private:
 
 namespace xrpl {
 namespace test {
+/**
+ * Helper function to make a simple gRPC call to test connectivity.
+ * Returns true if the call succeeded, false otherwise.
+ */
+bool
+makeTestGRPCCall(std::unique_ptr<org::xrpl::rpc::v1::XRPLedgerAPIService::Stub> const& stub)
+{
+    grpc::ClientContext context;
+    org::xrpl::rpc::v1::GetLedgerRequest request;
+    org::xrpl::rpc::v1::GetLedgerResponse response;
+
+    // Set a short deadline to avoid hanging on failed connections
+    context.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(2));
+
+    grpc::Status status = stub->GetLedger(&context, request, &response);
+    return status.ok();
+}
 
 class GRPCServerTLS_test : public beast::unit_test::suite, public TemporaryTLSCertificates
 {
@@ -230,9 +356,15 @@ public:
         Env env(*this, std::move(cfg));
 
         // Verify the server actually started by checking the port
-        auto const grpc_port = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
-        BEAST_EXPECT(grpc_port.has_value());
-        BEAST_EXPECT(*grpc_port > 0);
+        auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
+        BEAST_EXPECT(grpcPort.has_value());
+        BEAST_EXPECT(*grpcPort > 0);
+
+        // Test 1: Plaintext client should connect successfully
+        std::string serverAddress = "localhost:" + std::to_string(*grpcPort);
+        auto plaintextStub = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
+            grpc::CreateChannel(serverAddress, grpc::InsecureChannelCredentials()));
+        BEAST_EXPECT(makeTestGRPCCall(plaintextStub));
     }
 
     void
@@ -247,9 +379,23 @@ public:
         Env env(*this, std::move(cfg));
 
         // Verify the server actually started by checking the port
-        auto const grpc_port = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
-        BEAST_EXPECT(grpc_port.has_value());
-        BEAST_EXPECT(*grpc_port > 0);
+        auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
+        BEAST_EXPECT(grpcPort.has_value());
+        BEAST_EXPECT(*grpcPort > 0);
+
+        std::string serverAddress = "localhost:" + std::to_string(*grpcPort);
+
+        // Test 1: Plaintext client should FAIL against TLS server
+        auto plaintextStub = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
+            grpc::CreateChannel(serverAddress, grpc::InsecureChannelCredentials()));
+        BEAST_EXPECT(!makeTestGRPCCall(plaintextStub));
+
+        // Test 2: TLS client with server CA should succeed
+        grpc::SslCredentialsOptions sslOpts;
+        sslOpts.pem_root_certs = std::string(kCA_CERT_CONTENT);
+        auto tlsStub = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
+            grpc::CreateChannel(serverAddress, grpc::SslCredentials(sslOpts)));
+        BEAST_EXPECT(makeTestGRPCCall(tlsStub));
     }
 
     void
@@ -268,9 +414,27 @@ public:
         Env env(*this, std::move(cfg));
 
         // Verify the server actually started by checking the port
-        auto const grpc_port = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
-        BEAST_EXPECT(grpc_port.has_value());
-        BEAST_EXPECT(*grpc_port > 0);
+        auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
+        BEAST_EXPECT(grpcPort.has_value());
+        BEAST_EXPECT(*grpcPort > 0);
+
+        auto const serverAddress = "localhost:" + std::to_string(*grpcPort);
+
+        // Test 1: TLS client WITHOUT client certificate should FAIL (mTLS requires client cert)
+        grpc::SslCredentialsOptions sslOptsNoClient;
+        sslOptsNoClient.pem_root_certs = std::string(kCA_CERT_CONTENT);
+        auto tlsStubNoClient = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
+            grpc::CreateChannel(serverAddress, grpc::SslCredentials(sslOptsNoClient)));
+        BEAST_EXPECT(!makeTestGRPCCall(tlsStubNoClient));
+
+        // Test 2: TLS client WITH client certificate should succeed
+        grpc::SslCredentialsOptions sslOptsWithClient;
+        sslOptsWithClient.pem_root_certs = std::string(kCA_CERT_CONTENT);
+        sslOptsWithClient.pem_cert_chain = std::string(kCLIENT_CERT_CONTENT);
+        sslOptsWithClient.pem_private_key = std::string(kCLIENT_KEY_CONTENT);
+        auto tlsStubWithClient = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
+            grpc::CreateChannel(serverAddress, grpc::SslCredentials(sslOptsWithClient)));
+        BEAST_EXPECT(makeTestGRPCCall(tlsStubWithClient));
     }
 
     void
