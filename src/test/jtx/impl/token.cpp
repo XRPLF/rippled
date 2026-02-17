@@ -53,8 +53,7 @@ getNextID(
     std::uint16_t xferFee)
 {
     // Get the nftSeq from the account root of the issuer.
-    std::uint32_t const nftSeq = {
-        env.le(issuer)->at(~sfMintedNFTokens).value_or(0)};
+    std::uint32_t const nftSeq = {env.le(issuer)->at(~sfMintedNFTokens).value_or(0)};
     return token::getID(env, issuer, nfTokenTaxon, nftSeq, flags, xferFee);
 }
 
@@ -69,10 +68,8 @@ getID(
 {
     // We must add issuer's FirstNFTokenSequence to offset the starting NFT
     // sequence number.
-    nftSeq +=
-        env.le(issuer)->at(~sfFirstNFTokenSequence).value_or(env.seq(issuer));
-    return xrpl::NFTokenMint::createNFTokenID(
-        flags, xferFee, issuer, nft::toTaxon(nfTokenTaxon), nftSeq);
+    nftSeq += env.le(issuer)->at(~sfFirstNFTokenSequence).value_or(env.seq(issuer));
+    return xrpl::NFTokenMint::createNFTokenID(flags, xferFee, issuer, nft::toTaxon(nfTokenTaxon), nftSeq);
 }
 
 Json::Value
@@ -86,10 +83,7 @@ burn(jtx::Account const& account, uint256 const& nftokenID)
 }
 
 Json::Value
-createOffer(
-    jtx::Account const& account,
-    uint256 const& nftokenID,
-    STAmount const& amount)
+createOffer(jtx::Account const& account, uint256 const& nftokenID, STAmount const& amount)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
@@ -134,17 +128,13 @@ cancelOfferImpl(jtx::Account const& account, T const& nftokenOffers)
 }
 
 Json::Value
-cancelOffer(
-    jtx::Account const& account,
-    std::initializer_list<uint256> const& nftokenOffers)
+cancelOffer(jtx::Account const& account, std::initializer_list<uint256> const& nftokenOffers)
 {
     return cancelOfferImpl(account, nftokenOffers);
 }
 
 Json::Value
-cancelOffer(
-    jtx::Account const& account,
-    std::vector<uint256> const& nftokenOffers)
+cancelOffer(jtx::Account const& account, std::vector<uint256> const& nftokenOffers)
 {
     return cancelOfferImpl(account, nftokenOffers);
 }
@@ -176,10 +166,7 @@ acceptSellOffer(jtx::Account const& account, uint256 const& offerIndex)
 }
 
 Json::Value
-brokerOffers(
-    jtx::Account const& account,
-    uint256 const& buyOfferIndex,
-    uint256 const& sellOfferIndex)
+brokerOffers(jtx::Account const& account, uint256 const& buyOfferIndex, uint256 const& sellOfferIndex)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();

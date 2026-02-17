@@ -12,8 +12,7 @@ static inline std::pair<Currency, Currency>
 tokenPairKey(STObject const& pair)
 {
     return std::make_pair(
-        pair.getFieldCurrency(sfBaseAsset).currency(),
-        pair.getFieldCurrency(sfQuoteAsset).currency());
+        pair.getFieldCurrency(sfBaseAsset).currency(), pair.getFieldCurrency(sfQuoteAsset).currency());
 }
 
 NotTEC
@@ -26,12 +25,10 @@ SetOracle::preflight(PreflightContext const& ctx)
         return temARRAY_TOO_LARGE;
 
     auto isInvalidLength = [&](auto const& sField, std::size_t length) {
-        return ctx.tx.isFieldPresent(sField) &&
-            (ctx.tx[sField].length() == 0 || ctx.tx[sField].length() > length);
+        return ctx.tx.isFieldPresent(sField) && (ctx.tx[sField].length() == 0 || ctx.tx[sField].length() > length);
     };
 
-    if (isInvalidLength(sfProvider, maxOracleProvider) ||
-        isInvalidLength(sfURI, maxOracleURI) ||
+    if (isInvalidLength(sfProvider, maxOracleProvider) || isInvalidLength(sfURI, maxOracleURI) ||
         isInvalidLength(sfAssetClass, maxOracleSymbolClass))
         return temMALFORMED;
 
@@ -41,30 +38,25 @@ SetOracle::preflight(PreflightContext const& ctx)
 TER
 SetOracle::preclaim(PreclaimContext const& ctx)
 {
-    auto const sleSetter =
-        ctx.view.read(keylet::account(ctx.tx.getAccountID(sfAccount)));
+    auto const sleSetter = ctx.view.read(keylet::account(ctx.tx.getAccountID(sfAccount)));
     if (!sleSetter)
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
     // lastUpdateTime must be within maxLastUpdateTimeDelta seconds
     // of the last closed ledger
     using namespace std::chrono;
-    std::size_t const closeTime =
-        duration_cast<seconds>(ctx.view.header().closeTime.time_since_epoch())
-            .count();
+    std::size_t const closeTime = duration_cast<seconds>(ctx.view.header().closeTime.time_since_epoch()).count();
     std::size_t const lastUpdateTime = ctx.tx[sfLastUpdateTime];
     if (lastUpdateTime < epoch_offset.count())
         return tecINVALID_UPDATE_TIME;
-    std::size_t const lastUpdateTimeEpoch =
-        lastUpdateTime - epoch_offset.count();
+    std::size_t const lastUpdateTimeEpoch = lastUpdateTime - epoch_offset.count();
     if (closeTime < maxLastUpdateTimeDelta)
         return tecINTERNAL;  // LCOV_EXCL_LINE
     if (lastUpdateTimeEpoch < (closeTime - maxLastUpdateTimeDelta) ||
         lastUpdateTimeEpoch > (closeTime + maxLastUpdateTimeDelta))
         return tecINVALID_UPDATE_TIME;
 
-    auto const sle = ctx.view.read(keylet::oracle(
-        ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID]));
+    auto const sle = ctx.view.read(keylet::oracle(ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID]));
 
     // token pairs to add/update
     std::set<std::pair<Currency, Currency>> pairs;
@@ -123,8 +115,7 @@ SetOracle::preclaim(PreclaimContext const& ctx)
         if (!pairsDel.empty())
             return tecTOKEN_PAIR_NOT_FOUND;
 
-        auto const oldCount =
-            sle->getFieldArray(sfPriceDataSeries).size() > 5 ? 2 : 1;
+        auto const oldCount = sle->getFieldArray(sfPriceDataSeries).size() > 5 ? 2 : 1;
         auto const newCount = pairs.size() > 5 ? 2 : 1;
         adjustReserve = newCount - oldCount;
     }
@@ -132,8 +123,7 @@ SetOracle::preclaim(PreclaimContext const& ctx)
     {
         // create
 
-        if (!ctx.tx.isFieldPresent(sfProvider) ||
-            !ctx.tx.isFieldPresent(sfAssetClass))
+        if (!ctx.tx.isFieldPresent(sfProvider) || !ctx.tx.isFieldPresent(sfAssetClass))
             return temMALFORMED;
         adjustReserve = pairs.size() > 5 ? 2 : 1;
     }
@@ -143,8 +133,7 @@ SetOracle::preclaim(PreclaimContext const& ctx)
     if (pairs.size() > maxOracleDataSeries)
         return tecARRAY_TOO_LARGE;
 
-    auto const reserve = ctx.view.fees().accountReserve(
-        sleSetter->getFieldU32(sfOwnerCount) + adjustReserve);
+    auto const reserve = ctx.view.fees().accountReserve(sleSetter->getFieldU32(sfOwnerCount) + adjustReserve);
     auto const& balance = sleSetter->getFieldAmount(sfBalance);
 
     if (balance < reserve)
@@ -156,8 +145,7 @@ SetOracle::preclaim(PreclaimContext const& ctx)
 static bool
 adjustOwnerCount(ApplyContext& ctx, int count)
 {
-    if (auto const sleAccount =
-            ctx.view().peek(keylet::account(ctx.tx[sfAccount])))
+    if (auto const sleAccount = ctx.view().peek(keylet::account(ctx.tx[sfAccount])))
     {
         adjustOwnerCount(ctx.view(), sleAccount, count, ctx.journal);
         return true;
@@ -169,9 +157,7 @@ adjustOwnerCount(ApplyContext& ctx, int count)
 static void
 setPriceDataInnerObjTemplate(STObject& obj)
 {
-    if (SOTemplate const* elements =
-            InnerObjectFormats::getInstance().findSOTemplateBySField(
-                sfPriceData))
+    if (SOTemplate const* elements = InnerObjectFormats::getInstance().findSOTemplateBySField(sfPriceData))
         obj.set(*elements);
 }
 
@@ -182,10 +168,8 @@ SetOracle::doApply()
 
     auto populatePriceData = [](STObject& priceData, STObject const& entry) {
         setPriceDataInnerObjTemplate(priceData);
-        priceData.setFieldCurrency(
-            sfBaseAsset, entry.getFieldCurrency(sfBaseAsset));
-        priceData.setFieldCurrency(
-            sfQuoteAsset, entry.getFieldCurrency(sfQuoteAsset));
+        priceData.setFieldCurrency(sfBaseAsset, entry.getFieldCurrency(sfBaseAsset));
+        priceData.setFieldCurrency(sfQuoteAsset, entry.getFieldCurrency(sfQuoteAsset));
         priceData.setFieldU64(sfAssetPrice, entry.getFieldU64(sfAssetPrice));
         if (entry.isFieldPresent(sfScale))
             priceData.setFieldU8(sfScale, entry.getFieldU8(sfScale));
@@ -203,10 +187,8 @@ SetOracle::doApply()
         {
             STObject priceData{sfPriceData};
             setPriceDataInnerObjTemplate(priceData);
-            priceData.setFieldCurrency(
-                sfBaseAsset, entry.getFieldCurrency(sfBaseAsset));
-            priceData.setFieldCurrency(
-                sfQuoteAsset, entry.getFieldCurrency(sfQuoteAsset));
+            priceData.setFieldCurrency(sfBaseAsset, entry.getFieldCurrency(sfBaseAsset));
+            priceData.setFieldCurrency(sfQuoteAsset, entry.getFieldCurrency(sfQuoteAsset));
             pairs.emplace(tokenPairKey(entry), std::move(priceData));
         }
         auto const oldCount = pairs.size() > 5 ? 2 : 1;
@@ -222,8 +204,7 @@ SetOracle::doApply()
             else if (auto iter = pairs.find(key); iter != pairs.end())
             {
                 // update the price
-                iter->second.setFieldU64(
-                    sfAssetPrice, entry.getFieldU64(sfAssetPrice));
+                iter->second.setFieldU64(sfAssetPrice, entry.getFieldU64(sfAssetPrice));
                 if (entry.isFieldPresent(sfScale))
                     iter->second.setFieldU8(sfScale, entry.getFieldU8(sfScale));
             }
@@ -242,8 +223,7 @@ SetOracle::doApply()
         if (ctx_.tx.isFieldPresent(sfURI))
             sle->setFieldVL(sfURI, ctx_.tx[sfURI]);
         sle->setFieldU32(sfLastUpdateTime, ctx_.tx[sfLastUpdateTime]);
-        if (!sle->isFieldPresent(sfOracleDocumentID) &&
-            ctx_.view().rules().enabled(fixIncludeKeyletFields))
+        if (!sle->isFieldPresent(sfOracleDocumentID) && ctx_.view().rules().enabled(fixIncludeKeyletFields))
         {
             (*sle)[sfOracleDocumentID] = ctx_.tx[sfOracleDocumentID];
         }
@@ -292,8 +272,7 @@ SetOracle::doApply()
         sle->setFieldVL(sfAssetClass, ctx_.tx[sfAssetClass]);
         sle->setFieldU32(sfLastUpdateTime, ctx_.tx[sfLastUpdateTime]);
 
-        auto page = ctx_.view().dirInsert(
-            keylet::ownerDir(account_), sle->key(), describeOwnerDir(account_));
+        auto page = ctx_.view().dirInsert(keylet::ownerDir(account_), sle->key(), describeOwnerDir(account_));
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
 

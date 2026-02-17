@@ -9,9 +9,7 @@
 
 namespace xrpl {
 
-OrderBookDBImpl::OrderBookDBImpl(
-    ServiceRegistry& registry,
-    OrderBookDBConfig const& config)
+OrderBookDBImpl::OrderBookDBImpl(ServiceRegistry& registry, OrderBookDBConfig const& config)
     : registry_(registry)
     , pathSearchMax_(config.pathSearchMax)
     , standalone_(config.standalone)
@@ -49,8 +47,7 @@ OrderBookDBImpl::setup(std::shared_ptr<ReadView const> const& ledger)
     if (seq_.exchange(ledger->seq()) != seq)
         return;
 
-    JLOG(j_.debug()) << "Full order book update: " << seq << " to "
-                     << ledger->seq();
+    JLOG(j_.debug()) << "Full order book update: " << seq << " to " << ledger->seq();
 
     if (pathSearchMax_ != 0)
     {
@@ -58,9 +55,7 @@ OrderBookDBImpl::setup(std::shared_ptr<ReadView const> const& ledger)
             update(ledger);
         else
             registry_.getJobQueue().addJob(
-                jtUPDATE_PF,
-                "OrderBookDB::update: " + std::to_string(ledger->seq()),
-                [this, ledger]() { update(ledger); });
+                jtUPDATE_PF, "OrderBookUpd" + std::to_string(ledger->seq()), [this, ledger]() { update(ledger); });
     }
 }
 
@@ -73,8 +68,7 @@ OrderBookDBImpl::update(std::shared_ptr<ReadView const> const& ledger)
     // A newer full update job is pending
     if (auto const seq = seq_.load(); seq > ledger->seq())
     {
-        JLOG(j_.debug()) << "Eliding update for " << ledger->seq()
-                         << " because of pending update to later " << seq;
+        JLOG(j_.debug()) << "Eliding update for " << ledger->seq() << " because of pending update to later " << seq;
         return;
     }
 
@@ -97,14 +91,12 @@ OrderBookDBImpl::update(std::shared_ptr<ReadView const> const& ledger)
         {
             if (registry_.isStopping())
             {
-                JLOG(j_.info())
-                    << "Update halted because the process is stopping";
+                JLOG(j_.info()) << "Update halted because the process is stopping";
                 seq_.store(0);
                 return;
             }
 
-            if (sle->getType() == ltDIR_NODE &&
-                sle->isFieldPresent(sfExchangeRate) &&
+            if (sle->getType() == ltDIR_NODE && sle->isFieldPresent(sfExchangeRate) &&
                 sle->getFieldH256(sfRootIndex) == sle->key())
             {
                 Book book;
@@ -146,14 +138,12 @@ OrderBookDBImpl::update(std::shared_ptr<ReadView const> const& ledger)
     }
     catch (SHAMapMissingNode const& mn)
     {
-        JLOG(j_.info()) << "Missing node in " << ledger->seq()
-                        << " during update: " << mn.what();
+        JLOG(j_.info()) << "Missing node in " << ledger->seq() << " during update: " << mn.what();
         seq_.store(0);
         return;
     }
 
-    JLOG(j_.debug()) << "Update completed (" << ledger->seq() << "): " << cnt
-                     << " books found";
+    JLOG(j_.debug()) << "Update completed (" << ledger->seq() << "): " << cnt << " books found";
 
     {
         std::lock_guard sl(mLock);
@@ -186,9 +176,7 @@ OrderBookDBImpl::addOrderBook(Book const& book)
 
 // return list of all orderbooks that want this issuerID and currencyID
 std::vector<Book>
-OrderBookDBImpl::getBooksByTakerPays(
-    Issue const& issue,
-    std::optional<uint256> const& domain)
+OrderBookDBImpl::getBooksByTakerPays(Issue const& issue, std::optional<uint256> const& domain)
 {
     std::vector<Book> ret;
 
@@ -216,9 +204,7 @@ OrderBookDBImpl::getBooksByTakerPays(
 }
 
 int
-OrderBookDBImpl::getBookSize(
-    Issue const& issue,
-    std::optional<uint256> const& domain)
+OrderBookDBImpl::getBookSize(Issue const& issue, std::optional<uint256> const& domain)
 {
     std::lock_guard sl(mLock);
 
@@ -229,8 +215,7 @@ OrderBookDBImpl::getBookSize(
     }
     else
     {
-        if (auto it = domainBooks_.find({issue, *domain});
-            it != domainBooks_.end())
+        if (auto it = domainBooks_.find({issue, *domain}); it != domainBooks_.end())
             return static_cast<int>(it->second.size());
     }
 
@@ -303,10 +288,8 @@ OrderBookDBImpl::processTxn(
             if (node.getFieldU16(sfLedgerEntryType) == ltOFFER)
             {
                 auto process = [&, this](SField const& field) {
-                    if (auto data = dynamic_cast<STObject const*>(
-                            node.peekAtPField(field));
-                        data && data->isFieldPresent(sfTakerPays) &&
-                        data->isFieldPresent(sfTakerGets))
+                    if (auto data = dynamic_cast<STObject const*>(node.peekAtPField(field));
+                        data && data->isFieldPresent(sfTakerPays) && data->isFieldPresent(sfTakerGets))
                     {
                         auto listeners = getBookListeners(
                             {data->getFieldAmount(sfTakerGets).issue(),
@@ -329,8 +312,7 @@ OrderBookDBImpl::processTxn(
         }
         catch (std::exception const& ex)
         {
-            JLOG(j_.info())
-                << "processTxn: field not found (" << ex.what() << ")";
+            JLOG(j_.info()) << "processTxn: field not found (" << ex.what() << ")";
         }
     }
 }

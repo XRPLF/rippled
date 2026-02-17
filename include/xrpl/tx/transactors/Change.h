@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_CHANGE_H_INCLUDED
-#define XRPL_TX_CHANGE_H_INCLUDED
+#pragma once
 
 #include <xrpl/tx/Transactor.h>
 
@@ -44,5 +43,3 @@ using SetFee = Change;
 using UNLModify = Change;
 
 }  // namespace xrpl
-
-#endif

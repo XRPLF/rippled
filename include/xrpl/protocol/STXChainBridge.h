@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STXCHAINBRIDGE_H_INCLUDED
-#define XRPL_PROTOCOL_STXCHAINBRIDGE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/STAccount.h>
@@ -115,31 +114,15 @@ private:
 inline bool
 operator==(STXChainBridge const& lhs, STXChainBridge const& rhs)
 {
-    return std::tie(
-               lhs.lockingChainDoor_,
-               lhs.lockingChainIssue_,
-               lhs.issuingChainDoor_,
-               lhs.issuingChainIssue_) ==
-        std::tie(
-               rhs.lockingChainDoor_,
-               rhs.lockingChainIssue_,
-               rhs.issuingChainDoor_,
-               rhs.issuingChainIssue_);
+    return std::tie(lhs.lockingChainDoor_, lhs.lockingChainIssue_, lhs.issuingChainDoor_, lhs.issuingChainIssue_) ==
+        std::tie(rhs.lockingChainDoor_, rhs.lockingChainIssue_, rhs.issuingChainDoor_, rhs.issuingChainIssue_);
 }
 
 inline bool
 operator<(STXChainBridge const& lhs, STXChainBridge const& rhs)
 {
-    return std::tie(
-               lhs.lockingChainDoor_,
-               lhs.lockingChainIssue_,
-               lhs.issuingChainDoor_,
-               lhs.issuingChainIssue_) <
-        std::tie(
-               rhs.lockingChainDoor_,
-               rhs.lockingChainIssue_,
-               rhs.issuingChainDoor_,
-               rhs.issuingChainIssue_);
+    return std::tie(lhs.lockingChainDoor_, lhs.lockingChainIssue_, lhs.issuingChainDoor_, lhs.issuingChainIssue_) <
+        std::tie(rhs.lockingChainDoor_, rhs.lockingChainIssue_, rhs.issuingChainDoor_, rhs.issuingChainIssue_);
 }
 
 inline AccountID const&
@@ -213,5 +196,3 @@ STXChainBridge::dstChain(bool wasLockingChainSend)
 }
 
 }  // namespace xrpl
-
-#endif

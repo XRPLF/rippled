@@ -13,10 +13,7 @@
 
 namespace xrpl {
 
-OpenLedger::OpenLedger(
-    std::shared_ptr<Ledger const> const& ledger,
-    CachedSLEs& cache,
-    beast::Journal journal)
+OpenLedger::OpenLedger(std::shared_ptr<Ledger const> const& ledger, CachedSLEs& cache, beast::Journal journal)
     : j_(journal), cache_(cache), current_(create(ledger->rules(), ledger))
 {
 }
@@ -82,9 +79,7 @@ OpenLedger::accept(
             *ledger,
             boost::adaptors::transform(
                 current_->txs,
-                [](std::pair<
-                    std::shared_ptr<STTx const>,
-                    std::shared_ptr<STObject const>> const& p) {
+                [](std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>> const& p) {
                     return p.first;
                 }),
             retries,
@@ -127,8 +122,7 @@ OpenLedger::accept(
             tx->add(s);
             msg.set_rawtransaction(s.data(), s.size());
             msg.set_status(protocol::tsNEW);
-            msg.set_receivetimestamp(
-                app.timeKeeper().now().time_since_epoch().count());
+            msg.set_receivetimestamp(app.timeKeeper().now().time_since_epoch().count());
             app.overlay().relay(txId, msg, *toSkip);
         }
     }
@@ -141,14 +135,9 @@ OpenLedger::accept(
 //------------------------------------------------------------------------------
 
 std::shared_ptr<OpenView>
-OpenLedger::create(
-    Rules const& rules,
-    std::shared_ptr<Ledger const> const& ledger)
+OpenLedger::create(Rules const& rules, std::shared_ptr<Ledger const> const& ledger)
 {
-    return std::make_shared<OpenView>(
-        open_ledger,
-        rules,
-        std::make_shared<CachedLedger const>(ledger, cache_));
+    return std::make_shared<OpenView>(open_ledger, rules, std::make_shared<CachedLedger const>(ledger, cache_));
 }
 
 auto
@@ -163,12 +152,10 @@ OpenLedger::apply_one(
     if (retry)
         flags = flags | tapRETRY;
     // If it's in anybody's proposed set, try to keep it in the ledger
-    auto const result =
-        xrpl::apply(app.getServiceRegistry(), view, *tx, flags, j);
+    auto const result = xrpl::apply(app, view, *tx, flags, j);
     if (result.applied || result.ter == terQUEUED)
         return Result::success;
-    if (isTefFailure(result.ter) || isTemMalformed(result.ter) ||
-        isTelLocal(result.ter))
+    if (isTefFailure(result.ter) || isTemMalformed(result.ter) || isTelLocal(result.ter))
         return Result::failure;
     return Result::retry;
 }

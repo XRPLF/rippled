@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_XRPAMOUNT_H_INCLUDED
-#define XRPL_PROTOCOL_XRPAMOUNT_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
@@ -167,10 +166,8 @@ public:
     std::optional<Dest>
     dropsAs() const
     {
-        if ((drops_ > std::numeric_limits<Dest>::max()) ||
-            (!std::numeric_limits<Dest>::is_signed && drops_ < 0) ||
-            (std::numeric_limits<Dest>::is_signed &&
-             drops_ < std::numeric_limits<Dest>::lowest()))
+        if ((drops_ > std::numeric_limits<Dest>::max()) || (!std::numeric_limits<Dest>::is_signed && drops_ < 0) ||
+            (std::numeric_limits<Dest>::is_signed && drops_ < std::numeric_limits<Dest>::lowest()))
         {
             return std::nullopt;
         }
@@ -260,11 +257,7 @@ to_string(XRPAmount const& amount)
 }
 
 inline XRPAmount
-mulRatio(
-    XRPAmount const& amt,
-    std::uint32_t num,
-    std::uint32_t den,
-    bool roundUp)
+mulRatio(XRPAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundUp)
 {
     using namespace boost::multiprecision;
 
@@ -288,5 +281,3 @@ mulRatio(
 }
 
 }  // namespace xrpl
-
-#endif  // XRPL_BASICS_XRPAMOUNT_H_INCLUDED

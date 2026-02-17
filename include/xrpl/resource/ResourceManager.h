@@ -1,5 +1,4 @@
-#ifndef XRPL_RESOURCE_MANAGER_H_INCLUDED
-#define XRPL_RESOURCE_MANAGER_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/net/IPEndpoint.h>
@@ -28,10 +27,7 @@ public:
     virtual Consumer
     newInboundEndpoint(beast::IP::Endpoint const& address) = 0;
     virtual Consumer
-    newInboundEndpoint(
-        beast::IP::Endpoint const& address,
-        bool const proxy,
-        std::string_view forwardedFor) = 0;
+    newInboundEndpoint(beast::IP::Endpoint const& address, bool const proxy, std::string_view forwardedFor) = 0;
 
     /** Create a new endpoint keyed by outbound IP address and port. */
     virtual Consumer
@@ -61,11 +57,7 @@ public:
 //------------------------------------------------------------------------------
 
 std::unique_ptr<Manager>
-make_Manager(
-    beast::insight::Collector::ptr const& collector,
-    beast::Journal journal);
+make_Manager(beast::insight::Collector::ptr const& collector, beast::Journal journal);
 
 }  // namespace Resource
 }  // namespace xrpl
-
-#endif

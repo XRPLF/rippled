@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_MPTOKENISSUANCECREATE_H_INCLUDED
-#define XRPL_TX_MPTOKENISSUANCECREATE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Expected.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -47,5 +46,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

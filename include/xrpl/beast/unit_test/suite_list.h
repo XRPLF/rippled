@@ -2,8 +2,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_UNIT_TEST_SUITE_LIST_HPP
-#define BEAST_UNIT_TEST_SUITE_LIST_HPP
+#pragma once
 
 #include <xrpl/beast/unit_test/detail/const_container.h>
 #include <xrpl/beast/unit_test/suite_info.h>
@@ -33,24 +32,14 @@ public:
     */
     template <class Suite>
     void
-    insert(
-        char const* name,
-        char const* module,
-        char const* library,
-        bool manual,
-        int priority);
+    insert(char const* name, char const* module, char const* library, bool manual, int priority);
 };
 
 //------------------------------------------------------------------------------
 
 template <class Suite>
 void
-suite_list::insert(
-    char const* name,
-    char const* module,
-    char const* library,
-    bool manual,
-    int priority)
+suite_list::insert(char const* name, char const* module, char const* library, bool manual, int priority)
 {
 #ifndef NDEBUG
     {
@@ -65,11 +54,8 @@ suite_list::insert(
         BOOST_ASSERT(result.second);  // Duplicate type
     }
 #endif
-    cont().emplace(
-        make_suite_info<Suite>(name, module, library, manual, priority));
+    cont().emplace(make_suite_info<Suite>(name, module, library, manual, priority));
 }
 
 }  // namespace unit_test
 }  // namespace beast
-
-#endif

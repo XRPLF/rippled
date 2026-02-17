@@ -57,8 +57,7 @@ CredentialCreate::preflight(PreflightContext const& ctx)
     auto const credType = tx[sfCredentialType];
     if (credType.empty() || (credType.size() > maxCredentialTypeLength))
     {
-        JLOG(j.trace())
-            << "Malformed transaction: invalid size of CredentialType.";
+        JLOG(j.trace()) << "Malformed transaction: invalid size of CredentialType.";
         return temMALFORMED;
     }
 
@@ -77,8 +76,7 @@ CredentialCreate::preclaim(PreclaimContext const& ctx)
         return tecNO_TARGET;
     }
 
-    if (ctx.view.exists(
-            keylet::credential(subject, ctx.tx[sfAccount], credType)))
+    if (ctx.view.exists(keylet::credential(subject, ctx.tx[sfAccount], credType)))
     {
         JLOG(ctx.j.trace()) << "Credential already exists.";
         return tecDUPLICATE;
@@ -92,8 +90,7 @@ CredentialCreate::doApply()
 {
     auto const subject = ctx_.tx[sfSubject];
     auto const credType(ctx_.tx[sfCredentialType]);
-    Keylet const credentialKey =
-        keylet::credential(subject, account_, credType);
+    Keylet const credentialKey = keylet::credential(subject, account_, credType);
 
     auto const sleCred = std::make_shared<SLE>(credentialKey);
     if (!sleCred)
@@ -102,8 +99,7 @@ CredentialCreate::doApply()
     auto const optExp = ctx_.tx[~sfExpiration];
     if (optExp)
     {
-        std::uint32_t const closeTime =
-            ctx_.view().header().parentCloseTime.time_since_epoch().count();
+        std::uint32_t const closeTime = ctx_.view().header().parentCloseTime.time_since_epoch().count();
 
         if (closeTime > *optExp)
         {
@@ -120,8 +116,7 @@ CredentialCreate::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     {
-        STAmount const reserve{view().fees().accountReserve(
-            sleIssuer->getFieldU32(sfOwnerCount) + 1)};
+        STAmount const reserve{view().fees().accountReserve(sleIssuer->getFieldU32(sfOwnerCount) + 1)};
         if (mPriorBalance < reserve)
             return tecINSUFFICIENT_RESERVE;
     }
@@ -134,12 +129,8 @@ CredentialCreate::doApply()
         sleCred->setFieldVL(sfURI, ctx_.tx.getFieldVL(sfURI));
 
     {
-        auto const page = view().dirInsert(
-            keylet::ownerDir(account_),
-            credentialKey,
-            describeOwnerDir(account_));
-        JLOG(j_.trace()) << "Adding Credential to owner directory "
-                         << to_string(credentialKey.key) << ": "
+        auto const page = view().dirInsert(keylet::ownerDir(account_), credentialKey, describeOwnerDir(account_));
+        JLOG(j_.trace()) << "Adding Credential to owner directory " << to_string(credentialKey.key) << ": "
                          << (page ? "success" : "failure");
         if (!page)
             return tecDIR_FULL;
@@ -154,12 +145,8 @@ CredentialCreate::doApply()
     }
     else
     {
-        auto const page = view().dirInsert(
-            keylet::ownerDir(subject),
-            credentialKey,
-            describeOwnerDir(subject));
-        JLOG(j_.trace()) << "Adding Credential to owner directory "
-                         << to_string(credentialKey.key) << ": "
+        auto const page = view().dirInsert(keylet::ownerDir(subject), credentialKey, describeOwnerDir(subject));
+        JLOG(j_.trace()) << "Adding Credential to owner directory " << to_string(credentialKey.key) << ": "
                          << (page ? "success" : "failure");
         if (!page)
             return tecDIR_FULL;
@@ -206,8 +193,7 @@ CredentialDelete::preflight(PreflightContext const& ctx)
     auto const credType = ctx.tx[sfCredentialType];
     if (credType.empty() || (credType.size() > maxCredentialTypeLength))
     {
-        JLOG(ctx.j.trace())
-            << "Malformed transaction: invalid size of CredentialType.";
+        JLOG(ctx.j.trace()) << "Malformed transaction: invalid size of CredentialType.";
         return temMALFORMED;
     }
 
@@ -235,13 +221,11 @@ CredentialDelete::doApply()
     auto const issuer = ctx_.tx[~sfIssuer].value_or(account_);
 
     auto const credType(ctx_.tx[sfCredentialType]);
-    auto const sleCred =
-        view().peek(keylet::credential(subject, issuer, credType));
+    auto const sleCred = view().peek(keylet::credential(subject, issuer, credType));
     if (!sleCred)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    if ((subject != account_) && (issuer != account_) &&
-        !checkExpired(sleCred, ctx_.view().header().parentCloseTime))
+    if ((subject != account_) && (issuer != account_) && !checkExpired(sleCred, ctx_.view().header().parentCloseTime))
     {
         JLOG(j_.trace()) << "Can't delete non-expired credential.";
         return tecNO_PERMISSION;
@@ -271,8 +255,7 @@ CredentialAccept::preflight(PreflightContext const& ctx)
     auto const credType = ctx.tx[sfCredentialType];
     if (credType.empty() || (credType.size() > maxCredentialTypeLength))
     {
-        JLOG(ctx.j.trace())
-            << "Malformed transaction: invalid size of CredentialType.";
+        JLOG(ctx.j.trace()) << "Malformed transaction: invalid size of CredentialType.";
         return temMALFORMED;
     }
 
@@ -292,20 +275,17 @@ CredentialAccept::preclaim(PreclaimContext const& ctx)
         return tecNO_ISSUER;
     }
 
-    auto const sleCred =
-        ctx.view.read(keylet::credential(subject, issuer, credType));
+    auto const sleCred = ctx.view.read(keylet::credential(subject, issuer, credType));
     if (!sleCred)
     {
-        JLOG(ctx.j.warn()) << "No credential: " << to_string(subject) << ", "
-                           << to_string(issuer) << ", " << credType;
+        JLOG(ctx.j.warn()) << "No credential: " << to_string(subject) << ", " << to_string(issuer) << ", " << credType;
         return tecNO_ENTRY;
     }
 
     if (sleCred->getFieldU32(sfFlags) & lsfAccepted)
     {
-        JLOG(ctx.j.warn()) << "Credential already accepted: "
-                           << to_string(subject) << ", " << to_string(issuer)
-                           << ", " << credType;
+        JLOG(ctx.j.warn()) << "Credential already accepted: " << to_string(subject) << ", " << to_string(issuer) << ", "
+                           << credType;
         return tecDUPLICATE;
     }
 
@@ -325,8 +305,7 @@ CredentialAccept::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     {
-        STAmount const reserve{view().fees().accountReserve(
-            sleSubject->getFieldU32(sfOwnerCount) + 1)};
+        STAmount const reserve{view().fees().accountReserve(sleSubject->getFieldU32(sfOwnerCount) + 1)};
         if (mPriorBalance < reserve)
             return tecINSUFFICIENT_RESERVE;
     }

@@ -31,8 +31,7 @@ LoadFeeTrack::raiseLocalFee()
     if (origFee == localTxnLoadFee_)
         return false;
 
-    JLOG(j_.debug()) << "Local load fee raised from " << origFee << " to "
-                     << localTxnLoadFee_;
+    JLOG(j_.debug()) << "Local load fee raised from " << origFee << " to " << localTxnLoadFee_;
     return true;
 }
 
@@ -52,8 +51,7 @@ LoadFeeTrack::lowerLocalFee()
     if (origFee == localTxnLoadFee_)
         return false;
 
-    JLOG(j_.debug()) << "Local load fee lowered from " << origFee << " to "
-                     << localTxnLoadFee_;
+    JLOG(j_.debug()) << "Local load fee lowered from " << origFee << " to " << localTxnLoadFee_;
     return true;
 }
 
@@ -61,11 +59,7 @@ LoadFeeTrack::lowerLocalFee()
 
 // Scale using load as well as base rate
 XRPAmount
-scaleFeeLoad(
-    XRPAmount fee,
-    LoadFeeTrack const& feeTrack,
-    Fees const& fees,
-    bool bUnlimited)
+scaleFeeLoad(XRPAmount fee, LoadFeeTrack const& feeTrack, Fees const& fees, bool bUnlimited)
 {
     if (fee == 0)
         return fee;
@@ -82,8 +76,7 @@ scaleFeeLoad(
     // fee = fee * feeFactor / (lftNormalFee);
     // without overflow, and as accurately as possible
 
-    auto const result = mulDiv(
-        fee, feeFactor, safe_cast<std::uint64_t>(feeTrack.getLoadBase()));
+    auto const result = mulDiv(fee, feeFactor, safe_cast<std::uint64_t>(feeTrack.getLoadBase()));
     if (!result)
         Throw<std::overflow_error>("scaleFeeLoad");
     return *result;

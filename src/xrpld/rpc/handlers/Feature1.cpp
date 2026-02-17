@@ -40,8 +40,7 @@ doFeature(RPC::JsonContext& context)
 
         for (auto const& [h, t] : majorities)
         {
-            features[to_string(h)][jss::majority] =
-                t.time_since_epoch().count();
+            features[to_string(h)][jss::majority] = t.time_since_epoch().count();
         }
 
         Json::Value jvReply = Json::objectValue;

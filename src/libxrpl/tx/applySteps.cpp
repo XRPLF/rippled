@@ -53,8 +53,7 @@ with_txn_type(Rules const& rules, TxType txnType, F&& f)
     std::optional<NumberSO> stNumberSO;
     std::optional<CurrentTransactionRulesGuard> rulesGuard;
     std::optional<NumberMantissaScaleGuard> mantissaScaleGuard;
-    if (rules.enabled(featureSingleAssetVault) ||
-        rules.enabled(featureLendingProtocol))
+    if (rules.enabled(featureSingleAssetVault) || rules.enabled(featureLendingProtocol))
     {
         // raii classes for the current ledger rules.
         // fixUniversalNumber predates the rulesGuard and should be replaced.
@@ -132,18 +131,14 @@ invoke_preflight(PreflightContext const& ctx)
     {
         return with_txn_type(ctx.rules, ctx.tx.getTxnType(), [&]<typename T>() {
             auto const tec = Transactor::invokePreflight<T>(ctx);
-            return std::make_pair(
-                tec,
-                isTesSuccess(tec) ? consequences_helper<T>(ctx)
-                                  : TxConsequences{tec});
+            return std::make_pair(tec, isTesSuccess(tec) ? consequences_helper<T>(ctx) : TxConsequences{tec});
         });
     }
     catch (UnknownTxnType const& e)
     {
         // Should never happen
         // LCOV_EXCL_START
-        JLOG(ctx.j.fatal())
-            << "Unknown transaction type in preflight: " << e.txnType;
+        JLOG(ctx.j.fatal()) << "Unknown transaction type in preflight: " << e.txnType;
         UNREACHABLE("xrpl::invoke_preflight : unknown transaction type");
         return {temUNKNOWN, TxConsequences{temUNKNOWN}};
         // LCOV_EXCL_STOP
@@ -157,58 +152,52 @@ invoke_preclaim(PreclaimContext const& ctx)
     {
         // use name hiding to accomplish compile-time polymorphism of static
         // class functions for Transactor and derived classes.
-        return with_txn_type(
-            ctx.view.rules(), ctx.tx.getTxnType(), [&]<typename T>() -> TER {
-                // preclaim functionality is divided into two sections:
-                // 1. Up to and including the signature check: returns NotTEC.
-                //    All transaction checks before and including checkSign
-                //    MUST return NotTEC, or something more restrictive.
-                //    Allowing tec results in these steps risks theft or
-                //    destruction of funds, as a fee will be charged before the
-                //    signature is checked.
-                // 2. After the signature check: returns TER.
+        return with_txn_type(ctx.view.rules(), ctx.tx.getTxnType(), [&]<typename T>() -> TER {
+            // preclaim functionality is divided into two sections:
+            // 1. Up to and including the signature check: returns NotTEC.
+            //    All transaction checks before and including checkSign
+            //    MUST return NotTEC, or something more restrictive.
+            //    Allowing tec results in these steps risks theft or
+            //    destruction of funds, as a fee will be charged before the
+            //    signature is checked.
+            // 2. After the signature check: returns TER.
 
-                // If the transactor requires a valid account and the
-                // transaction doesn't list one, preflight will have already
-                // a flagged a failure.
-                auto const id = ctx.tx.getAccountID(sfAccount);
+            // If the transactor requires a valid account and the
+            // transaction doesn't list one, preflight will have already
+            // a flagged a failure.
+            auto const id = ctx.tx.getAccountID(sfAccount);
 
-                if (id != beast::zero)
-                {
-                    if (NotTEC const preSigResult = [&]() -> NotTEC {
-                            if (NotTEC const result =
-                                    T::checkSeqProxy(ctx.view, ctx.tx, ctx.j))
-                                return result;
+            if (id != beast::zero)
+            {
+                if (NotTEC const preSigResult = [&]() -> NotTEC {
+                        if (NotTEC const result = T::checkSeqProxy(ctx.view, ctx.tx, ctx.j))
+                            return result;
 
-                            if (NotTEC const result =
-                                    T::checkPriorTxAndLastLedger(ctx))
-                                return result;
+                        if (NotTEC const result = T::checkPriorTxAndLastLedger(ctx))
+                            return result;
 
-                            if (NotTEC const result =
-                                    T::checkPermission(ctx.view, ctx.tx))
-                                return result;
+                        if (NotTEC const result = T::checkPermission(ctx.view, ctx.tx))
+                            return result;
 
-                            if (NotTEC const result = T::checkSign(ctx))
-                                return result;
+                        if (NotTEC const result = T::checkSign(ctx))
+                            return result;
 
-                            return tesSUCCESS;
-                        }())
-                        return preSigResult;
+                        return tesSUCCESS;
+                    }())
+                    return preSigResult;
 
-                    if (TER const result = T::checkFee(
-                            ctx, calculateBaseFee(ctx.view, ctx.tx)))
-                        return result;
-                }
+                if (TER const result = T::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx)))
+                    return result;
+            }
 
-                return T::preclaim(ctx);
-            });
+            return T::preclaim(ctx);
+        });
     }
     catch (UnknownTxnType const& e)
     {
         // Should never happen
         // LCOV_EXCL_START
-        JLOG(ctx.j.fatal())
-            << "Unknown transaction type in preclaim: " << e.txnType;
+        JLOG(ctx.j.fatal()) << "Unknown transaction type in preclaim: " << e.txnType;
         UNREACHABLE("xrpl::invoke_preclaim : unknown transaction type");
         return temUNKNOWN;
         // LCOV_EXCL_STOP
@@ -236,9 +225,8 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     try
     {
-        return with_txn_type(view.rules(), tx.getTxnType(), [&]<typename T>() {
-            return T::calculateBaseFee(view, tx);
-        });
+        return with_txn_type(
+            view.rules(), tx.getTxnType(), [&]<typename T>() { return T::calculateBaseFee(view, tx); });
     }
     catch (UnknownTxnType const& e)
     {
@@ -256,36 +244,29 @@ TxConsequences::TxConsequences(NotTEC pfResult)
     , seqProx_(SeqProxy::sequence(0))
     , sequencesConsumed_(0)
 {
-    XRPL_ASSERT(
-        !isTesSuccess(pfResult),
-        "xrpl::TxConsequences::TxConsequences : is not tesSUCCESS");
+    XRPL_ASSERT(!isTesSuccess(pfResult), "xrpl::TxConsequences::TxConsequences : is not tesSUCCESS");
 }
 
 TxConsequences::TxConsequences(STTx const& tx)
     : isBlocker_(false)
-    , fee_(
-          tx[sfFee].native() && !tx[sfFee].negative() ? tx[sfFee].xrp()
-                                                      : beast::zero)
+    , fee_(tx[sfFee].native() && !tx[sfFee].negative() ? tx[sfFee].xrp() : beast::zero)
     , potentialSpend_(beast::zero)
     , seqProx_(tx.getSeqProxy())
     , sequencesConsumed_(tx.getSeqProxy().isSeq() ? 1 : 0)
 {
 }
 
-TxConsequences::TxConsequences(STTx const& tx, Category category)
-    : TxConsequences(tx)
+TxConsequences::TxConsequences(STTx const& tx, Category category) : TxConsequences(tx)
 {
     isBlocker_ = (category == blocker);
 }
 
-TxConsequences::TxConsequences(STTx const& tx, XRPAmount potentialSpend)
-    : TxConsequences(tx)
+TxConsequences::TxConsequences(STTx const& tx, XRPAmount potentialSpend) : TxConsequences(tx)
 {
     potentialSpend_ = potentialSpend;
 }
 
-TxConsequences::TxConsequences(STTx const& tx, std::uint32_t sequencesConsumed)
-    : TxConsequences(tx)
+TxConsequences::TxConsequences(STTx const& tx, std::uint32_t sequencesConsumed) : TxConsequences(tx)
 {
     sequencesConsumed_ = sequencesConsumed;
 }
@@ -295,18 +276,16 @@ invoke_apply(ApplyContext& ctx)
 {
     try
     {
-        return with_txn_type(
-            ctx.view().rules(), ctx.tx.getTxnType(), [&]<typename T>() {
-                T p(ctx);
-                return p();
-            });
+        return with_txn_type(ctx.view().rules(), ctx.tx.getTxnType(), [&]<typename T>() {
+            T p(ctx);
+            return p();
+        });
     }
     catch (UnknownTxnType const& e)
     {
         // Should never happen
         // LCOV_EXCL_START
-        JLOG(ctx.journal.fatal())
-            << "Unknown transaction type in apply: " << e.txnType;
+        JLOG(ctx.journal.fatal()) << "Unknown transaction type in apply: " << e.txnType;
         UNREACHABLE("xrpl::invoke_apply : unknown transaction type");
         return {temUNKNOWN, false};
         // LCOV_EXCL_STOP
@@ -314,12 +293,7 @@ invoke_apply(ApplyContext& ctx)
 }
 
 PreflightResult
-preflight(
-    ServiceRegistry& registry,
-    Rules const& rules,
-    STTx const& tx,
-    ApplyFlags flags,
-    beast::Journal j)
+preflight(ServiceRegistry& registry, Rules const& rules, STTx const& tx, ApplyFlags flags, beast::Journal j)
 {
     PreflightContext const pfCtx(registry, tx, rules, flags, j);
     try
@@ -355,10 +329,7 @@ preflight(
 }
 
 PreclaimResult
-preclaim(
-    PreflightResult const& preflightResult,
-    ServiceRegistry& registry,
-    OpenView const& view)
+preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, OpenView const& view)
 {
     std::optional<PreclaimContext const> ctx;
     if (preflightResult.rules != view.rules())
@@ -373,12 +344,7 @@ preclaim(
                     preflightResult.flags,
                     preflightResult.j);
 
-            return preflight(
-                registry,
-                view.rules(),
-                preflightResult.tx,
-                preflightResult.flags,
-                preflightResult.j);
+            return preflight(registry, view.rules(), preflightResult.tx, preflightResult.flags, preflightResult.j);
         }();
 
         ctx.emplace(
@@ -428,10 +394,7 @@ calculateDefaultBaseFee(ReadView const& view, STTx const& tx)
 }
 
 ApplyResult
-doApply(
-    PreclaimResult const& preclaimResult,
-    ServiceRegistry& registry,
-    OpenView& view)
+doApply(PreclaimResult const& preclaimResult, ServiceRegistry& registry, OpenView& view)
 {
     if (preclaimResult.view.seq() != view.seq())
     {

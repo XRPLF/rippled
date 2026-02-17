@@ -49,10 +49,7 @@ results::add(suite_results const& r)
     if (elapsed >= std::chrono::seconds{1})
     {
         auto const iter = std::lower_bound(
-            top.begin(),
-            top.end(),
-            elapsed,
-            [](run_time const& t1, typename clock_type::duration const& t2) {
+            top.begin(), top.end(), elapsed, [](run_time const& t1, typename clock_type::duration const& t2) {
                 return t1.second > t2;
             });
 
@@ -61,25 +58,18 @@ results::add(suite_results const& r)
             if (top.size() == max_top && iter == top.end() - 1)
             {
                 // avoid invalidating the iterator
-                *iter = run_time{
-                    static_string{static_string::string_view_type{r.name}},
-                    elapsed};
+                *iter = run_time{static_string{static_string::string_view_type{r.name}}, elapsed};
             }
             else
             {
                 if (top.size() == max_top)
                     top.resize(top.size() - 1);
-                top.emplace(
-                    iter,
-                    static_string{static_string::string_view_type{r.name}},
-                    elapsed);
+                top.emplace(iter, static_string{static_string::string_view_type{r.name}}, elapsed);
             }
         }
         else if (top.size() < max_top)
         {
-            top.emplace_back(
-                static_string{static_string::string_view_type{r.name}},
-                elapsed);
+            top.emplace_back(static_string{static_string::string_view_type{r.name}}, elapsed);
         }
     }
 }
@@ -101,9 +91,7 @@ results::merge(results const& r)
         r.top.begin(),
         r.top.end(),
         top_result.begin(),
-        [](run_time const& t1, run_time const& t2) {
-            return t1.second > t2.second;
-        });
+        [](run_time const& t1, run_time const& t2) { return t1.second > t2.second; });
 
     if (top_result.size() > max_top)
         top_result.resize(max_top);
@@ -125,9 +113,8 @@ results::print(S& s)
     }
 
     auto const elapsed = clock_type::now() - start;
-    s << fmtdur(elapsed) << ", " << amount{suites, "suite"} << ", "
-      << amount{cases, "case"} << ", " << amount{total, "test"} << " total, "
-      << amount{failed, "failure"} << std::endl;
+    s << fmtdur(elapsed) << ", " << amount{suites, "suite"} << ", " << amount{cases, "case"} << ", "
+      << amount{total, "test"} << " total, " << amount{failed, "failure"} << std::endl;
 }
 
 //------------------------------------------------------------------------------
@@ -220,32 +207,26 @@ multi_runner_base<IsParent>::multi_runner_base()
         }
 
         shared_mem_ = boost::interprocess::shared_memory_object{
-            std::conditional_t<
-                IsParent,
-                boost::interprocess::create_only_t,
-                boost::interprocess::open_only_t>{},
+            std::conditional_t<IsParent, boost::interprocess::create_only_t, boost::interprocess::open_only_t>{},
             shared_mem_name_,
             boost::interprocess::read_write};
 
         if (IsParent)
         {
             shared_mem_.truncate(sizeof(inner));
-            message_queue_ =
-                std::make_unique<boost::interprocess::message_queue>(
-                    boost::interprocess::create_only,
-                    message_queue_name_,
-                    /*max messages*/ 16,
-                    /*max message size*/ 1 << 20);
+            message_queue_ = std::make_unique<boost::interprocess::message_queue>(
+                boost::interprocess::create_only,
+                message_queue_name_,
+                /*max messages*/ 16,
+                /*max message size*/ 1 << 20);
         }
         else
         {
-            message_queue_ =
-                std::make_unique<boost::interprocess::message_queue>(
-                    boost::interprocess::open_only, message_queue_name_);
+            message_queue_ = std::make_unique<boost::interprocess::message_queue>(
+                boost::interprocess::open_only, message_queue_name_);
         }
 
-        region_ = boost::interprocess::mapped_region{
-            shared_mem_, boost::interprocess::read_write};
+        region_ = boost::interprocess::mapped_region{shared_mem_, boost::interprocess::read_write};
         if (IsParent)
             inner_ = new (region_.get_address()) inner{};
         else
@@ -332,9 +313,7 @@ multi_runner_base<IsParent>::print_results(S& s)
 
 template <bool IsParent>
 void
-multi_runner_base<IsParent>::message_queue_send(
-    MessageType mt,
-    std::string const& s)
+multi_runner_base<IsParent>::message_queue_send(MessageType mt, std::string const& s)
 {
     // must use a mutex since the two "sends" must happen in order
     std::lock_guard l{inner_->m_};
@@ -376,8 +355,7 @@ multi_runner_parent::multi_runner_parent() : os_(std::cout)
 {
     message_queue_thread_ = std::thread([this] {
         std::vector<char> buf(1 << 20);
-        while (this->continue_message_queue_ ||
-               this->message_queue_->get_num_msg())
+        while (this->continue_message_queue_ || this->message_queue_->get_num_msg())
         {
             // let children know the parent is still alive
             this->inc_keep_alive_count();
@@ -394,15 +372,13 @@ multi_runner_parent::multi_runner_parent() : os_(std::cout)
             {
                 std::size_t recvd_size = 0;
                 unsigned int priority = 0;
-                this->message_queue_->receive(
-                    buf.data(), buf.size(), recvd_size, priority);
+                this->message_queue_->receive(buf.data(), buf.size(), recvd_size, priority);
                 if (!recvd_size)
                     continue;
                 assert(recvd_size == 1);
                 MessageType mt{*reinterpret_cast<MessageType*>(buf.data())};
 
-                this->message_queue_->receive(
-                    buf.data(), buf.size(), recvd_size, priority);
+                this->message_queue_->receive(buf.data(), buf.size(), recvd_size, priority);
                 if (recvd_size)
                 {
                     std::string s{buf.data(), recvd_size};
@@ -425,8 +401,7 @@ multi_runner_parent::multi_runner_parent() : os_(std::cout)
             }
             catch (std::exception const& e)
             {
-                std::cerr << "Error: " << e.what()
-                          << " reading unit test message queue.\n";
+                std::cerr << "Error: " << e.what() << " reading unit test message queue.\n";
                 return;
             }
             catch (...)
@@ -451,8 +426,7 @@ multi_runner_parent::~multi_runner_parent()
 
     for (auto const& s : running_suites_)
     {
-        os_ << "\nSuite: " << s
-            << " failed to complete. The child process may have crashed.\n";
+        os_ << "\nSuite: " << s << " failed to complete. The child process may have crashed.\n";
     }
 }
 
@@ -482,14 +456,8 @@ multi_runner_parent::add_failures(std::size_t failures)
 
 //------------------------------------------------------------------------------
 
-multi_runner_child::multi_runner_child(
-    std::size_t num_jobs,
-    bool quiet,
-    bool print_log)
-    : job_index_{checkout_job_index()}
-    , num_jobs_{num_jobs}
-    , quiet_{quiet}
-    , print_log_{!quiet || print_log}
+multi_runner_child::multi_runner_child(std::size_t num_jobs, bool quiet, bool print_log)
+    : job_index_{checkout_job_index()}, num_jobs_{num_jobs}, quiet_{quiet}, print_log_{!quiet || print_log}
 {
     if (num_jobs_ > 1)
     {
@@ -510,8 +478,7 @@ multi_runner_child::multi_runner_child(
                     if (cur_count == last_count)
                     {
                         // assume parent process is no longer alive
-                        std::cerr << "multi_runner_child " << job_index_
-                                  << ": Assuming parent died, exiting.\n";
+                        std::cerr << "multi_runner_child " << job_index_ << ": Assuming parent died, exiting.\n";
                         std::exit(EXIT_FAILURE);
                     }
                 }
@@ -566,8 +533,7 @@ multi_runner_child::on_suite_end()
         std::stringstream s;
         if (num_jobs_ > 1)
             s << job_index_ << "> ";
-        s << (suite_results_.failed > 0 ? "failed: " : "")
-          << suite_results_.name << " had " << suite_results_.failed
+        s << (suite_results_.failed > 0 ? "failed: " : "") << suite_results_.name << " had " << suite_results_.failed
           << " failures." << std::endl;
         message_queue_send(MessageType::log, s.str());
     }
@@ -586,8 +552,7 @@ multi_runner_child::on_case_begin(std::string const& name)
     std::stringstream s;
     if (num_jobs_ > 1)
         s << job_index_ << "> ";
-    s << suite_results_.name
-      << (case_results_.name.empty() ? "" : (" " + case_results_.name)) << '\n';
+    s << suite_results_.name << (case_results_.name.empty() ? "" : (" " + case_results_.name)) << '\n';
     message_queue_send(MessageType::log, s.str());
 }
 
@@ -611,8 +576,7 @@ multi_runner_child::on_fail(std::string const& reason)
     std::stringstream s;
     if (num_jobs_ > 1)
         s << job_index_ << "> ";
-    s << "#" << case_results_.total << " failed" << (reason.empty() ? "" : ": ")
-      << reason << '\n';
+    s << "#" << case_results_.total << " failed" << (reason.empty() ? "" : ": ") << reason << '\n';
     message_queue_send(MessageType::log, s.str());
 }
 

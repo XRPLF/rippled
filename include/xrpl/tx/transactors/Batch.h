@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_BATCH_H_INCLUDED
-#define XRPL_TX_BATCH_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Indexes.h>
@@ -54,5 +53,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

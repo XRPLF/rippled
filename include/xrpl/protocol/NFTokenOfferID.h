@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_NFTOKENOFFERID_H_INCLUDED
-#define XRPL_PROTOCOL_NFTOKENOFFERID_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_forwards.h>
@@ -19,9 +18,7 @@ namespace xrpl {
    @{
  */
 bool
-canHaveNFTokenOfferID(
-    std::shared_ptr<STTx const> const& serializedTx,
-    TxMeta const& transactionMeta);
+canHaveNFTokenOfferID(std::shared_ptr<STTx const> const& serializedTx, TxMeta const& transactionMeta);
 
 std::optional<uint256>
 getOfferIDFromCreatedOffer(TxMeta const& transactionMeta);
@@ -34,5 +31,3 @@ insertNFTokenOfferID(
 /** @} */
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_SETTRUST_H_INCLUDED
-#define XRPL_TX_SETTRUST_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/Transactor.h>
@@ -34,5 +33,3 @@ public:
 using TrustSet = SetTrust;
 
 }  // namespace xrpl
-
-#endif

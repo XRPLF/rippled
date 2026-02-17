@@ -3,13 +3,15 @@ name: Run pre-commit hooks
 on:
   pull_request:
   push:
-    branches: [develop, release, master]
+    branches:
+      - "develop"
+      - "release*"
   workflow_dispatch:
 
 jobs:
   # Call the workflow in the XRPLF/actions repo that runs the pre-commit hooks.
   run-hooks:
-    uses: XRPLF/actions/.github/workflows/pre-commit.yml@282890f46d6921249d5659dd38babcb0bd8aef48
+    uses: XRPLF/actions/.github/workflows/pre-commit.yml@320be44621ca2a080f05aeb15817c44b84518108
     with:
       runs_on: ubuntu-latest
       container: '{ "image": "ghcr.io/xrplf/ci/tools-rippled-pre-commit:sha-ab4d1f0" }'

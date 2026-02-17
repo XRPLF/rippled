@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_SETORACLE_H_INCLUDED
-#define XRPL_TX_SETORACLE_H_INCLUDED
+#pragma once
 
 #include <xrpl/tx/Transactor.h>
 
@@ -36,5 +35,3 @@ public:
 using OracleSet = SetOracle;
 
 }  // namespace xrpl
-
-#endif  // XRPL_TX_SETORACLE_H_INCLUDED

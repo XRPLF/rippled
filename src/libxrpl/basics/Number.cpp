@@ -27,8 +27,7 @@ using int128_t = __int128_t;
 namespace xrpl {
 
 thread_local Number::rounding_mode Number::mode_ = Number::to_nearest;
-thread_local std::reference_wrapper<MantissaRange const> Number::range_ =
-    largeRange;
+thread_local std::reference_wrapper<MantissaRange const> Number::range_ = largeRange;
 
 Number::rounding_mode
 Number::getround()
@@ -63,8 +62,7 @@ Number::setMantissaScale(MantissaRange::mantissa_scale scale)
 // to be correctly rounded to the internal precision of Number.
 
 template <class T>
-concept UnsignedMantissa =
-    std::is_unsigned_v<T> || std::is_same_v<T, uint128_t>;
+concept UnsignedMantissa = std::is_unsigned_v<T> || std::is_same_v<T, uint128_t>;
 
 class Number::Guard
 {
@@ -114,11 +112,7 @@ public:
     // Modify the result to the correctly rounded value
     template <UnsignedMantissa T>
     void
-    doRoundDown(
-        bool& negative,
-        T& mantissa,
-        int& exponent,
-        internalrep const& minMantissa);
+    doRoundDown(bool& negative, T& mantissa, int& exponent, internalrep const& minMantissa);
 
     // Modify the result to the correctly rounded value
     void
@@ -130,11 +124,7 @@ private:
 
     template <UnsignedMantissa T>
     void
-    bringIntoRange(
-        bool& negative,
-        T& mantissa,
-        int& exponent,
-        internalrep const& minMantissa);
+    bringIntoRange(bool& negative, T& mantissa, int& exponent, internalrep const& minMantissa);
 };
 
 inline void
@@ -221,11 +211,7 @@ Number::Guard::round() noexcept
 
 template <UnsignedMantissa T>
 void
-Number::Guard::bringIntoRange(
-    bool& negative,
-    T& mantissa,
-    int& exponent,
-    internalrep const& minMantissa)
+Number::Guard::bringIntoRange(bool& negative, T& mantissa, int& exponent, internalrep const& minMantissa)
 {
     // Bring mantissa back into the minMantissa / maxMantissa range AFTER
     // rounding
@@ -273,11 +259,7 @@ Number::Guard::doRoundUp(
 
 template <UnsignedMantissa T>
 void
-Number::Guard::doRoundDown(
-    bool& negative,
-    T& mantissa,
-    int& exponent,
-    internalrep const& minMantissa)
+Number::Guard::doRoundDown(bool& negative, T& mantissa, int& exponent, internalrep const& minMantissa)
 {
     auto r = round();
     if (r == 1 || (r == 0 && (mantissa & 1) == 1))
@@ -344,11 +326,7 @@ Number::externalToInternal(rep mantissa)
 constexpr Number
 Number::oneSmall()
 {
-    return Number{
-        false,
-        Number::smallRange.min,
-        -Number::smallRange.log,
-        Number::unchecked{}};
+    return Number{false, Number::smallRange.min, -Number::smallRange.log, Number::unchecked{}};
 };
 
 constexpr Number oneSml = Number::oneSmall();
@@ -356,11 +334,7 @@ constexpr Number oneSml = Number::oneSmall();
 constexpr Number
 Number::oneLarge()
 {
-    return Number{
-        false,
-        Number::largeRange.min,
-        -Number::largeRange.log,
-        Number::unchecked{}};
+    return Number{false, Number::largeRange.min, -Number::largeRange.log, Number::unchecked{}};
 };
 
 constexpr Number oneLrg = Number::oneLarge();
@@ -449,23 +423,12 @@ doNormalize(
     // modification, it must be less than maxRep. In other words, the original
     // value should have been no more than maxRep * 10.
     // (maxRep * 10 > maxMantissa)
-    XRPL_ASSERT_PARTS(
-        m <= maxRep,
-        "xrpl::doNormalize",
-        "intermediate mantissa fits in int64");
+    XRPL_ASSERT_PARTS(m <= maxRep, "xrpl::doNormalize", "intermediate mantissa fits in int64");
     mantissa_ = m;
 
-    g.doRoundUp(
-        negative,
-        mantissa_,
-        exponent_,
-        minMantissa,
-        maxMantissa,
-        "Number::normalize 2");
+    g.doRoundUp(negative, mantissa_, exponent_, minMantissa, maxMantissa, "Number::normalize 2");
     XRPL_ASSERT_PARTS(
-        mantissa_ >= minMantissa && mantissa_ <= maxMantissa,
-        "xrpl::doNormalize",
-        "final mantissa fits in range");
+        mantissa_ >= minMantissa && mantissa_ <= maxMantissa, "xrpl::doNormalize", "final mantissa fits in range");
 }
 
 template <>
@@ -526,10 +489,7 @@ Number::shiftExponent(int exponentDelta) const
         return Number{};
     }
     Number const result{negative_, mantissa_, newExponent, unchecked{}};
-    XRPL_ASSERT_PARTS(
-        result.isnormal(),
-        "xrpl::Number::shiftExponent",
-        "result is normalized");
+    XRPL_ASSERT_PARTS(result.isnormal(), "xrpl::Number::shiftExponent", "result is normalized");
     return result;
 }
 
@@ -550,9 +510,7 @@ Number::operator+=(Number const& y)
         return *this;
     }
 
-    XRPL_ASSERT(
-        isnormal() && y.isnormal(),
-        "xrpl::Number::operator+=(Number) : is normal");
+    XRPL_ASSERT(isnormal() && y.isnormal(), "xrpl::Number::operator+=(Number) : is normal");
     // *n = negative
     // *s = sign
     // *m = mantissa
@@ -604,8 +562,7 @@ Number::operator+=(Number const& y)
             xm /= 10;
             ++xe;
         }
-        g.doRoundUp(
-            xn, xm, xe, minMantissa, maxMantissa, "Number::addition overflow");
+        g.doRoundUp(xn, xm, xe, minMantissa, maxMantissa, "Number::addition overflow");
     }
     else
     {
@@ -712,12 +669,7 @@ Number::operator*=(Number const& y)
     xm = static_cast<internalrep>(zm);
     xe = ze;
     g.doRoundUp(
-        zn,
-        xm,
-        xe,
-        minMantissa,
-        maxMantissa,
-        "Number::multiplication overflow : exponent is " + std::to_string(xe));
+        zn, xm, xe, minMantissa, maxMantissa, "Number::multiplication overflow : exponent is " + std::to_string(xe));
     negative_ = zn;
     mantissa_ = xm;
     exponent_ = xe;
@@ -764,10 +716,8 @@ Number::operator/=(Number const& y)
     static_assert(smallRange.log == 15);
     static_assert(largeRange.log == 18);
     bool small = Number::getMantissaScale() == MantissaRange::small;
-    uint128_t const f =
-        small ? 100'000'000'000'000'000 : 10'000'000'000'000'000'000ULL;
-    XRPL_ASSERT_PARTS(
-        f >= minMantissa * 10, "Number::operator/=", "factor expected size");
+    uint128_t const f = small ? 100'000'000'000'000'000 : 10'000'000'000'000'000'000ULL;
+    XRPL_ASSERT_PARTS(f >= minMantissa * 10, "Number::operator/=", "factor expected size");
 
     // unsigned denominator
     auto const dmu = static_cast<uint128_t>(dm);
@@ -818,8 +768,7 @@ Number::operator/=(Number const& y)
     negative_ = zn;
     mantissa_ = static_cast<internalrep>(zm);
     exponent_ = ze;
-    XRPL_ASSERT_PARTS(
-        isnormal(), "xrpl::Number::operator/=", "result is normalized");
+    XRPL_ASSERT_PARTS(isnormal(), "xrpl::Number::operator/=", "result is normalized");
 
     return *this;
 }
@@ -884,11 +833,9 @@ to_string(Number const& amount)
 
     // Use scientific notation for exponents that are too small or too large
     auto const rangeLog = Number::mantissaLog();
-    if (((exponent != 0) &&
-         ((exponent < -(rangeLog + 10)) || (exponent > -(rangeLog - 10)))))
+    if (((exponent != 0) && ((exponent < -(rangeLog + 10)) || (exponent > -(rangeLog - 10)))))
     {
-        while (mantissa != 0 && mantissa % 10 == 0 &&
-               exponent < Number::maxExponent)
+        while (mantissa != 0 && mantissa % 10 == 0 && exponent < Number::maxExponent)
         {
             mantissa /= 10;
             ++exponent;
@@ -900,8 +847,7 @@ to_string(Number const& amount)
         return ret;
     }
 
-    XRPL_ASSERT(
-        exponent + 43 > 0, "xrpl::to_string(Number) : minimum exponent");
+    XRPL_ASSERT(exponent + 43 > 0, "xrpl::to_string(Number) : minimum exponent");
 
     ptrdiff_t const pad_prefix = rangeLog + 12;
     ptrdiff_t const pad_suffix = rangeLog + 8;
@@ -927,8 +873,7 @@ to_string(Number const& amount)
     if (std::distance(pre_from, pre_to) > pad_prefix)
         pre_from += pad_prefix;
 
-    XRPL_ASSERT(
-        post_to >= post_from, "xrpl::to_string(Number) : first distance check");
+    XRPL_ASSERT(post_to >= post_from, "xrpl::to_string(Number) : first distance check");
 
     pre_from = std::find_if(pre_from, pre_to, [](char c) { return c != '0'; });
 
@@ -937,15 +882,11 @@ to_string(Number const& amount)
     if (std::distance(post_from, post_to) > pad_suffix)
         post_to -= pad_suffix;
 
-    XRPL_ASSERT(
-        post_to >= post_from,
-        "xrpl::to_string(Number) : second distance check");
+    XRPL_ASSERT(post_to >= post_from, "xrpl::to_string(Number) : second distance check");
 
-    post_to = std::find_if(
-                  std::make_reverse_iterator(post_to),
-                  std::make_reverse_iterator(post_from),
-                  [](char c) { return c != '0'; })
-                  .base();
+    post_to = std::find_if(std::make_reverse_iterator(post_to), std::make_reverse_iterator(post_from), [](char c) {
+                  return c != '0';
+              }).base();
 
     std::string ret;
 
@@ -1028,8 +969,7 @@ root(Number f, unsigned d)
     e += ex;
     f = f.shiftExponent(-e);  // f /= 10^e;
 
-    XRPL_ASSERT_PARTS(
-        f.isnormal(), "xrpl::root(Number, unsigned)", "f is normalized");
+    XRPL_ASSERT_PARTS(f.isnormal(), "xrpl::root(Number, unsigned)", "f is normalized");
     bool neg = false;
     if (f < zero)
     {
@@ -1062,10 +1002,7 @@ root(Number f, unsigned d)
 
     //  return r * 10^(e/d) to reverse scaling
     auto const result = r.shiftExponent(e / di);
-    XRPL_ASSERT_PARTS(
-        result.isnormal(),
-        "xrpl::root(Number, unsigned)",
-        "result is normalized");
+    XRPL_ASSERT_PARTS(result.isnormal(), "xrpl::root(Number, unsigned)", "result is normalized");
     return result;
 }
 
@@ -1109,8 +1046,7 @@ root2(Number f)
 
     //  return r * 10^(e/2) to reverse scaling
     auto const result = r.shiftExponent(e / 2);
-    XRPL_ASSERT_PARTS(
-        result.isnormal(), "xrpl::root2(Number)", "result is normalized");
+    XRPL_ASSERT_PARTS(result.isnormal(), "xrpl::root2(Number)", "result is normalized");
 
     return result;
 }

@@ -1,5 +1,4 @@
-#ifndef XRPLD_APP_MISC_SETUP_HASHROUTER_H_INCLUDED
-#define XRPLD_APP_MISC_SETUP_HASHROUTER_H_INCLUDED
+#pragma once
 
 #include <xrpl/core/HashRouter.h>
 
@@ -13,5 +12,3 @@ HashRouter::Setup
 setup_HashRouter(Config const& config);
 
 }  // namespace xrpl
-
-#endif

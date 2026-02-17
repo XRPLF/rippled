@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_OVERLAY_H_INCLUDED
-#define XRPL_OVERLAY_OVERLAY_H_INCLUDED
+#pragma once
 
 #include <xrpld/overlay/Peer.h>
 
@@ -134,10 +133,7 @@ public:
      * @return the set of peers which have already sent us this proposal
      */
     virtual std::set<Peer::id_t>
-    relay(
-        protocol::TMProposeSet& m,
-        uint256 const& uid,
-        PublicKey const& validator) = 0;
+    relay(protocol::TMProposeSet& m, uint256 const& uid, PublicKey const& validator) = 0;
 
     /** Relay a validation.
      * @param m the serialized validation
@@ -146,10 +142,7 @@ public:
      * @return the set of peers which have already sent us this validation
      */
     virtual std::set<Peer::id_t>
-    relay(
-        protocol::TMValidation& m,
-        uint256 const& uid,
-        PublicKey const& validator) = 0;
+    relay(protocol::TMValidation& m, uint256 const& uid, PublicKey const& validator) = 0;
 
     /** Relay a transaction. If the tx reduce-relay feature is enabled then
      * randomly select peers to relay to and queue transaction's hash
@@ -216,5 +209,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

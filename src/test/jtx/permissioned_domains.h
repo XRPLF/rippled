@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_PERMISSIONED_DOMAINS_H_INCLUDED
-#define XRPL_TEST_JTX_PERMISSIONED_DOMAINS_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -17,10 +16,7 @@ using Credentials = std::vector<Credential>;
 // helpers
 // Make json for PermissionedDomainSet transaction
 Json::Value
-setTx(
-    AccountID const& account,
-    Credentials const& credentials,
-    std::optional<uint256> domain = std::nullopt);
+setTx(AccountID const& account, Credentials const& credentials, std::optional<uint256> domain = std::nullopt);
 
 // Make json for PermissionedDomainDelete transaction
 Json::Value
@@ -36,9 +32,7 @@ objectExists(uint256 const& objID, Env& env);
 
 // Extract credentials from account_object object
 Credentials
-credentialsFromJson(
-    Json::Value const& object,
-    std::unordered_map<std::string, Account> const& human2Acc);
+credentialsFromJson(Json::Value const& object, std::unordered_map<std::string, Account> const& human2Acc);
 
 // Sort credentials the same way as PermissionedDomainSet
 Credentials
@@ -52,5 +46,3 @@ getNewDomain(std::shared_ptr<STObject const> const& meta);
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

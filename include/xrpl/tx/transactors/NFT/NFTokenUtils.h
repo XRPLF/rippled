@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_IMPL_DETAILS_NFTOKENUTILS_H_INCLUDED
-#define XRPL_TX_IMPL_DETAILS_NFTOKENUTILS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -15,10 +14,7 @@ namespace nft {
 /** Delete up to a specified number of offers from the specified token offer
  * directory. */
 std::size_t
-removeTokenOffersWithLimit(
-    ApplyView& view,
-    Keylet const& directory,
-    std::size_t maxDeletableOffers);
+removeTokenOffersWithLimit(ApplyView& view, Keylet const& directory, std::size_t maxDeletableOffers);
 
 /** Returns tesSUCCESS if NFToken has few enough offers that it can be burned */
 TER
@@ -26,10 +22,7 @@ notTooManyOffers(ReadView const& view, uint256 const& nftokenID);
 
 /** Finds the specified token in the owner's token directory. */
 std::optional<STObject>
-findToken(
-    ReadView const& view,
-    AccountID const& owner,
-    uint256 const& nftokenID);
+findToken(ReadView const& view, AccountID const& owner, uint256 const& nftokenID);
 
 /** Finds the token in the owner's token directory.  Returns token and page. */
 struct TokenAndPage
@@ -37,16 +30,12 @@ struct TokenAndPage
     STObject token;
     std::shared_ptr<SLE> page;
 
-    TokenAndPage(STObject const& token_, std::shared_ptr<SLE> page_)
-        : token(token_), page(std::move(page_))
+    TokenAndPage(STObject const& token_, std::shared_ptr<SLE> page_) : token(token_), page(std::move(page_))
     {
     }
 };
 std::optional<TokenAndPage>
-findTokenAndPage(
-    ApplyView& view,
-    AccountID const& owner,
-    uint256 const& nftokenID);
+findTokenAndPage(ApplyView& view, AccountID const& owner, uint256 const& nftokenID);
 
 /** Insert the token in the owner's token directory. */
 TER
@@ -57,11 +46,7 @@ TER
 removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID);
 
 TER
-removeToken(
-    ApplyView& view,
-    AccountID const& owner,
-    uint256 const& nftokenID,
-    std::shared_ptr<SLE>&& page);
+removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, std::shared_ptr<SLE>&& page);
 
 /** Deletes the given token offer.
 
@@ -133,21 +118,11 @@ tokenOfferCreateApply(
     std::uint32_t txFlags = lsfSellNFToken);
 
 TER
-checkTrustlineAuthorized(
-    ReadView const& view,
-    AccountID const id,
-    beast::Journal const j,
-    Issue const& issue);
+checkTrustlineAuthorized(ReadView const& view, AccountID const id, beast::Journal const j, Issue const& issue);
 
 TER
-checkTrustlineDeepFrozen(
-    ReadView const& view,
-    AccountID const id,
-    beast::Journal const j,
-    Issue const& issue);
+checkTrustlineDeepFrozen(ReadView const& view, AccountID const id, beast::Journal const j, Issue const& issue);
 
 }  // namespace nft
 
 }  // namespace xrpl
-
-#endif  // XRPL_TX_IMPL_DETAILS_NFTOKENUTILS_H_INCLUDED

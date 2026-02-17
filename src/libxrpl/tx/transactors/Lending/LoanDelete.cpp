@@ -47,11 +47,9 @@ LoanDelete::preclaim(PreclaimContext const& ctx)
         // should be impossible
         return tecINTERNAL;  // LCOV_EXCL_LINE
     }
-    if (loanBrokerSle->at(sfOwner) != account &&
-        loanSle->at(sfBorrower) != account)
+    if (loanBrokerSle->at(sfOwner) != account && loanSle->at(sfBorrower) != account)
     {
-        JLOG(ctx.j.warn())
-            << "Account is not Loan Broker Owner or Loan Borrower.";
+        JLOG(ctx.j.warn()) << "Account is not Loan Broker Owner or Loan Borrower.";
         return tecNO_PERMISSION;
     }
 
@@ -85,18 +83,10 @@ LoanDelete::doApply()
     auto const vaultAsset = vaultSle->at(sfAsset);
 
     // Remove LoanID from Directory of the LoanBroker pseudo-account.
-    if (!view.dirRemove(
-            keylet::ownerDir(brokerPseudoAccount),
-            loanSle->at(sfLoanBrokerNode),
-            loanID,
-            false))
+    if (!view.dirRemove(keylet::ownerDir(brokerPseudoAccount), loanSle->at(sfLoanBrokerNode), loanID, false))
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     // Remove LoanID from Directory of the Borrower.
-    if (!view.dirRemove(
-            keylet::ownerDir(borrower),
-            loanSle->at(sfOwnerNode),
-            loanID,
-            false))
+    if (!view.dirRemove(keylet::ownerDir(borrower), loanSle->at(sfOwnerNode), loanID, false))
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     // Delete the Loan object
@@ -115,10 +105,8 @@ LoanDelete::doApply()
         {
             XRPL_ASSERT_PARTS(
                 roundToAsset(
-                    vaultSle->at(sfAsset),
-                    debtTotalProxy,
-                    getAssetsTotalScale(vaultSle),
-                    Number::towards_zero) == beast::zero,
+                    vaultSle->at(sfAsset), debtTotalProxy, getAssetsTotalScale(vaultSle), Number::towards_zero) ==
+                    beast::zero,
                 "xrpl::LoanDelete::doApply",
                 "last loan, remaining debt rounds to zero");
             debtTotalProxy = 0;

@@ -12,11 +12,7 @@ namespace xrpl {
 
 template <class FlowResult>
 static auto
-finishFlow(
-    PaymentSandbox& sb,
-    Issue const& srcIssue,
-    Issue const& dstIssue,
-    FlowResult&& f)
+finishFlow(PaymentSandbox& sb, Issue const& srcIssue, Issue const& dstIssue, FlowResult&& f)
 {
     path::RippleCalc::Output result;
     if (f.ter == tesSUCCESS)
@@ -93,8 +89,7 @@ flow(
 
     if (j.trace())
     {
-        j.trace() << "\nsrc: " << src << "\ndst: " << dst
-                  << "\nsrcIssue: " << srcIssue << "\ndstIssue: " << dstIssue;
+        j.trace() << "\nsrc: " << src << "\ndst: " << dst << "\nsrcIssue: " << srcIssue << "\ndstIssue: " << dstIssue;
         j.trace() << "\nNumStrands: " << strands.size();
         for (auto const& curStrand : strands)
         {

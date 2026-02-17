@@ -1,5 +1,4 @@
-#ifndef XRPL_CORE_GRPCSERVER_H_INCLUDED
-#define XRPL_CORE_GRPCSERVER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/Context.h>
@@ -85,17 +84,13 @@ private:
     // typedef for actual handler (that populates a response)
     // handlers are defined in rpc/GRPCHandlers.h
     template <class Request, class Response>
-    using Handler = std::function<std::pair<Response, grpc::Status>(
-        RPC::GRPCContext<Request>&)>;
+    using Handler = std::function<std::pair<Response, grpc::Status>(RPC::GRPCContext<Request>&)>;
     // This implementation is currently limited to v1 of the API
     static unsigned constexpr apiVersion = 1;
 
     template <class Request, class Response>
-    using Forward = std::function<grpc::Status(
-        org::xrpl::rpc::v1::XRPLedgerAPIService::Stub*,
-        grpc::ClientContext*,
-        Request,
-        Response*)>;
+    using Forward = std::function<
+        grpc::Status(org::xrpl::rpc::v1::XRPLedgerAPIService::Stub*, grpc::ClientContext*, Request, Response*)>;
 
 public:
     explicit GRPCServerImpl(Application& app);
@@ -128,9 +123,7 @@ public:
 private:
     // Class encompassing the state and logic needed to serve a request.
     template <class Request, class Response>
-    class CallData
-        : public Processor,
-          public std::enable_shared_from_this<CallData<Request, Response>>
+    class CallData : public Processor, public std::enable_shared_from_this<CallData<Request, Response>>
     {
     private:
         // The means of communication with the gRPC runtime for an asynchronous
@@ -306,4 +299,3 @@ private:
     bool running_ = false;
 };
 }  // namespace xrpl
-#endif

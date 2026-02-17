@@ -1,5 +1,4 @@
-#ifndef XRPL_XRPL_RPC_HANDLERS_VERSION_H
-#define XRPL_XRPL_RPC_HANDLERS_VERSION_H
+#pragma once
 
 #include <xrpl/protocol/ApiVersion.h>
 
@@ -9,8 +8,7 @@ namespace RPC {
 class VersionHandler
 {
 public:
-    explicit VersionHandler(JsonContext& c)
-        : apiVersion_(c.apiVersion), betaEnabled_(c.app.config().BETA_RPC_API)
+    explicit VersionHandler(JsonContext& c) : apiVersion_(c.apiVersion), betaEnabled_(c.app.config().BETA_RPC_API)
     {
     }
 
@@ -43,5 +41,3 @@ private:
 
 }  // namespace RPC
 }  // namespace xrpl
-
-#endif

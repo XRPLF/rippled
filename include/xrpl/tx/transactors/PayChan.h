@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_PAYCHAN_H_INCLUDED
-#define XRPL_TX_PAYCHAN_H_INCLUDED
+#pragma once
 
 #include <xrpl/tx/Transactor.h>
 
@@ -82,5 +81,3 @@ public:
 using PaymentChannelClaim = PayChanClaim;
 
 }  // namespace xrpl
-
-#endif

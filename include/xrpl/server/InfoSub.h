@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_INFOSUB_H_INCLUDED
-#define XRPL_SERVER_INFOSUB_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/json/json_value.h>
@@ -54,25 +53,16 @@ public:
         // you get transactions as they occur or once their
         // results are confirmed
         virtual void
-        subAccount(
-            ref ispListener,
-            hash_set<AccountID> const& vnaAccountIDs,
-            bool realTime) = 0;
+        subAccount(ref ispListener, hash_set<AccountID> const& vnaAccountIDs, bool realTime) = 0;
 
         // for normal use, removes from InfoSub and server
         virtual void
-        unsubAccount(
-            ref isplistener,
-            hash_set<AccountID> const& vnaAccountIDs,
-            bool realTime) = 0;
+        unsubAccount(ref isplistener, hash_set<AccountID> const& vnaAccountIDs, bool realTime) = 0;
 
         // for use during InfoSub destruction
         // Removes only from the server
         virtual void
-        unsubAccountInternal(
-            std::uint64_t uListener,
-            hash_set<AccountID> const& vnaAccountIDs,
-            bool realTime) = 0;
+        unsubAccountInternal(std::uint64_t uListener, hash_set<AccountID> const& vnaAccountIDs, bool realTime) = 0;
 
         /**
          * subscribe an account's new transactions and retrieve the account's
@@ -91,16 +81,10 @@ public:
          * transactions.
          */
         virtual void
-        unsubAccountHistory(
-            ref ispListener,
-            AccountID const& account,
-            bool historyOnly) = 0;
+        unsubAccountHistory(ref ispListener, AccountID const& account, bool historyOnly) = 0;
 
         virtual void
-        unsubAccountHistoryInternal(
-            std::uint64_t uListener,
-            AccountID const& account,
-            bool historyOnly) = 0;
+        unsubAccountHistoryInternal(std::uint64_t uListener, AccountID const& account, bool historyOnly) = 0;
 
         // VFALCO TODO Document the bool return value
         virtual bool
@@ -238,5 +222,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_READVIEWFWDRANGE_H_INCLUDED
-#define XRPL_LEDGER_READVIEWFWDRANGE_H_INCLUDED
+#pragma once
 
 #include <cstddef>
 #include <memory>
@@ -73,9 +72,7 @@ public:
         iterator(iterator&& other) noexcept;
 
         // Used by the implementation
-        explicit iterator(
-            ReadView const* view,
-            std::unique_ptr<iter_base> impl);
+        explicit iterator(ReadView const* view, std::unique_ptr<iter_base> impl);
 
         iterator&
         operator=(iterator const& other);
@@ -131,5 +128,3 @@ protected:
 
 }  // namespace detail
 }  // namespace xrpl
-
-#endif

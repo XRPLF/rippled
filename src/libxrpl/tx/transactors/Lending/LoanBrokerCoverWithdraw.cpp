@@ -80,8 +80,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     // The broker's pseudo-account is the source of funds.
     auto const pseudoAccountID = sleBroker->at(sfAccount);
     // Cannot transfer a non-transferable Asset
-    if (auto const ret =
-            canTransfer(ctx.view, vaultAsset, pseudoAccountID, dstAcct))
+    if (auto const ret = canTransfer(ctx.view, vaultAsset, pseudoAccountID, dstAcct))
         return ret;
 
     // Withdrawal to a 3rd party destination account is essentially a transfer.
@@ -121,9 +120,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
         NumberRoundModeGuard mg(Number::upward);
         return roundToAsset(
             vaultAsset,
-            tenthBipsOfValue(
-                currentDebtTotal,
-                TenthBips32(sleBroker->at(sfCoverRateMinimum))),
+            tenthBipsOfValue(currentDebtTotal, TenthBips32(sleBroker->at(sfCoverRateMinimum))),
             currentDebtTotal.exponent());
     }();
     if (coverAvail < amount)
@@ -170,15 +167,7 @@ LoanBrokerCoverWithdraw::doApply()
 
     associateAsset(*broker, vaultAsset);
 
-    return doWithdraw(
-        view(),
-        tx,
-        account_,
-        dstAcct,
-        brokerPseudoID,
-        mPriorBalance,
-        amount,
-        j_);
+    return doWithdraw(view(), tx, account_, dstAcct, brokerPseudoID, mPriorBalance, amount, j_);
 }
 
 //------------------------------------------------------------------------------

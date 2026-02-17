@@ -1,5 +1,4 @@
-#ifndef XRPL_NODESTORE_BASE_H_INCLUDED
-#define XRPL_NODESTORE_BASE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/random.h>
@@ -27,9 +26,7 @@ namespace NodeStore {
 struct LessThan
 {
     bool
-    operator()(
-        std::shared_ptr<NodeObject> const& lhs,
-        std::shared_ptr<NodeObject> const& rhs) const noexcept
+    operator()(std::shared_ptr<NodeObject> const& lhs, std::shared_ptr<NodeObject> const& rhs) const noexcept
     {
         return lhs->getHash() < rhs->getHash();
     }
@@ -37,12 +34,9 @@ struct LessThan
 
 /** Returns `true` if objects are identical. */
 inline bool
-isSame(
-    std::shared_ptr<NodeObject> const& lhs,
-    std::shared_ptr<NodeObject> const& rhs)
+isSame(std::shared_ptr<NodeObject> const& lhs, std::shared_ptr<NodeObject> const& rhs)
 {
-    return (lhs->getType() == rhs->getType()) &&
-        (lhs->getHash() == rhs->getHash()) &&
+    return (lhs->getType() == rhs->getType()) && (lhs->getHash() == rhs->getHash()) &&
         (lhs->getData() == rhs->getData());
 }
 
@@ -91,8 +85,7 @@ public:
             Blob blob(rand_int(rng, minPayloadBytes, maxPayloadBytes));
             beast::rngfill(blob.data(), blob.size(), rng);
 
-            batch.push_back(
-                NodeObject::createObject(type, std::move(blob), hash));
+            batch.push_back(NodeObject::createObject(type, std::move(blob), hash));
         }
 
         return batch;
@@ -144,8 +137,7 @@ public:
         {
             std::shared_ptr<NodeObject> object;
 
-            Status const status =
-                backend.fetch(batch[i]->getHash().cbegin(), &object);
+            Status const status = backend.fetch(batch[i]->getHash().cbegin(), &object);
 
             BEAST_EXPECT(status == ok);
 
@@ -165,8 +157,7 @@ public:
         {
             std::shared_ptr<NodeObject> object;
 
-            Status const status =
-                backend.fetch(batch[i]->getHash().cbegin(), &object);
+            Status const status = backend.fetch(batch[i]->getHash().cbegin(), &object);
 
             BEAST_EXPECT(status == notFound);
         }
@@ -182,11 +173,7 @@ public:
 
             Blob data(object->getData());
 
-            db.store(
-                object->getType(),
-                std::move(data),
-                object->getHash(),
-                db.earliestLedgerSeq());
+            db.store(object->getType(), std::move(data), object->getHash(), db.earliestLedgerSeq());
         }
     }
 
@@ -199,8 +186,7 @@ public:
 
         for (int i = 0; i < batch.size(); ++i)
         {
-            std::shared_ptr<NodeObject> object =
-                db.fetchNodeObject(batch[i]->getHash(), 0);
+            std::shared_ptr<NodeObject> object = db.fetchNodeObject(batch[i]->getHash(), 0);
 
             if (object != nullptr)
                 pCopy->push_back(object);
@@ -210,5 +196,3 @@ public:
 
 }  // namespace NodeStore
 }  // namespace xrpl
-
-#endif

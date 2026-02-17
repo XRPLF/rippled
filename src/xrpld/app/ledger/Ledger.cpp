@@ -108,8 +108,7 @@ public:
 
     txs_iter_impl(txs_iter_impl const&) = default;
 
-    txs_iter_impl(bool metadata, SHAMap::const_iterator iter)
-        : metadata_(metadata), iter_(std::move(iter))
+    txs_iter_impl(bool metadata, SHAMap::const_iterator iter) : metadata_(metadata), iter_(std::move(iter))
     {
     }
 
@@ -145,11 +144,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-Ledger::Ledger(
-    create_genesis_t,
-    Config const& config,
-    std::vector<uint256> const& amendments,
-    Family& family)
+Ledger::Ledger(create_genesis_t, Config const& config, std::vector<uint256> const& amendments, Family& family)
     : mImmutable(false)
     , txMap_(SHAMapType::TRANSACTION, family)
     , stateMap_(SHAMapType::STATE, family)
@@ -160,9 +155,7 @@ Ledger::Ledger(
     header_.drops = INITIAL_XRP;
     header_.closeTimeResolution = ledgerGenesisTimeResolution;
 
-    static auto const id = calcAccountID(
-        generateKeyPair(KeyType::secp256k1, generateSeed("masterpassphrase"))
-            .first);
+    static auto const id = calcAccountID(generateKeyPair(KeyType::secp256k1, generateSeed("masterpassphrase")).first);
     {
         auto const sle = std::make_shared<SLE>(keylet::account(id));
         sle->setFieldU32(sfSequence, 1);
@@ -181,8 +174,7 @@ Ledger::Ledger(
     {
         auto sle = std::make_shared<SLE>(keylet::fees());
         // Whether featureXRPFees is supported will depend on startup options.
-        if (std::find(amendments.begin(), amendments.end(), featureXRPFees) !=
-            amendments.end())
+        if (std::find(amendments.begin(), amendments.end(), featureXRPFees) != amendments.end())
         {
             sle->at(sfBaseFeeDrops) = config.FEES.reference_fee;
             sle->at(sfReserveBaseDrops) = config.FEES.account_reserve;
@@ -190,14 +182,11 @@ Ledger::Ledger(
         }
         else
         {
-            if (auto const f =
-                    config.FEES.reference_fee.dropsAs<std::uint64_t>())
+            if (auto const f = config.FEES.reference_fee.dropsAs<std::uint64_t>())
                 sle->at(sfBaseFee) = *f;
-            if (auto const f =
-                    config.FEES.account_reserve.dropsAs<std::uint32_t>())
+            if (auto const f = config.FEES.account_reserve.dropsAs<std::uint32_t>())
                 sle->at(sfReserveBase) = *f;
-            if (auto const f =
-                    config.FEES.owner_reserve.dropsAs<std::uint32_t>())
+            if (auto const f = config.FEES.owner_reserve.dropsAs<std::uint32_t>())
                 sle->at(sfReserveIncrement) = *f;
             sle->at(sfReferenceFeeUnits) = Config::FEE_UNITS_DEPRECATED;
         }
@@ -224,20 +213,16 @@ Ledger::Ledger(
 {
     loaded = true;
 
-    if (header_.txHash.isNonZero() &&
-        !txMap_.fetchRoot(SHAMapHash{header_.txHash}, nullptr))
+    if (header_.txHash.isNonZero() && !txMap_.fetchRoot(SHAMapHash{header_.txHash}, nullptr))
     {
         loaded = false;
-        JLOG(j.warn()) << "Don't have transaction root for ledger"
-                       << header_.seq;
+        JLOG(j.warn()) << "Don't have transaction root for ledger" << header_.seq;
     }
 
-    if (header_.accountHash.isNonZero() &&
-        !stateMap_.fetchRoot(SHAMapHash{header_.accountHash}, nullptr))
+    if (header_.accountHash.isNonZero() && !stateMap_.fetchRoot(SHAMapHash{header_.accountHash}, nullptr))
     {
         loaded = false;
-        JLOG(j.warn()) << "Don't have state data root for ledger"
-                       << header_.seq;
+        JLOG(j.warn()) << "Don't have state data root for ledger" << header_.seq;
     }
 
     txMap_.setImmutable();
@@ -271,19 +256,15 @@ Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
     header_.closeTimeResolution = prevLedger.header_.closeTimeResolution;
     header_.parentHash = prevLedger.header().hash;
     header_.closeTimeResolution = getNextLedgerTimeResolution(
-        prevLedger.header_.closeTimeResolution,
-        getCloseAgree(prevLedger.header()),
-        header_.seq);
+        prevLedger.header_.closeTimeResolution, getCloseAgree(prevLedger.header()), header_.seq);
 
     if (prevLedger.header_.closeTime == NetClock::time_point{})
     {
-        header_.closeTime =
-            roundCloseTime(closeTime, header_.closeTimeResolution);
+        header_.closeTime = roundCloseTime(closeTime, header_.closeTimeResolution);
     }
     else
     {
-        header_.closeTime =
-            prevLedger.header_.closeTime + header_.closeTimeResolution;
+        header_.closeTime = prevLedger.header_.closeTime + header_.closeTimeResolution;
     }
 }
 
@@ -298,11 +279,7 @@ Ledger::Ledger(LedgerHeader const& info, Config const& config, Family& family)
     header_.hash = calculateLedgerHash(header_);
 }
 
-Ledger::Ledger(
-    std::uint32_t ledgerSeq,
-    NetClock::time_point closeTime,
-    Config const& config,
-    Family& family)
+Ledger::Ledger(std::uint32_t ledgerSeq, NetClock::time_point closeTime, Config const& config, Family& family)
     : mImmutable(false)
     , txMap_(SHAMapType::TRANSACTION, family)
     , stateMap_(SHAMapType::STATE, family)
@@ -337,10 +314,7 @@ Ledger::setImmutable(bool rehash)
 }
 
 void
-Ledger::setAccepted(
-    NetClock::time_point closeTime,
-    NetClock::duration closeResolution,
-    bool correctCloseTime)
+Ledger::setAccepted(NetClock::time_point closeTime, NetClock::duration closeResolution, bool correctCloseTime)
 {
     // Used when we witnessed the consensus.
     XRPL_ASSERT(!open(), "xrpl::Ledger::setAccepted : valid ledger state");
@@ -355,8 +329,7 @@ bool
 Ledger::addSLE(SLE const& sle)
 {
     auto const s = sle.getSerializer();
-    return stateMap_.addItem(
-        SHAMapNodeType::tnACCOUNT_STATE, make_shamapitem(sle.key(), s.slice()));
+    return stateMap_.addItem(SHAMapNodeType::tnACCOUNT_STATE, make_shamapitem(sle.key(), s.slice()));
 }
 
 //------------------------------------------------------------------------------
@@ -371,8 +344,7 @@ deserializeTx(SHAMapItem const& item)
 std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>
 deserializeTxPlusMeta(SHAMapItem const& item)
 {
-    std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>
-        result;
+    std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>> result;
     SerialIter sit(item.slice());
     {
         SerialIter s(sit.getSlice(sit.getVLDataLength()));
@@ -445,8 +417,7 @@ Ledger::slesEnd() const -> std::unique_ptr<sles_type::iter_base>
 }
 
 auto
-Ledger::slesUpperBound(uint256 const& key) const
-    -> std::unique_ptr<sles_type::iter_base>
+Ledger::slesUpperBound(uint256 const& key) const -> std::unique_ptr<sles_type::iter_base>
 {
     return std::make_unique<sles_iter_impl>(stateMap_.upper_bound(key));
 }
@@ -515,9 +486,7 @@ Ledger::rawInsert(std::shared_ptr<SLE> const& sle)
 {
     Serializer ss;
     sle->add(ss);
-    if (!stateMap_.addGiveItem(
-            SHAMapNodeType::tnACCOUNT_STATE,
-            make_shamapitem(sle->key(), ss.slice())))
+    if (!stateMap_.addGiveItem(SHAMapNodeType::tnACCOUNT_STATE, make_shamapitem(sle->key(), ss.slice())))
         LogicError("Ledger::rawInsert: key already exists");
 }
 
@@ -526,9 +495,7 @@ Ledger::rawReplace(std::shared_ptr<SLE> const& sle)
 {
     Serializer ss;
     sle->add(ss);
-    if (!stateMap_.updateGiveItem(
-            SHAMapNodeType::tnACCOUNT_STATE,
-            make_shamapitem(sle->key(), ss.slice())))
+    if (!stateMap_.updateGiveItem(SHAMapNodeType::tnACCOUNT_STATE, make_shamapitem(sle->key(), ss.slice())))
         LogicError("Ledger::rawReplace: key not found");
 }
 
@@ -538,15 +505,13 @@ Ledger::rawTxInsert(
     std::shared_ptr<Serializer const> const& txn,
     std::shared_ptr<Serializer const> const& metaData)
 {
-    XRPL_ASSERT(
-        metaData, "xrpl::Ledger::rawTxInsert : non-null metadata input");
+    XRPL_ASSERT(metaData, "xrpl::Ledger::rawTxInsert : non-null metadata input");
 
     // low-level - just add to table
     Serializer s(txn->getDataLength() + metaData->getDataLength() + 16);
     s.addVL(txn->peekData());
     s.addVL(metaData->peekData());
-    if (!txMap_.addGiveItem(
-            SHAMapNodeType::tnTRANSACTION_MD, make_shamapitem(key, s.slice())))
+    if (!txMap_.addGiveItem(SHAMapNodeType::tnTRANSACTION_MD, make_shamapitem(key, s.slice())))
         LogicError("duplicate_tx: " + to_string(key));
 }
 
@@ -556,9 +521,7 @@ Ledger::rawTxInsertWithHash(
     std::shared_ptr<Serializer const> const& txn,
     std::shared_ptr<Serializer const> const& metaData)
 {
-    XRPL_ASSERT(
-        metaData,
-        "xrpl::Ledger::rawTxInsertWithHash : non-null metadata input");
+    XRPL_ASSERT(metaData, "xrpl::Ledger::rawTxInsertWithHash : non-null metadata input");
 
     // low-level - just add to table
     Serializer s(txn->getDataLength() + metaData->getDataLength() + 16);
@@ -612,11 +575,8 @@ Ledger::setup()
             {
                 auto const baseFeeXRP = sle->at(~sfBaseFeeDrops);
                 auto const reserveBaseXRP = sle->at(~sfReserveBaseDrops);
-                auto const reserveIncrementXRP =
-                    sle->at(~sfReserveIncrementDrops);
-                auto assign = [&ret](
-                                  XRPAmount& dest,
-                                  std::optional<STAmount> const& src) {
+                auto const reserveIncrementXRP = sle->at(~sfReserveIncrementDrops);
+                auto assign = [&ret](XRPAmount& dest, std::optional<STAmount> const& src) {
                     if (src)
                     {
                         if (src->native())
@@ -654,9 +614,7 @@ Ledger::setup()
 void
 Ledger::defaultFees(Config const& config)
 {
-    XRPL_ASSERT(
-        fees_.base == 0 && fees_.reserve == 0 && fees_.increment == 0,
-        "xrpl::Ledger::defaultFees : zero fees");
+    XRPL_ASSERT(fees_.base == 0 && fees_.reserve == 0 && fees_.increment == 0, "xrpl::Ledger::defaultFees : zero fees");
     if (fees_.base == 0)
         fees_.base = config.FEES.reference_fee;
     if (fees_.reserve == 0)
@@ -681,8 +639,7 @@ hash_set<PublicKey>
 Ledger::negativeUNL() const
 {
     hash_set<PublicKey> negUnl;
-    if (auto sle = read(keylet::negativeUNL());
-        sle && sle->isFieldPresent(sfDisabledValidators))
+    if (auto sle = read(keylet::negativeUNL()); sle && sle->isFieldPresent(sfDisabledValidators))
     {
         auto const& nUnlData = sle->getFieldArray(sfDisabledValidators);
         for (auto const& n : nUnlData)
@@ -706,8 +663,7 @@ Ledger::negativeUNL() const
 std::optional<PublicKey>
 Ledger::validatorToDisable() const
 {
-    if (auto sle = read(keylet::negativeUNL());
-        sle && sle->isFieldPresent(sfValidatorToDisable))
+    if (auto sle = read(keylet::negativeUNL()); sle && sle->isFieldPresent(sfValidatorToDisable))
     {
         auto d = sle->getFieldVL(sfValidatorToDisable);
         auto s = makeSlice(d);
@@ -721,8 +677,7 @@ Ledger::validatorToDisable() const
 std::optional<PublicKey>
 Ledger::validatorToReEnable() const
 {
-    if (auto sle = read(keylet::negativeUNL());
-        sle && sle->isFieldPresent(sfValidatorToReEnable))
+    if (auto sle = read(keylet::negativeUNL()); sle && sle->isFieldPresent(sfValidatorToReEnable))
     {
         auto d = sle->getFieldVL(sfValidatorToReEnable);
         auto s = makeSlice(d);
@@ -753,8 +708,7 @@ Ledger::updateNegativeUNL()
         for (auto v : oldNUnl)
         {
             if (hasToReEnable && v.isFieldPresent(sfPublicKey) &&
-                v.getFieldVL(sfPublicKey) ==
-                    sle->getFieldVL(sfValidatorToReEnable))
+                v.getFieldVL(sfPublicKey) == sle->getFieldVL(sfValidatorToReEnable))
                 continue;
             newNUnl.push_back(v);
         }
@@ -763,8 +717,7 @@ Ledger::updateNegativeUNL()
     if (hasToDisable)
     {
         newNUnl.push_back(STObject::makeInnerObject(sfDisabledValidator));
-        newNUnl.back().setFieldVL(
-            sfPublicKey, sle->getFieldVL(sfValidatorToDisable));
+        newNUnl.back().setFieldVL(sfPublicKey, sle->getFieldVL(sfValidatorToDisable));
         newNUnl.back().setFieldU32(sfFirstLedgerSequence, seq());
     }
 
@@ -793,8 +746,7 @@ Ledger::walkLedger(beast::Journal j, bool parallel) const
     if (stateMap_.getHash().isZero() && !header_.accountHash.isZero() &&
         !stateMap_.fetchRoot(SHAMapHash{header_.accountHash}, nullptr))
     {
-        missingNodes1.emplace_back(
-            SHAMapType::STATE, SHAMapHash{header_.accountHash});
+        missingNodes1.emplace_back(SHAMapType::STATE, SHAMapHash{header_.accountHash});
     }
     else
     {
@@ -816,8 +768,7 @@ Ledger::walkLedger(beast::Journal j, bool parallel) const
     if (txMap_.getHash().isZero() && header_.txHash.isNonZero() &&
         !txMap_.fetchRoot(SHAMapHash{header_.txHash}, nullptr))
     {
-        missingNodes2.emplace_back(
-            SHAMapType::TRANSACTION, SHAMapHash{header_.txHash});
+        missingNodes2.emplace_back(SHAMapType::TRANSACTION, SHAMapHash{header_.txHash});
     }
     else
     {
@@ -839,8 +790,7 @@ bool
 Ledger::assertSensible(beast::Journal ledgerJ) const
 {
     if (header_.hash.isNonZero() && header_.accountHash.isNonZero() &&
-        (header_.accountHash == stateMap_.getHash().as_uint256()) &&
-        (header_.txHash == txMap_.getHash().as_uint256()))
+        (header_.accountHash == stateMap_.getHash().as_uint256()) && (header_.txHash == txMap_.getHash().as_uint256()))
     {
         return true;
     }
@@ -888,9 +838,7 @@ Ledger::updateSkipList()
             created = false;
         }
 
-        XRPL_ASSERT(
-            hashes.size() <= 256,
-            "xrpl::Ledger::updateSkipList : first maximum hashes size");
+        XRPL_ASSERT(hashes.size() <= 256, "xrpl::Ledger::updateSkipList : first maximum hashes size");
         hashes.push_back(header_.parentHash);
         sle->setFieldV256(sfHashes, STVector256(hashes));
         sle->setFieldU32(sfLastLedgerSequence, prevIndex);
@@ -915,9 +863,7 @@ Ledger::updateSkipList()
         hashes = static_cast<decltype(hashes)>(sle->getFieldV256(sfHashes));
         created = false;
     }
-    XRPL_ASSERT(
-        hashes.size() <= 256,
-        "xrpl::Ledger::updateSkipList : second maximum hashes size");
+    XRPL_ASSERT(hashes.size() <= 256, "xrpl::Ledger::updateSkipList : second maximum hashes size");
     if (hashes.size() == 256)
         hashes.erase(hashes.begin());
     hashes.push_back(header_.parentHash);
@@ -941,10 +887,7 @@ Ledger::isVotingLedger() const
 }
 
 static bool
-saveValidatedLedger(
-    Application& app,
-    std::shared_ptr<Ledger const> const& ledger,
-    bool current)
+saveValidatedLedger(Application& app, std::shared_ptr<Ledger const> const& ledger, bool current)
 {
     auto j = app.journal("Ledger");
     auto seq = ledger->header().seq;
@@ -969,14 +912,9 @@ saveValidatedLedger(
     Returns false on error
 */
 bool
-pendSaveValidated(
-    Application& app,
-    std::shared_ptr<Ledger const> const& ledger,
-    bool isSynchronous,
-    bool isCurrent)
+pendSaveValidated(Application& app, std::shared_ptr<Ledger const> const& ledger, bool isSynchronous, bool isCurrent)
 {
-    if (!app.getHashRouter().setFlags(
-            ledger->header().hash, HashRouterFlags::SAVED))
+    if (!app.getHashRouter().setFlags(ledger->header().hash, HashRouterFlags::SAVED))
     {
         // We have tried to save this ledger recently
         auto stream = app.journal("Ledger").debug();
@@ -990,14 +928,12 @@ pendSaveValidated(
         }
     }
 
-    XRPL_ASSERT(
-        ledger->isImmutable(), "xrpl::pendSaveValidated : immutable ledger");
+    XRPL_ASSERT(ledger->isImmutable(), "xrpl::pendSaveValidated : immutable ledger");
 
     if (!app.pendingSaves().shouldWork(ledger->header().seq, isSynchronous))
     {
         auto stream = app.journal("Ledger").debug();
-        JLOG(stream) << "Pend save with seq in pending saves "
-                     << ledger->header().seq;
+        JLOG(stream) << "Pend save with seq in pending saves " << ledger->header().seq;
 
         return true;
     }
@@ -1005,9 +941,7 @@ pendSaveValidated(
     // See if we can use the JobQueue.
     if (!isSynchronous &&
         app.getJobQueue().addJob(
-            isCurrent ? jtPUBLEDGER : jtPUBOLDLEDGER,
-            std::to_string(ledger->seq()),
-            [&app, ledger, isCurrent]() {
+            isCurrent ? jtPUBLEDGER : jtPUBOLDLEDGER, std::to_string(ledger->seq()), [&app, ledger, isCurrent]() {
                 saveValidatedLedger(app, ledger, isCurrent);
             }))
     {
@@ -1045,13 +979,8 @@ std::shared_ptr<Ledger>
 loadLedgerHelper(LedgerHeader const& info, Application& app, bool acquire)
 {
     bool loaded;
-    auto ledger = std::make_shared<Ledger>(
-        info,
-        loaded,
-        acquire,
-        app.config(),
-        app.getNodeFamily(),
-        app.journal("Ledger"));
+    auto ledger =
+        std::make_shared<Ledger>(info, loaded, acquire, app.config(), app.getNodeFamily(), app.journal("Ledger"));
 
     if (!loaded)
         ledger.reset();
@@ -1060,17 +989,13 @@ loadLedgerHelper(LedgerHeader const& info, Application& app, bool acquire)
 }
 
 static void
-finishLoadByIndexOrHash(
-    std::shared_ptr<Ledger> const& ledger,
-    Config const& config,
-    beast::Journal j)
+finishLoadByIndexOrHash(std::shared_ptr<Ledger> const& ledger, Config const& config, beast::Journal j)
 {
     if (!ledger)
         return;
 
     XRPL_ASSERT(
-        ledger->header().seq < XRP_LEDGER_EARLIEST_FEES ||
-            ledger->read(keylet::fees()),
+        ledger->header().seq < XRP_LEDGER_EARLIEST_FEES || ledger->read(keylet::fees()),
         "xrpl::finishLoadByIndexOrHash : valid ledger fees");
     ledger->setImmutable();
 
@@ -1082,8 +1007,7 @@ finishLoadByIndexOrHash(
 std::tuple<std::shared_ptr<Ledger>, std::uint32_t, uint256>
 getLatestLedger(Application& app)
 {
-    std::optional<LedgerHeader> const info =
-        app.getRelationalDatabase().getNewestLedgerInfo();
+    std::optional<LedgerHeader> const info = app.getRelationalDatabase().getNewestLedgerInfo();
     if (!info)
         return {std::shared_ptr<Ledger>(), {}, {}};
     return {loadLedgerHelper(*info, app, true), info->seq, info->hash};
@@ -1092,8 +1016,7 @@ getLatestLedger(Application& app)
 std::shared_ptr<Ledger>
 loadByIndex(std::uint32_t ledgerIndex, Application& app, bool acquire)
 {
-    if (std::optional<LedgerHeader> info =
-            app.getRelationalDatabase().getLedgerInfoByIndex(ledgerIndex))
+    if (std::optional<LedgerHeader> info = app.getRelationalDatabase().getLedgerInfoByIndex(ledgerIndex))
     {
         std::shared_ptr<Ledger> ledger = loadLedgerHelper(*info, app, acquire);
         finishLoadByIndexOrHash(ledger, app.config(), app.journal("Ledger"));
@@ -1105,14 +1028,11 @@ loadByIndex(std::uint32_t ledgerIndex, Application& app, bool acquire)
 std::shared_ptr<Ledger>
 loadByHash(uint256 const& ledgerHash, Application& app, bool acquire)
 {
-    if (std::optional<LedgerHeader> info =
-            app.getRelationalDatabase().getLedgerInfoByHash(ledgerHash))
+    if (std::optional<LedgerHeader> info = app.getRelationalDatabase().getLedgerInfoByHash(ledgerHash))
     {
         std::shared_ptr<Ledger> ledger = loadLedgerHelper(*info, app, acquire);
         finishLoadByIndexOrHash(ledger, app.config(), app.journal("Ledger"));
-        XRPL_ASSERT(
-            !ledger || ledger->header().hash == ledgerHash,
-            "xrpl::loadByHash : ledger hash match if loaded");
+        XRPL_ASSERT(!ledger || ledger->header().hash == ledgerHash, "xrpl::loadByHash : ledger hash match if loaded");
         return ledger;
     }
     return {};

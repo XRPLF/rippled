@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_APIVERSION_H_INCLUDED
-#define XRPL_PROTOCOL_APIVERSION_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/core/SemanticVersion.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -42,18 +41,15 @@ constexpr static auto apiInvalidVersion = apiVersion<0>;
 constexpr static auto apiMinimumSupportedVersion = apiVersion<1>;
 constexpr static auto apiMaximumSupportedVersion = apiVersion<2>;
 constexpr static auto apiVersionIfUnspecified = apiVersion<1>;
-constexpr static auto apiCommandLineVersion =
-    apiVersion<1>;  // TODO Bump to 2 later
+constexpr static auto apiCommandLineVersion = apiVersion<1>;  // TODO Bump to 2 later
 constexpr static auto apiBetaVersion = apiVersion<3>;
 constexpr static auto apiMaximumValidVersion = apiBetaVersion;
 
 static_assert(apiInvalidVersion < apiMinimumSupportedVersion);
 static_assert(
-    apiVersionIfUnspecified >= apiMinimumSupportedVersion &&
-    apiVersionIfUnspecified <= apiMaximumSupportedVersion);
+    apiVersionIfUnspecified >= apiMinimumSupportedVersion && apiVersionIfUnspecified <= apiMaximumSupportedVersion);
 static_assert(
-    apiCommandLineVersion >= apiMinimumSupportedVersion &&
-    apiCommandLineVersion <= apiMaximumSupportedVersion);
+    apiCommandLineVersion >= apiMinimumSupportedVersion && apiCommandLineVersion <= apiMaximumSupportedVersion);
 static_assert(apiMaximumSupportedVersion >= apiMinimumSupportedVersion);
 static_assert(apiBetaVersion >= apiMaximumSupportedVersion);
 static_assert(apiMaximumValidVersion >= apiMaximumSupportedVersion);
@@ -61,9 +57,7 @@ static_assert(apiMaximumValidVersion >= apiMaximumSupportedVersion);
 inline void
 setVersion(Json::Value& parent, unsigned int apiVersion, bool betaEnabled)
 {
-    XRPL_ASSERT(
-        apiVersion != apiInvalidVersion,
-        "xrpl::RPC::setVersion : input is valid");
+    XRPL_ASSERT(apiVersion != apiInvalidVersion, "xrpl::RPC::setVersion : input is valid");
 
     auto& retObj = parent[jss::version] = Json::objectValue;
 
@@ -81,8 +75,7 @@ setVersion(Json::Value& parent, unsigned int apiVersion, bool betaEnabled)
     else
     {
         retObj[jss::first] = apiMinimumSupportedVersion.value;
-        retObj[jss::last] =
-            betaEnabled ? apiBetaVersion : apiMaximumSupportedVersion;
+        retObj[jss::last] = betaEnabled ? apiBetaVersion : apiMaximumSupportedVersion;
     }
 }
 
@@ -104,8 +97,7 @@ inline unsigned int
 getAPIVersionNumber(Json::Value const& jv, bool betaEnabled)
 {
     static Json::Value const minVersion(RPC::apiMinimumSupportedVersion);
-    Json::Value const maxVersion(
-        betaEnabled ? RPC::apiBetaVersion : RPC::apiMaximumSupportedVersion);
+    Json::Value const maxVersion(betaEnabled ? RPC::apiBetaVersion : RPC::apiMaximumSupportedVersion);
 
     if (jv.isObject())
     {
@@ -117,8 +109,7 @@ getAPIVersionNumber(Json::Value const& jv, bool betaEnabled)
                 return RPC::apiInvalidVersion;
             }
             auto const specifiedVersionInt = specifiedVersion.asInt();
-            if (specifiedVersionInt < minVersion ||
-                specifiedVersionInt > maxVersion)
+            if (specifiedVersionInt < minVersion || specifiedVersionInt > maxVersion)
             {
                 return RPC::apiInvalidVersion;
             }
@@ -138,18 +129,13 @@ forApiVersions(Fn const& fn, Args&&... args)
     (maxVer >= minVer) &&                           //
     (minVer >= RPC::apiMinimumSupportedVersion) &&  //
     (RPC::apiMaximumValidVersion >= maxVer) && requires {
-        fn(std::integral_constant<unsigned int, minVer>{},
-           std::forward<Args>(args)...);
-        fn(std::integral_constant<unsigned int, maxVer>{},
-           std::forward<Args>(args)...);
+        fn(std::integral_constant<unsigned int, minVer>{}, std::forward<Args>(args)...);
+        fn(std::integral_constant<unsigned int, maxVer>{}, std::forward<Args>(args)...);
     }
 {
     constexpr auto size = maxVer + 1 - minVer;
     [&]<std::size_t... offset>(std::index_sequence<offset...>) {
-        (((void)fn(
-             std::integral_constant<unsigned int, minVer + offset>{},
-             std::forward<Args>(args)...)),
-         ...);
+        (((void)fn(std::integral_constant<unsigned int, minVer + offset>{}, std::forward<Args>(args)...)), ...);
     }(std::make_index_sequence<size>{});
 }
 
@@ -157,16 +143,10 @@ template <typename Fn, typename... Args>
 void
 forAllApiVersions(Fn const& fn, Args&&... args)
     requires requires {
-        forApiVersions<
-            RPC::apiMinimumSupportedVersion,
-            RPC::apiMaximumValidVersion>(fn, std::forward<Args>(args)...);
+        forApiVersions<RPC::apiMinimumSupportedVersion, RPC::apiMaximumValidVersion>(fn, std::forward<Args>(args)...);
     }
 {
-    forApiVersions<
-        RPC::apiMinimumSupportedVersion,
-        RPC::apiMaximumValidVersion>(fn, std::forward<Args>(args)...);
+    forApiVersions<RPC::apiMinimumSupportedVersion, RPC::apiMaximumValidVersion>(fn, std::forward<Args>(args)...);
 }
 
 }  // namespace xrpl
-
-#endif

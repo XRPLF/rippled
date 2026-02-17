@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_RDB_BACKEND_DETAIL_NODE_H_INCLUDED
-#define XRPL_APP_RDB_BACKEND_DETAIL_NODE_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/core/Config.h>
@@ -62,10 +61,7 @@ getMaxLedgerSeq(soci::session& session, TableType type);
  * @param ledgerSeq Ledger sequence.
  */
 void
-deleteByLedgerSeq(
-    soci::session& session,
-    TableType type,
-    LedgerIndex ledgerSeq);
+deleteByLedgerSeq(soci::session& session, TableType type, LedgerIndex ledgerSeq);
 
 /**
  * @brief deleteBeforeLedgerSeq Deletes all entries in given table
@@ -75,10 +71,7 @@ deleteByLedgerSeq(
  * @param ledgerSeq Ledger sequence.
  */
 void
-deleteBeforeLedgerSeq(
-    soci::session& session,
-    TableType type,
-    LedgerIndex ledgerSeq);
+deleteBeforeLedgerSeq(soci::session& session, TableType type, LedgerIndex ledgerSeq);
 
 /**
  * @brief getRows Returns number of rows in given table.
@@ -125,10 +118,7 @@ saveValidatedLedger(
  * @return Ledger or none if ledger not found.
  */
 std::optional<LedgerHeader>
-getLedgerInfoByIndex(
-    soci::session& session,
-    LedgerIndex ledgerSeq,
-    beast::Journal j);
+getLedgerInfoByIndex(soci::session& session, LedgerIndex ledgerSeq, beast::Journal j);
 
 /**
  * @brief getNewestLedgerInfo Returns info of newest saved ledger.
@@ -148,10 +138,7 @@ getNewestLedgerInfo(soci::session& session, beast::Journal j);
  * @return Ledger info or none if ledger not found.
  */
 std::optional<LedgerHeader>
-getLimitedOldestLedgerInfo(
-    soci::session& session,
-    LedgerIndex ledgerFirstIndex,
-    beast::Journal j);
+getLimitedOldestLedgerInfo(soci::session& session, LedgerIndex ledgerFirstIndex, beast::Journal j);
 
 /**
  * @brief getLimitedNewestLedgerInfo Returns info of newest ledger
@@ -162,10 +149,7 @@ getLimitedOldestLedgerInfo(
  * @return Ledger info or none if ledger not found.
  */
 std::optional<LedgerHeader>
-getLimitedNewestLedgerInfo(
-    soci::session& session,
-    LedgerIndex ledgerFirstIndex,
-    beast::Journal j);
+getLimitedNewestLedgerInfo(soci::session& session, LedgerIndex ledgerFirstIndex, beast::Journal j);
 
 /**
  * @brief getLedgerInfoByHash Returns info of ledger with given hash.
@@ -175,10 +159,7 @@ getLimitedNewestLedgerInfo(
  * @return Ledger or none if ledger not found.
  */
 std::optional<LedgerHeader>
-getLedgerInfoByHash(
-    soci::session& session,
-    uint256 const& ledgerHash,
-    beast::Journal j);
+getLedgerInfoByHash(soci::session& session, uint256 const& ledgerHash, beast::Journal j);
 
 /**
  * @brief getHashByIndex Returns hash of ledger with given sequence.
@@ -199,10 +180,7 @@ getHashByIndex(soci::session& session, LedgerIndex ledgerIndex);
  *         its parent ledger.
  */
 std::optional<LedgerHashPair>
-getHashesByIndex(
-    soci::session& session,
-    LedgerIndex ledgerIndex,
-    beast::Journal j);
+getHashesByIndex(soci::session& session, LedgerIndex ledgerIndex, beast::Journal j);
 
 /**
  * @brief getHashesByIndex Returns hash of the ledger and hash of parent
@@ -216,11 +194,7 @@ getHashesByIndex(
  *         LedgerHashPair which contains ledger hash and its parent hash.
  */
 std::map<LedgerIndex, LedgerHashPair>
-getHashesByIndex(
-    soci::session& session,
-    LedgerIndex minSeq,
-    LedgerIndex maxSeq,
-    beast::Journal j);
+getHashesByIndex(soci::session& session, LedgerIndex minSeq, LedgerIndex maxSeq, beast::Journal j);
 
 /**
  * @brief getTxHistory Returns given number of most recent transactions
@@ -234,11 +208,7 @@ getHashesByIndex(
  *         if count == true.
  */
 std::pair<std::vector<std::shared_ptr<Transaction>>, int>
-getTxHistory(
-    soci::session& session,
-    Application& app,
-    LedgerIndex startIndex,
-    int quantity);
+getTxHistory(soci::session& session, Application& app, LedgerIndex startIndex, int quantity);
 
 /**
  * @brief getOldestAccountTxs Returns oldest transactions for given
@@ -368,9 +338,7 @@ std::pair<std::optional<RelationalDatabase::AccountTxMarker>, int>
 oldestAccountTxPage(
     soci::session& session,
     std::function<void(std::uint32_t)> const& onUnsavedLedger,
-    std::function<
-        void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const&
-        onTransaction,
+    std::function<void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const& onTransaction,
     RelationalDatabase::AccountTxPageOptions const& options,
     std::uint32_t page_length);
 
@@ -396,9 +364,7 @@ std::pair<std::optional<RelationalDatabase::AccountTxMarker>, int>
 newestAccountTxPage(
     soci::session& session,
     std::function<void(std::uint32_t)> const& onUnsavedLedger,
-    std::function<
-        void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const&
-        onTransaction,
+    std::function<void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const& onTransaction,
     RelationalDatabase::AccountTxPageOptions const& options,
     std::uint32_t page_length);
 
@@ -438,5 +404,3 @@ dbHasSpace(soci::session& session, Config const& config, beast::Journal j);
 
 }  // namespace detail
 }  // namespace xrpl
-
-#endif

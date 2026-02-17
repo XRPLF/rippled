@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_ACCEPTEDLEDGER_H_INCLUDED
-#define XRPL_APP_LEDGER_ACCEPTEDLEDGER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -58,5 +57,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_APPLY_H_INCLUDED
-#define XRPL_TX_APPLY_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/View.h>
@@ -96,12 +95,7 @@ forceValidity(HashRouter& router, uint256 const& txid, Validity validity);
             whether or not the transaction was applied.
 */
 ApplyResult
-apply(
-    ServiceRegistry& registry,
-    OpenView& view,
-    STTx const& tx,
-    ApplyFlags flags,
-    beast::Journal journal);
+apply(ServiceRegistry& registry, OpenView& view, STTx const& tx, ApplyFlags flags, beast::Journal journal);
 
 /** Enum class for return value from `applyTransaction`
 
@@ -133,5 +127,3 @@ applyTransaction(
     beast::Journal journal);
 
 }  // namespace xrpl
-
-#endif

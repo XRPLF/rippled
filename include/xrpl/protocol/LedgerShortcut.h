@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_LEDGERSHORTCUT_H_INCLUDED
-#define XRPL_PROTOCOL_LEDGERSHORTCUT_H_INCLUDED
+#pragma once
 
 namespace xrpl {
 
@@ -21,5 +20,3 @@ enum class LedgerShortcut {
 };
 
 }  // namespace xrpl
-
-#endif

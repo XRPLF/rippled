@@ -1,5 +1,4 @@
-#ifndef XRPL_NODESTORE_NODEOBJECT_H_INCLUDED
-#define XRPL_NODESTORE_NODEOBJECT_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/CountedObject.h>
@@ -43,11 +42,7 @@ private:
 
 public:
     // This constructor is private, use createObject instead.
-    NodeObject(
-        NodeObjectType type,
-        Blob&& data,
-        uint256 const& hash,
-        PrivateAccess);
+    NodeObject(NodeObjectType type, Blob&& data, uint256 const& hash, PrivateAccess);
 
     /** Create an object from fields.
 
@@ -82,5 +77,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

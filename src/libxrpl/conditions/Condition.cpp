@@ -175,8 +175,7 @@ Condition::deserialize(Slice s, std::error_code& ec)
     switch (p.tag)
     {
         case 0:  // PreimageSha256
-            c = detail::loadSimpleSha256(
-                Type::preimageSha256, Slice(s.data(), p.length), ec);
+            c = detail::loadSimpleSha256(Type::preimageSha256, Slice(s.data(), p.length), ec);
             if (!ec)
                 s += p.length;
             break;

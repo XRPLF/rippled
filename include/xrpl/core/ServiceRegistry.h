@@ -1,17 +1,11 @@
-#ifndef XRPL_CORE_SERVICEREGISTRY_H_INCLUDED
-#define XRPL_CORE_SERVICEREGISTRY_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/TaggedCache.h>
-#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/CachedSLEs.h>
-#include <xrpl/protocol/Protocol.h>
 
-#include <boost/asio/io_context.hpp>
-
-#include <cstdint>
-#include <memory>
+#include <boost/asio.hpp>
 
 namespace xrpl {
 
@@ -26,12 +20,14 @@ namespace perf {
 class PerfLog;
 }
 
+// This is temporary until we migrate all code to use ServiceRegistry.
+class Application;
+
+// Forward declarations
 class AcceptedLedger;
 class AmendmentTable;
-class Application;
 class Cluster;
 class CollectorManager;
-class Config;
 class DatabaseCon;
 class Family;
 class HashRouter;
@@ -78,7 +74,6 @@ using NodeCache = TaggedCache<SHAMapHash, Blob>;
     ServiceRegistry rather than Application when they only need service
     access and not lifecycle management.
 
-    The implementation (ServiceRegistryImpl) is provided in xrpld.
 */
 class ServiceRegistry
 {
@@ -237,5 +232,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

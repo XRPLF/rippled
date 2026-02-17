@@ -1,5 +1,4 @@
-#ifndef XRPLD_APP_LEDGER_ORDERBOOK_DB_IMPL_H_INCLUDED
-#define XRPLD_APP_LEDGER_ORDERBOOK_DB_IMPL_H_INCLUDED
+#pragma once
 
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/AcceptedLedgerTx.h>
@@ -42,18 +41,13 @@ public:
     addOrderBook(Book const& book) override;
 
     std::vector<Book>
-    getBooksByTakerPays(
-        Issue const& issue,
-        std::optional<Domain> const& domain = std::nullopt) override;
+    getBooksByTakerPays(Issue const& issue, std::optional<Domain> const& domain = std::nullopt) override;
 
     int
-    getBookSize(
-        Issue const& issue,
-        std::optional<Domain> const& domain = std::nullopt) override;
+    getBookSize(Issue const& issue, std::optional<Domain> const& domain = std::nullopt) override;
 
     bool
-    isBookToXRP(Issue const& issue, std::optional<Domain> domain = std::nullopt)
-        override;
+    isBookToXRP(Issue const& issue, std::optional<Domain> domain = std::nullopt) override;
 
     // OrderBookDBImpl-specific methods
     void
@@ -61,10 +55,8 @@ public:
 
     // see if this txn effects any orderbook
     void
-    processTxn(
-        std::shared_ptr<ReadView const> const& ledger,
-        AcceptedLedgerTx const& alTx,
-        MultiApiJson const& jvObj) override;
+    processTxn(std::shared_ptr<ReadView const> const& ledger, AcceptedLedgerTx const& alTx, MultiApiJson const& jvObj)
+        override;
 
     BookListeners::pointer
     getBookListeners(Book const&) override;
@@ -79,8 +71,7 @@ private:
     // Maps order books by "issue in" to "issue out":
     hardened_hash_map<Issue, hardened_hash_set<Issue>> allBooks_;
 
-    hardened_hash_map<std::pair<Issue, Domain>, hardened_hash_set<Issue>>
-        domainBooks_;
+    hardened_hash_map<std::pair<Issue, Domain>, hardened_hash_set<Issue>> domainBooks_;
 
     // does an order book to XRP exist
     hash_set<Issue> xrpBooks_;
@@ -100,5 +91,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

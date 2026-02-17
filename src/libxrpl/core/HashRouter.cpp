@@ -16,8 +16,7 @@ HashRouter::emplace(uint256 const& key) -> std::pair<Entry&, bool>
     // See if any suppressions need to be expired
     expire(suppressionMap_, setup_.holdTime);
 
-    return std::make_pair(
-        std::ref(suppressionMap_.emplace(key, Entry()).first->second), true);
+    return std::make_pair(std::ref(suppressionMap_.emplace(key, Entry()).first->second), true);
 }
 
 void
@@ -45,10 +44,7 @@ HashRouter::addSuppressionPeerWithStatus(uint256 const& key, PeerShortID peer)
 }
 
 bool
-HashRouter::addSuppressionPeer(
-    uint256 const& key,
-    PeerShortID peer,
-    HashRouterFlags& flags)
+HashRouter::addSuppressionPeer(uint256 const& key, PeerShortID peer, HashRouterFlags& flags)
 {
     std::lock_guard lock(mutex_);
 
@@ -85,8 +81,7 @@ HashRouter::getFlags(uint256 const& key)
 bool
 HashRouter::setFlags(uint256 const& key, HashRouterFlags flags)
 {
-    XRPL_ASSERT(
-        static_cast<bool>(flags), "xrpl::HashRouter::setFlags : valid input");
+    XRPL_ASSERT(static_cast<bool>(flags), "xrpl::HashRouter::setFlags : valid input");
 
     std::lock_guard lock(mutex_);
 
@@ -100,8 +95,7 @@ HashRouter::setFlags(uint256 const& key, HashRouterFlags flags)
 }
 
 auto
-HashRouter::shouldRelay(uint256 const& key)
-    -> std::optional<std::set<PeerShortID>>
+HashRouter::shouldRelay(uint256 const& key) -> std::optional<std::set<PeerShortID>>
 {
     std::lock_guard lock(mutex_);
 

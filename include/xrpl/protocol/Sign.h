@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_SIGN_H_INCLUDED
-#define XRPL_PROTOCOL_SIGN_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -20,12 +19,7 @@ namespace xrpl {
     @note If a signature already exists, it is overwritten.
 */
 void
-sign(
-    STObject& st,
-    HashPrefix const& prefix,
-    KeyType type,
-    SecretKey const& sk,
-    SF_VL const& sigField = sfSignature);
+sign(STObject& st, HashPrefix const& prefix, KeyType type, SecretKey const& sk, SF_VL const& sigField = sfSignature);
 
 /** Returns `true` if STObject contains valid signature
 
@@ -36,11 +30,7 @@ sign(
     If not specified the value defaults to `sfSignature`.
 */
 bool
-verify(
-    STObject const& st,
-    HashPrefix const& prefix,
-    PublicKey const& pk,
-    SF_VL const& sigField = sfSignature);
+verify(STObject const& st, HashPrefix const& prefix, PublicKey const& pk, SF_VL const& sigField = sfSignature);
 
 /** Return a Serializer suitable for computing a multisigning TxnSignature. */
 Serializer
@@ -68,5 +58,3 @@ finishMultiSigningData(AccountID const& signingID, Serializer& s)
 }
 
 }  // namespace xrpl
-
-#endif

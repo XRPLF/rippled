@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_LEDGERREPLAY_H_INCLUDED
-#define XRPL_APP_LEDGER_LEDGERREPLAY_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 
@@ -18,9 +17,7 @@ class LedgerReplay : public CountedObject<LedgerReplay>
     std::map<std::uint32_t, std::shared_ptr<STTx const>> orderedTxns_;
 
 public:
-    LedgerReplay(
-        std::shared_ptr<Ledger const> parent,
-        std::shared_ptr<Ledger const> replay);
+    LedgerReplay(std::shared_ptr<Ledger const> parent, std::shared_ptr<Ledger const> replay);
 
     LedgerReplay(
         std::shared_ptr<Ledger const> parent,
@@ -53,5 +50,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

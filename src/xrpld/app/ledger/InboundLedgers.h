@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_INBOUNDLEDGERS_H_INCLUDED
-#define XRPL_APP_LEDGER_INBOUNDLEDGERS_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/InboundLedger.h>
 
@@ -27,10 +26,7 @@ public:
     // Queue. TODO review whether all callers of acquire() can use this
     // instead. Inbound ledger acquisition is asynchronous anyway.
     virtual void
-    acquireAsync(
-        uint256 const& hash,
-        std::uint32_t seq,
-        InboundLedger::Reason reason) = 0;
+    acquireAsync(uint256 const& hash, std::uint32_t seq, InboundLedger::Reason reason) = 0;
 
     virtual std::shared_ptr<InboundLedger>
     find(LedgerHash const& hash) = 0;
@@ -38,10 +34,7 @@ public:
     // VFALCO TODO Remove the dependency on the Peer object.
     //
     virtual bool
-    gotLedgerData(
-        LedgerHash const& ledgerHash,
-        std::shared_ptr<Peer>,
-        std::shared_ptr<protocol::TMLedgerData>) = 0;
+    gotLedgerData(LedgerHash const& ledgerHash, std::shared_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData>) = 0;
 
     virtual void
     gotStaleData(std::shared_ptr<protocol::TMLedgerData> packet) = 0;
@@ -85,5 +78,3 @@ make_InboundLedgers(
     beast::insight::Collector::ptr const& collector);
 
 }  // namespace xrpl
-
-#endif

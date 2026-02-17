@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_TRANSACTIONSTATESF_H_INCLUDED
-#define XRPL_APP_LEDGER_TRANSACTIONSTATESF_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/AbstractFetchPackContainer.h>
 
@@ -13,18 +12,13 @@ namespace xrpl {
 class TransactionStateSF : public SHAMapSyncFilter
 {
 public:
-    TransactionStateSF(NodeStore::Database& db, AbstractFetchPackContainer& fp)
-        : db_(db), fp_(fp)
+    TransactionStateSF(NodeStore::Database& db, AbstractFetchPackContainer& fp) : db_(db), fp_(fp)
     {
     }
 
     void
-    gotNode(
-        bool fromFilter,
-        SHAMapHash const& nodeHash,
-        std::uint32_t ledgerSeq,
-        Blob&& nodeData,
-        SHAMapNodeType type) const override;
+    gotNode(bool fromFilter, SHAMapHash const& nodeHash, std::uint32_t ledgerSeq, Blob&& nodeData, SHAMapNodeType type)
+        const override;
 
     std::optional<Blob>
     getNode(SHAMapHash const& nodeHash) const override;
@@ -35,5 +29,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

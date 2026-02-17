@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_BOOKLISTENERS_H_INCLUDED
-#define XRPL_APP_LEDGER_BOOKLISTENERS_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/MultiApiJson.h>
 #include <xrpl/server/InfoSub.h>
@@ -50,5 +49,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

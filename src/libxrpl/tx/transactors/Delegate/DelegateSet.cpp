@@ -25,8 +25,7 @@ DelegateSet::preflight(PreflightContext const& ctx)
         if (!permissionSet.insert(permission[sfPermissionValue]).second)
             return temMALFORMED;
 
-        if (!Permission::getInstance().isDelegable(
-                permission[sfPermissionValue], ctx.rules))
+        if (!Permission::getInstance().isDelegable(permission[sfPermissionValue], ctx.rules))
             return temMALFORMED;
     }
 
@@ -68,8 +67,7 @@ DelegateSet::doApply()
         return tesSUCCESS;
     }
 
-    STAmount const reserve{ctx_.view().fees().accountReserve(
-        sleOwner->getFieldU32(sfOwnerCount) + 1)};
+    STAmount const reserve{ctx_.view().fees().accountReserve(sleOwner->getFieldU32(sfOwnerCount) + 1)};
 
     if (mPriorBalance < reserve)
         return tecINSUFFICIENT_RESERVE;
@@ -82,10 +80,7 @@ DelegateSet::doApply()
         sle->setAccountID(sfAuthorize, authAccount);
 
         sle->setFieldArray(sfPermissions, permissions);
-        auto const page = ctx_.view().dirInsert(
-            keylet::ownerDir(account_),
-            delegateKey,
-            describeOwnerDir(account_));
+        auto const page = ctx_.view().dirInsert(keylet::ownerDir(account_), delegateKey, describeOwnerDir(account_));
 
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
@@ -108,8 +103,7 @@ DelegateSet::deleteDelegate(
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (!view.dirRemove(
-            keylet::ownerDir(account), (*sle)[sfOwnerNode], sle->key(), false))
+    if (!view.dirRemove(keylet::ownerDir(account), (*sle)[sfOwnerNode], sle->key(), false))
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "Unable to delete Delegate from owner.";

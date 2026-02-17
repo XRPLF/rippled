@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_TESTHELPERS_H_INCLUDED
-#define XRPL_TEST_JTX_TESTHELPERS_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
@@ -15,15 +14,8 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/jss.h>
 
-#include <vector>
-
-#if (defined(__clang_major__) && __clang_major__ < 15)
-#include <experimental/source_location>
-using source_location = std::experimental::source_location;
-#else
 #include <source_location>
-using std::source_location;
-#endif
+#include <vector>
 
 namespace xrpl {
 namespace test {
@@ -34,10 +26,7 @@ namespace jtx {
  Not every helper will be able to use this because of conversions and other
  issues, but for classes where it's straightforward, this can simplify things.
 */
-template <
-    class SField,
-    class StoredValue = typename SField::type::value_type,
-    class OutputValue = StoredValue>
+template <class SField, class StoredValue = typename SField::type::value_type, class OutputValue = StoredValue>
 struct JTxField
 {
     using SF = SField;
@@ -49,8 +38,7 @@ protected:
     SV value_;
 
 public:
-    explicit JTxField(SF const& sfield, SV const& value)
-        : sfield_(sfield), value_(value)
+    explicit JTxField(SF const& sfield, SV const& value) : sfield_(sfield), value_(value)
     {
     }
 
@@ -78,8 +66,7 @@ protected:
     SV value_;
 
 public:
-    explicit JTxField(SF const& sfield, SV const& value)
-        : sfield_(sfield), value_(value)
+    explicit JTxField(SF const& sfield, SV const& value) : sfield_(sfield), value_(value)
     {
     }
 
@@ -90,8 +77,7 @@ public:
     }
 };
 
-struct timePointField
-    : public JTxField<SF_UINT32, NetClock::time_point, NetClock::rep>
+struct timePointField : public JTxField<SF_UINT32, NetClock::time_point, NetClock::rep>
 {
     using SF = SF_UINT32;
     using SV = NetClock::time_point;
@@ -102,8 +88,7 @@ protected:
     using base::value_;
 
 public:
-    explicit timePointField(SF const& sfield, SV const& value)
-        : JTxField(sfield, value)
+    explicit timePointField(SF const& sfield, SV const& value) : JTxField(sfield, value)
     {
     }
 
@@ -125,8 +110,7 @@ protected:
     using base::value_;
 
 public:
-    explicit uint256Field(SF const& sfield, SV const& value)
-        : JTxField(sfield, value)
+    explicit uint256Field(SF const& sfield, SV const& value) : JTxField(sfield, value)
     {
     }
 
@@ -148,8 +132,7 @@ protected:
     using base::value_;
 
 public:
-    explicit accountIDField(SF const& sfield, SV const& value)
-        : JTxField(sfield, value)
+    explicit accountIDField(SF const& sfield, SV const& value) : JTxField(sfield, value)
     {
     }
 
@@ -171,8 +154,7 @@ protected:
     using base::value_;
 
 public:
-    explicit stAmountField(SF const& sfield, SV const& value)
-        : JTxField(sfield, value)
+    explicit stAmountField(SF const& sfield, SV const& value) : JTxField(sfield, value)
     {
     }
 
@@ -191,21 +173,18 @@ struct blobField : public JTxField<SF_VL, std::string>
 
     using JTxField::JTxField;
 
-    explicit blobField(SF const& sfield, Slice const& cond)
-        : JTxField(sfield, strHex(cond))
+    explicit blobField(SF const& sfield, Slice const& cond) : JTxField(sfield, strHex(cond))
     {
     }
 
     template <size_t N>
-    explicit blobField(SF const& sfield, std::array<std::uint8_t, N> const& c)
-        : blobField(sfield, makeSlice(c))
+    explicit blobField(SF const& sfield, std::array<std::uint8_t, N> const& c) : blobField(sfield, makeSlice(c))
     {
     }
 };
 
 template <class SField, class UnitTag, class ValueType>
-struct valueUnitField
-    : public JTxField<SField, unit::ValueUnit<UnitTag, ValueType>, ValueType>
+struct valueUnitField : public JTxField<SField, unit::ValueUnit<UnitTag, ValueType>, ValueType>
 {
     using SF = SField;
     using SV = unit::ValueUnit<UnitTag, ValueType>;
@@ -284,12 +263,8 @@ public:
     }
 };
 
-template <
-    class SField,
-    class UnitTag,
-    class ValueType = typename SField::type::value_type>
-using valueUnitWrapper =
-    JTxFieldWrapper<valueUnitField<SField, UnitTag, ValueType>>;
+template <class SField, class UnitTag, class ValueType = typename SField::type::value_type>
+using valueUnitWrapper = JTxFieldWrapper<valueUnitField<SField, UnitTag, ValueType>>;
 
 template <class SField, class StoredValue = typename SField::type::value_type>
 using simpleField = JTxFieldWrapper<JTxField<SField, StoredValue>>;
@@ -378,10 +353,7 @@ checkVL(Slice const& result, std::string const& expected)
 
 [[nodiscard]]
 inline bool
-checkVL(
-    std::shared_ptr<SLE const> const& sle,
-    SField const& field,
-    std::string const& expected)
+checkVL(std::shared_ptr<SLE const> const& sle, SField const& field, std::string const& expected)
 {
     return strHex(expected) == strHex(sle->getFieldVL(field));
 }
@@ -461,52 +433,32 @@ PrettyAmount
 xrpMinusFee(Env const& env, std::int64_t xrpAmount);
 
 bool
-expectHolding(
-    Env& env,
-    AccountID const& account,
-    STAmount const& value,
-    bool defaultLimits = false);
+expectHolding(Env& env, AccountID const& account, STAmount const& value, bool defaultLimits = false);
 
 template <typename... Amts>
 bool
-expectHolding(
-    Env& env,
-    AccountID const& account,
-    STAmount const& value,
-    Amts const&... amts)
+expectHolding(Env& env, AccountID const& account, STAmount const& value, Amts const&... amts)
 {
-    return expectHolding(env, account, value, false) &&
-        expectHolding(env, account, amts...);
+    return expectHolding(env, account, value, false) && expectHolding(env, account, amts...);
 }
 
 bool
 expectHolding(Env& env, AccountID const& account, None const& value);
 
 bool
-expectOffers(
-    Env& env,
-    AccountID const& account,
-    std::uint16_t size,
-    std::vector<Amounts> const& toMatch = {});
+expectOffers(Env& env, AccountID const& account, std::uint16_t size, std::vector<Amounts> const& toMatch = {});
 
 Json::Value
 ledgerEntryRoot(Env& env, Account const& acct);
 
 Json::Value
-ledgerEntryState(
-    Env& env,
-    Account const& acct_a,
-    Account const& acct_b,
-    std::string const& currency);
+ledgerEntryState(Env& env, Account const& acct_a, Account const& acct_b, std::string const& currency);
 
 Json::Value
 accountBalance(Env& env, Account const& acct);
 
 [[nodiscard]] bool
-expectLedgerEntryRoot(
-    Env& env,
-    Account const& acct,
-    STAmount const& expectedValue);
+expectLedgerEntryRoot(Env& env, Account const& acct, STAmount const& expectedValue);
 
 /* Payment Channel */
 /******************************************************************************/
@@ -532,8 +484,7 @@ create(
     std::optional<NetClock::time_point> const& cancelAfter = std::nullopt,
     std::optional<std::uint32_t> const& dstTag = std::nullopt)
 {
-    return create(
-        account.id(), to.id(), amount, settleDelay, pk, cancelAfter, dstTag);
+    return create(account.id(), to.id(), amount, settleDelay, pk, cancelAfter, dstTag);
 }
 
 Json::Value
@@ -553,10 +504,7 @@ claim(
     std::optional<PublicKey> const& pk = std::nullopt);
 
 uint256
-channel(
-    AccountID const& account,
-    AccountID const& dst,
-    std::uint32_t seqProxyValue);
+channel(AccountID const& account, AccountID const& dst, std::uint32_t seqProxyValue);
 
 inline uint256
 channel(Account const& account, Account const& dst, std::uint32_t seqProxyValue)
@@ -576,12 +524,7 @@ channelExists(ReadView const& view, uint256 const& chan);
 /******************************************************************************/
 
 void
-n_offers(
-    Env& env,
-    std::size_t n,
-    Account const& account,
-    STAmount const& in,
-    STAmount const& out);
+n_offers(Env& env, std::size_t n, Account const& account, STAmount const& in, STAmount const& out);
 
 /* Pay Strand */
 /***************************************************************/
@@ -592,7 +535,7 @@ cpe(Currency const& c);
 
 // All path element
 STPathElement
-allpe(AccountID const& a, Issue const& iss);
+allPathElements(AccountID const& a, Issue const& iss);
 /***************************************************************/
 
 /* Check */
@@ -616,10 +559,7 @@ create(A const& account, A const& dest, STAmount const& sendMax)
 // clang-format on
 
 inline Json::Value
-create(
-    jtx::Account const& account,
-    jtx::Account const& dest,
-    STAmount const& sendMax)
+create(jtx::Account const& account, jtx::Account const& dest, STAmount const& sendMax)
 {
     return create(account.id(), dest.id(), sendMax);
 }
@@ -640,7 +580,7 @@ checkMetrics(
     std::size_t expectedPerLedger,
     std::uint64_t expectedMinFeeLevel = baseFeeLevel.fee(),
     std::uint64_t expectedMedFeeLevel = minEscalationFeeLevel.fee(),
-    source_location const location = source_location::current())
+    std::source_location const location = std::source_location::current())
 {
     int line = location.line();
     char const* file = location.file_name();
@@ -649,74 +589,61 @@ checkMetrics(
     auto const metrics = env.app().getTxQ().getMetrics(*env.current());
     using namespace std::string_literals;
 
-    metrics.referenceFeeLevel == baseFeeLevel
-        ? test.pass()
-        : test.fail(
-              "reference: "s +
-                  std::to_string(metrics.referenceFeeLevel.value()) + "/" +
-                  std::to_string(baseFeeLevel.value()),
-              file,
-              line);
+    metrics.referenceFeeLevel == baseFeeLevel ? test.pass()
+                                              : test.fail(
+                                                    "reference: "s + std::to_string(metrics.referenceFeeLevel.value()) +
+                                                        "/" + std::to_string(baseFeeLevel.value()),
+                                                    file,
+                                                    line);
 
     metrics.txCount == expectedCount
         ? test.pass()
-        : test.fail(
-              "txCount: "s + std::to_string(metrics.txCount) + "/" +
-                  std::to_string(expectedCount),
-              file,
-              line);
+        : test.fail("txCount: "s + std::to_string(metrics.txCount) + "/" + std::to_string(expectedCount), file, line);
 
-    metrics.txQMaxSize == expectedMaxCount
-        ? test.pass()
-        : test.fail(
-              "txQMaxSize: "s + std::to_string(metrics.txQMaxSize.value_or(0)) +
-                  "/" + std::to_string(expectedMaxCount.value_or(0)),
-              file,
-              line);
+    metrics.txQMaxSize == expectedMaxCount ? test.pass()
+                                           : test.fail(
+                                                 "txQMaxSize: "s + std::to_string(metrics.txQMaxSize.value_or(0)) +
+                                                     "/" + std::to_string(expectedMaxCount.value_or(0)),
+                                                 file,
+                                                 line);
 
     metrics.txInLedger == expectedInLedger
         ? test.pass()
         : test.fail(
-              "txInLedger: "s + std::to_string(metrics.txInLedger) + "/" +
-                  std::to_string(expectedInLedger),
+              "txInLedger: "s + std::to_string(metrics.txInLedger) + "/" + std::to_string(expectedInLedger),
               file,
               line);
 
     metrics.txPerLedger == expectedPerLedger
         ? test.pass()
         : test.fail(
-              "txPerLedger: "s + std::to_string(metrics.txPerLedger) + "/" +
-                  std::to_string(expectedPerLedger),
+              "txPerLedger: "s + std::to_string(metrics.txPerLedger) + "/" + std::to_string(expectedPerLedger),
               file,
               line);
 
     metrics.minProcessingFeeLevel == expectedMin
         ? test.pass()
         : test.fail(
-              "minProcessingFeeLevel: "s +
-                  std::to_string(metrics.minProcessingFeeLevel.value()) + "/" +
+              "minProcessingFeeLevel: "s + std::to_string(metrics.minProcessingFeeLevel.value()) + "/" +
                   std::to_string(expectedMin.value()),
               file,
               line);
 
-    metrics.medFeeLevel == expectedMed
-        ? test.pass()
-        : test.fail(
-              "medFeeLevel: "s + std::to_string(metrics.medFeeLevel.value()) +
-                  "/" + std::to_string(expectedMed.value()),
-              file,
-              line);
+    metrics.medFeeLevel == expectedMed ? test.pass()
+                                       : test.fail(
+                                             "medFeeLevel: "s + std::to_string(metrics.medFeeLevel.value()) + "/" +
+                                                 std::to_string(expectedMed.value()),
+                                             file,
+                                             line);
 
     auto const expectedCurFeeLevel = expectedInLedger > expectedPerLedger
-        ? expectedMed * expectedInLedger * expectedInLedger /
-            (expectedPerLedger * expectedPerLedger)
+        ? expectedMed * expectedInLedger * expectedInLedger / (expectedPerLedger * expectedPerLedger)
         : metrics.referenceFeeLevel;
 
     metrics.openLedgerFeeLevel == expectedCurFeeLevel
         ? test.pass()
         : test.fail(
-              "openLedgerFeeLevel: "s +
-                  std::to_string(metrics.openLedgerFeeLevel.value()) + "/" +
+              "openLedgerFeeLevel: "s + std::to_string(metrics.openLedgerFeeLevel.value()) + "/" +
                   std::to_string(expectedCurFeeLevel.value()),
               file,
               line);
@@ -735,18 +662,10 @@ Json::Value
 del(AccountID const& account, uint256 const& brokerID, std::uint32_t flags = 0);
 
 Json::Value
-coverDeposit(
-    AccountID const& account,
-    uint256 const& brokerID,
-    STAmount const& amount,
-    std::uint32_t flags = 0);
+coverDeposit(AccountID const& account, uint256 const& brokerID, STAmount const& amount, std::uint32_t flags = 0);
 
 Json::Value
-coverWithdraw(
-    AccountID const& account,
-    uint256 const& brokerID,
-    STAmount const& amount,
-    std::uint32_t flags = 0);
+coverWithdraw(AccountID const& account, uint256 const& brokerID, STAmount const& amount, std::uint32_t flags = 0);
 
 // Must specify at least one of loanBrokerID or amount.
 Json::Value
@@ -754,16 +673,13 @@ coverClawback(AccountID const& account, std::uint32_t flags = 0);
 
 auto const loanBrokerID = JTxFieldWrapper<uint256Field>(sfLoanBrokerID);
 
-auto const managementFeeRate =
-    valueUnitWrapper<SF_UINT16, unit::TenthBipsTag>(sfManagementFeeRate);
+auto const managementFeeRate = valueUnitWrapper<SF_UINT16, unit::TenthBipsTag>(sfManagementFeeRate);
 
 auto const debtMaximum = simpleField<SF_NUMBER>(sfDebtMaximum);
 
-auto const coverRateMinimum =
-    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCoverRateMinimum);
+auto const coverRateMinimum = valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCoverRateMinimum);
 
-auto const coverRateLiquidation =
-    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCoverRateLiquidation);
+auto const coverRateLiquidation = valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCoverRateLiquidation);
 
 auto const destination = JTxFieldWrapper<accountIDField>(sfDestination);
 
@@ -774,10 +690,7 @@ auto const destination = JTxFieldWrapper<accountIDField>(sfDestination);
 namespace loan {
 
 Json::Value
-set(AccountID const& account,
-    uint256 const& loanBrokerID,
-    Number principalRequested,
-    std::uint32_t flags = 0);
+set(AccountID const& account, uint256 const& loanBrokerID, Number principalRequested, std::uint32_t flags = 0);
 
 auto const counterparty = JTxFieldWrapper<accountIDField>(sfCounterparty);
 
@@ -791,20 +704,15 @@ auto const latePaymentFee = simpleField<SF_NUMBER>(sfLatePaymentFee);
 
 auto const closePaymentFee = simpleField<SF_NUMBER>(sfClosePaymentFee);
 
-auto const overpaymentFee =
-    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfOverpaymentFee);
+auto const overpaymentFee = valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfOverpaymentFee);
 
-auto const interestRate =
-    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfInterestRate);
+auto const interestRate = valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfInterestRate);
 
-auto const lateInterestRate =
-    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfLateInterestRate);
+auto const lateInterestRate = valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfLateInterestRate);
 
-auto const closeInterestRate =
-    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCloseInterestRate);
+auto const closeInterestRate = valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCloseInterestRate);
 
-auto const overpaymentInterestRate =
-    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfOverpaymentInterestRate);
+auto const overpaymentInterestRate = valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfOverpaymentInterestRate);
 
 auto const paymentTotal = simpleField<SF_UINT32>(sfPaymentTotal);
 
@@ -819,15 +727,10 @@ Json::Value
 del(AccountID const& account, uint256 const& loanID, std::uint32_t flags = 0);
 
 Json::Value
-pay(AccountID const& account,
-    uint256 const& loanID,
-    STAmount const& amount,
-    std::uint32_t flags = 0);
+pay(AccountID const& account, uint256 const& loanID, STAmount const& amount, std::uint32_t flags = 0);
 
 }  // namespace loan
 
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif  // XRPL_TEST_JTX_TESTHELPERS_H_INCLUDED

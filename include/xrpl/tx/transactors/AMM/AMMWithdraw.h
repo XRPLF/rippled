@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_AMMWITHDRAW_H_INCLUDED
-#define XRPL_TX_AMMWITHDRAW_H_INCLUDED
+#pragma once
 
 #include <xrpl/ledger/View.h>
 #include <xrpl/tx/Transactor.h>
@@ -293,5 +292,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif  // XRPL_TX_AMMWITHDRAW_H_INCLUDED

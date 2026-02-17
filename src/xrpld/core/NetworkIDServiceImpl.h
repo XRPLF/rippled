@@ -1,5 +1,4 @@
-#ifndef XRPLD_CORE_NETWORK_ID_SERVICE_IMPL_H_INCLUDED
-#define XRPLD_CORE_NETWORK_ID_SERVICE_IMPL_H_INCLUDED
+#pragma once
 
 #include <xrpl/core/NetworkIDService.h>
 
@@ -16,20 +15,18 @@ class Config;
     the network ID from the application Config. It caches the
     network ID at construction time.
 */
-class NetworkIDServiceImpl : public NetworkIDService
+class NetworkIDServiceImpl final : public NetworkIDService
 {
 public:
-    explicit NetworkIDServiceImpl(Config const& config);
+    explicit NetworkIDServiceImpl(std::uint32_t networkID);
 
     ~NetworkIDServiceImpl() override = default;
 
     std::uint32_t
-    getNetworkID() const override;
+    getNetworkID() const noexcept override;
 
 private:
     std::uint32_t networkID_;
 };
 
 }  // namespace xrpl
-
-#endif

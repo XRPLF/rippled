@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_ORACLE_H_INCLUDED
-#define XRPL_TEST_JTX_ORACLE_H_INCLUDED
+#pragma once
 
 #include <test/jtx.h>
 
@@ -11,8 +10,7 @@ namespace jtx {
 namespace oracle {
 
 using AnyValue = std::variant<std::string, double, Json::Int, Json::UInt>;
-using OraclesData =
-    std::vector<std::pair<std::optional<Account>, std::optional<AnyValue>>>;
+using OraclesData = std::vector<std::pair<std::optional<Account>, std::optional<AnyValue>>>;
 
 // Special string value, which is converted to unquoted string in the string
 // passed to rpc.
@@ -33,11 +31,8 @@ void
 toJsonHex(Json::Value& jv, AnyValue const& v);
 
 // base asset, quote asset, price, scale
-using DataSeries = std::vector<std::tuple<
-    std::string,
-    std::string,
-    std::optional<std::uint32_t>,
-    std::optional<std::uint8_t>>>;
+using DataSeries =
+    std::vector<std::tuple<std::string, std::string, std::optional<std::uint32_t>, std::optional<std::uint8_t>>>;
 
 // Typical defaults for Create
 struct CreateArg
@@ -90,8 +85,7 @@ struct RemoveArg
 // The value doesn't matter much, it has to be greater
 // than maxLastUpdateTimeDelta in order to pass LastUpdateTime
 // validation {close-maxLastUpdateTimeDelta,close+maxLastUpdateTimeDelta}.
-constexpr static std::chrono::seconds testStartTime =
-    epoch_offset + std::chrono::seconds(10'000);
+constexpr static std::chrono::seconds testStartTime = epoch_offset + std::chrono::seconds(10'000);
 
 /** Oracle class facilitates unit-testing of the Price Oracle feature.
  * It defines functions to create, update, and delete the Oracle object,
@@ -186,5 +180,3 @@ public:
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif  // XRPL_TEST_JTX_ORACLE_H_INCLUDED

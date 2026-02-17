@@ -1,5 +1,4 @@
-#ifndef BEAST_CONTAINER_AGED_UNORDERED_MULTISET_H_INCLUDED
-#define BEAST_CONTAINER_AGED_UNORDERED_MULTISET_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/container/detail/aged_unordered_container.h>
 
@@ -15,16 +14,7 @@ template <
     class Hash = std::hash<Key>,
     class KeyEqual = std::equal_to<Key>,
     class Allocator = std::allocator<Key>>
-using aged_unordered_multiset = detail::aged_unordered_container<
-    true,
-    false,
-    Key,
-    void,
-    Clock,
-    Hash,
-    KeyEqual,
-    Allocator>;
+using aged_unordered_multiset =
+    detail::aged_unordered_container<true, false, Key, void, Clock, Hash, KeyEqual, Allocator>;
 
 }
-
-#endif

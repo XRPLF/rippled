@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_ISSUE_H_INCLUDED
-#define XRPL_PROTOCOL_ISSUE_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
@@ -72,8 +71,7 @@ hash_append(Hasher& h, Issue const& r)
 [[nodiscard]] inline constexpr bool
 operator==(Issue const& lhs, Issue const& rhs)
 {
-    return (lhs.currency == rhs.currency) &&
-        (isXRP(lhs.currency) || lhs.account == rhs.account);
+    return (lhs.currency == rhs.currency) && (isXRP(lhs.currency) || lhs.account == rhs.account);
 }
 /** @} */
 
@@ -117,5 +115,3 @@ isXRP(Issue const& issue)
 }
 
 }  // namespace xrpl
-
-#endif

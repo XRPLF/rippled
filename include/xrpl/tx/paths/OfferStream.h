@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_PATHS_OFFERSTREAM_H_INCLUDED
-#define XRPL_TX_PATHS_OFFERSTREAM_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
@@ -24,8 +23,7 @@ public:
         beast::Journal j_;
 
     public:
-        StepCounter(std::uint32_t limit, beast::Journal j)
-            : limit_(limit), count_(0), j_(j)
+        StepCounter(std::uint32_t limit, beast::Journal j) : limit_(limit), count_(0), j_(j)
         {
         }
 
@@ -174,5 +172,3 @@ public:
     }
 };
 }  // namespace xrpl
-
-#endif

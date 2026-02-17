@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_SHAMAPNODEID_H_INCLUDED
-#define XRPL_SHAMAP_SHAMAPNODEID_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/base_uint.h>
@@ -106,8 +105,7 @@ to_string(SHAMapNodeID const& node)
     if (node.isRoot())
         return "NodeID(root)";
 
-    return "NodeID(" + std::to_string(node.getDepth()) + "," +
-        to_string(node.getNodeID()) + ")";
+    return "NodeID(" + std::to_string(node.getDepth()) + "," + to_string(node.getNodeID()) + ")";
 }
 
 inline std::ostream&
@@ -140,5 +138,3 @@ deserializeSHAMapNodeID(std::string const& s)
 selectBranch(SHAMapNodeID const& id, uint256 const& hash);
 
 }  // namespace xrpl
-
-#endif

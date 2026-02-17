@@ -1,5 +1,4 @@
-#ifndef XRPL_PEERFINDER_HANDOUTS_H_INCLUDED
-#define XRPL_PEERFINDER_HANDOUTS_H_INCLUDED
+#pragma once
 
 #include <xrpld/peerfinder/detail/SlotImp.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
@@ -23,9 +22,7 @@ template <class Target, class HopContainer>
 std::size_t
 handout_one(Target& t, HopContainer& h)
 {
-    XRPL_ASSERT(
-        !t.full(),
-        "xrpl::PeerFinder::detail::handout_one : target is not full");
+    XRPL_ASSERT(!t.full(), "xrpl::PeerFinder::detail::handout_one : target is not full");
     for (auto it = h.begin(); it != h.end(); ++it)
     {
         auto const& e = *it;
@@ -46,11 +43,7 @@ handout_one(Target& t, HopContainer& h)
 */
 template <class TargetFwdIter, class SeqFwdIter>
 void
-handout(
-    TargetFwdIter first,
-    TargetFwdIter last,
-    SeqFwdIter seq_first,
-    SeqFwdIter seq_last)
+handout(TargetFwdIter first, TargetFwdIter last, SeqFwdIter seq_first, SeqFwdIter seq_last)
 {
     for (;;)
     {
@@ -303,8 +296,7 @@ public:
 };
 
 template <class>
-ConnectHandouts::ConnectHandouts(std::size_t needed, Squelches& squelches)
-    : m_needed(needed), m_squelches(squelches)
+ConnectHandouts::ConnectHandouts(std::size_t needed, Squelches& squelches) : m_needed(needed), m_squelches(squelches)
 {
     m_list.reserve(needed);
 }
@@ -317,13 +309,10 @@ ConnectHandouts::try_insert(beast::IP::Endpoint const& endpoint)
         return false;
 
     // Make sure the address isn't already in our list
-    if (std::any_of(
-            m_list.begin(),
-            m_list.end(),
-            [&endpoint](beast::IP::Endpoint const& other) {
-                // Ignore port for security reasons
-                return other.address() == endpoint.address();
-            }))
+    if (std::any_of(m_list.begin(), m_list.end(), [&endpoint](beast::IP::Endpoint const& other) {
+            // Ignore port for security reasons
+            return other.address() == endpoint.address();
+        }))
     {
         return false;
     }
@@ -341,5 +330,3 @@ ConnectHandouts::try_insert(beast::IP::Endpoint const& endpoint)
 
 }  // namespace PeerFinder
 }  // namespace xrpl
-
-#endif

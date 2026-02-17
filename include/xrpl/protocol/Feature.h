@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_FEATURE_H_INCLUDED
-#define XRPL_PROTOCOL_FEATURE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 
@@ -175,9 +174,7 @@ public:
 
     explicit FeatureBitset(base const& b) : base(b)
     {
-        XRPL_ASSERT(
-            b.count() == count(),
-            "xrpl::FeatureBitset::FeatureBitset(base) : count match");
+        XRPL_ASSERT(b.count() == count(), "xrpl::FeatureBitset::FeatureBitset(base) : count match");
     }
 
     template <class... Fs>
@@ -257,8 +254,7 @@ public:
     friend FeatureBitset
     operator&(FeatureBitset const& lhs, FeatureBitset const& rhs)
     {
-        return FeatureBitset{
-            static_cast<base const&>(lhs) & static_cast<base const&>(rhs)};
+        return FeatureBitset{static_cast<base const&>(lhs) & static_cast<base const&>(rhs)};
     }
 
     friend FeatureBitset
@@ -276,8 +272,7 @@ public:
     friend FeatureBitset
     operator|(FeatureBitset const& lhs, FeatureBitset const& rhs)
     {
-        return FeatureBitset{
-            static_cast<base const&>(lhs) | static_cast<base const&>(rhs)};
+        return FeatureBitset{static_cast<base const&>(lhs) | static_cast<base const&>(rhs)};
     }
 
     friend FeatureBitset
@@ -295,8 +290,7 @@ public:
     friend FeatureBitset
     operator^(FeatureBitset const& lhs, FeatureBitset const& rhs)
     {
-        return FeatureBitset{
-            static_cast<base const&>(lhs) ^ static_cast<base const&>(rhs)};
+        return FeatureBitset{static_cast<base const&>(lhs) ^ static_cast<base const&>(rhs)};
     }
 
     friend FeatureBitset
@@ -366,5 +360,3 @@ foreachFeature(FeatureBitset bs, F&& f)
 #pragma pop_macro("XRPL_FEATURE")
 
 }  // namespace xrpl
-
-#endif

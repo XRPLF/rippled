@@ -2,8 +2,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_UNIT_TEST_GLOBAL_SUITES_HPP
-#define BEAST_UNIT_TEST_GLOBAL_SUITES_HPP
+#pragma once
 
 #include <xrpl/beast/unit_test/suite_list.h>
 
@@ -23,12 +22,7 @@ global_suites()
 template <class Suite>
 struct insert_suite
 {
-    insert_suite(
-        char const* name,
-        char const* module,
-        char const* library,
-        bool manual,
-        int priority)
+    insert_suite(char const* name, char const* module, char const* library, bool manual, int priority)
     {
         global_suites().insert<Suite>(name, module, library, manual, priority);
     }
@@ -45,5 +39,3 @@ global_suites()
 
 }  // namespace unit_test
 }  // namespace beast
-
-#endif

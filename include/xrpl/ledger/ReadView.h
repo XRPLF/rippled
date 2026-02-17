@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_READVIEW_H_INCLUDED
-#define XRPL_LEDGER_READVIEW_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/hash/uhash.h>
@@ -31,8 +30,7 @@ namespace xrpl {
 class ReadView
 {
 public:
-    using tx_type =
-        std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>;
+    using tx_type = std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>;
 
     using key_type = uint256;
 
@@ -130,9 +128,7 @@ public:
         interval (key, last).
     */
     virtual std::optional<key_type>
-    succ(
-        key_type const& key,
-        std::optional<key_type> const& last = std::nullopt) const = 0;
+    succ(key_type const& key, std::optional<key_type> const& last = std::nullopt) const = 0;
 
     /** Return the state item associated with a key.
 
@@ -156,10 +152,7 @@ public:
     // balances so newly acquired assets are not counted toward the balance.
     // This is required to support PaymentSandbox.
     virtual STAmount
-    balanceHook(
-        AccountID const& account,
-        AccountID const& issuer,
-        STAmount const& amount) const
+    balanceHook(AccountID const& account, AccountID const& issuer, STAmount const& amount) const
     {
         return amount;
     }
@@ -254,12 +247,8 @@ Rules
 makeRulesGivenLedger(DigestAwareReadView const& ledger, Rules const& current);
 
 Rules
-makeRulesGivenLedger(
-    DigestAwareReadView const& ledger,
-    std::unordered_set<uint256, beast::uhash<>> const& presets);
+makeRulesGivenLedger(DigestAwareReadView const& ledger, std::unordered_set<uint256, beast::uhash<>> const& presets);
 
 }  // namespace xrpl
 
 #include <xrpl/ledger/detail/ReadViewFwdRange.ipp>
-
-#endif

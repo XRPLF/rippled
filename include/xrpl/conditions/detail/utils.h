@@ -1,5 +1,4 @@
-#ifndef XRPL_CONDITIONS_UTILS_H
-#define XRPL_CONDITIONS_UTILS_H
+#pragma once
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
@@ -208,5 +207,3 @@ parseInteger(Slice& s, std::size_t count, std::error_code& ec)
 }  // namespace der
 }  // namespace cryptoconditions
 }  // namespace xrpl
-
-#endif

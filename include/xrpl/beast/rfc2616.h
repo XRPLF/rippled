@@ -1,5 +1,4 @@
-#ifndef BEAST_RFC2616_HPP
-#define BEAST_RFC2616_HPP
+#pragma once
 
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/http/rfc7230.hpp>
@@ -26,8 +25,7 @@ struct ci_equal_pred
     operator()(char c1, char c2)
     {
         // VFALCO TODO Use a table lookup here
-        return std::tolower(static_cast<unsigned char>(c1)) ==
-            std::tolower(static_cast<unsigned char>(c2));
+        return std::tolower(static_cast<unsigned char>(c1)) == std::tolower(static_cast<unsigned char>(c2));
     }
 };
 
@@ -97,8 +95,7 @@ trim_right(String const& s)
 */
 template <
     class FwdIt,
-    class Result = std::vector<
-        std::basic_string<typename std::iterator_traits<FwdIt>::value_type>>,
+    class Result = std::vector<std::basic_string<typename std::iterator_traits<FwdIt>::value_type>>,
     class Char>
 Result
 split(FwdIt first, FwdIt last, Char delim)
@@ -172,10 +169,7 @@ split(FwdIt first, FwdIt last, Char delim)
     return result;
 }
 
-template <
-    class FwdIt,
-    class Result = std::vector<
-        std::basic_string<typename std::iterator_traits<FwdIt>::value_type>>>
+template <class FwdIt, class Result = std::vector<std::basic_string<typename std::iterator_traits<FwdIt>::value_type>>>
 Result
 split_commas(FwdIt first, FwdIt last)
 {
@@ -223,8 +217,7 @@ public:
     bool
     operator==(list_iterator const& other) const
     {
-        return other.it_ == it_ && other.end_ == end_ &&
-            other.value_.size() == value_.size();
+        return other.it_ == it_ && other.end_ == end_ && other.value_.size() == value_.size();
     }
 
     bool
@@ -288,14 +281,12 @@ list_iterator::increment()
                     ++it_;
                     if (it_ == end_)
                     {
-                        value_ = boost::string_ref(
-                            &*start, std::distance(start, it_));
+                        value_ = boost::string_ref(&*start, std::distance(start, it_));
                         return;
                     }
                     if (*it_ == '"')
                     {
-                        value_ = boost::string_ref(
-                            &*start, std::distance(start, it_));
+                        value_ = boost::string_ref(&*start, std::distance(start, it_));
                         ++it_;
                         return;
                     }
@@ -321,8 +312,7 @@ list_iterator::increment()
                 ++it_;
                 if (it_ == end_ || *it_ == ',' || is_lws(*it_))
                 {
-                    value_ =
-                        boost::string_ref(&*start, std::distance(start, it_));
+                    value_ = boost::string_ref(&*start, std::distance(start, it_));
                     return;
                 }
             }
@@ -344,8 +334,7 @@ inline boost::iterator_range<list_iterator>
 make_list(boost::string_ref const& field)
 {
     return boost::iterator_range<list_iterator>{
-        list_iterator{field.begin(), field.end()},
-        list_iterator{field.end(), field.end()}};
+        list_iterator{field.begin(), field.end()}, list_iterator{field.end(), field.end()}};
 }
 
 /** Returns true if the specified token exists in the list.
@@ -367,15 +356,9 @@ bool
 is_keep_alive(boost::beast::http::message<isRequest, Body, Fields> const& m)
 {
     if (m.version() <= 10)
-        return boost::beast::http::token_list{
-            m[boost::beast::http::field::connection]}
-            .exists("keep-alive");
-    return !boost::beast::http::token_list{
-        m[boost::beast::http::field::connection]}
-                .exists("close");
+        return boost::beast::http::token_list{m[boost::beast::http::field::connection]}.exists("keep-alive");
+    return !boost::beast::http::token_list{m[boost::beast::http::field::connection]}.exists("close");
 }
 
 }  // namespace rfc2616
 }  // namespace beast
-
-#endif

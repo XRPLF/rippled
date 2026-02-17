@@ -93,6 +93,7 @@ test.csf > xrpl.protocol
 test.json > test.jtx
 test.json > xrpl.json
 test.jtx > xrpl.basics
+test.jtx > xrpl.core
 test.jtx > xrpld.app
 test.jtx > xrpld.core
 test.jtx > xrpld.rpc
@@ -123,6 +124,7 @@ test.overlay > xrpl.basics
 test.overlay > xrpld.app
 test.overlay > xrpld.overlay
 test.overlay > xrpld.peerfinder
+test.overlay > xrpl.nodestore
 test.overlay > xrpl.protocol
 test.overlay > xrpl.shamap
 test.peerfinder > test.beast
@@ -181,6 +183,7 @@ xrpl.core > xrpl.protocol
 xrpl.json > xrpl.basics
 xrpl.ledger > xrpl.basics
 xrpl.ledger > xrpl.protocol
+xrpl.ledger > xrpl.server
 xrpl.ledger > xrpl.shamap
 xrpl.net > xrpl.basics
 xrpl.nodestore > xrpl.basics
@@ -211,6 +214,7 @@ xrpld.app > test.unit_test
 xrpld.app > xrpl.basics
 xrpld.app > xrpl.core
 xrpld.app > xrpld.consensus
+xrpld.app > xrpld.core
 xrpld.app > xrpl.json
 xrpld.app > xrpl.ledger
 xrpld.app > xrpl.net

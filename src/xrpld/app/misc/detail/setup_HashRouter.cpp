@@ -13,7 +13,7 @@ setup_HashRouter(Config const& config)
     HashRouter::Setup setup;
     auto const& section = config.section("hashrouter");
 
-    std::int32_t tmp;
+    std::int32_t tmp{};
 
     if (set(tmp, "hold_time", section))
     {
@@ -33,8 +33,7 @@ setup_HashRouter(Config const& config)
     }
     if (setup.relayTime > setup.holdTime)
     {
-        Throw<std::runtime_error>(
-            "HashRouter relay time must be less than or equal to hold time");
+        Throw<std::runtime_error>("HashRouter relay time must be less than or equal to hold time");
     }
 
     return setup;

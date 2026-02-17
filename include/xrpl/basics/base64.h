@@ -32,8 +32,7 @@
 
 */
 
-#ifndef XRPL_BASICS_BASE64_H_INCLUDED
-#define XRPL_BASICS_BASE64_H_INCLUDED
+#pragma once
 
 #include <cstdint>
 #include <string>
@@ -46,13 +45,10 @@ base64_encode(std::uint8_t const* data, std::size_t len);
 inline std::string
 base64_encode(std::string const& s)
 {
-    return base64_encode(
-        reinterpret_cast<std::uint8_t const*>(s.data()), s.size());
+    return base64_encode(reinterpret_cast<std::uint8_t const*>(s.data()), s.size());
 }
 
 std::string
 base64_decode(std::string_view data);
 
 }  // namespace xrpl
-
-#endif

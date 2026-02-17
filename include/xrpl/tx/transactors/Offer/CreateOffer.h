@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_CREATEOFFER_H_INCLUDED
-#define XRPL_TX_CREATEOFFER_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/tx/Transactor.h>
@@ -78,5 +77,3 @@ private:
 using OfferCreate = CreateOffer;
 
 }  // namespace xrpl
-
-#endif

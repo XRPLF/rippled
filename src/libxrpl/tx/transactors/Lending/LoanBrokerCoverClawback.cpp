@@ -129,16 +129,13 @@ determineAsset(
 }
 
 Expected<STAmount, TER>
-determineClawAmount(
-    SLE const& sleBroker,
-    Asset const& vaultAsset,
-    std::optional<STAmount> const& amount)
+determineClawAmount(SLE const& sleBroker, Asset const& vaultAsset, std::optional<STAmount> const& amount)
 {
     auto const maxClawAmount = [&]() {
         // Always round the minimum required up
         NumberRoundModeGuard mg1(Number::upward);
-        auto const minRequiredCover = tenthBipsOfValue(
-            sleBroker[sfDebtTotal], TenthBips32(sleBroker[sfCoverRateMinimum]));
+        auto const minRequiredCover =
+            tenthBipsOfValue(sleBroker[sfDebtTotal], TenthBips32(sleBroker[sfCoverRateMinimum]));
         // The subtraction probably won't round, but round down if it does.
         NumberRoundModeGuard mg2(Number::downward);
         return sleBroker[sfCoverAvailable] - minRequiredCover;
@@ -159,22 +156,15 @@ determineClawAmount(
 
 template <ValidIssueType T>
 static TER
-preclaimHelper(
-    PreclaimContext const& ctx,
-    SLE const& sleIssuer,
-    STAmount const& clawAmount);
+preclaimHelper(PreclaimContext const& ctx, SLE const& sleIssuer, STAmount const& clawAmount);
 
 template <>
 TER
-preclaimHelper<Issue>(
-    PreclaimContext const& ctx,
-    SLE const& sleIssuer,
-    STAmount const& clawAmount)
+preclaimHelper<Issue>(PreclaimContext const& ctx, SLE const& sleIssuer, STAmount const& clawAmount)
 {
     // If AllowTrustLineClawback is not set or NoFreeze is set, return no
     // permission
-    if (!(sleIssuer.isFlag(lsfAllowTrustLineClawback)) ||
-        (sleIssuer.isFlag(lsfNoFreeze)))
+    if (!(sleIssuer.isFlag(lsfAllowTrustLineClawback)) || (sleIssuer.isFlag(lsfNoFreeze)))
         return tecNO_PERMISSION;
 
     return tesSUCCESS;
@@ -182,13 +172,9 @@ preclaimHelper<Issue>(
 
 template <>
 TER
-preclaimHelper<MPTIssue>(
-    PreclaimContext const& ctx,
-    SLE const& sleIssuer,
-    STAmount const& clawAmount)
+preclaimHelper<MPTIssue>(PreclaimContext const& ctx, SLE const& sleIssuer, STAmount const& clawAmount)
 {
-    auto const issuanceKey =
-        keylet::mptIssuance(clawAmount.get<MPTIssue>().getMptID());
+    auto const issuanceKey = keylet::mptIssuance(clawAmount.get<MPTIssue>().getMptID());
     auto const sleIssuance = ctx.view.read(issuanceKey);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
@@ -251,8 +237,7 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
 
     if (amount)
     {
-        auto const findAsset =
-            determineAsset(ctx.view, account, brokerPseudoAccountID, *amount);
+        auto const findAsset = determineAsset(ctx.view, account, brokerPseudoAccountID, *amount);
         if (!findAsset)
             return findAsset.error();
         auto const txAsset = *findAsset;
@@ -264,8 +249,7 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    auto const findClawAmount =
-        determineClawAmount(*sleBroker, vaultAsset, amount);
+    auto const findClawAmount = determineClawAmount(*sleBroker, vaultAsset, amount);
     if (!findClawAmount)
     {
         JLOG(ctx.j.warn()) << "LoanBroker cover is already at minimum.";
@@ -276,18 +260,11 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
     // Explicitly check the balance of the trust line / MPT to make sure the
     // balance is actually there. It should always match `sfCoverAvailable`, so
     // if there isn't, this is an internal error.
-    if (accountHolds(
-            ctx.view,
-            brokerPseudoAccountID,
-            vaultAsset,
-            fhIGNORE_FREEZE,
-            ahIGNORE_AUTH,
-            ctx.j) < clawAmount)
+    if (accountHolds(ctx.view, brokerPseudoAccountID, vaultAsset, fhIGNORE_FREEZE, ahIGNORE_AUTH, ctx.j) < clawAmount)
         return tecINTERNAL;  // tecINSUFFICIENT_FUNDS; LCOV_EXCL_LINE
 
     // Check if the vault asset issuer has the correct flags
-    auto const sleIssuer =
-        ctx.view.read(keylet::account(vaultAsset.getIssuer()));
+    auto const sleIssuer = ctx.view.read(keylet::account(vaultAsset.getIssuer()));
     if (!sleIssuer)
     {
         // LCOV_EXCL_START
@@ -297,10 +274,7 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
     }
 
     return std::visit(
-        [&]<typename T>(T const&) {
-            return preclaimHelper<T>(ctx, *sleIssuer, clawAmount);
-        },
-        vaultAsset.value());
+        [&]<typename T>(T const&) { return preclaimHelper<T>(ctx, *sleIssuer, clawAmount); }, vaultAsset.value());
 }
 
 TER
@@ -326,8 +300,7 @@ LoanBrokerCoverClawback::doApply()
 
     auto const vaultAsset = vault->at(sfAsset);
 
-    auto const findClawAmount =
-        determineClawAmount(*sleBroker, vaultAsset, amount);
+    auto const findClawAmount = determineClawAmount(*sleBroker, vaultAsset, amount);
     if (!findClawAmount)
         return tecINTERNAL;  // LCOV_EXCL_LINE
     STAmount const& clawAmount = *findClawAmount;
@@ -342,8 +315,7 @@ LoanBrokerCoverClawback::doApply()
     associateAsset(*sleBroker, vaultAsset);
 
     // Transfer assets from pseudo-account to depositor.
-    return accountSend(
-        view(), brokerPseudoID, account, clawAmount, j_, WaiveTransferFee::Yes);
+    return accountSend(view(), brokerPseudoID, account, clawAmount, j_, WaiveTransferFee::Yes);
 }
 
 //------------------------------------------------------------------------------
