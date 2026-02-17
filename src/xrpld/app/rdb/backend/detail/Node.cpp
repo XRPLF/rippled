@@ -7,6 +7,7 @@
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/StringUtilities.h>
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/RelationalDatabase.h>
@@ -306,7 +307,7 @@ saveValidatedLedger(
                         acceptedLedgerTx->getTxn()->getMetaSQL(seq, acceptedLedgerTx->getEscMeta()) + ";");
 
                 app.getMasterTransaction().inLedger(
-                    transactionID, seq, acceptedLedgerTx->getTxnSeq(), app.config().NETWORK_ID);
+                    transactionID, seq, acceptedLedgerTx->getTxnSeq(), app.getNetworkIDService().getNetworkID());
             }
 
             tr.commit();

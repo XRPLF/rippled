@@ -1,8 +1,8 @@
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/tx/detail/SetSignerList.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/STArray.h>
@@ -151,7 +151,7 @@ signerCountBasedOwnerCountDelta(std::size_t entryCount, Rules const& rules)
 
 static TER
 removeSignersFromLedger(
-    Application& app,
+    ServiceRegistry& registry,
     ApplyView& view,
     Keylet const& accountKeylet,
     Keylet const& ownerDirKeylet,
@@ -187,7 +187,7 @@ removeSignersFromLedger(
         // LCOV_EXCL_STOP
     }
 
-    adjustOwnerCount(view, view.peek(accountKeylet), removeFromOwnerCount, app.journal("View"));
+    adjustOwnerCount(view, view.peek(accountKeylet), removeFromOwnerCount, registry.journal("View"));
 
     view.erase(signers);
 
@@ -195,13 +195,13 @@ removeSignersFromLedger(
 }
 
 TER
-SetSignerList::removeFromLedger(Application& app, ApplyView& view, AccountID const& account, beast::Journal j)
+SetSignerList::removeFromLedger(ServiceRegistry& registry, ApplyView& view, AccountID const& account, beast::Journal j)
 {
     auto const accountKeylet = keylet::account(account);
     auto const ownerDirKeylet = keylet::ownerDir(account);
     auto const signerListKeylet = keylet::signers(account);
 
-    return removeSignersFromLedger(app, view, accountKeylet, ownerDirKeylet, signerListKeylet, j);
+    return removeSignersFromLedger(registry, view, accountKeylet, ownerDirKeylet, signerListKeylet, j);
 }
 
 NotTEC
@@ -273,7 +273,8 @@ SetSignerList::replaceSignerList()
     // This may be either a create or a replace.  Preemptively remove any
     // old signer list.  May reduce the reserve, so this is done before
     // checking the reserve.
-    if (TER const ter = removeSignersFromLedger(ctx_.app, view(), accountKeylet, ownerDirKeylet, signerListKeylet, j_))
+    if (TER const ter =
+            removeSignersFromLedger(ctx_.registry, view(), accountKeylet, ownerDirKeylet, signerListKeylet, j_))
         return ter;
 
     auto const sle = view().peek(accountKeylet);
@@ -299,7 +300,7 @@ SetSignerList::replaceSignerList()
     view().insert(signerList);
     writeSignersToSLE(signerList, flags);
 
-    auto viewJ = ctx_.app.journal("View");
+    auto viewJ = ctx_.registry.journal("View");
     // Add the signer list to the account's directory.
     auto const page = ctx_.view().dirInsert(ownerDirKeylet, signerListKeylet, describeOwnerDir(account_));
 
@@ -332,7 +333,7 @@ SetSignerList::destroySignerList()
 
     auto const ownerDirKeylet = keylet::ownerDir(account_);
     auto const signerListKeylet = keylet::signers(account_);
-    return removeSignersFromLedger(ctx_.app, view(), accountKeylet, ownerDirKeylet, signerListKeylet, j_);
+    return removeSignersFromLedger(ctx_.registry, view(), accountKeylet, ownerDirKeylet, signerListKeylet, j_);
 }
 
 void

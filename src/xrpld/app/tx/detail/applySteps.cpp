@@ -14,6 +14,7 @@
 // DO NOT INCLUDE TRANSACTOR HEADER FILES HERE.
 // See the instructions at the top of transactions.macro instead.
 
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/protocol/TxFormats.h>
 
 #include <stdexcept>
@@ -292,9 +293,9 @@ invoke_apply(ApplyContext& ctx)
 }
 
 PreflightResult
-preflight(Application& app, Rules const& rules, STTx const& tx, ApplyFlags flags, beast::Journal j)
+preflight(ServiceRegistry& registry, Rules const& rules, STTx const& tx, ApplyFlags flags, beast::Journal j)
 {
-    PreflightContext const pfCtx(app, tx, rules, flags, j);
+    PreflightContext const pfCtx(registry, tx, rules, flags, j);
     try
     {
         return {pfCtx, invoke_preflight(pfCtx)};
@@ -308,14 +309,14 @@ preflight(Application& app, Rules const& rules, STTx const& tx, ApplyFlags flags
 
 PreflightResult
 preflight(
-    Application& app,
+    ServiceRegistry& registry,
     Rules const& rules,
     uint256 const& parentBatchId,
     STTx const& tx,
     ApplyFlags flags,
     beast::Journal j)
 {
-    PreflightContext const pfCtx(app, tx, parentBatchId, rules, flags, j);
+    PreflightContext const pfCtx(registry, tx, parentBatchId, rules, flags, j);
     try
     {
         return {pfCtx, invoke_preflight(pfCtx)};
@@ -328,7 +329,7 @@ preflight(
 }
 
 PreclaimResult
-preclaim(PreflightResult const& preflightResult, Application& app, OpenView const& view)
+preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, OpenView const& view)
 {
     std::optional<PreclaimContext const> ctx;
     if (preflightResult.rules != view.rules())
@@ -336,18 +337,18 @@ preclaim(PreflightResult const& preflightResult, Application& app, OpenView cons
         auto secondFlight = [&]() {
             if (preflightResult.parentBatchId)
                 return preflight(
-                    app,
+                    registry,
                     view.rules(),
                     preflightResult.parentBatchId.value(),
                     preflightResult.tx,
                     preflightResult.flags,
                     preflightResult.j);
 
-            return preflight(app, view.rules(), preflightResult.tx, preflightResult.flags, preflightResult.j);
+            return preflight(registry, view.rules(), preflightResult.tx, preflightResult.flags, preflightResult.j);
         }();
 
         ctx.emplace(
-            app,
+            registry,
             view,
             secondFlight.ter,
             secondFlight.tx,
@@ -358,7 +359,7 @@ preclaim(PreflightResult const& preflightResult, Application& app, OpenView cons
     else
     {
         ctx.emplace(
-            app,
+            registry,
             view,
             preflightResult.ter,
             preflightResult.tx,
@@ -393,7 +394,7 @@ calculateDefaultBaseFee(ReadView const& view, STTx const& tx)
 }
 
 ApplyResult
-doApply(PreclaimResult const& preclaimResult, Application& app, OpenView& view)
+doApply(PreclaimResult const& preclaimResult, ServiceRegistry& registry, OpenView& view)
 {
     if (preclaimResult.view.seq() != view.seq())
     {
@@ -406,7 +407,7 @@ doApply(PreclaimResult const& preclaimResult, Application& app, OpenView& view)
         if (!preclaimResult.likelyToClaimFee)
             return {preclaimResult.ter, false};
         ApplyContext ctx(
-            app,
+            registry,
             view,
             preclaimResult.parentBatchId,
             preclaimResult.tx,

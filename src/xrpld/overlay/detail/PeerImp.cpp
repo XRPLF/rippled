@@ -2722,8 +2722,8 @@ PeerImp::checkTransaction(
         if (checkSignature)
         {
             // Check the signature before handing off to the job queue.
-            if (auto [valid, validReason] = checkValidity(
-                    app_.getHashRouter(), *stx, app_.getLedgerMaster().getValidatedRules(), app_.config());
+            if (auto [valid, validReason] =
+                    checkValidity(app_.getHashRouter(), *stx, app_.getLedgerMaster().getValidatedRules());
                 valid != Validity::Valid)
             {
                 if (!validReason.empty())

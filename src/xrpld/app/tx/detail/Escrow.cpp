@@ -544,7 +544,7 @@ EscrowFinish::preflightSigValidated(PreflightContext const& ctx)
 
     if (cb && fb)
     {
-        auto& router = ctx.app.getHashRouter();
+        auto& router = ctx.registry.getHashRouter();
 
         auto const id = ctx.tx.getTransactionID();
         auto const flags = router.getFlags(id);
@@ -900,7 +900,7 @@ EscrowFinish::doApply()
     // Check cryptocondition fulfillment
     {
         auto const id = ctx_.tx.getTransactionID();
-        auto flags = ctx_.app.getHashRouter().getFlags(id);
+        auto flags = ctx_.registry.getHashRouter().getFlags(id);
 
         auto const cb = ctx_.tx[~sfCondition];
 
@@ -920,7 +920,7 @@ EscrowFinish::doApply()
             else
                 flags = SF_CF_INVALID;
 
-            ctx_.app.getHashRouter().setFlags(id, flags);
+            ctx_.registry.getHashRouter().setFlags(id, flags);
             // LCOV_EXCL_STOP
         }
 

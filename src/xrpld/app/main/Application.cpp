@@ -26,6 +26,7 @@
 #include <xrpld/app/paths/PathRequests.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/app/tx/apply.h>
+#include <xrpld/core/NetworkIDServiceImpl.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/PeerSet.h>
 #include <xrpld/overlay/make_Overlay.h>
@@ -158,6 +159,7 @@ public:
 
     NodeCache m_tempNodeCache;
     CachedSLEs cachedSLEs_;
+    std::unique_ptr<NetworkIDService> networkIDService_;
     std::optional<std::pair<PublicKey, SecretKey>> nodeIdentity_;
     ValidatorKeys const validatorKeys_;
 
@@ -289,6 +291,8 @@ public:
         , m_tempNodeCache("NodeCache", 16384, std::chrono::seconds{90}, stopwatch(), logs_->journal("TaggedCache"))
 
         , cachedSLEs_("Cached SLEs", 0, std::chrono::minutes(1), stopwatch(), logs_->journal("CachedSLEs"))
+
+        , networkIDService_(std::make_unique<NetworkIDServiceImpl>(config_->NETWORK_ID))
 
         , validatorKeys_(*config_, m_journal)
 
@@ -630,6 +634,12 @@ public:
     cachedSLEs() override
     {
         return cachedSLEs_;
+    }
+
+    NetworkIDService&
+    getNetworkIDService() override
+    {
+        return *networkIDService_;
     }
 
     AmendmentTable&

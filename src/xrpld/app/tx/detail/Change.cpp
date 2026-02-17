@@ -1,5 +1,3 @@
-#include <xrpld/app/ledger/Ledger.h>
-#include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/AmendmentTable.h>
 #include <xrpld/app/tx/detail/Change.h>
 
@@ -195,7 +193,7 @@ Change::applyAmendment()
         entry[sfAmendment] = amendment;
         entry[sfCloseTime] = view().parentCloseTime().time_since_epoch().count();
 
-        if (!ctx_.app.getAmendmentTable().isSupported(amendment))
+        if (!ctx_.registry.getAmendmentTable().isSupported(amendment))
         {
             JLOG(j_.warn()) << "Unsupported amendment " << amendment << " received a majority.";
         }
@@ -206,12 +204,12 @@ Change::applyAmendment()
         amendments.push_back(amendment);
         amendmentObject->setFieldV256(sfAmendments, amendments);
 
-        ctx_.app.getAmendmentTable().enable(amendment);
+        ctx_.registry.getAmendmentTable().enable(amendment);
 
-        if (!ctx_.app.getAmendmentTable().isSupported(amendment))
+        if (!ctx_.registry.getAmendmentTable().isSupported(amendment))
         {
             JLOG(j_.error()) << "Unsupported amendment " << amendment << " activated: server blocked.";
-            ctx_.app.getOPs().setAmendmentBlocked();
+            ctx_.registry.getOPs().setAmendmentBlocked();
         }
     }
 
