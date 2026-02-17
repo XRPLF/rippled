@@ -893,8 +893,21 @@ Transactor::checkMultiSign(
 
                 if (signerAccountFlags & lsfDisableMaster)
                 {
-                    JLOG(j.trace()) << "applyTransaction: Signer:Account lsfDisableMaster.";
-                    return tefMASTER_DISABLED;
+                    // With fixInvalidMultisign, we allow master key signatures
+                    // for accounts that have no alternative signing method
+                    // (no regular key). This supports grandfathered signer
+                    // lists that were created before the amendment, where
+                    // a signer has disabled master and no regular key.
+                    bool const hasRegularKey = sleTxSignerRoot->isFieldPresent(sfRegularKey);
+                    if (!view.rules().enabled(fixInvalidMultisign) || hasRegularKey)
+                    {
+                        JLOG(j.trace()) << "applyTransaction: Signer:Account "
+                                           "lsfDisableMaster.";
+                        return tefMASTER_DISABLED;
+                    }
+                    // Else: amendment enabled and no regular key means
+                    // this is a grandfathered nested multi-sign case.
+                    // Allow the master key signature.
                 }
             }
         }
