@@ -118,7 +118,7 @@ jobs:
       issues: write
       contents: read
     with:
-      check_all_files: false
+      check_only_changed: true
       create_issue_on_failure: false
 
   build-test:

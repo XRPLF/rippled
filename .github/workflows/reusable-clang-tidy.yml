@@ -3,10 +3,10 @@ name: Clang-tidy check
 on:
   workflow_call:
     inputs:
-      check_all_files:
-        description: "Check all files in the repository. If false, checks only changed files in PR."
+      check_only_changed:
+        description: "Check only changed files in PR. If false, checks all files in the repository."
         type: boolean
-        default: true
+        default: false
       create_issue_on_failure:
         description: "Whether to create an issue if the check failed"
         type: boolean
@@ -19,7 +19,7 @@ defaults:
 jobs:
   determine-files:
     name: Determine files to check
-    if: ${{ !inputs.check_all_files }}
+    if: ${{ inputs.check_only_changed }}
     runs-on: ubuntu-latest
     outputs:
       any_changed: ${{ steps.changed_files.outputs.any_changed }}
@@ -46,8 +46,8 @@ jobs:
 
   run-clang-tidy:
     needs: [determine-files]
-    if: ${{ always() && !cancelled() && (inputs.check_all_files || needs.determine-files.outputs.any_changed == 'true') }}
+    if: ${{ always() && !cancelled() && (!inputs.check_only_changed || needs.determine-files.outputs.any_changed == 'true') }}
     uses: ./.github/workflows/reusable-clang-tidy-files.yml
     with:
-      files: ${{ inputs.check_all_files && '' || needs.determine-files.outputs.all_changed_files }}
+      files: ${{ inputs.check_only_changed && needs.determine-files.outputs.all_changed_files || '' }}
       create_issue_on_failure: ${{ inputs.create_issue_on_failure }}
