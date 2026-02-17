@@ -54,7 +54,7 @@ CancelOffer::doApply()
     if (auto sleOffer = view().peek(keylet::offer(account_, offerSequence)))
     {
         JLOG(j_.debug()) << "Trying to cancel offer #" << offerSequence;
-        return offerDelete(view(), sleOffer, ctx_.app.journal("View"));
+        return offerDelete(view(), sleOffer, ctx_.registry.journal("View"));
     }
 
     JLOG(j_.debug()) << "Offer #" << offerSequence << " can't be found.";

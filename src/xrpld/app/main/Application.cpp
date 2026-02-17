@@ -26,6 +26,7 @@
 #include <xrpld/app/paths/PathRequests.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/app/tx/apply.h>
+#include <xrpld/core/NetworkIDServiceImpl.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/PeerSet.h>
 #include <xrpld/overlay/make_Overlay.h>
@@ -158,6 +159,7 @@ public:
 
     NodeCache m_tempNodeCache;
     CachedSLEs cachedSLEs_;
+    std::unique_ptr<NetworkIDService> networkIDService_;
     std::optional<std::pair<PublicKey, SecretKey>> nodeIdentity_;
     ValidatorKeys const validatorKeys_;
 
@@ -243,42 +245,44 @@ public:
         , m_journal(logs_->journal("Application"))
 
         // PerfLog must be started before any other threads are launched.
-        , perfLog_(perf::make_PerfLog(
-              perf::setup_PerfLog(config_->section("perf"), config_->CONFIG_DIR),
-              *this,
-              logs_->journal("PerfLog"),
-              [this] { signalStop("PerfLog"); }))
+        , perfLog_(
+              perf::make_PerfLog(
+                  perf::setup_PerfLog(config_->section("perf"), config_->CONFIG_DIR),
+                  *this,
+                  logs_->journal("PerfLog"),
+                  [this] { signalStop("PerfLog"); }))
 
         , m_txMaster(*this)
 
         , m_collectorManager(make_CollectorManager(config_->section(SECTION_INSIGHT), logs_->journal("Collector")))
 
-        , m_jobQueue(std::make_unique<JobQueue>(
-              [](std::unique_ptr<Config> const& config) {
-                  if (config->standalone() && !config->FORCE_MULTI_THREAD)
-                      return 1;
+        , m_jobQueue(
+              std::make_unique<JobQueue>(
+                  [](std::unique_ptr<Config> const& config) {
+                      if (config->standalone() && !config->FORCE_MULTI_THREAD)
+                          return 1;
 
-                  if (config->WORKERS)
-                      return config->WORKERS;
+                      if (config->WORKERS)
+                          return config->WORKERS;
 
-                  auto count = static_cast<int>(std::thread::hardware_concurrency());
+                      auto count = static_cast<int>(std::thread::hardware_concurrency());
 
-                  // Be more aggressive about the number of threads to use
-                  // for the job queue if the server is configured as
-                  // "large" or "huge" if there are enough cores.
-                  if (config->NODE_SIZE >= 4 && count >= 16)
-                      count = 6 + std::min(count, 8);
-                  else if (config->NODE_SIZE >= 3 && count >= 8)
-                      count = 4 + std::min(count, 6);
-                  else
-                      count = 2 + std::min(count, 4);
+                      // Be more aggressive about the number of threads to use
+                      // for the job queue if the server is configured as
+                      // "large" or "huge" if there are enough cores.
+                      if (config->NODE_SIZE >= 4 && count >= 16)
+                          count = 6 + std::min(count, 8);
+                      else if (config->NODE_SIZE >= 3 && count >= 8)
+                          count = 4 + std::min(count, 6);
+                      else
+                          count = 2 + std::min(count, 4);
 
-                  return count;
-              }(config_),
-              m_collectorManager->group("jobq"),
-              logs_->journal("JobQueue"),
-              *logs_,
-              *perfLog_))
+                      return count;
+                  }(config_),
+                  m_collectorManager->group("jobq"),
+                  logs_->journal("JobQueue"),
+                  *logs_,
+                  *perfLog_))
 
         , m_nodeStoreScheduler(*m_jobQueue)
 
@@ -287,6 +291,8 @@ public:
         , m_tempNodeCache("NodeCache", 16384, std::chrono::seconds{90}, stopwatch(), logs_->journal("TaggedCache"))
 
         , cachedSLEs_("Cached SLEs", 0, std::chrono::minutes(1), stopwatch(), logs_->journal("CachedSLEs"))
+
+        , networkIDService_(std::make_unique<NetworkIDServiceImpl>(config_->NETWORK_ID))
 
         , validatorKeys_(*config_, m_journal)
 
@@ -301,11 +307,12 @@ public:
         , m_pathRequests(
               std::make_unique<PathRequests>(*this, logs_->journal("PathRequest"), m_collectorManager->collector()))
 
-        , m_ledgerMaster(std::make_unique<LedgerMaster>(
-              *this,
-              stopwatch(),
-              m_collectorManager->collector(),
-              logs_->journal("LedgerMaster")))
+        , m_ledgerMaster(
+              std::make_unique<LedgerMaster>(
+                  *this,
+                  stopwatch(),
+                  m_collectorManager->collector(),
+                  logs_->journal("LedgerMaster")))
 
         , ledgerCleaner_(make_LedgerCleaner(*this, logs_->journal("LedgerCleaner")))
 
@@ -349,13 +356,14 @@ public:
 
         , publisherManifests_(std::make_unique<ManifestCache>(logs_->journal("ManifestCache")))
 
-        , validators_(std::make_unique<ValidatorList>(
-              *validatorManifests_,
-              *publisherManifests_,
-              *timeKeeper_,
-              config_->legacy("database_path"),
-              logs_->journal("ValidatorList"),
-              config_->VALIDATION_QUORUM))
+        , validators_(
+              std::make_unique<ValidatorList>(
+                  *validatorManifests_,
+                  *publisherManifests_,
+                  *timeKeeper_,
+                  config_->legacy("database_path"),
+                  logs_->journal("ValidatorList"),
+                  config_->VALIDATION_QUORUM))
 
         , validatorSites_(std::make_unique<ValidatorSite>(*this))
 
@@ -626,6 +634,12 @@ public:
     cachedSLEs() override
     {
         return cachedSLEs_;
+    }
+
+    NetworkIDService&
+    getNetworkIDService() override
+    {
+        return *networkIDService_;
     }
 
     AmendmentTable&

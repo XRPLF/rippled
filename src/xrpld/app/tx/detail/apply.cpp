@@ -19,7 +19,7 @@ constexpr HashRouterFlags SF_LOCALGOOD = HashRouterFlags::PRIVATE4;  // Local ch
 //------------------------------------------------------------------------------
 
 std::pair<Validity, std::string>
-checkValidity(HashRouter& router, STTx const& tx, Rules const& rules, Config const& config)
+checkValidity(HashRouter& router, STTx const& tx, Rules const& rules)
 {
     auto const id = tx.getTransactionID();
     auto const flags = router.getFlags(id);
@@ -108,32 +108,33 @@ forceValidity(HashRouter& router, uint256 const& txid, Validity validity)
 
 template <typename PreflightChecks>
 ApplyResult
-apply(Application& app, OpenView& view, PreflightChecks&& preflightChecks)
+apply(ServiceRegistry& registry, OpenView& view, PreflightChecks&& preflightChecks)
 {
     NumberSO stNumberSO{view.rules().enabled(fixUniversalNumber)};
-    return doApply(preclaim(preflightChecks(), app, view), app, view);
+    return doApply(preclaim(preflightChecks(), registry, view), registry, view);
 }
 
 ApplyResult
-apply(Application& app, OpenView& view, STTx const& tx, ApplyFlags flags, beast::Journal j)
+apply(ServiceRegistry& registry, OpenView& view, STTx const& tx, ApplyFlags flags, beast::Journal j)
 {
-    return apply(app, view, [&]() mutable { return preflight(app, view.rules(), tx, flags, j); });
+    return apply(registry, view, [&]() mutable { return preflight(registry, view.rules(), tx, flags, j); });
 }
 
 ApplyResult
 apply(
-    Application& app,
+    ServiceRegistry& registry,
     OpenView& view,
     uint256 const& parentBatchId,
     STTx const& tx,
     ApplyFlags flags,
     beast::Journal j)
 {
-    return apply(app, view, [&]() mutable { return preflight(app, view.rules(), parentBatchId, tx, flags, j); });
+    return apply(
+        registry, view, [&]() mutable { return preflight(registry, view.rules(), parentBatchId, tx, flags, j); });
 }
 
 static bool
-applyBatchTransactions(Application& app, OpenView& batchView, STTx const& batchTxn, beast::Journal j)
+applyBatchTransactions(ServiceRegistry& registry, OpenView& batchView, STTx const& batchTxn, beast::Journal j)
 {
     XRPL_ASSERT(
         batchTxn.getTxnType() == ttBATCH && batchTxn.getFieldArray(sfRawTransactions).size() != 0,
@@ -142,10 +143,10 @@ applyBatchTransactions(Application& app, OpenView& batchView, STTx const& batchT
     auto const parentBatchId = batchTxn.getTransactionID();
     auto const mode = batchTxn.getFlags();
 
-    auto applyOneTransaction = [&app, &j, &parentBatchId, &batchView](STTx&& tx) {
+    auto applyOneTransaction = [&registry, &j, &parentBatchId, &batchView](STTx&& tx) {
         OpenView perTxBatchView(batch_view, batchView);
 
-        auto const ret = apply(app, perTxBatchView, parentBatchId, tx, tapBATCH, j);
+        auto const ret = apply(registry, perTxBatchView, parentBatchId, tx, tapBATCH, j);
         XRPL_ASSERT(
             ret.applied == (isTesSuccess(ret.ter) || isTecClaim(ret.ter)), "Inner transaction should not be applied");
 
@@ -189,7 +190,7 @@ applyBatchTransactions(Application& app, OpenView& batchView, STTx const& batchT
 
 ApplyTransactionResult
 applyTransaction(
-    Application& app,
+    ServiceRegistry& registry,
     OpenView& view,
     STTx const& txn,
     bool retryAssured,
@@ -204,7 +205,7 @@ applyTransaction(
 
     try
     {
-        auto const result = apply(app, view, txn, flags, j);
+        auto const result = apply(registry, view, txn, flags, j);
 
         if (result.applied)
         {
@@ -216,7 +217,7 @@ applyTransaction(
             {
                 OpenView wholeBatchView(batch_view, view);
 
-                if (applyBatchTransactions(app, wholeBatchView, txn, j))
+                if (applyBatchTransactions(registry, wholeBatchView, txn, j))
                     wholeBatchView.apply(view);
             }
 

@@ -532,8 +532,7 @@ void
 PeerImp::fail(std::string const& reason)
 {
     if (!strand_.running_in_this_thread())
-        return post(
-            strand_, std::bind((void(Peer::*)(std::string const&)) & PeerImp::fail, shared_from_this(), reason));
+        return post(strand_, std::bind((void (Peer::*)(std::string const&))&PeerImp::fail, shared_from_this(), reason));
 
     if (!socket_.is_open())
         return;
@@ -2723,8 +2722,8 @@ PeerImp::checkTransaction(
         if (checkSignature)
         {
             // Check the signature before handing off to the job queue.
-            if (auto [valid, validReason] = checkValidity(
-                    app_.getHashRouter(), *stx, app_.getLedgerMaster().getValidatedRules(), app_.config());
+            if (auto [valid, validReason] =
+                    checkValidity(app_.getHashRouter(), *stx, app_.getLedgerMaster().getValidatedRules());
                 valid != Validity::Valid)
             {
                 if (!validReason.empty())

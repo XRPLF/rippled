@@ -75,8 +75,9 @@ DerivedData
 /.claude
 /CLAUDE.md
 
-# direnv
-.direnv
+# Direnv's directory
+/.direnv
 
-# clangd's local cache
-.cache
+# clangd cache
+/.cache
+

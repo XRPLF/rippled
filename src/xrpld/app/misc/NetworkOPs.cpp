@@ -38,6 +38,7 @@
 #include <xrpl/basics/scope.h>
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/core/HashRouter.h>
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/crypto/RFC1751.h>
 #include <xrpl/crypto/csprng.h>
@@ -1101,8 +1102,8 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
 
     try
     {
-        auto const [validity, reason] = checkValidity(
-            registry_.getHashRouter(), *trans, m_ledgerMaster.getValidatedRules(), registry_.app().config());
+        auto const [validity, reason] =
+            checkValidity(registry_.getHashRouter(), *trans, m_ledgerMaster.getValidatedRules());
 
         if (validity != Validity::Valid)
         {
@@ -1158,8 +1159,7 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
     // NOTE ximinez - I think this check is redundant,
     // but I'm not 100% sure yet.
     // If so, only cost is looking up HashRouter flags.
-    auto const [validity, reason] =
-        checkValidity(registry_.getHashRouter(), sttx, view->rules(), registry_.app().config());
+    auto const [validity, reason] = checkValidity(registry_.getHashRouter(), sttx, view->rules());
     XRPL_ASSERT(validity == Validity::Valid, "xrpl::NetworkOPsImp::processTransaction : valid validity");
 
     // Not concerned with local checks at this point.
@@ -2195,7 +2195,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         jvObj[jss::flags] = val->getFlags();
         jvObj[jss::signing_time] = *(*val)[~sfSigningTime];
         jvObj[jss::data] = strHex(val->getSerializer().slice());
-        jvObj[jss::network_id] = registry_.app().config().NETWORK_ID;
+        jvObj[jss::network_id] = registry_.getNetworkIDService().getNetworkID();
 
         if (auto version = (*val)[~sfServerVersion])
             jvObj[jss::server_version] = std::to_string(*version);
@@ -2844,7 +2844,7 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
             jvObj[jss::ledger_hash] = to_string(lpAccepted->header().hash);
             jvObj[jss::ledger_time] = Json::Value::UInt(lpAccepted->header().closeTime.time_since_epoch().count());
 
-            jvObj[jss::network_id] = registry_.app().config().NETWORK_ID;
+            jvObj[jss::network_id] = registry_.getNetworkIDService().getNetworkID();
 
             if (!lpAccepted->rules().enabled(featureXRPFees))
                 jvObj[jss::fee_ref] = Config::FEE_UNITS_DEPRECATED;
@@ -2987,7 +2987,7 @@ NetworkOPsImp::transJson(
         lookup.second && lookup.second->isFieldPresent(sfTransactionIndex))
     {
         uint32_t const txnSeq = lookup.second->getFieldU32(sfTransactionIndex);
-        uint32_t netID = registry_.app().config().NETWORK_ID;
+        uint32_t netID = registry_.getNetworkIDService().getNetworkID();
         if (transaction->isFieldPresent(sfNetworkID))
             netID = transaction->getFieldU32(sfNetworkID);
 
@@ -3817,7 +3817,7 @@ NetworkOPsImp::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
         jvResult[jss::fee_base] = lpClosed->fees().base.jsonClipped();
         jvResult[jss::reserve_base] = lpClosed->fees().reserve.jsonClipped();
         jvResult[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();
-        jvResult[jss::network_id] = registry_.app().config().NETWORK_ID;
+        jvResult[jss::network_id] = registry_.getNetworkIDService().getNetworkID();
     }
 
     if ((mMode >= OperatingMode::SYNCING) && !isNeedNetworkLedger())

@@ -7,6 +7,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/ledger/View.h>
@@ -32,7 +33,7 @@ preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
 
     if (!isPseudoTx(ctx.tx) || ctx.tx.isFieldPresent(sfNetworkID))
     {
-        uint32_t nodeNID = ctx.app.config().NETWORK_ID;
+        uint32_t nodeNID = ctx.registry.getNetworkIDService().getNetworkID();
         std::optional<uint32_t> txNID = ctx.tx[~sfNetworkID];
 
         if (nodeNID <= 1024)
@@ -204,7 +205,7 @@ Transactor::preflight2(PreflightContext const& ctx)
     // Do not add any checks after this point that are relevant for
     // batch inner transactions. They will be skipped.
 
-    auto const sigValid = checkValidity(ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
+    auto const sigValid = checkValidity(ctx.registry.getHashRouter(), ctx.tx, ctx.rules);
     if (sigValid.first == Validity::SigBad)
     {  // LCOV_EXCL_START
         JLOG(ctx.j.debug()) << "preflight2: bad signature. " << sigValid.second;
@@ -303,9 +304,9 @@ Transactor::calculateOwnerReserveFee(ReadView const& view, STTx const& tx)
 }
 
 XRPAmount
-Transactor::minimumFee(Application& app, XRPAmount baseFee, Fees const& fees, ApplyFlags flags)
+Transactor::minimumFee(ServiceRegistry& registry, XRPAmount baseFee, Fees const& fees, ApplyFlags flags)
 {
-    return scaleFeeLoad(baseFee, app.getFeeTrack(), fees, flags & tapUNLIMITED);
+    return scaleFeeLoad(baseFee, registry.getFeeTrack(), fees, flags & tapUNLIMITED);
 }
 
 TER
@@ -331,7 +332,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
     // Only check fee is sufficient when the ledger is open.
     if (ctx.view.open())
     {
-        auto const feeDue = minimumFee(ctx.app, baseFee, ctx.view.fees(), ctx.flags);
+        auto const feeDue = minimumFee(ctx.registry, baseFee, ctx.view.fees(), ctx.flags);
 
         if (feePaid < feeDue)
         {
@@ -1071,7 +1072,7 @@ Transactor::operator()()
     }
 #endif
 
-    if (auto const& trap = ctx_.app.trapTxID(); trap && *trap == ctx_.tx.getTransactionID())
+    if (auto const& trap = ctx_.registry.trapTxID(); trap && *trap == ctx_.tx.getTransactionID())
     {
         trapTransaction(*trap);
     }
@@ -1172,16 +1173,16 @@ Transactor::operator()()
 
         // If necessary, remove any offers found unfunded during processing
         if ((result == tecOVERSIZE) || (result == tecKILLED))
-            removeUnfundedOffers(view(), removedOffers, ctx_.app.journal("View"));
+            removeUnfundedOffers(view(), removedOffers, ctx_.registry.journal("View"));
 
         if (result == tecEXPIRED)
-            removeExpiredNFTokenOffers(view(), expiredNFTokenOffers, ctx_.app.journal("View"));
+            removeExpiredNFTokenOffers(view(), expiredNFTokenOffers, ctx_.registry.journal("View"));
 
         if (result == tecINCOMPLETE)
-            removeDeletedTrustLines(view(), removedTrustLines, ctx_.app.journal("View"));
+            removeDeletedTrustLines(view(), removedTrustLines, ctx_.registry.journal("View"));
 
         if (result == tecEXPIRED)
-            removeExpiredCredentials(view(), expiredCredentials, ctx_.app.journal("View"));
+            removeExpiredCredentials(view(), expiredCredentials, ctx_.registry.journal("View"));
 
         applied = isTecClaim(result);
     }
