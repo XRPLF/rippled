@@ -162,9 +162,9 @@ class Feature_test : public beast::unit_test::suite
         BEAST_EXPECTS(jrr[jss::status] == jss::success, "status");
         jrr.removeMember(jss::status);
         BEAST_EXPECT(jrr.size() == 1);
-        BEAST_EXPECT(
-            jrr.isMember("12523DF04B553A0B1AD74F42DDB741DE8DC06A03FC089A0EF197E"
-                         "2A87F1D8107"));
+        BEAST_EXPECT(jrr.isMember(
+            "12523DF04B553A0B1AD74F42DDB741DE8DC06A03FC089A0EF197E"
+            "2A87F1D8107"));
         auto feature = *(jrr.begin());
 
         BEAST_EXPECTS(feature[jss::name] == "fixAMMOverflowOffer", "name");

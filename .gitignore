@@ -72,4 +72,6 @@ DerivedData
 /.claude
 /CLAUDE.md
 
+
+# clangd cache
 /.cache
