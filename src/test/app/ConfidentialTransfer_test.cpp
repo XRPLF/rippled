@@ -77,42 +77,119 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testcase("Convert");
         using namespace test::jtx;
 
-        Env env{*this, features};
-        Account const alice("alice");
-        Account const bob("bob");
-        MPTTester mptAlice(env, alice, {.holders = {bob}});
+        // Basic convert test
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
-        mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
 
-        mptAlice.authorize({.account = bob});
-        mptAlice.pay(alice, bob, 100);
+            mptAlice.authorize({.account = bob});
+            mptAlice.pay(alice, bob, 100);
 
-        mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(alice);
 
-        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
 
-        mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(bob);
 
-        mptAlice.convert({
-            .account = bob,
-            .amt = 0,
-            .holderPubKey = mptAlice.getPubKey(bob),
-        });
+            mptAlice.convert({
+                .account = bob,
+                .amt = 0,
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
 
-        mptAlice.convert({
-            .account = bob,
-            .amt = 20,
-        });
+            mptAlice.convert({
+                .account = bob,
+                .amt = 20,
+            });
 
-        mptAlice.convert({
-            .account = bob,
-            .amt = 40,
-        });
+            mptAlice.convert({
+                .account = bob,
+                .amt = 40,
+            });
 
-        mptAlice.convert({
-            .account = bob,
-            .amt = 40,
-        });
+            mptAlice.convert({
+                .account = bob,
+                .amt = 40,
+            });
+        }
+
+        // Edge case: minimum amount (1)
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+
+            mptAlice.authorize({.account = bob});
+            mptAlice.pay(alice, bob, 1);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.generateKeyPair(bob);
+            mptAlice.convert({
+                .account = bob,
+                .amt = 0,
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = 1,
+            });
+        }
+
+        // Edge case: maxMPTokenAmount
+        // Using raw JSON to avoid automatic decryption checks in MPTTester
+        // which don't work for very large amounts (brute-force decryption is slow)
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+
+            mptAlice.authorize({.account = bob});
+            mptAlice.pay(alice, bob, maxMPTokenAmount);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.generateKeyPair(bob);
+
+            // First convert with amt=0 to register public key (uses MPTTester)
+            mptAlice.convert({
+                .account = bob,
+                .amt = 0,
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+
+            // Second convert with maxMPTokenAmount using raw JSON
+            Buffer const blindingFactor = generateBlindingFactor();
+            auto const holderCiphertext = mptAlice.encryptAmount(bob, maxMPTokenAmount, blindingFactor);
+            auto const issuerCiphertext = mptAlice.encryptAmount(alice, maxMPTokenAmount, blindingFactor);
+
+            Json::Value jv;
+            jv[jss::Account] = bob.human();
+            jv[jss::TransactionType] = jss::ConfidentialMPTConvert;
+            jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
+            jv[sfMPTAmount.jsonName] = std::to_string(maxMPTokenAmount);
+            jv[sfHolderEncryptedAmount.jsonName] = strHex(holderCiphertext);
+            jv[sfIssuerEncryptedAmount.jsonName] = strHex(issuerCiphertext);
+            jv[sfBlindingFactor.jsonName] = strHex(blindingFactor);
+
+            env(jv, ter(tesSUCCESS));
+
+            // Verify the public balance was reduced
+            env.require(mptbalance(mptAlice, bob, 0));
+        }
     }
 
     void
@@ -1581,42 +1658,187 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testcase("Convert back");
         using namespace test::jtx;
 
-        Env env{*this, features};
-        Account const alice("alice");
-        Account const bob("bob");
-        MPTTester mptAlice(env, alice, {.holders = {bob}});
+        // Basic convert back test
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
-        mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
 
-        mptAlice.authorize({.account = bob});
-        mptAlice.pay(alice, bob, 100);
+            mptAlice.authorize({.account = bob});
+            mptAlice.pay(alice, bob, 100);
 
-        mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(alice);
 
-        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
 
-        mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(bob);
 
-        mptAlice.convert({
-            .account = bob,
-            .amt = 40,
-            .holderPubKey = mptAlice.getPubKey(bob),
-        });
+            mptAlice.convert({
+                .account = bob,
+                .amt = 40,
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
 
-        mptAlice.mergeInbox({
-            .account = bob,
-        });
+            mptAlice.mergeInbox({
+                .account = bob,
+            });
 
-        mptAlice.convertBack({
-            .account = bob,
-            .amt = 30,
-        });
+            mptAlice.convertBack({
+                .account = bob,
+                .amt = 30,
+            });
 
-        // todo: this test fails because proof generation for convertback fails if remainder amount is 0
-        // mptAlice.convertBack({
-        //     .account = bob,
-        //     .amt = 10,
-        // });
+            // todo: this test fails because proof generation for convertback fails if remainder amount is 0
+            // mptAlice.convertBack({
+            //     .account = bob,
+            //     .amt = 10,
+            // });
+        }
+
+        // Edge case: minimum amount (1)
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+
+            mptAlice.authorize({.account = bob});
+            mptAlice.pay(alice, bob, 2);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.generateKeyPair(bob);
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = 2,
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+
+            mptAlice.mergeInbox({
+                .account = bob,
+            });
+
+            mptAlice.convertBack({
+                .account = bob,
+                .amt = 1,
+            });
+        }
+
+        // Edge case: maxMPTokenAmount
+        // Using raw JSON to avoid automatic decryption checks in MPTTester
+        // which don't work for very large amounts (brute-force decryption is slow)
+        // TODO: improve this test once there is bounded decryption or optimized decryption for large amounts
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+
+            mptAlice.authorize({.account = bob});
+            mptAlice.pay(alice, bob, maxMPTokenAmount);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.generateKeyPair(bob);
+
+            // Convert maxMPTokenAmount to confidential using raw JSON
+            Buffer const convertBlindingFactor = generateBlindingFactor();
+            auto const convertHolderCiphertext = mptAlice.encryptAmount(bob, maxMPTokenAmount, convertBlindingFactor);
+            auto const convertIssuerCiphertext = mptAlice.encryptAmount(alice, maxMPTokenAmount, convertBlindingFactor);
+            auto const convertContextHash =
+                getConvertContextHash(bob.id(), env.seq(bob), mptAlice.issuanceID(), maxMPTokenAmount);
+            auto const schnorrProof = mptAlice.getSchnorrProof(bob, convertContextHash);
+            BEAST_EXPECT(schnorrProof.has_value());
+
+            {
+                Json::Value jv;
+                jv[jss::Account] = bob.human();
+                jv[jss::TransactionType] = jss::ConfidentialMPTConvert;
+                jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
+                jv[sfMPTAmount.jsonName] = std::to_string(maxMPTokenAmount);
+                jv[sfHolderElGamalPublicKey.jsonName] = strHex(*mptAlice.getPubKey(bob));
+                jv[sfHolderEncryptedAmount.jsonName] = strHex(convertHolderCiphertext);
+                jv[sfIssuerEncryptedAmount.jsonName] = strHex(convertIssuerCiphertext);
+                jv[sfBlindingFactor.jsonName] = strHex(convertBlindingFactor);
+                jv[sfZKProof.jsonName] = strHex(*schnorrProof);
+
+                env(jv, ter(tesSUCCESS));
+            }
+
+            // Merge inbox using raw JSON - moves funds from inbox to spending balance
+            {
+                Json::Value jv;
+                jv[jss::Account] = bob.human();
+                jv[jss::TransactionType] = jss::ConfidentialMPTMergeInbox;
+                jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
+
+                env(jv, ter(tesSUCCESS));
+            }
+
+            // ConvertBack maxMPTokenAmount - 1 using raw JSON
+            // After convert + merge, spending balance = maxMPTokenAmount
+            // We convert back maxMPTokenAmount - 1 to leave remainder of 1
+            std::uint64_t const convertBackAmt = maxMPTokenAmount - 1;
+
+            Buffer const convertBackBlindingFactor = generateBlindingFactor();
+            auto const convertBackHolderCiphertext =
+                mptAlice.encryptAmount(bob, convertBackAmt, convertBackBlindingFactor);
+            auto const convertBackIssuerCiphertext =
+                mptAlice.encryptAmount(alice, convertBackAmt, convertBackBlindingFactor);
+
+            // Get the encrypted spending balance from ledger (no decryption needed)
+            auto const encryptedSpendingBalance =
+                mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            BEAST_EXPECT(encryptedSpendingBalance.has_value());
+
+            // Generate pedersen commitment for the known spending balance
+            Buffer const pcBlindingFactor = generateBlindingFactor();
+            Buffer const pedersenCommitment = mptAlice.getPedersenCommitment(maxMPTokenAmount, pcBlindingFactor);
+
+            // Generate the proof using known spending balance value
+            auto const version = mptAlice.getMPTokenVersion(bob);
+            uint256 const convertBackContextHash =
+                getConvertBackContextHash(bob.id(), env.seq(bob), mptAlice.issuanceID(), convertBackAmt, version);
+
+            Buffer const proof = mptAlice.getConvertBackProof(
+                bob,
+                convertBackAmt,
+                convertBackContextHash,
+                {
+                    .pedersenCommitment = pedersenCommitment,
+                    .amt = maxMPTokenAmount,
+                    .encryptedAmt = *encryptedSpendingBalance,
+                    .blindingFactor = pcBlindingFactor,
+                });
+
+            {
+                Json::Value jv;
+                jv[jss::Account] = bob.human();
+                jv[jss::TransactionType] = jss::ConfidentialMPTConvertBack;
+                jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
+                jv[sfMPTAmount.jsonName] = std::to_string(convertBackAmt);
+                jv[sfHolderEncryptedAmount.jsonName] = strHex(convertBackHolderCiphertext);
+                jv[sfIssuerEncryptedAmount.jsonName] = strHex(convertBackIssuerCiphertext);
+                jv[sfBlindingFactor.jsonName] = strHex(convertBackBlindingFactor);
+                jv[sfBalanceCommitment.jsonName] = strHex(pedersenCommitment);
+                jv[sfZKProof.jsonName] = strHex(proof);
+
+                env(jv, ter(tesSUCCESS));
+            }
+
+            // Verify the public balance was restored (minus 1 remaining in confidential)
+            env.require(mptbalance(mptAlice, bob, convertBackAmt));
+        }
     }
 
     void
