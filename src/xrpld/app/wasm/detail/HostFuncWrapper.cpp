@@ -28,7 +28,10 @@ setData(InstanceWrapper const* runtime, int32_t dst, int32_t dstSize, uint8_t co
     if (!memory.s)
         return HfErrorToInt(HostFunctionError::NO_MEM_EXPORTED);
     // LCOV_EXCL_STOP
-    if ((int64_t)dst + dstSize > memory.s)
+
+    // Overflow-safe bounds check: dst and dstSize are already validated as non-negative.
+    auto const memSize = static_cast<int64_t>(memory.s);
+    if (dst > memSize || dstSize > memSize - dst)
         return HfErrorToInt(HostFunctionError::POINTER_OUT_OF_BOUNDS);
     if (srcSize > dstSize)
         return HfErrorToInt(HostFunctionError::BUFFER_TOO_SMALL);
@@ -128,7 +131,10 @@ getDataSlice(IW const* runtime, wasm_val_vec_t const* params, int32_t& i, bool i
         return Unexpected(HostFunctionError::NO_MEM_EXPORTED);
     // LCOV_EXCL_STOP
 
-    if (ptr + size > memory.s)
+    // Overflow-safe bounds check: ptr and size are already validated as non-negative.
+    // Use subtraction to avoid potential overflow in addition.
+    auto const memSize = static_cast<int64_t>(memory.s);
+    if (ptr > memSize || size > memSize - ptr)
         return Unexpected(HostFunctionError::POINTER_OUT_OF_BOUNDS);
 
     Slice data(memory.p + ptr, size);

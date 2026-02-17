@@ -791,9 +791,9 @@ struct PerfHostFunctions : public TestHostFunctions
             if (STI_ARRAY == field->getSType())
             {
                 auto const* arr = static_cast<STArray const*>(field);
-                if (sfieldCode >= arr->size())
+                if (sfieldCode < 0 || static_cast<std::size_t>(sfieldCode) >= arr->size())
                     return Unexpected(HostFunctionError::INDEX_OUT_OF_BOUNDS);
-                field = &(arr->operator[](sfieldCode));
+                field = &(arr->operator[](static_cast<std::size_t>(sfieldCode)));
             }
             else if (STI_OBJECT == field->getSType())
             {

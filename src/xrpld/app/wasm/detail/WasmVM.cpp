@@ -104,9 +104,9 @@ Expected<EscrowResult, TER>
 runEscrowWasm(
     Bytes const& wasmCode,
     std::shared_ptr<HostFunctions> const& hfs,
+    int64_t gasLimit,
     std::string_view funcName,
-    std::vector<WasmParam> const& params,
-    int64_t gasLimit)
+    std::vector<WasmParam> const& params)
 {
     //  create VM and set cost limit
     auto& vm = WasmEngine::instance();

@@ -209,6 +209,9 @@ InstanceWrapper::setGas(std::int64_t gas) const
 ModulePtr
 ModuleWrapper::init(StorePtr& s, Bytes const& wasmBin, beast::Journal j)
 {
+    if (wasmBin.empty())
+        throw std::runtime_error("empty WASM module");
+
     wasm_byte_vec_t const code{wasmBin.size(), (char*)(wasmBin.data())};
     ModulePtr m = ModulePtr(wasm_module_new(s.get(), &code), &wasm_module_delete);
     if (!m)
@@ -744,6 +747,9 @@ WasmiEngine::run(
         hfs_ = hfs;
     }
 
+    if (gas < 0)
+        return Unexpected<TER>(temBAD_AMOUNT);
+
     try
     {
         if (imports_)
@@ -914,7 +920,9 @@ WasmiEngine::allocate(int32_t sz)
 
     int32_t const p = res.r.vec_.data[0].of.i32;
     auto const mem = getMem();
-    if (p <= 0 || p + sz > mem.s)
+    // Overflow-safe bounds check: p and sz are validated as positive.
+    auto const memSize = static_cast<int64_t>(mem.s);
+    if (p <= 0 || p > memSize || sz > memSize - p)
         throw std::runtime_error("invalid memory allocation, " + std::to_string(sz) + " bytes");
 
     return p;

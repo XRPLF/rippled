@@ -131,7 +131,7 @@ struct Wasm_test : public beast::unit_test::suite
             auto wasm = hexToBytes("00000000");
             std::string funcName("mock_escrow");
 
-            auto re = runEscrowWasm(wasm, hfs, funcName, {}, 15);
+            auto re = runEscrowWasm(wasm, hfs, 15, funcName, {});
             BEAST_EXPECT(!re);
         }
 
@@ -314,14 +314,22 @@ struct Wasm_test : public beast::unit_test::suite
         Env env{*this};
         {
             std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
-            auto re = runEscrowWasm(allHFWasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
+            auto re = runEscrowWasm(allHFWasm, hfs, 100'000, ESCROW_FUNCTION_NAME, {});
             checkResult(re, 1, 66'340);
+        }
+
+        {
+            // Invalid gas limit (-1) should be rejected
+            std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
+            auto re = runEscrowWasm(allHFWasm, hfs, -1, ESCROW_FUNCTION_NAME, {});
+            BEAST_EXPECT(!re.has_value());
+            BEAST_EXPECT(re.error() == temBAD_AMOUNT);
         }
 
         {
             // max<int64_t>() gas
             std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
-            auto re = runEscrowWasm(allHFWasm, hfs, ESCROW_FUNCTION_NAME, {}, -1);
+            auto re = runEscrowWasm(allHFWasm, hfs, std::numeric_limits<int64_t>::max(), ESCROW_FUNCTION_NAME, {});
             checkResult(re, 1, 66'340);
         }
 
@@ -339,7 +347,7 @@ struct Wasm_test : public beast::unit_test::suite
             };
 
             std::shared_ptr<HostFunctions> hfs(new BadTestHostFunctions(env));
-            auto re = runEscrowWasm(allHFWasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
+            auto re = runEscrowWasm(allHFWasm, hfs, 100'000, ESCROW_FUNCTION_NAME, {});
             checkResult(re, -201, 28'965);
         }
 
@@ -357,7 +365,7 @@ struct Wasm_test : public beast::unit_test::suite
             };
 
             std::shared_ptr<HostFunctions> hfs(new BadTestHostFunctions(env));
-            auto re = runEscrowWasm(allHFWasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
+            auto re = runEscrowWasm(allHFWasm, hfs, 100'000, ESCROW_FUNCTION_NAME, {});
             checkResult(re, -201, 28'965);
         }
 
@@ -367,7 +375,7 @@ struct Wasm_test : public beast::unit_test::suite
 
             std::shared_ptr<TestHostFunctionsSink> hfs(new TestHostFunctionsSink(env));
             std::string funcName("finish");
-            auto re = runEscrowWasm(deepWasm, hfs, funcName, {}, 1'000'000'000);
+            auto re = runEscrowWasm(deepWasm, hfs, 1'000'000'000, funcName, {});
             BEAST_EXPECT(!re && re.error());
             // std::cout << "bad case (deep recursion) result " << re.error()
             //             << std::endl;
@@ -395,7 +403,7 @@ struct Wasm_test : public beast::unit_test::suite
             std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
 
             // infinite loop should be caught and fail
-            auto const re = runEscrowWasm(infiniteLoopWasm, hfs, funcName, {}, 1'000'000);
+            auto const re = runEscrowWasm(infiniteLoopWasm, hfs, 1'000'000, funcName, {});
             if (BEAST_EXPECT(!re.has_value()))
             {
                 BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
@@ -459,7 +467,7 @@ struct Wasm_test : public beast::unit_test::suite
             auto const floatTestWasm = hexToBytes(floatTestsWasmHex);
 
             std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
-            auto re = runEscrowWasm(floatTestWasm, hfs, funcName, {}, 200'000);
+            auto re = runEscrowWasm(floatTestWasm, hfs, 200'000, funcName, {});
             checkResult(re, 1, 110'699);
             env.close();
         }
@@ -468,7 +476,7 @@ struct Wasm_test : public beast::unit_test::suite
             auto const float0Wasm = hexToBytes(float0Hex);
 
             std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
-            auto re = runEscrowWasm(float0Wasm, hfs, funcName, {}, 100'000);
+            auto re = runEscrowWasm(float0Wasm, hfs, 100'000, funcName, {});
             checkResult(re, 1, 4'259);
             env.close();
         }
@@ -546,7 +554,7 @@ struct Wasm_test : public beast::unit_test::suite
 
             std::shared_ptr<HostFunctions> hfs(new PerfHostFunctions(env, k, env.tx()));
 
-            auto re = runEscrowWasm(perfWasm, hfs, ESCROW_FUNCTION_NAME);
+            auto re = runEscrowWasm(perfWasm, hfs, 10'000'000, ESCROW_FUNCTION_NAME);
             if (BEAST_EXPECT(re.has_value()))
             {
                 BEAST_EXPECT(re->result);
@@ -575,7 +583,7 @@ struct Wasm_test : public beast::unit_test::suite
         std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
 
         auto const allowance = 201'503;
-        auto re = runEscrowWasm(codecovWasm, hfs, ESCROW_FUNCTION_NAME, {}, allowance);
+        auto re = runEscrowWasm(codecovWasm, hfs, allowance, ESCROW_FUNCTION_NAME, {});
 
         checkResult(re, 1, allowance);
     }
@@ -594,7 +602,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         {
             // f32 set constant, opcode disabled exception
-            auto const re = runEscrowWasm(disabledFloatWasm, hfs, funcName, {}, 1'000'000);
+            auto const re = runEscrowWasm(disabledFloatWasm, hfs, 1'000'000, funcName, {});
             if (BEAST_EXPECT(!re.has_value()))
             {
                 BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
@@ -604,7 +612,7 @@ struct Wasm_test : public beast::unit_test::suite
         {
             // f32 add, can't create module exception
             disabledFloatWasm[0x117] = 0x92;
-            auto const re = runEscrowWasm(disabledFloatWasm, hfs, funcName, {}, 1'000'000);
+            auto const re = runEscrowWasm(disabledFloatWasm, hfs, 1'000'000, funcName, {});
             if (BEAST_EXPECT(!re.has_value()))
             {
                 BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
@@ -833,7 +841,7 @@ struct Wasm_test : public beast::unit_test::suite
                 "071302066d656d6f727902000666696e69736800000a0a01"
                 "08004280808080100b";
             auto const wasm = hexToBytes(wasmHex);
-            auto const re = runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
+            auto const re = runEscrowWasm(wasm, hfs, 100'000, ESCROW_FUNCTION_NAME, {});
             BEAST_EXPECT(!re);
         }
 
@@ -849,7 +857,7 @@ struct Wasm_test : public beast::unit_test::suite
                 "0061736d01000000010401600000030201000503010001071302066d656d6f"
                 "727902000666696e69736800000a050103000f0b";
             auto const wasm = hexToBytes(wasmHex);
-            auto const re = runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
+            auto const re = runEscrowWasm(wasm, hfs, 100'000, ESCROW_FUNCTION_NAME, {});
             BEAST_EXPECT(!re);
         }
 
@@ -864,7 +872,7 @@ struct Wasm_test : public beast::unit_test::suite
                 "6d6f727902000666696e69736800000a10010e0041808080800141ff818080"
                 "010b";
             auto const wasm = hexToBytes(wasmHex);
-            auto const re = runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
+            auto const re = runEscrowWasm(wasm, hfs, 100'000, ESCROW_FUNCTION_NAME, {});
             BEAST_EXPECT(!re);
         }
     }
