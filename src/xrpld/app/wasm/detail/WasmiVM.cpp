@@ -732,11 +732,11 @@ checkImports(ImportVec const& imports, HostFunctions* hfs)
 Expected<WasmResult<int32_t>, TER>
 WasmiEngine::run(
     Bytes const& wasmCode,
+    int64_t gas,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
     std::shared_ptr<ImportVec> const& imports,
     std::shared_ptr<HostFunctions> const& hfs,
-    int64_t gas,
     beast::Journal j)
 {
     j_ = j;
@@ -920,9 +920,7 @@ WasmiEngine::allocate(int32_t sz)
 
     int32_t const p = res.r.vec_.data[0].of.i32;
     auto const mem = getMem();
-    // Overflow-safe bounds check: p and sz are validated as positive.
-    auto const memSize = static_cast<int64_t>(mem.s);
-    if (p <= 0 || p > memSize || sz > memSize - p)
+    if (p <= 0 || static_cast<int64_t>(p) + sz > static_cast<int64_t>(mem.s))
         throw std::runtime_error("invalid memory allocation, " + std::to_string(sz) + " bytes");
 
     return p;

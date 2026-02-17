@@ -43,11 +43,11 @@ public:
 
     Expected<WasmResult<int32_t>, TER>
     run(Bytes const& wasmCode,
+        int64_t gasLimit,
         std::string_view funcName = {},
         std::vector<WasmParam> const& params = {},
         std::shared_ptr<ImportVec> const& imports = {},
         std::shared_ptr<HostFunctions> const& hfs = {},
-        int64_t gasLimit = -1,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
     NotTEC

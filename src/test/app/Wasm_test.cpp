@@ -37,7 +37,7 @@ runFinishFunction(std::string const& code)
 {
     auto& engine = WasmEngine::instance();
     auto const wasm = hexToBytes(code);
-    auto const re = engine.run(wasm, "finish");
+    auto const re = engine.run(wasm, 10'000'000, "finish");
     if (re.has_value())
     {
         return std::optional<int32_t>(re->result);
@@ -110,7 +110,7 @@ struct Wasm_test : public beast::unit_test::suite
         std::shared_ptr<ImportVec> imports(std::make_shared<ImportVec>());
         WasmImpFunc<Add_proto>(*imports, "func-add", reinterpret_cast<void*>(&Add));
 
-        auto re = vm.run(wasm, "addTwo", wasmParams(1234, 5678), imports);
+        auto re = vm.run(wasm, 10'000'000, "addTwo", wasmParams(1234, 5678), imports);
 
         // if (res) printf("invokeAdd get the result: %d\n", res.value());
 
@@ -180,7 +180,7 @@ struct Wasm_test : public beast::unit_test::suite
         WASM_IMPORT_FUNC2(*imports, getLedgerSqn, "get_ledger_sqn", hfs.get(), 33);
         auto& engine = WasmEngine::instance();
 
-        auto re = engine.run(ledgerSqnWasm, ESCROW_FUNCTION_NAME, {}, imports, hfs, 1'000'000, env.journal);
+        auto re = engine.run(ledgerSqnWasm, 1'000'000, ESCROW_FUNCTION_NAME, {}, imports, hfs, env.journal);
 
         checkResult(re, 0, 440);
 
@@ -188,7 +188,7 @@ struct Wasm_test : public beast::unit_test::suite
         env.close();
 
         // empty module - run the same instance
-        re = engine.run({}, ESCROW_FUNCTION_NAME, {}, imports, hfs, 1'000'000, env.journal);
+        re = engine.run({}, 1'000'000, ESCROW_FUNCTION_NAME, {}, imports, hfs, env.journal);
 
         checkResult(re, 5, 488);
     }
@@ -201,7 +201,7 @@ struct Wasm_test : public beast::unit_test::suite
         auto const fibWasm = hexToBytes(fibWasmHex);
         auto& engine = WasmEngine::instance();
 
-        auto const re = engine.run(fibWasm, "fib", wasmParams(10));
+        auto const re = engine.run(fibWasm, 10'000'000, "fib", wasmParams(10));
 
         checkResult(re, 55, 1'137);
     }
@@ -214,7 +214,7 @@ struct Wasm_test : public beast::unit_test::suite
         auto const sha512Wasm = hexToBytes(sha512PureWasmHex);
         auto& engine = WasmEngine::instance();
 
-        auto const re = engine.run(sha512Wasm, "sha512_process", wasmParams(sha512PureWasmHex));
+        auto const re = engine.run(sha512Wasm, 10'000'000, "sha512_process", wasmParams(sha512PureWasmHex));
 
         checkResult(re, 34'432, 151'155);
     }
@@ -232,7 +232,7 @@ struct Wasm_test : public beast::unit_test::suite
         auto const minSize = std::min(static_cast<std::uint32_t>(512), static_cast<std::uint32_t>(b58WasmHex.size()));
         auto const s = std::string_view(b58WasmHex.c_str(), minSize);
 
-        auto const re = engine.run(b58Wasm, "b58enco", wasmParams(outb, s));
+        auto const re = engine.run(b58Wasm, 10'000'000, "b58enco", wasmParams(outb, s));
 
         checkResult(re, 700, 2'886'069);
     }
@@ -255,7 +255,7 @@ struct Wasm_test : public beast::unit_test::suite
             for (auto& i : *imp)
                 i.second.gas = 0;
 
-            auto re = engine.run(allHostFuncWasm, ESCROW_FUNCTION_NAME, {}, imp, hfs, 1'000'000, env.journal);
+            auto re = engine.run(allHostFuncWasm, 1'000'000, ESCROW_FUNCTION_NAME, {}, imp, hfs, env.journal);
 
             checkResult(re, 1, 27'080);
 
@@ -276,7 +276,7 @@ struct Wasm_test : public beast::unit_test::suite
             std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
             auto const imp = createWasmImport(*hfs);
 
-            auto re = engine.run(allHostFuncWasm, ESCROW_FUNCTION_NAME, {}, imp, hfs, 1'000'000, env.journal);
+            auto re = engine.run(allHostFuncWasm, 1'000'000, ESCROW_FUNCTION_NAME, {}, imp, hfs, env.journal);
 
             checkResult(re, 1, 66'340);
 
@@ -292,7 +292,7 @@ struct Wasm_test : public beast::unit_test::suite
             std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
             auto const imp = createWasmImport(*hfs);
 
-            auto re = engine.run(allHostFuncWasm, ESCROW_FUNCTION_NAME, {}, imp, hfs, 200, env.journal);
+            auto re = engine.run(allHostFuncWasm, 200, ESCROW_FUNCTION_NAME, {}, imp, hfs, env.journal);
 
             if (BEAST_EXPECT(!re))
             {
@@ -419,7 +419,7 @@ struct Wasm_test : public beast::unit_test::suite
 
             auto& engine = WasmEngine::instance();
 
-            auto re = engine.run(lgrSqnWasm, ESCROW_FUNCTION_NAME, {}, imports, hfs, 1'000'000, env.journal);
+            auto re = engine.run(lgrSqnWasm, 1'000'000, ESCROW_FUNCTION_NAME, {}, imports, hfs, env.journal);
 
             BEAST_EXPECT(!re);
         }
@@ -434,7 +434,7 @@ struct Wasm_test : public beast::unit_test::suite
 
             auto& engine = WasmEngine::instance();
 
-            auto re = engine.run(lgrSqnWasm, ESCROW_FUNCTION_NAME, {}, imports, hfs, 1'000'000, env.journal);
+            auto re = engine.run(lgrSqnWasm, 1'000'000, ESCROW_FUNCTION_NAME, {}, imports, hfs, env.journal);
 
             BEAST_EXPECT(!re);
         }
@@ -447,7 +447,7 @@ struct Wasm_test : public beast::unit_test::suite
             WASM_IMPORT_FUNC2(*imports, getLedgerSqn, "get_ledger_sqn", hfs.get());
 
             auto& engine = WasmEngine::instance();
-            auto re = engine.run(lgrSqnWasm, "func1", {}, imports, hfs, 1'000'000, env.journal);
+            auto re = engine.run(lgrSqnWasm, 1'000'000, "func1", {}, imports, hfs, env.journal);
 
             BEAST_EXPECT(!re);
         }
@@ -718,7 +718,7 @@ struct Wasm_test : public beast::unit_test::suite
         auto checkRes = engine.check(startLoopWasm, "finish", {}, imports, hfs, env.journal);
         BEAST_EXPECTS(checkRes == tesSUCCESS, std::to_string(TERtoInt(checkRes)));
 
-        auto re = engine.run(startLoopWasm, ESCROW_FUNCTION_NAME, {}, imports, hfs, 1'000'000, env.journal);
+        auto re = engine.run(startLoopWasm, 1'000'000, ESCROW_FUNCTION_NAME, {}, imports, hfs, env.journal);
         BEAST_EXPECTS(re.error() == tecFAILED_PROCESSING, std::to_string(TERtoInt(re.error())));
     }
 
@@ -741,7 +741,7 @@ struct Wasm_test : public beast::unit_test::suite
             std::vector<WasmParam> params = {{.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = sizeof(buf1)}}}};
             auto& engine = WasmEngine::instance();
 
-            auto re = engine.run(badAllocWasm, "test", params, {}, hfs, 1'000'000, env.journal);
+            auto re = engine.run(badAllocWasm, 1'000'000, "test", params, {}, hfs, env.journal);
             if (BEAST_EXPECT(re))
             {
                 BEAST_EXPECTS(re->result == 7, std::to_string(re->result));
@@ -752,28 +752,28 @@ struct Wasm_test : public beast::unit_test::suite
         {  // return 0 whithout calling wasm
             std::vector<WasmParam> params = {{.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 0}}}};
             auto& engine = WasmEngine::instance();
-            auto re = engine.run(badAllocWasm, "test", params, {}, hfs, 1'000'000, env.journal);
+            auto re = engine.run(badAllocWasm, 1'000'000, "test", params, {}, hfs, env.journal);
             BEAST_EXPECT(!re) && BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
         }
 
         {  // forged "allocate" return 8Mb (which is more than memory limit)
             std::vector<WasmParam> params = {{.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 1}}}};
             auto& engine = WasmEngine::instance();
-            auto re = engine.run(badAllocWasm, "test", params, {}, hfs, 1'000'000, env.journal);
+            auto re = engine.run(badAllocWasm, 1'000'000, "test", params, {}, hfs, env.journal);
             BEAST_EXPECT(!re) && BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
         }
 
         {  // forged "allocate" return 0
             std::vector<WasmParam> params = {{.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 2}}}};
             auto& engine = WasmEngine::instance();
-            auto re = engine.run(badAllocWasm, "test", params, {}, hfs, 1'000'000, env.journal);
+            auto re = engine.run(badAllocWasm, 1'000'000, "test", params, {}, hfs, env.journal);
             BEAST_EXPECT(!re) && BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
         }
 
         {  // forged "allocate" return -1
             std::vector<WasmParam> params = {{.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 3}}}};
             auto& engine = WasmEngine::instance();
-            auto re = engine.run(badAllocWasm, "test", params, {}, hfs, 1'000'000, env.journal);
+            auto re = engine.run(badAllocWasm, 1'000'000, "test", params, {}, hfs, env.journal);
 
             BEAST_EXPECT(!re) && BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
         }
@@ -814,7 +814,7 @@ struct Wasm_test : public beast::unit_test::suite
            // Can be checked through codecov
             auto& engine = WasmEngine::instance();
 
-            auto re = engine.run(badAlignWasm, "test", {}, imports, hfs, 1'000'000, env.journal);
+            auto re = engine.run(badAlignWasm, 1'000'000, "test", {}, imports, hfs, env.journal);
             if (BEAST_EXPECTS(re, transToken(re.error())))
             {
                 BEAST_EXPECTS(re->result == 0x684f7941, std::to_string(re->result));
@@ -952,28 +952,28 @@ struct Wasm_test : public beast::unit_test::suite
 
         auto& engine = WasmEngine::instance();
         {
-            auto re = engine.run(params1k, "test", params, imports, hfs, 1'000'000, env.journal);
+            auto re = engine.run(params1k, 1'000'000, "test", params, imports, hfs, env.journal);
             BEAST_EXPECT(re && re->result == 999000);
         }
 
         // add 1 more parameter, module can't be created now
         params.push_back({.type = WT_I32, .of = {.i32 = 2 * 1000}});
         {
-            auto re = engine.run(params1k1, "test", params, imports, hfs, 1'000'000, env.journal);
+            auto re = engine.run(params1k1, 1'000'000, "test", params, imports, hfs, env.journal);
             BEAST_EXPECT(!re);
         }
 
         // function that create 10k local variables
         auto const locals10k = hexToBytes(locals10kHex);
         {
-            auto re = engine.run(locals10k, "test", wasmParams(0, 1), imports, hfs, 1'000'000, env.journal);
+            auto re = engine.run(locals10k, 1'000'000, "test", wasmParams(0, 1), imports, hfs, env.journal);
             BEAST_EXPECT(re && re->result == 890'489'442);
         }
 
         // module has 5k functions
         auto const functions5k = hexToBytes(functions5kHex);
         {
-            auto re = engine.run(functions5k, "test0001", wasmParams(2, 3), imports, hfs, 1'000'000, env.journal);
+            auto re = engine.run(functions5k, 1'000'000, "test0001", wasmParams(2, 3), imports, hfs, env.journal);
             BEAST_EXPECT(re && re->result == 5);
         }
 

@@ -112,7 +112,7 @@ runEscrowWasm(
     auto& vm = WasmEngine::instance();
     // vm.initMaxPages(MAX_PAGES);
 
-    auto const ret = vm.run(wasmCode, funcName, params, createWasmImport(*hfs), hfs, gasLimit, hfs->getJournal());
+    auto const ret = vm.run(wasmCode, gasLimit, funcName, params, createWasmImport(*hfs), hfs, hfs->getJournal());
 
     // std::cout << "runEscrowWasm, mod size: " << wasmCode.size()
     //           << ", gasLimit: " << gasLimit << ", funcName: " << funcName;
@@ -163,14 +163,14 @@ WasmEngine::instance()
 Expected<WasmResult<int32_t>, TER>
 WasmEngine::run(
     Bytes const& wasmCode,
+    int64_t gasLimit,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
     std::shared_ptr<ImportVec> const& imports,
     std::shared_ptr<HostFunctions> const& hfs,
-    int64_t gasLimit,
     beast::Journal j)
 {
-    return impl->run(wasmCode, funcName, params, imports, hfs, gasLimit, j);
+    return impl->run(wasmCode, gasLimit, funcName, params, imports, hfs, j);
 }
 
 NotTEC

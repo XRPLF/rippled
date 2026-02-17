@@ -199,11 +199,11 @@ public:
 
     Expected<WasmResult<int32_t>, TER>
     run(Bytes const& wasmCode,
+        int64_t gas,
         std::string_view funcName,
         std::vector<WasmParam> const& params,
         std::shared_ptr<ImportVec> const& imports,
         std::shared_ptr<HostFunctions> const& hfs,
-        int64_t gas,
         beast::Journal j);
 
     NotTEC
