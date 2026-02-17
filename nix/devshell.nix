@@ -1,13 +1,13 @@
 { pkgs, ... }:
 let
-  common_packages = with pkgs; [
+  commonPackages = with pkgs; [
     ccache
     cmake
     conan
     gcovr
     git
     gnumake
-    llvmPackages_18.clang-tools
+    llvmPackages_21.clang-tools
     ninja
     perl # needed for openssl
     pkg-config
@@ -16,12 +16,12 @@ let
   ];
 
   # Supported compiler versions
-  gcc_versions = pkgs.lib.range 13 15;
-  clang_versions = pkgs.lib.range 18 21;
+  gccVersion = pkgs.lib.range 13 15;
+  clangVersions = pkgs.lib.range 18 21;
 
-  default_compiler = if pkgs.stdenv.isDarwin then "apple-clang" else "gcc";
-  default_gcc_version = pkgs.lib.last gcc_versions;
-  default_clang_version = pkgs.lib.last clang_versions;
+  defaultCompiler = if pkgs.stdenv.isDarwin then "apple-clang" else "gcc";
+  defaultGccVersion = pkgs.lib.last gccVersion;
+  defaultClangVersion = pkgs.lib.last clangVersions;
 
   strToCompilerEnv =
     compiler: version:
@@ -30,18 +30,18 @@ let
         let
           gccPkg = pkgs."gcc${toString version}Stdenv" or null;
         in
-        if gccPkg != null && builtins.elem version gcc_versions then
+        if gccPkg != null && builtins.elem version gccVersion then
           gccPkg
         else
-          throw "Invalid GCC version: ${toString version}. Must be one of: ${toString gcc_versions}"
+          throw "Invalid GCC version: ${toString version}. Must be one of: ${toString gccVersion}"
       else if compiler == "clang" then
         let
           clangPkg = pkgs."llvmPackages_${toString version}".stdenv or null;
         in
-        if clangPkg != null && builtins.elem version clang_versions then
+        if clangPkg != null && builtins.elem version clangVersions then
           clangPkg
         else
-          throw "Invalid Clang version: ${toString version}. Must be one of: ${toString clang_versions}"
+          throw "Invalid Clang version: ${toString version}. Must be one of: ${toString clangVersions}"
       else if compiler == "apple-clang" || compiler == "none" then
         pkgs.stdenvNoCC
       else
@@ -51,12 +51,12 @@ let
   # Helper function to create a shell with a specific compiler
   makeShell =
     {
-      compiler ? default_compiler,
+      compiler ? defaultCompiler,
       version ? (
         if compiler == "gcc" then
-          default_gcc_version
+          defaultGccVersion
         else if compiler == "clang" then
-          default_clang_version
+          defaultClangVersion
         else
           null
       ),
@@ -94,7 +94,7 @@ let
           '';
 
       shellAttrs = {
-        packages = common_packages;
+        packages = commonPackages;
 
         shellHook = ''
           echo "Welcome to xrpld development shell";
@@ -112,7 +112,7 @@ let
         compiler = "gcc";
         version = version;
       };
-    }) gcc_versions
+    }) gccVersion
   );
 
   clangShells = builtins.listToAttrs (
@@ -122,7 +122,7 @@ let
         compiler = "clang";
         version = version;
       };
-    }) clang_versions
+    }) clangVersions
   );
 
 in

@@ -1,6 +1,6 @@
 # Using Nix Development Shell for xrpld Development
 
-This guide explains how to use Nix to set up a reproducible development environment for xrpld. Using Nix eliminates the need to manually install dependencies and ensures consistent tooling across different machines.
+This guide explains how to use Nix to set up a reproducible development environment for xrpld. Using Nix eliminates the need to manually install utilities and ensures consistent tooling across different machines.
 
 ## Benefits of Using Nix
 
