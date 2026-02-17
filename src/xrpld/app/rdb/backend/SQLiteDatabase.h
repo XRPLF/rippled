@@ -2,7 +2,11 @@
 
 #include <xrpl/rdb/RelationalDatabase.h>
 
+#include <map>
 #include <memory>
+#include <optional>
+#include <variant>
+#include <vector>
 
 namespace xrpl {
 
@@ -378,7 +382,7 @@ public:
     SQLiteDatabase&
     operator=(SQLiteDatabase const&) = delete;
     SQLiteDatabase&
-    operator=(SQLiteDatabase&& rhs) = delete;
+    operator=(SQLiteDatabase&&) = delete;
 
     /**
      * @brief ledgerDbHasSpace Checks if the ledger database has available
@@ -400,7 +404,7 @@ public:
 
 private:
     ServiceRegistry& registry_;
-    bool const useTxTables_;
+    bool useTxTables_;
     beast::Journal j_;
     std::unique_ptr<DatabaseCon> ledgerDb_, txdb_;
 
@@ -464,7 +468,9 @@ private:
 
 /**
  * @brief setup_RelationalDatabase Creates and returns a SQLiteDatabase
- *        instance based on configuration.
+ *        instance based on configuration. It's recommended to use it as
+ *        a singleton, but it's not enforced (e.g. if you have more than one
+ *        database).
  * @param registry The service registry.
  * @param config Config object.
  * @param jobQueue JobQueue object.

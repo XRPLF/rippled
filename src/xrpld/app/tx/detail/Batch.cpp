@@ -6,6 +6,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -295,7 +296,7 @@ Batch::preflight(PreflightContext const& ctx)
         }
 
         auto const innerAccount = stx.getAccountID(sfAccount);
-        if (auto const preflightResult = xrpl::preflight(ctx.app, ctx.rules, parentBatchId, stx, tapBATCH, ctx.j);
+        if (auto const preflightResult = xrpl::preflight(ctx.registry, ctx.rules, parentBatchId, stx, tapBATCH, ctx.j);
             preflightResult.ter != tesSUCCESS)
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "

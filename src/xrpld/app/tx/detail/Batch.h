@@ -1,7 +1,6 @@
 #pragma once
 
 #include <xrpld/app/tx/detail/Transactor.h>
-#include <xrpld/core/Config.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Indexes.h>

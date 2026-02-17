@@ -44,7 +44,7 @@ public:
 
     // Interface used by DeleteAccount
     static TER
-    removeFromLedger(Application& app, ApplyView& view, AccountID const& account, beast::Journal j);
+    removeFromLedger(ServiceRegistry& registry, ApplyView& view, AccountID const& account, beast::Journal j);
 
 private:
     static std::tuple<NotTEC, std::uint32_t, std::vector<SignerEntries::SignerEntry>, Operation>

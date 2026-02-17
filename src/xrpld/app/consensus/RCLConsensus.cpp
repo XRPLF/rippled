@@ -8,10 +8,8 @@
 #include <xrpld/app/ledger/LocalTxs.h>
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/misc/AmendmentTable.h>
-#include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/misc/NegativeUNLVote.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/misc/ValidatorKeys.h>
 #include <xrpld/app/misc/ValidatorList.h>
@@ -22,9 +20,11 @@
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/HashRouter.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/server/NetworkOPs.h>
 
 #include <algorithm>
 #include <iomanip>

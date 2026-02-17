@@ -41,6 +41,7 @@ class LoadFeeTrack;
 class LoadManager;
 class ManifestCache;
 class NetworkOPs;
+class NetworkIDService;
 class OpenLedger;
 class OrderBookDB;
 class Overlay;
@@ -98,6 +99,9 @@ public:
 
     virtual CachedSLEs&
     cachedSLEs() = 0;
+
+    virtual NetworkIDService&
+    getNetworkIDService() = 0;
 
     // Protocol and validation services
     virtual AmendmentTable&
@@ -213,6 +217,13 @@ public:
 
     virtual Logs&
     logs() = 0;
+
+    virtual std::optional<uint256> const&
+    trapTxID() const = 0;
+
+    /** Retrieve the "wallet database" */
+    virtual DatabaseCon&
+    getWalletDB() = 0;
 
     // Temporary: Get the underlying Application for functions that haven't
     // been migrated yet. This should be removed once all code is migrated.

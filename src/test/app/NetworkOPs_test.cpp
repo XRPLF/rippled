@@ -2,7 +2,7 @@
 #include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
 
-#include <xrpld/app/misc/HashRouter.h>
+#include <xrpl/core/HashRouter.h>
 
 namespace xrpl {
 namespace test {

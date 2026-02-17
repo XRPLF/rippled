@@ -8,7 +8,7 @@
 namespace xrpl {
 
 ApplyContext::ApplyContext(
-    Application& app_,
+    ServiceRegistry& registry_,
     OpenView& base,
     std::optional<uint256 const> const& parentBatchId,
     STTx const& tx_,
@@ -16,7 +16,7 @@ ApplyContext::ApplyContext(
     XRPAmount baseFee_,
     ApplyFlags flags,
     beast::Journal journal_)
-    : app(app_)
+    : registry(registry_)
     , tx(tx_)
     , preclaimResult(preclaimResult_)
     , baseFee(baseFee_)

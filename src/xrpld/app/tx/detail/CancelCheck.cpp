@@ -1,8 +1,8 @@
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/tx/detail/CancelCheck.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TER.h>
@@ -62,7 +62,7 @@ CancelCheck::doApply()
 
     AccountID const srcId{sleCheck->getAccountID(sfAccount)};
     AccountID const dstId{sleCheck->getAccountID(sfDestination)};
-    auto viewJ = ctx_.app.journal("View");
+    auto viewJ = ctx_.registry.journal("View");
 
     // If the check is not written to self (and it shouldn't be), remove the
     // check from the destination account root.
