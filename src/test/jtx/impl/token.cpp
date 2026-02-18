@@ -1,10 +1,9 @@
 #include <test/jtx/flags.h>
 #include <test/jtx/token.h>
 
-#include <xrpld/app/tx/detail/NFTokenMint.h>
-
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/transactors/NFT/NFTokenMint.h>
 
 namespace xrpl {
 namespace test {

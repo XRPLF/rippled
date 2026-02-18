@@ -1,0 +1,33 @@
+#pragma once
+
+#include <xrpl/tx/Transactor.h>
+
+namespace xrpl {
+
+class DepositPreauth : public Transactor
+{
+public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+
+    explicit DepositPreauth(ApplyContext& ctx) : Transactor(ctx)
+    {
+    }
+
+    static bool
+    checkExtraFeatures(PreflightContext const& ctx);
+
+    static NotTEC
+    preflight(PreflightContext const& ctx);
+
+    static TER
+    preclaim(PreclaimContext const& ctx);
+
+    TER
+    doApply() override;
+
+    // Interface used by DeleteAccount
+    static TER
+    removeFromLedger(ApplyView& view, uint256 const& delIndex, beast::Journal j);
+};
+
+}  // namespace xrpl

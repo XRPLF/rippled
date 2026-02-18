@@ -1,5 +1,4 @@
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/paths/TrustLine.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
@@ -11,6 +10,7 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/LoadFeeTrack.h>
 
 namespace xrpl {
 
