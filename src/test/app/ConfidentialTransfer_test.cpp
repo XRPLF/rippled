@@ -1839,10 +1839,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             });
 
             // todo: this test fails because proof generation for convertback fails if remainder amount is 0
-            // mptAlice.convertBack({
-            //     .account = bob,
-            //     .amt = 10,
-            // });
+            mptAlice.convertBack({
+                .account = bob,
+                .amt = 10,
+            });
         }
 
         // Edge case: minimum amount (1)
@@ -3643,7 +3643,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testConvertBackBulletproof(features);
 
         // todo: this test fails because proof generation for convertback fails if remainder amount is 0
-        //  testMutatePrivacy(features);
+        testMutatePrivacy(features);
     }
 
 public:
