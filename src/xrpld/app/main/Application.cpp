@@ -6,31 +6,26 @@
 #include <xrpld/app/ledger/LedgerReplayer.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/ledger/OpenLedger.h>
-#include <xrpld/app/ledger/OrderBookDB.h>
+#include <xrpld/app/ledger/OrderBookDBImpl.h>
 #include <xrpld/app/ledger/PendingSaves.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/BasicApp.h>
-#include <xrpld/app/main/DBInit.h>
 #include <xrpld/app/main/GRPCServer.h>
 #include <xrpld/app/main/LoadManager.h>
 #include <xrpld/app/main/NodeIdentity.h>
 #include <xrpld/app/main/NodeStoreScheduler.h>
-#include <xrpld/app/misc/AmendmentTable.h>
-#include <xrpld/app/misc/HashRouter.h>
-#include <xrpld/app/misc/LoadFeeTrack.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/misc/ValidatorKeys.h>
 #include <xrpld/app/misc/ValidatorSite.h>
+#include <xrpld/app/misc/make_NetworkOPs.h>
+#include <xrpld/app/misc/setup_HashRouter.h>
 #include <xrpld/app/paths/PathRequests.h>
-#include <xrpld/app/rdb/RelationalDatabase.h>
-#include <xrpld/app/rdb/Wallet.h>
-#include <xrpld/app/tx/apply.h>
-#include <xrpld/core/DatabaseCon.h>
+#include <xrpld/app/rdb/backend/SQLiteDatabase.h>
+#include <xrpld/core/ConfigSections.h>
+#include <xrpld/core/NetworkIDServiceImpl.h>
 #include <xrpld/overlay/Cluster.h>
-#include <xrpld/overlay/PeerReservationTable.h>
 #include <xrpld/overlay/PeerSet.h>
 #include <xrpld/overlay/make_Overlay.h>
 #include <xrpld/shamap/NodeFamily.h>
@@ -40,16 +35,23 @@
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/asio/io_latency_probe.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/core/HashRouter.h>
+#include <xrpl/core/PeerReservationTable.h>
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/crypto/csprng.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/server/Wallet.h>
+#include <xrpl/tx/apply.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/steady_timer.hpp>
@@ -158,6 +160,7 @@ public:
 
     NodeCache m_tempNodeCache;
     CachedSLEs cachedSLEs_;
+    std::unique_ptr<NetworkIDService> networkIDService_;
     std::optional<std::pair<PublicKey, SecretKey>> nodeIdentity_;
     ValidatorKeys const validatorKeys_;
 
@@ -165,8 +168,7 @@ public:
 
     std::unique_ptr<NodeStore::Database> m_nodeStore;
     NodeFamily nodeFamily_;
-    // VFALCO TODO Make OrderBookDB abstract
-    OrderBookDB m_orderBookDB;
+    std::unique_ptr<OrderBookDB> m_orderBookDB;
     std::unique_ptr<PathRequests> m_pathRequests;
     std::unique_ptr<LedgerMaster> m_ledgerMaster;
     std::unique_ptr<LedgerCleaner> ledgerCleaner_;
@@ -192,7 +194,7 @@ public:
     boost::asio::steady_timer sweepTimer_;
     boost::asio::steady_timer entropyTimer_;
 
-    std::unique_ptr<RelationalDatabase> mRelationalDatabase;
+    std::optional<SQLiteDatabase> relationalDatabase_;
     std::unique_ptr<DatabaseCon> mWalletDB;
     std::unique_ptr<Overlay> overlay_;
     std::optional<uint256> trapTxID_;
@@ -244,42 +246,44 @@ public:
         , m_journal(logs_->journal("Application"))
 
         // PerfLog must be started before any other threads are launched.
-        , perfLog_(perf::make_PerfLog(
-              perf::setup_PerfLog(config_->section("perf"), config_->CONFIG_DIR),
-              *this,
-              logs_->journal("PerfLog"),
-              [this] { signalStop("PerfLog"); }))
+        , perfLog_(
+              perf::make_PerfLog(
+                  perf::setup_PerfLog(config_->section("perf"), config_->CONFIG_DIR),
+                  *this,
+                  logs_->journal("PerfLog"),
+                  [this] { signalStop("PerfLog"); }))
 
         , m_txMaster(*this)
 
         , m_collectorManager(make_CollectorManager(config_->section(SECTION_INSIGHT), logs_->journal("Collector")))
 
-        , m_jobQueue(std::make_unique<JobQueue>(
-              [](std::unique_ptr<Config> const& config) {
-                  if (config->standalone() && !config->FORCE_MULTI_THREAD)
-                      return 1;
+        , m_jobQueue(
+              std::make_unique<JobQueue>(
+                  [](std::unique_ptr<Config> const& config) {
+                      if (config->standalone() && !config->FORCE_MULTI_THREAD)
+                          return 1;
 
-                  if (config->WORKERS)
-                      return config->WORKERS;
+                      if (config->WORKERS)
+                          return config->WORKERS;
 
-                  auto count = static_cast<int>(std::thread::hardware_concurrency());
+                      auto count = static_cast<int>(std::thread::hardware_concurrency());
 
-                  // Be more aggressive about the number of threads to use
-                  // for the job queue if the server is configured as
-                  // "large" or "huge" if there are enough cores.
-                  if (config->NODE_SIZE >= 4 && count >= 16)
-                      count = 6 + std::min(count, 8);
-                  else if (config->NODE_SIZE >= 3 && count >= 8)
-                      count = 4 + std::min(count, 6);
-                  else
-                      count = 2 + std::min(count, 4);
+                      // Be more aggressive about the number of threads to use
+                      // for the job queue if the server is configured as
+                      // "large" or "huge" if there are enough cores.
+                      if (config->NODE_SIZE >= 4 && count >= 16)
+                          count = 6 + std::min(count, 8);
+                      else if (config->NODE_SIZE >= 3 && count >= 8)
+                          count = 4 + std::min(count, 6);
+                      else
+                          count = 2 + std::min(count, 4);
 
-                  return count;
-              }(config_),
-              m_collectorManager->group("jobq"),
-              logs_->journal("JobQueue"),
-              *logs_,
-              *perfLog_))
+                      return count;
+                  }(config_),
+                  m_collectorManager->group("jobq"),
+                  logs_->journal("JobQueue"),
+                  *logs_,
+                  *perfLog_))
 
         , m_nodeStoreScheduler(*m_jobQueue)
 
@@ -289,6 +293,8 @@ public:
 
         , cachedSLEs_("Cached SLEs", 0, std::chrono::minutes(1), stopwatch(), logs_->journal("CachedSLEs"))
 
+        , networkIDService_(std::make_unique<NetworkIDServiceImpl>(config_->NETWORK_ID))
+
         , validatorKeys_(*config_, m_journal)
 
         , m_resourceManager(Resource::make_Manager(m_collectorManager->collector(), logs_->journal("Resource")))
@@ -297,16 +303,17 @@ public:
 
         , nodeFamily_(*this, *m_collectorManager)
 
-        , m_orderBookDB(*this)
+        , m_orderBookDB(make_OrderBookDB(*this, {config_->PATH_SEARCH_MAX, config_->standalone()}))
 
         , m_pathRequests(
               std::make_unique<PathRequests>(*this, logs_->journal("PathRequest"), m_collectorManager->collector()))
 
-        , m_ledgerMaster(std::make_unique<LedgerMaster>(
-              *this,
-              stopwatch(),
-              m_collectorManager->collector(),
-              logs_->journal("LedgerMaster")))
+        , m_ledgerMaster(
+              std::make_unique<LedgerMaster>(
+                  *this,
+                  stopwatch(),
+                  m_collectorManager->collector(),
+                  logs_->journal("LedgerMaster")))
 
         , ledgerCleaner_(make_LedgerCleaner(*this, logs_->journal("LedgerCleaner")))
 
@@ -350,13 +357,14 @@ public:
 
         , publisherManifests_(std::make_unique<ManifestCache>(logs_->journal("ManifestCache")))
 
-        , validators_(std::make_unique<ValidatorList>(
-              *validatorManifests_,
-              *publisherManifests_,
-              *timeKeeper_,
-              config_->legacy("database_path"),
-              logs_->journal("ValidatorList"),
-              config_->VALIDATION_QUORUM))
+        , validators_(
+              std::make_unique<ValidatorList>(
+                  *validatorManifests_,
+                  *publisherManifests_,
+                  *timeKeeper_,
+                  config_->legacy("database_path"),
+                  logs_->journal("ValidatorList"),
+                  config_->VALIDATION_QUORUM))
 
         , validatorSites_(std::make_unique<ValidatorSite>(*this))
 
@@ -614,7 +622,7 @@ public:
     OrderBookDB&
     getOrderBookDB() override
     {
-        return m_orderBookDB;
+        return *m_orderBookDB;
     }
 
     PathRequests&
@@ -627,6 +635,12 @@ public:
     cachedSLEs() override
     {
         return cachedSLEs_;
+    }
+
+    NetworkIDService&
+    getNetworkIDService() override
+    {
+        return *networkIDService_;
     }
 
     AmendmentTable&
@@ -731,10 +745,10 @@ public:
     getRelationalDatabase() override
     {
         XRPL_ASSERT(
-            mRelationalDatabase,
+            relationalDatabase_,
             "xrpl::ApplicationImp::getRelationalDatabase : non-null "
             "relational database");
-        return *mRelationalDatabase;
+        return *relationalDatabase_;
     }
 
     DatabaseCon&
@@ -762,7 +776,7 @@ public:
 
         try
         {
-            mRelationalDatabase = RelationalDatabase::init(*this, *config_, *m_jobQueue);
+            relationalDatabase_.emplace(setup_RelationalDatabase(*this, *config_, *m_jobQueue));
 
             // wallet database
             auto setup = setup_DatabaseCon(*config_, m_journal);
@@ -873,7 +887,8 @@ public:
     void
     doSweep()
     {
-        if (!config_->standalone() && !getRelationalDatabase().transactionDbHasSpace(*config_))
+        XRPL_ASSERT(relationalDatabase_, "xrpl::ApplicationImp::doSweep : non-null relational database");
+        if (!config_->standalone() && !relationalDatabase_->transactionDbHasSpace(*config_))
         {
             signalStop("Out of transaction DB space");
         }
@@ -1021,6 +1036,12 @@ private:
 
     void
     setMaxDisallowedLedger();
+
+    Application&
+    app() override
+    {
+        return *this;
+    }
 };
 
 //------------------------------------------------------------------------------
@@ -1116,18 +1137,21 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
     auto const startUp = config_->START_UP;
     JLOG(m_journal.debug()) << "startUp: " << startUp;
-    if (startUp == Config::FRESH)
+    if (startUp == StartUpType::FRESH)
     {
         JLOG(m_journal.info()) << "Starting new Ledger";
 
         startGenesisLedger();
     }
-    else if (startUp == Config::LOAD || startUp == Config::LOAD_FILE || startUp == Config::REPLAY)
+    else if (startUp == StartUpType::LOAD || startUp == StartUpType::LOAD_FILE || startUp == StartUpType::REPLAY)
     {
         JLOG(m_journal.info()) << "Loading specified Ledger";
 
         if (!loadOldLedger(
-                config_->START_LEDGER, startUp == Config::REPLAY, startUp == Config::LOAD_FILE, config_->TRAP_TX_HASH))
+                config_->START_LEDGER,
+                startUp == StartUpType::REPLAY,
+                startUp == StartUpType::LOAD_FILE,
+                config_->TRAP_TX_HASH))
         {
             JLOG(m_journal.error()) << "The specified ledger could not be loaded.";
             if (config_->FAST_LOAD)
@@ -1142,7 +1166,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             }
         }
     }
-    else if (startUp == Config::NETWORK)
+    else if (startUp == StartUpType::NETWORK)
     {
         // This should probably become the default once we have a stable
         // network.
@@ -1161,7 +1185,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         m_ledgerMaster->setLedgerRangePresent(forcedRange->first, forcedRange->second);
     }
 
-    m_orderBookDB.setup(getLedgerMaster().getCurrentLedger());
+    m_orderBookDB->setup(getLedgerMaster().getCurrentLedger());
 
     nodeIdentity_ = getNodeIdentity(*this, cmdline);
 
@@ -1529,7 +1553,7 @@ void
 ApplicationImp::startGenesisLedger()
 {
     std::vector<uint256> const initialAmendments =
-        (config_->START_UP == Config::FRESH) ? m_amendmentTable->getDesired() : std::vector<uint256>{};
+        (config_->START_UP == StartUpType::FRESH) ? m_amendmentTable->getDesired() : std::vector<uint256>{};
 
     std::shared_ptr<Ledger> const genesis =
         std::make_shared<Ledger>(create_genesis, *config_, initialAmendments, nodeFamily_);

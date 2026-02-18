@@ -296,7 +296,7 @@ public:
     friend FeatureBitset
     operator^(FeatureBitset const& lhs, uint256 const& rhs)
     {
-        return lhs ^ FeatureBitset { rhs };
+        return lhs ^ FeatureBitset{rhs};
     }
 
     friend FeatureBitset

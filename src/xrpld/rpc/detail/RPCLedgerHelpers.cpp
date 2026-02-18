@@ -355,8 +355,9 @@ getOrAcquireLedger(RPC::JsonContext const& context)
     if ((hasHash + hasIndex) != 1)
     {
         return Unexpected(
-            RPC::make_param_error("Exactly one of 'ledger_hash' or "
-                                  "'ledger_index' can be specified."));
+            RPC::make_param_error(
+                "Exactly one of 'ledger_hash' or "
+                "'ledger_index' can be specified."));
     }
 
     if (hasHash)

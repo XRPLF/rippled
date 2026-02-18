@@ -1,8 +1,9 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/NodeIdentity.h>
-#include <xrpld/app/rdb/Wallet.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
+
+#include <xrpl/server/Wallet.h>
 
 namespace xrpl {
 

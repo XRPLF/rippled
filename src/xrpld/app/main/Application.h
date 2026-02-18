@@ -1,10 +1,10 @@
 #pragma once
 
 #include <xrpld/core/Config.h>
-#include <xrpld/overlay/PeerReservationTable.h>
 
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/core/PeerReservationTable.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/shamap/TreeNodeCache.h>
@@ -112,8 +112,6 @@ public:
 public:
     Application();
 
-    virtual ~Application() = default;
-
     virtual bool
     setup(boost::program_options::variables_map const& options) = 0;
 
@@ -127,8 +125,6 @@ public:
     checkSigs() const = 0;
     virtual void
     checkSigs(bool) = 0;
-    virtual bool
-    isStopping() const = 0;
 
     //
     // ---
@@ -138,13 +134,8 @@ public:
     virtual std::uint64_t
     instanceID() const = 0;
 
-    virtual Logs&
-    logs() = 0;
     virtual Config&
     config() = 0;
-
-    virtual boost::asio::io_context&
-    getIOContext() = 0;
 
     virtual std::pair<PublicKey, SecretKey> const&
     nodeIdentity() = 0;
@@ -158,24 +149,14 @@ public:
     virtual bool
     serverOkay(std::string& reason) = 0;
 
-    virtual beast::Journal
-    journal(std::string const& name) = 0;
-
     /* Returns the number of file descriptors the application needs */
     virtual int
     fdRequired() const = 0;
-
-    /** Retrieve the "wallet database" */
-    virtual DatabaseCon&
-    getWalletDB() = 0;
 
     /** Ensure that a newly-started validator does not sign proposals older
      * than the last ledger it persisted. */
     virtual LedgerIndex
     getMaxDisallowedLedger() = 0;
-
-    virtual std::optional<uint256> const&
-    trapTxID() const = 0;
 };
 
 std::unique_ptr<Application>
