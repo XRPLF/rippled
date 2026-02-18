@@ -1855,11 +1855,14 @@ removeEmptyHolding(
         if (!sleLowAccount)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        adjustOwnerCount(view, sleLowAccount, {}, -1, journal);
+        auto const currentLowSponsor = getLedgerEntryReserveSponsor(view, line, sfLowSponsor);
+
+        adjustOwnerCount(view, sleLowAccount, currentLowSponsor, -1, journal);
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
         // accurate state at the time of deletion.
         line->clearFlag(lsfLowReserve);
+        removeSponsorFromLedgerEntry(line, sfLowSponsor);
     }
 
     if (line->isFlag(lsfHighReserve))
@@ -1869,11 +1872,14 @@ removeEmptyHolding(
         if (!sleHighAccount)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        adjustOwnerCount(view, sleHighAccount, {}, -1, journal);
+        auto const currentHighSponsor = getLedgerEntryReserveSponsor(view, line, sfHighSponsor);
+
+        adjustOwnerCount(view, sleHighAccount, currentHighSponsor, -1, journal);
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
         // accurate state at the time of deletion.
         line->clearFlag(lsfHighReserve);
+        removeSponsorFromLedgerEntry(line, sfHighSponsor);
     }
 
     return trustDelete(view, line, line->at(sfLowLimit)->getIssuer(), line->at(sfHighLimit)->getIssuer(), journal);
