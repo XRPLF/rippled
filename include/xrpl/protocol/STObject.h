@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STOBJECT_H_INCLUDED
-#define XRPL_PROTOCOL_STOBJECT_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/Slice.h>
@@ -148,9 +147,12 @@ public:
     int
     getCount() const;
 
-    bool setFlag(std::uint32_t);
-    bool clearFlag(std::uint32_t);
-    bool isFlag(std::uint32_t) const;
+    bool
+    setFlag(std::uint32_t);
+    bool
+    clearFlag(std::uint32_t);
+    bool
+    isFlag(std::uint32_t) const;
 
     std::uint32_t
     getFlags() const;
@@ -800,7 +802,8 @@ STObject::ValueProxy<T>::operator-=(U const& u)
 }
 
 template <class T>
-STObject::ValueProxy<T>::operator value_type() const
+STObject::ValueProxy<T>::
+operator value_type() const
 {
     return this->value();
 }
@@ -813,13 +816,15 @@ STObject::ValueProxy<T>::ValueProxy(STObject* st, TypedField<T> const* f) : Prox
 //------------------------------------------------------------------------------
 
 template <class T>
-STObject::OptionalProxy<T>::operator bool() const noexcept
+STObject::OptionalProxy<T>::
+operator bool() const noexcept
 {
     return engaged();
 }
 
 template <class T>
-STObject::OptionalProxy<T>::operator typename STObject::OptionalProxy<T>::optional_type() const
+STObject::OptionalProxy<T>::
+operator typename STObject::OptionalProxy<T>::optional_type() const
 {
     return optional_value();
 }
@@ -1244,5 +1249,3 @@ STObject::peekField(SField const& field)
 }
 
 }  // namespace xrpl
-
-#endif

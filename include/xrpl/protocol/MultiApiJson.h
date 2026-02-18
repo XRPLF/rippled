@@ -1,5 +1,4 @@
-#ifndef XRPL_JSON_MULTIAPIJSON_H_INCLUDED
-#define XRPL_JSON_MULTIAPIJSON_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
@@ -108,7 +107,7 @@ struct MultiApiJson
         // unsigned int version, extra arguments
         template <typename Json, typename Version, typename... Args, typename Fn>
             requires(!some_integral_constant<Version>) && std::convertible_to<Version, unsigned> &&
-                        std::same_as<std::remove_cvref_t<Json>, MultiApiJson>
+            std::same_as<std::remove_cvref_t<Json>, MultiApiJson>
         auto
         operator()(Json& json, Version version, Fn fn, Args&&... args) const
             -> std::invoke_result_t<Fn, decltype(json.val[0]), Version, Args&&...>
@@ -123,7 +122,7 @@ struct MultiApiJson
         // unsigned int version, Json only
         template <typename Json, typename Version, typename Fn>
             requires(!some_integral_constant<Version>) && std::convertible_to<Version, unsigned> &&
-                        std::same_as<std::remove_cvref_t<Json>, MultiApiJson>
+            std::same_as<std::remove_cvref_t<Json>, MultiApiJson>
         auto
         operator()(Json& json, Version version, Fn fn) const -> std::invoke_result_t<Fn, decltype(json.val[0])>
         {
@@ -173,5 +172,3 @@ struct MultiApiJson
 using MultiApiJson = detail::MultiApiJson<RPC::apiMinimumSupportedVersion, RPC::apiMaximumValidVersion>;
 
 }  // namespace xrpl
-
-#endif

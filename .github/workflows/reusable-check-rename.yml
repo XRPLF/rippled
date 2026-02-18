@@ -31,6 +31,8 @@ jobs:
         run: .github/scripts/rename/namespace.sh .
       - name: Check config name
         run: .github/scripts/rename/config.sh .
+      - name: Check include guards
+        run: .github/scripts/rename/include.sh .
       - name: Check for differences
         env:
           MESSAGE: |

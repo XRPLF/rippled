@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_OVERLAYIMPL_H_INCLUDED
-#define XRPL_OVERLAY_OVERLAYIMPL_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/Message.h>
@@ -192,7 +191,8 @@ public:
         std::size_t& disabled,
         std::size_t& enabledInSkip) const;
 
-    void checkTracking(std::uint32_t) override;
+    void
+    checkTracking(std::uint32_t) override;
 
     std::shared_ptr<Peer>
     findPeerByShortID(Peer::id_t const& id) const override;
@@ -592,5 +592,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

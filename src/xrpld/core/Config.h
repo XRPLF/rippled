@@ -1,11 +1,12 @@
-#ifndef XRPL_CORE_CONFIG_H_INCLUDED
-#define XRPL_CORE_CONFIG_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/StartUpType.h>
 #include <xrpl/protocol/SystemParameters.h>  // VFALCO Breaks levelization
+#include <xrpl/rdb/DatabaseCon.h>
 
 #include <boost/filesystem.hpp>  // VFALCO FIX: This include should not be here
 
@@ -125,8 +126,7 @@ public:
     // Entries from [ips_fixed] config stanza
     std::vector<std::string> IPS_FIXED;
 
-    enum StartUpType { FRESH, NORMAL, LOAD, LOAD_FILE, REPLAY, NETWORK };
-    StartUpType START_UP = NORMAL;
+    StartUpType START_UP = StartUpType::NORMAL;
 
     bool START_VALID = false;
 
@@ -356,6 +356,7 @@ public:
 FeeSetup
 setup_FeeVote(Section const& section);
 
-}  // namespace xrpl
+DatabaseCon::Setup
+setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j = std::nullopt);
 
-#endif
+}  // namespace xrpl

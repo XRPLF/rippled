@@ -1,7 +1,6 @@
 // Copyright (c) 2022, Nikolaos D. Bougalis <nikb@bougalis.net>
 
-#ifndef XRPL_BASICS_SLABALLOCATOR_H_INCLUDED
-#define XRPL_BASICS_SLABALLOCATOR_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/beast/type_name.h>
@@ -216,7 +215,7 @@ public:
         // clang-format off
         if (!buf) [[unlikely]]
             return nullptr;
-            // clang-format on
+        // clang-format on
 
 #if BOOST_OS_LINUX
         // When allocating large blocks, attempt to leverage Linux's
@@ -386,5 +385,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif  // XRPL_BASICS_SLABALLOCATOR_H_INCLUDED

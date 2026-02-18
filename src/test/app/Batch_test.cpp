@@ -2,18 +2,18 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/utility.h>
 
-#include <xrpld/app/misc/HashRouter.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/Transaction.h>
-#include <xrpld/app/tx/apply.h>
-#include <xrpld/app/tx/detail/Batch.h>
 
+#include <xrpl/core/HashRouter.h>
 #include <xrpl/protocol/Batch.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/NetworkOPs.h>
+#include <xrpl/tx/apply.h>
+#include <xrpl/tx/transactors/Batch.h>
 
 namespace xrpl {
 namespace test {
@@ -3618,7 +3618,7 @@ class Batch_test : public beast::unit_test::suite
         // another transaction is part of the batch, the batch might fail
         // because the sequence is out of order. This is because the canonical
         // order of transactions is determined by the account first. So in this
-        // case, alice's batch comes after bobs self submitted transaction even
+        // case, alice's batch comes after bob's self submitted transaction even
         // though the payment was submitted after the batch.
 
         using namespace test::jtx;

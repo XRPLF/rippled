@@ -1,7 +1,5 @@
-#ifndef XRPL_APP_MISC_VALIDATORLIST_H_INCLUDED
-#define XRPL_APP_MISC_VALIDATORLIST_H_INCLUDED
+#pragma once
 
-#include <xrpld/app/misc/Manifest.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/overlay/Message.h>
 
@@ -10,6 +8,7 @@
 #include <xrpl/crypto/csprng.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/server/Manifest.h>
 
 #include <boost/thread/shared_mutex.hpp>
 
@@ -597,13 +596,14 @@ public:
         May be called concurrently
     */
     void
-    for_each_available(std::function<void(
-                           std::string const& manifest,
-                           std::uint32_t version,
-                           std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
-                           PublicKey const& pubKey,
-                           std::size_t maxSequence,
-                           uint256 const& hash)> func) const;
+    for_each_available(
+        std::function<void(
+            std::string const& manifest,
+            std::uint32_t version,
+            std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
+            PublicKey const& pubKey,
+            std::size_t maxSequence,
+            uint256 const& hash)> func) const;
 
     /** Returns the current valid list for the given publisher key,
         if available, as a Json object.
@@ -926,5 +926,3 @@ hash_append(Hasher& h, TMValidatorListCollection const& msg)
 }
 
 }  // namespace protocol
-
-#endif

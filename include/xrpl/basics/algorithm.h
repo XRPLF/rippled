@@ -1,5 +1,4 @@
-#ifndef XRPL_ALGORITHM_H_INCLUDED
-#define XRPL_ALGORITHM_H_INCLUDED
+#pragma once
 
 #include <utility>
 
@@ -90,5 +89,3 @@ remove_if_intersect_or_match(FwdIter1 first1, FwdIter1 last1, InputIter2 first2,
 }
 
 }  // namespace xrpl
-
-#endif

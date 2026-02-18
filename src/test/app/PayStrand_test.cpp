@@ -1,9 +1,6 @@
 #include <test/jtx.h>
 #include <test/jtx/PathSet.h>
 
-#include <xrpld/app/paths/AMMContext.h>
-#include <xrpld/app/paths/RippleCalc.h>
-#include <xrpld/app/paths/detail/Steps.h>
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/contract.h>
@@ -11,6 +8,9 @@
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/paths/RippleCalc.h>
+#include <xrpl/tx/paths/detail/Steps.h>
+#include <xrpl/tx/transactors/AMM/AMMContext.h>
 
 #include <optional>
 
@@ -73,11 +73,11 @@ equal(std::unique_ptr<Step> const& s1, DirectStepInfo const& dsi)
 }
 
 bool
-equal(std::unique_ptr<Step> const& s1, XRPEndpointStepInfo const& xrpsi)
+equal(std::unique_ptr<Step> const& s1, XRPEndpointStepInfo const& xrpStepInfo)
 {
     if (!s1)
         return false;
-    return test::xrpEndpointStepEqual(*s1, xrpsi.acc);
+    return test::xrpEndpointStepEqual(*s1, xrpStepInfo.acc);
 }
 
 bool
@@ -970,7 +970,7 @@ struct PayStrand_test : public beast::unit_test::suite
 
             Path const p = [&] {
                 Path result;
-                result.push_back(allpe(gw, bob["USD"]));
+                result.push_back(allPathElements(gw, bob["USD"]));
                 result.push_back(cpe(EUR.currency));
                 return result;
             }();

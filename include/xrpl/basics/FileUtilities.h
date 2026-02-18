@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_FILEUTILITIES_H_INCLUDED
-#define XRPL_BASICS_FILEUTILITIES_H_INCLUDED
+#pragma once
 
 #include <boost/filesystem.hpp>
 #include <boost/system/error_code.hpp>
@@ -18,5 +17,3 @@ void
 writeFileContents(boost::system::error_code& ec, boost::filesystem::path const& destPath, std::string const& contents);
 
 }  // namespace xrpl
-
-#endif

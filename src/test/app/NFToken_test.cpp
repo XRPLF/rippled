@@ -1,10 +1,9 @@
 #include <test/jtx.h>
 
-#include <xrpld/app/tx/detail/NFTokenUtils.h>
-
 #include <xrpl/basics/random.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/transactors/NFT/NFTokenUtils.h>
 
 #include <initializer_list>
 
@@ -887,42 +886,48 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         env.fund(XRP(1000), alice, buyer, gw);
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
+        BEAST_EXPECT(ownerCount(env, buyer) == 0);
 
         uint256 const nftAlice0ID = token::getNextID(env, alice, 0, tfTransferable);
         env(token::mint(alice, 0u), txflags(tfTransferable));
         env.close();
-        BEAST_EXPECT(ownerCount(env, alice) == 1);
+        uint8_t aliceCount = 1;
+        BEAST_EXPECT(ownerCount(env, alice) == aliceCount);
 
         uint256 const nftXrpOnlyID = token::getNextID(env, alice, 0, tfOnlyXRP | tfTransferable);
         env(token::mint(alice, 0), txflags(tfOnlyXRP | tfTransferable));
         env.close();
-        BEAST_EXPECT(ownerCount(env, alice) == 1);
+        BEAST_EXPECT(ownerCount(env, alice) == aliceCount);
 
         uint256 nftNoXferID = token::getNextID(env, alice, 0);
         env(token::mint(alice, 0));
         env.close();
-        BEAST_EXPECT(ownerCount(env, alice) == 1);
+        BEAST_EXPECT(ownerCount(env, alice) == aliceCount);
 
         // alice creates sell offers for her nfts.
         uint256 const plainOfferIndex = keylet::nftoffer(alice, env.seq(alice)).key;
         env(token::createOffer(alice, nftAlice0ID, XRP(10)), txflags(tfSellNFToken));
         env.close();
-        BEAST_EXPECT(ownerCount(env, alice) == 2);
+        aliceCount++;
+        BEAST_EXPECT(ownerCount(env, alice) == aliceCount);
 
         uint256 const audOfferIndex = keylet::nftoffer(alice, env.seq(alice)).key;
         env(token::createOffer(alice, nftAlice0ID, gwAUD(30)), txflags(tfSellNFToken));
         env.close();
-        BEAST_EXPECT(ownerCount(env, alice) == 3);
+        aliceCount++;
+        BEAST_EXPECT(ownerCount(env, alice) == aliceCount);
 
         uint256 const xrpOnlyOfferIndex = keylet::nftoffer(alice, env.seq(alice)).key;
         env(token::createOffer(alice, nftXrpOnlyID, XRP(20)), txflags(tfSellNFToken));
         env.close();
-        BEAST_EXPECT(ownerCount(env, alice) == 4);
+        aliceCount++;
+        BEAST_EXPECT(ownerCount(env, alice) == aliceCount);
 
         uint256 const noXferOfferIndex = keylet::nftoffer(alice, env.seq(alice)).key;
         env(token::createOffer(alice, nftNoXferID, XRP(30)), txflags(tfSellNFToken));
         env.close();
-        BEAST_EXPECT(ownerCount(env, alice) == 5);
+        aliceCount++;
+        BEAST_EXPECT(ownerCount(env, alice) == aliceCount);
 
         // alice creates a sell offer that will expire soon.
         uint256 const aliceExpOfferIndex = keylet::nftoffer(alice, env.seq(alice)).key;
@@ -930,7 +935,17 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             txflags(tfSellNFToken),
             token::expiration(lastClose(env) + 5));
         env.close();
-        BEAST_EXPECT(ownerCount(env, alice) == 6);
+        aliceCount++;
+        BEAST_EXPECT(ownerCount(env, alice) == aliceCount);
+
+        // buyer creates a Buy offer that will expire soon.
+        uint256 const buyerExpOfferIndex = keylet::nftoffer(buyer, env.seq(buyer)).key;
+        env(token::createOffer(buyer, nftAlice0ID, XRP(40)),
+            token::owner(alice),
+            token::expiration(lastClose(env) + 5));
+        env.close();
+        uint8_t buyerCount = 1;
+        BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
         //----------------------------------------------------------------------
         // preflight
@@ -938,12 +953,12 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // Set a negative fee.
         env(token::acceptSellOffer(buyer, noXferOfferIndex), fee(STAmount(10ull, true)), ter(temBAD_FEE));
         env.close();
-        BEAST_EXPECT(ownerCount(env, buyer) == 0);
+        BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
         // Set an invalid flag.
         env(token::acceptSellOffer(buyer, noXferOfferIndex), txflags(0x00008000), ter(temINVALID_FLAG));
         env.close();
-        BEAST_EXPECT(ownerCount(env, buyer) == 0);
+        BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
         // Supply nether an sfNFTokenBuyOffer nor an sfNFTokenSellOffer field.
         {
@@ -951,7 +966,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             jv.removeMember(sfNFTokenSellOffer.jsonName);
             env(jv, ter(temMALFORMED));
             env.close();
-            BEAST_EXPECT(ownerCount(env, buyer) == 0);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
         }
 
         // A buy offer may not contain a sfNFTokenBrokerFee field.
@@ -960,7 +975,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             jv[sfNFTokenBrokerFee.jsonName] = STAmount(500000).getJson(JsonOptions::none);
             env(jv, ter(temMALFORMED));
             env.close();
-            BEAST_EXPECT(ownerCount(env, buyer) == 0);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
         }
 
         // A sell offer may not contain a sfNFTokenBrokerFee field.
@@ -969,7 +984,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             jv[sfNFTokenBrokerFee.jsonName] = STAmount(500000).getJson(JsonOptions::none);
             env(jv, ter(temMALFORMED));
             env.close();
-            BEAST_EXPECT(ownerCount(env, buyer) == 0);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
         }
 
         // A brokered offer may not contain a negative or zero brokerFee.
@@ -977,7 +992,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             token::brokerFee(gwAUD(0)),
             ter(temMALFORMED));
         env.close();
-        BEAST_EXPECT(ownerCount(env, buyer) == 0);
+        BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
         //----------------------------------------------------------------------
         // preclaim
@@ -985,33 +1000,48 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // The buy offer must be non-zero.
         env(token::acceptBuyOffer(buyer, beast::zero), ter(tecOBJECT_NOT_FOUND));
         env.close();
-        BEAST_EXPECT(ownerCount(env, buyer) == 0);
+        BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
         // The buy offer must be present in the ledger.
         uint256 const missingOfferIndex = keylet::nftoffer(alice, 1).key;
         env(token::acceptBuyOffer(buyer, missingOfferIndex), ter(tecOBJECT_NOT_FOUND));
         env.close();
-        BEAST_EXPECT(ownerCount(env, buyer) == 0);
+        BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
         // The buy offer must not have expired.
-        env(token::acceptBuyOffer(buyer, aliceExpOfferIndex), ter(tecEXPIRED));
+        // NOTE: this is only a preclaim check with the
+        // fixExpiredNFTokenOfferRemoval amendment disabled.
+        env(token::acceptBuyOffer(alice, buyerExpOfferIndex), ter(tecEXPIRED));
         env.close();
-        BEAST_EXPECT(ownerCount(env, buyer) == 0);
+        if (features[fixExpiredNFTokenOfferRemoval])
+        {
+            buyerCount--;
+        }
+        BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
         // The sell offer must be non-zero.
         env(token::acceptSellOffer(buyer, beast::zero), ter(tecOBJECT_NOT_FOUND));
         env.close();
-        BEAST_EXPECT(ownerCount(env, buyer) == 0);
+        BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
         // The sell offer must be present in the ledger.
         env(token::acceptSellOffer(buyer, missingOfferIndex), ter(tecOBJECT_NOT_FOUND));
         env.close();
-        BEAST_EXPECT(ownerCount(env, buyer) == 0);
+        BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
         // The sell offer must not have expired.
+        // NOTE: this is only a preclaim check with the
+        // fixExpiredNFTokenOfferRemoval amendment disabled.
         env(token::acceptSellOffer(buyer, aliceExpOfferIndex), ter(tecEXPIRED));
         env.close();
-        BEAST_EXPECT(ownerCount(env, buyer) == 0);
+        // Alice's count is decremented by one when the expired offer is
+        // removed.
+        if (features[fixExpiredNFTokenOfferRemoval])
+        {
+            aliceCount--;
+        }
+        BEAST_EXPECT(ownerCount(env, alice) == aliceCount);
+        BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
         //----------------------------------------------------------------------
         // preclaim brokered
@@ -1023,8 +1053,13 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         env.close();
         env(pay(gw, buyer, gwAUD(30)));
         env.close();
-        BEAST_EXPECT(ownerCount(env, alice) == 7);
-        BEAST_EXPECT(ownerCount(env, buyer) == 1);
+        aliceCount++;
+        buyerCount++;
+        BEAST_EXPECT(ownerCount(env, alice) == aliceCount);
+        BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
+
+        BEAST_EXPECT(ownerCount(env, alice) == aliceCount);
+        BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
         // We're about to exercise offer brokering, so we need
         // corresponding buy and sell offers.
@@ -1033,35 +1068,38 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             uint256 const buyerOfferIndex = keylet::nftoffer(buyer, env.seq(buyer)).key;
             env(token::createOffer(buyer, nftAlice0ID, gwAUD(29)), token::owner(alice));
             env.close();
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            buyerCount++;
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
             // gw attempts to broker offers that are not for the same token.
             env(token::brokerOffers(gw, buyerOfferIndex, xrpOnlyOfferIndex), ter(tecNFTOKEN_BUY_SELL_MISMATCH));
             env.close();
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
             // gw attempts to broker offers that are not for the same currency.
             env(token::brokerOffers(gw, buyerOfferIndex, plainOfferIndex), ter(tecNFTOKEN_BUY_SELL_MISMATCH));
             env.close();
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
             // In a brokered offer, the buyer must offer greater than or
             // equal to the selling price.
             env(token::brokerOffers(gw, buyerOfferIndex, audOfferIndex), ter(tecINSUFFICIENT_PAYMENT));
             env.close();
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
             // Remove buyer's offer.
             env(token::cancelOffer(buyer, {buyerOfferIndex}));
             env.close();
-            BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            buyerCount--;
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
         }
         {
             // buyer creates a buy offer for one of alice's nfts.
             uint256 const buyerOfferIndex = keylet::nftoffer(buyer, env.seq(buyer)).key;
             env(token::createOffer(buyer, nftAlice0ID, gwAUD(31)), token::owner(alice));
             env.close();
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            buyerCount++;
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
             // Broker sets their fee in a denomination other than the one
             // used by the offers
@@ -1069,14 +1107,14 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 token::brokerFee(XRP(40)),
                 ter(tecNFTOKEN_BUY_SELL_MISMATCH));
             env.close();
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
             // Broker fee way too big.
             env(token::brokerOffers(gw, buyerOfferIndex, audOfferIndex),
                 token::brokerFee(gwAUD(31)),
                 ter(tecINSUFFICIENT_PAYMENT));
             env.close();
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
             // Broker fee is smaller, but still too big once the offer
             // seller's minimum is taken into account.
@@ -1084,12 +1122,13 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 token::brokerFee(gwAUD(1.5)),
                 ter(tecINSUFFICIENT_PAYMENT));
             env.close();
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
             // Remove buyer's offer.
             env(token::cancelOffer(buyer, {buyerOfferIndex}));
             env.close();
-            BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            buyerCount--;
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
         }
         //----------------------------------------------------------------------
         // preclaim buy
@@ -1098,17 +1137,18 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             uint256 const buyerOfferIndex = keylet::nftoffer(buyer, env.seq(buyer)).key;
             env(token::createOffer(buyer, nftAlice0ID, gwAUD(30)), token::owner(alice));
             env.close();
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            buyerCount++;
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
             // Don't accept a buy offer if the sell flag is set.
             env(token::acceptBuyOffer(buyer, plainOfferIndex), ter(tecNFTOKEN_OFFER_TYPE_MISMATCH));
             env.close();
-            BEAST_EXPECT(ownerCount(env, alice) == 7);
+            BEAST_EXPECT(ownerCount(env, alice) == aliceCount);
 
             // An account can't accept its own offer.
             env(token::acceptBuyOffer(buyer, buyerOfferIndex), ter(tecCANT_ACCEPT_OWN_NFTOKEN_OFFER));
             env.close();
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
             // An offer acceptor must have enough funds to pay for the offer.
             env(pay(buyer, gw, gwAUD(30)));
@@ -1116,7 +1156,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             BEAST_EXPECT(env.balance(buyer, gwAUD) == gwAUD(0));
             env(token::acceptBuyOffer(alice, buyerOfferIndex), ter(tecINSUFFICIENT_FUNDS));
             env.close();
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
             // alice gives her NFT to gw, so alice no longer owns nftAlice0.
             {
@@ -1125,7 +1165,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env.close();
                 env(token::acceptSellOffer(gw, offerIndex));
                 env.close();
-                BEAST_EXPECT(ownerCount(env, alice) == 7);
+                BEAST_EXPECT(ownerCount(env, alice) == aliceCount);
             }
             env(pay(gw, buyer, gwAUD(30)));
             env.close();
@@ -1133,12 +1173,13 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             // alice can't accept a buy offer for an NFT she no longer owns.
             env(token::acceptBuyOffer(alice, buyerOfferIndex), ter(tecNO_PERMISSION));
             env.close();
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
             // Remove buyer's offer.
             env(token::cancelOffer(buyer, {buyerOfferIndex}));
             env.close();
-            BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            buyerCount--;
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
         }
         //----------------------------------------------------------------------
         // preclaim sell
@@ -1147,23 +1188,24 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             uint256 const buyerOfferIndex = keylet::nftoffer(buyer, env.seq(buyer)).key;
             env(token::createOffer(buyer, nftXrpOnlyID, XRP(30)), token::owner(alice));
             env.close();
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            buyerCount++;
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
             // Don't accept a sell offer without the sell flag set.
             env(token::acceptSellOffer(alice, buyerOfferIndex), ter(tecNFTOKEN_OFFER_TYPE_MISMATCH));
             env.close();
-            BEAST_EXPECT(ownerCount(env, alice) == 7);
+            BEAST_EXPECT(ownerCount(env, alice) == aliceCount);
 
             // An account can't accept its own offer.
             env(token::acceptSellOffer(alice, plainOfferIndex), ter(tecCANT_ACCEPT_OWN_NFTOKEN_OFFER));
             env.close();
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
             // The seller must currently be in possession of the token they
             // are selling.  alice gave nftAlice0ID to gw.
             env(token::acceptSellOffer(buyer, plainOfferIndex), ter(tecNO_PERMISSION));
             env.close();
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
             // gw gives nftAlice0ID back to alice.  That allows us to check
             // buyer attempting to accept one of alice's offers with
@@ -1174,14 +1216,14 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env.close();
                 env(token::acceptSellOffer(alice, offerIndex));
                 env.close();
-                BEAST_EXPECT(ownerCount(env, alice) == 7);
+                BEAST_EXPECT(ownerCount(env, alice) == aliceCount);
             }
             env(pay(buyer, gw, gwAUD(30)));
             env.close();
             BEAST_EXPECT(env.balance(buyer, gwAUD) == gwAUD(0));
             env(token::acceptSellOffer(buyer, audOfferIndex), ter(tecINSUFFICIENT_FUNDS));
             env.close();
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
         }
 
         //----------------------------------------------------------------------
@@ -1351,28 +1393,28 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         // Set flagOnlyXRP and offers using IOUs are rejected.
         {
-            uint256 const nftOnlyXRPID{token::getNextID(env, alice, 0u, tfOnlyXRP | tfTransferable)};
+            uint256 const nftOnlyXrpID{token::getNextID(env, alice, 0u, tfOnlyXRP | tfTransferable)};
             env(token::mint(alice, 0u), txflags(tfOnlyXRP | tfTransferable));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 2);
-            env(token::createOffer(alice, nftOnlyXRPID, gwAUD(50)), txflags(tfSellNFToken), ter(temBAD_AMOUNT));
+            env(token::createOffer(alice, nftOnlyXrpID, gwAUD(50)), txflags(tfSellNFToken), ter(temBAD_AMOUNT));
             env.close();
             BEAST_EXPECT(ownerCount(env, alice) == 2);
 
             BEAST_EXPECT(ownerCount(env, buyer) == 1);
-            env(token::createOffer(buyer, nftOnlyXRPID, gwAUD(50)), token::owner(alice), ter(temBAD_AMOUNT));
+            env(token::createOffer(buyer, nftOnlyXrpID, gwAUD(50)), token::owner(alice), ter(temBAD_AMOUNT));
             env.close();
             BEAST_EXPECT(ownerCount(env, buyer) == 1);
 
             // However offers for XRP are okay.
             BEAST_EXPECT(ownerCount(env, alice) == 2);
-            env(token::createOffer(alice, nftOnlyXRPID, XRP(60)), txflags(tfSellNFToken));
+            env(token::createOffer(alice, nftOnlyXrpID, XRP(60)), txflags(tfSellNFToken));
             env.close();
             BEAST_EXPECT(ownerCount(env, alice) == 3);
 
             BEAST_EXPECT(ownerCount(env, buyer) == 1);
-            env(token::createOffer(buyer, nftOnlyXRPID, XRP(60)), token::owner(alice));
+            env(token::createOffer(buyer, nftOnlyXrpID, XRP(60)), token::owner(alice));
             env.close();
             BEAST_EXPECT(ownerCount(env, buyer) == 2);
         }
@@ -2780,6 +2822,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         uint256 const nftokenID1 = token::getNextID(env, issuer, 0, tfTransferable);
         env(token::mint(minter, 0), token::issuer(issuer), txflags(tfTransferable));
         env.close();
+        uint8_t issuerCount, minterCount, buyerCount;
 
         // Test how adding an Expiration field to an offer affects permissions
         // for cancelling offers.
@@ -2803,9 +2846,12 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             uint256 const offerBuyerToMinter = keylet::nftoffer(buyer, env.seq(buyer)).key;
             env(token::createOffer(buyer, nftokenID0, drops(1)), token::owner(minter), token::expiration(expiration));
             env.close();
-            BEAST_EXPECT(ownerCount(env, issuer) == 1);
-            BEAST_EXPECT(ownerCount(env, minter) == 3);
-            BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            issuerCount = 1;
+            minterCount = 3;
+            buyerCount = 1;
+            BEAST_EXPECT(ownerCount(env, issuer) == issuerCount);
+            BEAST_EXPECT(ownerCount(env, minter) == minterCount);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
             // Test who gets to cancel the offers.  Anyone outside of the
             // offer-owner/destination pair should not be able to cancel
@@ -2817,32 +2863,36 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env(token::cancelOffer(buyer, {offerIssuerToMinter}), ter(tecNO_PERMISSION));
             env.close();
             BEAST_EXPECT(lastClose(env) < expiration);
-            BEAST_EXPECT(ownerCount(env, issuer) == 1);
-            BEAST_EXPECT(ownerCount(env, minter) == 3);
-            BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            BEAST_EXPECT(ownerCount(env, issuer) == issuerCount);
+            BEAST_EXPECT(ownerCount(env, minter) == minterCount);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
             // The offer creator can cancel their own unexpired offer.
             env(token::cancelOffer(minter, {offerMinterToAnyone}));
+            minterCount--;
 
             // The destination of a sell offer can cancel the NFT owner's
             // unexpired offer.
             env(token::cancelOffer(issuer, {offerMinterToIssuer}));
+            minterCount--;
 
             // Close enough ledgers to get past the expiration.
             while (lastClose(env) < expiration)
                 env.close();
 
-            BEAST_EXPECT(ownerCount(env, issuer) == 1);
-            BEAST_EXPECT(ownerCount(env, minter) == 1);
-            BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            BEAST_EXPECT(ownerCount(env, issuer) == issuerCount);
+            BEAST_EXPECT(ownerCount(env, minter) == minterCount);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
             // Anyone can cancel expired offers.
             env(token::cancelOffer(issuer, {offerBuyerToMinter}));
+            buyerCount--;
             env(token::cancelOffer(buyer, {offerIssuerToMinter}));
+            issuerCount--;
             env.close();
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 1);
-            BEAST_EXPECT(ownerCount(env, buyer) == 0);
+            BEAST_EXPECT(ownerCount(env, issuer) == issuerCount);
+            BEAST_EXPECT(ownerCount(env, minter) == minterCount);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
         }
         // Show that:
         //  1. An unexpired sell offer with an expiration can be accepted.
@@ -2855,44 +2905,70 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env(token::createOffer(minter, nftokenID0, drops(1)),
                 token::expiration(expiration),
                 txflags(tfSellNFToken));
+            minterCount++;
 
             uint256 const offer1 = keylet::nftoffer(minter, env.seq(minter)).key;
             env(token::createOffer(minter, nftokenID1, drops(1)),
                 token::expiration(expiration),
                 txflags(tfSellNFToken));
+            minterCount++;
             env.close();
             BEAST_EXPECT(lastClose(env) < expiration);
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 3);
-            BEAST_EXPECT(ownerCount(env, buyer) == 0);
+            BEAST_EXPECT(ownerCount(env, issuer) == issuerCount);
+            BEAST_EXPECT(ownerCount(env, minter) == minterCount);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
             // Anyone can accept an unexpired sell offer.
             env(token::acceptSellOffer(buyer, offer0));
+            minterCount--;
+            buyerCount++;
 
             // Close enough ledgers to get past the expiration.
             while (lastClose(env) < expiration)
                 env.close();
 
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 2);
-            BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            BEAST_EXPECT(ownerCount(env, issuer) == issuerCount);
+            BEAST_EXPECT(ownerCount(env, minter) == minterCount);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
             // No one can accept an expired sell offer.
             env(token::acceptSellOffer(buyer, offer1), ter(tecEXPIRED));
-            env(token::acceptSellOffer(issuer, offer1), ter(tecEXPIRED));
+
+            // With fixExpiredNFTokenOfferRemoval amendment, the first accept
+            // attempt deletes the expired offer. Without the amendment,
+            // the offer remains and we can try to accept it again.
+            if (features[fixExpiredNFTokenOfferRemoval])
+            {
+                // After amendment: offer was deleted by first accept attempt
+                minterCount--;
+                env(token::acceptSellOffer(issuer, offer1), ter(tecOBJECT_NOT_FOUND));
+            }
+            else
+            {
+                // Before amendment: offer still exists, second accept also
+                // fails
+                env(token::acceptSellOffer(issuer, offer1), ter(tecEXPIRED));
+            }
             env.close();
 
-            // The expired sell offer is still in the ledger.
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 2);
-            BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            // Check if the expired sell offer behavior matches amendment status
+            BEAST_EXPECT(ownerCount(env, issuer) == issuerCount);
+            BEAST_EXPECT(ownerCount(env, minter) == minterCount);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
-            // Anyone can cancel the expired sell offer.
-            env(token::cancelOffer(issuer, {offer1}));
-            env.close();
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 1);
-            BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            if (!features[fixExpiredNFTokenOfferRemoval])
+            {
+                // Before amendment: expired offer still exists and needs to be
+                // cancelled
+                env(token::cancelOffer(issuer, {offer1}));
+                env.close();
+                minterCount--;
+            }
+            // Ensure that owner counts are correct with and without the
+            // amendment
+            BEAST_EXPECT(ownerCount(env, issuer) == 0 && issuerCount == 0);
+            BEAST_EXPECT(ownerCount(env, minter) == 1 && minterCount == 1);
+            BEAST_EXPECT(ownerCount(env, buyer) == 1 && buyerCount == 1);
 
             // Transfer nftokenID0 back to minter so we start the next test in
             // a simple place.
@@ -2900,10 +2976,11 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env(token::createOffer(buyer, nftokenID0, XRP(0)), txflags(tfSellNFToken), token::destination(minter));
             env.close();
             env(token::acceptSellOffer(minter, offerSellBack));
+            buyerCount--;
             env.close();
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 1);
-            BEAST_EXPECT(ownerCount(env, buyer) == 0);
+            BEAST_EXPECT(ownerCount(env, issuer) == issuerCount);
+            BEAST_EXPECT(ownerCount(env, minter) == minterCount);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
         }
         // Show that:
         //  1. An unexpired buy offer with an expiration can be accepted.
@@ -2914,14 +2991,16 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             uint256 const offer0 = keylet::nftoffer(buyer, env.seq(buyer)).key;
             env(token::createOffer(buyer, nftokenID0, drops(1)), token::owner(minter), token::expiration(expiration));
+            buyerCount++;
 
             uint256 const offer1 = keylet::nftoffer(buyer, env.seq(buyer)).key;
             env(token::createOffer(buyer, nftokenID1, drops(1)), token::owner(minter), token::expiration(expiration));
+            buyerCount++;
             env.close();
             BEAST_EXPECT(lastClose(env) < expiration);
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 1);
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            BEAST_EXPECT(ownerCount(env, issuer) == issuerCount);
+            BEAST_EXPECT(ownerCount(env, minter) == minterCount);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
             // An unexpired buy offer can be accepted.
             env(token::acceptBuyOffer(minter, offer0));
@@ -2930,26 +3009,48 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             while (lastClose(env) < expiration)
                 env.close();
 
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 1);
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            BEAST_EXPECT(ownerCount(env, issuer) == issuerCount);
+            BEAST_EXPECT(ownerCount(env, minter) == minterCount);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
             // An expired buy offer cannot be accepted.
             env(token::acceptBuyOffer(minter, offer1), ter(tecEXPIRED));
-            env(token::acceptBuyOffer(issuer, offer1), ter(tecEXPIRED));
+
+            // With fixExpiredNFTokenOfferRemoval amendment, the first accept
+            // attempt deletes the expired offer. Without the amendment,
+            // the offer remains and we can try to accept it again.
+            if (features[fixExpiredNFTokenOfferRemoval])
+            {
+                // After amendment: offer was deleted by first accept attempt
+                buyerCount--;
+                env(token::acceptBuyOffer(issuer, offer1), ter(tecOBJECT_NOT_FOUND));
+            }
+            else
+            {
+                // Before amendment: offer still exists, second accept also
+                // fails
+                env(token::acceptBuyOffer(issuer, offer1), ter(tecEXPIRED));
+            }
             env.close();
 
-            // The expired buy offer is still in the ledger.
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 1);
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            // Check if the expired buy offer behavior matches amendment status
+            BEAST_EXPECT(ownerCount(env, issuer) == issuerCount);
+            BEAST_EXPECT(ownerCount(env, minter) == minterCount);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
-            // Anyone can cancel the expired buy offer.
-            env(token::cancelOffer(issuer, {offer1}));
-            env.close();
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 1);
-            BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            if (!features[fixExpiredNFTokenOfferRemoval])
+            {
+                // Before amendment: expired offer still exists and can be
+                // cancelled
+                env(token::cancelOffer(issuer, {offer1}));
+                env.close();
+                buyerCount--;
+            }
+            // Ensure that owner counts are the same with and without the
+            // amendment
+            BEAST_EXPECT(ownerCount(env, issuer) == 0 && issuerCount == 0);
+            BEAST_EXPECT(ownerCount(env, minter) == 1 && minterCount == 1);
+            BEAST_EXPECT(ownerCount(env, buyer) == 1 && buyerCount == 1);
 
             // Transfer nftokenID0 back to minter so we start the next test in
             // a simple place.
@@ -2958,9 +3059,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env.close();
             env(token::acceptSellOffer(minter, offerSellBack));
             env.close();
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 1);
-            BEAST_EXPECT(ownerCount(env, buyer) == 0);
+            buyerCount--;
+            BEAST_EXPECT(ownerCount(env, issuer) == issuerCount);
+            BEAST_EXPECT(ownerCount(env, minter) == minterCount);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
         }
         // Show that in brokered mode:
         //  1. An unexpired sell offer with an expiration can be accepted.
@@ -2973,50 +3075,74 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env(token::createOffer(minter, nftokenID0, drops(1)),
                 token::expiration(expiration),
                 txflags(tfSellNFToken));
+            minterCount++;
 
             uint256 const sellOffer1 = keylet::nftoffer(minter, env.seq(minter)).key;
             env(token::createOffer(minter, nftokenID1, drops(1)),
                 token::expiration(expiration),
                 txflags(tfSellNFToken));
+            minterCount++;
 
             uint256 const buyOffer0 = keylet::nftoffer(buyer, env.seq(buyer)).key;
             env(token::createOffer(buyer, nftokenID0, drops(1)), token::owner(minter));
+            buyerCount++;
 
             uint256 const buyOffer1 = keylet::nftoffer(buyer, env.seq(buyer)).key;
             env(token::createOffer(buyer, nftokenID1, drops(1)), token::owner(minter));
+            buyerCount++;
 
             env.close();
             BEAST_EXPECT(lastClose(env) < expiration);
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 3);
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            BEAST_EXPECT(ownerCount(env, issuer) == issuerCount);
+            BEAST_EXPECT(ownerCount(env, minter) == minterCount);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
             // An unexpired offer can be brokered.
             env(token::brokerOffers(issuer, buyOffer0, sellOffer0));
+            minterCount--;
 
             // Close enough ledgers to get past the expiration.
             while (lastClose(env) < expiration)
                 env.close();
 
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 2);
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            BEAST_EXPECT(ownerCount(env, issuer) == issuerCount);
+            BEAST_EXPECT(ownerCount(env, minter) == minterCount);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
             // If the sell offer is expired it cannot be brokered.
             env(token::brokerOffers(issuer, buyOffer1, sellOffer1), ter(tecEXPIRED));
             env.close();
 
-            // The expired sell offer is still in the ledger.
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 2);
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            if (features[fixExpiredNFTokenOfferRemoval])
+            {
+                // With amendment: expired offers are deleted
+                minterCount--;
+            }
 
-            // Anyone can cancel the expired sell offer.
-            env(token::cancelOffer(buyer, {buyOffer1, sellOffer1}));
+            BEAST_EXPECT(ownerCount(env, issuer) == issuerCount);
+            BEAST_EXPECT(ownerCount(env, minter) == minterCount);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
+
+            if (features[fixExpiredNFTokenOfferRemoval])
+            {
+                // The buy offer was deleted, so no need to cancel it
+                // The sell offer still exists, so we can cancel it
+                env(token::cancelOffer(buyer, {buyOffer1}));
+                buyerCount--;
+            }
+            else
+            {
+                // Anyone can cancel the expired offers
+                env(token::cancelOffer(buyer, {buyOffer1, sellOffer1}));
+                minterCount--;
+                buyerCount--;
+            }
             env.close();
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 1);
-            BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            // Ensure that owner counts are the same with and without the
+            // amendment
+            BEAST_EXPECT(ownerCount(env, issuer) == 0 && issuerCount == 0);
+            BEAST_EXPECT(ownerCount(env, minter) == 1 && minterCount == 1);
+            BEAST_EXPECT(ownerCount(env, buyer) == 1 && buyerCount == 1);
 
             // Transfer nftokenID0 back to minter so we start the next test in
             // a simple place.
@@ -3025,9 +3151,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env.close();
             env(token::acceptSellOffer(minter, offerSellBack));
             env.close();
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 1);
-            BEAST_EXPECT(ownerCount(env, buyer) == 0);
+            buyerCount--;
+            BEAST_EXPECT(ownerCount(env, issuer) == issuerCount);
+            BEAST_EXPECT(ownerCount(env, minter) == minterCount);
+            BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
         }
         // Show that in brokered mode:
         //  1. An unexpired buy offer with an expiration can be accepted.
@@ -3065,17 +3192,28 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             BEAST_EXPECT(ownerCount(env, minter) == 2);
             BEAST_EXPECT(ownerCount(env, buyer) == 2);
 
-            // If the buy offer is expired it cannot be brokered.
             env(token::brokerOffers(issuer, buyOffer1, sellOffer1), ter(tecEXPIRED));
             env.close();
 
-            // The expired buy offer is still in the ledger.
             BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 2);
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
-
-            // Anyone can cancel the expired buy offer.
-            env(token::cancelOffer(minter, {buyOffer1, sellOffer1}));
+            if (features[fixExpiredNFTokenOfferRemoval])
+            {
+                // After amendment: expired offers were deleted during broker
+                // attempt
+                BEAST_EXPECT(ownerCount(env, minter) == 2);
+                BEAST_EXPECT(ownerCount(env, buyer) == 1);
+                // The buy offer was deleted, so no need to cancel it
+                // The sell offer still exists, so we can cancel it
+                env(token::cancelOffer(minter, {sellOffer1}));
+            }
+            else
+            {
+                // Before amendment: expired offers still exist in ledger
+                BEAST_EXPECT(ownerCount(env, minter) == 2);
+                BEAST_EXPECT(ownerCount(env, buyer) == 2);
+                // Anyone can cancel the expired offers
+                env(token::cancelOffer(minter, {buyOffer1, sellOffer1}));
+            }
             env.close();
             BEAST_EXPECT(ownerCount(env, issuer) == 0);
             BEAST_EXPECT(ownerCount(env, minter) == 1);
@@ -3133,17 +3271,19 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             BEAST_EXPECT(ownerCount(env, minter) == 2);
             BEAST_EXPECT(ownerCount(env, buyer) == 2);
 
-            // If the offers are expired they cannot be brokered.
             env(token::brokerOffers(issuer, buyOffer1, sellOffer1), ter(tecEXPIRED));
             env.close();
 
             // The expired offers are still in the ledger.
             BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 2);
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
-
-            // Anyone can cancel the expired offers.
-            env(token::cancelOffer(issuer, {buyOffer1, sellOffer1}));
+            if (!features[fixExpiredNFTokenOfferRemoval])
+            {
+                // Before amendment: expired offers still exist in ledger
+                BEAST_EXPECT(ownerCount(env, minter) == 2);
+                BEAST_EXPECT(ownerCount(env, buyer) == 2);
+                // Anyone can cancel the expired offers
+                env(token::cancelOffer(issuer, {buyOffer1, sellOffer1}));
+            }
             env.close();
             BEAST_EXPECT(ownerCount(env, issuer) == 0);
             BEAST_EXPECT(ownerCount(env, minter) == 1);
@@ -5025,8 +5165,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // bob now has a buy offer and a sell offer on the books.  A broker
         // spots this and swoops in to make a profit.
         BEAST_EXPECT(nftCount(env, bob) == 1);
-        auto const bobsPriorBalance = env.balance(bob);
-        auto const brokersPriorBalance = env.balance(broker);
+        auto const bobPriorBalance = env.balance(bob);
+        auto const brokerPriorBalance = env.balance(broker);
         env(token::brokerOffers(broker, bobBuyOfferIndex, bobSellOfferIndex),
             token::brokerFee(XRP(1)),
             ter(tecCANT_ACCEPT_OWN_NFTOKEN_OFFER));
@@ -5035,8 +5175,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // A tec result was returned, so no state should change other
         // than the broker burning their transaction fee.
         BEAST_EXPECT(nftCount(env, bob) == 1);
-        BEAST_EXPECT(env.balance(bob) == bobsPriorBalance);
-        BEAST_EXPECT(env.balance(broker) == brokersPriorBalance - baseFee);
+        BEAST_EXPECT(env.balance(bob) == bobPriorBalance);
+        BEAST_EXPECT(env.balance(broker) == brokerPriorBalance - baseFee);
     }
 
     void
@@ -6747,7 +6887,9 @@ public:
     void
     run() override
     {
-        testWithFeats(allFeatures - fixNFTokenReserve - featureNFTokenMintOffer - featureDynamicNFT);
+        testWithFeats(
+            allFeatures - fixNFTokenReserve - featureNFTokenMintOffer - featureDynamicNFT -
+            fixExpiredNFTokenOfferRemoval);
     }
 };
 
@@ -6775,6 +6917,15 @@ class NFTokenWOModify_test : public NFTokenBaseUtil_test
     run() override
     {
         testWithFeats(allFeatures - featureDynamicNFT);
+    }
+};
+
+class NFTokenWOExpiredOfferRemoval_test : public NFTokenBaseUtil_test
+{
+    void
+    run() override
+    {
+        testWithFeats(allFeatures - fixExpiredNFTokenOfferRemoval);
     }
 };
 

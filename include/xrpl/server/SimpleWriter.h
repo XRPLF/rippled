@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_SIMPLEWRITER_H_INCLUDED
-#define XRPL_SERVER_SIMPLEWRITER_H_INCLUDED
+#pragma once
 
 #include <xrpl/server/Writer.h>
 
@@ -55,5 +54,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

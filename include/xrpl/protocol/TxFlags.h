@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_TXFLAGS_H_INCLUDED
-#define XRPL_PROTOCOL_TXFLAGS_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/LedgerFormats.h>
 
@@ -311,5 +310,3 @@ constexpr std::uint32_t tfSponsorshipSetPermissionMask = ~(tfUniversal | tfSpons
 // clang-format on
 
 }  // namespace xrpl
-
-#endif

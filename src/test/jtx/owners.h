@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_OWNERS_H_INCLUDED
-#define XRPL_TEST_JTX_OWNERS_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
@@ -117,5 +116,3 @@ using offers = owner_count<ltOFFER>;
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

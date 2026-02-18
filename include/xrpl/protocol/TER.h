@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_TER_H_INCLUDED
-#define XRPL_PROTOCOL_TER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/json_value.h>
@@ -487,60 +486,54 @@ public:
 // Only enabled if both arguments return int if TERtiInt is called with them.
 template <typename L, typename R>
 constexpr auto
-operator==(L const& lhs, R const& rhs)
-    -> std::enable_if_t<
-        std::is_same<decltype(TERtoInt(lhs)), int>::value && std::is_same<decltype(TERtoInt(rhs)), int>::value,
-        bool>
+operator==(L const& lhs, R const& rhs) -> std::enable_if_t<
+    std::is_same<decltype(TERtoInt(lhs)), int>::value && std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    bool>
 {
     return TERtoInt(lhs) == TERtoInt(rhs);
 }
 
 template <typename L, typename R>
 constexpr auto
-operator!=(L const& lhs, R const& rhs)
-    -> std::enable_if_t<
-        std::is_same<decltype(TERtoInt(lhs)), int>::value && std::is_same<decltype(TERtoInt(rhs)), int>::value,
-        bool>
+operator!=(L const& lhs, R const& rhs) -> std::enable_if_t<
+    std::is_same<decltype(TERtoInt(lhs)), int>::value && std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    bool>
 {
     return TERtoInt(lhs) != TERtoInt(rhs);
 }
 
 template <typename L, typename R>
 constexpr auto
-operator<(L const& lhs, R const& rhs)
-    -> std::enable_if_t<
-        std::is_same<decltype(TERtoInt(lhs)), int>::value && std::is_same<decltype(TERtoInt(rhs)), int>::value,
-        bool>
+operator<(L const& lhs, R const& rhs) -> std::enable_if_t<
+    std::is_same<decltype(TERtoInt(lhs)), int>::value && std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    bool>
 {
     return TERtoInt(lhs) < TERtoInt(rhs);
 }
 
 template <typename L, typename R>
 constexpr auto
-operator<=(L const& lhs, R const& rhs)
-    -> std::enable_if_t<
-        std::is_same<decltype(TERtoInt(lhs)), int>::value && std::is_same<decltype(TERtoInt(rhs)), int>::value,
-        bool>
+operator<=(L const& lhs, R const& rhs) -> std::enable_if_t<
+    std::is_same<decltype(TERtoInt(lhs)), int>::value && std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    bool>
 {
     return TERtoInt(lhs) <= TERtoInt(rhs);
 }
 
 template <typename L, typename R>
 constexpr auto
-operator>(L const& lhs, R const& rhs)
-    -> std::enable_if_t<
-        std::is_same<decltype(TERtoInt(lhs)), int>::value && std::is_same<decltype(TERtoInt(rhs)), int>::value,
-        bool>
+operator>(L const& lhs, R const& rhs) -> std::enable_if_t<
+    std::is_same<decltype(TERtoInt(lhs)), int>::value && std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    bool>
 {
     return TERtoInt(lhs) > TERtoInt(rhs);
 }
 
 template <typename L, typename R>
 constexpr auto
-operator>=(L const& lhs, R const& rhs)
-    -> std::enable_if_t<
-        std::is_same<decltype(TERtoInt(lhs)), int>::value && std::is_same<decltype(TERtoInt(rhs)), int>::value,
-        bool>
+operator>=(L const& lhs, R const& rhs) -> std::enable_if_t<
+    std::is_same<decltype(TERtoInt(lhs)), int>::value && std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    bool>
 {
     return TERtoInt(lhs) >= TERtoInt(rhs);
 }
@@ -677,5 +670,3 @@ std::optional<TER>
 transCode(std::string const& token);
 
 }  // namespace xrpl
-
-#endif

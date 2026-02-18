@@ -64,7 +64,13 @@ DerivedData
 /.vs/
 /.vscode/
 
+# zed IDE.
+/.zed/
+
 # AI tools.
 /.augment
 /.claude
 /CLAUDE.md
+
+# clangd cache
+/.cache

@@ -219,7 +219,7 @@ coherent rather than a set of _thou shalt not_ commandments.
 
 ## Formatting
 
-All code must conform to `clang-format` version 18,
+All code must conform to `clang-format` version 21,
 according to the settings in [`.clang-format`](./.clang-format),
 unless the result would be unreasonably difficult to read or maintain.
 To demarcate lines that should be left as-is, surround them with comments like
@@ -872,7 +872,8 @@ git push --delete upstream-push master-next
 11. [Create a new release on
     Github](https://github.com/XRPLF/rippled/releases). Be sure that
     "Set as the latest release" is checked.
-12. Finally [reverse merge the release into `develop`](#follow-up-reverse-merge).
+12. Open a PR to update the [API-CHANGELOG](API-CHANGELOG.md) and `API-VERSION-[n].md` with the changes for this release (if any are missing).
+13. Finally, [reverse merge the release into `develop`](#follow-up-reverse-merge).
 
 #### Special cases: point releases, hotfixes, etc.
 

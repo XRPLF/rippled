@@ -1,0 +1,302 @@
+#pragma once
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+
+#include <stdexcept>
+
+namespace xrpl {
+
+template <class TIn, class TOut>
+class TOfferBase
+{
+protected:
+    Issue issIn_;
+    Issue issOut_;
+};
+
+template <>
+class TOfferBase<STAmount, STAmount>
+{
+public:
+    explicit TOfferBase() = default;
+};
+
+template <class TIn = STAmount, class TOut = STAmount>
+class TOffer : private TOfferBase<TIn, TOut>
+{
+private:
+    SLE::pointer m_entry;
+    Quality m_quality;
+    AccountID m_account;
+
+    TAmounts<TIn, TOut> m_amounts;
+    void
+    setFieldAmounts();
+
+public:
+    TOffer() = default;
+
+    TOffer(SLE::pointer const& entry, Quality quality);
+
+    /** Returns the quality of the offer.
+        Conceptually, the quality is the ratio of output to input currency.
+        The implementation calculates it as the ratio of input to output
+        currency (so it sorts ascending). The quality is computed at the time
+        the offer is placed, and never changes for the lifetime of the offer.
+        This is an important business rule that maintains accuracy when an
+        offer is partially filled; Subsequent partial fills will use the
+        original quality.
+    */
+    Quality
+    quality() const noexcept
+    {
+        return m_quality;
+    }
+
+    /** Returns the account id of the offer's owner. */
+    AccountID const&
+    owner() const
+    {
+        return m_account;
+    }
+
+    /** Returns the in and out amounts.
+        Some or all of the out amount may be unfunded.
+    */
+    TAmounts<TIn, TOut> const&
+    amount() const
+    {
+        return m_amounts;
+    }
+
+    /** Returns `true` if no more funds can flow through this offer. */
+    bool
+    fully_consumed() const
+    {
+        if (m_amounts.in <= beast::zero)
+            return true;
+        if (m_amounts.out <= beast::zero)
+            return true;
+        return false;
+    }
+
+    /** Adjusts the offer to indicate that we consumed some (or all) of it. */
+    void
+    consume(ApplyView& view, TAmounts<TIn, TOut> const& consumed)
+    {
+        if (consumed.in > m_amounts.in)
+            Throw<std::logic_error>("can't consume more than is available.");
+
+        if (consumed.out > m_amounts.out)
+            Throw<std::logic_error>("can't produce more than is available.");
+
+        m_amounts -= consumed;
+        setFieldAmounts();
+        view.update(m_entry);
+    }
+
+    std::string
+    id() const
+    {
+        return to_string(m_entry->key());
+    }
+
+    std::optional<uint256>
+    key() const
+    {
+        return m_entry->key();
+    }
+
+    Issue const&
+    issueIn() const;
+    Issue const&
+    issueOut() const;
+
+    TAmounts<TIn, TOut>
+    limitOut(TAmounts<TIn, TOut> const& offerAmount, TOut const& limit, bool roundUp) const;
+
+    TAmounts<TIn, TOut>
+    limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& limit, bool roundUp) const;
+
+    template <typename... Args>
+    static TER
+    send(Args&&... args);
+
+    bool
+    isFunded() const
+    {
+        // Offer owner is issuer; they have unlimited funds
+        return m_account == issueOut().account;
+    }
+
+    static std::pair<std::uint32_t, std::uint32_t>
+    adjustRates(std::uint32_t ofrInRate, std::uint32_t ofrOutRate)
+    {
+        // CLOB offer pays the transfer fee
+        return {ofrInRate, ofrOutRate};
+    }
+
+    /** Check any required invariant. Limit order book offer
+     * always returns true.
+     */
+    bool
+    checkInvariant(TAmounts<TIn, TOut> const& consumed, beast::Journal j) const
+    {
+        if (!isFeatureEnabled(fixAMMv1_3))
+            return true;
+
+        if (consumed.in > m_amounts.in || consumed.out > m_amounts.out)
+        {
+            // LCOV_EXCL_START
+            JLOG(j.error()) << "AMMOffer::checkInvariant failed: consumed " << to_string(consumed.in) << " "
+                            << to_string(consumed.out) << " amounts " << to_string(m_amounts.in) << " "
+                            << to_string(m_amounts.out);
+
+            return false;
+            // LCOV_EXCL_STOP
+        }
+
+        return true;
+    }
+};
+
+using Offer = TOffer<>;
+
+template <class TIn, class TOut>
+TOffer<TIn, TOut>::TOffer(SLE::pointer const& entry, Quality quality)
+    : m_entry(entry), m_quality(quality), m_account(m_entry->getAccountID(sfAccount))
+{
+    auto const tp = m_entry->getFieldAmount(sfTakerPays);
+    auto const tg = m_entry->getFieldAmount(sfTakerGets);
+    m_amounts.in = toAmount<TIn>(tp);
+    m_amounts.out = toAmount<TOut>(tg);
+    this->issIn_ = tp.issue();
+    this->issOut_ = tg.issue();
+}
+
+template <>
+inline TOffer<STAmount, STAmount>::TOffer(SLE::pointer const& entry, Quality quality)
+    : m_entry(entry)
+    , m_quality(quality)
+    , m_account(m_entry->getAccountID(sfAccount))
+    , m_amounts(m_entry->getFieldAmount(sfTakerPays), m_entry->getFieldAmount(sfTakerGets))
+{
+}
+
+template <class TIn, class TOut>
+void
+TOffer<TIn, TOut>::setFieldAmounts()
+{
+    // LCOV_EXCL_START
+#ifdef _MSC_VER
+    UNREACHABLE("xrpl::TOffer::setFieldAmounts : must be specialized");
+#else
+    static_assert(sizeof(TOut) == -1, "Must be specialized");
+#endif
+    // LCOV_EXCL_STOP
+}
+
+template <class TIn, class TOut>
+TAmounts<TIn, TOut>
+TOffer<TIn, TOut>::limitOut(TAmounts<TIn, TOut> const& offerAmount, TOut const& limit, bool roundUp) const
+{
+    // It turns out that the ceil_out implementation has some slop in
+    // it, which ceil_out_strict removes.
+    return quality().ceil_out_strict(offerAmount, limit, roundUp);
+}
+
+template <class TIn, class TOut>
+TAmounts<TIn, TOut>
+TOffer<TIn, TOut>::limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& limit, bool roundUp) const
+{
+    if (auto const& rules = getCurrentTransactionRules(); rules && rules->enabled(fixReducedOffersV2))
+        // It turns out that the ceil_in implementation has some slop in
+        // it.  ceil_in_strict removes that slop.  But removing that slop
+        // affects transaction outcomes, so the change must be made using
+        // an amendment.
+        return quality().ceil_in_strict(offerAmount, limit, roundUp);
+    return m_quality.ceil_in(offerAmount, limit);
+}
+
+template <class TIn, class TOut>
+template <typename... Args>
+TER
+TOffer<TIn, TOut>::send(Args&&... args)
+{
+    return accountSend(std::forward<Args>(args)...);
+}
+
+template <>
+inline void
+TOffer<STAmount, STAmount>::setFieldAmounts()
+{
+    m_entry->setFieldAmount(sfTakerPays, m_amounts.in);
+    m_entry->setFieldAmount(sfTakerGets, m_amounts.out);
+}
+
+template <>
+inline void
+TOffer<IOUAmount, IOUAmount>::setFieldAmounts()
+{
+    m_entry->setFieldAmount(sfTakerPays, toSTAmount(m_amounts.in, issIn_));
+    m_entry->setFieldAmount(sfTakerGets, toSTAmount(m_amounts.out, issOut_));
+}
+
+template <>
+inline void
+TOffer<IOUAmount, XRPAmount>::setFieldAmounts()
+{
+    m_entry->setFieldAmount(sfTakerPays, toSTAmount(m_amounts.in, issIn_));
+    m_entry->setFieldAmount(sfTakerGets, toSTAmount(m_amounts.out));
+}
+
+template <>
+inline void
+TOffer<XRPAmount, IOUAmount>::setFieldAmounts()
+{
+    m_entry->setFieldAmount(sfTakerPays, toSTAmount(m_amounts.in));
+    m_entry->setFieldAmount(sfTakerGets, toSTAmount(m_amounts.out, issOut_));
+}
+
+template <class TIn, class TOut>
+Issue const&
+TOffer<TIn, TOut>::issueIn() const
+{
+    return this->issIn_;
+}
+
+template <>
+inline Issue const&
+TOffer<STAmount, STAmount>::issueIn() const
+{
+    return m_amounts.in.issue();
+}
+
+template <class TIn, class TOut>
+Issue const&
+TOffer<TIn, TOut>::issueOut() const
+{
+    return this->issOut_;
+}
+
+template <>
+inline Issue const&
+TOffer<STAmount, STAmount>::issueOut() const
+{
+    return m_amounts.out.issue();
+}
+
+template <class TIn, class TOut>
+inline std::ostream&
+operator<<(std::ostream& os, TOffer<TIn, TOut> const& offer)
+{
+    return os << offer.id();
+}
+
+}  // namespace xrpl

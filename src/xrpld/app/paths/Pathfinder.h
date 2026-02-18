@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_PATHS_PATHFINDER_H_INCLUDED
-#define XRPL_APP_PATHS_PATHFINDER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/paths/RippleLineCache.h>
@@ -211,5 +210,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

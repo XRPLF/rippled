@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_LEDGER_H_INCLUDED
-#define XRPL_APP_LEDGER_LEDGER_H_INCLUDED
+#pragma once
 
 #include <xrpld/core/Config.h>
 #include <xrpld/core/TimeKeeper.h>
@@ -392,11 +391,6 @@ private:
 /** A ledger wrapped in a CachedView. */
 using CachedLedger = CachedView<Ledger>;
 
-std::uint32_t constexpr FLAG_LEDGER_INTERVAL = 256;
-/** Returns true if the given ledgerIndex is a flag ledgerIndex */
-bool
-isFlagLedger(LedgerIndex seq);
-
 //------------------------------------------------------------------------------
 //
 // API
@@ -444,5 +438,3 @@ uint256
 calculateLedgerHash(LedgerHeader const& info);
 
 }  // namespace xrpl
-
-#endif

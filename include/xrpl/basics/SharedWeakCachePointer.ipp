@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_SHAREDWEAKCACHEPOINTER_IPP_INCLUDED
-#define XRPL_BASICS_SHAREDWEAKCACHEPOINTER_IPP_INCLUDED
+#pragma once
 
 #include <xrpl/basics/SharedWeakCachePointer.h>
 
@@ -64,7 +63,8 @@ SharedWeakCachePointer<T>::getStrong() const
 }
 
 template <class T>
-SharedWeakCachePointer<T>::operator bool() const noexcept
+SharedWeakCachePointer<T>::
+operator bool() const noexcept
 {
     return !!std::get_if<std::shared_ptr<T>>(&combo_);
 }
@@ -164,4 +164,3 @@ SharedWeakCachePointer<T>::convertToWeak()
     return false;
 }
 }  // namespace xrpl
-#endif

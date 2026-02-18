@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_VALIDATION_H_INCLUDED
-#define XRPL_TEST_CSF_VALIDATION_H_INCLUDED
+#pragma once
 
 #include <test/csf/ledgers.h>
 
@@ -176,5 +175,3 @@ public:
 }  // namespace csf
 }  // namespace test
 }  // namespace xrpl
-
-#endif

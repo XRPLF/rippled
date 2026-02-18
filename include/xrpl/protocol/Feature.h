@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_FEATURE_H_INCLUDED
-#define XRPL_PROTOCOL_FEATURE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 
@@ -297,7 +296,7 @@ public:
     friend FeatureBitset
     operator^(FeatureBitset const& lhs, uint256 const& rhs)
     {
-        return lhs ^ FeatureBitset { rhs };
+        return lhs ^ FeatureBitset{rhs};
     }
 
     friend FeatureBitset
@@ -361,5 +360,3 @@ foreachFeature(FeatureBitset bs, F&& f)
 #pragma pop_macro("XRPL_FEATURE")
 
 }  // namespace xrpl
-
-#endif

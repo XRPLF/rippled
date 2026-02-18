@@ -1,5 +1,4 @@
-#ifndef XRPL_PEERFINDER_LIVECACHE_H_INCLUDED
-#define XRPL_PEERFINDER_LIVECACHE_H_INCLUDED
+#pragma once
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
@@ -513,5 +512,3 @@ Livecache<Allocator>::hops_t::remove(Element& e)
 
 }  // namespace PeerFinder
 }  // namespace xrpl
-
-#endif

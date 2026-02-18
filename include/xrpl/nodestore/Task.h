@@ -1,5 +1,4 @@
-#ifndef XRPL_NODESTORE_TASK_H_INCLUDED
-#define XRPL_NODESTORE_TASK_H_INCLUDED
+#pragma once
 
 namespace xrpl {
 namespace NodeStore {
@@ -18,5 +17,3 @@ struct Task
 
 }  // namespace NodeStore
 }  // namespace xrpl
-
-#endif

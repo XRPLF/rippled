@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STAMOUNT_H_INCLUDED
-#define XRPL_PROTOCOL_STAMOUNT_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/LocalValue.h>
@@ -481,12 +480,14 @@ STAmount::zeroed() const
     return STAmount(mAsset);
 }
 
-inline STAmount::operator bool() const noexcept
+inline STAmount::
+operator bool() const noexcept
 {
     return *this != beast::zero;
 }
 
-inline STAmount::operator Number() const
+inline STAmount::
+operator Number() const
 {
     if (native())
         return xrp();
@@ -735,4 +736,3 @@ getOrThrow(Json::Value const& v, xrpl::SField const& field)
     return amountFromJson(field, inner);
 }
 }  // namespace Json
-#endif

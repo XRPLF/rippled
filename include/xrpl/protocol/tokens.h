@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_TOKENS_H_INCLUDED
-#define XRPL_PROTOCOL_TOKENS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/contract.h>
@@ -100,5 +99,3 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out);
 }  // namespace b58_fast
 #endif  // _MSC_VER
 }  // namespace xrpl
-
-#endif

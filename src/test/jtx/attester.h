@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_ATTESTER_H_INCLUDED
-#define XRPL_TEST_JTX_ATTESTER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/protocol/AccountID.h>
@@ -44,5 +43,3 @@ sign_create_account_attestation(
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

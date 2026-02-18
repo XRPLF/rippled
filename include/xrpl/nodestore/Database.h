@@ -1,5 +1,4 @@
-#ifndef XRPL_NODESTORE_DATABASE_H_INCLUDED
-#define XRPL_NODESTORE_DATABASE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
@@ -133,10 +132,6 @@ public:
         uint256 const& hash,
         std::uint32_t ledgerSeq,
         std::function<void(std::shared_ptr<NodeObject> const&)>&& callback);
-
-    /** Remove expired entries from the positive and negative caches. */
-    virtual void
-    sweep() = 0;
 
     /** Gather statistics pertaining to read and write activities.
      *
@@ -274,5 +269,3 @@ private:
 
 }  // namespace NodeStore
 }  // namespace xrpl
-
-#endif

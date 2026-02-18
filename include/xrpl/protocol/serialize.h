@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_SERIALIZE_H_INCLUDED
-#define XRPL_PROTOCOL_SERIALIZE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/STObject.h>
@@ -25,5 +24,3 @@ serializeHex(STObject const& o)
 }
 
 }  // namespace xrpl
-
-#endif

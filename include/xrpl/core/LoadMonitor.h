@@ -1,5 +1,4 @@
-#ifndef XRPL_CORE_LOADMONITOR_H_INCLUDED
-#define XRPL_CORE_LOADMONITOR_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -66,5 +65,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

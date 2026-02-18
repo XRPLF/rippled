@@ -1,5 +1,4 @@
-#ifndef XRPL_JSON_JSON_WRITER_H_INCLUDED
-#define XRPL_JSON_JSON_WRITER_H_INCLUDED
+#pragma once
 
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
@@ -322,5 +321,3 @@ public:
 };
 
 }  // namespace Json
-
-#endif  // JSON_WRITER_H_INCLUDED

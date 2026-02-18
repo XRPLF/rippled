@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_BASEHTTPPEER_H_INCLUDED
-#define XRPL_SERVER_BASEHTTPPEER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
@@ -219,7 +218,7 @@ void
 BaseHTTPPeer<Handler, Impl>::close()
 {
     if (!strand_.running_in_this_thread())
-        return post(strand_, std::bind((void(BaseHTTPPeer::*)(void)) & BaseHTTPPeer::close, impl().shared_from_this()));
+        return post(strand_, std::bind((void (BaseHTTPPeer::*)(void))&BaseHTTPPeer::close, impl().shared_from_this()));
     boost::beast::get_lowest_layer(impl().stream_).close();
 }
 
@@ -437,7 +436,7 @@ BaseHTTPPeer<Handler, Impl>::close(bool graceful)
         return post(
             strand_,
             std::bind(
-                (void(BaseHTTPPeer::*)(bool)) & BaseHTTPPeer<Handler, Impl>::close,
+                (void (BaseHTTPPeer::*)(bool))&BaseHTTPPeer<Handler, Impl>::close,
                 impl().shared_from_this(),
                 graceful));
 
@@ -457,5 +456,3 @@ BaseHTTPPeer<Handler, Impl>::close(bool graceful)
 }
 
 }  // namespace xrpl
-
-#endif

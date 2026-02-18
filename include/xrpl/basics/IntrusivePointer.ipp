@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_INTRUSIVEPOINTER_IPP_INCLUDED
-#define XRPL_BASICS_INTRUSIVEPOINTER_IPP_INCLUDED
+#pragma once
 
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/IntrusiveRefCounts.h>
@@ -209,7 +208,8 @@ SharedIntrusive<T>::operator->() const noexcept
 }
 
 template <class T>
-SharedIntrusive<T>::operator bool() const noexcept
+SharedIntrusive<T>::
+operator bool() const noexcept
 {
     return bool(unsafeGetRawPtr());
 }
@@ -504,7 +504,8 @@ SharedWeakUnion<T>::getStrong() const
 }
 
 template <class T>
-SharedWeakUnion<T>::operator bool() const noexcept
+SharedWeakUnion<T>::
+operator bool() const noexcept
 {
     return bool(get());
 }
@@ -703,4 +704,3 @@ SharedWeakUnion<T>::unsafeReleaseNoStore()
 }
 
 }  // namespace xrpl
-#endif

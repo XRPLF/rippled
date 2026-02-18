@@ -1,5 +1,4 @@
-#ifndef BEAST_CONTAINER_AGED_UNORDERED_MULTIMAP_H_INCLUDED
-#define BEAST_CONTAINER_AGED_UNORDERED_MULTIMAP_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/container/detail/aged_unordered_container.h>
 
@@ -19,5 +18,3 @@ template <
 using aged_unordered_multimap = detail::aged_unordered_container<true, true, Key, T, Clock, Hash, KeyEqual, Allocator>;
 
 }
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_LEDGERTOJSON_H_INCLUDED
-#define XRPL_APP_LEDGER_LEDGERTOJSON_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
@@ -44,5 +43,3 @@ void
 copyFrom(Json::Value& to, Json::Value const& from);
 
 }  // namespace xrpl
-
-#endif

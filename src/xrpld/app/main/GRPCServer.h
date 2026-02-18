@@ -1,16 +1,15 @@
-#ifndef XRPL_CORE_GRPCSERVER_H_INCLUDED
-#define XRPL_CORE_GRPCSERVER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/GRPCHandlers.h>
-#include <xrpld/rpc/InfoSub.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
 #include <xrpl/resource/Charge.h>
+#include <xrpl/server/InfoSub.h>
 
 #include <grpcpp/grpcpp.h>
 
@@ -300,4 +299,3 @@ private:
     bool running_ = false;
 };
 }  // namespace xrpl
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_RESOURCE_ENTRY_H_INCLUDED
-#define XRPL_RESOURCE_ENTRY_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/DecayingSample.h>
 #include <xrpl/beast/clock/abstract_clock.h>
@@ -90,5 +89,3 @@ operator<<(std::ostream& os, Entry const& v)
 
 }  // namespace Resource
 }  // namespace xrpl
-
-#endif

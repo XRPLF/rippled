@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_IOUAMOUNT_H_INCLUDED
-#define XRPL_BASICS_IOUAMOUNT_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Number.h>
@@ -111,7 +110,8 @@ IOUAmount::operator=(beast::Zero)
     return *this;
 }
 
-inline IOUAmount::operator Number() const
+inline IOUAmount::
+operator Number() const
 {
     return Number{mantissa_, exponent_};
 }
@@ -141,7 +141,8 @@ IOUAmount::operator<(IOUAmount const& other) const
     return Number{*this} < Number{other};
 }
 
-inline IOUAmount::operator bool() const noexcept
+inline IOUAmount::
+operator bool() const noexcept
 {
     return mantissa_ != 0;
 }
@@ -208,5 +209,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif
