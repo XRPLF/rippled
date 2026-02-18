@@ -188,6 +188,24 @@ bool
 isValidCiphertext(Slice const& buffer);
 
 /**
+ * @brief Verifies that a buffer contains a valid, parsable compressed EC public key.
+ *
+ * @param buffer The input buffer containing a compressed EC public key (33 bytes).
+ * @return true if the key can be parsed successfully, false otherwise.
+ */
+bool
+isValidPublicKey(Slice const& buffer);
+
+/**
+ * @brief Verifies that a buffer contains a valid, parsable compressed Pedersen commitment.
+ *
+ * @param buffer The input buffer containing a compressed Pedersen commitment (33 bytes).
+ * @return true if the commitment can be parsed successfully, false otherwise.
+ */
+bool
+isValidCommitment(Slice const& buffer);
+
+/**
  * @brief Homomorphically adds two ElGamal ciphertexts.
  *
  * Uses the additive homomorphic property of ElGamal encryption to compute

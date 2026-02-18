@@ -48,6 +48,26 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         return trivialCiphertext;
     }
 
+    // Returns a valid compressed EC point (33 bytes) that can pass preflight
+    // validation but contains invalid data for preclaim test purposes.
+    static Buffer const&
+    getTrivialCommitment()
+    {
+        static Buffer const trivialCommitment = []() {
+            Buffer buf(ecPedersenCommitmentLength);
+            std::memset(buf.data(), 0, ecPedersenCommitmentLength);
+
+            // 0x02 prefix for compressed EC point with even y-coordinate
+            buf.data()[0] = 0x02;
+            // Set last byte to make it a valid x-coordinate on the curve
+            buf.data()[ecPedersenCommitmentLength - 1] = 0x01;
+
+            return buf;
+        }();
+
+        return trivialCommitment;
+    }
+
     std::string
     getTrivialSendProofHex(size_t nRecipients)
     {
@@ -276,6 +296,9 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             // Holder public key is invalid (empty buffer)
             mptAlice.convert({.account = bob, .amt = 10, .holderPubKey = Buffer{}, .err = temMALFORMED});
+
+            // Holder public key has correct length but invalid EC point data
+            mptAlice.convert({.account = bob, .amt = 10, .holderPubKey = Buffer(ecPubKeyLength), .err = temMALFORMED});
         }
 
         // when registering holder pub key, the transaction must include a
@@ -388,14 +411,24 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.generateKeyPair(alice);
             mptAlice.generateKeyPair(bob);
 
-            // Pub key is invalid
+            // Issuer pub key is invalid (empty)
             mptAlice.set({.account = alice, .issuerPubKey = Buffer{}, .err = temMALFORMED});
+
+            // Issuer pub key has correct length but invalid EC point data
+            mptAlice.set({.account = alice, .issuerPubKey = Buffer(ecPubKeyLength), .err = temMALFORMED});
 
             // Auditor key is invalid length
             mptAlice.set(
                 {.account = alice,
                  .issuerPubKey = mptAlice.getPubKey(alice),
                  .auditorPubKey = Buffer(10),
+                 .err = temMALFORMED});
+
+            // Auditor key has correct length but invalid EC point data
+            mptAlice.set(
+                {.account = alice,
+                 .issuerPubKey = mptAlice.getPubKey(alice),
+                 .auditorPubKey = Buffer(ecPubKeyLength),
                  .err = temMALFORMED});
 
             // Cannot set auditor key without issuer key
@@ -1135,8 +1168,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .amt = 10,
                  .proof = getTrivialSendProofHex(3),
                  .senderEncryptedAmt = Buffer(ecGamalEncryptedTotalLength),
-                 .amountCommitment = Buffer(ecPedersenCommitmentLength),
-                 .balanceCommitment = Buffer(ecPedersenCommitmentLength),
+                 .amountCommitment = getTrivialCommitment(),
+                 .balanceCommitment = getTrivialCommitment(),
                  .err = temBAD_CIPHERTEXT});
             // dest encrypted amount malformed
             mptAlice.send(
@@ -1145,8 +1178,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .amt = 10,
                  .proof = getTrivialSendProofHex(3),
                  .destEncryptedAmt = Buffer(ecGamalEncryptedTotalLength),
-                 .amountCommitment = Buffer(ecPedersenCommitmentLength),
-                 .balanceCommitment = Buffer(ecPedersenCommitmentLength),
+                 .amountCommitment = getTrivialCommitment(),
+                 .balanceCommitment = getTrivialCommitment(),
                  .err = temBAD_CIPHERTEXT});
             // issuer encrypted amount malformed
             mptAlice.send(
@@ -1155,8 +1188,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .amt = 10,
                  .proof = getTrivialSendProofHex(3),
                  .issuerEncryptedAmt = Buffer(ecGamalEncryptedTotalLength),
-                 .amountCommitment = Buffer(ecPedersenCommitmentLength),
-                 .balanceCommitment = Buffer(ecPedersenCommitmentLength),
+                 .amountCommitment = getTrivialCommitment(),
+                 .balanceCommitment = getTrivialCommitment(),
                  .err = temBAD_CIPHERTEXT});
 
             // invalid proof length
@@ -1165,8 +1198,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .dest = carol,
                  .amt = 10,
                  .proof = std::string(10, 'A'),
-                 .amountCommitment = Buffer(ecPedersenCommitmentLength),
-                 .balanceCommitment = Buffer(ecPedersenCommitmentLength),
+                 .amountCommitment = getTrivialCommitment(),
+                 .balanceCommitment = getTrivialCommitment(),
                  .err = temMALFORMED});
 
             // invalid amount Pedersen commitment length
@@ -1176,7 +1209,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .amt = 10,
                  .proof = getTrivialSendProofHex(3),
                  .amountCommitment = Buffer(100),
-                 .balanceCommitment = Buffer(ecPedersenCommitmentLength),
+                 .balanceCommitment = getTrivialCommitment(),
                  .err = temMALFORMED});
 
             // invalid balance Pedersen commitment length
@@ -1185,8 +1218,28 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .dest = carol,
                  .amt = 10,
                  .proof = getTrivialSendProofHex(3),
-                 .amountCommitment = Buffer(ecPedersenCommitmentLength),
+                 .amountCommitment = getTrivialCommitment(),
                  .balanceCommitment = Buffer(100),
+                 .err = temMALFORMED});
+
+            // amount Pedersen commitment has correct length but invalid EC point data
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = 10,
+                 .proof = getTrivialSendProofHex(3),
+                 .amountCommitment = Buffer(ecPedersenCommitmentLength),
+                 .balanceCommitment = getTrivialCommitment(),
+                 .err = temMALFORMED});
+
+            // balance Pedersen commitment has correct length but invalid EC point data
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = 10,
+                 .proof = getTrivialSendProofHex(3),
+                 .amountCommitment = getTrivialCommitment(),
+                 .balanceCommitment = Buffer(ecPedersenCommitmentLength),
                  .err = temMALFORMED});
         }
 
@@ -1234,8 +1287,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .amt = 10,
                  .proof = getTrivialSendProofHex(4),
                  .auditorEncryptedAmt = Buffer(10),
-                 .amountCommitment = Buffer(ecPedersenCommitmentLength),
-                 .balanceCommitment = Buffer(ecPedersenCommitmentLength),
+                 .amountCommitment = getTrivialCommitment(),
+                 .balanceCommitment = getTrivialCommitment(),
                  .err = temBAD_CIPHERTEXT});
 
             // auditor encrypted amount (correct length, invalid data)
@@ -1245,8 +1298,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .amt = 10,
                  .proof = getTrivialSendProofHex(4),
                  .auditorEncryptedAmt = getBadCiphertext(),
-                 .amountCommitment = Buffer(ecPedersenCommitmentLength),
-                 .balanceCommitment = Buffer(ecPedersenCommitmentLength),
+                 .amountCommitment = getTrivialCommitment(),
+                 .balanceCommitment = getTrivialCommitment(),
                  .err = temBAD_CIPHERTEXT});
         }
     }
@@ -1321,8 +1374,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             jv[sfSenderEncryptedAmount] = strHex(getTrivialCiphertext());
             jv[sfDestinationEncryptedAmount] = strHex(getTrivialCiphertext());
             jv[sfIssuerEncryptedAmount] = strHex(getTrivialCiphertext());
-            jv[sfAmountCommitment] = strHex(Buffer(ecPedersenCommitmentLength));
-            jv[sfBalanceCommitment] = strHex(Buffer(ecPedersenCommitmentLength));
+            jv[sfAmountCommitment] = strHex(getTrivialCommitment());
+            jv[sfBalanceCommitment] = strHex(getTrivialCommitment());
             jv[sfZKProof] = getTrivialSendProofHex(3);
 
             env(jv, ter(tecOBJECT_NOT_FOUND));
@@ -1339,8 +1392,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .senderEncryptedAmt = getTrivialCiphertext(),
                  .destEncryptedAmt = getTrivialCiphertext(),
                  .issuerEncryptedAmt = getTrivialCiphertext(),
-                 .amountCommitment = Buffer(ecPedersenCommitmentLength),
-                 .balanceCommitment = Buffer(ecPedersenCommitmentLength),
+                 .amountCommitment = getTrivialCommitment(),
+                 .balanceCommitment = getTrivialCommitment(),
                  .err = tecNO_TARGET});
         }
 
@@ -1354,8 +1407,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .senderEncryptedAmt = getTrivialCiphertext(),
                  .destEncryptedAmt = getTrivialCiphertext(),
                  .issuerEncryptedAmt = getTrivialCiphertext(),
-                 .amountCommitment = Buffer(ecPedersenCommitmentLength),
-                 .balanceCommitment = Buffer(ecPedersenCommitmentLength),
+                 .amountCommitment = getTrivialCommitment(),
+                 .balanceCommitment = getTrivialCommitment(),
                  .err = tecNO_PERMISSION});
             mptAlice.send(
                 {.account = dave,
@@ -1365,8 +1418,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .senderEncryptedAmt = getTrivialCiphertext(),
                  .destEncryptedAmt = getTrivialCiphertext(),
                  .issuerEncryptedAmt = getTrivialCiphertext(),
-                 .amountCommitment = Buffer(ecPedersenCommitmentLength),
-                 .balanceCommitment = Buffer(ecPedersenCommitmentLength),
+                 .amountCommitment = getTrivialCommitment(),
+                 .balanceCommitment = getTrivialCommitment(),
                  .err = tecNO_PERMISSION});
         }
 
@@ -1380,8 +1433,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .senderEncryptedAmt = getTrivialCiphertext(),
                  .destEncryptedAmt = getTrivialCiphertext(),
                  .issuerEncryptedAmt = getTrivialCiphertext(),
-                 .amountCommitment = Buffer(ecPedersenCommitmentLength),
-                 .balanceCommitment = Buffer(ecPedersenCommitmentLength),
+                 .amountCommitment = getTrivialCommitment(),
+                 .balanceCommitment = getTrivialCommitment(),
                  .err = tecOBJECT_NOT_FOUND});
         }
 
@@ -1585,8 +1638,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .amt = 10,
                  .proof = getTrivialSendProofHex(4),
                  .auditorEncryptedAmt = getTrivialCiphertext(),
-                 .amountCommitment = Buffer(ecPedersenCommitmentLength),
-                 .balanceCommitment = Buffer(ecPedersenCommitmentLength),
+                 .amountCommitment = getTrivialCommitment(),
+                 .balanceCommitment = getTrivialCommitment(),
                  .err = tecBAD_PROOF});
         }
     }
@@ -1861,6 +1914,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             // invalid blinding factor length
             mptAlice.convertBack({.account = alice, .amt = 30, .blindingFactor = Buffer{}, .err = temMALFORMED});
+
+            // Balance commitment has correct length but invalid EC point data
+            mptAlice.convertBack(
+                {.account = bob,
+                 .amt = 30,
+                 .pedersenCommitment = Buffer(ecPedersenCommitmentLength),
+                 .err = temMALFORMED});
 
             mptAlice.convertBack({.account = bob, .amt = 30, .holderEncryptedAmt = Buffer{}, .err = temBAD_CIPHERTEXT});
 

@@ -112,7 +112,8 @@ MPTTester::MPTTester(MPTInitDef const& arg)
 {
 }
 
-MPTTester::operator MPT() const
+MPTTester::
+operator MPT() const
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
@@ -624,7 +625,8 @@ MPTTester::mpt(std::int64_t amount) const
     return xrpl::test::jtx::MPT(issuer_.name(), *id_)(amount);
 }
 
-MPTTester::operator Asset() const
+MPTTester::
+operator Asset() const
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
@@ -698,7 +700,11 @@ MPTTester::getClawbackProof(
         return std::nullopt;
     }
 
-    std::memcpy(pk.data, pubKeyBlob.data(), ecPubKeyLength);
+    if (!secp256k1_ec_pubkey_parse(ctx, &pk, pubKeyBlob.data(), ecPubKeyLength))
+    {
+        return std::nullopt;
+    }
+
     Buffer proof(ecEqualityProofLength);
 
     if (secp256k1_equality_plaintext_prove(
@@ -722,7 +728,8 @@ MPTTester::getSchnorrProof(Account const& account, uint256 const& ctxHash) const
         return std::nullopt;
 
     secp256k1_pubkey pk;
-    std::memcpy(pk.data, pubKey->data(), ecPubKeyLength);
+    if (secp256k1_ec_pubkey_parse(secp256k1Context(), &pk, pubKey->data(), ecPubKeyLength) != 1)
+        return std::nullopt;
 
     Buffer proof(ecSchnorrProofLength);
 
@@ -785,7 +792,8 @@ MPTTester::getConfidentialSendProof(
             return std::nullopt;
         }
 
-        std::memcpy(pk[i].data, recipient.publicKey.data(), ecPubKeyLength);
+        if (!secp256k1_ec_pubkey_parse(ctx, &pk[i], recipient.publicKey.data(), ecPubKeyLength))
+            return std::nullopt;
 
         sr.insert(sr.end(), blindingFactor.data(), blindingFactor.data() + ecBlindingFactorLength);
     }
@@ -839,9 +847,16 @@ MPTTester::getPedersenCommitment(std::uint64_t const amount, Buffer const& peder
     if (pedersenBlindingFactor.size() != ecBlindingFactorLength)
         Throw<std::runtime_error>("Invalid blinding factor size");
 
-    // current pedersen generation implementation fails if amount is 0
+    // secp256k1_mpt_pedersen_commit doesn't handle amount 0, return a trivial
+    // valid commitment for test purposes
     if (amount == 0)
-        return Buffer{ecPedersenCommitmentLength};
+    {
+        Buffer buf(ecPedersenCommitmentLength);
+        std::memset(buf.data(), 0, ecPedersenCommitmentLength);
+        buf.data()[0] = 0x02;
+        buf.data()[ecPedersenCommitmentLength - 1] = 0x01;
+        return buf;
+    }
 
     secp256k1_pubkey commitment;
     auto const ctx = secp256k1Context();
@@ -852,7 +867,16 @@ MPTTester::getPedersenCommitment(std::uint64_t const amount, Buffer const& peder
         Throw<std::runtime_error>("Pedersen commitment generation failed");
     }
 
-    return Buffer{commitment.data, ecPedersenCommitmentLength};
+    // Serialize commitment to compressed format (33 bytes)
+    unsigned char compressedCommitment[ecPedersenCommitmentLength];
+    size_t outLen = ecPedersenCommitmentLength;
+    if (secp256k1_ec_pubkey_serialize(ctx, compressedCommitment, &outLen, &commitment, SECP256K1_EC_COMPRESSED) != 1 ||
+        outLen != ecPedersenCommitmentLength)
+    {
+        Throw<std::runtime_error>("Pedersen commitment serialization failed");
+    }
+
+    return Buffer{compressedCommitment, ecPedersenCommitmentLength};
 }
 
 Buffer
@@ -1427,7 +1451,15 @@ MPTTester::generateKeyPair(Account const& account)
     if (!secp256k1_elgamal_generate_keypair(secp256k1Context(), privKey, &pubKey))
         Throw<std::runtime_error>("failed to generate key pair");
 
-    pubKeys.insert({account.id(), Buffer{pubKey.data, ecPubKeyLength}});
+    // Serialize public key to compressed format (33 bytes)
+    unsigned char compressedPubKey[ecPubKeyLength];
+    size_t outLen = ecPubKeyLength;
+    if (secp256k1_ec_pubkey_serialize(
+            secp256k1Context(), compressedPubKey, &outLen, &pubKey, SECP256K1_EC_COMPRESSED) != 1 ||
+        outLen != ecPubKeyLength)
+        Throw<std::runtime_error>("failed to serialize public key");
+
+    pubKeys.insert({account.id(), Buffer{compressedPubKey, ecPubKeyLength}});
     privKeys.insert({account.id(), Buffer{privKey, ecPrivKeyLength}});
 }
 
@@ -1752,10 +1784,12 @@ MPTTester::getAmountLinkageProof(
     }
 
     secp256k1_pubkey pk;
-    std::memcpy(pk.data, pubKey.data(), ecPubKeyLength);
+    if (secp256k1_ec_pubkey_parse(ctx, &pk, pubKey.data(), ecPubKeyLength) != 1)
+        return Buffer();
 
     secp256k1_pubkey pcm;
-    std::memcpy(pcm.data, params.pedersenCommitment.data(), ecPedersenCommitmentLength);
+    if (secp256k1_ec_pubkey_parse(ctx, &pcm, params.pedersenCommitment.data(), ecPedersenCommitmentLength) != 1)
+        return Buffer();
 
     Buffer proof(ecPedersenProofLength);
     if (secp256k1_elgamal_pedersen_link_prove(
@@ -1798,10 +1832,12 @@ MPTTester::getBalanceLinkageProof(
     }
 
     secp256k1_pubkey pk;
-    std::memcpy(pk.data, pubKey.data(), ecPubKeyLength);
+    if (secp256k1_ec_pubkey_parse(ctx, &pk, pubKey.data(), ecPubKeyLength) != 1)
+        return Buffer();
 
     secp256k1_pubkey pcm;
-    std::memcpy(pcm.data, params.pedersenCommitment.data(), ecPedersenCommitmentLength);
+    if (secp256k1_ec_pubkey_parse(ctx, &pcm, params.pedersenCommitment.data(), ecPedersenCommitmentLength) != 1)
+        return Buffer();
 
     Buffer proof(ecPedersenProofLength);
 
