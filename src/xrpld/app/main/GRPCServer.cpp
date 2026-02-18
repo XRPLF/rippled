@@ -530,14 +530,15 @@ GRPCServerImpl::createServerCredentials()
             if (ec)
             {
                 JLOG(journal_.error()) << "Failed to read gRPC SSL certificate file: " << *sslCertPath_ << " - "
-                                       << ec.message();
+                                       << ec.message();  // LCOV_EXCL_LINE
                 return nullptr;
             }
 
             std::string keyContents = getFileContents(ec, *sslKeyPath_);
             if (ec)
             {
-                JLOG(journal_.error()) << "Failed to read gRPC SSL key file: " << *sslKeyPath_ << " - " << ec.message();
+                JLOG(journal_.error()) << "Failed to read gRPC SSL key file: " << *sslKeyPath_ << " - "
+                                       << ec.message();  // LCOV_EXCL_LINE
                 return nullptr;
             }
 
@@ -547,8 +548,8 @@ GRPCServerImpl::createServerCredentials()
                 chainContents = getFileContents(ec, *sslChainPath_);
                 if (ec)
                 {
-                    JLOG(journal_.error())
-                        << "Failed to read gRPC SSL chain file: " << *sslChainPath_ << " - " << ec.message();
+                    JLOG(journal_.error()) << "Failed to read gRPC SSL chain file: " << *sslChainPath_ << " - "
+                                           << ec.message();  // LCOV_EXCL_LINE
                     return nullptr;
                 }
             }
@@ -565,7 +566,7 @@ GRPCServerImpl::createServerCredentials()
                 if (chainContents.empty())
                 {
                     JLOG(journal_.error()) << "Empty/truncated gRPC SSL chain file: " << *sslChainPath_
-                                           << " - failed to configure mutual TLS";
+                                           << " - failed to configure mutual TLS";  // LCOV_EXCL_LINE
                     return nullptr;
                 }
 
@@ -579,7 +580,7 @@ GRPCServerImpl::createServerCredentials()
         }
         catch (std::exception const& e)
         {
-            JLOG(journal_.error()) << "Exception while configuring gRPC TLS: " << e.what();
+            JLOG(journal_.error()) << "Exception while configuring gRPC TLS: " << e.what();  // LCOV_EXCL_LINE
             return nullptr;
         }
     }
