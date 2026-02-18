@@ -488,6 +488,78 @@ public:
     }
 
     void
+    testWithChainButNoTLS()
+    {
+        testcase("GRPCServer with ssl_chain but without both ssl_cert and ssl_key");
+
+        using namespace jtx;
+
+        // Test 1: ssl_chain specified without any TLS config
+        {
+            auto cfg = envconfig();
+            (*cfg)[SECTION_PORT_GRPC].set("ip", "127.0.0.1");
+            (*cfg)[SECTION_PORT_GRPC].set("port", "0");
+            (*cfg)[SECTION_PORT_GRPC].set("ssl_chain", getCACertPath().string());
+            // Intentionally omit both ssl_cert and ssl_key
+
+            try
+            {
+                Env env(*this, std::move(cfg));
+                fail("Should have thrown exception for ssl_chain without TLS config");
+            }
+            catch (std::runtime_error const& e)
+            {
+                BEAST_EXPECT(
+                    std::string(e.what()).find("ssl_chain requires both ssl_cert and ssl_key") != std::string::npos);
+            }
+        }
+
+        // Test 2: ssl_chain with only ssl_cert (missing ssl_key)
+        {
+            auto cfg = envconfig();
+            (*cfg)[SECTION_PORT_GRPC].set("ip", "127.0.0.1");
+            (*cfg)[SECTION_PORT_GRPC].set("port", "0");
+            (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", getServerCertPath().string());
+            (*cfg)[SECTION_PORT_GRPC].set("ssl_chain", getCACertPath().string());
+            // Intentionally omit ssl_key
+
+            try
+            {
+                Env env(*this, std::move(cfg));
+                fail("Should have thrown exception for ssl_chain with only ssl_cert");
+            }
+            catch (std::runtime_error const& e)
+            {
+                // This should fail with "Incomplete TLS configuration" first
+                // because ssl_cert is specified without ssl_key
+                BEAST_EXPECT(std::string(e.what()).find("Incomplete TLS configuration") != std::string::npos);
+            }
+        }
+
+        // Test 3: ssl_chain with only ssl_key (missing ssl_cert)
+        {
+            auto cfg = envconfig();
+            (*cfg)[SECTION_PORT_GRPC].set("ip", "127.0.0.1");
+            (*cfg)[SECTION_PORT_GRPC].set("port", "0");
+            (*cfg)[SECTION_PORT_GRPC].set("ssl_key", getServerKeyPath().string());
+            (*cfg)[SECTION_PORT_GRPC].set("ssl_chain", getCACertPath().string());
+            // Intentionally omit ssl_cert
+
+            try
+            {
+                Env env(*this, std::move(cfg));
+                fail("Should have thrown exception for ssl_chain with only ssl_key");
+            }
+            catch (std::runtime_error const& e)
+            {
+                // This should fail with "Incomplete TLS configuration" first
+                // because ssl_key is specified without ssl_cert
+                BEAST_EXPECT(std::string(e.what()).find("Incomplete TLS configuration") != std::string::npos);
+            }
+        }
+    }
+
+    void
     run() override
     {
         testWithoutTLS();
@@ -495,6 +567,7 @@ public:
         testWithMutualTLS();
         testWithMissingKey();
         testWithMissingCert();
+        testWithChainButNoTLS();
     }
 };
 
