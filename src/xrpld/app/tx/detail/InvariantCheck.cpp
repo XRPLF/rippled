@@ -3009,13 +3009,13 @@ ValidVault::finalize(STTx const& tx, TER const ret, XRPAmount const fee, ReadVie
                     DeltaInfo totalDelta{
                         afterVault.assetsTotal - beforeVault.assetsTotal,
                         std::max(
-                            afterVault.assetsTotal.scale<STAmount>(vaultAsset),
-                            beforeVault.assetsTotal.scale<STAmount>(vaultAsset))};
+                            numberScale(afterVault.assetsTotal, vaultAsset),
+                            numberScale(beforeVault.assetsTotal, vaultAsset))};
                     DeltaInfo availableDelta{
                         afterVault.assetsAvailable - beforeVault.assetsAvailable,
                         std::max(
-                            afterVault.assetsAvailable.scale<STAmount>(vaultAsset),
-                            beforeVault.assetsAvailable.scale<STAmount>(vaultAsset))};
+                            numberScale(afterVault.assetsAvailable, vaultAsset),
+                            numberScale(beforeVault.assetsAvailable, vaultAsset))};
                     auto const minScale = computeMinScale(
                         vaultAsset,
                         {
@@ -3170,13 +3170,13 @@ ValidVault::finalize(STTx const& tx, TER const ret, XRPAmount const fee, ReadVie
                     auto const totalDelta = DeltaInfo{
                         afterVault.assetsTotal - beforeVault.assetsTotal,
                         std::max(
-                            afterVault.assetsTotal.scale<STAmount>(vaultAsset),
-                            beforeVault.assetsTotal.scale<STAmount>(vaultAsset))};
+                            numberScale(afterVault.assetsTotal, vaultAsset),
+                            numberScale(beforeVault.assetsTotal, vaultAsset))};
                     auto const availableDelta = DeltaInfo{
                         afterVault.assetsAvailable - beforeVault.assetsAvailable,
                         std::max(
-                            afterVault.assetsAvailable.scale<STAmount>(vaultAsset),
-                            beforeVault.assetsAvailable.scale<STAmount>(vaultAsset))};
+                            numberScale(afterVault.assetsAvailable, vaultAsset),
+                            numberScale(beforeVault.assetsAvailable, vaultAsset))};
                     auto const minScale =
                         computeMinScale(vaultAsset, {*maybeVaultDeltaAssets, totalDelta, availableDelta});
 
@@ -3327,13 +3327,13 @@ ValidVault::finalize(STTx const& tx, TER const ret, XRPAmount const fee, ReadVie
                         auto const totalDelta = DeltaInfo{
                             afterVault.assetsTotal - beforeVault.assetsTotal,
                             std::max(
-                                afterVault.assetsTotal.scale<STAmount>(vaultAsset),
-                                beforeVault.assetsTotal.scale<STAmount>(vaultAsset))};
+                                numberScale(afterVault.assetsTotal, vaultAsset),
+                                numberScale(beforeVault.assetsTotal, vaultAsset))};
                         auto const availableDelta = DeltaInfo{
                             afterVault.assetsAvailable - beforeVault.assetsAvailable,
                             std::max(
-                                afterVault.assetsAvailable.scale<STAmount>(vaultAsset),
-                                beforeVault.assetsAvailable.scale<STAmount>(vaultAsset))};
+                                numberScale(afterVault.assetsAvailable, vaultAsset),
+                                numberScale(beforeVault.assetsAvailable, vaultAsset))};
                         auto const minScale =
                             computeMinScale(vaultAsset, {*maybeVaultDeltaAssets, totalDelta, availableDelta});
                         auto const vaultDeltaAssets = roundToAsset(vaultAsset, maybeVaultDeltaAssets->delta, minScale);

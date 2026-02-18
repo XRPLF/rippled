@@ -480,12 +480,14 @@ STAmount::zeroed() const
     return STAmount(mAsset);
 }
 
-inline STAmount::operator bool() const noexcept
+inline STAmount::
+operator bool() const noexcept
 {
     return *this != beast::zero;
 }
 
-inline STAmount::operator Number() const
+inline STAmount::
+operator Number() const
 {
     if (native())
         return xrp();
@@ -717,6 +719,13 @@ canAdd(STAmount const& amt1, STAmount const& amt2);
 
 bool
 canSubtract(STAmount const& amt1, STAmount const& amt2);
+
+template <AssetType Asset>
+inline int
+numberScale(Number const& number, Asset const& asset)
+{
+    return number.scale<STAmount>(asset);
+}
 
 }  // namespace xrpl
 

@@ -122,7 +122,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
         return roundToAsset(
             vaultAsset,
             tenthBipsOfValue(currentDebtTotal, TenthBips32(sleBroker->at(sfCoverRateMinimum))),
-            currentDebtTotal.scale<STAmount>(vaultAsset));
+            numberScale(currentDebtTotal, vaultAsset));
     }();
     if (coverAvail < amount)
         return tecINSUFFICIENT_FUNDS;
