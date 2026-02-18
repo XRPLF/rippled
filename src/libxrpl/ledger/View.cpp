@@ -1139,7 +1139,6 @@ adjustOwnerCount(
 
     if (sponsorSle)
     {
-        XRPL_ASSERT(sponsorSle, "xrpl::adjustOwnerCount : sponsor exists");
         auto const account = accountSle->getAccountID(sfAccount);
         auto const sponsorAcc = (sponsorSle)->getAccountID(sfAccount);
         {
