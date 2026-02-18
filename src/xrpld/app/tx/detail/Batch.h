@@ -51,6 +51,11 @@ public:
         ttLOAN_DELETE,
         ttLOAN_MANAGE,
         ttLOAN_PAY,
+        ttCONFIDENTIAL_MPT_SEND,
+        ttCONFIDENTIAL_MPT_CONVERT,
+        ttCONFIDENTIAL_MPT_CONVERT_BACK,
+        ttCONFIDENTIAL_MPT_MERGE_INBOX,
+        ttCONFIDENTIAL_MPT_CLAWBACK,
     });
 };
 
