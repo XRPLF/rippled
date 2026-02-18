@@ -874,6 +874,55 @@ public:
         }
 
         {
+            // sponsor trustline
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const sponsor("sponsor");
+
+            auto const& highAcc = alice > bob ? alice : bob;
+            auto const& lowAcc = alice > bob ? bob : alice;
+
+            for (bool isIssuerHigh : {false, true})
+            {
+                Env env{*this, testable_amendments()};
+                env.fund(XRP(10000), alice, bob, sponsor);
+                env.close();
+
+                auto const& issuer = isIssuerHigh ? highAcc : lowAcc;
+                auto const& user = isIssuerHigh ? lowAcc : highAcc;
+
+                auto const USD = issuer["USD"];
+                auto const currency = USD.currency;
+
+                env(trust(user, issuer["USD"](100)));
+                env.close();
+
+                auto const trustId = keylet::line(user, issuer, currency);
+                BEAST_EXPECT(env.le(trustId));
+
+                // transfer sponsor
+                env(sponsor::transfer(user, trustId.key),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sig(sfSponsorSignature, sponsor));
+                env.close();
+
+                BEAST_EXPECT(env.le(trustId));
+
+                BEAST_EXPECT(
+                    env.le(trustId)->getAccountID(isIssuerHigh ? sfLowSponsor : sfHighSponsor) == sponsor.id());
+                BEAST_EXPECT(!env.le(trustId)->isFieldPresent(isIssuerHigh ? sfHighSponsor : sfLowSponsor));
+
+                // dissolve sponsor
+                env(sponsor::transfer(user, trustId.key));
+                env.close();
+
+                BEAST_EXPECT(env.le(trustId));
+                BEAST_EXPECT(!env.le(trustId)->isFieldPresent(isIssuerHigh ? sfLowSponsor : sfHighSponsor));
+                BEAST_EXPECT(!env.le(trustId)->isFieldPresent(isIssuerHigh ? sfHighSponsor : sfLowSponsor));
+            }
+        }
+
+        {
             // invalid transfer
             Env env{*this, testable_amendments()};
             Account const alice("alice");

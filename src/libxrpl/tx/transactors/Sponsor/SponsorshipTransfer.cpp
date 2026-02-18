@@ -346,7 +346,7 @@ SponsorshipTransfer::doApply()
         else
         {
             // dissolve object sponsor
-            auto const oldSponsor = objSle->getAccountID(sfSponsor);
+            auto const oldSponsor = objSle->getAccountID(sponsorField);
             auto const oldSponsorSle = view().peek(keylet::account(oldSponsor));
             if (!oldSponsorSle)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -367,7 +367,7 @@ SponsorshipTransfer::doApply()
                     return ter;
 
             // remove sponsor from object
-            objSle->makeFieldAbsent(sfSponsor);
+            objSle->makeFieldAbsent(sponsorField);
             view().update(objSle);
         }
     }
