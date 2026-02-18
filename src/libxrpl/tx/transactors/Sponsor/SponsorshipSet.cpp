@@ -195,8 +195,11 @@ SponsorshipSet::doApply()
             keylet::ownerDir(sponseeAcc), (*sponsorObjSle)[sfSponseeNode], sponsorObjSle->key(), false);
 
         // transfer feeAmount from ledger entry
-        auto const feeAmount = sponsorObjSle->getFieldAmount(sfFeeAmount);
-        (*sponsorAccSle)[sfBalance] += feeAmount;
+        if (sponsorObjSle->isFieldPresent(sfFeeAmount))
+        {
+            auto const feeAmount = sponsorObjSle->getFieldAmount(sfFeeAmount);
+            (*sponsorAccSle)[sfBalance] += feeAmount;
+        }
 
         ctx_.view().erase(sponsorObjSle);
 
@@ -313,8 +316,11 @@ SponsorshipSet::deleteSponsorship(ApplyView& view, std::shared_ptr<SLE> const& s
     if (!sponsorAccSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const feeAmount = sle->getFieldAmount(sfFeeAmount);
-    (*sponsorAccSle)[sfBalance] += feeAmount;
+    if (sle->isFieldPresent(sfFeeAmount))
+    {
+        auto const feeAmount = sle->getFieldAmount(sfFeeAmount);
+        (*sponsorAccSle)[sfBalance] += feeAmount;
+    }
 
     auto const reserveSponsor = getLedgerEntryReserveSponsor(view, sle);
     adjustOwnerCount(view, sponsorAccSle, reserveSponsor, -1, j);
