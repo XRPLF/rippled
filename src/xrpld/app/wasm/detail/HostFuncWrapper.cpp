@@ -32,8 +32,7 @@ setData(InstanceWrapper const* runtime, int32_t dst, int32_t dstSize, uint8_t co
     if (!memory.s)
         return HfErrorToInt(HostFunctionError::NO_MEM_EXPORTED);
     // LCOV_EXCL_STOP
-
-    if (dst + dstSize > static_cast<int64_t>(memory.s))
+    if ((int64_t)dst + dstSize > memory.s)
         return HfErrorToInt(HostFunctionError::POINTER_OUT_OF_BOUNDS);
     if (srcSize > dstSize)
         return HfErrorToInt(HostFunctionError::BUFFER_TOO_SMALL);
@@ -133,7 +132,7 @@ getDataSlice(IW const* runtime, wasm_val_vec_t const* params, int32_t& i, bool i
         return Unexpected(HostFunctionError::NO_MEM_EXPORTED);
     // LCOV_EXCL_STOP
 
-    if (ptr + size > static_cast<int64_t>(memory.s))
+    if (ptr + size > memory.s)
         return Unexpected(HostFunctionError::POINTER_OUT_OF_BOUNDS);
 
     Slice data(memory.p + ptr, size);

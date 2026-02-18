@@ -210,9 +210,6 @@ InstanceWrapper::setGas(std::int64_t gas) const
 ModulePtr
 ModuleWrapper::init(StorePtr& s, Bytes const& wasmBin, beast::Journal j)
 {
-    if (wasmBin.empty())
-        throw std::runtime_error("empty WASM module");
-
     wasm_byte_vec_t const code{wasmBin.size(), (char*)(wasmBin.data())};
     ModulePtr m = ModulePtr(wasm_module_new(s.get(), &code), &wasm_module_delete);
     if (!m)
