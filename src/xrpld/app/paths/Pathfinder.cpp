@@ -1,6 +1,5 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/paths/Pathfinder.h>
-#include <xrpld/app/paths/RippleCalc.h>
 #include <xrpld/app/paths/RippleLineCache.h>
 #include <xrpld/app/paths/detail/PathfinderUtils.h>
 
@@ -10,6 +9,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/tx/paths/RippleCalc.h>
 
 #include <tuple>
 

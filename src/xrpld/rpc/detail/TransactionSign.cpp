@@ -4,8 +4,6 @@
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/paths/Pathfinder.h>
-#include <xrpld/app/tx/apply.h>  // Validity::Valid
-#include <xrpld/app/tx/applySteps.h>
 #include <xrpld/rpc/detail/LegacyPathFind.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
@@ -20,6 +18,8 @@
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/tx/apply.h>  // Validity::Valid
+#include <xrpl/tx/applySteps.h>
 
 #include <algorithm>
 #include <iterator>
