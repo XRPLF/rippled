@@ -405,9 +405,9 @@ public:
 
         using namespace jtx;
 
-        // Test with server cert, key, and CA chain for client verification
+        // Test with server cert, key, and CA for client verification
         auto cfg = envconfig(
-            addGrpcConfigWithTLSAndChain,
+            addGrpcConfigWithTLSAndClientCA,
             getServerCertPath().string(),
             getServerKeyPath().string(),
             getCACertPath().string());
@@ -488,45 +488,46 @@ public:
     }
 
     void
-    testWithChainButNoTLS()
+    testWithClientCAButNoTLS()
     {
-        testcase("GRPCServer with ssl_chain but without both ssl_cert and ssl_key");
+        testcase("GRPCServer with ssl_client_ca but without both ssl_cert and ssl_key");
 
         using namespace jtx;
 
-        // Test 1: ssl_chain specified without any TLS config
+        // Test 1: ssl_client_ca specified without any TLS config
         {
             auto cfg = envconfig();
             (*cfg)[SECTION_PORT_GRPC].set("ip", "127.0.0.1");
             (*cfg)[SECTION_PORT_GRPC].set("port", "0");
-            (*cfg)[SECTION_PORT_GRPC].set("ssl_chain", getCACertPath().string());
+            (*cfg)[SECTION_PORT_GRPC].set("ssl_client_ca", getCACertPath().string());
             // Intentionally omit both ssl_cert and ssl_key
 
             try
             {
                 Env env(*this, std::move(cfg));
-                fail("Should have thrown exception for ssl_chain without TLS config");
+                fail("Should have thrown exception for ssl_client_ca without TLS config");
             }
             catch (std::runtime_error const& e)
             {
                 BEAST_EXPECT(
-                    std::string(e.what()).find("ssl_chain requires both ssl_cert and ssl_key") != std::string::npos);
+                    std::string(e.what()).find("ssl_client_ca requires both ssl_cert and ssl_key") !=
+                    std::string::npos);
             }
         }
 
-        // Test 2: ssl_chain with only ssl_cert (missing ssl_key)
+        // Test 2: ssl_client_ca with only ssl_cert (missing ssl_key)
         {
             auto cfg = envconfig();
             (*cfg)[SECTION_PORT_GRPC].set("ip", "127.0.0.1");
             (*cfg)[SECTION_PORT_GRPC].set("port", "0");
             (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", getServerCertPath().string());
-            (*cfg)[SECTION_PORT_GRPC].set("ssl_chain", getCACertPath().string());
+            (*cfg)[SECTION_PORT_GRPC].set("ssl_client_ca", getCACertPath().string());
             // Intentionally omit ssl_key
 
             try
             {
                 Env env(*this, std::move(cfg));
-                fail("Should have thrown exception for ssl_chain with only ssl_cert");
+                fail("Should have thrown exception for ssl_client_ca with only ssl_cert");
             }
             catch (std::runtime_error const& e)
             {
@@ -536,19 +537,19 @@ public:
             }
         }
 
-        // Test 3: ssl_chain with only ssl_key (missing ssl_cert)
+        // Test 3: ssl_client_ca with only ssl_key (missing ssl_cert)
         {
             auto cfg = envconfig();
             (*cfg)[SECTION_PORT_GRPC].set("ip", "127.0.0.1");
             (*cfg)[SECTION_PORT_GRPC].set("port", "0");
             (*cfg)[SECTION_PORT_GRPC].set("ssl_key", getServerKeyPath().string());
-            (*cfg)[SECTION_PORT_GRPC].set("ssl_chain", getCACertPath().string());
+            (*cfg)[SECTION_PORT_GRPC].set("ssl_client_ca", getCACertPath().string());
             // Intentionally omit ssl_cert
 
             try
             {
                 Env env(*this, std::move(cfg));
-                fail("Should have thrown exception for ssl_chain with only ssl_key");
+                fail("Should have thrown exception for ssl_client_ca with only ssl_key");
             }
             catch (std::runtime_error const& e)
             {
@@ -560,6 +561,248 @@ public:
     }
 
     void
+    testWithCertChainButNoTLS()
+    {
+        testcase("GRPCServer with ssl_cert_chain but without both ssl_cert and ssl_key");
+
+        using namespace jtx;
+
+        // Test 1: ssl_cert_chain specified without any TLS config
+        {
+            auto cfg = envconfig();
+            (*cfg)[SECTION_PORT_GRPC].set("ip", "127.0.0.1");
+            (*cfg)[SECTION_PORT_GRPC].set("port", "0");
+            (*cfg)[SECTION_PORT_GRPC].set("ssl_cert_chain", getCACertPath().string());
+            // Intentionally omit both ssl_cert and ssl_key
+
+            try
+            {
+                Env env(*this, std::move(cfg));
+                fail("Should have thrown exception for ssl_cert_chain without TLS config");
+            }
+            catch (std::runtime_error const& e)
+            {
+                BEAST_EXPECT(
+                    std::string(e.what()).find("ssl_cert_chain requires both ssl_cert and ssl_key") !=
+                    std::string::npos);
+            }
+        }
+
+        // Test 2: ssl_cert_chain with only ssl_cert (missing ssl_key)
+        {
+            auto cfg = envconfig();
+            (*cfg)[SECTION_PORT_GRPC].set("ip", "127.0.0.1");
+            (*cfg)[SECTION_PORT_GRPC].set("port", "0");
+            (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", getServerCertPath().string());
+            (*cfg)[SECTION_PORT_GRPC].set("ssl_cert_chain", getCACertPath().string());
+            // Intentionally omit ssl_key
+
+            try
+            {
+                Env env(*this, std::move(cfg));
+                fail("Should have thrown exception for ssl_cert_chain with only ssl_cert");
+            }
+            catch (std::runtime_error const& e)
+            {
+                // This should fail with "Incomplete TLS configuration" first
+                // because ssl_cert is specified without ssl_key
+                BEAST_EXPECT(std::string(e.what()).find("Incomplete TLS configuration") != std::string::npos);
+            }
+        }
+    }
+
+    void
+    testWithCertChain()
+    {
+        testcase("GRPCServer with ssl_cert_chain for intermediate CA certificates");
+
+        using namespace jtx;
+
+        // Test with server cert, key, and cert chain (intermediate CA)
+        // In this test, we use the CA cert as a stand-in for an intermediate CA cert
+        auto cfg = envconfig(
+            addGrpcConfigWithTLSAndCertChain,
+            getServerCertPath().string(),
+            getServerKeyPath().string(),
+            getCACertPath().string());
+        Env env(*this, std::move(cfg));
+
+        // Verify the server actually started by checking the port
+        auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
+        BEAST_EXPECT(grpcPort.has_value());
+        BEAST_EXPECT(*grpcPort > 0);
+
+        auto const serverAddress = "localhost:" + std::to_string(*grpcPort);
+
+        // Test: TLS client should be able to connect (no client cert required)
+        grpc::SslCredentialsOptions sslOpts;
+        sslOpts.pem_root_certs = std::string(kCA_CERT_CONTENT);
+        auto tlsStub = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
+            grpc::CreateChannel(serverAddress, grpc::SslCredentials(sslOpts)));
+        BEAST_EXPECT(makeTestGRPCCall(tlsStub));
+
+        // Insecure client should fail
+        auto insecureStub = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
+            grpc::CreateChannel(serverAddress, grpc::InsecureChannelCredentials()));
+        BEAST_EXPECT(!makeTestGRPCCall(insecureStub));
+    }
+
+    void
+    testWithInvalidCertFile()
+    {
+        testcase("GRPCServer with invalid/non-existent certificate file");
+
+        using namespace jtx;
+
+        auto cfg = envconfig();
+        (*cfg)[SECTION_PORT_GRPC].set("ip", "127.0.0.1");
+        (*cfg)[SECTION_PORT_GRPC].set("port", "0");
+        (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", "/nonexistent/path/to/cert.pem");
+        (*cfg)[SECTION_PORT_GRPC].set("ssl_key", getServerKeyPath().string());
+
+        Env env(*this, std::move(cfg));
+
+        // Server should fail to start - verify port is 0
+        auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
+        BEAST_EXPECT(grpcPort.has_value());
+        BEAST_EXPECT(*grpcPort == 0);  // Server should not have started
+    }
+
+    void
+    testWithInvalidKeyFile()
+    {
+        testcase("GRPCServer with invalid/non-existent key file");
+
+        using namespace jtx;
+
+        auto cfg = envconfig();
+        (*cfg)[SECTION_PORT_GRPC].set("ip", "127.0.0.1");
+        (*cfg)[SECTION_PORT_GRPC].set("port", "0");
+        (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", getServerCertPath().string());
+        (*cfg)[SECTION_PORT_GRPC].set("ssl_key", "/nonexistent/path/to/key.pem");
+
+        Env env(*this, std::move(cfg));
+
+        // Server should fail to start - verify port is 0
+        auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
+        BEAST_EXPECT(grpcPort.has_value());
+        BEAST_EXPECT(*grpcPort == 0);  // Server should not have started
+    }
+
+    void
+    testWithInvalidCertChainFile()
+    {
+        testcase("GRPCServer with invalid/non-existent cert chain file");
+
+        using namespace jtx;
+
+        auto cfg = envconfig();
+        (*cfg)[SECTION_PORT_GRPC].set("ip", "127.0.0.1");
+        (*cfg)[SECTION_PORT_GRPC].set("port", "0");
+        (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", getServerCertPath().string());
+        (*cfg)[SECTION_PORT_GRPC].set("ssl_key", getServerKeyPath().string());
+        (*cfg)[SECTION_PORT_GRPC].set("ssl_cert_chain", "/nonexistent/path/to/chain.pem");
+
+        Env env(*this, std::move(cfg));
+
+        // Server should fail to start - verify port is 0
+        auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
+        BEAST_EXPECT(grpcPort.has_value());
+        BEAST_EXPECT(*grpcPort == 0);  // Server should not have started
+    }
+
+    void
+    testWithInvalidClientCAFile()
+    {
+        testcase("GRPCServer with invalid/non-existent client CA file");
+
+        using namespace jtx;
+
+        auto cfg = envconfig();
+        (*cfg)[SECTION_PORT_GRPC].set("ip", "127.0.0.1");
+        (*cfg)[SECTION_PORT_GRPC].set("port", "0");
+        (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", getServerCertPath().string());
+        (*cfg)[SECTION_PORT_GRPC].set("ssl_key", getServerKeyPath().string());
+        (*cfg)[SECTION_PORT_GRPC].set("ssl_client_ca", "/nonexistent/path/to/ca.pem");
+
+        Env env(*this, std::move(cfg));
+
+        // Server should fail to start - verify port is 0
+        auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
+        BEAST_EXPECT(grpcPort.has_value());
+        BEAST_EXPECT(*grpcPort == 0);  // Server should not have started
+    }
+
+    void
+    testWithEmptyClientCAFile()
+    {
+        testcase("GRPCServer with empty client CA file");
+
+        using namespace jtx;
+
+        // Create an empty file for client CA
+        auto emptyCAPath = getTempDir() / "empty_ca.pem";
+        std::ofstream emptyFile(emptyCAPath);
+        emptyFile.close();
+
+        auto cfg = envconfig();
+        (*cfg)[SECTION_PORT_GRPC].set("ip", "127.0.0.1");
+        (*cfg)[SECTION_PORT_GRPC].set("port", "0");
+        (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", getServerCertPath().string());
+        (*cfg)[SECTION_PORT_GRPC].set("ssl_key", getServerKeyPath().string());
+        (*cfg)[SECTION_PORT_GRPC].set("ssl_client_ca", emptyCAPath.string());
+
+        Env env(*this, std::move(cfg));
+
+        // Server should fail to start due to empty CA file
+        auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
+        BEAST_EXPECT(grpcPort.has_value());
+        BEAST_EXPECT(*grpcPort == 0);  // Server should not have started
+    }
+
+    void
+    testWithBothCertChainAndClientCA()
+    {
+        testcase("GRPCServer with both cert chain and client CA (full mTLS with intermediates)");
+
+        using namespace jtx;
+
+        // Test with all TLS features enabled: cert, key, cert_chain, and client_ca
+        auto cfg = envconfig();
+        (*cfg)[SECTION_PORT_GRPC].set("ip", getEnvLocalhostAddr());
+        (*cfg)[SECTION_PORT_GRPC].set("port", "0");
+        (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", getServerCertPath().string());
+        (*cfg)[SECTION_PORT_GRPC].set("ssl_key", getServerKeyPath().string());
+        (*cfg)[SECTION_PORT_GRPC].set("ssl_cert_chain", getCACertPath().string());  // Using CA as intermediate
+        (*cfg)[SECTION_PORT_GRPC].set("ssl_client_ca", getCACertPath().string());
+
+        Env env(*this, std::move(cfg));
+
+        // Verify the server started successfully
+        auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
+        BEAST_EXPECT(grpcPort.has_value());
+        BEAST_EXPECT(*grpcPort > 0);
+
+        auto const serverAddress = "localhost:" + std::to_string(*grpcPort);
+
+        // Test 1: TLS client WITHOUT client certificate should FAIL (mTLS requires client cert)
+        grpc::SslCredentialsOptions sslOptsNoClient;
+        sslOptsNoClient.pem_root_certs = std::string(kCA_CERT_CONTENT);
+        auto tlsStubNoClient = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
+            grpc::CreateChannel(serverAddress, grpc::SslCredentials(sslOptsNoClient)));
+        BEAST_EXPECT(!makeTestGRPCCall(tlsStubNoClient));
+
+        // Test 2: TLS client WITH client certificate should succeed
+        grpc::SslCredentialsOptions sslOptsWithClient;
+        sslOptsWithClient.pem_root_certs = std::string(kCA_CERT_CONTENT);
+        sslOptsWithClient.pem_cert_chain = std::string(kCLIENT_CERT_CONTENT);
+        sslOptsWithClient.pem_private_key = std::string(kCLIENT_KEY_CONTENT);
+        auto tlsStubWithClient = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
+            grpc::CreateChannel(serverAddress, grpc::SslCredentials(sslOptsWithClient)));
+        BEAST_EXPECT(makeTestGRPCCall(tlsStubWithClient));
+    }
+
+    void
     run() override
     {
         testWithoutTLS();
@@ -567,7 +810,15 @@ public:
         testWithMutualTLS();
         testWithMissingKey();
         testWithMissingCert();
-        testWithChainButNoTLS();
+        testWithClientCAButNoTLS();
+        testWithCertChainButNoTLS();
+        testWithCertChain();
+        testWithInvalidCertFile();
+        testWithInvalidKeyFile();
+        testWithInvalidCertChainFile();
+        testWithInvalidClientCAFile();
+        testWithEmptyClientCAFile();
+        testWithBothCertChainAndClientCA();
     }
 };
 

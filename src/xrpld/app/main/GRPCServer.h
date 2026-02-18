@@ -69,7 +69,8 @@ private:
     // TLS certificate paths
     std::optional<std::string> sslCertPath_;
     std::optional<std::string> sslKeyPath_;
-    std::optional<std::string> sslChainPath_;
+    std::optional<std::string> sslCertChainPath_;  // Intermediate CA certs for server cert chain
+    std::optional<std::string> sslClientCAPath_;   // CA cert for client certificate verification (mTLS)
 
     beast::Journal journal_;
 

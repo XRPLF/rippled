@@ -129,17 +129,32 @@ addGrpcConfigWithTLS(std::unique_ptr<Config> cfg, std::string const& certPath, s
 }
 
 std::unique_ptr<Config>
-addGrpcConfigWithTLSAndChain(
+addGrpcConfigWithTLSAndClientCA(
     std::unique_ptr<Config> cfg,
     std::string const& certPath,
     std::string const& keyPath,
-    std::string const& chainPath)
+    std::string const& clientCAPath)
 {
     (*cfg)[SECTION_PORT_GRPC].set("ip", getEnvLocalhostAddr());
     (*cfg)[SECTION_PORT_GRPC].set("port", "0");
     (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", certPath);
     (*cfg)[SECTION_PORT_GRPC].set("ssl_key", keyPath);
-    (*cfg)[SECTION_PORT_GRPC].set("ssl_chain", chainPath);
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_client_ca", clientCAPath);
+    return cfg;
+}
+
+std::unique_ptr<Config>
+addGrpcConfigWithTLSAndCertChain(
+    std::unique_ptr<Config> cfg,
+    std::string const& certPath,
+    std::string const& keyPath,
+    std::string const& certChainPath)
+{
+    (*cfg)[SECTION_PORT_GRPC].set("ip", getEnvLocalhostAddr());
+    (*cfg)[SECTION_PORT_GRPC].set("port", "0");
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", certPath);
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_key", keyPath);
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_cert_chain", certChainPath);
     return cfg;
 }
 
