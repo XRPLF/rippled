@@ -1059,7 +1059,7 @@ getTxReserveSponsor(ApplyView& view, STTx const& tx)
     return {};
 }
 
-std::shared_ptr<SLE const> const
+std::shared_ptr<SLE const>
 getTxReserveSponsor(ReadView const& view, STTx const& tx)
 {
     auto const sponsorID = getTxReserveSponsorAccountID(tx);
@@ -1085,7 +1085,7 @@ getLedgerEntryReserveSponsor(ApplyView& view, std::shared_ptr<SLE> const& sle, S
     return {};
 }
 
-std::shared_ptr<SLE const> const
+std::shared_ptr<SLE const>
 getLedgerEntryReserveSponsor(ReadView const& view, std::shared_ptr<SLE const> const& sle, SF_ACCOUNT const& field)
 {
     auto const sponsorID = getLedgerEntryReserveSponsorAccountID(sle, field);

@@ -445,7 +445,7 @@ getTxReserveSponsorAccountID(STTx const& tx);
 std::shared_ptr<SLE>
 getTxReserveSponsor(ApplyView& view, STTx const& tx);
 
-std::shared_ptr<SLE const> const
+std::shared_ptr<SLE const>
 getTxReserveSponsor(ReadView const& view, STTx const& tx);
 
 std::optional<AccountID>
@@ -454,7 +454,7 @@ getLedgerEntryReserveSponsorAccountID(std::shared_ptr<SLE const> const& sle, SF_
 std::shared_ptr<SLE>
 getLedgerEntryReserveSponsor(ApplyView& view, std::shared_ptr<SLE> const& sle, SF_ACCOUNT const& field = sfSponsor);
 
-std::shared_ptr<SLE const> const
+std::shared_ptr<SLE const>
 getLedgerEntryReserveSponsor(
     ReadView const& view,
     std::shared_ptr<SLE const> const& sle,
