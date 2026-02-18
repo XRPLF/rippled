@@ -26,9 +26,7 @@ jobs:
       all_changed_files: ${{ steps.changed_files.outputs.all_changed_files }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
-        with:
-          persist-credentials: "true"
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Get changed C++ files
         id: changed_files
