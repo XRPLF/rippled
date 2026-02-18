@@ -2531,6 +2531,45 @@ public:
 
             BEAST_EXPECT(env.le(keylet::line(bob, gw, USD.currency))->getAccountID(sfHighSponsor) == sponsor2.id());
         }
+        {
+            // MPT Escrow
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), bob, sponsor);
+            env.close();
+
+            MPTTester mptGw(env, gw, {.holders = {alice}});
+            mptGw.create({.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+            mptGw.authorize({.account = alice});
+            auto const MPT = mptGw["MPT"];
+            env(pay(gw, alice, MPT(10'000)));
+            env.close();
+            return;
+
+            // create Escrow from alice to bob
+            auto const seq = env.seq(alice);
+            env(escrow::create(alice, bob, MPT(100)),
+                escrow::condition(escrow::cb1),
+                escrow::cancel_time(env.now() + 100s));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 2);
+            BEAST_EXPECT(ownerCount(env, bob) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+
+            // finish Escrow
+            env(escrow::finish(bob, alice, seq),
+                escrow::condition(escrow::cb1),
+                escrow::fulfillment(escrow::fb1),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sig(sfSponsorSignature, sponsor),
+                fee(XRP(1)));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(ownerCount(env, bob) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+        }
     }
 
     void
@@ -3384,7 +3423,7 @@ public:
                 BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
                 BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == ocount);
 
-                // disolve sponsor
+                // dissolve sponsor
                 env(sponsor::transfer(alice, keylet::oracle(alice, 1).key));
                 env.close();
 

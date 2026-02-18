@@ -834,7 +834,8 @@ escrowUnlockApplyHelper<MPTIssue>(
 
     auto const mptID = amount.get<MPTIssue>().getMptID();
     auto const issuanceKey = keylet::mptIssuance(mptID);
-    if (!view.exists(keylet::mptoken(issuanceKey.key, receiver)) && createAsset && !receiverIssuer)
+    auto const mptKeylet = keylet::mptoken(issuanceKey.key, receiver);
+    if (!view.exists(mptKeylet) && createAsset && !receiverIssuer)
     {
         auto const sponsor = getTxReserveSponsor(view, tx);
         if (auto const ret = checkInsufficientReserve(view, tx, sleDest, xrpBalance, sponsor, 1); !isTesSuccess(ret))
@@ -847,10 +848,11 @@ escrowUnlockApplyHelper<MPTIssue>(
 
         // update owner count.
         adjustOwnerCount(view, tx, sleDest, sponsor, 1, journal);
-        addSponsorToLedgerEntry(sleDest, sponsor);
+        auto mptSle = view.peek(mptKeylet);
+        addSponsorToLedgerEntry(mptSle, sponsor);
     }
 
-    if (!view.exists(keylet::mptoken(issuanceKey.key, receiver)) && !receiverIssuer)
+    if (!view.exists(mptKeylet) && !receiverIssuer)
         return tecNO_PERMISSION;
 
     auto const xferRate = transferRate(view, amount);
