@@ -1926,15 +1926,31 @@ protected:
                          : std::max(
                                broker.vaultScale(env), state.principalOutstanding.exponent())));
                 NumberRoundModeGuard mg(Number::upward);
-                auto const defaultAmount = roundToAsset(
-                    broker.asset,
-                    std::min(
-                        tenthBipsOfValue(
-                            tenthBipsOfValue(
-                                brokerSle->at(sfDebtTotal), broker.params.coverRateMin),
-                            broker.params.coverRateLiquidation),
-                        state.totalValue - state.managementFeeOutstanding),
-                    state.loanScale);
+                auto const totalDefaultAmount = state.totalValue - state.managementFeeOutstanding;
+                auto const defaultAmount = [&] {
+                    if (env.enabled(fixDefaultCoverLogicOptimization))
+                    {
+                        // DefaultCovered = min(DefaultAmount × CoverRateMinimum, CoverAvailable)
+                        return roundToAsset(
+                            broker.asset,
+                            tenthBipsOfValue(totalDefaultAmount, broker.params.coverRateMin),
+                            state.loanScale);
+                    }
+                    else
+                    {
+                        // From XLS-66 spec, section 3.2.3.2:
+                        // DefaultCovered = min(DebtTotal × CoverRateMinimum × CoverRateLiquidation, DefaultAmount,
+                        // CoverAvailable)
+                        return roundToAsset(
+                            broker.asset,
+                            std::min(
+                                tenthBipsOfValue(
+                                    tenthBipsOfValue(brokerSle->at(sfDebtTotal), broker.params.coverRateMin),
+                                    broker.params.coverRateLiquidation),
+                                state.totalValue - state.managementFeeOutstanding),
+                            state.loanScale);
+                    }
+                }();
                 return std::make_pair(defaultAmount, brokerSle->at(sfOwner));
             }
             return std::make_pair(Number{}, AccountID{});
@@ -6849,7 +6865,7 @@ protected:
     }
 
     void
-    testSequentialFLCDepletion()
+    testSequentialFLCDepletion(FeatureBitset features)
     {
         testcase << "First-Loss Capital Depletion on Sequential Defaults";
 
@@ -6857,7 +6873,7 @@ protected:
         using namespace loan;
         using namespace loanBroker;
 
-        Env env(*this, all);
+        Env env(*this, features);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -6948,13 +6964,33 @@ protected:
         auto const afterFirstDebtTotal = brokerSle->at(sfDebtTotal);
         auto const afterFirstCoverAvailable = brokerSle->at(sfCoverAvailable);
 
-        // DebtTotal should have decreased by Loan A's debt
-        BEAST_EXPECT(afterFirstDebtTotal == 50'134);
+        if (env.enabled(fixDefaultCoverLogicOptimization))
+        {
+            // Proportional default cover
+            // Loan 1 Defaults: 20% of Loan A (50,134) = 10,027 seizure
+            // Result: CoverAvailable = 21,000 - 10,027 = 10,973
 
-        // CoverAvailable should have decreased significantly
-        BEAST_EXPECT(afterFirstCoverAvailable == 946);
+            // DebtTotal should have decreased by Loan A's debt (~52,067)
+            BEAST_EXPECT(afterFirstDebtTotal == 50'134);
 
+            // CoverAvailable should have decreased proportionally
+            BEAST_EXPECT(afterFirstCoverAvailable == 10'973);
+        }
+        else
+        {
+            // Loan 1 Defaults: 100% × (20% × 104,201) = 20,840 seizure
+            // Result: CoverAvailable = 21,000 - 20,840 = 160
+
+            // DebtTotal should have decreased by Loan A's debt
+            BEAST_EXPECT(afterFirstDebtTotal == 50'134);
+
+            // CoverAvailable should have decreased significantly
+            BEAST_EXPECT(afterFirstCoverAvailable == 946);
+        }
+
+        // Default Loan B
         env(manage(lender, loanBKeylet.key, tfLoanDefault), ter(tesSUCCESS));
+        env.close();
 
         brokerSle = env.le(brokerKeylet);
         if (!BEAST_EXPECT(brokerSle))
@@ -6962,9 +6998,27 @@ protected:
         auto const afterSecondDebtTotal = brokerSle->at(sfDebtTotal);
         auto const afterSecondCoverAvailable = brokerSle->at(sfCoverAvailable);
 
+        // Both scenarios: DebtTotal should be 0 after both loans default
         BEAST_EXPECT(afterSecondDebtTotal == 0);
 
-        BEAST_EXPECT(afterSecondCoverAvailable == 0);
+        if (env.enabled(fixDefaultCoverLogicOptimization))
+        {
+            // Proportional default cover
+            // Loan 2 Defaults: 20% of Loan B (50,134) = 10,027 seizure
+            // Result: CoverAvailable = 10,973 - 10,027 = 946 (safety buffer remains)
+
+            // Both loans are covered equitably with a safety buffer remaining
+            BEAST_EXPECT(afterSecondCoverAvailable == 946);
+        }
+        else
+        {
+            // Scenario A: Global Logic (Old Formula)
+            // Loan 2 Defaults: Only 160 remains to cover a 52,067 loss
+            // Result: CoverAvailable = 0 (fully depleted)
+
+            // CoverAvailable should be fully depleted
+            BEAST_EXPECT(afterSecondCoverAvailable == 0);
+        }
     }
 
     // Tests that vault withdrawals work correctly when the vault has unrealized
@@ -7150,7 +7204,8 @@ public:
         testLoanPayBrokerOwnerUnauthorizedMPT();
         testLoanPayBrokerOwnerNoPermissionedDomainMPT();
         testLoanSetBrokerOwnerNoPermissionedDomainMPT();
-        testSequentialFLCDepletion();
+        testSequentialFLCDepletion(all - fixDefaultCoverLogicOptimization);
+        testSequentialFLCDepletion(all);
     }
 };
 

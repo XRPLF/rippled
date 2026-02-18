@@ -141,20 +141,37 @@ LoanManage::defaultLoan(
     // Apply the First-Loss Capital to the Default Amount
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     TenthBips32 const coverRateLiquidation{brokerSle->at(sfCoverRateLiquidation)};
+
+    auto const covered = [&]() {
+        // Always round the minimum required up.
+        NumberRoundModeGuard mg(Number::upward);
+
+        if (view.rules().enabled(fixDefaultCoverLogicOptimization))
+        {
+            // New formula: DefaultCovered = min(DefaultAmount × CoverRateMinimum, CoverAvailable)
+            // Round the liquidation amount up
+            return roundToAsset(vaultAsset, tenthBipsOfValue(totalDefaultAmount, coverRateMinimum), loanScale);
+        }
+        else
+        {
+            auto const minimumCover = tenthBipsOfValue(brokerDebtTotalProxy.value(), coverRateMinimum);
+            // Round the liquidation amount up
+            return roundToAsset(
+                vaultAsset,
+                /*
+                 * This formula is from the XLS-66 spec, section 3.2.3.2 (State
+                 * Changes), specifically "if the `tfLoanDefault` flag is set" /
+                 * "Apply the First-Loss Capital to the Default Amount"
+                 */
+                std::min(tenthBipsOfValue(minimumCover, coverRateLiquidation), totalDefaultAmount),
+                loanScale);
+        }
+    }();
+
     auto const defaultCovered = [&]() {
         // Always round the minimum required up.
         NumberRoundModeGuard mg(Number::upward);
-        auto const minimumCover = tenthBipsOfValue(brokerDebtTotalProxy.value(), coverRateMinimum);
-        // Round the liquidation amount up, too
-        auto const covered = roundToAsset(
-            vaultAsset,
-            /*
-             * This formula is from the XLS-66 spec, section 3.2.3.2 (State
-             * Changes), specifically "if the `tfLoanDefault` flag is set" /
-             * "Apply the First-Loss Capital to the Default Amount"
-             */
-            std::min(tenthBipsOfValue(minimumCover, coverRateLiquidation), totalDefaultAmount),
-            loanScale);
+
         auto const coverAvailable = *brokerSle->at(sfCoverAvailable);
 
         return std::min(covered, coverAvailable);
