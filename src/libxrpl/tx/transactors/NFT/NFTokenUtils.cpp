@@ -487,11 +487,7 @@ removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, s
 
     auto const sponsor = getLedgerEntryReserveSponsor(view, curr);
     adjustOwnerCount(
-        view,
-        view.peek(keylet::account(owner)),
-        getLedgerEntryReserveSponsor(view, curr),
-        -1,
-        beast::Journal{beast::Journal::getNullSink()});
+        view, view.peek(keylet::account(owner)), sponsor, -1, beast::Journal{beast::Journal::getNullSink()});
 
     view.erase(curr);
 
