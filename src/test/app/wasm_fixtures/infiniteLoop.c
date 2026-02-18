@@ -1,8 +1,7 @@
-int
-loop()
+int loop()
 {
-    int volatile x = 0;
-    while (1)
-        x++;
-    return x;
+  int volatile x = 0;
+  while (1)
+    x++;
+  return x;
 }

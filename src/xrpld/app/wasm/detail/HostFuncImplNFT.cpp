@@ -1,8 +1,8 @@
-#include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/app/wasm/HostFuncImpl.h>
 
 #include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/tx/transactors/NFT/NFTokenUtils.h>
 
 namespace xrpl {
 

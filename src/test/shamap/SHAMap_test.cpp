@@ -196,40 +196,56 @@ public:
             testcase("build/tear unbacked");
         {
             constexpr std::array keys{
-                uint256("b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("b92881fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("b92691fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("b92791fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("b91891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("b99891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("f22891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8")};
+                uint256(
+                    "b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "b92881fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "b92691fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "b92791fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "b91891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "b99891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "f22891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8")};
 
             constexpr std::array hashes{
-                uint256("B7387CFEA0465759ADC718E8C42B52D2309D179B326E239EB5075C"
-                        "64B6281F7F"),
-                uint256("FBC195A9592A54AB44010274163CB6BA95F497EC5BA0A883184546"
-                        "7FB2ECE266"),
-                uint256("4E7D2684B65DFD48937FFB775E20175C43AF0C94066F7D5679F51A"
-                        "E756795B75"),
-                uint256("7A2F312EB203695FFD164E038E281839EEF06A1B99BFC263F3CECC"
-                        "6C74F93E07"),
-                uint256("395A6691A372387A703FB0F2C6D2C405DAF307D0817F8F0E207596"
-                        "462B0E3A3E"),
-                uint256("D044C0A696DE3169CC70AE216A1564D69DE96582865796142CE7D9"
-                        "8A84D9DDE4"),
-                uint256("76DCC77C4027309B5A91AD164083264D70B77B5E43E08AEDA5EBF9"
-                        "4361143615"),
-                uint256("DF4220E93ADC6F5569063A01B4DC79F8DB9553B6A3222ADE23DEA0"
-                        "2BBE7230E5")};
+                uint256(
+                    "B7387CFEA0465759ADC718E8C42B52D2309D179B326E239EB5075C"
+                    "64B6281F7F"),
+                uint256(
+                    "FBC195A9592A54AB44010274163CB6BA95F497EC5BA0A883184546"
+                    "7FB2ECE266"),
+                uint256(
+                    "4E7D2684B65DFD48937FFB775E20175C43AF0C94066F7D5679F51A"
+                    "E756795B75"),
+                uint256(
+                    "7A2F312EB203695FFD164E038E281839EEF06A1B99BFC263F3CECC"
+                    "6C74F93E07"),
+                uint256(
+                    "395A6691A372387A703FB0F2C6D2C405DAF307D0817F8F0E207596"
+                    "462B0E3A3E"),
+                uint256(
+                    "D044C0A696DE3169CC70AE216A1564D69DE96582865796142CE7D9"
+                    "8A84D9DDE4"),
+                uint256(
+                    "76DCC77C4027309B5A91AD164083264D70B77B5E43E08AEDA5EBF9"
+                    "4361143615"),
+                uint256(
+                    "DF4220E93ADC6F5569063A01B4DC79F8DB9553B6A3222ADE23DEA0"
+                    "2BBE7230E5")};
 
             SHAMap map(SHAMapType::FREE, f);
             if (!backed)
@@ -258,22 +274,30 @@ public:
 
         {
             constexpr std::array keys{
-                uint256("f22891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("b99891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("b92881fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("b92791fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("b92691fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("b91891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8")};
+                uint256(
+                    "f22891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "b99891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "b92881fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "b92791fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "b92691fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "b91891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8")};
 
             tests::TestNodeFamily tf{journal};
             SHAMap map{SHAMapType::FREE, tf};

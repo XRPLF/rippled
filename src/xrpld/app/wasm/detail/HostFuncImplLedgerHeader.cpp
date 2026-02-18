@@ -1,6 +1,6 @@
-#include <xrpld/app/misc/AmendmentTable.h>
 #include <xrpld/app/wasm/HostFuncImpl.h>
 
+#include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/protocol/digest.h>
 
 namespace xrpl {
@@ -42,7 +42,7 @@ WasmHostFunctionsImpl::isAmendmentEnabled(uint256 const& amendmentId)
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::isAmendmentEnabled(std::string_view const& amendmentName)
 {
-    auto const& table = ctx.app.getAmendmentTable();
+    auto const& table = ctx.registry.getAmendmentTable();
     auto const amendment = table.find(std::string(amendmentName));
     return ctx.view().rules().enabled(amendment);
 }
