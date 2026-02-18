@@ -90,3 +90,5 @@ extern std::string const thousandParamsHex;
 extern std::string const thousand1ParamsHex;
 extern std::string const locals10kHex;
 extern std::string const functions5kHex;
+
+extern std::string const opcReservedHex;
