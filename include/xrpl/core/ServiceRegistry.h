@@ -41,6 +41,7 @@ class LoadFeeTrack;
 class LoadManager;
 class ManifestCache;
 class NetworkOPs;
+class NetworkIDService;
 class OpenLedger;
 class OrderBookDB;
 class Overlay;
@@ -98,6 +99,9 @@ public:
 
     virtual CachedSLEs&
     cachedSLEs() = 0;
+
+    virtual NetworkIDService&
+    getNetworkIDService() = 0;
 
     // Protocol and validation services
     virtual AmendmentTable&

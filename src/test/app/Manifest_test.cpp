@@ -250,11 +250,12 @@ public:
 
                 if (inManifests.size() == loadedManifests.size())
                 {
-                    BEAST_EXPECT(std::equal(
-                        inManifests.begin(),
-                        inManifests.end(),
-                        loadedManifests.begin(),
-                        [](Manifest const* lhs, Manifest const* rhs) { return *lhs == *rhs; }));
+                    BEAST_EXPECT(
+                        std::equal(
+                            inManifests.begin(),
+                            inManifests.end(),
+                            loadedManifests.begin(),
+                            [](Manifest const* lhs, Manifest const* rhs) { return *lhs == *rhs; }));
                 }
                 else
                 {

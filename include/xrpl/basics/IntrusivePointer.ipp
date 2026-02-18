@@ -208,7 +208,8 @@ SharedIntrusive<T>::operator->() const noexcept
 }
 
 template <class T>
-SharedIntrusive<T>::operator bool() const noexcept
+SharedIntrusive<T>::
+operator bool() const noexcept
 {
     return bool(unsafeGetRawPtr());
 }
@@ -503,7 +504,8 @@ SharedWeakUnion<T>::getStrong() const
 }
 
 template <class T>
-SharedWeakUnion<T>::operator bool() const noexcept
+SharedWeakUnion<T>::
+operator bool() const noexcept
 {
     return bool(get());
 }

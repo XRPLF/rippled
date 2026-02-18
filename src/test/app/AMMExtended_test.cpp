@@ -5,15 +5,15 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/sendmax.h>
 
-#include <xrpld/app/misc/AMMUtils.h>
-#include <xrpld/app/paths/AMMContext.h>
 #include <xrpld/app/paths/AMMOffer.h>
-#include <xrpld/app/paths/Flow.h>
-#include <xrpld/app/paths/detail/StrandFlow.h>
 
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/tx/paths/Flow.h>
+#include <xrpl/tx/paths/detail/StrandFlow.h>
+#include <xrpl/tx/transactors/AMM/AMMContext.h>
+#include <xrpl/tx/transactors/AMM/AMMUtils.h>
 
 #include <utility>
 #include <vector>
