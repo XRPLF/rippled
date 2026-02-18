@@ -4,9 +4,9 @@
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/CanonicalTXSet.h>
-#include <xrpld/app/tx/apply.h>
 
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/tx/apply.h>
 
 namespace xrpl {
 

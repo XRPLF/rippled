@@ -1,12 +1,11 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/OrderBookDBImpl.h>
-#include <xrpld/app/misc/AMMUtils.h>
-#include <xrpld/core/Config.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/tx/transactors/AMM/AMMUtils.h>
 
 namespace xrpl {
 

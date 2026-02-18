@@ -109,7 +109,11 @@ target_link_libraries(
            xrpl.libxrpl.protocol
            xrpl.libxrpl.rdb
            xrpl.libxrpl.server
+           xrpl.libxrpl.shamap
            xrpl.libxrpl.conditions)
+
+add_module(xrpl tx)
+target_link_libraries(xrpl.libxrpl.tx PUBLIC xrpl.libxrpl.ledger)
 
 add_library(xrpl.libxrpl)
 set_target_properties(xrpl.libxrpl PROPERTIES OUTPUT_NAME xrpl)
@@ -135,7 +139,8 @@ target_link_modules(
     rdb
     resource
     server
-    shamap)
+    shamap
+    tx)
 
 # All headers in libxrpl are in modules.
 # Uncomment this stanza if you have not yet moved new headers into a module.

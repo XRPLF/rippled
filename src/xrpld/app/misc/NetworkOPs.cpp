@@ -10,9 +10,7 @@
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/main/LoadManager.h>
 #include <xrpld/app/main/Tuning.h>
-#include <xrpld/app/misc/AmendmentTable.h>
 #include <xrpld/app/misc/DeliverMax.h>
-#include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/misc/ValidatorKeys.h>
@@ -20,9 +18,9 @@
 #include <xrpld/app/misc/detail/AccountTxPaging.h>
 #include <xrpld/app/misc/make_NetworkOPs.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
-#include <xrpld/app/tx/apply.h>
 #include <xrpld/consensus/Consensus.h>
 #include <xrpld/consensus/ConsensusParms.h>
+#include <xrpld/core/ConfigSections.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
@@ -42,6 +40,7 @@
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/crypto/RFC1751.h>
 #include <xrpl/crypto/csprng.h>
+#include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/Feature.h>
@@ -52,6 +51,8 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/resource/ResourceManager.h>
+#include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/tx/apply.h>
 
 #include <boost/asio/ip/host_name.hpp>
 #include <boost/asio/steady_timer.hpp>

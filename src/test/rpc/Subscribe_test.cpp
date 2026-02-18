@@ -3,7 +3,6 @@
 #include <test/jtx/envconfig.h>
 
 #include <xrpld/app/main/LoadManager.h>
-#include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/beast/unit_test.h>
@@ -11,6 +10,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
 
 #include <tuple>
