@@ -1226,6 +1226,7 @@ public:
 
         Account const alice("alice");
         Account const sponsor("sponsor");
+        Account const sponsor2("sponsor2");
         Account const bob("bob");
         Account const charlie("charlie");
         Account const gw("gw");
@@ -1241,7 +1242,7 @@ public:
         }
 
         Env env{*this, testable_amendments()};
-        env.fund(XRP(10000), alice, sponsor);
+        env.fund(XRP(10000), alice, sponsor, sponsor2);
         env.close();
 
         // Invalid flags
@@ -1275,18 +1276,29 @@ public:
         // Use tfSponsorCreatedAccount to sponsor an account
         {
             // to funded account
-            env(pay(sponsor, bob, drops(1)), txflags(tfSponsorCreatedAccount), ter(tecNO_SPONSOR_PERMISSION));
+            env(pay(sponsor2, bob, drops(1)),
+                txflags(tfSponsorCreatedAccount),
+                fee(XRP(1)),
+                ter(tecNO_SPONSOR_PERMISSION));
+            env.close();
+
+            BEAST_EXPECT(env.balance(sponsor2) == XRP(9999));
+
+            // to non-funded account / insufficient balance for reserve
+            env(pay(sponsor2, charlie, XRP(9999) - env.current()->fees().reserve + drops(1)),
+                txflags(tfSponsorCreatedAccount),
+                ter(tecUNFUNDED_PAYMENT));
             env.close();
 
             // to non-funded account
-            env(pay(sponsor, charlie, drops(1)), txflags(tfSponsorCreatedAccount));
+            env(pay(sponsor2, charlie, drops(1)), txflags(tfSponsorCreatedAccount), fee(XRP(1)));
             env.close();
 
             auto const charlieSle = env.le(keylet::account(charlie));
             BEAST_EXPECT(charlieSle->isFieldPresent(sfSponsor));
-            BEAST_EXPECT(charlieSle->getAccountID(sfSponsor) == sponsor.id());
+            BEAST_EXPECT(charlieSle->getAccountID(sfSponsor) == sponsor2.id());
             BEAST_EXPECT(sponsoredOwnerCount(env, charlie) == 0);
-            BEAST_EXPECT(sponsoringAccountCount(env, sponsor) == 1);
+            BEAST_EXPECT(sponsoringAccountCount(env, sponsor2) == 1);
         }
     }
 

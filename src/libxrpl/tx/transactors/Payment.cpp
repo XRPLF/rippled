@@ -562,7 +562,8 @@ Payment::doApply()
 
     // the number of reserves in this ledger for this account that require a
     // reserve.
-    auto const reserve = calculateReserve(sleSrc, view().fees());
+    auto const reserve = calculateReserve(sleSrc, view().fees()) +
+        ((txFlags & tfSponsorCreatedAccount) ? view().fees().reserve : beast::zero);
 
     // mPriorBalance is the balance on the sending account BEFORE the
     // fees were charged. We want to make sure we have enough reserve
