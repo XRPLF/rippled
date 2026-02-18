@@ -50,10 +50,10 @@ struct FeeSetup
     XRPAmount reference_fee{10};
 
     /** The account reserve requirement in drops. */
-    XRPAmount account_reserve{10 * DROPS_PER_XRP};
+    XRPAmount account_reserve{1 * DROPS_PER_XRP};
 
     /** The per-owned item reserve requirement in drops. */
-    XRPAmount owner_reserve{2 * DROPS_PER_XRP};
+    XRPAmount owner_reserve{0.2 * DROPS_PER_XRP};
 
     /* (Remember to update the example cfg files when changing any of these
      * values.) */
