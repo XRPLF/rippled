@@ -102,9 +102,7 @@ mallocTrim([[maybe_unused]] std::optional<std::string> const& tag, beast::Journa
         auto const statmBefore = readFile(statmPath);
         long const rssBeforeKB = detail::parseStatmRSSkB(statmBefore);
 
-        struct rusage ru0
-        {
-        };
+        struct rusage ru0{};
         bool const have_ru0 = getRusageThread(ru0);
 
         auto const t0 = std::chrono::steady_clock::now();
@@ -113,9 +111,7 @@ mallocTrim([[maybe_unused]] std::optional<std::string> const& tag, beast::Journa
 
         auto const t1 = std::chrono::steady_clock::now();
 
-        struct rusage ru1
-        {
-        };
+        struct rusage ru1{};
         bool const have_ru1 = getRusageThread(ru1);
 
         auto const statmAfter = readFile(statmPath);
