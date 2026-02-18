@@ -556,8 +556,15 @@ GRPCServerImpl::createServerCredentials()
             grpc::SslServerCredentialsOptions sslOpts;
             sslOpts.pem_key_cert_pairs.push_back(keyCertPair);
 
-            if (!chainContents.empty())
+            if (sslChainPath_.has_value())
             {
+                if (chainContents.empty())
+                {
+                    JLOG(journal_.error()) << "Empty/truncated gRPC SSL chain file: " << *sslChainPath_
+                                           << " - failed to configure mutual TLS";
+                    return nullptr;
+                }
+
                 sslOpts.pem_root_certs = chainContents;
                 sslOpts.client_certificate_request = GRPC_SSL_REQUEST_AND_REQUIRE_CLIENT_CERTIFICATE_AND_VERIFY;
                 JLOG(journal_.info()) << "gRPC mutual TLS enabled - client certificates will be required and verified";
