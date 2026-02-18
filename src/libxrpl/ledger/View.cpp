@@ -1170,18 +1170,14 @@ adjustOwnerCount(
         {
             // pre funded
             // update the pre-funded ReserveCount on Sponsorship ledger object
-            XRPL_ASSERT(sponsorObjSle, "xrpl::adjustOwnerCount : co-signing sponsor exists");
 
-            auto const currentReserveCount = sponsorObjSle->getFieldU32(sfReserveCount);
-            if (amount > 0)
-                XRPL_ASSERT(currentReserveCount >= amount, "xrpl::adjustOwnerCount : enough reserve count");
-
-            if (currentReserveCount - amount > 0)
-                // if amount > 0, reduce the reserve count
-                // if amount < 0, payback the reserve count
-                sponsorObjSle->setFieldU32(sfReserveCount, currentReserveCount - amount);
-            else
+            std::uint32_t const currentReserveCount = sponsorObjSle->getFieldU32(sfReserveCount);
+            // Reserve count moves opposite to amount: +amount => consume reserve (-), -amount => payback (+)
+            std::uint32_t const adjusted = confineOwnerCount(currentReserveCount, -amount, sponsorAcc, j);
+            if (adjusted == 0)
                 sponsorObjSle->makeFieldAbsent(sfReserveCount);
+            else
+                sponsorObjSle->setFieldU32(sfReserveCount, adjusted);
             view.update(sponsorObjSle);
         }
     }
