@@ -315,6 +315,11 @@ public:
 
         // Invalid Flags
         env(noop(alice), sponsor::as(sponsor, (tfSponsorFee | tfSponsorReserve) + 1), ter(temINVALID_FLAG));
+
+        // Invalid Flags without sponsor
+        auto tx = noop(alice);
+        tx[sfSponsorFlags.jsonName] = tfSponsorFee | tfSponsorReserve;
+        env(tx, ter(temINVALID_FLAG));
     }
 
     void

@@ -157,7 +157,13 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
         return temINVALID_FLAG;
     }
 
-    if (hasSponsorSig && !hasSponsor)
+    if (!hasSponsor && hasSponsorFlags)
+    {
+        JLOG(ctx.j.debug()) << "preflight1: sponsor flags without sponsor definition";
+        return temINVALID_FLAG;
+    }
+
+    if (!hasSponsor && hasSponsorSig)
     {
         JLOG(ctx.j.debug()) << "preflight1: sponsor signature without sponsor definition";
         return temMALFORMED;
