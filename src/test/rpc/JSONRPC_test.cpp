@@ -1,7 +1,6 @@
 #include <test/jtx.h>
 #include <test/jtx/envconfig.h>
 
-#include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
@@ -10,6 +9,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/server/LoadFeeTrack.h>
 
 namespace xrpl {
 

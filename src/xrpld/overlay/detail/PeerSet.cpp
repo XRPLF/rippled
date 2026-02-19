@@ -1,9 +1,8 @@
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/HashRouter.h>
-#include <xrpld/core/JobQueue.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/PeerSet.h>
 
+#include <xrpl/core/HashRouter.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/digest.h>
 

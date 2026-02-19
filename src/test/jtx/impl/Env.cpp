@@ -10,12 +10,12 @@
 #include <test/jtx/utility.h>
 
 #include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/rpc/RPCCall.h>
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/scope.h>
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/net/HTTPClient.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -25,8 +25,10 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/NetworkOPs.h>
 
 #include <memory>
+#include <source_location>
 
 namespace xrpl {
 namespace test {
@@ -330,7 +332,7 @@ Env::parseResult(Json::Value const& jr)
 }
 
 void
-Env::submit(JTx const& jt)
+Env::submit(JTx const& jt, std::source_location const& loc)
 {
     ParsedResult parsedResult;
     auto const jr = [&]() {
@@ -356,11 +358,11 @@ Env::submit(JTx const& jt)
             return Json::Value();
         }
     }();
-    return postconditions(jt, parsedResult, jr);
+    return postconditions(jt, parsedResult, jr, loc);
 }
 
 void
-Env::sign_and_submit(JTx const& jt, Json::Value params)
+Env::sign_and_submit(JTx const& jt, Json::Value params, std::source_location const& loc)
 {
     auto const account = lookup(jt.jv[jss::Account].asString());
     auto const& passphrase = account.name();
@@ -393,25 +395,26 @@ Env::sign_and_submit(JTx const& jt, Json::Value params)
     test.expect(parsedResult.ter, "ter uninitialized!");
     ter_ = parsedResult.ter.value_or(telENV_RPC_FAILED);
 
-    return postconditions(jt, parsedResult, jr);
+    return postconditions(jt, parsedResult, jr, loc);
 }
 
 void
-Env::postconditions(JTx const& jt, ParsedResult const& parsed, Json::Value const& jr)
+Env::postconditions(JTx const& jt, ParsedResult const& parsed, Json::Value const& jr, std::source_location const& loc)
 {
     auto const line = jt.testLine ? " (" + to_string(*jt.testLine) + ")" : "";
-    bool bad = !test.expect(parsed.ter, "apply: No ter result!" + line);
+    auto const locStr = std::string("(") + loc.file_name() + ":" + to_string(loc.line()) + ")";
+    bool bad = !test.expect(parsed.ter, "apply " + locStr + ": No ter result!" + line);
     bad =
         (jt.ter && parsed.ter &&
          !test.expect(
              *parsed.ter == *jt.ter,
-             "apply: Got " + transToken(*parsed.ter) + " (" + transHuman(*parsed.ter) + "); Expected " +
+             "apply " + locStr + ": Got " + transToken(*parsed.ter) + " (" + transHuman(*parsed.ter) + "); Expected " +
                  transToken(*jt.ter) + " (" + transHuman(*jt.ter) + ")" + line));
     using namespace std::string_literals;
     bad = (jt.rpcCode &&
            !test.expect(
                parsed.rpcCode == jt.rpcCode->first && parsed.rpcMessage == jt.rpcCode->second,
-               "apply: Got RPC result "s +
+               "apply " + locStr + ": Got RPC result "s +
                    (parsed.rpcCode ? RPC::get_error_info(*parsed.rpcCode).token.c_str() : "NO RESULT") + " (" +
                    parsed.rpcMessage + "); Expected " + RPC::get_error_info(jt.rpcCode->first).token.c_str() + " (" +
                    jt.rpcCode->second + ")" + line)) ||
@@ -419,13 +422,14 @@ Env::postconditions(JTx const& jt, ParsedResult const& parsed, Json::Value const
     // If we have an rpcCode (just checked), then the rpcException check is
     // optional - the 'error' field may not be defined, but if it is, it must
     // match rpcError.
-    bad = (jt.rpcException &&
-           !test.expect(
-               (jt.rpcCode && parsed.rpcError.empty()) ||
-                   (parsed.rpcError == jt.rpcException->first &&
-                    (!jt.rpcException->second || parsed.rpcException == *jt.rpcException->second)),
-               "apply: Got RPC result "s + parsed.rpcError + " (" + parsed.rpcException + "); Expected " +
-                   jt.rpcException->first + " (" + jt.rpcException->second.value_or("n/a") + ")" + line)) ||
+    bad =
+        (jt.rpcException &&
+         !test.expect(
+             (jt.rpcCode && parsed.rpcError.empty()) ||
+                 (parsed.rpcError == jt.rpcException->first &&
+                  (!jt.rpcException->second || parsed.rpcException == *jt.rpcException->second)),
+             "apply " + locStr + ": Got RPC result "s + parsed.rpcError + " (" + parsed.rpcException + "); Expected " +
+                 jt.rpcException->first + " (" + jt.rpcException->second.value_or("n/a") + ")" + line)) ||
         bad;
     if (bad)
     {
@@ -523,7 +527,7 @@ Env::autofill(JTx& jt)
 
     if (jt.fill_netid)
     {
-        uint32_t networkID = app().config().NETWORK_ID;
+        uint32_t networkID = app().getNetworkIDService().getNetworkID();
         if (!jv.isMember(jss::NetworkID) && networkID > 1024)
             jv[jss::NetworkID] = std::to_string(networkID);
     }

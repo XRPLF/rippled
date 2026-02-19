@@ -355,8 +355,9 @@ getOrAcquireLedger(RPC::JsonContext const& context)
     if ((hasHash + hasIndex) != 1)
     {
         return Unexpected(
-            RPC::make_param_error("Exactly one of 'ledger_hash' or "
-                                  "'ledger_index' can be specified."));
+            RPC::make_param_error(
+                "Exactly one of 'ledger_hash' or "
+                "'ledger_index' can be specified."));
     }
 
     if (hasHash)
@@ -405,8 +406,8 @@ getOrAcquireLedger(RPC::JsonContext const& context)
                 // We don't have the ledger we need to figure out which
                 // ledger they want. Try to get it.
 
-                if (auto il =
-                        context.app.getInboundLedgers().acquire(*refHash, refIndex, InboundLedger::Reason::GENERIC))
+                if (auto il = context.app.getInboundLedgers().acquire(
+                        *refHash, refIndex, InboundLedger::Reason::GENERIC, "getOrAcquireLedger by index"))
                 {
                     Json::Value jvResult =
                         RPC::make_error(rpcLGR_NOT_FOUND, "acquiring ledger containing requested index");
@@ -434,7 +435,8 @@ getOrAcquireLedger(RPC::JsonContext const& context)
 
     // Try to get the desired ledger
     // Verify all nodes even if we think we have it
-    auto ledger = context.app.getInboundLedgers().acquire(ledgerHash, ledgerIndex, InboundLedger::Reason::GENERIC);
+    auto ledger = context.app.getInboundLedgers().acquire(
+        ledgerHash, ledgerIndex, InboundLedger::Reason::GENERIC, "getOrAcquireLedger");
 
     // In standalone mode, accept the ledger from the ledger cache
     if (!ledger && context.app.config().standalone())

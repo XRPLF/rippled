@@ -437,7 +437,7 @@ void
 hash_append(Hasher& h, TMGetLedger const& msg)
 {
     using beast::hash_append;
-    using namespace ripple;
+    using namespace xrpl;
     hash_append(h, safe_cast<int>(protocolMessageType(msg)));
     hash_append(h, safe_cast<int>(msg.itype()));
     if (msg.has_ltype())
@@ -470,7 +470,7 @@ void
 hash_append(Hasher& h, TMLedgerData const& msg)
 {
     using beast::hash_append;
-    using namespace ripple;
+    using namespace xrpl;
     hash_append(h, safe_cast<int>(protocolMessageType(msg)));
     hash_append(h, msg.ledgerhash());
     hash_append(h, msg.ledgerseq());

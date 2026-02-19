@@ -1,10 +1,10 @@
 #pragma once
 
-#include <xrpld/rpc/InfoSub.h>
 #include <xrpld/rpc/Role.h>
 
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/json/json_writer.h>
+#include <xrpl/server/InfoSub.h>
 #include <xrpl/server/WSSession.h>
 
 #include <memory>

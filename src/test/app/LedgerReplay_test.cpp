@@ -496,8 +496,7 @@ struct LedgerServer
         for (int i = 0; i < newTxes; ++i)
         {
             updateIdx();
-            env.apply(
-                pay(accounts[fromIdx],
+            env(pay(accounts[fromIdx],
                     accounts[toIdx],
                     jtx::drops(ledgerMaster.getClosedLedger()->fees().base) + jtx::XRP(param.txAmount)),
                 jtx::seq(jtx::autofill),

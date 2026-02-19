@@ -72,9 +72,10 @@ LedgerReplayTask::LedgerReplayTask(
     , inboundLedgers_(inboundLedgers)
     , replayer_(replayer)
     , parameter_(parameter)
-    , maxTimeouts_(std::max(
-          LedgerReplayParameters::TASK_MAX_TIMEOUTS_MINIMUM,
-          parameter.totalLedgers_ * LedgerReplayParameters::TASK_MAX_TIMEOUTS_MULTIPLIER))
+    , maxTimeouts_(
+          std::max(
+              LedgerReplayParameters::TASK_MAX_TIMEOUTS_MINIMUM,
+              parameter.totalLedgers_ * LedgerReplayParameters::TASK_MAX_TIMEOUTS_MULTIPLIER))
     , skipListAcquirer_(skipListAcquirer)
 {
     JLOG(journal_.trace()) << "Create " << hash_;

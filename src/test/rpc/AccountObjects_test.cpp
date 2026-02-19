@@ -2,13 +2,12 @@
 #include <test/jtx/AMM.h>
 #include <test/jtx/xchain_bridge.h>
 
-#include <xrpld/app/tx/detail/NFTokenMint.h>
-
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nft.h>
+#include <xrpl/tx/transactors/NFT/NFTokenMint.h>
 
 #include <boost/utility/string_ref.hpp>
 
@@ -17,7 +16,7 @@
 namespace xrpl {
 namespace test {
 
-static char const* bobs_account_objects[] = {
+static char const* bob_account_objects[] = {
     R"json({
   "Account" : "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
   "BookDirectory" : "50AD0A9E54D2B381288D535EB724E4275FFBF41580D28A925D038D7EA4C68000",
@@ -254,7 +253,7 @@ public:
 
         Json::Value bobj[4];
         for (int i = 0; i < 4; ++i)
-            Json::Reader{}.parse(bobs_account_objects[i], bobj[i]);
+            Json::Reader{}.parse(bob_account_objects[i], bobj[i]);
 
         // test 'unstepped'
         // i.e. request account objects without explicit limit/marker paging
@@ -769,8 +768,9 @@ public:
             // xchain_create_account_claim_id should be present on the door
             // account (Account::master) to collect the signatures until a
             // quorum is reached
-            scEnv(test::jtx::create_account_attestation(
-                x.scAttester, x.jvb, x.mcCarol, amt, x.reward, x.payees[0], true, 1, x.scuAlice, x.signers[0]));
+            scEnv(
+                test::jtx::create_account_attestation(
+                    x.scAttester, x.jvb, x.mcCarol, amt, x.reward, x.payees[0], true, 1, x.scuAlice, x.signers[0]));
             scEnv.close();
 
             auto scEnvAcctObjs = [&](Account const& acct, char const* type) {
