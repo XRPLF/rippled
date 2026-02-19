@@ -511,10 +511,13 @@ verifyBalancePcmLinkage(
 }
 
 TER
-verifyAggregatedBulletproof(Slice const& proof, std::vector<Slice> const& commitments, uint256 const& contextHash)
+verifyAggregatedBulletproof(
+    Slice const& proof,
+    std::vector<Slice> const& compressedCommitments,
+    uint256 const& contextHash)
 {
     // 1. Validate Aggregation Factor (m)
-    std::size_t const m = commitments.size();
+    std::size_t const m = compressedCommitments.size();
     if (m == 0)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -523,15 +526,15 @@ verifyAggregatedBulletproof(Slice const& proof, std::vector<Slice> const& commit
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // 2. Prepare Pedersen Commitments, parse from compressed format
-    std::vector<secp256k1_pubkey> commitmentPts(m);
+    std::vector<secp256k1_pubkey> commitments(m);
     for (size_t i = 0; i < m; ++i)
     {
         // Sanity check length
-        if (commitments[i].size() != ecPedersenCommitmentLength)
+        if (compressedCommitments[i].size() != ecPedersenCommitmentLength)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         if (secp256k1_ec_pubkey_parse(
-                secp256k1Context(), &commitmentPts[i], commitments[i].data(), ecPedersenCommitmentLength) != 1)
+                secp256k1Context(), &commitments[i], compressedCommitments[i].data(), ecPedersenCommitmentLength) != 1)
             return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 

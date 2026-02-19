@@ -458,13 +458,16 @@ verifyBalancePcmLinkage(
  * to values within the valid 64-bit range [0, 2^64 - 1].
  *
  * @param proof       The serialized Bulletproof proof.
- * @param commitments Vector of Pedersen commitments (each 64 bytes).
+ * @param compressedCommitments Vector of compressed Pedersen commitments (each 33 bytes).
  * @param contextHash The unique context hash for this transaction.
  * @return tesSUCCESS if the proof is valid, tecBAD_PROOF if verification
  *         fails, or tecINTERNAL for internal errors.
  */
 TER
-verifyAggregatedBulletproof(Slice const& proof, std::vector<Slice> const& commitments, uint256 const& contextHash);
+verifyAggregatedBulletproof(
+    Slice const& proof,
+    std::vector<Slice> const& compressedCommitments,
+    uint256 const& contextHash);
 
 /**
  * @brief Computes the remainder commitment for ConvertBack.
