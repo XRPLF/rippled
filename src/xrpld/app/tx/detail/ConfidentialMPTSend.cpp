@@ -47,9 +47,8 @@ ConfidentialMPTSend::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfZKProof].length() != sizeEquality + sizePedersenLinkage)
         return temMALFORMED;
 
-    // Check the length of Pedersen commitments
-    if (ctx.tx[sfBalanceCommitment].size() != ecPedersenCommitmentLength ||
-        ctx.tx[sfAmountCommitment].size() != ecPedersenCommitmentLength)
+    // Check the Pedersen commitments are valid
+    if (!isValidCompressedECPoint(ctx.tx[sfBalanceCommitment]) || !isValidCompressedECPoint(ctx.tx[sfAmountCommitment]))
         return temMALFORMED;
 
     // Check the encrypted amount formats, this is more expensive so put it at

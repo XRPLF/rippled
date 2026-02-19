@@ -188,6 +188,18 @@ bool
 isValidCiphertext(Slice const& buffer);
 
 /**
+ * @brief Verifies that a buffer contains a valid, parsable compressed EC point.
+ *
+ * Can be used to validate both compressed public keys and Pedersen commitments.
+ * Fails early if the prefix byte is not 0x02 or 0x03.
+ *
+ * @param buffer The input buffer containing a compressed EC point (33 bytes).
+ * @return true if the point can be parsed successfully, false otherwise.
+ */
+bool
+isValidCompressedECPoint(Slice const& buffer);
+
+/**
  * @brief Homomorphically adds two ElGamal ciphertexts.
  *
  * Uses the additive homomorphic property of ElGamal encryption to compute

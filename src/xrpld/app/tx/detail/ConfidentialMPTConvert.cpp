@@ -28,7 +28,7 @@ ConfidentialMPTConvert::preflight(PreflightContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfHolderElGamalPublicKey))
     {
-        if (ctx.tx[sfHolderElGamalPublicKey].length() != ecPubKeyLength)
+        if (!isValidCompressedECPoint(ctx.tx[sfHolderElGamalPublicKey]))
             return temMALFORMED;
 
         // proof of knowledge of the secret key corresponding to the provided

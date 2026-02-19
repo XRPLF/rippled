@@ -1,6 +1,7 @@
 #include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/tx/detail/MPTokenIssuanceSet.h>
 
+#include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -127,10 +128,10 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     if (hasAuditorElGamalKey && !hasIssuerElGamalKey)
         return temMALFORMED;
 
-    if (hasIssuerElGamalKey && ctx.tx[sfIssuerElGamalPublicKey].length() != ecPubKeyLength)
+    if (hasIssuerElGamalKey && !isValidCompressedECPoint(ctx.tx[sfIssuerElGamalPublicKey]))
         return temMALFORMED;
 
-    if (hasAuditorElGamalKey && ctx.tx[sfAuditorElGamalPublicKey].length() != ecPubKeyLength)
+    if (hasAuditorElGamalKey && !isValidCompressedECPoint(ctx.tx[sfAuditorElGamalPublicKey]))
         return temMALFORMED;
 
     return tesSUCCESS;

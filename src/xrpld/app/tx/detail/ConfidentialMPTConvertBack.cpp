@@ -28,7 +28,7 @@ ConfidentialMPTConvertBack::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfBlindingFactor].size() != ecBlindingFactorLength)
         return temMALFORMED;
 
-    if (ctx.tx[sfBalanceCommitment].size() != ecPedersenCommitmentLength)
+    if (!isValidCompressedECPoint(ctx.tx[sfBalanceCommitment]))
         return temMALFORMED;
 
     // check encrypted amount format after the above basic checks
