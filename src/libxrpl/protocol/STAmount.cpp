@@ -984,7 +984,12 @@ amountFromJson(SField const& name, Json::Value const& v)
     else if (v.isString())
     {
         std::string val = v.asString();
+        // Pre-allocate to avoid reallocation during split. This function is often
+        // called deep in the RPC stack (via JSON parsing) where stack space is
+        // limited. ASAN detected stack-buffer-overflow here at ~95% coroutine
+        // stack usage (1001376/1048576 bytes). Coroutine stack increased to 2MB.
         std::vector<std::string> elements;
+        elements.reserve(3);
         boost::split(elements, val, boost::is_any_of("\t\n\r ,/"));
 
         if (elements.size() > 3)
