@@ -733,7 +733,7 @@ template <AssetType Asset>
 inline int
 numberScale(Number const& number, Asset const& asset)
 {
-    return number.scale<STAmount>(asset);
+    return STAmount{asset, number}.exponent();
 }
 
 }  // namespace xrpl
