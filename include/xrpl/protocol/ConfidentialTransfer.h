@@ -475,7 +475,7 @@ verifyAggregatedBulletproof(
  * Given a Pedersen commitment PC = m*G + rho*H, this function computes
  * PC_rem = PC - amount*G = (m - amount)*G + rho*H
  *
- * @param commitment The original Pedersen commitment (64 bytes).
+ * @param commitment The compressed Pedersen commitment (33 bytes).
  * @param amount     The amount to subtract (must be non-zero).
  * @param out        Output buffer for the resulting commitment (64 bytes).
  * @return tesSUCCESS on success, tecINTERNAL on failure or if amount is 0.
