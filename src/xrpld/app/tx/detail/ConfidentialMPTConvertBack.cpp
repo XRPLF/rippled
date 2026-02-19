@@ -95,24 +95,40 @@ verifyProofs(STTx const& tx, std::shared_ptr<SLE const> const& issuance, std::sh
         valid = false;
     }
 
-    // Use a pointer to parse each proof component
-    std::uint8_t const* ptr = reinterpret_cast<std::uint8_t const*>(tx[sfZKProof].data());
+    // Parse proof components using offset
+    auto const proof = tx[sfZKProof];
+    size_t remainingLength = proof.size();
+    size_t currentOffset = 0;
+
+    // Extract Pedersen linkage proof
+    if (remainingLength < ecPedersenProofLength)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    auto const pedersenProof = proof.substr(currentOffset, ecPedersenProofLength);
+    currentOffset += ecPedersenProofLength;
+    remainingLength -= ecPedersenProofLength;
+
+    // Extract bulletproof
+    if (remainingLength < ecSingleBulletproofLength)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    auto const bulletproof = proof.substr(currentOffset, ecSingleBulletproofLength);
+    currentOffset += ecSingleBulletproofLength;
+    remainingLength -= ecSingleBulletproofLength;
+
+    if (remainingLength != 0)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // verify el gamal pedersen linkage
+    if (auto const ter = verifyBalancePcmLinkage(
+            pedersenProof,
+            (*mptoken)[sfConfidentialBalanceSpending],
+            holderPubKey,
+            tx[sfBalanceCommitment],
+            contextHash);
+        !isTesSuccess(ter))
     {
-        Buffer const pedersen{ptr, ecPedersenProofLength};
-        if (auto const ter = verifyBalancePcmLinkage(
-                pedersen,
-                (*mptoken)[sfConfidentialBalanceSpending],
-                holderPubKey,
-                tx[sfBalanceCommitment],
-                contextHash);
-            !isTesSuccess(ter))
-        {
-            valid = false;
-        }
-
-        ptr += ecPedersenProofLength;
+        valid = false;
     }
 
     // verify bullet proof
@@ -124,18 +140,13 @@ verifyProofs(STTx const& tx, std::shared_ptr<SLE const> const& issuance, std::sh
             valid = false;
         }
 
-        Slice const bulletproofSlice{ptr, ecSingleBulletproofLength};
-
         // The bulletproof verifies that the remaining balance is non-negative
         std::vector<Slice> commitments{Slice(pcRem.data(), pcRem.size())};
 
-        if (auto const ter = verifyAggregatedBulletproof(bulletproofSlice, commitments, contextHash);
-            !isTesSuccess(ter))
+        if (auto const ter = verifyAggregatedBulletproof(bulletproof, commitments, contextHash); !isTesSuccess(ter))
         {
             valid = false;
         }
-
-        ptr += ecSingleBulletproofLength;
     }
 
     if (!valid)

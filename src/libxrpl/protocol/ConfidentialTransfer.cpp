@@ -1,6 +1,8 @@
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Protocol.h>
 
+#include <boost/endian/conversion.hpp>
+
 #include <openssl/rand.h>
 #include <openssl/sha.h>
 
@@ -516,16 +518,13 @@ verifyAggregatedBulletproof(
     std::vector<Slice> const& compressedCommitments,
     uint256 const& contextHash)
 {
-    // 1. Validate Aggregation Factor (m)
+    // 1. Validate Aggregation Factor (m), m to be a power of 2
     std::size_t const m = compressedCommitments.size();
-    if (m == 0)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    // Bulletproofs require m to be a power of 2
-    if ((m & (m - 1)) != 0)
+    if (m == 0 || (m & (m - 1)) != 0)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // 2. Prepare Pedersen Commitments, parse from compressed format
+    auto const ctx = secp256k1Context();
     std::vector<secp256k1_pubkey> commitments(m);
     for (size_t i = 0; i < m; ++i)
     {
@@ -534,7 +533,7 @@ verifyAggregatedBulletproof(
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         if (secp256k1_ec_pubkey_parse(
-                secp256k1Context(), &commitments[i], compressedCommitments[i].data(), ecPedersenCommitmentLength) != 1)
+                ctx, &commitments[i], compressedCommitments[i].data(), ecPedersenCommitmentLength) != 1)
             return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
@@ -545,26 +544,26 @@ verifyAggregatedBulletproof(
     std::vector<secp256k1_pubkey> H_vec(n);
 
     // Retrieve deterministic generators "G" and "H"
-    if (secp256k1_mpt_get_generator_vector(secp256k1Context(), G_vec.data(), n, (unsigned char const*)"G", 1) != 1)
+    if (secp256k1_mpt_get_generator_vector(ctx, G_vec.data(), n, (unsigned char const*)"G", 1) != 1)
     {
         return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
-    if (secp256k1_mpt_get_generator_vector(secp256k1Context(), H_vec.data(), n, (unsigned char const*)"H", 1) != 1)
+    if (secp256k1_mpt_get_generator_vector(ctx, H_vec.data(), n, (unsigned char const*)"H", 1) != 1)
     {
         return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
     // 4. Prepare Base Generator (pk_base / H)
     secp256k1_pubkey pk_base;
-    if (secp256k1_mpt_get_h_generator(secp256k1Context(), &pk_base) != 1)
+    if (secp256k1_mpt_get_h_generator(ctx, &pk_base) != 1)
     {
         return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
     // 5. Verify the Proof
     int const result = secp256k1_bulletproof_verify_agg(
-        secp256k1Context(),
+        ctx,
         G_vec.data(),
         H_vec.data(),
         reinterpret_cast<unsigned char const*>(proof.data()),
@@ -583,11 +582,8 @@ verifyAggregatedBulletproof(
 TER
 computeConvertBackRemainder(Slice const& commitment, std::uint64_t amount, Buffer& out)
 {
-    if (commitment.size() != ecPedersenCommitmentLength)
-        return tecINTERNAL;
-
-    if (amount == 0)
-        return tecINTERNAL;
+    if (commitment.size() != ecPedersenCommitmentLength || amount == 0)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const ctx = secp256k1Context();
 
@@ -598,8 +594,8 @@ computeConvertBackRemainder(Slice const& commitment, std::uint64_t amount, Buffe
 
     // Convert amount to 32-byte big-endian scalar
     unsigned char mScalar[32] = {0};
-    for (int i = 0; i < 8; i++)
-        mScalar[31 - i] = (amount >> (i * 8)) & 0xFF;
+    std::uint64_t amountBigEndian = boost::endian::native_to_big(amount);
+    std::memcpy(&mScalar[24], &amountBigEndian, sizeof(amountBigEndian));
 
     // Compute mG = amount * G
     secp256k1_pubkey mG;
