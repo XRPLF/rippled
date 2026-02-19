@@ -48,7 +48,7 @@ ConfidentialMPTSend::preflight(PreflightContext const& ctx)
         return temMALFORMED;
 
     // Check the Pedersen commitments are valid
-    if (!isValidCommitment(ctx.tx[sfBalanceCommitment]) || !isValidCommitment(ctx.tx[sfAmountCommitment]))
+    if (!isValidCompressedECPoint(ctx.tx[sfBalanceCommitment]) || !isValidCompressedECPoint(ctx.tx[sfAmountCommitment]))
         return temMALFORMED;
 
     // Check the encrypted amount formats, this is more expensive so put it at

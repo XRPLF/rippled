@@ -123,23 +123,17 @@ isValidCiphertext(Slice const& buffer)
 }
 
 bool
-isValidPublicKey(Slice const& buffer)
+isValidCompressedECPoint(Slice const& buffer)
 {
-    if (buffer.size() != ecPubKeyLength)
+    if (buffer.size() != compressedECPointLength)
         return false;
 
-    secp256k1_pubkey key;
-    return secp256k1_ec_pubkey_parse(secp256k1Context(), &key, buffer.data(), ecPubKeyLength) == 1;
-}
-
-bool
-isValidCommitment(Slice const& buffer)
-{
-    if (buffer.size() != ecPedersenCommitmentLength)
+    // Compressed EC points must start with 0x02 or 0x03
+    if (buffer[0] != 0x02 && buffer[0] != 0x03)
         return false;
 
-    secp256k1_pubkey commitment;
-    return secp256k1_ec_pubkey_parse(secp256k1Context(), &commitment, buffer.data(), ecPedersenCommitmentLength) == 1;
+    secp256k1_pubkey point;
+    return secp256k1_ec_pubkey_parse(secp256k1Context(), &point, buffer.data(), buffer.size()) == 1;
 }
 
 TER

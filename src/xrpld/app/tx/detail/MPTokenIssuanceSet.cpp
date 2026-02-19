@@ -128,10 +128,10 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     if (hasAuditorElGamalKey && !hasIssuerElGamalKey)
         return temMALFORMED;
 
-    if (hasIssuerElGamalKey && !isValidPublicKey(ctx.tx[sfIssuerElGamalPublicKey]))
+    if (hasIssuerElGamalKey && !isValidCompressedECPoint(ctx.tx[sfIssuerElGamalPublicKey]))
         return temMALFORMED;
 
-    if (hasAuditorElGamalKey && !isValidPublicKey(ctx.tx[sfAuditorElGamalPublicKey]))
+    if (hasAuditorElGamalKey && !isValidCompressedECPoint(ctx.tx[sfAuditorElGamalPublicKey]))
         return temMALFORMED;
 
     return tesSUCCESS;

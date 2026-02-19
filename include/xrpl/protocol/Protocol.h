@@ -305,8 +305,11 @@ std::size_t constexpr ecGamalEncryptedTotalLength = 66;
 /** Length of equality ZKProof */
 std::size_t constexpr ecEqualityProofLength = 98;
 
+/** Length of EC point (compressed) */
+std::size_t constexpr compressedECPointLength = 33;
+
 /** Length of EC public key (compressed) */
-std::size_t constexpr ecPubKeyLength = 33;
+std::size_t constexpr ecPubKeyLength = compressedECPointLength;
 
 /** Length of EC private key */
 std::size_t constexpr ecPrivKeyLength = 32;
@@ -324,6 +327,6 @@ std::size_t constexpr ecCiphertextEqualityProofLength = 261;
 std::size_t constexpr ecPedersenProofLength = 195;
 
 /** Length of Pedersen Commitment (compressed) */
-std::size_t constexpr ecPedersenCommitmentLength = 33;
+std::size_t constexpr ecPedersenCommitmentLength = compressedECPointLength;
 
 }  // namespace xrpl
