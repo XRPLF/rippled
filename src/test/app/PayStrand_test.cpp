@@ -1,9 +1,6 @@
 #include <test/jtx.h>
 #include <test/jtx/PathSet.h>
 
-#include <xrpld/app/paths/AMMContext.h>
-#include <xrpld/app/paths/RippleCalc.h>
-#include <xrpld/app/paths/detail/Steps.h>
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/contract.h>
@@ -11,6 +8,9 @@
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/paths/RippleCalc.h>
+#include <xrpl/tx/paths/detail/Steps.h>
+#include <xrpl/tx/transactors/AMM/AMMContext.h>
 
 #include <optional>
 

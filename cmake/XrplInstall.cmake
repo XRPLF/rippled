@@ -32,6 +32,7 @@ install(TARGETS common
                 xrpl.libxrpl.resource
                 xrpl.libxrpl.server
                 xrpl.libxrpl.shamap
+                xrpl.libxrpl.tx
                 antithesis-sdk-cpp
         EXPORT XrplExports
         LIBRARY DESTINATION lib

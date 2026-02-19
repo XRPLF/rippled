@@ -1,12 +1,12 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/Transaction.h>
-#include <xrpld/app/tx/apply.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/tx/apply.h>
 
 namespace xrpl {
 
@@ -76,8 +76,8 @@ doSubmit(RPC::JsonContext& context)
     {
         if (!context.app.checkSigs())
             forceValidity(context.app.getHashRouter(), stTx->getTransactionID(), Validity::SigGoodOnly);
-        auto [validity, reason] = checkValidity(
-            context.app.getHashRouter(), *stTx, context.ledgerMaster.getCurrentLedger()->rules(), context.app.config());
+        auto [validity, reason] =
+            checkValidity(context.app.getHashRouter(), *stTx, context.ledgerMaster.getCurrentLedger()->rules());
         if (validity != Validity::Valid)
         {
             jvResult[jss::error] = "invalidTransaction";

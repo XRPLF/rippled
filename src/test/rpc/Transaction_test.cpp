@@ -5,6 +5,7 @@
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/rpc/CTID.h>
 
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/jss.h>
@@ -247,7 +248,7 @@ class Transaction_test : public beast::unit_test::suite
         char const* EXCESSIVE = RPC::get_error_info(rpcEXCESSIVE_LGR_RANGE).token;
 
         Env env{*this, makeNetworkConfig(11111)};
-        uint32_t netID = env.app().config().NETWORK_ID;
+        uint32_t netID = env.app().getNetworkIDService().getNetworkID();
 
         auto const alice = Account("alice");
         env.fund(XRP(1000), alice);
@@ -520,7 +521,7 @@ class Transaction_test : public beast::unit_test::suite
         for (uint32_t netID : {11111, 65535, 65536})
         {
             Env env{*this, makeNetworkConfig(netID)};
-            BEAST_EXPECT(netID == env.app().config().NETWORK_ID);
+            BEAST_EXPECT(netID == env.app().getNetworkIDService().getNetworkID());
 
             auto const alice = Account("alice");
             auto const bob = Account("bob");
@@ -550,7 +551,7 @@ class Transaction_test : public beast::unit_test::suite
         // test querying with mixed case ctid
         {
             Env env{*this, makeNetworkConfig(11111)};
-            std::uint32_t const netID = env.app().config().NETWORK_ID;
+            std::uint32_t const netID = env.app().getNetworkIDService().getNetworkID();
 
             Account const alice = Account("alice");
             Account const bob = Account("bob");
@@ -591,7 +592,7 @@ class Transaction_test : public beast::unit_test::suite
         for (uint32_t netID : {2, 1024, 65535, 65536})
         {
             Env env{*this, makeNetworkConfig(netID)};
-            BEAST_EXPECT(netID == env.app().config().NETWORK_ID);
+            BEAST_EXPECT(netID == env.app().getNetworkIDService().getNetworkID());
 
             auto const alice = Account("alice");
             auto const bob = Account("bob");
@@ -623,7 +624,7 @@ class Transaction_test : public beast::unit_test::suite
         // test the wrong network ID was submitted
         {
             Env env{*this, makeNetworkConfig(21337)};
-            uint32_t netID = env.app().config().NETWORK_ID;
+            uint32_t netID = env.app().getNetworkIDService().getNetworkID();
 
             auto const alice = Account("alice");
             auto const bob = Account("bob");
