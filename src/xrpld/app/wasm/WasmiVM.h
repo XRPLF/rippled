@@ -237,7 +237,7 @@ private:
     allocate(int32_t size);
 
     Expected<WasmResult<int32_t>, TER>
-    runHlp(Bytes const& wasmCode, std::string_view funcName, std::vector<WasmParam> const& params, int64_t gas);
+    runHlp(Bytes const& wasmCode, int64_t gas, std::string_view funcName, std::vector<WasmParam> const& params);
 
     NotTEC
     checkHlp(Bytes const& wasmCode, std::string_view funcName, std::vector<WasmParam> const& params);

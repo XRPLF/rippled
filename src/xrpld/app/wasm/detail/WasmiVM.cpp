@@ -753,7 +753,7 @@ WasmiEngine::run(
     {
         if (imports_)
             checkImports(*imports_, hfs.get());
-        return runHlp(wasmCode, funcName, params, gas);
+        return runHlp(wasmCode, gas, funcName, params);
     }
     catch (std::exception const& e)
     {
@@ -769,7 +769,7 @@ WasmiEngine::run(
 }
 
 Expected<WasmResult<int32_t>, TER>
-WasmiEngine::runHlp(Bytes const& wasmCode, std::string_view funcName, std::vector<WasmParam> const& params, int64_t gas)
+WasmiEngine::runHlp(Bytes const& wasmCode, int64_t gas, std::string_view funcName, std::vector<WasmParam> const& params)
 {
     // currently only 1 module support, possible parallel UT run
     std::lock_guard<decltype(m_)> lg(m_);
@@ -919,7 +919,7 @@ WasmiEngine::allocate(int32_t sz)
 
     int32_t const p = res.r.vec_.data[0].of.i32;
     auto const mem = getMem();
-    if (p <= 0 || static_cast<int64_t>(p) + sz > static_cast<int64_t>(mem.s))
+    if (p <= 0 || p + sz > mem.s)
         throw std::runtime_error("invalid memory allocation, " + std::to_string(sz) + " bytes");
 
     return p;
