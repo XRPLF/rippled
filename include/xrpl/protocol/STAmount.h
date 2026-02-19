@@ -720,6 +720,15 @@ canAdd(STAmount const& amt1, STAmount const& amt2);
 bool
 canSubtract(STAmount const& amt1, STAmount const& amt2);
 
+/** Get the scale of a Number for a given asset.
+ *
+ * "scale" is similar to "exponent", but from the perspective of STAmount, which has different rules and mantissa ranges
+ * for determining the exponent than Number.
+ *
+ * @param number The Number to get the scale of.
+ * @param asset The asset to use for determining the scale.
+ * @return The scale of this Number for the given asset.
+ */
 template <AssetType Asset>
 inline int
 numberScale(Number const& number, Asset const& asset)
