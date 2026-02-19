@@ -569,7 +569,7 @@ verifyAggregatedBulletproof(
         H_vec.data(),
         reinterpret_cast<unsigned char const*>(proof.data()),
         proof.size(),
-        commitmentPts.data(),
+        commitments.data(),
         m,
         &pk_base,
         contextHash.data());
