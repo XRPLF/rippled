@@ -122,6 +122,8 @@ enum TEMcodes : TERUnderlyingType {
     temBAD_TRANSFER_FEE,
     temINVALID_INNER_BATCH,
     temBAD_FIELD_LENGTH,
+    temDUPLICATE,
+    temMUTUALLY_EXCLUSIVE,
 };
 
 //------------------------------------------------------------------------------

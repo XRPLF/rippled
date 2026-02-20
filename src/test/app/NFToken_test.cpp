@@ -458,7 +458,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         // Can't set a transfer fee if the NFT does not have the tfTRANSFERABLE
         // flag set.
-        env(token::mint(alice, 0u), token::xferFee(maxTransferFee), ter(temMALFORMED));
+        env(token::mint(alice, 0u),
+            token::xferFee(maxTransferFee),
+            ter(features[fixErrorCodes] ? temINVALID_FLAG : temMALFORMED));
 
         // Set a bad transfer fee.
         env(token::mint(alice, 0u),
@@ -467,15 +469,19 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             ter(temBAD_NFTOKEN_TRANSFER_FEE));
 
         // Account can't also be issuer.
-        env(token::mint(alice, 0u), token::issuer(alice), ter(temMALFORMED));
+        env(token::mint(alice, 0u),
+            token::issuer(alice),
+            ter(features[fixErrorCodes] ? temDST_IS_SRC : temMALFORMED));
 
         // Invalid URI: zero length.
-        env(token::mint(alice, 0u), token::uri(""), ter(temMALFORMED));
+        env(token::mint(alice, 0u),
+            token::uri(""),
+            ter(features[fixErrorCodes] ? temBAD_FIELD_LENGTH : temMALFORMED));
 
         // Invalid URI: too long.
         env(token::mint(alice, 0u),
             token::uri(std::string(maxTokenURILength + 1, 'q')),
-            ter(temMALFORMED));
+            ter(features[fixErrorCodes] ? temBAD_FIELD_LENGTH : temMALFORMED));
 
         //----------------------------------------------------------------------
         // preclaim
@@ -837,7 +843,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         {
             Json::Value jv = token::cancelOffer(buyer);
             jv[sfNFTokenOffers.jsonName] = Json::arrayValue;
-            env(jv, ter(temMALFORMED));
+            env(jv, ter(features[fixErrorCodes] ? temARRAY_EMPTY : temMALFORMED));
             env.close();
             BEAST_EXPECT(ownerCount(env, buyer) == 1);
         }
@@ -846,17 +852,21 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         {
             std::vector<uint256> offers(maxTokenOfferCancelCount + 1, buyerOfferIndex);
 
-            env(token::cancelOffer(buyer, offers), ter(temMALFORMED));
+            env(token::cancelOffer(buyer, offers),
+                ter(features[fixErrorCodes] ? temARRAY_TOO_LARGE : temMALFORMED));
             env.close();
             BEAST_EXPECT(ownerCount(env, buyer) == 1);
         }
 
         // Duplicate entries are not allowed in the list of offers to cancel.
-        env(token::cancelOffer(buyer, {buyerOfferIndex, buyerOfferIndex}), ter(temMALFORMED));
+        env(token::cancelOffer(buyer, {buyerOfferIndex, buyerOfferIndex}),
+            ter(features[fixErrorCodes] ? temDUPLICATE : temMALFORMED));
         env.close();
         BEAST_EXPECT(ownerCount(env, buyer) == 1);
 
         // Provide neither offers to cancel nor a root index.
+        // This fails with temMALFORMED because the NFTokenOffers field is
+        // missing entirely (not an empty array).
         env(token::cancelOffer(buyer), ter(temMALFORMED));
         env.close();
         BEAST_EXPECT(ownerCount(env, buyer) == 1);
@@ -1000,7 +1010,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         {
             Json::Value jv = token::acceptSellOffer(buyer, noXferOfferIndex);
             jv.removeMember(sfNFTokenSellOffer.jsonName);
-            env(jv, ter(temMALFORMED));
+            env(jv, ter(features[fixErrorCodes] ? temINVALID : temMALFORMED));
             env.close();
             BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
         }
@@ -1009,7 +1019,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         {
             Json::Value jv = token::acceptBuyOffer(buyer, noXferOfferIndex);
             jv[sfNFTokenBrokerFee.jsonName] = STAmount(500000).getJson(JsonOptions::none);
-            env(jv, ter(temMALFORMED));
+            env(jv, ter(features[fixErrorCodes] ? temINVALID : temMALFORMED));
             env.close();
             BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
         }
@@ -1018,7 +1028,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         {
             Json::Value jv = token::acceptSellOffer(buyer, noXferOfferIndex);
             jv[sfNFTokenBrokerFee.jsonName] = STAmount(500000).getJson(JsonOptions::none);
-            env(jv, ter(temMALFORMED));
+            env(jv, ter(features[fixErrorCodes] ? temINVALID : temMALFORMED));
             env.close();
             BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
         }
@@ -1026,7 +1036,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // A brokered offer may not contain a negative or zero brokerFee.
         env(token::brokerOffers(buyer, noXferOfferIndex, xrpOnlyOfferIndex),
             token::brokerFee(gwAUD(0)),
-            ter(temMALFORMED));
+            ter(features[fixErrorCodes] ? temBAD_AMOUNT : temMALFORMED));
         env.close();
         BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
@@ -3596,7 +3606,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         // alice attempts to cancel all of the expired offers.  There is one
         // too many so the request fails.
-        env(token::cancelOffer(alice, offerIndexes), ter(temMALFORMED));
+        env(token::cancelOffer(alice, offerIndexes),
+            ter(features[fixErrorCodes] ? temARRAY_TOO_LARGE : temMALFORMED));
         env.close();
 
         // However alice can cancel just one of the offers.
@@ -3622,7 +3633,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // Because alice added the sell offer there are still too many
             // offers in the list to cancel.
-            env(token::cancelOffer(alice, offerIndexes), ter(temMALFORMED));
+            env(token::cancelOffer(alice, offerIndexes),
+                ter(features[fixErrorCodes] ? temARRAY_TOO_LARGE : temMALFORMED));
             env.close();
 
             // alice burns her nft which removes the nft and the offer.
@@ -6894,17 +6906,21 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env(token::modify(issuer, nftId), txflags(0x00000001), ter(temINVALID_FLAG));
 
             // Invalid Owner
-            env(token::modify(issuer, nftId), token::owner(issuer), ter(temMALFORMED));
+            env(token::modify(issuer, nftId),
+                token::owner(issuer),
+                ter(features[fixErrorCodes] ? temDST_IS_SRC : temMALFORMED));
             env.close();
 
             // Invalid URI length = 0
-            env(token::modify(issuer, nftId), token::uri(""), ter(temMALFORMED));
+            env(token::modify(issuer, nftId),
+                token::uri(""),
+                ter(features[fixErrorCodes] ? temBAD_FIELD_LENGTH : temMALFORMED));
             env.close();
 
             // Invalid URI length > 256
             env(token::modify(issuer, nftId),
                 token::uri(std::string(maxTokenURILength + 1, 'q')),
-                ter(temMALFORMED));
+                ter(features[fixErrorCodes] ? temBAD_FIELD_LENGTH : temMALFORMED));
             env.close();
         }
         {
@@ -7174,6 +7190,8 @@ class NFTokenAllFeatures_test : public NFTokenBaseUtil_test
     run() override
     {
         testWithFeats(allFeatures);
+        // Test without fixErrorCodes to cover old error code paths
+        testWithFeats(allFeatures - fixErrorCodes);
     }
 };
 

@@ -183,7 +183,7 @@ CredentialDelete::preflight(PreflightContext const& ctx)
         // Neither field is present, the transaction is malformed.
         JLOG(ctx.j.trace()) << "Malformed transaction: "
                                "No Subject or Issuer fields.";
-        return temMALFORMED;
+        return ctx.rules.enabled(fixErrorCodes) ? temINVALID : temMALFORMED;
     }
 
     // Make sure that the passed account is valid.

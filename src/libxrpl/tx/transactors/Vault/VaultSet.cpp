@@ -43,7 +43,7 @@ VaultSet::preflight(PreflightContext const& ctx)
         if (*assetMax < beast::zero)
         {
             JLOG(ctx.j.debug()) << "VaultSet: invalid max assets.";
-            return temMALFORMED;
+            return ctx.rules.enabled(fixErrorCodes) ? temBAD_AMOUNT : temMALFORMED;
         }
     }
 

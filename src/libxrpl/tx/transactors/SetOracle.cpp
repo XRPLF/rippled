@@ -73,7 +73,7 @@ SetOracle::preclaim(PreclaimContext const& ctx)
             return temMALFORMED;
         auto const key = tokenPairKey(entry);
         if (pairs.contains(key) || pairsDel.contains(key))
-            return temMALFORMED;
+            return ctx.view.rules().enabled(fixErrorCodes) ? temDUPLICATE : temMALFORMED;
         if (entry[~sfScale] > maxPriceScale)
             return temMALFORMED;
         if (entry.isFieldPresent(sfAssetPrice))

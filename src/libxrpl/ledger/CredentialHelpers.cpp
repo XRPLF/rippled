@@ -1,5 +1,6 @@
 #include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/digest.h>
 
@@ -96,17 +97,23 @@ deleteSLE(ApplyView& view, std::shared_ptr<SLE> const& sleCredential, beast::Jou
 }
 
 NotTEC
-checkFields(STTx const& tx, beast::Journal j)
+checkFields(STTx const& tx, Rules const& rules, beast::Journal j)
 {
     if (!tx.isFieldPresent(sfCredentialIDs))
         return tesSUCCESS;
 
     auto const& credentials = tx.getFieldV256(sfCredentialIDs);
-    if (credentials.empty() || (credentials.size() > maxCredentialsArraySize))
+    if (credentials.empty())
     {
         JLOG(j.trace()) << "Malformed transaction: Credentials array size is invalid: "
                         << credentials.size();
-        return temMALFORMED;
+        return rules.enabled(fixErrorCodes) ? temARRAY_EMPTY : temMALFORMED;
+    }
+    if (credentials.size() > maxCredentialsArraySize)
+    {
+        JLOG(j.trace()) << "Malformed transaction: Credentials array size is too large: "
+                        << credentials.size();
+        return rules.enabled(fixErrorCodes) ? temARRAY_TOO_LARGE : temMALFORMED;
     }
 
     std::unordered_set<uint256> duplicates;
@@ -116,7 +123,7 @@ checkFields(STTx const& tx, beast::Journal j)
         if (!ins)
         {
             JLOG(j.trace()) << "Malformed transaction: duplicates in credentials.";
-            return temMALFORMED;
+            return rules.enabled(fixErrorCodes) ? temDUPLICATE : temMALFORMED;
         }
     }
 
@@ -234,7 +241,7 @@ makeSorted(STArray const& credentials)
 }
 
 NotTEC
-checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
+checkArray(STArray const& credentials, unsigned maxSize, Rules const& rules, beast::Journal j)
 {
     if (credentials.empty() || (credentials.size() > maxSize))
     {
@@ -262,7 +269,7 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
             JLOG(j.trace()) << "Malformed transaction: "
                                "Invalid credentialType size: "
                             << ct.size();
-            return temMALFORMED;
+            return rules.enabled(fixErrorCodes) ? temBAD_FIELD_LENGTH : temMALFORMED;
         }
 
         auto [it, ins] = duplicates.insert(sha512Half(issuer, ct));
@@ -270,7 +277,7 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
         {
             JLOG(j.trace()) << "Malformed transaction: "
                                "duplicates in credentials.";
-            return temMALFORMED;
+            return rules.enabled(fixErrorCodes) ? temDUPLICATE : temMALFORMED;
         }
     }
 

@@ -68,12 +68,12 @@ NFTokenMint::preflight(PreflightContext const& ctx)
         // If a non-zero TransferFee is set then the tfTransferable flag
         // must also be set.
         if (f > 0u && !ctx.tx.isFlag(tfTransferable))
-            return temMALFORMED;
+            return ctx.rules.enabled(fixErrorCodes) ? temINVALID_FLAG : temMALFORMED;
     }
 
     // An issuer must only be set if the tx is executed by the minter
     if (auto iss = ctx.tx[~sfIssuer]; iss == ctx.tx[sfAccount])
-        return temMALFORMED;
+        return ctx.rules.enabled(fixErrorCodes) ? temDST_IS_SRC : temMALFORMED;
 
     if (auto uri = ctx.tx[~sfURI])
     {

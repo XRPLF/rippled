@@ -34,7 +34,7 @@ DeleteAccount::preflight(PreflightContext const& ctx)
         // An account cannot be deleted and give itself the resulting XRP.
         return temDST_IS_SRC;
 
-    if (auto const err = credentials::checkFields(ctx.tx, ctx.j); !isTesSuccess(err))
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.rules, ctx.j); !isTesSuccess(err))
         return err;
 
     return tesSUCCESS;

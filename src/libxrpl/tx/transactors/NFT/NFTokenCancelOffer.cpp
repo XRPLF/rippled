@@ -34,7 +34,7 @@ NFTokenCancelOffer::preflight(PreflightContext const& ctx)
     STVector256 ids = ctx.tx.getFieldV256(sfNFTokenOffers);
     std::sort(ids.begin(), ids.end());
     if (std::adjacent_find(ids.begin(), ids.end()) != ids.end())
-        return temMALFORMED;
+        return ctx.rules.enabled(fixErrorCodes) ? temDUPLICATE : temMALFORMED;
 
     return tesSUCCESS;
 }

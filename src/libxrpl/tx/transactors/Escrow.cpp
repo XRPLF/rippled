@@ -133,7 +133,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
     // we want to ensure that either a FinishAfter time is explicitly
     // specified or a completion condition is attached.
     if (!ctx.tx[~sfFinishAfter] && !ctx.tx[~sfCondition])
-        return temMALFORMED;
+        return ctx.rules.enabled(fixErrorCodes) ? temINVALID : temMALFORMED;
 
     if (auto const cb = ctx.tx[~sfCondition])
     {
@@ -570,7 +570,7 @@ EscrowFinish::preflightSigValidated(PreflightContext const& ctx)
         }
     }
 
-    if (auto const err = credentials::checkFields(ctx.tx, ctx.j); !isTesSuccess(err))
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.rules, ctx.j); !isTesSuccess(err))
         return err;
 
     return tesSUCCESS;

@@ -10,14 +10,14 @@ namespace test {
 class AMMClawback_test : public beast::unit_test::suite
 {
     void
-    testInvalidRequest()
+    testInvalidRequest(FeatureBitset features)
     {
         testcase("test invalid request");
         using namespace jtx;
 
         // Test if holder does not exist.
         {
-            Env env(*this);
+            Env env(*this, features);
             Account gw{"gateway"};
             Account alice{"alice"};
             env.fund(XRP(100000), gw, alice);
@@ -42,7 +42,7 @@ class AMMClawback_test : public beast::unit_test::suite
         // Test if asset pair provided does not exist. This should
         // return terNO_AMM error.
         {
-            Env env(*this);
+            Env env(*this, features);
             Account gw{"gateway"};
             Account alice{"alice"};
             env.fund(XRP(100000), gw, alice);
@@ -74,7 +74,7 @@ class AMMClawback_test : public beast::unit_test::suite
         // Test if the issuer field and holder field is the same. This should
         // return temMALFORMED error.
         {
-            Env env(*this);
+            Env env(*this, features);
             Account gw{"gateway"};
             Account alice{"alice"};
             env.fund(XRP(10000), gw, alice);
@@ -94,15 +94,17 @@ class AMMClawback_test : public beast::unit_test::suite
             AMM amm(env, gw, XRP(100), USD(100), ter(tesSUCCESS));
 
             // Issuer can not clawback from himself.
-            env(amm::ammClawback(gw, gw, USD, XRP, std::nullopt), ter(temMALFORMED));
+            env(amm::ammClawback(gw, gw, USD, XRP, std::nullopt),
+                ter(features[fixErrorCodes] ? temDST_IS_SRC : temMALFORMED));
 
             // Holder can not clawback from himself.
-            env(amm::ammClawback(alice, alice, USD, XRP, std::nullopt), ter(temMALFORMED));
+            env(amm::ammClawback(alice, alice, USD, XRP, std::nullopt),
+                ter(features[fixErrorCodes] ? temDST_IS_SRC : temMALFORMED));
         }
 
         // Test if the Asset field matches the Account field.
         {
-            Env env(*this);
+            Env env(*this, features);
             Account gw{"gateway"};
             Account alice{"alice"};
             env.fund(XRP(10000), gw, alice);
@@ -130,7 +132,7 @@ class AMMClawback_test : public beast::unit_test::suite
 
         // Test if the Amount field matches the Asset field.
         {
-            Env env(*this);
+            Env env(*this, features);
             Account gw{"gateway"};
             Account alice{"alice"};
             env.fund(XRP(10000), gw, alice);
@@ -159,7 +161,7 @@ class AMMClawback_test : public beast::unit_test::suite
 
         // Test if the Amount is invalid, which is less than zero.
         {
-            Env env(*this);
+            Env env(*this, features);
             Account gw{"gateway"};
             Account alice{"alice"};
             env.fund(XRP(10000), gw, alice);
@@ -192,7 +194,7 @@ class AMMClawback_test : public beast::unit_test::suite
         // Test if the issuer did not set asfAllowTrustLineClawback, AMMClawback
         // transaction is prohibited.
         {
-            Env env(*this);
+            Env env(*this, features);
             Account gw{"gateway"};
             Account alice{"alice"};
             env.fund(XRP(10000), gw, alice);
@@ -216,7 +218,7 @@ class AMMClawback_test : public beast::unit_test::suite
 
         // Test invalid flag.
         {
-            Env env(*this);
+            Env env(*this, features);
             Account gw{"gateway"};
             Account alice{"alice"};
             env.fund(XRP(10000), gw, alice);
@@ -244,7 +246,7 @@ class AMMClawback_test : public beast::unit_test::suite
         // Test if tfClawTwoAssets is set when the two assets in the AMM pool
         // are not issued by the same issuer.
         {
-            Env env(*this);
+            Env env(*this, features);
             Account gw{"gateway"};
             Account alice{"alice"};
             env.fund(XRP(10000), gw, alice);
@@ -275,7 +277,7 @@ class AMMClawback_test : public beast::unit_test::suite
 
         // Test clawing back XRP is being prohibited.
         {
-            Env env(*this);
+            Env env(*this, features);
             Account gw{"gateway"};
             Account alice{"alice"};
             env.fund(XRP(1000000), gw, alice);
@@ -2210,7 +2212,9 @@ class AMMClawback_test : public beast::unit_test::suite
         FeatureBitset const all =
             jtx::testable_amendments() - featureSingleAssetVault - featureLendingProtocol;
 
-        testInvalidRequest();
+        // Test with and without fixErrorCodes to cover both error code paths
+        testInvalidRequest(all);
+        testInvalidRequest(all - fixErrorCodes);
         testFeatureDisabled(all - featureAMMClawback);
         for (auto const& features :
              {all - fixAMMv1_3 - fixAMMClawbackRounding, all - fixAMMClawbackRounding, all})
