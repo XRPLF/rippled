@@ -1849,7 +1849,44 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .flags = tfMPTUnauthorize,
             });
         }
-        // todo: test with convert back and delete
+        // test with convert back and delete
+        // can delete mptoken if converted back (COA returns to zero)
+        // TODO: uncomment when the bullet proof is fixed with values of 0
+        /*{
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+
+            mptAlice.authorize({.account = bob});
+            mptAlice.pay(alice, bob, 100);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+            mptAlice.generateKeyPair(bob);
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = 100,
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+
+            mptAlice.mergeInbox({
+                .account = bob,
+            });
+
+            mptAlice.convertBack({.account = bob, .amt = 100});
+
+            mptAlice.pay(bob, alice, 100);
+
+            // Should be able to delete as Confidential Outstanding amount is 0
+            mptAlice.authorize({
+                .account = bob,
+                .flags = tfMPTUnauthorize,
+            });
+        } */
     }
 
     void
