@@ -66,7 +66,11 @@ class Transaction_test : public beast::unit_test::suite
             auto const& tx = txns[i];
             auto const& meta = metas[i];
             auto const result = env.rpc(
-                COMMAND, to_string(tx->getTransactionID()), BINARY, to_string(startLegSeq), to_string(endLegSeq));
+                COMMAND,
+                to_string(tx->getTransactionID()),
+                BINARY,
+                to_string(startLegSeq),
+                to_string(endLegSeq));
 
             BEAST_EXPECT(result[jss::result][jss::status] == jss::success);
             BEAST_EXPECT(result[jss::result][jss::tx] == strHex(tx->getSerializer().getData()));
@@ -84,7 +88,8 @@ class Transaction_test : public beast::unit_test::suite
                 to_string(endLegSeq + deltaEndSeq));
 
             BEAST_EXPECT(
-                result[jss::result][jss::status] == jss::error && result[jss::result][jss::error] == NOT_FOUND);
+                result[jss::result][jss::status] == jss::error &&
+                result[jss::result][jss::error] == NOT_FOUND);
 
             if (deltaEndSeq)
                 BEAST_EXPECT(!result[jss::result][jss::searched_all].asBool());
@@ -122,18 +127,23 @@ class Transaction_test : public beast::unit_test::suite
                 to_string(endLegSeq + deltaEndSeq));
 
             BEAST_EXPECT(
-                result[jss::result][jss::status] == jss::error && result[jss::result][jss::error] == NOT_FOUND);
+                result[jss::result][jss::status] == jss::error &&
+                result[jss::result][jss::error] == NOT_FOUND);
             BEAST_EXPECT(!result[jss::result][jss::searched_all].asBool());
         }
 
         // Provide range without providing the `binary`
         // field. (Tests parameter parsing)
         {
-            auto const result =
-                env.rpc(COMMAND, to_string(tx->getTransactionID()), to_string(startLegSeq), to_string(endLegSeq));
+            auto const result = env.rpc(
+                COMMAND,
+                to_string(tx->getTransactionID()),
+                to_string(startLegSeq),
+                to_string(endLegSeq));
 
             BEAST_EXPECT(
-                result[jss::result][jss::status] == jss::error && result[jss::result][jss::error] == NOT_FOUND);
+                result[jss::result][jss::status] == jss::error &&
+                result[jss::result][jss::error] == NOT_FOUND);
 
             BEAST_EXPECT(!result[jss::result][jss::searched_all].asBool());
         }
@@ -142,10 +152,14 @@ class Transaction_test : public beast::unit_test::suite
         // field. (Tests parameter parsing)
         {
             auto const result = env.rpc(
-                COMMAND, to_string(tx->getTransactionID()), to_string(startLegSeq), to_string(deletedLedger - 1));
+                COMMAND,
+                to_string(tx->getTransactionID()),
+                to_string(startLegSeq),
+                to_string(deletedLedger - 1));
 
             BEAST_EXPECT(
-                result[jss::result][jss::status] == jss::error && result[jss::result][jss::error] == NOT_FOUND);
+                result[jss::result][jss::status] == jss::error &&
+                result[jss::result][jss::error] == NOT_FOUND);
 
             BEAST_EXPECT(result[jss::result][jss::searched_all].asBool());
         }
@@ -154,7 +168,10 @@ class Transaction_test : public beast::unit_test::suite
         // field. (Tests parameter parsing)
         {
             auto const result = env.rpc(
-                COMMAND, to_string(txns[0]->getTransactionID()), to_string(startLegSeq), to_string(deletedLedger - 1));
+                COMMAND,
+                to_string(txns[0]->getTransactionID()),
+                to_string(startLegSeq),
+                to_string(deletedLedger - 1));
 
             BEAST_EXPECT(result[jss::result][jss::status] == jss::success);
             BEAST_EXPECT(!result[jss::result].isMember(jss::searched_all));
@@ -169,7 +186,9 @@ class Transaction_test : public beast::unit_test::suite
                 to_string(deletedLedger - 1),
                 to_string(startLegSeq));
 
-            BEAST_EXPECT(result[jss::result][jss::status] == jss::error && result[jss::result][jss::error] == INVALID);
+            BEAST_EXPECT(
+                result[jss::result][jss::status] == jss::error &&
+                result[jss::result][jss::error] == INVALID);
 
             BEAST_EXPECT(!result[jss::result].isMember(jss::searched_all));
         }
@@ -177,28 +196,39 @@ class Transaction_test : public beast::unit_test::suite
         // Provide an invalid range: (min < 0)
         {
             auto const result = env.rpc(
-                COMMAND, to_string(tx->getTransactionID()), BINARY, to_string(-1), to_string(deletedLedger - 1));
+                COMMAND,
+                to_string(tx->getTransactionID()),
+                BINARY,
+                to_string(-1),
+                to_string(deletedLedger - 1));
 
-            BEAST_EXPECT(result[jss::result][jss::status] == jss::error && result[jss::result][jss::error] == INVALID);
+            BEAST_EXPECT(
+                result[jss::result][jss::status] == jss::error &&
+                result[jss::result][jss::error] == INVALID);
 
             BEAST_EXPECT(!result[jss::result].isMember(jss::searched_all));
         }
 
         // Provide an invalid range: (min < 0, max < 0)
         {
-            auto const result =
-                env.rpc(COMMAND, to_string(tx->getTransactionID()), BINARY, to_string(-20), to_string(-10));
+            auto const result = env.rpc(
+                COMMAND, to_string(tx->getTransactionID()), BINARY, to_string(-20), to_string(-10));
 
-            BEAST_EXPECT(result[jss::result][jss::status] == jss::error && result[jss::result][jss::error] == INVALID);
+            BEAST_EXPECT(
+                result[jss::result][jss::status] == jss::error &&
+                result[jss::result][jss::error] == INVALID);
 
             BEAST_EXPECT(!result[jss::result].isMember(jss::searched_all));
         }
 
         // Provide an invalid range: (only one value)
         {
-            auto const result = env.rpc(COMMAND, to_string(tx->getTransactionID()), BINARY, to_string(20));
+            auto const result =
+                env.rpc(COMMAND, to_string(tx->getTransactionID()), BINARY, to_string(20));
 
-            BEAST_EXPECT(result[jss::result][jss::status] == jss::error && result[jss::result][jss::error] == INVALID);
+            BEAST_EXPECT(
+                result[jss::result][jss::status] == jss::error &&
+                result[jss::result][jss::error] == INVALID);
 
             BEAST_EXPECT(!result[jss::result].isMember(jss::searched_all));
         }
@@ -227,7 +257,8 @@ class Transaction_test : public beast::unit_test::suite
                 to_string(startLegSeq + 1001));
 
             BEAST_EXPECT(
-                result[jss::result][jss::status] == jss::error && result[jss::result][jss::error] == EXCESSIVE);
+                result[jss::result][jss::status] == jss::error &&
+                result[jss::result][jss::error] == EXCESSIVE);
 
             BEAST_EXPECT(!result[jss::result].isMember(jss::searched_all));
         }
@@ -288,11 +319,12 @@ class Transaction_test : public beast::unit_test::suite
         auto const ctid = *RPC::encodeCTID(endLegSeq, tx->getSeqValue(), netID);
         for (int deltaEndSeq = 0; deltaEndSeq < 2; ++deltaEndSeq)
         {
-            auto const result =
-                env.rpc(COMMAND, ctid, BINARY, to_string(startLegSeq), to_string(endLegSeq + deltaEndSeq));
+            auto const result = env.rpc(
+                COMMAND, ctid, BINARY, to_string(startLegSeq), to_string(endLegSeq + deltaEndSeq));
 
             BEAST_EXPECT(
-                result[jss::result][jss::status] == jss::error && result[jss::result][jss::error] == NOT_FOUND);
+                result[jss::result][jss::status] == jss::error &&
+                result[jss::result][jss::error] == NOT_FOUND);
 
             if (deltaEndSeq)
                 BEAST_EXPECT(!result[jss::result][jss::searched_all].asBool());
@@ -325,21 +357,24 @@ class Transaction_test : public beast::unit_test::suite
 
         for (int deltaEndSeq = 0; deltaEndSeq < 2; ++deltaEndSeq)
         {
+            auto const result = env.rpc(
+                COMMAND, ctid, BINARY, to_string(startLegSeq), to_string(endLegSeq + deltaEndSeq));
+
+            BEAST_EXPECT(
+                result[jss::result][jss::status] == jss::error &&
+                result[jss::result][jss::error] == NOT_FOUND);
+            BEAST_EXPECT(!result[jss::result][jss::searched_all].asBool());
+        }
+
+        // Provide range without providing the `binary`
+        // field. (Tests parameter parsing)
+        {
             auto const result =
-                env.rpc(COMMAND, ctid, BINARY, to_string(startLegSeq), to_string(endLegSeq + deltaEndSeq));
+                env.rpc(COMMAND, ctid, to_string(startLegSeq), to_string(endLegSeq));
 
             BEAST_EXPECT(
-                result[jss::result][jss::status] == jss::error && result[jss::result][jss::error] == NOT_FOUND);
-            BEAST_EXPECT(!result[jss::result][jss::searched_all].asBool());
-        }
-
-        // Provide range without providing the `binary`
-        // field. (Tests parameter parsing)
-        {
-            auto const result = env.rpc(COMMAND, ctid, to_string(startLegSeq), to_string(endLegSeq));
-
-            BEAST_EXPECT(
-                result[jss::result][jss::status] == jss::error && result[jss::result][jss::error] == NOT_FOUND);
+                result[jss::result][jss::status] == jss::error &&
+                result[jss::result][jss::error] == NOT_FOUND);
 
             BEAST_EXPECT(!result[jss::result][jss::searched_all].asBool());
         }
@@ -347,10 +382,12 @@ class Transaction_test : public beast::unit_test::suite
         // Provide range without providing the `binary`
         // field. (Tests parameter parsing)
         {
-            auto const result = env.rpc(COMMAND, ctid, to_string(startLegSeq), to_string(deletedLedger - 1));
+            auto const result =
+                env.rpc(COMMAND, ctid, to_string(startLegSeq), to_string(deletedLedger - 1));
 
             BEAST_EXPECT(
-                result[jss::result][jss::status] == jss::error && result[jss::result][jss::error] == NOT_FOUND);
+                result[jss::result][jss::status] == jss::error &&
+                result[jss::result][jss::error] == NOT_FOUND);
 
             BEAST_EXPECT(!result[jss::result][jss::searched_all].asBool());
         }
@@ -372,18 +409,24 @@ class Transaction_test : public beast::unit_test::suite
 
         // Provide an invalid range: (min > max)
         {
-            auto const result = env.rpc(COMMAND, ctid, BINARY, to_string(deletedLedger - 1), to_string(startLegSeq));
+            auto const result = env.rpc(
+                COMMAND, ctid, BINARY, to_string(deletedLedger - 1), to_string(startLegSeq));
 
-            BEAST_EXPECT(result[jss::result][jss::status] == jss::error && result[jss::result][jss::error] == INVALID);
+            BEAST_EXPECT(
+                result[jss::result][jss::status] == jss::error &&
+                result[jss::result][jss::error] == INVALID);
 
             BEAST_EXPECT(!result[jss::result].isMember(jss::searched_all));
         }
 
         // Provide an invalid range: (min < 0)
         {
-            auto const result = env.rpc(COMMAND, ctid, BINARY, to_string(-1), to_string(deletedLedger - 1));
+            auto const result =
+                env.rpc(COMMAND, ctid, BINARY, to_string(-1), to_string(deletedLedger - 1));
 
-            BEAST_EXPECT(result[jss::result][jss::status] == jss::error && result[jss::result][jss::error] == INVALID);
+            BEAST_EXPECT(
+                result[jss::result][jss::status] == jss::error &&
+                result[jss::result][jss::error] == INVALID);
 
             BEAST_EXPECT(!result[jss::result].isMember(jss::searched_all));
         }
@@ -392,7 +435,9 @@ class Transaction_test : public beast::unit_test::suite
         {
             auto const result = env.rpc(COMMAND, ctid, BINARY, to_string(-20), to_string(-10));
 
-            BEAST_EXPECT(result[jss::result][jss::status] == jss::error && result[jss::result][jss::error] == INVALID);
+            BEAST_EXPECT(
+                result[jss::result][jss::status] == jss::error &&
+                result[jss::result][jss::error] == INVALID);
 
             BEAST_EXPECT(!result[jss::result].isMember(jss::searched_all));
         }
@@ -401,7 +446,9 @@ class Transaction_test : public beast::unit_test::suite
         {
             auto const result = env.rpc(COMMAND, ctid, BINARY, to_string(20));
 
-            BEAST_EXPECT(result[jss::result][jss::status] == jss::error && result[jss::result][jss::error] == INVALID);
+            BEAST_EXPECT(
+                result[jss::result][jss::status] == jss::error &&
+                result[jss::result][jss::error] == INVALID);
 
             BEAST_EXPECT(!result[jss::result].isMember(jss::searched_all));
         }
@@ -422,10 +469,12 @@ class Transaction_test : public beast::unit_test::suite
 
         // Provide an invalid range: (max - min > 1000)
         {
-            auto const result = env.rpc(COMMAND, ctid, BINARY, to_string(startLegSeq), to_string(startLegSeq + 1001));
+            auto const result = env.rpc(
+                COMMAND, ctid, BINARY, to_string(startLegSeq), to_string(startLegSeq + 1001));
 
             BEAST_EXPECT(
-                result[jss::result][jss::status] == jss::error && result[jss::result][jss::error] == EXCESSIVE);
+                result[jss::result][jss::status] == jss::error &&
+                result[jss::result][jss::error] == EXCESSIVE);
 
             BEAST_EXPECT(!result[jss::result].isMember(jss::searched_all));
         }
@@ -461,12 +510,14 @@ class Transaction_test : public beast::unit_test::suite
         BEAST_EXPECT(!RPC::encodeCTID(0x0FFF'FFFFUL, 0xFFFFU, 0x1'0000U));
 
         // Test case 5: Valid input values
-        auto const expected51 = std::optional<std::tuple<int32_t, uint16_t, uint16_t>>(std::make_tuple(0, 0, 0));
+        auto const expected51 =
+            std::optional<std::tuple<int32_t, uint16_t, uint16_t>>(std::make_tuple(0, 0, 0));
         BEAST_EXPECT(RPC::decodeCTID("C000000000000000") == expected51);
-        auto const expected52 = std::optional<std::tuple<int32_t, uint16_t, uint16_t>>(std::make_tuple(1U, 2U, 3U));
+        auto const expected52 =
+            std::optional<std::tuple<int32_t, uint16_t, uint16_t>>(std::make_tuple(1U, 2U, 3U));
         BEAST_EXPECT(RPC::decodeCTID("C000000100020003") == expected52);
-        auto const expected53 =
-            std::optional<std::tuple<int32_t, uint16_t, uint16_t>>(std::make_tuple(13249191UL, 12911U, 49221U));
+        auto const expected53 = std::optional<std::tuple<int32_t, uint16_t, uint16_t>>(
+            std::make_tuple(13249191UL, 12911U, 49221U));
         BEAST_EXPECT(RPC::decodeCTID("C0CA2AA7326FC045") == expected53);
 
         // Test case 6: ctid not a string or big int
@@ -487,7 +538,8 @@ class Transaction_test : public beast::unit_test::suite
         // Test case 11: Valid input values
         BEAST_EXPECT(
             (RPC::decodeCTID(0xCFFF'FFFF'FFFF'FFFFULL) ==
-             std::optional<std::tuple<int32_t, uint16_t, uint16_t>>(std::make_tuple(0x0FFF'FFFFUL, 0xFFFFU, 0xFFFFU))));
+             std::optional<std::tuple<int32_t, uint16_t, uint16_t>>(
+                 std::make_tuple(0x0FFF'FFFFUL, 0xFFFFU, 0xFFFFU))));
         BEAST_EXPECT(
             (RPC::decodeCTID(0xC000'0000'0000'0000ULL) ==
              std::optional<std::tuple<int32_t, uint16_t, uint16_t>>(std::make_tuple(0, 0, 0))));
@@ -496,7 +548,8 @@ class Transaction_test : public beast::unit_test::suite
              std::optional<std::tuple<int32_t, uint16_t, uint16_t>>(std::make_tuple(1U, 2U, 3U))));
         BEAST_EXPECT(
             (RPC::decodeCTID(0xC0CA'2AA7'326F'C045ULL) ==
-             std::optional<std::tuple<int32_t, uint16_t, uint16_t>>(std::make_tuple(1324'9191UL, 12911U, 49221U))));
+             std::optional<std::tuple<int32_t, uint16_t, uint16_t>>(
+                 std::make_tuple(1324'9191UL, 12911U, 49221U))));
 
         // Test case 12: ctid not exactly 16 nibbles
         BEAST_EXPECT(!RPC::decodeCTID(0xC003'FFFF'FFFF'FFF));
@@ -677,7 +730,8 @@ class Transaction_test : public beast::unit_test::suite
 
         std::shared_ptr<STTx const> txn = env.tx();
         env.close();
-        std::shared_ptr<STObject const> meta = env.closed()->txRead(env.tx()->getTransactionID()).second;
+        std::shared_ptr<STObject const> meta =
+            env.closed()->txRead(env.tx()->getTransactionID()).second;
 
         Json::Value expected = txn->getJson(JsonOptions::none);
         expected[jss::DeliverMax] = expected[jss::Amount];
@@ -711,7 +765,8 @@ class Transaction_test : public beast::unit_test::suite
         for (auto memberIt = expected.begin(); memberIt != expected.end(); memberIt++)
         {
             std::string const name = memberIt.memberName();
-            auto const& result_transaction = (apiVersion > 1 ? result[jss::result][jss::tx_json] : result[jss::result]);
+            auto const& result_transaction =
+                (apiVersion > 1 ? result[jss::result][jss::tx_json] : result[jss::result]);
             if (BEAST_EXPECT(result_transaction.isMember(name)))
             {
                 auto const received = result_transaction[name];
@@ -744,7 +799,8 @@ class Transaction_test : public beast::unit_test::suite
         env.fund(XRP(1000000), alice, gw);
         std::shared_ptr<STTx const> const txn = env.tx();
         BEAST_EXPECT(
-            to_string(txn->getTransactionID()) == "3F8BDE5A5F82C4F4708E5E9255B713E303E6E1A371FD5C7A704AFD1387C23981");
+            to_string(txn->getTransactionID()) ==
+            "3F8BDE5A5F82C4F4708E5E9255B713E303E6E1A371FD5C7A704AFD1387C23981");
         env.close();
         std::shared_ptr<STObject const> meta = env.closed()->txRead(txn->getTransactionID()).second;
 

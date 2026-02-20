@@ -155,7 +155,8 @@ public:
         for (auto const& [k, v] : delta)
         {
             XRPL_ASSERT(
-                (v.first && !v.second) || (v.second && !v.first), "xrpl::RCLTxSet::compare : either side is set");
+                (v.first && !v.second) || (v.second && !v.first),
+                "xrpl::RCLTxSet::compare : either side is set");
 
             ret[k] = static_cast<bool>(v.first);
         }

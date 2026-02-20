@@ -23,7 +23,8 @@ DeferredCredits::credit(
     STAmount const& amount,
     STAmount const& preCreditSenderBalance)
 {
-    XRPL_ASSERT(sender != receiver, "xrpl::detail::DeferredCredits::credit : sender is not receiver");
+    XRPL_ASSERT(
+        sender != receiver, "xrpl::detail::DeferredCredits::credit : sender is not receiver");
     XRPL_ASSERT(!amount.negative(), "xrpl::detail::DeferredCredits::credit : positive amount");
 
     auto const k = makeKey(sender, receiver, amount.getCurrency());
@@ -81,8 +82,10 @@ DeferredCredits::ownerCount(AccountID const& id) const
 
 // Get the adjustments for the balance between main and other.
 auto
-DeferredCredits::adjustments(AccountID const& main, AccountID const& other, Currency const& currency) const
-    -> std::optional<Adjustment>
+DeferredCredits::adjustments(
+    AccountID const& main,
+    AccountID const& other,
+    Currency const& currency) const -> std::optional<Adjustment>
 {
     std::optional<Adjustment> result;
 
@@ -136,7 +139,10 @@ DeferredCredits::apply(DeferredCredits& to)
 }  // namespace detail
 
 STAmount
-PaymentSandbox::balanceHook(AccountID const& account, AccountID const& issuer, STAmount const& amount) const
+PaymentSandbox::balanceHook(
+    AccountID const& account,
+    AccountID const& issuer,
+    STAmount const& amount) const
 {
     /*
     There are two algorithms here. The pre-switchover algorithm takes the
@@ -205,7 +211,10 @@ PaymentSandbox::creditHook(
 }
 
 void
-PaymentSandbox::adjustOwnerCountHook(AccountID const& account, std::uint32_t cur, std::uint32_t next)
+PaymentSandbox::adjustOwnerCountHook(
+    AccountID const& account,
+    std::uint32_t cur,
+    std::uint32_t next)
 {
     tab_.ownerCount(account, cur, next);
 }

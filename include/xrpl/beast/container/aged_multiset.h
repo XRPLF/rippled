@@ -13,6 +13,7 @@ template <
     class Clock = std::chrono::steady_clock,
     class Compare = std::less<Key>,
     class Allocator = std::allocator<Key>>
-using aged_multiset = detail::aged_ordered_container<true, false, Key, void, Clock, Compare, Allocator>;
+using aged_multiset =
+    detail::aged_ordered_container<true, false, Key, void, Clock, Compare, Allocator>;
 
 }

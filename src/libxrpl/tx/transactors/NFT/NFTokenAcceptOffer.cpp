@@ -40,7 +40,8 @@ NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
 TER
 NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 {
-    auto const checkOffer = [&ctx](std::optional<uint256> id) -> std::pair<std::shared_ptr<const SLE>, TER> {
+    auto const checkOffer =
+        [&ctx](std::optional<uint256> id) -> std::pair<std::shared_ptr<const SLE>, TER> {
         if (id)
         {
             if (id->isZero())
@@ -132,13 +133,13 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             // Check if broker is allowed to receive the fee with these IOUs.
             if (!brokerFee->native() && ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2))
             {
-                auto res =
-                    nft::checkTrustlineAuthorized(ctx.view, ctx.tx[sfAccount], ctx.j, brokerFee->asset().get<Issue>());
+                auto res = nft::checkTrustlineAuthorized(
+                    ctx.view, ctx.tx[sfAccount], ctx.j, brokerFee->asset().get<Issue>());
                 if (res != tesSUCCESS)
                     return res;
 
-                res =
-                    nft::checkTrustlineDeepFrozen(ctx.view, ctx.tx[sfAccount], ctx.j, brokerFee->asset().get<Issue>());
+                res = nft::checkTrustlineDeepFrozen(
+                    ctx.view, ctx.tx[sfAccount], ctx.j, brokerFee->asset().get<Issue>());
                 if (res != tesSUCCESS)
                     return res;
             }
@@ -163,7 +164,8 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         {
             // If the offer has a Destination field, the acceptor must be the
             // Destination.
-            if (auto const dest = bo->at(~sfDestination); dest.has_value() && *dest != ctx.tx[sfAccount])
+            if (auto const dest = bo->at(~sfDestination);
+                dest.has_value() && *dest != ctx.tx[sfAccount])
                 return tecNO_PERMISSION;
         }
 
@@ -182,17 +184,20 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // created by the broker.
         if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2) && !needed.native())
         {
-            auto res = nft::checkTrustlineAuthorized(ctx.view, bo->at(sfOwner), ctx.j, needed.asset().get<Issue>());
+            auto res = nft::checkTrustlineAuthorized(
+                ctx.view, bo->at(sfOwner), ctx.j, needed.asset().get<Issue>());
             if (res != tesSUCCESS)
                 return res;
 
             if (!so)
             {
-                res = nft::checkTrustlineAuthorized(ctx.view, ctx.tx[sfAccount], ctx.j, needed.asset().get<Issue>());
+                res = nft::checkTrustlineAuthorized(
+                    ctx.view, ctx.tx[sfAccount], ctx.j, needed.asset().get<Issue>());
                 if (res != tesSUCCESS)
                     return res;
 
-                res = nft::checkTrustlineDeepFrozen(ctx.view, ctx.tx[sfAccount], ctx.j, needed.asset().get<Issue>());
+                res = nft::checkTrustlineDeepFrozen(
+                    ctx.view, ctx.tx[sfAccount], ctx.j, needed.asset().get<Issue>());
                 if (res != tesSUCCESS)
                     return res;
             }
@@ -217,7 +222,8 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         {
             // If the offer has a Destination field, the acceptor must be the
             // Destination.
-            if (auto const dest = so->at(~sfDestination); dest.has_value() && *dest != ctx.tx[sfAccount])
+            if (auto const dest = so->at(~sfDestination);
+                dest.has_value() && *dest != ctx.tx[sfAccount])
                 return tecNO_PERMISSION;
         }
 
@@ -246,21 +252,22 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         {
             if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2))
             {
-                auto res = nft::checkTrustlineAuthorized(ctx.view, (*so)[sfOwner], ctx.j, needed.asset().get<Issue>());
+                auto res = nft::checkTrustlineAuthorized(
+                    ctx.view, (*so)[sfOwner], ctx.j, needed.asset().get<Issue>());
                 if (res != tesSUCCESS)
                     return res;
 
                 if (!bo)
                 {
-                    res =
-                        nft::checkTrustlineAuthorized(ctx.view, ctx.tx[sfAccount], ctx.j, needed.asset().get<Issue>());
+                    res = nft::checkTrustlineAuthorized(
+                        ctx.view, ctx.tx[sfAccount], ctx.j, needed.asset().get<Issue>());
                     if (res != tesSUCCESS)
                         return res;
                 }
             }
 
-            auto const res =
-                nft::checkTrustlineDeepFrozen(ctx.view, (*so)[sfOwner], ctx.j, needed.asset().get<Issue>());
+            auto const res = nft::checkTrustlineDeepFrozen(
+                ctx.view, (*so)[sfOwner], ctx.j, needed.asset().get<Issue>());
             if (res != tesSUCCESS)
                 return res;
         }
@@ -283,18 +290,21 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // give the NFToken issuer an undesired trust line.
         // Issuer doesn't need a trust line to accept their own currency.
         if (ctx.view.rules().enabled(fixEnforceNFTokenTrustline) &&
-            (nft::getFlags(tokenID) & nft::flagCreateTrustLines) == 0 && nftMinter != amount.getIssuer() &&
+            (nft::getFlags(tokenID) & nft::flagCreateTrustLines) == 0 &&
+            nftMinter != amount.getIssuer() &&
             !ctx.view.read(keylet::line(nftMinter, amount.issue())))
             return tecNO_LINE;
 
         // Check that the issuer is allowed to receive IOUs.
         if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2))
         {
-            auto res = nft::checkTrustlineAuthorized(ctx.view, nftMinter, ctx.j, amount.asset().get<Issue>());
+            auto res = nft::checkTrustlineAuthorized(
+                ctx.view, nftMinter, ctx.j, amount.asset().get<Issue>());
             if (res != tesSUCCESS)
                 return res;
 
-            res = nft::checkTrustlineDeepFrozen(ctx.view, nftMinter, ctx.j, amount.asset().get<Issue>());
+            res = nft::checkTrustlineDeepFrozen(
+                ctx.view, nftMinter, ctx.j, amount.asset().get<Issue>());
             if (res != tesSUCCESS)
                 return res;
         }
@@ -327,14 +337,18 @@ NFTokenAcceptOffer::pay(AccountID const& from, AccountID const& to, STAmount con
 }
 
 TER
-NFTokenAcceptOffer::transferNFToken(AccountID const& buyer, AccountID const& seller, uint256 const& nftokenID)
+NFTokenAcceptOffer::transferNFToken(
+    AccountID const& buyer,
+    AccountID const& seller,
+    uint256 const& nftokenID)
 {
     auto tokenAndPage = nft::findTokenAndPage(view(), seller, nftokenID);
 
     if (!tokenAndPage)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (auto const ret = nft::removeToken(view(), seller, nftokenID, std::move(tokenAndPage->page)); !isTesSuccess(ret))
+    if (auto const ret = nft::removeToken(view(), seller, nftokenID, std::move(tokenAndPage->page));
+        !isTesSuccess(ret))
         return ret;
 
     auto const sleBuyer = view().read(keylet::account(buyer));
@@ -363,7 +377,8 @@ NFTokenAcceptOffer::transferNFToken(AccountID const& buyer, AccountID const& sel
         auto const buyerOwnerCountAfter = sleBuyer->getFieldU32(sfOwnerCount);
         if (buyerOwnerCountAfter > buyerOwnerCountBefore)
         {
-            if (auto const reserve = view().fees().accountReserve(buyerOwnerCountAfter); buyerBalance < reserve)
+            if (auto const reserve = view().fees().accountReserve(buyerOwnerCountAfter);
+                buyerBalance < reserve)
                 return tecINSUFFICIENT_RESERVE;
         }
     }
@@ -426,14 +441,16 @@ NFTokenAcceptOffer::doApply()
     {
         bool foundExpired = false;
 
-        auto const deleteOfferIfExpired = [this, &foundExpired](std::shared_ptr<SLE> const& offer) -> TER {
+        auto const deleteOfferIfExpired =
+            [this, &foundExpired](std::shared_ptr<SLE> const& offer) -> TER {
             if (offer && hasExpired(view(), (*offer)[~sfExpiration]))
             {
                 JLOG(j_.trace()) << "Offer is expired, deleting: " << offer->key();
                 if (!nft::deleteTokenOffer(view(), offer))
                 {
                     // LCOV_EXCL_START
-                    JLOG(j_.fatal()) << "Unable to delete expired offer '" << offer->key() << "': ignoring";
+                    JLOG(j_.fatal())
+                        << "Unable to delete expired offer '" << offer->key() << "': ignoring";
                     return tecINTERNAL;
                     // LCOV_EXCL_STOP
                 }
@@ -463,7 +480,8 @@ NFTokenAcceptOffer::doApply()
     if (so && !nft::deleteTokenOffer(view(), so))
     {
         // LCOV_EXCL_START
-        JLOG(j_.fatal()) << "Unable to delete sell offer '" << to_string(so->key()) << "': ignoring";
+        JLOG(j_.fatal()) << "Unable to delete sell offer '" << to_string(so->key())
+                         << "': ignoring";
         return tecINTERNAL;
         // LCOV_EXCL_STOP
     }

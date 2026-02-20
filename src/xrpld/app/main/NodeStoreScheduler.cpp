@@ -27,7 +27,9 @@ NodeStoreScheduler::onFetch(NodeStore::FetchReport const& report)
         return;
 
     jobQueue_.addLoadEvents(
-        report.fetchType == NodeStore::FetchType::async ? jtNS_ASYNC_READ : jtNS_SYNC_READ, 1, report.elapsed);
+        report.fetchType == NodeStore::FetchType::async ? jtNS_ASYNC_READ : jtNS_SYNC_READ,
+        1,
+        report.elapsed);
 }
 
 void

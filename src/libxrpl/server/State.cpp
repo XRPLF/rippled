@@ -63,7 +63,8 @@ getCanDelete(soci::session& session)
 LedgerIndex
 setCanDelete(soci::session& session, LedgerIndex canDelete)
 {
-    session << "UPDATE CanDelete SET CanDeleteSeq = :canDelete WHERE Key = 1;", soci::use(canDelete);
+    session << "UPDATE CanDelete SET CanDeleteSeq = :canDelete WHERE Key = 1;",
+        soci::use(canDelete);
     return canDelete;
 }
 

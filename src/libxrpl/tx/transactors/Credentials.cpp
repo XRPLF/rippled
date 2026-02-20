@@ -99,7 +99,8 @@ CredentialCreate::doApply()
     auto const optExp = ctx_.tx[~sfExpiration];
     if (optExp)
     {
-        std::uint32_t const closeTime = ctx_.view().header().parentCloseTime.time_since_epoch().count();
+        std::uint32_t const closeTime =
+            ctx_.view().header().parentCloseTime.time_since_epoch().count();
 
         if (closeTime > *optExp)
         {
@@ -116,7 +117,8 @@ CredentialCreate::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     {
-        STAmount const reserve{view().fees().accountReserve(sleIssuer->getFieldU32(sfOwnerCount) + 1)};
+        STAmount const reserve{
+            view().fees().accountReserve(sleIssuer->getFieldU32(sfOwnerCount) + 1)};
         if (mPriorBalance < reserve)
             return tecINSUFFICIENT_RESERVE;
     }
@@ -129,9 +131,10 @@ CredentialCreate::doApply()
         sleCred->setFieldVL(sfURI, ctx_.tx.getFieldVL(sfURI));
 
     {
-        auto const page = view().dirInsert(keylet::ownerDir(account_), credentialKey, describeOwnerDir(account_));
-        JLOG(j_.trace()) << "Adding Credential to owner directory " << to_string(credentialKey.key) << ": "
-                         << (page ? "success" : "failure");
+        auto const page =
+            view().dirInsert(keylet::ownerDir(account_), credentialKey, describeOwnerDir(account_));
+        JLOG(j_.trace()) << "Adding Credential to owner directory " << to_string(credentialKey.key)
+                         << ": " << (page ? "success" : "failure");
         if (!page)
             return tecDIR_FULL;
         sleCred->setFieldU64(sfIssuerNode, *page);
@@ -145,9 +148,10 @@ CredentialCreate::doApply()
     }
     else
     {
-        auto const page = view().dirInsert(keylet::ownerDir(subject), credentialKey, describeOwnerDir(subject));
-        JLOG(j_.trace()) << "Adding Credential to owner directory " << to_string(credentialKey.key) << ": "
-                         << (page ? "success" : "failure");
+        auto const page =
+            view().dirInsert(keylet::ownerDir(subject), credentialKey, describeOwnerDir(subject));
+        JLOG(j_.trace()) << "Adding Credential to owner directory " << to_string(credentialKey.key)
+                         << ": " << (page ? "success" : "failure");
         if (!page)
             return tecDIR_FULL;
         sleCred->setFieldU64(sfSubjectNode, *page);
@@ -225,7 +229,8 @@ CredentialDelete::doApply()
     if (!sleCred)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    if ((subject != account_) && (issuer != account_) && !checkExpired(sleCred, ctx_.view().header().parentCloseTime))
+    if ((subject != account_) && (issuer != account_) &&
+        !checkExpired(sleCred, ctx_.view().header().parentCloseTime))
     {
         JLOG(j_.trace()) << "Can't delete non-expired credential.";
         return tecNO_PERMISSION;
@@ -278,14 +283,15 @@ CredentialAccept::preclaim(PreclaimContext const& ctx)
     auto const sleCred = ctx.view.read(keylet::credential(subject, issuer, credType));
     if (!sleCred)
     {
-        JLOG(ctx.j.warn()) << "No credential: " << to_string(subject) << ", " << to_string(issuer) << ", " << credType;
+        JLOG(ctx.j.warn()) << "No credential: " << to_string(subject) << ", " << to_string(issuer)
+                           << ", " << credType;
         return tecNO_ENTRY;
     }
 
     if (sleCred->getFieldU32(sfFlags) & lsfAccepted)
     {
-        JLOG(ctx.j.warn()) << "Credential already accepted: " << to_string(subject) << ", " << to_string(issuer) << ", "
-                           << credType;
+        JLOG(ctx.j.warn()) << "Credential already accepted: " << to_string(subject) << ", "
+                           << to_string(issuer) << ", " << credType;
         return tecDUPLICATE;
     }
 
@@ -305,7 +311,8 @@ CredentialAccept::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     {
-        STAmount const reserve{view().fees().accountReserve(sleSubject->getFieldU32(sfOwnerCount) + 1)};
+        STAmount const reserve{
+            view().fees().accountReserve(sleSubject->getFieldU32(sfOwnerCount) + 1)};
         if (mPriorBalance < reserve)
             return tecINSUFFICIENT_RESERVE;
     }

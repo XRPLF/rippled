@@ -40,7 +40,14 @@ sign_create_account_attestation(
     AccountID const& dst)
 {
     auto const toSign = Attestations::AttestationCreateAccount::message(
-        bridge, sendingAccount, sendingAmount, rewardAmount, rewardAccount, wasLockingChainSend, createCount, dst);
+        bridge,
+        sendingAccount,
+        sendingAmount,
+        rewardAmount,
+        rewardAccount,
+        wasLockingChainSend,
+        createCount,
+        dst);
     return sign(pk, sk, makeSlice(toSign));
 }
 

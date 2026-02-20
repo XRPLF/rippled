@@ -95,7 +95,8 @@ inline IOUAmount::IOUAmount(beast::Zero)
     *this = beast::zero;
 }
 
-inline IOUAmount::IOUAmount(mantissa_type mantissa, exponent_type exponent) : mantissa_(mantissa), exponent_(exponent)
+inline IOUAmount::IOUAmount(mantissa_type mantissa, exponent_type exponent)
+    : mantissa_(mantissa), exponent_(exponent)
 {
     normalize();
 }

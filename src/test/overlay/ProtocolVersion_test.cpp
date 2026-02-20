@@ -62,9 +62,12 @@ public:
             testcase("Protocol version negotiation");
 
             BEAST_EXPECT(negotiateProtocolVersion("RTXP/1.2") == std::nullopt);
-            BEAST_EXPECT(negotiateProtocolVersion("RTXP/1.2, XRPL/2.0, XRPL/2.1") == make_protocol(2, 1));
+            BEAST_EXPECT(
+                negotiateProtocolVersion("RTXP/1.2, XRPL/2.0, XRPL/2.1") == make_protocol(2, 1));
             BEAST_EXPECT(negotiateProtocolVersion("XRPL/2.2") == make_protocol(2, 2));
-            BEAST_EXPECT(negotiateProtocolVersion("RTXP/1.2, XRPL/2.2, XRPL/2.3, XRPL/999.999") == make_protocol(2, 2));
+            BEAST_EXPECT(
+                negotiateProtocolVersion("RTXP/1.2, XRPL/2.2, XRPL/2.3, XRPL/999.999") ==
+                make_protocol(2, 2));
             BEAST_EXPECT(negotiateProtocolVersion("XRPL/999.999, WebSocket/1.0") == std::nullopt);
             BEAST_EXPECT(negotiateProtocolVersion("") == std::nullopt);
         }

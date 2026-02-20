@@ -201,7 +201,11 @@ TEST(json_value, different_types)
 
 TEST(json_value, compare_strings)
 {
-    auto doCompare = [&](Json::Value const& lhs, Json::Value const& rhs, bool lhsEqRhs, bool lhsLtRhs, int line) {
+    auto doCompare = [&](Json::Value const& lhs,
+                         Json::Value const& rhs,
+                         bool lhsEqRhs,
+                         bool lhsLtRhs,
+                         int line) {
         SCOPED_TRACE(line);
         EXPECT_EQ((lhs == rhs), lhsEqRhs);
         EXPECT_NE((lhs != rhs), lhsEqRhs);

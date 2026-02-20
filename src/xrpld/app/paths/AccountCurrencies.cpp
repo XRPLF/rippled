@@ -3,7 +3,10 @@
 namespace xrpl {
 
 hash_set<Currency>
-accountSourceCurrencies(AccountID const& account, std::shared_ptr<RippleLineCache> const& lrCache, bool includeXRP)
+accountSourceCurrencies(
+    AccountID const& account,
+    std::shared_ptr<RippleLineCache> const& lrCache,
+    bool includeXRP)
 {
     hash_set<Currency> currencies;
 
@@ -34,7 +37,10 @@ accountSourceCurrencies(AccountID const& account, std::shared_ptr<RippleLineCach
 }
 
 hash_set<Currency>
-accountDestCurrencies(AccountID const& account, std::shared_ptr<RippleLineCache> const& lrCache, bool includeXRP)
+accountDestCurrencies(
+    AccountID const& account,
+    std::shared_ptr<RippleLineCache> const& lrCache,
+    bool includeXRP)
 {
     hash_set<Currency> currencies;
 

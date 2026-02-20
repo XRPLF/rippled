@@ -449,7 +449,9 @@ struct Directory_test : public beast::unit_test::suite
                     // All of the other directories, including the order
                     // book, did get touched, so they should have those
                     // fields
-                    BEAST_EXPECT(directory.isMember("PreviousTxnID") && directory["PreviousTxnID"].asString() == txID);
+                    BEAST_EXPECT(
+                        directory.isMember("PreviousTxnID") &&
+                        directory["PreviousTxnID"].asString() == txID);
                     BEAST_EXPECT(
                         directory.isMember("PreviousTxnLgrSeq") &&
                         directory["PreviousTxnLgrSeq"].asUInt() == ledgerSeq);
@@ -521,10 +523,12 @@ struct Directory_test : public beast::unit_test::suite
             env.close();
         };
 
-        testCase(testable_amendments() - fixDirectoryLimit, [this](Env&) -> std::tuple<std::uint64_t, bool> {
-            testcase("directory full without fixDirectoryLimit");
-            return {dirNodeMaxPages - 1, true};
-        });
+        testCase(
+            testable_amendments() - fixDirectoryLimit,
+            [this](Env&) -> std::tuple<std::uint64_t, bool> {
+                testcase("directory full without fixDirectoryLimit");
+                return {dirNodeMaxPages - 1, true};
+            });
         testCase(
             testable_amendments(),  //
             [this](Env&) -> std::tuple<std::uint64_t, bool> {

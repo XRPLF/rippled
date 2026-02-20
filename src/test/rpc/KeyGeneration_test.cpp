@@ -93,7 +93,9 @@ public:
         BEAST_EXPECT(result.isMember(jss::public_key_hex));
         BEAST_EXPECT(result.isMember(jss::key_type));
 
-        expectEquals(result[jss::key_type], params.isMember(jss::key_type) ? params[jss::key_type] : "secp256k1");
+        expectEquals(
+            result[jss::key_type],
+            params.isMember(jss::key_type) ? params[jss::key_type] : "secp256k1");
         BEAST_EXPECT(!result.isMember(jss::warning));
 
         std::string seed = result[jss::master_seed].asString();
@@ -115,7 +117,9 @@ public:
         expectEquals(result[jss::master_seed_hex], s.master_seed_hex);
         expectEquals(result[jss::public_key], s.public_key);
         expectEquals(result[jss::public_key_hex], s.public_key_hex);
-        expectEquals(result[jss::key_type], params.isMember(jss::key_type) ? params[jss::key_type] : "secp256k1");
+        expectEquals(
+            result[jss::key_type],
+            params.isMember(jss::key_type) ? params[jss::key_type] : "secp256k1");
         return result;
     }
 
@@ -148,7 +152,10 @@ public:
     }
 
     void
-    testLegacyPassphrase(char const* value, std::optional<std::string> const& keyType, key_strings const& strings)
+    testLegacyPassphrase(
+        char const* value,
+        std::optional<std::string> const& keyType,
+        key_strings const& strings)
     {
         Json::Value params;
         if (keyType)
@@ -423,7 +430,9 @@ public:
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
             BEAST_EXPECT(!ret);
-            BEAST_EXPECT(error[jss::error_message] == "The secret field is not allowed if key_type is used.");
+            BEAST_EXPECT(
+                error[jss::error_message] ==
+                "The secret field is not allowed if key_type is used.");
         }
 
         // Specify unknown or bad "key_type"
@@ -703,7 +712,8 @@ public:
                 auto ret = keypairForSignature(params, error);
 
                 BEAST_EXPECT(contains_error(error));
-                BEAST_EXPECT(error[jss::error_message] == "Specified seed is for an Ed25519 wallet.");
+                BEAST_EXPECT(
+                    error[jss::error_message] == "Specified seed is for an Ed25519 wallet.");
             }
 
             {
@@ -733,7 +743,8 @@ public:
                 auto ret = keypairForSignature(params, error);
 
                 BEAST_EXPECT(contains_error(error));
-                BEAST_EXPECT(error[jss::error_message] == "Specified seed is for an Ed25519 wallet.");
+                BEAST_EXPECT(
+                    error[jss::error_message] == "Specified seed is for an Ed25519 wallet.");
             }
         };
 

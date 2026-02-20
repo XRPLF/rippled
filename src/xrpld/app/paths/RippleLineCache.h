@@ -67,7 +67,8 @@ private:
         bool
         operator==(AccountKey const& lhs) const
         {
-            return hash_value_ == lhs.hash_value_ && account_ == lhs.account_ && direction_ == lhs.direction_;
+            return hash_value_ == lhs.hash_value_ && account_ == lhs.account_ &&
+                direction_ == lhs.direction_;
         }
 
         std::size_t

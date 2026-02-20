@@ -62,8 +62,8 @@ decodeCTID(T const ctid) noexcept
     uint64_t ctidValue = 0;
 
     if constexpr (
-        std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view> || std::is_same_v<T, char*> ||
-        std::is_same_v<T, char const*>)
+        std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view> ||
+        std::is_same_v<T, char*> || std::is_same_v<T, char const*>)
     {
         std::string const ctidString(ctid);
 

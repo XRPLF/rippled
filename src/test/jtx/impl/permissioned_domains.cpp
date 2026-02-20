@@ -59,7 +59,8 @@ getObjects(Account const& account, Env& env, bool withType)
             if (withType)
             {  // impossible to get there
                 Throw<std::runtime_error>(
-                    "Invalid object type: " + object["LedgerEntryType"].asString());  // LCOV_EXCL_LINE
+                    "Invalid object type: " +
+                    object["LedgerEntryType"].asString());  // LCOV_EXCL_LINE
             }
             continue;
         }
@@ -95,7 +96,9 @@ objectExists(uint256 const& objID, Env& env)
 
 // Extract credentials from account_object object
 Credentials
-credentialsFromJson(Json::Value const& object, std::unordered_map<std::string, Account> const& human2Acc)
+credentialsFromJson(
+    Json::Value const& object,
+    std::unordered_map<std::string, Account> const& human2Acc)
 {
     Credentials ret;
     Json::Value credentials(Json::arrayValue);
@@ -133,7 +136,8 @@ getNewDomain(std::shared_ptr<STObject const> const& meta)
 
     for (auto const& node : a)
     {
-        if (!node.isMember("CreatedNode") || node["CreatedNode"]["LedgerEntryType"] != "PermissionedDomain")
+        if (!node.isMember("CreatedNode") ||
+            node["CreatedNode"]["LedgerEntryType"] != "PermissionedDomain")
         {
             continue;
         }

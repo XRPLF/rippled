@@ -126,7 +126,8 @@ private:
         }
         else
         {
-            return RPC::make_param_error(std::string("Invalid currency/issuer '") + strCurrencyIssuer + "'");
+            return RPC::make_param_error(
+                std::string("Invalid currency/issuer '") + strCurrencyIssuer + "'");
         }
     }
 
@@ -536,11 +537,13 @@ private:
         }
         if (jv.isObject())
         {
-            if (jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0" && jv.isMember(jss::ripplerpc) &&
-                jv[jss::ripplerpc] == "2.0" && jv.isMember(jss::id) && jv.isMember(jss::method))
+            if (jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0" &&
+                jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0" &&
+                jv.isMember(jss::id) && jv.isMember(jss::method))
             {
                 if (jv.isMember(jss::params) &&
-                    !(jv[jss::params].isNull() || jv[jss::params].isArray() || jv[jss::params].isObject()))
+                    !(jv[jss::params].isNull() || jv[jss::params].isArray() ||
+                      jv[jss::params].isObject()))
                     return false;
                 return true;
             }
@@ -944,7 +947,8 @@ private:
         Json::Value txJSON;
         Json::Reader reader;
         bool const bOffline = jvParams.size() >= 3 && jvParams[2u].asString() == "offline";
-        std::optional<std::string> const field = [&jvParams, bOffline]() -> std::optional<std::string> {
+        std::optional<std::string> const field = [&jvParams,
+                                                  bOffline]() -> std::optional<std::string> {
             if (jvParams.size() < 3)
                 return std::nullopt;
             if (jvParams.size() < 4 && bOffline)
@@ -963,7 +967,8 @@ private:
 
             return jvRequest;
         }
-        else if ((jvParams.size() >= 2 || bOffline) && reader.parse(jvParams[1u].asString(), txJSON))
+        else if (
+            (jvParams.size() >= 2 || bOffline) && reader.parse(jvParams[1u].asString(), txJSON))
         {
             // Signing or submitting tx_json.
             Json::Value jvRequest{Json::objectValue};
@@ -1009,7 +1014,8 @@ private:
     parseTransactionEntry(Json::Value const& jvParams)
     {
         // Parameter count should have already been verified.
-        XRPL_ASSERT(jvParams.size() == 2, "xrpl::RPCParser::parseTransactionEntry : valid parameter count");
+        XRPL_ASSERT(
+            jvParams.size() == 2, "xrpl::RPCParser::parseTransactionEntry : valid parameter count");
 
         std::string const txHash = jvParams[0u].asString();
         if (txHash.length() != 64)
@@ -1275,8 +1281,8 @@ public:
                     (command.maxParams >= 0 && count > command.maxParams))
                 {
                     JLOG(j_.debug()) << "Wrong number of parameters for " << command.name
-                                     << " minimum=" << command.minParams << " maximum=" << command.maxParams
-                                     << " actual=" << count;
+                                     << " minimum=" << command.minParams
+                                     << " maximum=" << command.maxParams << " actual=" << count;
 
                     return rpcError(rpcBAD_SYNTAX);
                 }
@@ -1356,7 +1362,8 @@ struct RPCCallImp
 
             // Parse reply
             JLOG(j.debug()) << "RPC reply: " << strData << std::endl;
-            if (strData.find("Unable to parse request") == 0 || strData.find(jss::invalid_API_version.c_str()) == 0)
+            if (strData.find("Unable to parse request") == 0 ||
+                strData.find(jss::invalid_API_version.c_str()) == 0)
                 Throw<RequestNotParsable>(strData);
             Json::Reader reader;
             Json::Value jvReply;
@@ -1390,7 +1397,8 @@ struct RPCCallImp
         JLOG(j.debug()) << "requestRPC: strPath='" << strPath << "'";
 
         std::ostream osRequest(&sb);
-        osRequest << createHTTPPost(strHost, strPath, JSONRPCRequest(strMethod, jvParams, Json::Value(1)), headers);
+        osRequest << createHTTPPost(
+            strHost, strPath, JSONRPCRequest(strMethod, jvParams, Json::Value(1)), headers);
     }
 };
 
@@ -1398,7 +1406,11 @@ struct RPCCallImp
 
 // Used internally by rpcClient.
 Json::Value
-rpcCmdToJson(std::vector<std::string> const& args, Json::Value& retParams, unsigned int apiVersion, beast::Journal j)
+rpcCmdToJson(
+    std::vector<std::string> const& args,
+    Json::Value& retParams,
+    unsigned int apiVersion,
+    beast::Journal j)
 {
     Json::Value jvRequest(Json::objectValue);
 
@@ -1464,7 +1476,8 @@ rpcClient(
             xrpl::ServerHandler::Setup setup;
             try
             {
-                setup = setup_ServerHandler(config, beast::logstream{logs.journal("HTTPClient").warn()});
+                setup = setup_ServerHandler(
+                    config, beast::logstream{logs.journal("HTTPClient").warn()});
             }
             catch (std::exception const&)
             {
@@ -1535,7 +1548,7 @@ rpcClient(
             // If had an error, supply invocation in result.
             if (jvOutput.isMember(jss::error))
             {
-                jvOutput["rpc"] = jvRpc;               // How the command was seen as method + params.
+                jvOutput["rpc"] = jvRpc;  // How the command was seen as method + params.
                 jvOutput["request_sent"] = jvRequest;  // How the command was translated.
             }
         }
@@ -1607,11 +1620,13 @@ fromNetwork(
     // Connect to localhost
     if (!quiet)
     {
-        JLOG(j.info()) << (bSSL ? "Securely connecting to " : "Connecting to ") << strIp << ":" << iPort << std::endl;
+        JLOG(j.info()) << (bSSL ? "Securely connecting to " : "Connecting to ") << strIp << ":"
+                       << iPort << std::endl;
     }
 
     // HTTP basic authentication
-    headers["Authorization"] = std::string("Basic ") + base64_encode(strUsername + ":" + strPassword);
+    headers["Authorization"] =
+        std::string("Basic ") + base64_encode(strUsername + ":" + strPassword);
 
     // Send request
 

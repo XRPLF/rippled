@@ -210,7 +210,11 @@ public:
 
     // Add a peer suppression and return whether the entry should be processed
     bool
-    shouldProcess(uint256 const& key, PeerShortID peer, HashRouterFlags& flags, std::chrono::seconds tx_interval);
+    shouldProcess(
+        uint256 const& key,
+        PeerShortID peer,
+        HashRouterFlags& flags,
+        std::chrono::seconds tx_interval);
 
     /** Set the flags on a hash.
 
@@ -248,7 +252,8 @@ private:
     Setup const setup_;
 
     // Stores all suppressed hashes and their expiration time
-    beast::aged_unordered_map<uint256, Entry, Stopwatch::clock_type, hardened_hash<strong_hash>> suppressionMap_;
+    beast::aged_unordered_map<uint256, Entry, Stopwatch::clock_type, hardened_hash<strong_hash>>
+        suppressionMap_;
 };
 
 }  // namespace xrpl

@@ -39,12 +39,22 @@ public:
     /** Helper function that might be needed by other transactors
      */
     static TER
-    impairLoan(ApplyView& view, SLE::ref loanSle, SLE::ref vaultSle, Asset const& vaultAsset, beast::Journal j);
+    impairLoan(
+        ApplyView& view,
+        SLE::ref loanSle,
+        SLE::ref vaultSle,
+        Asset const& vaultAsset,
+        beast::Journal j);
 
     /** Helper function that might be needed by other transactors
      */
     [[nodiscard]] static TER
-    unimpairLoan(ApplyView& view, SLE::ref loanSle, SLE::ref vaultSle, Asset const& vaultAsset, beast::Journal j);
+    unimpairLoan(
+        ApplyView& view,
+        SLE::ref loanSle,
+        SLE::ref vaultSle,
+        Asset const& vaultAsset,
+        beast::Journal j);
 
     TER
     doApply() override;

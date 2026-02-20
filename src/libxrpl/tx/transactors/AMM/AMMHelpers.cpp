@@ -54,7 +54,11 @@ lpTokensOut(
  * (R/t2)**2 + R*(2*d/t2 - 1/f1) + d**2 - f2**2 = 0
  */
 STAmount
-ammAssetIn(STAmount const& asset1Balance, STAmount const& lptAMMBalance, STAmount const& lpTokens, std::uint16_t tfee)
+ammAssetIn(
+    STAmount const& asset1Balance,
+    STAmount const& lptAMMBalance,
+    STAmount const& lpTokens,
+    std::uint16_t tfee)
 {
     auto const f1 = feeMult(tfee);
     auto const f2 = feeMultHalf(tfee) / f1;
@@ -114,7 +118,11 @@ lpTokensIn(
  * R = (t1**2 + t1*(f - 2)) / (t1*f - 1)
  */
 STAmount
-ammAssetOut(STAmount const& assetBalance, STAmount const& lptAMMBalance, STAmount const& lpTokens, std::uint16_t tfee)
+ammAssetOut(
+    STAmount const& assetBalance,
+    STAmount const& lptAMMBalance,
+    STAmount const& lpTokens,
+    std::uint16_t tfee)
 {
     auto const f = getFee(tfee);
     Number const t1 = lpTokens / lptAMMBalance;
@@ -173,7 +181,8 @@ adjustAmountsByLPTokens(
     if (lpTokensActual < lpTokens)
     {
         bool const ammRoundingEnabled = [&]() {
-            if (auto const& rules = getCurrentTransactionRules(); rules && rules->enabled(fixAMMv1_1))
+            if (auto const& rules = getCurrentTransactionRules();
+                rules && rules->enabled(fixAMMv1_1))
                 return true;
             return false;
         }();
@@ -203,13 +212,15 @@ adjustAmountsByLPTokens(
                 return ammAssetOut(amountBalance, lptAMMBalance, lpTokensActual, tfee);
         }();
         if (!ammRoundingEnabled)
-            return amountActual < amount ? std::make_tuple(amountActual, std::nullopt, lpTokensActual)
-                                         : std::make_tuple(amount, std::nullopt, lpTokensActual);
+            return amountActual < amount
+                ? std::make_tuple(amountActual, std::nullopt, lpTokensActual)
+                : std::make_tuple(amount, std::nullopt, lpTokensActual);
         else
             return std::make_tuple(amountActual, std::nullopt, lpTokensActual);
     }
 
-    XRPL_ASSERT(lpTokensActual == lpTokens, "xrpl::adjustAmountsByLPTokens : LP tokens match actual");
+    XRPL_ASSERT(
+        lpTokensActual == lpTokens, "xrpl::adjustAmountsByLPTokens : LP tokens match actual");
 
     return {amount, amount2, lpTokensActual};
 }
@@ -262,7 +273,11 @@ getRoundedAsset(
 }
 
 STAmount
-getRoundedLPTokens(Rules const& rules, STAmount const& balance, Number const& frac, IsDeposit isDeposit)
+getRoundedLPTokens(
+    Rules const& rules,
+    STAmount const& balance,
+    Number const& frac,
+    IsDeposit isDeposit)
 {
     if (!rules.enabled(fixAMMv1_3))
         return toSTAmount(balance.issue(), balance * frac);
@@ -348,7 +363,11 @@ adjustAssetOutByTokens(
 }
 
 Number
-adjustFracByTokens(Rules const& rules, STAmount const& lptAMMBalance, STAmount const& tokens, Number const& frac)
+adjustFracByTokens(
+    Rules const& rules,
+    STAmount const& lptAMMBalance,
+    STAmount const& tokens,
+    Number const& frac)
 {
     if (!rules.enabled(fixAMMv1_3))
         return frac;

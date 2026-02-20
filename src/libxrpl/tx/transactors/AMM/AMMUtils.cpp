@@ -35,18 +35,21 @@ ammHolds(
         auto const issue2 = ammSle[sfAsset2].get<Issue>();
         if (optIssue1 && optIssue2)
         {
-            if (invalidAMMAssetPair(*optIssue1, *optIssue2, std::make_optional(std::make_pair(issue1, issue2))))
+            if (invalidAMMAssetPair(
+                    *optIssue1, *optIssue2, std::make_optional(std::make_pair(issue1, issue2))))
             {
                 // This error can only be hit if the AMM is corrupted
                 // LCOV_EXCL_START
-                JLOG(j.debug()) << "ammHolds: Invalid optIssue1 or optIssue2 " << *optIssue1 << " " << *optIssue2;
+                JLOG(j.debug()) << "ammHolds: Invalid optIssue1 or optIssue2 " << *optIssue1 << " "
+                                << *optIssue2;
                 return std::nullopt;
                 // LCOV_EXCL_STOP
             }
             return std::make_optional(std::make_pair(*optIssue1, *optIssue2));
         }
         auto const singleIssue = [&issue1, &issue2, &j](
-                                     Issue checkIssue, char const* label) -> std::optional<std::pair<Issue, Issue>> {
+                                     Issue checkIssue,
+                                     char const* label) -> std::optional<std::pair<Issue, Issue>> {
             if (checkIssue == issue1)
                 return std::make_optional(std::make_pair(issue1, issue2));
             else if (checkIssue == issue2)
@@ -70,8 +73,8 @@ ammHolds(
     }();
     if (!issues)
         return Unexpected(tecAMM_INVALID_TOKENS);
-    auto const [asset1, asset2] =
-        ammPoolHolds(view, ammSle.getAccountID(sfAccount), issues->first, issues->second, freezeHandling, j);
+    auto const [asset1, asset2] = ammPoolHolds(
+        view, ammSle.getAccountID(sfAccount), issues->first, issues->second, freezeHandling, j);
     return std::make_tuple(asset1, asset2, ammSle[sfLPTokenBalance]);
 }
 
@@ -97,13 +100,15 @@ ammLPHolds(
     {
         amount.clear(Issue{currency, ammAccount});
         JLOG(j.trace()) << "ammLPHolds: no SLE "
-                        << " lpAccount=" << to_string(lpAccount) << " amount=" << amount.getFullText();
+                        << " lpAccount=" << to_string(lpAccount)
+                        << " amount=" << amount.getFullText();
     }
     else if (isFrozen(view, lpAccount, currency, ammAccount))
     {
         amount.clear(Issue{currency, ammAccount});
         JLOG(j.trace()) << "ammLPHolds: frozen currency "
-                        << " lpAccount=" << to_string(lpAccount) << " amount=" << amount.getFullText();
+                        << " lpAccount=" << to_string(lpAccount)
+                        << " amount=" << amount.getFullText();
     }
     else
     {
@@ -116,14 +121,19 @@ ammLPHolds(
         amount.setIssuer(ammAccount);
 
         JLOG(j.trace()) << "ammLPHolds:"
-                        << " lpAccount=" << to_string(lpAccount) << " amount=" << amount.getFullText();
+                        << " lpAccount=" << to_string(lpAccount)
+                        << " amount=" << amount.getFullText();
     }
 
     return view.balanceHook(lpAccount, ammAccount, amount);
 }
 
 STAmount
-ammLPHolds(ReadView const& view, SLE const& ammSle, AccountID const& lpAccount, beast::Journal const j)
+ammLPHolds(
+    ReadView const& view,
+    SLE const& ammSle,
+    AccountID const& lpAccount,
+    beast::Journal const j)
 {
     return ammLPHolds(
         view,
@@ -146,7 +156,8 @@ getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
         auto const& auctionSlot = static_cast<STObject const&>(ammSle.peekAtField(sfAuctionSlot));
         // Not expired
         if (auto const expiration = auctionSlot[~sfExpiration];
-            duration_cast<seconds>(view.header().parentCloseTime.time_since_epoch()).count() < expiration)
+            duration_cast<seconds>(view.header().parentCloseTime.time_since_epoch()).count() <
+            expiration)
         {
             if (auctionSlot[~sfAccount] == account)
                 return auctionSlot[sfDiscountedFee];
@@ -183,12 +194,18 @@ ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Issue const
 }
 
 static TER
-deleteAMMTrustLines(Sandbox& sb, AccountID const& ammAccountID, std::uint16_t maxTrustlinesToDelete, beast::Journal j)
+deleteAMMTrustLines(
+    Sandbox& sb,
+    AccountID const& ammAccountID,
+    std::uint16_t maxTrustlinesToDelete,
+    beast::Journal j)
 {
     return cleanupOnAccountDelete(
         sb,
         keylet::ownerDir(ammAccountID),
-        [&](LedgerEntryType nodeType, uint256 const&, std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
+        [&](LedgerEntryType nodeType,
+            uint256 const&,
+            std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
             // Skip AMM
             if (nodeType == LedgerEntryType::ltAMM)
                 return {tesSUCCESS, SkipEntry::Yes};
@@ -234,12 +251,14 @@ deleteAMMAccount(Sandbox& sb, Issue const& asset, Issue const& asset2, beast::Jo
     if (!sleAMMRoot)
     {
         // LCOV_EXCL_START
-        JLOG(j.error()) << "deleteAMMAccount: AMM account does not exist " << to_string(ammAccountID);
+        JLOG(j.error()) << "deleteAMMAccount: AMM account does not exist "
+                        << to_string(ammAccountID);
         return tecINTERNAL;
         // LCOV_EXCL_STOP
     }
 
-    if (auto const ter = deleteAMMTrustLines(sb, ammAccountID, maxDeletableAMMTrustLines, j); ter != tesSUCCESS)
+    if (auto const ter = deleteAMMTrustLines(sb, ammAccountID, maxDeletableAMMTrustLines, j);
+        ter != tesSUCCESS)
         return ter;
 
     auto const ownerDirKeylet = keylet::ownerDir(ammAccountID);
@@ -253,7 +272,8 @@ deleteAMMAccount(Sandbox& sb, Issue const& asset, Issue const& asset2, beast::Jo
     if (sb.exists(ownerDirKeylet) && !sb.emptyDirDelete(ownerDirKeylet))
     {
         // LCOV_EXCL_START
-        JLOG(j.error()) << "deleteAMMAccount: cannot delete root dir node of " << toBase58(ammAccountID);
+        JLOG(j.error()) << "deleteAMMAccount: cannot delete root dir node of "
+                        << toBase58(ammAccountID);
         return tecINTERNAL;
         // LCOV_EXCL_STOP
     }
@@ -293,8 +313,9 @@ initializeFeeAuctionVote(
     STObject& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
     auctionSlot.setAccountID(sfAccount, account);
     // current + sec in 24h
-    auto const expiration =
-        std::chrono::duration_cast<std::chrono::seconds>(view.header().parentCloseTime.time_since_epoch()).count() +
+    auto const expiration = std::chrono::duration_cast<std::chrono::seconds>(
+                                view.header().parentCloseTime.time_since_epoch())
+                                .count() +
         TOTAL_TIME_SLOT_SECS;
     auctionSlot.setFieldU32(sfExpiration, expiration);
     auctionSlot.setFieldAmount(sfPrice, STAmount{lptIssue, 0});
@@ -352,8 +373,10 @@ isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID c
                 return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
             auto const lowLimit = sle->getFieldAmount(sfLowLimit);
             auto const highLimit = sle->getFieldAmount(sfHighLimit);
-            auto const isLPTrustline = lowLimit.getIssuer() == lpAccount || highLimit.getIssuer() == lpAccount;
-            auto const isLPTokenTrustline = lowLimit.issue() == ammIssue || highLimit.issue() == ammIssue;
+            auto const isLPTrustline =
+                lowLimit.getIssuer() == lpAccount || highLimit.getIssuer() == lpAccount;
+            auto const isLPTokenTrustline =
+                lowLimit.issue() == ammIssue || highLimit.issue() == ammIssue;
 
             // Liquidity Provider trustline
             if (isLPTrustline)
@@ -396,7 +419,8 @@ verifyAndAdjustLPTokenBalance(
         return Unexpected<TER>(res.error());
     else if (res.value())
     {
-        if (withinRelativeDistance(lpTokens, ammSle->getFieldAmount(sfLPTokenBalance), Number{1, -3}))
+        if (withinRelativeDistance(
+                lpTokens, ammSle->getFieldAmount(sfLPTokenBalance), Number{1, -3}))
         {
             ammSle->setFieldAmount(sfLPTokenBalance, lpTokens);
             sb.update(ammSle);

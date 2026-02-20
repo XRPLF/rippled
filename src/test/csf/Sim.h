@@ -23,7 +23,8 @@ class BasicSink : public beast::Journal::Sink
     Scheduler::clock_type const& clock_;
 
 public:
-    BasicSink(Scheduler::clock_type const& clock) : Sink(beast::severities::kDisabled, false), clock_{clock}
+    BasicSink(Scheduler::clock_type const& clock)
+        : Sink(beast::severities::kDisabled, false), clock_{clock}
     {
     }
 
@@ -89,7 +90,13 @@ public:
         for (std::size_t i = 0; i < numPeers; ++i)
         {
             peers.emplace_back(
-                PeerID{static_cast<std::uint32_t>(peers.size())}, scheduler, oracle, net, trustGraph, collectors, j);
+                PeerID{static_cast<std::uint32_t>(peers.size())},
+                scheduler,
+                oracle,
+                net,
+                trustGraph,
+                collectors,
+                j);
             newPeers.emplace_back(&peers.back());
         }
         PeerGroup res{newPeers};

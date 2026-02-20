@@ -26,7 +26,8 @@ namespace NodeStore {
 struct LessThan
 {
     bool
-    operator()(std::shared_ptr<NodeObject> const& lhs, std::shared_ptr<NodeObject> const& rhs) const noexcept
+    operator()(std::shared_ptr<NodeObject> const& lhs, std::shared_ptr<NodeObject> const& rhs)
+        const noexcept
     {
         return lhs->getHash() < rhs->getHash();
     }

@@ -69,7 +69,8 @@ TOfferStreamBase<TIn, TOut>::erase(ApplyView& view)
     p->setFieldV256(sfIndexes, v);
     view.update(p);
 
-    JLOG(j_.trace()) << "Missing offer " << tip_.index() << " removed from directory " << tip_.dir();
+    JLOG(j_.trace()) << "Missing offer " << tip_.index() << " removed from directory "
+                     << tip_.dir();
 }
 
 static STAmount
@@ -97,7 +98,8 @@ accountFundsHelper(
         // self funded
         return amtDefault;
 
-    return toAmount<IOUAmount>(accountHolds(view, id, issue.currency, issue.account, freezeHandling, j));
+    return toAmount<IOUAmount>(
+        accountHolds(view, id, issue.currency, issue.account, freezeHandling, j));
 }
 
 static XRPAmount
@@ -109,7 +111,8 @@ accountFundsHelper(
     FreezeHandling freezeHandling,
     beast::Journal j)
 {
-    return toAmount<XRPAmount>(accountHolds(view, id, issue.currency, issue.account, freezeHandling, j));
+    return toAmount<XRPAmount>(
+        accountHolds(view, id, issue.currency, issue.account, freezeHandling, j));
 }
 
 template <class TIn, class TOut>
@@ -118,13 +121,16 @@ bool
 TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
 {
     static_assert(
-        std::is_same_v<TTakerPays, IOUAmount> || std::is_same_v<TTakerPays, XRPAmount>, "STAmount is not supported");
+        std::is_same_v<TTakerPays, IOUAmount> || std::is_same_v<TTakerPays, XRPAmount>,
+        "STAmount is not supported");
 
     static_assert(
-        std::is_same_v<TTakerGets, IOUAmount> || std::is_same_v<TTakerGets, XRPAmount>, "STAmount is not supported");
+        std::is_same_v<TTakerGets, IOUAmount> || std::is_same_v<TTakerGets, XRPAmount>,
+        "STAmount is not supported");
 
     static_assert(
-        !std::is_same_v<TTakerPays, XRPAmount> || !std::is_same_v<TTakerGets, XRPAmount>, "Cannot have XRP/XRP offers");
+        !std::is_same_v<TTakerPays, XRPAmount> || !std::is_same_v<TTakerGets, XRPAmount>,
+        "Cannot have XRP/XRP offers");
 
     // Consider removing the offer if:
     //  o `TakerPays` is XRP (because of XRP drops granularity) or
@@ -230,8 +236,8 @@ TOfferStreamBase<TIn, TOut>::step()
             continue;
         }
 
-        bool const deepFrozen =
-            isDeepFrozen(view_, offer_.owner(), offer_.issueIn().currency, offer_.issueIn().account);
+        bool const deepFrozen = isDeepFrozen(
+            view_, offer_.owner(), offer_.issueIn().currency, offer_.issueIn().account);
         if (deepFrozen)
         {
             JLOG(j_.trace()) << "Removing deep frozen unfunded offer " << entry->key();
@@ -241,7 +247,8 @@ TOfferStreamBase<TIn, TOut>::step()
         }
 
         if (entry->isFieldPresent(sfDomainID) &&
-            !permissioned_dex::offerInDomain(view_, entry->key(), entry->getFieldH256(sfDomainID), j_))
+            !permissioned_dex::offerInDomain(
+                view_, entry->key(), entry->getFieldH256(sfDomainID), j_))
         {
             JLOG(j_.trace()) << "Removing offer no longer in domain " << entry->key();
             permRmOffer(entry->key());
@@ -250,7 +257,8 @@ TOfferStreamBase<TIn, TOut>::step()
         }
 
         // Calculate owner funds
-        ownerFunds_ = accountFundsHelper(view_, offer_.owner(), amount.out, offer_.issueOut(), fhZERO_IF_FROZEN, j_);
+        ownerFunds_ = accountFundsHelper(
+            view_, offer_.owner(), amount.out, offer_.issueOut(), fhZERO_IF_FROZEN, j_);
 
         // Check for unfunded offer
         if (*ownerFunds_ <= beast::zero)
@@ -258,8 +266,8 @@ TOfferStreamBase<TIn, TOut>::step()
             // If the owner's balance in the pristine view is the same,
             // we haven't modified the balance and therefore the
             // offer is "found unfunded" versus "became unfunded"
-            auto const original_funds =
-                accountFundsHelper(cancelView_, offer_.owner(), amount.out, offer_.issueOut(), fhZERO_IF_FROZEN, j_);
+            auto const original_funds = accountFundsHelper(
+                cancelView_, offer_.owner(), amount.out, offer_.issueOut(), fhZERO_IF_FROZEN, j_);
 
             if (original_funds == *ownerFunds_)
             {
@@ -311,8 +319,8 @@ TOfferStreamBase<TIn, TOut>::step()
 
         if (rmSmallIncreasedQOffer)
         {
-            auto const original_funds =
-                accountFundsHelper(cancelView_, offer_.owner(), amount.out, offer_.issueOut(), fhZERO_IF_FROZEN, j_);
+            auto const original_funds = accountFundsHelper(
+                cancelView_, offer_.owner(), amount.out, offer_.issueOut(), fhZERO_IF_FROZEN, j_);
 
             if (original_funds == *ownerFunds_)
             {

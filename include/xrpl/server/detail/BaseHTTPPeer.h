@@ -198,7 +198,8 @@ BaseHTTPPeer<Handler, Impl>::BaseHTTPPeer(
     , remote_address_(remote_address)
     , journal_(journal)
 {
-    read_buf_.commit(boost::asio::buffer_copy(read_buf_.prepare(boost::asio::buffer_size(buffers)), buffers));
+    read_buf_.commit(
+        boost::asio::buffer_copy(read_buf_.prepare(boost::asio::buffer_size(buffers)), buffers));
     static std::atomic<int> sid;
     nid_ = ++sid;
     id_ = std::string("#") + std::to_string(nid_) + " ";
@@ -218,7 +219,10 @@ void
 BaseHTTPPeer<Handler, Impl>::close()
 {
     if (!strand_.running_in_this_thread())
-        return post(strand_, std::bind((void (BaseHTTPPeer::*)(void))&BaseHTTPPeer::close, impl().shared_from_this()));
+        return post(
+            strand_,
+            std::bind(
+                (void (BaseHTTPPeer::*)(void))&BaseHTTPPeer::close, impl().shared_from_this()));
     boost::beast::get_lowest_layer(impl().stream_).close();
 }
 
@@ -242,7 +246,8 @@ BaseHTTPPeer<Handler, Impl>::start_timer()
 {
     boost::beast::get_lowest_layer(impl().stream_)
         .expires_after(
-            std::chrono::seconds(remote_address_.address().is_loopback() ? timeoutSecondsLocal : timeoutSeconds));
+            std::chrono::seconds(
+                remote_address_.address().is_loopback() ? timeoutSecondsLocal : timeoutSeconds));
 }
 
 // Convenience for discarding the error code
@@ -313,19 +318,29 @@ BaseHTTPPeer<Handler, Impl>::on_write(error_code const& ec, std::size_t bytes_tr
             bind_executor(
                 strand_,
                 std::bind(
-                    &BaseHTTPPeer::on_write, impl().shared_from_this(), std::placeholders::_1, std::placeholders::_2)));
+                    &BaseHTTPPeer::on_write,
+                    impl().shared_from_this(),
+                    std::placeholders::_1,
+                    std::placeholders::_2)));
     }
     if (!complete_)
         return;
     if (graceful_)
         return do_close();
     util::spawn(
-        strand_, std::bind(&BaseHTTPPeer<Handler, Impl>::do_read, impl().shared_from_this(), std::placeholders::_1));
+        strand_,
+        std::bind(
+            &BaseHTTPPeer<Handler, Impl>::do_read,
+            impl().shared_from_this(),
+            std::placeholders::_1));
 }
 
 template <class Handler, class Impl>
 void
-BaseHTTPPeer<Handler, Impl>::do_writer(std::shared_ptr<Writer> const& writer, bool keep_alive, yield_context do_yield)
+BaseHTTPPeer<Handler, Impl>::do_writer(
+    std::shared_ptr<Writer> const& writer,
+    bool keep_alive,
+    yield_context do_yield)
 {
     std::function<void(void)> resume;
     {
@@ -333,7 +348,12 @@ BaseHTTPPeer<Handler, Impl>::do_writer(std::shared_ptr<Writer> const& writer, bo
         resume = std::function<void(void)>([this, p, writer, keep_alive]() {
             util::spawn(
                 strand_,
-                std::bind(&BaseHTTPPeer<Handler, Impl>::do_writer, p, writer, keep_alive, std::placeholders::_1));
+                std::bind(
+                    &BaseHTTPPeer<Handler, Impl>::do_writer,
+                    p,
+                    writer,
+                    keep_alive,
+                    std::placeholders::_1));
         });
     }
 
@@ -342,8 +362,8 @@ BaseHTTPPeer<Handler, Impl>::do_writer(std::shared_ptr<Writer> const& writer, bo
         if (!writer->prepare(bufferSize, resume))
             return;
         error_code ec;
-        auto const bytes_transferred =
-            boost::asio::async_write(impl().stream_, writer->data(), boost::asio::transfer_at_least(1), do_yield[ec]);
+        auto const bytes_transferred = boost::asio::async_write(
+            impl().stream_, writer->data(), boost::asio::transfer_at_least(1), do_yield[ec]);
         if (ec)
             return fail(ec, "writer");
         writer->consume(bytes_transferred);
@@ -355,7 +375,11 @@ BaseHTTPPeer<Handler, Impl>::do_writer(std::shared_ptr<Writer> const& writer, bo
         return do_close();
 
     util::spawn(
-        strand_, std::bind(&BaseHTTPPeer<Handler, Impl>::do_read, impl().shared_from_this(), std::placeholders::_1));
+        strand_,
+        std::bind(
+            &BaseHTTPPeer<Handler, Impl>::do_read,
+            impl().shared_from_this(),
+            std::placeholders::_1));
 }
 
 //------------------------------------------------------------------------------
@@ -374,7 +398,9 @@ BaseHTTPPeer<Handler, Impl>::write(void const* buf, std::size_t bytes)
         }())
     {
         if (!strand_.running_in_this_thread())
-            return post(strand_, std::bind(&BaseHTTPPeer::on_write, impl().shared_from_this(), error_code{}, 0));
+            return post(
+                strand_,
+                std::bind(&BaseHTTPPeer::on_write, impl().shared_from_this(), error_code{}, 0));
         else
             return on_write(error_code{}, 0);
     }
@@ -410,7 +436,8 @@ void
 BaseHTTPPeer<Handler, Impl>::complete()
 {
     if (!strand_.running_in_this_thread())
-        return post(strand_, std::bind(&BaseHTTPPeer<Handler, Impl>::complete, impl().shared_from_this()));
+        return post(
+            strand_, std::bind(&BaseHTTPPeer<Handler, Impl>::complete, impl().shared_from_this()));
 
     message_ = {};
     complete_ = true;
@@ -423,7 +450,11 @@ BaseHTTPPeer<Handler, Impl>::complete()
 
     // keep-alive
     util::spawn(
-        strand_, std::bind(&BaseHTTPPeer<Handler, Impl>::do_read, impl().shared_from_this(), std::placeholders::_1));
+        strand_,
+        std::bind(
+            &BaseHTTPPeer<Handler, Impl>::do_read,
+            impl().shared_from_this(),
+            std::placeholders::_1));
 }
 
 // DEPRECATED

@@ -79,7 +79,8 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
             // LCOV_EXCL_START
             if (txnFees > maxAmount - fee)
             {
-                JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in txnFees calculation.";
+                JLOG(debugLog().error())
+                    << "BatchTrace: XRPAmount overflow in txnFees calculation.";
                 return XRPAmount{INITIAL_XRP};
             }
             // LCOV_EXCL_STOP
@@ -207,8 +208,9 @@ Batch::preflight(PreflightContext const& ctx)
     // Validation Inner Batch Txns
     std::unordered_set<uint256> uniqueHashes;
     std::unordered_map<AccountID, std::unordered_set<std::uint32_t>> accountSeqTicket;
-    auto checkSignatureFields = [&parentBatchId, &j = ctx.j](
-                                    STObject const& sig, uint256 const& hash, char const* label = "") -> NotTEC {
+    auto checkSignatureFields =
+        [&parentBatchId, &j = ctx.j](
+            STObject const& sig, uint256 const& hash, char const* label = "") -> NotTEC {
         if (sig.isFieldPresent(sfTxnSignature))
         {
             JLOG(j.debug()) << "BatchTrace[" << parentBatchId << "]: "
@@ -256,9 +258,10 @@ Batch::preflight(PreflightContext const& ctx)
             return temINVALID;
         }
 
-        if (std::any_of(disabledTxTypes.begin(), disabledTxTypes.end(), [txType](auto const& disabled) {
-                return txType == disabled;
-            }))
+        if (std::any_of(
+                disabledTxTypes.begin(), disabledTxTypes.end(), [txType](auto const& disabled) {
+                    return txType == disabled;
+                }))
         {
             return temINVALID_INNER_BATCH;
         }
@@ -279,7 +282,8 @@ Batch::preflight(PreflightContext const& ctx)
         if (stx.isFieldPresent(sfCounterpartySignature))
         {
             auto const counterpartySignature = stx.getFieldObject(sfCounterpartySignature);
-            if (auto const ret = checkSignatureFields(counterpartySignature, hash, "counterparty signature "))
+            if (auto const ret =
+                    checkSignatureFields(counterpartySignature, hash, "counterparty signature "))
             {
                 return ret;
             }
@@ -295,11 +299,13 @@ Batch::preflight(PreflightContext const& ctx)
         }
 
         auto const innerAccount = stx.getAccountID(sfAccount);
-        if (auto const preflightResult = xrpl::preflight(ctx.registry, ctx.rules, parentBatchId, stx, tapBATCH, ctx.j);
+        if (auto const preflightResult =
+                xrpl::preflight(ctx.registry, ctx.rules, parentBatchId, stx, tapBATCH, ctx.j);
             preflightResult.ter != tesSUCCESS)
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                << "inner txn preflight failed: " << transHuman(preflightResult.ter) << " "
+                                << "inner txn preflight failed: " << transHuman(preflightResult.ter)
+                                << " "
                                 << "txID: " << hash;
             return temINVALID_INNER_BATCH;
         }
@@ -374,7 +380,8 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
             requiredSigners.insert(innerAccount);
         // Some transactions have a Counterparty, who must also sign the
         // transaction if they are not the outer account
-        if (auto const counterparty = rb.at(~sfCounterparty); counterparty && counterparty != outerAccount)
+        if (auto const counterparty = rb.at(~sfCounterparty);
+            counterparty && counterparty != outerAccount)
             requiredSigners.insert(*counterparty);
     }
 
