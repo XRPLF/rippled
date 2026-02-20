@@ -23,6 +23,9 @@ TEST(MallocTrimReport, structure)
     EXPECT_EQ(report.trimResult, -1);
     EXPECT_EQ(report.rssBeforeKB, -1);
     EXPECT_EQ(report.rssAfterKB, -1);
+    EXPECT_EQ(report.durationUs, std::chrono::microseconds{-1});
+    EXPECT_EQ(report.minfltDelta, -1);
+    EXPECT_EQ(report.majfltDelta, -1);
     EXPECT_EQ(report.deltaKB(), 0);
 
     // Test deltaKB calculation - memory freed
@@ -127,12 +130,18 @@ TEST(mallocTrim, basic_functionality)
         EXPECT_EQ(report.supported, true);
         // trimResult should be 0 or 1 (success indicators)
         EXPECT_GE(report.trimResult, 0);
+        EXPECT_EQ(report.durationUs, std::chrono::microseconds{-1});
+        EXPECT_EQ(report.minfltDelta, -1);
+        EXPECT_EQ(report.majfltDelta, -1);
 #else
         // On other platforms, should be unsupported
         EXPECT_EQ(report.supported, false);
         EXPECT_EQ(report.trimResult, -1);
         EXPECT_EQ(report.rssBeforeKB, -1);
         EXPECT_EQ(report.rssAfterKB, -1);
+        EXPECT_EQ(report.durationUs, std::chrono::microseconds{-1});
+        EXPECT_EQ(report.minfltDelta, -1);
+        EXPECT_EQ(report.majfltDelta, -1);
 #endif
     }
 
@@ -151,15 +160,22 @@ TEST(mallocTrim, basic_functionality)
 
 TEST(mallocTrim, debug_logging)
 {
+    beast::severities::Severity const thresh = beast::severities::kDebug;
     beast::Journal journal{beast::Journal::getNullSink()};
+    journal.threshold(thresh);
 
     MallocTrimReport report = mallocTrim(std::optional<std::string>("debug_test"), journal);
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
     EXPECT_EQ(report.supported, true);
-    // The function should complete without crashing
+    EXPECT_GE(report.durationUs.count(), 0);
+    EXPECT_GE(report.minfltDelta, 0);
+    EXPECT_GE(report.majfltDelta, 0);
 #else
     EXPECT_EQ(report.supported, false);
+    EXPECT_EQ(report.durationUs, std::chrono::microseconds{-1});
+    EXPECT_EQ(report.minfltDelta, -1);
+    EXPECT_EQ(report.majfltDelta, -1);
 #endif
 }
 
