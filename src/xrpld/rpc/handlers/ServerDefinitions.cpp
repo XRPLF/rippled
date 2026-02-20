@@ -324,7 +324,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
     }
 
     defs_[jss::TRANSACTION_FLAGS] = Json::objectValue;
-    for (auto const& [name, value] : allTxFlags)
+    for (auto const& [name, value] : getAllTxFlags())
     {
         Json::Value txObj = Json::objectValue;
         for (auto const& [flagName, flagValue] : value)
@@ -335,7 +335,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
     }
 
     defs_[jss::LEDGER_ENTRY_FLAGS] = Json::objectValue;
-    for (auto const& [name, value] : allLedgerFlags)
+    for (auto const& [name, value] : getAllLedgerFlags())
     {
         Json::Value ledgerObj = Json::objectValue;
         for (auto const& [flagName, flagValue] : value)
@@ -346,7 +346,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
     }
 
     defs_[jss::ACCOUNT_SET_FLAGS] = Json::objectValue;
-    for (auto const& [name, value] : asfFlagMap)
+    for (auto const& [name, value] : getAsfFlagMap())
     {
         defs_[jss::ACCOUNT_SET_FLAGS][name] = value;
     }

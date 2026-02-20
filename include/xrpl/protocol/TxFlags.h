@@ -12,31 +12,35 @@ namespace xrpl {
 
 /** Transaction flags.
 
-    These flags are specified in a transaction's 'Flags' field and modify the behavior of that transaction.
+    These flags are specified in a transaction's 'Flags' field and modify
+    the behavior of that transaction.
 
     There are two types of flags:
 
-        (1) Universal flags: these are flags which apply to, and are interpreted the same way by, all transactions,
-                             except, perhaps, to special pseudo-transactions.
+        (1) Universal flags: these are flags which apply to, and are interpreted the same way by,
+            all transactions, except, perhaps, to special pseudo-transactions.
 
-        (2) Tx-Specific flags: these are flags which are interpreted according to the type of the transaction being
-                               executed. That is, the same numerical flag value may have different effects, depending on
-                               the transaction being executed.
+        (2) Tx-Specific flags: these are flags which are interpreted according to the type of the
+            transaction being executed. That is, the same numerical flag value may have different
+            effects, depending on the transaction being executed.
 
     @note The universal transaction flags occupy the high-order 8 bits.
           The tx-specific flags occupy the remaining 24 bits.
 
     @warning Transaction flags form part of the protocol.
-             **Changing them should be avoided because without special handling, this will result in a hard fork.**
+             **Changing them should be avoided because without special handling, this will result in
+             a hard fork.**
 
     @ingroup protocol
 */
 
+using FlagValue = std::uint32_t;
+
 // Universal Transaction flags:
-constexpr std::uint32_t tfFullyCanonicalSig = 0x80000000;
-constexpr std::uint32_t tfInnerBatchTxn = 0x40000000;
-constexpr std::uint32_t tfUniversal = tfFullyCanonicalSig | tfInnerBatchTxn;
-constexpr std::uint32_t tfUniversalMask = ~tfUniversal;
+inline constexpr FlagValue tfFullyCanonicalSig = 0x80000000;
+inline constexpr FlagValue tfInnerBatchTxn = 0x40000000;
+inline constexpr FlagValue tfUniversal = tfFullyCanonicalSig | tfInnerBatchTxn;
+inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
 
 #pragma push_macro("XMACRO")
 #pragma push_macro("TO_VALUE")
@@ -211,9 +215,8 @@ constexpr std::uint32_t tfUniversalMask = ~tfUniversal;
 // Create all the flag values.
 //
 // example:
-// constexpr std::uint32_t tfAccountSetRequireDestTag = 0x00010000;
-using FlagValue = std::uint32_t;
-#define TO_VALUE(name, value) constexpr FlagValue name = value;
+// inline constexpr FlagValue tfAccountSetRequireDestTag = 0x00010000;
+#define TO_VALUE(name, value) inline constexpr FlagValue name = value;
 #define NULL_NAME(name, values, maskAdj) values
 #define NULL_OUTPUT(name, value)
 #define NULL_MASK_ADJ(value)
@@ -222,43 +225,68 @@ XMACRO(NULL_NAME, TO_VALUE, NULL_OUTPUT, NULL_MASK_ADJ)
 // Create masks for each transaction type that has flags.
 //
 // example:
-// constexpr std::uint32_t tfAccountSetMask = ~(tfUniversal | tfRequireDestTag |
+// inline constexpr FlagValue tfAccountSetMask = ~(tfUniversal | tfRequireDestTag |
 //     tfOptionalDestTag | tfRequireAuth | tfOptionalAuth | tfDisallowXRP | tfAllowXRP);
 //
 // The mask adjustment (maskAdj) allows adding flags back to the mask, making them invalid.
 // For example, Batch uses MASK_ADJ(tfInnerBatchTxn) to reject tfInnerBatchTxn on outer Batch.
-#define TO_MASK(name, values, maskAdj) constexpr std::uint32_t tf##name##Mask = ~(tfUniversal values) | maskAdj;
+#define TO_MASK(name, values, maskAdj) \
+    inline constexpr FlagValue tf##name##Mask = ~(tfUniversal values) | maskAdj;
 #define VALUE_TO_MASK(name, value) | name
 #define MASK_ADJ_TO_MASK(value) value
 XMACRO(TO_MASK, VALUE_TO_MASK, VALUE_TO_MASK, MASK_ADJ_TO_MASK)
 
-// Create maps for each set of flags.
-// This is used below in `ALL_TX_FLAGS` to generate the server_definitions RPC
+// Create getter functions for each set of flags using Meyer's singleton pattern.
+// This avoids static initialization order fiasco while still providing efficient access.
+// This is used below in `getAllTxFlags()` to generate the server_definitions RPC
 // output.
 //
 // example:
-// FlagMap const AccountSetFlags = {
-//     {"tfRequireDestTag", 0x00010000},
-//     {"tfOptionalDestTag", 0x00020000},
-// ...};
+// inline FlagMap const& getAccountSetFlags() {
+//     static FlagMap const flags = {
+//         {"tfRequireDestTag", 0x00010000},
+//         {"tfOptionalDestTag", 0x00020000},
+//     ...};
+//     return flags;
+// }
 using FlagMap = std::map<std::string, FlagValue>;
 #define VALUE_TO_MAP(name, value) {#name, value},
-#define TO_MAP(name, values, maskAdj) FlagMap const name##Flags = {values};
+#define TO_MAP(name, values, maskAdj)          \
+    inline FlagMap const& get##name##Flags()   \
+    {                                          \
+        static FlagMap const flags = {values}; \
+        return flags;                          \
+    }
 XMACRO(TO_MAP, VALUE_TO_MAP, VALUE_TO_MAP, NULL_MASK_ADJ)
 
-FlagMap const UniversalFlags = {{"tfFullyCanonicalSig", tfFullyCanonicalSig}, {"tfInnerBatchTxn", tfInnerBatchTxn}};
+inline FlagMap const&
+getUniversalFlags()
+{
+    static FlagMap const flags = {
+        {"tfFullyCanonicalSig", tfFullyCanonicalSig}, {"tfInnerBatchTxn", tfInnerBatchTxn}};
+    return flags;
+}
 
-// Create a list of all transaction flag maps.
+// Create a getter function for all transaction flag maps using Meyer's singleton pattern.
 // This is used to generate the server_definitions RPC output.
 //
 // example:
-// std::vector<std::pair<std::string, FlagMap> const allTxFlags = {
-//     {"AccountSet", AccountSetFlags},
-// ...};
-#define ALL_TX_FLAGS(name, values, maskAdj) {#name, name##Flags},
-std::vector<std::pair<std::string, FlagMap>> const allTxFlags = {
-    {"universal", UniversalFlags},
-    XMACRO(ALL_TX_FLAGS, NULL_OUTPUT, NULL_OUTPUT, NULL_MASK_ADJ)};
+// inline FlagMapPairList const& getAllTxFlags() {
+//     static FlagMapPairList const flags = {
+//         {"AccountSet", getAccountSetFlags()},
+//     ...};
+//     return flags;
+// }
+using FlagMapPairList = std::vector<std::pair<std::string, FlagMap>>;
+#define ALL_TX_FLAGS(name, values, maskAdj) {#name, get##name##Flags()},
+inline FlagMapPairList const&
+getAllTxFlags()
+{
+    static FlagMapPairList const flags = {
+        {"universal", getUniversalFlags()},
+        XMACRO(ALL_TX_FLAGS, NULL_OUTPUT, NULL_OUTPUT, NULL_MASK_ADJ)};
+    return flags;
+}
 
 #undef XMACRO
 #undef TO_VALUE
@@ -284,64 +312,68 @@ std::vector<std::pair<std::string, FlagMap>> const allTxFlags = {
 #pragma pop_macro("NULL_MASK_ADJ")
 
 // Additional transaction masks and combos
-constexpr std::uint32_t tfMPTPaymentMask = ~(tfUniversal | tfPartialPayment);
-constexpr std::uint32_t tfTrustSetPermissionMask = ~(tfUniversal | tfSetfAuth | tfSetFreeze | tfClearFreeze);
+inline constexpr FlagValue tfMPTPaymentMask = ~(tfUniversal | tfPartialPayment);
+inline constexpr FlagValue tfTrustSetPermissionMask =
+    ~(tfUniversal | tfSetfAuth | tfSetFreeze | tfClearFreeze);
 
 // MPTokenIssuanceCreate MutableFlags:
 // Indicating specific fields or flags may be changed after issuance.
-constexpr std::uint32_t tmfMPTCanMutateCanLock = lsmfMPTCanMutateCanLock;
-constexpr std::uint32_t tmfMPTCanMutateRequireAuth = lsmfMPTCanMutateRequireAuth;
-constexpr std::uint32_t tmfMPTCanMutateCanEscrow = lsmfMPTCanMutateCanEscrow;
-constexpr std::uint32_t tmfMPTCanMutateCanTrade = lsmfMPTCanMutateCanTrade;
-constexpr std::uint32_t tmfMPTCanMutateCanTransfer = lsmfMPTCanMutateCanTransfer;
-constexpr std::uint32_t tmfMPTCanMutateCanClawback = lsmfMPTCanMutateCanClawback;
-constexpr std::uint32_t tmfMPTCanMutateMetadata = lsmfMPTCanMutateMetadata;
-constexpr std::uint32_t tmfMPTCanMutateTransferFee = lsmfMPTCanMutateTransferFee;
-constexpr std::uint32_t tmfMPTokenIssuanceCreateMutableMask =
-    ~(tmfMPTCanMutateCanLock | tmfMPTCanMutateRequireAuth | tmfMPTCanMutateCanEscrow | tmfMPTCanMutateCanTrade |
-      tmfMPTCanMutateCanTransfer | tmfMPTCanMutateCanClawback | tmfMPTCanMutateMetadata | tmfMPTCanMutateTransferFee);
+inline constexpr FlagValue tmfMPTCanMutateCanLock = lsmfMPTCanMutateCanLock;
+inline constexpr FlagValue tmfMPTCanMutateRequireAuth = lsmfMPTCanMutateRequireAuth;
+inline constexpr FlagValue tmfMPTCanMutateCanEscrow = lsmfMPTCanMutateCanEscrow;
+inline constexpr FlagValue tmfMPTCanMutateCanTrade = lsmfMPTCanMutateCanTrade;
+inline constexpr FlagValue tmfMPTCanMutateCanTransfer = lsmfMPTCanMutateCanTransfer;
+inline constexpr FlagValue tmfMPTCanMutateCanClawback = lsmfMPTCanMutateCanClawback;
+inline constexpr FlagValue tmfMPTCanMutateMetadata = lsmfMPTCanMutateMetadata;
+inline constexpr FlagValue tmfMPTCanMutateTransferFee = lsmfMPTCanMutateTransferFee;
+inline constexpr FlagValue tmfMPTokenIssuanceCreateMutableMask =
+    ~(tmfMPTCanMutateCanLock | tmfMPTCanMutateRequireAuth | tmfMPTCanMutateCanEscrow |
+      tmfMPTCanMutateCanTrade | tmfMPTCanMutateCanTransfer | tmfMPTCanMutateCanClawback |
+      tmfMPTCanMutateMetadata | tmfMPTCanMutateTransferFee);
 
 // MPTokenIssuanceSet MutableFlags:
 // Set or Clear flags.
 
-constexpr std::uint32_t tmfMPTSetCanLock = 0x00000001;
-constexpr std::uint32_t tmfMPTClearCanLock = 0x00000002;
-constexpr std::uint32_t tmfMPTSetRequireAuth = 0x00000004;
-constexpr std::uint32_t tmfMPTClearRequireAuth = 0x00000008;
-constexpr std::uint32_t tmfMPTSetCanEscrow = 0x00000010;
-constexpr std::uint32_t tmfMPTClearCanEscrow = 0x00000020;
-constexpr std::uint32_t tmfMPTSetCanTrade = 0x00000040;
-constexpr std::uint32_t tmfMPTClearCanTrade = 0x00000080;
-constexpr std::uint32_t tmfMPTSetCanTransfer = 0x00000100;
-constexpr std::uint32_t tmfMPTClearCanTransfer = 0x00000200;
-constexpr std::uint32_t tmfMPTSetCanClawback = 0x00000400;
-constexpr std::uint32_t tmfMPTClearCanClawback = 0x00000800;
-constexpr std::uint32_t tmfMPTokenIssuanceSetMutableMask =
-    ~(tmfMPTSetCanLock | tmfMPTClearCanLock | tmfMPTSetRequireAuth | tmfMPTClearRequireAuth | tmfMPTSetCanEscrow |
-      tmfMPTClearCanEscrow | tmfMPTSetCanTrade | tmfMPTClearCanTrade | tmfMPTSetCanTransfer | tmfMPTClearCanTransfer |
-      tmfMPTSetCanClawback | tmfMPTClearCanClawback);
+inline constexpr FlagValue tmfMPTSetCanLock = 0x00000001;
+inline constexpr FlagValue tmfMPTClearCanLock = 0x00000002;
+inline constexpr FlagValue tmfMPTSetRequireAuth = 0x00000004;
+inline constexpr FlagValue tmfMPTClearRequireAuth = 0x00000008;
+inline constexpr FlagValue tmfMPTSetCanEscrow = 0x00000010;
+inline constexpr FlagValue tmfMPTClearCanEscrow = 0x00000020;
+inline constexpr FlagValue tmfMPTSetCanTrade = 0x00000040;
+inline constexpr FlagValue tmfMPTClearCanTrade = 0x00000080;
+inline constexpr FlagValue tmfMPTSetCanTransfer = 0x00000100;
+inline constexpr FlagValue tmfMPTClearCanTransfer = 0x00000200;
+inline constexpr FlagValue tmfMPTSetCanClawback = 0x00000400;
+inline constexpr FlagValue tmfMPTClearCanClawback = 0x00000800;
+inline constexpr FlagValue tmfMPTokenIssuanceSetMutableMask = ~(
+    tmfMPTSetCanLock | tmfMPTClearCanLock | tmfMPTSetRequireAuth | tmfMPTClearRequireAuth |
+    tmfMPTSetCanEscrow | tmfMPTClearCanEscrow | tmfMPTSetCanTrade | tmfMPTClearCanTrade |
+    tmfMPTSetCanTransfer | tmfMPTClearCanTransfer | tmfMPTSetCanClawback | tmfMPTClearCanClawback);
 
-// Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between accounts allowed a TrustLine to be
-// added to the issuer of that token without explicit permission from that issuer. This was enabled by minting
-// the NFToken with the tfTrustLine flag set.
+// Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between accounts allowed a
+// TrustLine to be added to the issuer of that token without explicit permission from that issuer.
+// This was enabled by minting the NFToken with the tfTrustLine flag set.
 //
 // That capability could be used to attack the NFToken issuer.
-// It would be possible for two accounts to trade the NFToken back and forth building up any number of
-// TrustLines on the issuer, increasing the issuer's reserve without bound.
+// It would be possible for two accounts to trade the NFToken back and forth building up any number
+// of TrustLines on the issuer, increasing the issuer's reserve without bound.
 //
-// The fixRemoveNFTokenAutoTrustLine amendment disables minting with the tfTrustLine flag as a way to prevent
-// the attack. But until the amendment passes we still need to keep the old behavior available.
-constexpr std::uint32_t tfTrustLine = 0x00000004;  // needed for backwards compatibility
-constexpr std::uint32_t tfNFTokenMintMaskWithoutMutable = ~(tfUniversal | tfBurnable | tfOnlyXRP | tfTransferable);
+// The fixRemoveNFTokenAutoTrustLine amendment disables minting with the tfTrustLine flag as a way
+// to prevent the attack. But until the amendment passes we still need to keep the old behavior
+// available.
+inline constexpr FlagValue tfTrustLine = 0x00000004;  // needed for backwards compatibility
+inline constexpr FlagValue tfNFTokenMintMaskWithoutMutable =
+    ~(tfUniversal | tfBurnable | tfOnlyXRP | tfTransferable);
 
-constexpr std::uint32_t tfNFTokenMintOldMask = ~(~tfNFTokenMintMaskWithoutMutable | tfTrustLine);
+inline constexpr FlagValue tfNFTokenMintOldMask = ~(~tfNFTokenMintMaskWithoutMutable | tfTrustLine);
 
 // if featureDynamicNFT enabled then new flag allowing mutable URI available.
-constexpr std::uint32_t tfNFTokenMintOldMaskWithMutable = ~(~tfNFTokenMintOldMask | tfMutable);
+inline constexpr FlagValue tfNFTokenMintOldMaskWithMutable = ~(~tfNFTokenMintOldMask | tfMutable);
 
-constexpr std::uint32_t tfWithdrawSubTx =
-    tfLPToken | tfSingleAsset | tfTwoAsset | tfOneAssetLPToken | tfLimitLPToken | tfWithdrawAll | tfOneAssetWithdrawAll;
-constexpr std::uint32_t tfDepositSubTx =
+inline constexpr FlagValue tfWithdrawSubTx = tfLPToken | tfSingleAsset | tfTwoAsset |
+    tfOneAssetLPToken | tfLimitLPToken | tfWithdrawAll | tfOneAssetWithdrawAll;
+inline constexpr FlagValue tfDepositSubTx =
     tfLPToken | tfSingleAsset | tfTwoAsset | tfOneAssetLPToken | tfLimitLPToken | tfTwoAssetIfEmpty;
 
 // AccountSet SetFlag/ClearFlag values
@@ -365,10 +397,17 @@ constexpr std::uint32_t tfDepositSubTx =
     ASF_FLAG(asfAllowTrustLineClawback, 16)       \
     ASF_FLAG(asfAllowTrustLineLocking, 17)
 
-#define ACCOUNTSET_FLAG_TO_VALUE(name, value) constexpr std::uint32_t name = value;
+#define ACCOUNTSET_FLAG_TO_VALUE(name, value) inline constexpr FlagValue name = value;
 #define ACCOUNTSET_FLAG_TO_MAP(name, value) {#name, value},
 
 ACCOUNTSET_FLAGS(ACCOUNTSET_FLAG_TO_VALUE)
-static std::map<std::string, int> const asfFlagMap = {ACCOUNTSET_FLAGS(ACCOUNTSET_FLAG_TO_MAP)};
+
+inline std::map<std::string, FlagValue> const&
+getAsfFlagMap()
+{
+    static std::map<std::string, FlagValue> const flags = {
+        ACCOUNTSET_FLAGS(ACCOUNTSET_FLAG_TO_MAP)};
+    return flags;
+}
 
 }  // namespace xrpl

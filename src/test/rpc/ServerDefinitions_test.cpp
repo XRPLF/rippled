@@ -346,11 +346,12 @@ public:
                 }
             }
 
-            // Exhaustive test: verify all transaction flags from allTxFlags appear in the output
+            // Exhaustive test: verify all transaction flags from getAllTxFlags() appear in the
+            // output
             {
                 Json::Value const& txFlags = result[jss::result][jss::TRANSACTION_FLAGS];
 
-                for (auto const& [txName, flagMap] : allTxFlags)
+                for (auto const& [txName, flagMap] : getAllTxFlags())
                 {
                     BEAST_EXPECT(txFlags.isMember(txName));
                     if (txFlags.isMember(txName))
@@ -367,12 +368,12 @@ public:
                 }
             }
 
-            // Exhaustive test: verify all ledger entry flags from allLedgerFlags appear in the
+            // Exhaustive test: verify all ledger entry flags from getAllLedgerFlags() appear in the
             // output
             {
                 Json::Value const& leFlags = result[jss::result][jss::LEDGER_ENTRY_FLAGS];
 
-                for (auto const& [ledgerType, flagMap] : allLedgerFlags)
+                for (auto const& [ledgerType, flagMap] : getAllLedgerFlags())
                 {
                     BEAST_EXPECT(leFlags.isMember(ledgerType));
                     if (leFlags.isMember(ledgerType))
@@ -389,11 +390,12 @@ public:
                 }
             }
 
-            // Exhaustive test: verify all AccountSet flags from asfFlagMap appear in the output
+            // Exhaustive test: verify all AccountSet flags from getAsfFlagMap() appear in the
+            // output
             {
                 Json::Value const& asFlags = result[jss::result][jss::ACCOUNT_SET_FLAGS];
 
-                for (auto const& [flagName, flagValue] : asfFlagMap)
+                for (auto const& [flagName, flagValue] : getAsfFlagMap())
                 {
                     BEAST_EXPECT(asFlags.isMember(flagName));
                     if (asFlags.isMember(flagName))

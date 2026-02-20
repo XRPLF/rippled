@@ -9,18 +9,20 @@
 namespace xrpl {
 /** Identifiers for on-ledger objects.
 
-    Each ledger object requires a unique type identifier, which is stored within the object itself; this makes it
-    possible to iterate the entire ledger and determine each object's type and verify that the object you retrieved
-   from a given hash matches the expected type.
+    Each ledger object requires a unique type identifier, which is stored within the object itself;
+   this makes it possible to iterate the entire ledger and determine each object's type and verify
+   that the object you retrieved from a given hash matches the expected type.
 
-    @warning Since these values are stored inside objects stored on the ledger they are part of the protocol.
-   **Changing them should be avoided because without special handling, this will result in a hard fork.**
+    @warning Since these values are stored inside objects stored on the ledger they are part of the
+   protocol.
+   **Changing them should be avoided because without special handling, this will result in a hard
+   fork.**
 
-    @note Values outside this range may be used internally by the code for various purposes, but attempting to use
-   such values to identify on-ledger objects will results in an invariant failure.
+    @note Values outside this range may be used internally by the code for various purposes, but
+   attempting to use such values to identify on-ledger objects will results in an invariant failure.
 
-    @note When retiring types, the specific values should not be removed but should be marked as [[deprecated]].
-   This is to avoid accidental reuse of identifiers.
+    @note When retiring types, the specific values should not be removed but should be marked as
+   [[deprecated]]. This is to avoid accidental reuse of identifiers.
 
     @todo The C++ language does not enable checking for duplicate values here.
           If it becomes possible then we should do this.
@@ -42,8 +44,8 @@ enum LedgerEntryType : std::uint16_t {
     //---------------------------------------------------------------------------
     /** A special type, matching any ledger entry type.
 
-        The value does not represent a concrete type, but rather is used in contexts where the specific type of a
-       ledger object is unimportant, unknown or unavailable.
+        The value does not represent a concrete type, but rather is used in contexts where the
+       specific type of a ledger object is unimportant, unknown or unavailable.
 
         Objects with this special type cannot be created or stored on the ledger.
 
@@ -53,8 +55,9 @@ enum LedgerEntryType : std::uint16_t {
 
     /** A special type, matching any ledger type except directory nodes.
 
-        The value does not represent a concrete type, but rather is used in contexts where the ledger object must
-       not be a directory node but its specific type is otherwise unimportant, unknown or unavailable.
+        The value does not represent a concrete type, but rather is used in contexts where the
+       ledger object must not be a directory node but its specific type is otherwise unimportant,
+       unknown or unavailable.
 
         Objects with this special type cannot be created or stored on the ledger.
 
@@ -85,15 +88,17 @@ enum LedgerEntryType : std::uint16_t {
                     Support for this type of object was never implemented.
                     No objects of this type were ever created.
      */
-    ltGENERATOR_MAP [[deprecated("This object type is not supported and should not be used.")]] = 0x0067,
+    ltGENERATOR_MAP [[deprecated("This object type is not supported and should not be used.")]] =
+        0x0067,
 };
 
 /** Ledger object flags.
 
     These flags are specified in ledger objects and modify their behavior.
 
-    @warning Ledger object flags form part of the protocol. **Changing them should be avoided because without special
-             handling, this will result in a hard fork.**
+    @warning Ledger object flags form part of the protocol.
+    **Changing them should be avoided because without special handling, this will result in a hard
+   fork.**
 
     @ingroup protocol
 */
@@ -210,29 +215,46 @@ enum LedgerEntryType : std::uint16_t {
 #define NULL_OUTPUT(name, value)
 enum LedgerSpecificFlags : std::uint32_t { XMACRO(NULL_NAME, TO_VALUE, NULL_OUTPUT) };
 
-// Create maps for each set of flags.
-// This is used below in `ALL_LEDGER_FLAGS` to generate the server_definitions RPC output.
+// Create getter functions for each set of flags using Meyer's singleton pattern.
+// This avoids static initialization order fiasco while still providing efficient access.
+// This is used below in `getAllLedgerFlags()` to generate the server_definitions RPC output.
 //
 // example:
-// std::map<std::string, std::uint32_t> const AccountRootFlags = {
-//     {"lsfPasswordSpent", 0x00010000},
-//     {"lsfRequireDestTag", 0x00020000},
-// ...};
+// inline LedgerFlagMap const& getAccountRootFlags() {
+//     static LedgerFlagMap const flags = {
+//         {"lsfPasswordSpent", 0x00010000},
+//         {"lsfRequireDestTag", 0x00020000},
+//     ...};
+//     return flags;
+// }
 using LedgerFlagMap = std::map<std::string, std::uint32_t>;
 #define VALUE_TO_MAP(name, value) {#name, value},
-#define TO_MAP(name, values) LedgerFlagMap const name##Flags = {values};
+#define TO_MAP(name, values)                         \
+    inline LedgerFlagMap const& get##name##Flags()   \
+    {                                                \
+        static LedgerFlagMap const flags = {values}; \
+        return flags;                                \
+    }
 XMACRO(TO_MAP, VALUE_TO_MAP, VALUE_TO_MAP)
 
-// Create a list of all ledger flag maps.
+// Create a getter function for all ledger flag maps using Meyer's singleton pattern.
 // This is used to generate the server_definitions RPC output.
 //
 // example:
-// std::vector<std::pair<std::string, LedgerFlagMap>> const allLedgerFlags = {
-//     {"AccountRoot", AccountRootFlags},
-// ...};
-#define ALL_LEDGER_FLAGS(name, values) {#name, name##Flags},
-std::vector<std::pair<std::string, LedgerFlagMap>> const allLedgerFlags = {
-    XMACRO(ALL_LEDGER_FLAGS, NULL_OUTPUT, NULL_OUTPUT)};
+// inline std::vector<std::pair<std::string, LedgerFlagMap>> const& getAllLedgerFlags() {
+//     static std::vector<std::pair<std::string, LedgerFlagMap>> const flags = {
+//         {"AccountRoot", getAccountRootFlags()},
+//     ...};
+//     return flags;
+// }
+#define ALL_LEDGER_FLAGS(name, values) {#name, get##name##Flags()},
+inline std::vector<std::pair<std::string, LedgerFlagMap>> const&
+getAllLedgerFlags()
+{
+    static std::vector<std::pair<std::string, LedgerFlagMap>> const flags = {
+        XMACRO(ALL_LEDGER_FLAGS, NULL_OUTPUT, NULL_OUTPUT)};
+    return flags;
+}
 
 #undef XMACRO
 #undef TO_VALUE
