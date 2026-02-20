@@ -114,7 +114,8 @@ namespace Lending {
 
     Valid values are between 0 and 10% inclusive.
 */
-TenthBips16 constexpr maxManagementFeeRate(unsafe_cast<std::uint16_t>(percentageToTenthBips(10).value()));
+TenthBips16 constexpr maxManagementFeeRate(
+    unsafe_cast<std::uint16_t>(percentageToTenthBips(10).value()));
 static_assert(maxManagementFeeRate == TenthBips16(std::uint16_t(10'000u)));
 
 /** The maximum coverage rate required of a loan broker in 1/10 bips.
@@ -252,6 +253,16 @@ std::uint8_t constexpr maxAssetCheckDepth = 5;
 
 /** A ledger index. */
 using LedgerIndex = std::uint32_t;
+
+std::uint32_t constexpr FLAG_LEDGER_INTERVAL = 256;
+
+/** Returns true if the given ledgerIndex is a voting ledgerIndex */
+bool
+isVotingLedger(LedgerIndex seq);
+
+/** Returns true if the given ledgerIndex is a flag ledgerIndex */
+bool
+isFlagLedger(LedgerIndex seq);
 
 /** A transaction identifier.
     The value is computed as the hash of the

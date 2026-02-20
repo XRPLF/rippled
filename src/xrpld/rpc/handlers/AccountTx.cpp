@@ -48,10 +48,12 @@ parseLedgerArgs(RPC::Context& context, Json::Value const& params)
     }
     if (params.isMember(jss::ledger_index_min) || params.isMember(jss::ledger_index_max))
     {
-        uint32_t min = params.isMember(jss::ledger_index_min) && params[jss::ledger_index_min].asInt() >= 0
+        uint32_t min =
+            params.isMember(jss::ledger_index_min) && params[jss::ledger_index_min].asInt() >= 0
             ? params[jss::ledger_index_min].asUInt()
             : 0;
-        uint32_t max = params.isMember(jss::ledger_index_max) && params[jss::ledger_index_max].asInt() >= 0
+        uint32_t max =
+            params.isMember(jss::ledger_index_max) && params[jss::ledger_index_max].asInt() >= 0
             ? params[jss::ledger_index_max].asUInt()
             : UINT32_MAX;
 
@@ -133,7 +135,8 @@ getLedgerRange(RPC::Context& context, std::optional<LedgerSpecifier> const& ledg
                     // it is a valid input
                     if (context.apiVersion > 1u)
                     {
-                        if ((ls.max > uValidatedMax && ls.max != -1) || (ls.min < uValidatedMin && ls.min != 0))
+                        if ((ls.max > uValidatedMax && ls.max != -1) ||
+                            (ls.min < uValidatedMin && ls.min != 0))
                         {
                             return rpcLGR_IDX_MALFORMED;
                         }
@@ -283,13 +286,15 @@ populateJsonResponse(
                     auto const json_tx = (context.apiVersion > 1 ? jss::tx_json : jss::tx);
                     if (context.apiVersion > 1)
                     {
-                        jvObj[json_tx] =
-                            txn->getJson(JsonOptions::include_date | JsonOptions::disable_API_prior_V2, false);
+                        jvObj[json_tx] = txn->getJson(
+                            JsonOptions::include_date | JsonOptions::disable_API_prior_V2, false);
                         jvObj[jss::hash] = to_string(txn->getID());
                         jvObj[jss::ledger_index] = txn->getLedger();
-                        jvObj[jss::ledger_hash] = to_string(context.ledgerMaster.getHashBySeq(txn->getLedger()));
+                        jvObj[jss::ledger_hash] =
+                            to_string(context.ledgerMaster.getHashBySeq(txn->getLedger()));
 
-                        if (auto closeTime = context.ledgerMaster.getCloseTimeBySeq(txn->getLedger()))
+                        if (auto closeTime =
+                                context.ledgerMaster.getCloseTimeBySeq(txn->getLedger()))
                             jvObj[jss::close_time_iso] = to_string_iso(*closeTime);
                     }
                     else

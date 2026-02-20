@@ -59,8 +59,9 @@ PeerSetImpl::addPeers(
         pairs.emplace_back(score, std::move(peer));
     });
 
-    std::sort(
-        pairs.begin(), pairs.end(), [](ScoredPeer const& lhs, ScoredPeer const& rhs) { return lhs.first > rhs.first; });
+    std::sort(pairs.begin(), pairs.end(), [](ScoredPeer const& lhs, ScoredPeer const& rhs) {
+        return lhs.first > rhs.first;
+    });
 
     std::size_t accepted = 0;
     for (auto const& pair : pairs)

@@ -160,7 +160,8 @@ private:
         Idle:   Active, but blocked on waiting for a task.
         Paused: Blocked waiting to exit or become active.
     */
-    class Worker : public beast::LockFreeStack<Worker>::Node, public beast::LockFreeStack<Worker, PausedTag>::Node
+    class Worker : public beast::LockFreeStack<Worker>::Node,
+                   public beast::LockFreeStack<Worker, PausedTag>::Node
     {
     public:
         Worker(Workers& workers, std::string const& threadName, int const instance);

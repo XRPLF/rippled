@@ -18,7 +18,10 @@ public:
         updateHash();
     }
 
-    SHAMapTxLeafNode(boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t cowid, SHAMapHash const& hash)
+    SHAMapTxLeafNode(
+        boost::intrusive_ptr<SHAMapItem const> item,
+        std::uint32_t cowid,
+        SHAMapHash const& hash)
         : SHAMapLeafNode(std::move(item), cowid, hash)
     {
     }

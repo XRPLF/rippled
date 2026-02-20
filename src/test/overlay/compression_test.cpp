@@ -82,7 +82,9 @@ public:
             auto start = buffer.begin() + sz * i;
             auto end = i < nbuffers - 1 ? (buffer.begin() + sz * (i + 1)) : buffer.end();
             std::vector<std::uint8_t> slice(start, end);
-            buffers.commit(boost::asio::buffer_copy(buffers.prepare(slice.size()), boost::asio::buffer(slice)));
+            buffers.commit(
+                boost::asio::buffer_copy(
+                    buffers.prepare(slice.size()), boost::asio::buffer(slice)));
         }
 
         boost::system::error_code ec;
@@ -108,8 +110,11 @@ public:
 
         BEAST_EXPECT(proto1->ParseFromArray(decompressed.data(), decompressedSize));
         auto uncompressed = m.getBuffer(Compressed::Off);
-        BEAST_EXPECT(std::equal(
-            uncompressed.begin() + xrpl::compression::headerBytes, uncompressed.end(), decompressed.begin()));
+        BEAST_EXPECT(
+            std::equal(
+                uncompressed.begin() + xrpl::compression::headerBytes,
+                uncompressed.end(),
+                decompressed.begin()));
     }
 
     std::shared_ptr<protocol::TMManifests>
@@ -125,8 +130,10 @@ public:
             st[sfSequence] = i;
             st[sfPublicKey] = std::get<0>(master);
             st[sfSigningPubKey] = std::get<0>(signing);
-            st[sfDomain] = makeSlice(std::string("example") + std::to_string(i) + std::string(".com"));
-            sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(master), sfMasterSignature);
+            st[sfDomain] =
+                makeSlice(std::string("example") + std::to_string(i) + std::string(".com"));
+            sign(
+                st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(master), sfMasterSignature);
             sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(signing));
             Serializer s;
             st.add(s);
@@ -249,7 +256,8 @@ public:
     {
         auto getObject = std::make_shared<protocol::TMGetObjectByHash>();
 
-        getObject->set_type(protocol::TMGetObjectByHash_ObjectType::TMGetObjectByHash_ObjectType_otTRANSACTION);
+        getObject->set_type(
+            protocol::TMGetObjectByHash_ObjectType::TMGetObjectByHash_ObjectType_otTRANSACTION);
         getObject->set_query(true);
         getObject->set_seq(123456789);
         uint256 hash(xrpl::sha512Half(123456789));
@@ -365,7 +373,11 @@ public:
         doTest(buildGetObjectByHash(), protocol::mtGET_OBJECTS, 4, "TMGetObjectByHash");
         // 895B
         doTest(buildValidatorList(), protocol::mtVALIDATOR_LIST, 4, "TMValidatorList");
-        doTest(buildValidatorListCollection(), protocol::mtVALIDATOR_LIST_COLLECTION, 4, "TMValidatorListCollection");
+        doTest(
+            buildValidatorListCollection(),
+            protocol::mtVALIDATOR_LIST_COLLECTION,
+            4,
+            "TMValidatorListCollection");
     }
 
     void
@@ -382,7 +394,8 @@ public:
             c.loadFromString(str.str());
             auto env = std::make_shared<jtx::Env>(*this);
             env->app().config().COMPRESSION = c.COMPRESSION;
-            env->app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = c.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE;
+            env->app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE =
+                c.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE;
             return env;
         };
         auto handshake = [&](int outboundEnable, int inboundEnable) {
@@ -403,15 +416,18 @@ public:
             auto const peerEnabled = inboundEnable && outboundEnable;
             // inbound is enabled if the request's header has the feature
             // enabled and the peer's configuration is enabled
-            auto const inboundEnabled = peerFeatureEnabled(http_request, FEATURE_COMPR, "lz4", inboundEnable);
+            auto const inboundEnabled =
+                peerFeatureEnabled(http_request, FEATURE_COMPR, "lz4", inboundEnable);
             BEAST_EXPECT(!(peerEnabled ^ inboundEnabled));
 
             env.reset();
             env = getEnv(inboundEnable);
-            auto http_resp = xrpl::makeResponse(true, http_request, addr, addr, uint256{1}, 1, {1, 0}, env->app());
+            auto http_resp = xrpl::makeResponse(
+                true, http_request, addr, addr, uint256{1}, 1, {1, 0}, env->app());
             // outbound is enabled if the response's header has the feature
             // enabled and the peer's configuration is enabled
-            auto const outboundEnabled = peerFeatureEnabled(http_resp, FEATURE_COMPR, "lz4", outboundEnable);
+            auto const outboundEnabled =
+                peerFeatureEnabled(http_resp, FEATURE_COMPR, "lz4", outboundEnable);
             BEAST_EXPECT(!(peerEnabled ^ outboundEnabled));
         };
         handshake(1, 1);

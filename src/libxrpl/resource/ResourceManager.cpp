@@ -64,7 +64,10 @@ public:
     }
 
     Consumer
-    newInboundEndpoint(beast::IP::Endpoint const& address, bool const proxy, std::string_view forwardedFor) override
+    newInboundEndpoint(
+        beast::IP::Endpoint const& address,
+        bool const proxy,
+        std::string_view forwardedFor) override
     {
         if (!proxy)
             return newInboundEndpoint(address);
@@ -73,7 +76,8 @@ public:
         auto const proxiedIp = boost::asio::ip::make_address(forwardedFor, ec);
         if (ec)
         {
-            journal_.warn() << "forwarded for (" << forwardedFor << ") from proxy " << address.to_string()
+            journal_.warn() << "forwarded for (" << forwardedFor << ") from proxy "
+                            << address.to_string()
                             << " doesn't convert to IP endpoint: " << ec.message();
             return newInboundEndpoint(address);
         }

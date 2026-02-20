@@ -17,7 +17,8 @@ InfoSub::InfoSub(Source& source) : m_source(source), mSeq(assign_id())
 {
 }
 
-InfoSub::InfoSub(Source& source, Consumer consumer) : m_consumer(consumer), m_source(source), mSeq(assign_id())
+InfoSub::InfoSub(Source& source, Consumer consumer)
+    : m_consumer(consumer), m_source(source), mSeq(assign_id())
 {
 }
 

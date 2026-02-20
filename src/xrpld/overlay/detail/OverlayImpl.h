@@ -157,8 +157,10 @@ public:
     }
 
     Handoff
-    onHandoff(std::unique_ptr<stream_type>&& bundle, http_request_type&& request, endpoint_type remote_endpoint)
-        override;
+    onHandoff(
+        std::unique_ptr<stream_type>&& bundle,
+        http_request_type&& request,
+        endpoint_type remote_endpoint) override;
 
     void
     connect(beast::IP::Endpoint const& remote_endpoint) override;
@@ -191,7 +193,8 @@ public:
         std::size_t& disabled,
         std::size_t& enabledInSkip) const;
 
-    void checkTracking(std::uint32_t) override;
+    void
+    checkTracking(std::uint32_t) override;
 
     std::shared_ptr<Peer>
     findPeerByShortID(Peer::id_t const& id) const override;
@@ -271,7 +274,9 @@ public:
 
     // Called when TMManifests is received from a peer
     void
-    onManifests(std::shared_ptr<protocol::TMManifests> const& m, std::shared_ptr<PeerImp> const& from);
+    onManifests(
+        std::shared_ptr<protocol::TMManifests> const& m,
+        std::shared_ptr<PeerImp> const& from);
 
     static bool
     isPeerUpgrade(http_request_type const& request);
@@ -379,7 +384,11 @@ public:
     /** Overload to reduce allocation in case of single peer
      */
     void
-    updateSlotAndSquelch(uint256 const& key, PublicKey const& validator, Peer::id_t peer, protocol::MessageType type);
+    updateSlotAndSquelch(
+        uint256 const& key,
+        PublicKey const& validator,
+        Peer::id_t peer,
+        protocol::MessageType type);
 
     /** Called when the peer is deleted. If the peer was selected to be the
      * source of messages from the validator then squelched peers have to be
@@ -408,7 +417,8 @@ public:
 
 private:
     void
-    squelch(PublicKey const& validator, Peer::id_t const id, std::uint32_t squelchDuration) const override;
+    squelch(PublicKey const& validator, Peer::id_t const id, std::uint32_t squelchDuration)
+        const override;
 
     void
     unsquelch(PublicKey const& validator, Peer::id_t id) const override;
@@ -565,7 +575,8 @@ private:
         auto counts = m_traffic.getCounts();
         std::lock_guard lock(m_statsMutex);
         XRPL_ASSERT(
-            counts.size() == m_stats.trafficGauges.size(), "xrpl::OverlayImpl::collect_metrics : counts size do match");
+            counts.size() == m_stats.trafficGauges.size(),
+            "xrpl::OverlayImpl::collect_metrics : counts size do match");
 
         for (auto const& [key, value] : counts)
         {

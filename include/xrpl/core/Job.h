@@ -92,7 +92,11 @@ public:
     Job(JobType type, std::uint64_t index);
 
     // VFALCO TODO try to remove the dependency on LoadMonitor.
-    Job(JobType type, std::string const& name, std::uint64_t index, LoadMonitor& lm, std::function<void()> const& job);
+    Job(JobType type,
+        std::string const& name,
+        std::uint64_t index,
+        LoadMonitor& lm,
+        std::function<void()> const& job);
 
     JobType
     getType() const;

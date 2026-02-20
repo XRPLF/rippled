@@ -45,8 +45,10 @@ public:
                 BEAST_EXPECT(firstField[1][jss::type].asString() == "Unknown");
             }
 
-            BEAST_EXPECT(result[jss::result][jss::LEDGER_ENTRY_TYPES]["AccountRoot"].asUInt() == 97);
-            BEAST_EXPECT(result[jss::result][jss::TRANSACTION_RESULTS]["tecDIR_FULL"].asUInt() == 121);
+            BEAST_EXPECT(
+                result[jss::result][jss::LEDGER_ENTRY_TYPES]["AccountRoot"].asUInt() == 97);
+            BEAST_EXPECT(
+                result[jss::result][jss::TRANSACTION_RESULTS]["tecDIR_FULL"].asUInt() == 121);
             BEAST_EXPECT(result[jss::result][jss::TRANSACTION_TYPES]["Payment"].asUInt() == 0);
             BEAST_EXPECT(result[jss::result][jss::TYPES]["AccountID"].asUInt() == 8);
 
@@ -195,8 +197,8 @@ public:
                     BEAST_EXPECT(section[16u][jss::optionality] == soeOPTIONAL);
                 }
 
-                // validate the contents of four arbitrarily selected transactions validate the format of the OracleSet
-                // transaction
+                // validate the contents of four arbitrarily selected transactions validate the
+                // format of the OracleSet transaction
                 {
                     BEAST_EXPECT(txnFormats.isMember("OracleSet"));
                     Json::Value const& section = txnFormats["OracleSet"];
@@ -272,12 +274,13 @@ public:
                 }
             }
 
-            // test the properties of the LEDGER_ENTRY_FORMATS section in server_definitions response
+            // test the properties of the LEDGER_ENTRY_FORMATS section in server_definitions
+            // response
             {
                 BEAST_EXPECT(result[jss::result].isMember(jss::LEDGER_ENTRY_FORMATS));
 
-                // Note: For the purposes of software maintainance, this test does not exhaustively validate all the
-                // LEDGER_ENTRY_FORMATS
+                // Note: For the purposes of software maintainance, this test does not exhaustively
+                // validate all the LEDGER_ENTRY_FORMATS
 
                 // check "common" first
                 {
@@ -296,7 +299,8 @@ public:
 
                 // test the contents of an arbitrary ledger-entry (DID)
                 {
-                    Json::Value const& observedDIDLedgerEntry = result[jss::result][jss::LEDGER_ENTRY_FORMATS]["DID"];
+                    Json::Value const& observedDIDLedgerEntry =
+                        result[jss::result][jss::LEDGER_ENTRY_FORMATS]["DID"];
 
                     BEAST_EXPECT(observedDIDLedgerEntry[0u][jss::name] == "Account");
                     BEAST_EXPECT(observedDIDLedgerEntry[0u][jss::optionality] == soeREQUIRED);
@@ -363,7 +367,8 @@ public:
                 }
             }
 
-            // Exhaustive test: verify all ledger entry flags from allLedgerFlags appear in the output
+            // Exhaustive test: verify all ledger entry flags from allLedgerFlags appear in the
+            // output
             {
                 Json::Value const& leFlags = result[jss::result][jss::LEDGER_ENTRY_FLAGS];
 

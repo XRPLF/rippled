@@ -105,7 +105,11 @@ private:
         Returns false if the source currencies are invalid.
     */
     bool
-    findPaths(std::shared_ptr<RippleLineCache> const&, int const, Json::Value&, std::function<bool(void)> const&);
+    findPaths(
+        std::shared_ptr<RippleLineCache> const&,
+        int const,
+        Json::Value&,
+        std::function<bool(void)> const&);
 
     int
     parseJson(Json::Value const&);

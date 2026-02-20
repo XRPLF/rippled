@@ -14,7 +14,8 @@ LedgerReplayMsgHandler::LedgerReplayMsgHandler(Application& app, LedgerReplayer&
 }
 
 protocol::TMProofPathResponse
-LedgerReplayMsgHandler::processProofPathRequest(std::shared_ptr<protocol::TMProofPathRequest> const& msg)
+LedgerReplayMsgHandler::processProofPathRequest(
+    std::shared_ptr<protocol::TMProofPathRequest> const& msg)
 {
     protocol::TMProofPathRequest& packet = *msg;
     protocol::TMProofPathResponse reply;
@@ -57,7 +58,8 @@ LedgerReplayMsgHandler::processProofPathRequest(std::shared_ptr<protocol::TMProo
 
     if (!path)
     {
-        JLOG(journal_.debug()) << "getProofPath: Don't have the node " << key << " of ledger " << ledgerHash;
+        JLOG(journal_.debug()) << "getProofPath: Don't have the node " << key << " of ledger "
+                               << ledgerHash;
         reply.set_error(protocol::TMReplyError::reNO_NODE);
         return reply;
     }
@@ -70,13 +72,14 @@ LedgerReplayMsgHandler::processProofPathRequest(std::shared_ptr<protocol::TMProo
     for (auto const& b : *path)
         reply.add_path(b.data(), b.size());
 
-    JLOG(journal_.debug()) << "getProofPath for the node " << key << " of ledger " << ledgerHash << " path length "
-                           << path->size();
+    JLOG(journal_.debug()) << "getProofPath for the node " << key << " of ledger " << ledgerHash
+                           << " path length " << path->size();
     return reply;
 }
 
 bool
-LedgerReplayMsgHandler::processProofPathResponse(std::shared_ptr<protocol::TMProofPathResponse> const& msg)
+LedgerReplayMsgHandler::processProofPathResponse(
+    std::shared_ptr<protocol::TMProofPathResponse> const& msg)
 {
     protocol::TMProofPathResponse& reply = *msg;
     if (reply.has_error() || !reply.has_key() || !reply.has_ledgerhash() || !reply.has_type() ||
@@ -144,7 +147,8 @@ LedgerReplayMsgHandler::processProofPathResponse(std::shared_ptr<protocol::TMPro
 }
 
 protocol::TMReplayDeltaResponse
-LedgerReplayMsgHandler::processReplayDeltaRequest(std::shared_ptr<protocol::TMReplayDeltaRequest> const& msg)
+LedgerReplayMsgHandler::processReplayDeltaRequest(
+    std::shared_ptr<protocol::TMReplayDeltaRequest> const& msg)
 {
     protocol::TMReplayDeltaRequest& packet = *msg;
     protocol::TMReplayDeltaResponse reply;
@@ -182,7 +186,8 @@ LedgerReplayMsgHandler::processReplayDeltaRequest(std::shared_ptr<protocol::TMRe
 }
 
 bool
-LedgerReplayMsgHandler::processReplayDeltaResponse(std::shared_ptr<protocol::TMReplayDeltaResponse> const& msg)
+LedgerReplayMsgHandler::processReplayDeltaResponse(
+    std::shared_ptr<protocol::TMReplayDeltaResponse> const& msg)
 {
     protocol::TMReplayDeltaResponse& reply = *msg;
     if (reply.has_error() || !reply.has_ledgerheader())
@@ -227,7 +232,8 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(std::shared_ptr<protocol::TMR
             STObject meta(metaSit, sfMetadata);
             orderedTxns.emplace(meta[sfTransactionIndex], std::move(tx));
 
-            if (!txMap.addGiveItem(SHAMapNodeType::tnTRANSACTION_MD, make_shamapitem(tid, shaMapItemData.slice())))
+            if (!txMap.addGiveItem(
+                    SHAMapNodeType::tnTRANSACTION_MD, make_shamapitem(tid, shaMapItemData.slice())))
             {
                 JLOG(journal_.debug()) << "Bad message: Cannot deserialize";
                 return false;

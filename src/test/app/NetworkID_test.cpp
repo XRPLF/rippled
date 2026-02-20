@@ -3,6 +3,7 @@
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
 
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/protocol/jss.h>
 
 namespace xrpl {
@@ -58,7 +59,7 @@ public:
         // test mainnet
         {
             test::jtx::Env env{*this, makeNetworkConfig(0)};
-            BEAST_EXPECT(env.app().config().NETWORK_ID == 0);
+            BEAST_EXPECT(env.app().getNetworkIDService().getNetworkID() == 0);
 
             // try to submit a txn without network id, this should work
             Json::Value jv;
@@ -81,7 +82,7 @@ public:
         // NetworkID
         {
             test::jtx::Env env{*this, makeNetworkConfig(1024)};
-            BEAST_EXPECT(env.app().config().NETWORK_ID == 1024);
+            BEAST_EXPECT(env.app().getNetworkIDService().getNetworkID() == 1024);
 
             // try to submit a txn without network id, this should work
             Json::Value jv;
@@ -101,7 +102,7 @@ public:
         // absent networkid
         {
             test::jtx::Env env{*this, makeNetworkConfig(1025)};
-            BEAST_EXPECT(env.app().config().NETWORK_ID == 1025);
+            BEAST_EXPECT(env.app().getNetworkIDService().getNetworkID() == 1025);
             {
                 env.fund(XRP(200), alice);
                 // try to submit a txn without network id, this should not work
@@ -115,7 +116,8 @@ public:
                 Serializer s;
                 jt.stx->add(s);
                 BEAST_EXPECT(
-                    env.rpc("submit", strHex(s.slice()))[jss::result][jss::engine_result] == "telREQUIRES_NETWORK_ID");
+                    env.rpc("submit", strHex(s.slice()))[jss::result][jss::engine_result] ==
+                    "telREQUIRES_NETWORK_ID");
                 env.close();
             }
 

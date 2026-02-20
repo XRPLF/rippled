@@ -11,7 +11,9 @@
 
 namespace xrpl {
 
-SOTemplate::SOTemplate(std::initializer_list<SOElement> uniqueFields, std::initializer_list<SOElement> commonFields)
+SOTemplate::SOTemplate(
+    std::initializer_list<SOElement> uniqueFields,
+    std::initializer_list<SOElement> commonFields)
     : SOTemplate(std::vector(uniqueFields), std::vector(commonFields))
 {
 }

@@ -54,7 +54,10 @@ public:
 
     template <typename T>
         requires(std::is_same_v<T, STAmount> || std::is_same_v<T, STIssue>)
-    SOElement(TypedField<T> const& fieldName, SOEStyle style, SOETxMPTIssue supportMpt = soeMPTNotSupported)
+    SOElement(
+        TypedField<T> const& fieldName,
+        SOEStyle style,
+        SOETxMPTIssue supportMpt = soeMPTNotSupported)
         : sField_(fieldName), style_(style), supportMpt_(supportMpt)
     {
         init(fieldName);
@@ -102,7 +105,9 @@ public:
     /** Create a template populated with all fields.
         Note: Defers to the vector constructor above.
     */
-    SOTemplate(std::initializer_list<SOElement> uniqueFields, std::initializer_list<SOElement> commonFields = {});
+    SOTemplate(
+        std::initializer_list<SOElement> uniqueFields,
+        std::initializer_list<SOElement> commonFields = {});
 
     /* Provide for the enumeration of fields */
     std::vector<SOElement>::const_iterator

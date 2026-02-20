@@ -44,8 +44,8 @@ struct SharedIntrusiveAdoptNoIncrementTag
 //
 
 template <class T>
-concept CAdoptTag =
-    std::is_same_v<T, SharedIntrusiveAdoptIncrementStrongTag> || std::is_same_v<T, SharedIntrusiveAdoptNoIncrementTag>;
+concept CAdoptTag = std::is_same_v<T, SharedIntrusiveAdoptIncrementStrongTag> ||
+    std::is_same_v<T, SharedIntrusiveAdoptNoIncrementTag>;
 
 //------------------------------------------------------------------------------
 
@@ -443,7 +443,8 @@ make_SharedIntrusive(Args&&... args)
     auto p = new TT(std::forward<Args>(args)...);
 
     static_assert(
-        noexcept(SharedIntrusive<TT>(std::declval<TT*>(), std::declval<SharedIntrusiveAdoptNoIncrementTag>())),
+        noexcept(SharedIntrusive<TT>(
+            std::declval<TT*>(), std::declval<SharedIntrusiveAdoptNoIncrementTag>())),
         "SharedIntrusive constructor should not throw or this can leak "
         "memory");
 

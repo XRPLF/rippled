@@ -147,9 +147,12 @@ public:
     int
     getCount() const;
 
-    bool setFlag(std::uint32_t);
-    bool clearFlag(std::uint32_t);
-    bool isFlag(std::uint32_t) const;
+    bool
+    setFlag(std::uint32_t);
+    bool
+    clearFlag(std::uint32_t);
+    bool
+    isFlag(std::uint32_t) const;
 
     std::uint32_t
     getFlags() const;
@@ -431,8 +434,8 @@ private:
     // by value.
     template <
         typename T,
-        typename V =
-            typename std::remove_cv<typename std::remove_reference<decltype(std::declval<T>().value())>::type>::type>
+        typename V = typename std::remove_cv<
+            typename std::remove_reference<decltype(std::declval<T>().value())>::type>::type>
     V
     getFieldByValue(SField const& field) const;
 
@@ -507,10 +510,14 @@ protected:
 // Constraint += and -= ValueProxy operators
 // to value types that support arithmetic operations
 template <typename U>
-concept IsArithmeticNumber = std::is_arithmetic_v<U> || std::is_same_v<U, Number> || std::is_same_v<U, STAmount>;
-template <typename U, typename Value = typename U::value_type, typename Unit = typename U::unit_type>
-concept IsArithmeticValueUnit =
-    std::is_same_v<U, unit::ValueUnit<Unit, Value>> && IsArithmeticNumber<Value> && std::is_class_v<Unit>;
+concept IsArithmeticNumber =
+    std::is_arithmetic_v<U> || std::is_same_v<U, Number> || std::is_same_v<U, STAmount>;
+template <
+    typename U,
+    typename Value = typename U::value_type,
+    typename Unit = typename U::unit_type>
+concept IsArithmeticValueUnit = std::is_same_v<U, unit::ValueUnit<Unit, Value>> &&
+    IsArithmeticNumber<Value> && std::is_class_v<Unit>;
 template <typename U, typename Value = typename U::value_type>
 concept IsArithmeticST = !IsArithmeticValueUnit<U> && IsArithmeticNumber<Value>;
 template <typename U>
@@ -519,7 +526,8 @@ concept IsArithmetic = IsArithmeticNumber<U> || IsArithmeticST<U> || IsArithmeti
 template <class T, class U>
 concept Addable = requires(T t, U u) { t = t + u; };
 template <typename T, typename U>
-concept IsArithmeticCompatible = IsArithmetic<typename T::value_type> && Addable<typename T::value_type, U>;
+concept IsArithmeticCompatible =
+    IsArithmetic<typename T::value_type> && Addable<typename T::value_type, U>;
 
 template <class T>
 class STObject::ValueProxy : public Proxy<T>
@@ -799,7 +807,8 @@ STObject::ValueProxy<T>::operator-=(U const& u)
 }
 
 template <class T>
-STObject::ValueProxy<T>::operator value_type() const
+STObject::ValueProxy<T>::
+operator value_type() const
 {
     return this->value();
 }
@@ -812,13 +821,15 @@ STObject::ValueProxy<T>::ValueProxy(STObject* st, TypedField<T> const* f) : Prox
 //------------------------------------------------------------------------------
 
 template <class T>
-STObject::OptionalProxy<T>::operator bool() const noexcept
+STObject::OptionalProxy<T>::
+operator bool() const noexcept
 {
     return engaged();
 }
 
 template <class T>
-STObject::OptionalProxy<T>::operator typename STObject::OptionalProxy<T>::optional_type() const
+STObject::OptionalProxy<T>::
+operator typename STObject::OptionalProxy<T>::optional_type() const
 {
     return optional_value();
 }
@@ -1050,12 +1061,15 @@ STObject::at(TypedField<T> const& f) const
         return u->value();
 
     XRPL_ASSERT(mType, "xrpl::STObject::at(TypedField auto) : field template non-null");
-    XRPL_ASSERT(b->getSType() == STI_NOTPRESENT, "xrpl::STObject::at(TypedField auto) : type not present");
+    XRPL_ASSERT(
+        b->getSType() == STI_NOTPRESENT, "xrpl::STObject::at(TypedField auto) : type not present");
 
     if (mType->style(f) == soeOPTIONAL)
         Throw<STObject::FieldErr>("Missing optional field: " + f.getName());
 
-    XRPL_ASSERT(mType->style(f) == soeDEFAULT, "xrpl::STObject::at(TypedField auto) : template style is default");
+    XRPL_ASSERT(
+        mType->style(f) == soeDEFAULT,
+        "xrpl::STObject::at(TypedField auto) : template style is default");
 
     // Used to help handle the case where value_type is a const reference,
     // otherwise we would return the address of a temporary.
@@ -1077,7 +1091,9 @@ STObject::at(OptionaledField<T> const& of) const
             mType,
             "xrpl::STObject::at(OptionaledField auto) : field template "
             "non-null");
-        XRPL_ASSERT(b->getSType() == STI_NOTPRESENT, "xrpl::STObject::at(OptionaledField auto) : type not present");
+        XRPL_ASSERT(
+            b->getSType() == STI_NOTPRESENT,
+            "xrpl::STObject::at(OptionaledField auto) : type not present");
         if (mType->style(*of.f) == soeOPTIONAL)
             return std::nullopt;
         XRPL_ASSERT(

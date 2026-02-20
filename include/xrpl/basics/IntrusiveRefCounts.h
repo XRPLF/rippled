@@ -184,7 +184,8 @@ private:
 
     /** Mask that will zero out everything except the weak count.
      */
-    static constexpr FieldType weakMask = (((one << WeakCountNumBits) - 1) << StrongCountNumBits) & valueMask;
+    static constexpr FieldType weakMask =
+        (((one << WeakCountNumBits) - 1) << StrongCountNumBits) & valueMask;
 
     /** Unpack the count and tag fields from the packed atomic integer form. */
     struct RefCountPair
@@ -209,8 +210,10 @@ private:
         FieldType
         combinedValue() const noexcept;
 
-        static constexpr CountType maxStrongValue = static_cast<CountType>((one << StrongCountNumBits) - 1);
-        static constexpr CountType maxWeakValue = static_cast<CountType>((one << WeakCountNumBits) - 1);
+        static constexpr CountType maxStrongValue =
+            static_cast<CountType>((one << StrongCountNumBits) - 1);
+        static constexpr CountType maxWeakValue =
+            static_cast<CountType>((one << WeakCountNumBits) - 1);
         /**  Put an extra margin to detect when running up against limits.
              This is only used in debug code, and is useful if we reduce the
              number of bits in the strong and weak counts (to 16 and 14 bits).
@@ -395,7 +398,8 @@ inline IntrusiveRefCounts::~IntrusiveRefCounts() noexcept
 {
 #ifndef NDEBUG
     auto v = refCounts.load(std::memory_order_acquire);
-    XRPL_ASSERT((!(v & valueMask)), "xrpl::IntrusiveRefCounts::~IntrusiveRefCounts : count must be zero");
+    XRPL_ASSERT(
+        (!(v & valueMask)), "xrpl::IntrusiveRefCounts::~IntrusiveRefCounts : count must be zero");
     auto t = v & tagMask;
     XRPL_ASSERT((!t || t == tagMask), "xrpl::IntrusiveRefCounts::~IntrusiveRefCounts : valid tag");
 #endif
@@ -433,8 +437,10 @@ IntrusiveRefCounts::RefCountPair::combinedValue() const noexcept
         (strong < checkStrongMaxValue && weak < checkWeakMaxValue),
         "xrpl::IntrusiveRefCounts::RefCountPair::combinedValue : inputs "
         "inside range");
-    return (static_cast<IntrusiveRefCounts::FieldType>(weak) << IntrusiveRefCounts::StrongCountNumBits) |
-        static_cast<IntrusiveRefCounts::FieldType>(strong) | partialDestroyStartedBit | partialDestroyFinishedBit;
+    return (static_cast<IntrusiveRefCounts::FieldType>(weak)
+            << IntrusiveRefCounts::StrongCountNumBits) |
+        static_cast<IntrusiveRefCounts::FieldType>(strong) | partialDestroyStartedBit |
+        partialDestroyFinishedBit;
 }
 
 template <class T>
@@ -442,7 +448,8 @@ inline void
 partialDestructorFinished(T** o)
 {
     T& self = **o;
-    IntrusiveRefCounts::RefCountPair p = self.refCounts.fetch_or(IntrusiveRefCounts::partialDestroyFinishedMask);
+    IntrusiveRefCounts::RefCountPair p =
+        self.refCounts.fetch_or(IntrusiveRefCounts::partialDestroyFinishedMask);
     XRPL_ASSERT(
         (!p.partialDestroyFinishedBit && p.partialDestroyStartedBit && !p.strong),
         "xrpl::partialDestructorFinished : not a weak ref");

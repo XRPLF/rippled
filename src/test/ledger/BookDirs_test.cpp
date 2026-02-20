@@ -33,7 +33,8 @@ struct BookDirs_test : public beast::unit_test::suite
 
         {
             env(offer("alice", Account("alice")["USD"](50), XRP(10)));
-            auto d = BookDirs(*env.current(), Book(Account("alice")["USD"].issue(), xrpIssue(), std::nullopt));
+            auto d = BookDirs(
+                *env.current(), Book(Account("alice")["USD"].issue(), xrpIssue(), std::nullopt));
             BEAST_EXPECT(std::distance(d.begin(), d.end()) == 1);
         }
 
@@ -47,7 +48,8 @@ struct BookDirs_test : public beast::unit_test::suite
             env.trust(Account("bob")["CNY"](10), "alice");
             env(pay("bob", "alice", Account("bob")["CNY"](10)));
             env(offer("alice", USD(50), Account("bob")["CNY"](10)));
-            auto d = BookDirs(*env.current(), Book(USD.issue(), Account("bob")["CNY"].issue(), std::nullopt));
+            auto d = BookDirs(
+                *env.current(), Book(USD.issue(), Account("bob")["CNY"].issue(), std::nullopt));
             BEAST_EXPECT(std::distance(d.begin(), d.end()) == 1);
         }
 

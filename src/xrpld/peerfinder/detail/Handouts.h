@@ -296,7 +296,8 @@ public:
 };
 
 template <class>
-ConnectHandouts::ConnectHandouts(std::size_t needed, Squelches& squelches) : m_needed(needed), m_squelches(squelches)
+ConnectHandouts::ConnectHandouts(std::size_t needed, Squelches& squelches)
+    : m_needed(needed), m_squelches(squelches)
 {
     m_list.reserve(needed);
 }

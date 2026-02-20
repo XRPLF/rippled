@@ -4,7 +4,8 @@ namespace xrpl {
 
 using const_iterator = Dir::const_iterator;
 
-Dir::Dir(ReadView const& view, Keylet const& key) : view_(&view), root_(key), sle_(view_->read(root_))
+Dir::Dir(ReadView const& view, Keylet const& key)
+    : view_(&view), root_(key), sle_(view_->read(root_))
 {
     if (sle_ != nullptr)
         indexes_ = &sle_->getFieldV256(sfIndexes);

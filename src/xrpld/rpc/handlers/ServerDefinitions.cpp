@@ -61,8 +61,8 @@ ServerDefinitions::translate(std::string const& inp)
 
     if (contains("UINT"))
     {
-        if (contains("512") || contains("384") || contains("256") || contains("192") || contains("160") ||
-            contains("128"))
+        if (contains("512") || contains("384") || contains("256") || contains("192") ||
+            contains("160") || contains("128"))
             return replace("UINT", "Hash");
         else
             return replace("UINT", "UInt");
@@ -226,14 +226,16 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
 
         innerObj[jss::nth] = field->fieldValue;
 
-        // whether the field is variable-length encoded this means that the length is included before the content
+        // whether the field is variable-length encoded this means that the length is included
+        // before the content
         innerObj[jss::isVLEncoded] =
             (type == 7U /* Blob */ || type == 8U /* AccountID */ || type == 19U /* Vector256 */);
 
         // whether the field is included in serialization
         innerObj[jss::isSerialized] =
             (type < 10000 && field->fieldName != "hash" &&
-             field->fieldName != "index");  // hash, index, TRANSACTION, LEDGER_ENTRY, VALIDATION, METADATA
+             field->fieldName !=
+                 "index");  // hash, index, TRANSACTION, LEDGER_ENTRY, VALIDATION, METADATA
 
         // whether the field is included in serialization when signing
         innerObj[jss::isSigningField] = field->shouldInclude(false);

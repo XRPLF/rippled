@@ -31,8 +31,16 @@ public:
     beast::insight::Event dequeue;
     beast::insight::Event execute;
 
-    JobTypeData(JobTypeInfo const& info_, beast::insight::Collector::ptr const& collector, Logs& logs) noexcept
-        : m_load(logs.journal("LoadMonitor")), m_collector(collector), info(info_), waiting(0), running(0), deferred(0)
+    JobTypeData(
+        JobTypeInfo const& info_,
+        beast::insight::Collector::ptr const& collector,
+        Logs& logs) noexcept
+        : m_load(logs.journal("LoadMonitor"))
+        , m_collector(collector)
+        , info(info_)
+        , waiting(0)
+        , running(0)
+        , deferred(0)
     {
         m_load.setTargetLatency(info.getAverageLatency(), info.getPeakLatency());
 

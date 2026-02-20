@@ -62,7 +62,8 @@ LedgerDeltaAcquire::trigger(std::size_t limit, ScopedLockType& sl)
         peerSet_->addPeers(
             limit,
             [this](auto peer) {
-                return peer->supportsFeature(ProtocolFeature::LedgerReplay) && peer->hasLedger(hash_, ledgerSeq_);
+                return peer->supportsFeature(ProtocolFeature::LedgerReplay) &&
+                    peer->hasLedger(hash_, ledgerSeq_);
             },
             [this](auto peer) {
                 if (peer->supportsFeature(ProtocolFeature::LedgerReplay))
@@ -169,7 +170,9 @@ LedgerDeltaAcquire::tryBuild(std::shared_ptr<Ledger const> const& parent)
     if (failed_ || !complete_ || !replayTemp_)
         return {};
 
-    XRPL_ASSERT(parent->seq() + 1 == replayTemp_->seq(), "xrpl::LedgerDeltaAcquire::tryBuild : parent sequence match");
+    XRPL_ASSERT(
+        parent->seq() + 1 == replayTemp_->seq(),
+        "xrpl::LedgerDeltaAcquire::tryBuild : parent sequence match");
     XRPL_ASSERT(
         parent->header().hash == replayTemp_->header().parentHash,
         "xrpl::LedgerDeltaAcquire::tryBuild : parent hash match");
@@ -186,7 +189,8 @@ LedgerDeltaAcquire::tryBuild(std::shared_ptr<Ledger const> const& parent)
     {
         failed_ = true;
         complete_ = false;
-        JLOG(journal_.error()) << "tryBuild failed " << hash_ << " with parent " << parent->header().hash;
+        JLOG(journal_.error()) << "tryBuild failed " << hash_ << " with parent "
+                               << parent->header().hash;
         Throw<std::runtime_error>("Cannot replay ledger");
     }
 }
@@ -204,23 +208,24 @@ LedgerDeltaAcquire::onLedgerBuilt(ScopedLockType& sl, std::optional<InboundLedge
         reasons.push_back(*reason);
         firstTime = false;
     }
-    app_.getJobQueue().addJob(jtREPLAY_TASK, "OnLedBuilt", [=, ledger = this->fullLedger_, &app = this->app_]() {
-        for (auto reason : reasons)
-        {
-            switch (reason)
+    app_.getJobQueue().addJob(
+        jtREPLAY_TASK, "OnLedBuilt", [=, ledger = this->fullLedger_, &app = this->app_]() {
+            for (auto reason : reasons)
             {
-                case InboundLedger::Reason::GENERIC:
-                    app.getLedgerMaster().storeLedger(ledger);
-                    break;
-                default:
-                    // TODO for other use cases
-                    break;
+                switch (reason)
+                {
+                    case InboundLedger::Reason::GENERIC:
+                        app.getLedgerMaster().storeLedger(ledger);
+                        break;
+                    default:
+                        // TODO for other use cases
+                        break;
+                }
             }
-        }
 
-        if (firstTime)
-            app.getLedgerMaster().tryAdvance();
-    });
+            if (firstTime)
+                app.getLedgerMaster().tryAdvance();
+        });
 }
 
 void
