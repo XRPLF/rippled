@@ -38,7 +38,7 @@ NotTEC
 VaultCreate::preflight(PreflightContext const& ctx)
 {
     if (!validDataLength(ctx.tx[~sfData], maxDataPayloadLength))
-        return temMALFORMED;
+        return ctx.rules.enabled(fixErrorCodes) ? temBAD_FIELD_LENGTH : temMALFORMED;
 
     if (auto const withdrawalPolicy = ctx.tx[~sfWithdrawalPolicy])
     {
@@ -64,7 +64,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
         if (metadata->length() == 0 || metadata->length() > maxMPTokenMetadataLength)
-            return temMALFORMED;
+            return ctx.rules.enabled(fixErrorCodes) ? temBAD_FIELD_LENGTH : temMALFORMED;
     }
 
     if (auto const scale = ctx.tx[~sfScale])

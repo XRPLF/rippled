@@ -42,7 +42,7 @@ DIDSet::preflight(PreflightContext const& ctx)
 
     if (isTooLong(sfURI, maxDIDURILength) || isTooLong(sfDIDDocument, maxDIDDocumentLength) ||
         isTooLong(sfData, maxDIDAttestationLength))
-        return temMALFORMED;
+        return ctx.rules.enabled(fixErrorCodes) ? temBAD_FIELD_LENGTH : temMALFORMED;
 
     return tesSUCCESS;
 }

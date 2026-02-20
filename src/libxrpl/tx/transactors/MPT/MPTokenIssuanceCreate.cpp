@@ -59,7 +59,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
         if (metadata->length() == 0 || metadata->length() > maxMPTokenMetadataLength)
-            return temMALFORMED;
+            return ctx.rules.enabled(fixErrorCodes) ? temBAD_FIELD_LENGTH : temMALFORMED;
     }
 
     // Check if maximumAmount is within unsigned 63 bit range

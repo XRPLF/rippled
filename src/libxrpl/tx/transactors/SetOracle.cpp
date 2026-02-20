@@ -32,7 +32,7 @@ SetOracle::preflight(PreflightContext const& ctx)
 
     if (isInvalidLength(sfProvider, maxOracleProvider) || isInvalidLength(sfURI, maxOracleURI) ||
         isInvalidLength(sfAssetClass, maxOracleSymbolClass))
-        return temMALFORMED;
+        return ctx.rules.enabled(fixErrorCodes) ? temBAD_FIELD_LENGTH : temMALFORMED;
 
     return tesSUCCESS;
 }

@@ -51,14 +51,14 @@ CredentialCreate::preflight(PreflightContext const& ctx)
     if (uri && (uri->empty() || (uri->size() > maxCredentialURILength)))
     {
         JLOG(j.trace()) << "Malformed transaction: invalid size of URI.";
-        return temMALFORMED;
+        return ctx.rules.enabled(fixErrorCodes) ? temBAD_FIELD_LENGTH : temMALFORMED;
     }
 
     auto const credType = tx[sfCredentialType];
     if (credType.empty() || (credType.size() > maxCredentialTypeLength))
     {
         JLOG(j.trace()) << "Malformed transaction: invalid size of CredentialType.";
-        return temMALFORMED;
+        return ctx.rules.enabled(fixErrorCodes) ? temBAD_FIELD_LENGTH : temMALFORMED;
     }
 
     return tesSUCCESS;
@@ -198,7 +198,7 @@ CredentialDelete::preflight(PreflightContext const& ctx)
     if (credType.empty() || (credType.size() > maxCredentialTypeLength))
     {
         JLOG(ctx.j.trace()) << "Malformed transaction: invalid size of CredentialType.";
-        return temMALFORMED;
+        return ctx.rules.enabled(fixErrorCodes) ? temBAD_FIELD_LENGTH : temMALFORMED;
     }
 
     return tesSUCCESS;
@@ -261,7 +261,7 @@ CredentialAccept::preflight(PreflightContext const& ctx)
     if (credType.empty() || (credType.size() > maxCredentialTypeLength))
     {
         JLOG(ctx.j.trace()) << "Malformed transaction: invalid size of CredentialType.";
-        return temMALFORMED;
+        return ctx.rules.enabled(fixErrorCodes) ? temBAD_FIELD_LENGTH : temMALFORMED;
     }
 
     return tesSUCCESS;

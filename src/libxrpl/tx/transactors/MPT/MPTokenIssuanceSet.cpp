@@ -84,7 +84,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
             return temBAD_TRANSFER_FEE;
 
         if (metadata && metadata->length() > maxMPTokenMetadataLength)
-            return temMALFORMED;
+            return ctx.rules.enabled(fixErrorCodes) ? temBAD_FIELD_LENGTH : temMALFORMED;
 
         if (mutableFlags)
         {
