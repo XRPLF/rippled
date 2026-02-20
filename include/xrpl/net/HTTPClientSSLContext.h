@@ -30,8 +30,8 @@ public:
             registerSSLCerts(ssl_context_, ec, j_);
 
             if (ec && sslVerifyDir.empty())
-                Throw<std::runtime_error>(
-                    boost::str(boost::format("Failed to set_default_verify_paths: %s") % ec.message()));
+                Throw<std::runtime_error>(boost::str(
+                    boost::format("Failed to set_default_verify_paths: %s") % ec.message()));
         }
         else
         {
@@ -43,7 +43,8 @@ public:
             ssl_context_.add_verify_path(sslVerifyDir, ec);
 
             if (ec)
-                Throw<std::runtime_error>(boost::str(boost::format("Failed to add verify path: %s") % ec.message()));
+                Throw<std::runtime_error>(
+                    boost::str(boost::format("Failed to add verify path: %s") % ec.message()));
         }
     }
 
@@ -114,7 +115,9 @@ public:
             if (!ec)
             {
                 strm.set_verify_callback(
-                    std::bind(&rfc6125_verify, host, std::placeholders::_1, std::placeholders::_2, j_), ec);
+                    std::bind(
+                        &rfc6125_verify, host, std::placeholders::_1, std::placeholders::_2, j_),
+                    ec);
             }
         }
 
@@ -131,12 +134,17 @@ public:
      * @param j journal for logging
      */
     static bool
-    rfc6125_verify(std::string const& domain, bool preverified, boost::asio::ssl::verify_context& ctx, beast::Journal j)
+    rfc6125_verify(
+        std::string const& domain,
+        bool preverified,
+        boost::asio::ssl::verify_context& ctx,
+        beast::Journal j)
     {
         if (boost::asio::ssl::host_name_verification(domain)(preverified, ctx))
             return true;
 
-        JLOG(j.warn()) << "Outbound SSL connection to " << domain << " fails certificate verification";
+        JLOG(j.warn()) << "Outbound SSL connection to " << domain
+                       << " fails certificate verification";
         return false;
     }
 

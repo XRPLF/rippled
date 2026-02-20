@@ -47,7 +47,8 @@ doGatewayBalances(RPC::JsonContext& context)
         return RPC::missing_field_error(jss::account);
 
     std::string const strIdent(
-        params.isMember(jss::account) ? params[jss::account].asString() : params[jss::ident].asString());
+        params.isMember(jss::account) ? params[jss::account].asString()
+                                      : params[jss::ident].asString());
 
     // Get info on account.
     auto id = parseBase58<AccountID>(strIdent);
@@ -222,7 +223,8 @@ doGatewayBalances(RPC::JsonContext& context)
     }
 
     auto populateResult = [&result](
-                              std::map<AccountID, std::vector<STAmount>> const& array, Json::StaticString const& name) {
+                              std::map<AccountID, std::vector<STAmount>> const& array,
+                              Json::StaticString const& name) {
         if (!array.empty())
         {
             Json::Value j;

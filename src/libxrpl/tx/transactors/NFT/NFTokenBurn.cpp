@@ -51,7 +51,8 @@ NFTokenBurn::doApply()
     // Remove the token, effectively burning it:
     auto const ret = nft::removeToken(
         view(),
-        ctx_.tx.isFieldPresent(sfOwner) ? ctx_.tx.getAccountID(sfOwner) : ctx_.tx.getAccountID(sfAccount),
+        ctx_.tx.isFieldPresent(sfOwner) ? ctx_.tx.getAccountID(sfOwner)
+                                        : ctx_.tx.getAccountID(sfAccount),
         ctx_.tx[sfNFTokenID]);
 
     // Should never happen since preclaim() verified the token is present.
@@ -68,13 +69,15 @@ NFTokenBurn::doApply()
     // Because the number of sell offers is likely to be less than
     // the number of buy offers, we prioritize the deletion of sell
     // offers in order to clean up sell offer directory
-    std::size_t const deletedSellOffers =
-        nft::removeTokenOffersWithLimit(view(), keylet::nft_sells(ctx_.tx[sfNFTokenID]), maxDeletableTokenOfferEntries);
+    std::size_t const deletedSellOffers = nft::removeTokenOffersWithLimit(
+        view(), keylet::nft_sells(ctx_.tx[sfNFTokenID]), maxDeletableTokenOfferEntries);
 
     if (maxDeletableTokenOfferEntries > deletedSellOffers)
     {
         nft::removeTokenOffersWithLimit(
-            view(), keylet::nft_buys(ctx_.tx[sfNFTokenID]), maxDeletableTokenOfferEntries - deletedSellOffers);
+            view(),
+            keylet::nft_buys(ctx_.tx[sfNFTokenID]),
+            maxDeletableTokenOfferEntries - deletedSellOffers);
     }
 
     return tesSUCCESS;

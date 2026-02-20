@@ -161,7 +161,8 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
     // before the transaction sequence number.
     if (cancelSequence && (uAccountSequence <= *cancelSequence))
     {
-        JLOG(ctx.j.debug()) << "uAccountSequenceNext=" << uAccountSequence << " uOfferSequence=" << *cancelSequence;
+        JLOG(ctx.j.debug()) << "uAccountSequenceNext=" << uAccountSequence
+                            << " uOfferSequence=" << *cancelSequence;
         return temBAD_SEQUENCE;
     }
 
@@ -175,7 +176,8 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
     // Make sure that we are authorized to hold what the taker will pay us.
     if (!saTakerPays.native())
     {
-        auto result = checkAcceptAsset(ctx.view, ctx.flags, id, ctx.j, Issue(uPaysCurrency, uPaysIssuerID));
+        auto result =
+            checkAcceptAsset(ctx.view, ctx.flags, id, ctx.j, Issue(uPaysCurrency, uPaysIssuerID));
         if (result != tesSUCCESS)
             return result;
     }
@@ -206,7 +208,8 @@ CreateOffer::checkAcceptAsset(
 
     if (!issuerAccount)
     {
-        JLOG(j.debug()) << "delay: can't receive IOUs from non-existent issuer: " << to_string(issue.account);
+        JLOG(j.debug()) << "delay: can't receive IOUs from non-existent issuer: "
+                        << to_string(issue.account);
 
         return (flags & tapRETRY) ? TER{terNO_ACCOUNT} : TER{tecNO_ISSUER};
     }
@@ -281,7 +284,8 @@ CreateOffer::flowCross(
         // We check this in preclaim, but when selling XRP charged fees can
         // cause a user's available balance to go to 0 (by causing it to dip
         // below the reserve) so we check this case again.
-        STAmount const inStartBalance = accountFunds(psb, account_, takerAmount.in, fhZERO_IF_FROZEN, j_);
+        STAmount const inStartBalance =
+            accountFunds(psb, account_, takerAmount.in, fhZERO_IF_FROZEN, j_);
         if (inStartBalance <= beast::zero)
         {
             // The account balance can't cover even part of the offer.
@@ -299,7 +303,8 @@ CreateOffer::flowCross(
             gatewayXferRate = transferRate(psb, sendMax.getIssuer());
             if (gatewayXferRate.value != QUALITY_ONE)
             {
-                sendMax = multiplyRound(takerAmount.in, gatewayXferRate, takerAmount.in.issue(), true);
+                sendMax =
+                    multiplyRound(takerAmount.in, gatewayXferRate, takerAmount.in.issue(), true);
             }
         }
 
@@ -344,7 +349,8 @@ CreateOffer::flowCross(
                 // there might be a gateway transfer rate to account for.
                 // Since the transfer rate cannot exceed 200%, we use 1/2
                 // maxValue for our limit.
-                deliver = STAmount{takerAmount.out.issue(), STAmount::cMaxValue / 2, STAmount::cMaxOffset};
+                deliver = STAmount{
+                    takerAmount.out.issue(), STAmount::cMaxValue / 2, STAmount::cMaxOffset};
         }
 
         // Call the payment engine's flow() to do the actual work.
@@ -376,7 +382,8 @@ CreateOffer::flowCross(
         auto afterCross = takerAmount;  // If !tesSUCCESS offer unchanged
         if (isTesSuccess(result.result()))
         {
-            STAmount const takerInBalance = accountFunds(psb, account_, takerAmount.in, fhZERO_IF_FROZEN, j_);
+            STAmount const takerInBalance =
+                accountFunds(psb, account_, takerAmount.in, fhZERO_IF_FROZEN, j_);
 
             if (takerInBalance <= beast::zero)
             {
@@ -401,8 +408,8 @@ CreateOffer::flowCross(
                     // gateway's transfer rate.
                     STAmount nonGatewayAmountIn = result.actualAmountIn;
                     if (gatewayXferRate.value != QUALITY_ONE)
-                        nonGatewayAmountIn =
-                            divideRound(result.actualAmountIn, gatewayXferRate, takerAmount.in.issue(), true);
+                        nonGatewayAmountIn = divideRound(
+                            result.actualAmountIn, gatewayXferRate, takerAmount.in.issue(), true);
 
                     afterCross.in -= nonGatewayAmountIn;
 
@@ -413,7 +420,8 @@ CreateOffer::flowCross(
                         // what is a good threshold to check?
                         afterCross.in.clear();
 
-                    afterCross.out = divRoundStrict(afterCross.in, rate, takerAmount.out.issue(), false);
+                    afterCross.out =
+                        divRoundStrict(afterCross.in, rate, takerAmount.out.issue(), false);
                 }
                 else
                 {
@@ -421,7 +429,9 @@ CreateOffer::flowCross(
                     // remaining output.  This too preserves the offer
                     // Quality.
                     afterCross.out -= result.actualAmountOut;
-                    XRPL_ASSERT(afterCross.out >= beast::zero, "xrpl::CreateOffer::flowCross : minimum offer");
+                    XRPL_ASSERT(
+                        afterCross.out >= beast::zero,
+                        "xrpl::CreateOffer::flowCross : minimum offer");
                     if (afterCross.out < beast::zero)
                         afterCross.out.clear();
                     afterCross.in = mulRound(afterCross.out, rate, takerAmount.in.issue(), true);
@@ -646,9 +656,11 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         }
 
         XRPL_ASSERT(
-            saTakerGets.issue() == place_offer.in.issue(), "xrpl::CreateOffer::applyGuts : taker gets issue match");
+            saTakerGets.issue() == place_offer.in.issue(),
+            "xrpl::CreateOffer::applyGuts : taker gets issue match");
         XRPL_ASSERT(
-            saTakerPays.issue() == place_offer.out.issue(), "xrpl::CreateOffer::applyGuts : taker pays issue match");
+            saTakerPays.issue() == place_offer.out.issue(),
+            "xrpl::CreateOffer::applyGuts : taker pays issue match");
 
         if (takerAmount != place_offer)
             crossed = true;
@@ -677,7 +689,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     XRPL_ASSERT(
-        saTakerPays > zero && saTakerGets > zero, "xrpl::CreateOffer::applyGuts : taker pays and gets positive");
+        saTakerPays > zero && saTakerGets > zero,
+        "xrpl::CreateOffer::applyGuts : taker pays and gets positive");
 
     if (result != tesSUCCESS)
     {
@@ -741,7 +754,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     auto const offer_index = keylet::offer(account_, offerSequence);
 
     // Add offer to owner's directory.
-    auto const ownerNode = sb.dirInsert(keylet::ownerDir(account_), offer_index, describeOwnerDir(account_));
+    auto const ownerNode =
+        sb.dirInsert(keylet::ownerDir(account_), offer_index, describeOwnerDir(account_));
 
     if (!ownerNode)
     {
@@ -754,7 +768,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     // Update owner count.
     adjustOwnerCount(sb, sleCreator, 1, viewJ);
 
-    JLOG(j_.trace()) << "adding to book: " << to_string(saTakerPays.issue()) << " : " << to_string(saTakerGets.issue())
+    JLOG(j_.trace()) << "adding to book: " << to_string(saTakerPays.issue()) << " : "
+                     << to_string(saTakerGets.issue())
                      << (domainID ? (" : " + to_string(*domainID)) : "");
 
     Book const book{saTakerPays.issue(), saTakerGets.issue(), domainID};
@@ -816,7 +831,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     // if it's a hybrid offer, set hybrid flag, and create an open dir
     if (bHybrid)
     {
-        auto const res = applyHybrid(sb, sleOffer, offer_index, saTakerPays, saTakerGets, setBookDir);
+        auto const res =
+            applyHybrid(sb, sleOffer, offer_index, saTakerPays, saTakerGets, setBookDir);
         if (res != tesSUCCESS)
             return {res, true};  // LCOV_EXCL_LINE
     }

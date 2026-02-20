@@ -26,13 +26,20 @@ public:
     using callback = std::function<void(error_code)>;
 
 public:
-    AutoSocket(boost::asio::io_context& s, boost::asio::ssl::context& c, bool secureOnly, bool plainOnly)
-        : mSecure(secureOnly), mBuffer((plainOnly || secureOnly) ? 0 : 4), j_{beast::Journal::getNullSink()}
+    AutoSocket(
+        boost::asio::io_context& s,
+        boost::asio::ssl::context& c,
+        bool secureOnly,
+        bool plainOnly)
+        : mSecure(secureOnly)
+        , mBuffer((plainOnly || secureOnly) ? 0 : 4)
+        , j_{beast::Journal::getNullSink()}
     {
         mSocket = std::make_unique<ssl_socket>(s, c);
     }
 
-    AutoSocket(boost::asio::io_context& s, boost::asio::ssl::context& c) : AutoSocket(s, c, false, false)
+    AutoSocket(boost::asio::io_context& s, boost::asio::ssl::context& c)
+        : AutoSocket(s, c, false, false)
     {
     }
 
@@ -105,7 +112,12 @@ public:
             mSocket->next_layer().async_receive(
                 boost::asio::buffer(mBuffer),
                 boost::asio::socket_base::message_peek,
-                std::bind(&AutoSocket::handle_autodetect, this, cbFunc, std::placeholders::_1, std::placeholders::_2));
+                std::bind(
+                    &AutoSocket::handle_autodetect,
+                    this,
+                    cbFunc,
+                    std::placeholders::_1,
+                    std::placeholders::_2));
         }
     }
 
@@ -152,7 +164,10 @@ public:
 
     template <typename Allocator, typename Handler>
     void
-    async_read_until(boost::asio::basic_streambuf<Allocator>& buffers, std::string const& delim, Handler handler)
+    async_read_until(
+        boost::asio::basic_streambuf<Allocator>& buffers,
+        std::string const& delim,
+        Handler handler)
     {
         if (isSecure())
             boost::asio::async_read_until(*mSocket, buffers, delim, handler);
@@ -162,7 +177,10 @@ public:
 
     template <typename Allocator, typename MatchCondition, typename Handler>
     void
-    async_read_until(boost::asio::basic_streambuf<Allocator>& buffers, MatchCondition cond, Handler handler)
+    async_read_until(
+        boost::asio::basic_streambuf<Allocator>& buffers,
+        MatchCondition cond,
+        Handler handler)
     {
         if (isSecure())
             boost::asio::async_read_until(*mSocket, buffers, cond, handler);

@@ -49,7 +49,9 @@ private:
     makeRulesGivenLedger(DigestAwareReadView const& ledger, Rules const& current);
 
     friend Rules
-    makeRulesGivenLedger(DigestAwareReadView const& ledger, std::unordered_set<uint256, beast::uhash<>> const& presets);
+    makeRulesGivenLedger(
+        DigestAwareReadView const& ledger,
+        std::unordered_set<uint256, beast::uhash<>> const& presets);
 
     Rules(
         std::unordered_set<uint256, beast::uhash<>> const& presets,

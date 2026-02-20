@@ -1,0 +1,162 @@
+name: Run clang-tidy on files
+
+on:
+  workflow_call:
+    inputs:
+      files:
+        description: "List of files to check (empty means check all files)"
+        type: string
+        default: ""
+      create_issue_on_failure:
+        description: "Whether to create an issue if the check failed"
+        type: boolean
+        default: false
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  # Conan installs the generators in the build/generators directory, see the
+  # layout() method in conanfile.py. We then run CMake from the build directory.
+  BUILD_DIR: build
+  BUILD_TYPE: Release
+
+jobs:
+  run-clang-tidy:
+    name: Run clang tidy
+    runs-on: ["self-hosted", "Linux", "X64", "heavy"]
+    container: "ghcr.io/xrplf/ci/debian-trixie:clang-21-sha-53033a2"
+    permissions:
+      issues: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Prepare runner
+        uses: XRPLF/actions/prepare-runner@2cbf481018d930656e9276fcc20dc0e3a0be5b6d
+        with:
+          enable_ccache: false
+
+      - name: Print build environment
+        uses: ./.github/actions/print-env
+
+      - name: Get number of processors
+        uses: XRPLF/actions/get-nproc@cf0433aa74563aead044a1e395610c96d65a37cf
+        id: nproc
+
+      - name: Setup Conan
+        uses: ./.github/actions/setup-conan
+
+      - name: Build dependencies
+        uses: ./.github/actions/build-deps
+        with:
+          build_nproc: ${{ steps.nproc.outputs.nproc }}
+          build_type: ${{ env.BUILD_TYPE }}
+          log_verbosity: verbose
+
+      - name: Configure CMake
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          cmake \
+            -G 'Ninja' \
+            -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
+            -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
+            -Dtests=ON \
+            -Dwerr=ON \
+            -Dxrpld=ON \
+            ..
+
+      # clang-tidy needs headers generated from proto files
+      - name: Build libxrpl.libpb
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          ninja -j ${{ steps.nproc.outputs.nproc }} xrpl.libpb
+
+      - name: Run clang tidy
+        id: run_clang_tidy
+        continue-on-error: true
+        env:
+          FILES: ${{ inputs.files }}
+        run: |
+          run-clang-tidy -j ${{ steps.nproc.outputs.nproc }} -p "$BUILD_DIR" $FILES 2>&1 | tee clang-tidy-output.txt
+
+      - name: Upload clang-tidy output
+        if: steps.run_clang_tidy.outcome != 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: clang-tidy-results
+          path: clang-tidy-output.txt
+          retention-days: 30
+
+      - name: Create an issue
+        if: steps.run_clang_tidy.outcome != 'success' && inputs.create_issue_on_failure
+        id: create_issue
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Prepare issue body with clang-tidy output
+          cat > issue.md <<EOF
+          ## Clang-tidy Check Failed
+
+          **Workflow:** ${{ github.workflow }}
+          **Run ID:** ${{ github.run_id }}
+          **Commit:** ${{ github.sha }}
+          **Branch/Ref:** ${{ github.ref }}
+          **Triggered by:** ${{ github.actor }}
+
+          ### Clang-tidy Output:
+          \`\`\`
+          EOF
+
+          # Append clang-tidy output (filter for errors and warnings)
+          if [ -f clang-tidy-output.txt ]; then
+            # Extract lines containing 'error:', 'warning:', or 'note:'
+            grep -E '(error:|warning:|note:)' clang-tidy-output.txt > filtered-output.txt || true
+
+            # If filtered output is empty, use original (might be a different error format)
+            if [ ! -s filtered-output.txt ]; then
+              cp clang-tidy-output.txt filtered-output.txt
+            fi
+
+            # Truncate if too large
+            head -c 60000 filtered-output.txt >> issue.md
+            if [ "$(wc -c < filtered-output.txt)" -gt 60000 ]; then
+              echo "" >> issue.md
+              echo "... (output truncated, see artifacts for full output)" >> issue.md
+            fi
+
+            rm filtered-output.txt
+          else
+            echo "No output file found" >> issue.md
+          fi
+
+          cat >> issue.md <<EOF
+          \`\`\`
+
+          **Workflow run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+          ---
+          *This issue was automatically created by the clang-tidy workflow.*
+          EOF
+
+          # Create the issue
+          gh issue create \
+            --label "Bug,Clang-tidy" \
+            --title "Clang-tidy check failed" \
+            --body-file ./issue.md \
+            > create_issue.log
+
+          created_issue="$(sed 's|.*/||' create_issue.log)"
+          echo "created_issue=$created_issue" >> $GITHUB_OUTPUT
+          echo "Created issue #$created_issue"
+
+          rm -f create_issue.log issue.md clang-tidy-output.txt
+
+      - name: Fail the workflow if clang-tidy failed
+        if: steps.run_clang_tidy.outcome != 'success'
+        run: |
+          echo "Clang-tidy check failed!"
+          exit 1

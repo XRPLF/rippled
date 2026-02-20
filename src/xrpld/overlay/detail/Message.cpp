@@ -24,7 +24,9 @@ Message::Message(
     if (messageBytes != 0)
         message.SerializeToArray(buffer_.data() + headerBytes, messageBytes);
 
-    XRPL_ASSERT(getBufferSize() == totalSize(message), "xrpl::Message::Message : message size matches the buffer");
+    XRPL_ASSERT(
+        getBufferSize() == totalSize(message),
+        "xrpl::Message::Message : message size matches the buffer");
 }
 
 // static

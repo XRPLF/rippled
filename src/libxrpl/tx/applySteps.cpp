@@ -131,7 +131,8 @@ invoke_preflight(PreflightContext const& ctx)
     {
         return with_txn_type(ctx.rules, ctx.tx.getTxnType(), [&]<typename T>() {
             auto const tec = Transactor::invokePreflight<T>(ctx);
-            return std::make_pair(tec, isTesSuccess(tec) ? consequences_helper<T>(ctx) : TxConsequences{tec});
+            return std::make_pair(
+                tec, isTesSuccess(tec) ? consequences_helper<T>(ctx) : TxConsequences{tec});
         });
     }
     catch (UnknownTxnType const& e)
@@ -225,8 +226,9 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     try
     {
-        return with_txn_type(
-            view.rules(), tx.getTxnType(), [&]<typename T>() { return T::calculateBaseFee(view, tx); });
+        return with_txn_type(view.rules(), tx.getTxnType(), [&]<typename T>() {
+            return T::calculateBaseFee(view, tx);
+        });
     }
     catch (UnknownTxnType const& e)
     {
@@ -244,7 +246,8 @@ TxConsequences::TxConsequences(NotTEC pfResult)
     , seqProx_(SeqProxy::sequence(0))
     , sequencesConsumed_(0)
 {
-    XRPL_ASSERT(!isTesSuccess(pfResult), "xrpl::TxConsequences::TxConsequences : is not tesSUCCESS");
+    XRPL_ASSERT(
+        !isTesSuccess(pfResult), "xrpl::TxConsequences::TxConsequences : is not tesSUCCESS");
 }
 
 TxConsequences::TxConsequences(STTx const& tx)
@@ -293,7 +296,12 @@ invoke_apply(ApplyContext& ctx)
 }
 
 PreflightResult
-preflight(ServiceRegistry& registry, Rules const& rules, STTx const& tx, ApplyFlags flags, beast::Journal j)
+preflight(
+    ServiceRegistry& registry,
+    Rules const& rules,
+    STTx const& tx,
+    ApplyFlags flags,
+    beast::Journal j)
 {
     PreflightContext const pfCtx(registry, tx, rules, flags, j);
     try
@@ -344,7 +352,12 @@ preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, Open
                     preflightResult.flags,
                     preflightResult.j);
 
-            return preflight(registry, view.rules(), preflightResult.tx, preflightResult.flags, preflightResult.j);
+            return preflight(
+                registry,
+                view.rules(),
+                preflightResult.tx,
+                preflightResult.flags,
+                preflightResult.j);
         }();
 
         ctx.emplace(

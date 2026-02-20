@@ -38,14 +38,20 @@ PathFindTrustLine::makeItem(AccountID const& accountID, std::shared_ptr<SLE cons
 namespace detail {
 template <class T>
 std::vector<T>
-getTrustLineItems(AccountID const& accountID, ReadView const& view, LineDirection direction = LineDirection::outgoing)
+getTrustLineItems(
+    AccountID const& accountID,
+    ReadView const& view,
+    LineDirection direction = LineDirection::outgoing)
 {
     std::vector<T> items;
-    forEachItem(view, accountID, [&items, &accountID, &direction](std::shared_ptr<SLE const> const& sleCur) {
-        auto ret = T::makeItem(accountID, sleCur);
-        if (ret && (direction == LineDirection::outgoing || !ret->getNoRipple()))
-            items.push_back(std::move(*ret));
-    });
+    forEachItem(
+        view,
+        accountID,
+        [&items, &accountID, &direction](std::shared_ptr<SLE const> const& sleCur) {
+            auto ret = T::makeItem(accountID, sleCur);
+            if (ret && (direction == LineDirection::outgoing || !ret->getNoRipple()))
+                items.push_back(std::move(*ret));
+        });
     // This list may be around for a while, so free up any unneeded
     // capacity
     items.shrink_to_fit();
@@ -55,7 +61,10 @@ getTrustLineItems(AccountID const& accountID, ReadView const& view, LineDirectio
 }  // namespace detail
 
 std::vector<PathFindTrustLine>
-PathFindTrustLine::getItems(AccountID const& accountID, ReadView const& view, LineDirection direction)
+PathFindTrustLine::getItems(
+    AccountID const& accountID,
+    ReadView const& view,
+    LineDirection direction)
 {
     return detail::getTrustLineItems<PathFindTrustLine>(accountID, view, direction);
 }

@@ -258,41 +258,45 @@ struct DepositAuth_test : public beast::unit_test::suite
         IOU const USD1(gw1["USD"]);
         IOU const USD2(gw2["USD"]);
 
-        auto testIssuer =
-            [&](FeatureBitset const& features, bool noRipplePrev, bool noRippleNext, bool withDepositAuth) {
-                Env env(*this, features);
+        auto testIssuer = [&](FeatureBitset const& features,
+                              bool noRipplePrev,
+                              bool noRippleNext,
+                              bool withDepositAuth) {
+            Env env(*this, features);
 
-                env.fund(XRP(10000), gw1, alice, bob);
-                env.close();
-                env(trust(gw1, alice["USD"](10), noRipplePrev ? tfSetNoRipple : 0));
-                env(trust(gw1, bob["USD"](10), noRippleNext ? tfSetNoRipple : 0));
-                env.trust(USD1(10), alice, bob);
+            env.fund(XRP(10000), gw1, alice, bob);
+            env.close();
+            env(trust(gw1, alice["USD"](10), noRipplePrev ? tfSetNoRipple : 0));
+            env(trust(gw1, bob["USD"](10), noRippleNext ? tfSetNoRipple : 0));
+            env.trust(USD1(10), alice, bob);
 
-                env(pay(gw1, alice, USD1(10)));
+            env(pay(gw1, alice, USD1(10)));
 
-                if (withDepositAuth)
-                    env(fset(gw1, asfDepositAuth));
+            if (withDepositAuth)
+                env(fset(gw1, asfDepositAuth));
 
-                TER const result = (noRippleNext && noRipplePrev) ? TER{tecPATH_DRY} : TER{tesSUCCESS};
-                env(pay(alice, bob, USD1(10)), path(gw1), ter(result));
-            };
+            TER const result = (noRippleNext && noRipplePrev) ? TER{tecPATH_DRY} : TER{tesSUCCESS};
+            env(pay(alice, bob, USD1(10)), path(gw1), ter(result));
+        };
 
-        auto testNonIssuer =
-            [&](FeatureBitset const& features, bool noRipplePrev, bool noRippleNext, bool withDepositAuth) {
-                Env env(*this, features);
+        auto testNonIssuer = [&](FeatureBitset const& features,
+                                 bool noRipplePrev,
+                                 bool noRippleNext,
+                                 bool withDepositAuth) {
+            Env env(*this, features);
 
-                env.fund(XRP(10000), gw1, gw2, alice);
-                env.close();
-                env(trust(alice, USD1(10), noRipplePrev ? tfSetNoRipple : 0));
-                env(trust(alice, USD2(10), noRippleNext ? tfSetNoRipple : 0));
-                env(pay(gw2, alice, USD2(10)));
+            env.fund(XRP(10000), gw1, gw2, alice);
+            env.close();
+            env(trust(alice, USD1(10), noRipplePrev ? tfSetNoRipple : 0));
+            env(trust(alice, USD2(10), noRippleNext ? tfSetNoRipple : 0));
+            env(pay(gw2, alice, USD2(10)));
 
-                if (withDepositAuth)
-                    env(fset(alice, asfDepositAuth));
+            if (withDepositAuth)
+                env(fset(alice, asfDepositAuth));
 
-                TER const result = (noRippleNext && noRipplePrev) ? TER{tecPATH_DRY} : TER{tesSUCCESS};
-                env(pay(gw1, gw2, USD2(10)), path(alice), sendmax(USD1(10)), ter(result));
-            };
+            TER const result = (noRippleNext && noRipplePrev) ? TER{tecPATH_DRY} : TER{tesSUCCESS};
+            env(pay(gw1, gw2, USD2(10)), path(alice), sendmax(USD1(10)), ter(result));
+        };
 
         // Test every combo of noRipplePrev, noRippleNext, and withDepositAuth
         for (int i = 0; i < 8; ++i)
@@ -742,8 +746,9 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
             auto const jDP = ledgerEntryDepositPreauth(env, bob, {{issuer, credType}});
             BEAST_EXPECT(
-                jDP.isObject() && jDP.isMember(jss::result) && !jDP[jss::result].isMember(jss::error) &&
-                jDP[jss::result].isMember(jss::node) && jDP[jss::result][jss::node].isMember("LedgerEntryType") &&
+                jDP.isObject() && jDP.isMember(jss::result) &&
+                !jDP[jss::result].isMember(jss::error) && jDP[jss::result].isMember(jss::node) &&
+                jDP[jss::result][jss::node].isMember("LedgerEntryType") &&
                 jDP[jss::result][jss::node]["LedgerEntryType"] == jss::DepositPreauth);
 
             // Alice can't pay - empty credentials array
@@ -812,7 +817,8 @@ struct DepositPreauth_test : public beast::unit_test::suite
             }
 
             // Bob setup DepositPreauth object, duplicates is not allowed
-            env(deposit::authCredentials(bob, {{issuer, credType}, {issuer, credType}}), ter(temMALFORMED));
+            env(deposit::authCredentials(bob, {{issuer, credType}, {issuer, credType}}),
+                ter(temMALFORMED));
 
             // Bob setup DepositPreauth object
             env(deposit::authCredentials(bob, {{issuer, credType}}));
@@ -823,12 +829,16 @@ struct DepositPreauth_test : public beast::unit_test::suite
                     "0E0B04ED60588A758B67E21FBBE95AC5A63598BA951761DC0EC9C08D7E"
                     "01E034";
                 // Alice can't pay with non-existing credentials
-                env(pay(alice, bob, XRP(100)), credentials::ids({invalidIdx}), ter(tecBAD_CREDENTIALS));
+                env(pay(alice, bob, XRP(100)),
+                    credentials::ids({invalidIdx}),
+                    ter(tecBAD_CREDENTIALS));
             }
 
             {  // maria can't pay using valid credentials but issued for
                // different account
-                env(pay(maria, bob, XRP(100)), credentials::ids({credIdx}), ter(tecBAD_CREDENTIALS));
+                env(pay(maria, bob, XRP(100)),
+                    credentials::ids({credIdx}),
+                    ter(tecBAD_CREDENTIALS));
             }
 
             {
@@ -842,7 +852,9 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 std::string const credIdx2 = jv[jss::result][jss::index].asString();
 
                 // Alice can't pay with invalid set of valid credentials
-                env(pay(alice, bob, XRP(100)), credentials::ids({credIdx, credIdx2}), ter(tecNO_PERMISSION));
+                env(pay(alice, bob, XRP(100)),
+                    credentials::ids({credIdx, credIdx2}),
+                    ter(tecNO_PERMISSION));
             }
 
             // Error, duplicate credentials
@@ -936,7 +948,8 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
             {
                 // AuthorizeCredentials is larger than 8 elements
-                Account const a("a"), b("b"), c("c"), d("d"), e("e"), f("f"), g("g"), h("h"), i("i");
+                Account const a("a"), b("b"), c("c"), d("d"), e("e"), f("f"), g("g"), h("h"),
+                    i("i");
                 auto const& z = credType;
                 auto jv = deposit::authCredentials(
                     bob, {{a, z}, {b, z}, {c, z}, {d, z}, {e, z}, {f, z}, {g, z}, {h, z}, {i, z}});
@@ -972,8 +985,10 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
                 auto const jDP = ledgerEntryDepositPreauth(env, bob, {{issuer, credType}});
                 BEAST_EXPECT(
-                    jDP.isObject() && jDP.isMember(jss::result) && !jDP[jss::result].isMember(jss::error) &&
-                    jDP[jss::result].isMember(jss::node) && jDP[jss::result][jss::node].isMember("LedgerEntryType") &&
+                    jDP.isObject() && jDP.isMember(jss::result) &&
+                    !jDP[jss::result].isMember(jss::error) &&
+                    jDP[jss::result].isMember(jss::node) &&
+                    jDP[jss::result][jss::node].isMember("LedgerEntryType") &&
                     jDP[jss::result][jss::node]["LedgerEntryType"] == jss::DepositPreauth);
 
                 // Check object fields
@@ -984,7 +999,8 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 {
                     auto const& c(o[jss::Credential]);
                     BEAST_EXPECT(c[jss::Issuer].asString() == issuer.human());
-                    BEAST_EXPECT(c["CredentialType"].asString() == strHex(std::string_view(credType)));
+                    BEAST_EXPECT(
+                        c["CredentialType"].asString() == strHex(std::string_view(credType)));
                 }
 
                 // can't create duplicate
@@ -997,7 +1013,8 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 env.close();
                 auto const jDP = ledgerEntryDepositPreauth(env, bob, {{issuer, credType}});
                 BEAST_EXPECT(
-                    jDP.isObject() && jDP.isMember(jss::result) && jDP[jss::result].isMember(jss::error) &&
+                    jDP.isObject() && jDP.isMember(jss::result) &&
+                    jDP[jss::result].isMember(jss::error) &&
                     jDP[jss::result][jss::error] == "entryNotFound");
             }
         }
@@ -1028,7 +1045,8 @@ struct DepositPreauth_test : public beast::unit_test::suite
             auto jv = credentials::create(alice, issuer, credType);
             // Current time in ripple epoch.
             // Every time ledger close, unittest timer increase by 10s
-            uint32_t const t = env.current()->header().parentCloseTime.time_since_epoch().count() + 60;
+            uint32_t const t =
+                env.current()->header().parentCloseTime.time_since_epoch().count() + 60;
             jv[sfExpiration.jsonName] = t;
             env(jv);
             env.close();
@@ -1039,7 +1057,8 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
             // Create credential which not expired
             jv = credentials::create(alice, issuer, credType2);
-            uint32_t const t2 = env.current()->header().parentCloseTime.time_since_epoch().count() + 1000;
+            uint32_t const t2 =
+                env.current()->header().parentCloseTime.time_since_epoch().count() + 1000;
             jv[sfExpiration.jsonName] = t2;
             env(jv);
             env.close();
@@ -1069,7 +1088,9 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 env.close();
 
                 // Ledger closed, time increased, alice can't pay anymore
-                env(pay(alice, bob, XRP(100)), credentials::ids({credIdx, credIdx2}), ter(tecEXPIRED));
+                env(pay(alice, bob, XRP(100)),
+                    credentials::ids({credIdx, credIdx2}),
+                    ter(tecEXPIRED));
                 env.close();
 
                 {
@@ -1085,13 +1106,15 @@ struct DepositPreauth_test : public beast::unit_test::suite
                     // check that non-expired credential still present
                     auto const jle = credentials::ledgerEntry(env, alice, issuer, credType2);
                     BEAST_EXPECT(
-                        jle.isObject() && jle.isMember(jss::result) && !jle[jss::result].isMember(jss::error) &&
+                        jle.isObject() && jle.isMember(jss::result) &&
+                        !jle[jss::result].isMember(jss::error) &&
                         jle[jss::result].isMember(jss::node) &&
                         jle[jss::result][jss::node].isMember("LedgerEntryType") &&
                         jle[jss::result][jss::node]["LedgerEntryType"] == jss::Credential &&
                         jle[jss::result][jss::node][jss::Issuer] == issuer.human() &&
                         jle[jss::result][jss::node][jss::Subject] == alice.human() &&
-                        jle[jss::result][jss::node]["CredentialType"] == strHex(std::string_view(credType2)));
+                        jle[jss::result][jss::node]["CredentialType"] ==
+                            strHex(std::string_view(credType2)));
                 }
 
                 BEAST_EXPECT(ownerCount(env, issuer) == 0);
@@ -1100,7 +1123,8 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
             {
                 auto jv = credentials::create(gw, issuer, credType);
-                uint32_t const t = env.current()->header().parentCloseTime.time_since_epoch().count() + 40;
+                uint32_t const t =
+                    env.current()->header().parentCloseTime.time_since_epoch().count() + 40;
                 jv[sfExpiration.jsonName] = t;
                 env(jv);
                 env.close();
@@ -1125,7 +1149,8 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 auto const jDelCred = credentials::ledgerEntry(env, gw, issuer, credType);
                 BEAST_EXPECT(
                     jDelCred.isObject() && jDelCred.isMember(jss::result) &&
-                    jDelCred[jss::result].isMember(jss::error) && jDelCred[jss::result][jss::error] == "entryNotFound");
+                    jDelCred[jss::result].isMember(jss::error) &&
+                    jDelCred[jss::result][jss::error] == "entryNotFound");
 
                 BEAST_EXPECT(ownerCount(env, issuer) == 0);
                 BEAST_EXPECT(ownerCount(env, gw) == 0);
@@ -1144,7 +1169,8 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
             // Create credentials
             auto jv = credentials::create(zelda, issuer, credType);
-            uint32_t const t = env.current()->header().parentCloseTime.time_since_epoch().count() + 50;
+            uint32_t const t =
+                env.current()->header().parentCloseTime.time_since_epoch().count() + 50;
             jv[sfExpiration.jsonName] = t;
             env(jv);
             env.close();
@@ -1180,19 +1206,25 @@ struct DepositPreauth_test : public beast::unit_test::suite
                     "0E0B04ED60588A758B67E21FBBE95AC5A63598BA951761DC0EC9C08D7E"
                     "01E034";
 
-                env(escrow::finish(zelda, alice, seq), credentials::ids({invalidIdx}), ter(tecBAD_CREDENTIALS));
+                env(escrow::finish(zelda, alice, seq),
+                    credentials::ids({invalidIdx}),
+                    ter(tecBAD_CREDENTIALS));
                 env.close();
             }
 
             {  // Ledger closed, time increased, zelda can't finish escrow
-                env(escrow::finish(zelda, alice, seq), credentials::ids({credIdx}), fee(1500), ter(tecEXPIRED));
+                env(escrow::finish(zelda, alice, seq),
+                    credentials::ids({credIdx}),
+                    fee(1500),
+                    ter(tecEXPIRED));
                 env.close();
             }
 
             // check that expired credentials were deleted
             auto const jDelCred = credentials::ledgerEntry(env, zelda, issuer, credType);
             BEAST_EXPECT(
-                jDelCred.isObject() && jDelCred.isMember(jss::result) && jDelCred[jss::result].isMember(jss::error) &&
+                jDelCred.isObject() && jDelCred.isMember(jss::result) &&
+                jDelCred[jss::result].isMember(jss::error) &&
                 jDelCred[jss::result][jss::error] == "entryNotFound");
         }
     }
@@ -1213,7 +1245,14 @@ struct DepositPreauth_test : public beast::unit_test::suite
         env.fund(XRP(5000), stock, alice, bob);
 
         std::vector<deposit::AuthorizeCredentials> credentials = {
-            {"a", "a"}, {"b", "b"}, {"c", "c"}, {"d", "d"}, {"e", "e"}, {"f", "f"}, {"g", "g"}, {"h", "h"}};
+            {"a", "a"},
+            {"b", "b"},
+            {"c", "c"},
+            {"d", "d"},
+            {"e", "e"},
+            {"f", "f"},
+            {"g", "g"},
+            {"h", "h"}};
 
         for (auto const& c : credentials)
             env.fund(XRP(5000), c.issuer);
@@ -1244,7 +1283,8 @@ struct DepositPreauth_test : public beast::unit_test::suite
                     auto issuer = c[jss::Issuer].asString();
 
                     if (BEAST_EXPECT(pubKey2Acc.contains(issuer)))
-                        readCreds.emplace_back(pubKey2Acc.at(issuer), c["CredentialType"].asString());
+                        readCreds.emplace_back(
+                            pubKey2Acc.at(issuer), c["CredentialType"].asString());
                 }
 
                 BEAST_EXPECT(std::ranges::is_sorted(readCreds));
@@ -1270,7 +1310,8 @@ struct DepositPreauth_test : public beast::unit_test::suite
         testcase("Check duplicate credentials.");
         {
             // check duplicates in depositPreauth params
-            std::vector<deposit::AuthorizeCredentials> copyCredentials(credentials.begin(), credentials.end() - 1);
+            std::vector<deposit::AuthorizeCredentials> copyCredentials(
+                credentials.begin(), credentials.end() - 1);
 
             std::ranges::shuffle(copyCredentials, gen);
             for (auto const& c : copyCredentials)
@@ -1290,7 +1331,9 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 env.close();
 
                 credentialIDs.push_back(
-                    credentials::ledgerEntry(env, alice, c.issuer, c.credType)[jss::result][jss::index].asString());
+                    credentials::ledgerEntry(
+                        env, alice, c.issuer, c.credType)[jss::result][jss::index]
+                        .asString());
             }
 
             // check duplicates in payment params

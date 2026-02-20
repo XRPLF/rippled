@@ -19,7 +19,9 @@ public:
     ~TransactionAcquire() = default;
 
     SHAMapAddNode
-    takeNodes(std::vector<std::pair<SHAMapNodeID, Slice>> const& data, std::shared_ptr<Peer> const&);
+    takeNodes(
+        std::vector<std::pair<SHAMapNodeID, Slice>> const& data,
+        std::shared_ptr<Peer> const&);
 
     void
     init(int startPeers);

@@ -39,6 +39,7 @@ if (SANITIZERS_ENABLED AND is_clang)
     endif ()
     message(STATUS "Adding [${Boost_INCLUDE_DIRS}] to sanitizer blacklist")
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/san_bl.txt "src:${Boost_INCLUDE_DIRS}/*")
-    target_compile_options(opts INTERFACE # ignore boost headers for sanitizing
-                                          -fsanitize-blacklist=${CMAKE_CURRENT_BINARY_DIR}/san_bl.txt)
+    target_compile_options(
+        opts INTERFACE # ignore boost headers for sanitizing
+                       -fsanitize-blacklist=${CMAKE_CURRENT_BINARY_DIR}/san_bl.txt)
 endif ()

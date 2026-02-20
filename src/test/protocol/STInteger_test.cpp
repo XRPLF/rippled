@@ -21,7 +21,8 @@ struct STInteger_test : public beast::unit_test::suite
         // there is some special handling for sfTransactionResult
         STUInt8 tr(sfTransactionResult, 0);
         BEAST_EXPECT(tr.value() == 0);
-        BEAST_EXPECT(tr.getText() == "The transaction was applied. Only final in a validated ledger.");
+        BEAST_EXPECT(
+            tr.getText() == "The transaction was applied. Only final in a validated ledger.");
         BEAST_EXPECT(tr.getSType() == STI_UINT8);
         BEAST_EXPECT(tr.getJson(JsonOptions::none) == "tesSUCCESS");
 

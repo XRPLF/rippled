@@ -13,28 +13,32 @@ struct SeqProxy_test : public beast::unit_test::suite
     expectValues(SeqProxy seqProx, std::uint32_t value, SeqProxy::Type type)
     {
         bool const expectSeq{type == SeqProxy::seq};
-        return (seqProx.value() == value) && (seqProx.isSeq() == expectSeq) && (seqProx.isTicket() == !expectSeq);
+        return (seqProx.value() == value) && (seqProx.isSeq() == expectSeq) &&
+            (seqProx.isTicket() == !expectSeq);
     }
 
     // Exercise all SeqProxy comparison operators expecting lhs < rhs.
     static constexpr bool
     expectLt(SeqProxy lhs, SeqProxy rhs)
     {
-        return (lhs < rhs) && (lhs <= rhs) && (!(lhs == rhs)) && (lhs != rhs) && (!(lhs >= rhs)) && (!(lhs > rhs));
+        return (lhs < rhs) && (lhs <= rhs) && (!(lhs == rhs)) && (lhs != rhs) && (!(lhs >= rhs)) &&
+            (!(lhs > rhs));
     }
 
     // Exercise all SeqProxy comparison operators expecting lhs == rhs.
     static constexpr bool
     expectEq(SeqProxy lhs, SeqProxy rhs)
     {
-        return (!(lhs < rhs)) && (lhs <= rhs) && (lhs == rhs) && (!(lhs != rhs)) && (lhs >= rhs) && (!(lhs > rhs));
+        return (!(lhs < rhs)) && (lhs <= rhs) && (lhs == rhs) && (!(lhs != rhs)) && (lhs >= rhs) &&
+            (!(lhs > rhs));
     }
 
     // Exercise all SeqProxy comparison operators expecting lhs > rhs.
     static constexpr bool
     expectGt(SeqProxy lhs, SeqProxy rhs)
     {
-        return (!(lhs < rhs)) && (!(lhs <= rhs)) && (!(lhs == rhs)) && (lhs != rhs) && (lhs >= rhs) && (lhs > rhs);
+        return (!(lhs < rhs)) && (!(lhs <= rhs)) && (!(lhs == rhs)) && (lhs != rhs) &&
+            (lhs >= rhs) && (lhs > rhs);
     }
 
     // Verify streaming.
@@ -48,7 +52,8 @@ struct SeqProxy_test : public beast::unit_test::suite
         ss << seqProx;
         std::string str{ss.str()};
 
-        return str.find(type) == 0 && str[type.size()] == ' ' && str.find(value) == (type.size() + 1);
+        return str.find(type) == 0 && str[type.size()] == ' ' &&
+            str.find(value) == (type.size() + 1);
     }
 
     void

@@ -67,7 +67,8 @@ DelegateSet::doApply()
         return tesSUCCESS;
     }
 
-    STAmount const reserve{ctx_.view().fees().accountReserve(sleOwner->getFieldU32(sfOwnerCount) + 1)};
+    STAmount const reserve{
+        ctx_.view().fees().accountReserve(sleOwner->getFieldU32(sfOwnerCount) + 1)};
 
     if (mPriorBalance < reserve)
         return tecINSUFFICIENT_RESERVE;
@@ -80,7 +81,8 @@ DelegateSet::doApply()
         sle->setAccountID(sfAuthorize, authAccount);
 
         sle->setFieldArray(sfPermissions, permissions);
-        auto const page = ctx_.view().dirInsert(keylet::ownerDir(account_), delegateKey, describeOwnerDir(account_));
+        auto const page = ctx_.view().dirInsert(
+            keylet::ownerDir(account_), delegateKey, describeOwnerDir(account_));
 
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE

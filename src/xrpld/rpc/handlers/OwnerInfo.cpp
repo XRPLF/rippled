@@ -20,19 +20,22 @@ doOwnerInfo(RPC::JsonContext& context)
         return RPC::missing_field_error(jss::account);
     }
 
-    std::string strIdent = context.params.isMember(jss::account) ? context.params[jss::account].asString()
-                                                                 : context.params[jss::ident].asString();
+    std::string strIdent = context.params.isMember(jss::account)
+        ? context.params[jss::account].asString()
+        : context.params[jss::ident].asString();
     Json::Value ret;
 
     // Get info on account.
     auto const& closedLedger = context.ledgerMaster.getClosedLedger();
     std::optional<AccountID> const accountID = parseBase58<AccountID>(strIdent);
-    ret[jss::accepted] = accountID.has_value() ? context.netOps.getOwnerInfo(closedLedger, accountID.value())
-                                               : rpcError(rpcACT_MALFORMED);
+    ret[jss::accepted] = accountID.has_value()
+        ? context.netOps.getOwnerInfo(closedLedger, accountID.value())
+        : rpcError(rpcACT_MALFORMED);
 
     auto const& currentLedger = context.ledgerMaster.getCurrentLedger();
-    ret[jss::current] =
-        accountID.has_value() ? context.netOps.getOwnerInfo(currentLedger, *accountID) : rpcError(rpcACT_MALFORMED);
+    ret[jss::current] = accountID.has_value()
+        ? context.netOps.getOwnerInfo(currentLedger, *accountID)
+        : rpcError(rpcACT_MALFORMED);
     return ret;
 }
 

@@ -81,7 +81,8 @@ SingleMetrics::addMetrics(std::uint32_t val)
         auto const avg = accum / (perTimeUnit ? timeElapsedInSecs.count() : N);
         rollingAvgAggregate.push_back(avg);
 
-        auto const total = std::accumulate(rollingAvgAggregate.begin(), rollingAvgAggregate.end(), 0ull);
+        auto const total =
+            std::accumulate(rollingAvgAggregate.begin(), rollingAvgAggregate.end(), 0ull);
         rollingAvg = total / rollingAvgAggregate.size();
 
         intervalStart = clock_type::now();

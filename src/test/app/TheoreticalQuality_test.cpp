@@ -45,7 +45,9 @@ struct RippleCalcTestParams
                     {
                         assert(!pe.isMember(jss::currency) && !pe.isMember(jss::issuer));
                         p.emplace_back(
-                            *parseBase58<AccountID>(pe[jss::account].asString()), std::nullopt, std::nullopt);
+                            *parseBase58<AccountID>(pe[jss::account].asString()),
+                            std::nullopt,
+                            std::nullopt);
                     }
                     else if (pe.isMember(jss::currency) && pe.isMember(jss::issuer))
                     {
@@ -109,7 +111,11 @@ class RandomAccountParams
 
     // Setup the trust amounts and in/out qualities (but not the balances)
     void
-    setupTrustLine(jtx::Env& env, jtx::Account const& acc, jtx::Account const& peer, Currency const& currency)
+    setupTrustLine(
+        jtx::Env& env,
+        jtx::Account const& acc,
+        jtx::Account const& peer,
+        Currency const& currency)
     {
         using namespace jtx;
         IOU const iou{peer, currency};
@@ -134,19 +140,29 @@ public:
 
     // Set the initial balance, taking into account the qualities
     void
-    setInitialBalance(jtx::Env& env, jtx::Account const& acc, jtx::Account const& peer, Currency const& currency)
+    setInitialBalance(
+        jtx::Env& env,
+        jtx::Account const& acc,
+        jtx::Account const& peer,
+        Currency const& currency)
     {
         using namespace jtx;
         IOU const iou{acc, currency};
         // This payment sets the acc's balance to `initialBalance`.
         // Since input qualities complicate this payment, use `sendMax` with
         // `initialBalance` to make sure the balance is set correctly.
-        env(pay(peer, acc, iou(trustAmount_)), sendmax(iou(initialBalance_)), txflags(tfPartialPayment));
+        env(pay(peer, acc, iou(trustAmount_)),
+            sendmax(iou(initialBalance_)),
+            txflags(tfPartialPayment));
         env.close();
     }
 
     void
-    maybeSetInitialBalance(jtx::Env& env, jtx::Account const& acc, jtx::Account const& peer, Currency const& currency)
+    maybeSetInitialBalance(
+        jtx::Env& env,
+        jtx::Account const& acc,
+        jtx::Account const& peer,
+        Currency const& currency)
     {
         using namespace jtx;
         if (zeroOneDist_(engine_) > probRedeem_)
@@ -157,7 +173,11 @@ public:
     // Setup the trust amounts and in/out qualities (but not the balances) on
     // both sides of the trust line
     void
-    setupTrustLines(jtx::Env& env, jtx::Account const& acc1, jtx::Account const& acc2, Currency const& currency)
+    setupTrustLines(
+        jtx::Env& env,
+        jtx::Account const& acc1,
+        jtx::Account const& acc2,
+        Currency const& currency)
     {
         setupTrustLine(env, acc1, acc2, currency);
         setupTrustLine(env, acc2, acc1, currency);
@@ -236,7 +256,8 @@ class TheoreticalQuality_test : public beast::unit_test::suite
         for (auto const& strand : sr.second)
         {
             Quality const theoreticalQ = *qualityUpperBound(sb, strand);
-            auto const f = flow<IOUAmount, IOUAmount>(sb, strand, IOUAmount(10, 0), IOUAmount(5, 0), dummyJ);
+            auto const f =
+                flow<IOUAmount, IOUAmount>(sb, strand, IOUAmount(10, 0), IOUAmount(5, 0), dummyJ);
             BEAST_EXPECT(f.success);
             Quality const actualQ(f.out, f.in);
             if (actualQ != theoreticalQ && !compareClose(actualQ, theoreticalQ))
@@ -340,7 +361,9 @@ public:
             // Accounts are set up, make the payment
             IOU const iou{accounts.back(), currency};
             RippleCalcTestParams rcp{env.json(
-                pay(accounts.front(), accounts.back(), iou(paymentAmount)), accountsPath, txflags(tfNoRippleDirect))};
+                pay(accounts.front(), accounts.back(), iou(paymentAmount)),
+                accountsPath,
+                txflags(tfNoRippleDirect))};
 
             testCase(rcp, env.closed());
         }

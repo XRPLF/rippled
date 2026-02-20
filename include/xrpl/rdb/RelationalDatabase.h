@@ -414,7 +414,10 @@ public:
      *         default error code is not changed.
      */
     virtual std::variant<AccountTx, TxSearched>
-    getTransaction(uint256 const& id, std::optional<ClosedInterval<uint32_t>> const& range, error_code_i& ec) = 0;
+    getTransaction(
+        uint256 const& id,
+        std::optional<ClosedInterval<uint32_t>> const& range,
+        error_code_i& ec) = 0;
 
     /**
      * @brief getKBUsedAll Returns the amount of space used by all databases.
@@ -464,7 +467,8 @@ rangeCheckedCast(C c)
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::rangeCheckedCast : domain error");
         JLOG(debugLog().error()) << "rangeCheckedCast domain error:"
-                                 << " value = " << c << " min = " << std::numeric_limits<T>::lowest()
+                                 << " value = " << c
+                                 << " min = " << std::numeric_limits<T>::lowest()
                                  << " max: " << std::numeric_limits<T>::max();
         // LCOV_EXCL_STOP
     }

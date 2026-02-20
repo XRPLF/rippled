@@ -27,7 +27,8 @@ checkValidity(HashRouter& router, STTx const& tx, Rules const& rules)
     if (tx.isFlag(tfInnerBatchTxn) && rules.enabled(featureBatch))
     {
         // Defensive Check: These values are also checked in Batch::preflight
-        if (tx.isFieldPresent(sfTxnSignature) || !tx.getSigningPubKey().empty() || tx.isFieldPresent(sfSigners))
+        if (tx.isFieldPresent(sfTxnSignature) || !tx.getSigningPubKey().empty() ||
+            tx.isFieldPresent(sfSigners))
             return {Validity::SigBad, "Malformed: Invalid inner batch transaction."};
 
         // This block should probably have never been included in the
@@ -116,7 +117,8 @@ apply(ServiceRegistry& registry, OpenView& view, PreflightChecks&& preflightChec
 ApplyResult
 apply(ServiceRegistry& registry, OpenView& view, STTx const& tx, ApplyFlags flags, beast::Journal j)
 {
-    return apply(registry, view, [&]() mutable { return preflight(registry, view.rules(), tx, flags, j); });
+    return apply(
+        registry, view, [&]() mutable { return preflight(registry, view.rules(), tx, flags, j); });
 }
 
 ApplyResult
@@ -128,12 +130,17 @@ apply(
     ApplyFlags flags,
     beast::Journal j)
 {
-    return apply(
-        registry, view, [&]() mutable { return preflight(registry, view.rules(), parentBatchId, tx, flags, j); });
+    return apply(registry, view, [&]() mutable {
+        return preflight(registry, view.rules(), parentBatchId, tx, flags, j);
+    });
 }
 
 static bool
-applyBatchTransactions(ServiceRegistry& registry, OpenView& batchView, STTx const& batchTxn, beast::Journal j)
+applyBatchTransactions(
+    ServiceRegistry& registry,
+    OpenView& batchView,
+    STTx const& batchTxn,
+    beast::Journal j)
 {
     XRPL_ASSERT(
         batchTxn.getTxnType() == ttBATCH && batchTxn.getFieldArray(sfRawTransactions).size() != 0,
@@ -147,7 +154,8 @@ applyBatchTransactions(ServiceRegistry& registry, OpenView& batchView, STTx cons
 
         auto const ret = apply(registry, perTxBatchView, parentBatchId, tx, tapBATCH, j);
         XRPL_ASSERT(
-            ret.applied == (isTesSuccess(ret.ter) || isTecClaim(ret.ter)), "Inner transaction should not be applied");
+            ret.applied == (isTesSuccess(ret.ter) || isTecClaim(ret.ter)),
+            "Inner transaction should not be applied");
 
         JLOG(j.debug()) << "BatchTrace[" << parentBatchId << "]: " << tx.getTransactionID() << " "
                         << (ret.applied ? "applied" : "failure") << ": " << transToken(ret.ter);

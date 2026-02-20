@@ -114,8 +114,9 @@ SHAMapTreeNode::makeFromPrefix(Slice rawNode, SHAMapHash const& hash)
     // FIXME: Use SerialIter::get32?
     // Extract the prefix
     auto const type = safe_cast<HashPrefix>(
-        (safe_cast<std::uint32_t>(rawNode[0]) << 24) + (safe_cast<std::uint32_t>(rawNode[1]) << 16) +
-        (safe_cast<std::uint32_t>(rawNode[2]) << 8) + (safe_cast<std::uint32_t>(rawNode[3])));
+        (safe_cast<std::uint32_t>(rawNode[0]) << 24) +
+        (safe_cast<std::uint32_t>(rawNode[1]) << 16) + (safe_cast<std::uint32_t>(rawNode[2]) << 8) +
+        (safe_cast<std::uint32_t>(rawNode[3])));
 
     rawNode.remove_prefix(4);
 
@@ -134,7 +135,8 @@ SHAMapTreeNode::makeFromPrefix(Slice rawNode, SHAMapHash const& hash)
         return makeTransactionWithMeta(rawNode, hash, hashValid);
 
     Throw<std::runtime_error>(
-        "prefix: unknown type (" + std::to_string(safe_cast<std::underlying_type_t<HashPrefix>>(type)) + ")");
+        "prefix: unknown type (" +
+        std::to_string(safe_cast<std::underlying_type_t<HashPrefix>>(type)) + ")");
 }
 
 std::string

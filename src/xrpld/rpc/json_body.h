@@ -30,7 +30,8 @@ struct json_body
         explicit reader(boost::beast::http::message<isRequest, json_body, Fields> const& m)
         {
             stream(m.body, [&](void const* data, std::size_t n) {
-                buffer_.commit(boost::asio::buffer_copy(buffer_.prepare(n), boost::asio::buffer(data, n)));
+                buffer_.commit(
+                    boost::asio::buffer_copy(buffer_.prepare(n), boost::asio::buffer(data, n)));
             });
         }
 
@@ -61,7 +62,9 @@ struct json_body
         using const_buffers_type = boost::asio::const_buffer;
 
         template <bool isRequest, class Fields>
-        explicit writer(boost::beast::http::header<isRequest, Fields> const& fields, value_type const& value)
+        explicit writer(
+            boost::beast::http::header<isRequest, Fields> const& fields,
+            value_type const& value)
             : body_string_(to_string(value))
         {
         }

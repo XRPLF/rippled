@@ -150,8 +150,9 @@ VaultCreate::doApply()
     if (auto ter = addEmptyHolding(view(), pseudoId, mPriorBalance, asset, j_); !isTesSuccess(ter))
         return ter;
 
-    std::uint8_t const scale =
-        (asset.holds<MPTIssue>() || asset.native()) ? 0 : ctx_.tx[~sfScale].value_or(vaultDefaultIOUScale);
+    std::uint8_t const scale = (asset.holds<MPTIssue>() || asset.native())
+        ? 0
+        : ctx_.tx[~sfScale].value_or(vaultDefaultIOUScale);
 
     auto txFlags = tx.getFlags();
     std::uint32_t mptFlags = 0;
@@ -204,15 +205,16 @@ VaultCreate::doApply()
     view().insert(vault);
 
     // Explicitly create MPToken for the vault owner
-    if (auto const err = authorizeMPToken(view(), mPriorBalance, mptIssuanceID, account_, ctx_.journal);
+    if (auto const err =
+            authorizeMPToken(view(), mPriorBalance, mptIssuanceID, account_, ctx_.journal);
         !isTesSuccess(err))
         return err;
 
     // If the vault is private, set the authorized flag for the vault owner
     if (txFlags & tfVaultPrivate)
     {
-        if (auto const err =
-                authorizeMPToken(view(), mPriorBalance, mptIssuanceID, pseudoId, ctx_.journal, {}, account_);
+        if (auto const err = authorizeMPToken(
+                view(), mPriorBalance, mptIssuanceID, pseudoId, ctx_.journal, {}, account_);
             !isTesSuccess(err))
             return err;
     }

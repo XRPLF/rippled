@@ -76,7 +76,8 @@ inline bool
 operator==(Fulfillment const& lhs, Fulfillment const& rhs)
 {
     // FIXME: for compound conditions, need to also check subtypes
-    return lhs.type() == rhs.type() && lhs.cost() == rhs.cost() && lhs.fingerprint() == rhs.fingerprint();
+    return lhs.type() == rhs.type() && lhs.cost() == rhs.cost() &&
+        lhs.fingerprint() == rhs.fingerprint();
 }
 
 inline bool

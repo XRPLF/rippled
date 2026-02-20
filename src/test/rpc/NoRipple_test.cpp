@@ -247,7 +247,8 @@ public:
         testSetAndClear();
 
         auto withFeatsTests = [this](FeatureBitset features) {
-            forAllApiVersions([&, this](unsigned testVersion) { testDefaultRipple(features, testVersion); });
+            forAllApiVersions(
+                [&, this](unsigned testVersion) { testDefaultRipple(features, testVersion); });
             testNegativeBalance(features);
             testPairwise(features);
         };
