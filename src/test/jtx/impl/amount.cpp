@@ -75,8 +75,8 @@ operator<<(std::ostream& os, PrettyAmount const& amount)
     }
     else if (amount.value().holds<Issue>())
     {
-        os << amount.value().getText() << "/" << to_string(amount.value().issue().currency) << "(" << amount.name()
-           << ")";
+        os << amount.value().getText() << "/" << to_string(amount.value().issue().currency) << "("
+           << amount.name() << ")";
     }
     else
     {

@@ -67,7 +67,8 @@ class CanProcess
 {
 public:
     template <class Mutex, class Collection, class Item>
-    CanProcess(Mutex& mtx, Collection& collection, Item const& item) : cleanup_(insert(mtx, collection, item))
+    CanProcess(Mutex& mtx, Collection& collection, Item const& item)
+        : cleanup_(insert(mtx, collection, item))
     {
     }
 

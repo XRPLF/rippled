@@ -182,7 +182,10 @@ acceptSellOffer(jtx::Account const& account, uint256 const& offerIndex);
 
 /** Broker two NFToken offers. */
 Json::Value
-brokerOffers(jtx::Account const& account, uint256 const& buyOfferIndex, uint256 const& sellOfferIndex);
+brokerOffers(
+    jtx::Account const& account,
+    uint256 const& buyOfferIndex,
+    uint256 const& sellOfferIndex);
 
 /** Sets the optional NFTokenBrokerFee field in a brokerOffer transaction. */
 class brokerFee

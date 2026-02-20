@@ -229,7 +229,10 @@ private:
         {
             JLOG(j_.warn()) << "Ledger #" << ledger->header().seq << ": " << mn.what();
             app_.getInboundLedgers().acquire(
-                ledger->header().hash, ledger->header().seq, InboundLedger::Reason::GENERIC, "getLedgerHash");
+                ledger->header().hash,
+                ledger->header().seq,
+                InboundLedger::Reason::GENERIC,
+                "getLedgerHash");
         }
         return hash ? *hash : beast::zero;  // kludge
     }
@@ -242,10 +245,14 @@ private:
         @return `true` if the ledger was cleaned.
     */
     bool
-    doLedger(LedgerIndex const& ledgerIndex, LedgerHash const& ledgerHash, bool doNodes, bool doTxns)
+    doLedger(
+        LedgerIndex const& ledgerIndex,
+        LedgerHash const& ledgerHash,
+        bool doNodes,
+        bool doTxns)
     {
-        auto nodeLedger =
-            app_.getInboundLedgers().acquire(ledgerHash, ledgerIndex, InboundLedger::Reason::GENERIC, "doLedger");
+        auto nodeLedger = app_.getInboundLedgers().acquire(
+            ledgerHash, ledgerIndex, InboundLedger::Reason::GENERIC, "doLedger");
         if (!nodeLedger)
         {
             JLOG(j_.debug()) << "Ledger " << ledgerIndex << " not available";
@@ -326,8 +333,8 @@ private:
                 {
                     // We found the hash and sequence of a better reference
                     // ledger.
-                    referenceLedger =
-                        app_.getInboundLedgers().acquire(refHash, refIndex, InboundLedger::Reason::GENERIC, "getHash");
+                    referenceLedger = app_.getInboundLedgers().acquire(
+                        refHash, refIndex, InboundLedger::Reason::GENERIC, "getHash");
                     if (referenceLedger)
                         ledgerHash = getLedgerHash(referenceLedger, ledgerIndex);
                 }

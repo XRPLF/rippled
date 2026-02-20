@@ -34,11 +34,14 @@ LoanPay::preflight(PreflightContext const& ctx)
 
     // The loan payment flags are all mutually exclusive. If more than one is
     // set, the tx is malformed.
-    static_assert((tfLoanLatePayment | tfLoanFullPayment | tfLoanOverpayment) == ~(tfLoanPayMask | tfUniversal));
+    static_assert(
+        (tfLoanLatePayment | tfLoanFullPayment | tfLoanOverpayment) ==
+        ~(tfLoanPayMask | tfUniversal));
     auto const flagsSet = ctx.tx.getFlags() & ~(tfLoanPayMask | tfUniversal);
     if (std::popcount(flagsSet) > 1)
     {
-        JLOG(ctx.j.warn()) << "Only one LoanPay flag can be set per tx. " << flagsSet << " is too many.";
+        JLOG(ctx.j.warn()) << "Only one LoanPay flag can be set per tx. " << flagsSet
+                           << " is too many.";
         return temINVALID_FLAG;
     }
 
@@ -96,8 +99,8 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
 
     auto const scale = loanSle->at(sfLoanScale);
 
-    auto const regularPayment =
-        roundPeriodicPayment(asset, loanSle->at(sfPeriodicPayment), scale) + loanSle->at(sfLoanServiceFee);
+    auto const regularPayment = roundPeriodicPayment(asset, loanSle->at(sfPeriodicPayment), scale) +
+        loanSle->at(sfLoanServiceFee);
 
     // If making an overpayment, count it as a full payment because it will do
     // about the same amount of work, if not more.
@@ -107,8 +110,9 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
 
     // Charge one base fee per paymentsPerFeeIncrement payments, rounding up.
     Number::setround(Number::upward);
-    auto const feeIncrements =
-        std::max(std::int64_t(1), static_cast<std::int64_t>(numPaymentEstimate / loanPaymentsPerFeeIncrement));
+    auto const feeIncrements = std::max(
+        std::int64_t(1),
+        static_cast<std::int64_t>(numPaymentEstimate / loanPaymentsPerFeeIncrement));
 
     return feeIncrements * normalCost;
 }
@@ -262,8 +266,10 @@ LoanPay::doApply()
         // the broker's solvency.
         NumberRoundModeGuard mg(Number::upward);
         return coverAvailableProxy >=
-            roundToAsset(asset, tenthBipsOfValue(debtTotalProxy.value(), coverRateMinimum), loanScale) &&
-            !isDeepFrozen(view, brokerOwner, asset) && !requireAuth(view, asset, brokerOwner, AuthType::StrongAuth);
+            roundToAsset(
+                   asset, tenthBipsOfValue(debtTotalProxy.value(), coverRateMinimum), loanScale) &&
+            !isDeepFrozen(view, brokerOwner, asset) &&
+            !requireAuth(view, asset, brokerOwner, AuthType::StrongAuth);
     }();
 
     auto const brokerPayee = sendBrokerFeeToOwner ? brokerOwner : brokerPseudoAccount;
@@ -311,7 +317,8 @@ LoanPay::doApply()
 
     if (!paymentParts)
     {
-        XRPL_ASSERT_PARTS(paymentParts.error(), "xrpl::LoanPay::doApply", "payment error is an error");
+        XRPL_ASSERT_PARTS(
+            paymentParts.error(), "xrpl::LoanPay::doApply", "payment error is an error");
         return paymentParts.error();
     }
 
@@ -336,7 +343,8 @@ LoanPay::doApply()
         "valid total paid");
     XRPL_ASSERT_PARTS(paymentParts->feePaid >= 0, "xrpl::LoanPay::doApply", "valid fee paid");
 
-    if (paymentParts->principalPaid < 0 || paymentParts->interestPaid < 0 || paymentParts->feePaid < 0)
+    if (paymentParts->principalPaid < 0 || paymentParts->interestPaid < 0 ||
+        paymentParts->feePaid < 0)
     {
         // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Loan payment computation returned invalid values.";
@@ -345,7 +353,8 @@ LoanPay::doApply()
     }
 
     JLOG(j_.debug()) << "Loan Pay: principal paid: " << paymentParts->principalPaid
-                     << ", interest paid: " << paymentParts->interestPaid << ", fee paid: " << paymentParts->feePaid
+                     << ", interest paid: " << paymentParts->interestPaid
+                     << ", fee paid: " << paymentParts->feePaid
                      << ", value change: " << paymentParts->valueChange;
 
     //------------------------------------------------------
@@ -360,7 +369,8 @@ LoanPay::doApply()
     auto const vaultScale = getAssetsTotalScale(vaultSle);
 
     auto const totalPaidToVaultRaw = paymentParts->principalPaid + paymentParts->interestPaid;
-    auto const totalPaidToVaultRounded = roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::downward);
+    auto const totalPaidToVaultRounded =
+        roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::downward);
     XRPL_ASSERT_PARTS(
         !asset.integral() || totalPaidToVaultRaw == totalPaidToVaultRounded,
         "xrpl::LoanPay::doApply",
@@ -400,7 +410,12 @@ LoanPay::doApply()
     {
         Number const assetsAvailableBefore = *assetsAvailableProxy;
         Number const pseudoAccountBalanceBefore = accountHolds(
-            view, vaultPseudoAccount, asset, FreezeHandling::fhIGNORE_FREEZE, AuthHandling::ahIGNORE_AUTH, j_);
+            view,
+            vaultPseudoAccount,
+            asset,
+            FreezeHandling::fhIGNORE_FREEZE,
+            AuthHandling::ahIGNORE_AUTH,
+            j_);
 
         XRPL_ASSERT_PARTS(
             assetsAvailableBefore == pseudoAccountBalanceBefore,
@@ -429,11 +444,14 @@ LoanPay::doApply()
 
     JLOG(j_.debug()) << "total paid to vault raw: " << totalPaidToVaultRaw
                      << ", total paid to vault rounded: " << totalPaidToVaultRounded
-                     << ", total paid to broker: " << totalPaidToBroker << ", amount from transaction: " << amount;
+                     << ", total paid to broker: " << totalPaidToBroker
+                     << ", amount from transaction: " << amount;
 
     // Move funds
     XRPL_ASSERT_PARTS(
-        totalPaidToVaultRounded + totalPaidToBroker <= amount, "xrpl::LoanPay::doApply", "amount is sufficient");
+        totalPaidToVaultRounded + totalPaidToBroker <= amount,
+        "xrpl::LoanPay::doApply",
+        "amount is sufficient");
 
     if (!sendBrokerFeeToOwner)
     {
@@ -455,15 +473,34 @@ LoanPay::doApply()
         "assets available must not be greater than assets outstanding");
 
 #if !NDEBUG
-    auto const accountBalanceBefore =
-        accountHolds(view, account_, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_, SpendableHandling::shFULL_BALANCE);
+    auto const accountBalanceBefore = accountHolds(
+        view,
+        account_,
+        asset,
+        fhIGNORE_FREEZE,
+        ahIGNORE_AUTH,
+        j_,
+        SpendableHandling::shFULL_BALANCE);
     auto const vaultBalanceBefore = account_ == vaultPseudoAccount
         ? STAmount{asset, 0}
         : accountHolds(
-              view, vaultPseudoAccount, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_, SpendableHandling::shFULL_BALANCE);
+              view,
+              vaultPseudoAccount,
+              asset,
+              fhIGNORE_FREEZE,
+              ahIGNORE_AUTH,
+              j_,
+              SpendableHandling::shFULL_BALANCE);
     auto const brokerBalanceBefore = account_ == brokerPayee
         ? STAmount{asset, 0}
-        : accountHolds(view, brokerPayee, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_, SpendableHandling::shFULL_BALANCE);
+        : accountHolds(
+              view,
+              brokerPayee,
+              asset,
+              fhIGNORE_FREEZE,
+              ahIGNORE_AUTH,
+              j_,
+              SpendableHandling::shFULL_BALANCE);
 #endif
 
     if (totalPaidToVaultRounded != beast::zero)
@@ -477,8 +514,8 @@ LoanPay::doApply()
         if (brokerPayee == account_)
         {
             // The broker may have deleted their holding. Recreate it if needed
-            if (auto const ter =
-                    addEmptyHolding(view, brokerPayee, brokerPayeeSle->at(sfBalance).value().xrp(), asset, j_);
+            if (auto const ter = addEmptyHolding(
+                    view, brokerPayee, brokerPayeeSle->at(sfBalance).value().xrp(), asset, j_);
                 ter && ter != tecDUPLICATE)
                 // ignore tecDUPLICATE. That means the holding already exists,
                 // and is fine here
@@ -499,29 +536,54 @@ LoanPay::doApply()
 
 #if !NDEBUG
     Number const assetsAvailableAfter = *assetsAvailableProxy;
-    Number const pseudoAccountBalanceAfter =
-        accountHolds(view, vaultPseudoAccount, asset, FreezeHandling::fhIGNORE_FREEZE, AuthHandling::ahIGNORE_AUTH, j_);
+    Number const pseudoAccountBalanceAfter = accountHolds(
+        view,
+        vaultPseudoAccount,
+        asset,
+        FreezeHandling::fhIGNORE_FREEZE,
+        AuthHandling::ahIGNORE_AUTH,
+        j_);
     XRPL_ASSERT_PARTS(
         assetsAvailableAfter == pseudoAccountBalanceAfter,
         "xrpl::LoanPay::doApply",
         "vault pseudo balance agrees after");
 
-    auto const accountBalanceAfter =
-        accountHolds(view, account_, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_, SpendableHandling::shFULL_BALANCE);
+    auto const accountBalanceAfter = accountHolds(
+        view,
+        account_,
+        asset,
+        fhIGNORE_FREEZE,
+        ahIGNORE_AUTH,
+        j_,
+        SpendableHandling::shFULL_BALANCE);
     auto const vaultBalanceAfter = account_ == vaultPseudoAccount
         ? STAmount{asset, 0}
         : accountHolds(
-              view, vaultPseudoAccount, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_, SpendableHandling::shFULL_BALANCE);
+              view,
+              vaultPseudoAccount,
+              asset,
+              fhIGNORE_FREEZE,
+              ahIGNORE_AUTH,
+              j_,
+              SpendableHandling::shFULL_BALANCE);
     auto const brokerBalanceAfter = account_ == brokerPayee
         ? STAmount{asset, 0}
-        : accountHolds(view, brokerPayee, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_, SpendableHandling::shFULL_BALANCE);
+        : accountHolds(
+              view,
+              brokerPayee,
+              asset,
+              fhIGNORE_FREEZE,
+              ahIGNORE_AUTH,
+              j_,
+              SpendableHandling::shFULL_BALANCE);
 
     XRPL_ASSERT_PARTS(
         accountBalanceBefore + vaultBalanceBefore + brokerBalanceBefore ==
             accountBalanceAfter + vaultBalanceAfter + brokerBalanceAfter,
         "xrpl::LoanPay::doApply",
         "funds are conserved (with rounding)");
-    XRPL_ASSERT_PARTS(accountBalanceAfter >= beast::zero, "xrpl::LoanPay::doApply", "positive account balance");
+    XRPL_ASSERT_PARTS(
+        accountBalanceAfter >= beast::zero, "xrpl::LoanPay::doApply", "positive account balance");
     XRPL_ASSERT_PARTS(
         accountBalanceAfter < accountBalanceBefore || account_ == asset.getIssuer(),
         "xrpl::LoanPay::doApply",
@@ -531,9 +593,13 @@ LoanPay::doApply()
         "xrpl::LoanPay::doApply",
         "positive vault and broker balances");
     XRPL_ASSERT_PARTS(
-        vaultBalanceAfter >= vaultBalanceBefore, "xrpl::LoanPay::doApply", "vault balance did not decrease");
+        vaultBalanceAfter >= vaultBalanceBefore,
+        "xrpl::LoanPay::doApply",
+        "vault balance did not decrease");
     XRPL_ASSERT_PARTS(
-        brokerBalanceAfter >= brokerBalanceBefore, "xrpl::LoanPay::doApply", "broker balance did not decrease");
+        brokerBalanceAfter >= brokerBalanceBefore,
+        "xrpl::LoanPay::doApply",
+        "broker balance did not decrease");
     XRPL_ASSERT_PARTS(
         vaultBalanceAfter > vaultBalanceBefore || brokerBalanceAfter > brokerBalanceBefore,
         "xrpl::LoanPay::doApply",

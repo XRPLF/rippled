@@ -71,7 +71,10 @@ HashRouter::shouldProcess(
 }
 
 bool
-HashRouter::shouldProcessForPeer(uint256 const& key, PeerShortID peer, std::chrono::seconds interval)
+HashRouter::shouldProcessForPeer(
+    uint256 const& key,
+    PeerShortID peer,
+    std::chrono::seconds interval)
 {
     std::lock_guard lock(mutex_);
 

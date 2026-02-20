@@ -32,7 +32,8 @@ constexpr ProtocolVersion const supportedProtocolList[]
 // FIXME: With C++20 we can use std::is_sorted with an appropriate comparator
 static_assert(
     []() constexpr -> bool {
-        auto const len = std::distance(std::begin(supportedProtocolList), std::end(supportedProtocolList));
+        auto const len =
+            std::distance(std::begin(supportedProtocolList), std::end(supportedProtocolList));
 
         // There should be at least one protocol we're willing to speak.
         if (len == 0)
@@ -116,7 +117,9 @@ negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions)
     // output of std::set_intersection is sorted, that item is always going
     // to be the last one. So we get a little clever and avoid the need for
     // a container:
-    std::function<void(ProtocolVersion const&)> pickVersion = [&result](ProtocolVersion const& v) { result = v; };
+    std::function<void(ProtocolVersion const&)> pickVersion = [&result](ProtocolVersion const& v) {
+        result = v;
+    };
 
     std::set_intersection(
         std::begin(versions),

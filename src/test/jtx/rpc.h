@@ -21,7 +21,8 @@ private:
 
 public:
     /// If there's an error code, we expect an error message
-    explicit rpc(error_code_i code, std::optional<std::string> m = {}) : code_(code), errorMessage_(m)
+    explicit rpc(error_code_i code, std::optional<std::string> m = {})
+        : code_(code), errorMessage_(m)
     {
     }
 

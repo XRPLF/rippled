@@ -6,7 +6,8 @@ namespace PeerFinder {
 class SourceStringsImp : public SourceStrings
 {
 public:
-    SourceStringsImp(std::string const& name, Strings const& strings) : m_name(name), m_strings(strings)
+    SourceStringsImp(std::string const& name, Strings const& strings)
+        : m_name(name), m_strings(strings)
     {
     }
 

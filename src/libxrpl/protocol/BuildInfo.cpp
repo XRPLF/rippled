@@ -107,7 +107,8 @@ encodeSoftwareVersion(char const* const versionStr)
                     if (prefix != identifier.substr(0, prefix.length()))
                         return 0;
 
-                    if (!beast::lexicalCastChecked(ret, std::string(identifier.substr(prefix.length()))))
+                    if (!beast::lexicalCastChecked(
+                            ret, std::string(identifier.substr(prefix.length()))))
                         return 0;
 
                     if (std::clamp(ret, lok, hik) != ret)

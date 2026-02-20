@@ -15,7 +15,8 @@ namespace xrpl {
 
 // A few handy aliases
 
-using days = std::chrono::duration<int, std::ratio_multiply<std::chrono::hours::period, std::ratio<24>>>;
+using days =
+    std::chrono::duration<int, std::ratio_multiply<std::chrono::hours::period, std::ratio<24>>>;
 
 using weeks = std::chrono::duration<int, std::ratio_multiply<days::period, std::ratio<7>>>;
 

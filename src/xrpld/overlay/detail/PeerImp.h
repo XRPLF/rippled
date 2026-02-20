@@ -369,8 +369,9 @@ public:
     /** Send a set of PeerFinder endpoints as a protocol message. */
     template <
         class FwdIt,
-        class = typename std::enable_if_t<
-            std::is_same<typename std::iterator_traits<FwdIt>::value_type, PeerFinder::Endpoint>::value>>
+        class = typename std::enable_if_t<std::is_same<
+            typename std::iterator_traits<FwdIt>::value_type,
+            PeerFinder::Endpoint>::value>>
     void
     sendEndpoints(FwdIt first, FwdIt last);
 
@@ -664,7 +665,10 @@ private:
        transaction is part of a batch, and should not be charged an extra fee.
      */
     void
-    handleTransaction(std::shared_ptr<protocol::TMTransaction> const& m, bool eraseTxQueue, bool batch);
+    handleTransaction(
+        std::shared_ptr<protocol::TMTransaction> const& m,
+        bool eraseTxQueue,
+        bool batch);
 
     /** Handle protocol message with hashes of transactions that have not
        been relayed by an upstream node down to its peers - request
@@ -775,10 +779,17 @@ private:
     doTransactions(std::shared_ptr<protocol::TMGetObjectByHash> const& packet);
 
     void
-    checkTransaction(HashRouterFlags flags, bool checkSignature, std::shared_ptr<STTx const> const& stx, bool batch);
+    checkTransaction(
+        HashRouterFlags flags,
+        bool checkSignature,
+        std::shared_ptr<STTx const> const& stx,
+        bool batch);
 
     void
-    checkPropose(bool isTrusted, std::shared_ptr<protocol::TMProposeSet> const& packet, RCLCxPeerPos peerPos);
+    checkPropose(
+        bool isTrusted,
+        std::shared_ptr<protocol::TMProposeSet> const& packet,
+        RCLCxPeerPos peerPos);
 
     void
     checkValidation(
@@ -849,19 +860,25 @@ PeerImp::PeerImp(
     , response_(std::move(response))
     , headers_(response_)
     , compressionEnabled_(
-          peerFeatureEnabled(headers_, FEATURE_COMPR, "lz4", app_.config().COMPRESSION) ? Compressed::On
-                                                                                        : Compressed::Off)
-    , txReduceRelayEnabled_(peerFeatureEnabled(headers_, FEATURE_TXRR, app_.config().TX_REDUCE_RELAY_ENABLE))
-    , ledgerReplayEnabled_(peerFeatureEnabled(headers_, FEATURE_LEDGER_REPLAY, app_.config().LEDGER_REPLAY))
+          peerFeatureEnabled(headers_, FEATURE_COMPR, "lz4", app_.config().COMPRESSION)
+              ? Compressed::On
+              : Compressed::Off)
+    , txReduceRelayEnabled_(
+          peerFeatureEnabled(headers_, FEATURE_TXRR, app_.config().TX_REDUCE_RELAY_ENABLE))
+    , ledgerReplayEnabled_(
+          peerFeatureEnabled(headers_, FEATURE_LEDGER_REPLAY, app_.config().LEDGER_REPLAY))
     , ledgerReplayMsgHandler_(app, app.getLedgerReplayer())
 {
-    read_buffer_.commit(boost::asio::buffer_copy(read_buffer_.prepare(boost::asio::buffer_size(buffers)), buffers));
+    read_buffer_.commit(
+        boost::asio::buffer_copy(read_buffer_.prepare(boost::asio::buffer_size(buffers)), buffers));
     JLOG(journal_.info()) << "compression enabled " << (compressionEnabled_ == Compressed::On)
                           << " vp reduce-relay base squelch enabled "
                           << peerFeatureEnabled(
-                                 headers_, FEATURE_VPRR, app_.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
-                          << " tx reduce-relay enabled " << txReduceRelayEnabled_ << " on " << remote_address_ << " "
-                          << id_;
+                                 headers_,
+                                 FEATURE_VPRR,
+                                 app_.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
+                          << " tx reduce-relay enabled " << txReduceRelayEnabled_ << " on "
+                          << remote_address_ << " " << id_;
 }
 
 template <class FwdIt, class>

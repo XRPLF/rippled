@@ -61,8 +61,9 @@ PeerSetImpl::addPeers(
         pairs.emplace_back(score, std::move(peer));
     });
 
-    std::sort(
-        pairs.begin(), pairs.end(), [](ScoredPeer const& lhs, ScoredPeer const& rhs) { return lhs.first > rhs.first; });
+    std::sort(pairs.begin(), pairs.end(), [](ScoredPeer const& lhs, ScoredPeer const& rhs) {
+        return lhs.first > rhs.first;
+    });
 
     std::size_t accepted = 0;
     for (auto const& pair : pairs)
@@ -97,13 +98,13 @@ PeerSetImpl::sendRequest(
     {
         if (app_.getHashRouter().shouldProcessForPeer(messageHash, peer->id(), interval))
         {
-            JLOG(journal_.trace()) << "Sending " << protocolMessageName(type) << " message to [" << peer->id()
-                                   << "]: " << messageHash;
+            JLOG(journal_.trace()) << "Sending " << protocolMessageName(type) << " message to ["
+                                   << peer->id() << "]: " << messageHash;
             peer->send(packet);
         }
         else
-            JLOG(journal_.debug()) << "Suppressing sending duplicate " << protocolMessageName(type) << " message to ["
-                                   << peer->id() << "]: " << messageHash;
+            JLOG(journal_.debug()) << "Suppressing sending duplicate " << protocolMessageName(type)
+                                   << " message to [" << peer->id() << "]: " << messageHash;
         return;
     }
 
@@ -113,13 +114,14 @@ PeerSetImpl::sendRequest(
         {
             if (app_.getHashRouter().shouldProcessForPeer(messageHash, p->id(), interval))
             {
-                JLOG(journal_.trace()) << "Sending " << protocolMessageName(type) << " message to [" << p->id()
-                                       << "]: " << messageHash;
+                JLOG(journal_.trace()) << "Sending " << protocolMessageName(type) << " message to ["
+                                       << p->id() << "]: " << messageHash;
                 p->send(packet);
             }
             else
-                JLOG(journal_.debug()) << "Suppressing sending duplicate " << protocolMessageName(type)
-                                       << " message to [" << p->id() << "]: " << messageHash;
+                JLOG(journal_.debug())
+                    << "Suppressing sending duplicate " << protocolMessageName(type)
+                    << " message to [" << p->id() << "]: " << messageHash;
         }
     }
 }

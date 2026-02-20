@@ -83,7 +83,8 @@ inline STBitString<Bits>::STBitString(SField const& n, value_type const& v) : ST
 }
 
 template <int Bits>
-inline STBitString<Bits>::STBitString(SerialIter& sit, SField const& name) : STBitString(name, sit.getBitString<Bits>())
+inline STBitString<Bits>::STBitString(SerialIter& sit, SField const& name)
+    : STBitString(name, sit.getBitString<Bits>())
 {
 }
 

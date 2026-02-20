@@ -48,10 +48,15 @@ public:
 
     /** @callgraph */
     std::shared_ptr<Ledger const>
-    acquire(uint256 const& hash, std::uint32_t seq, InboundLedger::Reason reason, char const* context) override
+    acquire(
+        uint256 const& hash,
+        std::uint32_t seq,
+        InboundLedger::Reason reason,
+        char const* context) override
     {
         auto doAcquire = [&, seq, reason]() -> std::shared_ptr<Ledger const> {
-            XRPL_ASSERT(hash.isNonZero(), "xrpl::InboundLedgersImp::acquire::doAcquire : nonzero hash");
+            XRPL_ASSERT(
+                hash.isNonZero(), "xrpl::InboundLedgersImp::acquire::doAcquire : nonzero hash");
 
             bool const needNetworkLedger = app_.getOPs().isNeedNetworkLedger();
             bool const shouldAcquire = [&]() {
@@ -67,8 +72,9 @@ public:
             std::stringstream ss;
             ss << "InboundLedger::acquire: "
                << "Request: " << to_string(hash) << ", " << seq
-               << " NeedNetworkLedger: " << (needNetworkLedger ? "yes" : "no") << " Reason: " << to_string(reason)
-               << " Context: " << context << " Should acquire: " << (shouldAcquire ? "true." : "false.");
+               << " NeedNetworkLedger: " << (needNetworkLedger ? "yes" : "no")
+               << " Reason: " << to_string(reason) << " Context: " << context
+               << " Should acquire: " << (shouldAcquire ? "true." : "false.");
 
             /*  Acquiring ledgers is somewhat expensive. It requires lots of
              *  computation and network communication. Avoid it when it's not
@@ -105,7 +111,8 @@ public:
                 // ledger available.
                 LedgerIndex const validSeq = app_.getLedgerMaster().getValidLedgerIndex();
                 constexpr std::size_t lagLeeway = 2;
-                bool const nearFuture = (validSeq > 0) && (seq > validSeq) && (seq < validSeq + lagLeeway);
+                bool const nearFuture =
+                    (validSeq > 0) && (seq > validSeq) && (seq < validSeq + lagLeeway);
                 // If everything else is ok, don't try to acquire the ledger
                 // if the request is related to consensus. (Note that
                 // consensus calls usually pass a seq of 0, so nearFuture
@@ -115,7 +122,8 @@ public:
                    << ". full: " << (isFull ? "true" : "false")
                    << ". falling behind: " << (fallingBehind ? "true" : "false")
                    << ". needed for preferred ledger analysis: " << (preferred ? "true" : "false")
-                   << ". ledger sequence " << seq << ". Valid sequence: " << validSeq << ". Lag leeway: " << lagLeeway
+                   << ". ledger sequence " << seq << ". Valid sequence: " << validSeq
+                   << ". Lag leeway: " << lagLeeway
                    << ". request for near future ledger: " << (nearFuture ? "true" : "false")
                    << ". Consensus: " << (consensus ? "true" : "false");
 
@@ -210,7 +218,8 @@ public:
             }
             catch (std::exception const& e)
             {
-                JLOG(j_.warn()) << "Exception thrown for acquiring new inbound ledger " << hash << ": " << e.what();
+                JLOG(j_.warn()) << "Exception thrown for acquiring new inbound ledger " << hash
+                                << ": " << e.what();
             }
             catch (...)
             {
@@ -256,17 +265,21 @@ public:
     /** We received a TMLedgerData from a peer.
      */
     bool
-    gotLedgerData(LedgerHash const& hash, std::shared_ptr<Peer> peer, std::shared_ptr<protocol::TMLedgerData> packet)
-        override
+    gotLedgerData(
+        LedgerHash const& hash,
+        std::shared_ptr<Peer> peer,
+        std::shared_ptr<protocol::TMLedgerData> packet) override
     {
         if (auto ledger = find(hash))
         {
-            JLOG(j_.trace()) << "Got data (" << packet->nodes().size() << ") for acquiring ledger: " << hash;
+            JLOG(j_.trace()) << "Got data (" << packet->nodes().size()
+                             << ") for acquiring ledger: " << hash;
 
             // Stash the data for later processing and see if we need to
             // dispatch
             if (ledger->gotData(std::weak_ptr<Peer>(peer), packet))
-                app_.getJobQueue().addJob(jtLEDGER_DATA, "ProcessLData", [ledger]() { ledger->runData(); });
+                app_.getJobQueue().addJob(
+                    jtLEDGER_DATA, "ProcessLData", [ledger]() { ledger->runData(); });
 
             return true;
         }
@@ -277,7 +290,8 @@ public:
         // useful.
         if (packet->type() == protocol::liAS_NODE)
         {
-            app_.getJobQueue().addJob(jtLEDGER_DATA, "GotStaleData", [this, packet]() { gotStaleData(packet); });
+            app_.getJobQueue().addJob(
+                jtLEDGER_DATA, "GotStaleData", [this, packet]() { gotStaleData(packet); });
         }
 
         return false;
@@ -464,9 +478,11 @@ public:
             beast::expire(mRecentFailures, kReacquireInterval);
         }
 
-        JLOG(j_.debug()) << "Swept " << stuffToSweep.size() << " out of " << total << " inbound ledgers. Duration: "
-                         << std::chrono::duration_cast<std::chrono::milliseconds>(m_clock.now() - start).count()
-                         << "ms";
+        JLOG(j_.debug())
+            << "Swept " << stuffToSweep.size() << " out of " << total
+            << " inbound ledgers. Duration: "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(m_clock.now() - start).count()
+            << "ms";
     }
 
     void

@@ -85,7 +85,9 @@ public:
     bool
     contains(PeerID id)
     {
-        return std::find_if(peers_.begin(), peers_.end(), [id](Peer const* p) { return p->id == id; }) != peers_.end();
+        return std::find_if(peers_.begin(), peers_.end(), [id](Peer const* p) {
+                   return p->id == id;
+               }) != peers_.end();
     }
 
     std::size_t
@@ -214,7 +216,11 @@ public:
     {
         PeerGroup res;
         std::set_union(
-            a.peers_.begin(), a.peers_.end(), b.peers_.begin(), b.peers_.end(), std::back_inserter(res.peers_));
+            a.peers_.begin(),
+            a.peers_.end(),
+            b.peers_.begin(),
+            b.peers_.end(),
+            std::back_inserter(res.peers_));
         return res;
     }
 
@@ -225,7 +231,11 @@ public:
         PeerGroup res;
 
         std::set_difference(
-            a.peers_.begin(), a.peers_.end(), b.peers_.begin(), b.peers_.end(), std::back_inserter(res.peers_));
+            a.peers_.begin(),
+            a.peers_.end(),
+            b.peers_.begin(),
+            b.peers_.end(),
+            std::back_inserter(res.peers_));
 
         return res;
     }

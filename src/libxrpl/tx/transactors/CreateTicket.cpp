@@ -17,7 +17,8 @@ CreateTicket::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 CreateTicket::preflight(PreflightContext const& ctx)
 {
-    if (std::uint32_t const count = ctx.tx[sfTicketCount]; count < minValidCount || count > maxValidCount)
+    if (std::uint32_t const count = ctx.tx[sfTicketCount];
+        count < minValidCount || count > maxValidCount)
         return temINVALID_COUNT;
 
     return tesSUCCESS;
@@ -61,7 +62,8 @@ CreateTicket::doApply()
     // reserve to pay fees.
     std::uint32_t const ticketCount = ctx_.tx[sfTicketCount];
     {
-        XRPAmount const reserve = view().fees().accountReserve(sleAccountRoot->getFieldU32(sfOwnerCount) + ticketCount);
+        XRPAmount const reserve =
+            view().fees().accountReserve(sleAccountRoot->getFieldU32(sfOwnerCount) + ticketCount);
 
         if (mPriorBalance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -77,7 +79,8 @@ CreateTicket::doApply()
 
     // Sanity check that the transaction machinery really did already
     // increment the account root Sequence.
-    if (std::uint32_t const txSeq = ctx_.tx[sfSequence]; txSeq != 0 && txSeq != (firstTicketSeq - 1))
+    if (std::uint32_t const txSeq = ctx_.tx[sfSequence];
+        txSeq != 0 && txSeq != (firstTicketSeq - 1))
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     for (std::uint32_t i = 0; i < ticketCount; ++i)
@@ -90,9 +93,11 @@ CreateTicket::doApply()
         sleTicket->setFieldU32(sfTicketSequence, curTicketSeq);
         view().insert(sleTicket);
 
-        auto const page = view().dirInsert(keylet::ownerDir(account_), ticketKeylet, describeOwnerDir(account_));
+        auto const page =
+            view().dirInsert(keylet::ownerDir(account_), ticketKeylet, describeOwnerDir(account_));
 
-        JLOG(j_.trace()) << "Creating ticket " << to_string(ticketKeylet.key) << ": " << (page ? "success" : "failure");
+        JLOG(j_.trace()) << "Creating ticket " << to_string(ticketKeylet.key) << ": "
+                         << (page ? "success" : "failure");
 
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE

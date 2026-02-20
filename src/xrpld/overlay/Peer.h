@@ -13,7 +13,12 @@ namespace Resource {
 class Charge;
 }
 
-enum class ProtocolFeature { ValidatorListPropagation, ValidatorList2Propagation, LedgerReplay, LedgerDataCookies };
+enum class ProtocolFeature {
+    ValidatorListPropagation,
+    ValidatorList2Propagation,
+    LedgerReplay,
+    LedgerDataCookies
+};
 
 /** Represents a peer connection in the overlay. */
 class Peer

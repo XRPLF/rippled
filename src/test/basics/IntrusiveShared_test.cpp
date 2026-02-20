@@ -494,8 +494,12 @@ public:
             int s = destructionState.load(std::memory_order_relaxed);
             return {(s & 1) != 0, (s & 2) != 0};
         };
-        auto setDestructorRan = [&]() -> void { destructionState.fetch_or(1, std::memory_order_acq_rel); };
-        auto setPartialDeleteRan = [&]() -> void { destructionState.fetch_or(2, std::memory_order_acq_rel); };
+        auto setDestructorRan = [&]() -> void {
+            destructionState.fetch_or(1, std::memory_order_acq_rel);
+        };
+        auto setPartialDeleteRan = [&]() -> void {
+            destructionState.fetch_or(2, std::memory_order_acq_rel);
+        };
         auto tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
             using enum TrackedState;
             auto [destructorRan, partialDeleteRan] = getDestructorState();
@@ -623,8 +627,12 @@ public:
             int s = destructionState.load(std::memory_order_relaxed);
             return {(s & 1) != 0, (s & 2) != 0};
         };
-        auto setDestructorRan = [&]() -> void { destructionState.fetch_or(1, std::memory_order_acq_rel); };
-        auto setPartialDeleteRan = [&]() -> void { destructionState.fetch_or(2, std::memory_order_acq_rel); };
+        auto setDestructorRan = [&]() -> void {
+            destructionState.fetch_or(1, std::memory_order_acq_rel);
+        };
+        auto setPartialDeleteRan = [&]() -> void {
+            destructionState.fetch_or(2, std::memory_order_acq_rel);
+        };
         auto tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
             using enum TrackedState;
             auto [destructorRan, partialDeleteRan] = getDestructorState();
@@ -639,8 +647,9 @@ public:
                 setDestructorRan();
             }
         };
-        auto createVecOfPointers = [&](auto const& toClone,
-                                       std::default_random_engine& eng) -> std::vector<SharedWeakUnion<TIBase>> {
+        auto createVecOfPointers =
+            [&](auto const& toClone,
+                std::default_random_engine& eng) -> std::vector<SharedWeakUnion<TIBase>> {
             std::vector<SharedWeakUnion<TIBase>> result;
             std::uniform_int_distribution<> toCreateDist(4, 64);
             auto numToCreate = toCreateDist(eng);
@@ -758,8 +767,12 @@ public:
             int s = destructionState.load(std::memory_order_relaxed);
             return {(s & 1) != 0, (s & 2) != 0};
         };
-        auto setDestructorRan = [&]() -> void { destructionState.fetch_or(1, std::memory_order_acq_rel); };
-        auto setPartialDeleteRan = [&]() -> void { destructionState.fetch_or(2, std::memory_order_acq_rel); };
+        auto setDestructorRan = [&]() -> void {
+            destructionState.fetch_or(1, std::memory_order_acq_rel);
+        };
+        auto setPartialDeleteRan = [&]() -> void {
+            destructionState.fetch_or(2, std::memory_order_acq_rel);
+        };
         auto tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
             using enum TrackedState;
             auto [destructorRan, partialDeleteRan] = getDestructorState();
