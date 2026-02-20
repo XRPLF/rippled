@@ -820,10 +820,27 @@ MPTTester::getConfidentialSendProof(
 
     auto const balanceLinkageProof = getBalanceLinkageProof(sender, contextHash, *senderPubKey, balanceParams);
 
+    std::uint64_t const remainingBalance = balanceParams.amt - amount;
+
+    // Compute the blinding factor for the remaining balance: rho_rem = rho_balance - rho_amount
+    unsigned char rho_rem[32];
+    unsigned char neg_rho_m[32];
+
+    secp256k1_mpt_scalar_negate(neg_rho_m, amountParams.blindingFactor.data());
+    secp256k1_mpt_scalar_add(rho_rem, balanceParams.blindingFactor.data(), neg_rho_m);
+
+    // Generate bulletproof for the amount and remaining balance
+    Buffer const bulletproof =
+        getBulletproof({amount, remainingBalance}, {amountParams.blindingFactor, Buffer(rho_rem, 32)}, contextHash);
+
+    OPENSSL_cleanse(neg_rho_m, 32);
+    OPENSSL_cleanse(rho_rem, 32);
+
     auto const sizeAmountLinkage = amountLinkageProof.size();
     auto const sizeBalanceLinkage = balanceLinkageProof.size();
+    auto const sizeBulletproof = bulletproof.size();
 
-    size_t const proofSize = sizeEquality + sizeAmountLinkage + sizeBalanceLinkage;
+    size_t const proofSize = sizeEquality + sizeAmountLinkage + sizeBalanceLinkage + sizeBulletproof;
     Buffer proof(proofSize);
 
     auto ptr = proof.data();
@@ -834,6 +851,9 @@ MPTTester::getConfidentialSendProof(
     ptr += sizeAmountLinkage;
 
     std::memcpy(ptr, balanceLinkageProof.data(), sizeBalanceLinkage);
+    ptr += sizeBalanceLinkage;
+
+    std::memcpy(ptr, bulletproof.data(), sizeBulletproof);
 
     return proof;
 }
@@ -1298,7 +1318,8 @@ MPTTester::send(MPTConfidentialSend const& arg)
             jv[sfZKProof.jsonName] = strHex(*proof);
         else
         {
-            size_t const dummySize = secp256k1_mpt_prove_same_plaintext_multi_size(nRecipients);
+            size_t const sizeEquality = secp256k1_mpt_prove_same_plaintext_multi_size(nRecipients);
+            size_t const dummySize = sizeEquality + 2 * ecPedersenProofLength + ecDoubleBulletproofLength;
 
             jv[sfZKProof.jsonName] = strHex(Buffer(dummySize));
         }
