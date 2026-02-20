@@ -694,6 +694,7 @@ public:
  * sfIssuerEncryptedBalance must also exist (and vice versa).
  * - COA <= OutstandingAmount:
  * Confidential outstanding balance cannot exceed total outstanding.
+ * - Verifies sfConfidentialBalanceVersion is changed whenever sfConfidentialBalanceSpending is modified on an MPToken.
  */
 class ValidConfidentialMPToken
 {
