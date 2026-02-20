@@ -17,7 +17,8 @@ NFTokenCancelOffer::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 NFTokenCancelOffer::preflight(PreflightContext const& ctx)
 {
-    if (auto const& ids = ctx.tx[sfNFTokenOffers]; ids.empty() || (ids.size() > maxTokenOfferCancelCount))
+    if (auto const& ids = ctx.tx[sfNFTokenOffers];
+        ids.empty() || (ids.size() > maxTokenOfferCancelCount))
         return temMALFORMED;
 
     // In order to prevent unnecessarily overlarge transactions, we
@@ -76,10 +77,12 @@ NFTokenCancelOffer::doApply()
 {
     for (auto const& id : ctx_.tx[sfNFTokenOffers])
     {
-        if (auto offer = view().peek(keylet::nftoffer(id)); offer && !nft::deleteTokenOffer(view(), offer))
+        if (auto offer = view().peek(keylet::nftoffer(id));
+            offer && !nft::deleteTokenOffer(view(), offer))
         {
             // LCOV_EXCL_START
-            JLOG(j_.fatal()) << "Unable to delete token offer " << id << " (ledger " << view().seq() << ")";
+            JLOG(j_.fatal()) << "Unable to delete token offer " << id << " (ledger " << view().seq()
+                             << ")";
             return tefBAD_LEDGER;
             // LCOV_EXCL_STOP
         }

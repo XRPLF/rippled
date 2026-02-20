@@ -8,7 +8,8 @@ namespace RPC {
 class VersionHandler
 {
 public:
-    explicit VersionHandler(JsonContext& c) : apiVersion_(c.apiVersion), betaEnabled_(c.app.config().BETA_RPC_API)
+    explicit VersionHandler(JsonContext& c)
+        : apiVersion_(c.apiVersion), betaEnabled_(c.app.config().BETA_RPC_API)
     {
     }
 

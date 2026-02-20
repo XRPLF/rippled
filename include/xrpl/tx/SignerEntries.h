@@ -33,7 +33,10 @@ public:
         std::uint16_t weight;
         std::optional<uint256> tag;
 
-        SignerEntry(AccountID const& inAccount, std::uint16_t inWeight, std::optional<uint256> inTag)
+        SignerEntry(
+            AccountID const& inAccount,
+            std::uint16_t inWeight,
+            std::optional<uint256> inTag)
             : account(inAccount), weight(inWeight), tag(inTag)
         {
         }

@@ -14,6 +14,9 @@ getFileContents(
     std::optional<std::size_t> maxSize = std::nullopt);
 
 void
-writeFileContents(boost::system::error_code& ec, boost::filesystem::path const& destPath, std::string const& contents);
+writeFileContents(
+    boost::system::error_code& ec,
+    boost::filesystem::path const& destPath,
+    std::string const& contents);
 
 }  // namespace xrpl

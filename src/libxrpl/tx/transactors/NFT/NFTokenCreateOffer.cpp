@@ -44,7 +44,8 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
     uint256 const nftokenID = ctx.tx[sfNFTokenID];
     std::uint32_t const txFlags = {ctx.tx.getFlags()};
 
-    if (!nft::findToken(ctx.view, ctx.tx[(txFlags & tfSellNFToken) ? sfAccount : sfOwner], nftokenID))
+    if (!nft::findToken(
+            ctx.view, ctx.tx[(txFlags & tfSellNFToken) ? sfAccount : sfOwner], nftokenID))
         return tecNO_ENTRY;
 
     // Use implementation shared with NFTokenMint

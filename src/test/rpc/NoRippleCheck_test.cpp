@@ -77,7 +77,8 @@ class NoRippleCheck_test : public beast::unit_test::suite
             params[jss::limit] = -1;
             auto const result = env.rpc("json", "noripple_check", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
-            BEAST_EXPECT(result[jss::error_message] == "Invalid field 'limit', not unsigned integer.");
+            BEAST_EXPECT(
+                result[jss::error_message] == "Invalid field 'limit', not unsigned integer.");
         }
 
         {  // invalid ledger (hash)
@@ -87,7 +88,8 @@ class NoRippleCheck_test : public beast::unit_test::suite
             params[jss::ledger_hash] = 1;
             auto const result = env.rpc("json", "noripple_check", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
-            BEAST_EXPECT(result[jss::error_message] == "Invalid field 'ledger_hash', not hex string.");
+            BEAST_EXPECT(
+                result[jss::error_message] == "Invalid field 'ledger_hash', not hex string.");
         }
 
         {  // account not found
@@ -134,7 +136,8 @@ class NoRippleCheck_test : public beast::unit_test::suite
             params[jss::ledger] = Json::objectValue;
             auto const result = env.rpc("json", "noripple_check", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
-            BEAST_EXPECT(result[jss::error_message] == "Invalid field 'ledger', not string or number.");
+            BEAST_EXPECT(
+                result[jss::error_message] == "Invalid field 'ledger', not string or number.");
         }
     }
 
@@ -214,7 +217,8 @@ class NoRippleCheck_test : public beast::unit_test::suite
             }
 
             BEAST_EXPECT(result[jss::transactions][txs.size() - 1][jss::Account] == alice.human());
-            BEAST_EXPECT(result[jss::transactions][txs.size() - 1][jss::TransactionType] == jss::TrustSet);
+            BEAST_EXPECT(
+                result[jss::transactions][txs.size() - 1][jss::TransactionType] == jss::TrustSet);
             BEAST_EXPECT(
                 result[jss::transactions][txs.size() - 1][jss::LimitAmount] ==
                 gw["USD"](100).value().getJson(JsonOptions::none));
@@ -263,14 +267,15 @@ class NoRippleCheckLimits_test : public beast::unit_test::suite
             using namespace xrpl::Resource;
             using namespace std::chrono;
             using namespace beast::IP;
-            auto c =
-                env.app().getResourceManager().newInboundEndpoint(Endpoint::from_string(test::getEnvLocalhostAddr()));
+            auto c = env.app().getResourceManager().newInboundEndpoint(
+                Endpoint::from_string(test::getEnvLocalhostAddr()));
 
             // if we go above the warning threshold, reset
             if (c.balance() > warningThreshold)
             {
                 using ct = beast::abstract_clock<steady_clock>;
-                c.entry().local_balance = DecayingSample<decayWindowSeconds, ct>{steady_clock::now()};
+                c.entry().local_balance =
+                    DecayingSample<decayWindowSeconds, ct>{steady_clock::now()};
             }
         };
 

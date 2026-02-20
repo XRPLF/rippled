@@ -11,7 +11,9 @@ AcceptedLedgerTx::AcceptedLedgerTx(
     std::shared_ptr<ReadView const> const& ledger,
     std::shared_ptr<STTx const> const& txn,
     std::shared_ptr<STObject const> const& met)
-    : mTxn(txn), mMeta(txn->getTransactionID(), ledger->seq(), *met), mAffected(mMeta.getAffectedAccounts())
+    : mTxn(txn)
+    , mMeta(txn->getTransactionID(), ledger->seq(), *met)
+    , mAffected(mMeta.getAffectedAccounts())
 {
     XRPL_ASSERT(!ledger->open(), "xrpl::AcceptedLedgerTx::AcceptedLedgerTx : valid ledger state");
 
@@ -42,8 +44,12 @@ AcceptedLedgerTx::AcceptedLedgerTx(
         // If the offer create is not self funded then add the owner balance
         if (account != amount.issue().account)
         {
-            auto const ownerFunds =
-                accountFunds(*ledger, account, amount, fhIGNORE_FREEZE, beast::Journal{beast::Journal::getNullSink()});
+            auto const ownerFunds = accountFunds(
+                *ledger,
+                account,
+                amount,
+                fhIGNORE_FREEZE,
+                beast::Journal{beast::Journal::getNullSink()});
             mJson[jss::transaction][jss::owner_funds] = ownerFunds.getText();
         }
     }

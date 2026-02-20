@@ -19,8 +19,9 @@ bool
 operator==(Config const& lhs, Config const& rhs)
 {
     return lhs.autoConnect == rhs.autoConnect && lhs.peerPrivate == rhs.peerPrivate &&
-        lhs.wantIncoming == rhs.wantIncoming && lhs.inPeers == rhs.inPeers && lhs.maxPeers == rhs.maxPeers &&
-        lhs.outPeers == rhs.outPeers && lhs.features == lhs.features && lhs.ipLimit == rhs.ipLimit &&
+        lhs.wantIncoming == rhs.wantIncoming && lhs.inPeers == rhs.inPeers &&
+        lhs.maxPeers == rhs.maxPeers && lhs.outPeers == rhs.outPeers &&
+        lhs.features == lhs.features && lhs.ipLimit == rhs.ipLimit &&
         lhs.listeningPort == rhs.listeningPort;
 }
 
@@ -62,7 +63,11 @@ Config::onWrite(beast::PropertyStream::Map& map)
 }
 
 Config
-Config::makeConfig(xrpl::Config const& cfg, std::uint16_t port, bool validationPublicKey, int ipLimit)
+Config::makeConfig(
+    xrpl::Config const& cfg,
+    std::uint16_t port,
+    bool validationPublicKey,
+    int ipLimit)
 {
     PeerFinder::Config config;
 

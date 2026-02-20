@@ -187,7 +187,8 @@ public:
             boost::asio::dispatch(
                 m_io_context,
                 boost::asio::bind_executor(
-                    m_strand, std::bind(&ResolverAsioImpl::do_stop, this, CompletionCounter(this))));
+                    m_strand,
+                    std::bind(&ResolverAsioImpl::do_stop, this, CompletionCounter(this))));
 
             JLOG(m_journal.debug()) << "Queued a stop request";
         }
@@ -216,7 +217,9 @@ public:
         boost::asio::dispatch(
             m_io_context,
             boost::asio::bind_executor(
-                m_strand, std::bind(&ResolverAsioImpl::do_resolve, this, names, handler, CompletionCounter(this))));
+                m_strand,
+                std::bind(
+                    &ResolverAsioImpl::do_resolve, this, names, handler, CompletionCounter(this))));
     }
 
     //-------------------------------------------------------------------------
@@ -264,7 +267,8 @@ public:
 
         boost::asio::post(
             m_io_context,
-            boost::asio::bind_executor(m_strand, std::bind(&ResolverAsioImpl::do_work, this, CompletionCounter(this))));
+            boost::asio::bind_executor(
+                m_strand, std::bind(&ResolverAsioImpl::do_work, this, CompletionCounter(this))));
     }
 
     HostAndPort
@@ -339,7 +343,8 @@ public:
             boost::asio::post(
                 m_io_context,
                 boost::asio::bind_executor(
-                    m_strand, std::bind(&ResolverAsioImpl::do_work, this, CompletionCounter(this))));
+                    m_strand,
+                    std::bind(&ResolverAsioImpl::do_work, this, CompletionCounter(this))));
 
             return;
         }
@@ -366,15 +371,16 @@ public:
         {
             m_work.emplace_back(names, handler);
 
-            JLOG(m_journal.debug()) << "Queued new job with " << names.size() << " tasks. " << m_work.size()
-                                    << " jobs outstanding.";
+            JLOG(m_journal.debug()) << "Queued new job with " << names.size() << " tasks. "
+                                    << m_work.size() << " jobs outstanding.";
 
             if (m_work.size() > 0)
             {
                 boost::asio::post(
                     m_io_context,
                     boost::asio::bind_executor(
-                        m_strand, std::bind(&ResolverAsioImpl::do_work, this, CompletionCounter(this))));
+                        m_strand,
+                        std::bind(&ResolverAsioImpl::do_work, this, CompletionCounter(this))));
             }
         }
     }

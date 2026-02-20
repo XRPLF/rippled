@@ -214,7 +214,8 @@ private:
             std::uint32_t accum = {};
             for (std::uint32_t shift : {4u, 0u, 12u, 8u, 20u, 16u, 28u, 24u})
             {
-                if (auto const result = hexCharToUInt(*in++, shift, accum); result != ParseResult::okay)
+                if (auto const result = hexCharToUInt(*in++, shift, accum);
+                    result != ParseResult::okay)
                     return Unexpected(result);
             }
             ret[i++] = accum;
@@ -253,7 +254,8 @@ public:
     // This constructor is intended to be used at compile time since it might
     // throw at runtime.  Consider declaring this constructor consteval once
     // we get to C++23.
-    explicit constexpr base_uint(std::string_view sv) noexcept(false) : data_(parseFromStringViewThrows(sv))
+    explicit constexpr base_uint(std::string_view sv) noexcept(false)
+        : data_(parseFromStringViewThrows(sv))
     {
     }
 
@@ -442,7 +444,8 @@ public:
 
         for (int i = WIDTH; i--;)
         {
-            std::uint64_t n = carry + boost::endian::big_to_native(data_[i]) + boost::endian::big_to_native(b.data_[i]);
+            std::uint64_t n = carry + boost::endian::big_to_native(data_[i]) +
+                boost::endian::big_to_native(b.data_[i]);
 
             data_[i] = boost::endian::native_to_big(static_cast<std::uint32_t>(n));
             carry = n >> 32;

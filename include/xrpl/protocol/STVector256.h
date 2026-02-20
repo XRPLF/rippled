@@ -110,7 +110,8 @@ inline STVector256::STVector256(std::vector<uint256> const& vector) : mValue(vec
 {
 }
 
-inline STVector256::STVector256(SField const& n, std::vector<uint256> const& vector) : STBase(n), mValue(vector)
+inline STVector256::STVector256(SField const& n, std::vector<uint256> const& vector)
+    : STBase(n), mValue(vector)
 {
 }
 

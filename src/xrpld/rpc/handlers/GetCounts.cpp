@@ -15,7 +15,11 @@
 namespace xrpl {
 
 static void
-textTime(std::string& text, UptimeClock::time_point& seconds, char const* unitName, std::chrono::seconds unitVal)
+textTime(
+    std::string& text,
+    UptimeClock::time_point& seconds,
+    char const* unitName,
+    std::chrono::seconds unitVal)
 {
     auto i = seconds.time_since_epoch() / unitVal;
 

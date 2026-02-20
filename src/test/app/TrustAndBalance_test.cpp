@@ -215,7 +215,8 @@ class TrustAndBalance_test : public beast::unit_test::suite
                 auto const& t = jval[jss::transaction];
                 return t[jss::TransactionType] == jss::Payment;
             }));
-            BEAST_EXPECT(wsc->findMsg(5s, [](auto const& jval) { return jval[jss::type] == "ledgerClosed"; }));
+            BEAST_EXPECT(wsc->findMsg(
+                5s, [](auto const& jval) { return jval[jss::type] == "ledgerClosed"; }));
 
             BEAST_EXPECT(wsc->invoke("unsubscribe", jv)[jss::status] == "success");
         }
@@ -312,7 +313,9 @@ class TrustAndBalance_test : public beast::unit_test::suite
     void
     testIndirectMultiPath(bool with_rate, FeatureBitset features)
     {
-        testcase(std::string("Indirect Payment, Multi Path, ") + (with_rate ? "With " : "Without ") + " Xfer Fee, ");
+        testcase(
+            std::string("Indirect Payment, Multi Path, ") + (with_rate ? "With " : "Without ") +
+            " Xfer Fee, ");
         using namespace test::jtx;
 
         Env env{*this, features};
@@ -349,8 +352,10 @@ class TrustAndBalance_test : public beast::unit_test::suite
 
         if (with_rate)
         {
-            env.require(
-                balance(alice, STAmount(carol["USD"].issue(), 6500000000000000ull, -14, true, STAmount::unchecked{})));
+            env.require(balance(
+                alice,
+                STAmount(
+                    carol["USD"].issue(), 6500000000000000ull, -14, true, STAmount::unchecked{})));
             env.require(balance(carol, gw["USD"](35)));
         }
         else
@@ -386,7 +391,8 @@ class TrustAndBalance_test : public beast::unit_test::suite
         char const* invoiceId = "243F6A8885A308D313198A2E03707344A4093822299F31D0082EFA98EC4E6C89";
 
         Json::Value jv;
-        auto tx = env.jt(pay(env.master, alice, XRP(10000)), json(sfInvoiceID.fieldName, invoiceId));
+        auto tx =
+            env.jt(pay(env.master, alice, XRP(10000)), json(sfInvoiceID.fieldName, invoiceId));
         jv[jss::tx_blob] = strHex(tx.stx->getSerializer().slice());
         auto jrr = wsc->invoke("submit", jv)[jss::result];
         BEAST_EXPECT(jrr[jss::status] == "success");

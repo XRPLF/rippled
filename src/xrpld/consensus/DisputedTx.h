@@ -76,7 +76,8 @@ public:
         // We're have not reached the final avalanche state, or been there long
         // enough, so there's room for change. Check the times in case the state
         // machine is altered to allow states to loop.
-        if (nextCutoff.consensusTime > currentCutoff.consensusTime || avalancheCounter_ < p.avMIN_ROUNDS)
+        if (nextCutoff.consensusTime > currentCutoff.consensusTime ||
+            avalancheCounter_ < p.avMIN_ROUNDS)
             return false;
 
         // We've haven't had this vote for minimum rounds yet. Things could
@@ -88,7 +89,8 @@ public:
         // things could still change. But if _either_ has not changed in that
         // long, we're unlikely to change our vote any time soon. (This prevents
         // a malicious peer from flip-flopping a vote to prevent consensus.)
-        if (peersUnchanged < p.avSTALLED_ROUNDS && (proposing && currentVoteCounter_ < p.avSTALLED_ROUNDS))
+        if (peersUnchanged < p.avSTALLED_ROUNDS &&
+            (proposing && currentVoteCounter_ < p.avSTALLED_ROUNDS))
             return false;
 
         // Does this transaction have more than 80% agreement
@@ -109,8 +111,9 @@ public:
             // stalling is an error condition for even a single
             // transaction.
             std::stringstream s;
-            s << "Transaction " << ID() << " is stalled. We have been voting " << (getOurVote() ? "YES" : "NO")
-              << " for " << currentVoteCounter_ << " rounds. Peers have not changed their votes in " << peersUnchanged
+            s << "Transaction " << ID() << " is stalled. We have been voting "
+              << (getOurVote() ? "YES" : "NO") << " for " << currentVoteCounter_
+              << " rounds. Peers have not changed their votes in " << peersUnchanged
               << " rounds. The transaction has " << weight << "% support. ";
             JLOG(j_.error()) << s.str();
             CLOG(clog) << s.str();
@@ -289,8 +292,9 @@ DisputedTx<Tx_t, NodeID_t>::updateVote(int percentTime, bool proposing, Consensu
     if (newPosition == ourVote_)
     {
         ++currentVoteCounter_;
-        JLOG(j_.info()) << "No change (" << (ourVote_ ? "YES" : "NO") << ") on " << tx_.id() << " : weight " << weight
-                        << ", percent " << percentTime << ", round(s) with this vote: " << currentVoteCounter_;
+        JLOG(j_.info()) << "No change (" << (ourVote_ ? "YES" : "NO") << ") on " << tx_.id()
+                        << " : weight " << weight << ", percent " << percentTime
+                        << ", round(s) with this vote: " << currentVoteCounter_;
         JLOG(j_.debug()) << Json::Compact{getJson()};
         return false;
     }

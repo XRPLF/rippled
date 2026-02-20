@@ -415,7 +415,10 @@ public:
         env(noop("alice"), msig("bob"), fee(2 * baseFee));
         env(noop("alice"), msig("carol"), fee(2 * baseFee));
         env(noop("alice"), msig("bob", "carol"), fee(3 * baseFee));
-        env(noop("alice"), msig("bob", "carol", "dilbert"), fee(4 * baseFee), ter(tefBAD_SIGNATURE));
+        env(noop("alice"),
+            msig("bob", "carol", "dilbert"),
+            fee(4 * baseFee),
+            ter(tefBAD_SIGNATURE));
 
         env(signers("alice", none));
     }
@@ -725,7 +728,8 @@ public:
             // default Env has all supported features
             Env env{*this};
             BEAST_EXPECT(supported.count() == env.app().config().features.size());
-            foreachFeature(supported, [&](uint256 const& f) { this->BEAST_EXPECT(hasFeature(env, f)); });
+            foreachFeature(
+                supported, [&](uint256 const& f) { this->BEAST_EXPECT(hasFeature(env, f)); });
         }
 
         {
@@ -738,7 +742,8 @@ public:
             });
         }
 
-        auto const missingSomeFeatures = testable_amendments() - featureDynamicMPT - featureTokenEscrow;
+        auto const missingSomeFeatures =
+            testable_amendments() - featureDynamicMPT - featureTokenEscrow;
         BEAST_EXPECT(missingSomeFeatures.count() == (supported.count() - 2));
         {
             // a Env supported_features_except is missing *only* those features
@@ -755,7 +760,8 @@ public:
             // along with a list of explicit amendments
             // the unsupported feature should be enabled along with
             // the two supported ones
-            Env env{*this, FeatureBitset{featureDynamicMPT, featureTokenEscrow, *neverSupportedFeat}};
+            Env env{
+                *this, FeatureBitset{featureDynamicMPT, featureTokenEscrow, *neverSupportedFeat}};
 
             // this app will have just 2 supported amendments and
             // one additional never supported feature flag
@@ -794,7 +800,8 @@ public:
             // one additional never supported feature flag
             BEAST_EXPECT(env.app().config().features.size() == (supported.count() + 1));
             BEAST_EXPECT(hasFeature(env, *neverSupportedFeat));
-            foreachFeature(supported, [&](uint256 const& f) { this->BEAST_EXPECT(hasFeature(env, f)); });
+            foreachFeature(
+                supported, [&](uint256 const& f) { this->BEAST_EXPECT(hasFeature(env, f)); });
         }
     }
 

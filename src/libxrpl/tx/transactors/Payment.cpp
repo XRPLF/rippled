@@ -27,7 +27,10 @@ Payment::makeTxConsequences(PreflightContext const& ctx)
 }
 
 STAmount
-getMaxSourceAmount(AccountID const& account, STAmount const& dstAmount, std::optional<STAmount> const& sendMax)
+getMaxSourceAmount(
+    AccountID const& account,
+    STAmount const& dstAmount,
+    std::optional<STAmount> const& sendMax)
 {
     if (sendMax)
         return *sendMax;
@@ -94,8 +97,9 @@ Payment::preflight(PreflightContext const& ctx)
     if ((mptDirect && dstAmount.asset() != maxSourceAmount.asset()) ||
         (!mptDirect && maxSourceAmount.holds<MPTIssue>()))
     {
-        JLOG(j.trace()) << "Malformed transaction: inconsistent issues: " << dstAmount.getFullText() << " "
-                        << maxSourceAmount.getFullText() << " " << deliverMin.value_or(STAmount{}).getFullText();
+        JLOG(j.trace()) << "Malformed transaction: inconsistent issues: " << dstAmount.getFullText()
+                        << " " << maxSourceAmount.getFullText() << " "
+                        << deliverMin.value_or(STAmount{}).getFullText();
         return temMALFORMED;
     }
 
@@ -117,7 +121,8 @@ Payment::preflight(PreflightContext const& ctx)
     }
     if (hasMax && maxSourceAmount <= beast::zero)
     {
-        JLOG(j.trace()) << "Malformed transaction: bad max amount: " << maxSourceAmount.getFullText();
+        JLOG(j.trace()) << "Malformed transaction: bad max amount: "
+                        << maxSourceAmount.getFullText();
         return temBAD_AMOUNT;
     }
     if (dstAmount <= beast::zero)
@@ -135,8 +140,8 @@ Payment::preflight(PreflightContext const& ctx)
         // You're signing yourself a payment.
         // If hasPaths is true, you might be trying some arbitrage.
         JLOG(j.trace()) << "Malformed transaction: "
-                        << "Redundant payment from " << to_string(account) << " to self without path for "
-                        << to_string(dstAsset);
+                        << "Redundant payment from " << to_string(account)
+                        << " to self without path for " << to_string(dstAsset);
         return temREDUNDANT;
     }
     if (xrpDirect && hasMax)
@@ -188,8 +193,8 @@ Payment::preflight(PreflightContext const& ctx)
         auto const dMin = *deliverMin;
         if (!isLegalNet(dMin) || dMin <= beast::zero)
         {
-            JLOG(j.trace()) << "Malformed transaction: Invalid " << jss::DeliverMin.c_str() << " amount. "
-                            << dMin.getFullText();
+            JLOG(j.trace()) << "Malformed transaction: Invalid " << jss::DeliverMin.c_str()
+                            << " amount. " << dMin.getFullText();
             return temBAD_AMOUNT;
         }
         if (dMin.asset() != dstAmount.asset())
@@ -201,8 +206,8 @@ Payment::preflight(PreflightContext const& ctx)
         }
         if (dMin > dstAmount)
         {
-            JLOG(j.trace()) << "Malformed transaction: Dst amount less than " << jss::DeliverMin.c_str() << ". "
-                            << dMin.getFullText();
+            JLOG(j.trace()) << "Malformed transaction: Dst amount less than "
+                            << jss::DeliverMin.c_str() << ". " << dMin.getFullText();
             return temBAD_AMOUNT;
         }
     }
@@ -236,10 +241,12 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
     auto const& amountAsset = dstAmount.asset();
 
     // Granular permissions are only valid for direct payments.
-    if ((tx.isFieldPresent(sfSendMax) && tx[sfSendMax].asset() != amountAsset) || tx.isFieldPresent(sfPaths))
+    if ((tx.isFieldPresent(sfSendMax) && tx[sfSendMax].asset() != amountAsset) ||
+        tx.isFieldPresent(sfPaths))
         return terNO_DELEGATE_PERMISSION;
 
-    if (granularPermissions.contains(PaymentMint) && !isXRP(amountAsset) && amountAsset.getIssuer() == tx[sfAccount])
+    if (granularPermissions.contains(PaymentMint) && !isXRP(amountAsset) &&
+        amountAsset.getIssuer() == tx[sfAccount])
         return tesSUCCESS;
 
     if (granularPermissions.contains(PaymentBurn) && !isXRP(amountAsset) &&
@@ -317,13 +324,16 @@ Payment::preclaim(PreclaimContext const& ctx)
         STPathSet const& paths = ctx.tx.getFieldPathSet(sfPaths);
 
         if (paths.size() > MaxPathSize ||
-            std::any_of(paths.begin(), paths.end(), [](STPath const& path) { return path.size() > MaxPathLength; }))
+            std::any_of(paths.begin(), paths.end(), [](STPath const& path) {
+                return path.size() > MaxPathLength;
+            }))
         {
             return telBAD_PATH_COUNT;
         }
     }
 
-    if (auto const err = credentials::valid(ctx.tx, ctx.view, ctx.tx[sfAccount], ctx.j); !isTesSuccess(err))
+    if (auto const err = credentials::valid(ctx.tx, ctx.view, ctx.tx[sfAccount], ctx.j);
+        !isTesSuccess(err))
         return err;
 
     if (ctx.tx.isFieldPresent(sfDomainID))
@@ -356,7 +366,8 @@ Payment::doApply()
     bool const mptDirect = dstAmount.holds<MPTIssue>();
     STAmount const maxSourceAmount = getMaxSourceAmount(account_, dstAmount, sendMax);
 
-    JLOG(j_.trace()) << "maxSourceAmount=" << maxSourceAmount.getFullText() << " dstAmount=" << dstAmount.getFullText();
+    JLOG(j_.trace()) << "maxSourceAmount=" << maxSourceAmount.getFullText()
+                     << " dstAmount=" << dstAmount.getFullText();
 
     // Open a ledger for editing.
     auto const k = keylet::account(dstAccountID);
@@ -391,7 +402,8 @@ Payment::doApply()
         //  1. If Account == Destination, or
         //  2. If Account is deposit preauthorized by destination.
 
-        if (auto err = verifyDepositPreauth(ctx_.tx, ctx_.view(), account_, dstAccountID, sleDst, ctx_.journal);
+        if (auto err = verifyDepositPreauth(
+                ctx_.tx, ctx_.view(), account_, dstAccountID, sleDst, ctx_.journal);
             !isTesSuccess(err))
             return err;
 
@@ -452,10 +464,12 @@ Payment::doApply()
         if (auto const ter = requireAuth(view(), mptIssue, dstAccountID); ter != tesSUCCESS)
             return ter;
 
-        if (auto const ter = canTransfer(view(), mptIssue, account_, dstAccountID); ter != tesSUCCESS)
+        if (auto const ter = canTransfer(view(), mptIssue, account_, dstAccountID);
+            ter != tesSUCCESS)
             return ter;
 
-        if (auto err = verifyDepositPreauth(ctx_.tx, ctx_.view(), account_, dstAccountID, sleDst, ctx_.journal);
+        if (auto err = verifyDepositPreauth(
+                ctx_.tx, ctx_.view(), account_, dstAccountID, sleDst, ctx_.journal);
             !isTesSuccess(err))
             return err;
 
@@ -493,7 +507,8 @@ Payment::doApply()
             amountDeliver = divide(maxSourceAmount, rate);
         }
 
-        if (requiredMaxSourceAmount > maxSourceAmount || (deliverMin && amountDeliver < *deliverMin))
+        if (requiredMaxSourceAmount > maxSourceAmount ||
+            (deliverMin && amountDeliver < *deliverMin))
             return tecPATH_PARTIAL;
 
         PaymentSandbox pv(&view());
@@ -538,8 +553,9 @@ Payment::doApply()
     {
         // Vote no. However the transaction might succeed, if applied in
         // a different order.
-        JLOG(j_.trace()) << "Delay transaction: Insufficient funds: " << to_string(mPriorBalance) << " / "
-                         << to_string(dstAmount.xrp() + mmm) << " (" << to_string(reserve) << ")";
+        JLOG(j_.trace()) << "Delay transaction: Insufficient funds: " << to_string(mPriorBalance)
+                         << " / " << to_string(dstAmount.xrp() + mmm) << " (" << to_string(reserve)
+                         << ")";
 
         return tecUNFUNDED_PAYMENT;
     }
@@ -578,7 +594,8 @@ Payment::doApply()
 
     if (dstAmount > dstReserve || sleDst->getFieldAmount(sfBalance) > dstReserve)
     {
-        if (auto err = verifyDepositPreauth(ctx_.tx, ctx_.view(), account_, dstAccountID, sleDst, ctx_.journal);
+        if (auto err = verifyDepositPreauth(
+                ctx_.tx, ctx_.view(), account_, dstAccountID, sleDst, ctx_.journal);
             !isTesSuccess(err))
             return err;
     }

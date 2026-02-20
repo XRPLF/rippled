@@ -26,7 +26,10 @@ class CaptureLogs : public Logs
         std::stringstream& strm_;
 
     public:
-        CaptureSink(beast::severities::Severity threshold, std::mutex& mutex, std::stringstream& strm)
+        CaptureSink(
+            beast::severities::Severity threshold,
+            std::mutex& mutex,
+            std::stringstream& strm)
             : beast::Journal::Sink(threshold, false), strmMutex_(mutex), strm_(strm)
         {
         }

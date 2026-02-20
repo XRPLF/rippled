@@ -18,8 +18,10 @@
 
 namespace xrpl {
 
-using FunctionType = std::function<
-    Expected<uint256, Json::Value>(Json::Value const&, Json::StaticString const, unsigned const apiVersion)>;
+using FunctionType = std::function<Expected<uint256, Json::Value>(
+    Json::Value const&,
+    Json::StaticString const,
+    unsigned const apiVersion)>;
 
 static Expected<uint256, Json::Value>
 parseFixed(
@@ -34,8 +36,12 @@ parseFixed(
 static FunctionType
 fixed(Keylet const& keylet)
 {
-    return [keylet](Json::Value const& params, Json::StaticString const fieldName, unsigned const apiVersion)
-               -> Expected<uint256, Json::Value> { return parseFixed(keylet, params, fieldName, apiVersion); };
+    return [keylet](
+               Json::Value const& params,
+               Json::StaticString const fieldName,
+               unsigned const apiVersion) -> Expected<uint256, Json::Value> {
+        return parseFixed(keylet, params, fieldName, apiVersion);
+    };
 }
 
 static Expected<uint256, Json::Value>
@@ -88,14 +94,18 @@ parseAccountRoot(
 auto const parseAmendments = fixed(keylet::amendments());
 
 static Expected<uint256, Json::Value>
-parseAMM(Json::Value const& params, Json::StaticString const fieldName, [[maybe_unused]] unsigned const apiVersion)
+parseAMM(
+    Json::Value const& params,
+    Json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!params.isObject())
     {
         return parseObjectID(params, fieldName);
     }
 
-    if (auto const value = LedgerEntryHelpers::hasRequired(params, {jss::asset, jss::asset2}); !value)
+    if (auto const value = LedgerEntryHelpers::hasRequired(params, {jss::asset, jss::asset2});
+        !value)
     {
         return Unexpected(value.error());
     }
@@ -112,7 +122,10 @@ parseAMM(Json::Value const& params, Json::StaticString const fieldName, [[maybe_
 }
 
 static Expected<uint256, Json::Value>
-parseBridge(Json::Value const& params, Json::StaticString const fieldName, [[maybe_unused]] unsigned const apiVersion)
+parseBridge(
+    Json::Value const& params,
+    Json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!params.isMember(jss::bridge))
     {
@@ -128,11 +141,13 @@ parseBridge(Json::Value const& params, Json::StaticString const fieldName, [[may
     if (!bridge)
         return Unexpected(bridge.error());
 
-    auto const account = LedgerEntryHelpers::requiredAccountID(params, jss::bridge_account, "malformedBridgeAccount");
+    auto const account = LedgerEntryHelpers::requiredAccountID(
+        params, jss::bridge_account, "malformedBridgeAccount");
     if (!account)
         return Unexpected(account.error());
 
-    STXChainBridge::ChainType const chainType = STXChainBridge::srcChain(account.value() == bridge->lockingChainDoor());
+    STXChainBridge::ChainType const chainType =
+        STXChainBridge::srcChain(account.value() == bridge->lockingChainDoor());
     if (account.value() != bridge->door(chainType))
         return LedgerEntryHelpers::malformedError("malformedRequest", "");
 
@@ -140,29 +155,37 @@ parseBridge(Json::Value const& params, Json::StaticString const fieldName, [[may
 }
 
 static Expected<uint256, Json::Value>
-parseCheck(Json::Value const& params, Json::StaticString const fieldName, [[maybe_unused]] unsigned const apiVersion)
+parseCheck(
+    Json::Value const& params,
+    Json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
 {
     return parseObjectID(params, fieldName, "hex string");
 }
 
 static Expected<uint256, Json::Value>
-parseCredential(Json::Value const& cred, Json::StaticString const fieldName, [[maybe_unused]] unsigned const apiVersion)
+parseCredential(
+    Json::Value const& cred,
+    Json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!cred.isObject())
     {
         return parseObjectID(cred, fieldName);
     }
 
-    auto const subject = LedgerEntryHelpers::requiredAccountID(cred, jss::subject, "malformedRequest");
+    auto const subject =
+        LedgerEntryHelpers::requiredAccountID(cred, jss::subject, "malformedRequest");
     if (!subject)
         return Unexpected(subject.error());
 
-    auto const issuer = LedgerEntryHelpers::requiredAccountID(cred, jss::issuer, "malformedRequest");
+    auto const issuer =
+        LedgerEntryHelpers::requiredAccountID(cred, jss::issuer, "malformedRequest");
     if (!issuer)
         return Unexpected(issuer.error());
 
-    auto const credType =
-        LedgerEntryHelpers::requiredHexBlob(cred, jss::credential_type, maxCredentialTypeLength, "malformedRequest");
+    auto const credType = LedgerEntryHelpers::requiredHexBlob(
+        cred, jss::credential_type, maxCredentialTypeLength, "malformedRequest");
     if (!credType)
         return Unexpected(credType.error());
 
@@ -170,18 +193,23 @@ parseCredential(Json::Value const& cred, Json::StaticString const fieldName, [[m
 }
 
 static Expected<uint256, Json::Value>
-parseDelegate(Json::Value const& params, Json::StaticString const fieldName, [[maybe_unused]] unsigned const apiVersion)
+parseDelegate(
+    Json::Value const& params,
+    Json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!params.isObject())
     {
         return parseObjectID(params, fieldName);
     }
 
-    auto const account = LedgerEntryHelpers::requiredAccountID(params, jss::account, "malformedAddress");
+    auto const account =
+        LedgerEntryHelpers::requiredAccountID(params, jss::account, "malformedAddress");
     if (!account)
         return Unexpected(account.error());
 
-    auto const authorize = LedgerEntryHelpers::requiredAccountID(params, jss::authorize, "malformedAddress");
+    auto const authorize =
+        LedgerEntryHelpers::requiredAccountID(params, jss::authorize, "malformedAddress");
     if (!authorize)
         return Unexpected(authorize.error());
 
@@ -203,7 +231,8 @@ parseAuthorizeCredentials(Json::Value const& jv)
         return Unexpected(
             LedgerEntryHelpers::malformedError(
                 "malformedAuthorizedCredentials",
-                "Invalid field '" + std::string(jss::authorized_credentials) + "', array too long."));
+                "Invalid field '" + std::string(jss::authorized_credentials) +
+                    "', array too long."));
     }
 
     if (n == 0)
@@ -230,7 +259,8 @@ parseAuthorizeCredentials(Json::Value const& jv)
             return Unexpected(value.error());
         }
 
-        auto const issuer = LedgerEntryHelpers::requiredAccountID(jo, jss::issuer, "malformedAuthorizedCredentials");
+        auto const issuer = LedgerEntryHelpers::requiredAccountID(
+            jo, jss::issuer, "malformedAuthorizedCredentials");
         if (!issuer)
             return Unexpected(issuer.error());
 
@@ -279,7 +309,8 @@ parseDepositPreauth(
         {
             return keylet::depositPreauth(*owner, *authorized).key;
         }
-        return LedgerEntryHelpers::invalidFieldError("malformedAuthorized", jss::authorized, "AccountID");
+        return LedgerEntryHelpers::invalidFieldError(
+            "malformedAuthorized", jss::authorized, "AccountID");
     }
 
     auto const& ac(dp[jss::authorized_credentials]);
@@ -299,7 +330,10 @@ parseDepositPreauth(
 }
 
 static Expected<uint256, Json::Value>
-parseDID(Json::Value const& params, Json::StaticString const fieldName, [[maybe_unused]] unsigned const apiVersion)
+parseDID(
+    Json::Value const& params,
+    Json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
 {
     auto const account = LedgerEntryHelpers::parse<AccountID>(params);
     if (!account)
@@ -322,7 +356,8 @@ parseDirectoryNode(
     }
 
     if (params.isMember(jss::sub_index) &&
-        (!params[jss::sub_index].isConvertibleTo(Json::uintValue) || params[jss::sub_index].isBool()))
+        (!params[jss::sub_index].isConvertibleTo(Json::uintValue) ||
+         params[jss::sub_index].isBool()))
     {
         return LedgerEntryHelpers::invalidFieldError("malformedRequest", jss::sub_index, "number");
     }
@@ -350,7 +385,8 @@ parseDirectoryNode(
         auto const ownerID = LedgerEntryHelpers::parse<AccountID>(params[jss::owner]);
         if (!ownerID)
         {
-            return LedgerEntryHelpers::invalidFieldError("malformedAddress", jss::owner, "AccountID");
+            return LedgerEntryHelpers::invalidFieldError(
+                "malformedAddress", jss::owner, "AccountID");
         }
 
         return keylet::page(keylet::ownerDir(*ownerID), uSubIndex).key;
@@ -360,7 +396,10 @@ parseDirectoryNode(
 }
 
 static Expected<uint256, Json::Value>
-parseEscrow(Json::Value const& params, Json::StaticString const fieldName, [[maybe_unused]] unsigned const apiVersion)
+parseEscrow(
+    Json::Value const& params,
+    Json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!params.isObject())
     {
@@ -399,7 +438,10 @@ parseFixed(
 }
 
 static Expected<uint256, Json::Value>
-parseLedgerHashes(Json::Value const& params, Json::StaticString const fieldName, unsigned const apiVersion)
+parseLedgerHashes(
+    Json::Value const& params,
+    Json::StaticString const fieldName,
+    unsigned const apiVersion)
 {
     if (params.isUInt() || params.isInt())
     {
@@ -437,14 +479,18 @@ parseLoanBroker(
 }
 
 static Expected<uint256, Json::Value>
-parseLoan(Json::Value const& params, Json::StaticString const fieldName, [[maybe_unused]] unsigned const apiVersion)
+parseLoan(
+    Json::Value const& params,
+    Json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!params.isObject())
     {
         return parseObjectID(params, fieldName, "hex string");
     }
 
-    auto const id = LedgerEntryHelpers::requiredUInt256(params, jss::loan_broker_id, "malformedBroker");
+    auto const id =
+        LedgerEntryHelpers::requiredUInt256(params, jss::loan_broker_id, "malformedBroker");
     if (!id)
         return Unexpected(id.error());
     auto const seq = LedgerEntryHelpers::requiredUInt32(params, jss::loan_seq, "malformedSeq");
@@ -455,7 +501,10 @@ parseLoan(Json::Value const& params, Json::StaticString const fieldName, [[maybe
 }
 
 static Expected<uint256, Json::Value>
-parseMPToken(Json::Value const& params, Json::StaticString const fieldName, [[maybe_unused]] unsigned const apiVersion)
+parseMPToken(
+    Json::Value const& params,
+    Json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!params.isObject())
     {
@@ -467,7 +516,8 @@ parseMPToken(Json::Value const& params, Json::StaticString const fieldName, [[ma
     if (!mptIssuanceID)
         return Unexpected(mptIssuanceID.error());
 
-    auto const account = LedgerEntryHelpers::requiredAccountID(params, jss::account, "malformedAccount");
+    auto const account =
+        LedgerEntryHelpers::requiredAccountID(params, jss::account, "malformedAccount");
     if (!account)
         return Unexpected(account.error());
 
@@ -482,7 +532,8 @@ parseMPTokenIssuance(
 {
     auto const mptIssuanceID = LedgerEntryHelpers::parse<uint192>(params);
     if (!mptIssuanceID)
-        return LedgerEntryHelpers::invalidFieldError("malformedMPTokenIssuance", fieldName, "Hash192");
+        return LedgerEntryHelpers::invalidFieldError(
+            "malformedMPTokenIssuance", fieldName, "Hash192");
 
     return keylet::mptIssuance(*mptIssuanceID).key;
 }
@@ -508,7 +559,10 @@ parseNFTokenPage(
 auto const parseNegativeUNL = fixed(keylet::negativeUNL());
 
 static Expected<uint256, Json::Value>
-parseOffer(Json::Value const& params, Json::StaticString const fieldName, [[maybe_unused]] unsigned const apiVersion)
+parseOffer(
+    Json::Value const& params,
+    Json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!params.isObject())
     {
@@ -527,7 +581,10 @@ parseOffer(Json::Value const& params, Json::StaticString const fieldName, [[mayb
 }
 
 static Expected<uint256, Json::Value>
-parseOracle(Json::Value const& params, Json::StaticString const fieldName, [[maybe_unused]] unsigned const apiVersion)
+parseOracle(
+    Json::Value const& params,
+    Json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!params.isObject())
     {
@@ -538,7 +595,8 @@ parseOracle(Json::Value const& params, Json::StaticString const fieldName, [[may
     if (!id)
         return Unexpected(id.error());
 
-    auto const seq = LedgerEntryHelpers::requiredUInt32(params, jss::oracle_document_id, "malformedDocumentID");
+    auto const seq =
+        LedgerEntryHelpers::requiredUInt32(params, jss::oracle_document_id, "malformedDocumentID");
     if (!seq)
         return Unexpected(seq.error());
 
@@ -567,10 +625,12 @@ parsePermissionedDomain(
 
     if (!pd.isObject())
     {
-        return LedgerEntryHelpers::invalidFieldError("malformedRequest", fieldName, "hex string or object");
+        return LedgerEntryHelpers::invalidFieldError(
+            "malformedRequest", fieldName, "hex string or object");
     }
 
-    auto const account = LedgerEntryHelpers::requiredAccountID(pd, jss::account, "malformedAddress");
+    auto const account =
+        LedgerEntryHelpers::requiredAccountID(pd, jss::account, "malformedAddress");
     if (!account)
         return Unexpected(account.error());
 
@@ -594,31 +654,37 @@ parseRippleState(
         return parseObjectID(jvRippleState, fieldName);
     }
 
-    if (auto const value = LedgerEntryHelpers::hasRequired(jvRippleState, {jss::currency, jss::accounts}); !value)
+    if (auto const value =
+            LedgerEntryHelpers::hasRequired(jvRippleState, {jss::currency, jss::accounts});
+        !value)
     {
         return Unexpected(value.error());
     }
 
     if (!jvRippleState[jss::accounts].isArray() || jvRippleState[jss::accounts].size() != 2)
     {
-        return LedgerEntryHelpers::invalidFieldError("malformedRequest", jss::accounts, "length-2 array of Accounts");
+        return LedgerEntryHelpers::invalidFieldError(
+            "malformedRequest", jss::accounts, "length-2 array of Accounts");
     }
 
     auto const id1 = LedgerEntryHelpers::parse<AccountID>(jvRippleState[jss::accounts][0u]);
     auto const id2 = LedgerEntryHelpers::parse<AccountID>(jvRippleState[jss::accounts][1u]);
     if (!id1 || !id2)
     {
-        return LedgerEntryHelpers::invalidFieldError("malformedAddress", jss::accounts, "array of Accounts");
+        return LedgerEntryHelpers::invalidFieldError(
+            "malformedAddress", jss::accounts, "array of Accounts");
     }
     if (id1 == id2)
     {
-        return LedgerEntryHelpers::malformedError("malformedRequest", "Cannot have a trustline to self.");
+        return LedgerEntryHelpers::malformedError(
+            "malformedRequest", "Cannot have a trustline to self.");
     }
 
     if (!jvRippleState[jss::currency].isString() || jvRippleState[jss::currency] == "" ||
         !to_currency(uCurrency, jvRippleState[jss::currency].asString()))
     {
-        return LedgerEntryHelpers::invalidFieldError("malformedCurrency", jss::currency, "Currency");
+        return LedgerEntryHelpers::invalidFieldError(
+            "malformedCurrency", jss::currency, "Currency");
     }
 
     return keylet::line(*id1, *id2, uCurrency).key;
@@ -634,7 +700,10 @@ parseSignerList(
 }
 
 static Expected<uint256, Json::Value>
-parseTicket(Json::Value const& params, Json::StaticString const fieldName, [[maybe_unused]] unsigned const apiVersion)
+parseTicket(
+    Json::Value const& params,
+    Json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!params.isObject())
     {
@@ -645,7 +714,8 @@ parseTicket(Json::Value const& params, Json::StaticString const fieldName, [[may
     if (!id)
         return Unexpected(id.error());
 
-    auto const seq = LedgerEntryHelpers::requiredUInt32(params, jss::ticket_seq, "malformedRequest");
+    auto const seq =
+        LedgerEntryHelpers::requiredUInt32(params, jss::ticket_seq, "malformedRequest");
     if (!seq)
         return Unexpected(seq.error());
 
@@ -653,7 +723,10 @@ parseTicket(Json::Value const& params, Json::StaticString const fieldName, [[may
 }
 
 static Expected<uint256, Json::Value>
-parseVault(Json::Value const& params, Json::StaticString const fieldName, [[maybe_unused]] unsigned const apiVersion)
+parseVault(
+    Json::Value const& params,
+    Json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!params.isObject())
     {
@@ -686,8 +759,8 @@ parseXChainOwnedClaimID(
     if (!bridge_spec)
         return Unexpected(bridge_spec.error());
 
-    auto const seq =
-        LedgerEntryHelpers::requiredUInt32(claim_id, jss::xchain_owned_claim_id, "malformedXChainOwnedClaimID");
+    auto const seq = LedgerEntryHelpers::requiredUInt32(
+        claim_id, jss::xchain_owned_claim_id, "malformedXChainOwnedClaimID");
     if (!seq)
     {
         return Unexpected(seq.error());
@@ -713,7 +786,9 @@ parseXChainOwnedCreateAccountClaimID(
         return Unexpected(bridge_spec.error());
 
     auto const seq = LedgerEntryHelpers::requiredUInt32(
-        claim_id, jss::xchain_owned_create_account_claim_id, "malformedXChainOwnedCreateAccountClaimID");
+        claim_id,
+        jss::xchain_owned_create_account_claim_id,
+        "malformedXChainOwnedCreateAccountClaimID");
     if (!seq)
     {
         return Unexpected(seq.error());
@@ -795,9 +870,11 @@ doLedgerEntry(RPC::JsonContext& context)
                 // `ledger_entry` param level.
                 // So that parser needs to have the whole `params` field.
                 // All other parsers only need the one field name's info.
-                Json::Value const& params =
-                    ledgerEntry.fieldName == jss::bridge ? context.params : context.params[ledgerEntry.fieldName];
-                auto const result = ledgerEntry.parseFunction(params, ledgerEntry.fieldName, context.apiVersion);
+                Json::Value const& params = ledgerEntry.fieldName == jss::bridge
+                    ? context.params
+                    : context.params[ledgerEntry.fieldName];
+                auto const result =
+                    ledgerEntry.parseFunction(params, ledgerEntry.fieldName, context.apiVersion);
                 if (!result)
                     return result.error();
 

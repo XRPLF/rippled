@@ -136,7 +136,11 @@ public:
 private:
     template <class ConstBufferSequence>
     void
-    create(bool ssl, ConstBufferSequence const& buffers, stream_type&& stream, endpoint_type remote_address);
+    create(
+        bool ssl,
+        ConstBufferSequence const& buffers,
+        stream_type&& stream,
+        endpoint_type remote_address);
 
     void
     do_accept(yield_context yield);
@@ -165,7 +169,8 @@ template <class Handler>
 void
 Door<Handler>::Detector::run()
 {
-    util::spawn(strand_, std::bind(&Detector::do_detect, this->shared_from_this(), std::placeholders::_1));
+    util::spawn(
+        strand_, std::bind(&Detector::do_detect, this->shared_from_this(), std::placeholders::_1));
 }
 
 template <class Handler>
@@ -258,7 +263,11 @@ Door<Handler>::reOpen()
 }
 
 template <class Handler>
-Door<Handler>::Door(Handler& handler, boost::asio::io_context& io_context, Port const& port, beast::Journal j)
+Door<Handler>::Door(
+    Handler& handler,
+    boost::asio::io_context& io_context,
+    Port const& port,
+    beast::Journal j)
     : j_(j)
     , port_(port)
     , handler_(handler)
@@ -266,9 +275,11 @@ Door<Handler>::Door(Handler& handler, boost::asio::io_context& io_context, Port 
     , acceptor_(io_context)
     , strand_(boost::asio::make_strand(io_context))
     , ssl_(
-          port_.protocol.count("https") > 0 || port_.protocol.count("wss") > 0 || port_.protocol.count("wss2") > 0 ||
-          port_.protocol.count("peer") > 0)
-    , plain_(port_.protocol.count("http") > 0 || port_.protocol.count("ws") > 0 || port_.protocol.count("ws2"))
+          port_.protocol.count("https") > 0 || port_.protocol.count("wss") > 0 ||
+          port_.protocol.count("wss2") > 0 || port_.protocol.count("peer") > 0)
+    , plain_(
+          port_.protocol.count("http") > 0 || port_.protocol.count("ws") > 0 ||
+          port_.protocol.count("ws2"))
     , backoff_timer_(io_context)
 {
     reOpen();
@@ -278,7 +289,9 @@ template <class Handler>
 void
 Door<Handler>::run()
 {
-    util::spawn(strand_, std::bind(&Door<Handler>::do_accept, this->shared_from_this(), std::placeholders::_1));
+    util::spawn(
+        strand_,
+        std::bind(&Door<Handler>::do_accept, this->shared_from_this(), std::placeholders::_1));
 }
 
 template <class Handler>
@@ -286,7 +299,8 @@ void
 Door<Handler>::close()
 {
     if (!strand_.running_in_this_thread())
-        return boost::asio::post(strand_, std::bind(&Door<Handler>::close, this->shared_from_this()));
+        return boost::asio::post(
+            strand_, std::bind(&Door<Handler>::close, this->shared_from_this()));
     backoff_timer_.cancel();
     error_code ec;
     acceptor_.close(ec);
@@ -297,7 +311,11 @@ Door<Handler>::close()
 template <class Handler>
 template <class ConstBufferSequence>
 void
-Door<Handler>::create(bool ssl, ConstBufferSequence const& buffers, stream_type&& stream, endpoint_type remote_address)
+Door<Handler>::create(
+    bool ssl,
+    ConstBufferSequence const& buffers,
+    stream_type&& stream,
+    endpoint_type remote_address)
 {
     if (ssl)
     {
@@ -337,9 +355,11 @@ Door<Handler>::do_accept(boost::asio::yield_context do_yield)
             if (ec == boost::asio::error::operation_aborted)
                 break;
 
-            if (ec == boost::asio::error::no_descriptors || ec == boost::asio::error::no_buffer_space)
+            if (ec == boost::asio::error::no_descriptors ||
+                ec == boost::asio::error::no_buffer_space)
             {
-                JLOG(j_.warn()) << "accept: Too many open files. Pausing for " << accept_delay_.count() << "ms.";
+                JLOG(j_.warn()) << "accept: Too many open files. Pausing for "
+                                << accept_delay_.count() << "ms.";
 
                 backoff_timer_.expires_after(accept_delay_);
                 boost::system::error_code tec;
@@ -358,8 +378,8 @@ Door<Handler>::do_accept(boost::asio::yield_context do_yield)
 
         if (ssl_ && plain_)
         {
-            if (auto sp =
-                    ios().template emplace<Detector>(port_, handler_, ioc_, std::move(stream), remote_address, j_))
+            if (auto sp = ios().template emplace<Detector>(
+                    port_, handler_, ioc_, std::move(stream), remote_address, j_))
                 sp->run();
         }
         else if (ssl_ || plain_)

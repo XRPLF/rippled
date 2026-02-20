@@ -134,11 +134,13 @@ AMMClawback::applyGuts(Sandbox& sb)
         if (lpTokenBalance == beast::zero)
             return tecAMM_BALANCE;
 
-        if (auto const res = verifyAndAdjustLPTokenBalance(sb, lpTokenBalance, ammSle, holder); !res)
+        if (auto const res = verifyAndAdjustLPTokenBalance(sb, lpTokenBalance, ammSle, holder);
+            !res)
             return res.error();  // LCOV_EXCL_LINE
     }
 
-    auto const expected = ammHolds(sb, *ammSle, asset, asset2, FreezeHandling::fhIGNORE_FREEZE, ctx_.journal);
+    auto const expected =
+        ammHolds(sb, *ammSle, asset, asset2, FreezeHandling::fhIGNORE_FREEZE, ctx_.journal);
 
     if (!expected)
         return expected.error();  // LCOV_EXCL_LINE
@@ -156,29 +158,40 @@ AMMClawback::applyGuts(Sandbox& sb)
     if (!clawAmount)
         // Because we are doing a two-asset withdrawal,
         // tfee is actually not used, so pass tfee as 0.
-        std::tie(result, newLPTokenBalance, amountWithdraw, amount2Withdraw) = AMMWithdraw::equalWithdrawTokens(
-            sb,
-            *ammSle,
-            holder,
-            ammAccount,
-            amountBalance,
-            amount2Balance,
-            lptAMMBalance,
-            holdLPtokens,
-            holdLPtokens,
-            0,
-            FreezeHandling::fhIGNORE_FREEZE,
-            WithdrawAll::Yes,
-            mPriorBalance,
-            ctx_.journal);
+        std::tie(result, newLPTokenBalance, amountWithdraw, amount2Withdraw) =
+            AMMWithdraw::equalWithdrawTokens(
+                sb,
+                *ammSle,
+                holder,
+                ammAccount,
+                amountBalance,
+                amount2Balance,
+                lptAMMBalance,
+                holdLPtokens,
+                holdLPtokens,
+                0,
+                FreezeHandling::fhIGNORE_FREEZE,
+                WithdrawAll::Yes,
+                mPriorBalance,
+                ctx_.journal);
     else
-        std::tie(result, newLPTokenBalance, amountWithdraw, amount2Withdraw) = equalWithdrawMatchingOneAmount(
-            sb, *ammSle, holder, ammAccount, amountBalance, amount2Balance, lptAMMBalance, holdLPtokens, *clawAmount);
+        std::tie(result, newLPTokenBalance, amountWithdraw, amount2Withdraw) =
+            equalWithdrawMatchingOneAmount(
+                sb,
+                *ammSle,
+                holder,
+                ammAccount,
+                amountBalance,
+                amount2Balance,
+                lptAMMBalance,
+                holdLPtokens,
+                *clawAmount);
 
     if (result != tesSUCCESS)
         return result;  // LCOV_EXCL_LINE
 
-    auto const res = AMMWithdraw::deleteAMMAccountIfEmpty(sb, ammSle, newLPTokenBalance, asset, asset2, j_);
+    auto const res =
+        AMMWithdraw::deleteAMMAccountIfEmpty(sb, ammSle, newLPTokenBalance, asset, asset2, j_);
     if (!res.second)
         return res.first;  // LCOV_EXCL_LINE
 

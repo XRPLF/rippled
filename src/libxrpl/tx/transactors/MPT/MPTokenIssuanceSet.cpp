@@ -10,7 +10,8 @@ bool
 MPTokenIssuanceSet::checkExtraFeatures(PreflightContext const& ctx)
 {
     return !ctx.tx.isFieldPresent(sfDomainID) ||
-        (ctx.rules.enabled(featurePermissionedDomains) && ctx.rules.enabled(featureSingleAssetVault));
+        (ctx.rules.enabled(featurePermissionedDomains) &&
+         ctx.rules.enabled(featureSingleAssetVault));
 }
 
 std::uint32_t
@@ -91,9 +92,12 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
                 return temINVALID_FLAG;
 
             // Can not set and clear the same flag
-            if (std::any_of(mptMutabilityFlags.begin(), mptMutabilityFlags.end(), [mutableFlags](auto const& f) {
-                    return (*mutableFlags & f.setFlag) && (*mutableFlags & f.clearFlag);
-                }))
+            if (std::any_of(
+                    mptMutabilityFlags.begin(),
+                    mptMutabilityFlags.end(),
+                    [mutableFlags](auto const& f) {
+                        return (*mutableFlags & f.setFlag) && (*mutableFlags & f.clearFlag);
+                    }))
                 return temINVALID_FLAG;
 
             // Trying to set a non-zero TransferFee and clear MPTCanTransfer
@@ -152,7 +156,8 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     if (!sleMptIssuance->isFlag(lsfMPTCanLock))
     {
         // For readability two separate `if` rather than `||` of two conditions
-        if (!ctx.view.rules().enabled(featureSingleAssetVault) && !ctx.view.rules().enabled(featureDynamicMPT))
+        if (!ctx.view.rules().enabled(featureSingleAssetVault) &&
+            !ctx.view.rules().enabled(featureDynamicMPT))
             return tecNO_PERMISSION;
         else if (ctx.tx.isFlag(tfMPTLock) || ctx.tx.isFlag(tfMPTUnlock))
             return tecNO_PERMISSION;
@@ -190,13 +195,18 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     // the ledger.
     auto const currentMutableFlags = sleMptIssuance->getFieldU32(sfMutableFlags);
 
-    auto isMutableFlag = [&](std::uint32_t mutableFlag) -> bool { return currentMutableFlags & mutableFlag; };
+    auto isMutableFlag = [&](std::uint32_t mutableFlag) -> bool {
+        return currentMutableFlags & mutableFlag;
+    };
 
     if (auto const mutableFlags = ctx.tx[~sfMutableFlags])
     {
         if (std::any_of(
-                mptMutabilityFlags.begin(), mptMutabilityFlags.end(), [mutableFlags, &isMutableFlag](auto const& f) {
-                    return !isMutableFlag(f.canMutateFlag) && ((*mutableFlags & (f.setFlag | f.clearFlag)));
+                mptMutabilityFlags.begin(),
+                mptMutabilityFlags.end(),
+                [mutableFlags, &isMutableFlag](auto const& f) {
+                    return !isMutableFlag(f.canMutateFlag) &&
+                        ((*mutableFlags & (f.setFlag | f.clearFlag)));
                 }))
             return tecNO_PERMISSION;
     }
@@ -289,7 +299,9 @@ MPTokenIssuanceSet::doApply()
     if (domainID)
     {
         // This is enforced in preflight.
-        XRPL_ASSERT(sle->getType() == ltMPTOKEN_ISSUANCE, "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
+        XRPL_ASSERT(
+            sle->getType() == ltMPTOKEN_ISSUANCE,
+            "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
 
         if (*domainID != beast::zero)
         {

@@ -170,7 +170,11 @@ public:
     partition_severities() const;
 
     void
-    write(beast::severities::Severity level, std::string const& partition, std::string const& text, bool console);
+    write(
+        beast::severities::Severity level,
+        std::string const& partition,
+        std::string const& text,
+        bool console);
 
     std::string
     rotate();

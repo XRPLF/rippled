@@ -140,7 +140,8 @@ public:
     */
     template <
         typename JobHandler,
-        typename = std::enable_if_t<std::is_same<decltype(std::declval<JobHandler&&>()()), void>::value>>
+        typename =
+            std::enable_if_t<std::is_same<decltype(std::declval<JobHandler&&>()()), void>::value>>
     bool
     addJob(JobType type, std::string const& name, JobHandler&& jobHandler)
     {

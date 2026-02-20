@@ -62,8 +62,8 @@ lz4_compress(void const* in, std::size_t in_size, BufferFactory&& bf)
     std::uint8_t* out = reinterpret_cast<std::uint8_t*>(bf(n + out_max));
     result.first = out;
     std::memcpy(out, vi.data(), n);
-    auto const out_size =
-        LZ4_compress_default(reinterpret_cast<char const*>(in), reinterpret_cast<char*>(out + n), in_size, out_max);
+    auto const out_size = LZ4_compress_default(
+        reinterpret_cast<char const*>(in), reinterpret_cast<char*>(out + n), in_size, out_max);
     if (out_size == 0)
         Throw<std::runtime_error>("lz4 compress");
     result.second = n + out_size;
@@ -137,8 +137,9 @@ nodeobject_decompress(void const* in, std::size_t in_size, BufferFactory&& bf)
                 {
                     if (in_size < 32)
                         Throw<std::runtime_error>(
-                            "nodeobject codec v1: short inner node subsize: " + std::string("in_size = ") +
-                            std::to_string(in_size) + " i = " + std::to_string(i));
+                            "nodeobject codec v1: short inner node subsize: " +
+                            std::string("in_size = ") + std::to_string(in_size) +
+                            " i = " + std::to_string(i));
                     std::memcpy(os.data(32), is(32), 32);
                     in_size -= 32;
                 }
@@ -148,14 +149,16 @@ nodeobject_decompress(void const* in, std::size_t in_size, BufferFactory&& bf)
                 }
             }
             if (in_size > 0)
-                Throw<std::runtime_error>("nodeobject codec v1: long inner node, in_size = " + std::to_string(in_size));
+                Throw<std::runtime_error>(
+                    "nodeobject codec v1: long inner node, in_size = " + std::to_string(in_size));
             break;
         }
         case 3:  // full v1 inner node
         {
             if (in_size != 16 * 32)  // hashes
                 Throw<std::runtime_error>(
-                    "nodeobject codec v1: short full inner node, in_size = " + std::to_string(in_size));
+                    "nodeobject codec v1: short full inner node, in_size = " +
+                    std::to_string(in_size));
             istream is(p, in_size);
             result.second = 525;
             void* const out = bf(result.second);
