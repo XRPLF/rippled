@@ -580,6 +580,41 @@ verifyAggregatedBulletproof(
 }
 
 TER
+computeSendRemainder(Slice const& balanceCommitment, Slice const& amountCommitment, Buffer& out)
+{
+    if (balanceCommitment.size() != ecPedersenCommitmentLength || amountCommitment.size() != ecPedersenCommitmentLength)
+        return tecINTERNAL;
+
+    auto const ctx = secp256k1Context();
+
+    secp256k1_pubkey pcBalance;
+    if (secp256k1_ec_pubkey_parse(ctx, &pcBalance, balanceCommitment.data(), ecPedersenCommitmentLength) != 1)
+        return tecINTERNAL;
+
+    secp256k1_pubkey pcAmount;
+    if (secp256k1_ec_pubkey_parse(ctx, &pcAmount, amountCommitment.data(), ecPedersenCommitmentLength) != 1)
+        return tecINTERNAL;
+
+    // Negate PC_amount point to get -PC_amount
+    if (!secp256k1_ec_pubkey_negate(ctx, &pcAmount))
+        return tecINTERNAL;
+
+    // Compute pcRem = pcBalance + (-pcAmount)
+    secp256k1_pubkey const* summands[2] = {&pcBalance, &pcAmount};
+    secp256k1_pubkey pcRem;
+    if (!secp256k1_ec_pubkey_combine(ctx, &pcRem, summands, 2))
+        return tecINTERNAL;
+
+    // Serialize result to compressed format
+    out.alloc(ecPedersenCommitmentLength);
+    size_t outLen = ecPedersenCommitmentLength;
+    if (secp256k1_ec_pubkey_serialize(ctx, out.data(), &outLen, &pcRem, SECP256K1_EC_COMPRESSED) != 1)
+        return tecINTERNAL;
+
+    return tesSUCCESS;
+}
+
+TER
 computeConvertBackRemainder(Slice const& commitment, std::uint64_t amount, Buffer& out)
 {
     if (commitment.size() != ecPedersenCommitmentLength || amount == 0)

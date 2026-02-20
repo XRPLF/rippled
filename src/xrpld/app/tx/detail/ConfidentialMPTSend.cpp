@@ -44,7 +44,7 @@ ConfidentialMPTSend::preflight(PreflightContext const& ctx)
     auto const sizeEquality = getMultiCiphertextEqualityProofSize(recipientCount);
     auto const sizePedersenLinkage = 2 * ecPedersenProofLength;
 
-    if (ctx.tx[sfZKProof].length() != sizeEquality + sizePedersenLinkage)
+    if (ctx.tx[sfZKProof].length() != sizeEquality + sizePedersenLinkage + ecDoubleBulletproofLength)
         return temMALFORMED;
 
     // Check the Pedersen commitments are valid
@@ -105,7 +105,14 @@ verifySendProofs(
     currentOffset += ecPedersenProofLength;
     remainingLength -= ecPedersenProofLength;
 
-    // todo: Extract range proof once the lib is ready
+    // Extract range proof
+    if (remainingLength < ecDoubleBulletproofLength)
+        return tecINTERNAL;
+
+    auto const rangeProof = proof.substr(currentOffset, ecDoubleBulletproofLength);
+    currentOffset += ecDoubleBulletproofLength;
+    remainingLength -= ecDoubleBulletproofLength;
+
     if (remainingLength != 0)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -114,9 +121,7 @@ verifySendProofs(
     recipients.reserve(recipientCount);
 
     recipients.push_back({(*sleSenderMPToken)[sfHolderElGamalPublicKey], ctx.tx[sfSenderEncryptedAmount]});
-
     recipients.push_back({(*sleDestinationMPToken)[sfHolderElGamalPublicKey], ctx.tx[sfDestinationEncryptedAmount]});
-
     recipients.push_back({(*sleIssuance)[sfIssuerElGamalPublicKey], ctx.tx[sfIssuerEncryptedAmount]});
 
     if (hasAuditor)
@@ -132,12 +137,15 @@ verifySendProofs(
         ctx.tx[sfDestination],
         (*sleSenderMPToken)[~sfConfidentialBalanceVersion].value_or(0));
 
+    // Use a boolean flag to track validity instead of returning early on failure to prevent leaking information about
+    // which proof failed through timing differences
+    bool valid = true;
+
     // Verify the multi-ciphertext equality proof
     if (auto const ter = verifyMultiCiphertextEqualityProof(equalityProof, recipients, recipientCount, contextHash);
         !isTesSuccess(ter))
     {
-        JLOG(ctx.j.trace()) << "ConfidentialMPTSend: Equality proof failed.";
-        return ter;
+        valid = false;
     }
 
     // Verify amount linkage
@@ -149,8 +157,7 @@ verifySendProofs(
             contextHash);
         !isTesSuccess(ter))
     {
-        JLOG(ctx.j.trace()) << "ConfidentialMPTSend: Amount linkage proof failed.";
-        return ter;
+        valid = false;
     }
 
     // Verify balance linkage
@@ -162,8 +169,38 @@ verifySendProofs(
             contextHash);
         !isTesSuccess(ter))
     {
-        JLOG(ctx.j.trace()) << "ConfidentialMPTSend: Balance linkage proof failed.";
-        return ter;
+        valid = false;
+    }
+
+    // Verify Range Proof
+    {
+        Buffer pcRem;
+
+        // Derive PC_rem = PC_balance - PC_amount
+        if (auto const ter = computeSendRemainder(ctx.tx[sfBalanceCommitment], ctx.tx[sfAmountCommitment], pcRem);
+            !isTesSuccess(ter))
+        {
+            valid = false;
+        }
+        else
+        {
+            // Aggregated commitments: [PC_amount, PC_rem]
+            // Prove that both the transfer amount and the remaining balance are in range
+            std::vector<Slice> commitments;
+            commitments.push_back(ctx.tx[sfAmountCommitment]);
+            commitments.push_back(Slice{pcRem.data(), pcRem.size()});
+
+            if (auto const ter = verifyAggregatedBulletproof(rangeProof, commitments, contextHash); !isTesSuccess(ter))
+            {
+                valid = false;
+            }
+        }
+    }
+
+    if (!valid)
+    {
+        JLOG(ctx.j.trace()) << "ConfidentialMPTSend: One or more cryptographic proofs failed.";
+        return tecBAD_PROOF;
     }
 
     return tesSUCCESS;

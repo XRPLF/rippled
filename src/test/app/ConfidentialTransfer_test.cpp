@@ -72,7 +72,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     getTrivialSendProofHex(size_t nRecipients)
     {
         size_t const sizeEquality = getMultiCiphertextEqualityProofSize(nRecipients);
-        size_t const totalSize = sizeEquality + (2 * ecPedersenProofLength);
+        size_t const totalSize = sizeEquality + (2 * ecPedersenProofLength) + ecDoubleBulletproofLength;
 
         Buffer buf(totalSize);
         std::memset(buf.data(), 0, totalSize);
@@ -1719,6 +1719,71 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .balanceCommitment = getTrivialCommitment(),
                  .err = tecBAD_PROOF});
         }
+    }
+
+    void
+    testSendRangeProof(FeatureBitset features)
+    {
+        testcase("test ConfidentialMPTSend Range Proof");
+
+        using namespace test::jtx;
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+        mptAlice.create({.ownerCount = 1, .flags = tfMPTCanLock | tfMPTCanPrivacy | tfMPTCanTransfer});
+        mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = carol});
+
+        mptAlice.pay(alice, bob, 1000);
+        mptAlice.pay(alice, carol, 1000);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+        mptAlice.generateKeyPair(carol);
+
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+        {
+            // Bob converts 60
+            mptAlice.convert({.account = bob, .amt = 60, .holderPubKey = mptAlice.getPubKey(bob)});
+            mptAlice.mergeInbox({.account = bob});
+
+            mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
+            mptAlice.mergeInbox({.account = carol});
+
+            // Bob has 60, tries to send 70. Invalid remaining balance.
+            mptAlice.send({.account = bob, .dest = carol, .amt = 70, .err = tecBAD_PROOF});
+
+            // Bob has 60, tries to send 61. Invalid remaining balance.
+            mptAlice.send({.account = bob, .dest = carol, .amt = 61, .err = tecBAD_PROOF});
+
+            // Bob has 60, sends 60. Remainder is exactly 0. Valid remaining balance.
+            mptAlice.send({.account = bob, .dest = carol, .amt = 60, .err = tesSUCCESS});
+        }
+
+        {
+            // Bob converts 100.
+            mptAlice.convert({.account = bob, .amt = 100});
+            mptAlice.mergeInbox({.account = bob});
+
+            // Bob has 100, tries to send 2^64-1. Invalid remaining balance.
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = 0xFFFFFFFFFFFFFFFF,  // Max uint64
+                 .err = tecBAD_PROOF});
+
+            // Bob sends 1, remaining 99.
+            mptAlice.send({.account = bob, .dest = carol, .amt = 1, .err = tesSUCCESS});
+
+            // Bob sends 100, but only has 99. Invalid remaining balance.
+            mptAlice.send({.account = bob, .dest = carol, .amt = 100, .err = tecBAD_PROOF});
+        }
+
+        // todo: test m exceeding range, require using scala and refactor
     }
 
     void
@@ -3668,11 +3733,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     void
     testWithFeats(FeatureBitset features)
     {
+        // ConfidentialMPTConvert
         testConvert(features);
         testConvertPreflight(features);
         testConvertPreclaim(features);
         testConvertWithAuditor(features);
 
+        // ConfidentialMPTMergeInbox
         testMergeInbox(features);
         testMergeInboxPreflight(features);
         testMergeInboxPreclaim(features);
@@ -3683,6 +3750,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testSend(features);
         testSendPreflight(features);
         testSendPreclaim(features);
+        testSendRangeProof(features);
         testSendDepositPreauth(features);
         testSendWithAuditor(features);
 
@@ -3695,6 +3763,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         testDelete(features);
 
+        // ConfidentialMPTConvertBack
         testConvertBack(features);
         testConvertBackPreflight(features);
         testConvertBackPreclaim(features);

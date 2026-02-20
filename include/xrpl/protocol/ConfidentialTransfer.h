@@ -470,6 +470,24 @@ verifyAggregatedBulletproof(
     uint256 const& contextHash);
 
 /**
+ * @brief Computes the remainder commitment for ConfidentialMPTSend.
+ *
+ * Given a balance commitment PC_bal = m_bal*G + rho_bal*H and an amount
+ * commitment PC_amt = m_amt*G + rho_amt*H, this function computes:
+ * PC_rem = PC_bal - PC_amt = (m_bal - m_amt)*G + (rho_bal - rho_amt)*H
+ *
+ * This derived commitment is used in an aggregated range proof to ensure
+ * the sender maintains a non-negative balance (m_bal - m_amt >= 0).
+ *
+ * @param balanceCommitment The compressed Pedersen commitment to the balance (33 bytes).
+ * @param amountCommitment  The compressed Pedersen commitment to the amount (33 bytes).
+ * @param out               Output buffer for the resulting remainder commitment (33 bytes).
+ * @return tesSUCCESS on success, tecINTERNAL on failure.
+ */
+TER
+computeSendRemainder(Slice const& balanceCommitment, Slice const& amountCommitment, Buffer& out);
+
+/**
  * @brief Computes the remainder commitment for ConvertBack.
  *
  * Given a Pedersen commitment PC = m*G + rho*H, this function computes
