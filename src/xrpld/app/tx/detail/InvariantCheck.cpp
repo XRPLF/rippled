@@ -3490,13 +3490,18 @@ ValidConfidentialMPToken::finalize(
             }
         }
 
-        // Convert/ConvertBack symmetry (Conservation)
-        if (checks.mptAmountDelta + checks.coaDelta != checks.outstandingDelta)
+        // We only enforce this when Confidential Outstanding Amount changes (Convert, ConvertBack,
+        // ConfidentialClawback). This avoids falsely failing on Escrow or AMM operations that lock public tokens
+        // outside of ltMPTOKEN.
+        if (checks.coaDelta != 0)
         {
-            JLOG(j.fatal()) << "Invariant failed: Token conservation "
-                               "violation for MPT "
-                            << to_string(id);
-            return false;
+            if (checks.mptAmountDelta + checks.coaDelta != checks.outstandingDelta)
+            {
+                JLOG(j.fatal()) << "Invariant failed: Token conservation "
+                                   "violation for MPT "
+                                << to_string(id);
+                return false;
+            }
         }
 
         if (checks.badVersion)
