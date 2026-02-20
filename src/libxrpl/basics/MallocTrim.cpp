@@ -120,15 +120,12 @@ mallocTrim([[maybe_unused]] std::optional<std::string> const& tag, beast::Journa
         // Populate report fields
         report.rssBeforeKB = rssBeforeKB;
         report.rssAfterKB = rssAfterKB;
+        report.durationUs = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0);
 
-        long long const durationUs = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
-
-        long minfltDelta = -1;
-        long majfltDelta = -1;
         if (have_ru0 && have_ru1)
         {
-            minfltDelta = ru1.ru_minflt - ru0.ru_minflt;
-            majfltDelta = ru1.ru_majflt - ru0.ru_majflt;
+            report.minfltDelta = ru1.ru_minflt - ru0.ru_minflt;
+            report.majfltDelta = ru1.ru_majflt - ru0.ru_majflt;
         }
 
         long const deltaKB = (rssBeforeKB < 0 || rssAfterKB < 0) ? 0 : (rssAfterKB - rssBeforeKB);
@@ -138,8 +135,8 @@ mallocTrim([[maybe_unused]] std::optional<std::string> const& tag, beast::Journa
                               << " rss_before=" << rssBeforeKB << "kB"
                               << " rss_after=" << rssAfterKB << "kB"
                               << " delta=" << deltaKB << "kB"
-                              << " duration_us=" << durationUs << " minflt_delta=" << minfltDelta
-                              << " majflt_delta=" << majfltDelta;
+                              << " duration_us=" << report.durationUs.count() << " minflt_delta=" << report.minfltDelta
+                              << " majflt_delta=" << report.majfltDelta;
     }
     else
     {

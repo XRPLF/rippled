@@ -2,6 +2,7 @@
 
 #include <xrpl/beast/utility/Journal.h>
 
+#include <chrono>
 #include <optional>
 #include <string>
 
@@ -29,7 +30,7 @@ struct MallocTrimReport
     int trimResult{-1};
     long rssBeforeKB{-1};
     long rssAfterKB{-1};
-    long long durationUs{-1};
+    std::chrono::microseconds durationUs{-1};
     long minfltDelta{-1};
     long majfltDelta{-1};
 
