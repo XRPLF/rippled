@@ -66,10 +66,10 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
     if (auto const maxAmt = ctx.tx[~sfMaximumAmount])
     {
         if (maxAmt == 0)
-            return temMALFORMED;
+            return ctx.rules.enabled(fixErrorCodes) ? temBAD_AMOUNT : temMALFORMED;
 
         if (maxAmt > maxMPTokenAmount)
-            return temMALFORMED;
+            return ctx.rules.enabled(fixErrorCodes) ? temBAD_AMOUNT : temMALFORMED;
     }
     return tesSUCCESS;
 }

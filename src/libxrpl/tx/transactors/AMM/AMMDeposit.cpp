@@ -42,7 +42,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
     if (std::popcount(flags & tfDepositSubTx) != 1)
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid flags.";
-        return temMALFORMED;
+        return ctx.rules.enabled(fixErrorCodes) ? temINVALID_FLAG : temMALFORMED;
     }
     if (flags & tfLPToken)
     {

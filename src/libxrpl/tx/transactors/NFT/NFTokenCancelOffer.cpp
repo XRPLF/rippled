@@ -17,9 +17,17 @@ NFTokenCancelOffer::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 NFTokenCancelOffer::preflight(PreflightContext const& ctx)
 {
-    if (auto const& ids = ctx.tx[sfNFTokenOffers];
-        ids.empty() || (ids.size() > maxTokenOfferCancelCount))
-        return temMALFORMED;
+    {
+        auto const& ids = ctx.tx[sfNFTokenOffers];
+        if (ids.empty())
+        {
+            return ctx.rules.enabled(fixErrorCodes) ? temARRAY_EMPTY : temMALFORMED;
+        }
+        if (ids.size() > maxTokenOfferCancelCount)
+        {
+            return ctx.rules.enabled(fixErrorCodes) ? temARRAY_TOO_LARGE : temMALFORMED;
+        }
+    }
 
     // In order to prevent unnecessarily overlarge transactions, we
     // disallow duplicates in the list of offers to cancel.

@@ -31,7 +31,7 @@ NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
             return temMALFORMED;
 
         if (*bf <= beast::zero)
-            return temMALFORMED;
+            return ctx.rules.enabled(fixErrorCodes) ? temBAD_AMOUNT : temMALFORMED;
     }
 
     return tesSUCCESS;
