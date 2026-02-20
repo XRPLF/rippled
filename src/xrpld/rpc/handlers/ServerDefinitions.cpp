@@ -283,7 +283,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
         Json::Value templateArray = Json::arrayValue;
         for (auto const& element : soTemplate)
         {
-            if (txCommonFields.count(element.sField().getName()) > 0)
+            if (txCommonFields.contains(element.sField().getName()))
                 continue;  // skip common fields, already added
             Json::Value elementObj = Json::objectValue;
             elementObj[jss::name] = element.sField().getName();
@@ -311,7 +311,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
         Json::Value templateArray = Json::arrayValue;
         for (auto const& element : soTemplate)
         {
-            if (ledgerCommonFields.count(element.sField().getName()) > 0)
+            if (ledgerCommonFields.contains(element.sField().getName()))
                 continue;  // skip common fields, already added
             Json::Value elementObj = Json::objectValue;
             elementObj[jss::name] = element.sField().getName();
