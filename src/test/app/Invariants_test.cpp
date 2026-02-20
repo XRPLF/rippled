@@ -3894,27 +3894,27 @@ public:
     void
     run() override
     {
-        // testXRPNotCreated();
-        // testAccountRootsNotRemoved();
-        // testAccountRootsDeletedClean();
-        // testTypesMatch();
-        // testNoXRPTrustLine();
-        // testNoDeepFreezeTrustLinesWithoutFreeze();
-        // testTransfersNotFrozen();
-        // testXRPBalanceCheck();
-        // testTransactionFeeCheck();
-        // testNoBadOffers();
-        // testNoZeroEscrow();
-        // testValidNewAccountRoot();
-        // testNFTokenPageInvariants();
-        // testPermissionedDomainInvariants(defaultAmendments() | fixPermissionedDomainInvariant);
-        // testPermissionedDomainInvariants(defaultAmendments() - fixPermissionedDomainInvariant);
-        // testPermissionedDEX(defaultAmendments() | fixPermissionedDomainInvariant);
-        // testPermissionedDEX(defaultAmendments() - fixPermissionedDomainInvariant);
-        // testNoModifiedUnmodifiableFields();
-        // testValidPseudoAccounts();
-        // testValidLoanBroker();
-        // testVault();
+        testXRPNotCreated();
+        testAccountRootsNotRemoved();
+        testAccountRootsDeletedClean();
+        testTypesMatch();
+        testNoXRPTrustLine();
+        testNoDeepFreezeTrustLinesWithoutFreeze();
+        testTransfersNotFrozen();
+        testXRPBalanceCheck();
+        testTransactionFeeCheck();
+        testNoBadOffers();
+        testNoZeroEscrow();
+        testValidNewAccountRoot();
+        testNFTokenPageInvariants();
+        testPermissionedDomainInvariants(defaultAmendments() | fixPermissionedDomainInvariant);
+        testPermissionedDomainInvariants(defaultAmendments() - fixPermissionedDomainInvariant);
+        testPermissionedDEX(defaultAmendments() | fixPermissionedDomainInvariant);
+        testPermissionedDEX(defaultAmendments() - fixPermissionedDomainInvariant);
+        testNoModifiedUnmodifiableFields();
+        testValidPseudoAccounts();
+        testValidLoanBroker();
+        testVault();
         testValidConfidentialMPToken();
     }
 };
