@@ -522,12 +522,7 @@ private:
                      USD(100),
                      STAmount{USD, 1, -1},
                      std::nullopt},
-                    {tfTwoAssetIfEmpty | tfLPToken,
-                     std::nullopt,
-                     XRP(100),
-                     USD(100),
-                     STAmount{USD, 1, -1},
-                     std::nullopt}};
+                };
             for (auto const& it : invalidOptions)
             {
                 ammAlice.deposit(
@@ -542,6 +537,20 @@ private:
                     std::get<5>(it),
                     ter(temMALFORMED));
             }
+
+            // Two flags set - popcount check returns temINVALID_FLAG with
+            // fixErrorCodes
+            ammAlice.deposit(
+                alice,
+                std::nullopt,
+                XRP(100),
+                USD(100),
+                STAmount{USD, 1, -1},
+                tfTwoAssetIfEmpty | tfLPToken,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(env.enabled(fixErrorCodes) ? temINVALID_FLAG : temMALFORMED));
 
             {
                 // bad preflight1
@@ -1496,7 +1505,70 @@ private:
                 std::nullopt,
                 ter(temINVALID_FLAG));
 
-            // Invalid options
+            // Invalid options - cases where popcount of flags != 1
+            // These return temINVALID_FLAG with fixErrorCodes
+            auto const flagErr = env.enabled(fixErrorCodes) ? temINVALID_FLAG : temMALFORMED;
+            // No flags set
+            ammAlice.withdraw(
+                alice,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(flagErr));
+            // Two flags set: tfSingleAsset | tfTwoAsset
+            ammAlice.withdraw(
+                alice,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                tfSingleAsset | tfTwoAsset,
+                std::nullopt,
+                std::nullopt,
+                ter(flagErr));
+            // Two flags set: tfWithdrawAll | tfLPToken
+            ammAlice.withdraw(
+                alice,
+                std::nullopt,
+                USD(0),
+                XRP(100),
+                std::nullopt,
+                tfWithdrawAll | tfLPToken,
+                std::nullopt,
+                std::nullopt,
+                ter(flagErr));
+            // Two flags set: tfWithdrawAll | tfOneAssetWithdrawAll
+            ammAlice.withdraw(
+                alice,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                tfWithdrawAll | tfOneAssetWithdrawAll,
+                std::nullopt,
+                std::nullopt,
+                ter(flagErr));
+
+            // No flags and no auto-inference: asset2Out + EPrice only
+            // Popcount=0, so returns temINVALID_FLAG with fixErrorCodes
+            ammAlice.withdraw(
+                alice,
+                std::nullopt,
+                std::nullopt,
+                USD(100),
+                IOUAmount{250, 0},
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(flagErr));
+
+            // Invalid options - cases with exactly one flag but wrong options
+            // Note: tests with tokens/assets without explicit flags will have
+            // flags auto-inferred, so they don't test the popcount=0 case
             std::vector<std::tuple<
                 std::optional<std::uint32_t>,
                 std::optional<STAmount>,
@@ -1506,36 +1578,12 @@ private:
                 NotTEC>>
                 invalidOptions = {
                     // tokens, asset1Out, asset2Out, EPrice, flags, ter
-                    {std::nullopt,
-                     std::nullopt,
-                     std::nullopt,
-                     std::nullopt,
-                     std::nullopt,
-                     temMALFORMED},
-                    {std::nullopt,
-                     std::nullopt,
-                     std::nullopt,
-                     std::nullopt,
-                     tfSingleAsset | tfTwoAsset,
-                     temMALFORMED},
                     {1'000, std::nullopt, std::nullopt, std::nullopt, tfWithdrawAll, temMALFORMED},
-                    {std::nullopt,
-                     USD(0),
-                     XRP(100),
-                     std::nullopt,
-                     tfWithdrawAll | tfLPToken,
-                     temMALFORMED},
                     {std::nullopt,
                      std::nullopt,
                      USD(100),
                      std::nullopt,
                      tfWithdrawAll,
-                     temMALFORMED},
-                    {std::nullopt,
-                     std::nullopt,
-                     std::nullopt,
-                     std::nullopt,
-                     tfWithdrawAll | tfOneAssetWithdrawAll,
                      temMALFORMED},
                     {std::nullopt,
                      USD(100),
@@ -1549,6 +1597,8 @@ private:
                      std::nullopt,
                      tfOneAssetWithdrawAll,
                      temMALFORMED},
+                    // These have tokens/assets but no explicit flags - flags will
+                    // be auto-inferred so popcount will be 1
                     {1'000, std::nullopt, USD(100), std::nullopt, std::nullopt, temMALFORMED},
                     {std::nullopt,
                      std::nullopt,
@@ -1559,12 +1609,6 @@ private:
                     {1'000,
                      std::nullopt,
                      std::nullopt,
-                     IOUAmount{250, 0},
-                     std::nullopt,
-                     temMALFORMED},
-                    {std::nullopt,
-                     std::nullopt,
-                     USD(100),
                      IOUAmount{250, 0},
                      std::nullopt,
                      temMALFORMED},
