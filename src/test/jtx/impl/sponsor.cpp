@@ -57,6 +57,17 @@ set_reserve(jtx::Account const& account, uint32_t flags, uint32_t reserveCount)
 }
 
 Json::Value
+set_max_fee(jtx::Account const& account, uint32_t flags, STAmount maxFee)
+{
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::SponsorshipSet;
+    jv[jss::Account] = account.human();
+    jv[sfFlags.jsonName] = flags;
+    jv[sfMaxFee.jsonName] = maxFee.getJson(JsonOptions::none);
+    return jv;
+}
+
+Json::Value
 del(jtx::Account const& account)
 {
     Json::Value jv;

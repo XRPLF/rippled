@@ -128,23 +128,20 @@ public:
             ter(temMALFORMED));
 
         // Invalid feeAmount
-        for (auto amt : {XRP(-1), XRP(0), USD(1)})
+        for (auto amt : {XRP(-1), USD(1)})
         {
             env(sponsor::set_fee(sponsor, 0, amt), sponsor::sponseeAcc(alice), ter(temBAD_AMOUNT));
         }
         // Invalid MaxFee
-        for (auto amt : {XRP(-1), XRP(0), USD(1)})
+        for (auto amt : {XRP(-1), USD(1)})
         {
             env(sponsor::set_fee(sponsor, 0, XRP(1), amt), sponsor::sponseeAcc(alice), ter(temBAD_AMOUNT));
         }
 
-        // Invalid reserveCount
-        env(sponsor::set_reserve(sponsor, 0, 0), sponsor::sponseeAcc(alice), ter(temMALFORMED));
-
         // Invalid Delete operation
         env(sponsor::set_reserve(sponsor, tfDeleteObject, 1), sponsor::sponseeAcc(alice), ter(temMALFORMED));
         env(sponsor::set_fee(sponsor, tfDeleteObject, XRP(1)), sponsor::sponseeAcc(alice), ter(temMALFORMED));
-        // TODO: test MaxFee with tfDeleteObject
+        env(sponsor::set_max_fee(sponsor, tfDeleteObject, XRP(1)), sponsor::sponseeAcc(alice), ter(temMALFORMED));
 
         // Invalid SponsorAccount with non-Delete operation
         env(sponsor::set_reserve(sponsor, 0, 100), sponsor::counterpartySponsor(alice), ter(temMALFORMED));
@@ -334,6 +331,7 @@ public:
         env.close();
 
         {
+            // create sponsorship
             env(sponsor::set(
                     sponsor,
                     tfSponsorshipSetRequireSignForFee | tfSponsorshipSetRequireSignForReserve,
@@ -401,6 +399,37 @@ public:
             // delete from sponsee
             env(sponsor::del(alice), sponsor::counterpartySponsor(sponsor), ter(tesSUCCESS));
             env.close();
+            BEAST_EXPECT(!env.le(keylet::sponsor(sponsor, alice)));
+
+            // create sponsorship with zero value
+            env(sponsor::set(sponsor, 0, 0, XRP(0), XRP(0)), sponsor::sponseeAcc(alice), fee(XRP(1)));
+            env.close();
+
+            sle = env.le(keylet::sponsor(sponsor, alice));
+            BEAST_EXPECT(sle);
+            BEAST_EXPECT(!sle->isFieldPresent(sfReserveCount));
+            BEAST_EXPECT(!sle->isFieldPresent(sfFeeAmount));
+            BEAST_EXPECT(!sle->isFieldPresent(sfMaxFee));
+
+            // update sponsorship with non-zero value
+            env(sponsor::set(sponsor, 0, 100, XRP(100), XRP(1)), sponsor::sponseeAcc(alice), fee(XRP(1)));
+            env.close();
+
+            sle = env.le(keylet::sponsor(sponsor, alice));
+            BEAST_EXPECT(sle);
+            BEAST_EXPECT(sle->at(sfReserveCount) == 100);
+            BEAST_EXPECT(sle->at(sfFeeAmount) == XRP(100));
+            BEAST_EXPECT(sle->at(sfMaxFee) == XRP(1));
+
+            // update sponsorship with zero value
+            env(sponsor::set(sponsor, 0, 0, XRP(0), XRP(0)), sponsor::sponseeAcc(alice), fee(XRP(1)));
+            env.close();
+
+            sle = env.le(keylet::sponsor(sponsor, alice));
+            BEAST_EXPECT(sle);
+            BEAST_EXPECT(!sle->isFieldPresent(sfReserveCount));
+            BEAST_EXPECT(!sle->isFieldPresent(sfFeeAmount));
+            BEAST_EXPECT(!sle->isFieldPresent(sfMaxFee));
         }
 
         {

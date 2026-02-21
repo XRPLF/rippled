@@ -67,7 +67,7 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
             if (!isXRP(amount))
                 return temBAD_AMOUNT;
 
-            if (amount.xrp() <= XRPAmount{0})
+            if (amount.xrp() < XRPAmount{0})
                 return temBAD_AMOUNT;
 
             return tesSUCCESS;
@@ -83,8 +83,8 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
         if (ctx.tx.isFieldPresent(sfReserveCount))
         {
             auto const reserveCount = ctx.tx.getFieldU32(sfReserveCount);
-            if (reserveCount < 1)
-                return temMALFORMED;
+            if (reserveCount < 0)
+                return temMALFORMED;  // LCOV_EXCL_LINE
         }
     }
 
@@ -227,14 +227,14 @@ SponsorshipSet::doApply()
 
         (*newSle)[sfOwner] = sponsorAcc;
         (*newSle)[sfSponsee] = sponseeAcc;
-        if (feeAmount)
+        if (feeAmount && *feeAmount > XRPAmount(0))
         {
             (*sponsorAccSle)[sfBalance] -= *feeAmount;
             (*newSle)[sfFeeAmount] = *feeAmount;
         }
-        if (maxFee)
+        if (maxFee && *maxFee > XRPAmount(0))
             (*newSle)[sfMaxFee] = *maxFee;
-        if (reserveCount)
+        if (reserveCount && *reserveCount > 0)
             (*newSle)[sfReserveCount] = *reserveCount;
 
         auto flags = 0;
@@ -273,15 +273,29 @@ SponsorshipSet::doApply()
         if (feeAmountDelta != beast::zero)
         {
             (*sponsorAccSle)[sfBalance] -= feeAmountDelta;
-            (*sponsorObjSle).setFieldAmount(sfFeeAmount, *feeAmount);
+
+            if (*feeAmount == XRPAmount(0))
+                (*sponsorObjSle).makeFieldAbsent(sfFeeAmount);
+            else
+                (*sponsorObjSle).setFieldAmount(sfFeeAmount, *feeAmount);
         }
     }
 
     if (maxFee)
-        (*sponsorObjSle)[sfMaxFee] = *maxFee;
+    {
+        if (*maxFee == XRPAmount(0))
+            (*sponsorObjSle).makeFieldAbsent(sfMaxFee);
+        else
+            (*sponsorObjSle)[sfMaxFee] = *maxFee;
+    }
 
     if (reserveCount)
-        (*sponsorObjSle)[sfReserveCount] = *reserveCount;
+    {
+        if (*reserveCount == 0)
+            (*sponsorObjSle).makeFieldAbsent(sfReserveCount);
+        else
+            (*sponsorObjSle)[sfReserveCount] = *reserveCount;
+    }
 
     // update Flags
     auto flags = sponsorObjSle->getFieldU32(sfFlags);
