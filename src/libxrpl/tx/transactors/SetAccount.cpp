@@ -152,17 +152,8 @@ SetAccount::preflight(PreflightContext const& ctx)
 NotTEC
 SetAccount::checkPermission(ReadView const& view, STTx const& tx)
 {
-    // SetAccount is prohibited to be granted on a transaction level,
-    // but some granular permissions are allowed.
-    auto const delegate = tx[~sfDelegate];
-    if (!delegate)
-        return tesSUCCESS;
-
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
-    if (!sle)
-        return terNO_DELEGATE_PERMISSION;
+    if (auto result = Transactor::checkPermission(view, tx); !isTesSuccess(result))
+        return result;
 
     std::unordered_set<GranularPermissionType> granularPermissions;
     loadGranularPermission(sle, ttACCOUNT_SET, granularPermissions);
