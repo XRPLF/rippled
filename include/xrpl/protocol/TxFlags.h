@@ -307,6 +307,12 @@ constexpr std::uint32_t tfDeleteObject                                       = 0
 constexpr std::uint32_t tfSponsorshipSetMask = ~(tfUniversal | tfSponsorshipSetRequireSignForFee | tfSponsorshipClearRequireSignForFee | tfSponsorshipSetRequireSignForReserve | tfSponsorshipClearRequireSignForReserve | tfDeleteObject);
 constexpr std::uint32_t tfSponsorshipSetPermissionMask = ~(tfUniversal | tfSponsorshipSetRequireSignForFee | tfSponsorshipSetRequireSignForReserve);
 
+// SponsorshipTransfer flags:
+constexpr std::uint32_t tfSponsorshipEnd                                       = 0x00000001;
+constexpr std::uint32_t tfSponsorshipCreate                                    = 0x00000002;
+constexpr std::uint32_t tfSponsorshipReassign                                  = 0x00000004;
+constexpr std::uint32_t tfSponsorshipTransferMask = ~(tfUniversal | tfSponsorshipEnd | tfSponsorshipCreate | tfSponsorshipReassign);
+
 // clang-format on
 
 }  // namespace xrpl

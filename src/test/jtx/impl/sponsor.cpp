@@ -78,11 +78,12 @@ del(jtx::Account const& account)
 }
 
 Json::Value
-transfer(jtx::Account const& account, std::optional<uint256> const& index)
+transfer(jtx::Account const& account, uint32_t flags, std::optional<uint256> const& index)
 {
     Json::Value jv;
     jv[jss::TransactionType] = jss::SponsorshipTransfer;
     jv[jss::Account] = account.human();
+    jv[sfFlags.jsonName] = flags;
     if (index)
         jv[sfObjectID.jsonName] = to_string(*index);
     return jv;

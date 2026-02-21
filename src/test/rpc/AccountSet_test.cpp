@@ -403,7 +403,9 @@ public:
                 env(did::set(alice), did::uri("uri"), sponsor::as(gw, tfSponsorReserve), sig(sfSponsorSignature, gw));
                 env.close();
 
-                env(sponsor::transfer(alice), sponsor::as(gw, tfSponsorReserve), sig(sfSponsorSignature, gw));
+                env(sponsor::transfer(alice, tfSponsorshipCreate),
+                    sponsor::as(gw, tfSponsorReserve),
+                    sig(sfSponsorSignature, gw));
                 env.close();
             }
 
