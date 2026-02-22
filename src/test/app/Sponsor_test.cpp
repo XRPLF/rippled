@@ -549,7 +549,7 @@ public:
         using namespace test::jtx;
 
         {
-            // invalid flags
+            // invalid fields
             Env env{*this, testable_amendments()};
             Account const alice("alice");
             Account const bob("bob");
@@ -573,16 +573,28 @@ public:
             // invalid tfSponsorshipCreate
             // no sponsor field present
             env(sponsor::transfer(alice, tfSponsorshipCreate), ter(temINVALID_FLAG));
+            // sponsee field present
+            env(sponsor::transfer(alice, tfSponsorshipCreate),
+                sponsor::sponseeAcc(bob),
+                sponsor::as(sponsor1, tfSponsorReserve),
+                ter(temMALFORMED));
 
             // invalid tfSponsorshipReassign
             // no sponsor field present
             env(sponsor::transfer(alice, tfSponsorshipReassign), ter(temINVALID_FLAG));
+            // sponsee field present
+            env(sponsor::transfer(alice, tfSponsorshipReassign),
+                sponsor::sponseeAcc(bob),
+                sponsor::as(sponsor1, tfSponsorReserve),
+                ter(temMALFORMED));
 
             // invalid tfSponsorshipEnd
             // sponsor field present
             env(sponsor::transfer(alice, tfSponsorshipEnd),
                 sponsor::as(sponsor1, tfSponsorReserve),
                 ter(temINVALID_FLAG));
+            // account = sponsee
+            env(sponsor::transfer(alice, tfSponsorshipEnd), sponsor::sponseeAcc(alice), ter(temMALFORMED));
         }
 
         {
@@ -705,6 +717,30 @@ public:
             env(sponsor::transfer(bob, tfSponsorshipEnd), ter(tecNO_PERMISSION));
             env.close();
         }
+        {
+            // dissolve account sponsorship from sponsor
+            Env env{*this, testable_amendments()};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const sponsor("sponsor");
+            env.fund(XRP(10000), alice, bob, sponsor);
+            env.close();
+
+            env(sponsor::transfer(alice, tfSponsorshipCreate),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sig(sfSponsorSignature, sponsor));
+            env.close();
+
+            BEAST_EXPECT(env.le(alice)->getAccountID(sfSponsor) == sponsor.id());
+            BEAST_EXPECT(sponsoringAccountCount(env, sponsor) == 1);
+
+            env(sponsor::transfer(sponsor, tfSponsorshipEnd), sponsor::sponseeAcc(alice));
+            env.close();
+
+            BEAST_EXPECT(!env.le(alice)->isFieldPresent(sfSponsor));
+            BEAST_EXPECT(sponsoringAccountCount(env, sponsor) == 0);
+        }
+
         {
             // sponsor object (co-signing)
             Env env{*this, testable_amendments()};
@@ -949,6 +985,45 @@ public:
             BEAST_EXPECT(!checkSle->isFieldPresent(sfSponsor));
             sponsor2Sle = env.le(keylet::sponsor(sponsor2, alice));
             BEAST_EXPECT(sponsor2Sle->getFieldU32(sfReserveCount) == 100);  // paybacked
+        }
+
+        {
+            // Dissolve object sponsorship from sponsor
+            Env env{*this, testable_amendments()};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const sponsor("sponsor");
+            env.fund(XRP(10000), alice, bob, sponsor);
+            env.close();
+
+            auto const seq = env.seq(alice);
+            env(check::create(alice, bob, XRP(1)));
+            env.close();
+
+            auto const checkId = keylet::check(alice, seq).key;
+            BEAST_EXPECT(env.le(keylet::unchecked(checkId)) != nullptr);
+
+            env(sponsor::transfer(alice, tfSponsorshipCreate, checkId),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sig(sfSponsorSignature, sponsor));
+            env.close();
+
+            BEAST_EXPECT(env.le(keylet::unchecked(checkId))->getAccountID(sfSponsor) == sponsor.id());
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+            // not the owner of the object
+            env(sponsor::transfer(sponsor, tfSponsorshipEnd, checkId), ter(tecNO_PERMISSION));
+            env.close();
+
+            env(sponsor::transfer(sponsor, tfSponsorshipEnd, checkId), sponsor::sponseeAcc(alice));
+            env.close();
+
+            BEAST_EXPECT(!env.le(keylet::unchecked(checkId))->isFieldPresent(sfSponsor));
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
         }
 
         {
