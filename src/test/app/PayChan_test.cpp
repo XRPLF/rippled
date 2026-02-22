@@ -755,7 +755,7 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testDepositAuthCreds()
+    testDepositAuthCreds(FeatureBitset features)
     {
         testcase("Deposit Authorization with Credentials");
         using namespace jtx;
@@ -770,7 +770,7 @@ struct PayChan_test : public beast::unit_test::suite
         Account const zelda("zelda");
 
         {
-            Env env{*this};
+            Env env{*this, features};
             env.fund(XRP(10000), alice, bob, carol, dillon, zelda);
 
             auto const pk = alice.pk();
@@ -838,7 +838,9 @@ struct PayChan_test : public beast::unit_test::suite
                 ter(tecBAD_CREDENTIALS));
 
             // Fail, empty credentials
-            env(claim(alice, chan, delta, delta), credentials::ids({}), ter(temMALFORMED));
+            env(claim(alice, chan, delta, delta),
+                credentials::ids({}),
+                ter(features[fixErrorCodes] ? temARRAY_EMPTY : temMALFORMED));
 
             {
                 // claim fails cause of expired credentials
@@ -1549,15 +1551,17 @@ struct PayChan_test : public beast::unit_test::suite
         auto const authAmt = XRP(100);
         auto const sig = signClaimAuth(alice.pk(), alice.sk(), chan, authAmt);
         jv = claim(bob, chan, authAmt.value(), authAmt.value(), Slice(sig), alice.pk());
+        auto const pkErr =
+            features[fixErrorCodes] ? NotTEC{telBAD_PUBLIC_KEY} : NotTEC{temMALFORMED};
         jv["PublicKey"] = pkHex.substr(2, pkHex.size() - 2);
-        env(jv, ter(temMALFORMED));
+        env(jv, ter(pkErr));
         jv["PublicKey"] = pkHex.substr(0, pkHex.size() - 2);
-        env(jv, ter(temMALFORMED));
+        env(jv, ter(pkErr));
         badPrefix = pkHex;
         badPrefix[0] = 'f';
         badPrefix[1] = 'f';
         jv["PublicKey"] = badPrefix;
-        env(jv, ter(temMALFORMED));
+        env(jv, ter(pkErr));
 
         // missing public key
         jv.removeMember("PublicKey");
@@ -1921,7 +1925,9 @@ public:
         using namespace test::jtx;
         FeatureBitset const all{testable_amendments()};
         testWithFeats(all);
-        testDepositAuthCreds();
+        testWithFeats(all - fixErrorCodes);
+        testDepositAuthCreds(all);
+        testDepositAuthCreds(all - fixErrorCodes);
         testMetaAndOwnership(all - fixIncludeKeyletFields);
     }
 };

@@ -11,7 +11,7 @@ struct Oracle_test : public beast::unit_test::suite
 {
 private:
     void
-    testInvalidSet()
+    testInvalidSet(FeatureBitset features)
     {
         testcase("Invalid Set");
 
@@ -20,7 +20,7 @@ private:
 
         {
             // Invalid account
-            Env env(*this);
+            Env env(*this, features);
             Account const bad("bad");
             env.memoize(bad);
             Oracle oracle(
@@ -33,7 +33,7 @@ private:
 
         // Insufficient reserve
         {
-            Env env(*this);
+            Env env(*this, features);
             env.fund(env.current()->fees().accountReserve(0), owner);
             Oracle oracle(
                 env,
@@ -43,7 +43,7 @@ private:
         }
         // Insufficient reserve if the data series extends to greater than 5
         {
-            Env env(*this);
+            Env env(*this, features);
             env.fund(
                 env.current()->fees().accountReserve(1) + env.current()->fees().base * 2, owner);
             Oracle oracle(
@@ -64,10 +64,12 @@ private:
         }
 
         {
-            Env env(*this);
+            Env env(*this, features);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             env.fund(XRP(1'000), owner);
             Oracle oracle(env, {.owner = owner, .fee = baseFee}, false);
+
+            auto const dupErr = env.enabled(fixErrorCodes) ? temDUPLICATE : temMALFORMED;
 
             // Invalid flag
             oracle.set(
@@ -78,7 +80,7 @@ private:
                 CreateArg{
                     .series = {{"XRP", "USD", 740, 1}, {"XRP", "USD", 750, 1}},
                     .fee = baseFee,
-                    .err = ter(temMALFORMED)});
+                    .err = ter(dupErr)});
 
             // Price is not included
             oracle.set(
@@ -92,13 +94,13 @@ private:
                 CreateArg{
                     .series = {{"XRP", "USD", 740, 1}, {"XRP", "USD", std::nullopt, 1}},
                     .fee = baseFee,
-                    .err = ter(temMALFORMED)});
+                    .err = ter(dupErr)});
             // Token pair is in add and delete
             oracle.set(
                 CreateArg{
                     .series = {{"XRP", "EUR", 740, 1}, {"XRP", "EUR", std::nullopt, 1}},
                     .fee = baseFee,
-                    .err = ter(temMALFORMED)});
+                    .err = ter(dupErr)});
 
             // Array of token pair is 0 or exceeds 10
             oracle.set(
@@ -122,7 +124,7 @@ private:
 
         // Array of token pair exceeds 10 after update
         {
-            Env env{*this};
+            Env env{*this, features};
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             env.fund(XRP(1'000), owner);
 
@@ -149,7 +151,7 @@ private:
         }
 
         {
-            Env env(*this);
+            Env env(*this, features);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             env.fund(XRP(1'000), owner);
             Oracle oracle(env, {.owner = owner, .fee = baseFee}, false);
@@ -188,34 +190,35 @@ private:
         }
 
         {
-            Env env(*this);
+            Env env(*this, features);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             env.fund(XRP(1'000), owner);
             Oracle oracle(env, {.owner = owner, .fee = baseFee}, false);
 
+            auto const lenErr = env.enabled(fixErrorCodes) ? temBAD_FIELD_LENGTH : temMALFORMED;
+
             // Fields too long
             // Asset class
             std::string assetClass(17, '0');
-            oracle.set(
-                CreateArg{.assetClass = assetClass, .fee = baseFee, .err = ter(temMALFORMED)});
+            oracle.set(CreateArg{.assetClass = assetClass, .fee = baseFee, .err = ter(lenErr)});
             // provider
             std::string const large(257, '0');
-            oracle.set(CreateArg{.provider = large, .fee = baseFee, .err = ter(temMALFORMED)});
+            oracle.set(CreateArg{.provider = large, .fee = baseFee, .err = ter(lenErr)});
             // URI
-            oracle.set(CreateArg{.uri = large, .fee = baseFee, .err = ter(temMALFORMED)});
+            oracle.set(CreateArg{.uri = large, .fee = baseFee, .err = ter(lenErr)});
             // Empty field
             // Asset class
-            oracle.set(CreateArg{.assetClass = "", .fee = baseFee, .err = ter(temMALFORMED)});
+            oracle.set(CreateArg{.assetClass = "", .fee = baseFee, .err = ter(lenErr)});
             // provider
-            oracle.set(CreateArg{.provider = "", .fee = baseFee, .err = ter(temMALFORMED)});
+            oracle.set(CreateArg{.provider = "", .fee = baseFee, .err = ter(lenErr)});
             // URI
-            oracle.set(CreateArg{.uri = "", .fee = baseFee, .err = ter(temMALFORMED)});
+            oracle.set(CreateArg{.uri = "", .fee = baseFee, .err = ter(lenErr)});
         }
 
         {
             // Different owner creates a new object and fails because
             // of missing fields currency/provider
-            Env env(*this);
+            Env env(*this, features);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             Account const some("some");
             env.fund(XRP(1'000), owner);
@@ -233,7 +236,7 @@ private:
         {
             // Invalid update time
             using namespace std::chrono;
-            Env env(*this);
+            Env env(*this, features);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             auto closeTime = [&]() {
                 return duration_cast<seconds>(
@@ -279,7 +282,7 @@ private:
 
         {
             // delete token pair that doesn't exist
-            Env env(*this);
+            Env env(*this, features);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             env.fund(XRP(1'000), owner);
             Oracle oracle(env, {.owner = owner, .fee = baseFee});
@@ -299,7 +302,7 @@ private:
 
         {
             // same BaseAsset and QuoteAsset
-            Env env(*this);
+            Env env(*this, features);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             env.fund(XRP(1'000), owner);
             Oracle oracle(
@@ -312,7 +315,7 @@ private:
 
         {
             // Scale is greater than maxPriceScale
-            Env env(*this);
+            Env env(*this, features);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             env.fund(XRP(1'000), owner);
             Oracle oracle(
@@ -325,15 +328,17 @@ private:
 
         {
             // Updating token pair to add and delete
-            Env env(*this);
+            Env env(*this, features);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             env.fund(XRP(1'000), owner);
             Oracle oracle(env, {.owner = owner, .fee = baseFee});
+
+            auto const dupErr = env.enabled(fixErrorCodes) ? temDUPLICATE : temMALFORMED;
             oracle.set(
                 UpdateArg{
                     .series = {{"XRP", "EUR", std::nullopt, std::nullopt}, {"XRP", "EUR", 740, 1}},
                     .fee = baseFee,
-                    .err = ter(temMALFORMED)});
+                    .err = ter(dupErr)});
             // Delete token pair that doesn't exist in this oracle
             oracle.set(
                 UpdateArg{
@@ -351,7 +356,7 @@ private:
 
         {
             // Bad fee
-            Env env(*this);
+            Env env(*this, features);
             env.fund(XRP(1'000), owner);
             Oracle oracle(env, {.owner = owner, .fee = -1, .err = ter(temBAD_FEE)});
             Oracle oracle1(
@@ -779,7 +784,8 @@ public:
     {
         using namespace jtx;
         auto const all = testable_amendments();
-        testInvalidSet();
+        testInvalidSet(all);
+        testInvalidSet(all - fixErrorCodes);
         testInvalidDelete();
         testCreate(all);
         testCreate(all - fixIncludeKeyletFields);

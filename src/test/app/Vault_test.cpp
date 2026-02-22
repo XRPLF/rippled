@@ -541,13 +541,13 @@ class Vault_test : public beast::unit_test::suite
     }
 
     void
-    testPreflight()
+    testPreflight(FeatureBitset features)
     {
         using namespace test::jtx;
 
         struct CaseArgs
         {
-            FeatureBitset features = testable_amendments() | featureSingleAssetVault;
+            FeatureBitset features;
         };
 
         auto testCase = [&, this](
@@ -558,6 +558,8 @@ class Vault_test : public beast::unit_test::suite
                                 Asset const& asset,
                                 Vault& vault)> test,
                             CaseArgs args = {}) {
+            if (args.features.count() == 0)
+                args.features = features;
             Env env{*this, args.features};
             Account issuer{"issuer"};
             Account owner{"owner"};
@@ -872,32 +874,34 @@ class Vault_test : public beast::unit_test::suite
             [&](Env& env, Account const&, Account const& owner, Asset const& asset, Vault& vault) {
                 testcase("create or set invalid data");
 
+                auto const lenErr = env.enabled(fixErrorCodes) ? temBAD_FIELD_LENGTH : temMALFORMED;
+
                 auto [tx1, keylet] = vault.create({.owner = owner, .asset = asset});
 
                 {
                     auto tx = tx1;
                     tx[sfData] = "";
-                    env(tx, ter(temMALFORMED));
+                    env(tx, ter(lenErr));
                 }
 
                 {
                     auto tx = tx1;
                     // A hexadecimal string of 257 bytes.
                     tx[sfData] = std::string(514, 'A');
-                    env(tx, ter(temMALFORMED));
+                    env(tx, ter(lenErr));
                 }
 
                 {
                     auto tx = vault.set({.owner = owner, .id = keylet.key});
                     tx[sfData] = "";
-                    env(tx, ter{temMALFORMED});
+                    env(tx, ter{lenErr});
                 }
 
                 {
                     auto tx = vault.set({.owner = owner, .id = keylet.key});
                     // A hexadecimal string of 257 bytes.
                     tx[sfData] = std::string(514, 'A');
-                    env(tx, ter{temMALFORMED});
+                    env(tx, ter{lenErr});
                 }
             });
 
@@ -917,12 +921,14 @@ class Vault_test : public beast::unit_test::suite
             [&](Env& env, Account const&, Account const& owner, Asset const& asset, Vault& vault) {
                 testcase("create with invalid metadata");
 
+                auto const lenErr = env.enabled(fixErrorCodes) ? temBAD_FIELD_LENGTH : temMALFORMED;
+
                 auto [tx1, keylet] = vault.create({.owner = owner, .asset = asset});
 
                 {
                     auto tx = tx1;
                     tx[sfMPTokenMetadata] = "";
-                    env(tx, ter(temMALFORMED));
+                    env(tx, ter(lenErr));
                 }
 
                 {
@@ -930,7 +936,7 @@ class Vault_test : public beast::unit_test::suite
                     // This metadata is for the share token.
                     // A hexadecimal string of 1025 bytes.
                     tx[sfMPTokenMetadata] = std::string(2050, 'B');
-                    env(tx, ter(temMALFORMED));
+                    env(tx, ter(lenErr));
                 }
             });
 
@@ -938,12 +944,14 @@ class Vault_test : public beast::unit_test::suite
             [&](Env& env, Account const&, Account const& owner, Asset const& asset, Vault& vault) {
                 testcase("set negative maximum");
 
+                auto const amtErr = env.enabled(fixErrorCodes) ? temBAD_AMOUNT : temMALFORMED;
+
                 auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
 
                 {
                     auto tx = vault.set({.owner = owner, .id = keylet.key});
                     tx[sfAssetsMaximum] = negativeAmount(asset).number();
-                    env(tx, ter{temMALFORMED});
+                    env(tx, ter{amtErr});
                 }
             });
 
@@ -1029,6 +1037,8 @@ class Vault_test : public beast::unit_test::suite
             [&](Env& env, Account const&, Account const& owner, Asset const& asset, Vault& vault) {
                 testcase("invalid create");
 
+                auto const amtErr = env.enabled(fixErrorCodes) ? temBAD_AMOUNT : temMALFORMED;
+
                 auto [tx1, keylet] = vault.create({.owner = owner, .asset = asset});
 
                 {
@@ -1046,7 +1056,7 @@ class Vault_test : public beast::unit_test::suite
                 {
                     auto tx = tx1;
                     tx[sfAssetsMaximum] = negativeAmount(asset).number();
-                    env(tx, ter{temMALFORMED});
+                    env(tx, ter{amtErr});
                 }
 
                 {
@@ -5361,8 +5371,11 @@ public:
     void
     run() override
     {
+        using namespace test::jtx;
+        FeatureBitset const all{testable_amendments() | featureSingleAssetVault};
         testSequences();
-        testPreflight();
+        testPreflight(all);
+        testPreflight(all - fixErrorCodes);
         testCreateFailXRP();
         testCreateFailIOU();
         testCreateFailMPT();

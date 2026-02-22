@@ -679,7 +679,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
     }
 
     void
-    testCredentialsPayment()
+    testCredentialsPayment(FeatureBitset features)
     {
         using namespace jtx;
 
@@ -693,7 +693,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
         {
             testcase("Payment failure with disabled credentials rule.");
 
-            Env env(*this, testable_amendments() - featureCredentials);
+            Env env(*this, features - featureCredentials);
 
             env.fund(XRP(5000), issuer, bob, alice);
             env.close();
@@ -722,7 +722,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
         {
             testcase("Payment with credentials.");
 
-            Env env(*this);
+            Env env(*this, features);
 
             env.fund(XRP(5000), issuer, alice, bob, john);
             env.close();
@@ -755,7 +755,8 @@ struct DepositPreauth_test : public beast::unit_test::suite
             {
                 auto jv = pay(alice, bob, XRP(100));
                 jv[sfCredentialIDs.jsonName] = Json::arrayValue;
-                env(jv, ter(temMALFORMED));
+                auto const emptyErr = env.enabled(fixErrorCodes) ? temARRAY_EMPTY : temMALFORMED;
+                env(jv, ter(emptyErr));
                 env.close();
             }
 
@@ -786,7 +787,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
         {
             testcase("Payment failure with invalid credentials.");
 
-            Env env(*this);
+            Env env(*this, features);
 
             env.fund(XRP(10000), issuer, alice, bob, maria);
             env.close();
@@ -817,8 +818,9 @@ struct DepositPreauth_test : public beast::unit_test::suite
             }
 
             // Bob setup DepositPreauth object, duplicates is not allowed
+            auto const dupErr = env.enabled(fixErrorCodes) ? temDUPLICATE : temMALFORMED;
             env(deposit::authCredentials(bob, {{issuer, credType}, {issuer, credType}}),
-                ter(temMALFORMED));
+                ter(dupErr));
 
             // Bob setup DepositPreauth object
             env(deposit::authCredentials(bob, {{issuer, credType}}));
@@ -858,7 +860,8 @@ struct DepositPreauth_test : public beast::unit_test::suite
             }
 
             // Error, duplicate credentials
-            env(pay(alice, bob, XRP(100)), credentials::ids({credIdx, credIdx}), ter(temMALFORMED));
+            auto const dupErr2 = env.enabled(fixErrorCodes) ? temDUPLICATE : temMALFORMED;
+            env(pay(alice, bob, XRP(100)), credentials::ids({credIdx, credIdx}), ter(dupErr2));
 
             // Alice can pay
             env(pay(alice, bob, XRP(100)), credentials::ids({credIdx}));
@@ -867,7 +870,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
     }
 
     void
-    testCredentialsCreation()
+    testCredentialsCreation(FeatureBitset features)
     {
         using namespace jtx;
 
@@ -880,7 +883,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
         {
             testcase("Creating / deleting with credentials.");
 
-            Env env(*this);
+            Env env(*this, features);
 
             env.fund(XRP(5000), issuer, alice, bob);
             env.close();
@@ -942,8 +945,9 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
             {
                 // empty credential type
+                auto const lenErr = env.enabled(fixErrorCodes) ? temBAD_FIELD_LENGTH : temMALFORMED;
                 auto jv = deposit::authCredentials(bob, {{issuer, {}}});
-                env(jv, ter(temMALFORMED));
+                env(jv, ter(lenErr));
             }
 
             {
@@ -1021,7 +1025,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
     }
 
     void
-    testExpiredCreds()
+    testExpiredCreds(FeatureBitset features)
     {
         using namespace jtx;
         char const credType[] = "abcde";
@@ -1036,7 +1040,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
         {
             testcase("Payment failure with expired credentials.");
 
-            Env env(*this);
+            Env env(*this, features);
 
             env.fund(XRP(10000), issuer, alice, bob, gw);
             env.close();
@@ -1162,7 +1166,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
             testcase("Escrow failure with expired credentials.");
 
-            Env env(*this);
+            Env env(*this, features);
 
             env.fund(XRP(5000), issuer, alice, bob, zelda);
             env.close();
@@ -1196,7 +1200,8 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
             // zelda can't finish escrow with invalid credentials
             {
-                env(escrow::finish(zelda, alice, seq), credentials::ids({}), ter(temMALFORMED));
+                auto const emptyErr = env.enabled(fixErrorCodes) ? temARRAY_EMPTY : temMALFORMED;
+                env(escrow::finish(zelda, alice, seq), credentials::ids({}), ter(emptyErr));
                 env.close();
             }
 
@@ -1230,7 +1235,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
     }
 
     void
-    testSortingCredentials()
+    testSortingCredentials(FeatureBitset features)
     {
         using namespace jtx;
 
@@ -1238,7 +1243,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
         Account const alice{"alice"};
         Account const bob{"bob"};
 
-        Env env(*this);
+        Env env(*this, features);
 
         testcase("Sorting credentials.");
 
@@ -1309,6 +1314,8 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
         testcase("Check duplicate credentials.");
         {
+            auto const dupErr = env.enabled(fixErrorCodes) ? temDUPLICATE : temMALFORMED;
+
             // check duplicates in depositPreauth params
             std::vector<deposit::AuthorizeCredentials> copyCredentials(
                 credentials.begin(), credentials.end() - 1);
@@ -1318,12 +1325,14 @@ struct DepositPreauth_test : public beast::unit_test::suite
             {
                 auto credentials2 = copyCredentials;
                 credentials2.push_back(c);
-                env(deposit::authCredentials(stock, credentials2), ter(temMALFORMED));
+                env(deposit::authCredentials(stock, credentials2), ter(dupErr));
             }
 
             // create batch of credentials and save their hashes
+            // Use only 7 credentials so that adding a duplicate (to test
+            // duplicate detection) doesn't exceed the max array size of 8
             std::vector<std::string> credentialIDs;
-            for (auto const& c : credentials)
+            for (auto const& c : copyCredentials)
             {
                 env(credentials::create(alice, c.issuer, c.credType));
                 env.close();
@@ -1342,7 +1351,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 auto credentialIDs2 = credentialIDs;
                 credentialIDs2.push_back(h);
 
-                env(pay(alice, bob, XRP(100)), credentials::ids(credentialIDs2), ter(temMALFORMED));
+                env(pay(alice, bob, XRP(100)), credentials::ids(credentialIDs2), ter(dupErr));
             }
         }
     }
@@ -1350,15 +1359,20 @@ struct DepositPreauth_test : public beast::unit_test::suite
     void
     run() override
     {
+        using namespace jtx;
         testEnable();
         testInvalid();
-        auto const supported{jtx::testable_amendments()};
+        auto const supported{testable_amendments()};
         testPayment(supported - featureCredentials);
         testPayment(supported);
-        testCredentialsPayment();
-        testCredentialsCreation();
-        testExpiredCreds();
-        testSortingCredentials();
+        testCredentialsPayment(supported);
+        testCredentialsPayment(supported - fixErrorCodes);
+        testCredentialsCreation(supported);
+        testCredentialsCreation(supported - fixErrorCodes);
+        testExpiredCreds(supported);
+        testExpiredCreds(supported - fixErrorCodes);
+        testSortingCredentials(supported);
+        testSortingCredentials(supported - fixErrorCodes);
     }
 };
 

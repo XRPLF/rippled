@@ -144,7 +144,8 @@ class Delegate_test : public beast::unit_test::suite
 
         // alice can not authorize herself
         {
-            env(delegate::set(alice, alice, {"Payment"}), ter(temMALFORMED));
+            env(delegate::set(alice, alice, {"Payment"}),
+                ter(features[fixErrorCodes] ? temDST_IS_SRC : temMALFORMED));
         }
 
         // bad fee
@@ -165,7 +166,7 @@ class Delegate_test : public beast::unit_test::suite
         }
 
         // when provided permissions contains duplicate values, should return
-        // temMALFORMED
+        // error
         {
             env(delegate::set(
                     gw,
@@ -176,7 +177,7 @@ class Delegate_test : public beast::unit_test::suite
                      "TrustlineAuthorize",
                      "CheckCreate",
                      "TrustlineAuthorize"}),
-                ter(temMALFORMED));
+                ter(features[fixErrorCodes] ? temDUPLICATE : temMALFORMED));
         }
 
         // when authorizing account which does not exist, should return
@@ -1669,6 +1670,7 @@ class Delegate_test : public beast::unit_test::suite
         testFeatureDisabled(all);
         testDelegateSet();
         testInvalidRequest(all);
+        testInvalidRequest(all - fixErrorCodes);
         testReserve();
         testFee();
         testSequence();

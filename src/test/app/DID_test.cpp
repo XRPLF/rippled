@@ -117,17 +117,18 @@ struct DID_test : public beast::unit_test::suite
 
         // uri is too long
         std::string const longString(257, 'a');
-        env(did::set(alice), did::uri(longString), ter(temMALFORMED));
+        auto const lenErr = features[fixErrorCodes] ? temBAD_FIELD_LENGTH : temMALFORMED;
+        env(did::set(alice), did::uri(longString), ter(lenErr));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
         // document is too long
-        env(did::set(alice), did::document(longString), ter(temMALFORMED));
+        env(did::set(alice), did::document(longString), ter(lenErr));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
         // attestation is too long
-        env(did::set(alice), did::document("data"), did::data(longString), ter(temMALFORMED));
+        env(did::set(alice), did::document("data"), did::data(longString), ter(lenErr));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
@@ -354,12 +355,14 @@ struct DID_test : public beast::unit_test::suite
         testEnabled(all);
         testAccountReserve(all);
         testSetInvalid(all);
+        testSetInvalid(all - fixErrorCodes);
         testDeleteInvalid(all);
         testSetModify(all);
 
         testEnabled(all - emptyDID);
         testAccountReserve(all - emptyDID);
         testSetInvalid(all - emptyDID);
+        testSetInvalid(all - emptyDID - fixErrorCodes);
         testDeleteInvalid(all - emptyDID);
         testSetModify(all - emptyDID);
     }
