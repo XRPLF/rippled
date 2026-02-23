@@ -130,12 +130,13 @@ mallocTrim([[maybe_unused]] std::optional<std::string> const& tag, beast::Journa
 
         long const deltaKB = (rssBeforeKB < 0 || rssAfterKB < 0) ? 0 : (rssAfterKB - rssBeforeKB);
 
-        JLOG(journal.debug()) << "malloc_trim tag=" << tagStr << " result=" << report.trimResult << " pad=" << TRIM_PAD
-                              << " bytes"
+        JLOG(journal.debug()) << "malloc_trim tag=" << tagStr << " result=" << report.trimResult
+                              << " pad=" << TRIM_PAD << " bytes"
                               << " rss_before=" << rssBeforeKB << "kB"
                               << " rss_after=" << rssAfterKB << "kB"
                               << " delta=" << deltaKB << "kB"
-                              << " duration_us=" << report.durationUs.count() << " minflt_delta=" << report.minfltDelta
+                              << " duration_us=" << report.durationUs.count()
+                              << " minflt_delta=" << report.minfltDelta
                               << " majflt_delta=" << report.majfltDelta;
     }
     else
