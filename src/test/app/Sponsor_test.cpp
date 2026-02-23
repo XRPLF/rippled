@@ -4449,7 +4449,7 @@ public:
         Account const sponsor("sponsor");
 
         {
-            // Delete Account with ltSponsorship
+            // Delete Sponsee Account with ltSponsorship
             Env env{*this, testable_amendments()};
             env.fund(XRP(1000000), alice, bob, sponsor);
             env.close();
@@ -4467,6 +4467,34 @@ public:
             // AccountDelete
             auto const requiredFee = drops(env.current()->fees().increment);
             env(acctdelete(alice, bob), fee(requiredFee), ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(!env.le(keylet));
+            auto const jv = sponsor::ledgerEntry(env, sponsor, alice);
+            BEAST_EXPECT(
+                jv.isObject() && jv.isMember(jss::result) && jv[jss::result].isMember(jss::error) &&
+                jv[jss::result][jss::error] == "entryNotFound");
+        }
+
+        {
+            // Delete Sponsor Account with ltSponsorship
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, bob, sponsor);
+            env.close();
+
+            // set sponsor
+            env(sponsor::set(sponsor, 0, 100, XRP(100)), sponsor::sponseeAcc(alice), ter(tesSUCCESS));
+            env.close();
+
+            incLgrSeqForAccDel(env, sponsor);
+
+            auto const keylet = keylet::sponsor(sponsor, alice);
+            auto const sponsorObj = env.le(keylet);
+            BEAST_EXPECT(sponsorObj);
+
+            // AccountDelete
+            auto const requiredFee = drops(env.current()->fees().increment);
+            env(acctdelete(sponsor, alice), fee(requiredFee), ter(tesSUCCESS));
             env.close();
 
             BEAST_EXPECT(!env.le(keylet));

@@ -395,9 +395,13 @@ DeleteAccount::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Transfer any XRP remaining after the fee is paid to the destination:
-    (*dst)[sfBalance] = (*dst)[sfBalance] + mSourceBalance;
-    (*src)[sfBalance] = (*src)[sfBalance] - mSourceBalance;
-    ctx_.deliver(mSourceBalance);
+    // Use the current balance from the SLE, not mSourceBalance, because
+    // the cleanup loop may have returned pre-funded sfFeeAmount from
+    // ltSponsorship objects back to the account's sfBalance.
+    auto const srcCurrentBalance = STAmount{(*src)[sfBalance]}.xrp();
+    (*dst)[sfBalance] = (*dst)[sfBalance] + srcCurrentBalance;
+    (*src)[sfBalance] = (*src)[sfBalance] - srcCurrentBalance;
+    ctx_.deliver(srcCurrentBalance);
 
     if (src->isFieldPresent(sfSponsor))
     {
@@ -437,7 +441,7 @@ DeleteAccount::doApply()
     }
 
     // Re-arm the password change fee if we can and need to.
-    if (mSourceBalance > XRPAmount(0) && dst->isFlag(lsfPasswordSpent))
+    if (srcCurrentBalance > XRPAmount(0) && dst->isFlag(lsfPasswordSpent))
         dst->clearFlag(lsfPasswordSpent);
 
     view().update(dst);
