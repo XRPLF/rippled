@@ -104,7 +104,7 @@ jobs:
         uses: XRPLF/actions/cleanup-workspace@cf0433aa74563aead044a1e395610c96d65a37cf
 
       - name: Checkout repository
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Prepare runner
         uses: XRPLF/actions/prepare-runner@2cbf481018d930656e9276fcc20dc0e3a0be5b6d
@@ -177,7 +177,7 @@ jobs:
 
       - name: Upload the binary (Linux)
         if: ${{ github.repository_owner == 'XRPLF' && runner.os == 'Linux' }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: xrpld-${{ inputs.config_name }}
           path: ${{ env.BUILD_DIR }}/xrpld
@@ -254,7 +254,7 @@ jobs:
 
       - name: Upload coverage report
         if: ${{ github.repository_owner == 'XRPLF' && !inputs.build_only && env.COVERAGE_ENABLED == 'true' }}
-        uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5.4.3
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
         with:
           disable_search: true
           disable_telem: true
