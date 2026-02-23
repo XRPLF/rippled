@@ -5,6 +5,7 @@
 #include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/ledger/Credit.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/RippleStateView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -223,19 +224,7 @@ isFrozen(
     Currency const& currency,
     AccountID const& issuer)
 {
-    if (isXRP(currency))
-        return false;
-    auto sle = view.read(keylet::account(issuer));
-    if (sle && sle->isFlag(lsfGlobalFreeze))
-        return true;
-    if (issuer != account)
-    {
-        // Check if the issuer froze the line
-        sle = view.read(keylet::line(account, issuer, currency));
-        if (sle && sle->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
-            return true;
-    }
-    return false;
+    return RippleStateView::isFrozen(view, account, currency, issuer);
 }
 
 bool
@@ -318,23 +307,7 @@ isDeepFrozen(
     Currency const& currency,
     AccountID const& issuer)
 {
-    if (isXRP(currency))
-    {
-        return false;
-    }
-
-    if (issuer == account)
-    {
-        return false;
-    }
-
-    auto const sle = view.read(keylet::line(account, issuer, currency));
-    if (!sle)
-    {
-        return false;
-    }
-
-    return sle->isFlag(lsfHighDeepFreeze) || sle->isFlag(lsfLowDeepFreeze);
+    return RippleStateView::isDeepFrozen(view, account, currency, issuer);
 }
 
 bool
@@ -414,17 +387,11 @@ getTrustLineBalance(
     STAmount amount;
     if (sle)
     {
-        amount = sle->getFieldAmount(sfBalance);
-        bool const accountHigh = account > issuer;
-        auto const& oppositeField = accountHigh ? sfLowLimit : sfHighLimit;
-        if (accountHigh)
-        {
-            // Put balance in account terms.
-            amount.negate();
-        }
+        RippleStateView const rsv(sle, account);
+        amount = rsv.getBalance();
         if (includeOppositeLimit)
         {
-            amount += sle->getFieldAmount(oppositeField);
+            amount += rsv.getLimitPeer();
         }
         amount.setIssuer(issuer);
     }
@@ -1853,7 +1820,8 @@ rippleCreditIOU(
     // Disallow sending to self.
     XRPL_ASSERT(uSenderID != uReceiverID, "xrpl::rippleCreditIOU : sender is not receiver");
 
-    bool const bSenderHigh = uSenderID > uReceiverID;
+    // Determine if sender is the low account in the trustline
+    bool const senderIsLow = RippleStateView::isLow(uSenderID, uReceiverID);
     auto const index = keylet::line(uSenderID, uReceiverID, currency);
 
     XRPL_ASSERT(
@@ -1867,7 +1835,7 @@ rippleCreditIOU(
     {
         STAmount saBalance = sleRippleState->getFieldAmount(sfBalance);
 
-        if (bSenderHigh)
+        if (!senderIsLow)
             saBalance.negate();  // Put balance in sender terms.
 
         view.creditHook(uSenderID, uReceiverID, saAmount, saBalance);
@@ -1884,39 +1852,47 @@ rippleCreditIOU(
         std::uint32_t const uFlags(sleRippleState->getFieldU32(sfFlags));
         bool bDelete = false;
 
+        // Use RippleStateView helpers to get the correct flags/fields for sender
+        auto const senderReserve = RippleStateView::reserveFlag(senderIsLow);
+        auto const senderNoRipple = RippleStateView::noRippleFlag(senderIsLow);
+        auto const senderFreeze = RippleStateView::freezeFlag(senderIsLow);
+        auto const& senderLimit = RippleStateView::limitField(senderIsLow);
+        auto const& senderQualityIn = RippleStateView::qualityInField(senderIsLow);
+        auto const& senderQualityOut = RippleStateView::qualityOutField(senderIsLow);
+        auto const receiverReserve = RippleStateView::reserveFlag(!senderIsLow);
+
         // FIXME This NEEDS to be cleaned up and simplified. It's impossible
         //       for anyone to understand.
         if (saBefore > beast::zero
             // Sender balance was positive.
             && saBalance <= beast::zero
             // Sender is zero or negative.
-            && (uFlags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve))
+            && (uFlags & senderReserve)
             // Sender reserve is set.
-            && static_cast<bool>(uFlags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
+            && static_cast<bool>(uFlags & senderNoRipple) !=
                 static_cast<bool>(
                     view.read(keylet::account(uSenderID))->getFlags() & lsfDefaultRipple) &&
-            !(uFlags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) &&
-            !sleRippleState->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
+            !(uFlags & senderFreeze) &&
+            !sleRippleState->getFieldAmount(senderLimit)
             // Sender trust limit is 0.
-            && !sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn)
+            && !sleRippleState->getFieldU32(senderQualityIn)
             // Sender quality in is 0.
-            && !sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityOut : sfHighQualityOut))
+            && !sleRippleState->getFieldU32(senderQualityOut))
         // Sender quality out is 0.
         {
             // Clear the reserve of the sender, possibly delete the line!
             adjustOwnerCount(view, view.peek(keylet::account(uSenderID)), -1, j);
 
             // Clear reserve flag.
-            sleRippleState->setFieldU32(
-                sfFlags, uFlags & (!bSenderHigh ? ~lsfLowReserve : ~lsfHighReserve));
+            sleRippleState->setFieldU32(sfFlags, uFlags & ~senderReserve);
 
             // Balance is zero, receiver reserve is clear.
             bDelete = !saBalance  // Balance is zero.
-                && !(uFlags & (bSenderHigh ? lsfLowReserve : lsfHighReserve));
+                && !(uFlags & receiverReserve);
             // Receiver reserve is clear.
         }
 
-        if (bSenderHigh)
+        if (!senderIsLow)
             saBalance.negate();
 
         // Want to reflect balance to zero even if we are deleting line.
@@ -1928,8 +1904,8 @@ rippleCreditIOU(
             return trustDelete(
                 view,
                 sleRippleState,
-                bSenderHigh ? uReceiverID : uSenderID,
-                !bSenderHigh ? uReceiverID : uSenderID,
+                senderIsLow ? uSenderID : uReceiverID,
+                senderIsLow ? uReceiverID : uSenderID,
                 j);
         }
 
@@ -1955,7 +1931,7 @@ rippleCreditIOU(
 
     return trustCreate(
         view,
-        bSenderHigh,
+        !senderIsLow,  // trustCreate expects bSenderHigh
         uSenderID,
         uReceiverID,
         index.key,
@@ -2632,7 +2608,7 @@ static bool
 updateTrustLine(
     ApplyView& view,
     SLE::pointer state,
-    bool bSenderHigh,
+    bool senderIsLow,
     AccountID const& sender,
     STAmount const& before,
     STAmount const& after,
@@ -2646,21 +2622,30 @@ updateTrustLine(
     if (!sle)
         return false;
 
+    // Use RippleStateView helpers to get the correct flags/fields for sender
+    auto const senderReserve = RippleStateView::reserveFlag(senderIsLow);
+    auto const senderNoRipple = RippleStateView::noRippleFlag(senderIsLow);
+    auto const senderFreeze = RippleStateView::freezeFlag(senderIsLow);
+    auto const& senderLimit = RippleStateView::limitField(senderIsLow);
+    auto const& senderQualityIn = RippleStateView::qualityInField(senderIsLow);
+    auto const& senderQualityOut = RippleStateView::qualityOutField(senderIsLow);
+    auto const receiverReserve = RippleStateView::reserveFlag(!senderIsLow);
+
     // YYY Could skip this if rippling in reverse.
     if (before > beast::zero
         // Sender balance was positive.
         && after <= beast::zero
         // Sender is zero or negative.
-        && (flags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve))
+        && (flags & senderReserve)
         // Sender reserve is set.
-        && static_cast<bool>(flags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
+        && static_cast<bool>(flags & senderNoRipple) !=
             static_cast<bool>(sle->getFlags() & lsfDefaultRipple) &&
-        !(flags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) &&
-        !state->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
+        !(flags & senderFreeze) &&
+        !state->getFieldAmount(senderLimit)
         // Sender trust limit is 0.
-        && !state->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn)
+        && !state->getFieldU32(senderQualityIn)
         // Sender quality in is 0.
-        && !state->getFieldU32(!bSenderHigh ? sfLowQualityOut : sfHighQualityOut))
+        && !state->getFieldU32(senderQualityOut))
     // Sender quality out is 0.
     {
         // VFALCO Where is the line being deleted?
@@ -2668,11 +2653,11 @@ updateTrustLine(
         adjustOwnerCount(view, sle, -1, j);
 
         // Clear reserve flag.
-        state->setFieldU32(sfFlags, flags & (!bSenderHigh ? ~lsfLowReserve : ~lsfHighReserve));
+        state->setFieldU32(sfFlags, flags & ~senderReserve);
 
         // Balance is zero, receiver reserve is clear.
         if (!after  // Balance is zero.
-            && !(flags & (bSenderHigh ? lsfLowReserve : lsfHighReserve)))
+            && !(flags & receiverReserve))
             return true;
     }
     return false;
@@ -2698,7 +2683,8 @@ issueIOU(
 
     JLOG(j.trace()) << "issueIOU: " << to_string(account) << ": " << amount.getFullText();
 
-    bool bSenderHigh = issue.account > account;
+    // Determine if sender (issuer) is the low account in the trustline
+    bool const senderIsLow = RippleStateView::isLow(issue.account, account);
 
     auto const index = keylet::line(issue.account, account, issue.currency);
 
@@ -2706,7 +2692,7 @@ issueIOU(
     {
         STAmount final_balance = state->getFieldAmount(sfBalance);
 
-        if (bSenderHigh)
+        if (!senderIsLow)
             final_balance.negate();  // Put balance in sender terms.
 
         STAmount const start_balance = final_balance;
@@ -2714,11 +2700,11 @@ issueIOU(
         final_balance -= amount;
 
         auto const must_delete = updateTrustLine(
-            view, state, bSenderHigh, issue.account, start_balance, final_balance, j);
+            view, state, senderIsLow, issue.account, start_balance, final_balance, j);
 
         view.creditHook(issue.account, account, amount, start_balance);
 
-        if (bSenderHigh)
+        if (!senderIsLow)
             final_balance.negate();
 
         // Adjust the balance on the trust line if necessary. We do this even if
@@ -2729,8 +2715,8 @@ issueIOU(
             return trustDelete(
                 view,
                 state,
-                bSenderHigh ? account : issue.account,
-                bSenderHigh ? issue.account : account,
+                senderIsLow ? issue.account : account,
+                senderIsLow ? account : issue.account,
                 j);
 
         view.update(state);
@@ -2754,7 +2740,7 @@ issueIOU(
 
     return trustCreate(
         view,
-        bSenderHigh,
+        !senderIsLow,  // trustCreate expects bSenderHigh
         issue.account,
         account,
         index.key,
@@ -2790,13 +2776,14 @@ redeemIOU(
 
     JLOG(j.trace()) << "redeemIOU: " << to_string(account) << ": " << amount.getFullText();
 
-    bool bSenderHigh = account > issue.account;
+    // Determine if sender (account) is the low account in the trustline
+    bool const senderIsLow = RippleStateView::isLow(account, issue.account);
 
     if (auto state = view.peek(keylet::line(account, issue.account, issue.currency)))
     {
         STAmount final_balance = state->getFieldAmount(sfBalance);
 
-        if (bSenderHigh)
+        if (!senderIsLow)
             final_balance.negate();  // Put balance in sender terms.
 
         STAmount const start_balance = final_balance;
@@ -2804,11 +2791,11 @@ redeemIOU(
         final_balance -= amount;
 
         auto const must_delete =
-            updateTrustLine(view, state, bSenderHigh, account, start_balance, final_balance, j);
+            updateTrustLine(view, state, senderIsLow, account, start_balance, final_balance, j);
 
         view.creditHook(account, issue.account, amount, start_balance);
 
-        if (bSenderHigh)
+        if (!senderIsLow)
             final_balance.negate();
 
         // Adjust the balance on the trust line if necessary. We do this even if
@@ -2821,8 +2808,8 @@ redeemIOU(
             return trustDelete(
                 view,
                 state,
-                bSenderHigh ? issue.account : account,
-                bSenderHigh ? account : issue.account,
+                senderIsLow ? account : issue.account,
+                senderIsLow ? issue.account : account,
                 j);
         }
 

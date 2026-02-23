@@ -1,4 +1,5 @@
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/RippleStateView.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/STAmount.h>
@@ -12,16 +13,7 @@ creditLimit(
     AccountID const& issuer,
     Currency const& currency)
 {
-    STAmount result(Issue{currency, account});
-
-    auto sleRippleState = view.read(keylet::line(account, issuer, currency));
-
-    if (sleRippleState)
-    {
-        result = sleRippleState->getFieldAmount(account < issuer ? sfLowLimit : sfHighLimit);
-        result.setIssuer(account);
-    }
-
+    auto result = RippleStateView::creditLimit(view, account, issuer, currency);
     XRPL_ASSERT(result.getIssuer() == account, "xrpl::creditLimit : result issuer match");
     XRPL_ASSERT(result.getCurrency() == currency, "xrpl::creditLimit : result currency match");
     return result;
@@ -40,18 +32,7 @@ creditBalance(
     AccountID const& issuer,
     Currency const& currency)
 {
-    STAmount result(Issue{currency, account});
-
-    auto sleRippleState = view.read(keylet::line(account, issuer, currency));
-
-    if (sleRippleState)
-    {
-        result = sleRippleState->getFieldAmount(sfBalance);
-        if (account < issuer)
-            result.negate();
-        result.setIssuer(account);
-    }
-
+    auto result = RippleStateView::creditBalance(view, account, issuer, currency);
     XRPL_ASSERT(result.getIssuer() == account, "xrpl::creditBalance : result issuer match");
     XRPL_ASSERT(result.getCurrency() == currency, "xrpl::creditBalance : result currency match");
     return result;

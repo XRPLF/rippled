@@ -1,4 +1,5 @@
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/RippleStateView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
@@ -11,31 +12,35 @@
 
 namespace {
 
+// Helper to compute freeze flag changes using RippleStateView helpers
 uint32_t
 computeFreezeFlags(
     uint32_t uFlags,
-    bool bHigh,
+    bool isLow,
     bool bNoFreeze,
     bool bSetFreeze,
     bool bClearFreeze,
     bool bSetDeepFreeze,
     bool bClearDeepFreeze)
 {
+    auto const freezeFlag = xrpl::RippleStateView::freezeFlag(isLow);
+    auto const deepFreezeFlag = xrpl::RippleStateView::deepFreezeFlag(isLow);
+
     if (bSetFreeze && !bClearFreeze && !bNoFreeze)
     {
-        uFlags |= (bHigh ? xrpl::lsfHighFreeze : xrpl::lsfLowFreeze);
+        uFlags |= freezeFlag;
     }
     else if (bClearFreeze && !bSetFreeze)
     {
-        uFlags &= ~(bHigh ? xrpl::lsfHighFreeze : xrpl::lsfLowFreeze);
+        uFlags &= ~freezeFlag;
     }
     if (bSetDeepFreeze && !bClearDeepFreeze && !bNoFreeze)
     {
-        uFlags |= (bHigh ? xrpl::lsfHighDeepFreeze : xrpl::lsfLowDeepFreeze);
+        uFlags |= deepFreezeFlag;
     }
     else if (bClearDeepFreeze && !bSetDeepFreeze)
     {
-        uFlags &= ~(bHigh ? xrpl::lsfHighDeepFreeze : xrpl::lsfLowDeepFreeze);
+        uFlags &= ~deepFreezeFlag;
     }
 
     return uFlags;
@@ -108,8 +113,18 @@ SetTrust::preflight(PreflightContext const& ctx)
 NotTEC
 SetTrust::checkPermission(ReadView const& view, STTx const& tx)
 {
-    if (auto result = Transactor::checkPermission(view, tx); !isTesSuccess(result))
-        return result;
+    auto const delegate = tx[~sfDelegate];
+    if (!delegate)
+        return tesSUCCESS;
+
+    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
+    auto const sle = view.read(delegateKey);
+
+    if (!sle)
+        return terNO_DELEGATE_PERMISSION;
+
+    if (checkTxPermission(sle, tx) == tesSUCCESS)
+        return tesSUCCESS;
 
     std::uint32_t const txFlags = tx.getFlags();
 
@@ -264,16 +279,17 @@ SetTrust::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
         }
 
-        bool const bHigh = id > uDstAccountID;
+        // Determine if the account is the low account in the trustline
+        bool const isLow = RippleStateView::isLow(id, uDstAccountID);
         // Fetching current state of trust line
         auto const sleRippleState = ctx.view.read(keylet::line(id, uDstAccountID, currency));
         std::uint32_t uFlags = sleRippleState ? sleRippleState->getFieldU32(sfFlags) : 0u;
         // Computing expected trust line state
         uFlags = computeFreezeFlags(
-            uFlags, bHigh, bNoFreeze, bSetFreeze, bClearFreeze, bSetDeepFreeze, bClearDeepFreeze);
+            uFlags, isLow, bNoFreeze, bSetFreeze, bClearFreeze, bSetDeepFreeze, bClearDeepFreeze);
 
-        auto const frozen = uFlags & (bHigh ? lsfHighFreeze : lsfLowFreeze);
-        auto const deepFrozen = uFlags & (bHigh ? lsfHighDeepFreeze : lsfLowDeepFreeze);
+        auto const frozen = uFlags & RippleStateView::freezeFlag(isLow);
+        auto const deepFrozen = uFlags & RippleStateView::deepFreezeFlag(isLow);
 
         // Trying to set deep freeze on not already frozen trust line must
         // fail. This also checks that clearing normal freeze while deep
@@ -299,8 +315,8 @@ SetTrust::doApply()
     Currency const currency(saLimitAmount.getCurrency());
     AccountID uDstAccountID(saLimitAmount.getIssuer());
 
-    // true, if current is high account.
-    bool const bHigh = account_ > uDstAccountID;
+    // Determine if current account is the low account in the trustline
+    bool const isLow = RippleStateView::isLow(account_, uDstAccountID);
 
     auto const sle = view().peek(keylet::account(account_));
     if (!sle)
@@ -370,10 +386,10 @@ SetTrust::doApply()
         std::uint32_t uLowQualityOut;
         std::uint32_t uHighQualityIn;
         std::uint32_t uHighQualityOut;
-        auto const& uLowAccountID = !bHigh ? account_ : uDstAccountID;
-        auto const& uHighAccountID = bHigh ? account_ : uDstAccountID;
-        SLE::ref sleLowAccount = !bHigh ? sle : sleDst;
-        SLE::ref sleHighAccount = bHigh ? sle : sleDst;
+        auto const& uLowAccountID = isLow ? account_ : uDstAccountID;
+        auto const& uHighAccountID = !isLow ? account_ : uDstAccountID;
+        SLE::ref sleLowAccount = isLow ? sle : sleDst;
+        SLE::ref sleHighAccount = !isLow ? sle : sleDst;
 
         //
         // Balances
@@ -386,10 +402,10 @@ SetTrust::doApply()
         // Limits
         //
 
-        sleRippleState->setFieldAmount(!bHigh ? sfLowLimit : sfHighLimit, saLimitAllow);
+        sleRippleState->setFieldAmount(RippleStateView::limitField(isLow), saLimitAllow);
 
-        saLowLimit = !bHigh ? saLimitAllow : sleRippleState->getFieldAmount(sfLowLimit);
-        saHighLimit = bHigh ? saLimitAllow : sleRippleState->getFieldAmount(sfHighLimit);
+        saLowLimit = isLow ? saLimitAllow : sleRippleState->getFieldAmount(sfLowLimit);
+        saHighLimit = !isLow ? saLimitAllow : sleRippleState->getFieldAmount(sfHighLimit);
 
         //
         // Quality in
@@ -406,19 +422,19 @@ SetTrust::doApply()
         {
             // Setting.
 
-            sleRippleState->setFieldU32(!bHigh ? sfLowQualityIn : sfHighQualityIn, uQualityIn);
+            sleRippleState->setFieldU32(RippleStateView::qualityInField(isLow), uQualityIn);
 
-            uLowQualityIn = !bHigh ? uQualityIn : sleRippleState->getFieldU32(sfLowQualityIn);
-            uHighQualityIn = bHigh ? uQualityIn : sleRippleState->getFieldU32(sfHighQualityIn);
+            uLowQualityIn = isLow ? uQualityIn : sleRippleState->getFieldU32(sfLowQualityIn);
+            uHighQualityIn = !isLow ? uQualityIn : sleRippleState->getFieldU32(sfHighQualityIn);
         }
         else
         {
             // Clearing.
 
-            sleRippleState->makeFieldAbsent(!bHigh ? sfLowQualityIn : sfHighQualityIn);
+            sleRippleState->makeFieldAbsent(RippleStateView::qualityInField(isLow));
 
-            uLowQualityIn = !bHigh ? 0 : sleRippleState->getFieldU32(sfLowQualityIn);
-            uHighQualityIn = bHigh ? 0 : sleRippleState->getFieldU32(sfHighQualityIn);
+            uLowQualityIn = isLow ? 0 : sleRippleState->getFieldU32(sfLowQualityIn);
+            uHighQualityIn = !isLow ? 0 : sleRippleState->getFieldU32(sfHighQualityIn);
         }
 
         if (QUALITY_ONE == uLowQualityIn)
@@ -442,43 +458,45 @@ SetTrust::doApply()
         {
             // Setting.
 
-            sleRippleState->setFieldU32(!bHigh ? sfLowQualityOut : sfHighQualityOut, uQualityOut);
+            sleRippleState->setFieldU32(RippleStateView::qualityOutField(isLow), uQualityOut);
 
-            uLowQualityOut = !bHigh ? uQualityOut : sleRippleState->getFieldU32(sfLowQualityOut);
-            uHighQualityOut = bHigh ? uQualityOut : sleRippleState->getFieldU32(sfHighQualityOut);
+            uLowQualityOut = isLow ? uQualityOut : sleRippleState->getFieldU32(sfLowQualityOut);
+            uHighQualityOut = !isLow ? uQualityOut : sleRippleState->getFieldU32(sfHighQualityOut);
         }
         else
         {
             // Clearing.
 
-            sleRippleState->makeFieldAbsent(!bHigh ? sfLowQualityOut : sfHighQualityOut);
+            sleRippleState->makeFieldAbsent(RippleStateView::qualityOutField(isLow));
 
-            uLowQualityOut = !bHigh ? 0 : sleRippleState->getFieldU32(sfLowQualityOut);
-            uHighQualityOut = bHigh ? 0 : sleRippleState->getFieldU32(sfHighQualityOut);
+            uLowQualityOut = isLow ? 0 : sleRippleState->getFieldU32(sfLowQualityOut);
+            uHighQualityOut = !isLow ? 0 : sleRippleState->getFieldU32(sfHighQualityOut);
         }
 
         std::uint32_t const uFlagsIn(sleRippleState->getFieldU32(sfFlags));
         std::uint32_t uFlagsOut(uFlagsIn);
 
+        // "my balance" is saLowBalance when isLow, saHighBalance otherwise
+        STAmount const& myBalance = isLow ? saLowBalance : saHighBalance;
+
         if (bSetNoRipple && !bClearNoRipple)
         {
-            if ((bHigh ? saHighBalance : saLowBalance) >= beast::zero)
-                uFlagsOut |= (bHigh ? lsfHighNoRipple : lsfLowNoRipple);
-
+            if (myBalance >= beast::zero)
+                uFlagsOut |= RippleStateView::noRippleFlag(isLow);
             else
                 // Cannot set noRipple on a negative balance.
                 return tecNO_PERMISSION;
         }
         else if (bClearNoRipple && !bSetNoRipple)
         {
-            uFlagsOut &= ~(bHigh ? lsfHighNoRipple : lsfLowNoRipple);
+            uFlagsOut &= ~RippleStateView::noRippleFlag(isLow);
         }
 
         // Have to use lsfNoFreeze to maintain pre-deep freeze behavior
         bool const bNoFreeze = sle->isFlag(lsfNoFreeze);
         uFlagsOut = computeFreezeFlags(
             uFlagsOut,
-            bHigh,
+            isLow,
             bNoFreeze,
             bSetFreeze,
             bClearFreeze,
@@ -513,7 +531,7 @@ SetTrust::doApply()
 
         if (bSetAuth)
         {
-            uFlagsOut |= (bHigh ? lsfHighAuth : lsfLowAuth);
+            uFlagsOut |= RippleStateView::authFlag(isLow);
         }
 
         if (bLowReserveSet && !bLowReserved)
@@ -522,7 +540,7 @@ SetTrust::doApply()
             adjustOwnerCount(view(), sleLowAccount, 1, viewJ);
             uFlagsOut |= lsfLowReserve;
 
-            if (!bHigh)
+            if (isLow)
                 bReserveIncrease = true;
         }
 
@@ -539,7 +557,7 @@ SetTrust::doApply()
             adjustOwnerCount(view(), sleHighAccount, 1, viewJ);
             uFlagsOut |= lsfHighReserve;
 
-            if (bHigh)
+            if (!isLow)
                 bReserveIncrease = true;
         }
 
@@ -608,9 +626,10 @@ SetTrust::doApply()
         JLOG(j_.trace()) << "doTrustSet: Creating ripple line: " << to_string(k.key);
 
         // Create a new ripple line.
+        // trustCreate expects bSenderHigh = true if sender is high account, which is !isLow
         terResult = trustCreate(
             view(),
-            bHigh,
+            !isLow,  // bSenderHigh
             account_,
             uDstAccountID,
             k.key,
