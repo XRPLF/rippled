@@ -158,21 +158,56 @@ TEST(mallocTrim, basic_functionality)
     }
 }
 
-TEST(mallocTrim, debug_logging)
+TEST(mallocTrim, without_debug_logging)
 {
-    beast::severities::Severity const thresh = beast::severities::kDebug;
     beast::Journal journal{beast::Journal::getNullSink()};
-    journal.threshold(thresh);
+
+    MallocTrimReport report = mallocTrim(std::optional<std::string>("test"), journal);
+
+#if defined(__GLIBC__) && BOOST_OS_LINUX
+    EXPECT_EQ(report.supported, true);
+    EXPECT_GE(report.trimResult, 0);
+    EXPECT_EQ(report.durationUs, std::chrono::microseconds{-1});
+    EXPECT_EQ(report.minfltDelta, -1);
+    EXPECT_EQ(report.majfltDelta, -1);
+#else
+    EXPECT_EQ(report.supported, false);
+    EXPECT_EQ(report.trimResult, -1);
+    EXPECT_EQ(report.durationUs, std::chrono::microseconds{-1});
+    EXPECT_EQ(report.minfltDelta, -1);
+    EXPECT_EQ(report.majfltDelta, -1);
+#endif
+}
+
+TEST(mallocTrim, with_debug_logging)
+{
+    struct DebugSink : public beast::Journal::Sink
+    {
+        DebugSink() : Sink(beast::severities::kDebug, false) {}
+        void
+        write(beast::severities::Severity, std::string const&) override
+        {
+        }
+        void
+        writeAlways(beast::severities::Severity, std::string const&) override
+        {
+        }
+    };
+
+    DebugSink sink;
+    beast::Journal journal{sink};
 
     MallocTrimReport report = mallocTrim(std::optional<std::string>("debug_test"), journal);
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
     EXPECT_EQ(report.supported, true);
+    EXPECT_GE(report.trimResult, 0);
     EXPECT_GE(report.durationUs.count(), 0);
     EXPECT_GE(report.minfltDelta, 0);
     EXPECT_GE(report.majfltDelta, 0);
 #else
     EXPECT_EQ(report.supported, false);
+    EXPECT_EQ(report.trimResult, -1);
     EXPECT_EQ(report.durationUs, std::chrono::microseconds{-1});
     EXPECT_EQ(report.minfltDelta, -1);
     EXPECT_EQ(report.majfltDelta, -1);
