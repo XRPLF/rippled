@@ -539,6 +539,8 @@ STAmount::fromNumber(A const& a, Number const& number)
         return STAmount{asset, intValue, 0, negative};
     }
 
+    XRPL_ASSERT_PARTS(
+        working.signum() >= 0, "xrpl::STAmount::fromNumber", "non-negative Number to normalize");
     auto const [mantissa, exponent] = working.normalizeToRange(cMinValue, cMaxValue);
 
     return STAmount{asset, mantissa, exponent, negative};
