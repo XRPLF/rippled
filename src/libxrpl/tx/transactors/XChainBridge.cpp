@@ -508,15 +508,15 @@ struct FinalizeClaimHelperResult
     bool
     isTesSuccess() const
     {
-        return isTesSuccess(mainFundsTer) && isTesSuccess(rewardTer) &&
-            (!rmSleTer || *isTesSuccess(rmSleTer));
+        return xrpl::isTesSuccess(mainFundsTer) && xrpl::isTesSuccess(rewardTer) &&
+            (!rmSleTer || xrpl::isTesSuccess(*rmSleTer));
     }
 
     TER
     ter() const
     {
-        if ((!mainFundsTer || *isTesSuccess(mainFundsTer)) &&
-            (!rewardTer || *isTesSuccess(rewardTer)) && (!rmSleTer || *isTesSuccess(rmSleTer)))
+        if ((!mainFundsTer || xrpl::extract(*mainFundsTer)) &&
+            (!rewardTer || xrpl::extract(*rewardTer)) && (!rmSleTer || xrpl::extract(*rmSleTer)))
             return tesSUCCESS;
 
         // if any phase return a tecINTERNAL or a tef, prefer returning those
