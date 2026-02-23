@@ -80,7 +80,8 @@ public:
             {
                 BEAST_EXPECT(list.size() == 1);
                 auto const [slot, _] = logic.new_outbound_slot(list.front());
-                BEAST_EXPECT(logic.onConnected(slot, beast::IP::Endpoint::from_string("65.0.0.2:5")));
+                BEAST_EXPECT(
+                    logic.onConnected(slot, beast::IP::Endpoint::from_string("65.0.0.2:5")));
                 logic.on_closed(slot);
                 ++n;
             }
@@ -119,7 +120,8 @@ public:
             {
                 BEAST_EXPECT(list.size() == 1);
                 auto const [slot, _] = logic.new_outbound_slot(list.front());
-                if (!BEAST_EXPECT(logic.onConnected(slot, beast::IP::Endpoint::from_string("65.0.0.2:5"))))
+                if (!BEAST_EXPECT(
+                        logic.onConnected(slot, beast::IP::Endpoint::from_string("65.0.0.2:5"))))
                     return;
                 std::string s = ".";
                 if (!BEAST_EXPECT(logic.activate(slot, pk, false) == PeerFinder::Result::success))
@@ -218,15 +220,18 @@ public:
         }
 
         auto const local = beast::IP::Endpoint::from_string("65.0.0.2:1024");
-        auto const [slot, r] = logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("55.104.0.2:1025"));
+        auto const [slot, r] =
+            logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("55.104.0.2:1025"));
         BEAST_EXPECT(slot != nullptr);
         BEAST_EXPECT(r == Result::success);
 
-        auto const [slot1, r1] = logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("55.104.0.2:1026"));
+        auto const [slot1, r1] =
+            logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("55.104.0.2:1026"));
         BEAST_EXPECT(slot1 != nullptr);
         BEAST_EXPECT(r1 == Result::success);
 
-        auto const [slot2, r2] = logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("55.104.0.2:1027"));
+        auto const [slot2, r2] =
+            logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("55.104.0.2:1027"));
         BEAST_EXPECT(r2 == Result::ipLimitExceeded);
 
         if (!BEAST_EXPECT(slot2 == nullptr))
@@ -255,11 +260,13 @@ public:
 
         PublicKey const pk1(randomKeyPair(KeyType::secp256k1).first);
 
-        auto const [slot, rSlot] = logic.new_outbound_slot(beast::IP::Endpoint::from_string("55.104.0.2:1025"));
+        auto const [slot, rSlot] =
+            logic.new_outbound_slot(beast::IP::Endpoint::from_string("55.104.0.2:1025"));
         BEAST_EXPECT(slot != nullptr);
         BEAST_EXPECT(rSlot == Result::success);
 
-        auto const [slot2, r2Slot] = logic.new_outbound_slot(beast::IP::Endpoint::from_string("55.104.0.2:1026"));
+        auto const [slot2, r2Slot] =
+            logic.new_outbound_slot(beast::IP::Endpoint::from_string("55.104.0.2:1026"));
         BEAST_EXPECT(slot2 != nullptr);
         BEAST_EXPECT(r2Slot == Result::success);
 
@@ -297,7 +304,8 @@ public:
         PublicKey const pk1(randomKeyPair(KeyType::secp256k1).first);
         auto const local = beast::IP::Endpoint::from_string("65.0.0.2:1024");
 
-        auto const [slot, rSlot] = logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("55.104.0.2:1025"));
+        auto const [slot, rSlot] =
+            logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("55.104.0.2:1025"));
         BEAST_EXPECT(slot != nullptr);
         BEAST_EXPECT(rSlot == Result::success);
 
@@ -315,7 +323,8 @@ public:
         BEAST_EXPECT(logic.activate(slot, pk1, false) == Result::success);
 
         // creating a new inbound slot must succeed as IP Limit is not exceeded
-        auto const [slot2, r2Slot] = logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("55.104.0.2:1026"));
+        auto const [slot2, r2Slot] =
+            logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("55.104.0.2:1026"));
         BEAST_EXPECT(slot2 != nullptr);
         BEAST_EXPECT(r2Slot == Result::success);
 
@@ -408,7 +417,8 @@ public:
             Counts counts;
             counts.onConfig(config);
             BEAST_EXPECT(
-                counts.out_max() == expectOut && counts.in_max() == expectIn && config.ipLimit == expectIpLimit);
+                counts.out_max() == expectOut && counts.in_max() == expectIn &&
+                config.ipLimit == expectIpLimit);
 
             TestStore store;
             TestChecker checker;

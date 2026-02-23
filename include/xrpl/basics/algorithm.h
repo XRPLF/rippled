@@ -51,7 +51,13 @@ generalized_set_intersection(
 // std::set_intersection.
 template <class FwdIter1, class InputIter2, class Pred, class Comp>
 FwdIter1
-remove_if_intersect_or_match(FwdIter1 first1, FwdIter1 last1, InputIter2 first2, InputIter2 last2, Pred pred, Comp comp)
+remove_if_intersect_or_match(
+    FwdIter1 first1,
+    FwdIter1 last1,
+    InputIter2 first2,
+    InputIter2 last2,
+    Pred pred,
+    Comp comp)
 {
     // [original-first1, current-first1) is the set of elements to be preserved.
     // [current-first1, i) is the set of elements that have been removed.

@@ -254,7 +254,8 @@ public:
             BEAST_EXPECT(map.getHash() == beast::zero);
             for (int k = 0; k < keys.size(); ++k)
             {
-                BEAST_EXPECT(map.addItem(SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(keys[k], IntToVUC(k))));
+                BEAST_EXPECT(map.addItem(
+                    SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(keys[k], IntToVUC(k))));
                 BEAST_EXPECT(map.getHash().as_uint256() == hashes[k]);
                 map.invariants();
             }
@@ -337,7 +338,8 @@ class SHAMapPathProof_test : public beast::unit_test::suite
         for (unsigned char c = 1; c < 100; ++c)
         {
             uint256 k(c);
-            map.addItem(SHAMapNodeType::tnACCOUNT_STATE, make_shamapitem(k, Slice{k.data(), k.size()}));
+            map.addItem(
+                SHAMapNodeType::tnACCOUNT_STATE, make_shamapitem(k, Slice{k.data(), k.size()}));
             map.invariants();
 
             auto root = map.getHash().as_uint256();

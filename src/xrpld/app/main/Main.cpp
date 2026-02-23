@@ -86,11 +86,11 @@ adjustDescriptorLimit(int needed, beast::Journal j)
 
     if (needed > available)
     {
-        j.fatal() << "Insufficient number of file descriptors: " << needed << " are needed, but only " << available
-                  << " are available.";
+        j.fatal() << "Insufficient number of file descriptors: " << needed
+                  << " are needed, but only " << available << " are available.";
 
-        std::cerr << "Insufficient number of file descriptors: " << needed << " are needed, but only " << available
-                  << " are available.\n";
+        std::cerr << "Insufficient number of file descriptors: " << needed
+                  << " are needed, but only " << available << " are available.\n";
 
         return false;
     }
@@ -224,7 +224,8 @@ anyMissing(Runner& runner, multi_selector const& pred)
     {
         auto const missing = pred.size() - runner.suites();
         runner.add_failures(missing);
-        std::cout << "Failed: " << missing << " filters did not match any existing test suites" << std::endl;
+        std::cout << "Failed: " << missing << " filters did not match any existing test suites"
+                  << std::endl;
         return true;
     }
     return false;
@@ -275,7 +276,8 @@ runUnitTests(
         }
 
         for (std::size_t i = 0; i < num_jobs; ++i)
-            children.emplace_back(boost::process::v1::exe = exe_name, boost::process::v1::args = args);
+            children.emplace_back(
+                boost::process::v1::exe = exe_name, boost::process::v1::args = args);
 
         int bad_child_exits = 0;
         int terminated_child_exits = 0;
@@ -355,10 +357,12 @@ run(int argc, char** argv)
 
     po::options_description data("Ledger/Data Options");
     data.add_options()("import", importText.c_str())(
-        "ledger", po::value<std::string>(), "Load the specified ledger and start from the value given.")(
+        "ledger",
+        po::value<std::string>(),
+        "Load the specified ledger and start from the value given.")(
         "ledgerfile", po::value<std::string>(), "Load the specified ledger file.")(
-        "load", "Load the current ledger from the local DB.")("net", "Get the initial ledger from the network.")(
-        "replay", "Replay a ledger close.")(
+        "load", "Load the current ledger from the local DB.")(
+        "net", "Get the initial ledger from the network.")("replay", "Replay a ledger close.")(
         "trap_tx_hash", po::value<std::string>(), "Trap a specific transaction during replay.")(
         "start", "Start from a fresh Ledger.")("vacuum", "VACUUM the transaction db.")(
         "valid", "Consider the initial ledger a valid network ledger.");
@@ -395,12 +399,15 @@ run(int argc, char** argv)
         "is made available to each suite that runs. Interpretation of the "
         "argument is handled individually by any suite that accesses it -- "
         "as such, it typically only make sense to provide this when running "
-        "a single suite.")("unittest-ipv6", "Use IPv6 localhost when running unittests (default is IPv4).")(
+        "a single suite.")(
+        "unittest-ipv6", "Use IPv6 localhost when running unittests (default is IPv4).")(
         "unittest-log",
         "Force unit test log message output. Only useful in combination with "
         "--quiet, in which case log messages will print but suite/case names "
         "will not.")(
-        "unittest-jobs", po::value<std::size_t>(), "Number of unittest jobs to run in parallel (child processes).");
+        "unittest-jobs",
+        po::value<std::size_t>(),
+        "Number of unittest jobs to run in parallel (child processes).");
 #endif  // ENABLE_TESTS
 
     // These are hidden options, not intended to be shown in the usage/help
@@ -533,7 +540,11 @@ run(int argc, char** argv)
     auto configFile = vm.count("conf") ? vm["conf"].as<std::string>() : std::string();
 
     // config file, quiet flag.
-    config->setup(configFile, bool(vm.count("quiet")), bool(vm.count("silent")), bool(vm.count("standalone")));
+    config->setup(
+        configFile,
+        bool(vm.count("quiet")),
+        bool(vm.count("silent")),
+        bool(vm.count("standalone")));
 
     if (vm.count("vacuum"))
     {
@@ -565,7 +576,9 @@ run(int argc, char** argv)
             auto const r = [&vm]() -> std::vector<std::uint32_t> {
                 std::vector<std::string> strVec;
                 boost::split(
-                    strVec, vm["force_ledger_present_range"].as<std::string>(), boost::algorithm::is_any_of(","));
+                    strVec,
+                    vm["force_ledger_present_range"].as<std::string>(),
+                    boost::algorithm::is_any_of(","));
                 std::vector<std::uint32_t> result;
                 for (auto& s : strVec)
                 {
@@ -736,12 +749,13 @@ run(int argc, char** argv)
         // say 1.7 or higher
         if (config->had_trailing_comments())
         {
-            JLOG(logs->journal("Application").warn()) << "Trailing comments were seen in your config file. "
-                                                      << "The treatment of inline/trailing comments has changed "
-                                                         "recently. "
-                                                      << "Any `#` characters NOT intended to delimit comments should "
-                                                         "be "
-                                                      << "preceded by a \\";
+            JLOG(logs->journal("Application").warn())
+                << "Trailing comments were seen in your config file. "
+                << "The treatment of inline/trailing comments has changed "
+                   "recently. "
+                << "Any `#` characters NOT intended to delimit comments should "
+                   "be "
+                << "preceded by a \\";
         }
 
         // We want at least 1024 file descriptors. We'll
@@ -752,7 +766,8 @@ run(int argc, char** argv)
         if (vm.count("debug"))
             setDebugLogSink(logs->makeSink("Debug", beast::severities::kTrace));
 
-        auto app = make_Application(std::move(config), std::move(logs), std::make_unique<TimeKeeper>());
+        auto app =
+            make_Application(std::move(config), std::move(logs), std::make_unique<TimeKeeper>());
 
         if (!app->setup(vm))
             return -1;
@@ -773,7 +788,8 @@ run(int argc, char** argv)
 
     // We have an RPC command to process:
     beast::setCurrentThreadName("rippled: rpc");
-    return RPCCall::fromCommandLine(*config, vm["parameters"].as<std::vector<std::string>>(), *logs);
+    return RPCCall::fromCommandLine(
+        *config, vm["parameters"].as<std::vector<std::string>>(), *logs);
     // LCOV_EXCL_STOP
 }
 

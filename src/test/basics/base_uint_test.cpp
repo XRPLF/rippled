@@ -76,14 +76,15 @@ struct base_uint_test : beast::unit_test::suite
         }
 
         {
-            static constexpr std::array<std::pair<std::string_view, std::string_view>, 6> test_args{{
-                {"000000000000000000000000", "000000000000000000000001"},
-                {"000000000000000000000000", "ffffffffffffffffffffffff"},
-                {"0123456789ab0123456789ab", "123456789abc123456789abc"},
-                {"555555555555555555555555", "55555555555a555555555555"},
-                {"aaaaaaaaaaaaaaa9aaaaaaaa", "aaaaaaaaaaaaaaaaaaaaaaaa"},
-                {"fffffffffffffffffffffffe", "ffffffffffffffffffffffff"},
-            }};
+            static constexpr std::array<std::pair<std::string_view, std::string_view>, 6> test_args{
+                {
+                    {"000000000000000000000000", "000000000000000000000001"},
+                    {"000000000000000000000000", "ffffffffffffffffffffffff"},
+                    {"0123456789ab0123456789ab", "123456789abc123456789abc"},
+                    {"555555555555555555555555", "55555555555a555555555555"},
+                    {"aaaaaaaaaaaaaaa9aaaaaaaa", "aaaaaaaaaaaaaaaaaaaaaaaa"},
+                    {"fffffffffffffffffffffffe", "ffffffffffffffffffffffff"},
+                }};
 
             for (auto const& arg : test_args)
             {

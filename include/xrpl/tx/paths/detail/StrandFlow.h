@@ -142,8 +142,9 @@ flow(
                         // throwing out the sandbox can only increase liquidity
                         // yet the limiting is still limiting
                         // LCOV_EXCL_START
-                        JLOG(j.fatal()) << "Re-executed limiting step failed. r.first: "
-                                        << to_string(get<TInAmt>(r.first)) << " maxIn: " << to_string(*maxIn);
+                        JLOG(j.fatal())
+                            << "Re-executed limiting step failed. r.first: "
+                            << to_string(get<TInAmt>(r.first)) << " maxIn: " << to_string(*maxIn);
                         UNREACHABLE(
                             "xrpl::flow : first step re-executing the "
                             "limiting step failed");
@@ -178,8 +179,9 @@ flow(
                         // yet the limiting is still limiting
                         // LCOV_EXCL_START
 #ifndef NDEBUG
-                        JLOG(j.fatal()) << "Re-executed limiting step failed. r.second: " << r.second
-                                        << " stepOut: " << stepOut;
+                        JLOG(j.fatal())
+                            << "Re-executed limiting step failed. r.second: " << r.second
+                            << " stepOut: " << stepOut;
 #else
                         JLOG(j.fatal()) << "Re-executed limiting step failed";
 #endif
@@ -215,7 +217,8 @@ flow(
                     // new limit
                     // LCOV_EXCL_START
 #ifndef NDEBUG
-                    JLOG(j.fatal()) << "Re-executed forward pass failed. r.first: " << r.first << " stepIn: " << stepIn;
+                    JLOG(j.fatal()) << "Re-executed forward pass failed. r.first: " << r.first
+                                    << " stepIn: " << stepIn;
 #else
                     JLOG(j.fatal()) << "Re-executed forward pass failed";
 #endif
@@ -252,11 +255,18 @@ flow(
         }
 #endif
 
-        bool const inactive = std::any_of(
-            strand.begin(), strand.end(), [](std::unique_ptr<Step> const& step) { return step->inactive(); });
+        bool const inactive =
+            std::any_of(strand.begin(), strand.end(), [](std::unique_ptr<Step> const& step) {
+                return step->inactive();
+            });
 
         return Result(
-            strand, get<TInAmt>(strandIn), get<TOutAmt>(strandOut), std::move(*sb), std::move(ofrsToRm), inactive);
+            strand,
+            get<TInAmt>(strandIn),
+            get<TOutAmt>(strandOut),
+            std::move(*sb),
+            std::move(ofrsToRm),
+            inactive);
     }
     catch (FlowException const&)
     {
@@ -281,15 +291,24 @@ struct FlowResult
         TOutAmt const& out_,
         PaymentSandbox&& sandbox_,
         boost::container::flat_set<uint256> ofrsToRm)
-        : in(in_), out(out_), sandbox(std::move(sandbox_)), removableOffers(std::move(ofrsToRm)), ter(tesSUCCESS)
+        : in(in_)
+        , out(out_)
+        , sandbox(std::move(sandbox_))
+        , removableOffers(std::move(ofrsToRm))
+        , ter(tesSUCCESS)
     {
     }
 
-    FlowResult(TER ter_, boost::container::flat_set<uint256> ofrsToRm) : removableOffers(std::move(ofrsToRm)), ter(ter_)
+    FlowResult(TER ter_, boost::container::flat_set<uint256> ofrsToRm)
+        : removableOffers(std::move(ofrsToRm)), ter(ter_)
     {
     }
 
-    FlowResult(TER ter_, TInAmt const& in_, TOutAmt const& out_, boost::container::flat_set<uint256> ofrsToRm)
+    FlowResult(
+        TER ter_,
+        TInAmt const& in_,
+        TOutAmt const& out_,
+        boost::container::flat_set<uint256> ofrsToRm)
         : in(in_), out(out_), removableOffers(std::move(ofrsToRm)), ter(ter_)
     {
     }
@@ -325,7 +344,11 @@ qualityUpperBound(ReadView const& v, Strand const& strand)
  */
 template <typename TOutAmt>
 inline TOutAmt
-limitOut(ReadView const& v, Strand const& strand, TOutAmt const& remainingOut, Quality const& limitQuality)
+limitOut(
+    ReadView const& v,
+    Strand const& strand,
+    TOutAmt const& remainingOut,
+    Quality const& limitQuality)
 {
     std::optional<QualityFunction> stepQualityFunc;
     std::optional<QualityFunction> qf;
@@ -427,10 +450,13 @@ public:
                 }
                 // must stable sort for deterministic order across different c++
                 // standard library implementations
-                std::stable_sort(strandQualities.begin(), strandQualities.end(), [](auto const& lhs, auto const& rhs) {
-                    // higher qualities first
-                    return std::get<Quality>(lhs) > std::get<Quality>(rhs);
-                });
+                std::stable_sort(
+                    strandQualities.begin(),
+                    strandQualities.end(),
+                    [](auto const& lhs, auto const& rhs) {
+                        // higher qualities first
+                        return std::get<Quality>(lhs) > std::get<Quality>(rhs);
+                    });
                 next_.clear();
                 next_.reserve(strandQualities.size());
                 for (auto const& sq : strandQualities)
@@ -649,8 +675,8 @@ flow(
 
             Quality const q(f.out, f.in);
 
-            JLOG(j.trace()) << "New flow iter (iter, in, out): " << curTry - 1 << " " << to_string(f.in) << " "
-                            << to_string(f.out);
+            JLOG(j.trace()) << "New flow iter (iter, in, out): " << curTry - 1 << " "
+                            << to_string(f.in) << " " << to_string(f.out);
 
             // limitOut() finds output to generate exact requested
             // limitQuality. But the actual limit quality might be slightly
@@ -687,9 +713,11 @@ flow(
                 remainingIn = *sendMax - sum(savedIns);
 
             if (flowDebugInfo)
-                flowDebugInfo->pushPass(EitherAmount(best->in), EitherAmount(best->out), activeStrands.size());
+                flowDebugInfo->pushPass(
+                    EitherAmount(best->in), EitherAmount(best->out), activeStrands.size());
 
-            JLOG(j.trace()) << "Best path: in: " << to_string(best->in) << " out: " << to_string(best->out)
+            JLOG(j.trace()) << "Best path: in: " << to_string(best->in)
+                            << " out: " << to_string(best->out)
                             << " remainingOut: " << to_string(remainingOut);
 
             best->sb.apply(sb);
@@ -719,7 +747,8 @@ flow(
     auto const actualOut = sum(savedOuts);
     auto const actualIn = sum(savedIns);
 
-    JLOG(j.trace()) << "Total flow: in: " << to_string(actualIn) << " out: " << to_string(actualOut);
+    JLOG(j.trace()) << "Total flow: in: " << to_string(actualIn)
+                    << " out: " << to_string(actualOut);
 
     /* flowCross doesn't handle offer crossing with tfFillOrKill flag correctly.
      * 1. If tfFillOrKill is set then the owner must receive the full
@@ -764,7 +793,8 @@ flow(
             return {tecPATH_DRY, std::move(ofrsToRmOnFail)};
         }
     }
-    if (offerCrossing && (!partialPayment && (!fillOrKillEnabled || offerCrossing == OfferCrossing::sell)))
+    if (offerCrossing &&
+        (!partialPayment && (!fillOrKillEnabled || offerCrossing == OfferCrossing::sell)))
     {
         // If we're offer crossing and partialPayment is *not* true, then
         // we're handling a FillOrKill offer.  In this case remainingIn must

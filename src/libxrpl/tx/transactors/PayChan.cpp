@@ -94,7 +94,11 @@ namespace xrpl {
 //------------------------------------------------------------------------------
 
 static TER
-closeChannel(std::shared_ptr<SLE> const& slep, ApplyView& view, uint256 const& key, beast::Journal j)
+closeChannel(
+    std::shared_ptr<SLE> const& slep,
+    ApplyView& view,
+    uint256 const& key,
+    beast::Journal j)
 {
     AccountID const src = (*slep)[sfAccount];
     // Remove PayChan from owner directory
@@ -127,7 +131,8 @@ closeChannel(std::shared_ptr<SLE> const& slep, ApplyView& view, uint256 const& k
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    XRPL_ASSERT((*slep)[sfAmount] >= (*slep)[sfBalance], "xrpl::closeChannel : minimum channel amount");
+    XRPL_ASSERT(
+        (*slep)[sfAmount] >= (*slep)[sfBalance], "xrpl::closeChannel : minimum channel amount");
     (*sle)[sfBalance] = (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
     auto const sponsor = getLedgerEntryReserveSponsor(view, slep);
     adjustOwnerCount(view, sle, sponsor, -1, j);
@@ -173,10 +178,12 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
     {
         auto const balance = (*sle)[sfBalance];
         auto const sponsor = getTxReserveSponsor(ctx.view, ctx.tx);
-        if (auto const ret = checkInsufficientReserve(ctx.view, ctx.tx, sle, balance, sponsor, 1); !isTesSuccess(ret))
+        if (auto const ret = checkInsufficientReserve(ctx.view, ctx.tx, sle, balance, sponsor, 1);
+            !isTesSuccess(ret))
             return ret;
 
-        if (auto const ret = checkInsufficientReserve(ctx.view, ctx.tx, sle, balance - ctx.tx[sfAmount], sponsor, 1);
+        if (auto const ret = checkInsufficientReserve(
+                ctx.view, ctx.tx, sle, balance - ctx.tx[sfAmount], sponsor, 1);
             !isTesSuccess(ret))
             return tecUNFUNDED;
     }
@@ -255,7 +262,8 @@ PayChanCreate::doApply()
 
     // Add PayChan to owner directory
     {
-        auto const page = ctx_.view().dirInsert(keylet::ownerDir(account), payChanKeylet, describeOwnerDir(account));
+        auto const page = ctx_.view().dirInsert(
+            keylet::ownerDir(account), payChanKeylet, describeOwnerDir(account));
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*slep)[sfOwnerNode] = *page;
@@ -263,7 +271,8 @@ PayChanCreate::doApply()
 
     // Add PayChan to the recipient's owner directory
     {
-        auto const page = ctx_.view().dirInsert(keylet::ownerDir(dst), payChanKeylet, describeOwnerDir(dst));
+        auto const page =
+            ctx_.view().dirInsert(keylet::ownerDir(dst), payChanKeylet, describeOwnerDir(dst));
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*slep)[sfDestinationNode] = *page;
@@ -322,7 +331,8 @@ PayChanFund::doApply()
 
     if (auto extend = ctx_.tx[~sfExpiration])
     {
-        auto minExpiration = ctx_.view().header().parentCloseTime.time_since_epoch().count() + (*slep)[sfSettleDelay];
+        auto minExpiration = ctx_.view().header().parentCloseTime.time_since_epoch().count() +
+            (*slep)[sfSettleDelay];
         if (expiration && *expiration < minExpiration)
             minExpiration = *expiration;
 
@@ -340,11 +350,13 @@ PayChanFund::doApply()
         // Check reserve and funds availability
         auto const balance = (*sle)[sfBalance];
         auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
-        if (auto const ret = checkInsufficientReserve(ctx_.view(), ctx_.tx, sle, balance, sponsor, 0);
+        if (auto const ret =
+                checkInsufficientReserve(ctx_.view(), ctx_.tx, sle, balance, sponsor, 0);
             !isTesSuccess(ret))
             return ret;
 
-        if (auto const ret = checkInsufficientReserve(ctx_.view(), ctx_.tx, sle, balance - ctx_.tx[sfAmount], {}, 0);
+        if (auto const ret = checkInsufficientReserve(
+                ctx_.view(), ctx_.tx, sle, balance - ctx_.tx[sfAmount], {}, 0);
             !isTesSuccess(ret))
             return tecUNFUNDED;
     }
@@ -437,7 +449,8 @@ PayChanClaim::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.rules().enabled(featureCredentials))
         return Transactor::preclaim(ctx);
 
-    if (auto const err = credentials::valid(ctx.tx, ctx.view, ctx.tx[sfAccount], ctx.j); !isTesSuccess(err))
+    if (auto const err = credentials::valid(ctx.tx, ctx.view, ctx.tx[sfAccount], ctx.j);
+        !isTesSuccess(err))
         return err;
 
     return tesSUCCESS;
@@ -459,7 +472,8 @@ PayChanClaim::doApply()
     {
         auto const cancelAfter = (*slep)[~sfCancelAfter];
         auto const closeTime = ctx_.view().header().parentCloseTime.time_since_epoch().count();
-        if ((cancelAfter && closeTime >= *cancelAfter) || (curExpiration && closeTime >= *curExpiration))
+        if ((cancelAfter && closeTime >= *cancelAfter) ||
+            (curExpiration && closeTime >= *curExpiration))
             return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.journal("View"));
     }
 
@@ -493,7 +507,8 @@ PayChanClaim::doApply()
         if (!sled)
             return tecNO_DST;
 
-        if (auto err = verifyDepositPreauth(ctx_.tx, ctx_.view(), txAccount, dst, sled, ctx_.journal);
+        if (auto err =
+                verifyDepositPreauth(ctx_.tx, ctx_.view(), txAccount, dst, sled, ctx_.journal);
             !isTesSuccess(err))
             return err;
 
@@ -520,7 +535,8 @@ PayChanClaim::doApply()
             return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.journal("View"));
 
         auto const settleExpiration =
-            ctx_.view().header().parentCloseTime.time_since_epoch().count() + (*slep)[sfSettleDelay];
+            ctx_.view().header().parentCloseTime.time_since_epoch().count() +
+            (*slep)[sfSettleDelay];
 
         if (!curExpiration || *curExpiration > settleExpiration)
         {

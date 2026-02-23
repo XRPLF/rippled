@@ -38,7 +38,9 @@ public:
             test::jtx::Env fully_canonical(*this, test::jtx::testable_amendments());
 
             Validity valid =
-                checkValidity(fully_canonical.app().getHashRouter(), tx, fully_canonical.current()->rules()).first;
+                checkValidity(
+                    fully_canonical.app().getHashRouter(), tx, fully_canonical.current()->rules())
+                    .first;
             if (valid == Validity::Valid)
                 fail("Non-Fully canonical signature was permitted");
         }

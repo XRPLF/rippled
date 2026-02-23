@@ -82,7 +82,8 @@ private:
     std::shared_ptr<Backend> backend_;
 
     std::shared_ptr<NodeObject>
-    fetchNodeObject(uint256 const& hash, std::uint32_t, FetchReport& fetchReport, bool duplicate) override;
+    fetchNodeObject(uint256 const& hash, std::uint32_t, FetchReport& fetchReport, bool duplicate)
+        override;
 
     void
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override

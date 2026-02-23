@@ -97,7 +97,8 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
     {
         auto& overlay = dynamic_cast<OverlayImpl&>(env.app().overlay());
         boost::beast::http::request<boost::beast::http::dynamic_body> request;
-        auto stream_ptr = std::make_unique<stream_type>(socket_type(env.app().getIOContext()), *context_);
+        auto stream_ptr =
+            std::make_unique<stream_type>(socket_type(env.app().getIOContext()), *context_);
 
         beast::IP::Endpoint local(boost::asio::ip::make_address("172.1.1.1"), 51235);
         beast::IP::Endpoint remote(boost::asio::ip::make_address("172.1.1.2"), 51235);
@@ -107,7 +108,14 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
         auto [slot, _] = overlay.peerFinder().new_inbound_slot(local, remote);
 
         auto peer = std::make_shared<PeerTest>(
-            env.app(), slot, std::move(request), key, protocolVersion_, consumer, std::move(stream_ptr), overlay);
+            env.app(),
+            slot,
+            std::move(request),
+            key,
+            protocolVersion_,
+            consumer,
+            std::move(stream_ptr),
+            overlay);
 
         overlay.add_active(peer);
         return peer;

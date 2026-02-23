@@ -57,16 +57,22 @@ auto constexpr decreaseLedgerTimeResolutionEvery = 1;
 */
 template <class Rep, class Period, class Seq>
 std::chrono::duration<Rep, Period>
-getNextLedgerTimeResolution(std::chrono::duration<Rep, Period> previousResolution, bool previousAgree, Seq ledgerSeq)
+getNextLedgerTimeResolution(
+    std::chrono::duration<Rep, Period> previousResolution,
+    bool previousAgree,
+    Seq ledgerSeq)
 {
     XRPL_ASSERT(ledgerSeq != Seq{0}, "ripple:getNextLedgerTimeResolution : valid ledger sequence");
 
     using namespace std::chrono;
     // Find the current resolution:
     auto iter = std::find(
-        std::begin(ledgerPossibleTimeResolutions), std::end(ledgerPossibleTimeResolutions), previousResolution);
+        std::begin(ledgerPossibleTimeResolutions),
+        std::end(ledgerPossibleTimeResolutions),
+        previousResolution);
     XRPL_ASSERT(
-        iter != std::end(ledgerPossibleTimeResolutions), "ripple:getNextLedgerTimeResolution : found time resolution");
+        iter != std::end(ledgerPossibleTimeResolutions),
+        "ripple:getNextLedgerTimeResolution : found time resolution");
 
     // This should never happen, but just as a precaution
     if (iter == std::end(ledgerPossibleTimeResolutions))
@@ -100,7 +106,9 @@ getNextLedgerTimeResolution(std::chrono::duration<Rep, Period> previousResolutio
 */
 template <class Clock, class Duration, class Rep, class Period>
 std::chrono::time_point<Clock, Duration>
-roundCloseTime(std::chrono::time_point<Clock, Duration> closeTime, std::chrono::duration<Rep, Period> closeResolution)
+roundCloseTime(
+    std::chrono::time_point<Clock, Duration> closeTime,
+    std::chrono::duration<Rep, Period> closeResolution)
 {
     using time_point = decltype(closeTime);
     if (closeTime == time_point{})

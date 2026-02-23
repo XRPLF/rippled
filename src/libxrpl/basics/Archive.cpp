@@ -41,8 +41,9 @@ extractTarLz4(boost::filesystem::path const& src, boost::filesystem::path const&
         Throw<std::runtime_error>("Failed to allocate archive");
 
     if (archive_write_disk_set_options(
-            aw.get(), ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_PERM | ARCHIVE_EXTRACT_ACL | ARCHIVE_EXTRACT_FFLAGS) <
-        ARCHIVE_OK)
+            aw.get(),
+            ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_PERM | ARCHIVE_EXTRACT_ACL |
+                ARCHIVE_EXTRACT_FFLAGS) < ARCHIVE_OK)
     {
         Throw<std::runtime_error>(archive_error_string(aw.get()));
     }

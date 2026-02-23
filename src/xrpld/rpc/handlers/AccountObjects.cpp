@@ -74,7 +74,8 @@ doAccountNFTs(RPC::JsonContext& context)
     auto const first = keylet::nftpage(keylet::nftpage_min(accountID), marker);
     auto const last = keylet::nftpage_max(accountID);
 
-    auto cp = ledger->read(Keylet(ltNFTOKEN_PAGE, ledger->succ(first.key, last.key.next()).value_or(last.key)));
+    auto cp = ledger->read(
+        Keylet(ltNFTOKEN_PAGE, ledger->succ(first.key, last.key.next()).value_or(last.key)));
 
     std::uint32_t cnt = 0;
     auto& nfts = (result[jss::account_nfts] = Json::arrayValue);
@@ -181,12 +182,14 @@ getAccountObjects(
     if (!dirIndex.isZero() && !ledger.read({ltDIR_NODE, dirIndex}))
         return false;
 
-    auto typeMatchesFilter = [](std::vector<LedgerEntryType> const& typeFilter, LedgerEntryType ledgerType) {
+    auto typeMatchesFilter = [](std::vector<LedgerEntryType> const& typeFilter,
+                                LedgerEntryType ledgerType) {
         auto it = std::find(typeFilter.begin(), typeFilter.end(), ledgerType);
         return it != typeFilter.end();
     };
 
-    auto sponsoredMatchesFilter = [](bool const sponsored, std::optional<AccountID> const& sponsor) {
+    auto sponsoredMatchesFilter = [](bool const sponsored,
+                                     std::optional<AccountID> const& sponsor) {
         if (sponsored)
             return sponsor.has_value();
         return !sponsor.has_value();
@@ -195,7 +198,8 @@ getAccountObjects(
     // if dirIndex != 0, then all NFTs have already been returned.  only
     // iterate NFT pages if the filter says so AND dirIndex == 0
     bool iterateNFTPages =
-        (!typeFilter.has_value() || typeMatchesFilter(typeFilter.value(), ltNFTOKEN_PAGE)) && dirIndex == beast::zero;
+        (!typeFilter.has_value() || typeMatchesFilter(typeFilter.value(), ltNFTOKEN_PAGE)) &&
+        dirIndex == beast::zero;
 
     Keylet const firstNFTPage = keylet::nftpage_min(account);
 
@@ -218,7 +222,8 @@ getAccountObjects(
     // iterate NFTokenPages preferentially
     if (iterateNFTPages)
     {
-        Keylet const first = entryIndex == beast::zero ? firstNFTPage : Keylet{ltNFTOKEN_PAGE, entryIndex};
+        Keylet const first =
+            entryIndex == beast::zero ? firstNFTPage : Keylet{ltNFTOKEN_PAGE, entryIndex};
 
         Keylet const last = keylet::nftpage_max(account);
 
@@ -317,7 +322,8 @@ getAccountObjects(
 
             bool canAppend = true;
 
-            if (typeFilter.has_value() && !typeMatchesFilter(typeFilter.value(), sleNode->getType()))
+            if (typeFilter.has_value() &&
+                !typeMatchesFilter(typeFilter.value(), sleNode->getType()))
                 canAppend = false;
 
             std::optional<AccountID> const sponsor = sleNode->isFieldPresent(sfSponsor)
@@ -394,7 +400,8 @@ doAccountObjects(RPC::JsonContext& context)
 
     std::optional<std::vector<LedgerEntryType>> typeFilter;
 
-    if (params.isMember(jss::deletion_blockers_only) && params[jss::deletion_blockers_only].asBool())
+    if (params.isMember(jss::deletion_blockers_only) &&
+        params[jss::deletion_blockers_only].asBool())
     {
         struct
         {
@@ -482,7 +489,8 @@ doAccountObjects(RPC::JsonContext& context)
         sponsored = sponsoredJv.asBool();
     }
 
-    if (!getAccountObjects(*ledger, accountID, typeFilter, dirIndex, entryIndex, limit, sponsored, result))
+    if (!getAccountObjects(
+            *ledger, accountID, typeFilter, dirIndex, entryIndex, limit, sponsored, result))
         return RPC::invalid_field_error(jss::marker);
 
     result[jss::account] = toBase58(accountID);

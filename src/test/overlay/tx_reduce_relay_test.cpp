@@ -32,7 +32,11 @@ private:
     testConfig(bool log)
     {
         doTest("Config Test", log, [&](bool log) {
-            auto test = [&](bool enable, bool metrics, std::uint16_t min, std::uint16_t pct, bool success = true) {
+            auto test = [&](bool enable,
+                            bool metrics,
+                            std::uint16_t min,
+                            std::uint16_t pct,
+                            bool success = true) {
                 std::stringstream str("[reduce_relay]");
                 str << "[reduce_relay]\n"
                     << "tx_enable=" << static_cast<int>(enable) << "\n"
@@ -141,17 +145,28 @@ private:
     {
         auto& overlay = dynamic_cast<OverlayImpl&>(env.app().overlay());
         boost::beast::http::request<boost::beast::http::dynamic_body> request;
-        (nDisabled == 0) ? (void)request.insert("X-Protocol-Ctl", makeFeaturesRequestHeader(false, false, true, false))
-                         : (void)nDisabled--;
+        (nDisabled == 0)
+            ? (void)request.insert(
+                  "X-Protocol-Ctl", makeFeaturesRequestHeader(false, false, true, false))
+            : (void)nDisabled--;
         auto stream_ptr = std::make_unique<stream_type>(
-            socket_type(std::forward<boost::asio::io_context&>(env.app().getIOContext())), *context_);
+            socket_type(std::forward<boost::asio::io_context&>(env.app().getIOContext())),
+            *context_);
         beast::IP::Endpoint local(boost::asio::ip::make_address("172.1.1." + std::to_string(lid_)));
-        beast::IP::Endpoint remote(boost::asio::ip::make_address("172.1.1." + std::to_string(rid_)));
+        beast::IP::Endpoint remote(
+            boost::asio::ip::make_address("172.1.1." + std::to_string(rid_)));
         PublicKey key(std::get<0>(randomKeyPair(KeyType::ed25519)));
         auto consumer = overlay.resourceManager().newInboundEndpoint(remote);
         auto [slot, _] = overlay.peerFinder().new_inbound_slot(local, remote);
         auto const peer = std::make_shared<PeerTest>(
-            env.app(), slot, std::move(request), key, protocolVersion_, consumer, std::move(stream_ptr), overlay);
+            env.app(),
+            slot,
+            std::move(request),
+            key,
+            protocolVersion_,
+            consumer,
+            std::move(stream_ptr),
+            overlay);
         BEAST_EXPECT(overlay.findPeerByPublicKey(key) == std::shared_ptr<PeerImp>{});
         overlay.add_active(peer);
         BEAST_EXPECT(overlay.findPeerByPublicKey(key) == peer);

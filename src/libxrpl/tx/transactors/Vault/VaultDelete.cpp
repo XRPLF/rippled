@@ -84,7 +84,8 @@ VaultDelete::doApply()
     // Destroy the asset holding.
     auto asset = vault->at(sfAsset);
 
-    if (auto ter = removeEmptyHolding(view(), ctx_.tx, vault->at(sfAccount), asset, j_); !isTesSuccess(ter))
+    if (auto ter = removeEmptyHolding(view(), ctx_.tx, vault->at(sfAccount), asset, j_);
+        !isTesSuccess(ter))
         return ter;
 
     auto const& pseudoID = vault->at(sfAccount);
@@ -112,7 +113,8 @@ VaultDelete::doApply()
     // Try to remove MPToken for vault shares for the vault owner if it exists.
     if (auto const mptoken = view().peek(keylet::mptoken(shareMPTID, account_)))
     {
-        if (auto const ter = removeEmptyHolding(view(), ctx_.tx, account_, MPTIssue(shareMPTID), j_);
+        if (auto const ter =
+                removeEmptyHolding(view(), ctx_.tx, account_, MPTIssue(shareMPTID), j_);
             !isTesSuccess(ter))
         {
             // LCOV_EXCL_START

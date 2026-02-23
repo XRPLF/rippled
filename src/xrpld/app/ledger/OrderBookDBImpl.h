@@ -41,7 +41,8 @@ public:
     addOrderBook(Book const& book) override;
 
     std::vector<Book>
-    getBooksByTakerPays(Issue const& issue, std::optional<Domain> const& domain = std::nullopt) override;
+    getBooksByTakerPays(Issue const& issue, std::optional<Domain> const& domain = std::nullopt)
+        override;
 
     int
     getBookSize(Issue const& issue, std::optional<Domain> const& domain = std::nullopt) override;
@@ -55,8 +56,10 @@ public:
 
     // see if this txn effects any orderbook
     void
-    processTxn(std::shared_ptr<ReadView const> const& ledger, AcceptedLedgerTx const& alTx, MultiApiJson const& jvObj)
-        override;
+    processTxn(
+        std::shared_ptr<ReadView const> const& ledger,
+        AcceptedLedgerTx const& alTx,
+        MultiApiJson const& jvObj) override;
 
     BookListeners::pointer
     getBookListeners(Book const&) override;

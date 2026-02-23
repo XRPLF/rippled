@@ -5,7 +5,11 @@
 
 namespace xrpl {
 
-Workers::Workers(Callback& callback, perf::PerfLog* perfLog, std::string const& threadNames, int numberOfThreads)
+Workers::Workers(
+    Callback& callback,
+    perf::PerfLog* perfLog,
+    std::string const& threadNames,
+    int numberOfThreads)
     : m_callback(callback)
     , perfLog_(perfLog)
     , m_threadNames(threadNames)
@@ -133,7 +137,11 @@ Workers::deleteWorkers(beast::LockFreeStack<Worker>& stack)
 //------------------------------------------------------------------------------
 
 Workers::Worker::Worker(Workers& workers, std::string const& threadName, int const instance)
-    : m_workers{workers}, threadName_{threadName}, instance_{instance}, wakeCount_{0}, shouldExit_{false}
+    : m_workers{workers}
+    , threadName_{threadName}
+    , instance_{instance}
+    , wakeCount_{0}
+    , shouldExit_{false}
 {
     thread_ = std::thread{&Workers::Worker::run, this};
 }

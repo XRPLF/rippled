@@ -80,7 +80,10 @@ STPathElement
 IPE(Issue const& iss)
 {
     return STPathElement(
-        STPathElement::typeCurrency | STPathElement::typeIssuer, xrpAccount(), iss.currency, iss.account);
+        STPathElement::typeCurrency | STPathElement::typeIssuer,
+        xrpAccount(),
+        iss.currency,
+        iss.account);
 }
 
 /******************************************************************************/
@@ -115,7 +118,8 @@ expectHolding(Env& env, AccountID const& account, STAmount const& value, bool de
             low.setIssuer(accountLow ? account : issue.account);
             high.setIssuer(accountLow ? issue.account : account);
 
-            expectDefaultTrustLine = sle->getFieldAmount(sfLowLimit) == low && sle->getFieldAmount(sfHighLimit) == high;
+            expectDefaultTrustLine =
+                sle->getFieldAmount(sfLowLimit) == low && sle->getFieldAmount(sfHighLimit) == high;
         }
 
         auto amount = sle->getFieldAmount(sfBalance);
@@ -143,11 +147,16 @@ expectHolding(Env& env, AccountID const& account, None const&, MPTIssue const& m
 expectHolding(Env& env, AccountID const& account, None const& value)
 {
     return std::visit(
-        [&](auto const& issue) { return expectHolding(env, account, value, issue); }, value.asset.value());
+        [&](auto const& issue) { return expectHolding(env, account, value, issue); },
+        value.asset.value());
 }
 
 [[nodiscard]] bool
-expectOffers(Env& env, AccountID const& account, std::uint16_t size, std::vector<Amounts> const& toMatch)
+expectOffers(
+    Env& env,
+    AccountID const& account,
+    std::uint16_t size,
+    std::vector<Amounts> const& toMatch)
 {
     std::uint16_t cnt = 0;
     std::uint16_t matched = 0;
@@ -158,7 +167,8 @@ expectOffers(Env& env, AccountID const& account, std::uint16_t size, std::vector
         {
             ++cnt;
             if (std::find_if(toMatch.begin(), toMatch.end(), [&](auto const& a) {
-                    return a.in == sle->getFieldAmount(sfTakerPays) && a.out == sle->getFieldAmount(sfTakerGets);
+                    return a.in == sle->getFieldAmount(sfTakerPays) &&
+                        a.out == sle->getFieldAmount(sfTakerGets);
                 }) != toMatch.end())
                 ++matched;
         }
@@ -177,7 +187,11 @@ ledgerEntryRoot(Env& env, Account const& acct)
 }
 
 Json::Value
-ledgerEntryState(Env& env, Account const& acct_a, Account const& acct_b, std::string const& currency)
+ledgerEntryState(
+    Env& env,
+    Account const& acct_a,
+    Account const& acct_b,
+    std::string const& currency)
 {
     Json::Value jvParams;
     jvParams[jss::ledger_index] = "current";
@@ -359,7 +373,11 @@ del(AccountID const& account, uint256 const& brokerID, uint32_t flags)
 }
 
 Json::Value
-coverDeposit(AccountID const& account, uint256 const& brokerID, STAmount const& amount, uint32_t flags)
+coverDeposit(
+    AccountID const& account,
+    uint256 const& brokerID,
+    STAmount const& amount,
+    uint32_t flags)
 {
     Json::Value jv;
     jv[sfTransactionType] = jss::LoanBrokerCoverDeposit;
@@ -371,7 +389,11 @@ coverDeposit(AccountID const& account, uint256 const& brokerID, STAmount const& 
 }
 
 Json::Value
-coverWithdraw(AccountID const& account, uint256 const& brokerID, STAmount const& amount, uint32_t flags)
+coverWithdraw(
+    AccountID const& account,
+    uint256 const& brokerID,
+    STAmount const& amount,
+    uint32_t flags)
 {
     Json::Value jv;
     jv[sfTransactionType] = jss::LoanBrokerCoverWithdraw;
@@ -399,7 +421,10 @@ coverClawback(AccountID const& account, std::uint32_t flags)
 namespace loan {
 
 Json::Value
-set(AccountID const& account, uint256 const& loanBrokerID, Number principalRequested, std::uint32_t flags)
+set(AccountID const& account,
+    uint256 const& loanBrokerID,
+    Number principalRequested,
+    std::uint32_t flags)
 {
     Json::Value jv;
     jv[sfTransactionType] = jss::LoanSet;

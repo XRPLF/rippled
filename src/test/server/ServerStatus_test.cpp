@@ -98,7 +98,11 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
     }
 
     auto
-    makeHTTPRequest(std::string const& host, uint16_t port, std::string const& body, myFields const& fields)
+    makeHTTPRequest(
+        std::string const& host,
+        uint16_t port,
+        std::string const& body,
+        myFields const& fields)
     {
         using namespace boost::asio;
         using namespace boost::beast::http;
@@ -259,8 +263,9 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
     void
     testAdminRequest(std::string const& proto, bool admin, bool credentials)
     {
-        testcase << "Admin request over " << proto << ", config " << (admin ? "enabled" : "disabled")
-                 << ", credentials " << (credentials ? "" : "not ") << "set";
+        testcase << "Admin request over " << proto << ", config "
+                 << (admin ? "enabled" : "disabled") << ", credentials "
+                 << (credentials ? "" : "not ") << "set";
         using namespace jtx;
         Env env{*this, makeConfig(proto, admin, credentials)};
 
@@ -272,34 +277,41 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
 
         if (admin && credentials)
         {
-            auto const user = env.app().config()[proto_ws ? "port_ws" : "port_rpc"].get<std::string>("admin_user");
+            auto const user =
+                env.app().config()[proto_ws ? "port_ws" : "port_rpc"].get<std::string>(
+                    "admin_user");
 
             auto const password =
-                env.app().config()[proto_ws ? "port_ws" : "port_rpc"].get<std::string>("admin_password");
+                env.app().config()[proto_ws ? "port_ws" : "port_rpc"].get<std::string>(
+                    "admin_password");
 
             // 1 - FAILS with wrong pass
             jrr = makeAdminRequest(env, proto, *user, *password + "_")[jss::result];
             BEAST_EXPECT(jrr["error"] == proto_ws ? "forbidden" : "noPermission");
             BEAST_EXPECT(
-                jrr["error_message"] == proto_ws ? "Bad credentials." : "You don't have permission for this command.");
+                jrr["error_message"] == proto_ws ? "Bad credentials."
+                                                 : "You don't have permission for this command.");
 
             // 2 - FAILS with password in an object
             jrr = makeAdminRequest(env, proto, *user, *password, true)[jss::result];
             BEAST_EXPECT(jrr["error"] == proto_ws ? "forbidden" : "noPermission");
             BEAST_EXPECT(
-                jrr["error_message"] == proto_ws ? "Bad credentials." : "You don't have permission for this command.");
+                jrr["error_message"] == proto_ws ? "Bad credentials."
+                                                 : "You don't have permission for this command.");
 
             // 3 - FAILS with wrong user
             jrr = makeAdminRequest(env, proto, *user + "_", *password)[jss::result];
             BEAST_EXPECT(jrr["error"] == proto_ws ? "forbidden" : "noPermission");
             BEAST_EXPECT(
-                jrr["error_message"] == proto_ws ? "Bad credentials." : "You don't have permission for this command.");
+                jrr["error_message"] == proto_ws ? "Bad credentials."
+                                                 : "You don't have permission for this command.");
 
             // 4 - FAILS no credentials
             jrr = makeAdminRequest(env, proto, "", "")[jss::result];
             BEAST_EXPECT(jrr["error"] == proto_ws ? "forbidden" : "noPermission");
             BEAST_EXPECT(
-                jrr["error_message"] == proto_ws ? "Bad credentials." : "You don't have permission for this command.");
+                jrr["error_message"] == proto_ws ? "Bad credentials."
+                                                 : "You don't have permission for this command.");
 
             // 5 - SUCCEEDS with proper credentials
             jrr = makeAdminRequest(env, proto, *user, *password)[jss::result];
@@ -321,7 +333,8 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
             jrr = makeAdminRequest(env, proto, "", "")[jss::result];
             BEAST_EXPECT(jrr["error"] == proto_ws ? "forbidden" : "noPermission");
             BEAST_EXPECT(
-                jrr["error_message"] == proto_ws ? "Bad credentials." : "You don't have permission for this command.");
+                jrr["error_message"] == proto_ws ? "Bad credentials."
+                                                 : "You don't have permission for this command.");
         }
     }
 
@@ -441,7 +454,8 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         // The essence of this test is to have a client and server configured
         // out-of-phase with respect to ssl (secure client and insecure server
         // or vice-versa)
-        testcase << "Connect fails: " << client_protocol << " client to " << server_protocol << " server";
+        testcase << "Connect fails: " << client_protocol << " client to " << server_protocol
+                 << " server";
         using namespace jtx;
         Env env{*this, makeConfig(server_protocol)};
 
@@ -454,7 +468,8 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         }
         else
         {
-            doWSRequest(env, yield, client_protocol == "wss" || client_protocol == "wss2", resp, ec);
+            doWSRequest(
+                env, yield, client_protocol == "wss" || client_protocol == "wss2", resp, ec);
             BEAST_EXPECT(ec);
         }
     }
@@ -495,7 +510,8 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         BEAST_EXPECT(resp.result() == boost::beast::http::status::forbidden);
 
         auto const user = env.app().config().section("port_rpc").get<std::string>("user").value();
-        auto const pass = env.app().config().section("port_rpc").get<std::string>("password").value();
+        auto const pass =
+            env.app().config().section("port_rpc").get<std::string>("password").value();
 
         // try with the correct user/pass, but not encoded
         auth.set("Authorization", "Basic " + user + ":" + pass);
@@ -547,7 +563,8 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         int testTo = (limit == 0) ? 50 : limit + 1;
         while (connectionCount < testTo)
         {
-            clients.emplace_back(std::make_pair(ip::tcp::socket{ios}, boost::beast::multi_buffer{}));
+            clients.emplace_back(
+                std::make_pair(ip::tcp::socket{ios}, boost::beast::multi_buffer{}));
             async_connect(clients.back().first, it, yield[ec]);
             BEAST_EXPECT(!ec);
             auto req = makeHTTPRequest(ip, port, to_string(jr), {});
@@ -586,7 +603,8 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         doRequest(yield, makeWSUpgrade(ip, port), ip, port, true, resp, ec);
         BEAST_EXPECT(resp.result() == boost::beast::http::status::switching_protocols);
         BEAST_EXPECT(resp.find("Upgrade") != resp.end() && resp["Upgrade"] == "websocket");
-        BEAST_EXPECT(resp.find("Connection") != resp.end() && boost::iequals(resp["Connection"], "upgrade"));
+        BEAST_EXPECT(
+            resp.find("Connection") != resp.end() && boost::iequals(resp["Connection"], "upgrade"));
     }
 
     void
@@ -650,8 +668,9 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
 
             Json::Value resp;
             Json::Reader jr;
-            if (!BEAST_EXPECT(
-                    jr.parse(boost::lexical_cast<std::string>(boost::beast::make_printable(sb.data())), resp)))
+            if (!BEAST_EXPECT(jr.parse(
+                    boost::lexical_cast<std::string>(boost::beast::make_printable(sb.data())),
+                    resp)))
                 return Json::objectValue;
             sb.consume(sb.size());
             return resp;
@@ -728,7 +747,8 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         boost::system::error_code ec;
         response<string_body> resp;
 
-        doRequest(yield, makeHTTPRequest(*ip_ws, *port_ws, "", {}), *ip_ws, *port_ws, false, resp, ec);
+        doRequest(
+            yield, makeHTTPRequest(*ip_ws, *port_ws, "", {}), *ip_ws, *port_ws, false, resp, ec);
 
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
@@ -763,7 +783,8 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
             si[jss::state][jss::warnings][0u][jss::id].asInt() == warnRPC_UNSUPPORTED_MAJORITY);
 
         // but status does not indicate a problem
-        doRequest(yield, makeHTTPRequest(*ip_ws, *port_ws, "", {}), *ip_ws, *port_ws, false, resp, ec);
+        doRequest(
+            yield, makeHTTPRequest(*ip_ws, *port_ws, "", {}), *ip_ws, *port_ws, false, resp, ec);
 
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
@@ -773,7 +794,8 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         // with ELB_SUPPORT, status still does not indicate a problem
         env.app().config().ELB_SUPPORT = true;
 
-        doRequest(yield, makeHTTPRequest(*ip_ws, *port_ws, "", {}), *ip_ws, *port_ws, false, resp, ec);
+        doRequest(
+            yield, makeHTTPRequest(*ip_ws, *port_ws, "", {}), *ip_ws, *port_ws, false, resp, ec);
 
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
@@ -826,7 +848,8 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         boost::system::error_code ec;
         response<string_body> resp;
 
-        doRequest(yield, makeHTTPRequest(*ip_ws, *port_ws, "", {}), *ip_ws, *port_ws, false, resp, ec);
+        doRequest(
+            yield, makeHTTPRequest(*ip_ws, *port_ws, "", {}), *ip_ws, *port_ws, false, resp, ec);
 
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
@@ -844,7 +867,9 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         // RPC request server_info again, now AB should be returned
         si = env.rpc("server_info")[jss::result];
         BEAST_EXPECT(si.isMember(jss::info));
-        BEAST_EXPECT(si[jss::info].isMember(jss::amendment_blocked) && si[jss::info][jss::amendment_blocked] == true);
+        BEAST_EXPECT(
+            si[jss::info].isMember(jss::amendment_blocked) &&
+            si[jss::info][jss::amendment_blocked] == true);
         BEAST_EXPECT(
             si[jss::info].isMember(jss::warnings) && si[jss::info][jss::warnings].isArray() &&
             si[jss::info][jss::warnings].size() == 1 &&
@@ -852,7 +877,9 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
 
         // RPC request server_state again, now AB should be returned
         si = env.rpc("server_state")[jss::result];
-        BEAST_EXPECT(si[jss::state].isMember(jss::amendment_blocked) && si[jss::state][jss::amendment_blocked] == true);
+        BEAST_EXPECT(
+            si[jss::state].isMember(jss::amendment_blocked) &&
+            si[jss::state][jss::amendment_blocked] == true);
         BEAST_EXPECT(
             si[jss::state].isMember(jss::warnings) && si[jss::state][jss::warnings].isArray() &&
             si[jss::state][jss::warnings].size() == 1 &&
@@ -860,7 +887,8 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
 
         // but status does not indicate because it still relies on ELB
         // being enabled
-        doRequest(yield, makeHTTPRequest(*ip_ws, *port_ws, "", {}), *ip_ws, *port_ws, false, resp, ec);
+        doRequest(
+            yield, makeHTTPRequest(*ip_ws, *port_ws, "", {}), *ip_ws, *port_ws, false, resp, ec);
 
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
@@ -869,7 +897,8 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
 
         env.app().config().ELB_SUPPORT = true;
 
-        doRequest(yield, makeHTTPRequest(*ip_ws, *port_ws, "", {}), *ip_ws, *port_ws, false, resp, ec);
+        doRequest(
+            yield, makeHTTPRequest(*ip_ws, *port_ws, "", {}), *ip_ws, *port_ws, false, resp, ec);
 
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;

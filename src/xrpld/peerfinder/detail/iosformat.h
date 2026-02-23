@@ -89,7 +89,10 @@ to_string(T const& t)
 
 /** Justifies a field at the specified width. */
 /** @{ */
-template <class CharT, class Traits = std::char_traits<CharT>, class Allocator = std::allocator<CharT>>
+template <
+    class CharT,
+    class Traits = std::char_traits<CharT>,
+    class Allocator = std::allocator<CharT>>
 class field_t
 {
 public:
@@ -127,7 +130,11 @@ public:
 
 template <class CharT, class Traits, class Allocator>
 field_t<CharT, Traits, Allocator>
-field(std::basic_string<CharT, Traits, Allocator> const& text, int width = 8, int pad = 0, bool right = false)
+field(
+    std::basic_string<CharT, Traits, Allocator> const& text,
+    int width = 8,
+    int pad = 0,
+    bool right = false)
 {
     return field_t<CharT, Traits, Allocator>(text, width, pad, right);
 }
@@ -137,7 +144,10 @@ field_t<CharT>
 field(CharT const* text, int width = 8, int pad = 0, bool right = false)
 {
     return field_t<CharT, std::char_traits<CharT>, std::allocator<CharT>>(
-        std::basic_string<CharT, std::char_traits<CharT>, std::allocator<CharT>>(text), width, pad, right);
+        std::basic_string<CharT, std::char_traits<CharT>, std::allocator<CharT>>(text),
+        width,
+        pad,
+        right);
 }
 
 template <typename T>
@@ -160,7 +170,10 @@ field_t<CharT>
 rField(CharT const* text, int width = 8, int pad = 0)
 {
     return field_t<CharT, std::char_traits<CharT>, std::allocator<CharT>>(
-        std::basic_string<CharT, std::char_traits<CharT>, std::allocator<CharT>>(text), width, pad, true);
+        std::basic_string<CharT, std::char_traits<CharT>, std::allocator<CharT>>(text),
+        width,
+        pad,
+        true);
 }
 
 template <typename T>

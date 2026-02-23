@@ -1,0 +1,56 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Etc/GMT
+    commit-message:
+      prefix: "ci: [DEPENDABOT] "
+    target-branch: develop
+
+  - package-ecosystem: github-actions
+    directory: .github/actions/build-deps/
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Etc/GMT
+    commit-message:
+      prefix: "ci: [DEPENDABOT] "
+    target-branch: develop
+
+  - package-ecosystem: github-actions
+    directory: .github/actions/generate-version/
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Etc/GMT
+    commit-message:
+      prefix: "ci: [DEPENDABOT] "
+    target-branch: develop
+
+  - package-ecosystem: github-actions
+    directory: .github/actions/print-env/
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Etc/GMT
+    commit-message:
+      prefix: "ci: [DEPENDABOT] "
+    target-branch: develop
+
+  - package-ecosystem: github-actions
+    directory: .github/actions/setup-conan/
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Etc/GMT
+    commit-message:
+      prefix: "ci: [DEPENDABOT] "
+    target-branch: develop

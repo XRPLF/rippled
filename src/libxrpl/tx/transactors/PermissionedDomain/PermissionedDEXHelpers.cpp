@@ -17,19 +17,25 @@ accountInDomain(ReadView const& view, AccountID const& account, Domain const& do
 
     auto const& credentials = sleDomain->getFieldArray(sfAcceptedCredentials);
 
-    bool const inDomain = std::any_of(credentials.begin(), credentials.end(), [&](auto const& credential) {
-        auto const sleCred = view.read(keylet::credential(account, credential[sfIssuer], credential[sfCredentialType]));
-        if (!sleCred || !sleCred->isFlag(lsfAccepted))
-            return false;
+    bool const inDomain =
+        std::any_of(credentials.begin(), credentials.end(), [&](auto const& credential) {
+            auto const sleCred = view.read(
+                keylet::credential(account, credential[sfIssuer], credential[sfCredentialType]));
+            if (!sleCred || !sleCred->isFlag(lsfAccepted))
+                return false;
 
-        return !credentials::checkExpired(sleCred, view.header().parentCloseTime);
-    });
+            return !credentials::checkExpired(sleCred, view.header().parentCloseTime);
+        });
 
     return inDomain;
 }
 
 bool
-offerInDomain(ReadView const& view, uint256 const& offerID, Domain const& domainID, beast::Journal j)
+offerInDomain(
+    ReadView const& view,
+    uint256 const& offerID,
+    Domain const& domainID,
+    beast::Journal j)
 {
     auto const sleOffer = view.read(keylet::offer(offerID));
 

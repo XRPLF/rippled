@@ -155,13 +155,17 @@ public:
                      contexts (e.g. when minimal memory usage is needed) and
                      allows for graceful failure.
      */
-    constexpr explicit SlabAllocator(std::size_t extra, std::size_t alloc = 0, std::size_t align = 0)
+    constexpr explicit SlabAllocator(
+        std::size_t extra,
+        std::size_t alloc = 0,
+        std::size_t align = 0)
         : itemAlignment_(align ? align : alignof(Type))
         , itemSize_(boost::alignment::align_up(sizeof(Type) + extra, itemAlignment_))
         , slabSize_(alloc)
     {
         XRPL_ASSERT(
-            (itemAlignment_ & (itemAlignment_ - 1)) == 0, "xrpl::SlabAllocator::SlabAllocator : valid alignment");
+            (itemAlignment_ & (itemAlignment_ - 1)) == 0,
+            "xrpl::SlabAllocator::SlabAllocator : valid alignment");
     }
 
     SlabAllocator(SlabAllocator const& other) = delete;
@@ -228,7 +232,8 @@ public:
 
         // We need to carve out a bit of memory for the slab header
         // and then align the rest appropriately:
-        auto slabData = reinterpret_cast<void*>(reinterpret_cast<std::uint8_t*>(buf) + sizeof(SlabBlock));
+        auto slabData =
+            reinterpret_cast<void*>(reinterpret_cast<std::uint8_t*>(buf) + sizeof(SlabBlock));
         auto slabSize = size - sizeof(SlabBlock);
 
         // This operation is essentially guaranteed not to fail but
@@ -239,10 +244,12 @@ public:
             return nullptr;
         }
 
-        slab = new (buf) SlabBlock(slabs_.load(), reinterpret_cast<std::uint8_t*>(slabData), slabSize, itemSize_);
+        slab = new (buf) SlabBlock(
+            slabs_.load(), reinterpret_cast<std::uint8_t*>(slabData), slabSize, itemSize_);
 
         // Link the new slab
-        while (!slabs_.compare_exchange_weak(slab->next_, slab, std::memory_order_release, std::memory_order_relaxed))
+        while (!slabs_.compare_exchange_weak(
+            slab->next_, slab, std::memory_order_release, std::memory_order_relaxed))
         {
             ;  // Nothing to do
         }
@@ -299,7 +306,10 @@ public:
         std::size_t align;
 
     public:
-        constexpr SlabConfig(std::size_t extra_, std::size_t alloc_ = 0, std::size_t align_ = alignof(Type))
+        constexpr SlabConfig(
+            std::size_t extra_,
+            std::size_t alloc_ = 0,
+            std::size_t align_ = alignof(Type))
             : extra(extra_), alloc(alloc_), align(align_)
         {
         }
@@ -309,15 +319,18 @@ public:
     {
         // Ensure that the specified allocators are sorted from smallest to
         // largest by size:
-        std::sort(
-            std::begin(cfg), std::end(cfg), [](SlabConfig const& a, SlabConfig const& b) { return a.extra < b.extra; });
+        std::sort(std::begin(cfg), std::end(cfg), [](SlabConfig const& a, SlabConfig const& b) {
+            return a.extra < b.extra;
+        });
 
         // We should never have two slabs of the same size
-        if (std::adjacent_find(std::begin(cfg), std::end(cfg), [](SlabConfig const& a, SlabConfig const& b) {
-                return a.extra == b.extra;
-            }) != cfg.end())
+        if (std::adjacent_find(
+                std::begin(cfg), std::end(cfg), [](SlabConfig const& a, SlabConfig const& b) {
+                    return a.extra == b.extra;
+                }) != cfg.end())
         {
-            throw std::runtime_error("SlabAllocatorSet<" + beast::type_name<Type>() + ">: duplicate slab size");
+            throw std::runtime_error(
+                "SlabAllocatorSet<" + beast::type_name<Type>() + ">: duplicate slab size");
         }
 
         for (auto const& c : cfg)

@@ -174,19 +174,22 @@ initAnonymous(boost::asio::ssl::context& context)
             X509V3_set_ctx_nodb(&ctx);
             X509V3_set_ctx(&ctx, x509, x509, nullptr, nullptr, 0);
 
-            if (auto ext = X509V3_EXT_conf_nid(nullptr, &ctx, NID_basic_constraints, "critical,CA:FALSE"))
+            if (auto ext =
+                    X509V3_EXT_conf_nid(nullptr, &ctx, NID_basic_constraints, "critical,CA:FALSE"))
             {
                 X509_add_ext(x509, ext, -1);
                 X509_EXTENSION_free(ext);
             }
 
-            if (auto ext = X509V3_EXT_conf_nid(nullptr, &ctx, NID_ext_key_usage, "critical,serverAuth,clientAuth"))
+            if (auto ext = X509V3_EXT_conf_nid(
+                    nullptr, &ctx, NID_ext_key_usage, "critical,serverAuth,clientAuth"))
             {
                 X509_add_ext(x509, ext, -1);
                 X509_EXTENSION_free(ext);
             }
 
-            if (auto ext = X509V3_EXT_conf_nid(nullptr, &ctx, NID_key_usage, "critical,digitalSignature"))
+            if (auto ext =
+                    X509V3_EXT_conf_nid(nullptr, &ctx, NID_key_usage, "critical,digitalSignature"))
             {
                 X509_add_ext(x509, ext, -1);
                 X509_EXTENSION_free(ext);
@@ -286,7 +289,8 @@ initAuthenticated(
         catch (std::exception const& ex)
         {
             fclose(f);
-            LogicError(std::string("Reading the SSL chain file generated an exception: ") + ex.what());
+            LogicError(
+                std::string("Reading the SSL chain file generated an exception: ") + ex.what());
         }
     }
 

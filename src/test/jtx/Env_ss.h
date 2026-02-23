@@ -23,7 +23,8 @@ private:
         SignSubmitRunner&
         operator=(SignSubmitRunner&&) = delete;
 
-        SignSubmitRunner(Env& env, JTx&& jt, std::source_location loc) : env_(env), jt_(jt), loc_(loc)
+        SignSubmitRunner(Env& env, JTx&& jt, std::source_location loc)
+            : env_(env), jt_(jt), loc_(loc)
         {
         }
 

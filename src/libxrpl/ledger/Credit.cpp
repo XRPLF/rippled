@@ -6,7 +6,11 @@
 namespace xrpl {
 
 STAmount
-creditLimit(ReadView const& view, AccountID const& account, AccountID const& issuer, Currency const& currency)
+creditLimit(
+    ReadView const& view,
+    AccountID const& account,
+    AccountID const& issuer,
+    Currency const& currency)
 {
     STAmount result(Issue{currency, account});
 
@@ -30,7 +34,11 @@ creditLimit2(ReadView const& v, AccountID const& acc, AccountID const& iss, Curr
 }
 
 STAmount
-creditBalance(ReadView const& view, AccountID const& account, AccountID const& issuer, Currency const& currency)
+creditBalance(
+    ReadView const& view,
+    AccountID const& account,
+    AccountID const& issuer,
+    Currency const& currency)
 {
     STAmount result(Issue{currency, account});
 

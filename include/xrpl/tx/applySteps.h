@@ -15,7 +15,8 @@ struct ApplyResult
     bool applied;
     std::optional<TxMeta> metadata;
 
-    ApplyResult(TER t, bool a, std::optional<TxMeta> m = std::nullopt) : ter(t), applied(a), metadata(std::move(m))
+    ApplyResult(TER t, bool a, std::optional<TxMeta> m = std::nullopt)
+        : ter(t), applied(a), metadata(std::move(m))
     {
     }
 };
@@ -240,7 +241,12 @@ public:
 */
 /** @{ */
 PreflightResult
-preflight(ServiceRegistry& registry, Rules const& rules, STTx const& tx, ApplyFlags flags, beast::Journal j);
+preflight(
+    ServiceRegistry& registry,
+    Rules const& rules,
+    STTx const& tx,
+    ApplyFlags flags,
+    beast::Journal j);
 
 PreflightResult
 preflight(

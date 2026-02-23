@@ -26,7 +26,8 @@ doRipplePathFind(RPC::JsonContext& context)
     {
         // No ledger specified, use pathfinding defaults
         // and dispatch to pathfinding engine
-        if (context.app.getLedgerMaster().getValidatedLedgerAge() > RPC::Tuning::maxValidatedLedgerAge)
+        if (context.app.getLedgerMaster().getValidatedLedgerAge() >
+            RPC::Tuning::maxValidatedLedgerAge)
         {
             if (context.apiVersion == 1)
                 return rpcError(rpcNO_NETWORK);
@@ -143,7 +144,8 @@ doRipplePathFind(RPC::JsonContext& context)
     if (!lpf.isOk())
         return rpcError(rpcTOO_BUSY);
 
-    auto result = context.app.getPathRequests().doLegacyPathRequest(context.consumer, lpLedger, context.params);
+    auto result = context.app.getPathRequests().doLegacyPathRequest(
+        context.consumer, lpLedger, context.params);
 
     for (auto& fieldName : jvResult.getMemberNames())
         result[fieldName] = std::move(jvResult[fieldName]);

@@ -94,7 +94,8 @@ std::unique_ptr<Config>
 validator(std::unique_ptr<Config> cfg, std::string const& seed)
 {
     // If the config has valid validation keys then we run as a validator.
-    cfg->section(SECTION_VALIDATION_SEED).append(std::vector<std::string>{seed.empty() ? defaultseed : seed});
+    cfg->section(SECTION_VALIDATION_SEED)
+        .append(std::vector<std::string>{seed.empty() ? defaultseed : seed});
     return cfg;
 }
 
@@ -119,7 +120,9 @@ addGrpcConfigWithSecureGateway(std::unique_ptr<Config> cfg, std::string const& s
 }
 
 std::unique_ptr<Config>
-makeConfig(std::map<std::string, std::string> extraTxQ, std::map<std::string, std::string> extraVoting)
+makeConfig(
+    std::map<std::string, std::string> extraTxQ,
+    std::map<std::string, std::string> extraVoting)
 {
     auto p = test::jtx::envconfig();
     auto& section = p->section("transaction_queue");

@@ -374,7 +374,9 @@ StyledWriter::writeArrayValue(Value const& value)
         }
         else  // output on a single line
         {
-            XRPL_ASSERT(childValues_.size() == size, "Json::StyledWriter::writeArrayValue : child size match");
+            XRPL_ASSERT(
+                childValues_.size() == size,
+                "Json::StyledWriter::writeArrayValue : child size match");
             document_ += "[ ";
 
             for (unsigned index = 0; index < size; ++index)
@@ -400,7 +402,8 @@ StyledWriter::isMultilineArray(Value const& value)
     for (int index = 0; index < size && !isMultiLine; ++index)
     {
         Value const& childValue = value[index];
-        isMultiLine = isMultiLine || ((childValue.isArray() || childValue.isObject()) && childValue.size() > 0);
+        isMultiLine = isMultiLine ||
+            ((childValue.isArray() || childValue.isObject()) && childValue.size() > 0);
     }
 
     if (!isMultiLine)  // check if line length > max line length
@@ -464,7 +467,9 @@ StyledWriter::indent()
 void
 StyledWriter::unindent()
 {
-    XRPL_ASSERT(int(indentString_.size()) >= indentSize_, "Json::StyledWriter::unindent : maximum indent size");
+    XRPL_ASSERT(
+        int(indentString_.size()) >= indentSize_,
+        "Json::StyledWriter::unindent : maximum indent size");
     indentString_.resize(indentString_.size() - indentSize_);
 }
 
@@ -594,7 +599,9 @@ StyledStreamWriter::writeArrayValue(Value const& value)
         }
         else  // output on a single line
         {
-            XRPL_ASSERT(childValues_.size() == size, "Json::StyledStreamWriter::writeArrayValue : child size match");
+            XRPL_ASSERT(
+                childValues_.size() == size,
+                "Json::StyledStreamWriter::writeArrayValue : child size match");
             *document_ << "[ ";
 
             for (unsigned index = 0; index < size; ++index)
@@ -620,7 +627,8 @@ StyledStreamWriter::isMultilineArray(Value const& value)
     for (int index = 0; index < size && !isMultiLine; ++index)
     {
         Value const& childValue = value[index];
-        isMultiLine = isMultiLine || ((childValue.isArray() || childValue.isObject()) && childValue.size() > 0);
+        isMultiLine = isMultiLine ||
+            ((childValue.isArray() || childValue.isObject()) && childValue.size() > 0);
     }
 
     if (!isMultiLine)  // check if line length > max line length
@@ -686,7 +694,8 @@ void
 StyledStreamWriter::unindent()
 {
     XRPL_ASSERT(
-        indentString_.size() >= indentation_.size(), "Json::StyledStreamWriter::unindent : maximum indent size");
+        indentString_.size() >= indentation_.size(),
+        "Json::StyledStreamWriter::unindent : maximum indent size");
     indentString_.resize(indentString_.size() - indentation_.size());
 }
 

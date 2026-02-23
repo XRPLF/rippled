@@ -68,7 +68,8 @@ DelegateSet::doApply()
     }
 
     auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
-    if (auto const ret = checkInsufficientReserve(view(), ctx_.tx, sleOwner, mPriorBalance, sponsor, 1);
+    if (auto const ret =
+            checkInsufficientReserve(view(), ctx_.tx, sleOwner, mPriorBalance, sponsor, 1);
         !isTesSuccess(ret))
         return ret;
 
@@ -80,7 +81,8 @@ DelegateSet::doApply()
         sle->setAccountID(sfAuthorize, authAccount);
 
         sle->setFieldArray(sfPermissions, permissions);
-        auto const page = ctx_.view().dirInsert(keylet::ownerDir(account_), delegateKey, describeOwnerDir(account_));
+        auto const page = ctx_.view().dirInsert(
+            keylet::ownerDir(account_), delegateKey, describeOwnerDir(account_));
 
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE

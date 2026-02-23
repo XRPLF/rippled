@@ -17,7 +17,8 @@ public:
 
         if (server == "statsd")
         {
-            beast::IP::Endpoint const address(beast::IP::Endpoint::from_string(get(params, "address")));
+            beast::IP::Endpoint const address(
+                beast::IP::Endpoint::from_string(get(params, "address")));
             std::string const& prefix(get(params, "prefix"));
 
             m_collector = beast::insight::StatsDCollector::New(address, prefix, journal);

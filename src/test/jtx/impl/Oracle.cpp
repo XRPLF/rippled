@@ -99,8 +99,9 @@ Oracle::expectPrice(DataSeries const& series) const
                     auto const& quoteAsset = o.getFieldCurrency(sfQuoteAsset);
                     auto const& price = o.getFieldU64(sfAssetPrice);
                     auto const& scale = o.getFieldU8(sfScale);
-                    return baseAsset.getText() == std::get<0>(data) && quoteAsset.getText() == std::get<1>(data) &&
-                        price == std::get<2>(data) && scale == std::get<3>(data);
+                    return baseAsset.getText() == std::get<0>(data) &&
+                        quoteAsset.getText() == std::get<1>(data) && price == std::get<2>(data) &&
+                        scale == std::get<3>(data);
                 }) == leSeries.end())
                 return false;
         }
@@ -199,7 +200,8 @@ Oracle::set(UpdateArg const& arg)
     if (arg.lastUpdateTime)
     {
         if (std::holds_alternative<std::uint32_t>(*arg.lastUpdateTime))
-            jv[jss::LastUpdateTime] = to_string(testStartTime.count() + std::get<std::uint32_t>(*arg.lastUpdateTime));
+            jv[jss::LastUpdateTime] =
+                to_string(testStartTime.count() + std::get<std::uint32_t>(*arg.lastUpdateTime));
         else
             toJson(jv[jss::LastUpdateTime], *arg.lastUpdateTime);
     }

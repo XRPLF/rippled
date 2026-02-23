@@ -209,8 +209,14 @@ public:
         shouldParseEPV4("1.2.3.4:5    ", {{1, 2, 3, 4}}, 5, "1.2.3.4:5");
         shouldParseEPV4("1.2.3.4   ", {{1, 2, 3, 4}}, 0, "1.2.3.4");
         shouldParseEPV4("  1.2.3.4", {{1, 2, 3, 4}}, 0, "1.2.3.4");
-        shouldParseEPV6("2001:db8:a0b:12f0::1", {{32, 01, 13, 184, 10, 11, 18, 240, 0, 0, 0, 0, 0, 0, 0, 1}}, 0);
-        shouldParseEPV6("[2001:db8:a0b:12f0::1]:8", {{32, 01, 13, 184, 10, 11, 18, 240, 0, 0, 0, 0, 0, 0, 0, 1}}, 8);
+        shouldParseEPV6(
+            "2001:db8:a0b:12f0::1",
+            {{32, 01, 13, 184, 10, 11, 18, 240, 0, 0, 0, 0, 0, 0, 0, 1}},
+            0);
+        shouldParseEPV6(
+            "[2001:db8:a0b:12f0::1]:8",
+            {{32, 01, 13, 184, 10, 11, 18, 240, 0, 0, 0, 0, 0, 0, 0, 1}},
+            8);
         shouldParseEPV6(
             "[2001:2002:2003:2004:2005:2006:2007:2008]:65535",
             {{32, 1, 32, 2, 32, 3, 32, 4, 32, 5, 32, 6, 32, 7, 32, 8}},
@@ -232,7 +238,8 @@ public:
         BEAST_EXPECT(is_loopback(ep));
         BEAST_EXPECT(to_string(ep) == "127.0.0.1:80");
         // same address as v4 mapped in ipv6
-        ep = Endpoint(boost::asio::ip::make_address_v6(boost::asio::ip::v4_mapped, AddressV4{d}), 80);
+        ep = Endpoint(
+            boost::asio::ip::make_address_v6(boost::asio::ip::v4_mapped, AddressV4{d}), 80);
         BEAST_EXPECT(!is_unspecified(ep));
         BEAST_EXPECT(!is_public(ep));
         BEAST_EXPECT(is_private(ep));
@@ -251,7 +258,9 @@ public:
         BEAST_EXPECT(to_string(ep) == "10.0.0.1");
         // same address as v4 mapped in ipv6
         ep = Endpoint(boost::asio::ip::make_address_v6(boost::asio::ip::v4_mapped, AddressV4{d}));
-        BEAST_EXPECT(get_class(boost::asio::ip::make_address_v4(boost::asio::ip::v4_mapped, ep.to_v6())) == 'A');
+        BEAST_EXPECT(
+            get_class(boost::asio::ip::make_address_v4(boost::asio::ip::v4_mapped, ep.to_v6())) ==
+            'A');
         BEAST_EXPECT(!is_unspecified(ep));
         BEAST_EXPECT(!is_public(ep));
         BEAST_EXPECT(is_private(ep));
@@ -385,7 +394,8 @@ public:
         using namespace std::literals;
         T t;
         BEAST_EXPECT(parse(text, t));
-        BEAST_EXPECTS(to_string(t) == (normal.empty() ? text : normal), "string mismatch for "s + text);
+        BEAST_EXPECTS(
+            to_string(t) == (normal.empty() ? text : normal), "string mismatch for "s + text);
     }
 
     template <typename T>

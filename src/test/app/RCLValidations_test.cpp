@@ -17,9 +17,11 @@ class RCLValidations_test : public beast::unit_test::suite
         testcase("Change validation trusted status");
         auto keys = randomKeyPair(KeyType::secp256k1);
         auto v = std::make_shared<STValidation>(
-            xrpl::NetClock::time_point{}, keys.first, keys.second, calcNodeID(keys.first), [&](STValidation& v) {
-                v.setFieldU32(sfLedgerSequence, 123456);
-            });
+            xrpl::NetClock::time_point{},
+            keys.first,
+            keys.second,
+            calcNodeID(keys.first),
+            [&](STValidation& v) { v.setFieldU32(sfLedgerSequence, 123456); });
 
         BEAST_EXPECT(v->isTrusted());
         v->setUntrusted();
@@ -54,8 +56,8 @@ class RCLValidations_test : public beast::unit_test::suite
 
         jtx::Env env(*this);
         Config config;
-        auto prev =
-            std::make_shared<Ledger const>(create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
+        auto prev = std::make_shared<Ledger const>(
+            create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
         history.push_back(prev);
         for (auto i = 0; i < (2 * maxAncestors + 1); ++i)
         {
@@ -67,7 +69,8 @@ class RCLValidations_test : public beast::unit_test::suite
 
         // altHistory agrees with first half of regular history
         Seq const diverge = history.size() / 2;
-        std::vector<std::shared_ptr<Ledger const>> altHistory(history.begin(), history.begin() + diverge);
+        std::vector<std::shared_ptr<Ledger const>> altHistory(
+            history.begin(), history.begin() + diverge);
         // advance clock to get new ledgers
         using namespace std::chrono_literals;
         env.timeKeeper().set(env.timeKeeper().now() + 1200s);
@@ -211,8 +214,8 @@ class RCLValidations_test : public beast::unit_test::suite
         jtx::Env env(*this);
         auto& j = env.journal;
         Config config;
-        auto prev =
-            std::make_shared<Ledger const>(create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
+        auto prev = std::make_shared<Ledger const>(
+            create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
         history.push_back(prev);
         for (auto i = 0; i < (maxAncestors + 10); ++i)
         {

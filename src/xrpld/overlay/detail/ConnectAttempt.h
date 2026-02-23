@@ -37,7 +37,8 @@ namespace xrpl {
  *       as part of the peer discovery and connection management system.
  *
  */
-class ConnectAttempt : public OverlayImpl::Child, public std::enable_shared_from_this<ConnectAttempt>
+class ConnectAttempt : public OverlayImpl::Child,
+                       public std::enable_shared_from_this<ConnectAttempt>
 {
 private:
     using error_code = boost::system::error_code;

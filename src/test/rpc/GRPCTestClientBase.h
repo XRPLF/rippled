@@ -15,7 +15,9 @@ struct GRPCTestClientBase
         : stub_(
               org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
                   grpc::CreateChannel(
-                      beast::IP::Endpoint(boost::asio::ip::make_address(getEnvLocalhostAddr()), std::stoi(port))
+                      beast::IP::Endpoint(
+                          boost::asio::ip::make_address(getEnvLocalhostAddr()),
+                          std::stoi(port))
                           .to_string(),
                       grpc::InsecureChannelCredentials())))
     {

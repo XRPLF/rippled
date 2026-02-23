@@ -16,7 +16,8 @@ AMMVote::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 AMMVote::preflight(PreflightContext const& ctx)
 {
-    if (auto const res = invalidAMMAssetPair(ctx.tx[sfAsset].get<Issue>(), ctx.tx[sfAsset2].get<Issue>()))
+    if (auto const res =
+            invalidAMMAssetPair(ctx.tx[sfAsset].get<Issue>(), ctx.tx[sfAsset2].get<Issue>()))
     {
         JLOG(ctx.j.debug()) << "AMM Vote: invalid asset pair.";
         return res;
@@ -99,13 +100,15 @@ applyVote(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jou
         if (feeVal != 0)
             newEntry.setFieldU16(sfTradingFee, feeVal);
         newEntry.setFieldU32(
-            sfVoteWeight, static_cast<std::int64_t>(Number(lpTokens) * VOTE_WEIGHT_SCALE_FACTOR / lptAMMBalance));
+            sfVoteWeight,
+            static_cast<std::int64_t>(Number(lpTokens) * VOTE_WEIGHT_SCALE_FACTOR / lptAMMBalance));
 
         // Find an entry with the least tokens/fee. Make the order deterministic
         // if the tokens/fees are equal.
         if (!minTokens ||
             (lpTokens < *minTokens ||
-             (lpTokens == *minTokens && (feeVal < minFee || (feeVal == minFee && account < minAccount)))))
+             (lpTokens == *minTokens &&
+              (feeVal < minFee || (feeVal == minFee && account < minAccount)))))
         {
             minTokens = lpTokens;
             minPos = updatedVoteSlots.size();
@@ -124,7 +127,8 @@ applyVote(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jou
                 newEntry.setFieldU16(sfTradingFee, feeNew);
             newEntry.setFieldU32(
                 sfVoteWeight,
-                static_cast<std::int64_t>(Number(lpTokensNew) * VOTE_WEIGHT_SCALE_FACTOR / lptAMMBalance));
+                static_cast<std::int64_t>(
+                    Number(lpTokensNew) * VOTE_WEIGHT_SCALE_FACTOR / lptAMMBalance));
             newEntry.setAccountID(sfAccount, account_);
             num += feeNew * lpTokensNew;
             den += lpTokensNew;

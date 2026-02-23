@@ -125,7 +125,8 @@ CashCheck::preclaim(PreclaimContext const& ctx)
         // Make sure the check owner holds at least value.  If they have
         // less than value the check cannot be cashed.
         {
-            STAmount availableFunds{accountFunds(ctx.view, sleCheck->at(sfAccount), value, fhZERO_IF_FROZEN, ctx.j)};
+            STAmount availableFunds{
+                accountFunds(ctx.view, sleCheck->at(sfAccount), value, fhZERO_IF_FROZEN, ctx.j)};
 
             // Note that src will have one reserve's worth of additional XRP
             // once the check is cashed, since the check's reserve will no
@@ -147,7 +148,8 @@ CashCheck::preclaim(PreclaimContext const& ctx)
             auto const sleIssuer = ctx.view.read(keylet::account(issuerId));
             if (!sleIssuer)
             {
-                JLOG(ctx.j.warn()) << "Can't receive IOUs from non-existent issuer: " << to_string(issuerId);
+                JLOG(ctx.j.warn())
+                    << "Can't receive IOUs from non-existent issuer: " << to_string(issuerId);
                 return tecNO_ISSUER;
             }
 
@@ -167,7 +169,8 @@ CashCheck::preclaim(PreclaimContext const& ctx)
                 // weak ordering. Determine which entry we need to access.
                 bool const canonical_gt(dstId > issuerId);
 
-                bool const is_authorized(sleTrustLine->at(sfFlags) & (canonical_gt ? lsfLowAuth : lsfHighAuth));
+                bool const is_authorized(
+                    sleTrustLine->at(sfFlags) & (canonical_gt ? lsfLowAuth : lsfHighAuth));
 
                 if (!is_authorized)
                 {
@@ -258,8 +261,8 @@ CashCheck::doApply()
             {
                 // Vote no. However the transaction might succeed if applied
                 // in a different order.
-                JLOG(j_.trace()) << "Cash Check: Insufficient XRP: " << srcLiquid.getFullText() << " < "
-                                 << xrpDeliver.getFullText();
+                JLOG(j_.trace()) << "Cash Check: Insufficient XRP: " << srcLiquid.getFullText()
+                                 << " < " << xrpDeliver.getFullText();
                 return tecUNFUNDED_PAYMENT;
             }
 
@@ -268,7 +271,8 @@ CashCheck::doApply()
                 ctx_.deliver(xrpDeliver);
 
             // The source account has enough XRP so make the ledger change.
-            if (TER const ter{transferXRP(psb, srcId, account_, xrpDeliver, viewJ)}; ter != tesSUCCESS)
+            if (TER const ter{transferXRP(psb, srcId, account_, xrpDeliver, viewJ)};
+                ter != tesSUCCESS)
             {
                 // The transfer failed.  Return the error code.
                 return ter;
@@ -282,8 +286,10 @@ CashCheck::doApply()
             // transfer rate to account for.  Since the transfer rate cannot
             // exceed 200%, we use 1/2 maxValue as our limit.
             STAmount const flowDeliver{
-                optDeliverMin ? STAmount(optDeliverMin->issue(), STAmount::cMaxValue / 2, STAmount::cMaxOffset)
-                              : ctx_.tx.getFieldAmount(sfAmount)};
+                optDeliverMin
+                    ? STAmount(
+                          optDeliverMin->issue(), STAmount::cMaxValue / 2, STAmount::cMaxOffset)
+                    : ctx_.tx.getFieldAmount(sfAmount)};
 
             // If a trust line does not exist yet create one.
             Issue const& trustLineIssue = flowDeliver.issue();
@@ -309,7 +315,8 @@ CashCheck::doApply()
                     sponsorSle = psb.peek(keylet::account(*sponsorAcc));
 
                 // Can the account cover the trust line's reserve?
-                if (auto const ret = checkInsufficientReserve(psb, ctx_.tx, sleDst, mPriorBalance, sponsorSle, 1);
+                if (auto const ret = checkInsufficientReserve(
+                        psb, ctx_.tx, sleDst, mPriorBalance, sponsorSle, 1);
                     !isTesSuccess(ret))
                 {
                     JLOG(j_.trace()) << "Trust line does not exist. "
@@ -418,7 +425,8 @@ CashCheck::doApply()
     // Check was cashed.  If not a self send (and it shouldn't be), remove
     // check link from destination directory.
     if (srcId != account_ &&
-        !psb.dirRemove(keylet::ownerDir(account_), sleCheck->at(sfDestinationNode), sleCheck->key(), true))
+        !psb.dirRemove(
+            keylet::ownerDir(account_), sleCheck->at(sfDestinationNode), sleCheck->key(), true))
     {
         // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Unable to delete check from destination.";

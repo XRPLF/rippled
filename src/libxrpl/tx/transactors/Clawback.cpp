@@ -63,8 +63,9 @@ Clawback::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 Clawback::preflight(PreflightContext const& ctx)
 {
-    if (auto const ret =
-            std::visit([&]<typename T>(T const&) { return preflightHelper<T>(ctx); }, ctx.tx[sfAmount].asset().value());
+    if (auto const ret = std::visit(
+            [&]<typename T>(T const&) { return preflightHelper<T>(ctx); },
+            ctx.tx[sfAmount].asset().value());
         !isTesSuccess(ret))
         return ret;
 
@@ -96,7 +97,8 @@ preclaimHelper<Issue>(
     if (!(issuerFlagsIn & lsfAllowTrustLineClawback) || (issuerFlagsIn & lsfNoFreeze))
         return tecNO_PERMISSION;
 
-    auto const sleRippleState = ctx.view.read(keylet::line(holder, issuer, clawAmount.getCurrency()));
+    auto const sleRippleState =
+        ctx.view.read(keylet::line(holder, issuer, clawAmount.getCurrency()));
     if (!sleRippleState)
         return tecNO_LINE;
 
@@ -119,7 +121,8 @@ preclaimHelper<Issue>(
     // We can't directly check the balance of trustline because
     // the available balance of a trustline is prone to new changes (eg.
     // XLS-34). So we must use `accountHolds`.
-    if (accountHolds(ctx.view, holder, clawAmount.getCurrency(), issuer, fhIGNORE_FREEZE, ctx.j) <= beast::zero)
+    if (accountHolds(ctx.view, holder, clawAmount.getCurrency(), issuer, fhIGNORE_FREEZE, ctx.j) <=
+        beast::zero)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -148,7 +151,8 @@ preclaimHelper<MPTIssue>(
     if (!ctx.view.exists(keylet::mptoken(issuanceKey.key, holder)))
         return tecOBJECT_NOT_FOUND;
 
-    if (accountHolds(ctx.view, holder, clawAmount.get<MPTIssue>(), fhIGNORE_FREEZE, ahIGNORE_AUTH, ctx.j) <=
+    if (accountHolds(
+            ctx.view, holder, clawAmount.get<MPTIssue>(), fhIGNORE_FREEZE, ahIGNORE_AUTH, ctx.j) <=
         beast::zero)
         return tecINSUFFICIENT_FUNDS;
 
@@ -175,7 +179,9 @@ Clawback::preclaim(PreclaimContext const& ctx)
         return tecAMM_ACCOUNT;
 
     return std::visit(
-        [&]<typename T>(T const&) { return preclaimHelper<T>(ctx, *sleIssuer, issuer, holder, clawAmount); },
+        [&]<typename T>(T const&) {
+            return preclaimHelper<T>(ctx, *sleIssuer, issuer, holder, clawAmount);
+        },
         ctx.tx[sfAmount].asset().value());
 }
 
@@ -198,9 +204,15 @@ applyHelper<Issue>(ApplyContext& ctx)
 
     // Get the spendable balance. Must use `accountHolds`.
     STAmount const spendableAmount = accountHolds(
-        ctx.view(), holder, clawAmount.getCurrency(), clawAmount.getIssuer(), fhIGNORE_FREEZE, ctx.journal);
+        ctx.view(),
+        holder,
+        clawAmount.getCurrency(),
+        clawAmount.getIssuer(),
+        fhIGNORE_FREEZE,
+        ctx.journal);
 
-    return rippleCredit(ctx.view(), holder, issuer, std::min(spendableAmount, clawAmount), true, ctx.journal);
+    return rippleCredit(
+        ctx.view(), holder, issuer, std::min(spendableAmount, clawAmount), true, ctx.journal);
 }
 
 template <>
@@ -212,8 +224,13 @@ applyHelper<MPTIssue>(ApplyContext& ctx)
     AccountID const holder = ctx.tx[sfHolder];
 
     // Get the spendable balance. Must use `accountHolds`.
-    STAmount const spendableAmount =
-        accountHolds(ctx.view(), holder, clawAmount.get<MPTIssue>(), fhIGNORE_FREEZE, ahIGNORE_AUTH, ctx.journal);
+    STAmount const spendableAmount = accountHolds(
+        ctx.view(),
+        holder,
+        clawAmount.get<MPTIssue>(),
+        fhIGNORE_FREEZE,
+        ahIGNORE_AUTH,
+        ctx.journal);
 
     return rippleCredit(
         ctx.view(),
@@ -227,7 +244,9 @@ applyHelper<MPTIssue>(ApplyContext& ctx)
 TER
 Clawback::doApply()
 {
-    return std::visit([&]<typename T>(T const&) { return applyHelper<T>(ctx_); }, ctx_.tx[sfAmount].asset().value());
+    return std::visit(
+        [&]<typename T>(T const&) { return applyHelper<T>(ctx_); },
+        ctx_.tx[sfAmount].asset().value());
 }
 
 }  // namespace xrpl

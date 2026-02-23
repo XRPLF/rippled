@@ -228,14 +228,16 @@ class DeliveredAmount_test : public beast::unit_test::suite
                 // Check stream update
                 while (true)
                 {
-                    auto const r = wsc->findMsg(1s, [&](auto const& jv) { return jv[jss::ledger_index] == 4; });
+                    auto const r = wsc->findMsg(
+                        1s, [&](auto const& jv) { return jv[jss::ledger_index] == 4; });
                     if (!r)
                         break;
 
                     if (!r->isMember(jss::transaction))
                         continue;
 
-                    BEAST_EXPECT(checkDeliveredAmount.checkTxn((*r)[jss::transaction], (*r)[jss::meta]));
+                    BEAST_EXPECT(
+                        checkDeliveredAmount.checkTxn((*r)[jss::transaction], (*r)[jss::meta]));
                 }
             }
             BEAST_EXPECT(checkDeliveredAmount.checkExpectedCounters());
@@ -290,8 +292,8 @@ class DeliveredAmount_test : public beast::unit_test::suite
             jvParams[jss::ledger_index] = 4u;
             jvParams[jss::transactions] = true;
             jvParams[jss::expand] = true;
-            auto const jtxn =
-                env.rpc("json", "ledger", to_string(jvParams))[jss::result][jss::ledger][jss::transactions];
+            auto const jtxn = env.rpc(
+                "json", "ledger", to_string(jvParams))[jss::result][jss::ledger][jss::transactions];
             for (auto const& t : jtxn)
                 BEAST_EXPECT(checkDeliveredAmount.checkTxn(t, t[jss::metaData]));
             BEAST_EXPECT(checkDeliveredAmount.checkExpectedCounters());
@@ -311,7 +313,8 @@ class DeliveredAmount_test : public beast::unit_test::suite
 
         MPTTester mptAlice(env, alice, {.holders = {bob, carol}, .close = false});
 
-        mptAlice.create({.transferFee = 25000, .ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
+        mptAlice.create(
+            {.transferFee = 25000, .ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
         auto const MPT = mptAlice["MPT"];
 
         mptAlice.authorize({.account = bob});
@@ -330,8 +333,10 @@ class DeliveredAmount_test : public beast::unit_test::suite
 
         if (features[fixMPTDeliveredAmount])
         {
-            BEAST_EXPECT(meta[sfDeliveredAmount.jsonName] == STAmount{MPT(800)}.getJson(JsonOptions::none));
-            BEAST_EXPECT(meta[jss::delivered_amount] == STAmount{MPT(800)}.getJson(JsonOptions::none));
+            BEAST_EXPECT(
+                meta[sfDeliveredAmount.jsonName] == STAmount{MPT(800)}.getJson(JsonOptions::none));
+            BEAST_EXPECT(
+                meta[jss::delivered_amount] == STAmount{MPT(800)}.getJson(JsonOptions::none));
         }
         else
         {
@@ -347,8 +352,10 @@ class DeliveredAmount_test : public beast::unit_test::suite
 
         if (features[fixMPTDeliveredAmount])
         {
-            BEAST_EXPECT(meta[sfDeliveredAmount.jsonName] == STAmount{MPT(960)}.getJson(JsonOptions::none));
-            BEAST_EXPECT(meta[jss::delivered_amount] == STAmount{MPT(960)}.getJson(JsonOptions::none));
+            BEAST_EXPECT(
+                meta[sfDeliveredAmount.jsonName] == STAmount{MPT(960)}.getJson(JsonOptions::none));
+            BEAST_EXPECT(
+                meta[jss::delivered_amount] == STAmount{MPT(960)}.getJson(JsonOptions::none));
         }
         else
         {

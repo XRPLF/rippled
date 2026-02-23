@@ -42,8 +42,10 @@ public:
                 BEAST_EXPECT(firstField[1][jss::type].asString() == "Unknown");
             }
 
-            BEAST_EXPECT(result[jss::result][jss::LEDGER_ENTRY_TYPES]["AccountRoot"].asUInt() == 97);
-            BEAST_EXPECT(result[jss::result][jss::TRANSACTION_RESULTS]["tecDIR_FULL"].asUInt() == 121);
+            BEAST_EXPECT(
+                result[jss::result][jss::LEDGER_ENTRY_TYPES]["AccountRoot"].asUInt() == 97);
+            BEAST_EXPECT(
+                result[jss::result][jss::TRANSACTION_RESULTS]["tecDIR_FULL"].asUInt() == 121);
             BEAST_EXPECT(result[jss::result][jss::TRANSACTION_TYPES]["Payment"].asUInt() == 0);
             BEAST_EXPECT(result[jss::result][jss::TYPES]["AccountID"].asUInt() == 8);
 

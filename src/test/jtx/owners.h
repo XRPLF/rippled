@@ -16,7 +16,11 @@ std::uint32_t
 owned_count_of(ReadView const& view, AccountID const& id, LedgerEntryType type);
 
 void
-owned_count_helper(test::jtx::Env& env, AccountID const& id, LedgerEntryType type, std::uint32_t value);
+owned_count_helper(
+    test::jtx::Env& env,
+    AccountID const& id,
+    LedgerEntryType type,
+    std::uint32_t value);
 
 }  // namespace detail
 
@@ -83,7 +87,8 @@ private:
     std::uint32_t value_;
 
 public:
-    sponsoring_owners(Account const& account, std::uint32_t value) : account_(account), value_(value)
+    sponsoring_owners(Account const& account, std::uint32_t value)
+        : account_(account), value_(value)
     {
     }
 
@@ -99,7 +104,8 @@ private:
     std::uint32_t value_;
 
 public:
-    sponsoring_account_count(Account const& account, std::uint32_t value) : account_(account), value_(value)
+    sponsoring_account_count(Account const& account, std::uint32_t value)
+        : account_(account), value_(value)
     {
     }
 

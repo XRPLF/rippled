@@ -27,9 +27,15 @@ namespace detail {
 template <
     class V,
     class N,
-    class = std::enable_if_t<std::is_same_v<std::remove_cv_t<N>, SLE> && std::is_base_of_v<ReadView, V>>>
+    class = std::enable_if_t<
+        std::is_same_v<std::remove_cv_t<N>, SLE> && std::is_base_of_v<ReadView, V>>>
 bool
-internalDirNext(V& view, uint256 const& root, std::shared_ptr<N>& page, unsigned int& index, uint256& entry)
+internalDirNext(
+    V& view,
+    uint256 const& root,
+    std::shared_ptr<N>& page,
+    unsigned int& index,
+    uint256& entry)
 {
     auto const& svIndexes = page->getFieldV256(sfIndexes);
     XRPL_ASSERT(index <= svIndexes.size(), "xrpl::detail::internalDirNext : index inside range");
@@ -66,9 +72,15 @@ internalDirNext(V& view, uint256 const& root, std::shared_ptr<N>& page, unsigned
 template <
     class V,
     class N,
-    class = std::enable_if_t<std::is_same_v<std::remove_cv_t<N>, SLE> && std::is_base_of_v<ReadView, V>>>
+    class = std::enable_if_t<
+        std::is_same_v<std::remove_cv_t<N>, SLE> && std::is_base_of_v<ReadView, V>>>
 bool
-internalDirFirst(V& view, uint256 const& root, std::shared_ptr<N>& page, unsigned int& index, uint256& entry)
+internalDirFirst(
+    V& view,
+    uint256 const& root,
+    std::shared_ptr<N>& page,
+    unsigned int& index,
+    uint256& entry)
 {
     if constexpr (std::is_const_v<N>)
         page = view.read(keylet::page(root));
@@ -86,13 +98,23 @@ internalDirFirst(V& view, uint256 const& root, std::shared_ptr<N>& page, unsigne
 }  // namespace detail
 
 bool
-dirFirst(ApplyView& view, uint256 const& root, std::shared_ptr<SLE>& page, unsigned int& index, uint256& entry)
+dirFirst(
+    ApplyView& view,
+    uint256 const& root,
+    std::shared_ptr<SLE>& page,
+    unsigned int& index,
+    uint256& entry)
 {
     return detail::internalDirFirst(view, root, page, index, entry);
 }
 
 bool
-dirNext(ApplyView& view, uint256 const& root, std::shared_ptr<SLE>& page, unsigned int& index, uint256& entry)
+dirNext(
+    ApplyView& view,
+    uint256 const& root,
+    std::shared_ptr<SLE>& page,
+    unsigned int& index,
+    uint256& entry)
 {
     return detail::internalDirNext(view, root, page, index, entry);
 }
@@ -166,7 +188,11 @@ isGlobalFrozen(ReadView const& view, Asset const& asset)
 }
 
 bool
-isIndividualFrozen(ReadView const& view, AccountID const& account, Currency const& currency, AccountID const& issuer)
+isIndividualFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Currency const& currency,
+    AccountID const& issuer)
 {
     if (isXRP(currency))
         return false;
@@ -191,7 +217,11 @@ isIndividualFrozen(ReadView const& view, AccountID const& account, MPTIssue cons
 // Can the specified account spend the specified currency issued by
 // the specified issuer or does the freeze flag prohibit it?
 bool
-isFrozen(ReadView const& view, AccountID const& account, Currency const& currency, AccountID const& issuer)
+isFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Currency const& currency,
+    AccountID const& issuer)
 {
     if (isXRP(currency))
         return false;
@@ -216,7 +246,11 @@ isFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssu
 }
 
 [[nodiscard]] bool
-isAnyFrozen(ReadView const& view, std::initializer_list<AccountID> const& accounts, MPTIssue const& mptIssue, int depth)
+isAnyFrozen(
+    ReadView const& view,
+    std::initializer_list<AccountID> const& accounts,
+    MPTIssue const& mptIssue,
+    int depth)
 {
     if (isGlobalFrozen(view, mptIssue))
         return true;
@@ -237,7 +271,11 @@ isAnyFrozen(ReadView const& view, std::initializer_list<AccountID> const& accoun
 }
 
 bool
-isVaultPseudoAccountFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptShare, int depth)
+isVaultPseudoAccountFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptShare,
+    int depth)
 {
     if (!view.rules().enabled(featureSingleAssetVault))
         return false;
@@ -274,7 +312,11 @@ isVaultPseudoAccountFrozen(ReadView const& view, AccountID const& account, MPTIs
 }
 
 bool
-isDeepFrozen(ReadView const& view, AccountID const& account, Currency const& currency, AccountID const& issuer)
+isDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Currency const& currency,
+    AccountID const& issuer)
 {
     if (isXRP(currency))
     {
@@ -296,7 +338,11 @@ isDeepFrozen(ReadView const& view, AccountID const& account, Currency const& cur
 }
 
 bool
-isLPTokenFrozen(ReadView const& view, AccountID const& account, Issue const& asset, Issue const& asset2)
+isLPTokenFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Issue const& asset,
+    Issue const& asset2)
 {
     return isFrozen(view, account, asset.currency, asset.account) ||
         isFrozen(view, account, asset2.currency, asset2.account);
@@ -320,7 +366,8 @@ getLineIfUsable(
 
     if (zeroIfFrozen == fhZERO_IF_FROZEN)
     {
-        if (isFrozen(view, account, currency, issuer) || isDeepFrozen(view, account, currency, issuer))
+        if (isFrozen(view, account, currency, issuer) ||
+            isDeepFrozen(view, account, currency, issuer))
         {
             return nullptr;
         }
@@ -339,7 +386,11 @@ getLineIfUsable(
                 auto const sleAmm = view.read(keylet::amm((*sleIssuer)[sfAMMID]));
 
                 if (!sleAmm ||
-                    isLPTokenFrozen(view, account, (*sleAmm)[sfAsset].get<Issue>(), (*sleAmm)[sfAsset2].get<Issue>()))
+                    isLPTokenFrozen(
+                        view,
+                        account,
+                        (*sleAmm)[sfAsset].get<Issue>(),
+                        (*sleAmm)[sfAsset2].get<Issue>()))
                 {
                     return nullptr;
                 }
@@ -411,7 +462,8 @@ accountHolds(
         return STAmount{Issue{currency, issuer}, STAmount::cMaxValue, STAmount::cMaxOffset};
 
     // IOU: Return balance on trust line modulo freeze
-    SLE::const_pointer const sle = getLineIfUsable(view, account, currency, issuer, zeroIfFrozen, j);
+    SLE::const_pointer const sle =
+        getLineIfUsable(view, account, currency, issuer, zeroIfFrozen, j);
 
     return getTrustLineBalance(view, sle, account, currency, issuer, returnSpendable, j);
 }
@@ -425,7 +477,8 @@ accountHolds(
     beast::Journal j,
     SpendableHandling includeFullBalance)
 {
-    return accountHolds(view, account, issue.currency, issue.account, zeroIfFrozen, j, includeFullBalance);
+    return accountHolds(
+        view, account, issue.currency, issue.account, zeroIfFrozen, j, includeFullBalance);
 }
 
 STAmount
@@ -451,7 +504,9 @@ accountHolds(
             return STAmount{mptIssue};
         }
         return STAmount{
-            mptIssue, issuance->at(~sfMaximumAmount).value_or(maxMPTokenAmount) - issuance->at(sfOutstandingAmount)};
+            mptIssue,
+            issuance->at(~sfMaximumAmount).value_or(maxMPTokenAmount) -
+                issuance->at(sfOutstandingAmount)};
     }
 
     STAmount amount;
@@ -468,9 +523,11 @@ accountHolds(
 
         // Only if auth check is needed, as it needs to do an additional read
         // operation. Note featureSingleAssetVault will affect error codes.
-        if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED && view.rules().enabled(featureSingleAssetVault))
+        if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED &&
+            view.rules().enabled(featureSingleAssetVault))
         {
-            if (auto const err = requireAuth(view, mptIssue, account, AuthType::StrongAuth); !isTesSuccess(err))
+            if (auto const err = requireAuth(view, mptIssue, account, AuthType::StrongAuth);
+                !isTesSuccess(err))
                 amount.clear(mptIssue);
         }
         else if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED)
@@ -479,7 +536,8 @@ accountHolds(
 
             // if auth is enabled on the issuance and mpt is not authorized,
             // clear amount
-            if (sleIssuance && sleIssuance->isFlag(lsfMPTRequireAuth) && !sleMpt->isFlag(lsfMPTAuthorized))
+            if (sleIssuance && sleIssuance->isFlag(lsfMPTRequireAuth) &&
+                !sleMpt->isFlag(lsfMPTAuthorized))
                 amount.clear(mptIssue);
         }
     }
@@ -505,7 +563,8 @@ accountHolds(
             }
             else if constexpr (std::is_same_v<TIss, MPTIssue>)
             {
-                return accountHolds(view, account, value, zeroIfFrozen, zeroIfUnauthorized, j, includeFullBalance);
+                return accountHolds(
+                    view, account, value, zeroIfFrozen, zeroIfUnauthorized, j, includeFullBalance);
             }
         },
         asset.value());
@@ -522,7 +581,8 @@ accountFunds(
     if (!saDefault.native() && saDefault.getIssuer() == id)
         return saDefault;
 
-    return accountHolds(view, id, saDefault.getCurrency(), saDefault.getIssuer(), freezeHandling, j);
+    return accountHolds(
+        view, id, saDefault.getCurrency(), saDefault.getIssuer(), freezeHandling, j);
 }
 
 // Prevent ownerCount from wrapping under error conditions.
@@ -584,10 +644,13 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
     std::size_t sponsoringAccountCount = sle->getFieldU32(sfSponsoringAccountCount);
 
     // Pseudo-accounts have no reserve requirement
-    auto const reserve = isPseudoAccount(sle)
-        ? XRPAmount{0}
-        : view.fees().accountReserve(
-              ownerCount, sponsoredOwnerCount, sponsoringOwnerCount, isAccountSponsored, sponsoringAccountCount);
+    auto const reserve = isPseudoAccount(sle) ? XRPAmount{0}
+                                              : view.fees().accountReserve(
+                                                    ownerCount,
+                                                    sponsoredOwnerCount,
+                                                    sponsoringOwnerCount,
+                                                    isAccountSponsored,
+                                                    sponsoringAccountCount);
 
     auto const fullBalance = sle->getFieldAmount(sfBalance);
 
@@ -595,15 +658,20 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
 
     STAmount const amount = (balance < reserve) ? STAmount{0} : balance - reserve;
 
-    JLOG(j.trace()) << "accountHolds:" << " account=" << to_string(id) << " amount=" << amount.getFullText()
-                    << " fullBalance=" << fullBalance.getFullText() << " balance=" << balance.getFullText()
-                    << " reserve=" << reserve << " ownerCount=" << ownerCount << " ownerCountAdj=" << ownerCountAdj;
+    JLOG(j.trace()) << "accountHolds:" << " account=" << to_string(id)
+                    << " amount=" << amount.getFullText()
+                    << " fullBalance=" << fullBalance.getFullText()
+                    << " balance=" << balance.getFullText() << " reserve=" << reserve
+                    << " ownerCount=" << ownerCount << " ownerCountAdj=" << ownerCountAdj;
 
     return amount.xrp();
 }
 
 void
-forEachItem(ReadView const& view, Keylet const& root, std::function<void(std::shared_ptr<SLE const> const&)> const& f)
+forEachItem(
+    ReadView const& view,
+    Keylet const& root,
+    std::function<void(std::shared_ptr<SLE const> const&)> const& f)
 {
     XRPL_ASSERT(root.type == ltDIR_NODE, "xrpl::forEachItem : valid root type");
 
@@ -720,7 +788,8 @@ transferRate(ReadView const& view, MPTID const& issuanceID)
     // fee is 0-50,000 (0-50%), rate is 1,000,000,000-2,000,000,000
     // For example, if transfer fee is 50% then 10,000 * 50,000 = 500,000
     // which represents 50% of 1,000,000,000
-    if (auto const sle = view.read(keylet::mptIssuance(issuanceID)); sle && sle->isFieldPresent(sfTransferFee))
+    if (auto const sle = view.read(keylet::mptIssuance(issuanceID));
+        sle && sle->isFieldPresent(sfTransferFee))
         return Rate{1'000'000'000u + 10'000 * sle->getFieldU16(sfTransferFee)};
 
     return parityRate;
@@ -740,14 +809,19 @@ transferRate(ReadView const& view, STAmount const& amount)
 }
 
 bool
-areCompatible(ReadView const& validLedger, ReadView const& testLedger, beast::Journal::Stream& s, char const* reason)
+areCompatible(
+    ReadView const& validLedger,
+    ReadView const& testLedger,
+    beast::Journal::Stream& s,
+    char const* reason)
 {
     bool ret = true;
 
     if (validLedger.header().seq < testLedger.header().seq)
     {
         // valid -> ... -> test
-        auto hash = hashOfSeq(testLedger, validLedger.header().seq, beast::Journal{beast::Journal::getNullSink()});
+        auto hash = hashOfSeq(
+            testLedger, validLedger.header().seq, beast::Journal{beast::Journal::getNullSink()});
         if (hash && (*hash != validLedger.header().hash))
         {
             JLOG(s) << reason << " incompatible with valid ledger";
@@ -760,7 +834,8 @@ areCompatible(ReadView const& validLedger, ReadView const& testLedger, beast::Jo
     else if (validLedger.header().seq > testLedger.header().seq)
     {
         // test -> ... -> valid
-        auto hash = hashOfSeq(validLedger, testLedger.header().seq, beast::Journal{beast::Journal::getNullSink()});
+        auto hash = hashOfSeq(
+            validLedger, testLedger.header().seq, beast::Journal{beast::Journal::getNullSink()});
         if (hash && (*hash != testLedger.header().hash))
         {
             JLOG(s) << reason << " incompatible preceding ledger";
@@ -782,7 +857,8 @@ areCompatible(ReadView const& validLedger, ReadView const& testLedger, beast::Jo
 
     if (!ret)
     {
-        JLOG(s) << "Val: " << validLedger.header().seq << " " << to_string(validLedger.header().hash);
+        JLOG(s) << "Val: " << validLedger.header().seq << " "
+                << to_string(validLedger.header().hash);
 
         JLOG(s) << "New: " << testLedger.header().seq << " " << to_string(testLedger.header().hash);
     }
@@ -803,7 +879,8 @@ areCompatible(
     if (testLedger.header().seq > validIndex)
     {
         // Ledger we are testing follows last valid ledger
-        auto hash = hashOfSeq(testLedger, validIndex, beast::Journal{beast::Journal::getNullSink()});
+        auto hash =
+            hashOfSeq(testLedger, validIndex, beast::Journal{beast::Journal::getNullSink()});
         if (hash && (*hash != validHash))
         {
             JLOG(s) << reason << " incompatible following ledger";
@@ -908,12 +985,13 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
             STVector256 vec = hashIndex->getFieldV256(sfHashes);
             if (vec.size() >= diff)
                 return vec[vec.size() - diff];
-            JLOG(journal.warn()) << "Ledger " << ledger.seq() << " missing hash for " << seq << " (" << vec.size()
-                                 << "," << diff << ")";
+            JLOG(journal.warn()) << "Ledger " << ledger.seq() << " missing hash for " << seq << " ("
+                                 << vec.size() << "," << diff << ")";
         }
         else
         {
-            JLOG(journal.warn()) << "Ledger " << ledger.seq() << ":" << ledger.header().hash << " missing normal list";
+            JLOG(journal.warn()) << "Ledger " << ledger.seq() << ":" << ledger.header().hash
+                                 << " missing normal list";
         }
     }
 
@@ -990,8 +1068,8 @@ checkInsufficientReserve(
     {
         auto const isCoSigning = isSponsorReserveCoSigning(tx);
 
-        auto const sle =
-            view.read(keylet::sponsor(sponsorSle->getAccountID(sfAccount), accSle->getAccountID(sfAccount)));
+        auto const sle = view.read(
+            keylet::sponsor(sponsorSle->getAccountID(sfAccount), accSle->getAccountID(sfAccount)));
 
         if (isCoSigning)
         {
@@ -1069,7 +1147,9 @@ getTxReserveSponsor(ReadView const& view, STTx const& tx)
 }
 
 std::optional<AccountID>
-getLedgerEntryReserveSponsorAccountID(std::shared_ptr<SLE const> const& sle, SF_ACCOUNT const& field)
+getLedgerEntryReserveSponsorAccountID(
+    std::shared_ptr<SLE const> const& sle,
+    SF_ACCOUNT const& field)
 {
     if (sle->isFieldPresent(field))
         return sle->getAccountID(field);
@@ -1077,7 +1157,10 @@ getLedgerEntryReserveSponsorAccountID(std::shared_ptr<SLE const> const& sle, SF_
 }
 
 std::shared_ptr<SLE>
-getLedgerEntryReserveSponsor(ApplyView& view, std::shared_ptr<SLE> const& sle, SF_ACCOUNT const& field)
+getLedgerEntryReserveSponsor(
+    ApplyView& view,
+    std::shared_ptr<SLE> const& sle,
+    SF_ACCOUNT const& field)
 {
     auto const sponsorID = getLedgerEntryReserveSponsorAccountID(sle, field);
     if (sponsorID)
@@ -1086,7 +1169,10 @@ getLedgerEntryReserveSponsor(ApplyView& view, std::shared_ptr<SLE> const& sle, S
 }
 
 std::shared_ptr<SLE const>
-getLedgerEntryReserveSponsor(ReadView const& view, std::shared_ptr<SLE const> const& sle, SF_ACCOUNT const& field)
+getLedgerEntryReserveSponsor(
+    ReadView const& view,
+    std::shared_ptr<SLE const> const& sle,
+    SF_ACCOUNT const& field)
 {
     auto const sponsorID = getLedgerEntryReserveSponsorAccountID(sle, field);
     if (sponsorID)
@@ -1172,8 +1258,10 @@ adjustOwnerCount(
             // update the pre-funded ReserveCount on Sponsorship ledger object
 
             std::uint32_t const currentReserveCount = sponsorObjSle->getFieldU32(sfReserveCount);
-            // Reserve count moves opposite to amount: +amount => consume reserve (-), -amount => payback (+)
-            std::uint32_t const adjusted = confineOwnerCount(currentReserveCount, -amount, sponsorAcc, j);
+            // Reserve count moves opposite to amount: +amount => consume reserve (-), -amount =>
+            // payback (+)
+            std::uint32_t const adjusted =
+                confineOwnerCount(currentReserveCount, -amount, sponsorAcc, j);
             if (adjusted == 0)
                 sponsorObjSle->makeFieldAbsent(sfReserveCount);
             else
@@ -1196,9 +1284,14 @@ describeOwnerDir(AccountID const& account)
 }
 
 TER
-dirLink(ApplyView& view, AccountID const& owner, std::shared_ptr<SLE>& object, SF_UINT64 const& node)
+dirLink(
+    ApplyView& view,
+    AccountID const& owner,
+    std::shared_ptr<SLE>& object,
+    SF_UINT64 const& node)
 {
-    auto const page = view.dirInsert(keylet::ownerDir(owner), object->key(), describeOwnerDir(owner));
+    auto const page =
+        view.dirInsert(keylet::ownerDir(owner), object->key(), describeOwnerDir(owner));
     if (!page)
         return tecDIR_FULL;  // LCOV_EXCL_LINE
     object->setFieldU64(node, *page);
@@ -1255,16 +1348,20 @@ getPseudoAccountFields()
 }
 
 [[nodiscard]] bool
-isPseudoAccount(std::shared_ptr<SLE const> sleAcct, std::set<SField const*> const& pseudoFieldFilter)
+isPseudoAccount(
+    std::shared_ptr<SLE const> sleAcct,
+    std::set<SField const*> const& pseudoFieldFilter)
 {
     auto const& fields = getPseudoAccountFields();
 
     // Intentionally use defensive coding here because it's cheap and makes the
     // semantics of true return value clean.
     return sleAcct && sleAcct->getType() == ltACCOUNT_ROOT &&
-        std::count_if(fields.begin(), fields.end(), [&sleAcct, &pseudoFieldFilter](SField const* sf) -> bool {
-            return sleAcct->isFieldPresent(*sf) && (pseudoFieldFilter.empty() || pseudoFieldFilter.contains(sf));
-        }) > 0;
+        std::count_if(
+            fields.begin(), fields.end(), [&sleAcct, &pseudoFieldFilter](SField const* sf) -> bool {
+                return sleAcct->isFieldPresent(*sf) &&
+                    (pseudoFieldFilter.empty() || pseudoFieldFilter.contains(sf));
+            }) > 0;
 }
 
 Expected<std::shared_ptr<SLE>, TER>
@@ -1274,7 +1371,9 @@ createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const
     auto const& fields = getPseudoAccountFields();
     XRPL_ASSERT(
         std::count_if(
-            fields.begin(), fields.end(), [&ownerField](SField const* sf) -> bool { return *sf == ownerField; }) == 1,
+            fields.begin(),
+            fields.end(),
+            [&ownerField](SField const* sf) -> bool { return *sf == ownerField; }) == 1,
         "xrpl::createPseudoAccount : valid owner field");
 
     auto const accountId = pseudoAccountAddress(view, pseudoOwnerKey);
@@ -1339,7 +1438,8 @@ canAddHolding(ReadView const& view, MPTIssue const& mptIssue)
 canAddHolding(ReadView const& view, Asset const& asset)
 {
     return std::visit(
-        [&]<ValidIssueType TIss>(TIss const& issue) -> TER { return canAddHolding(view, issue); }, asset.value());
+        [&]<ValidIssueType TIss>(TIss const& issue) -> TER { return canAddHolding(view, issue); },
+        asset.value());
 }
 
 [[nodiscard]] TER
@@ -1373,7 +1473,11 @@ checkDestinationAndTag(SLE::const_ref toSle, bool hasDestinationTag)
  * even if `from` is the issuer.
  */
 static TER
-withdrawToDestExceedsLimit(ReadView const& view, AccountID const& from, AccountID const& to, STAmount const& amount)
+withdrawToDestExceedsLimit(
+    ReadView const& view,
+    AccountID const& from,
+    AccountID const& to,
+    STAmount const& amount)
 {
     auto const& issuer = amount.getIssuer();
     if (from == to || to == issuer || isXRP(issuer))
@@ -1470,7 +1574,12 @@ doWithdraw(
 
     // Sanity check
     if (accountHolds(
-            view, sourceAcct, amount.asset(), FreezeHandling::fhIGNORE_FREEZE, AuthHandling::ahIGNORE_AUTH, j) < amount)
+            view,
+            sourceAcct,
+            amount.asset(),
+            FreezeHandling::fhIGNORE_FREEZE,
+            AuthHandling::ahIGNORE_AUTH,
+            j) < amount)
     {
         // LCOV_EXCL_START
         JLOG(j.error()) << "LoanBrokerCoverWithdraw: negative balance of "
@@ -1517,7 +1626,8 @@ addEmptyHolding(
     // If the line already exists, don't create it again.
     if (view.read(index))
         return tecDUPLICATE;
-    auto const& sponsorAccountID = !isPseudoAccount(sleDst) ? getTxReserveSponsorAccountID(tx) : std::nullopt;
+    auto const& sponsorAccountID =
+        !isPseudoAccount(sleDst) ? getTxReserveSponsorAccountID(tx) : std::nullopt;
 
     // Can the account cover the trust line reserve ?
     if (auto const ret = checkInsufficientReserve(
@@ -1525,7 +1635,8 @@ addEmptyHolding(
             tx,
             sleDst,
             priorBalance,
-            sponsorAccountID ? view.peek(keylet::account(*sponsorAccountID)) : std::shared_ptr<SLE>(),
+            sponsorAccountID ? view.peek(keylet::account(*sponsorAccountID))
+                             : std::shared_ptr<SLE>(),
             1);
         !isTesSuccess(ret))
         return tecNO_LINE_INSUF_RESERVE;
@@ -1537,9 +1648,9 @@ addEmptyHolding(
         dstId,
         index.key,
         sleDst,
-        /*auth=*/false,
-        /*noRipple=*/true,
-        /*freeze=*/false,
+        /*bAuth=*/false,
+        /*bNoRipple=*/true,
+        /*bFreeze=*/false,
         /*deepFreeze*/ false,
         /*balance=*/STAmount{Issue{currency, noAccount()}},
         /*limit=*/STAmount{Issue{currency, dstId}},
@@ -1602,7 +1713,8 @@ authorizeMPToken(
             if (!sleMpt || (*sleMpt)[sfMPTAmount] != 0)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
-            if (!view.dirRemove(keylet::ownerDir(account), (*sleMpt)[sfOwnerNode], sleMpt->key(), false))
+            if (!view.dirRemove(
+                    keylet::ownerDir(account), (*sleMpt)[sfOwnerNode], sleMpt->key(), false))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
             auto const sponsor = getLedgerEntryReserveSponsor(view, sleMpt);
@@ -1629,7 +1741,8 @@ authorizeMPToken(
         // ReserveCount exists.
         if (ownerCount(sponsor ? sponsor : sleAcct) >= 2 || isSponsoredAndPreFunded)
         {
-            if (auto const ret = checkInsufficientReserve(view, tx, sleAcct, priorBalance, sponsor, 1);
+            if (auto const ret =
+                    checkInsufficientReserve(view, tx, sleAcct, priorBalance, sponsor, 1);
                 !isTesSuccess(ret))
                 return ret;
         }
@@ -1716,8 +1829,8 @@ trustCreate(
     std::optional<AccountID> const& sponsorAccountID,
     beast::Journal j)
 {
-    JLOG(j.trace()) << "trustCreate: " << to_string(uSrcAccountID) << ", " << to_string(uDstAccountID) << ", "
-                    << saBalance.getFullText();
+    JLOG(j.trace()) << "trustCreate: " << to_string(uSrcAccountID) << ", "
+                    << to_string(uDstAccountID) << ", " << saBalance.getFullText();
 
     auto const& uLowAccountID = !bSrcHigh ? uSrcAccountID : uDstAccountID;
     auto const& uHighAccountID = bSrcHigh ? uSrcAccountID : uDstAccountID;
@@ -1733,14 +1846,14 @@ trustCreate(
     auto const sleRippleState = std::make_shared<SLE>(ltRIPPLE_STATE, uIndex);
     view.insert(sleRippleState);
 
-    auto lowNode =
-        view.dirInsert(keylet::ownerDir(uLowAccountID), sleRippleState->key(), describeOwnerDir(uLowAccountID));
+    auto lowNode = view.dirInsert(
+        keylet::ownerDir(uLowAccountID), sleRippleState->key(), describeOwnerDir(uLowAccountID));
 
     if (!lowNode)
         return tecDIR_FULL;  // LCOV_EXCL_LINE
 
-    auto highNode =
-        view.dirInsert(keylet::ownerDir(uHighAccountID), sleRippleState->key(), describeOwnerDir(uHighAccountID));
+    auto highNode = view.dirInsert(
+        keylet::ownerDir(uHighAccountID), sleRippleState->key(), describeOwnerDir(uHighAccountID));
 
     if (!highNode)
         return tecDIR_FULL;  // LCOV_EXCL_LINE
@@ -1882,7 +1995,8 @@ removeEmptyHolding(
         removeSponsorFromLedgerEntry(line, sfHighSponsor);
     }
 
-    return trustDelete(view, line, line->at(sfLowLimit)->getIssuer(), line->at(sfHighLimit)->getIssuer(), journal);
+    return trustDelete(
+        view, line, line->at(sfLowLimit)->getIssuer(), line->at(sfHighLimit)->getIssuer(), journal);
 }
 
 [[nodiscard]] TER
@@ -2032,8 +2146,11 @@ rippleCreditIOU(
     bool const bSenderHigh = uSenderID > uReceiverID;
     auto const index = keylet::line(uSenderID, uReceiverID, currency);
 
-    XRPL_ASSERT(!isXRP(uSenderID) && uSenderID != noAccount(), "xrpl::rippleCreditIOU : sender is not XRP");
-    XRPL_ASSERT(!isXRP(uReceiverID) && uReceiverID != noAccount(), "xrpl::rippleCreditIOU : receiver is not XRP");
+    XRPL_ASSERT(
+        !isXRP(uSenderID) && uSenderID != noAccount(), "xrpl::rippleCreditIOU : sender is not XRP");
+    XRPL_ASSERT(
+        !isXRP(uReceiverID) && uReceiverID != noAccount(),
+        "xrpl::rippleCreditIOU : receiver is not XRP");
 
     // If the line exists, modify it accordingly.
     if (auto const sleRippleState = view.peek(index))
@@ -2049,8 +2166,9 @@ rippleCreditIOU(
 
         saBalance -= saAmount;
 
-        JLOG(j.trace()) << "rippleCreditIOU: " << to_string(uSenderID) << " -> " << to_string(uReceiverID)
-                        << " : before=" << saBefore.getFullText() << " amount=" << saAmount.getFullText()
+        JLOG(j.trace()) << "rippleCreditIOU: " << to_string(uSenderID) << " -> "
+                        << to_string(uReceiverID) << " : before=" << saBefore.getFullText()
+                        << " amount=" << saAmount.getFullText()
                         << " after=" << saBalance.getFullText();
 
         std::uint32_t const uFlags(sleRippleState->getFieldU32(sfFlags));
@@ -2065,7 +2183,8 @@ rippleCreditIOU(
             && (uFlags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve))
             // Sender reserve is set.
             && static_cast<bool>(uFlags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
-                static_cast<bool>(view.read(keylet::account(uSenderID))->getFlags() & lsfDefaultRipple) &&
+                static_cast<bool>(
+                    view.read(keylet::account(uSenderID))->getFlags() & lsfDefaultRipple) &&
             !(uFlags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) &&
             !sleRippleState->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
             // Sender trust limit is 0.
@@ -2075,14 +2194,16 @@ rippleCreditIOU(
         // Sender quality out is 0.
         {
             // Clear the reserve of the sender, possibly delete the line!
-            auto const currentSponsor =
-                getLedgerEntryReserveSponsor(view, sleRippleState, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
+            auto const currentSponsor = getLedgerEntryReserveSponsor(
+                view, sleRippleState, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
             adjustOwnerCount(view, view.peek(keylet::account(uSenderID)), currentSponsor, -1, j);
 
-            removeSponsorFromLedgerEntry(sleRippleState, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
+            removeSponsorFromLedgerEntry(
+                sleRippleState, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
 
             // Clear reserve flag.
-            sleRippleState->setFieldU32(sfFlags, uFlags & (!bSenderHigh ? ~lsfLowReserve : ~lsfHighReserve));
+            sleRippleState->setFieldU32(
+                sfFlags, uFlags & (!bSenderHigh ? ~lsfLowReserve : ~lsfHighReserve));
 
             // Balance is zero, receiver reserve is clear.
             bDelete = !saBalance  // Balance is zero.
@@ -2100,7 +2221,11 @@ rippleCreditIOU(
         if (bDelete)
         {
             return trustDelete(
-                view, sleRippleState, bSenderHigh ? uReceiverID : uSenderID, !bSenderHigh ? uReceiverID : uSenderID, j);
+                view,
+                sleRippleState,
+                bSenderHigh ? uReceiverID : uSenderID,
+                !bSenderHigh ? uReceiverID : uSenderID,
+                j);
         }
 
         view.update(sleRippleState);
@@ -2114,7 +2239,8 @@ rippleCreditIOU(
 
     JLOG(j.debug()) << "rippleCreditIOU: "
                        "create line: "
-                    << to_string(uSenderID) << " -> " << to_string(uReceiverID) << " : " << saAmount.getFullText();
+                    << to_string(uSenderID) << " -> " << to_string(uReceiverID) << " : "
+                    << saAmount.getFullText();
 
     auto const sleAccount = view.peek(keylet::account(uReceiverID));
     if (!sleAccount)
@@ -2157,13 +2283,16 @@ rippleSendIOU(
 {
     auto const& issuer = saAmount.getIssuer();
 
-    XRPL_ASSERT(!isXRP(uSenderID) && !isXRP(uReceiverID), "xrpl::rippleSendIOU : neither sender nor receiver is XRP");
+    XRPL_ASSERT(
+        !isXRP(uSenderID) && !isXRP(uReceiverID),
+        "xrpl::rippleSendIOU : neither sender nor receiver is XRP");
     XRPL_ASSERT(uSenderID != uReceiverID, "xrpl::rippleSendIOU : sender is not receiver");
 
     if (uSenderID == issuer || uReceiverID == issuer || issuer == noAccount())
     {
         // Direct send: redeeming IOUs and/or sending own IOUs.
-        auto const ter = rippleCreditIOU(view, uSenderID, uReceiverID, saAmount, false, sponsorAccount, j);
+        auto const ter =
+            rippleCreditIOU(view, uSenderID, uReceiverID, saAmount, false, sponsorAccount, j);
         if (ter != tesSUCCESS)
             return ter;
         saActual = saAmount;
@@ -2174,10 +2303,12 @@ rippleSendIOU(
 
     // Calculate the amount to transfer accounting
     // for any transfer fees if the fee is not waived:
-    saActual = (waiveFee == WaiveTransferFee::Yes) ? saAmount : multiply(saAmount, transferRate(view, issuer));
+    saActual = (waiveFee == WaiveTransferFee::Yes) ? saAmount
+                                                   : multiply(saAmount, transferRate(view, issuer));
 
-    JLOG(j.debug()) << "rippleSendIOU> " << to_string(uSenderID) << " - > " << to_string(uReceiverID)
-                    << " : deliver=" << saAmount.getFullText() << " cost=" << saActual.getFullText();
+    JLOG(j.debug()) << "rippleSendIOU> " << to_string(uSenderID) << " - > "
+                    << to_string(uReceiverID) << " : deliver=" << saAmount.getFullText()
+                    << " cost=" << saActual.getFullText();
 
     TER terResult = rippleCreditIOU(view, issuer, uReceiverID, saAmount, true, sponsorAccount, j);
 
@@ -2226,7 +2357,8 @@ rippleSendMultiIOU(
         if (senderID == issuer || receiverID == issuer || issuer == noAccount())
         {
             // Direct send: redeeming IOUs and/or sending own IOUs.
-            if (auto const ter = rippleCreditIOU(view, senderID, receiverID, amount, false, sponsorAccount, j))
+            if (auto const ter =
+                    rippleCreditIOU(view, senderID, receiverID, amount, false, sponsorAccount, j))
                 return ter;
             actual += amount;
             // Do not add amount to takeFromSender, because rippleCreditIOU took
@@ -2239,21 +2371,25 @@ rippleSendMultiIOU(
 
         // Calculate the amount to transfer accounting
         // for any transfer fees if the fee is not waived:
-        STAmount actualSend =
-            (waiveFee == WaiveTransferFee::Yes) ? amount : multiply(amount, transferRate(view, issuer));
+        STAmount actualSend = (waiveFee == WaiveTransferFee::Yes)
+            ? amount
+            : multiply(amount, transferRate(view, issuer));
         actual += actualSend;
         takeFromSender += actualSend;
 
-        JLOG(j.debug()) << "rippleSendMultiIOU> " << to_string(senderID) << " - > " << to_string(receiverID)
-                        << " : deliver=" << amount.getFullText() << " cost=" << actual.getFullText();
+        JLOG(j.debug()) << "rippleSendMultiIOU> " << to_string(senderID) << " - > "
+                        << to_string(receiverID) << " : deliver=" << amount.getFullText()
+                        << " cost=" << actual.getFullText();
 
-        if (TER const terResult = rippleCreditIOU(view, issuer, receiverID, amount, true, sponsorAccount, j))
+        if (TER const terResult =
+                rippleCreditIOU(view, issuer, receiverID, amount, true, sponsorAccount, j))
             return terResult;
     }
 
     if (senderID != issuer && takeFromSender)
     {
-        if (TER const terResult = rippleCreditIOU(view, senderID, issuer, takeFromSender, true, sponsorAccount, j))
+        if (TER const terResult =
+                rippleCreditIOU(view, senderID, issuer, takeFromSender, true, sponsorAccount, j))
             return terResult;
     }
 
@@ -2296,10 +2432,11 @@ accountSendIOU(
     {
         STAmount saActual;
 
-        JLOG(j.trace()) << "accountSendIOU: " << to_string(uSenderID) << " -> " << to_string(uReceiverID) << " : "
-                        << saAmount.getFullText();
+        JLOG(j.trace()) << "accountSendIOU: " << to_string(uSenderID) << " -> "
+                        << to_string(uReceiverID) << " : " << saAmount.getFullText();
 
-        return rippleSendIOU(view, uSenderID, uReceiverID, saAmount, saActual, j, sponsorAccount, waiveFee);
+        return rippleSendIOU(
+            view, uSenderID, uReceiverID, saAmount, saActual, j, sponsorAccount, waiveFee);
     }
 
     /* XRP send which does not check reserve and can do pure adjustment.
@@ -2309,8 +2446,10 @@ accountSendIOU(
      */
     TER terResult(tesSUCCESS);
 
-    SLE::pointer sender = uSenderID != beast::zero ? view.peek(keylet::account(uSenderID)) : SLE::pointer();
-    SLE::pointer receiver = uReceiverID != beast::zero ? view.peek(keylet::account(uReceiverID)) : SLE::pointer();
+    SLE::pointer sender =
+        uSenderID != beast::zero ? view.peek(keylet::account(uSenderID)) : SLE::pointer();
+    SLE::pointer receiver =
+        uReceiverID != beast::zero ? view.peek(keylet::account(uReceiverID)) : SLE::pointer();
 
     if (auto stream = j.trace())
     {
@@ -2323,8 +2462,9 @@ accountSendIOU(
         if (receiver)
             receiver_bal = receiver->getFieldAmount(sfBalance).getFullText();
 
-        stream << "accountSendIOU> " << to_string(uSenderID) << " (" << sender_bal << ") -> " << to_string(uReceiverID)
-               << " (" << receiver_bal << ") : " << saAmount.getFullText();
+        stream << "accountSendIOU> " << to_string(uSenderID) << " (" << sender_bal << ") -> "
+               << to_string(uReceiverID) << " (" << receiver_bal
+               << ") : " << saAmount.getFullText();
     }
 
     if (sender)
@@ -2369,8 +2509,9 @@ accountSendIOU(
         if (receiver)
             receiver_bal = receiver->getFieldAmount(sfBalance).getFullText();
 
-        stream << "accountSendIOU< " << to_string(uSenderID) << " (" << sender_bal << ") -> " << to_string(uReceiverID)
-               << " (" << receiver_bal << ") : " << saAmount.getFullText();
+        stream << "accountSendIOU< " << to_string(uSenderID) << " (" << sender_bal << ") -> "
+               << to_string(uReceiverID) << " (" << receiver_bal
+               << ") : " << saAmount.getFullText();
     }
 
     return terResult;
@@ -2386,14 +2527,17 @@ accountSendMultiIOU(
     std::optional<AccountID> const& sponsorAccount,
     WaiveTransferFee waiveFee)
 {
-    XRPL_ASSERT_PARTS(receivers.size() > 1, "xrpl::accountSendMultiIOU", "multiple recipients provided");
+    XRPL_ASSERT_PARTS(
+        receivers.size() > 1, "xrpl::accountSendMultiIOU", "multiple recipients provided");
 
     if (!issue.native())
     {
         STAmount actual;
-        JLOG(j.trace()) << "accountSendMultiIOU: " << to_string(senderID) << " sending " << receivers.size() << " IOUs";
+        JLOG(j.trace()) << "accountSendMultiIOU: " << to_string(senderID) << " sending "
+                        << receivers.size() << " IOUs";
 
-        return rippleSendMultiIOU(view, senderID, issue, receivers, actual, j, sponsorAccount, waiveFee);
+        return rippleSendMultiIOU(
+            view, senderID, issue, receivers, actual, j, sponsorAccount, waiveFee);
     }
 
     /* XRP send which does not check reserve and can do pure adjustment.
@@ -2402,7 +2546,8 @@ accountSendMultiIOU(
      * ensure that transfers are balanced.
      */
 
-    SLE::pointer sender = senderID != beast::zero ? view.peek(keylet::account(senderID)) : SLE::pointer();
+    SLE::pointer sender =
+        senderID != beast::zero ? view.peek(keylet::account(senderID)) : SLE::pointer();
 
     if (auto stream = j.trace())
     {
@@ -2411,8 +2556,8 @@ accountSendMultiIOU(
         if (sender)
             sender_bal = sender->getFieldAmount(sfBalance).getFullText();
 
-        stream << "accountSendMultiIOU> " << to_string(senderID) << " (" << sender_bal << ") -> " << receivers.size()
-               << " receivers.";
+        stream << "accountSendMultiIOU> " << to_string(senderID) << " (" << sender_bal << ") -> "
+               << receivers.size() << " receivers.";
     }
 
     // Failures return immediately.
@@ -2433,7 +2578,8 @@ accountSendMultiIOU(
         if (!amount || (senderID == receiverID))
             continue;
 
-        SLE::pointer receiver = receiverID != beast::zero ? view.peek(keylet::account(receiverID)) : SLE::pointer();
+        SLE::pointer receiver =
+            receiverID != beast::zero ? view.peek(keylet::account(receiverID)) : SLE::pointer();
 
         if (auto stream = j.trace())
         {
@@ -2442,8 +2588,9 @@ accountSendMultiIOU(
             if (receiver)
                 receiver_bal = receiver->getFieldAmount(sfBalance).getFullText();
 
-            stream << "accountSendMultiIOU> " << to_string(senderID) << " -> " << to_string(receiverID) << " ("
-                   << receiver_bal << ") : " << amount.getFullText();
+            stream << "accountSendMultiIOU> " << to_string(senderID) << " -> "
+                   << to_string(receiverID) << " (" << receiver_bal
+                   << ") : " << amount.getFullText();
         }
 
         if (receiver)
@@ -2466,8 +2613,9 @@ accountSendMultiIOU(
             if (receiver)
                 receiver_bal = receiver->getFieldAmount(sfBalance).getFullText();
 
-            stream << "accountSendMultiIOU< " << to_string(senderID) << " -> " << to_string(receiverID) << " ("
-                   << receiver_bal << ") : " << amount.getFullText();
+            stream << "accountSendMultiIOU< " << to_string(senderID) << " -> "
+                   << to_string(receiverID) << " (" << receiver_bal
+                   << ") : " << amount.getFullText();
         }
     }
 
@@ -2496,8 +2644,8 @@ accountSendMultiIOU(
         if (sender)
             sender_bal = sender->getFieldAmount(sfBalance).getFullText();
 
-        stream << "accountSendMultiIOU< " << to_string(senderID) << " (" << sender_bal << ") -> " << receivers.size()
-               << " receivers.";
+        stream << "accountSendMultiIOU< " << to_string(senderID) << " (" << sender_bal << ") -> "
+               << receivers.size() << " receivers.";
     }
     return tesSUCCESS;
 }
@@ -2591,7 +2739,8 @@ rippleSendMPT(
         {
             auto const sendAmount = saAmount.mpt().value();
             auto const maximumAmount = sle->at(~sfMaximumAmount).value_or(maxMPTokenAmount);
-            if (sendAmount > maximumAmount || sle->getFieldU64(sfOutstandingAmount) > maximumAmount - sendAmount)
+            if (sendAmount > maximumAmount ||
+                sle->getFieldU64(sfOutstandingAmount) > maximumAmount - sendAmount)
                 return tecPATH_DRY;
         }
 
@@ -2608,10 +2757,12 @@ rippleSendMPT(
         ? saAmount
         : multiply(saAmount, transferRate(view, saAmount.get<MPTIssue>().getMptID()));
 
-    JLOG(j.debug()) << "rippleSendMPT> " << to_string(uSenderID) << " - > " << to_string(uReceiverID)
-                    << " : deliver=" << saAmount.getFullText() << " cost=" << saActual.getFullText();
+    JLOG(j.debug()) << "rippleSendMPT> " << to_string(uSenderID) << " - > "
+                    << to_string(uReceiverID) << " : deliver=" << saAmount.getFullText()
+                    << " cost=" << saActual.getFullText();
 
-    if (auto const terResult = rippleCreditMPT(view, issuer, uReceiverID, saAmount, j); terResult != tesSUCCESS)
+    if (auto const terResult = rippleCreditMPT(view, issuer, uReceiverID, saAmount, j);
+        terResult != tesSUCCESS)
         return terResult;
 
     return rippleCreditMPT(view, uSenderID, issuer, saActual, j);
@@ -2667,7 +2818,8 @@ rippleSendMultiMPT(
                     "sender == issuer, takeFromSender == zero");
                 auto const sendAmount = amount.mpt().value();
                 auto const maximumAmount = sle->at(~sfMaximumAmount).value_or(maxMPTokenAmount);
-                if (sendAmount > maximumAmount || sle->getFieldU64(sfOutstandingAmount) > maximumAmount - sendAmount)
+                if (sendAmount > maximumAmount ||
+                    sle->getFieldU64(sfOutstandingAmount) > maximumAmount - sendAmount)
                     return tecPATH_DRY;
             }
 
@@ -2688,8 +2840,9 @@ rippleSendMultiMPT(
         actual += actualSend;
         takeFromSender += actualSend;
 
-        JLOG(j.debug()) << "rippleSendMultiMPT> " << to_string(senderID) << " - > " << to_string(receiverID)
-                        << " : deliver=" << amount.getFullText() << " cost=" << actualSend.getFullText();
+        JLOG(j.debug()) << "rippleSendMultiMPT> " << to_string(senderID) << " - > "
+                        << to_string(receiverID) << " : deliver=" << amount.getFullText()
+                        << " cost=" << actualSend.getFullText();
 
         if (auto const terResult = rippleCreditMPT(view, issuer, receiverID, amount, j))
             return terResult;
@@ -2712,7 +2865,9 @@ accountSendMPT(
     beast::Journal j,
     WaiveTransferFee waiveFee)
 {
-    XRPL_ASSERT(saAmount >= beast::zero && saAmount.holds<MPTIssue>(), "xrpl::accountSendMPT : minimum amount and MPT");
+    XRPL_ASSERT(
+        saAmount >= beast::zero && saAmount.holds<MPTIssue>(),
+        "xrpl::accountSendMPT : minimum amount and MPT");
 
     /* If we aren't sending anything or if the sender is the same as the
      * receiver then we don't need to do anything.
@@ -2752,7 +2907,8 @@ accountSend(
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
-                return accountSendIOU(view, uSenderID, uReceiverID, saAmount, j, sponsorAcc, waiveFee);
+                return accountSendIOU(
+                    view, uSenderID, uReceiverID, saAmount, j, sponsorAcc, waiveFee);
             else
                 return accountSendMPT(view, uSenderID, uReceiverID, saAmount, j, waiveFee);
         },
@@ -2769,11 +2925,13 @@ accountSendMulti(
     std::optional<AccountID> const& sponsorAccount,
     WaiveTransferFee waiveFee)
 {
-    XRPL_ASSERT_PARTS(receivers.size() > 1, "xrpl::accountSendMulti", "multiple recipients provided");
+    XRPL_ASSERT_PARTS(
+        receivers.size() > 1, "xrpl::accountSendMulti", "multiple recipients provided");
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
-                return accountSendMultiIOU(view, senderID, issue, receivers, j, sponsorAccount, waiveFee);
+                return accountSendMultiIOU(
+                    view, senderID, issue, receivers, j, sponsorAccount, waiveFee);
             else
                 return accountSendMultiMPT(view, senderID, issue, receivers, j, waiveFee);
         },
@@ -2835,9 +2993,16 @@ updateTrustLine(
 }
 
 TER
-issueIOU(ApplyView& view, AccountID const& account, STAmount const& amount, Issue const& issue, beast::Journal j)
+issueIOU(
+    ApplyView& view,
+    AccountID const& account,
+    STAmount const& amount,
+    Issue const& issue,
+    beast::Journal j)
 {
-    XRPL_ASSERT(!isXRP(account) && !isXRP(issue.account), "xrpl::issueIOU : neither account nor issuer is XRP");
+    XRPL_ASSERT(
+        !isXRP(account) && !isXRP(issue.account),
+        "xrpl::issueIOU : neither account nor issuer is XRP");
 
     // Consistency check
     XRPL_ASSERT(issue == amount.issue(), "xrpl::issueIOU : matching issue");
@@ -2862,8 +3027,8 @@ issueIOU(ApplyView& view, AccountID const& account, STAmount const& amount, Issu
 
         final_balance -= amount;
 
-        auto const must_delete =
-            updateTrustLine(view, state, bSenderHigh, issue.account, start_balance, final_balance, j);
+        auto const must_delete = updateTrustLine(
+            view, state, bSenderHigh, issue.account, start_balance, final_balance, j);
 
         view.creditHook(issue.account, account, amount, start_balance);
 
@@ -2876,7 +3041,11 @@ issueIOU(ApplyView& view, AccountID const& account, STAmount const& amount, Issu
         state->setFieldAmount(sfBalance, final_balance);
         if (must_delete)
             return trustDelete(
-                view, state, bSenderHigh ? account : issue.account, bSenderHigh ? issue.account : account, j);
+                view,
+                state,
+                bSenderHigh ? account : issue.account,
+                bSenderHigh ? issue.account : account,
+                j);
 
         view.update(state);
 
@@ -2917,9 +3086,16 @@ issueIOU(ApplyView& view, AccountID const& account, STAmount const& amount, Issu
 }
 
 TER
-redeemIOU(ApplyView& view, AccountID const& account, STAmount const& amount, Issue const& issue, beast::Journal j)
+redeemIOU(
+    ApplyView& view,
+    AccountID const& account,
+    STAmount const& amount,
+    Issue const& issue,
+    beast::Journal j)
 {
-    XRPL_ASSERT(!isXRP(account) && !isXRP(issue.account), "xrpl::redeemIOU : neither account nor issuer is XRP");
+    XRPL_ASSERT(
+        !isXRP(account) && !isXRP(issue.account),
+        "xrpl::redeemIOU : neither account nor issuer is XRP");
 
     // Consistency check
     XRPL_ASSERT(issue == amount.issue(), "xrpl::redeemIOU : matching issue");
@@ -2942,7 +3118,8 @@ redeemIOU(ApplyView& view, AccountID const& account, STAmount const& amount, Iss
 
         final_balance -= amount;
 
-        auto const must_delete = updateTrustLine(view, state, bSenderHigh, account, start_balance, final_balance, j);
+        auto const must_delete =
+            updateTrustLine(view, state, bSenderHigh, account, start_balance, final_balance, j);
 
         view.creditHook(account, issue.account, amount, start_balance);
 
@@ -2957,7 +3134,11 @@ redeemIOU(ApplyView& view, AccountID const& account, STAmount const& amount, Iss
         if (must_delete)
         {
             return trustDelete(
-                view, state, bSenderHigh ? issue.account : account, bSenderHigh ? account : issue.account, j);
+                view,
+                state,
+                bSenderHigh ? issue.account : account,
+                bSenderHigh ? account : issue.account,
+                j);
         }
 
         view.update(state);
@@ -2968,15 +3149,20 @@ redeemIOU(ApplyView& view, AccountID const& account, STAmount const& amount, Iss
     // balance. If it doesn't, then something is very wrong. Don't try
     // to continue.
     // LCOV_EXCL_START
-    JLOG(j.fatal()) << "redeemIOU: " << to_string(account) << " attempts to redeem " << amount.getFullText()
-                    << " but no trust line exists!";
+    JLOG(j.fatal()) << "redeemIOU: " << to_string(account) << " attempts to redeem "
+                    << amount.getFullText() << " but no trust line exists!";
 
     return tefINTERNAL;
     // LCOV_EXCL_STOP
 }
 
 TER
-transferXRP(ApplyView& view, AccountID const& from, AccountID const& to, STAmount const& amount, beast::Journal j)
+transferXRP(
+    ApplyView& view,
+    AccountID const& from,
+    AccountID const& to,
+    STAmount const& amount,
+    beast::Journal j)
 {
     XRPL_ASSERT(from != beast::zero, "xrpl::transferXRP : nonzero from account");
     XRPL_ASSERT(to != beast::zero, "xrpl::transferXRP : nonzero to account");
@@ -2988,7 +3174,8 @@ transferXRP(ApplyView& view, AccountID const& from, AccountID const& to, STAmoun
     if (!sender || !receiver)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    JLOG(j.trace()) << "transferXRP: " << to_string(from) << " -> " << to_string(to) << ") : " << amount.getFullText();
+    JLOG(j.trace()) << "transferXRP: " << to_string(from) << " -> " << to_string(to)
+                    << ") : " << amount.getFullText();
 
     if (sender->getFieldAmount(sfBalance) < amount)
     {
@@ -3027,8 +3214,9 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, 
         issuerAccount && (*issuerAccount)[sfFlags] & lsfRequireAuth)
     {
         if (trustLine)
-            return ((*trustLine)[sfFlags] & ((account > issue.account) ? lsfLowAuth : lsfHighAuth)) ? tesSUCCESS
-                                                                                                    : TER{tecNO_AUTH};
+            return ((*trustLine)[sfFlags] & ((account > issue.account) ? lsfLowAuth : lsfHighAuth))
+                ? tesSUCCESS
+                : TER{tecNO_AUTH};
         return TER{tecNO_LINE};
     }
 
@@ -3036,7 +3224,12 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, 
 }
 
 TER
-requireAuth(ReadView const& view, MPTIssue const& mptIssue, AccountID const& account, AuthType authType, int depth)
+requireAuth(
+    ReadView const& view,
+    MPTIssue const& mptIssue,
+    AccountID const& account,
+    AuthType authType,
+    int depth)
 {
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto const sleIssuance = view.read(mptID);
@@ -3097,7 +3290,8 @@ requireAuth(ReadView const& view, MPTIssue const& mptIssue, AccountID const& acc
             sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth,
             "xrpl::requireAuth : issuance requires authorization");
         // ter = tefINTERNAL | tecOBJECT_NOT_FOUND | tecNO_AUTH | tecEXPIRED
-        if (auto const ter = credentials::validDomain(view, *maybeDomainID, account); isTesSuccess(ter))
+        if (auto const ter = credentials::validDomain(view, *maybeDomainID, account);
+            isTesSuccess(ter))
             return ter;  // Note: sleToken might be null
         else if (!sleToken)
             return ter;
@@ -3113,7 +3307,8 @@ requireAuth(ReadView const& view, MPTIssue const& mptIssue, AccountID const& acc
     }
 
     // mptoken must be authorized if issuance enabled requireAuth
-    if (sleIssuance->isFlag(lsfMPTRequireAuth) && (!sleToken || !sleToken->isFlag(lsfMPTAuthorized)))
+    if (sleIssuance->isFlag(lsfMPTRequireAuth) &&
+        (!sleToken || !sleToken->isFlag(lsfMPTAuthorized)))
         return tecNO_AUTH;
 
     return tesSUCCESS;  // Note: sleToken might be null
@@ -3132,7 +3327,9 @@ enforceMPTokenAuthorization(
     if (!sleIssuance)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    XRPL_ASSERT(sleIssuance->isFlag(lsfMPTRequireAuth), "xrpl::enforceMPTokenAuthorization : authorization required");
+    XRPL_ASSERT(
+        sleIssuance->isFlag(lsfMPTRequireAuth),
+        "xrpl::enforceMPTokenAuthorization : authorization required");
 
     if (account == sleIssuance->at(sfIssuer))
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -3177,7 +3374,8 @@ enforceMPTokenAuthorization(
         // We found an MPToken, but sfDomainID is not set, so this is a classic
         // MPToken which requires authorization by the token issuer.
         XRPL_ASSERT(
-            sleToken != nullptr && !maybeDomainID.has_value(), "xrpl::enforceMPTokenAuthorization : found MPToken");
+            sleToken != nullptr && !maybeDomainID.has_value(),
+            "xrpl::enforceMPTokenAuthorization : found MPToken");
         if (sleToken->isFlag(lsfMPTAuthorized))
             return tesSUCCESS;
 
@@ -3187,7 +3385,9 @@ enforceMPTokenAuthorization(
     {
         // Found an MPToken, authorized by the domain. Ignore authorization flag
         // lsfMPTAuthorized because it is meaningless. Return tesSUCCESS
-        XRPL_ASSERT(maybeDomainID.has_value(), "xrpl::enforceMPTokenAuthorization : found MPToken for domain");
+        XRPL_ASSERT(
+            maybeDomainID.has_value(),
+            "xrpl::enforceMPTokenAuthorization : found MPToken for domain");
         return tesSUCCESS;
     }
     else if (authorizedByDomain)
@@ -3217,7 +3417,11 @@ enforceMPTokenAuthorization(
 }
 
 TER
-canTransfer(ReadView const& view, MPTIssue const& mptIssue, AccountID const& from, AccountID const& to)
+canTransfer(
+    ReadView const& view,
+    MPTIssue const& mptIssue,
+    AccountID const& from,
+    AccountID const& to)
 {
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto const sleIssuance = view.read(mptID);
@@ -3278,7 +3482,8 @@ cleanupOnAccountDelete(
     uint256 dirEntry{beast::zero};
     std::uint32_t deleted = 0;
 
-    if (view.exists(ownerDirKeylet) && dirFirst(view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
+    if (view.exists(ownerDirKeylet) &&
+        dirFirst(view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
     {
         do
         {
@@ -3297,7 +3502,8 @@ cleanupOnAccountDelete(
                 // LCOV_EXCL_STOP
             }
 
-            LedgerEntryType const nodeType{safe_cast<LedgerEntryType>(sleItem->getFieldU16(sfLedgerEntryType))};
+            LedgerEntryType const nodeType{
+                safe_cast<LedgerEntryType>(sleItem->getFieldU16(sfLedgerEntryType))};
 
             // Deleter handles the details of specific account-owned object
             // deletion
@@ -3349,7 +3555,8 @@ deleteAMMTrustLine(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const& [low, high] = std::minmax(
-        sleState->getFieldAmount(sfLowLimit).getIssuer(), sleState->getFieldAmount(sfHighLimit).getIssuer());
+        sleState->getFieldAmount(sfLowLimit).getIssuer(),
+        sleState->getFieldAmount(sfHighLimit).getIssuer());
     auto sleLow = view.peek(keylet::account(low));
     auto sleHigh = view.peek(keylet::account(high));
     if (!sleLow || !sleHigh)
@@ -3380,7 +3587,8 @@ deleteAMMTrustLine(
     if (!(sleState->getFlags() & uFlags))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sponsorSle = getLedgerEntryReserveSponsor(view, sleState, !ammLow ? sfLowSponsor : sfHighSponsor);
+    auto const sponsorSle =
+        getLedgerEntryReserveSponsor(view, sleState, !ammLow ? sfLowSponsor : sfHighSponsor);
     adjustOwnerCount(view, !ammLow ? sleLow : sleHigh, sponsorSle, -1, j);
     removeSponsorFromLedgerEntry(sleState, !ammLow ? sfLowSponsor : sfHighSponsor);
 
@@ -3400,7 +3608,8 @@ rippleCredit(
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
             {
-                return rippleCreditIOU(view, uSenderID, uReceiverID, saAmount, bCheckIssuer, std::nullopt, j);
+                return rippleCreditIOU(
+                    view, uSenderID, uReceiverID, saAmount, bCheckIssuer, std::nullopt, j);
             }
             else
             {
@@ -3418,14 +3627,18 @@ assetsToSharesDeposit(
     STAmount const& assets)
 {
     XRPL_ASSERT(!assets.negative(), "xrpl::assetsToSharesDeposit : non-negative assets");
-    XRPL_ASSERT(assets.asset() == vault->at(sfAsset), "xrpl::assetsToSharesDeposit : assets and vault match");
+    XRPL_ASSERT(
+        assets.asset() == vault->at(sfAsset),
+        "xrpl::assetsToSharesDeposit : assets and vault match");
     if (assets.negative() || assets.asset() != vault->at(sfAsset))
         return std::nullopt;  // LCOV_EXCL_LINE
 
     Number const assetTotal = vault->at(sfAssetsTotal);
     STAmount shares{vault->at(sfShareMPTID)};
     if (assetTotal == 0)
-        return STAmount{shares.asset(), Number(assets.mantissa(), assets.exponent() + vault->at(sfScale)).truncate()};
+        return STAmount{
+            shares.asset(),
+            Number(assets.mantissa(), assets.exponent() + vault->at(sfScale)).truncate()};
 
     Number const shareTotal = issuance->at(sfOutstandingAmount);
     shares = ((shareTotal * assets) / assetTotal).truncate();
@@ -3439,14 +3652,17 @@ sharesToAssetsDeposit(
     STAmount const& shares)
 {
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsDeposit : non-negative shares");
-    XRPL_ASSERT(shares.asset() == vault->at(sfShareMPTID), "xrpl::sharesToAssetsDeposit : shares and vault match");
+    XRPL_ASSERT(
+        shares.asset() == vault->at(sfShareMPTID),
+        "xrpl::sharesToAssetsDeposit : shares and vault match");
     if (shares.negative() || shares.asset() != vault->at(sfShareMPTID))
         return std::nullopt;  // LCOV_EXCL_LINE
 
     Number const assetTotal = vault->at(sfAssetsTotal);
     STAmount assets{vault->at(sfAsset)};
     if (assetTotal == 0)
-        return STAmount{assets.asset(), shares.mantissa(), shares.exponent() - vault->at(sfScale), false};
+        return STAmount{
+            assets.asset(), shares.mantissa(), shares.exponent() - vault->at(sfScale), false};
 
     Number const shareTotal = issuance->at(sfOutstandingAmount);
     assets = (assetTotal * shares) / shareTotal;
@@ -3461,7 +3677,9 @@ assetsToSharesWithdraw(
     TruncateShares truncate)
 {
     XRPL_ASSERT(!assets.negative(), "xrpl::assetsToSharesDeposit : non-negative assets");
-    XRPL_ASSERT(assets.asset() == vault->at(sfAsset), "xrpl::assetsToSharesWithdraw : assets and vault match");
+    XRPL_ASSERT(
+        assets.asset() == vault->at(sfAsset),
+        "xrpl::assetsToSharesWithdraw : assets and vault match");
     if (assets.negative() || assets.asset() != vault->at(sfAsset))
         return std::nullopt;  // LCOV_EXCL_LINE
 
@@ -3485,7 +3703,9 @@ sharesToAssetsWithdraw(
     STAmount const& shares)
 {
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsDeposit : non-negative shares");
-    XRPL_ASSERT(shares.asset() == vault->at(sfShareMPTID), "xrpl::sharesToAssetsWithdraw : shares and vault match");
+    XRPL_ASSERT(
+        shares.asset() == vault->at(sfShareMPTID),
+        "xrpl::sharesToAssetsWithdraw : shares and vault match");
     if (shares.negative() || shares.asset() != vault->at(sfShareMPTID))
         return std::nullopt;  // LCOV_EXCL_LINE
 
@@ -3500,14 +3720,19 @@ sharesToAssetsWithdraw(
 }
 
 TER
-rippleLockEscrowMPT(ApplyView& view, AccountID const& sender, STAmount const& amount, beast::Journal j)
+rippleLockEscrowMPT(
+    ApplyView& view,
+    AccountID const& sender,
+    STAmount const& amount,
+    beast::Journal j)
 {
     auto const mptIssue = amount.get<MPTIssue>();
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto sleIssuance = view.peek(mptID);
     if (!sleIssuance)
     {  // LCOV_EXCL_START
-        JLOG(j.error()) << "rippleLockEscrowMPT: MPT issuance not found for " << mptIssue.getMptID();
+        JLOG(j.error()) << "rippleLockEscrowMPT: MPT issuance not found for "
+                        << mptIssue.getMptID();
         return tecOBJECT_NOT_FOUND;
     }  // LCOV_EXCL_STOP
 
@@ -3534,8 +3759,8 @@ rippleLockEscrowMPT(ApplyView& view, AccountID const& sender, STAmount const& am
         // Underflow check for subtraction
         if (!canSubtract(STAmount(mptIssue, amt), STAmount(mptIssue, pay)))
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleLockEscrowMPT: insufficient MPTAmount for " << to_string(sender) << ": " << amt
-                            << " < " << pay;
+            JLOG(j.error()) << "rippleLockEscrowMPT: insufficient MPTAmount for "
+                            << to_string(sender) << ": " << amt << " < " << pay;
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
 
@@ -3546,8 +3771,8 @@ rippleLockEscrowMPT(ApplyView& view, AccountID const& sender, STAmount const& am
 
         if (!canAdd(STAmount(mptIssue, locked), STAmount(mptIssue, pay)))
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleLockEscrowMPT: overflow on locked amount for " << to_string(sender) << ": "
-                            << locked << " + " << pay;
+            JLOG(j.error()) << "rippleLockEscrowMPT: overflow on locked amount for "
+                            << to_string(sender) << ": " << locked << " + " << pay;
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
 
@@ -3594,7 +3819,8 @@ rippleUnlockEscrowMPT(
     beast::Journal j)
 {
     if (!view.rules().enabled(fixTokenEscrowV1))
-        XRPL_ASSERT(netAmount == grossAmount, "xrpl::rippleUnlockEscrowMPT : netAmount == grossAmount");
+        XRPL_ASSERT(
+            netAmount == grossAmount, "xrpl::rippleUnlockEscrowMPT : netAmount == grossAmount");
 
     auto const& issuer = netAmount.getIssuer();
     auto const& mptIssue = netAmount.get<MPTIssue>();
@@ -3602,7 +3828,8 @@ rippleUnlockEscrowMPT(
     auto sleIssuance = view.peek(mptID);
     if (!sleIssuance)
     {  // LCOV_EXCL_START
-        JLOG(j.error()) << "rippleUnlockEscrowMPT: MPT issuance not found for " << mptIssue.getMptID();
+        JLOG(j.error()) << "rippleUnlockEscrowMPT: MPT issuance not found for "
+                        << mptIssue.getMptID();
         return tecOBJECT_NOT_FOUND;
     }  // LCOV_EXCL_STOP
 
@@ -3610,7 +3837,8 @@ rippleUnlockEscrowMPT(
     {
         if (!sleIssuance->isFieldPresent(sfLockedAmount))
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleUnlockEscrowMPT: no locked amount in issuance for " << mptIssue.getMptID();
+            JLOG(j.error()) << "rippleUnlockEscrowMPT: no locked amount in issuance for "
+                            << mptIssue.getMptID();
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
 
@@ -3620,8 +3848,8 @@ rippleUnlockEscrowMPT(
         // Underflow check for subtraction
         if (!canSubtract(STAmount(mptIssue, locked), STAmount(mptIssue, redeem)))
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleUnlockEscrowMPT: insufficient locked amount for " << mptIssue.getMptID() << ": "
-                            << locked << " < " << redeem;
+            JLOG(j.error()) << "rippleUnlockEscrowMPT: insufficient locked amount for "
+                            << mptIssue.getMptID() << ": " << locked << " < " << redeem;
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
 
@@ -3650,8 +3878,8 @@ rippleUnlockEscrowMPT(
         // Overflow check for addition
         if (!canAdd(STAmount(mptIssue, current), STAmount(mptIssue, delta)))
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleUnlockEscrowMPT: overflow on MPTAmount for " << to_string(receiver) << ": "
-                            << current << " + " << delta;
+            JLOG(j.error()) << "rippleUnlockEscrowMPT: overflow on MPTAmount for "
+                            << to_string(receiver) << ": " << current << " + " << delta;
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
 
@@ -3667,8 +3895,8 @@ rippleUnlockEscrowMPT(
         // Underflow check for subtraction
         if (!canSubtract(STAmount(mptIssue, outstanding), STAmount(mptIssue, redeem)))
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleUnlockEscrowMPT: insufficient outstanding amount for " << mptIssue.getMptID()
-                            << ": " << outstanding << " < " << redeem;
+            JLOG(j.error()) << "rippleUnlockEscrowMPT: insufficient outstanding amount for "
+                            << mptIssue.getMptID() << ": " << outstanding << " < " << redeem;
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
 
@@ -3695,7 +3923,8 @@ rippleUnlockEscrowMPT(
 
         if (!sle->isFieldPresent(sfLockedAmount))
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleUnlockEscrowMPT: no locked amount in MPToken for " << to_string(sender);
+            JLOG(j.error()) << "rippleUnlockEscrowMPT: no locked amount in MPToken for "
+                            << to_string(sender);
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
 
@@ -3705,8 +3934,8 @@ rippleUnlockEscrowMPT(
         // Underflow check for subtraction
         if (!canSubtract(STAmount(mptIssue, locked), STAmount(mptIssue, delta)))
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleUnlockEscrowMPT: insufficient locked amount for " << to_string(sender) << ": "
-                            << locked << " < " << delta;
+            JLOG(j.error()) << "rippleUnlockEscrowMPT: insufficient locked amount for "
+                            << to_string(sender) << ": " << locked << " < " << delta;
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
 
@@ -3729,8 +3958,8 @@ rippleUnlockEscrowMPT(
         // Underflow check for subtraction
         if (!canSubtract(STAmount(mptIssue, outstanding), STAmount(mptIssue, diff)))
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleUnlockEscrowMPT: insufficient outstanding amount for " << mptIssue.getMptID()
-                            << ": " << outstanding << " < " << diff;
+            JLOG(j.error()) << "rippleUnlockEscrowMPT: insufficient outstanding amount for "
+                            << mptIssue.getMptID() << ": " << outstanding << " < " << diff;
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
 

@@ -17,7 +17,8 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
     using namespace Lending;
 
     auto const& tx = ctx.tx;
-    if (auto const data = tx[~sfData]; data && !data->empty() && !validDataLength(tx[~sfData], maxDataPayloadLength))
+    if (auto const data = tx[~sfData];
+        data && !data->empty() && !validDataLength(tx[~sfData], maxDataPayloadLength))
         return temINVALID;
     if (!validNumericRange(tx[~sfManagementFeeRate], maxManagementFeeRate))
         return temINVALID;
@@ -139,8 +140,8 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
     {
         if (auto const value = tx[field]; value && STAmount{asset, *value} != *value)
         {
-            JLOG(ctx.j.warn()) << field.f->getName() << " (" << *value << ") can not be represented as a(n) "
-                               << to_string(asset) << ".";
+            JLOG(ctx.j.warn()) << field.f->getName() << " (" << *value
+                               << ") can not be represented as a(n) " << to_string(asset) << ".";
             return tecPRECISION_LOSS;
         }
     }
@@ -217,13 +218,15 @@ LoanBrokerSet::doApply()
 
         auto const sponsor = getTxReserveSponsor(view, tx);
 
-        if (auto const ret = checkInsufficientReserve(view, tx, owner, mPriorBalance, {}, sponsor ? 1 : 2);
+        if (auto const ret =
+                checkInsufficientReserve(view, tx, owner, mPriorBalance, {}, sponsor ? 1 : 2);
             !isTesSuccess(ret))
             return ret;
 
         if (sponsor)
         {
-            if (auto const ret = checkInsufficientReserve(view, tx, owner, mPriorBalance, sponsor, 1);
+            if (auto const ret =
+                    checkInsufficientReserve(view, tx, owner, mPriorBalance, sponsor, 1);
                 !isTesSuccess(ret))
                 return ret;
         }
@@ -241,7 +244,8 @@ LoanBrokerSet::doApply()
         auto& pseudo = *maybePseudo;
         auto pseudoId = pseudo->at(sfAccount);
 
-        if (auto ter = addEmptyHolding(view, tx, pseudoId, mPriorBalance, sleVault->at(sfAsset), j_))
+        if (auto ter =
+                addEmptyHolding(view, tx, pseudoId, mPriorBalance, sleVault->at(sfAsset), j_))
             return ter;
 
         // Initialize data fields:

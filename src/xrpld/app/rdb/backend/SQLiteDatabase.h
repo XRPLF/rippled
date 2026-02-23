@@ -336,8 +336,10 @@ public:
      *         default error code is not changed.
      */
     std::variant<AccountTx, TxSearched>
-    getTransaction(uint256 const& id, std::optional<ClosedInterval<std::uint32_t>> const& range, error_code_i& ec)
-        override;
+    getTransaction(
+        uint256 const& id,
+        std::optional<ClosedInterval<std::uint32_t>> const& range,
+        error_code_i& ec) override;
 
     /**
      * @brief getKBUsedAll Returns the amount of space used by all databases.

@@ -19,7 +19,8 @@ AMMBid::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 AMMBid::preflight(PreflightContext const& ctx)
 {
-    if (auto const res = invalidAMMAssetPair(ctx.tx[sfAsset].get<Issue>(), ctx.tx[sfAsset2].get<Issue>()))
+    if (auto const res =
+            invalidAMMAssetPair(ctx.tx[sfAsset].get<Issue>(), ctx.tx[sfAsset2].get<Issue>()))
     {
         JLOG(ctx.j.debug()) << "AMM Bid: Invalid asset pair.";
         return res;
@@ -167,7 +168,8 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
             return {tecINTERNAL, false};
     }
     auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
-    auto const current = duration_cast<seconds>(ctx_.view().header().parentCloseTime.time_since_epoch()).count();
+    auto const current =
+        duration_cast<seconds>(ctx_.view().header().parentCloseTime.time_since_epoch()).count();
     // Auction slot discounted fee
     auto const discountedFee = (*ammSle)[sfTradingFee] / AUCTION_SLOT_DISCOUNTED_FEE_FRACTION;
     auto const tradingFee = getFee((*ammSle)[sfTradingFee]);
@@ -200,12 +202,14 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
         else
             auctionSlot.makeFieldAbsent(sfAuthAccounts);
         // Burn the remaining bid amount
-        auto const saBurn = adjustLPTokens(lptAMMBalance, toSTAmount(lptAMMBalance.issue(), burn), IsDeposit::No);
+        auto const saBurn =
+            adjustLPTokens(lptAMMBalance, toSTAmount(lptAMMBalance.issue(), burn), IsDeposit::No);
         if (saBurn >= lptAMMBalance)
         {
             // This error case should never occur.
             // LCOV_EXCL_START
-            JLOG(ctx_.journal.fatal()) << "AMM Bid: LP Token burn exceeds AMM balance " << burn << " " << lptAMMBalance;
+            JLOG(ctx_.journal.fatal())
+                << "AMM Bid: LP Token burn exceeds AMM balance " << burn << " " << lptAMMBalance;
             return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
@@ -232,8 +236,8 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
             {
                 if (computedPrice <= *bidMax)
                     return std::max(computedPrice, Number(*bidMin));
-                JLOG(ctx_.journal.debug())
-                    << "AMM Bid: not in range " << computedPrice << " " << *bidMin << " " << *bidMax;
+                JLOG(ctx_.journal.debug()) << "AMM Bid: not in range " << computedPrice << " "
+                                           << *bidMin << " " << *bidMax;
                 return std::nullopt;
             }
             // Bidder pays max(bidPrice, computedPrice)
@@ -245,7 +249,8 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
             {
                 if (computedPrice <= *bidMax)
                     return computedPrice;
-                JLOG(ctx_.journal.debug()) << "AMM Bid: not in range " << computedPrice << " " << *bidMax;
+                JLOG(ctx_.journal.debug())
+                    << "AMM Bid: not in range " << computedPrice << " " << *bidMax;
                 return std::nullopt;
             }
             else
@@ -293,10 +298,16 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
         if (refund > *payPrice)
         {
             // This error case should never occur.
-            JLOG(ctx_.journal.fatal()) << "AMM Bid: refund exceeds payPrice " << refund << " " << *payPrice;
+            JLOG(ctx_.journal.fatal())
+                << "AMM Bid: refund exceeds payPrice " << refund << " " << *payPrice;
             return {tecINTERNAL, false};
         }
-        res = accountSend(sb, account_, auctionSlot[sfAccount], toSTAmount(lpTokens.issue(), refund), ctx_.journal);
+        res = accountSend(
+            sb,
+            account_,
+            auctionSlot[sfAccount],
+            toSTAmount(lpTokens.issue(), refund),
+            ctx_.journal);
         if (res != tesSUCCESS)
         {
             JLOG(ctx_.journal.debug()) << "AMM Bid: failed to refund.";
