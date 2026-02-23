@@ -4,6 +4,7 @@
 #include <boost/predef.h>
 
 #include <chrono>
+#include <cstdint>
 #include <cstdio>
 #include <fstream>
 #include <sstream>
@@ -128,7 +129,9 @@ mallocTrim([[maybe_unused]] std::optional<std::string> const& tag, beast::Journa
             report.majfltDelta = ru1.ru_majflt - ru0.ru_majflt;
         }
 
-        long const deltaKB = (rssBeforeKB < 0 || rssAfterKB < 0) ? 0 : (rssAfterKB - rssBeforeKB);
+        std::int64_t const deltaKB = (rssBeforeKB < 0 || rssAfterKB < 0)
+            ? 0
+            : (static_cast<std::int64_t>(rssAfterKB) - static_cast<std::int64_t>(rssBeforeKB));
 
         JLOG(journal.debug()) << "malloc_trim tag=" << tagStr << " result=" << report.trimResult
                               << " pad=" << TRIM_PAD << " bytes"

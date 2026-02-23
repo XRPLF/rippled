@@ -3,6 +3,7 @@
 #include <xrpl/beast/utility/Journal.h>
 
 #include <chrono>
+#include <cstdint>
 #include <optional>
 #include <string>
 
@@ -28,13 +29,13 @@ struct MallocTrimReport
 {
     bool supported{false};
     int trimResult{-1};
-    long rssBeforeKB{-1};
-    long rssAfterKB{-1};
+    std::int64_t rssBeforeKB{-1};
+    std::int64_t rssAfterKB{-1};
     std::chrono::microseconds durationUs{-1};
-    long minfltDelta{-1};
-    long majfltDelta{-1};
+    std::int64_t minfltDelta{-1};
+    std::int64_t majfltDelta{-1};
 
-    [[nodiscard]] long
+    [[nodiscard]] std::int64_t
     deltaKB() const noexcept
     {
         if (rssBeforeKB < 0 || rssAfterKB < 0)
