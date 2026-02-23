@@ -52,8 +52,15 @@ public:
      * Construct a view from an existing SLE.
      * @param sle The RippleState SLE (must be ltRIPPLE_STATE or nullptr)
      * @param account The perspective account ("my" side)
+     * @param peer The counterparty account ("peer" side)
+     * @note The peer is needed to reliably determine which side the account
+     *       is on, since the issuer field of the limit amounts can be
+     *       temporarily modified by some transactions (e.g., CashCheck).
      */
-    RippleStateView(std::shared_ptr<SLE const> sle, AccountID const& account);
+    RippleStateView(
+        std::shared_ptr<SLE const> sle,
+        AccountID const& account,
+        AccountID const& peer);
 
     /** Returns the state map key for the ledger entry. */
     uint256 const&

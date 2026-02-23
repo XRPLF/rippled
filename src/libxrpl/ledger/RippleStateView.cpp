@@ -7,11 +7,14 @@ RippleStateView::RippleStateView(
     AccountID const& account,
     AccountID const& peer,
     Currency const& currency)
-    : RippleStateView(view.read(keylet::line(account, peer, currency)), account)
+    : RippleStateView(view.read(keylet::line(account, peer, currency)), account, peer)
 {
 }
 
-RippleStateView::RippleStateView(std::shared_ptr<SLE const> sle, AccountID const& account)
+RippleStateView::RippleStateView(
+    std::shared_ptr<SLE const> sle,
+    AccountID const& account,
+    AccountID const& peer)
     : LedgerEntryViewBase(std::move(sle))
 {
     if (!sle_ || sle_->getType() != ltRIPPLE_STATE)
@@ -30,7 +33,11 @@ RippleStateView::RippleStateView(std::shared_ptr<SLE const> sle, AccountID const
     highQualityIn_ = sle_->getFieldU32(sfHighQualityIn);
     highQualityOut_ = sle_->getFieldU32(sfHighQualityOut);
 
-    viewLowest_ = (lowLimit_.getIssuer() == account);
+    // Use account comparison to determine which side we're viewing from.
+    // We cannot rely on lowLimit_.getIssuer() == account because some
+    // transactions (e.g., CashCheck) temporarily modify the issuer field
+    // of the limit amounts.
+    viewLowest_ = (account < peer);
 
     // Negate balance if we're viewing from the high side.
     // This puts the balance in "account terms" where:

@@ -387,7 +387,7 @@ getTrustLineBalance(
     STAmount amount;
     if (sle)
     {
-        RippleStateView const rsv(sle, account);
+        RippleStateView const rsv(sle, account, issuer);
         amount = rsv.getBalance();
         if (includeOppositeLimit)
         {
