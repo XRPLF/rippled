@@ -729,9 +729,8 @@ canSubtract(STAmount const& amt1, STAmount const& amt2);
  * @param asset The asset to use for determining the scale.
  * @return The scale of this Number for the given asset.
  */
-template <AssetType Asset>
 inline int
-numberScale(Number const& number, Asset const& asset)
+scale(Number const& number, Asset const& asset)
 {
     return STAmount{asset, number}.exponent();
 }
