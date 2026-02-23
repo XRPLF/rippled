@@ -33,12 +33,14 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
     {
         if (!isReserveSponsored(ctx.tx))
         {
-            JLOG(ctx.j.debug()) << "preflight: tfSponsorReserve should not be set when creating sponsorship";
+            JLOG(ctx.j.debug())
+                << "preflight: tfSponsorReserve should not be set when creating sponsorship";
             return temINVALID_FLAG;
         }
         if (ctx.tx.isFieldPresent(sfSponsee))
         {
-            JLOG(ctx.j.debug()) << "preflight: sfSponsee should be available only when ending sponsorship";
+            JLOG(ctx.j.debug())
+                << "preflight: sfSponsee should be available only when ending sponsorship";
             return temMALFORMED;
         }
     }
@@ -46,12 +48,14 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
     {
         if (!isReserveSponsored(ctx.tx))
         {
-            JLOG(ctx.j.debug()) << "preflight: tfSponsorReserve should be set when reassigning sponsorship";
+            JLOG(ctx.j.debug())
+                << "preflight: tfSponsorReserve should be set when reassigning sponsorship";
             return temINVALID_FLAG;
         }
         if (ctx.tx.isFieldPresent(sfSponsee))
         {
-            JLOG(ctx.j.debug()) << "preflight: sfSponsee should not be set when reassigning sponsorship";
+            JLOG(ctx.j.debug())
+                << "preflight: sfSponsee should not be set when reassigning sponsorship";
             return temMALFORMED;
         }
     }
@@ -59,7 +63,8 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
     {
         if (isReserveSponsored(ctx.tx))
         {
-            JLOG(ctx.j.debug()) << "preflight: tfSponsorReserve should not be set when ending sponsorship";
+            JLOG(ctx.j.debug())
+                << "preflight: tfSponsorReserve should not be set when ending sponsorship";
             return temINVALID_FLAG;
         }
 
@@ -270,7 +275,12 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
 
         // check new sponsor have sufficient balance
         if (auto const ter = checkInsufficientReserve(
-                ctx.view, ctx.tx, sponseeSle, sponseeSle->getFieldAmount(sfBalance), newSponsor, ownerCountDelta);
+                ctx.view,
+                ctx.tx,
+                sponseeSle,
+                sponseeSle->getFieldAmount(sfBalance),
+                newSponsor,
+                ownerCountDelta);
             !isTesSuccess(ter))
             return ter;
     }
@@ -305,10 +315,17 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         }
 
         // check account have sufficient balance
-        // In the case of removing an account sponsor, accSle should have no sfSponsor set (AccountReserve = 0).
-        // However, by setting accountCountDelta = 1 here, we are able to calculate the actual required Account Reserve.
+        // In the case of removing an account sponsor, accSle should have no sfSponsor set
+        // (AccountReserve = 0). However, by setting accountCountDelta = 1 here, we are able to
+        // calculate the actual required Account Reserve.
         if (auto const ter = checkInsufficientReserve(
-                ctx.view, ctx.tx, sponseeSle, sponseeSle->getFieldAmount(sfBalance), newSponsor, 0, 1);
+                ctx.view,
+                ctx.tx,
+                sponseeSle,
+                sponseeSle->getFieldAmount(sfBalance),
+                newSponsor,
+                0,
+                1);
             !isTesSuccess(ter))
             return ter;
     }
@@ -317,7 +334,11 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-adjustReserveCount(ApplyView& view, AccountID const& account, AccountID const& sponsor, int32_t delta)
+adjustReserveCount(
+    ApplyView& view,
+    AccountID const& account,
+    AccountID const& sponsor,
+    int32_t delta)
 {
     if (delta == 0)
         return tesSUCCESS;
@@ -407,7 +428,8 @@ SponsorshipTransfer::doApply()
             if (!hasSignature)
             {
                 // use ReserveCount for pre-funded sponsoring
-                if (auto const ter = adjustReserveCount(view(), account_, newSponsor, -ownerCountDelta);
+                if (auto const ter =
+                        adjustReserveCount(view(), account_, newSponsor, -ownerCountDelta);
                     !isTesSuccess(ter))
                     return ter;
             }
@@ -441,14 +463,17 @@ SponsorshipTransfer::doApply()
             if (!hasSignature)
             {
                 // use ReserveCount for pre-funded sponsoring
-                if (auto const ter = adjustReserveCount(view(), account_, newSponsor, -ownerCountDelta);
+                if (auto const ter =
+                        adjustReserveCount(view(), account_, newSponsor, -ownerCountDelta);
                     !isTesSuccess(ter))
                     return ter;
             }
 
             // payback the reserve count if ltSponsorship exists
-            if (auto const sponsorSle = view().exists(keylet::sponsor(oldSponsor, account_)); sponsorSle)
-                if (auto const ter = adjustReserveCount(view(), account_, oldSponsor, ownerCountDelta);
+            if (auto const sponsorSle = view().exists(keylet::sponsor(oldSponsor, account_));
+                sponsorSle)
+                if (auto const ter =
+                        adjustReserveCount(view(), account_, oldSponsor, ownerCountDelta);
                     !isTesSuccess(ter))
                     return ter;
         }
@@ -470,8 +495,10 @@ SponsorshipTransfer::doApply()
             view().update(oldSponsorSle);
 
             // payback the reserve count if ltSponsorship exists
-            if (auto const sponsorSle = view().exists(keylet::sponsor(oldSponsor, account_)); sponsorSle)
-                if (auto const ter = adjustReserveCount(view(), account_, oldSponsor, ownerCountDelta);
+            if (auto const sponsorSle = view().exists(keylet::sponsor(oldSponsor, account_));
+                sponsorSle)
+                if (auto const ter =
+                        adjustReserveCount(view(), account_, oldSponsor, ownerCountDelta);
                     !isTesSuccess(ter))
                     return ter;
 

@@ -98,11 +98,16 @@ public:
                 sponsor::sponseeAcc(alice),
                 ter(temINVALID_FLAG));
 
-            env(sponsor::set(sponsor, tfSponsorshipSetRequireSignForFee | tfSponsorshipClearRequireSignForFee),
+            env(sponsor::set(
+                    sponsor,
+                    tfSponsorshipSetRequireSignForFee | tfSponsorshipClearRequireSignForFee),
                 sponsor::sponseeAcc(alice),
                 ter(temINVALID_FLAG));
 
-            env(sponsor::set(sponsor, tfSponsorshipSetRequireSignForReserve | tfSponsorshipClearRequireSignForReserve),
+            env(sponsor::set(
+                    sponsor,
+                    tfSponsorshipSetRequireSignForReserve |
+                        tfSponsorshipClearRequireSignForReserve),
                 sponsor::sponseeAcc(alice),
                 ter(temINVALID_FLAG));
 
@@ -112,13 +117,17 @@ public:
                   tfSponsorshipSetRequireSignForReserve,
                   tfSponsorshipClearRequireSignForReserve})
             {
-                env(sponsor::set(sponsor, tfDeleteObject | flag), sponsor::sponseeAcc(alice), ter(temINVALID_FLAG));
+                env(sponsor::set(sponsor, tfDeleteObject | flag),
+                    sponsor::sponseeAcc(alice),
+                    ter(temINVALID_FLAG));
             }
         }
 
         // invalid SponsorAccount / Sponsee
         // Account = Sponsor
-        env(sponsor::set(alice, tfDeleteObject), sponsor::counterpartySponsor(alice), ter(temMALFORMED));
+        env(sponsor::set(alice, tfDeleteObject),
+            sponsor::counterpartySponsor(alice),
+            ter(temMALFORMED));
         // Account = Sponsee
         env(sponsor::set(alice, tfDeleteObject), sponsor::sponseeAcc(alice), ter(temMALFORMED));
         // Both Sponsor and Sponsee are specified
@@ -135,17 +144,29 @@ public:
         // Invalid MaxFee
         for (auto amt : {XRP(-1), USD(1)})
         {
-            env(sponsor::set_fee(sponsor, 0, XRP(1), amt), sponsor::sponseeAcc(alice), ter(temBAD_AMOUNT));
+            env(sponsor::set_fee(sponsor, 0, XRP(1), amt),
+                sponsor::sponseeAcc(alice),
+                ter(temBAD_AMOUNT));
         }
 
         // Invalid Delete operation
-        env(sponsor::set_reserve(sponsor, tfDeleteObject, 1), sponsor::sponseeAcc(alice), ter(temMALFORMED));
-        env(sponsor::set_fee(sponsor, tfDeleteObject, XRP(1)), sponsor::sponseeAcc(alice), ter(temMALFORMED));
-        env(sponsor::set_max_fee(sponsor, tfDeleteObject, XRP(1)), sponsor::sponseeAcc(alice), ter(temMALFORMED));
+        env(sponsor::set_reserve(sponsor, tfDeleteObject, 1),
+            sponsor::sponseeAcc(alice),
+            ter(temMALFORMED));
+        env(sponsor::set_fee(sponsor, tfDeleteObject, XRP(1)),
+            sponsor::sponseeAcc(alice),
+            ter(temMALFORMED));
+        env(sponsor::set_max_fee(sponsor, tfDeleteObject, XRP(1)),
+            sponsor::sponseeAcc(alice),
+            ter(temMALFORMED));
 
         // Invalid SponsorAccount with non-Delete operation
-        env(sponsor::set_reserve(sponsor, 0, 100), sponsor::counterpartySponsor(alice), ter(temMALFORMED));
-        env(sponsor::set_fee(sponsor, 0, XRP(1), XRP(1)), sponsor::counterpartySponsor(alice), ter(temMALFORMED));
+        env(sponsor::set_reserve(sponsor, 0, 100),
+            sponsor::counterpartySponsor(alice),
+            ter(temMALFORMED));
+        env(sponsor::set_fee(sponsor, 0, XRP(1), XRP(1)),
+            sponsor::counterpartySponsor(alice),
+            ter(temMALFORMED));
 
         //
         // preclaim
@@ -156,7 +177,9 @@ public:
         env.close();
 
         // Invalid Sponsor
-        env(sponsor::set(sponsor, tfDeleteObject), sponsor::counterpartySponsor(noFunded), ter(tecNO_DST));
+        env(sponsor::set(sponsor, tfDeleteObject),
+            sponsor::counterpartySponsor(noFunded),
+            ter(tecNO_DST));
         env.close();
 
         // Invalid Delete operation (sponsorship not found)
@@ -173,16 +196,25 @@ public:
         //  FeeAmount + Fee > Balance
         /// Balance = 1000XRP, FeeAmount = 1001XRP
         adjustAccountXRPBalance(env, sponsor, XRP(1000));
-        env(sponsor::set_fee(sponsor, 0, XRP(1001)), sponsor::sponseeAcc(alice), fee(XRP(1)), ter(tecUNFUNDED));
+        env(sponsor::set_fee(sponsor, 0, XRP(1001)),
+            sponsor::sponseeAcc(alice),
+            fee(XRP(1)),
+            ter(tecUNFUNDED));
         env.close();
         /// Balance = 1000XRP, FeeAmount = 999XRP, Fee=2XRP
         adjustAccountXRPBalance(env, sponsor, XRP(1000));
-        env(sponsor::set_fee(sponsor, 0, XRP(999)), sponsor::sponseeAcc(alice), fee(XRP(2)), ter(tecUNFUNDED));
+        env(sponsor::set_fee(sponsor, 0, XRP(999)),
+            sponsor::sponseeAcc(alice),
+            fee(XRP(2)),
+            ter(tecUNFUNDED));
         env.close();
 
         // create sponsor to use above tests
         adjustAccountXRPBalance(env, sponsor, XRP(1001));
-        env(sponsor::set(sponsor, 0, 100, XRP(1000)), sponsor::sponseeAcc(alice), fee(XRP(1)), ter(tesSUCCESS));
+        env(sponsor::set(sponsor, 0, 100, XRP(1000)),
+            sponsor::sponseeAcc(alice),
+            fee(XRP(1)),
+            ter(tesSUCCESS));
         env.close();
     }
 
@@ -311,7 +343,9 @@ public:
             ter(terNO_ACCOUNT));
 
         // Invalid Flags
-        env(noop(alice), sponsor::as(sponsor, (tfSponsorFee | tfSponsorReserve) + 1), ter(temINVALID_FLAG));
+        env(noop(alice),
+            sponsor::as(sponsor, (tfSponsorFee | tfSponsorReserve) + 1),
+            ter(temINVALID_FLAG));
 
         // Invalid Flags without sponsor
         auto tx = noop(alice);
@@ -402,7 +436,9 @@ public:
             BEAST_EXPECT(!env.le(keylet::sponsor(sponsor, alice)));
 
             // create sponsorship with zero value
-            env(sponsor::set(sponsor, 0, 0, XRP(0), XRP(0)), sponsor::sponseeAcc(alice), fee(XRP(1)));
+            env(sponsor::set(sponsor, 0, 0, XRP(0), XRP(0)),
+                sponsor::sponseeAcc(alice),
+                fee(XRP(1)));
             env.close();
 
             sle = env.le(keylet::sponsor(sponsor, alice));
@@ -412,7 +448,9 @@ public:
             BEAST_EXPECT(!sle->isFieldPresent(sfMaxFee));
 
             // update sponsorship with non-zero value
-            env(sponsor::set(sponsor, 0, 100, XRP(100), XRP(1)), sponsor::sponseeAcc(alice), fee(XRP(1)));
+            env(sponsor::set(sponsor, 0, 100, XRP(100), XRP(1)),
+                sponsor::sponseeAcc(alice),
+                fee(XRP(1)));
             env.close();
 
             sle = env.le(keylet::sponsor(sponsor, alice));
@@ -422,7 +460,9 @@ public:
             BEAST_EXPECT(sle->at(sfMaxFee) == XRP(1));
 
             // update sponsorship with zero value
-            env(sponsor::set(sponsor, 0, 0, XRP(0), XRP(0)), sponsor::sponseeAcc(alice), fee(XRP(1)));
+            env(sponsor::set(sponsor, 0, 0, XRP(0), XRP(0)),
+                sponsor::sponseeAcc(alice),
+                fee(XRP(1)));
             env.close();
 
             sle = env.le(keylet::sponsor(sponsor, alice));
@@ -439,7 +479,9 @@ public:
             env.close();
 
             // add FeeAmount
-            env(sponsor::set_fee(sponsor, 0, XRP(100)), sponsor::sponseeAcc(alice), ter(tesSUCCESS));
+            env(sponsor::set_fee(sponsor, 0, XRP(100)),
+                sponsor::sponseeAcc(alice),
+                ter(tesSUCCESS));
             env.close();
 
             env(sponsor::del(alice), sponsor::counterpartySponsor(sponsor), ter(tesSUCCESS));
@@ -448,7 +490,9 @@ public:
         {
             // Update Sponsorship (ReserveCount)
             // set empty ReserveCount
-            env(sponsor::set_fee(sponsor, 0, XRP(100)), sponsor::sponseeAcc(alice), ter(tesSUCCESS));
+            env(sponsor::set_fee(sponsor, 0, XRP(100)),
+                sponsor::sponseeAcc(alice),
+                ter(tesSUCCESS));
             env.close();
 
             // add ReserveCount
@@ -460,7 +504,9 @@ public:
         }
         {
             // delete Sponsorship (only with FeeAmount)
-            env(sponsor::set_fee(sponsor, 0, XRP(100)), sponsor::sponseeAcc(alice), ter(tesSUCCESS));
+            env(sponsor::set_fee(sponsor, 0, XRP(100)),
+                sponsor::sponseeAcc(alice),
+                ter(tesSUCCESS));
             env.close();
 
             env(sponsor::del(alice), sponsor::counterpartySponsor(sponsor), ter(tesSUCCESS));
@@ -490,7 +536,9 @@ public:
             env.fund(XRP(10000), alice, sponsor);
             env.close();
 
-            env(sponsor::set(sponsor, 0, 100, XRP(100), XRP(1)), sponsor::sponseeAcc(alice), ter(tesSUCCESS));
+            env(sponsor::set(sponsor, 0, 100, XRP(100), XRP(1)),
+                sponsor::sponseeAcc(alice),
+                ter(tesSUCCESS));
             env.close();
 
             env(did::set(alice),
@@ -521,7 +569,9 @@ public:
             env.fund(XRP(10000), alice, sponsor);
             env.close();
 
-            env(sponsor::set(sponsor, 0, 10, XRP(10), XRP(100)), sponsor::sponseeAcc(alice), ter(tesSUCCESS));
+            env(sponsor::set(sponsor, 0, 10, XRP(10), XRP(100)),
+                sponsor::sponseeAcc(alice),
+                ter(tesSUCCESS));
             env.close();
 
             // fee insufficient
@@ -558,7 +608,8 @@ public:
             env.fund(XRP(10000), alice, bob, sponsor1, sponsor2);
             env.close();
 
-            env(sponsor::transfer(alice, (tfSponsorshipCreate | tfSponsorshipReassign | tfSponsorshipEnd) + 1),
+            env(sponsor::transfer(
+                    alice, (tfSponsorshipCreate | tfSponsorshipReassign | tfSponsorshipEnd) + 1),
                 ter(temINVALID_FLAG));
 
             // invalid combination of flags
@@ -594,7 +645,9 @@ public:
                 sponsor::as(sponsor1, tfSponsorReserve),
                 ter(temINVALID_FLAG));
             // account = sponsee
-            env(sponsor::transfer(alice, tfSponsorshipEnd), sponsor::sponseeAcc(alice), ter(temMALFORMED));
+            env(sponsor::transfer(alice, tfSponsorshipEnd),
+                sponsor::sponseeAcc(alice),
+                ter(temMALFORMED));
         }
 
         {
@@ -662,7 +715,8 @@ public:
             BEAST_EXPECT(sponsoringAccountCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor1) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor2) == 1);
-            BEAST_EXPECT(!env.le(keylet::account(sponsor1))->isFieldPresent(sfSponsoringAccountCount));
+            BEAST_EXPECT(
+                !env.le(keylet::account(sponsor1))->isFieldPresent(sfSponsoringAccountCount));
             auto const sle2 = env.le(keylet::account(alice));
             BEAST_EXPECT(sle2->isFieldPresent(sfSponsor));
             BEAST_EXPECT(sle2->getAccountID(sfSponsor) == sponsor2.id());
@@ -709,7 +763,8 @@ public:
             BEAST_EXPECT(sponsoringAccountCount(env, bob) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor1) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor2) == 0);
-            BEAST_EXPECT(!env.le(keylet::account(sponsor2))->isFieldPresent(sfSponsoringAccountCount));
+            BEAST_EXPECT(
+                !env.le(keylet::account(sponsor2))->isFieldPresent(sfSponsoringAccountCount));
             auto const sle4 = env.le(keylet::account(bob));
             BEAST_EXPECT(!sle4->isFieldPresent(sfSponsor));
 
@@ -861,7 +916,8 @@ public:
             BEAST_EXPECT(sponsoringAccountCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor1) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor2) == 0);
-            BEAST_EXPECT(!env.le(keylet::account(sponsor2))->isFieldPresent(sfSponsoringOwnerCount));
+            BEAST_EXPECT(
+                !env.le(keylet::account(sponsor2))->isFieldPresent(sfSponsoringOwnerCount));
             auto const sle3 = env.le(keylet::unchecked(checkId));
             BEAST_EXPECT(!sle3->isFieldPresent(sfSponsor));
         }
@@ -890,7 +946,8 @@ public:
             env(sponsor::set_reserve(sponsor2, 0, 1), sponsor::sponseeAcc(alice));
             env.close();
 
-            env(sponsor::transfer(alice, tfSponsorshipCreate, checkId), sponsor::as(sponsor2, tfSponsorReserve));
+            env(sponsor::transfer(alice, tfSponsorshipCreate, checkId),
+                sponsor::as(sponsor2, tfSponsorReserve));
             env.close();
 
             env(sponsor::transfer(alice, tfSponsorshipReassign, checkId),
@@ -926,7 +983,8 @@ public:
             env(sponsor::set_reserve(sponsor1, 0, 100), sponsor::sponseeAcc(alice));
             env.close();
 
-            env(sponsor::transfer(alice, tfSponsorshipCreate, checkId), sponsor::as(sponsor1, tfSponsorReserve));
+            env(sponsor::transfer(alice, tfSponsorshipCreate, checkId),
+                sponsor::as(sponsor1, tfSponsorReserve));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -946,7 +1004,8 @@ public:
             env(sponsor::set_reserve(sponsor2, 0, 100), sponsor::sponseeAcc(alice));
             env.close();
 
-            env(sponsor::transfer(alice, tfSponsorshipReassign, checkId), sponsor::as(sponsor2, tfSponsorReserve));
+            env(sponsor::transfer(alice, tfSponsorshipReassign, checkId),
+                sponsor::as(sponsor2, tfSponsorReserve));
             env.close();
 
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
@@ -980,7 +1039,8 @@ public:
             BEAST_EXPECT(sponsoringAccountCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor1) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor2) == 0);
-            BEAST_EXPECT(!env.le(keylet::account(sponsor2))->isFieldPresent(sfSponsoringOwnerCount));
+            BEAST_EXPECT(
+                !env.le(keylet::account(sponsor2))->isFieldPresent(sfSponsoringOwnerCount));
             checkSle = env.le(keylet::unchecked(checkId));
             BEAST_EXPECT(!checkSle->isFieldPresent(sfSponsor));
             sponsor2Sle = env.le(keylet::sponsor(sponsor2, alice));
@@ -1008,7 +1068,8 @@ public:
                 sig(sfSponsorSignature, sponsor));
             env.close();
 
-            BEAST_EXPECT(env.le(keylet::unchecked(checkId))->getAccountID(sfSponsor) == sponsor.id());
+            BEAST_EXPECT(
+                env.le(keylet::unchecked(checkId))->getAccountID(sfSponsor) == sponsor.id());
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
@@ -1062,16 +1123,20 @@ public:
                 BEAST_EXPECT(env.le(trustId));
 
                 BEAST_EXPECT(
-                    env.le(trustId)->getAccountID(isIssuerHigh ? sfLowSponsor : sfHighSponsor) == sponsor.id());
-                BEAST_EXPECT(!env.le(trustId)->isFieldPresent(isIssuerHigh ? sfHighSponsor : sfLowSponsor));
+                    env.le(trustId)->getAccountID(isIssuerHigh ? sfLowSponsor : sfHighSponsor) ==
+                    sponsor.id());
+                BEAST_EXPECT(
+                    !env.le(trustId)->isFieldPresent(isIssuerHigh ? sfHighSponsor : sfLowSponsor));
 
                 // dissolve sponsor
                 env(sponsor::transfer(user, tfSponsorshipEnd, trustId.key));
                 env.close();
 
                 BEAST_EXPECT(env.le(trustId));
-                BEAST_EXPECT(!env.le(trustId)->isFieldPresent(isIssuerHigh ? sfLowSponsor : sfHighSponsor));
-                BEAST_EXPECT(!env.le(trustId)->isFieldPresent(isIssuerHigh ? sfHighSponsor : sfLowSponsor));
+                BEAST_EXPECT(
+                    !env.le(trustId)->isFieldPresent(isIssuerHigh ? sfLowSponsor : sfHighSponsor));
+                BEAST_EXPECT(
+                    !env.le(trustId)->isFieldPresent(isIssuerHigh ? sfHighSponsor : sfLowSponsor));
             }
         }
 
@@ -1287,13 +1352,17 @@ public:
                     auto bobBalance = env.balance(bob);
                     auto sponsorBalance = env.balance(sponsor);
 
-                    env(pay(alice, bob, XRP(100)), fee(XRP(90)), sponsor::as(sponsor, tfSponsorFee), ter(tesSUCCESS));
+                    env(pay(alice, bob, XRP(100)),
+                        fee(XRP(90)),
+                        sponsor::as(sponsor, tfSponsorFee),
+                        ter(tesSUCCESS));
                     env.close();
 
                     BEAST_EXPECT(env.balance(alice) == aliceBalance - XRP(100));
                     BEAST_EXPECT(env.balance(bob) == bobBalance + XRP(100));
                     BEAST_EXPECT(env.balance(sponsor) == sponsorBalance);
-                    BEAST_EXPECT(!env.le(keylet::sponsor(sponsor, alice))->isFieldPresent(sfFeeAmount));
+                    BEAST_EXPECT(
+                        !env.le(keylet::sponsor(sponsor, alice))->isFieldPresent(sfFeeAmount));
                 }
 
                 // reset FeeAmount and MaxFee
@@ -1354,16 +1423,22 @@ public:
             env.close();
 
             // set flag
-            env(sponsor::set_fee(sponsor, tfSponsorshipSetRequireSignForFee, XRP(10)), sponsor::sponseeAcc(alice));
+            env(sponsor::set_fee(sponsor, tfSponsorshipSetRequireSignForFee, XRP(10)),
+                sponsor::sponseeAcc(alice));
             env.close();
 
-            env(pay(alice, bob, XRP(100)), fee(XRP(10)), sponsor::as(sponsor, tfSponsorFee), ter(terNO_SPONSORSHIP));
+            env(pay(alice, bob, XRP(100)),
+                fee(XRP(10)),
+                sponsor::as(sponsor, tfSponsorFee),
+                ter(terNO_SPONSORSHIP));
             env.close();
 
-            BEAST_EXPECT(env.le(keylet::sponsor(sponsor, alice))->getFieldAmount(sfFeeAmount) == XRP(10));
+            BEAST_EXPECT(
+                env.le(keylet::sponsor(sponsor, alice))->getFieldAmount(sfFeeAmount) == XRP(10));
 
             // clear flag
-            env(sponsor::set_fee(sponsor, tfSponsorshipClearRequireSignForFee, XRP(10)), sponsor::sponseeAcc(alice));
+            env(sponsor::set_fee(sponsor, tfSponsorshipClearRequireSignForFee, XRP(10)),
+                sponsor::sponseeAcc(alice));
             env.close();
 
             // Payment is re-applied
@@ -1405,7 +1480,9 @@ public:
                  tfLimitQuality,
              })
         {
-            env(pay(alice, bob, XRP(100)), txflags(tfSponsorCreatedAccount | flag), ter(temINVALID_FLAG));
+            env(pay(alice, bob, XRP(100)),
+                txflags(tfSponsorCreatedAccount | flag),
+                ter(temINVALID_FLAG));
             env.close();
         }
 
@@ -1470,7 +1547,8 @@ public:
             env.close();
 
             // set flag
-            env(sponsor::set_reserve(sponsor, tfSponsorshipSetRequireSignForReserve, 10), sponsor::sponseeAcc(alice));
+            env(sponsor::set_reserve(sponsor, tfSponsorshipSetRequireSignForReserve, 10),
+                sponsor::sponseeAcc(alice));
             env.close();
 
             env(check::create(alice, bob, XRP(100)),
@@ -1483,7 +1561,8 @@ public:
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
 
             // clear flag
-            env(sponsor::set_reserve(sponsor, tfSponsorshipClearRequireSignForReserve, 1), sponsor::sponseeAcc(alice));
+            env(sponsor::set_reserve(sponsor, tfSponsorshipClearRequireSignForReserve, 1),
+                sponsor::sponseeAcc(alice));
             env.close();
 
             // CheckCreate is re-applied
@@ -1503,7 +1582,8 @@ public:
             env.close();
 
             // set flag
-            env(sponsor::set_fee(sponsor, tfSponsorshipSetRequireSignForFee, XRP(10)), sponsor::sponseeAcc(alice));
+            env(sponsor::set_fee(sponsor, tfSponsorshipSetRequireSignForFee, XRP(10)),
+                sponsor::sponseeAcc(alice));
             env.close();
 
             env(check::create(alice, bob, XRP(100)),
@@ -1512,10 +1592,12 @@ public:
                 ter(terNO_SPONSORSHIP));
 
             BEAST_EXPECT(ownerCount(env, alice) == 0);
-            BEAST_EXPECT(env.le(keylet::sponsor(sponsor, alice))->getFieldAmount(sfFeeAmount) == XRP(10));
+            BEAST_EXPECT(
+                env.le(keylet::sponsor(sponsor, alice))->getFieldAmount(sfFeeAmount) == XRP(10));
 
             // clear flag
-            env(sponsor::set_fee(sponsor, tfSponsorshipClearRequireSignForFee, XRP(10)), sponsor::sponseeAcc(alice));
+            env(sponsor::set_fee(sponsor, tfSponsorshipClearRequireSignForFee, XRP(10)),
+                sponsor::sponseeAcc(alice));
             env.close();
 
             // CheckCreate is re-applied
@@ -1545,10 +1627,11 @@ public:
         auto const sponseeSponsoringOwnerCountBefore = sponsoringOwnerCount(env, sponsee);
         auto const sponsorSponsoringOwnerCountBefore = sponsoringOwnerCount(env, sponsor);
 
-        std::optional<sig> sponsorSig = cosigning ? std::optional<sig>(sig(sfSponsorSignature, sponsor)) : std::nullopt;
+        std::optional<sig> sponsorSig =
+            cosigning ? std::optional<sig>(sig(sfSponsorSignature, sponsor)) : std::nullopt;
 
-        auto const sponsorCurrentOwnerCount =
-            ownerCount(env, sponsor) - sponsoredOwnerCount(env, sponsor) + sponsoringOwnerCount(env, sponsor);
+        auto const sponsorCurrentOwnerCount = ownerCount(env, sponsor) -
+            sponsoredOwnerCount(env, sponsor) + sponsoringOwnerCount(env, sponsor);
 
         auto submit = [&](TER _ter) {
             return [&, _ter](Json::Value const& jv, auto const&... fN) {
@@ -1564,7 +1647,9 @@ public:
             if (cosigning)
             {
                 adjustAccountXRPBalance(
-                    env, sponsor, reserve(env, sponsorCurrentOwnerCount + sponsorReserveCount) - drops(1));
+                    env,
+                    sponsor,
+                    reserve(env, sponsorCurrentOwnerCount + sponsorReserveCount) - drops(1));
             }
             else
             {
@@ -1576,10 +1661,12 @@ public:
                 }
 
                 if (sponsorReserveCount - 1 > 0)
-                    env(sponsor::set(sponsor, 0, sponsorReserveCount - 1, XRP(1)), sponsor::sponseeAcc(sponsee));
+                    env(sponsor::set(sponsor, 0, sponsorReserveCount - 1, XRP(1)),
+                        sponsor::sponseeAcc(sponsee));
                 else
                     // just create sponsor object
-                    env(sponsor::set(sponsor, 0, std::nullopt, XRP(1)), sponsor::sponseeAcc(sponsee));
+                    env(sponsor::set(sponsor, 0, std::nullopt, XRP(1)),
+                        sponsor::sponseeAcc(sponsee));
                 env.close();
             }
             callback(env, submit(insufficientReserveResult));
@@ -1590,13 +1677,15 @@ public:
         {
             if (cosigning)
             {
-                adjustAccountXRPBalance(env, sponsor, reserve(env, sponsorCurrentOwnerCount + sponsorReserveCount));
+                adjustAccountXRPBalance(
+                    env, sponsor, reserve(env, sponsorCurrentOwnerCount + sponsorReserveCount));
             }
             else
             {
                 // reset sponsorship
                 env(sponsor::del(sponsor), sponsor::sponseeAcc(sponsee));
-                env(sponsor::set(sponsor, 0, sponsorReserveCount, XRP(1)), sponsor::sponseeAcc(sponsee));
+                env(sponsor::set(sponsor, 0, sponsorReserveCount, XRP(1)),
+                    sponsor::sponseeAcc(sponsee));
                 env.close();
             }
             callback(env, submit(tesSUCCESS));
@@ -1615,9 +1704,14 @@ public:
         else
         {
             BEAST_EXPECT(ownerCount(env, sponsee) - sponseeOwnerCountBefore == reserveCount);
-            BEAST_EXPECT(sponsoredOwnerCount(env, sponsee) - sponseeSponsoredOwnerCountBefore == sponsorReserveCount);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsee) - sponseeSponsoringOwnerCountBefore == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) - sponsorSponsoringOwnerCountBefore == sponsorReserveCount);
+            BEAST_EXPECT(
+                sponsoredOwnerCount(env, sponsee) - sponseeSponsoredOwnerCountBefore ==
+                sponsorReserveCount);
+            BEAST_EXPECT(
+                sponsoringOwnerCount(env, sponsee) - sponseeSponsoringOwnerCountBefore == 0);
+            BEAST_EXPECT(
+                sponsoringOwnerCount(env, sponsor) - sponsorSponsoringOwnerCountBefore ==
+                sponsorReserveCount);
         }
     };
 
@@ -1634,7 +1728,10 @@ public:
         auto const USD = gw["USD"];
         auto const EUR = gw["EUR"];
 
-        auto const ammCreate = [&](Env& env, Account const& account, STAmount const& amount1, STAmount const& amount2) {
+        auto const ammCreate = [&](Env& env,
+                                   Account const& account,
+                                   STAmount const& amount1,
+                                   STAmount const& amount2) {
             Json::Value jv;
             jv[jss::TransactionType] = jss::AMMCreate;
             jv[jss::Account] = account.human();
@@ -1645,18 +1742,20 @@ public:
             return jv;
         };
 
-        auto const ammDeposit =
-            [&](Env& env, Account const& account, STAmount const& amount1, STAmount const& amount2) {
-                Json::Value jv;
-                jv[jss::TransactionType] = jss::AMMDeposit;
-                jv[jss::Account] = account.human();
-                jv[jss::Asset] = STIssue(sfAsset, amount1.issue()).getJson(JsonOptions::none);
-                jv[jss::Asset2] = STIssue(sfAsset, amount2.issue()).getJson(JsonOptions::none);
-                jv[jss::Amount] = amount1.value().getJson(JsonOptions::none);
-                jv[jss::Amount2] = amount2.value().getJson(JsonOptions::none);
-                jv[jss::Flags] = tfTwoAsset;
-                return jv;
-            };
+        auto const ammDeposit = [&](Env& env,
+                                    Account const& account,
+                                    STAmount const& amount1,
+                                    STAmount const& amount2) {
+            Json::Value jv;
+            jv[jss::TransactionType] = jss::AMMDeposit;
+            jv[jss::Account] = account.human();
+            jv[jss::Asset] = STIssue(sfAsset, amount1.issue()).getJson(JsonOptions::none);
+            jv[jss::Asset2] = STIssue(sfAsset, amount2.issue()).getJson(JsonOptions::none);
+            jv[jss::Amount] = amount1.value().getJson(JsonOptions::none);
+            jv[jss::Amount2] = amount2.value().getJson(JsonOptions::none);
+            jv[jss::Flags] = tfTwoAsset;
+            return jv;
+        };
 
         {
             // AMMCreate
@@ -1682,16 +1781,19 @@ public:
                 1,
                 1,
                 tecINSUF_RESERVE_LINE,
-                [&](Env& env, auto const& submit) { submit(ammCreate(env, alice, USD(100), EUR(100))); },
+                [&](Env& env, auto const& submit) {
+                    submit(ammCreate(env, alice, USD(100), EUR(100)));
+                },
                 [&]() {
                     auto const amm = env.current()->read(keylet::amm(USD.issue(), EUR.issue()));
                     auto const ammAccount = Account("amm", amm->getAccountID(sfAccount));
-                    BEAST_EXPECT(ownerCount(env, alice) == 3);           // RippleState (USD,EUR/LP Token)
+                    BEAST_EXPECT(ownerCount(env, alice) == 3);  // RippleState (USD,EUR/LP Token)
                     BEAST_EXPECT(ownerCount(env, ammAccount) == 2);      //  USD, EUR
                     BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);  // LPToken
                     BEAST_EXPECT(sponsoredOwnerCount(env, ammAccount) == 0);
                     BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);  // LPToken
-                    BEAST_EXPECT(!env.le(keylet::amm(USD.issue(), EUR.issue()))->isFieldPresent(sfSponsor));
+                    BEAST_EXPECT(
+                        !env.le(keylet::amm(USD.issue(), EUR.issue()))->isFieldPresent(sfSponsor));
                 });
 
             auto const ammKeylet = keylet::amm(USD.issue(), EUR.issue());
@@ -1738,7 +1840,14 @@ public:
             BEAST_EXPECT(ownerCount(env, bob) == 2);  // RippleState (USD,EUR)
 
             testEachSponsorship(
-                env, cosigning, sponsor, bob, 1, 1, tecINSUF_RESERVE_LINE, [&](Env& env, auto const& submit) {
+                env,
+                cosigning,
+                sponsor,
+                bob,
+                1,
+                1,
+                tecINSUF_RESERVE_LINE,
+                [&](Env& env, auto const& submit) {
                     submit(ammDeposit(env, bob, USD(100), EUR(100)));
                 });
         }
@@ -1784,9 +1893,14 @@ public:
                 env.close();
 
                 testEachSponsorship(
-                    env, cosigning, sponsor, alice, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
-                        submit(jv);
-                    });
+                    env,
+                    cosigning,
+                    sponsor,
+                    alice,
+                    1,
+                    1,
+                    tecINSUFFICIENT_RESERVE,
+                    [&](Env& env, auto const& submit) { submit(jv); });
             }
             {
                 // Double Asset Withdraw
@@ -1923,7 +2037,14 @@ public:
 
             uint32_t seq;
             testEachSponsorship(
-                env, cosigning, sponsor, alice, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
                     seq = env.seq(alice);
                     submit(check::create(alice, bob, XRP(1)));
                 });
@@ -1981,7 +2102,14 @@ public:
             // CheckCreate -> CheckCash
             uint32_t seq2;
             testEachSponsorship(
-                env, cosigning, sponsor, alice, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
                     seq2 = env.seq(alice);
                     submit(check::create(alice, bob, XRP(1)));
                 });
@@ -2015,7 +2143,14 @@ public:
             // CheckCreate -> CheckCash
             uint32_t seq2;
             testEachSponsorship(
-                env, cosigning, sponsor, alice, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
                     seq2 = env.seq(alice);
                     submit(check::create(alice, bob, USD(1)));
                 });
@@ -2069,7 +2204,14 @@ public:
             // OfferCreate
             uint32_t seq;
             testEachSponsorship(
-                env, cosigning, sponsor1, alice, 1, 1, tecINSUF_RESERVE_OFFER, [&](Env& env, auto const& submit) {
+                env,
+                cosigning,
+                sponsor1,
+                alice,
+                1,
+                1,
+                tecINSUF_RESERVE_OFFER,
+                [&](Env& env, auto const& submit) {
                     seq = env.seq(alice);
                     submit(offer(alice, USD(1), XRP(1)));
                 });
@@ -2120,7 +2262,14 @@ public:
             // OfferCreate
             uint32_t seq;
             testEachSponsorship(
-                env, cosigning, sponsor1, alice, 1, 1, tecINSUF_RESERVE_OFFER, [&](Env& env, auto const& submit) {
+                env,
+                cosigning,
+                sponsor1,
+                alice,
+                1,
+                1,
+                tecINSUF_RESERVE_OFFER,
+                [&](Env& env, auto const& submit) {
                     seq = env.seq(alice);
                     submit(offer(alice, USD(1), XRP(1)));
                 });
@@ -2255,7 +2404,14 @@ public:
             uint32_t ticketSeq;
 
             testEachSponsorship(
-                env, cosigning, sponsor, alice, 250, 250, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                250,
+                250,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
                     ticketSeq = env.seq(alice) + 1;
                     submit(ticket::create(alice, 250));
                 });
@@ -2319,7 +2475,14 @@ public:
             env.close();
 
             testEachSponsorship(
-                env, cosigning, sponsor, issuer, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
+                env,
+                cosigning,
+                sponsor,
+                issuer,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
                     submit(credentials::create(subject, issuer, credType), credentials::uri("uri"));
                 });
 
@@ -2354,7 +2517,14 @@ public:
 
             // CredentialsAccept
             testEachSponsorship(
-                env, cosigning, sponsor, subject, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
+                env,
+                cosigning,
+                sponsor,
+                subject,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
                     submit(credentials::accept(subject, issuer, credType));
                 });
 
@@ -2402,7 +2572,14 @@ public:
 
             // Accept Sponsored Credentials without sponsoring
             testEachSponsorship(
-                env, cosigning, sponsor, issuer, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
+                env,
+                cosigning,
+                sponsor,
+                issuer,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
                     submit(credentials::create(subject, issuer, credType));
                 });
 
@@ -2415,7 +2592,8 @@ public:
             BEAST_EXPECT(sponsoredOwnerCount(env, issuer) == 0);
             BEAST_EXPECT(sponsoredOwnerCount(env, subject) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-            BEAST_EXPECT(!env.le(keylet::credential(subject, issuer, credTypeSlice))->isFieldPresent(sfSponsor));
+            BEAST_EXPECT(!env.le(keylet::credential(subject, issuer, credTypeSlice))
+                              ->isFieldPresent(sfSponsor));
 
             env(credentials::deleteCred(subject, subject, issuer, credType));
             env.close();
@@ -2439,7 +2617,14 @@ public:
 
             // DelegateSet
             testEachSponsorship(
-                env, cosigning, sponsor, alice, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
                     submit(delegate::set(alice, bob, {"Payment"}));
                 });
 
@@ -2493,9 +2678,14 @@ public:
 
             // DepositPreauthSet
             testEachSponsorship(
-                env, cosigning, sponsor, alice, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
-                    submit(deposit::auth(alice, sponsor));
-                });
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) { submit(deposit::auth(alice, sponsor)); });
 
             // transfer sponsor
             auto const keylet = keylet::depositPreauth(alice, sponsor);
@@ -2548,9 +2738,14 @@ public:
 
             // DIDSet
             testEachSponsorship(
-                env, cosigning, sponsor, alice, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
-                    submit(did::set(alice), did::uri("uri"));
-                });
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) { submit(did::set(alice), did::uri("uri")); });
 
             // transfer sponsor
             auto const keylet = keylet::did(alice);
@@ -2608,14 +2803,22 @@ public:
             // EscrowCreate
             uint32_t seq;
             testEachSponsorship(
-                env, cosigning, sponsor, alice, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
                     seq = env.seq(alice);
                     submit(
                         escrow::create(alice, bob, XRP(100)),
                         escrow::condition(escrow::cb1),
                         escrow::cancel_time(env.now() + 100s));
                 });
-            BEAST_EXPECT(env.le(keylet::escrow(alice, seq))->getAccountID(sfSponsor) == sponsor.id());
+            BEAST_EXPECT(
+                env.le(keylet::escrow(alice, seq))->getAccountID(sfSponsor) == sponsor.id());
 
             // transfer sponsor
             if (cosigning)
@@ -2640,7 +2843,8 @@ public:
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
 
-            BEAST_EXPECT(env.le(keylet::escrow(alice, seq))->getAccountID(sfSponsor) == sponsor2.id());
+            BEAST_EXPECT(
+                env.le(keylet::escrow(alice, seq))->getAccountID(sfSponsor) == sponsor2.id());
 
             // EscrowFinish
             env(escrow::finish(bob, alice, seq),
@@ -2678,7 +2882,14 @@ public:
             // EscrowCreate
             uint32_t seq;
             testEachSponsorship(
-                env, cosigning, sponsor, alice, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
                     seq = env.seq(alice);
                     submit(
                         escrow::create(alice, bob, USD(100)),
@@ -2686,11 +2897,19 @@ public:
                         escrow::cancel_time(env.now() + 100s));
                 });
 
-            BEAST_EXPECT(env.le(keylet::escrow(alice, seq))->getAccountID(sfSponsor) == sponsor.id());
+            BEAST_EXPECT(
+                env.le(keylet::escrow(alice, seq))->getAccountID(sfSponsor) == sponsor.id());
 
             // EscrowFinish
             testEachSponsorship(
-                env, cosigning, sponsor2, bob, 1, 1, tecNO_LINE_INSUF_RESERVE, [&](Env& env, auto const& submit) {
+                env,
+                cosigning,
+                sponsor2,
+                bob,
+                1,
+                1,
+                tecNO_LINE_INSUF_RESERVE,
+                [&](Env& env, auto const& submit) {
                     submit(
                         escrow::finish(bob, alice, seq),
                         escrow::condition(escrow::cb1),
@@ -2702,7 +2921,9 @@ public:
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
 
-            BEAST_EXPECT(env.le(keylet::line(bob, gw, USD.currency))->getAccountID(sfHighSponsor) == sponsor2.id());
+            BEAST_EXPECT(
+                env.le(keylet::line(bob, gw, USD.currency))->getAccountID(sfHighSponsor) ==
+                sponsor2.id());
         }
         {
             // MPT Escrow
@@ -2711,7 +2932,8 @@ public:
             env.close();
 
             MPTTester mptGw(env, gw, {.holders = {alice}});
-            mptGw.create({.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+            mptGw.create(
+                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
             auto const MPT = mptGw["MPT"];
             env(pay(gw, alice, MPT(10'000)));
@@ -2766,7 +2988,14 @@ public:
             jv[sfTransactionType] = jss::MPTokenIssuanceCreate;
             MPTID mptid;
             testEachSponsorship(
-                env, cosigning, sponsor, alice, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
                     mptid = makeMptID(env.seq(alice), alice.id());
                     submit(jv);
                 });
@@ -2805,9 +3034,14 @@ public:
             }
 
             testEachSponsorship(
-                env, cosigning, sponsor, bob, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
-                    submit(jv);
-                });
+                env,
+                cosigning,
+                sponsor,
+                bob,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) { submit(jv); });
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
@@ -2917,7 +3151,10 @@ public:
             if (cosigning)
             {
                 adjustAccountXRPBalance(env, sponsor, reserve(env, 2) - drops(1));
-                env(jv, sponsor::as(sponsor, tfSponsorReserve), sig(sfSponsorSignature, sponsor), ter(tesSUCCESS));
+                env(jv,
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sig(sfSponsorSignature, sponsor),
+                    ter(tesSUCCESS));
                 env.close();
             }
             else
@@ -2949,7 +3186,14 @@ public:
             // NFTokenMint
             uint256 nftId;
             testEachSponsorship(
-                env, cosigning, sponsor, alice, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
                     nftId = token::getNextID(env, alice, 0);
                     submit(token::mint(alice));
                 });
@@ -3015,7 +3259,9 @@ public:
             {
                 for (auto i = 0; i < nftCount; i++)
                 {
-                    env(token::mint(alice), sponsor::as(sponsor, tfSponsorReserve), sig(sfSponsorSignature, sponsor));
+                    env(token::mint(alice),
+                        sponsor::as(sponsor, tfSponsorReserve),
+                        sig(sfSponsorSignature, sponsor));
                 }
             }
             else
@@ -3073,16 +3319,36 @@ public:
             // NFTokenOfferCreate
             uint256 offerIndex1;
             testEachSponsorship(
-                env, cosigning, sponsor, alice, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
                     offerIndex1 = keylet::nftoffer(alice, env.seq(alice)).key;
-                    submit(token::createOffer(alice, nftId, XRP(1)), token::destination(bob), txflags(tfSellNFToken));
+                    submit(
+                        token::createOffer(alice, nftId, XRP(1)),
+                        token::destination(bob),
+                        txflags(tfSellNFToken));
                 });
 
             uint256 offerIndex2;
             testEachSponsorship(
-                env, cosigning, sponsor, alice, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
                     offerIndex2 = keylet::nftoffer(alice, env.seq(alice)).key;
-                    submit(token::createOffer(alice, nftId, XRP(1)), token::destination(bob), txflags(tfSellNFToken));
+                    submit(
+                        token::createOffer(alice, nftId, XRP(1)),
+                        token::destination(bob),
+                        txflags(tfSellNFToken));
                 });
 
             // transfer sponsor
@@ -3132,9 +3398,19 @@ public:
             // NFTokenOfferCreate
             uint256 offerIndex;
             testEachSponsorship(
-                env, cosigning, sponsor, alice, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
                     offerIndex = keylet::nftoffer(alice, env.seq(alice)).key;
-                    submit(token::createOffer(alice, nftId, XRP(1)), token::destination(bob), txflags(tfSellNFToken));
+                    submit(
+                        token::createOffer(alice, nftId, XRP(1)),
+                        token::destination(bob),
+                        txflags(tfSellNFToken));
                 });
 
             // NFTokenOfferAccept
@@ -3162,9 +3438,19 @@ public:
             // NFTokenOfferCreate
             uint256 offerIndex;
             testEachSponsorship(
-                env, cosigning, sponsor, bob, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
+                env,
+                cosigning,
+                sponsor,
+                bob,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
                     offerIndex = keylet::nftoffer(bob, env.seq(bob)).key;
-                    submit(token::createOffer(bob, nftId, XRP(1)), token::owner(alice), token::destination(alice));
+                    submit(
+                        token::createOffer(bob, nftId, XRP(1)),
+                        token::owner(alice),
+                        token::destination(alice));
                 });
 
             // NFTokenOfferAccept
@@ -3193,18 +3479,37 @@ public:
             // NFTokenOfferCreate (BuyOffer)
             uint256 buyOfferIndex;
             testEachSponsorship(
-                env, cosigning, sponsor, bob, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
+                env,
+                cosigning,
+                sponsor,
+                bob,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
                     buyOfferIndex = keylet::nftoffer(bob, env.seq(bob)).key;
-                    submit(token::createOffer(bob, nftId, XRP(1)), token::owner(alice), token::destination(broker));
+                    submit(
+                        token::createOffer(bob, nftId, XRP(1)),
+                        token::owner(alice),
+                        token::destination(broker));
                 });
 
             // NFTokenOfferCreate (SellOffer)
             uint256 sellOfferIndex;
             testEachSponsorship(
-                env, cosigning, sponsor2, alice, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
+                env,
+                cosigning,
+                sponsor2,
+                alice,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
                     sellOfferIndex = keylet::nftoffer(alice, env.seq(alice)).key;
                     submit(
-                        token::createOffer(alice, nftId, XRP(1)), txflags(tfSellNFToken), token::destination(broker));
+                        token::createOffer(alice, nftId, XRP(1)),
+                        txflags(tfSellNFToken),
+                        token::destination(broker));
                 });
 
             // NFTokenOfferAccept
@@ -3241,7 +3546,14 @@ public:
             auto const settleDelay = 10s;
             uint256 chan;
             testEachSponsorship(
-                env, cosigning, sponsor, alice, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
                     chan = paychan::channel(alice, bob, env.seq(alice));
                     submit(paychan::create(alice, bob, XRP(100), settleDelay, pk));
                 });
@@ -3259,7 +3571,8 @@ public:
                 env(sponsor::set_reserve(sponsor2, 0, 1), sponsor::sponseeAcc(alice));
                 env.close();
 
-                env(sponsor::transfer(alice, tfSponsorshipReassign, chan), sponsor::as(sponsor2, tfSponsorReserve));
+                env(sponsor::transfer(alice, tfSponsorshipReassign, chan),
+                    sponsor::as(sponsor2, tfSponsorReserve));
                 env.close();
             }
 
@@ -3297,7 +3610,14 @@ public:
             pdomain::Credentials credentials{{alice, "first credential"}};
             uint32_t seq;
             testEachSponsorship(
-                env, cosigning, sponsor, alice, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
                     seq = env.seq(alice);
                     submit(pdomain::setTx(alice, credentials));
                 });
@@ -3345,7 +3665,8 @@ public:
         testcase("Oracle");
         using namespace test::jtx;
         using namespace std::chrono;
-        using DataSeries = std::vector<std::tuple<std::string, std::string, std::uint32_t, std::uint8_t>>;
+        using DataSeries =
+            std::vector<std::tuple<std::string, std::string, std::uint32_t, std::uint8_t>>;
 
         Account const alice("alice");
         Account const sponsor("sponsor");
@@ -3359,7 +3680,8 @@ public:
             jv[jss::Account] = to_string(account);
             jv[jss::OracleDocumentID] = 1;
             jv[jss::LastUpdateTime] = to_string(
-                duration_cast<seconds>(env.current()->header().closeTime.time_since_epoch()).count() +
+                duration_cast<seconds>(env.current()->header().closeTime.time_since_epoch())
+                    .count() +
                 epoch_offset.count() + 100);
             jv[jss::PriceDataSeries] = Json::arrayValue;
             jv[jss::Provider] = strHex(std::string{"provider"});
@@ -3412,9 +3734,14 @@ public:
             {
                 // OracleSet (reserve 1)
                 testEachSponsorship(
-                    env, cosigning, sponsor, alice, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
-                        submit(oracleSet(env, alice, 5));
-                    });
+                    env,
+                    cosigning,
+                    sponsor,
+                    alice,
+                    1,
+                    1,
+                    tecINSUFFICIENT_RESERVE,
+                    [&](Env& env, auto const& submit) { submit(oracleSet(env, alice, 5)); });
 
                 // transfer sponsor
                 auto const keylet = keylet::oracle(alice, 1);
@@ -3451,9 +3778,14 @@ public:
             {
                 // OracleSet (reserve 2)
                 testEachSponsorship(
-                    env, cosigning, sponsor, alice, 2, 2, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
-                        submit(oracleSet(env, alice, 6));
-                    });
+                    env,
+                    cosigning,
+                    sponsor,
+                    alice,
+                    2,
+                    2,
+                    tecINSUFFICIENT_RESERVE,
+                    [&](Env& env, auto const& submit) { submit(oracleSet(env, alice, 6)); });
 
                 // transfer sponsor
                 auto const keylet = keylet::oracle(alice, 1);
@@ -3490,9 +3822,14 @@ public:
             {
                 // OracleSet (reserve 1->2, sponsor1 -> no-sponsor)
                 testEachSponsorship(
-                    env, cosigning, sponsor, alice, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
-                        submit(oracleSet(env, alice, 5));
-                    });
+                    env,
+                    cosigning,
+                    sponsor,
+                    alice,
+                    1,
+                    1,
+                    tecINSUFFICIENT_RESERVE,
+                    [&](Env& env, auto const& submit) { submit(oracleSet(env, alice, 5)); });
 
                 // reserve 1->2
                 env(oracleSet(env, alice, 6));
@@ -3513,9 +3850,14 @@ public:
             {
                 // OracleSet (reserve 1->2, sponsor1 -> sponsor2)
                 testEachSponsorship(
-                    env, cosigning, sponsor, alice, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
-                        submit(oracleSet(env, alice, 5));
-                    });
+                    env,
+                    cosigning,
+                    sponsor,
+                    alice,
+                    1,
+                    1,
+                    tecINSUFFICIENT_RESERVE,
+                    [&](Env& env, auto const& submit) { submit(oracleSet(env, alice, 5)); });
                 // return;
 
                 // reserve 1->2
@@ -3553,9 +3895,14 @@ public:
 
                 // reserve 1->2
                 testEachSponsorship(
-                    env, cosigning, sponsor, alice, 1, 2, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
-                        submit(oracleSet(env, alice, 6));
-                    });
+                    env,
+                    cosigning,
+                    sponsor,
+                    alice,
+                    1,
+                    2,
+                    tecINSUFFICIENT_RESERVE,
+                    [&](Env& env, auto const& submit) { submit(oracleSet(env, alice, 6)); });
 
                 // OracleDelete
                 env(oracleDelete(alice));
@@ -3579,12 +3926,15 @@ public:
                     ocount,
                     ocount,
                     tecINSUFFICIENT_RESERVE,
-                    [&](Env& env, auto const& submit) { submit(oracleSet(env, alice, dataSeriesSize)); });
+                    [&](Env& env, auto const& submit) {
+                        submit(oracleSet(env, alice, dataSeriesSize));
+                    });
 
                 // transfer sponsor
                 if (cosigning)
                 {
-                    env(sponsor::transfer(alice, tfSponsorshipReassign, keylet::oracle(alice, 1).key),
+                    env(sponsor::transfer(
+                            alice, tfSponsorshipReassign, keylet::oracle(alice, 1).key),
                         sponsor::as(sponsor2, tfSponsorReserve),
                         sig(sfSponsorSignature, sponsor2));
                     env.close();
@@ -3593,7 +3943,8 @@ public:
                 {
                     env(sponsor::set_reserve(sponsor2, 0, ocount), sponsor::sponseeAcc(alice));
                     env.close();
-                    env(sponsor::transfer(alice, tfSponsorshipReassign, keylet::oracle(alice, 1).key),
+                    env(sponsor::transfer(
+                            alice, tfSponsorshipReassign, keylet::oracle(alice, 1).key),
                         sponsor::as(sponsor2, tfSponsorReserve));
                     env.close();
                 }
@@ -3634,9 +3985,14 @@ public:
 
         // SignerListSet
         testEachSponsorship(
-            env, cosigning, sponsor, alice, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
-                submit(signers(alice, 1, {{bob, 1}}));
-            });
+            env,
+            cosigning,
+            sponsor,
+            alice,
+            1,
+            1,
+            tecINSUFFICIENT_RESERVE,
+            [&](Env& env, auto const& submit) { submit(signers(alice, 1, {{bob, 1}})); });
 
         // transfer sponsor
         if (cosigning)
@@ -3697,7 +4053,8 @@ public:
 
         auto const validateSponsoredTrustline =
             [&](std::shared_ptr<const SLE> const& sle, bool isIssuerHigh, Account const& sponsor) {
-                BEAST_EXPECT(sle->getAccountID(isIssuerHigh ? sfLowSponsor : sfHighSponsor) == sponsor.id());
+                BEAST_EXPECT(
+                    sle->getAccountID(isIssuerHigh ? sfLowSponsor : sfHighSponsor) == sponsor.id());
                 BEAST_EXPECT(!sle->isFieldPresent(isIssuerHigh ? sfHighSponsor : sfLowSponsor));
             };
 
@@ -3726,9 +4083,14 @@ public:
             }
 
             testEachSponsorship(
-                env, cosigning, sponsor, user, 1, 1, tecNO_LINE_INSUF_RESERVE, [&](Env& env, auto const& submit) {
-                    submit(trust(user, USD(100)));
-                });
+                env,
+                cosigning,
+                sponsor,
+                user,
+                1,
+                1,
+                tecNO_LINE_INSUF_RESERVE,
+                [&](Env& env, auto const& submit) { submit(trust(user, USD(100))); });
 
             auto const keylet = keylet::line(user, issuer, currency);
 
@@ -3796,9 +4158,14 @@ public:
             }
 
             testEachSponsorship(
-                env, cosigning, sponsor, user, 1, 1, tecINSUF_RESERVE_LINE, [&](Env& env, auto const& submit) {
-                    submit(trust(user, USD(100)));
-                });
+                env,
+                cosigning,
+                sponsor,
+                user,
+                1,
+                1,
+                tecINSUF_RESERVE_LINE,
+                [&](Env& env, auto const& submit) { submit(trust(user, USD(100))); });
 
             auto const line = env.le(keylet::line(user, issuer, currency));
             validateSponsoredTrustline(line, isIssuerHigh, sponsor);
@@ -3921,15 +4288,21 @@ public:
 
             BEAST_EXPECT(ownerCount(env, bob) == 1);  // RippleState
 
-            auto const depositTx = vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(100)});
+            auto const depositTx =
+                vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(100)});
 
             env(ticket::create(sponsor, 2));  // for free MPToken
             env.close();
 
             testEachSponsorship(
-                env, cosigning, sponsor, bob, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
-                    submit(depositTx);
-                });
+                env,
+                cosigning,
+                sponsor,
+                bob,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) { submit(depositTx); });
         }
         // VaultWithdraw
         {
@@ -3949,15 +4322,21 @@ public:
                 env(pay(gw, bob, asset(100)));
                 env.close();
 
-                auto const depositTx = vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(100)});
+                auto const depositTx =
+                    vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(100)});
 
                 env(ticket::create(sponsor, 2));  // for free MPToken
                 env.close();
 
                 testEachSponsorship(
-                    env, cosigning, sponsor, bob, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
-                        submit(depositTx);
-                    });
+                    env,
+                    cosigning,
+                    sponsor,
+                    bob,
+                    1,
+                    1,
+                    tecINSUFFICIENT_RESERVE,
+                    [&](Env& env, auto const& submit) { submit(depositTx); });
 
                 env(trust(bob, asset(0)));  // remove trustline
                 env.close();
@@ -3968,13 +4347,22 @@ public:
 
                 // create Trustline with vault withdraw
                 testEachSponsorship(
-                    env, cosigning, sponsor, bob, 1, 1, tecNO_LINE_INSUF_RESERVE, [&](Env& env, auto const& submit) {
-                        submit(vault.withdraw({.depositor = bob, .id = keylet.key, .amount = asset(50)}));
+                    env,
+                    cosigning,
+                    sponsor,
+                    bob,
+                    1,
+                    1,
+                    tecNO_LINE_INSUF_RESERVE,
+                    [&](Env& env, auto const& submit) {
+                        submit(vault.withdraw(
+                            {.depositor = bob, .id = keylet.key, .amount = asset(50)}));
                     });
 
-                BEAST_EXPECT(ownerCount(env, bob) == 2);                // RippleState, MPToken(share)
-                BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 2);       // RippleState, MPToken(share)
-                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 2);  // RippleState, MPToken(share)
+                BEAST_EXPECT(ownerCount(env, bob) == 2);           // RippleState, MPToken(share)
+                BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 2);  // RippleState, MPToken(share)
+                BEAST_EXPECT(
+                    sponsoringOwnerCount(env, sponsor) == 2);  // RippleState, MPToken(share)
 
                 // remove sponsored MPToken(share)
                 env(vault.withdraw({.depositor = bob, .id = keylet.key, .amount = asset(50)}));
@@ -4009,15 +4397,21 @@ public:
             env(pay(gw, bob, asset(100)));
             env.close();
 
-            auto const depositTx = vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(100)});
+            auto const depositTx =
+                vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(100)});
 
             env(ticket::create(sponsor, 2));  // for free MPToken
             env.close();
 
             testEachSponsorship(
-                env, cosigning, sponsor, bob, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
-                    submit(depositTx);
-                });
+                env,
+                cosigning,
+                sponsor,
+                bob,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) { submit(depositTx); });
 
             BEAST_EXPECT(ownerCount(env, bob) == 2);                // RippleState, MPToken(share)
             BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);       // MPToken(share)
@@ -4082,14 +4476,28 @@ public:
         // XChainCreateBridge
         {
             testEachSponsorship(
-                env, cosigning, sponsor, doorA, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
+                env,
+                cosigning,
+                sponsor,
+                doorA,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
                     submit(bridge_create(doorA, jvb, XRP(1), XRP(1)));
                 });
         }
         // XChainCreateClaimID
         {
             testEachSponsorship(
-                env, cosigning, sponsor, alice, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
                     submit(xchain_create_claim_id(alice, jvb, XRP(1), bob));
                 });
         }
@@ -4111,7 +4519,8 @@ public:
                 env(sponsor::set_reserve(sponsor, 0, 1), sponsor::sponseeAcc(alice));
                 env.close();
 
-                env(xchain_commit(alice, jvb, 1, XRP(100), bob), sponsor::as(sponsor, tfSponsorReserve));
+                env(xchain_commit(alice, jvb, 1, XRP(100), bob),
+                    sponsor::as(sponsor, tfSponsorReserve));
                 env.close();
 
                 env(sponsor::del(sponsor), sponsor::sponseeAcc(alice));
@@ -4162,7 +4571,8 @@ public:
                     sponsor::as(sponsor, tfSponsorReserve),
                     sig(sfSponsorSignature, sponsor));
                 env(xchain_commit(alice, jvb, 2, XRP(100)));  // omit destination
-                env(claim_attestation(alice, jvb, bob, XRP(100), bob, false, 2, std::nullopt, signer));
+                env(claim_attestation(
+                    alice, jvb, bob, XRP(100), bob, false, 2, std::nullopt, signer));
                 env.close();
             }
 
@@ -4203,11 +4613,13 @@ public:
             env(tx, THISLINE);
             env.close();
 
-            BEAST_EXPECT(ownerCount(env, alice) == 3);  // Vault, PseudoAccount(Vault), MPToken(Vault)
+            BEAST_EXPECT(
+                ownerCount(env, alice) == 3);  // Vault, PseudoAccount(Vault), MPToken(Vault)
 
             // LoanBrokerSet
             testEachSponsorship(
-                // Both the Pseudo-account and LoanBroker objects are created, but only the LoanBroker is sponsored.
+                // Both the Pseudo-account and LoanBroker objects are created, but only the
+                // LoanBroker is sponsored.
                 env,
                 cosigning,
                 sponsor,
@@ -4215,7 +4627,9 @@ public:
                 2,
                 1,
                 tecINSUFFICIENT_RESERVE,
-                [&](Env& env, auto const& submit) { submit(loanBroker::set(alice, keylet.key, 0)); });
+                [&](Env& env, auto const& submit) {
+                    submit(loanBroker::set(alice, keylet.key, 0));
+                });
 
             BEAST_EXPECT(
                 ownerCount(env, alice) ==
@@ -4257,8 +4671,10 @@ public:
 
             env(loanBroker::set(alice, keylet.key, 0));
             env.close();
-            BEAST_EXPECT(ownerCount(env, alice) == 6);  // LoanBroker, PseudoAccount(LB), (Vault, PseudoAccount(Vault),
-                                                        // MPToken(Vault), MPToken(issuer))
+            BEAST_EXPECT(
+                ownerCount(env, alice) ==
+                6);  // LoanBroker, PseudoAccount(LB), (Vault, PseudoAccount(Vault),
+                     // MPToken(Vault), MPToken(issuer))
 
             auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice) - 1);
             // LoanBrokerCoverDeposit
@@ -4281,7 +4697,14 @@ public:
 
             // LoanBrokerCoverWithdraw
             testEachSponsorship(
-                env, cosigning, sponsor, alice, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
                     submit(loanBroker::coverWithdraw(alice, brokerKeylet.key, asset(10)));
                 });
 
@@ -4324,7 +4747,8 @@ public:
             auto const [tx, keylet] = vault.create({.owner = bob, .asset = asset});
             env(tx, THISLINE);
             env.close();
-            env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(100)}), THISLINE);
+            env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(100)}),
+                THISLINE);
             env.close();
 
             auto const brokerKeylet = keylet::loanbroker(bob.id(), env.seq(bob));
@@ -4340,8 +4764,18 @@ public:
 
             auto const loanSeq = broker->getFieldU32(sfLoanSequence);
             testEachSponsorship(
-                env, cosigning, sponsor, alice, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
-                    submit(loan::set(alice, brokerKeylet.key, 10), sig(sfCounterpartySignature, bob), fee(XRP(1)));
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
+                    submit(
+                        loan::set(alice, brokerKeylet.key, 10),
+                        sig(sfCounterpartySignature, bob),
+                        fee(XRP(1)));
                 });
             broker = env.le(brokerKeylet);
             // broker'object doesn't sponsored
@@ -4416,7 +4850,9 @@ public:
         env.close();
 
         // Create sponsor should fail
-        env(sponsor::set(sponsor, 0, 100, XRP(100)), sponsor::sponseeAcc(alice), ter(tecNO_PERMISSION));
+        env(sponsor::set(sponsor, 0, 100, XRP(100)),
+            sponsor::sponseeAcc(alice),
+            ter(tecNO_PERMISSION));
         env.close();
 
         // clear flag
@@ -4455,7 +4891,9 @@ public:
             env.close();
 
             // set sponsor
-            env(sponsor::set(sponsor, 0, 100, XRP(100)), sponsor::sponseeAcc(alice), ter(tesSUCCESS));
+            env(sponsor::set(sponsor, 0, 100, XRP(100)),
+                sponsor::sponseeAcc(alice),
+                ter(tesSUCCESS));
             env.close();
 
             incLgrSeqForAccDel(env, alice);
@@ -4483,7 +4921,9 @@ public:
             env.close();
 
             // set sponsor
-            env(sponsor::set(sponsor, 0, 100, XRP(100)), sponsor::sponseeAcc(alice), ter(tesSUCCESS));
+            env(sponsor::set(sponsor, 0, 100, XRP(100)),
+                sponsor::sponseeAcc(alice),
+                ter(tesSUCCESS));
             env.close();
 
             incLgrSeqForAccDel(env, sponsor);
@@ -4589,7 +5029,10 @@ public:
             env(delegate::set(alice, carol, {"SponsorshipSet"}));
             env.close();
 
-            env(sponsor::set(alice, 0, 100, XRP(100)), sponsor::sponseeAcc(bob), delegate::as(carol), ter(tesSUCCESS));
+            env(sponsor::set(alice, 0, 100, XRP(100)),
+                sponsor::sponseeAcc(bob),
+                delegate::as(carol),
+                ter(tesSUCCESS));
             env.close();
         }
 
@@ -4651,7 +5094,10 @@ public:
 
             auto const testReservePermission = [&](TER result) {
                 // ReserveCount
-                env(sponsor::set(alice, 0, 100), sponsor::sponseeAcc(bob), delegate::as(carol), ter(result));
+                env(sponsor::set(alice, 0, 100),
+                    sponsor::sponseeAcc(bob),
+                    delegate::as(carol),
+                    ter(result));
                 // SetRequireSignForReserve flag
                 env(sponsor::set(alice, tfSponsorshipSetRequireSignForReserve),
                     sponsor::sponseeAcc(bob),
@@ -4726,7 +5172,10 @@ public:
             env.fund(XRP(1001), sponsor);
             env.close();
 
-            env(sponsor::set(sponsor, 0, 100, XRP(100)), sponsor::sponseeAcc(alice), fee(XRP(1)), ter(tesSUCCESS));
+            env(sponsor::set(sponsor, 0, 100, XRP(100)),
+                sponsor::sponseeAcc(alice),
+                fee(XRP(1)),
+                ter(tesSUCCESS));
             env.close();
 
             auto const seq = env.seq(alice);
@@ -4761,7 +5210,9 @@ public:
             env.close();
 
             auto jt = env.jtnofill(
-                noop(alice), sponsor::as(sponsor, tfSponsorReserve | tfSponsorFee), sig(sfSponsorSignature, sponsor));
+                noop(alice),
+                sponsor::as(sponsor, tfSponsorReserve | tfSponsorFee),
+                sig(sfSponsorSignature, sponsor));
 
             auto const seq = env.seq(alice);
             // should fail because inner transaction cannot include SponsorSignature
@@ -4777,11 +5228,15 @@ public:
             env.fund(XRP(1001), sponsor);
             env.close();
 
-            env(sponsor::set(sponsor, 0, 100, XRP(100)), sponsor::sponseeAcc(alice), fee(XRP(1)), ter(tesSUCCESS));
+            env(sponsor::set(sponsor, 0, 100, XRP(100)),
+                sponsor::sponseeAcc(alice),
+                fee(XRP(1)),
+                ter(tesSUCCESS));
             env.close();
             BEAST_EXPECT(env.balance(sponsor) == XRP(900));
 
-            auto jt = env.jtnofill(ticket::create(alice, 1), sponsor::as(sponsor, tfSponsorReserve | tfSponsorFee));
+            auto jt = env.jtnofill(
+                ticket::create(alice, 1), sponsor::as(sponsor, tfSponsorReserve | tfSponsorFee));
             // remove txn signature since it is filled by env.jtnofill()
             jt.jv.removeMember(jss::TxnSignature);
 

@@ -37,7 +37,8 @@ struct Fees
 
         XRPL_ASSERT(
             ownerCount >= sponsoredOwnerCount,
-            "xrpl::Fees::accountReserve : OwnerCount must be greater than or equal to SponsoredOwnerCount");
+            "xrpl::Fees::accountReserve : OwnerCount must be greater than or equal to "
+            "SponsoredOwnerCount");
 
         auto const ownerReserveUnits = (ownerCount - sponsoredOwnerCount) + sponsoringOwnerCount;
 

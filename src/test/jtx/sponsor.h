@@ -35,7 +35,10 @@ Json::Value
 del(jtx::Account const& account);
 
 Json::Value
-transfer(jtx::Account const& account, uint32_t flags, std::optional<uint256> const& index = std::nullopt);
+transfer(
+    jtx::Account const& account,
+    uint32_t flags,
+    std::optional<uint256> const& index = std::nullopt);
 
 struct counterpartySponsor
 {

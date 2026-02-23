@@ -16,9 +16,11 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
 {
     auto const flags = ctx.tx.getFlags();
 
-    if ((flags & tfSponsorshipSetRequireSignForFee) && (flags & tfSponsorshipClearRequireSignForFee))
+    if ((flags & tfSponsorshipSetRequireSignForFee) &&
+        (flags & tfSponsorshipClearRequireSignForFee))
         return temINVALID_FLAG;
-    if ((flags & tfSponsorshipSetRequireSignForReserve) && (flags & tfSponsorshipClearRequireSignForReserve))
+    if ((flags & tfSponsorshipSetRequireSignForReserve) &&
+        (flags & tfSponsorshipClearRequireSignForReserve))
         return temINVALID_FLAG;
 
     auto const account = ctx.tx.getAccountID(sfAccount);
@@ -117,9 +119,10 @@ SponsorshipSet::checkPermission(ReadView const& view, STTx const& tx)
     std::unordered_set<GranularPermissionType> granularPermissions;
     loadGranularPermission(sle, ttSPONSORSHIP_SET, granularPermissions);
 
-    auto const sponsoringFee =
-        tx.isFieldPresent(sfFeeAmount) || tx.isFieldPresent(sfMaxFee) || txFlags & tfSponsorshipSetRequireSignForFee;
-    auto const sponsoringReserve = tx.isFieldPresent(sfReserveCount) || txFlags & tfSponsorshipSetRequireSignForReserve;
+    auto const sponsoringFee = tx.isFieldPresent(sfFeeAmount) || tx.isFieldPresent(sfMaxFee) ||
+        txFlags & tfSponsorshipSetRequireSignForFee;
+    auto const sponsoringReserve =
+        tx.isFieldPresent(sfReserveCount) || txFlags & tfSponsorshipSetRequireSignForReserve;
 
     if (sponsoringFee && !granularPermissions.contains(SponsorFee))
         return terNO_DELEGATE_PERMISSION;
@@ -190,9 +193,16 @@ SponsorshipSet::doApply()
         auto const sponsor = getLedgerEntryReserveSponsor(ctx_.view(), sponsorObjSle);
         adjustOwnerCount(ctx_.view(), sponsorAccSle, sponsor, -1, ctx_.journal);
 
-        ctx_.view().dirRemove(keylet::ownerDir(sponsorAcc), (*sponsorObjSle)[sfOwnerNode], sponsorObjSle->key(), false);
         ctx_.view().dirRemove(
-            keylet::ownerDir(sponseeAcc), (*sponsorObjSle)[sfSponseeNode], sponsorObjSle->key(), false);
+            keylet::ownerDir(sponsorAcc),
+            (*sponsorObjSle)[sfOwnerNode],
+            sponsorObjSle->key(),
+            false);
+        ctx_.view().dirRemove(
+            keylet::ownerDir(sponseeAcc),
+            (*sponsorObjSle)[sfSponseeNode],
+            sponsorObjSle->key(),
+            false);
 
         // transfer feeAmount from ledger entry
         if (sponsorObjSle->isFieldPresent(sfFeeAmount))
@@ -220,8 +230,8 @@ SponsorshipSet::doApply()
         // Create
         auto newSle = std::make_shared<SLE>(sponsorKeylet);
 
-        if (auto const ret =
-                checkInsufficientReserve(ctx_.view(), ctx_.tx, sponsorAccSle, mPriorBalance, reserveSponsorAccSle, 1);
+        if (auto const ret = checkInsufficientReserve(
+                ctx_.view(), ctx_.tx, sponsorAccSle, mPriorBalance, reserveSponsorAccSle, 1);
             !isTesSuccess(ret))
             return tecUNFUNDED;
 
@@ -246,12 +256,12 @@ SponsorshipSet::doApply()
 
         (*newSle)[sfFlags] = flags;
 
-        auto const sponsorPage =
-            view().dirInsert(keylet::ownerDir(sponsorAcc), sponsorKeylet, describeOwnerDir(sponsorAcc));
+        auto const sponsorPage = view().dirInsert(
+            keylet::ownerDir(sponsorAcc), sponsorKeylet, describeOwnerDir(sponsorAcc));
         (*newSle)[sfOwnerNode] = *sponsorPage;
 
-        auto const sponseePage =
-            view().dirInsert(keylet::ownerDir(sponseeAcc), sponsorKeylet, describeOwnerDir(sponseeAcc));
+        auto const sponseePage = view().dirInsert(
+            keylet::ownerDir(sponseeAcc), sponsorKeylet, describeOwnerDir(sponseeAcc));
         (*newSle)[sfSponseeNode] = *sponseePage;
 
         auto viewJ = ctx_.registry.journal("View");
@@ -320,7 +330,10 @@ SponsorshipSet::doApply()
 }
 
 TER
-SponsorshipSet::deleteSponsorship(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
+SponsorshipSet::deleteSponsorship(
+    ApplyView& view,
+    std::shared_ptr<SLE> const& sle,
+    beast::Journal j)
 {
     auto const sponsor = sle->getAccountID(sfOwner);
     auto const sponsee = sle->getAccountID(sfSponsee);
