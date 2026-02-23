@@ -824,6 +824,8 @@ struct Wasm_test : public beast::unit_test::suite
         Env env(*this);
         std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
 
+        testcase("Wasm invalid return type");
+
         // return int64.
         {  // (module
             //   (memory (export "memory") 1)
@@ -866,6 +868,57 @@ struct Wasm_test : public beast::unit_test::suite
                 "010b";
             auto const wasm = hexToBytes(wasmHex);
             auto const re = runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
+            BEAST_EXPECT(!re);
+        }
+    }
+
+    void
+    testParameterType()
+    {
+        using namespace test::jtx;
+        Env env(*this);
+        std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
+
+        testcase("Wasm invalid params");
+
+        // (module
+        //   (memory (export "memory") 1)
+        //   (func $test1 (export "test1") (param i32) (result i32)
+        //     i32.const 1000)
+        //   (func $test2 (export "test2") (param i32 i32) (result i32)
+        //     i32.const 1001))
+        auto const wasmHex =
+            "0061736d01000000010c0260017f017f60027f7f017f03030200010503010001071a03066d656d6f7279020005746573743100"
+            "0005746573743200010a0d02050041e8070b050041e9070b";
+        auto const wasm = hexToBytes(wasmHex);
+
+        // good params, module is working properly
+        {
+            auto const re = runEscrowWasm(wasm, hfs, "test2", wasmParams(2, 10), 100'000);
+            BEAST_EXPECT(re && re->result == 1001 && re->cost == 37);
+        }
+
+        // no params
+        {
+            auto const re = runEscrowWasm(wasm, hfs, "test1", {}, 100'000);
+            BEAST_EXPECT(!re);
+        }
+
+        // more params
+        {
+            auto const re = runEscrowWasm(wasm, hfs, "test1", wasmParams(0, 1), 100'000);
+            BEAST_EXPECT(!re);
+        }
+
+        // less params
+        {
+            auto const re = runEscrowWasm(wasm, hfs, "test2", wasmParams(1), 100'000);
+            BEAST_EXPECT(!re);
+        }
+
+        // invalid type
+        {
+            auto const re = runEscrowWasm(wasm, hfs, "test1", wasmParams(std::int64_t(15)), 100'000);
             BEAST_EXPECT(!re);
         }
     }
@@ -1007,6 +1060,7 @@ struct Wasm_test : public beast::unit_test::suite
         testReturnType();
         testSwapBytes();
         testManyParams();
+        testParameterType();
 
         // perfTest();
     }
