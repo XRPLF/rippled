@@ -183,7 +183,9 @@ TEST(mallocTrim, with_debug_logging)
 {
     struct DebugSink : public beast::Journal::Sink
     {
-        DebugSink() : Sink(beast::severities::kDebug, false) {}
+        DebugSink() : Sink(beast::severities::kDebug, false)
+        {
+        }
         void
         write(beast::severities::Severity, std::string const&) override
         {
