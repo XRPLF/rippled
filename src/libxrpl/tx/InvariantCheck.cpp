@@ -434,7 +434,7 @@ AccountRootsNotDeleted::finalize(
     // transaction when the total AMM LP Tokens balance goes to 0.
     // A successful AccountDelete or AMMDelete MUST delete exactly
     // one account root.
-    if (hasPrivilege(tx, mustDeleteAcct) && result == tesSUCCESS)
+    if (hasPrivilege(tx, mustDeleteAcct) && isTesSuccess(result))
     {
         if (accountsDeleted_ == 1)
             return true;
@@ -451,7 +451,7 @@ AccountRootsNotDeleted::finalize(
     // A successful AMMWithdraw/AMMClawback MAY delete one account root
     // when the total AMM LP Tokens balance goes to 0. Not every AMM withdraw
     // deletes the AMM account, accountsDeleted_ is set if it is deleted.
-    if (hasPrivilege(tx, mayDeleteAcct) && result == tesSUCCESS && accountsDeleted_ == 1)
+    if (hasPrivilege(tx, mayDeleteAcct) && isTesSuccess(result) && accountsDeleted_ == 1)
         return true;
 
     if (accountsDeleted_ == 0)
@@ -1012,7 +1012,7 @@ ValidNewAccountRoot::finalize(
     }
 
     // From this point on we know exactly one account was created.
-    if (hasPrivilege(tx, createAcct | createPseudoAcct) && result == tesSUCCESS)
+    if (hasPrivilege(tx, createAcct | createPseudoAcct) && isTesSuccess(result))
     {
         bool const pseudoAccount =
             (pseudoAccount_ &&
@@ -1264,14 +1264,14 @@ NFTokenCountTracking::finalize(
 
     if (tx.getTxnType() == ttNFTOKEN_MINT)
     {
-        if (result == tesSUCCESS && beforeMintedTotal >= afterMintedTotal)
+        if (isTesSuccess(result) && beforeMintedTotal >= afterMintedTotal)
         {
             JLOG(j.fatal()) << "Invariant failed: successful minting didn't increase "
                                "the number of minted tokens.";
             return false;
         }
 
-        if (result != tesSUCCESS && beforeMintedTotal != afterMintedTotal)
+        if (!isTesSuccess(result) && beforeMintedTotal != afterMintedTotal)
         {
             JLOG(j.fatal()) << "Invariant failed: failed minting changed the "
                                "number of minted tokens.";
@@ -1288,7 +1288,7 @@ NFTokenCountTracking::finalize(
 
     if (tx.getTxnType() == ttNFTOKEN_BURN)
     {
-        if (result == tesSUCCESS)
+        if (isTesSuccess(result))
         {
             if (beforeBurnedTotal >= afterBurnedTotal)
             {
@@ -1298,7 +1298,7 @@ NFTokenCountTracking::finalize(
             }
         }
 
-        if (result != tesSUCCESS && beforeBurnedTotal != afterBurnedTotal)
+        if (!isTesSuccess(result) && beforeBurnedTotal != afterBurnedTotal)
         {
             JLOG(j.fatal()) << "Invariant failed: failed burning changed the "
                                "number of burned tokens.";
@@ -1342,7 +1342,7 @@ ValidClawback::finalize(
     if (tx.getTxnType() != ttCLAWBACK)
         return true;
 
-    if (result == tesSUCCESS)
+    if (isTesSuccess(result))
     {
         if (trustlinesChanged > 1)
         {
@@ -1429,7 +1429,7 @@ ValidMPTIssuance::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    if (result == tesSUCCESS)
+    if (isTesSuccess(result))
     {
         auto const& rules = view.rules();
         [[maybe_unused]]
@@ -1655,7 +1655,7 @@ ValidPermissionedDomain::finalize(
     if (view.rules().enabled(fixPermissionedDomainInvariant))
     {
         // No permissioned domains should be affected if the transaction failed
-        if (result != tesSUCCESS)
+        if (!isTesSuccess(result))
             // If nothing changed, all is good. If there were changes, that's
             // bad.
             return sleStatus_.empty();
@@ -1718,7 +1718,7 @@ ValidPermissionedDomain::finalize(
     }
     else
     {
-        if (tx.getTxnType() != ttPERMISSIONED_DOMAIN_SET || result != tesSUCCESS ||
+        if (tx.getTxnType() != ttPERMISSIONED_DOMAIN_SET || !isTesSuccess(result) ||
             sleStatus_.empty())
             return true;
         return check(sleStatus_[0], j);
@@ -1853,7 +1853,7 @@ ValidPermissionedDEX::finalize(
     beast::Journal const& j)
 {
     auto const txType = tx.getTxnType();
-    if ((txType != ttPAYMENT && txType != ttOFFER_CREATE) || result != tesSUCCESS)
+    if ((txType != ttPAYMENT && txType != ttOFFER_CREATE) || !isTesSuccess(result))
         return true;
 
     // For each offercreate transaction, check if
@@ -2041,7 +2041,7 @@ ValidAMM::finalizeDelete(bool enforce, TER res, beast::Journal const& j) const
     if (ammAccount_)
     {
         // LCOV_EXCL_START
-        std::string const msg = (res == tesSUCCESS) ? "AMM object is not deleted on tesSUCCESS"
+        std::string const msg = (isTesSuccess(res)) ? "AMM object is not deleted on tesSUCCESS"
                                                     : "AMM object is changed on tecINCOMPLETE";
         JLOG(j.error()) << "AMMDelete invariant failed: " << msg;
         if (enforce)
@@ -2160,7 +2160,7 @@ ValidAMM::finalize(
 {
     // Delete may return tecINCOMPLETE if there are too many
     // trustlines to delete.
-    if (result != tesSUCCESS && result != tecINCOMPLETE)
+    if (!isTesSuccess(result) && result != tecINCOMPLETE)
         return true;
 
     bool const enforce = view.rules().enabled(fixAMMv1_3);

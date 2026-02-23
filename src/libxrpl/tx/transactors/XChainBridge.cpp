@@ -267,8 +267,8 @@ onNewAttestations(
     bool changed = false;
     for (auto att = attBegin; att != attEnd; ++att)
     {
-        if (checkAttestationPublicKey(
-                view, signersList, att->attestationSignerAccount, att->publicKey, j) != tesSUCCESS)
+        if (!isTesSuccess(checkAttestationPublicKey(
+                view, signersList, att->attestationSignerAccount, att->publicKey, j)))
         {
             // The checkAttestationPublicKey is not strictly necessary here (it
             // should be checked in a preclaim step), but it would be bad to let
@@ -508,15 +508,15 @@ struct FinalizeClaimHelperResult
     bool
     isTesSuccess() const
     {
-        return mainFundsTer == tesSUCCESS && rewardTer == tesSUCCESS &&
-            (!rmSleTer || *rmSleTer == tesSUCCESS);
+        return isTesSuccess(mainFundsTer) && isTesSuccess(rewardTer) &&
+            (!rmSleTer || *isTesSuccess(rmSleTer));
     }
 
     TER
     ter() const
     {
-        if ((!mainFundsTer || *mainFundsTer == tesSUCCESS) &&
-            (!rewardTer || *rewardTer == tesSUCCESS) && (!rmSleTer || *rmSleTer == tesSUCCESS))
+        if ((!mainFundsTer || *isTesSuccess(mainFundsTer)) &&
+            (!rewardTer || *isTesSuccess(rewardTer)) && (!rmSleTer || *isTesSuccess(rmSleTer)))
             return tesSUCCESS;
 
         // if any phase return a tecINTERNAL or a tef, prefer returning those
@@ -530,11 +530,11 @@ struct FinalizeClaimHelperResult
 
         // Only after the tecINTERNAL and tef are checked, return the first
         // non-success error code.
-        if (mainFundsTer && mainFundsTer != tesSUCCESS)
+        if (mainFundsTer && !isTesSuccess(mainFundsTer))
             return *mainFundsTer;
-        if (rewardTer && rewardTer != tesSUCCESS)
+        if (rewardTer && !isTesSuccess(rewardTer))
             return *rewardTer;
-        if (rmSleTer && rmSleTer != tesSUCCESS)
+        if (rmSleTer && !isTesSuccess(rmSleTer))
             return *rmSleTer;
         return tesSUCCESS;
     }

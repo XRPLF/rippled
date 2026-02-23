@@ -351,7 +351,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         // LCOV_EXCL_STOP
     }();
 
-    if (result != tesSUCCESS)
+    if (!isTesSuccess(result))
         return {result, false};
 
     auto const res = deleteAMMAccountIfEmpty(
@@ -545,7 +545,7 @@ AMMWithdraw::withdraw(
     // Withdraw amountWithdraw
     auto res = accountSend(
         view, ammAccount, account, amountWithdrawActual, journal, WaiveTransferFee::Yes);
-    if (res != tesSUCCESS)
+    if (!isTesSuccess(res))
     {
         // LCOV_EXCL_START
         JLOG(journal.debug()) << "AMM Withdraw: failed to withdraw " << amountWithdrawActual;
@@ -556,12 +556,12 @@ AMMWithdraw::withdraw(
     // Withdraw amount2Withdraw
     if (amount2WithdrawActual)
     {
-        if (auto const err = sufficientReserve(amount2WithdrawActual->issue()); err != tesSUCCESS)
+        if (auto const err = sufficientReserve(amount2WithdrawActual->issue()); !isTesSuccess(err))
             return {err, STAmount{}, STAmount{}, STAmount{}};
 
         res = accountSend(
             view, ammAccount, account, *amount2WithdrawActual, journal, WaiveTransferFee::Yes);
-        if (res != tesSUCCESS)
+        if (!isTesSuccess(res))
         {
             // LCOV_EXCL_START
             JLOG(journal.debug()) << "AMM Withdraw: failed to withdraw " << *amount2WithdrawActual;
@@ -572,7 +572,7 @@ AMMWithdraw::withdraw(
 
     // Withdraw LP tokens
     res = redeemIOU(view, account, lpTokensWithdrawActual, lpTokensWithdrawActual.issue(), journal);
-    if (res != tesSUCCESS)
+    if (!isTesSuccess(res))
     {
         // LCOV_EXCL_START
         JLOG(journal.debug()) << "AMM Withdraw: failed to withdraw LPTokens";
@@ -647,7 +647,7 @@ AMMWithdraw::deleteAMMAccountIfEmpty(
     if (lpTokenBalance == beast::zero)
     {
         ter = deleteAMMAccount(sb, issue1, issue2, journal);
-        if (ter != tesSUCCESS && ter != tecINCOMPLETE)
+        if (!isTesSuccess(ter) && ter != tecINCOMPLETE)
             return {ter, false};  // LCOV_EXCL_LINE
         else
             updateBalance = (ter == tecINCOMPLETE);

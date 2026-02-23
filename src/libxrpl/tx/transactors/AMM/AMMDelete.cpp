@@ -45,7 +45,7 @@ AMMDelete::doApply()
 
     auto const ter =
         deleteAMMAccount(sb, ctx_.tx[sfAsset].get<Issue>(), ctx_.tx[sfAsset2].get<Issue>(), j_);
-    if (ter == tesSUCCESS || ter == tecINCOMPLETE)
+    if (isTesSuccess(ter) || ter == tecINCOMPLETE)
         sb.apply(ctx_.rawView());
 
     return ter;

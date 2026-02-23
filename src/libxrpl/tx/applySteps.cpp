@@ -383,7 +383,7 @@ preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, Open
 
     try
     {
-        if (ctx->preflightResult != tesSUCCESS)
+        if (ctx->!isTesSuccess(preflightResult))
             return {*ctx, ctx->preflightResult};
         return {*ctx, invoke_preclaim(*ctx)};
     }

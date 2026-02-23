@@ -196,11 +196,11 @@ escrowCreatePreclaimHelper<Issue>(
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
 
     // If the issuer has requireAuth set, check if the account is authorized
-    if (auto const ter = requireAuth(ctx.view, amount.issue(), account); ter != tesSUCCESS)
+    if (auto const ter = requireAuth(ctx.view, amount.issue(), account); !isTesSuccess(ter))
         return ter;
 
     // If the issuer has requireAuth set, check if the destination is authorized
-    if (auto const ter = requireAuth(ctx.view, amount.issue(), dest); ter != tesSUCCESS)
+    if (auto const ter = requireAuth(ctx.view, amount.issue(), dest); !isTesSuccess(ter))
         return ter;
 
     // If the issuer has frozen the account, return tecFROZEN
@@ -266,13 +266,13 @@ escrowCreatePreclaimHelper<MPTIssue>(
     // authorized
     auto const& mptIssue = amount.get<MPTIssue>();
     if (auto const ter = requireAuth(ctx.view, mptIssue, account, AuthType::WeakAuth);
-        ter != tesSUCCESS)
+        !isTesSuccess(ter))
         return ter;
 
     // If the issuer has requireAuth set, check if the destination is
     // authorized
     if (auto const ter = requireAuth(ctx.view, mptIssue, dest, AuthType::WeakAuth);
-        ter != tesSUCCESS)
+        !isTesSuccess(ter))
         return ter;
 
     // If the issuer has frozen the account, return tecLOCKED
@@ -284,7 +284,7 @@ escrowCreatePreclaimHelper<MPTIssue>(
         return tecLOCKED;
 
     // If the mpt cannot be transferred, return tecNO_AUTH
-    if (auto const ter = canTransfer(ctx.view, mptIssue, account, dest); ter != tesSUCCESS)
+    if (auto const ter = canTransfer(ctx.view, mptIssue, account, dest); !isTesSuccess(ter))
         return ter;
 
     STAmount const spendableAmount = accountHolds(
@@ -360,7 +360,7 @@ escrowLockApplyHelper<Issue>(
 
     auto const ter = rippleCredit(
         view, sender, issuer, amount, amount.holds<MPTIssue>() ? false : true, journal);
-    if (ter != tesSUCCESS)
+    if (!isTesSuccess(ter))
         return ter;  // LCOV_EXCL_LINE
     return tesSUCCESS;
 }
@@ -379,7 +379,7 @@ escrowLockApplyHelper<MPTIssue>(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const ter = rippleLockEscrowMPT(view, sender, amount, journal);
-    if (ter != tesSUCCESS)
+    if (!isTesSuccess(ter))
         return ter;  // LCOV_EXCL_LINE
     return tesSUCCESS;
 }
@@ -609,7 +609,7 @@ escrowFinishPreclaimHelper<Issue>(
         return tesSUCCESS;
 
     // If the issuer has requireAuth set, check if the destination is authorized
-    if (auto const ter = requireAuth(ctx.view, amount.issue(), dest); ter != tesSUCCESS)
+    if (auto const ter = requireAuth(ctx.view, amount.issue(), dest); !isTesSuccess(ter))
         return ter;
 
     // If the issuer has deep frozen the destination, return tecFROZEN
@@ -641,7 +641,7 @@ escrowFinishPreclaimHelper<MPTIssue>(
     // authorized
     auto const& mptIssue = amount.get<MPTIssue>();
     if (auto const ter = requireAuth(ctx.view, mptIssue, dest, AuthType::WeakAuth);
-        ter != tesSUCCESS)
+        !isTesSuccess(ter))
         return ter;
 
     // If the issuer has frozen the destination, return tecLOCKED
@@ -824,7 +824,7 @@ escrowUnlockApplyHelper<Issue>(
     if (!receiverIssuer)
     {
         auto const ter = rippleCredit(view, issuer, receiver, finalAmt, true, journal);
-        if (ter != tesSUCCESS)
+        if (!isTesSuccess(ter))
             return ter;  // LCOV_EXCL_LINE
     }
     return tesSUCCESS;
@@ -1096,7 +1096,7 @@ escrowCancelPreclaimHelper<Issue>(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // If the issuer has requireAuth set, check if the account is authorized
-    if (auto const ter = requireAuth(ctx.view, amount.issue(), account); ter != tesSUCCESS)
+    if (auto const ter = requireAuth(ctx.view, amount.issue(), account); !isTesSuccess(ter))
         return ter;
 
     return tesSUCCESS;
@@ -1124,7 +1124,7 @@ escrowCancelPreclaimHelper<MPTIssue>(
     // authorized
     auto const& mptIssue = amount.get<MPTIssue>();
     if (auto const ter = requireAuth(ctx.view, mptIssue, account, AuthType::WeakAuth);
-        ter != tesSUCCESS)
+        !isTesSuccess(ter))
         return ter;
 
     return tesSUCCESS;

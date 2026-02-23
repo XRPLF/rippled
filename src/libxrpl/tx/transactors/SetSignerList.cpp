@@ -62,7 +62,7 @@ SetSignerList::preflight(PreflightContext const& ctx)
 {
     auto const result = determineOperation(ctx.tx, ctx.flags, ctx.j);
 
-    if (std::get<0>(result) != tesSUCCESS)
+    if (!isTesSuccess(std::get<0>(result)))
         return std::get<0>(result);
 
     if (std::get<3>(result) == unknown)
@@ -78,7 +78,7 @@ SetSignerList::preflight(PreflightContext const& ctx)
         auto const account = ctx.tx.getAccountID(sfAccount);
         NotTEC const ter = validateQuorumAndSignerEntries(
             std::get<1>(result), std::get<2>(result), account, ctx.j, ctx.rules);
-        if (ter != tesSUCCESS)
+        if (!isTesSuccess(ter))
         {
             return ter;
         }
@@ -114,7 +114,7 @@ SetSignerList::preCompute()
     // Get the quorum and operation info.
     auto result = determineOperation(ctx_.tx, view().flags(), j_);
     XRPL_ASSERT(
-        std::get<0>(result) == tesSUCCESS,
+        isTesSuccess(std::get<0>(result)),
         "xrpl::SetSignerList::preCompute : result is tesSUCCESS");
     XRPL_ASSERT(
         std::get<3>(result) != unknown,
