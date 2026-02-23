@@ -55,7 +55,8 @@ class TransactionEntry_test : public beast::unit_test::suite
             BEAST_EXPECT(result[jss::status] == "error");
         }
 
-        std::string const txHash{"E2FE8D4AF3FCC3944DDF6CD8CDDC5E3F0AD50863EF8919AFEF10CB6408CD4D05"};
+        std::string const txHash{
+            "E2FE8D4AF3FCC3944DDF6CD8CDDC5E3F0AD50863EF8919AFEF10CB6408CD4D05"};
 
         // Command line format
         {
@@ -194,17 +195,19 @@ class TransactionEntry_test : public beast::unit_test::suite
                 params[jss::ledger_hash] = resIndex[jss::ledger_hash];
                 params[jss::tx_hash] = txhash;
                 params[jss::api_version] = apiVersion;
-                Json::Value const resHash = env.client().invoke("transaction_entry", params)[jss::result];
+                Json::Value const resHash =
+                    env.client().invoke("transaction_entry", params)[jss::result];
                 BEAST_EXPECT(resHash == resIndex);
             }
 
             // Use the command line form with the index.
-            Json::Value const clIndex{env.rpc(apiVersion, "transaction_entry", txhash, std::to_string(index))};
+            Json::Value const clIndex{
+                env.rpc(apiVersion, "transaction_entry", txhash, std::to_string(index))};
             BEAST_EXPECT(clIndex["result"] == resIndex);
 
             // Use the command line form with the ledger_hash.
-            Json::Value const clHash{
-                env.rpc(apiVersion, "transaction_entry", txhash, resIndex[jss::ledger_hash].asString())};
+            Json::Value const clHash{env.rpc(
+                apiVersion, "transaction_entry", txhash, resIndex[jss::ledger_hash].asString())};
             BEAST_EXPECT(clHash["result"] == resIndex);
         };
 
@@ -213,11 +216,13 @@ class TransactionEntry_test : public beast::unit_test::suite
 
         env.fund(XRP(10000), A1);
         auto fund_1_tx = to_string(env.tx()->getTransactionID());
-        BEAST_EXPECT(fund_1_tx == "F4E9DF90D829A9E8B423FF68C34413E240D8D8BB0EFD080DF08114ED398E2506");
+        BEAST_EXPECT(
+            fund_1_tx == "F4E9DF90D829A9E8B423FF68C34413E240D8D8BB0EFD080DF08114ED398E2506");
 
         env.fund(XRP(10000), A2);
         auto fund_2_tx = to_string(env.tx()->getTransactionID());
-        BEAST_EXPECT(fund_2_tx == "6853CD8226A05068C951CB1F54889FF4E40C5B440DC1C5BA38F114C4E0B1E705");
+        BEAST_EXPECT(
+            fund_2_tx == "6853CD8226A05068C951CB1F54889FF4E40C5B440DC1C5BA38F114C4E0B1E705");
 
         env.close();
 
@@ -257,7 +262,8 @@ class TransactionEntry_test : public beast::unit_test::suite
         // refunds fees with a payment after TrustSet..so just ignore the type
         // in the check below
         auto trust_tx = to_string(env.tx()->getTransactionID());
-        BEAST_EXPECT(trust_tx == "C992D97D88FF444A1AB0C06B27557EC54B7F7DA28254778E60238BEA88E0C101");
+        BEAST_EXPECT(
+            trust_tx == "C992D97D88FF444A1AB0C06B27557EC54B7F7DA28254778E60238BEA88E0C101");
 
         env(pay(A2, A1, A2["USD"](5)));
         auto pay_tx = to_string(env.tx()->getTransactionID());
@@ -305,7 +311,8 @@ class TransactionEntry_test : public beast::unit_test::suite
 
         env(offer(A2, XRP(100), A2["USD"](1)));
         auto offer_tx = to_string(env.tx()->getTransactionID());
-        BEAST_EXPECT(offer_tx == "5FCC1A27A7664F82A0CC4BE5766FBBB7C560D52B93AA7B550CD33B27AEC7EFFB");
+        BEAST_EXPECT(
+            offer_tx == "5FCC1A27A7664F82A0CC4BE5766FBBB7C560D52B93AA7B550CD33B27AEC7EFFB");
 
         env.close();
         check_tx(

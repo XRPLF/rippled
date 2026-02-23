@@ -185,8 +185,8 @@ public:
             }
 
             // Check balance
-            auto ff =
-                jv[jss::result][jss::transactions][0u][jss::meta]["AffectedNodes"][1u]["ModifiedNode"]["FinalFields"];
+            auto ff = jv[jss::result][jss::transactions][0u][jss::meta]["AffectedNodes"][1u]
+                        ["ModifiedNode"]["FinalFields"];
             BEAST_EXPECT(ff[jss::Account] == Account("bob").human());
             BEAST_EXPECT(ff["Balance"] == "10001000000");
         }
@@ -261,7 +261,8 @@ public:
                 // Wait for the jobqueue to process everything
                 env.app().getJobQueue().rendezvous();
 
-                BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jval) { return jval[jss::type] == "ledgerClosed"; }));
+                BEAST_EXPECT(wsc->findMsg(
+                    5s, [&](auto const& jval) { return jval[jss::type] == "ledgerClosed"; }));
             }
 
             {
@@ -313,7 +314,8 @@ public:
                 // Wait for the jobqueue to process everything
                 env.app().getJobQueue().rendezvous();
 
-                BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jval) { return jval[jss::type] == "ledgerClosed"; }));
+                BEAST_EXPECT(wsc->findMsg(
+                    5s, [&](auto const& jval) { return jval[jss::type] == "ledgerClosed"; }));
             }
 
             {
@@ -348,8 +350,8 @@ public:
             }
 
             // Check balance
-            auto ff =
-                jv[jss::result][jss::transactions][0u][jss::meta]["AffectedNodes"][1u]["ModifiedNode"]["FinalFields"];
+            auto ff = jv[jss::result][jss::transactions][0u][jss::meta]["AffectedNodes"][1u]
+                        ["ModifiedNode"]["FinalFields"];
             BEAST_EXPECT(ff[jss::Account] == Account("bob").human());
             BEAST_EXPECT(ff["Balance"] == "10001000000");
         }
@@ -398,8 +400,9 @@ public:
 
         {
             // Check stream update
-            BEAST_EXPECT(wsc->findMsg(
-                5s, [&](auto const& jv) { return jv[jss::transaction][jss::TransactionType] == jss::AccountSet; }));
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+                return jv[jss::transaction][jss::TransactionType] == jss::AccountSet;
+            }));
         }
 
         {

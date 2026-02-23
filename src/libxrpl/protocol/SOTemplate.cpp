@@ -8,7 +8,9 @@
 
 namespace xrpl {
 
-SOTemplate::SOTemplate(std::initializer_list<SOElement> uniqueFields, std::initializer_list<SOElement> commonFields)
+SOTemplate::SOTemplate(
+    std::initializer_list<SOElement> uniqueFields,
+    std::initializer_list<SOElement> commonFields)
     : indices_(SField::getNumFields() + 1, -1)  // Unmapped indices == -1
 {
     // Add all SOElements.

@@ -73,7 +73,8 @@ class Freeze_test : public beast::unit_test::suite
             if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
                 return;
             auto ff = affected[1u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
-            BEAST_EXPECT(ff[sfLowLimit.fieldName] == G1["USD"](0).value().getJson(JsonOptions::none));
+            BEAST_EXPECT(
+                ff[sfLowLimit.fieldName] == G1["USD"](0).value().getJson(JsonOptions::none));
             BEAST_EXPECT(ff[jss::Flags].asUInt() & lsfLowFreeze);
             BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfHighFreeze));
             env.close();
@@ -87,8 +88,10 @@ class Freeze_test : public beast::unit_test::suite
             if (!BEAST_EXPECT(checkArraySize(affected, 5u)))
                 return;
             auto ff = affected[3u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
-            BEAST_EXPECT(ff[sfHighLimit.fieldName] == bob["USD"](100).value().getJson(JsonOptions::none));
-            auto amt = STAmount{Issue{to_currency("USD"), noAccount()}, -15}.value().getJson(JsonOptions::none);
+            BEAST_EXPECT(
+                ff[sfHighLimit.fieldName] == bob["USD"](100).value().getJson(JsonOptions::none));
+            auto amt = STAmount{Issue{to_currency("USD"), noAccount()}, -15}.value().getJson(
+                JsonOptions::none);
             BEAST_EXPECT(ff[sfBalance.fieldName] == amt);
             env.close();
         }
@@ -149,7 +152,8 @@ class Freeze_test : public beast::unit_test::suite
             if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
                 return;
             auto ff = affected[1u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
-            BEAST_EXPECT(ff[sfLowLimit.fieldName] == G1["USD"](0).value().getJson(JsonOptions::none));
+            BEAST_EXPECT(
+                ff[sfLowLimit.fieldName] == G1["USD"](0).value().getJson(JsonOptions::none));
             BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfLowFreeze));
             BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfHighFreeze));
             env.close();
@@ -320,7 +324,8 @@ class Freeze_test : public beast::unit_test::suite
             env(trust(G1, A1["USD"](0), tfSetFreeze | tfClearFreeze), ter(tecNO_PERMISSION));
             env(trust(G1, A1["USD"](0), tfSetFreeze | tfClearDeepFreeze), ter(tecNO_PERMISSION));
             env(trust(G1, A1["USD"](0), tfSetDeepFreeze | tfClearFreeze), ter(tecNO_PERMISSION));
-            env(trust(G1, A1["USD"](0), tfSetDeepFreeze | tfClearDeepFreeze), ter(tecNO_PERMISSION));
+            env(trust(G1, A1["USD"](0), tfSetDeepFreeze | tfClearDeepFreeze),
+                ter(tecNO_PERMISSION));
         }
         else
         {
@@ -388,7 +393,8 @@ class Freeze_test : public beast::unit_test::suite
         {
             // Account without GlobalFreeze (proving operations normally work)
             //    test: visible offers where taker_pays is unfrozen issuer
-            auto offers = env.rpc("book_offers", std::string("USD/") + G1.human(), "XRP")[jss::result][jss::offers];
+            auto offers = env.rpc(
+                "book_offers", std::string("USD/") + G1.human(), "XRP")[jss::result][jss::offers];
             if (!BEAST_EXPECT(checkArraySize(offers, 2u)))
                 return;
             std::set<std::string> accounts;
@@ -400,7 +406,8 @@ class Freeze_test : public beast::unit_test::suite
             BEAST_EXPECT(accounts.find(G1.human()) != std::end(accounts));
 
             //    test: visible offers where taker_gets is unfrozen issuer
-            offers = env.rpc("book_offers", "XRP", std::string("USD/") + G1.human())[jss::result][jss::offers];
+            offers = env.rpc(
+                "book_offers", "XRP", std::string("USD/") + G1.human())[jss::result][jss::offers];
             if (!BEAST_EXPECT(checkArraySize(offers, 2u)))
                 return;
             accounts.clear();
@@ -458,11 +465,13 @@ class Freeze_test : public beast::unit_test::suite
 
             //    test: book_offers shows offers
             //    (should these actually be filtered?)
-            offers = env.rpc("book_offers", "XRP", std::string("USD/") + G1.human())[jss::result][jss::offers];
+            offers = env.rpc(
+                "book_offers", "XRP", std::string("USD/") + G1.human())[jss::result][jss::offers];
             if (!BEAST_EXPECT(checkArraySize(offers, 2u)))
                 return;
 
-            offers = env.rpc("book_offers", std::string("USD/") + G1.human(), "XRP")[jss::result][jss::offers];
+            offers = env.rpc(
+                "book_offers", std::string("USD/") + G1.human(), "XRP")[jss::result][jss::offers];
             if (!BEAST_EXPECT(checkArraySize(offers, 2u)))
                 return;
         }
@@ -629,7 +638,8 @@ class Freeze_test : public beast::unit_test::suite
         auto offers = getAccountOffers(env, A3)[jss::offers];
         if (!BEAST_EXPECT(checkArraySize(offers, 1u)))
             return;
-        BEAST_EXPECT(offers[0u][jss::taker_gets] == G1["USD"](999).value().getJson(JsonOptions::none));
+        BEAST_EXPECT(
+            offers[0u][jss::taker_gets] == G1["USD"](999).value().getJson(JsonOptions::none));
 
         //    test: someone else creates an offer providing liquidity
         env(offer(A4, XRP(999), G1["USD"](999)));
@@ -950,11 +960,19 @@ class Freeze_test : public beast::unit_test::suite
             env.close();
 
             // test: A1 cannot send USD using XRP through A2 offer
-            env(pay(A1, G1, USD(10)), path(~USD), sendmax(XRP(11)), txflags(tfNoRippleDirect), ter(tecPATH_PARTIAL));
+            env(pay(A1, G1, USD(10)),
+                path(~USD),
+                sendmax(XRP(11)),
+                txflags(tfNoRippleDirect),
+                ter(tecPATH_PARTIAL));
             env.close();
 
             // test: G1 cannot send USD using XRP through A2 offer
-            env(pay(G1, A1, USD(10)), path(~USD), sendmax(XRP(11)), txflags(tfNoRippleDirect), ter(tecPATH_PARTIAL));
+            env(pay(G1, A1, USD(10)),
+                path(~USD),
+                sendmax(XRP(11)),
+                txflags(tfNoRippleDirect),
+                ter(tecPATH_PARTIAL));
             env.close();
 
             env(trust(G1, A2["USD"](0), tfClearFreeze));
@@ -968,11 +986,19 @@ class Freeze_test : public beast::unit_test::suite
             env.close();
 
             // test: A1 cannot send USD using XRP through A2 offer
-            env(pay(A1, G1, USD(10)), path(~USD), sendmax(XRP(11)), txflags(tfNoRippleDirect), ter(tecPATH_PARTIAL));
+            env(pay(A1, G1, USD(10)),
+                path(~USD),
+                sendmax(XRP(11)),
+                txflags(tfNoRippleDirect),
+                ter(tecPATH_PARTIAL));
             env.close();
 
             // test: G1 cannot send USD using XRP through A2 offer
-            env(pay(G1, A1, USD(10)), path(~USD), sendmax(XRP(11)), txflags(tfNoRippleDirect), ter(tecPATH_PARTIAL));
+            env(pay(G1, A1, USD(10)),
+                path(~USD),
+                sendmax(XRP(11)),
+                txflags(tfNoRippleDirect),
+                ter(tecPATH_PARTIAL));
             env.close();
 
             env(trust(G1, A2["USD"](0), tfClearFreeze | tfClearDeepFreeze));
@@ -1005,11 +1031,19 @@ class Freeze_test : public beast::unit_test::suite
             env.close();
 
             // test: A1 cannot send USD using XRP through A2 offer
-            env(pay(A1, G1, USD(10)), path(~USD), sendmax(XRP(11)), txflags(tfNoRippleDirect), ter(tecPATH_PARTIAL));
+            env(pay(A1, G1, USD(10)),
+                path(~USD),
+                sendmax(XRP(11)),
+                txflags(tfNoRippleDirect),
+                ter(tecPATH_PARTIAL));
             env.close();
 
             // test: G1 cannot send USD using XRP through A2 offer
-            env(pay(G1, A1, USD(10)), path(~USD), sendmax(XRP(11)), txflags(tfNoRippleDirect), ter(tecPATH_PARTIAL));
+            env(pay(G1, A1, USD(10)),
+                path(~USD),
+                sendmax(XRP(11)),
+                txflags(tfNoRippleDirect),
+                ter(tecPATH_PARTIAL));
             env.close();
 
             env(trust(A2, limit, tfClearFreeze | tfClearDeepFreeze));
@@ -1049,11 +1083,19 @@ class Freeze_test : public beast::unit_test::suite
             env.close();
 
             // test: A1 cannot send XRP using USD through A2 offer
-            env(pay(A1, G1, XRP(10)), path(~XRP), sendmax(USD(11)), txflags(tfNoRippleDirect), ter(tecPATH_PARTIAL));
+            env(pay(A1, G1, XRP(10)),
+                path(~XRP),
+                sendmax(USD(11)),
+                txflags(tfNoRippleDirect),
+                ter(tecPATH_PARTIAL));
             env.close();
 
             // test: G1 cannot send XRP using USD through A2 offer
-            env(pay(G1, A1, XRP(10)), path(~XRP), sendmax(USD(11)), txflags(tfNoRippleDirect), ter(tecPATH_PARTIAL));
+            env(pay(G1, A1, XRP(10)),
+                path(~XRP),
+                sendmax(USD(11)),
+                txflags(tfNoRippleDirect),
+                ter(tecPATH_PARTIAL));
             env.close();
 
             env(trust(G1, A2["USD"](0), tfClearFreeze | tfClearDeepFreeze));
@@ -1086,11 +1128,19 @@ class Freeze_test : public beast::unit_test::suite
             env.close();
 
             // test: A1 cannot send XRP using USD through A2 offer
-            env(pay(A1, G1, XRP(10)), path(~XRP), sendmax(USD(11)), txflags(tfNoRippleDirect), ter(tecPATH_PARTIAL));
+            env(pay(A1, G1, XRP(10)),
+                path(~XRP),
+                sendmax(USD(11)),
+                txflags(tfNoRippleDirect),
+                ter(tecPATH_PARTIAL));
             env.close();
 
             // test: G1 cannot send XRP using USD through A2 offer
-            env(pay(G1, A1, XRP(10)), path(~XRP), sendmax(USD(11)), txflags(tfNoRippleDirect), ter(tecPATH_PARTIAL));
+            env(pay(G1, A1, XRP(10)),
+                path(~XRP),
+                sendmax(USD(11)),
+                txflags(tfNoRippleDirect),
+                ter(tecPATH_PARTIAL));
             env.close();
 
             env(trust(A2, limit, tfClearFreeze | tfClearDeepFreeze));
@@ -1556,7 +1606,11 @@ class Freeze_test : public beast::unit_test::suite
             env.close();
 
             // test: cannot use USD to make payment
-            env(pay(A1, A2, XRP(10)), path(~XRP), sendmax(USD(11)), txflags(tfNoRippleDirect), ter(tecPATH_DRY));
+            env(pay(A1, A2, XRP(10)),
+                path(~XRP),
+                sendmax(USD(11)),
+                txflags(tfNoRippleDirect),
+                ter(tecPATH_DRY));
             env.close();
 
             // test: can still receive USD payments.
@@ -1583,11 +1637,19 @@ class Freeze_test : public beast::unit_test::suite
             env.close();
 
             // test: cannot use USD to make payment
-            env(pay(A1, A2, XRP(10)), path(~XRP), sendmax(USD(11)), txflags(tfNoRippleDirect), ter(tecPATH_DRY));
+            env(pay(A1, A2, XRP(10)),
+                path(~XRP),
+                sendmax(USD(11)),
+                txflags(tfNoRippleDirect),
+                ter(tecPATH_DRY));
             env.close();
 
             // test: cannot receive USD payments.
-            env(pay(A2, A1, USD(10)), path(~USD), sendmax(XRP(11)), txflags(tfNoRippleDirect), ter(tecPATH_DRY));
+            env(pay(A2, A1, USD(10)),
+                path(~USD),
+                sendmax(XRP(11)),
+                txflags(tfNoRippleDirect),
+                ter(tecPATH_DRY));
             env.close();
 
             // test: can still receive XRP payments.
@@ -1784,7 +1846,9 @@ class Freeze_test : public beast::unit_test::suite
             env(token::createOffer(A1, nftID, USD(11)), token::owner(A2));
             env.close();
 
-            env(token::brokerOffers(broker, buyIdx, sellIdx), token::brokerFee(USD(1)), ter(tecFROZEN));
+            env(token::brokerOffers(broker, buyIdx, sellIdx),
+                token::brokerFee(USD(1)),
+                ter(tecFROZEN));
             env.close();
         }
 
@@ -1819,7 +1883,11 @@ class Freeze_test : public beast::unit_test::suite
 
     // Helper function to extract trustline flags from open ledger
     uint32_t
-    getTrustlineFlags(test::jtx::Env& env, size_t expectedArraySize, size_t expectedArrayIndex, bool modified = true)
+    getTrustlineFlags(
+        test::jtx::Env& env,
+        size_t expectedArraySize,
+        size_t expectedArrayIndex,
+        bool modified = true)
     {
         using namespace test::jtx;
         auto const affected = env.meta()->getJson(JsonOptions::none)[sfAffectedNodes.fieldName];
@@ -1828,10 +1896,14 @@ class Freeze_test : public beast::unit_test::suite
 
         if (modified)
         {
-            return affected[expectedArrayIndex][sfModifiedNode.fieldName][sfFinalFields.fieldName][jss::Flags].asUInt();
+            return affected[expectedArrayIndex][sfModifiedNode.fieldName][sfFinalFields.fieldName]
+                           [jss::Flags]
+                               .asUInt();
         }
 
-        return affected[expectedArrayIndex][sfCreatedNode.fieldName][sfNewFields.fieldName][jss::Flags].asUInt();
+        return affected[expectedArrayIndex][sfCreatedNode.fieldName][sfNewFields.fieldName]
+                       [jss::Flags]
+                           .asUInt();
     }
 
     // Helper function that returns the index of the next check on account
@@ -1842,7 +1914,10 @@ class Freeze_test : public beast::unit_test::suite
     }
 
     uint256
-    createNFTSellOffer(test::jtx::Env& env, test::jtx::Account const& account, test::jtx::PrettyAmount const& currency)
+    createNFTSellOffer(
+        test::jtx::Env& env,
+        test::jtx::Account const& account,
+        test::jtx::PrettyAmount const& currency)
     {
         using namespace test::jtx;
         uint256 const nftID{token::getNextID(env, account, 0u, tfTransferable)};

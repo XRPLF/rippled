@@ -209,9 +209,11 @@ public:
             return;
         }
         auto const rate = elapsed.count() / double(work);
-        clock_type::duration const remain(static_cast<clock_type::duration::rep>((work_ - work) * rate));
+        clock_type::duration const remain(
+            static_cast<clock_type::duration::rep>((work_ - work) * rate));
         log << "Remaining: " << detail::fmtdur(remain) << " (" << work << " of " << work_ << " in "
-            << detail::fmtdur(elapsed) << ", " << (work - prev_) << " in " << detail::fmtdur(now - report_) << ")";
+            << detail::fmtdur(elapsed) << ", " << (work - prev_) << " in "
+            << detail::fmtdur(now - report_) << ")";
         report_ = now;
         prev_ = work;
     }
@@ -365,7 +367,8 @@ public:
             for (it->SeekToFirst(); it->Valid(); it->Next())
             {
                 if (it->key().size() != 32)
-                    Throw<std::runtime_error>("Unexpected key size " + std::to_string(it->key().size()));
+                    Throw<std::runtime_error>(
+                        "Unexpected key size " + std::to_string(it->key().size()));
                 void const* const key = it->key().data();
                 void const* const data = it->value().data();
                 auto const size = it->value().size();

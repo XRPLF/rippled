@@ -73,7 +73,13 @@ SSLHTTPPeer<Handler>::SSLHTTPPeer(
     endpoint_type remote_address,
     ConstBufferSequence const& buffers,
     middle_type&& stream)
-    : BaseHTTPPeer<Handler, SSLHTTPPeer>(port, handler, ioc.get_executor(), journal, remote_address, buffers)
+    : BaseHTTPPeer<Handler, SSLHTTPPeer>(
+          port,
+          handler,
+          ioc.get_executor(),
+          journal,
+          remote_address,
+          buffers)
     , stream_ptr_(std::make_unique<stream_type>(middle_type(std::move(stream)), *port.context))
     , stream_(*stream_ptr_)
     , socket_(stream_.next_layer().socket())
@@ -92,7 +98,9 @@ SSLHTTPPeer<Handler>::run()
     }
     if (!socket_.is_open())
         return;
-    util::spawn(this->strand_, std::bind(&SSLHTTPPeer::do_handshake, this->shared_from_this(), std::placeholders::_1));
+    util::spawn(
+        this->strand_,
+        std::bind(&SSLHTTPPeer::do_handshake, this->shared_from_this(), std::placeholders::_1));
 }
 
 template <class Handler>
@@ -116,17 +124,21 @@ SSLHTTPPeer<Handler>::do_handshake(yield_context do_yield)
     boost::system::error_code ec;
     stream_.set_verify_mode(boost::asio::ssl::verify_none);
     this->start_timer();
-    this->read_buf_.consume(stream_.async_handshake(stream_type::server, this->read_buf_.data(), do_yield[ec]));
+    this->read_buf_.consume(
+        stream_.async_handshake(stream_type::server, this->read_buf_.data(), do_yield[ec]));
     this->cancel_timer();
     if (ec == boost::beast::error::timeout)
         return this->on_timer();
     if (ec)
         return this->fail(ec, "handshake");
-    bool const http = this->port().protocol.count("peer") > 0 || this->port().protocol.count("wss") > 0 ||
-        this->port().protocol.count("wss2") > 0 || this->port().protocol.count("https") > 0;
+    bool const http = this->port().protocol.count("peer") > 0 ||
+        this->port().protocol.count("wss") > 0 || this->port().protocol.count("wss2") > 0 ||
+        this->port().protocol.count("https") > 0;
     if (http)
     {
-        util::spawn(this->strand_, std::bind(&SSLHTTPPeer::do_read, this->shared_from_this(), std::placeholders::_1));
+        util::spawn(
+            this->strand_,
+            std::bind(&SSLHTTPPeer::do_read, this->shared_from_this(), std::placeholders::_1));
         return;
     }
     // `this` will be destroyed
@@ -153,7 +165,8 @@ SSLHTTPPeer<Handler>::do_close()
 {
     this->start_timer();
     stream_.async_shutdown(bind_executor(
-        this->strand_, std::bind(&SSLHTTPPeer::on_shutdown, this->shared_from_this(), std::placeholders::_1)));
+        this->strand_,
+        std::bind(&SSLHTTPPeer::on_shutdown, this->shared_from_this(), std::placeholders::_1)));
 }
 
 template <class Handler>

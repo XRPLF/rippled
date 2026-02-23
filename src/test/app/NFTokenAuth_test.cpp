@@ -1,6 +1,6 @@
 #include <test/jtx.h>
 
-#include <xrpld/app/tx/detail/NFTokenUtils.h>
+#include <xrpl/tx/transactors/NFT/NFTokenUtils.h>
 
 namespace xrpl {
 
@@ -335,7 +335,9 @@ public:
         if (features[fixEnforceNFTokenTrustlineV2])
         {
             // test: G1 requires authorization of broker, no trust line exists
-            env(token::brokerOffers(broker, buyIdx, sellIdx), token::brokerFee(USD(1)), ter(tecNO_LINE));
+            env(token::brokerOffers(broker, buyIdx, sellIdx),
+                token::brokerFee(USD(1)),
+                ter(tecNO_LINE));
             env.close();
 
             // trust line created, but not authorized
@@ -343,7 +345,9 @@ public:
             env.close();
 
             // test: G1 requires authorization of broker
-            env(token::brokerOffers(broker, buyIdx, sellIdx), token::brokerFee(USD(1)), ter(tecNO_AUTH));
+            env(token::brokerOffers(broker, buyIdx, sellIdx),
+                token::brokerFee(USD(1)),
+                ter(tecNO_AUTH));
             env.close();
 
             // test: can still be brokered without broker fee.
@@ -413,7 +417,9 @@ public:
         if (features[fixEnforceNFTokenTrustlineV2])
         {
             // test: G1 requires authorization of A2
-            env(token::brokerOffers(broker, buyIdx, sellIdx), token::brokerFee(USD(1)), ter(tecNO_AUTH));
+            env(token::brokerOffers(broker, buyIdx, sellIdx),
+                token::brokerFee(USD(1)),
+                ter(tecNO_AUTH));
             env.close();
         }
     }
@@ -464,7 +470,9 @@ public:
         if (features[fixEnforceNFTokenTrustlineV2])
         {
             // test: G1 requires authorization of broker, no trust line exists
-            env(token::brokerOffers(broker, buyIdx, sellIdx), token::brokerFee(USD(1)), ter(tecNO_LINE));
+            env(token::brokerOffers(broker, buyIdx, sellIdx),
+                token::brokerFee(USD(1)),
+                ter(tecNO_LINE));
             env.close();
 
             // trust line created, but not authorized
@@ -472,7 +480,9 @@ public:
             env.close();
 
             // test: G1 requires authorization of A2
-            env(token::brokerOffers(broker, buyIdx, sellIdx), token::brokerFee(USD(1)), ter(tecNO_AUTH));
+            env(token::brokerOffers(broker, buyIdx, sellIdx),
+                token::brokerFee(USD(1)),
+                ter(tecNO_AUTH));
             env.close();
 
             // test: cannot be brokered even without broker fee.

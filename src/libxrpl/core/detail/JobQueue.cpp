@@ -62,7 +62,8 @@ JobQueue::addRefCountedJob(JobType type, std::string const& name, JobFunction co
     XRPL_ASSERT(type != jtINVALID, "xrpl::JobQueue::addRefCountedJob : valid input job type");
 
     auto iter(m_jobData.find(type));
-    XRPL_ASSERT(iter != m_jobData.end(), "xrpl::JobQueue::addRefCountedJob : job type found in jobs");
+    XRPL_ASSERT(
+        iter != m_jobData.end(), "xrpl::JobQueue::addRefCountedJob : job type found in jobs");
     if (iter == m_jobData.end())
         return false;
 
@@ -83,7 +84,8 @@ JobQueue::addRefCountedJob(JobType type, std::string const& name, JobFunction co
 
         JobType const type(job.getType());
         XRPL_ASSERT(type != jtINVALID, "xrpl::JobQueue::addRefCountedJob : has valid job type");
-        XRPL_ASSERT(m_jobSet.find(job) != m_jobSet.end(), "xrpl::JobQueue::addRefCountedJob : job found");
+        XRPL_ASSERT(
+            m_jobSet.find(job) != m_jobSet.end(), "xrpl::JobQueue::addRefCountedJob : job found");
         perfLog_.jobQueue(type);
 
         JobTypeData& data(getJobTypeData(type));
@@ -165,7 +167,9 @@ JobQueue::addLoadEvents(JobType t, int count, std::chrono::milliseconds elapsed)
 bool
 JobQueue::isOverloaded()
 {
-    return std::any_of(m_jobData.begin(), m_jobData.end(), [](auto& entry) { return entry.second.load().isOver(); });
+    return std::any_of(m_jobData.begin(), m_jobData.end(), [](auto& entry) {
+        return entry.second.load().isOver();
+    });
 }
 
 Json::Value
@@ -285,7 +289,8 @@ JobQueue::getNextJob(Job& job)
         XRPL_ASSERT(type != jtINVALID, "xrpl::JobQueue::getNextJob : valid job type");
 
         JobTypeData& data(getJobTypeData(type));
-        XRPL_ASSERT(data.running <= getJobLimit(type), "xrpl::JobQueue::getNextJob : maximum jobs running");
+        XRPL_ASSERT(
+            data.running <= getJobLimit(type), "xrpl::JobQueue::getNextJob : maximum jobs running");
 
         // Run this job if we're running below the limit.
         if (data.running < getJobLimit(data.type()))
@@ -312,7 +317,9 @@ JobQueue::finishJob(JobType type)
     // Queue a deferred task if possible
     if (data.deferred > 0)
     {
-        XRPL_ASSERT(data.running + data.waiting >= getJobLimit(type), "xrpl::JobQueue::finishJob : job limit");
+        XRPL_ASSERT(
+            data.running + data.waiting >= getJobLimit(type),
+            "xrpl::JobQueue::finishJob : job limit");
 
         --data.deferred;
         m_workers.addTask();

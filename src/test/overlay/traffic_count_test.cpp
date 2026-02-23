@@ -25,7 +25,8 @@ public:
         BEAST_EXPECT(known == TrafficCount::category::base);
 
         // an unknown message type is categorized as unknown
-        auto const unknown = TrafficCount::categorize(message, static_cast<protocol::MessageType>(99), false);
+        auto const unknown =
+            TrafficCount::categorize(message, static_cast<protocol::MessageType>(99), false);
         BEAST_EXPECT(unknown == TrafficCount::category::unknown);
     }
 
@@ -109,7 +110,8 @@ public:
         BEAST_EXPECT(TrafficCount::to_string(TrafficCount::category::total) == "total");
 
         // return "unknown" for unknown categories
-        BEAST_EXPECT(TrafficCount::to_string(static_cast<TrafficCount::category>(1000)) == "unknown");
+        BEAST_EXPECT(
+            TrafficCount::to_string(static_cast<TrafficCount::category>(1000)) == "unknown");
     }
 
     void

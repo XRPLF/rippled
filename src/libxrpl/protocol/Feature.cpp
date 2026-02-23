@@ -70,7 +70,8 @@ class FeatureCollections
         uint256 feature;
 
         Feature() = delete;
-        explicit Feature(std::string const& name_, uint256 const& feature_) : name(name_), feature(feature_)
+        explicit Feature(std::string const& name_, uint256 const& feature_)
+            : name(name_), feature(feature_)
         {
         }
 
@@ -90,8 +91,9 @@ class FeatureCollections
 
     // Intermediate types to help with readability
     template <class tag, typename Type, Type Feature::* PtrToMember>
-    using feature_hashed_unique = boost::multi_index::
-        hashed_unique<boost::multi_index::tag<tag>, boost::multi_index::member<Feature, Type, PtrToMember>>;
+    using feature_hashed_unique = boost::multi_index::hashed_unique<
+        boost::multi_index::tag<tag>,
+        boost::multi_index::member<Feature, Type, PtrToMember>>;
 
     // Intermediate types to help with readability
     using feature_indexing = boost::multi_index::indexed_by<
@@ -204,7 +206,8 @@ FeatureCollections::FeatureCollections()
 std::optional<uint256>
 FeatureCollections::getRegisteredFeature(std::string const& name) const
 {
-    XRPL_ASSERT(readOnly.load(), "xrpl::FeatureCollections::getRegisteredFeature : startup completed");
+    XRPL_ASSERT(
+        readOnly.load(), "xrpl::FeatureCollections::getRegisteredFeature : startup completed");
     Feature const* feature = getByName(name);
     if (feature)
         return feature->feature;
@@ -237,7 +240,8 @@ FeatureCollections::registerFeature(std::string const& name, Supported support, 
         auto const getAmendmentSupport = [=]() {
             if (vote == VoteBehavior::Obsolete)
                 return AmendmentSupport::Retired;
-            return support == Supported::yes ? AmendmentSupport::Supported : AmendmentSupport::Unsupported;
+            return support == Supported::yes ? AmendmentSupport::Supported
+                                             : AmendmentSupport::Unsupported;
         };
         all.emplace(name, getAmendmentSupport());
 
@@ -271,7 +275,8 @@ FeatureCollections::registrationIsDone()
 size_t
 FeatureCollections::featureToBitsetIndex(uint256 const& f) const
 {
-    XRPL_ASSERT(readOnly.load(), "xrpl::FeatureCollections::featureToBitsetIndex : startup completed");
+    XRPL_ASSERT(
+        readOnly.load(), "xrpl::FeatureCollections::featureToBitsetIndex : startup completed");
 
     Feature const* feature = getByFeature(f);
     if (!feature)
@@ -283,7 +288,8 @@ FeatureCollections::featureToBitsetIndex(uint256 const& f) const
 uint256 const&
 FeatureCollections::bitsetIndexToFeature(size_t i) const
 {
-    XRPL_ASSERT(readOnly.load(), "xrpl::FeatureCollections::bitsetIndexToFeature : startup completed");
+    XRPL_ASSERT(
+        readOnly.load(), "xrpl::FeatureCollections::bitsetIndexToFeature : startup completed");
     Feature const& feature = getByIndex(i);
     return feature.feature;
 }
@@ -389,8 +395,10 @@ featureToName(uint256 const& f)
 #pragma push_macro("XRPL_RETIRE_FIX")
 #undef XRPL_RETIRE_FIX
 
-#define XRPL_FEATURE(name, supported, vote) uint256 const feature##name = registerFeature(#name, supported, vote);
-#define XRPL_FIX(name, supported, vote) uint256 const fix##name = registerFeature("fix" #name, supported, vote);
+#define XRPL_FEATURE(name, supported, vote) \
+    uint256 const feature##name = registerFeature(#name, supported, vote);
+#define XRPL_FIX(name, supported, vote) \
+    uint256 const fix##name = registerFeature("fix" #name, supported, vote);
 
 // clang-format off
 #define XRPL_RETIRE_FEATURE(name)                                       \

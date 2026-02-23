@@ -211,7 +211,11 @@ Number::Guard::round() noexcept
 
 template <UnsignedMantissa T>
 void
-Number::Guard::bringIntoRange(bool& negative, T& mantissa, int& exponent, internalrep const& minMantissa)
+Number::Guard::bringIntoRange(
+    bool& negative,
+    T& mantissa,
+    int& exponent,
+    internalrep const& minMantissa)
 {
     // Bring mantissa back into the minMantissa / maxMantissa range AFTER
     // rounding
@@ -259,7 +263,11 @@ Number::Guard::doRoundUp(
 
 template <UnsignedMantissa T>
 void
-Number::Guard::doRoundDown(bool& negative, T& mantissa, int& exponent, internalrep const& minMantissa)
+Number::Guard::doRoundDown(
+    bool& negative,
+    T& mantissa,
+    int& exponent,
+    internalrep const& minMantissa)
 {
     auto r = round();
     if (r == 1 || (r == 0 && (mantissa & 1) == 1))
@@ -428,7 +436,9 @@ doNormalize(
 
     g.doRoundUp(negative, mantissa_, exponent_, minMantissa, maxMantissa, "Number::normalize 2");
     XRPL_ASSERT_PARTS(
-        mantissa_ >= minMantissa && mantissa_ <= maxMantissa, "xrpl::doNormalize", "final mantissa fits in range");
+        mantissa_ >= minMantissa && mantissa_ <= maxMantissa,
+        "xrpl::doNormalize",
+        "final mantissa fits in range");
 }
 
 template <>
@@ -669,7 +679,12 @@ Number::operator*=(Number const& y)
     xm = static_cast<internalrep>(zm);
     xe = ze;
     g.doRoundUp(
-        zn, xm, xe, minMantissa, maxMantissa, "Number::multiplication overflow : exponent is " + std::to_string(xe));
+        zn,
+        xm,
+        xe,
+        minMantissa,
+        maxMantissa,
+        "Number::multiplication overflow : exponent is " + std::to_string(xe));
     negative_ = zn;
     mantissa_ = xm;
     exponent_ = xe;
@@ -885,9 +900,11 @@ to_string(Number const& amount)
 
     XRPL_ASSERT(post_to >= post_from, "xrpl::to_string(Number) : second distance check");
 
-    post_to = std::find_if(std::make_reverse_iterator(post_to), std::make_reverse_iterator(post_from), [](char c) {
-                  return c != '0';
-              }).base();
+    post_to = std::find_if(
+                  std::make_reverse_iterator(post_to),
+                  std::make_reverse_iterator(post_from),
+                  [](char c) { return c != '0'; })
+                  .base();
 
     std::string ret;
 

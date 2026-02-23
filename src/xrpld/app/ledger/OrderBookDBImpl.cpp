@@ -1,12 +1,11 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/OrderBookDBImpl.h>
-#include <xrpld/app/misc/AMMUtils.h>
-#include <xrpld/core/Config.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/tx/transactors/AMM/AMMUtils.h>
 
 namespace xrpl {
 
@@ -56,7 +55,9 @@ OrderBookDBImpl::setup(std::shared_ptr<ReadView const> const& ledger)
             update(ledger);
         else
             registry_.getJobQueue().addJob(
-                jtUPDATE_PF, "OrderBookUpd" + std::to_string(ledger->seq()), [this, ledger]() { update(ledger); });
+                jtUPDATE_PF, "OrderBookUpd" + std::to_string(ledger->seq()), [this, ledger]() {
+                    update(ledger);
+                });
     }
 }
 
@@ -69,7 +70,8 @@ OrderBookDBImpl::update(std::shared_ptr<ReadView const> const& ledger)
     // A newer full update job is pending
     if (auto const seq = seq_.load(); seq > ledger->seq())
     {
-        JLOG(j_.debug()) << "Eliding update for " << ledger->seq() << " because of pending update to later " << seq;
+        JLOG(j_.debug()) << "Eliding update for " << ledger->seq()
+                         << " because of pending update to later " << seq;
         return;
     }
 
@@ -289,8 +291,8 @@ OrderBookDBImpl::processTxn(
             if (node.getFieldU16(sfLedgerEntryType) == ltOFFER)
             {
                 auto process = [&, this](SField const& field) {
-                    if (auto data = dynamic_cast<STObject const*>(node.peekAtPField(field));
-                        data && data->isFieldPresent(sfTakerPays) && data->isFieldPresent(sfTakerGets))
+                    if (auto data = dynamic_cast<STObject const*>(node.peekAtPField(field)); data &&
+                        data->isFieldPresent(sfTakerPays) && data->isFieldPresent(sfTakerGets))
                     {
                         auto listeners = getBookListeners(
                             {data->getFieldAmount(sfTakerGets).issue(),

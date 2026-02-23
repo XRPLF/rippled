@@ -1,9 +1,8 @@
 #include <test/jtx.h>
 
-#include <xrpld/app/tx/detail/PermissionedDomainSet.h>
-
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/transactors/PermissionedDomain/PermissionedDomainSet.h>
 
 #include <exception>
 #include <map>
@@ -164,7 +163,8 @@ class PermissionedDomains_test : public beast::unit_test::suite
             "Cred0123456789012345678901234567890123456789012345678901234567890";
         static_assert(longCredentialType.size() == maxCredentialTypeLength + 1);
         txJsonMutable["AcceptedCredentials"][2u] = credentialOrig;
-        txJsonMutable["AcceptedCredentials"][2u][jss::Credential]["CredentialType"] = std::string(longCredentialType);
+        txJsonMutable["AcceptedCredentials"][2u][jss::Credential]["CredentialType"] =
+            std::string(longCredentialType);
         BEAST_EXPECT(exceptionExpected(env, txJsonMutable).starts_with("invalidParams"));
 
         // Remove Credentialtype from a credential and apply.
@@ -312,7 +312,8 @@ class PermissionedDomains_test : public beast::unit_test::suite
                     BEAST_EXPECT(domain.isNonZero());
                     BEAST_EXPECT(object["LedgerEntryType"] == "PermissionedDomain");
                     BEAST_EXPECT(object["Owner"] == alice[0].human());
-                    BEAST_EXPECT(pdomain::credentialsFromJson(object, human2Acc) == longCredentials);
+                    BEAST_EXPECT(
+                        pdomain::credentialsFromJson(object, human2Acc) == longCredentials);
                     break;
                 }
             }
@@ -342,13 +343,16 @@ class PermissionedDomains_test : public beast::unit_test::suite
             domain2 = pdomain::getNewDomain(env.meta());
             auto objects = pdomain::getObjects(alice[0], env);
             auto object = objects[domain2];
-            BEAST_EXPECT(pdomain::credentialsFromJson(object, human2Acc) == pdomain::sortCredentials(credentials10));
+            BEAST_EXPECT(
+                pdomain::credentialsFromJson(object, human2Acc) ==
+                pdomain::sortCredentials(credentials10));
         }
 
         // Update with 1 credential.
         env(pdomain::setTx(alice[0], credentials1, domain2));
         BEAST_EXPECT(
-            pdomain::credentialsFromJson(pdomain::getObjects(alice[0], env)[domain2], human2Acc) == credentials1);
+            pdomain::credentialsFromJson(pdomain::getObjects(alice[0], env)[domain2], human2Acc) ==
+            credentials1);
 
         // Update with 10 credentials.
         env(pdomain::setTx(alice[0], credentials10, domain2));

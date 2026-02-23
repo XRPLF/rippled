@@ -32,7 +32,8 @@ class LedgerRPC_test : public beast::unit_test::suite
         else if (BEAST_EXPECT(jv.isMember(jss::error_message)))
             BEAST_EXPECTS(
                 jv[jss::error_message] == msg,
-                "Expected error message \"" + msg + "\", received \"" + jv[jss::error_message].asString() + "\"");
+                "Expected error message \"" + msg + "\", received \"" +
+                    jv[jss::error_message].asString() + "\"");
     }
 
     // Corrupt a valid address by replacing the 10th character with '!'.
@@ -77,7 +78,8 @@ class LedgerRPC_test : public beast::unit_test::suite
             // using current identifier
             auto const jrr = env.rpc("ledger", "current")[jss::result];
             BEAST_EXPECT(jrr[jss::ledger][jss::closed] == false);
-            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == std::to_string(env.current()->header().seq));
+            BEAST_EXPECT(
+                jrr[jss::ledger][jss::ledger_index] == std::to_string(env.current()->header().seq));
             BEAST_EXPECT(jrr[jss::ledger_current_index] == env.current()->header().seq);
         }
     }
@@ -102,7 +104,8 @@ class LedgerRPC_test : public beast::unit_test::suite
             Json::Value jvParams;
             jvParams[jss::ledger_index] = "potato";
             auto const jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "invalidParams", "Invalid field 'ledger_index', not string or number.");
+            checkErrorValue(
+                jrr, "invalidParams", "Invalid field 'ledger_index', not string or number.");
         }
 
         {
@@ -110,7 +113,8 @@ class LedgerRPC_test : public beast::unit_test::suite
             Json::Value jvParams;
             jvParams[jss::ledger_index] = -1;
             auto const jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "invalidParams", "Invalid field 'ledger_index', not string or number.");
+            checkErrorValue(
+                jrr, "invalidParams", "Invalid field 'ledger_index', not string or number.");
         }
 
         {
@@ -268,7 +272,8 @@ class LedgerRPC_test : public beast::unit_test::suite
             jvParams[jss::ledger] = "invalid";
             jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
-            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'ledger', not string or number.");
+            BEAST_EXPECT(
+                jrr[jss::error_message] == "Invalid field 'ledger', not string or number.");
 
             // numeric index
             jvParams[jss::ledger] = 4;
@@ -351,7 +356,8 @@ class LedgerRPC_test : public beast::unit_test::suite
             jvParams[jss::ledger_index] = "invalid";
             jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
-            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'ledger_index', not string or number.");
+            BEAST_EXPECT(
+                jrr[jss::error_message] == "Invalid field 'ledger_index', not string or number.");
 
             // numeric index
             for (auto i : {1, 2, 3, 4, 5, 6})
@@ -640,7 +646,8 @@ class LedgerRPC_test : public beast::unit_test::suite
 
             // jss::type is a deprecated field
             BEAST_EXPECT(
-                jrr.isMember(jss::warnings) && jrr[jss::warnings].isArray() && jrr[jss::warnings].size() == 1 &&
+                jrr.isMember(jss::warnings) && jrr[jss::warnings].isArray() &&
+                jrr[jss::warnings].size() == 1 &&
                 jrr[jss::warnings][0u][jss::id].asInt() == warnRPC_FIELDS_DEPRECATED);
         }
         {
@@ -653,11 +660,13 @@ class LedgerRPC_test : public beast::unit_test::suite
             BEAST_EXPECT(jrr[jss::ledger].isMember(jss::accountState));
             BEAST_EXPECT(jrr[jss::ledger][jss::accountState].isArray());
             BEAST_EXPECT(
-                hashesLedgerEntryIndex > 0 && jrr[jss::ledger][jss::accountState][hashesLedgerEntryIndex] == index);
+                hashesLedgerEntryIndex > 0 &&
+                jrr[jss::ledger][jss::accountState][hashesLedgerEntryIndex] == index);
 
             // jss::type is a deprecated field
             BEAST_EXPECT(
-                jrr.isMember(jss::warnings) && jrr[jss::warnings].isArray() && jrr[jss::warnings].size() == 1 &&
+                jrr.isMember(jss::warnings) && jrr[jss::warnings].isArray() &&
+                jrr[jss::warnings].size() == 1 &&
                 jrr[jss::warnings][0u][jss::id].asInt() == warnRPC_FIELDS_DEPRECATED);
         }
     }

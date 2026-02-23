@@ -22,7 +22,10 @@ std::unordered_map<protocol::MessageType, TrafficCount::category> const type_loo
 };
 
 TrafficCount::category
-TrafficCount::categorize(::google::protobuf::Message const& message, protocol::MessageType type, bool inbound)
+TrafficCount::categorize(
+    ::google::protobuf::Message const& message,
+    protocol::MessageType type,
+    bool inbound)
 {
     if (auto item = type_lookup.find(type); item != type_lookup.end())
         return item->second;
@@ -95,7 +98,8 @@ TrafficCount::categorize(::google::protobuf::Message const& message, protocol::M
         if (msg->type() == protocol::TMGetObjectByHash::otTRANSACTIONS)
             return TrafficCount::category::get_transactions;
 
-        return (msg->query() == inbound) ? TrafficCount::category::share_hash : TrafficCount::category::get_hash;
+        return (msg->query() == inbound) ? TrafficCount::category::share_hash
+                                         : TrafficCount::category::get_hash;
     }
 
     return TrafficCount::category::unknown;

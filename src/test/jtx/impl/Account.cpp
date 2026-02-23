@@ -14,8 +14,15 @@ Account const Account::master(
     generateKeyPair(KeyType::secp256k1, generateSeed("masterpassphrase")),
     Account::privateCtorTag{});
 
-Account::Account(std::string name, std::pair<PublicKey, SecretKey> const& keys, Account::privateCtorTag)
-    : name_(std::move(name)), pk_(keys.first), sk_(keys.second), id_(calcAccountID(pk_)), human_(toBase58(id_))
+Account::Account(
+    std::string name,
+    std::pair<PublicKey, SecretKey> const& keys,
+    Account::privateCtorTag)
+    : name_(std::move(name))
+    , pk_(keys.first)
+    , sk_(keys.second)
+    , id_(calcAccountID(pk_))
+    , human_(toBase58(id_))
 {
 }
 
@@ -46,7 +53,8 @@ Account::fromCache(AcctStringType stringType, std::string name, KeyType type)
     return r.first->second;
 }
 
-Account::Account(std::string name, KeyType type) : Account(fromCache(Account::other, std::move(name), type))
+Account::Account(std::string name, KeyType type)
+    : Account(fromCache(Account::other, std::move(name), type))
 {
 }
 

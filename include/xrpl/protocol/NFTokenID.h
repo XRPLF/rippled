@@ -29,7 +29,10 @@ std::vector<uint256>
 getNFTokenIDFromDeletedOffer(TxMeta const& transactionMeta);
 
 void
-insertNFTokenID(Json::Value& response, std::shared_ptr<STTx const> const& transaction, TxMeta const& transactionMeta);
+insertNFTokenID(
+    Json::Value& response,
+    std::shared_ptr<STTx const> const& transaction,
+    TxMeta const& transactionMeta);
 /** @} */
 
 }  // namespace xrpl

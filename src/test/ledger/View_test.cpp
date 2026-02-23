@@ -113,8 +113,8 @@ class View_test : public beast::unit_test::suite
         using namespace jtx;
         Env env(*this);
         Config config;
-        std::shared_ptr<Ledger const> const genesis =
-            std::make_shared<Ledger>(create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
+        std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
+            create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
         auto const ledger = std::make_shared<Ledger>(*genesis, env.app().timeKeeper().closeTime());
         wipe(*ledger);
         ReadView& v = *ledger;
@@ -376,8 +376,8 @@ class View_test : public beast::unit_test::suite
         using namespace jtx;
         Env env(*this);
         Config config;
-        std::shared_ptr<Ledger const> const genesis =
-            std::make_shared<Ledger>(create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
+        std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
+            create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
         auto const ledger = std::make_shared<Ledger>(*genesis, env.app().timeKeeper().closeTime());
 
         auto setup = [&ledger](std::vector<int> const& vec) {
@@ -580,8 +580,8 @@ class View_test : public beast::unit_test::suite
         using namespace jtx;
         Env env(*this);
         Config config;
-        std::shared_ptr<Ledger const> const genesis =
-            std::make_shared<Ledger>(create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
+        std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
+            create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
         auto const ledger = std::make_shared<Ledger>(*genesis, env.app().timeKeeper().closeTime());
         auto setup123 = [&ledger, this]() {
             // erase middle element
@@ -732,7 +732,10 @@ class View_test : public beast::unit_test::suite
             env.close();
 
             // Alice's USD balance should be zero if frozen.
-            BEAST_EXPECT(USD(0) == accountHolds(*env.closed(), alice, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
+            BEAST_EXPECT(
+                USD(0) ==
+                accountHolds(
+                    *env.closed(), alice, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
 
             // Thaw gw and try again.
             env(fclear(gw, asfGlobalFreeze));
@@ -749,12 +752,16 @@ class View_test : public beast::unit_test::suite
             env.close();
 
             // Bob's balance should be zero if frozen.
-            BEAST_EXPECT(USD(0) == accountHolds(*env.closed(), bob, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
+            BEAST_EXPECT(
+                USD(0) ==
+                accountHolds(*env.closed(), bob, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
 
             // gw thaws bob's trust line.  bob gets his money back.
             env(trust(gw, USD(100), bob, tfClearFreeze));
             env.close();
-            BEAST_EXPECT(USD(50) == accountHolds(*env.closed(), bob, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
+            BEAST_EXPECT(
+                USD(50) ==
+                accountHolds(*env.closed(), bob, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
         }
         {
             // accountHolds().
@@ -762,15 +769,20 @@ class View_test : public beast::unit_test::suite
             env.close();
 
             // carol has no EUR.
-            BEAST_EXPECT(EUR(0) == accountHolds(*env.closed(), carol, EUR.currency, gw, fhZERO_IF_FROZEN, env.journal));
+            BEAST_EXPECT(
+                EUR(0) ==
+                accountHolds(
+                    *env.closed(), carol, EUR.currency, gw, fhZERO_IF_FROZEN, env.journal));
 
             // But carol does have USD.
             BEAST_EXPECT(
-                USD(50) == accountHolds(*env.closed(), carol, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
+                USD(50) ==
+                accountHolds(
+                    *env.closed(), carol, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
 
             // carol's XRP balance should be her holdings minus her reserve.
-            auto const carolsXRP =
-                accountHolds(*env.closed(), carol, xrpCurrency(), xrpAccount(), fhZERO_IF_FROZEN, env.journal);
+            auto const carolsXRP = accountHolds(
+                *env.closed(), carol, xrpCurrency(), xrpAccount(), fhZERO_IF_FROZEN, env.journal);
             // carol's XRP balance:              10000
             // base reserve:                      -200
             // 1 trust line times its reserve: 1 * -50
@@ -785,16 +797,20 @@ class View_test : public beast::unit_test::suite
 
             // carol's XRP balance should now show as zero.
             BEAST_EXPECT(
-                XRP(0) == accountHolds(*env.closed(), carol, xrpCurrency(), gw, fhZERO_IF_FROZEN, env.journal));
+                XRP(0) ==
+                accountHolds(
+                    *env.closed(), carol, xrpCurrency(), gw, fhZERO_IF_FROZEN, env.journal));
         }
         {
             // accountFunds().
             // Gateways have whatever funds they claim to have.
-            auto const gwUSD = accountFunds(*env.closed(), gw, USD(314159), fhZERO_IF_FROZEN, env.journal);
+            auto const gwUSD =
+                accountFunds(*env.closed(), gw, USD(314159), fhZERO_IF_FROZEN, env.journal);
             BEAST_EXPECT(gwUSD == USD(314159));
 
             // carol has funds from the gateway.
-            auto carolsUSD = accountFunds(*env.closed(), carol, USD(0), fhZERO_IF_FROZEN, env.journal);
+            auto carolsUSD =
+                accountFunds(*env.closed(), carol, USD(0), fhZERO_IF_FROZEN, env.journal);
             BEAST_EXPECT(carolsUSD == USD(50));
 
             // If carol's funds are frozen she has no funds...
@@ -910,9 +926,10 @@ class View_test : public beast::unit_test::suite
         {
             Env env(*this);
             Config config;
-            std::shared_ptr<Ledger const> const genesis =
-                std::make_shared<Ledger>(create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
-            auto const ledger = std::make_shared<Ledger>(*genesis, env.app().timeKeeper().closeTime());
+            std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
+                create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
+            auto const ledger =
+                std::make_shared<Ledger>(*genesis, env.app().timeKeeper().closeTime());
             wipe(*ledger);
             ledger->rawInsert(sle(1));
             ReadView& v0 = *ledger;

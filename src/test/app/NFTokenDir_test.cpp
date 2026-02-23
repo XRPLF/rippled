@@ -1,10 +1,9 @@
 #include <test/jtx.h>
 
-#include <xrpld/app/tx/detail/NFTokenUtils.h>
-
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nftPageMask.h>
+#include <xrpl/tx/transactors/NFT/NFTokenUtils.h>
 
 #include <initializer_list>
 
@@ -44,10 +43,12 @@ class NFTokenDir_test : public beast::unit_test::suite
             }
             for (Json::UInt i = 0; i < state.size(); ++i)
             {
-                if (state[i].isMember(sfNFTokens.jsonName) && state[i][sfNFTokens.jsonName].isArray())
+                if (state[i].isMember(sfNFTokens.jsonName) &&
+                    state[i][sfNFTokens.jsonName].isArray())
                 {
                     std::uint32_t tokenCount = state[i][sfNFTokens.jsonName].size();
-                    std::cout << tokenCount << " NFtokens in page " << state[i][jss::index].asString() << std::endl;
+                    std::cout << tokenCount << " NFtokens in page "
+                              << state[i][jss::index].asString() << std::endl;
 
                     if (vol == noisy)
                     {
@@ -56,10 +57,14 @@ class NFTokenDir_test : public beast::unit_test::suite
                     else
                     {
                         if (tokenCount > 0)
-                            std::cout << "first: " << state[i][sfNFTokens.jsonName][0u].toStyledString() << std::endl;
+                            std::cout
+                                << "first: " << state[i][sfNFTokens.jsonName][0u].toStyledString()
+                                << std::endl;
                         if (tokenCount > 1)
-                            std::cout << "last: " << state[i][sfNFTokens.jsonName][tokenCount - 1].toStyledString()
-                                      << std::endl;
+                            std::cout
+                                << "last: "
+                                << state[i][sfNFTokens.jsonName][tokenCount - 1].toStyledString()
+                                << std::endl;
                     }
                 }
             }
@@ -139,7 +144,8 @@ class NFTokenDir_test : public beast::unit_test::suite
         // with identical 96-low-bits are all kept on the same page.
 
         // Lambda that exercises the lopsided splits.
-        auto exerciseLopsided = [this, &features](std::initializer_list<std::string_view const> seeds) {
+        auto exerciseLopsided = [this,
+                                 &features](std::initializer_list<std::string_view const> seeds) {
             Env env{*this, features};
 
             // Eventually all of the NFTokens will be owned by buyer.
@@ -152,7 +158,8 @@ class NFTokenDir_test : public beast::unit_test::suite
             accounts.reserve(seeds.size());
             for (std::string_view seed : seeds)
             {
-                Account const& account = accounts.emplace_back(Account::base58Seed, std::string(seed));
+                Account const& account =
+                    accounts.emplace_back(Account::base58Seed, std::string(seed));
                 env.fund(XRP(10000), account);
 
                 // Do not close the ledger inside the loop.  If accounts are
@@ -170,13 +177,16 @@ class NFTokenDir_test : public beast::unit_test::suite
             for (Account const& account : accounts)
             {
                 // Mint the NFT.
-                uint256 const& nftID = nftIDs.emplace_back(token::getNextID(env, account, 0, tfTransferable));
+                uint256 const& nftID =
+                    nftIDs.emplace_back(token::getNextID(env, account, 0, tfTransferable));
                 env(token::mint(account, 0), txflags(tfTransferable));
                 env.close();
 
                 // Create an offer to give the NFT to buyer for free.
                 offers.emplace_back(keylet::nftoffer(account, env.seq(account)).key);
-                env(token::createOffer(account, nftID, XRP(0)), token::destination(buyer), txflags((tfSellNFToken)));
+                env(token::createOffer(account, nftID, XRP(0)),
+                    token::destination(buyer),
+                    txflags((tfSellNFToken)));
             }
             env.close();
 
@@ -352,7 +362,8 @@ class NFTokenDir_test : public beast::unit_test::suite
             accounts.reserve(seeds.size());
             for (std::string_view seed : seeds)
             {
-                Account const& account = accounts.emplace_back(Account::base58Seed, std::string(seed));
+                Account const& account =
+                    accounts.emplace_back(Account::base58Seed, std::string(seed));
                 env.fund(XRP(10000), account);
 
                 // Do not close the ledger inside the loop.  If accounts are
@@ -370,13 +381,16 @@ class NFTokenDir_test : public beast::unit_test::suite
             for (Account const& account : accounts)
             {
                 // Mint the NFT.
-                uint256 const& nftID = nftIDs.emplace_back(token::getNextID(env, account, 0, tfTransferable));
+                uint256 const& nftID =
+                    nftIDs.emplace_back(token::getNextID(env, account, 0, tfTransferable));
                 env(token::mint(account, 0), txflags(tfTransferable));
                 env.close();
 
                 // Create an offer to give the NFT to buyer for free.
                 offers.emplace_back(keylet::nftoffer(account, env.seq(account)).key);
-                env(token::createOffer(account, nftID, XRP(0)), token::destination(buyer), txflags((tfSellNFToken)));
+                env(token::createOffer(account, nftID, XRP(0)),
+                    token::destination(buyer),
+                    txflags((tfSellNFToken)));
             }
             env.close();
 
@@ -596,13 +610,16 @@ class NFTokenDir_test : public beast::unit_test::suite
         for (Account const& account : accounts)
         {
             // Mint the NFT.
-            uint256 const& nftID = nftIDs.emplace_back(token::getNextID(env, account, 0, tfTransferable));
+            uint256 const& nftID =
+                nftIDs.emplace_back(token::getNextID(env, account, 0, tfTransferable));
             env(token::mint(account, 0), txflags(tfTransferable));
             env.close();
 
             // Create an offer to give the NFT to buyer for free.
             offers.emplace_back(keylet::nftoffer(account, env.seq(account)).key);
-            env(token::createOffer(account, nftID, XRP(0)), token::destination(buyer), txflags((tfSellNFToken)));
+            env(token::createOffer(account, nftID, XRP(0)),
+                token::destination(buyer),
+                txflags((tfSellNFToken)));
         }
         env.close();
 
@@ -764,14 +781,16 @@ class NFTokenDir_test : public beast::unit_test::suite
                 // Mint the NFT.  Tweak the taxon so zero is always stored.
                 std::uint32_t taxon = toUInt32(nft::cipheredTaxon(i, nft::toTaxon(0)));
 
-                uint256 const& nftID =
-                    nftIDsByPage[i].emplace_back(token::getNextID(env, account, taxon, tfTransferable));
+                uint256 const& nftID = nftIDsByPage[i].emplace_back(
+                    token::getNextID(env, account, taxon, tfTransferable));
                 env(token::mint(account, taxon), txflags(tfTransferable));
                 env.close();
 
                 // Create an offer to give the NFT to buyer for free.
                 offers[i].emplace_back(keylet::nftoffer(account, env.seq(account)).key);
-                env(token::createOffer(account, nftID, XRP(0)), token::destination(buyer), txflags((tfSellNFToken)));
+                env(token::createOffer(account, nftID, XRP(0)),
+                    token::destination(buyer),
+                    txflags((tfSellNFToken)));
             }
         }
         env.close();
@@ -906,7 +925,8 @@ class NFTokenDir_test : public beast::unit_test::suite
                 return env.rpc("json", "account_objects", to_string(params));
             }();
             BEAST_EXPECT(
-                remainingOffers.isMember(jss::result) && remainingOffers[jss::result].isMember(jss::account_objects) &&
+                remainingOffers.isMember(jss::result) &&
+                remainingOffers[jss::result].isMember(jss::account_objects) &&
                 remainingOffers[jss::result][jss::account_objects].size() == 0);
         }
 

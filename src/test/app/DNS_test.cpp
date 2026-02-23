@@ -31,13 +31,14 @@ public:
     void
     makeRequest(endpoint_type const& lastEndpoint, bool lastStatus)
     {
-        auto onFetch =
-            [&](error_code const& errorCode, endpoint_type const& endpoint, xrpl::detail::response_type&& resp) {
-                BEAST_EXPECT(!errorCode);
-                lastEndpoint_ = endpoint;
-                resolved_[endpoint.address().to_string()]++;
-                cv_.notify_all();
-            };
+        auto onFetch = [&](error_code const& errorCode,
+                           endpoint_type const& endpoint,
+                           xrpl::detail::response_type&& resp) {
+            BEAST_EXPECT(!errorCode);
+            lastEndpoint_ = endpoint;
+            resolved_[endpoint.address().to_string()]++;
+            cv_.notify_all();
+        };
 
         auto sp = std::make_shared<xrpl::detail::WorkSSL>(
             pUrl_.domain,

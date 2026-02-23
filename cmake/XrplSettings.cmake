@@ -70,7 +70,8 @@ if (is_linux AND NOT SANITIZER)
     else ()
         set(TRUNCATED_LOGS_DEFAULT OFF)
     endif ()
-    option(TRUNCATED_THREAD_NAME_LOGS "Show warnings about truncated thread names on Linux." ${TRUNCATED_LOGS_DEFAULT})
+    option(TRUNCATED_THREAD_NAME_LOGS "Show warnings about truncated thread names on Linux."
+           ${TRUNCATED_LOGS_DEFAULT})
     if (TRUNCATED_THREAD_NAME_LOGS)
         add_compile_definitions(TRUNCATED_THREAD_NAME_LOGS)
     endif ()
@@ -92,11 +93,13 @@ endif ()
 
 option(jemalloc "Enables jemalloc for heap profiling" OFF)
 option(werr "treat warnings as errors" OFF)
-option(local_protobuf "Force a local build of protobuf instead of looking for an installed version." OFF)
+option(local_protobuf
+       "Force a local build of protobuf instead of looking for an installed version." OFF)
 option(local_grpc "Force a local build of gRPC instead of looking for an installed version." OFF)
 
 # the remaining options are obscure and rarely used
-option(beast_no_unit_test_inline "Prevents unit test definitions from being inserted into global table" OFF)
+option(beast_no_unit_test_inline
+       "Prevents unit test definitions from being inserted into global table" OFF)
 option(single_io_service_thread "Restricts the number of threads calling io_context::run to one. \
   This can be useful when debugging." OFF)
 option(boost_show_deprecated "Allow boost to fail on deprecated usage. Only useful if you're trying\

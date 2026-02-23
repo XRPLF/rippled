@@ -20,7 +20,8 @@ class Checker
 private:
     using error_code = boost::system::error_code;
 
-    struct basic_async_op : boost::intrusive::list_base_hook<boost::intrusive::link_mode<boost::intrusive::normal_link>>
+    struct basic_async_op : boost::intrusive::list_base_hook<
+                                boost::intrusive::link_mode<boost::intrusive::normal_link>>
     {
         virtual ~basic_async_op() = default;
 
@@ -54,8 +55,8 @@ private:
 
     //--------------------------------------------------------------------------
 
-    using list_type =
-        typename boost::intrusive::make_list<basic_async_op, boost::intrusive::constant_time_size<true>>::type;
+    using list_type = typename boost::intrusive::
+        make_list<basic_async_op, boost::intrusive::constant_time_size<true>>::type;
 
     std::mutex mutex_;
     std::condition_variable cond_;
@@ -104,7 +105,10 @@ private:
 
 template <class Protocol>
 template <class Handler>
-Checker<Protocol>::async_op<Handler>::async_op(Checker& owner, boost::asio::io_context& io_context, Handler&& handler)
+Checker<Protocol>::async_op<Handler>::async_op(
+    Checker& owner,
+    boost::asio::io_context& io_context,
+    Handler&& handler)
     : checker_(owner), socket_(io_context), handler_(std::forward<Handler>(handler))
 {
 }
@@ -173,7 +177,8 @@ template <class Handler>
 void
 Checker<Protocol>::async_connect(beast::IP::Endpoint const& endpoint, Handler&& handler)
 {
-    auto const op = std::make_shared<async_op<Handler>>(*this, io_context_, std::forward<Handler>(handler));
+    auto const op =
+        std::make_shared<async_op<Handler>>(*this, io_context_, std::forward<Handler>(handler));
     {
         std::lock_guard lock(mutex_);
         list_.push_back(*op);

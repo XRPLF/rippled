@@ -1,6 +1,4 @@
-#include <xrpld/app/paths/detail/AmountSpec.h>
 #include <xrpld/app/paths/detail/StepChecks.h>
-#include <xrpld/app/paths/detail/Steps.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/Credit.h>
@@ -9,6 +7,8 @@
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/paths/detail/AmountSpec.h>
+#include <xrpl/tx/paths/detail/Steps.h>
 
 #include <boost/container/flat_set.hpp>
 
@@ -38,7 +38,8 @@ private:
     }
 
 public:
-    XRPEndpointStep(StrandContext const& ctx, AccountID const& acc) : acc_(acc), isLast_(ctx.isLast), j_(ctx.j)
+    XRPEndpointStep(StrandContext const& ctx, AccountID const& acc)
+        : acc_(acc), isLast_(ctx.isLast), j_(ctx.j)
     {
     }
 
@@ -78,10 +79,18 @@ public:
     qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const override;
 
     std::pair<XRPAmount, XRPAmount>
-    revImp(PaymentSandbox& sb, ApplyView& afView, boost::container::flat_set<uint256>& ofrsToRm, XRPAmount const& out);
+    revImp(
+        PaymentSandbox& sb,
+        ApplyView& afView,
+        boost::container::flat_set<uint256>& ofrsToRm,
+        XRPAmount const& out);
 
     std::pair<XRPAmount, XRPAmount>
-    fwdImp(PaymentSandbox& sb, ApplyView& afView, boost::container::flat_set<uint256>& ofrsToRm, XRPAmount const& in);
+    fwdImp(
+        PaymentSandbox& sb,
+        ApplyView& afView,
+        boost::container::flat_set<uint256>& ofrsToRm,
+        XRPAmount const& in);
 
     std::pair<bool, EitherAmount>
     validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmount const& in) override;
@@ -177,7 +186,8 @@ private:
 
 public:
     XRPEndpointOfferCrossingStep(StrandContext const& ctx, AccountID const& acc)
-        : XRPEndpointStep<XRPEndpointOfferCrossingStep>(ctx, acc), reserveReduction_(computeReserveReduction(ctx, acc))
+        : XRPEndpointStep<XRPEndpointOfferCrossingStep>(ctx, acc)
+        , reserveReduction_(computeReserveReduction(ctx, acc))
     {
     }
 
@@ -276,14 +286,16 @@ XRPEndpointStep<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, Eithe
     if (!isLast_ && balance < xrpIn)
     {
         JLOG(j_.warn()) << "XRPEndpointStep: Strand re-execute check failed."
-                        << " Insufficient balance: " << to_string(balance) << " Requested: " << to_string(xrpIn);
+                        << " Insufficient balance: " << to_string(balance)
+                        << " Requested: " << to_string(xrpIn);
         return {false, EitherAmount(balance)};
     }
 
     if (xrpIn != *cache_)
     {
         JLOG(j_.warn()) << "XRPEndpointStep: Strand re-execute check failed."
-                        << " ExpectedIn: " << to_string(*cache_) << " CachedIn: " << to_string(xrpIn);
+                        << " ExpectedIn: " << to_string(*cache_)
+                        << " CachedIn: " << to_string(xrpIn);
     }
     return {true, in};
 }
@@ -321,7 +333,8 @@ XRPEndpointStep<TDerived>::check(StrandContext const& ctx) const
     auto const issuesIndex = isLast_ ? 0 : 1;
     if (!ctx.seenDirectIssues[issuesIndex].insert(xrpIssue()).second)
     {
-        JLOG(j_.debug()) << "XRPEndpointStep: loop detected: Index: " << ctx.strandSize << ' ' << *this;
+        JLOG(j_.debug()) << "XRPEndpointStep: loop detected: Index: " << ctx.strandSize << ' '
+                         << *this;
         return temBAD_PATH_LOOP;
     }
 

@@ -12,7 +12,8 @@ public:
     static bool
     checkMarker(Json::Value const& val)
     {
-        return val.isMember(jss::marker) && val[jss::marker].isString() && val[jss::marker].asString().size() > 0;
+        return val.isMember(jss::marker) && val[jss::marker].isString() &&
+            val[jss::marker].asString().size() > 0;
     }
 
     void
@@ -43,7 +44,9 @@ public:
         jvParams[jss::binary] = false;
         {
             auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::ledger_current_index].isIntegral() && jrr[jss::ledger_current_index].asInt() > 0);
+            BEAST_EXPECT(
+                jrr[jss::ledger_current_index].isIntegral() &&
+                jrr[jss::ledger_current_index].asInt() > 0);
             BEAST_EXPECT(checkMarker(jrr));
             BEAST_EXPECT(checkArraySize(jrr[jss::state], max_limit));
         }
@@ -53,7 +56,8 @@ public:
         {
             jvParams[jss::limit] = max_limit + delta;
             auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(checkArraySize(jrr[jss::state], (delta > 0 && !asAdmin) ? max_limit : max_limit + delta));
+            BEAST_EXPECT(checkArraySize(
+                jrr[jss::state], (delta > 0 && !asAdmin) ? max_limit : max_limit + delta));
         }
     }
 
@@ -80,7 +84,9 @@ public:
         jvParams[jss::ledger_index] = "current";
         jvParams[jss::binary] = true;
         auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
-        BEAST_EXPECT(jrr[jss::ledger_current_index].isIntegral() && jrr[jss::ledger_current_index].asInt() > 0);
+        BEAST_EXPECT(
+            jrr[jss::ledger_current_index].isIntegral() &&
+            jrr[jss::ledger_current_index].asInt() > 0);
         BEAST_EXPECT(!jrr.isMember(jss::marker));
         BEAST_EXPECT(checkArraySize(jrr[jss::state], num_accounts + 4));
     }
@@ -192,7 +198,8 @@ public:
             jvParams[jss::ledger_index] = "closed";
             auto jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
             if (BEAST_EXPECT(jrr.isMember(jss::ledger)))
-                BEAST_EXPECT(jrr[jss::ledger][jss::ledger_hash] == to_string(env.closed()->header().hash));
+                BEAST_EXPECT(
+                    jrr[jss::ledger][jss::ledger_hash] == to_string(env.closed()->header().hash));
         }
         {
             // Closed ledger with binary form
@@ -230,7 +237,8 @@ public:
 
         // Make sure fixInnerObjTemplate2 doesn't break amendments.
         for (FeatureBitset const& features :
-             {testable_amendments() - fixInnerObjTemplate2, testable_amendments() | fixInnerObjTemplate2})
+             {testable_amendments() - fixInnerObjTemplate2,
+              testable_amendments() | fixInnerObjTemplate2})
         {
             using namespace std::chrono;
             Env env{*this, envconfig(validator, ""), features};
@@ -291,7 +299,8 @@ public:
                 jv[jss::Account] = Account{"bob5"}.human();
                 jv[jss::Destination] = Account{"bob6"}.human();
                 jv[jss::Amount] = XRP(50).value().getJson(JsonOptions::none);
-                jv[sfFinishAfter.fieldName] = NetClock::time_point{env.now() + 10s}.time_since_epoch().count();
+                jv[sfFinishAfter.fieldName] =
+                    NetClock::time_point{env.now() + 10s}.time_since_epoch().count();
                 env(jv);
             }
 
@@ -303,7 +312,8 @@ public:
                 jv[jss::Amount] = XRP(100).value().getJson(JsonOptions::none);
                 jv[jss::SettleDelay] = NetClock::duration{10s}.count();
                 jv[sfPublicKey.fieldName] = strHex(Account{"bob6"}.pk().slice());
-                jv[sfCancelAfter.fieldName] = NetClock::time_point{env.now() + 300s}.time_since_epoch().count();
+                jv[sfCancelAfter.fieldName] =
+                    NetClock::time_point{env.now() + 300s}.time_since_epoch().count();
                 env(jv);
             }
 

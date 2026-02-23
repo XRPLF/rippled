@@ -25,7 +25,10 @@ class HeartbeatTimer
     SimTime startSimTime_;
 
 public:
-    HeartbeatTimer(Scheduler& sched, SimDuration interval = std::chrono::seconds{60}, std::ostream& out = std::cerr)
+    HeartbeatTimer(
+        Scheduler& sched,
+        SimDuration interval = std::chrono::seconds{60},
+        std::ostream& out = std::cerr)
         : scheduler_{sched}
         , interval_{interval}
         , out_{out}

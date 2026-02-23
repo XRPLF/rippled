@@ -1,19 +1,20 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/Transaction.h>
-#include <xrpld/app/tx/apply.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/tx/apply.h>
 
 namespace xrpl {
 
 static NetworkOPs::FailHard
 getFailHard(RPC::JsonContext const& context)
 {
-    return NetworkOPs::doFailHard(context.params.isMember("fail_hard") && context.params["fail_hard"].asBool());
+    return NetworkOPs::doFailHard(
+        context.params.isMember("fail_hard") && context.params["fail_hard"].asBool());
 }
 
 // {
@@ -75,9 +76,10 @@ doSubmit(RPC::JsonContext& context)
 
     {
         if (!context.app.checkSigs())
-            forceValidity(context.app.getHashRouter(), stTx->getTransactionID(), Validity::SigGoodOnly);
+            forceValidity(
+                context.app.getHashRouter(), stTx->getTransactionID(), Validity::SigGoodOnly);
         auto [validity, reason] = checkValidity(
-            context.app.getHashRouter(), *stTx, context.ledgerMaster.getCurrentLedger()->rules(), context.app.config());
+            context.app.getHashRouter(), *stTx, context.ledgerMaster.getCurrentLedger()->rules());
         if (validity != Validity::Valid)
         {
             jvResult[jss::error] = "invalidTransaction";
@@ -137,7 +139,8 @@ doSubmit(RPC::JsonContext& context)
 
             if (auto currentLedgerState = transaction->getCurrentLedgerState())
             {
-                jvResult[jss::account_sequence_next] = safe_cast<Json::Value::UInt>(currentLedgerState->accountSeqNext);
+                jvResult[jss::account_sequence_next] =
+                    safe_cast<Json::Value::UInt>(currentLedgerState->accountSeqNext);
                 jvResult[jss::account_sequence_available] =
                     safe_cast<Json::Value::UInt>(currentLedgerState->accountSeqAvail);
                 jvResult[jss::open_ledger_cost] = to_string(currentLedgerState->minFeeRequired);

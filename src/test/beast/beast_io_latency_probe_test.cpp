@@ -39,8 +39,8 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
         {
             using namespace std::chrono;
             boost::asio::io_context ios;
-            std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work{
-                boost::asio::make_work_guard(ios)};
+            std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>>
+                work{boost::asio::make_work_guard(ios)};
             std::thread worker{[&] { ios.run(); }};
             boost::asio::basic_waitable_timer<Clock> timer{ios};
             elapsed_times_.reserve(num_samples);
@@ -88,7 +88,8 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
         auto
         getMax()
         {
-            return std::chrono::duration_cast<D>(*std::max_element(elapsed_times_.begin(), elapsed_times_.end()))
+            return std::chrono::duration_cast<D>(
+                       *std::max_element(elapsed_times_.begin(), elapsed_times_.end()))
                 .count();
         }
 
@@ -96,7 +97,8 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
         auto
         getMin()
         {
-            return std::chrono::duration_cast<D>(*std::min_element(elapsed_times_.begin(), elapsed_times_.end()))
+            return std::chrono::duration_cast<D>(
+                       *std::min_element(elapsed_times_.begin(), elapsed_times_.end()))
                 .count();
         }
     };
@@ -107,7 +109,8 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
         beast::io_latency_probe<std::chrono::steady_clock> probe_;
         std::vector<std::chrono::steady_clock::duration> durations_;
 
-        test_sampler(std::chrono::milliseconds interval, boost::asio::io_context& ios) : probe_(interval, ios)
+        test_sampler(std::chrono::milliseconds interval, boost::asio::io_context& ios)
+            : probe_(interval, ios)
         {
         }
 
@@ -162,7 +165,8 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
         measure_asio_timers<steady_clock> tt{interval};
         log << "measured mean for timers: " << tt.getMean<milliseconds>() << "ms\n";
         log << "measured max for timers: " << tt.getMax<milliseconds>() << "ms\n";
-        expected_probe_count_min = static_cast<size_t>(duration_cast<milliseconds>(probe_duration).count()) /
+        expected_probe_count_min =
+            static_cast<size_t>(duration_cast<milliseconds>(probe_duration).count()) /
             static_cast<size_t>(tt.getMean<milliseconds>());
 #endif
         test_sampler io_probe{interval, get_io_context()};
@@ -173,7 +177,8 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
             return;
         auto probes_seen = io_probe.durations_.size();
         BEAST_EXPECTS(
-            probes_seen >= (expected_probe_count_min - 1) && probes_seen <= (expected_probe_count_max + 1),
+            probes_seen >= (expected_probe_count_min - 1) &&
+                probes_seen <= (expected_probe_count_max + 1),
             std::string("probe count is ") + std::to_string(probes_seen));
         io_probe.probe_.cancel_async();
         // wait again in order to flush the remaining

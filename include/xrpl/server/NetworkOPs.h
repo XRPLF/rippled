@@ -116,7 +116,11 @@ public:
      * @param failType fail_hard setting from transaction submission.
      */
     virtual void
-    processTransaction(std::shared_ptr<Transaction>& transaction, bool bUnlimited, bool bLocal, FailHard failType) = 0;
+    processTransaction(
+        std::shared_ptr<Transaction>& transaction,
+        bool bUnlimited,
+        bool bLocal,
+        FailHard failType) = 0;
 
     /**
      * Process a set of transactions synchronously, and ensuring that they are

@@ -34,7 +34,8 @@ struct JsonTypeMismatchError : std::exception
     char const* const key;
     std::string const expectedType;
     mutable std::string msg;
-    JsonTypeMismatchError(Json::StaticString const& k, std::string et) : key{k.c_str()}, expectedType{std::move(et)}
+    JsonTypeMismatchError(Json::StaticString const& k, std::string et)
+        : key{k.c_str()}, expectedType{std::move(et)}
     {
     }
     char const*
@@ -42,7 +43,8 @@ struct JsonTypeMismatchError : std::exception
     {
         if (msg.empty())
         {
-            msg = std::string("Type mismatch on json key: ") + key + "; expected type: " + expectedType;
+            msg = std::string("Type mismatch on json key: ") + key +
+                "; expected type: " + expectedType;
         }
         return msg.c_str();
     }

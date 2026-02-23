@@ -10,7 +10,11 @@
 namespace xrpl {
 namespace NodeStore {
 
-Database::Database(Scheduler& scheduler, int readThreads, Section const& config, beast::Journal journal)
+Database::Database(
+    Scheduler& scheduler,
+    int readThreads,
+    Section const& config,
+    beast::Journal journal)
     : j_(journal)
     , scheduler_(scheduler)
     , earliestLedgerSeq_(get<std::uint32_t>(config, "earliest_seq", XRP_LEDGER_EARLIEST_SEQ))
@@ -136,13 +140,16 @@ Database::stop()
 
     while (readThreads_.load() != 0)
     {
-        XRPL_ASSERT(steady_clock::now() - start < 30s, "xrpl::NodeStore::Database::stop : maximum stop duration");
+        XRPL_ASSERT(
+            steady_clock::now() - start < 30s,
+            "xrpl::NodeStore::Database::stop : maximum stop duration");
         std::this_thread::yield();
     }
 
-    JLOG(j_.debug()) << "Stop request completed in "
-                     << duration_cast<std::chrono::milliseconds>(steady_clock::now() - start).count()
-                     << " milliseconds";
+    JLOG(j_.debug())
+        << "Stop request completed in "
+        << duration_cast<std::chrono::milliseconds>(steady_clock::now() - start).count()
+        << " milliseconds";
 }
 
 void
@@ -199,7 +206,11 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
 
 // Perform a fetch and report the time it took
 std::shared_ptr<NodeObject>
-Database::fetchNodeObject(uint256 const& hash, std::uint32_t ledgerSeq, FetchType fetchType, bool duplicate)
+Database::fetchNodeObject(
+    uint256 const& hash,
+    std::uint32_t ledgerSeq,
+    FetchType fetchType,
+    bool duplicate)
 {
     FetchReport fetchReport(fetchType);
 

@@ -3,7 +3,9 @@
 
 namespace xrpl {
 
-LedgerReplay::LedgerReplay(std::shared_ptr<Ledger const> parent, std::shared_ptr<Ledger const> replay)
+LedgerReplay::LedgerReplay(
+    std::shared_ptr<Ledger const> parent,
+    std::shared_ptr<Ledger const> replay)
     : parent_{std::move(parent)}, replay_{std::move(replay)}
 {
     for (auto const& item : replay_->txMap())

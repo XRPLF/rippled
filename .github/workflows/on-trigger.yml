@@ -22,9 +22,12 @@ on:
       - ".github/workflows/reusable-build.yml"
       - ".github/workflows/reusable-build-test-config.yml"
       - ".github/workflows/reusable-build-test.yml"
+      - ".github/workflows/reusable-clang-tidy.yml"
+      - ".github/workflows/reusable-clang-tidy-files.yml"
       - ".github/workflows/reusable-strategy-matrix.yml"
       - ".github/workflows/reusable-test.yml"
       - ".github/workflows/reusable-upload-recipe.yml"
+      - ".clang-tidy"
       - ".codecov.yml"
       - "cmake/**"
       - "conan/**"
@@ -60,6 +63,15 @@ defaults:
     shell: bash
 
 jobs:
+  clang-tidy:
+    uses: ./.github/workflows/reusable-clang-tidy.yml
+    permissions:
+      issues: write
+      contents: read
+    with:
+      check_only_changed: false
+      create_issue_on_failure: ${{ github.event_name == 'schedule' }}
+
   build-test:
     uses: ./.github/workflows/reusable-build-test.yml
     strategy:

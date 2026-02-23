@@ -60,7 +60,10 @@ public:
 
         @param ledger A closed ledger
     */
-    explicit OpenLedger(std::shared_ptr<Ledger const> const& ledger, CachedSLEs& cache, beast::Journal journal);
+    explicit OpenLedger(
+        std::shared_ptr<Ledger const> const& ledger,
+        CachedSLEs& cache,
+        beast::Journal journal);
 
     /** Returns `true` if there are no transactions.
 

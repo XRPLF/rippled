@@ -104,7 +104,8 @@ doAccountLines(RPC::JsonContext& context)
 
     // this flag allows the requester to ask incoming trustlines in default
     // state be omitted
-    bool ignoreDefault = params.isMember(jss::ignore_default) && params[jss::ignore_default].asBool();
+    bool ignoreDefault =
+        params.isMember(jss::ignore_default) && params[jss::ignore_default].asBool();
 
     Json::Value& jsonLines(result[jss::lines] = Json::arrayValue);
     struct VisitData
@@ -167,7 +168,8 @@ doAccountLines(RPC::JsonContext& context)
                 startAfter,
                 startHint,
                 limit + 1,
-                [&visitData, &count, &marker, &limit, &nextHint](std::shared_ptr<SLE const> const& sleCur) {
+                [&visitData, &count, &marker, &limit, &nextHint](
+                    std::shared_ptr<SLE const> const& sleCur) {
                     if (!sleCur)
                     {
                         // LCOV_EXCL_START
@@ -198,7 +200,9 @@ doAccountLines(RPC::JsonContext& context)
                     {
                         auto const line = RPCTrustLine::makeItem(visitData.accountID, sleCur);
 
-                        if (line && (!visitData.raPeerAccount || *visitData.raPeerAccount == line->getAccountIDPeer()))
+                        if (line &&
+                            (!visitData.raPeerAccount ||
+                             *visitData.raPeerAccount == line->getAccountIDPeer()))
                         {
                             visitData.items.emplace_back(*line);
                         }
