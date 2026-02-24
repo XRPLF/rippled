@@ -2,9 +2,6 @@
 #include <test/jtx/AMM.h>
 #include <test/jtx/Env.h>
 
-#include <xrpld/app/tx/apply.h>
-#include <xrpld/app/tx/detail/ApplyContext.h>
-
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/AccountID.h>
@@ -17,6 +14,8 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/apply.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 

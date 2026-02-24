@@ -3,8 +3,6 @@
 #include <test/jtx/utility.h>
 
 #include <xrpld/app/misc/Transaction.h>
-#include <xrpld/app/tx/apply.h>
-#include <xrpld/app/tx/detail/Batch.h>
 
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/protocol/Batch.h>
@@ -14,6 +12,8 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/tx/apply.h>
+#include <xrpl/tx/transactors/Batch.h>
 
 namespace xrpl {
 namespace test {

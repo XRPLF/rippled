@@ -6,6 +6,7 @@ ignorePaths:
   - docs/**/*.puml
   - cmake/**
   - LICENSE.md
+  - .clang-tidy
 language: en
 allowCompoundWords: true # TODO (#6334)
 ignoreRandomStrings: true

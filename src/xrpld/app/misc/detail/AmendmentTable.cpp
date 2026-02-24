@@ -1,7 +1,5 @@
-#include <xrpld/app/misc/AmendmentTable.h>
-#include <xrpld/core/ConfigSections.h>
-
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/TxFlags.h>

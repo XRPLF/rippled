@@ -4,14 +4,13 @@
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/paths/Pathfinder.h>
-#include <xrpld/app/tx/apply.h>  // Validity::Valid
-#include <xrpld/app/tx/applySteps.h>
 #include <xrpld/rpc/detail/LegacyPathFind.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/mulDiv.h>
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
@@ -19,6 +18,8 @@
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/tx/apply.h>  // Validity::Valid
+#include <xrpl/tx/applySteps.h>
 
 #include <algorithm>
 #include <iterator>
@@ -466,7 +467,7 @@ transactionPreProcessImpl(
 
         if (!tx_json.isMember(jss::NetworkID))
         {
-            auto const networkId = app.config().NETWORK_ID;
+            auto const networkId = app.getNetworkIDService().getNetworkID();
             if (networkId > 1024)
                 tx_json[jss::NetworkID] = to_string(networkId);
         }
@@ -637,7 +638,7 @@ transactionConstructImpl(std::shared_ptr<STTx const> const& stTx, Rules const& r
             auto sttxNew = std::make_shared<STTx const>(sit);
             if (!app.checkSigs())
                 forceValidity(app.getHashRouter(), sttxNew->getTransactionID(), Validity::SigGoodOnly);
-            if (checkValidity(app.getHashRouter(), *sttxNew, rules, app.config()).first != Validity::Valid)
+            if (checkValidity(app.getHashRouter(), *sttxNew, rules).first != Validity::Valid)
             {
                 ret.first = RPC::make_error(rpcINTERNAL, "Invalid signature.");
                 return ret;

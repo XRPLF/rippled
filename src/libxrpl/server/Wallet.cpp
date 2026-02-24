@@ -124,8 +124,9 @@ getNodeIdentity(soci::session& session)
     auto [newpublicKey, newsecretKey] = randomKeyPair(KeyType::secp256k1);
 
     session << str(
-        boost::format("INSERT INTO NodeIdentity (PublicKey,PrivateKey) "
-                      "VALUES ('%s','%s');") %
+        boost::format(
+            "INSERT INTO NodeIdentity (PublicKey,PrivateKey) "
+            "VALUES ('%s','%s');") %
         toBase58(TokenType::NodePublic, newpublicKey) % toBase58(TokenType::NodePrivate, newsecretKey));
 
     return {newpublicKey, newsecretKey};

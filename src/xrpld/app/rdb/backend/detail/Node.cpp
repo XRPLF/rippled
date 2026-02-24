@@ -7,6 +7,7 @@
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/StringUtilities.h>
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/RelationalDatabase.h>
@@ -306,7 +307,7 @@ saveValidatedLedger(
                         acceptedLedgerTx->getTxn()->getMetaSQL(seq, acceptedLedgerTx->getEscMeta()) + ";");
 
                 app.getMasterTransaction().inLedger(
-                    transactionID, seq, acceptedLedgerTx->getTxnSeq(), app.config().NETWORK_ID);
+                    transactionID, seq, acceptedLedgerTx->getTxnSeq(), app.getNetworkIDService().getNetworkID());
             }
 
             tr.commit();
@@ -555,8 +556,9 @@ std::pair<std::vector<std::shared_ptr<Transaction>>, int>
 getTxHistory(soci::session& session, Application& app, LedgerIndex startIndex, int quantity)
 {
     std::string sql = boost::str(
-        boost::format("SELECT LedgerSeq, Status, RawTxn "
-                      "FROM Transactions ORDER BY LedgerSeq DESC LIMIT %u,%u;") %
+        boost::format(
+            "SELECT LedgerSeq, Status, RawTxn "
+            "FROM Transactions ORDER BY LedgerSeq DESC LIMIT %u,%u;") %
         startIndex % quantity);
 
     std::vector<std::shared_ptr<Transaction>> txs;
@@ -658,18 +660,20 @@ transactionsSQL(
 
     if (count)
         sql = boost::str(
-            boost::format("SELECT %s FROM AccountTransactions "
-                          "WHERE Account = '%s' %s %s LIMIT %u, %u;") %
+            boost::format(
+                "SELECT %s FROM AccountTransactions "
+                "WHERE Account = '%s' %s %s LIMIT %u, %u;") %
             selection % toBase58(options.account) % maxClause % minClause % options.offset % numberOfResults);
     else
         sql = boost::str(
-            boost::format("SELECT %s FROM "
-                          "AccountTransactions INNER JOIN Transactions "
-                          "ON Transactions.TransID = AccountTransactions.TransID "
-                          "WHERE Account = '%s' %s %s "
-                          "ORDER BY AccountTransactions.LedgerSeq %s, "
-                          "AccountTransactions.TxnSeq %s, AccountTransactions.TransID %s "
-                          "LIMIT %u, %u;") %
+            boost::format(
+                "SELECT %s FROM "
+                "AccountTransactions INNER JOIN Transactions "
+                "ON Transactions.TransID = AccountTransactions.TransID "
+                "WHERE Account = '%s' %s %s "
+                "ORDER BY AccountTransactions.LedgerSeq %s, "
+                "AccountTransactions.TxnSeq %s, AccountTransactions.TransID %s "
+                "LIMIT %u, %u;") %
             selection % toBase58(options.account) % maxClause % minClause % (descending ? "DESC" : "ASC") %
             (descending ? "DESC" : "ASC") % (descending ? "DESC" : "ASC") % options.offset % numberOfResults);
     JLOG(j.trace()) << "txSQL query: " << sql;
