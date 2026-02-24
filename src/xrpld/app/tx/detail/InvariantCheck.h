@@ -703,7 +703,7 @@ class ValidConfidentialMPToken
         std::int64_t mptAmountDelta = 0;
         std::int64_t coaDelta = 0;
         std::int64_t outstandingDelta = 0;
-        std::shared_ptr<SLE const> issuance;
+        SLE::const_pointer issuance;
         bool deletedWithEncrypted = false;
         bool badConsistency = false;
         bool badCOA = false;

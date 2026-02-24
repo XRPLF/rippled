@@ -14,13 +14,6 @@ namespace xrpl {
 namespace test {
 namespace jtx {
 
-auto makeZeroBuffer = [](size_t size) {
-    Buffer b(size);
-    if (size > 0)
-        std::memset(b.data(), 0, size);
-    return b;
-};
-
 void
 mptflags::operator()(Env& env) const
 {

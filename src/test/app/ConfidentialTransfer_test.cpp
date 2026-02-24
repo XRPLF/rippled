@@ -7,22 +7,6 @@
 
 namespace xrpl {
 
-/*Helper lambda to create a zero-initialized buffer.
-WHY THIS IS NEEDED: In C++, xrpl::Buffer(size) allocates uninitialized heap memory.
-Because CI runs unit tests sequentially in the same process, uninitialized memory
-often recycles "ghost data" (like valid SECP256k1 keys or Pedersen commitments)
-left over from previously executed tests.
-When testing malformed cryptography paths, passing uninitialized memory might
-accidentally supply a valid curve point, causing the ledger's preflight checks
-to falsely succeed and return tecBAD_PROOF instead of the expected temMALFORMED.
-Explicitly zeroing the buffer guarantees it fails structural validation. */
-auto makeZeroBuffer = [](size_t size) {
-    Buffer b(size);
-    if (size > 0)
-        std::memset(b.data(), 0, size);
-    return b;
-};
-
 class ConfidentialTransfer_test : public beast::unit_test::suite
 {
     // Get a bad ciphertext with valid structure but cryptographic invalid for

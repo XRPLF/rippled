@@ -3332,15 +3332,15 @@ ValidConfidentialMPToken::visitEntry(
         uint192 const id = getMptID(before);
         changes_[id].mptAmountDelta -= before->getFieldU64(sfMPTAmount);
 
-        // Cannot delete MPToken with non-zero confidential state
+        // Cannot delete MPToken with non-zero confidential state or non-zero public amount
         if (isDelete)
         {
-            if (before->isFieldPresent(sfIssuerEncryptedBalance) ||
-                before->isFieldPresent(sfConfidentialBalanceInbox) ||
-                before->isFieldPresent(sfConfidentialBalanceSpending))
-            {
+            bool const hasPublicBalance = before->getFieldU64(sfMPTAmount) > 0;
+            bool const hasEncryptedFields = before->isFieldPresent(sfConfidentialBalanceSpending) ||
+                before->isFieldPresent(sfConfidentialBalanceInbox) || before->isFieldPresent(sfIssuerEncryptedBalance);
+
+            if (hasPublicBalance || hasEncryptedFields)
                 changes_[id].deletedWithEncrypted = true;
-            }
         }
     }
 
@@ -3378,45 +3378,36 @@ ValidConfidentialMPToken::visitEntry(
     if (after && after->getType() == ltMPTOKEN_ISSUANCE)
     {
         uint192 const id = getMptID(after);
-        if (after->isFieldPresent(sfConfidentialOutstandingAmount))
-            changes_[id].coaDelta += after->getFieldU64(sfConfidentialOutstandingAmount);
-        changes_[id].outstandingDelta += after->getFieldU64(sfOutstandingAmount);
-        changes_[id].issuance = after;
+        auto& change = changes_[id];
+
+        bool const hasCOA = after->isFieldPresent(sfConfidentialOutstandingAmount);
+        std::uint64_t const coa = (*after)[~sfConfidentialOutstandingAmount].value_or(0);
+        std::uint64_t const oa = after->getFieldU64(sfOutstandingAmount);
+
+        if (hasCOA)
+            change.coaDelta += coa;
+
+        change.outstandingDelta += oa;
+        change.issuance = after;
 
         // COA <= OutstandingAmount
-        std::uint64_t const coa = after->isFieldPresent(sfConfidentialOutstandingAmount)
-            ? after->getFieldU64(sfConfidentialOutstandingAmount)
-            : 0;
-        std::uint64_t const outstanding = after->getFieldU64(sfOutstandingAmount);
-        if (coa > outstanding)
-        {
-            changes_[id].badCOA = true;
-        }
+        if (coa > oa)
+            change.badCOA = true;
     }
 
     if (before && after && before->getType() == ltMPTOKEN && after->getType() == ltMPTOKEN)
     {
         uint192 const id = getMptID(after);
 
-        auto const getSpending = [](std::shared_ptr<SLE const> const& sle) -> std::optional<Blob> {
-            if (sle->isFieldPresent(sfConfidentialBalanceSpending))
-                return sle->getFieldVL(sfConfidentialBalanceSpending);
-            return std::nullopt;
-        };
-
-        auto const getVersion = [](std::shared_ptr<SLE const> const& sle) -> std::optional<std::uint32_t> {
-            if (sle->isFieldPresent(sfConfidentialBalanceVersion))
-                return sle->getFieldU32(sfConfidentialBalanceVersion);
-            return std::nullopt;
-        };
-
         // sfConfidentialBalanceVersion must change when spending changes
-        auto const spendingBefore = getSpending(before);
-        auto const spendingAfter = getSpending(after);
+        auto const spendingBefore = (*before)[~sfConfidentialBalanceSpending];
+        auto const spendingAfter = (*after)[~sfConfidentialBalanceSpending];
+        auto const versionBefore = (*before)[~sfConfidentialBalanceVersion];
+        auto const versionAfter = (*after)[~sfConfidentialBalanceVersion];
 
         if (spendingBefore.has_value() && spendingBefore != spendingAfter)
         {
-            if (getVersion(before) == getVersion(after))
+            if (versionBefore == versionAfter)
             {
                 changes_[id].badVersion = true;
             }
@@ -3451,11 +3442,7 @@ ValidConfidentialMPToken::finalize(
         // Cannot delete MPToken with non-zero confidential state
         if (checks.deletedWithEncrypted)
         {
-            std::uint64_t coa = 0;
-            if (issuance->isFieldPresent(sfConfidentialOutstandingAmount))
-                coa = issuance->getFieldU64(sfConfidentialOutstandingAmount);
-
-            if (coa > 0)
+            if ((*issuance)[~sfConfidentialOutstandingAmount].value_or(0) > 0)
             {
                 JLOG(j.fatal()) << "Invariant failed: MPToken deleted with encrypted fields while COA > 0";
                 return false;
@@ -3493,6 +3480,15 @@ ValidConfidentialMPToken::finalize(
         // We only enforce this when Confidential Outstanding Amount changes (Convert, ConvertBack,
         // ConfidentialClawback). This avoids falsely failing on Escrow or AMM operations that lock public tokens
         // outside of ltMPTOKEN.
+        // Convert / ConvertBack:
+        // - COA and MPTAmount must have opposite deltas, which cancel each other out to zero.
+        // - OA remains unchanged.
+        // - Therefore, the net delta on both sides of the equation is zero.
+        //
+        // Clawback:
+        // - MPTAmount remains unchanged.
+        // - COA and OA must have identical deltas (mirrored on each side).
+        // - The equation remains balanced as both sides have equal offsets.
         if (checks.coaDelta != 0)
         {
             if (checks.mptAmountDelta + checks.coaDelta != checks.outstandingDelta)
