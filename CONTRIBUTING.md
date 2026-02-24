@@ -251,6 +251,33 @@ pip3 install pre-commit
 pre-commit install
 ```
 
+## Clang-tidy
+
+All code must pass `clang-tidy` checks according to the settings in [`.clang-tidy`](./.clang-tidy).
+
+There is a Continuous Integration job that runs clang-tidy on pull requests. The CI will check:
+
+- All changed C++ files (`.cpp`, `.h`, `.ipp`) when only code files are modified
+- **All files in the repository** when the `.clang-tidy` configuration file is changed
+
+This ensures that configuration changes don't introduce new warnings across the codebase.
+
+### Running clang-tidy locally
+
+Before running clang-tidy, you must build the project to generate required files (particularly protobuf headers). At minimum, build the `xrpl.libpb` target:
+
+```
+cmake --build build --target xrpl.libpb
+```
+
+Then run clang-tidy on your local changes:
+
+```
+run-clang-tidy -p build src test
+```
+
+This will check all source files in the `src` and `test` directories using the compile commands from your `build` directory.
+
 ## Contracts and instrumentation
 
 We are using [Antithesis](https://antithesis.com/) for continuous fuzzing,
