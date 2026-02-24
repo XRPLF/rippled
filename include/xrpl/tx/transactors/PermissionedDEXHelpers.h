@@ -10,7 +10,11 @@ accountInDomain(ReadView const& view, AccountID const& account, Domain const& do
 
 // Check if an offer is in the permissioned domain
 [[nodiscard]] bool
-offerInDomain(ReadView const& view, uint256 const& offerID, Domain const& domainID, beast::Journal j);
+offerInDomain(
+    ReadView const& view,
+    uint256 const& offerID,
+    Domain const& domainID,
+    beast::Journal j);
 
 }  // namespace permissioned_dex
 

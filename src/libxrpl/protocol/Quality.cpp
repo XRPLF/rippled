@@ -36,7 +36,9 @@ Quality::operator++(int)
 Quality&
 Quality::operator--()
 {
-    XRPL_ASSERT(m_value < std::numeric_limits<value_type>::max(), "xrpl::Quality::operator--() : maximum value");
+    XRPL_ASSERT(
+        m_value < std::numeric_limits<value_type>::max(),
+        "xrpl::Quality::operator--() : maximum value");
     ++m_value;
     return *this;
 }
@@ -121,7 +123,9 @@ composed_quality(Quality const& lhs, Quality const& rhs)
     std::uint64_t const stored_exponent(rate.exponent() + 100);
     std::uint64_t const stored_mantissa(rate.mantissa());
 
-    XRPL_ASSERT((stored_exponent > 0) && (stored_exponent <= 255), "xrpl::composed_quality : valid exponent");
+    XRPL_ASSERT(
+        (stored_exponent > 0) && (stored_exponent <= 255),
+        "xrpl::composed_quality : valid exponent");
 
     return Quality((stored_exponent << (64 - 8)) | stored_mantissa);
 }

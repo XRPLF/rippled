@@ -47,9 +47,11 @@ constexpr static auto apiMaximumValidVersion = apiBetaVersion;
 
 static_assert(apiInvalidVersion < apiMinimumSupportedVersion);
 static_assert(
-    apiVersionIfUnspecified >= apiMinimumSupportedVersion && apiVersionIfUnspecified <= apiMaximumSupportedVersion);
+    apiVersionIfUnspecified >= apiMinimumSupportedVersion &&
+    apiVersionIfUnspecified <= apiMaximumSupportedVersion);
 static_assert(
-    apiCommandLineVersion >= apiMinimumSupportedVersion && apiCommandLineVersion <= apiMaximumSupportedVersion);
+    apiCommandLineVersion >= apiMinimumSupportedVersion &&
+    apiCommandLineVersion <= apiMaximumSupportedVersion);
 static_assert(apiMaximumSupportedVersion >= apiMinimumSupportedVersion);
 static_assert(apiBetaVersion >= apiMaximumSupportedVersion);
 static_assert(apiMaximumValidVersion >= apiMaximumSupportedVersion);
@@ -97,7 +99,8 @@ inline unsigned int
 getAPIVersionNumber(Json::Value const& jv, bool betaEnabled)
 {
     static Json::Value const minVersion(RPC::apiMinimumSupportedVersion);
-    Json::Value const maxVersion(betaEnabled ? RPC::apiBetaVersion : RPC::apiMaximumSupportedVersion);
+    Json::Value const maxVersion(
+        betaEnabled ? RPC::apiBetaVersion : RPC::apiMaximumSupportedVersion);
 
     if (jv.isObject())
     {
@@ -135,7 +138,9 @@ forApiVersions(Fn const& fn, Args&&... args)
 {
     constexpr auto size = maxVer + 1 - minVer;
     [&]<std::size_t... offset>(std::index_sequence<offset...>) {
-        (((void)fn(std::integral_constant<unsigned int, minVer + offset>{}, std::forward<Args>(args)...)), ...);
+        (((void)fn(
+             std::integral_constant<unsigned int, minVer + offset>{}, std::forward<Args>(args)...)),
+         ...);
     }(std::make_index_sequence<size>{});
 }
 
@@ -143,10 +148,12 @@ template <typename Fn, typename... Args>
 void
 forAllApiVersions(Fn const& fn, Args&&... args)
     requires requires {
-        forApiVersions<RPC::apiMinimumSupportedVersion, RPC::apiMaximumValidVersion>(fn, std::forward<Args>(args)...);
+        forApiVersions<RPC::apiMinimumSupportedVersion, RPC::apiMaximumValidVersion>(
+            fn, std::forward<Args>(args)...);
     }
 {
-    forApiVersions<RPC::apiMinimumSupportedVersion, RPC::apiMaximumValidVersion>(fn, std::forward<Args>(args)...);
+    forApiVersions<RPC::apiMinimumSupportedVersion, RPC::apiMaximumValidVersion>(
+        fn, std::forward<Args>(args)...);
 }
 
 }  // namespace xrpl

@@ -154,7 +154,11 @@ struct LoanProperties
 // accumulated rounding errors and leftover dust amounts.
 template <class NumberProxy>
 void
-adjustImpreciseNumber(NumberProxy value, Number const& adjustment, Asset const& asset, int vaultScale)
+adjustImpreciseNumber(
+    NumberProxy value,
+    Number const& adjustment,
+    Asset const& asset,
+    int vaultScale)
 {
     value = roundToAsset(asset, value + adjustment, vaultScale);
 
@@ -199,7 +203,11 @@ LoanState
 constructRoundedLoanState(SLE::const_ref loan);
 
 Number
-computeManagementFee(Asset const& asset, Number const& interest, TenthBips32 managementFeeRate, std::int32_t scale);
+computeManagementFee(
+    Asset const& asset,
+    Number const& interest,
+    TenthBips32 managementFeeRate,
+    std::int32_t scale);
 
 Number
 computeFullPaymentInterest(
@@ -370,7 +378,10 @@ computeInterestAndFeeParts(
     std::int32_t loanScale);
 
 Number
-loanPeriodicPayment(Number const& principalOutstanding, Number const& periodicRate, std::uint32_t paymentsRemaining);
+loanPeriodicPayment(
+    Number const& principalOutstanding,
+    Number const& periodicRate,
+    std::uint32_t paymentsRemaining);
 
 Number
 loanPrincipalFromPeriodicPayment(

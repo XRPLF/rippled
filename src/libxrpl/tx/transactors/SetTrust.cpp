@@ -76,7 +76,8 @@ SetTrust::preflight(PreflightContext const& ctx)
 
     if (saLimitAmount.native())
     {
-        JLOG(j.trace()) << "Malformed transaction: specifies native limit " << saLimitAmount.getFullText();
+        JLOG(j.trace()) << "Malformed transaction: specifies native limit "
+                        << saLimitAmount.getFullText();
         return temBAD_LIMIT;
     }
 
@@ -132,8 +133,8 @@ SetTrust::checkPermission(ReadView const& view, STTx const& tx)
         return terNO_DELEGATE_PERMISSION;
 
     auto const saLimitAmount = tx.getFieldAmount(sfLimitAmount);
-    auto const sleRippleState =
-        view.read(keylet::line(tx[sfAccount], saLimitAmount.getIssuer(), saLimitAmount.getCurrency()));
+    auto const sleRippleState = view.read(
+        keylet::line(tx[sfAccount], saLimitAmount.getIssuer(), saLimitAmount.getCurrency()));
 
     // if the trustline does not exist, granular permissions are
     // not allowed to create trustline
@@ -152,8 +153,9 @@ SetTrust::checkPermission(ReadView const& view, STTx const& tx)
 
     // updating LimitAmount is not allowed only with granular permissions,
     // unless there's a new granular permission for this in the future.
-    auto const curLimit = tx[sfAccount] > saLimitAmount.getIssuer() ? sleRippleState->getFieldAmount(sfHighLimit)
-                                                                    : sleRippleState->getFieldAmount(sfLowLimit);
+    auto const curLimit = tx[sfAccount] > saLimitAmount.getIssuer()
+        ? sleRippleState->getFieldAmount(sfHighLimit)
+        : sleRippleState->getFieldAmount(sfLowLimit);
 
     STAmount saLimitAllow = saLimitAmount;
     saLimitAllow.setIssuer(tx[sfAccount]);
@@ -193,7 +195,8 @@ SetTrust::preclaim(PreclaimContext const& ctx)
 
     // This might be nullptr
     auto const sleDst = ctx.view.read(keylet::account(uDstAccountID));
-    if ((ammEnabled(ctx.view.rules()) || ctx.view.rules().enabled(featureSingleAssetVault)) && sleDst == nullptr)
+    if ((ammEnabled(ctx.view.rules()) || ctx.view.rules().enabled(featureSingleAssetVault)) &&
+        sleDst == nullptr)
         return tecNO_DST;
 
     // If the destination has opted to disallow incoming trustlines
@@ -230,7 +233,8 @@ SetTrust::preclaim(PreclaimContext const& ctx)
             }
             else if (auto const ammSle = ctx.view.read({ltAMM, sleDst->getFieldH256(sfAMMID)}))
             {
-                if (auto const lpTokens = ammSle->getFieldAmount(sfLPTokenBalance); lpTokens == beast::zero)
+                if (auto const lpTokens = ammSle->getFieldAmount(sfLPTokenBalance);
+                    lpTokens == beast::zero)
                     return tecAMM_EMPTY;
                 else if (lpTokens.getCurrency() != saLimitAmount.getCurrency())
                     return tecNO_PERMISSION;
@@ -275,8 +279,8 @@ SetTrust::preclaim(PreclaimContext const& ctx)
         auto const sleRippleState = ctx.view.read(keylet::line(id, uDstAccountID, currency));
         std::uint32_t uFlags = sleRippleState ? sleRippleState->getFieldU32(sfFlags) : 0u;
         // Computing expected trust line state
-        uFlags =
-            computeFreezeFlags(uFlags, bHigh, bNoFreeze, bSetFreeze, bClearFreeze, bSetDeepFreeze, bClearDeepFreeze);
+        uFlags = computeFreezeFlags(
+            uFlags, bHigh, bNoFreeze, bSetFreeze, bClearFreeze, bSetDeepFreeze, bClearDeepFreeze);
 
         auto const frozen = uFlags & (bHigh ? lsfHighFreeze : lsfLowFreeze);
         auto const deepFrozen = uFlags & (bHigh ? lsfHighDeepFreeze : lsfLowDeepFreeze);
@@ -482,8 +486,14 @@ SetTrust::doApply()
 
         // Have to use lsfNoFreeze to maintain pre-deep freeze behavior
         bool const bNoFreeze = sle->isFlag(lsfNoFreeze);
-        uFlagsOut =
-            computeFreezeFlags(uFlagsOut, bHigh, bNoFreeze, bSetFreeze, bClearFreeze, bSetDeepFreeze, bClearDeepFreeze);
+        uFlagsOut = computeFreezeFlags(
+            uFlagsOut,
+            bHigh,
+            bNoFreeze,
+            bSetFreeze,
+            bClearFreeze,
+            bSetDeepFreeze,
+            bClearDeepFreeze);
 
         if (QUALITY_ONE == uLowQualityOut)
             uLowQualityOut = 0;
@@ -495,13 +505,13 @@ SetTrust::doApply()
         bool const bHighDefRipple = sleHighAccount->getFlags() & lsfDefaultRipple;
 
         bool const bLowReserveSet = uLowQualityIn || uLowQualityOut ||
-            ((uFlagsOut & lsfLowNoRipple) == 0) != bLowDefRipple || (uFlagsOut & lsfLowFreeze) || saLowLimit ||
-            saLowBalance > beast::zero;
+            ((uFlagsOut & lsfLowNoRipple) == 0) != bLowDefRipple || (uFlagsOut & lsfLowFreeze) ||
+            saLowLimit || saLowBalance > beast::zero;
         bool const bLowReserveClear = !bLowReserveSet;
 
         bool const bHighReserveSet = uHighQualityIn || uHighQualityOut ||
-            ((uFlagsOut & lsfHighNoRipple) == 0) != bHighDefRipple || (uFlagsOut & lsfHighFreeze) || saHighLimit ||
-            saHighBalance > beast::zero;
+            ((uFlagsOut & lsfHighNoRipple) == 0) != bHighDefRipple || (uFlagsOut & lsfHighFreeze) ||
+            saHighLimit || saHighBalance > beast::zero;
         bool const bHighReserveClear = !bHighReserveSet;
 
         bool const bDefault = bLowReserveClear && bHighReserveClear;

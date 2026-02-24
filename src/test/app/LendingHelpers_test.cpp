@@ -62,7 +62,8 @@ class LendingHelpers_test : public beast::unit_test::suite
         {
             testcase("computeRaisedRate: " + tc.name);
 
-            auto const computedRaisedRate = computeRaisedRate(tc.periodicRate, tc.paymentsRemaining);
+            auto const computedRaisedRate =
+                computeRaisedRate(tc.periodicRate, tc.paymentsRemaining);
             BEAST_EXPECTS(
                 computedRaisedRate == tc.expectedRaisedRate,
                 "Raised rate mismatch: expected " + to_string(tc.expectedRaisedRate) + ", got " +
@@ -114,11 +115,12 @@ class LendingHelpers_test : public beast::unit_test::suite
         {
             testcase("computePaymentFactor: " + tc.name);
 
-            auto const computedPaymentFactor = computePaymentFactor(tc.periodicRate, tc.paymentsRemaining);
+            auto const computedPaymentFactor =
+                computePaymentFactor(tc.periodicRate, tc.paymentsRemaining);
             BEAST_EXPECTS(
                 computedPaymentFactor == tc.expectedPaymentFactor,
-                "Payment factor mismatch: expected " + to_string(tc.expectedPaymentFactor) + ", got " +
-                    to_string(computedPaymentFactor));
+                "Payment factor mismatch: expected " + to_string(tc.expectedPaymentFactor) +
+                    ", got " + to_string(computedPaymentFactor));
         }
     }
 
@@ -176,8 +178,8 @@ class LendingHelpers_test : public beast::unit_test::suite
                 loanPeriodicPayment(tc.principalOutstanding, tc.periodicRate, tc.paymentsRemaining);
             BEAST_EXPECTS(
                 computedPeriodicPayment == tc.expectedPeriodicPayment,
-                "Periodic payment mismatch: expected " + to_string(tc.expectedPeriodicPayment) + ", got " +
-                    to_string(computedPeriodicPayment));
+                "Periodic payment mismatch: expected " + to_string(tc.expectedPeriodicPayment) +
+                    ", got " + to_string(computedPeriodicPayment));
         }
     }
 
@@ -231,11 +233,12 @@ class LendingHelpers_test : public beast::unit_test::suite
         {
             testcase("loanPrincipalFromPeriodicPayment: " + tc.name);
 
-            auto const computedPrincipalOutstanding =
-                loanPrincipalFromPeriodicPayment(tc.periodicPayment, tc.periodicRate, tc.paymentsRemaining);
+            auto const computedPrincipalOutstanding = loanPrincipalFromPeriodicPayment(
+                tc.periodicPayment, tc.periodicRate, tc.paymentsRemaining);
             BEAST_EXPECTS(
                 computedPrincipalOutstanding == tc.expectedPrincipalOutstanding,
-                "Principal outstanding mismatch: expected " + to_string(tc.expectedPrincipalOutstanding) + ", got " +
+                "Principal outstanding mismatch: expected " +
+                    to_string(tc.expectedPrincipalOutstanding) + ", got " +
                     to_string(computedPrincipalOutstanding));
         }
     }
@@ -262,7 +265,12 @@ class LendingHelpers_test : public beast::unit_test::suite
         auto const expectedPrincipalPortion = Number{400};          // 1,000 - 100 - 500
 
         auto const components = detail::computeOverpaymentComponents(
-            IOU, loanScale, overpayment, overpaymentInterestRate, overpaymentFeeRate, managementFeeRate);
+            IOU,
+            loanScale,
+            overpayment,
+            overpaymentInterestRate,
+            overpaymentFeeRate,
+            managementFeeRate);
 
         BEAST_EXPECT(components.untrackedManagementFee == expectedOverpaymentFee);
 
@@ -273,11 +281,12 @@ class LendingHelpers_test : public beast::unit_test::suite
         BEAST_EXPECT(components.trackedManagementFeeDelta == expectedOverpaymentManagementFee);
         BEAST_EXPECT(components.trackedPrincipalDelta == expectedPrincipalPortion);
         BEAST_EXPECT(
-            components.trackedManagementFeeDelta + components.untrackedInterest == expectedOverpaymentInterestGross);
+            components.trackedManagementFeeDelta + components.untrackedInterest ==
+            expectedOverpaymentInterestGross);
 
         BEAST_EXPECT(
-            components.trackedManagementFeeDelta + components.untrackedInterest + components.trackedPrincipalDelta +
-                components.untrackedManagementFee ==
+            components.trackedManagementFeeDelta + components.untrackedInterest +
+                components.trackedPrincipalDelta + components.untrackedManagementFee ==
             overpayment);
     }
 
@@ -326,11 +335,12 @@ class LendingHelpers_test : public beast::unit_test::suite
                 computeInterestAndFeeParts(IOU, tc.interest, tc.managementFeeRate, loanScale);
             BEAST_EXPECTS(
                 computedInterestPart == tc.expectedInterestPart,
-                "Interest part mismatch: expected " + to_string(tc.expectedInterestPart) + ", got " +
-                    to_string(computedInterestPart));
+                "Interest part mismatch: expected " + to_string(tc.expectedInterestPart) +
+                    ", got " + to_string(computedInterestPart));
             BEAST_EXPECTS(
                 computedFeePart == tc.expectedFeePart,
-                "Fee part mismatch: expected " + to_string(tc.expectedFeePart) + ", got " + to_string(computedFeePart));
+                "Fee part mismatch: expected " + to_string(tc.expectedFeePart) + ", got " +
+                    to_string(computedFeePart));
         }
     }
 
@@ -397,11 +407,14 @@ class LendingHelpers_test : public beast::unit_test::suite
             testcase("loanLatePaymentInterest: " + tc.name);
 
             auto const computedLateInterest = loanLatePaymentInterest(
-                tc.principalOutstanding, tc.lateInterestRate, tc.parentCloseTime, tc.nextPaymentDueDate);
+                tc.principalOutstanding,
+                tc.lateInterestRate,
+                tc.parentCloseTime,
+                tc.nextPaymentDueDate);
             BEAST_EXPECTS(
                 computedLateInterest == tc.expectedLateInterest,
-                "Late interest mismatch: expected " + to_string(tc.expectedLateInterest) + ", got " +
-                    to_string(computedLateInterest));
+                "Late interest mismatch: expected " + to_string(tc.expectedLateInterest) +
+                    ", got " + to_string(computedLateInterest));
         }
     }
 
@@ -488,8 +501,8 @@ class LendingHelpers_test : public beast::unit_test::suite
                 tc.paymentInterval);
             BEAST_EXPECTS(
                 computedAccruedInterest == tc.expectedAccruedInterest,
-                "Accrued interest mismatch: expected " + to_string(tc.expectedAccruedInterest) + ", got " +
-                    to_string(computedAccruedInterest));
+                "Accrued interest mismatch: expected " + to_string(tc.expectedAccruedInterest) +
+                    ", got " + to_string(computedAccruedInterest));
         }
     }
 
@@ -564,7 +577,8 @@ class LendingHelpers_test : public beast::unit_test::suite
                 tc.closeInterestRate);
             BEAST_EXPECTS(
                 computedFullPaymentInterest == tc.expectedFullPaymentInterest,
-                "Full payment interest mismatch: expected " + to_string(tc.expectedFullPaymentInterest) + ", got " +
+                "Full payment interest mismatch: expected " +
+                    to_string(tc.expectedFullPaymentInterest) + ", got " +
                     to_string(computedFullPaymentInterest));
         }
     }
@@ -594,7 +608,13 @@ class LendingHelpers_test : public beast::unit_test::suite
             asset, loanScale, overpaymentAmount, TenthBips32(0), TenthBips32(0), managementFeeRate);
 
         auto const loanProperties = computeLoanProperties(
-            asset, loanPrincipal, loanInterestRate, paymentInterval, paymentsRemaining, managementFeeRate, loanScale);
+            asset,
+            loanPrincipal,
+            loanInterestRate,
+            paymentInterval,
+            paymentsRemaining,
+            managementFeeRate,
+            loanScale);
 
         auto const ret = tryOverpayment(
             asset,
@@ -623,7 +643,8 @@ class LendingHelpers_test : public beast::unit_test::suite
 
         BEAST_EXPECTS(
             actualPaymentParts.interestPaid == 0,
-            " interestPaid mismatch: expected 0, got " + to_string(actualPaymentParts.interestPaid));
+            " interestPaid mismatch: expected 0, got " +
+                to_string(actualPaymentParts.interestPaid));
 
         BEAST_EXPECTS(
             actualPaymentParts.principalPaid == overpaymentAmount,
@@ -645,8 +666,9 @@ class LendingHelpers_test : public beast::unit_test::suite
             actualPaymentParts.principalPaid ==
                 loanProperties.loanState.principalOutstanding - newState.principalOutstanding,
             " principalPaid mismatch: expected " +
-                to_string(loanProperties.loanState.principalOutstanding - newState.principalOutstanding) + ", got " +
-                to_string(actualPaymentParts.principalPaid));
+                to_string(
+                    loanProperties.loanState.principalOutstanding - newState.principalOutstanding) +
+                ", got " + to_string(actualPaymentParts.principalPaid));
     }
 
     void
@@ -677,7 +699,13 @@ class LendingHelpers_test : public beast::unit_test::suite
             managementFeeRate);
 
         auto const loanProperties = computeLoanProperties(
-            asset, loanPrincipal, loanInterestRate, paymentInterval, paymentsRemaining, managementFeeRate, loanScale);
+            asset,
+            loanPrincipal,
+            loanInterestRate,
+            paymentInterval,
+            paymentsRemaining,
+            managementFeeRate,
+            loanScale);
 
         auto const ret = tryOverpayment(
             asset,
@@ -706,11 +734,13 @@ class LendingHelpers_test : public beast::unit_test::suite
 
         BEAST_EXPECTS(
             actualPaymentParts.principalPaid == 45,
-            " principalPaid mismatch: expected 45, got `" + to_string(actualPaymentParts.principalPaid));
+            " principalPaid mismatch: expected 45, got `" +
+                to_string(actualPaymentParts.principalPaid));
 
         BEAST_EXPECTS(
             actualPaymentParts.interestPaid == 0,
-            " interestPaid mismatch: expected 0, got " + to_string(actualPaymentParts.interestPaid));
+            " interestPaid mismatch: expected 0, got " +
+                to_string(actualPaymentParts.interestPaid));
 
         // =========== VALIDATE STATE CHANGES ===========
         // With no Loan interest, interest outstanding should not change
@@ -729,8 +759,9 @@ class LendingHelpers_test : public beast::unit_test::suite
             actualPaymentParts.principalPaid ==
                 loanProperties.loanState.principalOutstanding - newState.principalOutstanding,
             " principalPaid mismatch: expected " +
-                to_string(loanProperties.loanState.principalOutstanding - newState.principalOutstanding) + ", got " +
-                to_string(actualPaymentParts.principalPaid));
+                to_string(
+                    loanProperties.loanState.principalOutstanding - newState.principalOutstanding) +
+                ", got " + to_string(actualPaymentParts.principalPaid));
     }
 
     void
@@ -761,7 +792,13 @@ class LendingHelpers_test : public beast::unit_test::suite
             managementFeeRate);
 
         auto const loanProperties = computeLoanProperties(
-            asset, loanPrincipal, loanInterestRate, paymentInterval, paymentsRemaining, managementFeeRate, loanScale);
+            asset,
+            loanPrincipal,
+            loanInterestRate,
+            paymentInterval,
+            paymentsRemaining,
+            managementFeeRate,
+            loanScale);
 
         auto const ret = tryOverpayment(
             asset,
@@ -794,23 +831,27 @@ class LendingHelpers_test : public beast::unit_test::suite
 
         BEAST_EXPECTS(
             actualPaymentParts.principalPaid == 50,
-            " principalPaid mismatch: expected 50, got `" + to_string(actualPaymentParts.principalPaid));
+            " principalPaid mismatch: expected 50, got `" +
+                to_string(actualPaymentParts.principalPaid));
 
         // with no interest portion, interest paid should be zero
         BEAST_EXPECTS(
             actualPaymentParts.interestPaid == 0,
-            " interestPaid mismatch: expected 0, got " + to_string(actualPaymentParts.interestPaid));
+            " interestPaid mismatch: expected 0, got " +
+                to_string(actualPaymentParts.interestPaid));
 
         // =========== VALIDATE STATE CHANGES ===========
         BEAST_EXPECTS(
             actualPaymentParts.principalPaid ==
                 loanProperties.loanState.principalOutstanding - newState.principalOutstanding,
             " principalPaid mismatch: expected " +
-                to_string(loanProperties.loanState.principalOutstanding - newState.principalOutstanding) + ", got " +
-                to_string(actualPaymentParts.principalPaid));
+                to_string(
+                    loanProperties.loanState.principalOutstanding - newState.principalOutstanding) +
+                ", got " + to_string(actualPaymentParts.principalPaid));
 
         BEAST_EXPECTS(
-            actualPaymentParts.valueChange == newState.interestDue - loanProperties.loanState.interestDue,
+            actualPaymentParts.valueChange ==
+                newState.interestDue - loanProperties.loanState.interestDue,
             " valueChange mismatch: expected " +
                 to_string(newState.interestDue - loanProperties.loanState.interestDue) + ", got " +
                 to_string(actualPaymentParts.valueChange));
@@ -850,7 +891,13 @@ class LendingHelpers_test : public beast::unit_test::suite
             managementFeeRate);
 
         auto const loanProperties = computeLoanProperties(
-            asset, loanPrincipal, loanInterestRate, paymentInterval, paymentsRemaining, managementFeeRate, loanScale);
+            asset,
+            loanPrincipal,
+            loanInterestRate,
+            paymentInterval,
+            paymentsRemaining,
+            managementFeeRate,
+            loanScale);
 
         auto const ret = tryOverpayment(
             asset,
@@ -872,15 +919,17 @@ class LendingHelpers_test : public beast::unit_test::suite
         // with overpayment interest portion, interest paid should be 5
         BEAST_EXPECTS(
             actualPaymentParts.interestPaid == 5,
-            " interestPaid mismatch: expected 5, got " + to_string(actualPaymentParts.interestPaid));
+            " interestPaid mismatch: expected 5, got " +
+                to_string(actualPaymentParts.interestPaid));
 
         // With overpayment interest portion, value change should equal the
         // interest decrease plus overpayment interest portion
         BEAST_EXPECTS(
-            (actualPaymentParts.valueChange == Number{-205922, -5} + actualPaymentParts.interestPaid),
+            (actualPaymentParts.valueChange ==
+             Number{-205922, -5} + actualPaymentParts.interestPaid),
             " valueChange mismatch: expected " +
-                to_string(actualPaymentParts.valueChange - actualPaymentParts.interestPaid) + ", got " +
-                to_string(actualPaymentParts.valueChange));
+                to_string(actualPaymentParts.valueChange - actualPaymentParts.interestPaid) +
+                ", got " + to_string(actualPaymentParts.valueChange));
 
         // with no fee portion, fee paid should be zero
         BEAST_EXPECTS(
@@ -889,15 +938,17 @@ class LendingHelpers_test : public beast::unit_test::suite
 
         BEAST_EXPECTS(
             actualPaymentParts.principalPaid == 45,
-            " principalPaid mismatch: expected 45, got `" + to_string(actualPaymentParts.principalPaid));
+            " principalPaid mismatch: expected 45, got `" +
+                to_string(actualPaymentParts.principalPaid));
 
         // =========== VALIDATE STATE CHANGES ===========
         BEAST_EXPECTS(
             actualPaymentParts.principalPaid ==
                 loanProperties.loanState.principalOutstanding - newState.principalOutstanding,
             " principalPaid mismatch: expected " +
-                to_string(loanProperties.loanState.principalOutstanding - newState.principalOutstanding) + ", got " +
-                to_string(actualPaymentParts.principalPaid));
+                to_string(
+                    loanProperties.loanState.principalOutstanding - newState.principalOutstanding) +
+                ", got " + to_string(actualPaymentParts.principalPaid));
 
         // The change in interest is equal to the value change sans the
         // overpayment interest
@@ -906,7 +957,8 @@ class LendingHelpers_test : public beast::unit_test::suite
                 newState.interestDue - loanProperties.loanState.interestDue,
             " valueChange mismatch: expected " +
                 to_string(
-                    newState.interestDue - loanProperties.loanState.interestDue + actualPaymentParts.interestPaid) +
+                    newState.interestDue - loanProperties.loanState.interestDue +
+                    actualPaymentParts.interestPaid) +
                 ", got " + to_string(actualPaymentParts.valueChange));
 
         // With no Loan management fee, management fee due should not change
@@ -946,7 +998,13 @@ class LendingHelpers_test : public beast::unit_test::suite
             managementFeeRate);
 
         auto const loanProperties = computeLoanProperties(
-            asset, loanPrincipal, loanInterestRate, paymentInterval, paymentsRemaining, managementFeeRate, loanScale);
+            asset,
+            loanPrincipal,
+            loanInterestRate,
+            paymentInterval,
+            paymentsRemaining,
+            managementFeeRate,
+            loanScale);
 
         auto const ret = tryOverpayment(
             asset,
@@ -970,14 +1028,17 @@ class LendingHelpers_test : public beast::unit_test::suite
         // overpayment interest portion first, so interest paid remains 4.5
         BEAST_EXPECTS(
             (actualPaymentParts.interestPaid == Number{45, -1}),
-            " interestPaid mismatch: expected 4.5, got " + to_string(actualPaymentParts.interestPaid));
+            " interestPaid mismatch: expected 4.5, got " +
+                to_string(actualPaymentParts.interestPaid));
 
         // With overpayment interest portion, value change should equal the
         // interest decrease plus overpayment interest portion
         BEAST_EXPECTS(
-            (actualPaymentParts.valueChange == Number{-18533, -4} + actualPaymentParts.interestPaid),
-            " valueChange mismatch: expected " + to_string(Number{-18533, -4} + actualPaymentParts.interestPaid) +
-                ", got " + to_string(actualPaymentParts.valueChange));
+            (actualPaymentParts.valueChange ==
+             Number{-18533, -4} + actualPaymentParts.interestPaid),
+            " valueChange mismatch: expected " +
+                to_string(Number{-18533, -4} + actualPaymentParts.interestPaid) + ", got " +
+                to_string(actualPaymentParts.valueChange));
 
         // While there is no overpayment fee, fee paid should equal the
         // management fee charged against the overpayment interest portion
@@ -987,21 +1048,25 @@ class LendingHelpers_test : public beast::unit_test::suite
 
         BEAST_EXPECTS(
             actualPaymentParts.principalPaid == 45,
-            " principalPaid mismatch: expected 45, got `" + to_string(actualPaymentParts.principalPaid));
+            " principalPaid mismatch: expected 45, got `" +
+                to_string(actualPaymentParts.principalPaid));
 
         // =========== VALIDATE STATE CHANGES ===========
         BEAST_EXPECTS(
             actualPaymentParts.principalPaid ==
                 loanProperties.loanState.principalOutstanding - newState.principalOutstanding,
             " principalPaid mismatch: expected " +
-                to_string(loanProperties.loanState.principalOutstanding - newState.principalOutstanding) + ", got " +
-                to_string(actualPaymentParts.principalPaid));
+                to_string(
+                    loanProperties.loanState.principalOutstanding - newState.principalOutstanding) +
+                ", got " + to_string(actualPaymentParts.principalPaid));
 
         // Note that the management fee value change is not captured, as this
         // value is not needed to correctly update the Vault state.
         BEAST_EXPECTS(
-            (newState.managementFeeDue - loanProperties.loanState.managementFeeDue == Number{-20592, -5}),
-            " management fee change mismatch: expected " + to_string(Number{-20592, -5}) + ", got " +
+            (newState.managementFeeDue - loanProperties.loanState.managementFeeDue ==
+             Number{-20592, -5}),
+            " management fee change mismatch: expected " + to_string(Number{-20592, -5}) +
+                ", got " +
                 to_string(newState.managementFeeDue - loanProperties.loanState.managementFeeDue));
 
         BEAST_EXPECTS(
@@ -1040,7 +1105,13 @@ class LendingHelpers_test : public beast::unit_test::suite
             managementFeeRate);
 
         auto const loanProperties = computeLoanProperties(
-            asset, loanPrincipal, loanInterestRate, paymentInterval, paymentsRemaining, managementFeeRate, loanScale);
+            asset,
+            loanPrincipal,
+            loanInterestRate,
+            paymentInterval,
+            paymentsRemaining,
+            managementFeeRate,
+            loanScale);
 
         auto const ret = tryOverpayment(
             asset,
@@ -1064,14 +1135,17 @@ class LendingHelpers_test : public beast::unit_test::suite
         // overpayment interest portion first, so interest paid remains 4.5
         BEAST_EXPECTS(
             (actualPaymentParts.interestPaid == Number{45, -1}),
-            " interestPaid mismatch: expected 4.5, got " + to_string(actualPaymentParts.interestPaid));
+            " interestPaid mismatch: expected 4.5, got " +
+                to_string(actualPaymentParts.interestPaid));
 
         // With overpayment interest portion, value change should equal the
         // interest decrease plus overpayment interest portion
         BEAST_EXPECTS(
-            (actualPaymentParts.valueChange == Number{-164737, -5} + actualPaymentParts.interestPaid),
-            " valueChange mismatch: expected " + to_string(Number{-164737, -5} + actualPaymentParts.interestPaid) +
-                ", got " + to_string(actualPaymentParts.valueChange));
+            (actualPaymentParts.valueChange ==
+             Number{-164737, -5} + actualPaymentParts.interestPaid),
+            " valueChange mismatch: expected " +
+                to_string(Number{-164737, -5} + actualPaymentParts.interestPaid) + ", got " +
+                to_string(actualPaymentParts.valueChange));
 
         // While there is no overpayment fee, fee paid should equal the
         // management fee charged against the overpayment interest portion
@@ -1081,7 +1155,8 @@ class LendingHelpers_test : public beast::unit_test::suite
 
         BEAST_EXPECTS(
             actualPaymentParts.principalPaid == 40,
-            " principalPaid mismatch: expected 40, got `" + to_string(actualPaymentParts.principalPaid));
+            " principalPaid mismatch: expected 40, got `" +
+                to_string(actualPaymentParts.principalPaid));
 
         // =========== VALIDATE STATE CHANGES ===========
 
@@ -1089,14 +1164,17 @@ class LendingHelpers_test : public beast::unit_test::suite
             actualPaymentParts.principalPaid ==
                 loanProperties.loanState.principalOutstanding - newState.principalOutstanding,
             " principalPaid mismatch: expected " +
-                to_string(loanProperties.loanState.principalOutstanding - newState.principalOutstanding) + ", got " +
-                to_string(actualPaymentParts.principalPaid));
+                to_string(
+                    loanProperties.loanState.principalOutstanding - newState.principalOutstanding) +
+                ", got " + to_string(actualPaymentParts.principalPaid));
 
         // Note that the management fee value change is not captured, as this
         // value is not needed to correctly update the Vault state.
         BEAST_EXPECTS(
-            (newState.managementFeeDue - loanProperties.loanState.managementFeeDue == Number{-18304, -5}),
-            " management fee change mismatch: expected " + to_string(Number{-18304, -5}) + ", got " +
+            (newState.managementFeeDue - loanProperties.loanState.managementFeeDue ==
+             Number{-18304, -5}),
+            " management fee change mismatch: expected " + to_string(Number{-18304, -5}) +
+                ", got " +
                 to_string(newState.managementFeeDue - loanProperties.loanState.managementFeeDue));
 
         BEAST_EXPECTS(

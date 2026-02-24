@@ -27,10 +27,12 @@ private:
     std::unique_lock<mutex> lock_;
 
 public:
-    LockedSociSession(std::shared_ptr<soci::session> it, mutex& m) : session_(std::move(it)), lock_(m)
+    LockedSociSession(std::shared_ptr<soci::session> it, mutex& m)
+        : session_(std::move(it)), lock_(m)
     {
     }
-    LockedSociSession(LockedSociSession&& rhs) noexcept : session_(std::move(rhs.session_)), lock_(std::move(rhs.lock_))
+    LockedSociSession(LockedSociSession&& rhs) noexcept
+        : session_(std::move(rhs.session_)), lock_(std::move(rhs.lock_))
     {
     }
     LockedSociSession() = delete;
@@ -104,7 +106,8 @@ public:
         beast::Journal journal)
         // Use temporary files or regular DB files?
         : DatabaseCon(
-              setup.standAlone && setup.startUp != StartUpType::LOAD && setup.startUp != StartUpType::LOAD_FILE &&
+              setup.standAlone && setup.startUp != StartUpType::LOAD &&
+                      setup.startUp != StartUpType::LOAD_FILE &&
                       setup.startUp != StartUpType::REPLAY
                   ? ""
                   : (setup.dataDir / dbName),
@@ -166,8 +169,8 @@ public:
     checkoutDb()
     {
         using namespace std::chrono_literals;
-        LockedSociSession session =
-            perf::measureDurationAndLog([&]() { return LockedSociSession(session_, lock_); }, "checkoutDb", 10ms, j_);
+        LockedSociSession session = perf::measureDurationAndLog(
+            [&]() { return LockedSociSession(session_, lock_); }, "checkoutDb", 10ms, j_);
 
         return session;
     }

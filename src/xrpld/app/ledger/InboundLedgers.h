@@ -34,7 +34,10 @@ public:
     // VFALCO TODO Remove the dependency on the Peer object.
     //
     virtual bool
-    gotLedgerData(LedgerHash const& ledgerHash, std::shared_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData>) = 0;
+    gotLedgerData(
+        LedgerHash const& ledgerHash,
+        std::shared_ptr<Peer>,
+        std::shared_ptr<protocol::TMLedgerData>) = 0;
 
     virtual void
     gotStaleData(std::shared_ptr<protocol::TMLedgerData> packet) = 0;

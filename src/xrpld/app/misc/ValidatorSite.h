@@ -207,17 +207,26 @@ private:
     /// Initiate request to given resource.
     /// lock over sites_mutex_ required
     void
-    makeRequest(std::shared_ptr<Site::Resource> resource, std::size_t siteIdx, std::lock_guard<std::mutex> const&);
+    makeRequest(
+        std::shared_ptr<Site::Resource> resource,
+        std::size_t siteIdx,
+        std::lock_guard<std::mutex> const&);
 
     /// Parse json response from validator list site.
     /// lock over sites_mutex_ required
     void
-    parseJsonResponse(std::string const& res, std::size_t siteIdx, std::lock_guard<std::mutex> const&);
+    parseJsonResponse(
+        std::string const& res,
+        std::size_t siteIdx,
+        std::lock_guard<std::mutex> const&);
 
     /// Interpret a redirect response.
     /// lock over sites_mutex_ required
     std::shared_ptr<Site::Resource>
-    processRedirect(detail::response_type& res, std::size_t siteIdx, std::lock_guard<std::mutex> const&);
+    processRedirect(
+        detail::response_type& res,
+        std::size_t siteIdx,
+        std::lock_guard<std::mutex> const&);
 
     /// If no sites are provided, or a site fails to load,
     /// get a list of local cache files from the ValidatorList.

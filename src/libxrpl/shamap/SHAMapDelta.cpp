@@ -85,9 +85,11 @@ SHAMap::walkBranch(
     {
         // otherMapItem was unmatched, must add
         if (isFirstMap)  // this is first map, so other item is from second
-            differences.insert(std::make_pair(otherMapItem->key(), DeltaRef(nullptr, otherMapItem)));
+            differences.insert(
+                std::make_pair(otherMapItem->key(), DeltaRef(nullptr, otherMapItem)));
         else
-            differences.insert(std::make_pair(otherMapItem->key(), DeltaRef(otherMapItem, nullptr)));
+            differences.insert(
+                std::make_pair(otherMapItem->key(), DeltaRef(otherMapItem, nullptr)));
 
         if (--maxCount <= 0)
             return false;
@@ -104,7 +106,8 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
     // many differences throws on corrupt tables or missing nodes CAUTION:
     // otherMap is not locked and must be immutable
 
-    XRPL_ASSERT(isValid() && otherMap.isValid(), "xrpl::SHAMap::compare : valid state and valid input");
+    XRPL_ASSERT(
+        isValid() && otherMap.isValid(), "xrpl::SHAMap::compare : valid state and valid input");
 
     if (getHash() == otherMap.getHash())
         return true;
@@ -136,18 +139,22 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
                 if (ours->peekItem()->slice() != other->peekItem()->slice())
                 {
                     differences.insert(
-                        std::make_pair(ours->peekItem()->key(), DeltaRef(ours->peekItem(), other->peekItem())));
+                        std::make_pair(
+                            ours->peekItem()->key(),
+                            DeltaRef(ours->peekItem(), other->peekItem())));
                     if (--maxCount <= 0)
                         return false;
                 }
             }
             else
             {
-                differences.insert(std::make_pair(ours->peekItem()->key(), DeltaRef(ours->peekItem(), nullptr)));
+                differences.insert(
+                    std::make_pair(ours->peekItem()->key(), DeltaRef(ours->peekItem(), nullptr)));
                 if (--maxCount <= 0)
                     return false;
 
-                differences.insert(std::make_pair(other->peekItem()->key(), DeltaRef(nullptr, other->peekItem())));
+                differences.insert(
+                    std::make_pair(other->peekItem()->key(), DeltaRef(nullptr, other->peekItem())));
                 if (--maxCount <= 0)
                     return false;
             }
@@ -292,12 +299,15 @@ SHAMap::walkMapParallel(std::vector<SHAMapMissingNode>& missingNodes, int maxMis
                             {
                                 if (node->isEmptyBranch(i))
                                     continue;
-                                intr_ptr::SharedPtr<SHAMapTreeNode> nextNode = descendNoStore(*node, i);
+                                intr_ptr::SharedPtr<SHAMapTreeNode> nextNode =
+                                    descendNoStore(*node, i);
 
                                 if (nextNode)
                                 {
                                     if (nextNode->isInner())
-                                        nodeStack.push(intr_ptr::static_pointer_cast<SHAMapInnerNode>(nextNode));
+                                        nodeStack.push(
+                                            intr_ptr::static_pointer_cast<SHAMapInnerNode>(
+                                                nextNode));
                                 }
                                 else
                                 {
