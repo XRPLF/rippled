@@ -43,7 +43,8 @@ set(CMAKE_VS_GLOBALS "CLToolExe=cl.exe" "CLToolPath=${CMAKE_BINARY_DIR}" "TrackF
 # By default Visual Studio generators will use /Zi to capture debug information, which is not compatible with ccache, so
 # tell it to use /Z7 instead.
 if (MSVC)
-    foreach (var_ CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE)
+    foreach (var_ CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE CMAKE_CXX_FLAGS_DEBUG
+                  CMAKE_CXX_FLAGS_RELEASE)
         string(REPLACE "/Zi" "/Z7" ${var_} "${${var_}}")
     endforeach ()
 endif ()

@@ -59,7 +59,8 @@ struct WithSourceLocation
 
     // Non-explicit constructor allows implicit conversion.
     // The default argument for loc is evaluated at the call site.
-    WithSourceLocation(T v, std::source_location l = std::source_location::current()) : value(std::move(v)), loc(l)
+    WithSourceLocation(T v, std::source_location l = std::source_location::current())
+        : value(std::move(v)), loc(l)
     {
     }
 };
@@ -99,7 +100,8 @@ class SuiteLogs : public Logs
     beast::unit_test::suite& suite_;
 
 public:
-    explicit SuiteLogs(beast::unit_test::suite& suite) : Logs(beast::severities::kError), suite_(suite)
+    explicit SuiteLogs(beast::unit_test::suite& suite)
+        : Logs(beast::severities::kError), suite_(suite)
     {
     }
 
@@ -190,7 +192,9 @@ public:
     {
         memoize(Account::master);
         Pathfinder::initPathTable();
-        foreachFeature(features, [&appFeats = app().config().features](uint256 const& f) { appFeats.insert(f); });
+        foreachFeature(features, [&appFeats = app().config().features](uint256 const& f) {
+            appFeats.insert(f);
+        });
     }
 
     /**
@@ -206,7 +210,9 @@ public:
      * @param args collection of features
      *
      */
-    Env(beast::unit_test::suite& suite_, FeatureBitset features, std::unique_ptr<Logs> logs = nullptr)
+    Env(beast::unit_test::suite& suite_,
+        FeatureBitset features,
+        std::unique_ptr<Logs> logs = nullptr)
         : Env(suite_, envconfig(), features, std::move(logs))
     {
     }
@@ -240,7 +246,8 @@ public:
      *
      * @param suite_ the current unit_test::suite
      */
-    Env(beast::unit_test::suite& suite_, beast::severities::Severity thresh = beast::severities::kError)
+    Env(beast::unit_test::suite& suite_,
+        beast::severities::Severity thresh = beast::severities::kError)
         : Env(suite_, envconfig(), nullptr, thresh)
     {
     }
@@ -301,7 +308,9 @@ public:
 
     template <class... Args>
     Json::Value
-    rpc(std::unordered_map<std::string, std::string> const& headers, std::string const& cmd, Args&&... args);
+    rpc(std::unordered_map<std::string, std::string> const& headers,
+        std::string const& cmd,
+        Args&&... args);
 
     template <class... Args>
     Json::Value
@@ -351,7 +360,9 @@ public:
         @return true if no error, false if error
     */
     bool
-    close(NetClock::time_point closeTime, std::optional<std::chrono::milliseconds> consensusDelay = std::nullopt);
+    close(
+        NetClock::time_point closeTime,
+        std::optional<std::chrono::milliseconds> consensusDelay = std::nullopt);
 
     /** Close and advance the ledger.
 
@@ -802,14 +813,24 @@ template <class... Args>
 Json::Value
 Env::rpc(unsigned apiVersion, std::string const& cmd, Args&&... args)
 {
-    return rpc(apiVersion, std::unordered_map<std::string, std::string>(), cmd, std::forward<Args>(args)...);
+    return rpc(
+        apiVersion,
+        std::unordered_map<std::string, std::string>(),
+        cmd,
+        std::forward<Args>(args)...);
 }
 
 template <class... Args>
 Json::Value
-Env::rpc(std::unordered_map<std::string, std::string> const& headers, std::string const& cmd, Args&&... args)
+Env::rpc(
+    std::unordered_map<std::string, std::string> const& headers,
+    std::string const& cmd,
+    Args&&... args)
 {
-    return do_rpc(RPC::apiCommandLineVersion, std::vector<std::string>{cmd, std::forward<Args>(args)...}, headers);
+    return do_rpc(
+        RPC::apiCommandLineVersion,
+        std::vector<std::string>{cmd, std::forward<Args>(args)...},
+        headers);
 }
 
 template <class... Args>

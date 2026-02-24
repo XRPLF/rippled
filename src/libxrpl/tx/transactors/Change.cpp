@@ -19,7 +19,8 @@ Transactor::invokePreflight<Change>(PreflightContext const& ctx)
     // The check for tfChangeMask is gated by LendingProtocol because that
     // feature introduced this parameter, and it's not worth adding another
     // amendment just for this.
-    if (auto const ret = preflight0(ctx, ctx.rules.enabled(featureLendingProtocol) ? tfChangeMask : 0))
+    if (auto const ret =
+            preflight0(ctx, ctx.rules.enabled(featureLendingProtocol) ? tfChangeMask : 0))
         return ret;
 
     auto account = ctx.tx.getAccountID(sfAccount);
@@ -37,7 +38,8 @@ Transactor::invokePreflight<Change>(PreflightContext const& ctx)
         return temBAD_FEE;
     }
 
-    if (!ctx.tx.getSigningPubKey().empty() || !ctx.tx.getSignature().empty() || ctx.tx.isFieldPresent(sfSigners))
+    if (!ctx.tx.getSigningPubKey().empty() || !ctx.tx.getSignature().empty() ||
+        ctx.tx.isFieldPresent(sfSigners))
     {
         JLOG(ctx.j.warn()) << "Change: Bad signature";
         return temBAD_SIGNATURE;
@@ -71,14 +73,17 @@ Change::preclaim(PreclaimContext const& ctx)
                 // The ttFEE transaction format defines these fields as
                 // optional, but once the XRPFees feature is enabled, they are
                 // required.
-                if (!ctx.tx.isFieldPresent(sfBaseFeeDrops) || !ctx.tx.isFieldPresent(sfReserveBaseDrops) ||
+                if (!ctx.tx.isFieldPresent(sfBaseFeeDrops) ||
+                    !ctx.tx.isFieldPresent(sfReserveBaseDrops) ||
                     !ctx.tx.isFieldPresent(sfReserveIncrementDrops))
                     return temMALFORMED;
                 // The ttFEE transaction format defines these fields as
                 // optional, but once the XRPFees feature is enabled, they are
                 // forbidden.
-                if (ctx.tx.isFieldPresent(sfBaseFee) || ctx.tx.isFieldPresent(sfReferenceFeeUnits) ||
-                    ctx.tx.isFieldPresent(sfReserveBase) || ctx.tx.isFieldPresent(sfReserveIncrement))
+                if (ctx.tx.isFieldPresent(sfBaseFee) ||
+                    ctx.tx.isFieldPresent(sfReferenceFeeUnits) ||
+                    ctx.tx.isFieldPresent(sfReserveBase) ||
+                    ctx.tx.isFieldPresent(sfReserveIncrement))
                     return temMALFORMED;
             }
             else
@@ -87,13 +92,16 @@ Change::preclaim(PreclaimContext const& ctx)
                 // as required. When the XRPFees feature was implemented, they
                 // were changed to be optional. Until the feature has been
                 // enabled, they are required.
-                if (!ctx.tx.isFieldPresent(sfBaseFee) || !ctx.tx.isFieldPresent(sfReferenceFeeUnits) ||
-                    !ctx.tx.isFieldPresent(sfReserveBase) || !ctx.tx.isFieldPresent(sfReserveIncrement))
+                if (!ctx.tx.isFieldPresent(sfBaseFee) ||
+                    !ctx.tx.isFieldPresent(sfReferenceFeeUnits) ||
+                    !ctx.tx.isFieldPresent(sfReserveBase) ||
+                    !ctx.tx.isFieldPresent(sfReserveIncrement))
                     return temMALFORMED;
                 // The ttFEE transaction format defines these fields as
                 // optional, but without the XRPFees feature, they are
                 // forbidden.
-                if (ctx.tx.isFieldPresent(sfBaseFeeDrops) || ctx.tx.isFieldPresent(sfReserveBaseDrops) ||
+                if (ctx.tx.isFieldPresent(sfBaseFeeDrops) ||
+                    ctx.tx.isFieldPresent(sfReserveBaseDrops) ||
                     ctx.tx.isFieldPresent(sfReserveIncrementDrops))
                     return temDISABLED;
             }
@@ -207,7 +215,8 @@ Change::applyAmendment()
 
         if (!ctx_.registry.getAmendmentTable().isSupported(amendment))
         {
-            JLOG(j_.error()) << "Unsupported amendment " << amendment << " activated: server blocked.";
+            JLOG(j_.error()) << "Unsupported amendment " << amendment
+                             << " activated: server blocked.";
             ctx_.registry.getOPs().setAmendmentBlocked();
         }
     }
@@ -234,7 +243,9 @@ Change::applyFee()
         feeObject = std::make_shared<SLE>(k);
         view().insert(feeObject);
     }
-    auto set = [](SLE::pointer& feeObject, STTx const& tx, auto const& field) { feeObject->at(field) = tx[field]; };
+    auto set = [](SLE::pointer& feeObject, STTx const& tx, auto const& field) {
+        feeObject->at(field) = tx[field];
+    };
     if (view().rules().enabled(featureXRPFees))
     {
         set(feeObject, ctx_.tx, sfBaseFeeDrops);
@@ -269,8 +280,9 @@ Change::applyUNLModify()
         return tefFAILURE;
     }
 
-    if (!ctx_.tx.isFieldPresent(sfUNLModifyDisabling) || ctx_.tx.getFieldU8(sfUNLModifyDisabling) > 1 ||
-        !ctx_.tx.isFieldPresent(sfLedgerSequence) || !ctx_.tx.isFieldPresent(sfUNLModifyValidator))
+    if (!ctx_.tx.isFieldPresent(sfUNLModifyDisabling) ||
+        ctx_.tx.getFieldU8(sfUNLModifyDisabling) > 1 || !ctx_.tx.isFieldPresent(sfLedgerSequence) ||
+        !ctx_.tx.isFieldPresent(sfUNLModifyValidator))
     {
         JLOG(j_.warn()) << "N-UNL: applyUNLModify, wrong Tx format.";
         return tefFAILURE;
@@ -291,8 +303,8 @@ Change::applyUNLModify()
         return tefFAILURE;
     }
 
-    JLOG(j_.info()) << "N-UNL: applyUNLModify, " << (disabling ? "ToDisable" : "ToReEnable") << " seq=" << seq
-                    << " validator data:" << strHex(validator);
+    JLOG(j_.info()) << "N-UNL: applyUNLModify, " << (disabling ? "ToDisable" : "ToReEnable")
+                    << " seq=" << seq << " validator data:" << strHex(validator);
 
     auto const k = keylet::negativeUNL();
     SLE::pointer negUnlObject = view().peek(k);

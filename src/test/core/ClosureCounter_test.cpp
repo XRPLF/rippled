@@ -106,12 +106,14 @@ class ClosureCounter_test : public beast::unit_test::suite
         }
 
         // Copy constructor
-        TrackedString(TrackedString const& rhs) : copies(rhs.copies + 1), moves(rhs.moves), str(rhs.str)
+        TrackedString(TrackedString const& rhs)
+            : copies(rhs.copies + 1), moves(rhs.moves), str(rhs.str)
         {
         }
 
         // Move constructor
-        TrackedString(TrackedString&& rhs) noexcept : copies(rhs.copies), moves(rhs.moves + 1), str(std::move(rhs.str))
+        TrackedString(TrackedString&& rhs) noexcept
+            : copies(rhs.copies), moves(rhs.moves + 1), str(std::move(rhs.str))
         {
         }
 

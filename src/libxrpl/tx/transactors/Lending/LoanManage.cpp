@@ -69,7 +69,8 @@ LoanManage::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.warn()) << "Loan is impaired. A loan can not be impaired twice.";
         return tecNO_PERMISSION;
     }
-    if (!(loanSle->isFlag(lsfLoanImpaired) || loanSle->isFlag(lsfLoanDefault)) && (tx.isFlag(tfLoanUnimpair)))
+    if (!(loanSle->isFlag(lsfLoanImpaired) || loanSle->isFlag(lsfLoanDefault)) &&
+        (tx.isFlag(tfLoanUnimpair)))
     {
         JLOG(ctx.j.warn()) << "Loan is unimpaired. Can not be unimpaired again.";
         return tecNO_PERMISSION;
@@ -181,7 +182,8 @@ LoanManage::defaultLoan(
             // LCOV_EXCL_STOP
         }
 
-        auto const vaultDefaultRounded = roundToAsset(vaultAsset, vaultDefaultAmount, vaultScale, Number::downward);
+        auto const vaultDefaultRounded =
+            roundToAsset(vaultAsset, vaultDefaultAmount, vaultScale, Number::downward);
         vaultTotalProxy -= vaultDefaultRounded;
         // Increase the Asset Available of the Vault by liquidated First-Loss
         // Capital and any unclaimed funds amount:
@@ -190,9 +192,10 @@ LoanManage::defaultLoan(
         {
             auto const difference = vaultAvailableProxy - vaultTotalProxy;
             JLOG(j.debug()) << "Vault assets available: " << *vaultAvailableProxy << "("
-                            << vaultAvailableProxy.value().exponent() << "), Total: " << *vaultTotalProxy << "("
-                            << vaultTotalProxy.value().exponent() << "), Difference: " << difference << "("
-                            << difference.exponent() << ")";
+                            << vaultAvailableProxy.value().exponent()
+                            << "), Total: " << *vaultTotalProxy << "("
+                            << vaultTotalProxy.value().exponent() << "), Difference: " << difference
+                            << "(" << difference.exponent() << ")";
             if (vaultAvailableProxy.value().exponent() - difference.exponent() > 13)
             {
                 // If the difference is dust, bring the total up to match
@@ -223,7 +226,8 @@ LoanManage::defaultLoan(
                 return tefBAD_LEDGER;
                 // LCOV_EXCL_STOP
             }
-            adjustImpreciseNumber(vaultLossUnrealizedProxy, -totalDefaultAmount, vaultAsset, vaultScale);
+            adjustImpreciseNumber(
+                vaultLossUnrealizedProxy, -totalDefaultAmount, vaultAsset, vaultScale);
         }
         view.update(vaultSle);
     }
@@ -270,7 +274,12 @@ LoanManage::defaultLoan(
 }
 
 TER
-LoanManage::impairLoan(ApplyView& view, SLE::ref loanSle, SLE::ref vaultSle, Asset const& vaultAsset, beast::Journal j)
+LoanManage::impairLoan(
+    ApplyView& view,
+    SLE::ref loanSle,
+    SLE::ref vaultSle,
+    Asset const& vaultAsset,
+    beast::Journal j)
 {
     Number const lossUnrealized = owedToVault(loanSle);
 
@@ -347,7 +356,8 @@ LoanManage::unimpairLoan(
     else
     {
         // loan was unimpaired after the original payment due date
-        loanSle->at(sfNextPaymentDueDate) = view.parentCloseTime().time_since_epoch().count() + paymentInterval;
+        loanSle->at(sfNextPaymentDueDate) =
+            view.parentCloseTime().time_since_epoch().count() + paymentInterval;
     }
     view.update(loanSle);
 

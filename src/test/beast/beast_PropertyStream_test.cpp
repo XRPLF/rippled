@@ -9,7 +9,10 @@ public:
     using Source = PropertyStream::Source;
 
     void
-    test_peel_name(std::string s, std::string const& expected, std::string const& expected_remainder)
+    test_peel_name(
+        std::string s,
+        std::string const& expected,
+        std::string const& expected_remainder)
     {
         try
         {
@@ -41,7 +44,10 @@ public:
     }
 
     void
-    test_peel_trailing_slashstar(std::string s, std::string const& expected_remainder, bool should_be_found)
+    test_peel_trailing_slashstar(
+        std::string s,
+        std::string const& expected_remainder,
+        bool should_be_found)
     {
         try
         {

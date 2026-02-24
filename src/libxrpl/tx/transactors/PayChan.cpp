@@ -94,7 +94,11 @@ namespace xrpl {
 //------------------------------------------------------------------------------
 
 static TER
-closeChannel(std::shared_ptr<SLE> const& slep, ApplyView& view, uint256 const& key, beast::Journal j)
+closeChannel(
+    std::shared_ptr<SLE> const& slep,
+    ApplyView& view,
+    uint256 const& key,
+    beast::Journal j)
 {
     AccountID const src = (*slep)[sfAccount];
     // Remove PayChan from owner directory
@@ -127,7 +131,8 @@ closeChannel(std::shared_ptr<SLE> const& slep, ApplyView& view, uint256 const& k
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    XRPL_ASSERT((*slep)[sfAmount] >= (*slep)[sfBalance], "xrpl::closeChannel : minimum channel amount");
+    XRPL_ASSERT(
+        (*slep)[sfAmount] >= (*slep)[sfBalance], "xrpl::closeChannel : minimum channel amount");
     (*sle)[sfBalance] = (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
     adjustOwnerCount(view, sle, -1, j);
     view.update(sle);
@@ -254,7 +259,8 @@ PayChanCreate::doApply()
 
     // Add PayChan to owner directory
     {
-        auto const page = ctx_.view().dirInsert(keylet::ownerDir(account), payChanKeylet, describeOwnerDir(account));
+        auto const page = ctx_.view().dirInsert(
+            keylet::ownerDir(account), payChanKeylet, describeOwnerDir(account));
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*slep)[sfOwnerNode] = *page;
@@ -262,7 +268,8 @@ PayChanCreate::doApply()
 
     // Add PayChan to the recipient's owner directory
     {
-        auto const page = ctx_.view().dirInsert(keylet::ownerDir(dst), payChanKeylet, describeOwnerDir(dst));
+        auto const page =
+            ctx_.view().dirInsert(keylet::ownerDir(dst), payChanKeylet, describeOwnerDir(dst));
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*slep)[sfDestinationNode] = *page;
@@ -318,7 +325,8 @@ PayChanFund::doApply()
 
     if (auto extend = ctx_.tx[~sfExpiration])
     {
-        auto minExpiration = ctx_.view().header().parentCloseTime.time_since_epoch().count() + (*slep)[sfSettleDelay];
+        auto minExpiration = ctx_.view().header().parentCloseTime.time_since_epoch().count() +
+            (*slep)[sfSettleDelay];
         if (expiration && *expiration < minExpiration)
             minExpiration = *expiration;
 
@@ -432,7 +440,8 @@ PayChanClaim::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.rules().enabled(featureCredentials))
         return Transactor::preclaim(ctx);
 
-    if (auto const err = credentials::valid(ctx.tx, ctx.view, ctx.tx[sfAccount], ctx.j); !isTesSuccess(err))
+    if (auto const err = credentials::valid(ctx.tx, ctx.view, ctx.tx[sfAccount], ctx.j);
+        !isTesSuccess(err))
         return err;
 
     return tesSUCCESS;
@@ -454,7 +463,8 @@ PayChanClaim::doApply()
     {
         auto const cancelAfter = (*slep)[~sfCancelAfter];
         auto const closeTime = ctx_.view().header().parentCloseTime.time_since_epoch().count();
-        if ((cancelAfter && closeTime >= *cancelAfter) || (curExpiration && closeTime >= *curExpiration))
+        if ((cancelAfter && closeTime >= *cancelAfter) ||
+            (curExpiration && closeTime >= *curExpiration))
             return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.journal("View"));
     }
 
@@ -488,7 +498,8 @@ PayChanClaim::doApply()
         if (!sled)
             return tecNO_DST;
 
-        if (auto err = verifyDepositPreauth(ctx_.tx, ctx_.view(), txAccount, dst, sled, ctx_.journal);
+        if (auto err =
+                verifyDepositPreauth(ctx_.tx, ctx_.view(), txAccount, dst, sled, ctx_.journal);
             !isTesSuccess(err))
             return err;
 
@@ -515,7 +526,8 @@ PayChanClaim::doApply()
             return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.journal("View"));
 
         auto const settleExpiration =
-            ctx_.view().header().parentCloseTime.time_since_epoch().count() + (*slep)[sfSettleDelay];
+            ctx_.view().header().parentCloseTime.time_since_epoch().count() +
+            (*slep)[sfSettleDelay];
 
         if (!curExpiration || *curExpiration > settleExpiration)
         {

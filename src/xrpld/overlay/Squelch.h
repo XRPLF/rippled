@@ -55,7 +55,9 @@ private:
 
 template <typename clock_type>
 bool
-Squelch<clock_type>::addSquelch(PublicKey const& validator, std::chrono::seconds const& squelchDuration)
+Squelch<clock_type>::addSquelch(
+    PublicKey const& validator,
+    std::chrono::seconds const& squelchDuration)
 {
     if (squelchDuration >= MIN_UNSQUELCH_EXPIRE && squelchDuration <= MAX_UNSQUELCH_EXPIRE_PEERS)
     {

@@ -57,7 +57,8 @@ IOUAmount::fromNumber(Number const& number)
     // Need to create a default IOUAmount and assign directly so it doesn't try
     // to normalize, which calls fromNumber
     IOUAmount result{};
-    std::tie(result.mantissa_, result.exponent_) = number.normalizeToRange(minMantissa, maxMantissa);
+    std::tie(result.mantissa_, result.exponent_) =
+        number.normalizeToRange(minMantissa, maxMantissa);
     return result;
 }
 

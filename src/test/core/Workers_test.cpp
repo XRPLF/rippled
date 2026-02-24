@@ -101,7 +101,9 @@ public:
     void
     testThreads(int const tc1, int const tc2, int const tc3)
     {
-        testcase("threadCounts: " + std::to_string(tc1) + " -> " + std::to_string(tc2) + " -> " + std::to_string(tc3));
+        testcase(
+            "threadCounts: " + std::to_string(tc1) + " -> " + std::to_string(tc2) + " -> " +
+            std::to_string(tc3));
 
         TestCallback cb;
         std::unique_ptr<perf::PerfLog> perfLog = std::make_unique<perf::PerfLogTest>();

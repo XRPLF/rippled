@@ -23,9 +23,11 @@ class AccountCurrencies_test : public beast::unit_test::suite
             Json::Value params;
             params[jss::account] = Account{"bob"}.human();
             params[jss::ledger_hash] = 1;
-            auto const result = env.rpc("json", "account_currencies", to_string(params))[jss::result];
+            auto const result =
+                env.rpc("json", "account_currencies", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
-            BEAST_EXPECT(result[jss::error_message] == "Invalid field 'ledger_hash', not hex string.");
+            BEAST_EXPECT(
+                result[jss::error_message] == "Invalid field 'ledger_hash', not hex string.");
         }
 
         {  // missing account field
@@ -73,7 +75,8 @@ class AccountCurrencies_test : public beast::unit_test::suite
         {
             Json::Value params;
             params[jss::account] = "llIIOO";  // these are invalid in bitcoin alphabet
-            auto const result = env.rpc("json", "account_currencies", to_string(params))[jss::result];
+            auto const result =
+                env.rpc("json", "account_currencies", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "actMalformed");
             BEAST_EXPECT(result[jss::error_message] == "Account malformed.");
         }
@@ -82,7 +85,8 @@ class AccountCurrencies_test : public beast::unit_test::suite
             // Cannot use a seed as account
             Json::Value params;
             params[jss::account] = "Bob";
-            auto const result = env.rpc("json", "account_currencies", to_string(params))[jss::result];
+            auto const result =
+                env.rpc("json", "account_currencies", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "actMalformed");
             BEAST_EXPECT(result[jss::error_message] == "Account malformed.");
         }
@@ -90,7 +94,8 @@ class AccountCurrencies_test : public beast::unit_test::suite
         {  // ask for nonexistent account
             Json::Value params;
             params[jss::account] = Account{"bob"}.human();
-            auto const result = env.rpc("json", "account_currencies", to_string(params))[jss::result];
+            auto const result =
+                env.rpc("json", "account_currencies", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "actNotFound");
             BEAST_EXPECT(result[jss::error_message] == "Account not found.");
         }
@@ -121,8 +126,10 @@ class AccountCurrencies_test : public beast::unit_test::suite
         auto result = env.rpc("json", "account_currencies", to_string(params))[jss::result];
 
         auto arrayCheck = [&result](
-                              Json::StaticString const& fld, std::vector<std::optional<IOU>> const& expected) -> bool {
-            bool stat = result.isMember(fld) && result[fld].isArray() && result[fld].size() == expected.size();
+                              Json::StaticString const& fld,
+                              std::vector<std::optional<IOU>> const& expected) -> bool {
+            bool stat = result.isMember(fld) && result[fld].isArray() &&
+                result[fld].size() == expected.size();
             for (size_t i = 0; stat && i < expected.size(); ++i)
             {
                 stat &= (to_string(expected[i].value().currency) == result[fld][i].asString());

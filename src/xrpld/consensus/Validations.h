@@ -139,7 +139,8 @@ isCurrent(
     // promoted from unsigned 32 bit to signed 64 bit prior
     // to computation.
 
-    return (signTime > (now - p.validationCURRENT_EARLY)) && (signTime < (now + p.validationCURRENT_WALL)) &&
+    return (signTime > (now - p.validationCURRENT_EARLY)) &&
+        (signTime < (now + p.validationCURRENT_WALL)) &&
         ((seenTime == NetClock::time_point{}) || (seenTime < (now + p.validationCURRENT_LOCAL)));
 }
 
@@ -274,7 +275,8 @@ class Validations
     using NodeID = typename Validation::NodeID;
     using NodeKey = typename Validation::NodeKey;
 
-    using WrappedValidationType = std::decay_t<std::invoke_result_t<decltype(&Validation::unwrap), Validation>>;
+    using WrappedValidationType =
+        std::decay_t<std::invoke_result_t<decltype(&Validation::unwrap), Validation>>;
 
     // Manages concurrent access to members
     mutable Mutex mutex_;
@@ -289,10 +291,20 @@ class Validations
     hash_map<NodeID, SeqEnforcer<Seq>> seqEnforcers_;
 
     //! Validations from listed nodes, indexed by ledger id (partial and full)
-    beast::aged_unordered_map<ID, hash_map<NodeID, Validation>, std::chrono::steady_clock, beast::uhash<>> byLedger_;
+    beast::aged_unordered_map<
+        ID,
+        hash_map<NodeID, Validation>,
+        std::chrono::steady_clock,
+        beast::uhash<>>
+        byLedger_;
 
     // Partial and full validations indexed by sequence
-    beast::aged_unordered_map<Seq, hash_map<NodeID, Validation>, std::chrono::steady_clock, beast::uhash<>> bySequence_;
+    beast::aged_unordered_map<
+        Seq,
+        hash_map<NodeID, Validation>,
+        std::chrono::steady_clock,
+        beast::uhash<>>
+        bySequence_;
 
     // A range [low_, high_) of validations to keep from expire
     struct KeepRange
@@ -523,7 +535,10 @@ public:
         @param ts Parameters for constructing Adaptor instance
     */
     template <class... Ts>
-    Validations(ValidationParms const& p, beast::abstract_clock<std::chrono::steady_clock>& c, Ts&&... ts)
+    Validations(
+        ValidationParms const& p,
+        beast::abstract_clock<std::chrono::steady_clock>& c,
+        Ts&&... ts)
         : byLedger_(c), bySequence_(c), parms_(p), adaptor_(std::forward<Ts>(ts)...)
     {
     }
@@ -589,7 +604,8 @@ public:
                 auto const diff = std::max(seqit->second.signTime(), val.signTime()) -
                     std::min(seqit->second.signTime(), val.signTime());
 
-                if (diff > parms_.validationCURRENT_WALL && val.signTime() > seqit->second.signTime())
+                if (diff > parms_.validationCURRENT_WALL &&
+                    val.signTime() > seqit->second.signTime())
                     seqit->second = val;
             }
 
@@ -711,10 +727,11 @@ public:
             beast::expire(byLedger_, parms_.validationSET_EXPIRES);
             beast::expire(bySequence_, parms_.validationSET_EXPIRES);
         }
-        JLOG(j.debug())
-            << "Validations sets sweep lock duration "
-            << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count()
-            << "ms";
+        JLOG(j.debug()) << "Validations sets sweep lock duration "
+                        << std::chrono::duration_cast<std::chrono::milliseconds>(
+                               std::chrono::steady_clock::now() - start)
+                               .count()
+                        << "ms";
     }
 
     /** Update trust status of validations
@@ -785,21 +802,23 @@ public:
     getPreferred(Ledger const& curr)
     {
         std::lock_guard lock{mutex_};
-        std::optional<SpanTip<Ledger>> preferred =
-            withTrie(lock, [this](LedgerTrie<Ledger>& trie) { return trie.getPreferred(localSeqEnforcer_.largest()); });
+        std::optional<SpanTip<Ledger>> preferred = withTrie(lock, [this](LedgerTrie<Ledger>& trie) {
+            return trie.getPreferred(localSeqEnforcer_.largest());
+        });
         // No trusted validations to determine branch
         if (!preferred)
         {
             // fall back to majority over acquiring ledgers
-            auto it = std::max_element(acquiring_.begin(), acquiring_.end(), [](auto const& a, auto const& b) {
-                std::pair<Seq, ID> const& aKey = a.first;
-                typename hash_set<NodeID>::size_type const& aSize = a.second.size();
-                std::pair<Seq, ID> const& bKey = b.first;
-                typename hash_set<NodeID>::size_type const& bSize = b.second.size();
-                // order by number of trusted peers validating that ledger
-                // break ties with ledger ID
-                return std::tie(aSize, aKey.second) < std::tie(bSize, bKey.second);
-            });
+            auto it = std::max_element(
+                acquiring_.begin(), acquiring_.end(), [](auto const& a, auto const& b) {
+                    std::pair<Seq, ID> const& aKey = a.first;
+                    typename hash_set<NodeID>::size_type const& aSize = a.second.size();
+                    std::pair<Seq, ID> const& bKey = b.first;
+                    typename hash_set<NodeID>::size_type const& bSize = b.second.size();
+                    // order by number of trusted peers validating that ledger
+                    // break ties with ledger ID
+                    return std::tie(aSize, aKey.second) < std::tie(bSize, bKey.second);
+                });
             if (it != acquiring_.end())
                 return it->first;
             return std::nullopt;

@@ -10,7 +10,8 @@ AcceptedLedger::AcceptedLedger(std::shared_ptr<ReadView const> const& ledger) : 
 
     auto insertAll = [&](auto const& txns) {
         for (auto const& item : txns)
-            transactions_.emplace_back(std::make_unique<AcceptedLedgerTx>(ledger, item.first, item.second));
+            transactions_.emplace_back(
+                std::make_unique<AcceptedLedgerTx>(ledger, item.first, item.second));
     };
 
     transactions_.reserve(256);

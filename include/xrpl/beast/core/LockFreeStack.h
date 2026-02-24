@@ -19,10 +19,12 @@ public:
     using iterator_category = std::forward_iterator_tag;
     using value_type = typename Container::value_type;
     using difference_type = typename Container::difference_type;
-    using pointer =
-        typename std::conditional<IsConst, typename Container::const_pointer, typename Container::pointer>::type;
-    using reference =
-        typename std::conditional<IsConst, typename Container::const_reference, typename Container::reference>::type;
+    using pointer = typename std::
+        conditional<IsConst, typename Container::const_pointer, typename Container::pointer>::type;
+    using reference = typename std::conditional<
+        IsConst,
+        typename Container::const_reference,
+        typename Container::reference>::type;
 
     LockFreeStackIterator() : m_node()
     {
@@ -33,7 +35,8 @@ public:
     }
 
     template <bool OtherIsConst>
-    explicit LockFreeStackIterator(LockFreeStackIterator<Container, OtherIsConst> const& other) : m_node(other.m_node)
+    explicit LockFreeStackIterator(LockFreeStackIterator<Container, OtherIsConst> const& other)
+        : m_node(other.m_node)
     {
     }
 
@@ -190,7 +193,8 @@ public:
         {
             first = (old_head == &m_end);
             node->m_next = old_head;
-        } while (!m_head.compare_exchange_strong(old_head, node, std::memory_order_release, std::memory_order_relaxed));
+        } while (!m_head.compare_exchange_strong(
+            old_head, node, std::memory_order_release, std::memory_order_relaxed));
         return first;
     }
 
@@ -213,7 +217,8 @@ public:
             if (node == &m_end)
                 return nullptr;
             new_head = node->m_next.load();
-        } while (!m_head.compare_exchange_strong(node, new_head, std::memory_order_release, std::memory_order_relaxed));
+        } while (!m_head.compare_exchange_strong(
+            node, new_head, std::memory_order_release, std::memory_order_relaxed));
         return static_cast<Element*>(node);
     }
 
