@@ -2481,7 +2481,7 @@ protected:
                 env(manage(lender, loanKeylet.key, tfLoanDefault), ter(tecNO_PERMISSION));
             });
 
-#if LOANTODO
+#if LOAN_TODO
         // TODO
 
         /*
@@ -5087,7 +5087,7 @@ protected:
         }
     }
 
-#if LOANTODO
+#if LOAN_TODO
     void
     testLoanPayLateFullPaymentBypassesPenalties()
     {
@@ -6805,7 +6805,7 @@ public:
     void
     run() override
     {
-#if LOANTODO
+#if LOAN_TODO
         testLoanPayLateFullPaymentBypassesPenalties();
         testLoanCoverMinimumRoundingExploit();
 #endif
