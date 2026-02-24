@@ -258,7 +258,8 @@ Batch::preflight(PreflightContext const& ctx)
             return temINVALID;
         }
 
-        if (std::any_of(
+        if (!ctx.rules.enabled(fixLendingProtocolV1_1) &&
+            std::any_of(
                 disabledTxTypes.begin(), disabledTxTypes.end(), [txType](auto const& disabled) {
                     return txType == disabled;
                 }))

@@ -2600,15 +2600,17 @@ class Batch_test : public beast::unit_test::suite
     {
         testcase("loan");
 
-        bool const lendingBatchEnabled = !std::any_of(
-            Batch::disabledTxTypes.begin(), Batch::disabledTxTypes.end(), [](auto const& disabled) {
-                return disabled == ttLOAN_BROKER_SET;
-            });
-
         using namespace test::jtx;
 
         test::jtx::Env env{
             *this, features | featureSingleAssetVault | featureLendingProtocol | featureMPTokensV1};
+
+        bool const lendingBatchEnabled =
+            !std::any_of(
+                Batch::disabledTxTypes.begin(),
+                Batch::disabledTxTypes.end(),
+                [](auto const& disabled) { return disabled == ttLOAN_BROKER_SET; }) ||
+            env.enabled(fixLendingProtocolV1_1);
 
         Account const issuer{"issuer"};
         // For simplicity, lender will be the sole actor for the vault &

@@ -3584,14 +3584,16 @@ protected:
         // From FIND-001
         testcase << "Batch Bypass Counterparty";
 
-        bool const lendingBatchEnabled = !std::any_of(
-            Batch::disabledTxTypes.begin(), Batch::disabledTxTypes.end(), [](auto const& disabled) {
-                return disabled == ttLOAN_BROKER_SET;
-            });
-
         using namespace jtx;
         using namespace std::chrono_literals;
         Env env(*this, all);
+
+        bool const lendingBatchEnabled =
+            !std::any_of(
+                Batch::disabledTxTypes.begin(),
+                Batch::disabledTxTypes.end(),
+                [](auto const& disabled) { return disabled == ttLOAN_BROKER_SET; }) ||
+            env.enabled(fixLendingProtocolV1_1);
 
         Account const lender{"lender"};
         Account const borrower{"borrower"};
