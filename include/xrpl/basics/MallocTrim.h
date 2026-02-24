@@ -4,8 +4,7 @@
 
 #include <chrono>
 #include <cstdint>
-#include <optional>
-#include <string>
+#include <string_view>
 
 namespace xrpl {
 
@@ -52,7 +51,7 @@ struct MallocTrimReport
  * a different allocator is in use, this function is a no-op and the report will
  * indicate that trimming is unsupported or had no effect.
  *
- * @param tag     Optional identifier for logging/debugging purposes.
+ * @param tag     Identifier for logging/debugging purposes.
  * @param journal Journal for diagnostic logging.
  * @return Report containing before/after metrics and the trim result.
  *
@@ -69,6 +68,6 @@ struct MallocTrimReport
  *       cache sweeps, ledger cleanup, online delete). Consider rate limiting.
  */
 MallocTrimReport
-mallocTrim(std::optional<std::string> const& tag, beast::Journal journal);
+mallocTrim(std::string_view tag, beast::Journal journal);
 
 }  // namespace xrpl

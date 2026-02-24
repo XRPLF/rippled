@@ -117,52 +117,11 @@ TEST(parseStatmRSSkB, standard_format)
 }
 #endif
 
-TEST(mallocTrim, basic_functionality)
-{
-    beast::Journal journal{beast::Journal::getNullSink()};
-
-    // Test with no tag
-    {
-        MallocTrimReport report = mallocTrim(std::nullopt, journal);
-
-#if defined(__GLIBC__) && BOOST_OS_LINUX
-        // On Linux with glibc, should be supported
-        EXPECT_EQ(report.supported, true);
-        // trimResult should be 0 or 1 (success indicators)
-        EXPECT_GE(report.trimResult, 0);
-        EXPECT_EQ(report.durationUs, std::chrono::microseconds{-1});
-        EXPECT_EQ(report.minfltDelta, -1);
-        EXPECT_EQ(report.majfltDelta, -1);
-#else
-        // On other platforms, should be unsupported
-        EXPECT_EQ(report.supported, false);
-        EXPECT_EQ(report.trimResult, -1);
-        EXPECT_EQ(report.rssBeforeKB, -1);
-        EXPECT_EQ(report.rssAfterKB, -1);
-        EXPECT_EQ(report.durationUs, std::chrono::microseconds{-1});
-        EXPECT_EQ(report.minfltDelta, -1);
-        EXPECT_EQ(report.majfltDelta, -1);
-#endif
-    }
-
-    // Test with tag
-    {
-        MallocTrimReport report = mallocTrim("test_tag", journal);
-
-#if defined(__GLIBC__) && BOOST_OS_LINUX
-        EXPECT_EQ(report.supported, true);
-        EXPECT_GE(report.trimResult, 0);
-#else
-        EXPECT_EQ(report.supported, false);
-#endif
-    }
-}
-
 TEST(mallocTrim, without_debug_logging)
 {
     beast::Journal journal{beast::Journal::getNullSink()};
 
-    MallocTrimReport report = mallocTrim("test", journal);
+    MallocTrimReport report = mallocTrim("without_debug", journal);
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
     EXPECT_EQ(report.supported, true);
@@ -173,9 +132,24 @@ TEST(mallocTrim, without_debug_logging)
 #else
     EXPECT_EQ(report.supported, false);
     EXPECT_EQ(report.trimResult, -1);
+    EXPECT_EQ(report.rssBeforeKB, -1);
+    EXPECT_EQ(report.rssAfterKB, -1);
     EXPECT_EQ(report.durationUs, std::chrono::microseconds{-1});
     EXPECT_EQ(report.minfltDelta, -1);
     EXPECT_EQ(report.majfltDelta, -1);
+#endif
+}
+
+TEST(mallocTrim, empty_tag)
+{
+    beast::Journal journal{beast::Journal::getNullSink()};
+    MallocTrimReport report = mallocTrim("", journal);
+
+#if defined(__GLIBC__) && BOOST_OS_LINUX
+    EXPECT_EQ(report.supported, true);
+    EXPECT_GE(report.trimResult, 0);
+#else
+    EXPECT_EQ(report.supported, false);
 #endif
 }
 

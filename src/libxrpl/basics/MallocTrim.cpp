@@ -68,14 +68,14 @@ parseStatmRSSkB(std::string const& statm)
 }  // namespace detail
 
 MallocTrimReport
-mallocTrim([[maybe_unused]] std::optional<std::string> const& tag, beast::Journal journal)
+mallocTrim(std::string_view tag, beast::Journal journal)
 {
     // LCOV_EXCL_START
 
     MallocTrimReport report;
 
 #if !(defined(__GLIBC__) && BOOST_OS_LINUX)
-    JLOG(journal.debug()) << "malloc_trim not supported on this platform";
+    JLOG(journal.debug()) << "malloc_trim not supported on this platform (tag=" << tag << ")";
 #else
     // Keep glibc malloc_trim padding at 0 (default): 12h Mainnet tests across 0/256KB/1MB/16MB
     // showed no clear, consistent benefit from custom padding—0 provided the best overall balance
@@ -97,7 +97,7 @@ mallocTrim([[maybe_unused]] std::optional<std::string> const& tag, beast::Journa
             return oss.str();
         };
 
-        std::string const tagStr = tag.value_or("default");
+        std::string const tagStr{tag};
         std::string const statmPath = "/proc/self/statm";
 
         auto const statmBefore = readFile(statmPath);
