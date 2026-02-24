@@ -117,7 +117,7 @@ enum class ApplyTransactionResult {
 
 std::optional<std::vector<ApplyResult>>
 applyBatchTransactions(
-    Application& app,
+    Registry& registry,
     OpenView& batchView,
     STTx const& batchTxn,
     ApplyFlags flags,
