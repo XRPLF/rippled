@@ -47,7 +47,8 @@ VaultSet::preflight(PreflightContext const& ctx)
         }
     }
 
-    if (!ctx.tx.isFieldPresent(sfDomainID) && !ctx.tx.isFieldPresent(sfAssetsMaximum) && !ctx.tx.isFieldPresent(sfData))
+    if (!ctx.tx.isFieldPresent(sfDomainID) && !ctx.tx.isFieldPresent(sfAssetsMaximum) &&
+        !ctx.tx.isFieldPresent(sfData))
     {
         JLOG(ctx.j.debug()) << "VaultSet: nothing is being updated.";
         return temMALFORMED;

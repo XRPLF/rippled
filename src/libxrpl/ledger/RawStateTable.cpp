@@ -126,7 +126,8 @@ private:
     void
     skip()
     {
-        while (iter1_ != end1_ && iter1_->second.action == Action::erase && sle0_->key() == sle1_->key())
+        while (iter1_ != end1_ && iter1_->second.action == Action::erase &&
+               sle0_->key() == sle1_->key())
         {
             inc1();
             inc0();
@@ -182,8 +183,8 @@ RawStateTable::exists(ReadView const& base, Keylet const& k) const
     the lower of the two.
 */
 auto
-RawStateTable::succ(ReadView const& base, key_type const& key, std::optional<key_type> const& last) const
-    -> std::optional<key_type>
+RawStateTable::succ(ReadView const& base, key_type const& key, std::optional<key_type> const& last)
+    const -> std::optional<key_type>
 {
     std::optional<key_type> next = key;
     items_t::const_iterator iter;
@@ -219,7 +220,9 @@ RawStateTable::erase(std::shared_ptr<SLE> const& sle)
 {
     // The base invariant is checked during apply
     auto const result = items_.emplace(
-        std::piecewise_construct, std::forward_as_tuple(sle->key()), std::forward_as_tuple(Action::erase, sle));
+        std::piecewise_construct,
+        std::forward_as_tuple(sle->key()),
+        std::forward_as_tuple(Action::erase, sle));
     if (result.second)
         return;
     auto& item = result.first->second;
@@ -242,7 +245,9 @@ void
 RawStateTable::insert(std::shared_ptr<SLE> const& sle)
 {
     auto const result = items_.emplace(
-        std::piecewise_construct, std::forward_as_tuple(sle->key()), std::forward_as_tuple(Action::insert, sle));
+        std::piecewise_construct,
+        std::forward_as_tuple(sle->key()),
+        std::forward_as_tuple(Action::insert, sle));
     if (result.second)
         return;
     auto& item = result.first->second;
@@ -265,7 +270,9 @@ void
 RawStateTable::replace(std::shared_ptr<SLE> const& sle)
 {
     auto const result = items_.emplace(
-        std::piecewise_construct, std::forward_as_tuple(sle->key()), std::forward_as_tuple(Action::replace, sle));
+        std::piecewise_construct,
+        std::forward_as_tuple(sle->key()),
+        std::forward_as_tuple(Action::replace, sle));
     if (result.second)
         return;
     auto& item = result.first->second;
@@ -306,13 +313,15 @@ RawStateTable::destroyXRP(XRPAmount const& fee)
 std::unique_ptr<ReadView::sles_type::iter_base>
 RawStateTable::slesBegin(ReadView const& base) const
 {
-    return std::make_unique<sles_iter_impl>(items_.begin(), items_.end(), base.sles.begin(), base.sles.end());
+    return std::make_unique<sles_iter_impl>(
+        items_.begin(), items_.end(), base.sles.begin(), base.sles.end());
 }
 
 std::unique_ptr<ReadView::sles_type::iter_base>
 RawStateTable::slesEnd(ReadView const& base) const
 {
-    return std::make_unique<sles_iter_impl>(items_.end(), items_.end(), base.sles.end(), base.sles.end());
+    return std::make_unique<sles_iter_impl>(
+        items_.end(), items_.end(), base.sles.end(), base.sles.end());
 }
 
 std::unique_ptr<ReadView::sles_type::iter_base>

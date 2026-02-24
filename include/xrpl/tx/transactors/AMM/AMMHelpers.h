@@ -60,7 +60,11 @@ lpTokensOut(
  * @return
  */
 STAmount
-ammAssetIn(STAmount const& asset1Balance, STAmount const& lptAMMBalance, STAmount const& lpTokens, std::uint16_t tfee);
+ammAssetIn(
+    STAmount const& asset1Balance,
+    STAmount const& lptAMMBalance,
+    STAmount const& lpTokens,
+    std::uint16_t tfee);
 
 /** Calculate LP Tokens given asset's withdraw amount. Return 0
  * if can't calculate.
@@ -85,7 +89,11 @@ lpTokensIn(
  * @return calculated asset amount
  */
 STAmount
-ammAssetOut(STAmount const& assetBalance, STAmount const& lptAMMBalance, STAmount const& lpTokens, std::uint16_t tfee);
+ammAssetOut(
+    STAmount const& assetBalance,
+    STAmount const& lptAMMBalance,
+    STAmount const& lpTokens,
+    std::uint16_t tfee);
 
 /** Check if the relative distance between the qualities
  * is within the requested distance.
@@ -159,7 +167,10 @@ solveQuadraticEqSmallest(Number const& a, Number const& b, Number const& c);
  */
 template <typename TIn, typename TOut>
 std::optional<TAmounts<TIn, TOut>>
-getAMMOfferStartWithTakerGets(TAmounts<TIn, TOut> const& pool, Quality const& targetQuality, std::uint16_t const& tfee)
+getAMMOfferStartWithTakerGets(
+    TAmounts<TIn, TOut> const& pool,
+    Quality const& targetQuality,
+    std::uint16_t const& tfee)
 {
     if (targetQuality.rate() == beast::zero)
         return std::nullopt;
@@ -185,7 +196,8 @@ getAMMOfferStartWithTakerGets(TAmounts<TIn, TOut> const& pool, Quality const& ta
     auto getAmounts = [&pool, &tfee](Number const& nTakerGetsProposed) {
         // Round downward to minimize the offer and to maximize the quality.
         // This has the most impact when takerGets is XRP.
-        auto const takerGets = toAmount<TOut>(getIssue(pool.out), nTakerGetsProposed, Number::downward);
+        auto const takerGets =
+            toAmount<TOut>(getIssue(pool.out), nTakerGetsProposed, Number::downward);
         return TAmounts<TIn, TOut>{swapAssetOut(pool, takerGets, tfee), takerGets};
     };
 
@@ -222,7 +234,10 @@ getAMMOfferStartWithTakerGets(TAmounts<TIn, TOut> const& pool, Quality const& ta
  */
 template <typename TIn, typename TOut>
 std::optional<TAmounts<TIn, TOut>>
-getAMMOfferStartWithTakerPays(TAmounts<TIn, TOut> const& pool, Quality const& targetQuality, std::uint16_t tfee)
+getAMMOfferStartWithTakerPays(
+    TAmounts<TIn, TOut> const& pool,
+    Quality const& targetQuality,
+    std::uint16_t tfee)
 {
     if (targetQuality.rate() == beast::zero)
         return std::nullopt;
@@ -248,7 +263,8 @@ getAMMOfferStartWithTakerPays(TAmounts<TIn, TOut> const& pool, Quality const& ta
     auto getAmounts = [&pool, &tfee](Number const& nTakerPaysProposed) {
         // Round downward to minimize the offer and to maximize the quality.
         // This has the most impact when takerPays is XRP.
-        auto const takerPays = toAmount<TIn>(getIssue(pool.in), nTakerPaysProposed, Number::downward);
+        auto const takerPays =
+            toAmount<TIn>(getIssue(pool.in), nTakerPaysProposed, Number::downward);
         return TAmounts<TIn, TOut>{takerPays, swapAssetIn(pool, takerPays, tfee)};
     };
 
@@ -313,32 +329,34 @@ changeSpotPriceQuality(
             }();
             if (nTakerPays <= 0)
             {
-                JLOG(j.trace()) << "changeSpotPriceQuality calc failed: " << to_string(pool.in) << " "
-                                << to_string(pool.out) << " " << quality << " " << tfee;
+                JLOG(j.trace()) << "changeSpotPriceQuality calc failed: " << to_string(pool.in)
+                                << " " << to_string(pool.out) << " " << quality << " " << tfee;
                 return std::nullopt;
             }
             auto const takerPays = toAmount<TIn>(getIssue(pool.in), nTakerPays, Number::upward);
             // should not fail
-            if (auto const amounts = TAmounts<TIn, TOut>{takerPays, swapAssetIn(pool, takerPays, tfee)};
-                Quality{amounts} < quality && !withinRelativeDistance(Quality{amounts}, quality, Number(1, -7)))
+            if (auto const amounts =
+                    TAmounts<TIn, TOut>{takerPays, swapAssetIn(pool, takerPays, tfee)};
+                Quality{amounts} < quality &&
+                !withinRelativeDistance(Quality{amounts}, quality, Number(1, -7)))
             {
-                JLOG(j.error()) << "changeSpotPriceQuality failed: " << to_string(pool.in) << " " << to_string(pool.out)
-                                << " "
-                                << " " << quality << " " << tfee << " " << to_string(amounts.in) << " "
-                                << to_string(amounts.out);
+                JLOG(j.error()) << "changeSpotPriceQuality failed: " << to_string(pool.in) << " "
+                                << to_string(pool.out) << " "
+                                << " " << quality << " " << tfee << " " << to_string(amounts.in)
+                                << " " << to_string(amounts.out);
                 Throw<std::runtime_error>("changeSpotPriceQuality failed");
             }
             else
             {
                 JLOG(j.trace()) << "changeSpotPriceQuality succeeded: " << to_string(pool.in) << " "
                                 << to_string(pool.out) << " "
-                                << " " << quality << " " << tfee << " " << to_string(amounts.in) << " "
-                                << to_string(amounts.out);
+                                << " " << quality << " " << tfee << " " << to_string(amounts.in)
+                                << " " << to_string(amounts.out);
                 return amounts;
             }
         }
-        JLOG(j.trace()) << "changeSpotPriceQuality calc failed: " << to_string(pool.in) << " " << to_string(pool.out)
-                        << " " << quality << " " << tfee;
+        JLOG(j.trace()) << "changeSpotPriceQuality calc failed: " << to_string(pool.in) << " "
+                        << to_string(pool.out) << " " << quality << " " << tfee;
         return std::nullopt;
     }
 
@@ -351,20 +369,23 @@ changeSpotPriceQuality(
     }();
     if (!amounts)
     {
-        JLOG(j.trace()) << "changeSpotPrice calc failed: " << to_string(pool.in) << " " << to_string(pool.out) << " "
-                        << quality << " " << tfee << std::endl;
+        JLOG(j.trace()) << "changeSpotPrice calc failed: " << to_string(pool.in) << " "
+                        << to_string(pool.out) << " " << quality << " " << tfee << std::endl;
         return std::nullopt;
     }
 
     if (Quality{*amounts} < quality)
     {
-        JLOG(j.error()) << "changeSpotPriceQuality failed: " << to_string(pool.in) << " " << to_string(pool.out) << " "
-                        << quality << " " << tfee << " " << to_string(amounts->in) << " " << to_string(amounts->out);
+        JLOG(j.error()) << "changeSpotPriceQuality failed: " << to_string(pool.in) << " "
+                        << to_string(pool.out) << " " << quality << " " << tfee << " "
+                        << to_string(amounts->in) << " " << to_string(amounts->out);
         return std::nullopt;
     }
 
-    JLOG(j.trace()) << "changeSpotPriceQuality succeeded: " << to_string(pool.in) << " " << to_string(pool.out) << " "
-                    << " " << quality << " " << tfee << " " << to_string(amounts->in) << " " << to_string(amounts->out);
+    JLOG(j.trace()) << "changeSpotPriceQuality succeeded: " << to_string(pool.in) << " "
+                    << to_string(pool.out) << " "
+                    << " " << quality << " " << tfee << " " << to_string(amounts->in) << " "
+                    << to_string(amounts->out);
 
     return amounts;
 }
@@ -631,7 +652,11 @@ getRoundedAsset(
  * digits) when adding the lptokens to the balance.
  */
 STAmount
-getRoundedLPTokens(Rules const& rules, STAmount const& balance, Number const& frac, IsDeposit isDeposit);
+getRoundedLPTokens(
+    Rules const& rules,
+    STAmount const& balance,
+    Number const& frac,
+    IsDeposit isDeposit);
 
 /** Round AMM single deposit/withdrawal LPToken amount.
  * The lambda's are used to delay evaluation until the function is executed
@@ -684,6 +709,10 @@ adjustAssetOutByTokens(
  * is used to adjust equal deposit/withdraw amount.
  */
 Number
-adjustFracByTokens(Rules const& rules, STAmount const& lptAMMBalance, STAmount const& tokens, Number const& frac);
+adjustFracByTokens(
+    Rules const& rules,
+    STAmount const& lptAMMBalance,
+    STAmount const& tokens,
+    Number const& frac);
 
 }  // namespace xrpl

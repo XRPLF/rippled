@@ -83,7 +83,8 @@ issueFromJson(Json::Value const& v)
 {
     if (!v.isObject())
     {
-        Throw<std::runtime_error>("issueFromJson can only be specified with an 'object' Json value");
+        Throw<std::runtime_error>(
+            "issueFromJson can only be specified with an 'object' Json value");
     }
 
     if (v.isMember(jss::mpt_issuance_id))

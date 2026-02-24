@@ -133,7 +133,9 @@ STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
         {
             construct<T>(std::forward<Args>(args)...);
         }
-        else if constexpr (std::is_same_v<std::tuple<std::remove_cvref_t<Args>...>, std::tuple<SerialIter, SField>>)
+        else if constexpr (std::is_same_v<
+                               std::tuple<std::remove_cvref_t<Args>...>,
+                               std::tuple<SerialIter, SField>>)
         {
             construct<T>(std::forward<Args>(args)..., depth);
         }

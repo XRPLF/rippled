@@ -12,7 +12,12 @@
 namespace xrpl {
 
 void
-sign(STObject& st, HashPrefix const& prefix, KeyType type, SecretKey const& sk, SF_VL const& sigField)
+sign(
+    STObject& st,
+    HashPrefix const& prefix,
+    KeyType type,
+    SecretKey const& sk,
+    SF_VL const& sigField)
 {
     Serializer ss;
     ss.add32(prefix);

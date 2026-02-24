@@ -25,7 +25,8 @@ static_assert(
 // Terminology: A chunk is the memory being allocated from a block. A block
 // contains multiple chunks. This is the terminology the boost documentation
 // uses. Pools use "Simple Segregated Storage" as their storage format.
-constexpr size_t elementSizeBytes = (sizeof(SHAMapHash) + sizeof(intr_ptr::SharedPtr<SHAMapTreeNode>));
+constexpr size_t elementSizeBytes =
+    (sizeof(SHAMapHash) + sizeof(intr_ptr::SharedPtr<SHAMapTreeNode>));
 
 constexpr size_t blockSizeBytes = kilobytes(512);
 
@@ -37,7 +38,8 @@ initArrayChunkSizeBytes(std::index_sequence<I...>)
         boundaries[I] * elementSizeBytes...,
     };
 }
-constexpr auto arrayChunkSizeBytes = initArrayChunkSizeBytes(std::make_index_sequence<boundaries.size()>{});
+constexpr auto arrayChunkSizeBytes =
+    initArrayChunkSizeBytes(std::make_index_sequence<boundaries.size()>{});
 
 template <std::size_t... I>
 constexpr std::array<size_t, boundaries.size()>
@@ -47,7 +49,8 @@ initArrayChunksPerBlock(std::index_sequence<I...>)
         blockSizeBytes / arrayChunkSizeBytes[I]...,
     };
 }
-constexpr auto chunksPerBlock = initArrayChunksPerBlock(std::make_index_sequence<boundaries.size()>{});
+constexpr auto chunksPerBlock =
+    initArrayChunksPerBlock(std::make_index_sequence<boundaries.size()>{});
 
 [[nodiscard]] inline std::uint8_t
 numAllocatedChildren(std::uint8_t n)
@@ -59,8 +62,10 @@ numAllocatedChildren(std::uint8_t n)
 [[nodiscard]] inline std::size_t
 boundariesIndex(std::uint8_t numChildren)
 {
-    XRPL_ASSERT(numChildren <= SHAMapInnerNode::branchFactor, "xrpl::boundariesIndex : valid input");
-    return std::distance(boundaries.begin(), std::lower_bound(boundaries.begin(), boundaries.end(), numChildren));
+    XRPL_ASSERT(
+        numChildren <= SHAMapInnerNode::branchFactor, "xrpl::boundariesIndex : valid input");
+    return std::distance(
+        boundaries.begin(), std::lower_bound(boundaries.begin(), boundaries.end(), numChildren));
 }
 
 template <std::size_t... I>
@@ -358,7 +363,8 @@ inline TaggedPointer::TaggedPointer(
                 // keep
                 new (&dstHashes[dstIndex]) SHAMapHash{srcHashes[srcIndex]};
 
-                new (&dstChildren[dstIndex]) intr_ptr::SharedPtr<SHAMapTreeNode>{std::move(srcChildren[srcIndex])};
+                new (&dstChildren[dstIndex])
+                    intr_ptr::SharedPtr<SHAMapTreeNode>{std::move(srcChildren[srcIndex])};
                 ++dstIndex;
                 ++srcIndex;
             }
@@ -413,7 +419,10 @@ inline TaggedPointer::TaggedPointer(
     }
 }
 
-inline TaggedPointer::TaggedPointer(TaggedPointer&& other, std::uint16_t isBranch, std::uint8_t toAllocate)
+inline TaggedPointer::TaggedPointer(
+    TaggedPointer&& other,
+    std::uint16_t isBranch,
+    std::uint8_t toAllocate)
     : TaggedPointer(std::move(other))
 {
     auto const oldNumAllocated = capacity();
@@ -435,7 +444,8 @@ inline TaggedPointer::TaggedPointer(TaggedPointer&& other, std::uint16_t isBranc
         // new arrays are dense, old arrays are sparse
         iterNonEmptyChildIndexes(isBranch, [&](auto branchNum, auto indexNum) {
             new (&newHashes[branchNum]) SHAMapHash{oldHashes[indexNum]};
-            new (&newChildren[branchNum]) intr_ptr::SharedPtr<SHAMapTreeNode>{std::move(oldChildren[indexNum])};
+            new (&newChildren[branchNum])
+                intr_ptr::SharedPtr<SHAMapTreeNode>{std::move(oldChildren[indexNum])};
         });
         // Run the constructors for the remaining elements
         for (int i = 0; i < SHAMapInnerNode::branchFactor; ++i)
@@ -518,7 +528,8 @@ TaggedPointer::getHashesAndChildren() const
     auto const [tag, ptr] = decode();
     auto const hashes = reinterpret_cast<SHAMapHash*>(ptr);
     std::uint8_t numAllocated = boundaries[tag];
-    auto const children = reinterpret_cast<intr_ptr::SharedPtr<SHAMapTreeNode>*>(hashes + numAllocated);
+    auto const children =
+        reinterpret_cast<intr_ptr::SharedPtr<SHAMapTreeNode>*>(hashes + numAllocated);
     return {numAllocated, hashes, children};
 };
 

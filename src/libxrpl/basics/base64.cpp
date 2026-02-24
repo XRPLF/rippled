@@ -47,7 +47,8 @@ namespace base64 {
 inline char const*
 get_alphabet()
 {
-    static char constexpr tab[] = {"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"};
+    static char constexpr tab[] = {
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"};
     return &tab[0];
 }
 

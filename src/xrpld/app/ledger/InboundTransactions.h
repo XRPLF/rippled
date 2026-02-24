@@ -44,7 +44,10 @@ public:
      * @param message The LedgerData message.
      */
     virtual void
-    gotData(uint256 const& setHash, std::shared_ptr<Peer> peer, std::shared_ptr<protocol::TMLedgerData> message) = 0;
+    gotData(
+        uint256 const& setHash,
+        std::shared_ptr<Peer> peer,
+        std::shared_ptr<protocol::TMLedgerData> message) = 0;
 
     /** Add a transaction set.
      *

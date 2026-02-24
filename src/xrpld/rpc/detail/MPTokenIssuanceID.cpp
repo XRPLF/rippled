@@ -5,7 +5,9 @@ namespace xrpl {
 namespace RPC {
 
 bool
-canHaveMPTokenIssuanceID(std::shared_ptr<STTx const> const& serializedTx, TxMeta const& transactionMeta)
+canHaveMPTokenIssuanceID(
+    std::shared_ptr<STTx const> const& serializedTx,
+    TxMeta const& transactionMeta)
 {
     if (!serializedTx)
         return false;
@@ -26,7 +28,8 @@ getIDFromCreatedIssuance(TxMeta const& transactionMeta)
 {
     for (STObject const& node : transactionMeta.getNodes())
     {
-        if (node.getFieldU16(sfLedgerEntryType) != ltMPTOKEN_ISSUANCE || node.getFName() != sfCreatedNode)
+        if (node.getFieldU16(sfLedgerEntryType) != ltMPTOKEN_ISSUANCE ||
+            node.getFName() != sfCreatedNode)
             continue;
 
         auto const& mptNode = node.peekAtField(sfNewFields).downcast<STObject>();

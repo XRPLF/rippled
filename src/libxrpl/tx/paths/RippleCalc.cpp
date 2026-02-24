@@ -54,7 +54,8 @@ RippleCalc::rippleCalculate(
         }();
 
         auto const sendMax = [&]() -> std::optional<STAmount> {
-            if (saMaxAmountReq >= beast::zero || saMaxAmountReq.getCurrency() != saDstAmountReq.getCurrency() ||
+            if (saMaxAmountReq >= beast::zero ||
+                saMaxAmountReq.getCurrency() != saDstAmountReq.getCurrency() ||
                 saMaxAmountReq.getIssuer() != uSrcAccountID)
             {
                 return saMaxAmountReq;
@@ -92,9 +93,9 @@ RippleCalc::rippleCalculate(
     }
 
     j.debug() << "RippleCalc Result> "
-              << " actualIn: " << flowOut.actualAmountIn << ", actualOut: " << flowOut.actualAmountOut
-              << ", result: " << flowOut.result() << ", dstAmtReq: " << saDstAmountReq
-              << ", sendMax: " << saMaxAmountReq;
+              << " actualIn: " << flowOut.actualAmountIn
+              << ", actualOut: " << flowOut.actualAmountOut << ", result: " << flowOut.result()
+              << ", dstAmtReq: " << saDstAmountReq << ", sendMax: " << saMaxAmountReq;
 
     flowSB.apply(view);
     return flowOut;

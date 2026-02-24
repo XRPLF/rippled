@@ -87,7 +87,12 @@ public:
     }
 
     std::string
-    makeManifestString(PublicKey const& pk, SecretKey const& sk, PublicKey const& spk, SecretKey const& ssk, int seq)
+    makeManifestString(
+        PublicKey const& pk,
+        SecretKey const& sk,
+        PublicKey const& spk,
+        SecretKey const& ssk,
+        int seq)
     {
         STObject st(sfGeneric);
         st[sfSequence] = seq;
@@ -112,7 +117,8 @@ public:
         st[sfSequence] = std::numeric_limits<std::uint32_t>::max();
         st[sfPublicKey] = pk;
 
-        sign(st, HashPrefix::manifest, type, invalidSig ? randomSecretKey() : sk, sfMasterSignature);
+        sign(
+            st, HashPrefix::manifest, type, invalidSig ? randomSecretKey() : sk, sfMasterSignature);
         BEAST_EXPECT(invalidSig ^ verify(st, HashPrefix::manifest, pk, sfMasterSignature));
 
         Serializer s;
@@ -130,7 +136,8 @@ public:
         st[sfSequence] = std::numeric_limits<std::uint32_t>::max();
         st[sfPublicKey] = pk;
 
-        sign(st, HashPrefix::manifest, type, invalidSig ? randomSecretKey() : sk, sfMasterSignature);
+        sign(
+            st, HashPrefix::manifest, type, invalidSig ? randomSecretKey() : sk, sfMasterSignature);
         BEAST_EXPECT(invalidSig ^ verify(st, HashPrefix::manifest, pk, sfMasterSignature));
 
         Serializer s;
@@ -164,7 +171,8 @@ public:
         sign(st, HashPrefix::manifest, stype, ssk);
         BEAST_EXPECT(verify(st, HashPrefix::manifest, spk));
 
-        sign(st, HashPrefix::manifest, type, invalidSig ? randomSecretKey() : sk, sfMasterSignature);
+        sign(
+            st, HashPrefix::manifest, type, invalidSig ? randomSecretKey() : sk, sfMasterSignature);
         BEAST_EXPECT(invalidSig ^ verify(st, HashPrefix::manifest, pk, sfMasterSignature));
 
         Serializer s;
@@ -199,7 +207,8 @@ public:
 
             auto dbCon = makeTestWalletDB(setup, dbName, env.journal);
 
-            auto getPopulatedManifests = [](ManifestCache const& cache) -> std::vector<Manifest const*> {
+            auto getPopulatedManifests =
+                [](ManifestCache const& cache) -> std::vector<Manifest const*> {
                 std::vector<Manifest const*> result;
                 result.reserve(32);
                 cache.for_each_manifest([&result](Manifest const& man) { result.push_back(&man); });
@@ -220,14 +229,17 @@ public:
             {
                 // save should not store untrusted master keys to db
                 // except for revocations
-                m.save(*dbCon, "ValidatorManifests", [&unl](PublicKey const& pubKey) { return unl->listed(pubKey); });
+                m.save(*dbCon, "ValidatorManifests", [&unl](PublicKey const& pubKey) {
+                    return unl->listed(pubKey);
+                });
 
                 ManifestCache loaded;
 
                 loaded.load(*dbCon, "ValidatorManifests");
 
                 // check that all loaded manifests are revocations
-                std::vector<Manifest const*> const loadedManifests(sort(getPopulatedManifests(loaded)));
+                std::vector<Manifest const*> const loadedManifests(
+                    sort(getPopulatedManifests(loaded)));
 
                 for (auto const& man : loadedManifests)
                     BEAST_EXPECT(man->revoked());
@@ -241,12 +253,15 @@ public:
                     s1.push_back(toBase58(TokenType::NodePublic, man->masterKey));
                 unl->load({}, s1, keys);
 
-                m.save(*dbCon, "ValidatorManifests", [&unl](PublicKey const& pubKey) { return unl->listed(pubKey); });
+                m.save(*dbCon, "ValidatorManifests", [&unl](PublicKey const& pubKey) {
+                    return unl->listed(pubKey);
+                });
                 ManifestCache loaded;
                 loaded.load(*dbCon, "ValidatorManifests");
 
                 // check that the manifest caches are the same
-                std::vector<Manifest const*> const loadedManifests(sort(getPopulatedManifests(loaded)));
+                std::vector<Manifest const*> const loadedManifests(
+                    sort(getPopulatedManifests(loaded)));
 
                 if (inManifests.size() == loadedManifests.size())
                 {
@@ -268,7 +283,8 @@ public:
                 std::vector<std::string> const emptyRevocation;
 
                 std::string const badManifest = "bad manifest";
-                BEAST_EXPECT(!loaded.load(*dbCon, "ValidatorManifests", badManifest, emptyRevocation));
+                BEAST_EXPECT(
+                    !loaded.load(*dbCon, "ValidatorManifests", badManifest, emptyRevocation));
 
                 auto const sk = randomSecretKey();
                 auto const pk = derivePublicKey(KeyType::ed25519, sk);
@@ -276,7 +292,8 @@ public:
 
                 std::string const cfgManifest = makeManifestString(pk, sk, kp.first, kp.second, 0);
 
-                BEAST_EXPECT(loaded.load(*dbCon, "ValidatorManifests", cfgManifest, emptyRevocation));
+                BEAST_EXPECT(
+                    loaded.load(*dbCon, "ValidatorManifests", cfgManifest, emptyRevocation));
             }
             {
                 // load config revocation
@@ -284,23 +301,29 @@ public:
                 std::string const emptyManifest;
 
                 std::vector<std::string> const badRevocation = {"bad revocation"};
-                BEAST_EXPECT(!loaded.load(*dbCon, "ValidatorManifests", emptyManifest, badRevocation));
+                BEAST_EXPECT(
+                    !loaded.load(*dbCon, "ValidatorManifests", emptyManifest, badRevocation));
 
                 auto const sk = randomSecretKey();
                 auto const keyType = KeyType::ed25519;
                 auto const pk = derivePublicKey(keyType, sk);
                 auto const kp = randomKeyPair(KeyType::secp256k1);
-                std::vector<std::string> const nonRevocation = {makeManifestString(pk, sk, kp.first, kp.second, 0)};
+                std::vector<std::string> const nonRevocation = {
+                    makeManifestString(pk, sk, kp.first, kp.second, 0)};
 
-                BEAST_EXPECT(!loaded.load(*dbCon, "ValidatorManifests", emptyManifest, nonRevocation));
+                BEAST_EXPECT(
+                    !loaded.load(*dbCon, "ValidatorManifests", emptyManifest, nonRevocation));
                 BEAST_EXPECT(!loaded.revoked(pk));
 
-                std::vector<std::string> const badSigRevocation = {makeRevocationString(sk, keyType, true)};
-                BEAST_EXPECT(!loaded.load(*dbCon, "ValidatorManifests", emptyManifest, badSigRevocation));
+                std::vector<std::string> const badSigRevocation = {
+                    makeRevocationString(sk, keyType, true)};
+                BEAST_EXPECT(
+                    !loaded.load(*dbCon, "ValidatorManifests", emptyManifest, badSigRevocation));
                 BEAST_EXPECT(!loaded.revoked(pk));
 
                 std::vector<std::string> const cfgRevocation = {makeRevocationString(sk, keyType)};
-                BEAST_EXPECT(loaded.load(*dbCon, "ValidatorManifests", emptyManifest, cfgRevocation));
+                BEAST_EXPECT(
+                    loaded.load(*dbCon, "ValidatorManifests", emptyManifest, cfgRevocation));
 
                 BEAST_EXPECT(loaded.revoked(pk));
             }
@@ -350,7 +373,8 @@ public:
         auto const kp0 = randomKeyPair(KeyType::secp256k1);
         BEAST_EXPECT(
             ManifestDisposition::accepted ==
-            cache.applyManifest(makeManifest(sk, KeyType::ed25519, kp0.second, KeyType::secp256k1, 0)));
+            cache.applyManifest(
+                makeManifest(sk, KeyType::ed25519, kp0.second, KeyType::secp256k1, 0)));
         BEAST_EXPECT(cache.getSigningKey(pk) == kp0.first);
         BEAST_EXPECT(cache.getMasterKey(kp0.first) == pk);
 
@@ -361,7 +385,8 @@ public:
         auto const kp1 = randomKeyPair(KeyType::secp256k1);
         BEAST_EXPECT(
             ManifestDisposition::accepted ==
-            cache.applyManifest(makeManifest(sk, KeyType::ed25519, kp1.second, KeyType::secp256k1, 1)));
+            cache.applyManifest(
+                makeManifest(sk, KeyType::ed25519, kp1.second, KeyType::secp256k1, 1)));
         BEAST_EXPECT(cache.getSigningKey(pk) == kp1.first);
         BEAST_EXPECT(cache.getMasterKey(kp1.first) == pk);
         BEAST_EXPECT(cache.getMasterKey(kp0.first) == kp0.first);
@@ -370,7 +395,8 @@ public:
         // applied with the same signing key but a higher sequence
         BEAST_EXPECT(
             ManifestDisposition::badEphemeralKey ==
-            cache.applyManifest(makeManifest(sk, KeyType::ed25519, kp1.second, KeyType::secp256k1, 2)));
+            cache.applyManifest(
+                makeManifest(sk, KeyType::ed25519, kp1.second, KeyType::secp256k1, 2)));
         BEAST_EXPECT(cache.getSigningKey(pk) == kp1.first);
         BEAST_EXPECT(cache.getMasterKey(kp1.first) == pk);
         BEAST_EXPECT(cache.getMasterKey(kp0.first) == kp0.first);
@@ -378,7 +404,9 @@ public:
         // getSigningKey should return std::nullopt for a revoked master public
         // key getMasterKey should return std::nullopt for an ephemeral public
         // key from a revoked master public key
-        BEAST_EXPECT(ManifestDisposition::accepted == cache.applyManifest(makeRevocation(sk, KeyType::ed25519)));
+        BEAST_EXPECT(
+            ManifestDisposition::accepted ==
+            cache.applyManifest(makeRevocation(sk, KeyType::ed25519)));
         BEAST_EXPECT(cache.revoked(pk));
         BEAST_EXPECT(cache.getSigningKey(pk) == pk);
         BEAST_EXPECT(cache.getMasterKey(kp0.first) == kp0.first);
@@ -391,8 +419,8 @@ public:
         testcase("validator token");
 
         {
-            auto const valSecret =
-                parseBase58<SecretKey>(TokenType::NodePrivate, "paQmjZ37pKKPMrgadBLsuf9ab7Y7EUNzh27LQrZqoexpAs31nJi");
+            auto const valSecret = parseBase58<SecretKey>(
+                TokenType::NodePrivate, "paQmjZ37pKKPMrgadBLsuf9ab7Y7EUNzh27LQrZqoexpAs31nJi");
 
             // Format token string to test trim()
             std::vector<std::string> const tokenBlob = {
@@ -482,13 +510,29 @@ public:
         std::uint32_t sequence = 0;
 
         // public key with invalid type
-        std::array<std::uint8_t, 33> const badKey{0x99, 0x30, 0xE7, 0xFC, 0x9D, 0x56, 0xBB, 0x25, 0xD6, 0x89, 0x3B,
-                                                  0xA3, 0xF3, 0x17, 0xAE, 0x5B, 0xCF, 0x33, 0xB3, 0x29, 0x1B, 0xD6,
-                                                  0x3D, 0xB3, 0x26, 0x54, 0xA3, 0x13, 0x22, 0x2F, 0x7F, 0xD0, 0x20};
+        std::array<std::uint8_t, 33> const badKey{
+            0x99, 0x30, 0xE7, 0xFC, 0x9D, 0x56, 0xBB, 0x25, 0xD6, 0x89, 0x3B,
+            0xA3, 0xF3, 0x17, 0xAE, 0x5B, 0xCF, 0x33, 0xB3, 0x29, 0x1B, 0xD6,
+            0x3D, 0xB3, 0x26, 0x54, 0xA3, 0x13, 0x22, 0x2F, 0x7F, 0xD0, 0x20};
 
         // Short public key:
         std::array<std::uint8_t, 16> const shortKey{
-            0x03, 0x30, 0xE7, 0xFC, 0x9D, 0x56, 0xBB, 0x25, 0xD6, 0x89, 0x3B, 0xA3, 0xF3, 0x17, 0xAE, 0x5B};
+            0x03,
+            0x30,
+            0xE7,
+            0xFC,
+            0x9D,
+            0x56,
+            0xBB,
+            0x25,
+            0xD6,
+            0x89,
+            0x3B,
+            0xA3,
+            0xF3,
+            0x17,
+            0xAE,
+            0x5B};
 
         auto toString = [](STObject const& st) {
             Serializer s;
@@ -530,8 +574,8 @@ public:
                 };
 
                 {
-                    testcase << "deserializeManifest: normal manifest (" << to_string(keyType) << " + "
-                             << to_string(sKeyType) << ")";
+                    testcase << "deserializeManifest: normal manifest (" << to_string(keyType)
+                             << " + " << to_string(sKeyType) << ")";
 
                     {  // valid manifest without domain
                         auto const st = buildManifestObject(++sequence, std::nullopt);
@@ -670,13 +714,13 @@ public:
                 }
 
                 {
-                    testcase << "deserializeManifest: revocation manifest (" << to_string(keyType) << " + "
-                             << to_string(sKeyType) << ")";
+                    testcase << "deserializeManifest: revocation manifest (" << to_string(keyType)
+                             << " + " << to_string(sKeyType) << ")";
 
                     // valid revocation
                     {
-                        auto const st =
-                            buildManifestObject(std::numeric_limits<std::uint32_t>::max(), std::nullopt, true, true);
+                        auto const st = buildManifestObject(
+                            std::numeric_limits<std::uint32_t>::max(), std::nullopt, true, true);
 
                         auto const m = toString(st);
                         auto const manifest = deserializeManifest(m);
@@ -694,20 +738,20 @@ public:
                     }
 
                     {  // can't specify an ephemeral signing key
-                        auto const st =
-                            buildManifestObject(std::numeric_limits<std::uint32_t>::max(), std::nullopt, true, false);
+                        auto const st = buildManifestObject(
+                            std::numeric_limits<std::uint32_t>::max(), std::nullopt, true, false);
 
                         BEAST_EXPECT(!deserializeManifest(toString(st)));
                     }
                     {  // can't specify an ephemeral signature
-                        auto const st =
-                            buildManifestObject(std::numeric_limits<std::uint32_t>::max(), std::nullopt, false, true);
+                        auto const st = buildManifestObject(
+                            std::numeric_limits<std::uint32_t>::max(), std::nullopt, false, true);
 
                         BEAST_EXPECT(!deserializeManifest(toString(st)));
                     }
                     {  // can't specify an ephemeral key & signature
-                        auto const st =
-                            buildManifestObject(std::numeric_limits<std::uint32_t>::max(), std::nullopt, false, false);
+                        auto const st = buildManifestObject(
+                            std::numeric_limits<std::uint32_t>::max(), std::nullopt, false, false);
 
                         BEAST_EXPECT(!deserializeManifest(toString(st)));
                     }
@@ -805,16 +849,20 @@ public:
             auto const pk_a = derivePublicKey(KeyType::ed25519, sk_a);
             auto const kp_a0 = randomKeyPair(KeyType::secp256k1);
             auto const kp_a1 = randomKeyPair(KeyType::secp256k1);
-            auto const s_a0 = makeManifest(sk_a, KeyType::ed25519, kp_a0.second, KeyType::secp256k1, 0);
-            auto const s_a1 = makeManifest(sk_a, KeyType::ed25519, kp_a1.second, KeyType::secp256k1, 1);
-            auto const s_a2 = makeManifest(sk_a, KeyType::ed25519, kp_a1.second, KeyType::secp256k1, 2);
+            auto const s_a0 =
+                makeManifest(sk_a, KeyType::ed25519, kp_a0.second, KeyType::secp256k1, 0);
+            auto const s_a1 =
+                makeManifest(sk_a, KeyType::ed25519, kp_a1.second, KeyType::secp256k1, 1);
+            auto const s_a2 =
+                makeManifest(sk_a, KeyType::ed25519, kp_a1.second, KeyType::secp256k1, 2);
             auto const s_aMax = makeRevocation(sk_a, KeyType::ed25519);
 
             auto const sk_b = randomSecretKey();
             auto const kp_b0 = randomKeyPair(KeyType::secp256k1);
             auto const kp_b1 = randomKeyPair(KeyType::secp256k1);
             auto const kp_b2 = randomKeyPair(KeyType::secp256k1);
-            auto const s_b0 = makeManifest(sk_b, KeyType::ed25519, kp_b0.second, KeyType::secp256k1, 0);
+            auto const s_b0 =
+                makeManifest(sk_b, KeyType::ed25519, kp_b0.second, KeyType::secp256k1, 0);
             auto const s_b1 = makeManifest(
                 sk_b,
                 KeyType::ed25519,
@@ -822,7 +870,8 @@ public:
                 KeyType::secp256k1,
                 1,
                 true);  // invalidSig
-            auto const s_b2 = makeManifest(sk_b, KeyType::ed25519, kp_b2.second, KeyType::ed25519, 2);
+            auto const s_b2 =
+                makeManifest(sk_b, KeyType::ed25519, kp_b2.second, KeyType::ed25519, 2);
 
             auto const fake = s_b2.serialized + '\0';
 
@@ -859,7 +908,8 @@ public:
             BEAST_EXPECT(cache.applyManifest(clone(s_b1)) == ManifestDisposition::invalid);
             BEAST_EXPECT(cache.applyManifest(clone(s_b2)) == ManifestDisposition::accepted);
 
-            auto const s_c0 = makeManifest(kp_b2.second, KeyType::ed25519, randomSecretKey(), KeyType::ed25519, 47);
+            auto const s_c0 = makeManifest(
+                kp_b2.second, KeyType::ed25519, randomSecretKey(), KeyType::ed25519, 47);
             BEAST_EXPECT(cache.applyManifest(clone(s_c0)) == ManifestDisposition::badMasterKey);
         }
 
