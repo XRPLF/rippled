@@ -292,7 +292,10 @@ public:
     struct MessageWithHash
     {
         explicit MessageWithHash() = default;
-        explicit MessageWithHash(std::shared_ptr<Message> const& message_, uint256 hash_, std::size_t num_);
+        explicit MessageWithHash(
+            std::shared_ptr<Message> const& message_,
+            uint256 hash_,
+            std::size_t num_);
         std::shared_ptr<Message> message;
         uint256 hash;
         std::size_t numVLs = 0;
@@ -596,13 +599,14 @@ public:
         May be called concurrently
     */
     void
-    for_each_available(std::function<void(
-                           std::string const& manifest,
-                           std::uint32_t version,
-                           std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
-                           PublicKey const& pubKey,
-                           std::size_t maxSequence,
-                           uint256 const& hash)> func) const;
+    for_each_available(
+        std::function<void(
+            std::string const& manifest,
+            std::uint32_t version,
+            std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
+            PublicKey const& pubKey,
+            std::size_t maxSequence,
+            uint256 const& hash)> func) const;
 
     /** Returns the current valid list for the given publisher key,
         if available, as a Json object.
@@ -767,7 +771,9 @@ private:
         lock_guard const&);
 
     static void
-    buildBlobInfos(std::map<std::size_t, ValidatorBlobInfo>& blobInfos, PublisherListCollection const& lists);
+    buildBlobInfos(
+        std::map<std::size_t, ValidatorBlobInfo>& blobInfos,
+        PublisherListCollection const& lists);
 
     static std::map<std::size_t, ValidatorBlobInfo>
     buildBlobInfos(PublisherListCollection const& lists);
@@ -804,7 +810,10 @@ private:
         writing to a cache file, or serving to a /vl/ query
     */
     static Json::Value
-    buildFileData(std::string const& pubKey, PublisherListCollection const& pubCollection, beast::Journal j);
+    buildFileData(
+        std::string const& pubKey,
+        PublisherListCollection const& pubCollection,
+        beast::Journal j);
 
     /** Build a Json representation of the collection, suitable for
     writing to a cache file, or serving to a /vl/ query

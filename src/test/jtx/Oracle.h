@@ -31,8 +31,9 @@ void
 toJsonHex(Json::Value& jv, AnyValue const& v);
 
 // base asset, quote asset, price, scale
-using DataSeries =
-    std::vector<std::tuple<std::string, std::string, std::optional<std::uint32_t>, std::optional<std::uint8_t>>>;
+using DataSeries = std::vector<
+    std::
+        tuple<std::string, std::string, std::optional<std::uint32_t>, std::optional<std::uint8_t>>>;
 
 // Typical defaults for Create
 struct CreateArg

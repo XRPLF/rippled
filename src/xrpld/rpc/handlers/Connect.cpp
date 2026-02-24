@@ -27,7 +27,8 @@ doConnect(RPC::JsonContext& context)
     if (!context.params.isMember(jss::ip))
         return RPC::missing_field_error(jss::ip);
 
-    if (context.params.isMember(jss::port) && !context.params[jss::port].isConvertibleTo(Json::intValue))
+    if (context.params.isMember(jss::port) &&
+        !context.params[jss::port].isConvertibleTo(Json::intValue))
     {
         return rpcError(rpcINVALID_PARAMS);
     }
@@ -45,7 +46,8 @@ doConnect(RPC::JsonContext& context)
     if (!is_unspecified(ip))
         context.app.overlay().connect(ip.at_port(iPort));
 
-    return RPC::makeObjectValue("attempting connection to IP:" + ip_str + " port: " + std::to_string(iPort));
+    return RPC::makeObjectValue(
+        "attempting connection to IP:" + ip_str + " port: " + std::to_string(iPort));
 }
 
 }  // namespace xrpl

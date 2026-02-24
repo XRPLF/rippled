@@ -20,7 +20,9 @@ public:
 
     /** Retrieve a message that meets the predicate criteria. */
     virtual std::optional<Json::Value>
-    findMsg(std::chrono::milliseconds const& timeout, std::function<bool(Json::Value const&)> pred) = 0;
+    findMsg(
+        std::chrono::milliseconds const& timeout,
+        std::function<bool(Json::Value const&)> pred) = 0;
 };
 
 /** Returns a client operating through WebSockets/S. */

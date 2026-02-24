@@ -25,13 +25,22 @@ public:
             env.trust(USD(100), "alice", "bob", "carol");
             env.close();
             env(pay("alice", "bob", USD(10)), deliver_min(USD(10)), ter(temBAD_AMOUNT));
-            env(pay("alice", "bob", USD(10)), deliver_min(USD(-5)), txflags(tfPartialPayment), ter(temBAD_AMOUNT));
-            env(pay("alice", "bob", USD(10)), deliver_min(XRP(5)), txflags(tfPartialPayment), ter(temBAD_AMOUNT));
+            env(pay("alice", "bob", USD(10)),
+                deliver_min(USD(-5)),
+                txflags(tfPartialPayment),
+                ter(temBAD_AMOUNT));
+            env(pay("alice", "bob", USD(10)),
+                deliver_min(XRP(5)),
+                txflags(tfPartialPayment),
+                ter(temBAD_AMOUNT));
             env(pay("alice", "bob", USD(10)),
                 deliver_min(Account("carol")["USD"](5)),
                 txflags(tfPartialPayment),
                 ter(temBAD_AMOUNT));
-            env(pay("alice", "bob", USD(10)), deliver_min(USD(15)), txflags(tfPartialPayment), ter(temBAD_AMOUNT));
+            env(pay("alice", "bob", USD(10)),
+                deliver_min(USD(15)),
+                txflags(tfPartialPayment),
+                ter(temBAD_AMOUNT));
             env(pay(gw, "carol", USD(50)));
             env(offer("carol", XRP(5), USD(5)));
             env(pay("alice", "bob", USD(10)),

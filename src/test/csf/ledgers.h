@@ -93,7 +93,14 @@ private:
         auto
         asTie() const
         {
-            return std::tie(seq, txs, closeTimeResolution, closeTime, closeTimeAgree, parentID, parentCloseTime);
+            return std::tie(
+                seq,
+                txs,
+                closeTimeResolution,
+                closeTime,
+                closeTimeAgree,
+                parentID,
+                parentCloseTime);
         }
 
         friend bool

@@ -134,7 +134,8 @@ STInteger<Integer>::setValue(Integer v)
 }
 
 template <typename Integer>
-inline STInteger<Integer>::operator Integer() const
+inline STInteger<Integer>::
+operator Integer() const
 {
     return value_;
 }

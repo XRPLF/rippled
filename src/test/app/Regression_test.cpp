@@ -3,13 +3,13 @@
 #include <test/jtx/envconfig.h>
 
 #include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/tx/apply.h>
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/apply.h>
 
 namespace xrpl {
 namespace test {
@@ -278,10 +278,13 @@ struct Regression_test : public beast::unit_test::suite
                 auto const afterCounts = mapCounts(CountedObjects::getInstance().getCounts(0));
 
                 using namespace std::string_literals;
-                BEAST_EXPECT(beforeCounts.at("CachedView::hit"s) == afterCounts.at("CachedView::hit"s));
                 BEAST_EXPECT(
-                    beforeCounts.at("CachedView::hitExpired"s) + 1 == afterCounts.at("CachedView::hitExpired"s));
-                BEAST_EXPECT(beforeCounts.at("CachedView::miss"s) == afterCounts.at("CachedView::miss"s));
+                    beforeCounts.at("CachedView::hit"s) == afterCounts.at("CachedView::hit"s));
+                BEAST_EXPECT(
+                    beforeCounts.at("CachedView::hitExpired"s) + 1 ==
+                    afterCounts.at("CachedView::hitExpired"s));
+                BEAST_EXPECT(
+                    beforeCounts.at("CachedView::miss"s) == afterCounts.at("CachedView::miss"s));
             }
         }
     }

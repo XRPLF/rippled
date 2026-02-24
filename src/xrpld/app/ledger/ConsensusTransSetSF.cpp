@@ -50,7 +50,8 @@ ConsensusTransSetSF::gotNode(
         }
         catch (std::exception const& ex)
         {
-            JLOG(j_.warn()) << "Fetched invalid transaction in proposed set. Exception: " << ex.what();
+            JLOG(j_.warn()) << "Fetched invalid transaction in proposed set. Exception: "
+                            << ex.what();
         }
     }
 }

@@ -23,7 +23,8 @@ STCurrency::STCurrency(SerialIter& sit, SField const& name) : STBase{name}
     currency_ = sit.get160();
 }
 
-STCurrency::STCurrency(SField const& name, Currency const& currency) : STBase{name}, currency_{currency}
+STCurrency::STCurrency(SField const& name, Currency const& currency)
+    : STBase{name}, currency_{currency}
 {
 }
 

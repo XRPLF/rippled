@@ -37,7 +37,8 @@ private:
             DummyScheduler scheduler;
             test::SuiteJournal journal("NuDBFactory_test", *this);
 
-            auto backend = Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+            auto backend =
+                Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
 
             if (!BEAST_EXPECT(backend))
                 return false;
@@ -69,7 +70,10 @@ private:
 
     // Helper function to test log messages
     void
-    testLogMessage(Section const& params, beast::severities::Severity level, std::string const& expectedMessage)
+    testLogMessage(
+        Section const& params,
+        beast::severities::Severity level,
+        std::string const& expectedMessage)
     {
         test::StreamSink sink(level);
         beast::Journal journal(sink);
@@ -204,14 +208,17 @@ public:
             DummyScheduler scheduler;
             try
             {
-                auto backend = Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+                auto backend =
+                    Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
                 fail();
             }
             catch (std::exception const& e)
             {
                 std::string logOutput{e.what()};
                 BEAST_EXPECT(logOutput.find("Invalid nudb_block_size: 5000") != std::string::npos);
-                BEAST_EXPECT(logOutput.find("Must be power of 2 between 4096 and 32768") != std::string::npos);
+                BEAST_EXPECT(
+                    logOutput.find("Must be power of 2 between 4096 and 32768") !=
+                    std::string::npos);
             }
         }
 
@@ -226,14 +233,16 @@ public:
             DummyScheduler scheduler;
             try
             {
-                auto backend = Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+                auto backend =
+                    Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
 
                 fail();
             }
             catch (std::exception const& e)
             {
                 std::string logOutput{e.what()};
-                BEAST_EXPECT(logOutput.find("Invalid nudb_block_size value: invalid") != std::string::npos);
+                BEAST_EXPECT(
+                    logOutput.find("Invalid nudb_block_size value: invalid") != std::string::npos);
             }
         }
     }
@@ -269,7 +278,8 @@ public:
             DummyScheduler scheduler;
             try
             {
-                auto backend = Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+                auto backend =
+                    Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
                 BEAST_EXPECT(shouldWork);
             }
             catch (std::exception const& e)
@@ -293,7 +303,8 @@ public:
 
         // Test first constructor (without nudb::context)
         {
-            auto backend1 = Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+            auto backend1 =
+                Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
             BEAST_EXPECT(backend1 != nullptr);
             BEAST_EXPECT(testBackendFunctionality(params, 16384));
         }
@@ -333,11 +344,13 @@ public:
             beast::Journal journal(sink);
 
             DummyScheduler scheduler;
-            auto backend = Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+            auto backend =
+                Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
 
             // Should log success message for valid values
             std::string logOutput = sink.messages().str();
-            bool hasSuccessMessage = logOutput.find("Using custom NuDB block size") != std::string::npos;
+            bool hasSuccessMessage =
+                logOutput.find("Using custom NuDB block size") != std::string::npos;
             BEAST_EXPECT(hasSuccessMessage);
         }
 
@@ -355,7 +368,8 @@ public:
             DummyScheduler scheduler;
             try
             {
-                auto backend = Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+                auto backend =
+                    Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
                 fail();
             }
             catch (...)
@@ -386,7 +400,8 @@ public:
 
             // Store data
             {
-                auto backend = Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+                auto backend =
+                    Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
                 backend->open();
                 storeBatch(*backend, batch);
                 backend->close();
@@ -394,7 +409,8 @@ public:
 
             // Retrieve data in new backend instance
             {
-                auto backend = Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+                auto backend =
+                    Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
                 backend->open();
 
                 Batch copy;

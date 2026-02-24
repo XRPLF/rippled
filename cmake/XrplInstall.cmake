@@ -32,6 +32,7 @@ install(TARGETS common
                 xrpl.libxrpl.resource
                 xrpl.libxrpl.server
                 xrpl.libxrpl.shamap
+                xrpl.libxrpl.tx
                 antithesis-sdk-cpp
         EXPORT XrplExports
         LIBRARY DESTINATION lib
@@ -40,11 +41,13 @@ install(TARGETS common
         INCLUDES
         DESTINATION include)
 
-install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/xrpl" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/xrpl"
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 
 install(EXPORT XrplExports FILE XrplTargets.cmake NAMESPACE Xrpl:: DESTINATION lib/cmake/xrpl)
 include(CMakePackageConfigHelpers)
-write_basic_package_version_file(XrplConfigVersion.cmake VERSION ${xrpld_version} COMPATIBILITY SameMajorVersion)
+write_basic_package_version_file(XrplConfigVersion.cmake VERSION ${xrpld_version}
+                                 COMPATIBILITY SameMajorVersion)
 
 if (is_root_project AND TARGET xrpld)
     install(TARGETS xrpld RUNTIME DESTINATION bin)
@@ -71,5 +74,5 @@ if (is_root_project AND TARGET xrpld)
   ")
 endif ()
 
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/XrplConfig.cmake ${CMAKE_CURRENT_BINARY_DIR}/XrplConfigVersion.cmake
-        DESTINATION lib/cmake/xrpl)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/XrplConfig.cmake
+              ${CMAKE_CURRENT_BINARY_DIR}/XrplConfigVersion.cmake DESTINATION lib/cmake/xrpl)

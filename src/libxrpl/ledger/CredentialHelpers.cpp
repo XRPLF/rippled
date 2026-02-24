@@ -11,7 +11,8 @@ namespace credentials {
 bool
 checkExpired(std::shared_ptr<SLE const> const& sleCredential, NetClock::time_point const& closed)
 {
-    std::uint32_t const exp = (*sleCredential)[~sfExpiration].value_or(std::numeric_limits<std::uint32_t>::max());
+    std::uint32_t const exp =
+        (*sleCredential)[~sfExpiration].value_or(std::numeric_limits<std::uint32_t>::max());
     std::uint32_t const now = closed.time_since_epoch().count();
     return now > exp;
 }
@@ -46,7 +47,8 @@ deleteSLE(ApplyView& view, std::shared_ptr<SLE> const& sleCredential, beast::Jou
     if (!sleCredential)
         return tecNO_ENTRY;
 
-    auto delSLE = [&view, &sleCredential, j](AccountID const& account, SField const& node, bool isOwner) -> TER {
+    auto delSLE = [&view, &sleCredential, j](
+                      AccountID const& account, SField const& node, bool isOwner) -> TER {
         auto const sleAccount = view.peek(keylet::account(account));
         if (!sleAccount)
         {
@@ -102,7 +104,8 @@ checkFields(STTx const& tx, beast::Journal j)
     auto const& credentials = tx.getFieldV256(sfCredentialIDs);
     if (credentials.empty() || (credentials.size() > maxCredentialsArraySize))
     {
-        JLOG(j.trace()) << "Malformed transaction: Credentials array size is invalid: " << credentials.size();
+        JLOG(j.trace()) << "Malformed transaction: Credentials array size is invalid: "
+                        << credentials.size();
         return temMALFORMED;
     }
 
@@ -334,9 +337,9 @@ verifyDepositPreauth(
         if (src != dst)
         {
             if (!view.exists(keylet::depositPreauth(dst, src)))
-                return !credentialsPresent
-                    ? tecNO_PERMISSION
-                    : credentials::authorizedDepositPreauth(view, tx.getFieldV256(sfCredentialIDs), dst);
+                return !credentialsPresent ? tecNO_PERMISSION
+                                           : credentials::authorizedDepositPreauth(
+                                                 view, tx.getFieldV256(sfCredentialIDs), dst);
         }
     }
 

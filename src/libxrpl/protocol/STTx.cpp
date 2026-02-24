@@ -61,7 +61,8 @@ getTxFormat(TxType type)
     if (format == nullptr)
     {
         Throw<std::runtime_error>(
-            "Invalid transaction type " + std::to_string(safe_cast<std::underlying_type_t<TxType>>(type)));
+            "Invalid transaction type " +
+            std::to_string(safe_cast<std::underlying_type_t<TxType>>(type)));
     }
 
     return format;
@@ -242,7 +243,8 @@ STTx::checkSign(Rules const& rules, STObject const& sigObject) const
         // multi-signing.  Otherwise we're single-signing.
 
         Blob const& signingPubKey = sigObject.getFieldVL(sfSigningPubKey);
-        return signingPubKey.empty() ? checkMultiSign(rules, sigObject) : checkSingleSign(sigObject);
+        return signingPubKey.empty() ? checkMultiSign(rules, sigObject)
+                                     : checkSingleSign(sigObject);
     }
     catch (std::exception const&)
     {
@@ -280,8 +282,8 @@ STTx::checkBatchSign(Rules const& rules) const
         for (auto const& signer : signers)
         {
             Blob const& signingPubKey = signer.getFieldVL(sfSigningPubKey);
-            auto const result =
-                signingPubKey.empty() ? checkBatchMultiSign(signer, rules) : checkBatchSingleSign(signer);
+            auto const result = signingPubKey.empty() ? checkBatchMultiSign(signer, rules)
+                                                      : checkBatchSingleSign(signer);
 
             if (!result)
                 return result;
@@ -354,7 +356,11 @@ STTx::getMetaSQL(std::uint32_t inLedger, std::string const& escapedMetaData) con
 
 // VFALCO This could be a free function elsewhere
 std::string
-STTx::getMetaSQL(Serializer rawTxn, std::uint32_t inLedger, char status, std::string const& escapedMetaData) const
+STTx::getMetaSQL(
+    Serializer rawTxn,
+    std::uint32_t inLedger,
+    char status,
+    std::string const& escapedMetaData) const
 {
     static boost::format bfTrans("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
     std::string rTxn = sqlBlobLiteral(rawTxn.peekData());
@@ -363,8 +369,9 @@ STTx::getMetaSQL(Serializer rawTxn, std::uint32_t inLedger, char status, std::st
     XRPL_ASSERT(format, "xrpl::STTx::getMetaSQL : non-null type format");
 
     return str(
-        boost::format(bfTrans) % to_string(getTransactionID()) % format->getName() % toBase58(getAccountID(sfAccount)) %
-        getFieldU32(sfSequence) % inLedger % status % rTxn % escapedMetaData);
+        boost::format(bfTrans) % to_string(getTransactionID()) % format->getName() %
+        toBase58(getAccountID(sfAccount)) % getFieldU32(sfSequence) % inLedger % status % rTxn %
+        escapedMetaData);
 }
 
 static Expected<void, std::string>
@@ -468,7 +475,8 @@ multiSignHelper(
             if (publicKeyType(makeSlice(spk)))
             {
                 Blob const signature = signer.getFieldVL(sfTxnSignature);
-                validSig = verify(PublicKey(makeSlice(spk)), makeMsg(accountID).slice(), makeSlice(signature));
+                validSig = verify(
+                    PublicKey(makeSlice(spk)), makeMsg(accountID).slice(), makeSlice(signature));
             }
         }
         catch (std::exception const& e)
@@ -479,7 +487,8 @@ multiSignHelper(
         }
         if (!validSig)
             return Unexpected(
-                std::string("Invalid signature on account ") + toBase58(accountID) + errorWhat.value_or("") + ".");
+                std::string("Invalid signature on account ") + toBase58(accountID) +
+                errorWhat.value_or("") + ".");
     }
     // All signatures verified.
     return {};
@@ -509,7 +518,8 @@ STTx::checkMultiSign(Rules const& rules, STObject const& sigObject) const
 {
     // Used inside the loop in multiSignHelper to enforce that
     // the account owner may not multisign for themselves.
-    auto const txnAccountID = &sigObject != this ? std::nullopt : std::optional<AccountID>(getAccountID(sfAccount));
+    auto const txnAccountID =
+        &sigObject != this ? std::nullopt : std::optional<AccountID>(getAccountID(sfAccount));
 
     // We can ease the computational load inside the loop a bit by
     // pre-constructing part of the data that we hash.  Fill a Serializer
@@ -545,7 +555,9 @@ std::vector<uint256> const&
 STTx::getBatchTransactionIDs() const
 {
     XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::getBatchTransactionIDs : not a batch transaction");
-    XRPL_ASSERT(getFieldArray(sfRawTransactions).size() != 0, "STTx::getBatchTransactionIDs : empty raw transactions");
+    XRPL_ASSERT(
+        getFieldArray(sfRawTransactions).size() != 0,
+        "STTx::getBatchTransactionIDs : empty raw transactions");
 
     // The list of inner ids is built once, then reused on subsequent calls.
     // After the list is built, it must always have the same size as the array
@@ -681,8 +693,10 @@ invalidMPTAmountInTx(STObject const& tx)
             if (tx.isFieldPresent(e.sField()) && e.supportMPT() != soeMPTNone)
             {
                 if (auto const& field = tx.peekAtField(e.sField());
-                    (field.getSType() == STI_AMOUNT && static_cast<STAmount const&>(field).holds<MPTIssue>()) ||
-                    (field.getSType() == STI_ISSUE && static_cast<STIssue const&>(field).holds<MPTIssue>()))
+                    (field.getSType() == STI_AMOUNT &&
+                     static_cast<STAmount const&>(field).holds<MPTIssue>()) ||
+                    (field.getSType() == STI_ISSUE &&
+                     static_cast<STIssue const&>(field).holds<MPTIssue>()))
                 {
                     if (e.supportMPT() != soeMPTSupported)
                         return true;
@@ -699,7 +713,8 @@ isRawTransactionOkay(STObject const& st, std::string& reason)
     if (!st.isFieldPresent(sfRawTransactions))
         return true;
 
-    if (st.isFieldPresent(sfBatchSigners) && st.getFieldArray(sfBatchSigners).size() > maxBatchTxCount)
+    if (st.isFieldPresent(sfBatchSigners) &&
+        st.getFieldArray(sfBatchSigners).size() > maxBatchTxCount)
     {
         reason = "Batch Signers array exceeds max entries.";
         return false;

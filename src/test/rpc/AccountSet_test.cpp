@@ -1,12 +1,11 @@
 #include <test/jtx.h>
 
-#include <xrpld/app/tx/apply.h>
-
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/apply.h>
 
 namespace xrpl {
 
@@ -44,7 +43,8 @@ public:
         env(regkey(alice, alie));
         env.close();
 
-        auto testFlags = [this, &alice, &alie, &env](std::initializer_list<std::uint32_t> goodFlags) {
+        auto testFlags = [this, &alice, &alie, &env](
+                             std::initializer_list<std::uint32_t> goodFlags) {
             std::uint32_t const orig_flags = (*env.le(alice))[sfFlags];
             for (std::uint32_t flag{1u}; flag < std::numeric_limits<std::uint32_t>::digits; ++flag)
             {
@@ -248,7 +248,8 @@ public:
         env.fund(XRP(10000), alice);
         auto jt = noop(alice);
 
-        std::string const locator = "9633EC8AF54F16B5286DB1D7B519EF49EEFC050C0C8AC4384F1D88ACD1BFDF05";
+        std::string const locator =
+            "9633EC8AF54F16B5286DB1D7B519EF49EEFC050C0C8AC4384F1D88ACD1BFDF05";
         jt[sfWalletLocator.fieldName] = locator;
         env(jt);
         BEAST_EXPECT(to_string((*env.le(alice))[sfWalletLocator]) == locator);
@@ -292,24 +293,25 @@ public:
         testcase("TransferRate");
 
         using namespace test::jtx;
-        auto doTests = [this](FeatureBitset const& features, std::initializer_list<test_results> testData) {
-            Env env(*this, features);
+        auto doTests =
+            [this](FeatureBitset const& features, std::initializer_list<test_results> testData) {
+                Env env(*this, features);
 
-            Account const alice("alice");
-            env.fund(XRP(10000), alice);
+                Account const alice("alice");
+                env.fund(XRP(10000), alice);
 
-            for (auto const& r : testData)
-            {
-                env(rate(alice, r.set), ter(r.code));
-                env.close();
+                for (auto const& r : testData)
+                {
+                    env(rate(alice, r.set), ter(r.code));
+                    env.close();
 
-                // If the field is not present expect the default value
-                if (!(*env.le(alice))[~sfTransferRate])
-                    BEAST_EXPECT(r.get == 1.0);
-                else
-                    BEAST_EXPECT(*(*env.le(alice))[~sfTransferRate] == r.get * QUALITY_ONE);
-            }
-        };
+                    // If the field is not present expect the default value
+                    if (!(*env.le(alice))[~sfTransferRate])
+                        BEAST_EXPECT(r.get == 1.0);
+                    else
+                        BEAST_EXPECT(*(*env.le(alice))[~sfTransferRate] == r.get * QUALITY_ONE);
+                }
+            };
 
         doTests(
             testable_amendments(),
@@ -405,13 +407,15 @@ public:
                 // We'll insert a replacement for the account root
                 // with the higher (currently invalid) transfer rate.
                 auto replacement = std::make_shared<SLE>(*sle, sle->key());
-                (*replacement)[sfTransferRate] = static_cast<std::uint32_t>(transferRate * QUALITY_ONE);
+                (*replacement)[sfTransferRate] =
+                    static_cast<std::uint32_t>(transferRate * QUALITY_ONE);
                 view.rawReplace(replacement);
                 return true;
             });
 
             auto const amount = USD(1);
-            auto const amountWithRate = toAmount<STAmount>(multiply(amount.value(), Rate(transferRate * QUALITY_ONE)));
+            auto const amountWithRate =
+                toAmount<STAmount>(multiply(amount.value(), Rate(transferRate * QUALITY_ONE)));
 
             env(pay(gw, alice, USD(10)));
             env(pay(alice, bob, amount), sendmax(USD(10)));
