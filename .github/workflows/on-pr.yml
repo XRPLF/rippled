@@ -65,9 +65,12 @@ jobs:
             .github/workflows/reusable-build.yml
             .github/workflows/reusable-build-test-config.yml
             .github/workflows/reusable-build-test.yml
+            .github/workflows/reusable-clang-tidy.yml
+            .github/workflows/reusable-clang-tidy-files.yml
             .github/workflows/reusable-strategy-matrix.yml
             .github/workflows/reusable-test.yml
             .github/workflows/reusable-upload-recipe.yml
+            .clang-tidy
             .codecov.yml
             cmake/**
             conan/**
@@ -106,6 +109,17 @@ jobs:
     needs: should-run
     if: ${{ needs.should-run.outputs.go == 'true' }}
     uses: ./.github/workflows/reusable-check-rename.yml
+
+  clang-tidy:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-clang-tidy.yml
+    permissions:
+      issues: write
+      contents: read
+    with:
+      check_only_changed: true
+      create_issue_on_failure: false
 
   build-test:
     needs: should-run
@@ -156,6 +170,7 @@ jobs:
     needs:
       - check-levelization
       - check-rename
+      - clang-tidy
       - build-test
       - upload-recipe
       - notify-clio
