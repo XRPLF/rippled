@@ -56,7 +56,28 @@ Checks: "-*,
   bugprone-unhandled-exception-at-new,
   bugprone-unique-ptr-array-mismatch,
   bugprone-unsafe-functions,
-  bugprone-virtual-near-miss
+  bugprone-virtual-near-miss,
+  cppcoreguidelines-no-suspend-with-lock,
+  cppcoreguidelines-virtual-class-destructor,
+  hicpp-ignored-remove-result,
+  misc-definitions-in-headers,
+  misc-header-include-cycle,
+  misc-misplaced-const,
+  misc-static-assert,
+  misc-throw-by-value-catch-by-reference,
+  misc-unused-using-decls,
+  readability-duplicate-include,
+  readability-enum-initial-value,
+  readability-misleading-indentation,
+  readability-non-const-parameter,
+  readability-redundant-declaration,
+  readability-reference-to-constructed-temporary,
+  modernize-deprecated-headers,
+  modernize-make-shared,
+  modernize-make-unique,
+  performance-implicit-conversion-in-loop,
+  performance-move-constructor-init,
+  performance-trivially-destructible
   "
 # ---
 # checks that have some issues that need to be resolved:
@@ -79,32 +100,44 @@ Checks: "-*,
 # bugprone-use-after-move,
 # bugprone-unhandled-self-assignment,
 # bugprone-unused-raii,
-# ---
 #
-# cppcoreguidelines-init-variables,
 # cppcoreguidelines-misleading-capture-default-by-value,
-# cppcoreguidelines-no-suspend-with-lock,
+# cppcoreguidelines-init-variables,
 # cppcoreguidelines-pro-type-member-init,
 # cppcoreguidelines-pro-type-static-cast-downcast,
-# cppcoreguidelines-rvalue-reference-param-not-moved,
 # cppcoreguidelines-use-default-member-init,
-# cppcoreguidelines-virtual-class-destructor,
-# hicpp-ignored-remove-result,
+# cppcoreguidelines-rvalue-reference-param-not-moved,
+#
 # llvm-namespace-comment,
 # misc-const-correctness,
-# misc-definitions-in-headers,
-# misc-header-include-cycle,
 # misc-include-cleaner,
-# misc-misplaced-const,
 # misc-redundant-expression,
-# misc-static-assert,
-# misc-throw-by-value-catch-by-reference,
 # misc-unused-alias-decls,
-# misc-unused-using-decls,
+#
+# readability-avoid-nested-conditional-operator,
+# readability-avoid-return-with-void-value,
+# readability-braces-around-statements,
+# readability-container-contains,
+# readability-container-size-empty,
+# readability-convert-member-functions-to-static,
+# readability-const-return-type,
+# readability-else-after-return,
+# readability-implicit-bool-conversion,
+# readability-inconsistent-declaration-parameter-name,
+# readability-identifier-naming,
+# readability-make-member-function-const,
+# readability-math-missing-parentheses,
+# readability-redundant-inline-specifier,
+# readability-redundant-member-init,
+# readability-redundant-casting,
+# readability-redundant-string-init,
+# readability-simplify-boolean-expr,
+# readability-static-definition-in-anonymous-namespace,
+# readability-suspicious-call-argument,
+# readability-use-std-min-max,
+# readability-static-accessed-through-instance,
+#
 # modernize-concat-nested-namespaces,
-# modernize-deprecated-headers,
-# modernize-make-shared,
-# modernize-make-unique,
 # modernize-pass-by-value,
 # modernize-type-traits,
 # modernize-use-designated-initializers,
@@ -116,79 +149,50 @@ Checks: "-*,
 # modernize-use-starts-ends-with,
 # modernize-use-std-numbers,
 # modernize-use-using,
+#
 # performance-faster-string-find,
 # performance-for-range-copy,
-# performance-implicit-conversion-in-loop,
 # performance-inefficient-vector-operation,
 # performance-move-const-arg,
-# performance-move-constructor-init,
 # performance-no-automatic-move,
-# performance-trivially-destructible,
-# readability-avoid-nested-conditional-operator,
-# readability-avoid-return-with-void-value,
-# readability-braces-around-statements,
-# readability-const-return-type,
-# readability-container-contains,
-# readability-container-size-empty,
-# readability-convert-member-functions-to-static,
-# readability-duplicate-include,
-# readability-else-after-return,
-# readability-enum-initial-value,
-# readability-implicit-bool-conversion,
-# readability-inconsistent-declaration-parameter-name,
-# readability-identifier-naming,
-# readability-make-member-function-const,
-# readability-math-missing-parentheses,
-# readability-misleading-indentation,
-# readability-non-const-parameter,
-# readability-redundant-casting,
-# readability-redundant-declaration,
-# readability-redundant-inline-specifier,
-# readability-redundant-member-init,
-# readability-redundant-string-init,
-# readability-reference-to-constructed-temporary,
-# readability-simplify-boolean-expr,
-# readability-static-accessed-through-instance,
-# readability-static-definition-in-anonymous-namespace,
-# readability-suspicious-call-argument,
-# readability-use-std-min-max
+# ---
 #
-# CheckOptions:
-#   readability-braces-around-statements.ShortStatementLines: 2
-#   readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
-#   readability-identifier-naming.ClassCase: CamelCase
-#   readability-identifier-naming.StructCase: CamelCase
-#   readability-identifier-naming.UnionCase: CamelCase
-#   readability-identifier-naming.EnumCase: CamelCase
-#   readability-identifier-naming.EnumConstantCase: CamelCase
-#   readability-identifier-naming.ScopedEnumConstantCase: CamelCase
-#   readability-identifier-naming.GlobalConstantCase: UPPER_CASE
-#   readability-identifier-naming.GlobalConstantPrefix: "k"
-#   readability-identifier-naming.GlobalVariableCase: CamelCase
-#   readability-identifier-naming.GlobalVariablePrefix: "g"
-#   readability-identifier-naming.ConstexprFunctionCase: camelBack
-#   readability-identifier-naming.ConstexprMethodCase: camelBack
-#   readability-identifier-naming.ClassMethodCase: camelBack
-#   readability-identifier-naming.ClassMemberCase: camelBack
-#   readability-identifier-naming.ClassConstantCase: UPPER_CASE
-#   readability-identifier-naming.ClassConstantPrefix: "k"
-#   readability-identifier-naming.StaticConstantCase: UPPER_CASE
-#   readability-identifier-naming.StaticConstantPrefix: "k"
-#   readability-identifier-naming.StaticVariableCase: UPPER_CASE
-#   readability-identifier-naming.StaticVariablePrefix: "k"
-#   readability-identifier-naming.ConstexprVariableCase: UPPER_CASE
-#   readability-identifier-naming.ConstexprVariablePrefix: "k"
-#   readability-identifier-naming.LocalConstantCase: camelBack
-#   readability-identifier-naming.LocalVariableCase: camelBack
-#   readability-identifier-naming.TemplateParameterCase: CamelCase
-#   readability-identifier-naming.ParameterCase: camelBack
-#   readability-identifier-naming.FunctionCase: camelBack
-#   readability-identifier-naming.MemberCase: camelBack
-#   readability-identifier-naming.PrivateMemberSuffix: _
-#   readability-identifier-naming.ProtectedMemberSuffix: _
-#   readability-identifier-naming.PublicMemberSuffix: ""
-#   readability-identifier-naming.FunctionIgnoredRegexp: ".*tag_invoke.*"
-#   bugprone-unsafe-functions.ReportMoreUnsafeFunctions: true
+CheckOptions:
+  #   readability-braces-around-statements.ShortStatementLines: 2
+  #   readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
+  #   readability-identifier-naming.ClassCase: CamelCase
+  #   readability-identifier-naming.StructCase: CamelCase
+  #   readability-identifier-naming.UnionCase: CamelCase
+  #   readability-identifier-naming.EnumCase: CamelCase
+  #   readability-identifier-naming.EnumConstantCase: CamelCase
+  #   readability-identifier-naming.ScopedEnumConstantCase: CamelCase
+  #   readability-identifier-naming.GlobalConstantCase: UPPER_CASE
+  #   readability-identifier-naming.GlobalConstantPrefix: "k"
+  #   readability-identifier-naming.GlobalVariableCase: CamelCase
+  #   readability-identifier-naming.GlobalVariablePrefix: "g"
+  #   readability-identifier-naming.ConstexprFunctionCase: camelBack
+  #   readability-identifier-naming.ConstexprMethodCase: camelBack
+  #   readability-identifier-naming.ClassMethodCase: camelBack
+  #   readability-identifier-naming.ClassMemberCase: camelBack
+  #   readability-identifier-naming.ClassConstantCase: UPPER_CASE
+  #   readability-identifier-naming.ClassConstantPrefix: "k"
+  #   readability-identifier-naming.StaticConstantCase: UPPER_CASE
+  #   readability-identifier-naming.StaticConstantPrefix: "k"
+  #   readability-identifier-naming.StaticVariableCase: UPPER_CASE
+  #   readability-identifier-naming.StaticVariablePrefix: "k"
+  #   readability-identifier-naming.ConstexprVariableCase: UPPER_CASE
+  #   readability-identifier-naming.ConstexprVariablePrefix: "k"
+  #   readability-identifier-naming.LocalConstantCase: camelBack
+  #   readability-identifier-naming.LocalVariableCase: camelBack
+  #   readability-identifier-naming.TemplateParameterCase: CamelCase
+  #   readability-identifier-naming.ParameterCase: camelBack
+  #   readability-identifier-naming.FunctionCase: camelBack
+  #   readability-identifier-naming.MemberCase: camelBack
+  #   readability-identifier-naming.PrivateMemberSuffix: _
+  #   readability-identifier-naming.ProtectedMemberSuffix: _
+  #   readability-identifier-naming.PublicMemberSuffix: ""
+  #   readability-identifier-naming.FunctionIgnoredRegexp: ".*tag_invoke.*"
+  bugprone-unsafe-functions.ReportMoreUnsafeFunctions: true
 #   bugprone-unused-return-value.CheckedReturnTypes: ::std::error_code;::std::error_condition;::std::errc
 #   misc-include-cleaner.IgnoreHeaders: '.*/(detail|impl)/.*;.*(expected|unexpected).*;.*ranges_lower_bound\.h;time.h;stdlib.h;__chrono/.*;fmt/chrono.h;boost/uuid/uuid_hash.hpp'
 #
