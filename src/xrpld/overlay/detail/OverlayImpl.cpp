@@ -60,8 +60,9 @@ void
 OverlayImpl::Timer::async_wait()
 {
     timer_.expires_after(std::chrono::seconds(1));
-    timer_.async_wait(boost::asio::bind_executor(
-        overlay_.strand_, std::bind(&Timer::on_timer, shared_from_this(), std::placeholders::_1)));
+    timer_.async_wait(
+        boost::asio::bind_executor(
+            overlay_.strand_, std::bind(&Timer::on_timer, shared_from_this(), std::placeholders::_1)));
 }
 
 void

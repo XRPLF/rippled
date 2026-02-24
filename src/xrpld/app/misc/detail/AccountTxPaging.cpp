@@ -3,6 +3,7 @@
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/detail/AccountTxPaging.h>
 
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/protocol/Serializer.h>
 
 namespace xrpl {
@@ -30,7 +31,7 @@ convertBlobsToTxResult(
             Transaction::sqlTransactionStatus(status),
             ledger_index,
             metaset->getAsObject().getFieldU32(sfTransactionIndex),
-            app.config().NETWORK_ID);
+            app.getNetworkIDService().getNetworkID());
     else
         tr->setStatus(Transaction::sqlTransactionStatus(status), ledger_index);
 

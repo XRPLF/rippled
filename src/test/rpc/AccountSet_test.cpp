@@ -1,12 +1,11 @@
 #include <test/jtx.h>
 
-#include <xrpld/app/tx/apply.h>
-
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/apply.h>
 
 namespace xrpl {
 

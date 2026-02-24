@@ -4,12 +4,12 @@
 #include <test/jtx/envconfig.h>
 
 #include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/rpc/ServerHandler.h>
 
 #include <xrpl/basics/base64.h>
 #include <xrpl/beast/test/yield_to.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
 
 #include <boost/algorithm/string/predicate.hpp>
