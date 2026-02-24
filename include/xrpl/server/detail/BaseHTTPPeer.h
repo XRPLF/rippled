@@ -220,8 +220,9 @@ BaseHTTPPeer<Handler, Impl>::BaseHTTPPeer(
     , remote_address_(remote_address)
     , journal_(journal)
 {
-    read_buf_.commit(boost::asio::buffer_copy(
-        read_buf_.prepare(boost::asio::buffer_size(buffers)), buffers));
+    read_buf_.commit(
+        boost::asio::buffer_copy(
+            read_buf_.prepare(boost::asio::buffer_size(buffers)), buffers));
     static std::atomic<int> sid;
     nid_ = ++sid;
     id_ = std::string("#") + std::to_string(nid_) + " ";
@@ -245,7 +246,7 @@ BaseHTTPPeer<Handler, Impl>::close()
         return post(
             strand_,
             std::bind(
-                (void(BaseHTTPPeer::*)(void)) & BaseHTTPPeer::close,
+                (void (BaseHTTPPeer::*)(void))&BaseHTTPPeer::close,
                 impl().shared_from_this()));
     boost::beast::get_lowest_layer(impl().stream_).close();
 }
@@ -270,9 +271,10 @@ void
 BaseHTTPPeer<Handler, Impl>::start_timer()
 {
     boost::beast::get_lowest_layer(impl().stream_)
-        .expires_after(std::chrono::seconds(
-            remote_address_.address().is_loopback() ? timeoutSecondsLocal
-                                                    : timeoutSeconds));
+        .expires_after(
+            std::chrono::seconds(
+                remote_address_.address().is_loopback() ? timeoutSecondsLocal
+                                                        : timeoutSeconds));
 }
 
 // Convenience for discarding the error code
@@ -508,8 +510,8 @@ BaseHTTPPeer<Handler, Impl>::close(bool graceful)
         return post(
             strand_,
             std::bind(
-                (void(BaseHTTPPeer::*)(bool)) &
-                    BaseHTTPPeer<Handler, Impl>::close,
+                (void (BaseHTTPPeer::*)(
+                    bool))&BaseHTTPPeer<Handler, Impl>::close,
                 impl().shared_from_this(),
                 graceful));
 

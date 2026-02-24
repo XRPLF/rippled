@@ -158,10 +158,11 @@ public:
 
         if (!mShutdown)
         {
-            mDeadline.async_wait(std::bind(
-                &HTTPClientImp::handleDeadline,
-                shared_from_this(),
-                std::placeholders::_1));
+            mDeadline.async_wait(
+                std::bind(
+                    &HTTPClientImp::handleDeadline,
+                    shared_from_this(),
+                    std::placeholders::_1));
         }
 
         if (!mShutdown)
@@ -213,10 +214,11 @@ public:
             mResolver.cancel();
 
             // Stop the transaction.
-            mSocket.async_shutdown(std::bind(
-                &HTTPClientImp::handleShutdown,
-                shared_from_this(),
-                std::placeholders::_1));
+            mSocket.async_shutdown(
+                std::bind(
+                    &HTTPClientImp::handleShutdown,
+                    shared_from_this(),
+                    std::placeholders::_1));
         }
     }
 
@@ -386,9 +388,10 @@ public:
         {
             // XXX Use our own error code.
             JLOG(j_.trace()) << "No status code";
-            invokeComplete(boost::system::error_code{
-                boost::system::errc::bad_address,
-                boost::system::system_category()});
+            invokeComplete(
+                boost::system::error_code{
+                    boost::system::errc::bad_address,
+                    boost::system::system_category()});
             return;
         }
 
@@ -407,9 +410,10 @@ public:
         if (responseSize > maxResponseSize_)
         {
             JLOG(j_.trace()) << "Response field too large";
-            invokeComplete(boost::system::error_code{
-                boost::system::errc::value_too_large,
-                boost::system::system_category()});
+            invokeComplete(
+                boost::system::error_code{
+                    boost::system::errc::value_too_large,
+                    boost::system::system_category()});
             return;
         }
 

@@ -294,11 +294,12 @@ public:
         }
 
         // Create the slot
-        SlotImp::ptr const slot(std::make_shared<SlotImp>(
-            local_endpoint,
-            remote_endpoint,
-            fixed(remote_endpoint.address()),
-            m_clock));
+        SlotImp::ptr const slot(
+            std::make_shared<SlotImp>(
+                local_endpoint,
+                remote_endpoint,
+                fixed(remote_endpoint.address()),
+                m_clock));
         // Add slot to table
         auto const result(slots_.emplace(slot->remote_endpoint(), slot));
         // Remote address must not already exist
@@ -334,8 +335,9 @@ public:
         }
 
         // Create the slot
-        SlotImp::ptr const slot(std::make_shared<SlotImp>(
-            remote_endpoint, fixed(remote_endpoint), m_clock));
+        SlotImp::ptr const slot(
+            std::make_shared<SlotImp>(
+                remote_endpoint, fixed(remote_endpoint), m_clock));
 
         // Add slot to table
         auto const result = slots_.emplace(slot->remote_endpoint(), slot);

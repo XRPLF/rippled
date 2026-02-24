@@ -236,8 +236,9 @@ doAMMInfo(RPC::JsonContext& context)
             auction[jss::discounted_fee] = auctionSlot[sfDiscountedFee];
             auction[jss::account] =
                 to_string(auctionSlot.getAccountID(sfAccount));
-            auction[jss::expiration] = to_iso8601(NetClock::time_point{
-                NetClock::duration{auctionSlot[sfExpiration]}});
+            auction[jss::expiration] = to_iso8601(
+                NetClock::time_point{
+                    NetClock::duration{auctionSlot[sfExpiration]}});
             if (auctionSlot.isFieldPresent(sfAuthAccounts))
             {
                 Json::Value auth;

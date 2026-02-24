@@ -284,36 +284,41 @@ public:
     Hook
     make_hook(HookImpl::HandlerType const& handler) override
     {
-        return Hook(std::make_shared<detail::StatsDHookImpl>(
-            handler, shared_from_this()));
+        return Hook(
+            std::make_shared<detail::StatsDHookImpl>(
+                handler, shared_from_this()));
     }
 
     Counter
     make_counter(std::string const& name) override
     {
-        return Counter(std::make_shared<detail::StatsDCounterImpl>(
-            name, shared_from_this()));
+        return Counter(
+            std::make_shared<detail::StatsDCounterImpl>(
+                name, shared_from_this()));
     }
 
     Event
     make_event(std::string const& name) override
     {
-        return Event(std::make_shared<detail::StatsDEventImpl>(
-            name, shared_from_this()));
+        return Event(
+            std::make_shared<detail::StatsDEventImpl>(
+                name, shared_from_this()));
     }
 
     Gauge
     make_gauge(std::string const& name) override
     {
-        return Gauge(std::make_shared<detail::StatsDGaugeImpl>(
-            name, shared_from_this()));
+        return Gauge(
+            std::make_shared<detail::StatsDGaugeImpl>(
+                name, shared_from_this()));
     }
 
     Meter
     make_meter(std::string const& name) override
     {
-        return Meter(std::make_shared<detail::StatsDMeterImpl>(
-            name, shared_from_this()));
+        return Meter(
+            std::make_shared<detail::StatsDMeterImpl>(
+                name, shared_from_this()));
     }
 
     //--------------------------------------------------------------------------
@@ -355,8 +360,9 @@ public:
     void
     post_buffer(std::string&& buffer)
     {
-        m_io_service.dispatch(m_strand.wrap(std::bind(
-            &StatsDCollectorImp::do_post_buffer, this, std::move(buffer))));
+        m_io_service.dispatch(m_strand.wrap(
+            std::bind(
+                &StatsDCollectorImp::do_post_buffer, this, std::move(buffer))));
     }
 
     // The keepAlive parameter makes sure the buffers sent to
@@ -457,8 +463,9 @@ public:
     {
         using namespace std::chrono_literals;
         m_timer.expires_from_now(1s);
-        m_timer.async_wait(std::bind(
-            &StatsDCollectorImp::on_timer, this, std::placeholders::_1));
+        m_timer.async_wait(
+            std::bind(
+                &StatsDCollectorImp::on_timer, this, std::placeholders::_1));
     }
 
     void
@@ -547,10 +554,11 @@ StatsDCounterImpl::~StatsDCounterImpl()
 void
 StatsDCounterImpl::increment(CounterImpl::value_type amount)
 {
-    m_impl->get_io_service().dispatch(std::bind(
-        &StatsDCounterImpl::do_increment,
-        std::static_pointer_cast<StatsDCounterImpl>(shared_from_this()),
-        amount));
+    m_impl->get_io_service().dispatch(
+        std::bind(
+            &StatsDCounterImpl::do_increment,
+            std::static_pointer_cast<StatsDCounterImpl>(shared_from_this()),
+            amount));
 }
 
 void
@@ -592,10 +600,11 @@ StatsDEventImpl::StatsDEventImpl(
 void
 StatsDEventImpl::notify(EventImpl::value_type const& value)
 {
-    m_impl->get_io_service().dispatch(std::bind(
-        &StatsDEventImpl::do_notify,
-        std::static_pointer_cast<StatsDEventImpl>(shared_from_this()),
-        value));
+    m_impl->get_io_service().dispatch(
+        std::bind(
+            &StatsDEventImpl::do_notify,
+            std::static_pointer_cast<StatsDEventImpl>(shared_from_this()),
+            value));
 }
 
 void
@@ -625,19 +634,21 @@ StatsDGaugeImpl::~StatsDGaugeImpl()
 void
 StatsDGaugeImpl::set(GaugeImpl::value_type value)
 {
-    m_impl->get_io_service().dispatch(std::bind(
-        &StatsDGaugeImpl::do_set,
-        std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()),
-        value));
+    m_impl->get_io_service().dispatch(
+        std::bind(
+            &StatsDGaugeImpl::do_set,
+            std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()),
+            value));
 }
 
 void
 StatsDGaugeImpl::increment(GaugeImpl::difference_type amount)
 {
-    m_impl->get_io_service().dispatch(std::bind(
-        &StatsDGaugeImpl::do_increment,
-        std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()),
-        amount));
+    m_impl->get_io_service().dispatch(
+        std::bind(
+            &StatsDGaugeImpl::do_increment,
+            std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()),
+            amount));
 }
 
 void
@@ -713,10 +724,11 @@ StatsDMeterImpl::~StatsDMeterImpl()
 void
 StatsDMeterImpl::increment(MeterImpl::value_type amount)
 {
-    m_impl->get_io_service().dispatch(std::bind(
-        &StatsDMeterImpl::do_increment,
-        std::static_pointer_cast<StatsDMeterImpl>(shared_from_this()),
-        amount));
+    m_impl->get_io_service().dispatch(
+        std::bind(
+            &StatsDMeterImpl::do_increment,
+            std::static_pointer_cast<StatsDMeterImpl>(shared_from_this()),
+            amount));
 }
 
 void

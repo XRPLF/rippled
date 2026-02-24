@@ -194,7 +194,8 @@ STBitString<Bits>::value() const
 }
 
 template <int Bits>
-STBitString<Bits>::operator value_type() const
+STBitString<Bits>::
+operator value_type() const
 {
     return value_;
 }

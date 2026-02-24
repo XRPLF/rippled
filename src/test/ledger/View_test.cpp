@@ -79,8 +79,9 @@ class View_test : public beast::unit_test::suite
                 next = view.succ(*next);
                 if (!next)
                     break;
-                view.rawErase(std::make_shared<SLE>(
-                    *view.read(keylet::unchecked(*next))));
+                view.rawErase(
+                    std::make_shared<SLE>(
+                        *view.read(keylet::unchecked(*next))));
             }
             return true;
         });

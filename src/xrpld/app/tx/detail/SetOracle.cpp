@@ -83,8 +83,9 @@ SetOracle::preclaim(PreclaimContext const& ctx)
         lastUpdateTimeEpoch > (closeTime + maxLastUpdateTimeDelta))
         return tecINVALID_UPDATE_TIME;
 
-    auto const sle = ctx.view.read(keylet::oracle(
-        ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID]));
+    auto const sle = ctx.view.read(
+        keylet::oracle(
+            ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID]));
 
     // token pairs to add/update
     std::set<std::pair<Currency, Currency>> pairs;

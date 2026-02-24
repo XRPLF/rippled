@@ -681,12 +681,13 @@ aged_associative_container_test_base::checkUnorderedContentsRefRef(
         auto const last(c.end(i));
         for (auto iter(c.begin(i)); iter != last; ++iter)
         {
-            auto const match(std::find_if(
-                v.begin(),
-                v.end(),
-                [iter](typename Values::value_type const& e) {
-                    return Traits::extract(*iter) == Traits::extract(e);
-                }));
+            auto const match(
+                std::find_if(
+                    v.begin(),
+                    v.end(),
+                    [iter](typename Values::value_type const& e) {
+                        return Traits::extract(*iter) == Traits::extract(e);
+                    }));
             BEAST_EXPECT(match != v.end());
             BEAST_EXPECT(
                 key_eq(Traits::extract(*iter), Traits::extract(*match)));
@@ -709,17 +710,22 @@ aged_associative_container_test_base::checkContentsRefRef(
     BEAST_EXPECT(size_type(std::distance(c.begin(), c.end())) == v.size());
     BEAST_EXPECT(size_type(std::distance(c.cbegin(), c.cend())) == v.size());
     BEAST_EXPECT(
-        size_type(std::distance(
-            c.chronological.begin(), c.chronological.end())) == v.size());
+        size_type(
+            std::distance(c.chronological.begin(), c.chronological.end())) ==
+        v.size());
     BEAST_EXPECT(
-        size_type(std::distance(
-            c.chronological.cbegin(), c.chronological.cend())) == v.size());
+        size_type(
+            std::distance(c.chronological.cbegin(), c.chronological.cend())) ==
+        v.size());
     BEAST_EXPECT(
-        size_type(std::distance(
-            c.chronological.rbegin(), c.chronological.rend())) == v.size());
+        size_type(
+            std::distance(c.chronological.rbegin(), c.chronological.rend())) ==
+        v.size());
     BEAST_EXPECT(
-        size_type(std::distance(
-            c.chronological.crbegin(), c.chronological.crend())) == v.size());
+        size_type(
+            std::distance(
+                c.chronological.crbegin(), c.chronological.crend())) ==
+        v.size());
 
     checkUnorderedContentsRefRef(c, v);
 }
@@ -1358,12 +1364,13 @@ aged_associative_container_test_base::testChronological()
 
     typename Traits::template Cont<> c(v.begin(), v.end(), clock);
 
-    BEAST_EXPECT(std::equal(
-        c.chronological.cbegin(),
-        c.chronological.cend(),
-        v.begin(),
-        v.end(),
-        equal_value<Traits>()));
+    BEAST_EXPECT(
+        std::equal(
+            c.chronological.cbegin(),
+            c.chronological.cend(),
+            v.begin(),
+            v.end(),
+            equal_value<Traits>()));
 
     // Test touch() with a non-const iterator.
     for (auto iter(v.crbegin()); iter != v.crend(); ++iter)
@@ -1377,12 +1384,13 @@ aged_associative_container_test_base::testChronological()
         c.touch(found);
     }
 
-    BEAST_EXPECT(std::equal(
-        c.chronological.cbegin(),
-        c.chronological.cend(),
-        v.crbegin(),
-        v.crend(),
-        equal_value<Traits>()));
+    BEAST_EXPECT(
+        std::equal(
+            c.chronological.cbegin(),
+            c.chronological.cend(),
+            v.crbegin(),
+            v.crend(),
+            equal_value<Traits>()));
 
     // Test touch() with a const_iterator
     for (auto iter(v.cbegin()); iter != v.cend(); ++iter)
@@ -1396,12 +1404,13 @@ aged_associative_container_test_base::testChronological()
         c.touch(found);
     }
 
-    BEAST_EXPECT(std::equal(
-        c.chronological.cbegin(),
-        c.chronological.cend(),
-        v.cbegin(),
-        v.cend(),
-        equal_value<Traits>()));
+    BEAST_EXPECT(
+        std::equal(
+            c.chronological.cbegin(),
+            c.chronological.cend(),
+            v.cbegin(),
+            v.cend(),
+            equal_value<Traits>()));
 
     {
         // Because touch (reverse_iterator pos) is not allowed, the following

@@ -987,8 +987,9 @@ public:
         env.trust(Account("bob")["USD"](0), "alice");
         env.trust(Account("alice")["USD"](0), "bob");
         BEAST_EXPECT(
-            env.le(keylet::line(
-                Account("bob").id(), Account("alice")["USD"].issue())) ==
+            env.le(
+                keylet::line(
+                    Account("bob").id(), Account("alice")["USD"].issue())) ==
             nullptr);
     }
 
@@ -1041,8 +1042,9 @@ public:
 
         env(pay("alice", "bob", Account("alice")["USD"](50)));
         BEAST_EXPECT(
-            env.le(keylet::line(
-                Account("alice").id(), Account("bob")["USD"].issue())) ==
+            env.le(
+                keylet::line(
+                    Account("alice").id(), Account("bob")["USD"].issue())) ==
             nullptr);
     }
 

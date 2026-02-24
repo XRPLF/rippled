@@ -44,8 +44,9 @@ class Validations_test : public beast::unit_test::suite
         // generated NetClock time to be well past its epoch to ensure
         // any subtractions are positive
         using namespace std::chrono;
-        return NetClock::time_point(duration_cast<NetClock::duration>(
-            c.now().time_since_epoch() + 86400s));
+        return NetClock::time_point(
+            duration_cast<NetClock::duration>(
+                c.now().time_since_epoch() + 86400s));
     }
 
     // Represents a node that can issue validations

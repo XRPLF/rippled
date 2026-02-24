@@ -101,8 +101,9 @@ to_string_iso(NetClock::time_point tp)
     // 2000-01-01 00:00:00 UTC is 946684800s from 1970-01-01 00:00:00 UTC
     // Note, NetClock::duration is seconds, as checked by static_assert
     static_assert(std::is_same_v<NetClock::duration::period, std::ratio<1>>);
-    return to_string_iso(date::sys_time<NetClock::duration>{
-        tp.time_since_epoch() + epoch_offset});
+    return to_string_iso(
+        date::sys_time<NetClock::duration>{
+            tp.time_since_epoch() + epoch_offset});
 }
 
 /** A clock for measuring elapsed time.

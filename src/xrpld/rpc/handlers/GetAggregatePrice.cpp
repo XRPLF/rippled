@@ -295,9 +295,10 @@ doGetAggregatePrice(RPC::JsonContext& context)
                 auto const scale = iter->isFieldPresent(sfScale)
                     ? -static_cast<int>(iter->getFieldU8(sfScale))
                     : 0;
-                prices.insert(Prices::value_type(
-                    node.getFieldU32(sfLastUpdateTime),
-                    STAmount{noIssue(), price, scale}));
+                prices.insert(
+                    Prices::value_type(
+                        node.getFieldU32(sfLastUpdateTime),
+                        STAmount{noIssue(), price, scale}));
                 return true;
             }
             return false;

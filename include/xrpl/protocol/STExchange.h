@@ -143,8 +143,9 @@ template <class U, class T>
 void
 set(STObject& st, TypedField<U> const& f, T&& t)
 {
-    st.set(STExchange<U, typename std::decay<T>::type>::set(
-        f, std::forward<T>(t)));
+    st.set(
+        STExchange<U, typename std::decay<T>::type>::set(
+            f, std::forward<T>(t)));
 }
 
 /** Set a blob field using an init function. */

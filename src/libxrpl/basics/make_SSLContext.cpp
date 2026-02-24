@@ -282,8 +282,9 @@ initAuthenticated(
         {
             LogicError(
                 "Problem opening SSL chain file" +
-                fmt_error(boost::system::error_code(
-                    errno, boost::system::generic_category())));
+                fmt_error(
+                    boost::system::error_code(
+                        errno, boost::system::generic_category())));
         }
 
         try

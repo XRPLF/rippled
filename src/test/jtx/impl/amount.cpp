@@ -47,7 +47,8 @@ operator<<(std::ostream&& os,
 }
 #endif
 
-PrettyAmount::operator AnyAmount() const
+PrettyAmount::
+operator AnyAmount() const
 {
     return {amount_};
 }

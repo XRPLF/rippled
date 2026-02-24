@@ -633,8 +633,9 @@ class ServerStatus_test : public beast::unit_test::suite,
         int testTo = (limit == 0) ? 50 : limit + 1;
         while (connectionCount < testTo)
         {
-            clients.emplace_back(std::make_pair(
-                ip::tcp::socket{ios}, boost::beast::multi_buffer{}));
+            clients.emplace_back(
+                std::make_pair(
+                    ip::tcp::socket{ios}, boost::beast::multi_buffer{}));
             async_connect(clients.back().first, it, yield[ec]);
             BEAST_EXPECT(!ec);
             auto req = makeHTTPRequest(ip, port, to_string(jr), {});

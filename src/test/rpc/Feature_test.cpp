@@ -206,9 +206,9 @@ class Feature_test : public beast::unit_test::suite
         BEAST_EXPECTS(jrr[jss::status] == jss::success, "status");
         jrr.removeMember(jss::status);
         BEAST_EXPECT(jrr.size() == 1);
-        BEAST_EXPECT(
-            jrr.isMember("586480873651E106F1D6339B0C4A8945BA705A777F3F4524626FF"
-                         "1FC07EFE41D"));
+        BEAST_EXPECT(jrr.isMember(
+            "586480873651E106F1D6339B0C4A8945BA705A777F3F4524626FF"
+            "1FC07EFE41D"));
         auto feature = *(jrr.begin());
 
         BEAST_EXPECTS(feature[jss::name] == "MultiSignReserve", "name");

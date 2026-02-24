@@ -1732,8 +1732,10 @@ trustCreate(
         bSetHigh ? sfHighLimit : sfLowLimit, saLimit);
     sleRippleState->setFieldAmount(
         bSetHigh ? sfLowLimit : sfHighLimit,
-        STAmount(Issue{
-            saBalance.getCurrency(), bSetDst ? uSrcAccountID : uDstAccountID}));
+        STAmount(
+            Issue{
+                saBalance.getCurrency(),
+                bSetDst ? uSrcAccountID : uDstAccountID}));
 
     if (uQualityIn)
         sleRippleState->setFieldU32(

@@ -52,8 +52,9 @@ struct json_body
             boost::beast::http::message<isRequest, json_body, Fields> const& m)
         {
             stream(m.body, [&](void const* data, std::size_t n) {
-                buffer_.commit(boost::asio::buffer_copy(
-                    buffer_.prepare(n), boost::asio::buffer(data, n)));
+                buffer_.commit(
+                    boost::asio::buffer_copy(
+                        buffer_.prepare(n), boost::asio::buffer(data, n)));
             });
         }
 

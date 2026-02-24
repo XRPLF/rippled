@@ -94,9 +94,10 @@ class AccountTx_test : public beast::unit_test::suite
                         .asString());
 
             else if (metaNode.isMember(sfModifiedNode.jsonName))
-                modifiedNodes.insert(metaNode[sfModifiedNode.jsonName]
-                                             [sfLedgerEntryType.jsonName]
-                                                 .asString());
+                modifiedNodes.insert(
+                    metaNode[sfModifiedNode.jsonName]
+                            [sfLedgerEntryType.jsonName]
+                                .asString());
 
             else
                 fail(

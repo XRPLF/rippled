@@ -6563,8 +6563,10 @@ protected:
         auto state = getCurrentState(env, broker, loanKeylet);
         if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
         {
-            env.close(tp{d{
-                loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
+            env.close(
+                tp{
+                    d{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) +
+                      1}});
         }
 
         topUpBorrower(

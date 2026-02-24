@@ -38,8 +38,9 @@ DeleteOracle::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.exists(keylet::account(ctx.tx.getAccountID(sfAccount))))
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
-    if (auto const sle = ctx.view.read(keylet::oracle(
-            ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID]));
+    if (auto const sle = ctx.view.read(
+            keylet::oracle(
+                ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID]));
         !sle)
     {
         JLOG(ctx.j.debug()) << "Oracle Delete: Oracle does not exist.";

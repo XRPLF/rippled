@@ -553,8 +553,9 @@ ValidatorSite::onSiteFetch(
                          << sites_[siteIdx].activeResource->uri << " "
                          << endpoint;
         auto onError = [&](std::string const& errMsg, bool retry) {
-            sites_[siteIdx].lastRefreshStatus.emplace(Site::Status{
-                clock_type::now(), ListDisposition::invalid, errMsg});
+            sites_[siteIdx].lastRefreshStatus.emplace(
+                Site::Status{
+                    clock_type::now(), ListDisposition::invalid, errMsg});
             if (retry)
                 sites_[siteIdx].nextRefresh =
                     clock_type::now() + error_retry_interval;
@@ -655,8 +656,9 @@ ValidatorSite::onTextFetch(
         {
             JLOG(j_.error())
                 << "Exception in " << __func__ << ": " << ex.what();
-            sites_[siteIdx].lastRefreshStatus.emplace(Site::Status{
-                clock_type::now(), ListDisposition::invalid, ex.what()});
+            sites_[siteIdx].lastRefreshStatus.emplace(
+                Site::Status{
+                    clock_type::now(), ListDisposition::invalid, ex.what()});
         }
         sites_[siteIdx].activeResource.reset();
     }

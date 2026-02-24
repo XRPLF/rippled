@@ -958,8 +958,9 @@ struct Peer
         // code are positive. (e.g. proposeFRESHNESS)
         using namespace std::chrono;
         using namespace std::chrono_literals;
-        return NetClock::time_point(duration_cast<NetClock::duration>(
-            scheduler.now().time_since_epoch() + 86400s + clockSkew));
+        return NetClock::time_point(
+            duration_cast<NetClock::duration>(
+                scheduler.now().time_since_epoch() + 86400s + clockSkew));
     }
 
     Ledger::ID

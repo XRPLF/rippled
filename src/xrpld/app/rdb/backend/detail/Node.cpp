@@ -753,8 +753,9 @@ transactionsSQL(
 
     if (count)
         sql = boost::str(
-            boost::format("SELECT %s FROM AccountTransactions "
-                          "WHERE Account = '%s' %s %s LIMIT %u, %u;") %
+            boost::format(
+                "SELECT %s FROM AccountTransactions "
+                "WHERE Account = '%s' %s %s LIMIT %u, %u;") %
             selection % toBase58(options.account) % maxClause % minClause %
             options.offset % numberOfResults);
     else

@@ -44,16 +44,18 @@ private:
 
 public:
     TestNodeFamily(beast::Journal j)
-        : fbCache_(std::make_shared<FullBelowCache>(
-              "App family full below cache",
-              clock_,
-              j))
-        , tnCache_(std::make_shared<TreeNodeCache>(
-              "App family tree node cache",
-              65536,
-              std::chrono::minutes{1},
-              clock_,
-              j))
+        : fbCache_(
+              std::make_shared<FullBelowCache>(
+                  "App family full below cache",
+                  clock_,
+                  j))
+        , tnCache_(
+              std::make_shared<TreeNodeCache>(
+                  "App family tree node cache",
+                  65536,
+                  std::chrono::minutes{1},
+                  clock_,
+                  j))
         , j_(j)
     {
         Section testSection;

@@ -100,9 +100,10 @@ SSLHTTPPeer<Handler>::SSLHTTPPeer(
           journal,
           remote_address,
           buffers)
-    , stream_ptr_(std::make_unique<stream_type>(
-          middle_type(std::move(stream)),
-          *port.context))
+    , stream_ptr_(
+          std::make_unique<stream_type>(
+              middle_type(std::move(stream)),
+              *port.context))
     , stream_(*stream_ptr_)
     , socket_(stream_.next_layer().socket())
 {

@@ -186,15 +186,18 @@ class NoRippleCheck_test : public beast::unit_test::suite
 
             if (user)
             {
-                BEAST_EXPECT(boost::starts_with(
-                    pa[0u].asString(), "You appear to have set"));
-                BEAST_EXPECT(boost::starts_with(
-                    pa[1u].asString(), "You should probably set"));
+                BEAST_EXPECT(
+                    boost::starts_with(
+                        pa[0u].asString(), "You appear to have set"));
+                BEAST_EXPECT(
+                    boost::starts_with(
+                        pa[1u].asString(), "You should probably set"));
             }
             else
             {
-                BEAST_EXPECT(boost::starts_with(
-                    pa[0u].asString(), "You should immediately set"));
+                BEAST_EXPECT(
+                    boost::starts_with(
+                        pa[0u].asString(), "You should immediately set"));
                 BEAST_EXPECT(
                     boost::starts_with(pa[1u].asString(), "You should clear"));
             }

@@ -1537,12 +1537,13 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 env(credentials::accept(alice, c.issuer, c.credType));
                 env.close();
 
-                credentialIDs.push_back(credentials::ledgerEntry(
-                                            env,
-                                            alice,
-                                            c.issuer,
-                                            c.credType)[jss::result][jss::index]
-                                            .asString());
+                credentialIDs.push_back(
+                    credentials::ledgerEntry(
+                        env,
+                        alice,
+                        c.issuer,
+                        c.credType)[jss::result][jss::index]
+                        .asString());
             }
 
             // check duplicates in payment params

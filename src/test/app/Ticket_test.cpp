@@ -875,8 +875,9 @@ class Ticket_test : public beast::unit_test::suite
             Json::Value jr = env.rpc("json", "sign", to_string(tx));
 
             // Verify that "sign" inserted a "Sequence": 0 field.
-            if (BEAST_EXPECT(jr[jss::result][jss::tx_json].isMember(
-                    sfSequence.jsonName)))
+            if (BEAST_EXPECT(
+                    jr[jss::result][jss::tx_json].isMember(
+                        sfSequence.jsonName)))
             {
                 BEAST_EXPECT(
                     jr[jss::result][jss::tx_json][sfSequence.jsonName] == 0);
@@ -910,8 +911,9 @@ class Ticket_test : public beast::unit_test::suite
             Json::Value jr = env.rpc("json", "submit", to_string(tx));
 
             // Verify that "submit" inserted a "Sequence": 0 field.
-            if (BEAST_EXPECT(jr[jss::result][jss::tx_json].isMember(
-                    sfSequence.jsonName)))
+            if (BEAST_EXPECT(
+                    jr[jss::result][jss::tx_json].isMember(
+                        sfSequence.jsonName)))
             {
                 BEAST_EXPECT(
                     jr[jss::result][jss::tx_json][sfSequence.jsonName] == 0);

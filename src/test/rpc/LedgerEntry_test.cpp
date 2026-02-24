@@ -2317,8 +2317,9 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
             auto attest = r[sfXChainCreateAccountAttestations.jsonName];
             BEAST_EXPECT(attest.isArray());
             BEAST_EXPECT(attest.size() == 3);
-            BEAST_EXPECT(attest[Json::Value::UInt(0)].isMember(
-                sfXChainCreateAccountProofSig.jsonName));
+            BEAST_EXPECT(
+                attest[Json::Value::UInt(0)].isMember(
+                    sfXChainCreateAccountProofSig.jsonName));
             Json::Value a[num_attest];
             for (size_t i = 0; i < num_attest; ++i)
             {

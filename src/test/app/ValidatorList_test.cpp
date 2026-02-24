@@ -2376,8 +2376,9 @@ private:
             auto start = buffer.begin();
             auto end = buffer.end();
             std::vector<std::uint8_t> slice(start, end);
-            buffers.commit(boost::asio::buffer_copy(
-                buffers.prepare(slice.size()), boost::asio::buffer(slice)));
+            buffers.commit(
+                boost::asio::buffer_copy(
+                    buffers.prepare(slice.size()), boost::asio::buffer(slice)));
 
             boost::system::error_code ec;
             auto header =
@@ -2779,11 +2780,12 @@ private:
                     pubSigningKeys.first,
                     pubSigningKeys.second,
                     i < countRevoked ? revoked : 1));
-                publishers.push_back(Publisher{
-                    i < countRevoked,
-                    publisherPublic,
-                    pubSigningKeys,
-                    manifest});
+                publishers.push_back(
+                    Publisher{
+                        i < countRevoked,
+                        publisherPublic,
+                        pubSigningKeys,
+                        manifest});
             }
 
             std::vector<std::string> const emptyCfgKeys;

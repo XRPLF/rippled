@@ -106,8 +106,9 @@ public:
             auto end = i < nbuffers - 1 ? (buffer.begin() + sz * (i + 1))
                                         : buffer.end();
             std::vector<std::uint8_t> slice(start, end);
-            buffers.commit(boost::asio::buffer_copy(
-                buffers.prepare(slice.size()), boost::asio::buffer(slice)));
+            buffers.commit(
+                boost::asio::buffer_copy(
+                    buffers.prepare(slice.size()), boost::asio::buffer(slice)));
         }
 
         boost::system::error_code ec;
@@ -139,10 +140,11 @@ public:
         BEAST_EXPECT(
             proto1->ParseFromArray(decompressed.data(), decompressedSize));
         auto uncompressed = m.getBuffer(Compressed::Off);
-        BEAST_EXPECT(std::equal(
-            uncompressed.begin() + ripple::compression::headerBytes,
-            uncompressed.end(),
-            decompressed.begin()));
+        BEAST_EXPECT(
+            std::equal(
+                uncompressed.begin() + ripple::compression::headerBytes,
+                uncompressed.end(),
+                decompressed.begin()));
     }
 
     std::shared_ptr<protocol::TMManifests>
@@ -297,8 +299,9 @@ public:
     {
         auto getObject = std::make_shared<protocol::TMGetObjectByHash>();
 
-        getObject->set_type(protocol::TMGetObjectByHash_ObjectType::
-                                TMGetObjectByHash_ObjectType_otTRANSACTION);
+        getObject->set_type(
+            protocol::TMGetObjectByHash_ObjectType::
+                TMGetObjectByHash_ObjectType_otTRANSACTION);
         getObject->set_query(true);
         getObject->set_seq(123456789);
         uint256 hash(ripple::sha512Half(123456789));

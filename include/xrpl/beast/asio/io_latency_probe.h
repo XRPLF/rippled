@@ -109,8 +109,9 @@ public:
         std::lock_guard lock(m_mutex);
         if (m_cancel)
             throw std::logic_error("io_latency_probe is canceled");
-        m_ios.post(sample_op<Handler>(
-            std::forward<Handler>(handler), Clock::now(), false, this));
+        m_ios.post(
+            sample_op<Handler>(
+                std::forward<Handler>(handler), Clock::now(), false, this));
     }
 
     /** Initiate continuous i/o latency sampling.
@@ -124,8 +125,9 @@ public:
         std::lock_guard lock(m_mutex);
         if (m_cancel)
             throw std::logic_error("io_latency_probe is canceled");
-        m_ios.post(sample_op<Handler>(
-            std::forward<Handler>(handler), Clock::now(), true, this));
+        m_ios.post(
+            sample_op<Handler>(
+                std::forward<Handler>(handler), Clock::now(), true, this));
     }
 
 private:

@@ -1090,8 +1090,9 @@ trustthesevalidators.gov
         }
         catch (std::exception const& ex)
         {
-            BEAST_EXPECT(std::string_view(ex.what()).starts_with(
-                "Invalid value '0' for key 'port'"));
+            BEAST_EXPECT(
+                std::string_view(ex.what()).starts_with(
+                    "Invalid value '0' for key 'port'"));
         }
     }
 
@@ -1101,23 +1102,24 @@ trustthesevalidators.gov
         Config cfg;
         /* NOTE: this string includes some explicit
          * space chars in order to verify proper trimming */
-        std::string toLoad(R"(
+        std::string toLoad(
+            R"(
 [port_rpc])"
-                           "\x20"
-                           R"(
+            "\x20"
+            R"(
 # comment
     # indented comment
 )"
-                           "\x20\x20"
-                           R"(
+            "\x20\x20"
+            R"(
 [ips])"
-                           "\x20"
-                           R"(
+            "\x20"
+            R"(
 r.ripple.com 51235
 
   [ips_fixed])"
-                           "\x20\x20"
-                           R"(
+            "\x20\x20"
+            R"(
     # COMMENT
     s1.ripple.com 51235
     s2.ripple.com 51235
@@ -1143,23 +1145,24 @@ r.ripple.com 51235
         Config cfg;
         /* NOTE: this string includes some explicit
          * space chars in order to verify proper trimming */
-        std::string toLoad(R"(
+        std::string toLoad(
+            R"(
 [port_rpc])"
-                           "\x20"
-                           R"(
+            "\x20"
+            R"(
 # comment
     # indented comment
 )"
-                           "\x20\x20"
-                           R"(
+            "\x20\x20"
+            R"(
 [ips])"
-                           "\x20"
-                           R"(
+            "\x20"
+            R"(
 r.ripple.com:51235
 
   [ips_fixed])"
-                           "\x20\x20"
-                           R"(
+            "\x20\x20"
+            R"(
     # COMMENT
     s1.ripple.com:51235
     s2.ripple.com 51235

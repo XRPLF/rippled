@@ -57,8 +57,9 @@ class Peers_test : public beast::unit_test::suite
             using namespace std::chrono_literals;
             env.app().cluster().update(
                 kp.first, name, 200, env.timeKeeper().now() - 10s);
-            nodes.insert(std::make_pair(
-                toBase58(TokenType::NodePublic, kp.first), name));
+            nodes.insert(
+                std::make_pair(
+                    toBase58(TokenType::NodePublic, kp.first), name));
         }
 
         // make request, verify nodes we created match

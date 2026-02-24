@@ -854,17 +854,18 @@ public:
             // xchain_create_account_claim_id should be present on the door
             // account (Account::master) to collect the signatures until a
             // quorum is reached
-            scEnv(test::jtx::create_account_attestation(
-                x.scAttester,
-                x.jvb,
-                x.mcCarol,
-                amt,
-                x.reward,
-                x.payees[0],
-                true,
-                1,
-                x.scuAlice,
-                x.signers[0]));
+            scEnv(
+                test::jtx::create_account_attestation(
+                    x.scAttester,
+                    x.jvb,
+                    x.mcCarol,
+                    amt,
+                    x.reward,
+                    x.payees[0],
+                    true,
+                    1,
+                    x.scuAlice,
+                    x.signers[0]));
             scEnv.close();
 
             auto scEnvAcctObjs = [&](Account const& acct, char const* type) {
@@ -1221,8 +1222,9 @@ public:
                                       std::uint16_t flags = 0,
                                       std::uint16_t fee = 0) {
             // the marker has the exact same format as an NFTokenID
-            return to_string(NFTokenMint::createNFTokenID(
-                flags, fee, issuer, nft::toTaxon(taxon), tokenSeq));
+            return to_string(
+                NFTokenMint::createNFTokenID(
+                    flags, fee, issuer, nft::toTaxon(taxon), tokenSeq));
         };
 
         // test an unassociated marker which does not exist in the NFTokenIDs

@@ -71,8 +71,9 @@ protocol = wss2
 admin = 127.0.0.1
 )rippleConfig");
 
-        p->loadFromString(boost::str(
-            toLoad % validator_data::token % validator_data::public_key));
+        p->loadFromString(
+            boost::str(
+                toLoad % validator_data::token % validator_data::public_key));
 
         setupConfigForUnitTests(*p);
 

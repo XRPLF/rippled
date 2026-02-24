@@ -158,11 +158,12 @@ WorkBase<Impl>::run()
     resolver_.async_resolve(
         host_,
         port_,
-        strand_.wrap(std::bind(
-            &WorkBase::onResolve,
-            impl().shared_from_this(),
-            std::placeholders::_1,
-            std::placeholders::_2)));
+        strand_.wrap(
+            std::bind(
+                &WorkBase::onResolve,
+                impl().shared_from_this(),
+                std::placeholders::_1,
+                std::placeholders::_2)));
 }
 
 template <class Impl>
@@ -201,11 +202,12 @@ WorkBase<Impl>::onResolve(error_code const& ec, results_type results)
     boost::asio::async_connect(
         socket_,
         results,
-        strand_.wrap(std::bind(
-            &WorkBase::onConnect,
-            impl().shared_from_this(),
-            std::placeholders::_1,
-            std::placeholders::_2)));
+        strand_.wrap(
+            std::bind(
+                &WorkBase::onConnect,
+                impl().shared_from_this(),
+                std::placeholders::_1,
+                std::placeholders::_2)));
 }
 
 template <class Impl>
@@ -233,10 +235,11 @@ WorkBase<Impl>::onStart()
     boost::beast::http::async_write(
         impl().stream(),
         req_,
-        strand_.wrap(std::bind(
-            &WorkBase::onRequest,
-            impl().shared_from_this(),
-            std::placeholders::_1)));
+        strand_.wrap(
+            std::bind(
+                &WorkBase::onRequest,
+                impl().shared_from_this(),
+                std::placeholders::_1)));
 }
 
 template <class Impl>
@@ -250,10 +253,11 @@ WorkBase<Impl>::onRequest(error_code const& ec)
         impl().stream(),
         readBuf_,
         res_,
-        strand_.wrap(std::bind(
-            &WorkBase::onResponse,
-            impl().shared_from_this(),
-            std::placeholders::_1)));
+        strand_.wrap(
+            std::bind(
+                &WorkBase::onResponse,
+                impl().shared_from_this(),
+                std::placeholders::_1)));
 }
 
 template <class Impl>

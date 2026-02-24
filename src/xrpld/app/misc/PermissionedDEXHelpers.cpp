@@ -42,8 +42,11 @@ accountInDomain(
 
     bool const inDomain = std::any_of(
         credentials.begin(), credentials.end(), [&](auto const& credential) {
-            auto const sleCred = view.read(keylet::credential(
-                account, credential[sfIssuer], credential[sfCredentialType]));
+            auto const sleCred = view.read(
+                keylet::credential(
+                    account,
+                    credential[sfIssuer],
+                    credential[sfCredentialType]));
             if (!sleCred || !sleCred->isFlag(lsfAccepted))
                 return false;
 

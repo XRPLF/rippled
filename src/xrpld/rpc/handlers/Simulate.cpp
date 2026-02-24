@@ -53,8 +53,10 @@ getAutofillSequence(Json::Value const& tx_json, RPC::JsonContext& context)
     auto const srcAddressID = parseBase58<AccountID>(accountStr.asString());
     if (!srcAddressID.has_value())
     {
-        return Unexpected(RPC::make_error(
-            rpcSRC_ACT_MALFORMED, RPC::invalid_field_message("tx.Account")));
+        return Unexpected(
+            RPC::make_error(
+                rpcSRC_ACT_MALFORMED,
+                RPC::invalid_field_message("tx.Account")));
     }
     std::shared_ptr<SLE const> const sle =
         context.app.openLedger().current()->read(

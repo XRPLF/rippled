@@ -1059,9 +1059,8 @@ public:
     // map, set
     template <bool maybe_multi = IsMulti, bool maybe_map = IsMap>
     auto
-    insert(value_type&& value) -> typename std::enable_if<
-                                   !maybe_multi && !maybe_map,
-                                   std::pair<iterator, bool>>::type;
+    insert(value_type&& value) -> typename std::
+        enable_if<!maybe_multi && !maybe_map, std::pair<iterator, bool>>::type;
 
     // multimap, multiset
     template <bool maybe_multi = IsMulti, bool maybe_map = IsMap>
@@ -2808,9 +2807,8 @@ aged_unordered_container<
     Clock,
     Hash,
     KeyEqual,
-    Allocator>::insert(value_type&& value) ->
-    typename std::
-        enable_if<!maybe_multi && !maybe_map, std::pair<iterator, bool>>::type
+    Allocator>::insert(value_type&& value) -> typename std::
+    enable_if<!maybe_multi && !maybe_map, std::pair<iterator, bool>>::type
 {
     maybe_rehash(1);
     typename cont_type::insert_commit_data d;
@@ -3033,8 +3031,8 @@ aged_unordered_container<
     Clock,
     Hash,
     KeyEqual,
-    Allocator>::erase(beast::detail::aged_container_iterator<is_const, Iterator>
-                          pos)
+    Allocator>::
+    erase(beast::detail::aged_container_iterator<is_const, Iterator> pos)
 {
     unlink_and_delete_element(&*((pos++).iterator()));
     return beast::detail::aged_container_iterator<false, Iterator>(

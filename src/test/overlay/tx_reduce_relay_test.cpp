@@ -174,8 +174,9 @@ private:
                   makeFeaturesRequestHeader(false, false, true, false))
             : (void)nDisabled--;
         auto stream_ptr = std::make_unique<stream_type>(
-            socket_type(std::forward<boost::asio::io_service&>(
-                env.app().getIOService())),
+            socket_type(
+                std::forward<boost::asio::io_service&>(
+                    env.app().getIOService())),
             *context_);
         beast::IP::Endpoint local(
             beast::IP::Address::from_string("172.1.1." + std::to_string(lid_)));
