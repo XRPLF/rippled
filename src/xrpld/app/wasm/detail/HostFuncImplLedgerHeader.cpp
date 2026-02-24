@@ -1,6 +1,6 @@
-#include <xrpld/app/misc/AmendmentTable.h>
 #include <xrpld/app/wasm/HostFuncImpl.h>
 
+#include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/protocol/digest.h>
 
 namespace xrpl {
@@ -48,7 +48,7 @@ WasmHostFunctionsImpl::isAmendmentEnabled(Slice const& data)
         return Unexpected(HostFunctionError::DATA_FIELD_TOO_LARGE);
 
     auto const amendmentName = std::string_view(reinterpret_cast<char const*>(data.data()), data.size());
-    auto const& table = ctx.app.getAmendmentTable();
+    auto const& table = ctx.registry.getAmendmentTable();
     auto const amendment = table.find(std::string(amendmentName));
     return ctx.view().rules().enabled(amendment);
 }

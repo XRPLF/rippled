@@ -2,9 +2,8 @@
 #include <test/jtx/AMM.h>
 #include <test/jtx/CaptureLogs.h>
 
-#include <xrpld/app/misc/AMMUtils.h>
-
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/tx/transactors/AMM/AMMUtils.h>
 
 namespace xrpl {
 namespace test {

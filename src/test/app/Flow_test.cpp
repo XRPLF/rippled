@@ -1,14 +1,14 @@
 #include <test/jtx.h>
 #include <test/jtx/PathSet.h>
 
-#include <xrpld/app/paths/Flow.h>
-#include <xrpld/app/paths/detail/Steps.h>
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/tx/paths/Flow.h>
+#include <xrpl/tx/paths/detail/Steps.h>
 
 namespace xrpl {
 namespace test {

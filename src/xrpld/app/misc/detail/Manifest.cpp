@@ -1,13 +1,12 @@
-#include <xrpld/app/misc/Manifest.h>
-#include <xrpld/app/rdb/Wallet.h>
-#include <xrpld/core/DatabaseCon.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Sign.h>
+#include <xrpl/rdb/DatabaseCon.h>
+#include <xrpl/server/Manifest.h>
+#include <xrpl/server/Wallet.h>
 
 #include <boost/algorithm/string/trim.hpp>
 
@@ -524,11 +523,12 @@ ManifestCache::load(
     if (!configRevocation.empty())
     {
         std::string revocationStr;
-        revocationStr.reserve(std::accumulate(
-            configRevocation.cbegin(),
-            configRevocation.cend(),
-            std::size_t(0),
-            [](std::size_t init, std::string const& s) { return init + s.size(); }));
+        revocationStr.reserve(
+            std::accumulate(
+                configRevocation.cbegin(),
+                configRevocation.cend(),
+                std::size_t(0),
+                [](std::size_t init, std::string const& s) { return init + s.size(); }));
 
         for (auto const& line : configRevocation)
             revocationStr += boost::algorithm::trim_copy(line);

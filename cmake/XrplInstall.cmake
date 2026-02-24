@@ -20,9 +20,11 @@ install(TARGETS common
                 xrpl.libxrpl
                 xrpl.libxrpl.basics
                 xrpl.libxrpl.beast
+                xrpl.libxrpl.conditions
                 xrpl.libxrpl.core
                 xrpl.libxrpl.crypto
                 xrpl.libxrpl.json
+                xrpl.libxrpl.rdb
                 xrpl.libxrpl.ledger
                 xrpl.libxrpl.net
                 xrpl.libxrpl.nodestore
@@ -30,6 +32,7 @@ install(TARGETS common
                 xrpl.libxrpl.resource
                 xrpl.libxrpl.server
                 xrpl.libxrpl.shamap
+                xrpl.libxrpl.tx
                 antithesis-sdk-cpp
         EXPORT XrplExports
         LIBRARY DESTINATION lib

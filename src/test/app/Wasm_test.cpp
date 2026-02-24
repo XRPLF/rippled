@@ -535,11 +535,12 @@ struct Wasm_test : public beast::unit_test::suite
             [[maybe_unused]] uint256 const nft1{token::getNextID(env, alan, 0u)};
 
             env(token::mint(alan, 0u),
-                token::uri("https://github.com/XRPLF/XRPL-Standards/discussions/"
-                           "279?id=github.com/XRPLF/XRPL-Standards/discussions/"
-                           "279&ut=github.com/XRPLF/XRPL-Standards/discussions/"
-                           "279&sid=github.com/XRPLF/XRPL-Standards/discussions/"
-                           "279&aot=github.com/XRPLF/XRPL-Standards/disc"));
+                token::uri(
+                    "https://github.com/XRPLF/XRPL-Standards/discussions/"
+                    "279?id=github.com/XRPLF/XRPL-Standards/discussions/"
+                    "279&ut=github.com/XRPLF/XRPL-Standards/discussions/"
+                    "279&sid=github.com/XRPLF/XRPL-Standards/discussions/"
+                    "279&aot=github.com/XRPLF/XRPL-Standards/disc"));
             [[maybe_unused]] uint256 const nft2{token::getNextID(env, alan, 0u)};
             env(token::mint(alan, 0u));
             env.close();

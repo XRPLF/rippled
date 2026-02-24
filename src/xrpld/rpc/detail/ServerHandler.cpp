@@ -1,5 +1,4 @@
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/rpc/RPCHandler.h>
@@ -23,6 +22,7 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/resource/ResourceManager.h>
+#include <xrpl/server/NetworkOPs.h>
 #include <xrpl/server/Server.h>
 #include <xrpl/server/SimpleWriter.h>
 #include <xrpl/server/detail/JSONRPCUtil.h>

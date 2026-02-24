@@ -99,7 +99,8 @@ InstanceWrapper::operator=(InstanceWrapper&& o)
     return *this;
 }
 
-InstanceWrapper::operator bool() const
+InstanceWrapper::
+operator bool() const
 {
     return static_cast<bool>(instance_);
 }
@@ -259,7 +260,8 @@ ModuleWrapper::operator=(ModuleWrapper&& o)
     return *this;
 }
 
-ModuleWrapper::operator bool() const
+ModuleWrapper::
+operator bool() const
 {
     return instanceWrap_;
 }

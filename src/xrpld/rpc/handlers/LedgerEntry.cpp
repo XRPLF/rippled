@@ -200,16 +200,18 @@ parseAuthorizeCredentials(Json::Value const& jv)
     std::uint32_t const n = jv.size();
     if (n > maxCredentialsArraySize)
     {
-        return Unexpected(LedgerEntryHelpers::malformedError(
-            "malformedAuthorizedCredentials",
-            "Invalid field '" + std::string(jss::authorized_credentials) + "', array too long."));
+        return Unexpected(
+            LedgerEntryHelpers::malformedError(
+                "malformedAuthorizedCredentials",
+                "Invalid field '" + std::string(jss::authorized_credentials) + "', array too long."));
     }
 
     if (n == 0)
     {
-        return Unexpected(LedgerEntryHelpers::malformedError(
-            "malformedAuthorizedCredentials",
-            "Invalid field '" + std::string(jss::authorized_credentials) + "', array empty."));
+        return Unexpected(
+            LedgerEntryHelpers::malformedError(
+                "malformedAuthorizedCredentials",
+                "Invalid field '" + std::string(jss::authorized_credentials) + "', array empty."));
     }
 
     STArray arr(sfAuthorizeCredentials, n);

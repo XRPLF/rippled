@@ -6,13 +6,13 @@
 #include <test/jtx/ticket.h>
 
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/misc/TxQ.h>
-#include <xrpld/app/tx/apply.h>
 
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/st.h>
+#include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/tx/apply.h>
 
 namespace xrpl {
 

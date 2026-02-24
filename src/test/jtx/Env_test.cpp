@@ -1,6 +1,5 @@
 #include <test/jtx.h>
 
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/TxQ.h>
 
 #include <xrpl/beast/hash/uhash.h>
@@ -8,6 +7,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/NetworkOPs.h>
 
 #include <boost/lexical_cast.hpp>
 

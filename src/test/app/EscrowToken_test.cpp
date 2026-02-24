@@ -1,7 +1,5 @@
 #include <test/jtx.h>
 
-#include <xrpld/app/tx/applySteps.h>
-
 #include <xrpl/ledger/Dir.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/protocol/Feature.h>
@@ -9,6 +7,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/applySteps.h>
 
 #include <algorithm>
 #include <iterator>
