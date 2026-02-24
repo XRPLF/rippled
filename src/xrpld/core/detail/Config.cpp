@@ -927,7 +927,8 @@ Config::loadFromIniFileSections(IniFileSections& secConfig)
                 auto const tomlTable = parseTomlString(data, j_);
                 if (!tomlTable)
                 {
-                    Throw<std::runtime_error>("Failed to parse TOML validators file: " + validatorsFile.string());
+                    Throw<std::runtime_error>(
+                        "Failed to parse TOML validators file: " + validatorsFile.string());
                 }
                 valFile = tomlToIniFileSections(*tomlTable, j_);
             }

@@ -224,7 +224,8 @@ bool
 isTomlFile(boost::filesystem::path const& path)
 {
     auto ext = path.extension().string();
-    std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return std::tolower(c); });
+    std::transform(
+        ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return std::tolower(c); });
     return ext == ".toml";
 }
 

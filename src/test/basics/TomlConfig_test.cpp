@@ -401,7 +401,9 @@ admin = "127.0.0.1"
 
             BEAST_EXPECT(ini.find("rpc_startup") != ini.end());
             BEAST_EXPECT(ini["rpc_startup"].size() == 1);
-            BEAST_EXPECT(ini["rpc_startup"][0] == "{ \"command\": \"log_level\", \"severity\": \"warning\" }");
+            BEAST_EXPECT(
+                ini["rpc_startup"][0] ==
+                "{ \"command\": \"log_level\", \"severity\": \"warning\" }");
         }
 
         // ips host port using array of tables
