@@ -276,7 +276,7 @@ Then run clang-tidy on your local changes:
 run-clang-tidy -p build src tests
 ```
 
-This will check all source files in the `src` and `test` directories using the compile commands from your `build` directory.
+This will check all source files in the `src` and `tests` directories using the compile commands from your `build` directory.
 
 ## Contracts and instrumentation
 
