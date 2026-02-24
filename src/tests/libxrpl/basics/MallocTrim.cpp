@@ -223,8 +223,7 @@ TEST(mallocTrim, repeated_calls)
     // Call malloc_trim multiple times to ensure it's safe
     for (int i = 0; i < 5; ++i)
     {
-        MallocTrimReport report =
-            mallocTrim("iteration_" + std::to_string(i), journal);
+        MallocTrimReport report = mallocTrim("iteration_" + std::to_string(i), journal);
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
         EXPECT_EQ(report.supported, true);
