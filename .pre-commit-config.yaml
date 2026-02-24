@@ -57,6 +57,16 @@ repos:
           - .git/COMMIT_EDITMSG
         stages: [commit-msg]
 
+  - repo: local
+    hooks:
+      - id: nix-fmt
+        name: Format Nix files
+        entry: nix --extra-experimental-features 'nix-command flakes' fmt
+        language: system
+        types:
+          - nix
+        pass_filenames: true
+
 exclude: |
   (?x)^(
       external/.*|
