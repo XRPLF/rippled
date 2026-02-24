@@ -1928,7 +1928,7 @@ protected:
                 NumberRoundModeGuard mg(Number::upward);
                 auto const totalDefaultAmount = state.totalValue - state.managementFeeOutstanding;
                 auto const defaultAmount = [&] {
-                    if (env.enabled(fixDefaultCoverLogicOptimization))
+                    if (env.enabled(fixLendingProtocolV1_1))
                     {
                         // DefaultCovered = min(DefaultAmount × CoverRateMinimum, CoverAvailable)
                         return roundToAsset(
@@ -6964,7 +6964,7 @@ protected:
         auto const afterFirstDebtTotal = brokerSle->at(sfDebtTotal);
         auto const afterFirstCoverAvailable = brokerSle->at(sfCoverAvailable);
 
-        if (env.enabled(fixDefaultCoverLogicOptimization))
+        if (env.enabled(fixLendingProtocolV1_1))
         {
             // Proportional default cover
             // Loan 1 Defaults: 20% of Loan A (50,134) = 10,027 seizure
@@ -7001,7 +7001,7 @@ protected:
         // Both scenarios: DebtTotal should be 0 after both loans default
         BEAST_EXPECT(afterSecondDebtTotal == 0);
 
-        if (env.enabled(fixDefaultCoverLogicOptimization))
+        if (env.enabled(fixLendingProtocolV1_1))
         {
             // Proportional default cover
             // Loan 2 Defaults: 20% of Loan B (50,134) = 10,027 seizure
@@ -7204,7 +7204,7 @@ public:
         testLoanPayBrokerOwnerUnauthorizedMPT();
         testLoanPayBrokerOwnerNoPermissionedDomainMPT();
         testLoanSetBrokerOwnerNoPermissionedDomainMPT();
-        testSequentialFLCDepletion(all - fixDefaultCoverLogicOptimization);
+        testSequentialFLCDepletion(all - fixLendingProtocolV1_1);
         testSequentialFLCDepletion(all);
     }
 };

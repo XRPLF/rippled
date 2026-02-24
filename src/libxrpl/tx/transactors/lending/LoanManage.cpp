@@ -146,7 +146,7 @@ LoanManage::defaultLoan(
         // Always round the minimum required up.
         NumberRoundModeGuard mg(Number::upward);
 
-        if (view.rules().enabled(fixDefaultCoverLogicOptimization))
+        if (view.rules().enabled(fixLendingProtocolV1_1))
         {
             // New formula: DefaultCovered = min(DefaultAmount × CoverRateMinimum, CoverAvailable)
             // Round the liquidation amount up

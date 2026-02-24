@@ -16,7 +16,6 @@
 // Add new amendments to the top of this list.
 // Keep it sorted in reverse chronological order.
 
-XRPL_FIX    (DefaultCoverLogicOptimization, Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (LendingProtocolV1_1,        Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX   (PermissionedDomainInvariant, Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (ExpiredNFTokenOfferRemoval, Supported::yes, VoteBehavior::DefaultNo)
