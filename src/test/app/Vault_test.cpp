@@ -5350,7 +5350,8 @@ class Vault_test : public beast::unit_test::suite
             catch (parse_error const& e)
             {
                 using namespace std::string_literals;
-                BEAST_EXPECT(e.what() == "invalidParamsField 'tx_json.AssetsMaximum' has invalid data."s);
+                BEAST_EXPECT(
+                    e.what() == "invalidParamsField 'tx_json.AssetsMaximum' has invalid data."s);
             }
             env.set_parse_failure_expected(false);
         }
