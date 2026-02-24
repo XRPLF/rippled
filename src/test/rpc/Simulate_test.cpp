@@ -500,7 +500,8 @@ class Simulate_test : public beast::unit_test::suite
             params[jss::ctid] = "ABCDEF1234567890";
             auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
-                resp[jss::result][jss::error_message] == "Cannot use `ctid` without `ledger_index` or `ledger_hash`.");
+                resp[jss::result][jss::error_message] ==
+                "Cannot use `ctid` without `ledger_index` or `ledger_hash`.");
         }
         {
             // invalid tx_hash
@@ -517,7 +518,9 @@ class Simulate_test : public beast::unit_test::suite
             params[jss::tx_hash] = std::string(64, 'A');
             params[jss::ledger_index] = 1;
             auto const resp = env.rpc("json", "simulate", to_string(params));
-            BEAST_EXPECTS(resp[jss::result][jss::error_message] == "Transaction not found.", resp.toStyledString());
+            BEAST_EXPECTS(
+                resp[jss::result][jss::error_message] == "Transaction not found.",
+                resp.toStyledString());
             BEAST_EXPECT(resp[jss::result][jss::error_code] == rpcTXN_NOT_FOUND);
         }
         {
@@ -547,7 +550,9 @@ class Simulate_test : public beast::unit_test::suite
             tx_json["UnknownField"] = "value";
             params[jss::tx_json] = tx_json;
             auto const resp = env.rpc("json", "simulate", to_string(params));
-            BEAST_EXPECT(resp[jss::result][jss::error_message] == "Field 'tx_json.UnknownField' is unknown.");
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Field 'tx_json.UnknownField' is unknown.");
         }
         {
             // TicketSequence autofill returns 0
@@ -570,7 +575,8 @@ class Simulate_test : public beast::unit_test::suite
             params[jss::ledger_index] = Json::arrayValue;
             auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
-                resp[jss::result][jss::error_message] == "Invalid field 'ledger_index', not string or number.");
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'ledger_index', not string or number.");
         }
         {
             // Invalid ledger_hash type
@@ -581,21 +587,27 @@ class Simulate_test : public beast::unit_test::suite
             params[jss::tx_json] = tx_json;
             params[jss::ledger_hash] = Json::arrayValue;
             auto const resp = env.rpc("json", "simulate", to_string(params));
-            BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'ledger_hash', not hex string.");
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'ledger_hash', not hex string.");
         }
         {
             // Invalid transactions array type
             Json::Value params;
             params[jss::transactions] = "not_an_array";
             auto const resp = env.rpc("json", "simulate", to_string(params));
-            BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'transactions', not array.");
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'transactions', not array.");
         }
         {
             // Empty transactions array
             Json::Value params;
             params[jss::transactions] = Json::arrayValue;
             auto const resp = env.rpc("json", "simulate", to_string(params));
-            BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'transactions', not nonempty array.");
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'transactions', not nonempty array.");
         }
         {
             // Non-object transaction in transactions array
@@ -605,7 +617,8 @@ class Simulate_test : public beast::unit_test::suite
             params[jss::transactions] = txs;
             auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
-                resp[jss::result][jss::error_message] == "Invalid field 'transactions', not array of objects.");
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'transactions', not array of objects.");
         }
         {
             // Missing tx_json in transaction object in transactions array
@@ -630,7 +643,8 @@ class Simulate_test : public beast::unit_test::suite
             params[jss::transactions] = txs;
             auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECTS(
-                resp[jss::result][jss::error_message] == "Invalid field 'tx_json', not object.", resp.toStyledString());
+                resp[jss::result][jss::error_message] == "Invalid field 'tx_json', not object.",
+                resp.toStyledString());
         }
         {
             // Multiple fields in transaction object in transactions array
@@ -1412,7 +1426,9 @@ class Simulate_test : public beast::unit_test::suite
             Json::Value request = Json::objectValue;
             request[jss::tx_json] = tx;
             auto const result = env.rpc("json", "simulate", to_string(request));
-            BEAST_EXPECTS(result[jss::result][jss::engine_result] == "tecUNFUNDED_PAYMENT", result.toStyledString());
+            BEAST_EXPECTS(
+                result[jss::result][jss::engine_result] == "tecUNFUNDED_PAYMENT",
+                result.toStyledString());
         }
 
         {
@@ -1423,7 +1439,8 @@ class Simulate_test : public beast::unit_test::suite
                 BEAST_EXPECTS(result[jss::engine_result] == "tesSUCCESS", result.toStyledString());
                 BEAST_EXPECT(result[jss::engine_result_code] == 0);
                 BEAST_EXPECT(
-                    result[jss::engine_result_message] == "The simulated transaction would have been applied.");
+                    result[jss::engine_result_message] ==
+                    "The simulated transaction would have been applied.");
 
                 if (BEAST_EXPECT(result.isMember(jss::meta) || result.isMember(jss::meta_blob)))
                 {
@@ -1439,7 +1456,8 @@ class Simulate_test : public beast::unit_test::suite
                             BEAST_EXPECT(modifiedNode[sfLedgerEntryType] == "AccountRoot");
                             auto finalFields = modifiedNode[sfFinalFields];
                             BEAST_EXPECTS(
-                                finalFields[sfBalance] == (XRP(99999999700) - env.current()->fees().base * 2).getJson(),
+                                finalFields[sfBalance] ==
+                                    (XRP(99999999700) - env.current()->fees().base * 2).getJson(),
                                 metadata.toStyledString());
                         }
                         auto const aliceNode = metadata[sfAffectedNodes.jsonName][1u];
@@ -1448,7 +1466,9 @@ class Simulate_test : public beast::unit_test::suite
                             auto modifiedNode = aliceNode[sfModifiedNode];
                             BEAST_EXPECT(modifiedNode[sfLedgerEntryType] == "AccountRoot");
                             auto finalFields = modifiedNode[sfFinalFields];
-                            BEAST_EXPECT(finalFields[sfBalance] == (XRP(300) - env.current()->fees().base).getJson());
+                            BEAST_EXPECT(
+                                finalFields[sfBalance] ==
+                                (XRP(300) - env.current()->fees().base).getJson());
                         }
                     }
                     BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 0);
@@ -1517,7 +1537,8 @@ class Simulate_test : public beast::unit_test::suite
                 BEAST_EXPECTS(result[jss::engine_result] == "tesSUCCESS", result.toStyledString());
                 BEAST_EXPECT(result[jss::engine_result_code] == 0);
                 BEAST_EXPECT(
-                    result[jss::engine_result_message] == "The simulated transaction would have been applied.");
+                    result[jss::engine_result_message] ==
+                    "The simulated transaction would have been applied.");
 
                 if (BEAST_EXPECT(result.isMember(jss::meta) || result.isMember(jss::meta_blob)))
                 {
@@ -1535,7 +1556,8 @@ class Simulate_test : public beast::unit_test::suite
                             BEAST_EXPECT(finalFields[sfAccount] == env.master.human());
                             BEAST_EXPECT(
                                 finalFields[sfBalance] ==
-                                (XRP(99999999500) + XRP(200 * j) - env.current()->fees().base * 2).getJson());
+                                (XRP(99999999500) + XRP(200 * j) - env.current()->fees().base * 2)
+                                    .getJson());
                         }
                         auto const aliceNode = metadata[sfAffectedNodes.jsonName][1u];
                         if (BEAST_EXPECT(aliceNode.isMember(sfModifiedNode.jsonName)))
@@ -1546,7 +1568,8 @@ class Simulate_test : public beast::unit_test::suite
                             BEAST_EXPECT(finalFields[sfAccount] == alice.human());
                             BEAST_EXPECT(
                                 finalFields[sfBalance] ==
-                                (XRP(500) - XRP(200 * j) - env.current()->fees().base * (j + 1)).getJson());
+                                (XRP(500) - XRP(200 * j) - env.current()->fees().base * (j + 1))
+                                    .getJson());
                         }
                     }
                     BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == j);
@@ -1580,9 +1603,11 @@ class Simulate_test : public beast::unit_test::suite
         auto const batchFee = batch::calcBatchFee(env, 0, 2);
         Json::Value batchTx = batch::outer(alice, seq, batchFee, tfIndependent);
         Json::Value tx1 = Json::objectValue;
-        tx1[jss::RawTransaction] = batch::inner(pay(alice, env.master, XRP(500)), env.seq(alice) + 1).getTxn();
+        tx1[jss::RawTransaction] =
+            batch::inner(pay(alice, env.master, XRP(500)), env.seq(alice) + 1).getTxn();
         Json::Value tx2 = Json::objectValue;
-        tx2[jss::RawTransaction] = batch::inner(pay(alice, env.master, XRP(200)), env.seq(alice) + 2).getTxn();
+        tx2[jss::RawTransaction] =
+            batch::inner(pay(alice, env.master, XRP(200)), env.seq(alice) + 2).getTxn();
         batchTx[jss::RawTransactions] = Json::arrayValue;
         batchTx[jss::RawTransactions].append(tx1);
         batchTx[jss::RawTransactions].append(tx2);
@@ -1601,7 +1626,8 @@ class Simulate_test : public beast::unit_test::suite
                 BEAST_EXPECT(outerTx[jss::engine_result] == "tesSUCCESS");
                 BEAST_EXPECT(outerTx[jss::engine_result_code] == 0);
                 BEAST_EXPECT(
-                    outerTx[jss::engine_result_message] == "The simulated transaction would have been applied.");
+                    outerTx[jss::engine_result_message] ==
+                    "The simulated transaction would have been applied.");
             }
 
             for (unsigned j = 0; j < 2; ++j)
@@ -1612,7 +1638,8 @@ class Simulate_test : public beast::unit_test::suite
                 BEAST_EXPECTS(result[jss::engine_result] == "tesSUCCESS", result.toStyledString());
                 BEAST_EXPECT(result[jss::engine_result_code] == 0);
                 BEAST_EXPECT(
-                    result[jss::engine_result_message] == "The simulated transaction would have been applied.");
+                    result[jss::engine_result_message] ==
+                    "The simulated transaction would have been applied.");
 
                 if (BEAST_EXPECT(result.isMember(jss::meta) || result.isMember(jss::meta_blob)))
                 {
@@ -1630,7 +1657,8 @@ class Simulate_test : public beast::unit_test::suite
                             BEAST_EXPECT(finalFields[sfAccount] == env.master.human());
                             BEAST_EXPECT(
                                 finalFields[sfBalance] ==
-                                (XRP(99999999500) + XRP(200 * j) - env.current()->fees().base * 2).getJson());
+                                (XRP(99999999500) + XRP(200 * j) - env.current()->fees().base * 2)
+                                    .getJson());
                         }
                         auto const aliceNode = metadata[sfAffectedNodes.jsonName][1u];
                         if (BEAST_EXPECT(aliceNode.isMember(sfModifiedNode.jsonName)))
@@ -1641,7 +1669,8 @@ class Simulate_test : public beast::unit_test::suite
                             BEAST_EXPECT(finalFields[sfAccount] == alice.human());
                             BEAST_EXPECT(
                                 finalFields[sfBalance] ==
-                                (XRP(500) - XRP(200 * j) - env.current()->fees().base * 4).getJson());
+                                (XRP(500) - XRP(200 * j) - env.current()->fees().base * 4)
+                                    .getJson());
                         }
                     }
                     BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == j + 1);
