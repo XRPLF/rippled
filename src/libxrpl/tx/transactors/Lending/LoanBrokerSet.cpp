@@ -17,7 +17,8 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
     using namespace Lending;
 
     auto const& tx = ctx.tx;
-    if (auto const data = tx[~sfData]; data && !data->empty() && !validDataLength(tx[~sfData], maxDataPayloadLength))
+    if (auto const data = tx[~sfData];
+        data && !data->empty() && !validDataLength(tx[~sfData], maxDataPayloadLength))
         return temINVALID;
     if (!validNumericRange(tx[~sfManagementFeeRate], maxManagementFeeRate))
         return temINVALID;
@@ -139,8 +140,8 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
     {
         if (auto const value = tx[field]; value && STAmount{asset, *value} != *value)
         {
-            JLOG(ctx.j.warn()) << field.f->getName() << " (" << *value << ") can not be represented as a(n) "
-                               << to_string(asset) << ".";
+            JLOG(ctx.j.warn()) << field.f->getName() << " (" << *value
+                               << ") can not be represented as a(n) " << to_string(asset) << ".";
             return tecPRECISION_LOSS;
         }
     }

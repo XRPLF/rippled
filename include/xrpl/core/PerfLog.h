@@ -151,7 +151,11 @@ PerfLog::Setup
 setup_PerfLog(Section const& section, boost::filesystem::path const& configDir);
 
 std::unique_ptr<PerfLog>
-make_PerfLog(PerfLog::Setup const& setup, Application& app, beast::Journal journal, std::function<void()>&& signalStop);
+make_PerfLog(
+    PerfLog::Setup const& setup,
+    Application& app,
+    beast::Journal journal,
+    std::function<void()>&& signalStop);
 
 template <typename Func, class Rep, class Period>
 auto

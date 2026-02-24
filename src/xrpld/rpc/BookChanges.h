@@ -81,18 +81,23 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
             auto const& previousFields = pfBase.template downcast<STObject>();
 
             // defensive case that should never be hit
-            if (!finalFields.isFieldPresent(sfTakerGets) || !finalFields.isFieldPresent(sfTakerPays) ||
-                !previousFields.isFieldPresent(sfTakerGets) || !previousFields.isFieldPresent(sfTakerPays))
+            if (!finalFields.isFieldPresent(sfTakerGets) ||
+                !finalFields.isFieldPresent(sfTakerPays) ||
+                !previousFields.isFieldPresent(sfTakerGets) ||
+                !previousFields.isFieldPresent(sfTakerPays))
                 continue;
 
             // filter out any offers deleted by explicit offer cancels
-            if (metaType == sfDeletedNode && offerCancel && finalFields.getFieldU32(sfSequence) == *offerCancel)
+            if (metaType == sfDeletedNode && offerCancel &&
+                finalFields.getFieldU32(sfSequence) == *offerCancel)
                 continue;
 
             // compute the difference in gets and pays actually
             // affected onto the offer
-            STAmount deltaGets = finalFields.getFieldAmount(sfTakerGets) - previousFields.getFieldAmount(sfTakerGets);
-            STAmount deltaPays = finalFields.getFieldAmount(sfTakerPays) - previousFields.getFieldAmount(sfTakerPays);
+            STAmount deltaGets = finalFields.getFieldAmount(sfTakerGets) -
+                previousFields.getFieldAmount(sfTakerGets);
+            STAmount deltaPays = finalFields.getFieldAmount(sfTakerPays) -
+                previousFields.getFieldAmount(sfTakerPays);
 
             std::string g{to_string(deltaGets.issue())};
             std::string p{to_string(deltaPays.issue())};
@@ -160,7 +165,8 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
     jvObj[jss::validated] = lpAccepted->header().validated;
     jvObj[jss::ledger_index] = lpAccepted->header().seq;
     jvObj[jss::ledger_hash] = to_string(lpAccepted->header().hash);
-    jvObj[jss::ledger_time] = Json::Value::UInt(lpAccepted->header().closeTime.time_since_epoch().count());
+    jvObj[jss::ledger_time] =
+        Json::Value::UInt(lpAccepted->header().closeTime.time_since_epoch().count());
 
     jvObj[jss::changes] = Json::arrayValue;
 

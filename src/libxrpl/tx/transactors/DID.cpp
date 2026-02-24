@@ -25,11 +25,13 @@ namespace xrpl {
 NotTEC
 DIDSet::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.tx.isFieldPresent(sfURI) && !ctx.tx.isFieldPresent(sfDIDDocument) && !ctx.tx.isFieldPresent(sfData))
+    if (!ctx.tx.isFieldPresent(sfURI) && !ctx.tx.isFieldPresent(sfDIDDocument) &&
+        !ctx.tx.isFieldPresent(sfData))
         return temEMPTY_DID;
 
-    if (ctx.tx.isFieldPresent(sfURI) && ctx.tx[sfURI].empty() && ctx.tx.isFieldPresent(sfDIDDocument) &&
-        ctx.tx[sfDIDDocument].empty() && ctx.tx.isFieldPresent(sfData) && ctx.tx[sfData].empty())
+    if (ctx.tx.isFieldPresent(sfURI) && ctx.tx[sfURI].empty() &&
+        ctx.tx.isFieldPresent(sfDIDDocument) && ctx.tx[sfDIDDocument].empty() &&
+        ctx.tx.isFieldPresent(sfData) && ctx.tx[sfData].empty())
         return temEMPTY_DID;
 
     auto isTooLong = [&](auto const& sField, std::size_t length) -> bool {
@@ -66,7 +68,8 @@ addSLE(ApplyContext& ctx, std::shared_ptr<SLE> const& sle, AccountID const& owne
 
     // Add ledger object to owner's page
     {
-        auto page = ctx.view().dirInsert(keylet::ownerDir(owner), sle->key(), describeOwnerDir(owner));
+        auto page =
+            ctx.view().dirInsert(keylet::ownerDir(owner), sle->key(), describeOwnerDir(owner));
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*sle)[sfOwnerNode] = *page;
@@ -101,7 +104,8 @@ DIDSet::doApply()
         update(sfDIDDocument);
         update(sfData);
 
-        if (!sleDID->isFieldPresent(sfURI) && !sleDID->isFieldPresent(sfDIDDocument) && !sleDID->isFieldPresent(sfData))
+        if (!sleDID->isFieldPresent(sfURI) && !sleDID->isFieldPresent(sfDIDDocument) &&
+            !sleDID->isFieldPresent(sfData))
         {
             return tecEMPTY_DID;
         }
@@ -147,7 +151,11 @@ DIDDelete::deleteSLE(ApplyContext& ctx, Keylet sleKeylet, AccountID const owner)
 }
 
 TER
-DIDDelete::deleteSLE(ApplyView& view, std::shared_ptr<SLE> sle, AccountID const owner, beast::Journal j)
+DIDDelete::deleteSLE(
+    ApplyView& view,
+    std::shared_ptr<SLE> sle,
+    AccountID const owner,
+    beast::Journal j)
 {
     // Remove object from owner directory
     if (!view.dirRemove(keylet::ownerDir(owner), (*sle)[sfOwnerNode], sle->key(), true))

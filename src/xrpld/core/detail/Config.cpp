@@ -199,7 +199,11 @@ getIniFileSection(IniFileSections& secSource, std::string const& strSection)
 }
 
 bool
-getSingleSection(IniFileSections& secSource, std::string const& strSection, std::string& strValue, beast::Journal j)
+getSingleSection(
+    IniFileSections& secSource,
+    std::string const& strSection,
+    std::string& strValue,
+    beast::Journal j)
 {
     auto const pmtEntries = getIniFileSection(secSource, strSection);
 
@@ -211,7 +215,8 @@ getSingleSection(IniFileSections& secSource, std::string const& strSection, std:
 
     if (pmtEntries)
     {
-        JLOG(j.warn()) << "Section '" << strSection << "': requires 1 line not " << pmtEntries->size() << " lines.";
+        JLOG(j.warn()) << "Section '" << strSection << "': requires 1 line not "
+                       << pmtEntries->size() << " lines.";
     }
 
     return false;
@@ -239,7 +244,8 @@ getEnvVar(char const* name)
     return value;
 }
 
-Config::Config() : j_(beast::Journal::getNullSink()), ramSize_(detail::getMemorySize() / (1024 * 1024 * 1024))
+Config::Config()
+    : j_(beast::Journal::getNullSink()), ramSize_(detail::getMemorySize() / (1024 * 1024 * 1024))
 {
 }
 
@@ -259,9 +265,10 @@ Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
         // First, check against 'minimum' RAM requirements per node size:
         auto const& threshold = sizedItems[std::underlying_type_t<SizedItem>(SizedItem::ramSizeGB)];
 
-        auto ns = std::find_if(threshold.second.begin(), threshold.second.end(), [this](std::size_t limit) {
-            return (limit == 0) || (ramSize_ < limit);
-        });
+        auto ns = std::find_if(
+            threshold.second.begin(), threshold.second.end(), [this](std::size_t limit) {
+                return (limit == 0) || (ramSize_ < limit);
+            });
 
         XRPL_ASSERT(ns != threshold.second.end(), "xrpl::Config::setupControl : valid node size");
 
@@ -376,7 +383,8 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
         legacy("database_path", boost::filesystem::absolute(dataDir).string());
     }
 
-    HTTPClient::initializeSSLContext(this->SSL_VERIFY_DIR, this->SSL_VERIFY_FILE, this->SSL_VERIFY, j_);
+    HTTPClient::initializeSSLContext(
+        this->SSL_VERIFY_DIR, this->SSL_VERIFY_FILE, this->SSL_VERIFY, j_);
 
     if (RUN_STANDALONE)
         LEDGER_HISTORY = 0;
@@ -431,7 +439,8 @@ Config::load()
 
     if (ec)
     {
-        std::cerr << "Failed to read '" << CONFIG_FILE << "'." << ec.value() << ": " << ec.message() << std::endl;
+        std::cerr << "Failed to read '" << CONFIG_FILE << "'." << ec.value() << ": " << ec.message()
+                  << std::endl;
         return;
     }
 
@@ -597,7 +606,8 @@ Config::loadFromIniFileSections(IniFileSections& secConfig)
         else if (boost::iequals(strTemp, "drop_untrusted"))
             RELAY_UNTRUSTED_VALIDATIONS = -1;
         else
-            Throw<std::runtime_error>("Invalid value specified in [" SECTION_RELAY_VALIDATIONS "] section");
+            Throw<std::runtime_error>("Invalid value specified in [" SECTION_RELAY_VALIDATIONS
+                                      "] section");
     }
 
     if (getSingleSection(secConfig, SECTION_RELAY_PROPOSALS, strTemp, j_))
@@ -609,12 +619,13 @@ Config::loadFromIniFileSections(IniFileSections& secConfig)
         else if (boost::iequals(strTemp, "drop_untrusted"))
             RELAY_UNTRUSTED_PROPOSALS = -1;
         else
-            Throw<std::runtime_error>("Invalid value specified in [" SECTION_RELAY_PROPOSALS "] section");
+            Throw<std::runtime_error>("Invalid value specified in [" SECTION_RELAY_PROPOSALS
+                                      "] section");
     }
 
     if (exists(SECTION_VALIDATION_SEED) && exists(SECTION_VALIDATOR_TOKEN))
-        Throw<std::runtime_error>("Cannot have both [" SECTION_VALIDATION_SEED "] and [" SECTION_VALIDATOR_TOKEN
-                                  "] config sections");
+        Throw<std::runtime_error>("Cannot have both [" SECTION_VALIDATION_SEED
+                                  "] and [" SECTION_VALIDATOR_TOKEN "] config sections");
 
     if (getSingleSection(secConfig, SECTION_NETWORK_QUORUM, strTemp, j_))
         NETWORK_QUORUM = beast::lexicalCastThrow<std::size_t>(strTemp);
@@ -671,7 +682,8 @@ Config::loadFromIniFileSections(IniFileSections& secConfig)
         SWEEP_INTERVAL = beast::lexicalCastThrow<std::size_t>(strTemp);
 
         if (SWEEP_INTERVAL < 10 || SWEEP_INTERVAL > 600)
-            Throw<std::runtime_error>("Invalid " SECTION_SWEEP_INTERVAL ": must be between 10 and 600 inclusive");
+            Throw<std::runtime_error>("Invalid " SECTION_SWEEP_INTERVAL
+                                      ": must be between 10 and 600 inclusive");
     }
 
     if (getSingleSection(secConfig, SECTION_WORKERS, strTemp, j_))
@@ -679,7 +691,8 @@ Config::loadFromIniFileSections(IniFileSections& secConfig)
         WORKERS = beast::lexicalCastThrow<int>(strTemp);
 
         if (WORKERS < 1 || WORKERS > 1024)
-            Throw<std::runtime_error>("Invalid " SECTION_WORKERS ": must be between 1 and 1024 inclusive.");
+            Throw<std::runtime_error>("Invalid " SECTION_WORKERS
+                                      ": must be between 1 and 1024 inclusive.");
     }
 
     if (getSingleSection(secConfig, SECTION_IO_WORKERS, strTemp, j_))
@@ -687,7 +700,8 @@ Config::loadFromIniFileSections(IniFileSections& secConfig)
         IO_WORKERS = beast::lexicalCastThrow<int>(strTemp);
 
         if (IO_WORKERS < 1 || IO_WORKERS > 1024)
-            Throw<std::runtime_error>("Invalid " SECTION_IO_WORKERS ": must be between 1 and 1024 inclusive.");
+            Throw<std::runtime_error>("Invalid " SECTION_IO_WORKERS
+                                      ": must be between 1 and 1024 inclusive.");
     }
 
     if (getSingleSection(secConfig, SECTION_PREFETCH_WORKERS, strTemp, j_))
@@ -695,7 +709,8 @@ Config::loadFromIniFileSections(IniFileSections& secConfig)
         PREFETCH_WORKERS = beast::lexicalCastThrow<int>(strTemp);
 
         if (PREFETCH_WORKERS < 1 || PREFETCH_WORKERS > 1024)
-            Throw<std::runtime_error>("Invalid " SECTION_PREFETCH_WORKERS ": must be between 1 and 1024 inclusive.");
+            Throw<std::runtime_error>("Invalid " SECTION_PREFETCH_WORKERS
+                                      ": must be between 1 and 1024 inclusive.");
     }
 
     if (getSingleSection(secConfig, SECTION_COMPRESSION, strTemp, j_))
@@ -733,7 +748,8 @@ Config::loadFromIniFileSections(IniFileSections& secConfig)
         // Temporary squelching config for the peers selected as a source of //
         // validator messages. The config must be removed once squelching is //
         // made the default routing algorithm.                               //
-        VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS = sec.value_or("vp_base_squelch_max_selected_peers", 5);
+        VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS =
+            sec.value_or("vp_base_squelch_max_selected_peers", 5);
         if (VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS < 3)
             Throw<std::runtime_error>("Invalid " SECTION_REDUCE_RELAY
                                       " vp_base_squelch_max_selected_peers must be "
@@ -753,15 +769,17 @@ Config::loadFromIniFileSections(IniFileSections& secConfig)
 
     if (getSingleSection(secConfig, SECTION_MAX_TRANSACTIONS, strTemp, j_))
     {
-        MAX_TRANSACTIONS = std::clamp(beast::lexicalCastThrow<int>(strTemp), MIN_JOB_QUEUE_TX, MAX_JOB_QUEUE_TX);
+        MAX_TRANSACTIONS =
+            std::clamp(beast::lexicalCastThrow<int>(strTemp), MIN_JOB_QUEUE_TX, MAX_JOB_QUEUE_TX);
     }
 
     if (getSingleSection(secConfig, SECTION_SERVER_DOMAIN, strTemp, j_))
     {
         if (!isProperlyFormedTomlDomain(strTemp))
         {
-            Throw<std::runtime_error>("Invalid " SECTION_SERVER_DOMAIN
-                                      ": the domain name does not appear to meet the requirements.");
+            Throw<std::runtime_error>(
+                "Invalid " SECTION_SERVER_DOMAIN
+                ": the domain name does not appear to meet the requirements.");
         }
 
         SERVER_DOMAIN = strTemp;
@@ -785,8 +803,9 @@ Config::loadFromIniFileSections(IniFileSections& secConfig)
         }
 
         if (MAX_UNKNOWN_TIME < seconds{300} || MAX_UNKNOWN_TIME > seconds{1800})
-            Throw<std::runtime_error>("Invalid value 'max_unknown_time' in " SECTION_OVERLAY
-                                      ": the time must be between 300 and 1800 seconds, inclusive.");
+            Throw<std::runtime_error>(
+                "Invalid value 'max_unknown_time' in " SECTION_OVERLAY
+                ": the time must be between 300 and 1800 seconds, inclusive.");
 
         try
         {
@@ -853,7 +872,8 @@ Config::loadFromIniFileSections(IniFileSections& secConfig)
             validatorsFile = strTemp;
 
             if (validatorsFile.empty())
-                Throw<std::runtime_error>("Invalid path specified in [" SECTION_VALIDATORS_FILE "]");
+                Throw<std::runtime_error>("Invalid path specified in [" SECTION_VALIDATORS_FILE
+                                          "]");
 
             if (!validatorsFile.is_absolute() && !CONFIG_DIR.empty())
                 validatorsFile = CONFIG_DIR / validatorsFile;
@@ -866,9 +886,11 @@ Config::loadFromIniFileSections(IniFileSections& secConfig)
                     validatorsFile.string());
 
             else if (
-                !boost::filesystem::is_regular_file(validatorsFile) && !boost::filesystem::is_symlink(validatorsFile))
+                !boost::filesystem::is_regular_file(validatorsFile) &&
+                !boost::filesystem::is_symlink(validatorsFile))
                 Throw<std::runtime_error>(
-                    "Invalid file specified in [" SECTION_VALIDATORS_FILE "]: " + validatorsFile.string());
+                    "Invalid file specified in [" SECTION_VALIDATORS_FILE "]: " +
+                    validatorsFile.string());
         }
         else if (!CONFIG_DIR.empty())
         {
@@ -886,15 +908,16 @@ Config::loadFromIniFileSections(IniFileSections& secConfig)
         }
 
         if (!validatorsFile.empty() && boost::filesystem::exists(validatorsFile) &&
-            (boost::filesystem::is_regular_file(validatorsFile) || boost::filesystem::is_symlink(validatorsFile)))
+            (boost::filesystem::is_regular_file(validatorsFile) ||
+             boost::filesystem::is_symlink(validatorsFile)))
         {
             boost::system::error_code ec;
             auto const data = getFileContents(ec, validatorsFile);
             if (ec)
             {
                 Throw<std::runtime_error>(
-                    "Failed to read '" + validatorsFile.string() + "'." + std::to_string(ec.value()) + ": " +
-                    ec.message());
+                    "Failed to read '" + validatorsFile.string() + "'." +
+                    std::to_string(ec.value()) + ": " + ec.message());
             }
 
             // Parse as TOML or INI depending on file extension
@@ -966,7 +989,8 @@ Config::loadFromIniFileSections(IniFileSections& secConfig)
                 {
                     Throw<std::runtime_error>(
                         "Value in config section "
-                        "[" SECTION_VALIDATOR_LIST_THRESHOLD "] exceeds the number of configured list keys");
+                        "[" SECTION_VALIDATOR_LIST_THRESHOLD
+                        "] exceeds the number of configured list keys");
                 }
                 return listThreshold;
             }
@@ -984,7 +1008,8 @@ Config::loadFromIniFileSections(IniFileSections& secConfig)
         if (!section(SECTION_VALIDATOR_LIST_SITES).lines().empty() &&
             section(SECTION_VALIDATOR_LIST_KEYS).lines().empty())
         {
-            Throw<std::runtime_error>("[" + std::string(SECTION_VALIDATOR_LIST_KEYS) + "] config section is missing");
+            Throw<std::runtime_error>(
+                "[" + std::string(SECTION_VALIDATOR_LIST_KEYS) + "] config section is missing");
         }
     }
 
@@ -1043,7 +1068,8 @@ Config::getDebugLogFile() const
             // decide how to handle this situation.
             if (ec)
             {
-                std::cerr << "Unable to create log file path " << log_dir << ": " << ec.message() << '\n';
+                std::cerr << "Unable to create log file path " << log_dir << ": " << ec.message()
+                          << '\n';
             }
         }
     }
@@ -1066,7 +1092,8 @@ setup_FeeVote(Section const& section)
     FeeSetup setup;
     {
         std::uint64_t temp;
-        if (set(temp, "reference_fee", section) && temp <= std::numeric_limits<XRPAmount::value_type>::max())
+        if (set(temp, "reference_fee", section) &&
+            temp <= std::numeric_limits<XRPAmount::value_type>::max())
             setup.reference_fee = temp;
     }
     {
@@ -1130,12 +1157,15 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
                     "Configuration file may not define both "
                     "\"safety_level\" and \"journal_mode\"");
             }
-            bool higherRisk = boost::iequals(journal_mode, "memory") || boost::iequals(journal_mode, "off");
+            bool higherRisk =
+                boost::iequals(journal_mode, "memory") || boost::iequals(journal_mode, "off");
             showRiskWarning = showRiskWarning || higherRisk;
-            if (higherRisk || boost::iequals(journal_mode, "delete") || boost::iequals(journal_mode, "truncate") ||
+            if (higherRisk || boost::iequals(journal_mode, "delete") ||
+                boost::iequals(journal_mode, "truncate") ||
                 boost::iequals(journal_mode, "persist") || boost::iequals(journal_mode, "wal"))
             {
-                result->emplace_back(boost::str(boost::format(CommonDBPragmaJournal) % journal_mode));
+                result->emplace_back(
+                    boost::str(boost::format(CommonDBPragmaJournal) % journal_mode));
             }
             else
             {
@@ -1153,8 +1183,8 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
             }
             bool higherRisk = boost::iequals(synchronous, "off");
             showRiskWarning = showRiskWarning || higherRisk;
-            if (higherRisk || boost::iequals(synchronous, "normal") || boost::iequals(synchronous, "full") ||
-                boost::iequals(synchronous, "extra"))
+            if (higherRisk || boost::iequals(synchronous, "normal") ||
+                boost::iequals(synchronous, "full") || boost::iequals(synchronous, "extra"))
             {
                 result->emplace_back(boost::str(boost::format(CommonDBPragmaSync) % synchronous));
             }
@@ -1174,7 +1204,8 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
             }
             bool higherRisk = boost::iequals(temp_store, "memory");
             showRiskWarning = showRiskWarning || higherRisk;
-            if (higherRisk || boost::iequals(temp_store, "default") || boost::iequals(temp_store, "file"))
+            if (higherRisk || boost::iequals(temp_store, "default") ||
+                boost::iequals(temp_store, "file"))
             {
                 result->emplace_back(boost::str(boost::format(CommonDBPragmaTemp) % temp_store));
             }
@@ -1191,7 +1222,8 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
                                "nodes storing large amounts of history, because of the "
                                "difficulty inherent in rebuilding corrupted data.";
         }
-        XRPL_ASSERT(result->size() == 3, "xrpl::setup_DatabaseCon::globalPragma : result size is 3");
+        XRPL_ASSERT(
+            result->size() == 3, "xrpl::setup_DatabaseCon::globalPragma : result size is 3");
         setup.globalPragma = std::move(result);
     }
     setup.useGlobalPragma = true;

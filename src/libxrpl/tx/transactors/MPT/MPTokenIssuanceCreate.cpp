@@ -9,7 +9,8 @@ bool
 MPTokenIssuanceCreate::checkExtraFeatures(PreflightContext const& ctx)
 {
     if (ctx.tx.isFieldPresent(sfDomainID) &&
-        !(ctx.rules.enabled(featurePermissionedDomains) && ctx.rules.enabled(featureSingleAssetVault)))
+        !(ctx.rules.enabled(featurePermissionedDomains) &&
+          ctx.rules.enabled(featureSingleAssetVault)))
         return false;
 
     if (ctx.tx.isFieldPresent(sfMutableFlags) && !ctx.rules.enabled(featureDynamicMPT))
@@ -80,7 +81,8 @@ MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreate
     if (!acct)
         return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
-    if (args.priorBalance && *(args.priorBalance) < view.fees().accountReserve((*acct)[sfOwnerCount] + 1))
+    if (args.priorBalance &&
+        *(args.priorBalance) < view.fees().accountReserve((*acct)[sfOwnerCount] + 1))
         return Unexpected(tecINSUFFICIENT_RESERVE);
 
     auto const mptId = makeMptID(args.sequence, args.account);
@@ -88,8 +90,8 @@ MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreate
 
     // create the MPTokenIssuance
     {
-        auto const ownerNode =
-            view.dirInsert(keylet::ownerDir(args.account), mptIssuanceKeylet, describeOwnerDir(args.account));
+        auto const ownerNode = view.dirInsert(
+            keylet::ownerDir(args.account), mptIssuanceKeylet, describeOwnerDir(args.account));
 
         if (!ownerNode)
             return Unexpected(tecDIR_FULL);  // LCOV_EXCL_LINE

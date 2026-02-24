@@ -20,7 +20,8 @@
 namespace xrpl {
 
 template <>
-STInteger<unsigned char>::STInteger(SerialIter& sit, SField const& name) : STInteger(name, sit.get8())
+STInteger<unsigned char>::STInteger(SerialIter& sit, SField const& name)
+    : STInteger(name, sit.get8())
 {
 }
 
@@ -72,7 +73,8 @@ STUInt8::getJson(JsonOptions) const
 //------------------------------------------------------------------------------
 
 template <>
-STInteger<std::uint16_t>::STInteger(SerialIter& sit, SField const& name) : STInteger(name, sit.get16())
+STInteger<std::uint16_t>::STInteger(SerialIter& sit, SField const& name)
+    : STInteger(name, sit.get16())
 {
 }
 
@@ -132,7 +134,8 @@ STUInt16::getJson(JsonOptions) const
 //------------------------------------------------------------------------------
 
 template <>
-STInteger<std::uint32_t>::STInteger(SerialIter& sit, SField const& name) : STInteger(name, sit.get32())
+STInteger<std::uint32_t>::STInteger(SerialIter& sit, SField const& name)
+    : STInteger(name, sit.get32())
 {
 }
 
@@ -173,7 +176,8 @@ STUInt32::getJson(JsonOptions) const
 //------------------------------------------------------------------------------
 
 template <>
-STInteger<std::uint64_t>::STInteger(SerialIter& sit, SField const& name) : STInteger(name, sit.get64())
+STInteger<std::uint64_t>::STInteger(SerialIter& sit, SField const& name)
+    : STInteger(name, sit.get64())
 {
 }
 
@@ -215,7 +219,8 @@ STUInt64::getJson(JsonOptions) const
 //------------------------------------------------------------------------------
 
 template <>
-STInteger<std::int32_t>::STInteger(SerialIter& sit, SField const& name) : STInteger(name, sit.get32())
+STInteger<std::int32_t>::STInteger(SerialIter& sit, SField const& name)
+    : STInteger(name, sit.get32())
 {
 }
 
