@@ -42,6 +42,9 @@ gmon.out
 # Locally patched Conan recipes
 external/conan-center-index/
 
+# Local conan directory
+.conan
+
 # XCode IDE.
 *.pbxuser
 !default.pbxuser
@@ -71,6 +74,9 @@ DerivedData
 /.augment
 /.claude
 /CLAUDE.md
+
+# Direnv's directory
+/.direnv
 
 # clangd cache
 /.cache
