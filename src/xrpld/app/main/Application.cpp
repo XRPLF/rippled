@@ -1054,7 +1054,7 @@ public:
                                     << "; size after: " << cachedSLEs_.size();
         }
 
-        mallocTrim(std::optional<std::string>("doSweep"), m_journal);
+        mallocTrim("doSweep", m_journal);
 
         // Set timer to do another sweep later.
         setSweepTimer();

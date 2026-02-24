@@ -147,7 +147,7 @@ TEST(mallocTrim, basic_functionality)
 
     // Test with tag
     {
-        MallocTrimReport report = mallocTrim(std::optional<std::string>("test_tag"), journal);
+        MallocTrimReport report = mallocTrim("test_tag", journal);
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
         EXPECT_EQ(report.supported, true);
@@ -162,7 +162,7 @@ TEST(mallocTrim, without_debug_logging)
 {
     beast::Journal journal{beast::Journal::getNullSink()};
 
-    MallocTrimReport report = mallocTrim(std::optional<std::string>("test"), journal);
+    MallocTrimReport report = mallocTrim("test", journal);
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
     EXPECT_EQ(report.supported, true);
@@ -199,7 +199,7 @@ TEST(mallocTrim, with_debug_logging)
     DebugSink sink;
     beast::Journal journal{sink};
 
-    MallocTrimReport report = mallocTrim(std::optional<std::string>("debug_test"), journal);
+    MallocTrimReport report = mallocTrim("debug_test", journal);
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
     EXPECT_EQ(report.supported, true);
@@ -224,7 +224,7 @@ TEST(mallocTrim, repeated_calls)
     for (int i = 0; i < 5; ++i)
     {
         MallocTrimReport report =
-            mallocTrim(std::optional<std::string>("iteration_" + std::to_string(i)), journal);
+            mallocTrim("iteration_" + std::to_string(i), journal);
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
         EXPECT_EQ(report.supported, true);
