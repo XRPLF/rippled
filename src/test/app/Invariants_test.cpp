@@ -3708,7 +3708,7 @@ class Invariants_test : public beast::unit_test::suite
     }
 
     void
-    testValidConfidentialMPToken()
+    testConfidentialMPTTransfer()
     {
         using namespace test::jtx;
         testcase << "ValidConfidentialMPToken";
@@ -3915,7 +3915,7 @@ public:
         testValidPseudoAccounts();
         testValidLoanBroker();
         testVault();
-        testValidConfidentialMPToken();
+        testConfidentialMPTTransfer();
     }
 };
 

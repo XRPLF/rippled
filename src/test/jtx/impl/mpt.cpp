@@ -14,6 +14,13 @@ namespace xrpl {
 namespace test {
 namespace jtx {
 
+auto makeZeroBuffer = [](size_t size) {
+    Buffer b(size);
+    if (size > 0)
+        std::memset(b.data(), 0, size);
+    return b;
+};
+
 void
 mptflags::operator()(Env& env) const
 {
@@ -909,12 +916,12 @@ MPTTester::getConvertBackProof(
 
     auto const sleMptoken = env_.le(keylet::mptoken(*id_, holder.id()));
     if (!sleMptoken || !sleMptoken->isFieldPresent(sfConfidentialBalanceSpending))
-        return Buffer(expectedProofLength);
+        return makeZeroBuffer(expectedProofLength);
 
     auto const holderPubKey = getPubKey(holder);
 
     if (!holderPubKey)
-        return Buffer(expectedProofLength);
+        return makeZeroBuffer(expectedProofLength);
 
     Buffer const pedersenProof = getBalanceLinkageProof(holder, contextHash, *holderPubKey, pcParams);
 
@@ -1063,7 +1070,7 @@ MPTTester::convert(MPTConvert const& arg)
         if (proof)
             jv[sfZKProof.jsonName] = strHex(*proof);
         else
-            jv[sfZKProof.jsonName] = strHex(Buffer(ecSchnorrProofLength));
+            jv[sfZKProof.jsonName] = strHex(makeZeroBuffer(ecSchnorrProofLength));
     }
 
     auto const holderAmt = getBalance(*arg.account);
@@ -1321,7 +1328,7 @@ MPTTester::send(MPTConfidentialSend const& arg)
             size_t const sizeEquality = secp256k1_mpt_prove_same_plaintext_multi_size(nRecipients);
             size_t const dummySize = sizeEquality + 2 * ecPedersenProofLength + ecDoubleBulletproofLength;
 
-            jv[sfZKProof.jsonName] = strHex(Buffer(dummySize));
+            jv[sfZKProof.jsonName] = strHex(makeZeroBuffer(dummySize));
         }
     }
 
@@ -1438,7 +1445,7 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
         if (proof)
             jv[sfZKProof] = strHex(*proof);
         else
-            jv[sfZKProof] = strHex(Buffer(ecEqualityProofLength));
+            jv[sfZKProof] = strHex(makeZeroBuffer(ecEqualityProofLength));
     }
 
     auto const holderPubAmt = getBalance(*arg.holder);
@@ -1524,7 +1531,7 @@ MPTTester::encryptAmount(Account const& account, uint64_t const amt, Buffer cons
 
     // Return a dummy buffer on failure to allow testing of
     // failures that occur prior to encryption.
-    return Buffer(ecGamalEncryptedTotalLength);
+    return makeZeroBuffer(ecGamalEncryptedTotalLength);
 }
 
 std::optional<uint64_t>
@@ -1715,7 +1722,7 @@ MPTTester::convertBack(MPTConvertBack const& arg)
         // generate a dummy proof if no encrypted amount field, so that other
         // preflight/preclaim are checked
         if (!prevEncryptedSpendingBalance)
-            proof = Buffer(ecPedersenProofLength + ecSingleBulletproofLength);
+            proof = makeZeroBuffer(ecPedersenProofLength + ecSingleBulletproofLength);
         else
         {
             proof = getConvertBackProof(
@@ -1794,7 +1801,7 @@ MPTTester::getAmountLinkageProof(
     if (params.blindingFactor.size() != ecBlindingFactorLength ||
         params.pedersenCommitment.size() != ecPedersenCommitmentLength || pubKey.size() != ecPubKeyLength ||
         params.encryptedAmt.size() != ecGamalEncryptedTotalLength || blindingFactor.size() != ecBlindingFactorLength)
-        return Buffer(ecPedersenProofLength);
+        return makeZeroBuffer(ecPedersenProofLength);
 
     secp256k1_pubkey c1, c2;
     auto const ctx = secp256k1Context();
@@ -1842,7 +1849,7 @@ MPTTester::getBalanceLinkageProof(
     if (params.blindingFactor.size() != ecBlindingFactorLength ||
         params.pedersenCommitment.size() != ecPedersenCommitmentLength || pubKey.size() != ecPubKeyLength ||
         params.encryptedAmt.size() != ecGamalEncryptedTotalLength)
-        return Buffer(ecPedersenProofLength);
+        return makeZeroBuffer(ecPedersenProofLength);
 
     secp256k1_pubkey c1, c2;
     auto const ctx = secp256k1Context();
@@ -1850,7 +1857,7 @@ MPTTester::getBalanceLinkageProof(
         !secp256k1_ec_pubkey_parse(
             ctx, &c2, params.encryptedAmt.data() + ecGamalEncryptedLength, ecGamalEncryptedLength))
     {
-        return Buffer(ecPedersenProofLength);
+        return makeZeroBuffer(ecPedersenProofLength);
     }
 
     secp256k1_pubkey pk;
