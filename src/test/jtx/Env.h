@@ -393,6 +393,44 @@ public:
         return close(std::chrono::seconds(5));
     }
 
+    /** Close and advance the ledger, then synchronize with the server's
+        io_context to ensure all async operations initiated by the close have
+        been started.
+
+        This function performs the same ledger close as close(), but additionally
+        ensures that all tasks posted to the server's io_context (such as
+        WebSocket subscription message sends) have been initiated before returning.
+
+        What it guarantees:
+        - All async operations posted before syncClose() have been STARTED
+        - For WebSocket sends: async_write_some() has been called
+        - The actual I/O completion may still be pending (async)
+
+        What it does NOT guarantee:
+        - Async operations have COMPLETED
+        - WebSocket messages have been received by clients
+        - However, for localhost connections, the remaining latency is typically
+          microseconds, making tests reliable
+
+        Use this instead of close() when:
+        - Test code immediately checks for subscription messages
+        - Race conditions between test and worker threads must be avoided
+        - Deterministic test behavior is required
+
+        @param timeout Maximum time to wait for the barrier task to execute
+        @return true if close succeeded and barrier executed within timeout,
+                false otherwise
+    */
+    [[nodiscard]] bool
+    syncClose(std::chrono::system_clock::duration timeout = std::chrono::seconds{1})
+    {
+        auto const result = close();
+        std::promise<void> server_barrier;
+        boost::asio::post(app().getIOContext(), [&]() { server_barrier.set_value(); });
+        auto const status = server_barrier.get_future().wait_for(timeout);
+        return result && status == std::future_status::ready;
+    }
+
     /** Turn on JSON tracing.
         With no arguments, trace all
     */
