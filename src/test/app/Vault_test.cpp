@@ -5404,7 +5404,8 @@ class Vault_test : public beast::unit_test::suite
             auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpAsset});
             env(delTx, ter(tesSUCCESS), THISLINE);
             env.close();
-
+            // Recreate the transaction as the vault keylet changed
+            auto delTx = vault.del({.owner = owner, .id = keylet.key});
             delTx[sfMemoData] = strHex(std::string(maxDataPayloadLength, 'A'));
             env(delTx, ter(tesSUCCESS), THISLINE);
             env.close();
