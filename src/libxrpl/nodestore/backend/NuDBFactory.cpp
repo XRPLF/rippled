@@ -83,7 +83,7 @@ public:
             // close can throw and we don't want the destructor to throw.
             close();
         }
-        catch (nudb::system_error const&)
+        catch (nudb::system_error const&)  // NOLINT(bugprone-empty-catch)
         {
             // Don't allow exceptions to propagate out of destructors.
             // close() has already logged the error.
