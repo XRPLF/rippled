@@ -27,7 +27,7 @@ When testing malformed cryptography paths, passing uninitialized memory might
 accidentally supply a valid curve point, causing the ledger's preflight checks
 to falsely succeed and return tecBAD_PROOF instead of the expected temMALFORMED.
 Explicitly zeroing the buffer guarantees it fails structural validation. */
-auto makeZeroBuffer = [](size_t size) {
+static auto makeZeroBuffer = [](size_t size) {
     Buffer b(size);
     if (size > 0)
         std::memset(b.data(), 0, size);
