@@ -35,7 +35,8 @@ Status
 handle(JsonContext& context, Object& object)
 {
     XRPL_ASSERT(
-        context.apiVersion >= HandlerImpl::minApiVer && context.apiVersion <= HandlerImpl::maxApiVer,
+        context.apiVersion >= HandlerImpl::minApiVer &&
+            context.apiVersion <= HandlerImpl::maxApiVer,
         "xrpl::RPC::handle : valid API version");
     HandlerImpl handler(context);
 
@@ -152,7 +153,9 @@ private:
         unsigned maxVer)
     {
         XRPL_ASSERT(minVer <= maxVer, "xrpl::RPC::HandlerTable : valid API version range");
-        XRPL_ASSERT(maxVer <= RPC::apiMaximumValidVersion, "xrpl::RPC::HandlerTable : valid max API version");
+        XRPL_ASSERT(
+            maxVer <= RPC::apiMaximumValidVersion,
+            "xrpl::RPC::HandlerTable : valid max API version");
 
         return std::any_of(
             range.first,
@@ -167,8 +170,11 @@ private:
     {
         for (auto const& entry : entries)
         {
-            if (overlappingApiVersion(table_.equal_range(entry.name_), entry.minApiVer_, entry.maxApiVer_))
-                LogicError(std::string("Handler for ") + entry.name_ + " overlaps with an existing handler");
+            if (overlappingApiVersion(
+                    table_.equal_range(entry.name_), entry.minApiVer_, entry.maxApiVer_))
+                LogicError(
+                    std::string("Handler for ") + entry.name_ +
+                    " overlaps with an existing handler");
 
             table_.insert({entry.name_, entry});
         }
@@ -223,8 +229,12 @@ private:
         static_assert(RPC::apiMinimumSupportedVersion <= HandlerImpl::minApiVer);
 
         if (overlappingApiVersion(
-                table_.equal_range(HandlerImpl::name), HandlerImpl::minApiVer, HandlerImpl::maxApiVer))
-            LogicError(std::string("Handler for ") + HandlerImpl::name + " overlaps with an existing handler");
+                table_.equal_range(HandlerImpl::name),
+                HandlerImpl::minApiVer,
+                HandlerImpl::maxApiVer))
+            LogicError(
+                std::string("Handler for ") + HandlerImpl::name +
+                " overlaps with an existing handler");
 
         table_.insert({HandlerImpl::name, handlerFrom<HandlerImpl>()});
     }

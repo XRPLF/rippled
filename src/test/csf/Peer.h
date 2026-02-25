@@ -489,7 +489,9 @@ struct Peer
         issue(CloseLedger{prevLedger, openTxs});
 
         return Result(
-            TxSet{openTxs}, Proposal(prevLedger.id(), Proposal::seqJoin, TxSet::calcID(openTxs), closeTime, now(), id));
+            TxSet{openTxs},
+            Proposal(
+                prevLedger.id(), Proposal::seqJoin, TxSet::calcID(openTxs), closeTime, now(), id));
     }
 
     void
@@ -501,7 +503,14 @@ struct Peer
         ConsensusMode const& mode,
         Json::Value&& consensusJson)
     {
-        onAccept(result, prevLedger, closeResolution, rawCloseTimes, mode, std::move(consensusJson), validating());
+        onAccept(
+            result,
+            prevLedger,
+            closeResolution,
+            rawCloseTimes,
+            mode,
+            std::move(consensusJson),
+            validating());
     }
 
     void
@@ -519,8 +528,8 @@ struct Peer
             bool const consensusFail = result.state == ConsensusState::MovedOn;
 
             TxSet const acceptedTxs = injectTxs(prevLedger, result.txns);
-            Ledger const newLedger =
-                oracle.accept(prevLedger, acceptedTxs.txs(), closeResolution, result.position.closeTime());
+            Ledger const newLedger = oracle.accept(
+                prevLedger, acceptedTxs.txs(), closeResolution, result.position.closeTime());
             ledgers[newLedger.id()] = newLedger;
 
             issue(AcceptLedger{newLedger, lastClosedLedger});
@@ -528,8 +537,9 @@ struct Peer
             prevRoundTime = result.roundTime.read();
             lastClosedLedger = newLedger;
 
-            auto const it = std::remove_if(
-                openTxs.begin(), openTxs.end(), [&](Tx const& tx) { return acceptedTxs.exists(tx.id()); });
+            auto const it = std::remove_if(openTxs.begin(), openTxs.end(), [&](Tx const& tx) {
+                return acceptedTxs.exists(tx.id());
+            });
             openTxs.erase(it, openTxs.end());
 
             // Only send validation if the new ledger is compatible with our
@@ -537,7 +547,8 @@ struct Peer
             bool const isCompatible = newLedger.isAncestor(fullyValidatedLedger);
 
             // Can only send one validated ledger per seq
-            if (runAsValidator && isCompatible && !consensusFail && validations.canValidateSeq(newLedger.seq()))
+            if (runAsValidator && isCompatible && !consensusFail &&
+                validations.canValidateSeq(newLedger.seq()))
             {
                 bool isFull = proposing;
 
@@ -709,7 +720,9 @@ struct Peer
                 if (link.target->router.lastObservedSeq[bm.origin] < bm.seq)
                 {
                     issue(Relay<M>{link.target->id, bm.msg});
-                    net.send(this, link.target, [to = link.target, bm, id = this->id] { to->receive(bm, id); });
+                    net.send(this, link.target, [to = link.target, bm, id = this->id] {
+                        to->receive(bm, id);
+                    });
                 }
             }
         }
@@ -892,7 +905,8 @@ struct Peer
         using namespace std::chrono;
         using namespace std::chrono_literals;
         return NetClock::time_point(
-            duration_cast<NetClock::duration>(scheduler.now().time_since_epoch() + 86400s + clockSkew));
+            duration_cast<NetClock::duration>(
+                scheduler.now().time_since_epoch() + 86400s + clockSkew));
     }
 
     Ledger::ID

@@ -1,7 +1,6 @@
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 
 #include <xrpl/basics/DecayingSample.h>
 #include <xrpl/basics/Log.h>
@@ -10,6 +9,7 @@
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/NetworkOPs.h>
 
 #include <exception>
 #include <memory>
@@ -51,7 +51,8 @@ public:
     acquire(uint256 const& hash, std::uint32_t seq, InboundLedger::Reason reason) override
     {
         auto doAcquire = [&, seq, reason]() -> std::shared_ptr<Ledger const> {
-            XRPL_ASSERT(hash.isNonZero(), "xrpl::InboundLedgersImp::acquire::doAcquire : nonzero hash");
+            XRPL_ASSERT(
+                hash.isNonZero(), "xrpl::InboundLedgersImp::acquire::doAcquire : nonzero hash");
 
             // probably not the right rule
             if (app_.getOPs().isNeedNetworkLedger() && (reason != InboundLedger::Reason::GENERIC) &&
@@ -115,7 +116,8 @@ public:
         }
         catch (std::exception const& e)
         {
-            JLOG(j_.warn()) << "Exception thrown for acquiring new inbound ledger " << hash << ": " << e.what();
+            JLOG(j_.warn()) << "Exception thrown for acquiring new inbound ledger " << hash << ": "
+                            << e.what();
         }
         catch (...)
         {
@@ -159,17 +161,21 @@ public:
     /** We received a TMLedgerData from a peer.
      */
     bool
-    gotLedgerData(LedgerHash const& hash, std::shared_ptr<Peer> peer, std::shared_ptr<protocol::TMLedgerData> packet)
-        override
+    gotLedgerData(
+        LedgerHash const& hash,
+        std::shared_ptr<Peer> peer,
+        std::shared_ptr<protocol::TMLedgerData> packet) override
     {
         if (auto ledger = find(hash))
         {
-            JLOG(j_.trace()) << "Got data (" << packet->nodes().size() << ") for acquiring ledger: " << hash;
+            JLOG(j_.trace()) << "Got data (" << packet->nodes().size()
+                             << ") for acquiring ledger: " << hash;
 
             // Stash the data for later processing and see if we need to
             // dispatch
             if (ledger->gotData(std::weak_ptr<Peer>(peer), packet))
-                app_.getJobQueue().addJob(jtLEDGER_DATA, "ProcessLData", [ledger]() { ledger->runData(); });
+                app_.getJobQueue().addJob(
+                    jtLEDGER_DATA, "ProcessLData", [ledger]() { ledger->runData(); });
 
             return true;
         }
@@ -180,7 +186,8 @@ public:
         // useful.
         if (packet->type() == protocol::liAS_NODE)
         {
-            app_.getJobQueue().addJob(jtLEDGER_DATA, "GotStaleData", [this, packet]() { gotStaleData(packet); });
+            app_.getJobQueue().addJob(
+                jtLEDGER_DATA, "GotStaleData", [this, packet]() { gotStaleData(packet); });
         }
 
         return false;
@@ -367,9 +374,11 @@ public:
             beast::expire(mRecentFailures, kReacquireInterval);
         }
 
-        JLOG(j_.debug()) << "Swept " << stuffToSweep.size() << " out of " << total << " inbound ledgers. Duration: "
-                         << std::chrono::duration_cast<std::chrono::milliseconds>(m_clock.now() - start).count()
-                         << "ms";
+        JLOG(j_.debug())
+            << "Swept " << stuffToSweep.size() << " out of " << total
+            << " inbound ledgers. Duration: "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(m_clock.now() - start).count()
+            << "ms";
     }
 
     void

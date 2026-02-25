@@ -68,11 +68,13 @@ private:
     friend class detail::STVar;
 };
 
-inline STBlob::STBlob(STBlob const& rhs) : STBase(rhs), CountedObject<STBlob>(rhs), value_(rhs.data(), rhs.size())
+inline STBlob::STBlob(STBlob const& rhs)
+    : STBase(rhs), CountedObject<STBlob>(rhs), value_(rhs.data(), rhs.size())
 {
 }
 
-inline STBlob::STBlob(SField const& f, void const* data, std::size_t size) : STBase(f), value_(data, size)
+inline STBlob::STBlob(SField const& f, void const* data, std::size_t size)
+    : STBase(f), value_(data, size)
 {
 }
 

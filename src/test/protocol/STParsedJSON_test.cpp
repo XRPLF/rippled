@@ -336,7 +336,22 @@ class STParsedJSON_test : public beast::unit_test::suite
             BEAST_EXPECT(obj.object->isFieldPresent(sfEmailHash));
             BEAST_EXPECT(obj.object->getFieldH128(sfEmailHash).size() == 16);
             std::array<uint8_t, 16> expected = {
-                0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF};
+                0x01,
+                0x23,
+                0x45,
+                0x67,
+                0x89,
+                0xAB,
+                0xCD,
+                0xEF,
+                0x01,
+                0x23,
+                0x45,
+                0x67,
+                0x89,
+                0xAB,
+                0xCD,
+                0xEF};
             BEAST_EXPECT(obj.object->getFieldH128(sfEmailHash) == uint128{expected});
         }
 
@@ -423,8 +438,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             BEAST_EXPECT(obj.object.has_value());
             BEAST_EXPECT(obj.object->isFieldPresent(sfTakerPaysCurrency));
             BEAST_EXPECT(obj.object->getFieldH160(sfTakerPaysCurrency).size() == 20);
-            std::array<uint8_t, 20> expected = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23,
-                                                0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67};
+            std::array<uint8_t, 20> expected = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD,
+                                                0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB,
+                                                0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67};
             BEAST_EXPECT(obj.object->getFieldH160(sfTakerPaysCurrency) == uint160{expected});
         }
         // Valid lowercase hex string for UInt160
@@ -502,8 +518,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             BEAST_EXPECT(obj.object.has_value());
             BEAST_EXPECT(obj.object->isFieldPresent(sfMPTokenIssuanceID));
             BEAST_EXPECT(obj.object->getFieldH192(sfMPTokenIssuanceID).size() == 24);
-            std::array<uint8_t, 24> expected = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+            std::array<uint8_t, 24> expected = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                                                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                                                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
             BEAST_EXPECT(obj.object->getFieldH192(sfMPTokenIssuanceID) == uint192{expected});
         }
 
@@ -593,9 +610,10 @@ class STParsedJSON_test : public beast::unit_test::suite
             BEAST_EXPECT(obj.object.has_value());
             BEAST_EXPECT(obj.object->isFieldPresent(sfLedgerHash));
             BEAST_EXPECT(obj.object->getFieldH256(sfLedgerHash).size() == 32);
-            std::array<uint8_t, 32> expected = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45,
-                                                0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB,
-                                                0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF};
+            std::array<uint8_t, 32> expected = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
+                                                0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
+                                                0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
+                                                0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF};
             BEAST_EXPECT(obj.object->getFieldH256(sfLedgerHash) == uint256{expected});
         }
         // Valid lowercase hex string for UInt256
@@ -709,7 +727,8 @@ class STParsedJSON_test : public beast::unit_test::suite
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
             if (BEAST_EXPECT(obj.object->isFieldPresent(sfLoanScale)))
-                BEAST_EXPECT(obj.object->getFieldI32(sfLoanScale) == static_cast<int32_t>(maxUInt32));
+                BEAST_EXPECT(
+                    obj.object->getFieldI32(sfLoanScale) == static_cast<int32_t>(maxUInt32));
         }
 
         // Test with string value
@@ -1197,9 +1216,13 @@ class STParsedJSON_test : public beast::unit_test::suite
                 BEAST_EXPECT(!ps.empty());
                 BEAST_EXPECT(ps.size() == 1);
                 BEAST_EXPECT(ps[0].size() == 1);
-                BEAST_EXPECT(ps[0][0].getAccountID() == parseBase58<AccountID>("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"));
+                BEAST_EXPECT(
+                    ps[0][0].getAccountID() ==
+                    parseBase58<AccountID>("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"));
                 BEAST_EXPECT(to_string(ps[0][0].getCurrency()) == "USD");
-                BEAST_EXPECT(ps[0][0].getIssuerID() == parseBase58<AccountID>("rPT1Sjq2YGrBMTttX4GZHjKu9dyfzbpAYe"));
+                BEAST_EXPECT(
+                    ps[0][0].getIssuerID() ==
+                    parseBase58<AccountID>("rPT1Sjq2YGrBMTttX4GZHjKu9dyfzbpAYe"));
             }
         }
 
@@ -1374,7 +1397,8 @@ class STParsedJSON_test : public beast::unit_test::suite
                 BEAST_EXPECT(issue.currency.size() == 20);
                 BEAST_EXPECT(to_string(issue.currency) == "USD");
                 BEAST_EXPECT(issue.account.size() == 20);
-                BEAST_EXPECT(issue.account == parseBase58<AccountID>("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"));
+                BEAST_EXPECT(
+                    issue.account == parseBase58<AccountID>("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"));
             }
         }
 
@@ -2003,8 +2027,9 @@ class STParsedJSON_test : public beast::unit_test::suite
         }
 
         {
-            std::string const goodJson(R"({"CloseResolution":19,"Method":250,)"
-                                       R"("TransactionResult":"tecFROZEN"})");
+            std::string const goodJson(
+                R"({"CloseResolution":19,"Method":250,)"
+                R"("TransactionResult":"tecFROZEN"})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(goodJson, jv)))
@@ -2012,17 +2037,20 @@ class STParsedJSON_test : public beast::unit_test::suite
                 STParsedJSONObject parsed("test", jv);
                 if (BEAST_EXPECT(parsed.object))
                 {
-                    std::string const& serialized(to_string(parsed.object->getJson(JsonOptions::none)));
+                    std::string const& serialized(
+                        to_string(parsed.object->getJson(JsonOptions::none)));
                     BEAST_EXPECT(serialized == goodJson);
                 }
             }
         }
 
         {
-            std::string const goodJson(R"({"CloseResolution":19,"Method":"250",)"
-                                       R"("TransactionResult":"tecFROZEN"})");
-            std::string const expectedJson(R"({"CloseResolution":19,"Method":250,)"
-                                           R"("TransactionResult":"tecFROZEN"})");
+            std::string const goodJson(
+                R"({"CloseResolution":19,"Method":"250",)"
+                R"("TransactionResult":"tecFROZEN"})");
+            std::string const expectedJson(
+                R"({"CloseResolution":19,"Method":250,)"
+                R"("TransactionResult":"tecFROZEN"})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(goodJson, jv)))
@@ -2033,17 +2061,20 @@ class STParsedJSON_test : public beast::unit_test::suite
                 STParsedJSONObject parsed("test", jv);
                 if (BEAST_EXPECT(parsed.object))
                 {
-                    std::string const& serialized(to_string(parsed.object->getJson(JsonOptions::none)));
+                    std::string const& serialized(
+                        to_string(parsed.object->getJson(JsonOptions::none)));
                     BEAST_EXPECT(serialized == expectedJson);
                 }
             }
         }
 
         {
-            std::string const goodJson(R"({"CloseResolution":"19","Method":"250",)"
-                                       R"("TransactionResult":"tecFROZEN"})");
-            std::string const expectedJson(R"({"CloseResolution":19,"Method":250,)"
-                                           R"("TransactionResult":"tecFROZEN"})");
+            std::string const goodJson(
+                R"({"CloseResolution":"19","Method":"250",)"
+                R"("TransactionResult":"tecFROZEN"})");
+            std::string const expectedJson(
+                R"({"CloseResolution":19,"Method":250,)"
+                R"("TransactionResult":"tecFROZEN"})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(goodJson, jv)))
@@ -2054,15 +2085,17 @@ class STParsedJSON_test : public beast::unit_test::suite
                 STParsedJSONObject parsed("test", jv);
                 if (BEAST_EXPECT(parsed.object))
                 {
-                    std::string const& serialized(to_string(parsed.object->getJson(JsonOptions::none)));
+                    std::string const& serialized(
+                        to_string(parsed.object->getJson(JsonOptions::none)));
                     BEAST_EXPECT(serialized == expectedJson);
                 }
             }
         }
 
         {
-            std::string const json(R"({"CloseResolution":19,"Method":250,)"
-                                   R"("TransactionResult":"terQUEUED"})");
+            std::string const json(
+                R"({"CloseResolution":19,"Method":250,)"
+                R"("TransactionResult":"terQUEUED"})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(json, jv)))
@@ -2071,13 +2104,16 @@ class STParsedJSON_test : public beast::unit_test::suite
                 BEAST_EXPECT(!parsed.object);
                 BEAST_EXPECT(parsed.error);
                 BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
-                BEAST_EXPECT(parsed.error[jss::error_message] == "Field 'test.TransactionResult' is out of range.");
+                BEAST_EXPECT(
+                    parsed.error[jss::error_message] ==
+                    "Field 'test.TransactionResult' is out of range.");
             }
         }
 
         {
-            std::string const json(R"({"CloseResolution":19,"Method":"pony",)"
-                                   R"("TransactionResult":"tesSUCCESS"})");
+            std::string const json(
+                R"({"CloseResolution":19,"Method":"pony",)"
+                R"("TransactionResult":"tesSUCCESS"})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(json, jv)))
@@ -2086,13 +2122,15 @@ class STParsedJSON_test : public beast::unit_test::suite
                 BEAST_EXPECT(!parsed.object);
                 BEAST_EXPECT(parsed.error);
                 BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
-                BEAST_EXPECT(parsed.error[jss::error_message] == "Field 'test.Method' has bad type.");
+                BEAST_EXPECT(
+                    parsed.error[jss::error_message] == "Field 'test.Method' has bad type.");
             }
         }
 
         {
-            std::string const json(R"({"CloseResolution":19,"Method":3294967296,)"
-                                   R"("TransactionResult":"tesSUCCESS"})");
+            std::string const json(
+                R"({"CloseResolution":19,"Method":3294967296,)"
+                R"("TransactionResult":"tesSUCCESS"})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(json, jv)))
@@ -2101,13 +2139,15 @@ class STParsedJSON_test : public beast::unit_test::suite
                 BEAST_EXPECT(!parsed.object);
                 BEAST_EXPECT(parsed.error);
                 BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
-                BEAST_EXPECT(parsed.error[jss::error_message] == "Field 'test.Method' is out of range.");
+                BEAST_EXPECT(
+                    parsed.error[jss::error_message] == "Field 'test.Method' is out of range.");
             }
         }
 
         {
-            std::string const json(R"({"CloseResolution":-10,"Method":42,)"
-                                   R"("TransactionResult":"tesSUCCESS"})");
+            std::string const json(
+                R"({"CloseResolution":-10,"Method":42,)"
+                R"("TransactionResult":"tesSUCCESS"})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(json, jv)))
@@ -2116,13 +2156,16 @@ class STParsedJSON_test : public beast::unit_test::suite
                 BEAST_EXPECT(!parsed.object);
                 BEAST_EXPECT(parsed.error);
                 BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
-                BEAST_EXPECT(parsed.error[jss::error_message] == "Field 'test.CloseResolution' is out of range.");
+                BEAST_EXPECT(
+                    parsed.error[jss::error_message] ==
+                    "Field 'test.CloseResolution' is out of range.");
             }
         }
 
         {
-            std::string const json(R"({"CloseResolution":19,"Method":3.141592653,)"
-                                   R"("TransactionResult":"tesSUCCESS"})");
+            std::string const json(
+                R"({"CloseResolution":19,"Method":3.141592653,)"
+                R"("TransactionResult":"tesSUCCESS"})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(json, jv)))
@@ -2131,15 +2174,18 @@ class STParsedJSON_test : public beast::unit_test::suite
                 BEAST_EXPECT(!parsed.object);
                 BEAST_EXPECT(parsed.error);
                 BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
-                BEAST_EXPECT(parsed.error[jss::error_message] == "Field 'test.Method' has bad type.");
+                BEAST_EXPECT(
+                    parsed.error[jss::error_message] == "Field 'test.Method' has bad type.");
             }
         }
 
         {
-            std::string const goodJson(R"({"CloseResolution":19,"Method":250,)"
-                                       R"("TransferFee":"65535"})");
-            std::string const expectedJson(R"({"CloseResolution":19,"Method":250,)"
-                                           R"("TransferFee":65535})");
+            std::string const goodJson(
+                R"({"CloseResolution":19,"Method":250,)"
+                R"("TransferFee":"65535"})");
+            std::string const expectedJson(
+                R"({"CloseResolution":19,"Method":250,)"
+                R"("TransferFee":65535})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(goodJson, jv)))
@@ -2147,15 +2193,17 @@ class STParsedJSON_test : public beast::unit_test::suite
                 STParsedJSONObject parsed("test", jv);
                 if (BEAST_EXPECT(parsed.object))
                 {
-                    std::string const& serialized(to_string(parsed.object->getJson(JsonOptions::none)));
+                    std::string const& serialized(
+                        to_string(parsed.object->getJson(JsonOptions::none)));
                     BEAST_EXPECT(serialized == expectedJson);
                 }
             }
         }
 
         {
-            std::string const json(R"({"CloseResolution":19,"Method":250,)"
-                                   R"("TransferFee":"65536"})");
+            std::string const json(
+                R"({"CloseResolution":19,"Method":250,)"
+                R"("TransferFee":"65536"})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(json, jv)))
@@ -2164,13 +2212,16 @@ class STParsedJSON_test : public beast::unit_test::suite
                 BEAST_EXPECT(!parsed.object);
                 BEAST_EXPECT(parsed.error);
                 BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
-                BEAST_EXPECT(parsed.error[jss::error_message] == "Field 'test.TransferFee' has invalid data.");
+                BEAST_EXPECT(
+                    parsed.error[jss::error_message] ==
+                    "Field 'test.TransferFee' has invalid data.");
             }
         }
 
         {
-            std::string const json(R"({"CloseResolution":19,"Method":250,)"
-                                   R"("TransferFee":"Payment"})");
+            std::string const json(
+                R"({"CloseResolution":19,"Method":250,)"
+                R"("TransferFee":"Payment"})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(json, jv)))
@@ -2179,13 +2230,16 @@ class STParsedJSON_test : public beast::unit_test::suite
                 BEAST_EXPECT(!parsed.object);
                 BEAST_EXPECT(parsed.error);
                 BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
-                BEAST_EXPECT(parsed.error[jss::error_message] == "Field 'test.TransferFee' has invalid data.");
+                BEAST_EXPECT(
+                    parsed.error[jss::error_message] ==
+                    "Field 'test.TransferFee' has invalid data.");
             }
         }
 
         {
-            std::string const json(R"({"CloseResolution":19,"Method":250,)"
-                                   R"("TransferFee":true})");
+            std::string const json(
+                R"({"CloseResolution":19,"Method":250,)"
+                R"("TransferFee":true})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(json, jv)))
@@ -2194,7 +2248,8 @@ class STParsedJSON_test : public beast::unit_test::suite
                 BEAST_EXPECT(!parsed.object);
                 BEAST_EXPECT(parsed.error);
                 BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
-                BEAST_EXPECT(parsed.error[jss::error_message] == "Field 'test.TransferFee' has bad type.");
+                BEAST_EXPECT(
+                    parsed.error[jss::error_message] == "Field 'test.TransferFee' has bad type.");
             }
         }
     }

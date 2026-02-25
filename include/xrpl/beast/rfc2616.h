@@ -25,7 +25,8 @@ struct ci_equal_pred
     operator()(char c1, char c2)
     {
         // VFALCO TODO Use a table lookup here
-        return std::tolower(static_cast<unsigned char>(c1)) == std::tolower(static_cast<unsigned char>(c2));
+        return std::tolower(static_cast<unsigned char>(c1)) ==
+            std::tolower(static_cast<unsigned char>(c2));
     }
 };
 
@@ -169,7 +170,9 @@ split(FwdIt first, FwdIt last, Char delim)
     return result;
 }
 
-template <class FwdIt, class Result = std::vector<std::basic_string<typename std::iterator_traits<FwdIt>::value_type>>>
+template <
+    class FwdIt,
+    class Result = std::vector<std::basic_string<typename std::iterator_traits<FwdIt>::value_type>>>
 Result
 split_commas(FwdIt first, FwdIt last)
 {
@@ -356,8 +359,10 @@ bool
 is_keep_alive(boost::beast::http::message<isRequest, Body, Fields> const& m)
 {
     if (m.version() <= 10)
-        return boost::beast::http::token_list{m[boost::beast::http::field::connection]}.exists("keep-alive");
-    return !boost::beast::http::token_list{m[boost::beast::http::field::connection]}.exists("close");
+        return boost::beast::http::token_list{m[boost::beast::http::field::connection]}.exists(
+            "keep-alive");
+    return !boost::beast::http::token_list{m[boost::beast::http::field::connection]}.exists(
+        "close");
 }
 
 }  // namespace rfc2616

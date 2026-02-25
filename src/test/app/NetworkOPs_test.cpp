@@ -2,7 +2,7 @@
 #include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
 
-#include <xrpld/app/misc/HashRouter.h>
+#include <xrpl/core/HashRouter.h>
 
 namespace xrpl {
 namespace test {
@@ -28,7 +28,8 @@ public:
         {
             using namespace jtx;
             auto const alice = Account{"alice"};
-            Env env{*this, envconfig(), std::make_unique<CaptureLogs>(&logs), beast::severities::kAll};
+            Env env{
+                *this, envconfig(), std::make_unique<CaptureLogs>(&logs), beast::severities::kAll};
             env.memoize(env.master);
             env.memoize(alice);
 

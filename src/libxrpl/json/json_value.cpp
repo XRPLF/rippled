@@ -95,9 +95,11 @@ Value::CZString::CZString(char const* cstr, DuplicationPolicy allocate)
 
 Value::CZString::CZString(CZString const& other)
     : cstr_(
-          other.index_ != noDuplication && other.cstr_ != 0 ? valueAllocator()->makeMemberName(other.cstr_)
-                                                            : other.cstr_)
-    , index_(other.cstr_ ? (other.index_ == noDuplication ? noDuplication : duplicate) : other.index_)
+          other.index_ != noDuplication && other.cstr_ != 0
+              ? valueAllocator()->makeMemberName(other.cstr_)
+              : other.cstr_)
+    , index_(
+          other.cstr_ ? (other.index_ == noDuplication ? noDuplication : duplicate) : other.index_)
 {
 }
 
@@ -219,7 +221,8 @@ Value::Value(xrpl::Number const& value) : type_(stringValue), allocated_(true)
 
 Value::Value(std::string const& value) : type_(stringValue), allocated_(true)
 {
-    value_.string_ = valueAllocator()->duplicateStringValue(value.c_str(), (unsigned int)value.length());
+    value_.string_ =
+        valueAllocator()->duplicateStringValue(value.c_str(), (unsigned int)value.length());
 }
 
 Value::Value(StaticString const& value) : type_(stringValue), allocated_(false)
@@ -305,7 +308,8 @@ Value::operator=(Value const& other)
     return *this;
 }
 
-Value::Value(Value&& other) noexcept : value_(other.value_), type_(other.type_), allocated_(other.allocated_)
+Value::Value(Value&& other) noexcept
+    : value_(other.value_), type_(other.type_), allocated_(other.allocated_)
 {
     other.type_ = nullValue;
     other.allocated_ = 0;
@@ -381,7 +385,8 @@ operator<(Value const& x, Value const& y)
 
         case stringValue:
             return (x.value_.string_ == 0 && y.value_.string_) ||
-                (y.value_.string_ && x.value_.string_ && strcmp(x.value_.string_, y.value_.string_) < 0);
+                (y.value_.string_ && x.value_.string_ &&
+                 strcmp(x.value_.string_, y.value_.string_) < 0);
 
         case arrayValue:
         case objectValue: {
@@ -431,11 +436,13 @@ operator==(Value const& x, Value const& y)
 
         case stringValue:
             return x.value_.string_ == y.value_.string_ ||
-                (y.value_.string_ && x.value_.string_ && !strcmp(x.value_.string_, y.value_.string_));
+                (y.value_.string_ && x.value_.string_ &&
+                 !strcmp(x.value_.string_, y.value_.string_));
 
         case arrayValue:
         case objectValue:
-            return x.value_.map_->size() == y.value_.map_->size() && *x.value_.map_ == *y.value_.map_;
+            return x.value_.map_->size() == y.value_.map_->size() &&
+                *x.value_.map_ == *y.value_.map_;
 
         // LCOV_EXCL_START
         default:
@@ -501,11 +508,14 @@ Value::asInt() const
             return value_.int_;
 
         case uintValue:
-            JSON_ASSERT_MESSAGE(value_.uint_ < (unsigned)maxInt, "integer out of signed integer range");
+            JSON_ASSERT_MESSAGE(
+                value_.uint_ < (unsigned)maxInt, "integer out of signed integer range");
             return value_.uint_;
 
         case realValue:
-            JSON_ASSERT_MESSAGE(value_.real_ >= minInt && value_.real_ <= maxInt, "Real out of signed integer range");
+            JSON_ASSERT_MESSAGE(
+                value_.real_ >= minInt && value_.real_ <= maxInt,
+                "Real out of signed integer range");
             return Int(value_.real_);
 
         case booleanValue:
@@ -551,7 +561,8 @@ Value::asAbsUInt() const
         case realValue: {
             if (value_.real_ < 0)
             {
-                JSON_ASSERT_MESSAGE(-1 * value_.real_ <= maxUInt, "Real out of unsigned integer range");
+                JSON_ASSERT_MESSAGE(
+                    -1 * value_.real_ <= maxUInt, "Real out of unsigned integer range");
                 return UInt(-1 * value_.real_);
             }
             JSON_ASSERT_MESSAGE(value_.real_ <= maxUInt, "Real out of unsigned integer range");
@@ -595,14 +606,16 @@ Value::asUInt() const
             return 0;
 
         case intValue:
-            JSON_ASSERT_MESSAGE(value_.int_ >= 0, "Negative integer can not be converted to unsigned integer");
+            JSON_ASSERT_MESSAGE(
+                value_.int_ >= 0, "Negative integer can not be converted to unsigned integer");
             return value_.int_;
 
         case uintValue:
             return value_.uint_;
 
         case realValue:
-            JSON_ASSERT_MESSAGE(value_.real_ >= 0 && value_.real_ <= maxUInt, "Real out of unsigned integer range");
+            JSON_ASSERT_MESSAGE(
+                value_.real_ >= 0 && value_.real_ <= maxUInt, "Real out of unsigned integer range");
             return UInt(value_.real_);
 
         case booleanValue:
@@ -704,27 +717,30 @@ Value::isConvertibleTo(ValueType other) const
 
         case intValue:
             return (other == nullValue && value_.int_ == 0) || other == intValue ||
-                (other == uintValue && value_.int_ >= 0) || other == realValue || other == stringValue ||
-                other == booleanValue;
+                (other == uintValue && value_.int_ >= 0) || other == realValue ||
+                other == stringValue || other == booleanValue;
 
         case uintValue:
             return (other == nullValue && value_.uint_ == 0) ||
-                (other == intValue && value_.uint_ <= (unsigned)maxInt) || other == uintValue || other == realValue ||
-                other == stringValue || other == booleanValue;
+                (other == intValue && value_.uint_ <= (unsigned)maxInt) || other == uintValue ||
+                other == realValue || other == stringValue || other == booleanValue;
 
         case realValue:
             return (other == nullValue && value_.real_ == 0.0) ||
                 (other == intValue && value_.real_ >= minInt && value_.real_ <= maxInt) ||
                 (other == uintValue && value_.real_ >= 0 && value_.real_ <= maxUInt &&
-                 std::fabs(round(value_.real_) - value_.real_) < std::numeric_limits<double>::epsilon()) ||
+                 std::fabs(round(value_.real_) - value_.real_) <
+                     std::numeric_limits<double>::epsilon()) ||
                 other == realValue || other == stringValue || other == booleanValue;
 
         case booleanValue:
-            return (other == nullValue && value_.bool_ == false) || other == intValue || other == uintValue ||
-                other == realValue || other == stringValue || other == booleanValue;
+            return (other == nullValue && value_.bool_ == false) || other == intValue ||
+                other == uintValue || other == realValue || other == stringValue ||
+                other == booleanValue;
 
         case stringValue:
-            return other == stringValue || (other == nullValue && (!value_.string_ || value_.string_[0] == 0));
+            return other == stringValue ||
+                (other == nullValue && (!value_.string_ || value_.string_[0] == 0));
 
         case arrayValue:
             return other == arrayValue || (other == nullValue && value_.map_->size() == 0);
@@ -777,7 +793,8 @@ Value::size() const
     return 0;  // unreachable;
 }
 
-Value::operator bool() const
+Value::
+operator bool() const
 {
     if (isNull())
         return false;
@@ -794,7 +811,9 @@ Value::operator bool() const
 void
 Value::clear()
 {
-    XRPL_ASSERT(type_ == nullValue || type_ == arrayValue || type_ == objectValue, "Json::Value::clear : valid type");
+    XRPL_ASSERT(
+        type_ == nullValue || type_ == arrayValue || type_ == objectValue,
+        "Json::Value::clear : valid type");
 
     switch (type_)
     {
@@ -811,7 +830,8 @@ Value::clear()
 Value&
 Value::operator[](UInt index)
 {
-    XRPL_ASSERT(type_ == nullValue || type_ == arrayValue, "Json::Value::operator[](UInt) : valid type");
+    XRPL_ASSERT(
+        type_ == nullValue || type_ == arrayValue, "Json::Value::operator[](UInt) : valid type");
 
     if (type_ == nullValue)
         *this = Value(arrayValue);
@@ -830,7 +850,9 @@ Value::operator[](UInt index)
 Value const&
 Value::operator[](UInt index) const
 {
-    XRPL_ASSERT(type_ == nullValue || type_ == arrayValue, "Json::Value::operator[](UInt) const : valid type");
+    XRPL_ASSERT(
+        type_ == nullValue || type_ == arrayValue,
+        "Json::Value::operator[](UInt) const : valid type");
 
     if (type_ == nullValue)
         return null;
@@ -853,7 +875,8 @@ Value::operator[](char const* key)
 Value&
 Value::resolveReference(char const* key, bool isStatic)
 {
-    XRPL_ASSERT(type_ == nullValue || type_ == objectValue, "Json::Value::resolveReference : valid type");
+    XRPL_ASSERT(
+        type_ == nullValue || type_ == objectValue, "Json::Value::resolveReference : valid type");
 
     if (type_ == nullValue)
         *this = Value(objectValue);
@@ -886,7 +909,9 @@ Value::isValidIndex(UInt index) const
 Value const&
 Value::operator[](char const* key) const
 {
-    XRPL_ASSERT(type_ == nullValue || type_ == objectValue, "Json::Value::operator[](const char*) const : valid type");
+    XRPL_ASSERT(
+        type_ == nullValue || type_ == objectValue,
+        "Json::Value::operator[](const char*) const : valid type");
 
     if (type_ == nullValue)
         return null;
@@ -952,7 +977,8 @@ Value::get(std::string const& key, Value const& defaultValue) const
 Value
 Value::removeMember(char const* key)
 {
-    XRPL_ASSERT(type_ == nullValue || type_ == objectValue, "Json::Value::removeMember : valid type");
+    XRPL_ASSERT(
+        type_ == nullValue || type_ == objectValue, "Json::Value::removeMember : valid type");
 
     if (type_ == nullValue)
         return null;
@@ -999,7 +1025,8 @@ Value::isMember(StaticString const& key) const
 Value::Members
 Value::getMemberNames() const
 {
-    XRPL_ASSERT(type_ == nullValue || type_ == objectValue, "Json::Value::getMemberNames : valid type");
+    XRPL_ASSERT(
+        type_ == nullValue || type_ == objectValue, "Json::Value::getMemberNames : valid type");
 
     if (type_ == nullValue)
         return Value::Members();

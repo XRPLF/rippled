@@ -49,7 +49,11 @@ public:
         AccountID const& issuer,
         bool forceCurrency = false);
 
-    STPathElement(unsigned int uType, AccountID const& account, Currency const& currency, AccountID const& issuer);
+    STPathElement(
+        unsigned int uType,
+        AccountID const& account,
+        Currency const& currency,
+        AccountID const& issuer);
 
     auto
     getNodeType() const;
@@ -230,7 +234,8 @@ inline STPathElement::STPathElement(
         is_offer_ = false;
         mAccountID = *account;
         mType |= typeAccount;
-        XRPL_ASSERT(mAccountID != noAccount(), "xrpl::STPathElement::STPathElement : account is set");
+        XRPL_ASSERT(
+            mAccountID != noAccount(), "xrpl::STPathElement::STPathElement : account is set");
     }
 
     if (currency)
@@ -254,7 +259,11 @@ inline STPathElement::STPathElement(
     Currency const& currency,
     AccountID const& issuer,
     bool forceCurrency)
-    : mType(typeNone), mAccountID(account), mCurrencyID(currency), mIssuerID(issuer), is_offer_(isXRP(mAccountID))
+    : mType(typeNone)
+    , mAccountID(account)
+    , mCurrencyID(currency)
+    , mIssuerID(issuer)
+    , is_offer_(isXRP(mAccountID))
 {
     if (!is_offer_)
         mType |= typeAccount;
@@ -273,7 +282,11 @@ inline STPathElement::STPathElement(
     AccountID const& account,
     Currency const& currency,
     AccountID const& issuer)
-    : mType(uType), mAccountID(account), mCurrencyID(currency), mIssuerID(issuer), is_offer_(isXRP(mAccountID))
+    : mType(uType)
+    , mAccountID(account)
+    , mCurrencyID(currency)
+    , mIssuerID(issuer)
+    , is_offer_(isXRP(mAccountID))
 {
     hash_value_ = get_hash(*this);
 }

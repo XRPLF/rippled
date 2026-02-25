@@ -2,18 +2,18 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/utility.h>
 
-#include <xrpld/app/misc/HashRouter.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/Transaction.h>
-#include <xrpld/app/tx/apply.h>
-#include <xrpld/app/tx/detail/Batch.h>
 
+#include <xrpl/core/HashRouter.h>
 #include <xrpl/protocol/Batch.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/NetworkOPs.h>
+#include <xrpl/tx/apply.h>
+#include <xrpl/tx/transactors/Batch.h>
 
 namespace xrpl {
 namespace test {
@@ -334,7 +334,8 @@ class Batch_test : public beast::unit_test::suite
             tx1[sfSigners.jsonName] = Json::arrayValue;
             tx1[sfSigners.jsonName][0U][sfSigner.jsonName] = Json::objectValue;
             tx1[sfSigners.jsonName][0U][sfSigner.jsonName][sfAccount.jsonName] = alice.human();
-            tx1[sfSigners.jsonName][0U][sfSigner.jsonName][sfSigningPubKey.jsonName] = strHex(alice.pk());
+            tx1[sfSigners.jsonName][0U][sfSigner.jsonName][sfSigningPubKey.jsonName] =
+                strHex(alice.pk());
             tx1[sfSigners.jsonName][0U][sfSigner.jsonName][sfTxnSignature.jsonName] = "DEADBEEF";
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(tx1, seq + 1),
@@ -553,8 +554,10 @@ class Batch_test : public beast::unit_test::suite
             Serializer msg;
             serializeBatch(msg, tfAllOrNothing, jt.stx->getBatchTransactionIDs());
             auto const sig = xrpl::sign(bob.pk(), bob.sk(), msg.slice());
-            jt.jv[sfBatchSigners.jsonName][0u][sfBatchSigner.jsonName][sfAccount.jsonName] = bob.human();
-            jt.jv[sfBatchSigners.jsonName][0u][sfBatchSigner.jsonName][sfSigningPubKey.jsonName] = strHex(alice.pk());
+            jt.jv[sfBatchSigners.jsonName][0u][sfBatchSigner.jsonName][sfAccount.jsonName] =
+                bob.human();
+            jt.jv[sfBatchSigners.jsonName][0u][sfBatchSigner.jsonName][sfSigningPubKey.jsonName] =
+                strHex(alice.pk());
             jt.jv[sfBatchSigners.jsonName][0u][sfBatchSigner.jsonName][sfTxnSignature.jsonName] =
                 strHex(Slice{sig.data(), sig.size()});
 
@@ -1754,9 +1757,12 @@ class Batch_test : public beast::unit_test::suite
                 env,
                 tesSUCCESS,
                 batch::outer(alice, seq, batchFee, tfOnlyOne),
-                batch::inner(offer(alice, alice["USD"](100), XRP(100), tfImmediateOrCancel), seq + 1),
-                batch::inner(offer(alice, alice["USD"](100), XRP(100), tfImmediateOrCancel), seq + 2),
-                batch::inner(offer(alice, alice["USD"](100), XRP(100), tfImmediateOrCancel), seq + 3),
+                batch::inner(
+                    offer(alice, alice["USD"](100), XRP(100), tfImmediateOrCancel), seq + 1),
+                batch::inner(
+                    offer(alice, alice["USD"](100), XRP(100), tfImmediateOrCancel), seq + 2),
+                batch::inner(
+                    offer(alice, alice["USD"](100), XRP(100), tfImmediateOrCancel), seq + 3),
                 batch::inner(pay(alice, bob, XRP(100)), seq + 4),
                 batch::inner(pay(alice, carol, XRP(100)), seq + 5),
                 batch::inner(pay(alice, dave, XRP(100)), seq + 6));
@@ -1975,7 +1981,8 @@ class Batch_test : public beast::unit_test::suite
                 batch::outer(alice, seq, batchFee, tfUntilFailure),
                 batch::inner(pay(alice, bob, XRP(100)), seq + 1),
                 batch::inner(pay(alice, carol, XRP(100)), seq + 2),
-                batch::inner(offer(alice, alice["USD"](100), XRP(100), tfImmediateOrCancel), seq + 3),
+                batch::inner(
+                    offer(alice, alice["USD"](100), XRP(100), tfImmediateOrCancel), seq + 3),
                 batch::inner(pay(alice, dave, XRP(100)), seq + 4));
             env.close();
 
@@ -2163,7 +2170,8 @@ class Batch_test : public beast::unit_test::suite
                 batch::outer(alice, seq, batchFee, tfIndependent),
                 batch::inner(pay(alice, bob, XRP(100)), seq + 1),
                 batch::inner(pay(alice, carol, XRP(100)), seq + 2),
-                batch::inner(offer(alice, alice["USD"](100), XRP(100), tfImmediateOrCancel), seq + 3));
+                batch::inner(
+                    offer(alice, alice["USD"](100), XRP(100), tfImmediateOrCancel), seq + 3));
             env.close();
 
             std::vector<TestLedgerData> testCases = {
@@ -2213,12 +2221,14 @@ class Batch_test : public beast::unit_test::suite
                                      std::optional<std::string> expectedEnabled = std::nullopt,
                                      std::optional<std::string> expectedDisabled = std::nullopt,
                                      bool expectInvalidFlag = false) {
-            testcase << testName << caseName << (expectInvalidFlag ? " - Expected to reach tx engine!" : "");
+            testcase << testName << caseName
+                     << (expectInvalidFlag ? " - Expected to reach tx engine!" : "");
             auto const jrr = env.rpc("submit", strHex(slice))[jss::result];
-            auto const expected = withBatch ? expectedEnabled.value_or(
-                                                  "fails local checks: Malformed: Invalid inner batch "
-                                                  "transaction.")
-                                            : expectedDisabled.value_or("fails local checks: Empty SigningPubKey.");
+            auto const expected = withBatch
+                ? expectedEnabled.value_or(
+                      "fails local checks: Malformed: Invalid inner batch "
+                      "transaction.")
+                : expectedDisabled.value_or("fails local checks: Empty SigningPubKey.");
             if (expectInvalidFlag)
             {
                 expect(
@@ -2265,7 +2275,11 @@ class Batch_test : public beast::unit_test::suite
             Serializer s;
             parsed.object->add(s);
             submitAndValidate(
-                "SigningPubKey set", s.slice(), __LINE__, std::nullopt, "fails local checks: Invalid signature.");
+                "SigningPubKey set",
+                s.slice(),
+                __LINE__,
+                std::nullopt,
+                "fails local checks: Invalid signature.");
         }
 
         // Invalid RPC Submission: Signers
@@ -2280,7 +2294,11 @@ class Batch_test : public beast::unit_test::suite
             Serializer s;
             parsed.object->add(s);
             submitAndValidate(
-                "Signers set", s.slice(), __LINE__, std::nullopt, "fails local checks: Invalid Signers array size.");
+                "Signers set",
+                s.slice(),
+                __LINE__,
+                std::nullopt,
+                "fails local checks: Invalid Signers array size.");
         }
 
         {
@@ -2291,7 +2309,8 @@ class Batch_test : public beast::unit_test::suite
             STParsedJSONObject parsed("test", jt.jv);
             Serializer s;
             parsed.object->add(s);
-            submitAndValidate("Fully signed", s.slice(), __LINE__, std::nullopt, std::nullopt, !withBatch);
+            submitAndValidate(
+                "Fully signed", s.slice(), __LINE__, std::nullopt, std::nullopt, !withBatch);
         }
 
         // Invalid RPC Submission: tfInnerBatchTxn
@@ -2581,14 +2600,15 @@ class Batch_test : public beast::unit_test::suite
     {
         testcase("loan");
 
-        bool const lendingBatchEnabled =
-            !std::any_of(Batch::disabledTxTypes.begin(), Batch::disabledTxTypes.end(), [](auto const& disabled) {
+        bool const lendingBatchEnabled = !std::any_of(
+            Batch::disabledTxTypes.begin(), Batch::disabledTxTypes.end(), [](auto const& disabled) {
                 return disabled == ttLOAN_BROKER_SET;
             });
 
         using namespace test::jtx;
 
-        test::jtx::Env env{*this, features | featureSingleAssetVault | featureLendingProtocol | featureMPTokensV1};
+        test::jtx::Env env{
+            *this, features | featureSingleAssetVault | featureLendingProtocol | featureMPTokensV1};
 
         Account const issuer{"issuer"};
         // For simplicity, lender will be the sole actor for the vault &
@@ -2656,7 +2676,9 @@ class Batch_test : public beast::unit_test::suite
                             fee(none),
                             seq(none)),
                         lenderSeq + 1),
-                    batch::inner(pay(lender, loanKeylet.key, STAmount{asset, asset(500).value()}), lenderSeq + 2));
+                    batch::inner(
+                        pay(lender, loanKeylet.key, STAmount{asset, asset(500).value()}),
+                        lenderSeq + 2));
             }
             {
                 auto const [txIDs, batchID] = submitBatch(
@@ -2671,7 +2693,9 @@ class Batch_test : public beast::unit_test::suite
                             fee(none),
                             seq(none)),
                         lenderSeq + 1),
-                    batch::inner(pay(lender, loanKeylet.key, STAmount{asset, asset(500).value()}), lenderSeq + 2));
+                    batch::inner(
+                        pay(lender, loanKeylet.key, STAmount{asset, asset(500).value()}),
+                        lenderSeq + 2));
             }
             {
                 auto const [txIDs, batchID] = submitBatch(
@@ -2687,7 +2711,9 @@ class Batch_test : public beast::unit_test::suite
                             fee(none),
                             seq(none)),
                         lenderSeq + 1),
-                    batch::inner(pay(lender, loanKeylet.key, STAmount{asset, asset(500).value()}), lenderSeq + 2));
+                    batch::inner(
+                        pay(lender, loanKeylet.key, STAmount{asset, asset(500).value()}),
+                        lenderSeq + 2));
             }
             {
                 // LoanSet normally charges at least 2x base fee, but since the
@@ -3827,7 +3853,8 @@ class Batch_test : public beast::unit_test::suite
             jt.stx->add(s);
             std::string reason;
             auto transaction = std::make_shared<Transaction>(jt.stx, reason, env.app());
-            env.app().getOPs().processTransaction(transaction, false, true, NetworkOPs::FailHard::yes);
+            env.app().getOPs().processTransaction(
+                transaction, false, true, NetworkOPs::FailHard::yes);
             return transaction->getID();
         };
 

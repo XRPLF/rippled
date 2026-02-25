@@ -145,7 +145,11 @@ private:
     bool
     decodeUnicodeCodePoint(Token& token, Location& current, Location end, unsigned int& unicode);
     bool
-    decodeUnicodeEscapeSequence(Token& token, Location& current, Location end, unsigned int& unicode);
+    decodeUnicodeEscapeSequence(
+        Token& token,
+        Location& current,
+        Location end,
+        unsigned int& unicode);
     bool
     addError(std::string const& message, Token& token, Location extra = 0);
     bool

@@ -46,7 +46,8 @@ public:
     open(std::string const& path)
     {
         std::lock_guard _(mutex_);
-        auto const result = map_.emplace(std::piecewise_construct, std::make_tuple(path), std::make_tuple());
+        auto const result =
+            map_.emplace(std::piecewise_construct, std::make_tuple(path), std::make_tuple());
         MemoryDB& db = result.first->second;
         if (db.open)
             Throw<std::runtime_error>("already open");

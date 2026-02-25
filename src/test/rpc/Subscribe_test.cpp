@@ -3,14 +3,15 @@
 #include <test/jtx/envconfig.h>
 
 #include <xrpld/app/main/LoadManager.h>
-#include <xrpld/app/misc/LoadFeeTrack.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/server/NetworkOPs.h>
 
 #include <tuple>
 
@@ -57,7 +58,8 @@ public:
             env.app().getOPs().reportFeeChange();
 
             // Check stream update
-            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) { return jv[jss::type] == "serverStatus"; }));
+            BEAST_EXPECT(
+                wsc->findMsg(5s, [&](auto const& jv) { return jv[jss::type] == "serverStatus"; }));
         }
 
         {
@@ -106,7 +108,8 @@ public:
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::result][jss::ledger_index] == 2);
-            BEAST_EXPECT(jv[jss::result][jss::network_id] == env.app().config().NETWORK_ID);
+            BEAST_EXPECT(
+                jv[jss::result][jss::network_id] == env.app().getNetworkIDService().getNetworkID());
         }
 
         {
@@ -115,7 +118,8 @@ public:
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::ledger_index] == 3 && jv[jss::network_id] == env.app().config().NETWORK_ID;
+                return jv[jss::ledger_index] == 3 &&
+                    jv[jss::network_id] == env.app().getNetworkIDService().getNetworkID();
             }));
         }
 
@@ -125,7 +129,8 @@ public:
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::ledger_index] == 4 && jv[jss::network_id] == env.app().config().NETWORK_ID;
+                return jv[jss::ledger_index] == 4 &&
+                    jv[jss::network_id] == env.app().getNetworkIDService().getNetworkID();
             }));
         }
 
@@ -170,7 +175,8 @@ public:
 
             // Check stream update for payment transaction
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::meta]["AffectedNodes"][1u]["CreatedNode"]["NewFields"][jss::Account]  //
+                return jv[jss::meta]["AffectedNodes"][1u]["CreatedNode"]["NewFields"]
+                         [jss::Account]  //
                     == Account("alice").human() &&
                     jv[jss::transaction][jss::TransactionType]  //
                     == jss::Payment &&
@@ -184,8 +190,8 @@ public:
 
             // Check stream update for accountset transaction
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::meta]["AffectedNodes"][0u]["ModifiedNode"]["FinalFields"][jss::Account] ==
-                    Account("alice").human();
+                return jv[jss::meta]["AffectedNodes"][0u]["ModifiedNode"]["FinalFields"]
+                         [jss::Account] == Account("alice").human();
             }));
 
             env.fund(XRP(10000), "bob");
@@ -193,7 +199,8 @@ public:
 
             // Check stream update for payment transaction
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::meta]["AffectedNodes"][1u]["CreatedNode"]["NewFields"][jss::Account]  //
+                return jv[jss::meta]["AffectedNodes"][1u]["CreatedNode"]["NewFields"]
+                         [jss::Account]  //
                     == Account("bob").human() &&
                     jv[jss::transaction][jss::TransactionType]  //
                     == jss::Payment &&
@@ -207,8 +214,8 @@ public:
 
             // Check stream update for accountset transaction
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::meta]["AffectedNodes"][0u]["ModifiedNode"]["FinalFields"][jss::Account] ==
-                    Account("bob").human();
+                return jv[jss::meta]["AffectedNodes"][0u]["ModifiedNode"]["FinalFields"]
+                         [jss::Account] == Account("bob").human();
             }));
         }
 
@@ -251,13 +258,13 @@ public:
 
             // Check stream updates
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::meta]["AffectedNodes"][1u]["ModifiedNode"]["FinalFields"][jss::Account] ==
-                    Account("alice").human();
+                return jv[jss::meta]["AffectedNodes"][1u]["ModifiedNode"]["FinalFields"]
+                         [jss::Account] == Account("alice").human();
             }));
 
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::meta]["AffectedNodes"][1u]["CreatedNode"]["NewFields"]["LowLimit"][jss::issuer] ==
-                    Account("alice").human();
+                return jv[jss::meta]["AffectedNodes"][1u]["CreatedNode"]["NewFields"]["LowLimit"]
+                         [jss::issuer] == Account("alice").human();
             }));
         }
 
@@ -307,7 +314,8 @@ public:
 
             // Check stream update for payment transaction
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::meta]["AffectedNodes"][1u]["CreatedNode"]["NewFields"][jss::Account]  //
+                return jv[jss::meta]["AffectedNodes"][1u]["CreatedNode"]["NewFields"]
+                         [jss::Account]  //
                     == Account("alice").human() &&
                     jv[jss::close_time_iso]  //
                     == "2000-01-01T00:00:10Z" &&
@@ -330,8 +338,8 @@ public:
 
             // Check stream update for accountset transaction
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::meta]["AffectedNodes"][0u]["ModifiedNode"]["FinalFields"][jss::Account] ==
-                    Account("alice").human();
+                return jv[jss::meta]["AffectedNodes"][0u]["ModifiedNode"]["FinalFields"]
+                         [jss::Account] == Account("alice").human();
             }));
         }
 
@@ -396,7 +404,8 @@ public:
 
         std::string const valPublicKey = toBase58(
             TokenType::NodePublic,
-            derivePublicKey(KeyType::secp256k1, generateSecretKey(KeyType::secp256k1, *parsedseed)));
+            derivePublicKey(
+                KeyType::secp256k1, generateSecretKey(KeyType::secp256k1, *parsedseed)));
 
         auto wsc = makeWSClient(env.app().config());
         Json::Value stream;
@@ -451,7 +460,7 @@ public:
                 if (!jv.isMember(jss::validated_hash))
                     return false;
 
-                uint32_t netID = env.app().config().NETWORK_ID;
+                uint32_t netID = env.app().getNetworkIDService().getNetworkID();
                 if (!jv.isMember(jss::network_id) || jv[jss::network_id] != netID)
                     return false;
 
@@ -510,7 +519,7 @@ public:
         jv[jss::streams][0u] = "ledger";
         jr = env.rpc("json", "subscribe", to_string(jv))[jss::result];
         BEAST_EXPECT(jr[jss::status] == "success");
-        BEAST_EXPECT(jr[jss::network_id] == env.app().config().NETWORK_ID);
+        BEAST_EXPECT(jr[jss::network_id] == env.app().getNetworkIDService().getNetworkID());
 
         jr = env.rpc("json", "unsubscribe", to_string(jv))[jss::result];
         BEAST_EXPECT(jr[jss::status] == "success");
@@ -678,7 +687,8 @@ public:
             // NOTE: this error is slightly incongruous with the
             // equivalent source currency error
             BEAST_EXPECT(jr[jss::error] == "dstAmtMalformed");
-            BEAST_EXPECT(jr[jss::error_message] == "Destination amount/currency/issuer is malformed.");
+            BEAST_EXPECT(
+                jr[jss::error_message] == "Destination amount/currency/issuer is malformed.");
         }
 
         {
@@ -692,7 +702,8 @@ public:
             // NOTE: this error is slightly incongruous with the
             // equivalent source currency error
             BEAST_EXPECT(jr[jss::error] == "dstAmtMalformed");
-            BEAST_EXPECT(jr[jss::error_message] == "Destination amount/currency/issuer is malformed.");
+            BEAST_EXPECT(
+                jr[jss::error_message] == "Destination amount/currency/issuer is malformed.");
         }
 
         {
@@ -850,7 +861,9 @@ public:
          * and in the same order.
          * If sizeCompare is false, txHistoryVec is allowed to be larger.
          */
-        auto hashCompare = [](IdxHashVec const& accountVec, IdxHashVec const& txHistoryVec, bool sizeCompare) -> bool {
+        auto hashCompare = [](IdxHashVec const& accountVec,
+                              IdxHashVec const& txHistoryVec,
+                              bool sizeCompare) -> bool {
             if (accountVec.empty() || txHistoryVec.empty())
                 return false;
             if (sizeCompare && accountVec.size() != (txHistoryVec.size()))
@@ -979,7 +992,8 @@ public:
             auto wscTxHistory = makeWSClient(env.app().config());
             Json::Value request;
             request[jss::account_history_tx_stream] = Json::objectValue;
-            request[jss::account_history_tx_stream][jss::account] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            request[jss::account_history_tx_stream][jss::account] =
+                "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             auto jv = wscTxHistory->invoke("subscribe", request);
             if (!BEAST_EXPECT(goodSubRPC(jv)))
                 return;
@@ -1005,7 +1019,8 @@ public:
             r = getTxHash(*wscTxHistory, bobFullHistoryVec, 1);
             if (!BEAST_EXPECT(r.first && r.second))
                 return;
-            BEAST_EXPECT(std::get<1>(bobFullHistoryVec.back()) == std::get<1>(genesisFullHistoryVec.back()));
+            BEAST_EXPECT(
+                std::get<1>(bobFullHistoryVec.back()) == std::get<1>(genesisFullHistoryVec.back()));
 
             /*
              * unsubscribe to prepare next test
@@ -1013,7 +1028,8 @@ public:
             jv = wscTxHistory->invoke("unsubscribe", request);
             if (!BEAST_EXPECT(goodSubRPC(jv)))
                 return;
-            request[jss::account_history_tx_stream][jss::account] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            request[jss::account_history_tx_stream][jss::account] =
+                "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             jv = wscTxHistory->invoke("unsubscribe", request);
             BEAST_EXPECT(goodSubRPC(jv));
 
@@ -1030,13 +1046,15 @@ public:
             BEAST_EXPECT(getTxHash(*wscTxHistory, bobFullHistoryVec, 31).second);
             jv = wscTxHistory->invoke("unsubscribe", request);
 
-            request[jss::account_history_tx_stream][jss::account] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            request[jss::account_history_tx_stream][jss::account] =
+                "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             jv = wscTxHistory->invoke("subscribe", request);
             genesisFullHistoryVec.clear();
             BEAST_EXPECT(getTxHash(*wscTxHistory, genesisFullHistoryVec, 31).second);
             jv = wscTxHistory->invoke("unsubscribe", request);
 
-            BEAST_EXPECT(std::get<1>(bobFullHistoryVec.back()) == std::get<1>(genesisFullHistoryVec.back()));
+            BEAST_EXPECT(
+                std::get<1>(bobFullHistoryVec.back()) == std::get<1>(genesisFullHistoryVec.back()));
         }
 
         {
@@ -1157,7 +1175,9 @@ public:
             env.close();
 
             // many payments, and close lots of ledgers
-            auto oneRound = [&](int numPayments) { return sendPayments(env, alice, carol, numPayments, 300); };
+            auto oneRound = [&](int numPayments) {
+                return sendPayments(env, alice, carol, numPayments, 300);
+            };
 
             // subscribe
             Json::Value request;
@@ -1199,7 +1219,8 @@ public:
         using namespace jtx;
         using namespace std::chrono_literals;
         FeatureBitset const all{
-            jtx::testable_amendments() | featurePermissionedDomains | featureCredentials | featurePermissionedDEX};
+            jtx::testable_amendments() | featurePermissionedDomains | featureCredentials |
+            featurePermissionedDEX};
 
         Env env(*this, all);
         PermissionedDEX permDex(env);
@@ -1231,7 +1252,8 @@ public:
 
             auto const jrOffer = jv[jss::changes][0u];
             return (jv[jss::changes][0u][jss::domain]).asString() == strHex(domainID) &&
-                jrOffer[jss::currency_a].asString() == "XRP_drops" && jrOffer[jss::volume_a].asString() == "5000000" &&
+                jrOffer[jss::currency_a].asString() == "XRP_drops" &&
+                jrOffer[jss::volume_a].asString() == "5000000" &&
                 jrOffer[jss::currency_b].asString() == "rHUKYAZyUFn8PCZWbPfwHfbVQXTYrYKkHb/USD" &&
                 jrOffer[jss::volume_b].asString() == "5";
         }));
@@ -1380,7 +1402,9 @@ public:
 
             // Alice creates sell offer and set broker as destination
             uint256 const offerAliceToBroker = keylet::nftoffer(alice, env.seq(alice)).key;
-            env(token::createOffer(alice, nftId, drops(1)), token::destination(broker), txflags(tfSellNFToken));
+            env(token::createOffer(alice, nftId, drops(1)),
+                token::destination(broker),
+                txflags(tfSellNFToken));
             env.close();
             verifyNFTokenOfferID(offerAliceToBroker);
 

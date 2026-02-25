@@ -52,17 +52,20 @@ TimeoutCounter::queueJob(ScopedLockType& sl)
     if (isDone())
         return;
     if (queueJobParameter_.jobLimit &&
-        app_.getJobQueue().getJobCountTotal(queueJobParameter_.jobType) >= queueJobParameter_.jobLimit)
+        app_.getJobQueue().getJobCountTotal(queueJobParameter_.jobType) >=
+            queueJobParameter_.jobLimit)
     {
-        JLOG(journal_.debug()) << "Deferring " << queueJobParameter_.jobName << " timer due to load";
+        JLOG(journal_.debug()) << "Deferring " << queueJobParameter_.jobName
+                               << " timer due to load";
         setTimer(sl);
         return;
     }
 
-    app_.getJobQueue().addJob(queueJobParameter_.jobType, queueJobParameter_.jobName, [wptr = pmDowncast()]() {
-        if (auto sptr = wptr.lock(); sptr)
-            sptr->invokeOnTimer();
-    });
+    app_.getJobQueue().addJob(
+        queueJobParameter_.jobType, queueJobParameter_.jobName, [wptr = pmDowncast()]() {
+            if (auto sptr = wptr.lock(); sptr)
+                sptr->invokeOnTimer();
+        });
 }
 
 void
