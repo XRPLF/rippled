@@ -5402,7 +5402,7 @@ class Vault_test : public beast::unit_test::suite
             testcase("VaultDelete data fixLendingProtocolV1_1 enabled data valid");
             PrettyAsset const xrpAsset = xrpIssue();
             auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpAsset});
-            env(delTx, ter(tesSUCCESS), THISLINE);
+            env(tx, ter(tesSUCCESS), THISLINE);
             env.close();
             // Recreate the transaction as the vault keylet changed
             auto delTx = vault.del({.owner = owner, .id = keylet.key});
