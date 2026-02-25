@@ -186,7 +186,7 @@ public:
         nudb::error_code ec;
         db_.fetch(
             hash.data(),
-            [hash, pno, &status](void const* data, std::size_t size) {
+            [&hash, pno, &status](void const* data, std::size_t size) {
                 nudb::detail::buffer bf;
                 auto const result = nodeobject_decompress(data, size, bf);
                 DecodedBlob decoded(hash.data(), result.first, result.second);

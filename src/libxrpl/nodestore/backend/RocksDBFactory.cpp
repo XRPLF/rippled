@@ -332,9 +332,8 @@ public:
             EncodedBlob encoded(e);
 
             wb.Put(
-                rocksdb::Slice(reinterpret_cast<char const*>(encoded.getKey()), m_keyBytes),
-                rocksdb::Slice(
-                    reinterpret_cast<char const*>(encoded.getData()), encoded.getSize()));
+                rocksdb::Slice(std::bit_cast<char const*>(encoded.getKey()), m_keyBytes),
+                rocksdb::Slice(std::bit_cast<char const*>(encoded.getData()), encoded.getSize()));
         }
 
         rocksdb::WriteOptions const options;
