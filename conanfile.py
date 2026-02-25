@@ -31,7 +31,7 @@ class Xrpl(ConanFile):
         "ed25519/2015.03",
         "grpc/1.72.0",
         "libarchive/3.8.1",
-        "mpt-crypto/0.1.0-rc1",
+        "mpt-crypto/0.1.0-rc2",
         "nudb/2.0.9",
         "openssl/3.5.5",
         "secp256k1/0.7.1",
