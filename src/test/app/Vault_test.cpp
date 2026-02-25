@@ -5369,15 +5369,15 @@ class Vault_test : public beast::unit_test::suite
         Vault vault{env};
 
         auto const keylet = keylet::vault(owner.id(), 1);
+        auto delTx = vault.del({.owner = owner, .id = keylet.key});
 
         // Test VaultDelete with fixLendingProtocolV1_1 disabled
         // Transaction fails if the data field is provided
         {
             testcase("VaultDelete data fixLendingProtocolV1_1 disabled");
             env.disableFeature(fixLendingProtocolV1_1);
-            auto tx = vault.del({.owner = owner, .id = keylet.key});
-            tx[sfMemoData] = strHex(std::string(maxDataPayloadLength, 'A'));
-            env(tx, ter(temDISABLED), THISLINE);
+            delTx[sfMemoData] = strHex(std::string(maxDataPayloadLength, 'A'));
+            env(delTx, ter(temDISABLED), THISLINE);
             env.close();
             env.enableFeature(fixLendingProtocolV1_1);
         }
@@ -5385,18 +5385,16 @@ class Vault_test : public beast::unit_test::suite
         // Transaction fails if the data field is too large
         {
             testcase("VaultDelete data fixLendingProtocolV1_1 enabled data too large");
-            auto tx = vault.del({.owner = owner, .id = keylet.key});
-            tx[sfMemoData] = strHex(std::string(maxDataPayloadLength + 1, 'A'));
-            env(tx, ter(temMALFORMED), THISLINE);
+            delTx[sfMemoData] = strHex(std::string(maxDataPayloadLength + 1, 'A'));
+            env(delTx, ter(temMALFORMED), THISLINE);
             env.close();
         }
 
         // Transaction fails if the data field is set, but is empty
         {
             testcase("VaultDelete data fixLendingProtocolV1_1 enabled data empty");
-            auto tx = vault.del({.owner = owner, .id = keylet.key});
-            tx[sfMemoData] = strHex(std::string(0, 'A'));
-            env(tx, ter(temMALFORMED), THISLINE);
+            delTx[sfMemoData] = strHex(std::string(0, 'A'));
+            env(delTx, ter(temMALFORMED), THISLINE);
             env.close();
         }
 
@@ -5404,12 +5402,11 @@ class Vault_test : public beast::unit_test::suite
             testcase("VaultDelete data fixLendingProtocolV1_1 enabled data valid");
             PrettyAsset const xrpAsset = xrpIssue();
             auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpAsset});
-            env(tx, ter(tesSUCCESS), THISLINE);
+            env(delTx, ter(tesSUCCESS), THISLINE);
             env.close();
 
-            tx = vault.del({.owner = owner, .id = keylet.key});
-            tx[sfMemoData] = strHex(std::string(maxDataPayloadLength, 'A'));
-            env(tx, ter(tesSUCCESS), THISLINE);
+            delTx[sfMemoData] = strHex(std::string(maxDataPayloadLength, 'A'));
+            env(delTx, ter(tesSUCCESS), THISLINE);
             env.close();
         }
     }
