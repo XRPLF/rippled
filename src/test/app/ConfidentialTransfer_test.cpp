@@ -3731,6 +3731,263 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     void
+    testSendForgedEqualityProof(FeatureBitset features)
+    {
+        testcase("test ConfidentialMPTSend Forged Equality Proof");
+
+        // This test verifies that the proof verification algorithm correctly
+        // rejects forged proofs. The attack variant modifies a ciphertext after
+        // proof generation, keeping the original proof unchanged. The proof
+        // should fail because the Fiat-Shamir challenge binds the ciphertexts
+        // to the proof.
+
+        using namespace test::jtx;
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+        mptAlice.create({.ownerCount = 1, .flags = tfMPTCanLock | tfMPTCanPrivacy | tfMPTCanTransfer});
+        mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = carol});
+
+        mptAlice.pay(alice, bob, 1000);
+        mptAlice.pay(alice, carol, 1000);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+        mptAlice.generateKeyPair(carol);
+
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+        // Bob converts 100 to confidential
+        mptAlice.convert({.account = bob, .amt = 100, .holderPubKey = mptAlice.getPubKey(bob)});
+        mptAlice.mergeInbox({.account = bob});
+
+        // Carol converts 50 to confidential (needed for receiving)
+        mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
+        mptAlice.mergeInbox({.account = carol});
+
+        // Attack Variant A: Modify ciphertext after proof generation
+        // 1. Generate valid proof for Enc(10)
+        // 2. Replace destEncryptedAmt with Enc(20) - a different value
+        // 3. Keep original proof unchanged
+        // Expected: tecBAD_PROOF because Fiat-Shamir challenge binds ciphertexts
+        {
+            uint64_t const sendAmount = 10;
+            uint64_t const forgedAmount = 20;  // Different from sendAmount
+
+            // Generate the same blinding factor for consistency
+            Buffer const blindingFactor = generateBlindingFactor();
+
+            // Generate valid ciphertexts for sendAmount (10)
+            auto const senderAmt = mptAlice.encryptAmount(bob, sendAmount, blindingFactor);
+            auto const destAmt = mptAlice.encryptAmount(carol, sendAmount, blindingFactor);
+            auto const issuerAmt = mptAlice.encryptAmount(alice, sendAmount, blindingFactor);
+
+            // Generate commitments
+            auto const amountBlindingFactor = generateBlindingFactor();
+            auto const amountCommitment = mptAlice.getPedersenCommitment(sendAmount, amountBlindingFactor);
+
+            auto const prevSpending = mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            BEAST_EXPECT(prevSpending.has_value());
+            auto const balanceBlindingFactor = generateBlindingFactor();
+            auto const balanceCommitment = mptAlice.getPedersenCommitment(*prevSpending, balanceBlindingFactor);
+
+            // Generate valid proof for sendAmount with original ciphertexts
+            auto const version = mptAlice.getMPTokenVersion(bob);
+            auto const ctxHash = getSendContextHash(bob.id(), env.seq(bob), mptAlice.issuanceID(), carol.id(), version);
+
+            size_t const nRecipients = 3;  // sender, dest, issuer
+            std::vector<ConfidentialRecipient> recipients;
+            recipients.push_back({Slice(*mptAlice.getPubKey(bob)), senderAmt});
+            recipients.push_back({Slice(*mptAlice.getPubKey(carol)), destAmt});
+            recipients.push_back({Slice(*mptAlice.getPubKey(alice)), issuerAmt});
+
+            auto const prevEncryptedSpending = mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            BEAST_EXPECT(prevEncryptedSpending.has_value());
+
+            auto const validProof = mptAlice.getConfidentialSendProof(
+                bob,
+                sendAmount,
+                recipients,
+                blindingFactor,
+                nRecipients,
+                ctxHash,
+                {.pedersenCommitment = amountCommitment,
+                 .amt = sendAmount,
+                 .encryptedAmt = senderAmt,
+                 .blindingFactor = amountBlindingFactor},
+                {.pedersenCommitment = balanceCommitment,
+                 .amt = *prevSpending,
+                 .encryptedAmt = *prevEncryptedSpending,
+                 .blindingFactor = balanceBlindingFactor});
+
+            BEAST_EXPECT(validProof.has_value());
+
+            // Now forge: create a different ciphertext for destination (Enc(20))
+            // Use a different blinding factor for the forged ciphertext
+            Buffer const forgedBlindingFactor = generateBlindingFactor();
+            auto const forgedDestAmt = mptAlice.encryptAmount(carol, forgedAmount, forgedBlindingFactor);
+
+            // Submit transaction with:
+            // - Original proof (generated for sendAmount=10)
+            // - Forged destEncryptedAmt (encrypting forgedAmount=20)
+            // This should fail because the proof was generated with the original
+            // destAmt ciphertext, not the forged one
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = sendAmount,
+                 .proof = strHex(*validProof),
+                 .senderEncryptedAmt = senderAmt,
+                 .destEncryptedAmt = forgedDestAmt,  // Forged ciphertext
+                 .issuerEncryptedAmt = issuerAmt,
+                 .amountCommitment = amountCommitment,
+                 .balanceCommitment = balanceCommitment,
+                 .err = tecBAD_PROOF});
+        }
+
+        // Attack Variant B: Modify sender's ciphertext after proof generation
+        // Expected: tecBAD_PROOF
+        {
+            uint64_t const sendAmount = 10;
+            uint64_t const forgedAmount = 5;  // Attacker tries to hide real amount
+
+            Buffer const blindingFactor = generateBlindingFactor();
+
+            // Generate valid ciphertexts
+            auto const senderAmt = mptAlice.encryptAmount(bob, sendAmount, blindingFactor);
+            auto const destAmt = mptAlice.encryptAmount(carol, sendAmount, blindingFactor);
+            auto const issuerAmt = mptAlice.encryptAmount(alice, sendAmount, blindingFactor);
+
+            auto const amountBlindingFactor = generateBlindingFactor();
+            auto const amountCommitment = mptAlice.getPedersenCommitment(sendAmount, amountBlindingFactor);
+
+            auto const prevSpending = mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            BEAST_EXPECT(prevSpending.has_value());
+            auto const balanceBlindingFactor = generateBlindingFactor();
+            auto const balanceCommitment = mptAlice.getPedersenCommitment(*prevSpending, balanceBlindingFactor);
+
+            auto const version = mptAlice.getMPTokenVersion(bob);
+            auto const ctxHash = getSendContextHash(bob.id(), env.seq(bob), mptAlice.issuanceID(), carol.id(), version);
+
+            size_t const nRecipients = 3;
+            std::vector<ConfidentialRecipient> recipients;
+            recipients.push_back({Slice(*mptAlice.getPubKey(bob)), senderAmt});
+            recipients.push_back({Slice(*mptAlice.getPubKey(carol)), destAmt});
+            recipients.push_back({Slice(*mptAlice.getPubKey(alice)), issuerAmt});
+
+            auto const prevEncryptedSpending = mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            BEAST_EXPECT(prevEncryptedSpending.has_value());
+
+            auto const validProof = mptAlice.getConfidentialSendProof(
+                bob,
+                sendAmount,
+                recipients,
+                blindingFactor,
+                nRecipients,
+                ctxHash,
+                {.pedersenCommitment = amountCommitment,
+                 .amt = sendAmount,
+                 .encryptedAmt = senderAmt,
+                 .blindingFactor = amountBlindingFactor},
+                {.pedersenCommitment = balanceCommitment,
+                 .amt = *prevSpending,
+                 .encryptedAmt = *prevEncryptedSpending,
+                 .blindingFactor = balanceBlindingFactor});
+
+            BEAST_EXPECT(validProof.has_value());
+
+            // Forge sender's ciphertext
+            Buffer const forgedBlindingFactor = generateBlindingFactor();
+            auto const forgedSenderAmt = mptAlice.encryptAmount(bob, forgedAmount, forgedBlindingFactor);
+
+            // Submit with forged sender ciphertext
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = sendAmount,
+                 .proof = strHex(*validProof),
+                 .senderEncryptedAmt = forgedSenderAmt,  // Forged ciphertext
+                 .destEncryptedAmt = destAmt,
+                 .issuerEncryptedAmt = issuerAmt,
+                 .amountCommitment = amountCommitment,
+                 .balanceCommitment = balanceCommitment,
+                 .err = tecBAD_PROOF});
+        }
+
+        // Attack Variant C: Modify issuer's ciphertext (breaks integrity for issuer view)
+        // Expected: tecBAD_PROOF
+        {
+            uint64_t const sendAmount = 10;
+            uint64_t const forgedAmount = 100;  // Issuer would see wrong balance
+
+            Buffer const blindingFactor = generateBlindingFactor();
+
+            auto const senderAmt = mptAlice.encryptAmount(bob, sendAmount, blindingFactor);
+            auto const destAmt = mptAlice.encryptAmount(carol, sendAmount, blindingFactor);
+            auto const issuerAmt = mptAlice.encryptAmount(alice, sendAmount, blindingFactor);
+
+            auto const amountBlindingFactor = generateBlindingFactor();
+            auto const amountCommitment = mptAlice.getPedersenCommitment(sendAmount, amountBlindingFactor);
+
+            auto const prevSpending = mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            BEAST_EXPECT(prevSpending.has_value());
+            auto const balanceBlindingFactor = generateBlindingFactor();
+            auto const balanceCommitment = mptAlice.getPedersenCommitment(*prevSpending, balanceBlindingFactor);
+
+            auto const version = mptAlice.getMPTokenVersion(bob);
+            auto const ctxHash = getSendContextHash(bob.id(), env.seq(bob), mptAlice.issuanceID(), carol.id(), version);
+
+            size_t const nRecipients = 3;
+            std::vector<ConfidentialRecipient> recipients;
+            recipients.push_back({Slice(*mptAlice.getPubKey(bob)), senderAmt});
+            recipients.push_back({Slice(*mptAlice.getPubKey(carol)), destAmt});
+            recipients.push_back({Slice(*mptAlice.getPubKey(alice)), issuerAmt});
+
+            auto const prevEncryptedSpending = mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            BEAST_EXPECT(prevEncryptedSpending.has_value());
+
+            auto const validProof = mptAlice.getConfidentialSendProof(
+                bob,
+                sendAmount,
+                recipients,
+                blindingFactor,
+                nRecipients,
+                ctxHash,
+                {.pedersenCommitment = amountCommitment,
+                 .amt = sendAmount,
+                 .encryptedAmt = senderAmt,
+                 .blindingFactor = amountBlindingFactor},
+                {.pedersenCommitment = balanceCommitment,
+                 .amt = *prevSpending,
+                 .encryptedAmt = *prevEncryptedSpending,
+                 .blindingFactor = balanceBlindingFactor});
+
+            BEAST_EXPECT(validProof.has_value());
+
+            // Forge issuer's ciphertext
+            Buffer const forgedBlindingFactor = generateBlindingFactor();
+            auto const forgedIssuerAmt = mptAlice.encryptAmount(alice, forgedAmount, forgedBlindingFactor);
+
+            // Submit with forged issuer ciphertext
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = sendAmount,
+                 .proof = strHex(*validProof),
+                 .senderEncryptedAmt = senderAmt,
+                 .destEncryptedAmt = destAmt,
+                 .issuerEncryptedAmt = forgedIssuerAmt,  // Forged ciphertext
+                 .amountCommitment = amountCommitment,
+                 .balanceCommitment = balanceCommitment,
+                 .err = tecBAD_PROOF});
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         // ConfidentialMPTConvert
@@ -3773,6 +4030,9 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         // todo: this test fails because proof generation for convertback fails if remainder amount is 0
         //  testMutatePrivacy(features);
+
+        // Additional integration tests
+        testSendForgedEqualityProof(features);
     }
 
 public:
