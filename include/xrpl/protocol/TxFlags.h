@@ -52,6 +52,7 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
 #pragma push_macro("VALUE_TO_MASK")
 #pragma push_macro("ALL_TX_FLAGS")
 #pragma push_macro("NULL_MASK_ADJ")
+#pragma push_macro("MASK_ADJ_TO_MASK")
 
 #undef XMACRO
 #undef TO_VALUE
@@ -62,6 +63,7 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
 #undef TO_MASK
 #undef VALUE_TO_MASK
 #undef NULL_MASK_ADJ
+#undef MASK_ADJ_TO_MASK
 
 // clang-format off
 #undef ALL_TX_FLAGS
@@ -236,6 +238,22 @@ XMACRO(NULL_NAME, TO_VALUE, NULL_OUTPUT, NULL_MASK_ADJ)
 #define MASK_ADJ_TO_MASK(value) value
 XMACRO(TO_MASK, VALUE_TO_MASK, VALUE_TO_MASK, MASK_ADJ_TO_MASK)
 
+// Verify that tfBatchMask correctly rejects tfInnerBatchTxn.
+// The outer Batch transaction must NOT have tfInnerBatchTxn set; only inner transactions should
+// have it.
+static_assert(
+    (tfBatchMask & tfInnerBatchTxn) == tfInnerBatchTxn,
+    "tfBatchMask must include tfInnerBatchTxn to reject it on outer Batch");
+
+// Verify that other transaction masks correctly allow tfInnerBatchTxn.
+// Inner transactions need tfInnerBatchTxn to be valid, so these masks must not reject it.
+static_assert(
+    (tfPaymentMask & tfInnerBatchTxn) == 0,
+    "tfPaymentMask must not reject tfInnerBatchTxn");
+static_assert(
+    (tfAccountSetMask & tfInnerBatchTxn) == 0,
+    "tfAccountSetMask must not reject tfInnerBatchTxn");
+
 // Create getter functions for each set of flags using Meyer's singleton pattern.
 // This avoids static initialization order fiasco while still providing efficient access.
 // This is used below in `getAllTxFlags()` to generate the server_definitions RPC
@@ -310,6 +328,7 @@ getAllTxFlags()
 #pragma pop_macro("VALUE_TO_MASK")
 #pragma pop_macro("ALL_TX_FLAGS")
 #pragma pop_macro("NULL_MASK_ADJ")
+#pragma pop_macro("MASK_ADJ_TO_MASK")
 
 // Additional transaction masks and combos
 inline constexpr FlagValue tfMPTPaymentMask = ~(tfUniversal | tfPartialPayment);
@@ -376,6 +395,10 @@ inline constexpr FlagValue tfWithdrawSubTx = tfLPToken | tfSingleAsset | tfTwoAs
 inline constexpr FlagValue tfDepositSubTx =
     tfLPToken | tfSingleAsset | tfTwoAsset | tfOneAssetLPToken | tfLimitLPToken | tfTwoAssetIfEmpty;
 
+#pragma push_macro("ACCOUNTSET_FLAGS")
+#pragma push_macro("ACCOUNTSET_FLAG_TO_VALUE")
+#pragma push_macro("ACCOUNTSET_FLAG_TO_MAP")
+
 // AccountSet SetFlag/ClearFlag values
 #define ACCOUNTSET_FLAGS(ASF_FLAG)                \
     ASF_FLAG(asfRequireDest, 1)                   \
@@ -409,5 +432,13 @@ getAsfFlagMap()
         ACCOUNTSET_FLAGS(ACCOUNTSET_FLAG_TO_MAP)};
     return flags;
 }
+
+#undef ACCOUNTSET_FLAG_TO_VALUE
+#undef ACCOUNTSET_FLAG_TO_MAP
+#undef ACCOUNTSET_FLAGS
+
+#pragma pop_macro("ACCOUNTSET_FLAG_TO_VALUE")
+#pragma pop_macro("ACCOUNTSET_FLAG_TO_MAP")
+#pragma pop_macro("ACCOUNTSET_FLAGS")
 
 }  // namespace xrpl

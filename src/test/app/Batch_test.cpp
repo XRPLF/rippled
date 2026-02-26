@@ -4316,33 +4316,6 @@ class Batch_test : public beast::unit_test::suite
     }
 
     void
-    testBatchFlagsMask()
-    {
-        testcase("batch flags mask");
-
-        // Verify that tfBatchMask correctly rejects tfInnerBatchTxn.
-        {
-            // tfInnerBatchTxn bit should be SET in tfBatchMask (meaning it's invalid)
-            BEAST_EXPECT((tfBatchMask & tfInnerBatchTxn) == tfInnerBatchTxn);
-
-            // A Batch transaction with tfInnerBatchTxn should be rejected
-            std::uint32_t const batchWithInnerFlag =
-                tfFullyCanonicalSig | tfAllOrNothing | tfInnerBatchTxn;
-            BEAST_EXPECT((batchWithInnerFlag & tfBatchMask) != 0);
-
-            // A valid Batch transaction without tfInnerBatchTxn should pass
-            std::uint32_t const validBatch = tfFullyCanonicalSig | tfAllOrNothing;
-            BEAST_EXPECT((validBatch & tfBatchMask) == 0);
-        }
-
-        // Verify that other transaction masks correctly allow tfInnerBatchTxn
-        {
-            BEAST_EXPECT((tfPaymentMask & tfInnerBatchTxn) == 0);
-            BEAST_EXPECT((tfAccountSetMask & tfInnerBatchTxn) == 0);
-        }
-    }
-
-    void
     testWithFeats(FeatureBitset features)
     {
         testEnable(features);
@@ -4382,8 +4355,6 @@ public:
     run() override
     {
         using namespace test::jtx;
-
-        testBatchFlagsMask();
 
         auto const sa = testable_amendments();
         testWithFeats(sa - fixBatchInnerSigs);

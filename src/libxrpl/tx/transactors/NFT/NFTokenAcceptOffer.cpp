@@ -7,12 +7,6 @@
 
 namespace xrpl {
 
-std::uint32_t
-NFTokenAcceptOffer::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
 {
