@@ -115,10 +115,9 @@ public:
     //--------------------------------------------------------------------------
 
     Status
-    fetch(void const* key, std::shared_ptr<NodeObject>* pObject) override
+    fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pObject) override
     {
         XRPL_ASSERT(db_, "xrpl::NodeStore::MemoryBackend::fetch : non-null database");
-        uint256 const hash(uint256::fromVoid(key));
 
         std::lock_guard const _(db_->mutex);
 
@@ -133,14 +132,14 @@ public:
     }
 
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
-    fetchBatch(std::vector<uint256 const*> const& hashes) override
+    fetchBatch(std::vector<uint256> const& hashes) override
     {
         std::vector<std::shared_ptr<NodeObject>> results;
         results.reserve(hashes.size());
         for (auto const& h : hashes)
         {
             std::shared_ptr<NodeObject> nObj;
-            Status const status = fetch(h->begin(), &nObj);
+            Status const status = fetch(h, &nObj);
             if (status != ok)
             {
                 results.push_back({});
