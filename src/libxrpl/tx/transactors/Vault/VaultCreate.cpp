@@ -50,8 +50,10 @@ VaultCreate::preflight(PreflightContext const& ctx)
     if (auto const domain = ctx.tx[~sfDomainID])
     {
         if (*domain == beast::zero)
+        {
             return temMALFORMED;
-        else if ((ctx.tx.getFlags() & tfVaultPrivate) == 0)
+        }
+        if ((ctx.tx.getFlags() & tfVaultPrivate) == 0)
             return temMALFORMED;  // DomainID only allowed on private vaults
     }
 
@@ -63,7 +65,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
 
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
-        if (metadata->length() == 0 || metadata->length() > maxMPTokenMetadataLength)
+        if (metadata->empty() || metadata->length() > maxMPTokenMetadataLength)
             return temMALFORMED;
     }
 
@@ -158,7 +160,7 @@ VaultCreate::doApply()
     std::uint32_t mptFlags = 0;
     if ((txFlags & tfVaultShareNonTransferable) == 0)
         mptFlags |= (lsfMPTCanEscrow | lsfMPTCanTrade | lsfMPTCanTransfer);
-    if (txFlags & tfVaultPrivate)
+    if ((txFlags & tfVaultPrivate) != 0u)
         mptFlags |= lsfMPTRequireAuth;
 
     // Note, here we are **not** creating an MPToken for the assets held in
@@ -197,10 +199,14 @@ VaultCreate::doApply()
         vault->at(sfData) = *value;
     // Required field, default to vaultStrategyFirstComeFirstServe
     if (auto value = tx[~sfWithdrawalPolicy])
+    {
         vault->at(sfWithdrawalPolicy) = *value;
+    }
     else
+    {
         vault->at(sfWithdrawalPolicy) = vaultStrategyFirstComeFirstServe;
-    if (scale)
+    }
+    if (scale != 0u)
         vault->at(sfScale) = scale;
     view().insert(vault);
 
@@ -211,7 +217,7 @@ VaultCreate::doApply()
         return err;
 
     // If the vault is private, set the authorized flag for the vault owner
-    if (txFlags & tfVaultPrivate)
+    if ((txFlags & tfVaultPrivate) != 0u)
     {
         if (auto const err = authorizeMPToken(
                 view(), mPriorBalance, mptIssuanceID, pseudoId, ctx_.journal, {}, account_);

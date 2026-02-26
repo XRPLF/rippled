@@ -45,7 +45,7 @@ struct AttestationBase
         PublicKey const& publicKey_,
         Buffer signature_,
         AccountID const& sendingAccount_,
-        STAmount const& sendingAmount_,
+        STAmount sendingAmount_,
         AccountID const& rewardAccount_,
         bool wasLockingChainSend_);
 
@@ -169,7 +169,7 @@ struct AttestationCreateAccount : AttestationBase
         Buffer signature_,
         AccountID const& sendingAccount_,
         STAmount const& sendingAmount_,
-        STAmount const& rewardAmount_,
+        STAmount rewardAmount_,
         AccountID const& rewardAccount_,
         bool wasLockingChainSend_,
         std::uint64_t createCount_,

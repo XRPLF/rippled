@@ -9,8 +9,7 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
 
-namespace xrpl {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 class PeerFinder_test : public beast::unit_test::suite
 {
@@ -123,7 +122,7 @@ public:
                 if (!BEAST_EXPECT(
                         logic.onConnected(slot, beast::IP::Endpoint::from_string("65.0.0.2:5"))))
                     return;
-                std::string s = ".";
+                std::string const s = ".";
                 if (!BEAST_EXPECT(logic.activate(slot, pk, false) == PeerFinder::Result::success))
                     return;
                 logic.on_closed(slot);
@@ -392,7 +391,7 @@ public:
 
             testcase(test);
 
-            std::string toLoad = "";
+            std::string toLoad;
             int max = 0;
             if (maxPeers)
             {
@@ -412,7 +411,7 @@ public:
                 (c.PEERS_MAX == max && c.PEERS_IN_MAX == 0 && c.PEERS_OUT_MAX == 0) ||
                 (c.PEERS_IN_MAX == *maxIn && c.PEERS_OUT_MAX == *maxOut));
 
-            Config config = Config::makeConfig(c, port, false, 0);
+            Config const config = Config::makeConfig(c, port, false, 0);
 
             Counts counts;
             counts.onConfig(config);
@@ -517,5 +516,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(PeerFinder, peerfinder, xrpl);
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

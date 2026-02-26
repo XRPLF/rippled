@@ -7,8 +7,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 namespace {
 
@@ -45,7 +44,7 @@ struct MultiApiJson_test : beast::unit_test::suite
 
         MultiApiJson<1, 3> subject{};
         static_assert(sizeof(subject) == sizeof(subject.val));
-        static_assert(subject.size == subject.val.size());
+        static_assert(xrpl::detail::MultiApiJson<1, 3>::size == subject.val.size());
         static_assert(std::is_same_v<decltype(subject.val), std::array<Json::Value, 3>>);
 
         BEAST_EXPECT(subject.val.size() == 3);
@@ -64,7 +63,8 @@ struct MultiApiJson_test : beast::unit_test::suite
 
             MultiApiJson<1, 3> s1{};
             static_assert(
-                s1.size == RPC::apiMaximumValidVersion + 1 - RPC::apiMinimumSupportedVersion);
+                xrpl::detail::MultiApiJson<1, 3>::size ==
+                RPC::apiMaximumValidVersion + 1 - RPC::apiMinimumSupportedVersion);
 
             int productAllVersions = 1;
             for (unsigned i = RPC::apiMinimumSupportedVersion; i <= RPC::apiMaximumValidVersion;
@@ -556,7 +556,7 @@ struct MultiApiJson_test : beast::unit_test::suite
             static_assert([](auto&& v) {
                 return !requires {
                     v.visitor(
-                        std::move(v),  // cannot bind rvalue
+                        declval<decltype(v)>(),  // cannot bind rvalue
                         1,
                         [](Json::Value&, auto) {});
                 };
@@ -915,5 +915,4 @@ struct MultiApiJson_test : beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(MultiApiJson, protocol, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

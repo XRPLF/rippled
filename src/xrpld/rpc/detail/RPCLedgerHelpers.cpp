@@ -8,8 +8,7 @@
 
 #include <boost/algorithm/string/case_conv.hpp>
 
-namespace xrpl {
-namespace RPC {
+namespace xrpl::RPC {
 
 namespace {
 
@@ -55,7 +54,7 @@ ledgerFromIndex(
     if (index == "closed")
         return getLedger(ledger, LedgerShortcut::Closed, context);
 
-    std::uint32_t iVal;
+    std::uint32_t iVal = 0;
     if (!beast::lexicalCastChecked(iVal, index))
         return {rpcINVALID_PARAMS, expected_field_message(fieldName, "string or number")};
 
@@ -78,10 +77,12 @@ ledgerFromRequest(T& ledger, JsonContext const& context)
         // while `ledger` is still supported, it is deprecated
         // and therefore shouldn't be mentioned in the error message
         if (hasLedger)
+        {
             return {
                 rpcINVALID_PARAMS,
                 "Exactly one of 'ledger', 'ledger_hash', or "
                 "'ledger_index' can be specified."};
+        }
         return {
             rpcINVALID_PARAMS,
             "Exactly one of 'ledger_hash' or "
@@ -97,9 +98,10 @@ ledgerFromRequest(T& ledger, JsonContext const& context)
             return {rpcINVALID_PARAMS, expected_field_message(jss::ledger, "string or number")};
         }
         if (legacyLedger.isString() && legacyLedger.asString().size() == 64)
+        {
             return ledgerFromHash(ledger, legacyLedger, context, jss::ledger);
-        else
-            return ledgerFromIndex(ledger, legacyLedger, context, jss::ledger);
+        }
+        return ledgerFromIndex(ledger, legacyLedger, context, jss::ledger);
     }
 
     if (hasHash)
@@ -162,7 +164,7 @@ ledgerFromSpecifier(
     ledger.reset();
 
     using LedgerCase = org::xrpl::rpc::v1::LedgerSpecifier::LedgerCase;
-    LedgerCase ledgerCase = specifier.ledger_case();
+    LedgerCase const ledgerCase = specifier.ledger_case();
     switch (ledgerCase)
     {
         case LedgerCase::kHash: {
@@ -182,17 +184,15 @@ ledgerFromSpecifier(
             {
                 return getLedger(ledger, LedgerShortcut::Validated, context);
             }
-            else
+
+            if (shortcut == org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_CURRENT ||
+                shortcut == org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_UNSPECIFIED)
             {
-                if (shortcut == org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_CURRENT ||
-                    shortcut == org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_UNSPECIFIED)
-                {
-                    return getLedger(ledger, LedgerShortcut::Current, context);
-                }
-                else if (shortcut == org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_CLOSED)
-                {
-                    return getLedger(ledger, LedgerShortcut::Closed, context);
-                }
+                return getLedger(ledger, LedgerShortcut::Current, context);
+            }
+            else if (shortcut == org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_CLOSED)
+            {
+                return getLedger(ledger, LedgerShortcut::Closed, context);
             }
         }
     }
@@ -373,7 +373,7 @@ getOrAcquireLedger(RPC::JsonContext const& context)
     auto& ledgerMaster = context.app.getLedgerMaster();
     LedgerHash ledgerHash;
 
-    if ((hasHash + hasIndex) != 1)
+    if ((static_cast<int>(hasHash) + static_cast<int>(hasIndex)) != 1)
     {
         return Unexpected(
             RPC::make_param_error(
@@ -473,5 +473,4 @@ getOrAcquireLedger(RPC::JsonContext const& context)
         RPC::make_error(rpcNOT_READY, "findCreate failed to return an inbound ledger"));
 }
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

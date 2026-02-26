@@ -36,17 +36,17 @@ class LedgerLoad_test : public beast::unit_test::suite
     struct SetupData
     {
         std::string const dbPath;
-        std::string ledgerFile{};
-        Json::Value ledger{};
-        Json::Value hashes{};
-        uint256 trapTxHash{};
+        std::string ledgerFile;
+        Json::Value ledger;
+        Json::Value hashes;
+        uint256 trapTxHash;
     };
 
     SetupData
     setupLedger(beast::temp_dir const& td)
     {
         using namespace test::jtx;
-        SetupData retval = {td.path()};
+        SetupData retval = {.dbPath = td.path()};
 
         retval.ledgerFile = td.file("ledgerdata.json");
 
@@ -124,7 +124,7 @@ class LedgerLoad_test : public beast::unit_test::suite
 
         // empty path
         except([&] {
-            Env env(
+            Env const env(
                 *this,
                 envconfig(ledgerConfig, sd.dbPath, "", StartUpType::LOAD_FILE, std::nullopt),
                 nullptr,
@@ -133,7 +133,7 @@ class LedgerLoad_test : public beast::unit_test::suite
 
         // file does not exist
         except([&] {
-            Env env(
+            Env const env(
                 *this,
                 envconfig(
                     ledgerConfig, sd.dbPath, "badfile.json", StartUpType::LOAD_FILE, std::nullopt),
@@ -155,7 +155,7 @@ class LedgerLoad_test : public beast::unit_test::suite
             return;
 
         except([&] {
-            Env env(
+            Env const env(
                 *this,
                 envconfig(
                     ledgerConfig,
@@ -254,7 +254,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         {
             // will throw an exception, because we cannot load a ledger for
             // replay when trapTxHash is set to an invalid transaction
-            Env env(
+            Env const env(
                 *this,
                 envconfig(ledgerConfig, sd.dbPath, ledgerHash, StartUpType::REPLAY, ~sd.trapTxHash),
                 nullptr,
@@ -311,7 +311,7 @@ public:
     void
     run() override
     {
-        beast::temp_dir td;
+        beast::temp_dir const td;
         auto sd = setupLedger(td);
 
         // test cases

@@ -41,25 +41,25 @@ parseLedgerArgs(RPC::Context& context, Json::Value const& params)
         if ((params.isMember(jss::ledger_index_min) || params.isMember(jss::ledger_index_max)) &&
             (params.isMember(jss::ledger_hash) || params.isMember(jss::ledger_index)))
         {
-            RPC::Status status{rpcINVALID_PARAMS, "invalidParams"};
+            RPC::Status const status{rpcINVALID_PARAMS, "invalidParams"};
             status.inject(response);
             return response;
         }
     }
     if (params.isMember(jss::ledger_index_min) || params.isMember(jss::ledger_index_max))
     {
-        uint32_t min =
+        uint32_t const min =
             params.isMember(jss::ledger_index_min) && params[jss::ledger_index_min].asInt() >= 0
             ? params[jss::ledger_index_min].asUInt()
             : 0;
-        uint32_t max =
+        uint32_t const max =
             params.isMember(jss::ledger_index_max) && params[jss::ledger_index_max].asInt() >= 0
             ? params[jss::ledger_index_max].asUInt()
             : UINT32_MAX;
 
-        return LedgerRange{min, max};
+        return LedgerRange{.min = min, .max = max};
     }
-    else if (params.isMember(jss::ledger_hash))
+    if (params.isMember(jss::ledger_hash))
     {
         auto& hashValue = params[jss::ledger_hash];
         if (!hashValue.isString())
@@ -108,9 +108,9 @@ parseLedgerArgs(RPC::Context& context, Json::Value const& params)
 std::variant<LedgerRange, RPC::Status>
 getLedgerRange(RPC::Context& context, std::optional<LedgerSpecifier> const& ledgerSpecifier)
 {
-    std::uint32_t uValidatedMin;
-    std::uint32_t uValidatedMax;
-    bool bValidated = context.ledgerMaster.getValidatedRange(uValidatedMin, uValidatedMax);
+    std::uint32_t uValidatedMin = 0;
+    std::uint32_t uValidatedMax = 0;
+    bool const bValidated = context.ledgerMaster.getValidatedRange(uValidatedMin, uValidatedMax);
 
     if (!bValidated)
     {
@@ -165,7 +165,7 @@ getLedgerRange(RPC::Context& context, std::optional<LedgerSpecifier> const& ledg
                         return status;
                     }
 
-                    bool validated = context.ledgerMaster.isValidated(*ledgerView);
+                    bool const validated = context.ledgerMaster.isValidated(*ledgerView);
 
                     if (!validated || ledgerView->header().seq > uValidatedMax ||
                         ledgerView->header().seq < uValidatedMin)
@@ -181,7 +181,7 @@ getLedgerRange(RPC::Context& context, std::optional<LedgerSpecifier> const& ledg
         if (status)
             return status;
     }
-    return LedgerRange{uLedgerMin, uLedgerMax};
+    return LedgerRange{.min = uLedgerMin, .max = uLedgerMax};
 }
 
 std::pair<AccountTxResult, RPC::Status>
@@ -202,13 +202,13 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
 
     result.marker = args.marker;
 
-    RelationalDatabase::AccountTxPageOptions options = {
-        args.account,
-        result.ledgerRange.min,
-        result.ledgerRange.max,
-        result.marker,
-        args.limit,
-        isUnlimited(context.role)};
+    RelationalDatabase::AccountTxPageOptions const options = {
+        .account = args.account,
+        .minLedger = result.ledgerRange.min,
+        .maxLedger = result.ledgerRange.max,
+        .marker = result.marker,
+        .limit = args.limit,
+        .bAdmin = isUnlimited(context.role)};
 
     auto& db = context.app.getRelationalDatabase();
 
@@ -298,7 +298,9 @@ populateJsonResponse(
                             jvObj[jss::close_time_iso] = to_string_iso(*closeTime);
                     }
                     else
+                    {
                         jvObj[json_tx] = txn->getJson(JsonOptions::include_date);
+                    }
 
                     auto const& sttx = txn->getSTransaction();
                     RPC::insertDeliverMax(jvObj[json_tx], sttx->getTxnType(), context.apiVersion);
@@ -404,10 +406,8 @@ doAccountTxJson(RPC::JsonContext& context)
     {
         return *jv;
     }
-    else
-    {
-        args.ledger = std::get<std::optional<LedgerSpecifier>>(parseRes);
-    }
+
+    args.ledger = std::get<std::optional<LedgerSpecifier>>(parseRes);
 
     if (params.isMember(jss::marker))
     {
@@ -416,14 +416,15 @@ doAccountTxJson(RPC::JsonContext& context)
             !token[jss::ledger].isConvertibleTo(Json::ValueType::uintValue) ||
             !token[jss::seq].isConvertibleTo(Json::ValueType::uintValue))
         {
-            RPC::Status status{
+            RPC::Status const status{
                 rpcINVALID_PARAMS,
                 "invalid marker. Provide ledger index via ledger field, and "
                 "transaction sequence number via seq field"};
             status.inject(response);
             return response;
         }
-        args.marker = {token[jss::ledger].asUInt(), token[jss::seq].asUInt()};
+        args.marker = {
+            .ledgerSeq = token[jss::ledger].asUInt(), .txnSeq = token[jss::seq].asUInt()};
     }
 
     auto res = doAccountTxHelp(context, args);

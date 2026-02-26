@@ -123,7 +123,7 @@ class PerfLogImp : public PerfLog
 
 public:
     PerfLogImp(
-        Setup const& setup,
+        Setup setup,
         Application& app,
         beast::Journal journal,
         std::function<void()>&& signalStop);

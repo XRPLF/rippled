@@ -9,8 +9,7 @@
 
 #include <boost/algorithm/string.hpp>
 
-namespace xrpl {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 bool
 operator==(Endpoint const& a, Endpoint const& b)
@@ -30,10 +29,10 @@ public:
 
     // Add the address as an endpoint
     template <class C>
-    inline void
+    void
     add(beast::IP::Endpoint ep, C& c, std::uint32_t hops = 0)
     {
-        Endpoint cep{ep, hops};
+        Endpoint const cep{ep, hops};
         c.insert(cep);
     }
 
@@ -199,5 +198,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Livecache, peerfinder, xrpl);
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

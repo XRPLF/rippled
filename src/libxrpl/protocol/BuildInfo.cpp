@@ -10,9 +10,7 @@
 #include <string>
 #include <string_view>
 
-namespace xrpl {
-
-namespace BuildInfo {
+namespace xrpl::BuildInfo {
 
 //--------------------------------------------------------------------------
 //  The build version number. You must edit this for each release
@@ -95,7 +93,7 @@ encodeSoftwareVersion(char const* const versionStr)
         {
             std::uint8_t x = 0;
 
-            for (auto id : v.preReleaseIdentifiers)
+            for (auto const& id : v.preReleaseIdentifiers)
             {
                 auto parsePreRelease = [](std::string_view identifier,
                                           std::string_view prefix,
@@ -104,7 +102,7 @@ encodeSoftwareVersion(char const* const versionStr)
                                           std::uint8_t hik) -> std::uint8_t {
                     std::uint8_t ret = 0;
 
-                    if (prefix != identifier.substr(0, prefix.length()))
+                    if (!identifier.starts_with(prefix))
                         return 0;
 
                     if (!beast::lexicalCastChecked(
@@ -122,7 +120,7 @@ encodeSoftwareVersion(char const* const versionStr)
                 if (x == 0)
                     x = parsePreRelease(id, "b", 0x40, 0, 63);
 
-                if (x & 0xC0)
+                if ((x & 0xC0) != 0)
                 {
                     c |= static_cast<std::uint64_t>(x) << 16;
                     break;
@@ -155,6 +153,4 @@ isNewerVersion(std::uint64_t version)
     return false;
 }
 
-}  // namespace BuildInfo
-
-}  // namespace xrpl
+}  // namespace xrpl::BuildInfo

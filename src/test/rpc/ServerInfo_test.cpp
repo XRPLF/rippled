@@ -8,9 +8,7 @@
 
 #include <boost/format.hpp>
 
-namespace xrpl {
-
-namespace test {
+namespace xrpl::test {
 
 namespace validator_data {
 static auto const public_key = "nHBt9fsb4849WmZiCds4r5TXyBeQjqnH5kzPtqgMAQMgi39YZRPa";
@@ -85,7 +83,7 @@ admin = 127.0.0.1
                     (git[jss::hash].isString() && git[jss::hash].asString().size() == 40));
                 BEAST_EXPECT(
                     !git.isMember(jss::branch) ||
-                    (git[jss::branch].isString() && git[jss::branch].asString().size() != 0));
+                    (git[jss::branch].isString() && !git[jss::branch].asString().empty()));
             }
         }
 
@@ -93,7 +91,7 @@ admin = 127.0.0.1
             Env env(*this);
 
             // Call NetworkOPs directly and set the admin flag to false.
-            auto const result = env.app().getOPs().getServerInfo(true, false, 0);
+            auto const result = env.app().getOPs().getServerInfo(true, false, false);
             // Expect that the admin ports are not included in the result.
             auto const& ports = result[jss::ports];
             BEAST_EXPECT(ports.isArray() && ports.size() == 0);
@@ -157,5 +155,4 @@ admin = 127.0.0.1
 
 BEAST_DEFINE_TESTSUITE(ServerInfo, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -4,8 +4,7 @@
 #include "xrpl/beast/unit_test/suite.h"
 #include "xrpl/protocol/jss.h"
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class BookChanges_test : public beast::unit_test::suite
 {
@@ -78,7 +77,7 @@ public:
             featurePermissionedDEX};
 
         Env env(*this, all);
-        PermissionedDEX permDex(env);
+        PermissionedDEX const permDex(env);
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] = permDex;
 
         auto wsc = makeWSClient(env.app().config());
@@ -118,5 +117,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(BookChanges, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

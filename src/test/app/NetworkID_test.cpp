@@ -6,8 +6,7 @@
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class NetworkID_test : public beast::unit_test::suite
 {
@@ -18,7 +17,7 @@ public:
         testNetworkID();
     }
 
-    std::unique_ptr<Config>
+    static std::unique_ptr<Config>
     makeNetworkConfig(uint32_t networkID)
     {
         using namespace jtx;
@@ -141,5 +140,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(NetworkID, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

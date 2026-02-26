@@ -177,10 +177,10 @@ partsFromString(std::string const& number)
     //   6 = exponent sign
     //   7 = exponent number
 
-    bool negative = (match[1].matched && (match[1] == "-"));
+    bool const negative = (match[1].matched && (match[1] == "-"));
 
-    std::uint64_t mantissa;
-    int exponent;
+    std::uint64_t mantissa = 0;
+    int exponent = 0;
 
     if (!match[4].matched)  // integer only
     {
@@ -198,12 +198,16 @@ partsFromString(std::string const& number)
     {
         // we have an exponent
         if (match[6].matched && (match[6] == "-"))
+        {
             exponent -= boost::lexical_cast<int>(std::string(match[7]));
+        }
         else
+        {
             exponent += boost::lexical_cast<int>(std::string(match[7]));
+        }
     }
 
-    return {mantissa, exponent, negative};
+    return {.mantissa = mantissa, .exponent = exponent, .negative = negative};
 }
 
 STNumber

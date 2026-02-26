@@ -10,6 +10,7 @@
 #include <xrpl/json/json_reader.h>
 #include <xrpl/protocol/jss.h>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <cmath>
@@ -63,8 +64,8 @@ class PerfLog_test : public beast::unit_test::suite
             stopSignaled = true;
         }
 
-        path
-        logDir() const
+        static path
+        logDir()
         {
             using namespace boost::filesystem;
             return temp_directory_path() / "perf_log_test_dir";
@@ -76,8 +77,8 @@ class PerfLog_test : public beast::unit_test::suite
             return logDir() / "perf_log.txt";
         }
 
-        std::chrono::milliseconds
-        logInterval() const
+        static std::chrono::milliseconds
+        logInterval()
         {
             return std::chrono::milliseconds{10};
         }
@@ -86,8 +87,11 @@ class PerfLog_test : public beast::unit_test::suite
         perfLog(WithFile withFile)
         {
             perf::PerfLog::Setup const setup{
-                withFile == WithFile::no ? "" : logFile(), logInterval()};
-            return perf::make_PerfLog(setup, app_, j_, [this]() { return signalStop(); });
+                .perfLog = withFile == WithFile::no ? "" : logFile(), .logInterval = logInterval()};
+            return perf::make_PerfLog(setup, app_, j_, [this]() {
+                signalStop();
+                return;
+            });
         }
 
         // Block until the log file has grown in size, indicating that the
@@ -156,7 +160,7 @@ class PerfLog_test : public beast::unit_test::suite
 
         // Note that the longest durations should be at the front of the
         // vector since they were started first.
-        std::sort(currents.begin(), currents.end(), [](Cur const& lhs, Cur const& rhs) {
+        std::ranges::sort(currents, [](Cur const& lhs, Cur const& rhs) {
             if (lhs.dur != rhs.dur)
                 return (rhs.dur < lhs.dur);
             return (lhs.name < rhs.name);
@@ -451,8 +455,10 @@ public:
             Json::Value parsedLastLine;
             Json::Reader().parse(lastLine, parsedLastLine);
             if (!BEAST_EXPECT(!RPC::contains_error(parsedLastLine)))
+            {
                 // Avoid cascade of failures
                 return;
+            }
 
             // Validate the contents of the last line of the log.
             validateFinalCounters(parsedLastLine[jss::counters]);
@@ -770,8 +776,10 @@ public:
             Json::Value parsedLastLine;
             Json::Reader().parse(lastLine, parsedLastLine);
             if (!BEAST_EXPECT(!RPC::contains_error(parsedLastLine)))
+            {
                 // Avoid cascade of failures
                 return;
+            }
 
             // Validate the contents of the last line of the log.
             validateFinalCounters(parsedLastLine[jss::counters]);
@@ -908,8 +916,10 @@ public:
             Json::Value parsedLastLine;
             Json::Reader().parse(lastLine, parsedLastLine);
             if (!BEAST_EXPECT(!RPC::contains_error(parsedLastLine)))
+            {
                 // Avoid cascade of failures
                 return;
+            }
 
             // Validate the contents of the last line of the log.
             verifyCounters(parsedLastLine[jss::counters], 2, 2, 24, 36);

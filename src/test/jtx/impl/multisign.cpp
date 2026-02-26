@@ -7,9 +7,7 @@
 
 #include <optional>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 Json::Value
 signers(Account const& account, std::uint32_t quorum, std::vector<signer> const& v)
@@ -53,9 +51,13 @@ msig::operator()(Env& env, JTx& jt) const
 
         // The signing pub key is only required at the top level.
         if (!subField)
+        {
             sigObject[sfSigningPubKey] = "";
+        }
         else if (sigObject.isNull())
+        {
             sigObject = Json::Value(Json::objectValue);
+        }
         std::optional<STObject> st;
         try
         {
@@ -74,17 +76,19 @@ msig::operator()(Env& env, JTx& jt) const
             jo[jss::Account] = e.acct.human();
             jo[jss::SigningPubKey] = strHex(e.sig.pk().slice());
 
-            Serializer ss{buildMultiSigningData(*st, e.acct.id())};
+            Serializer const ss{buildMultiSigningData(*st, e.acct.id())};
             auto const sig = xrpl::sign(*publicKeyType(e.sig.pk().slice()), e.sig.sk(), ss.slice());
             jo[sfTxnSignature.getJsonName()] = strHex(Slice{sig.data(), sig.size()});
         }
     };
-    if (!subField)
+    if (subField == nullptr)
+    {
         jt.mainSigners.emplace_back(callback);
+    }
     else
+    {
         jt.postSigners.emplace_back(callback);
+    }
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

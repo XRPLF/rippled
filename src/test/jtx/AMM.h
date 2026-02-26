@@ -123,9 +123,9 @@ class AMM
 
 public:
     AMM(Env& env,
-        Account const& account,
-        STAmount const& asset1,
-        STAmount const& asset2,
+        Account account,
+        STAmount asset1,
+        STAmount asset2,
         bool log = false,
         std::uint16_t tfee = 0,
         std::uint32_t fee = 0,

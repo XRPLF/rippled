@@ -29,7 +29,7 @@ SetSignerList::determineOperation(STTx const& tx, ApplyFlags flags, beast::Journ
     Operation op = unknown;
 
     bool const hasSignerEntries(tx.isFieldPresent(sfSignerEntries));
-    if (quorum && hasSignerEntries)
+    if ((quorum != 0u) && hasSignerEntries)
     {
         auto signers = SignerEntries::deserialize(tx, j, "transaction");
 
@@ -124,7 +124,7 @@ SetSignerList::preCompute()
     signers_ = std::get<2>(result);
     do_ = std::get<3>(result);
 
-    return Transactor::preCompute();
+    Transactor::preCompute();
 }
 
 // The return type is signed so it is compatible with the 3rd argument
@@ -167,7 +167,7 @@ removeSignersFromLedger(
 {
     // We have to examine the current SignerList so we know how much to
     // reduce the OwnerCount.
-    SLE::pointer signers = view.peek(signerListKeylet);
+    SLE::pointer const signers = view.peek(signerListKeylet);
 
     // If the signer list doesn't exist we've already succeeded in deleting it.
     if (!signers)
@@ -241,7 +241,7 @@ SetSignerList::validateQuorumAndSignerEntries(
         std::is_sorted(signers.begin(), signers.end()),
         "xrpl::SetSignerList::validateQuorumAndSignerEntries : sorted "
         "signers");
-    if (std::adjacent_find(signers.begin(), signers.end()) != signers.end())
+    if (std::ranges::adjacent_find(signers) != signers.end())
     {
         JLOG(j.trace()) << "Duplicate signers in signer list";
         return temBAD_SIGNER;
@@ -299,7 +299,7 @@ SetSignerList::replaceSignerList()
     std::uint32_t const oldOwnerCount{(*sle)[sfOwnerCount]};
 
     constexpr int addedOwnerCount = 1;
-    std::uint32_t flags{lsfOneOwnerCount};
+    std::uint32_t const flags{lsfOneOwnerCount};
 
     XRPAmount const newReserve{view().fees().accountReserve(oldOwnerCount + addedOwnerCount)};
 
@@ -339,7 +339,7 @@ SetSignerList::destroySignerList()
     auto const accountKeylet = keylet::account(account_);
     // Destroying the signer list is only allowed if either the master key
     // is enabled or there is a regular key.
-    SLE::pointer ledgerEntry = view().peek(accountKeylet);
+    SLE::pointer const ledgerEntry = view().peek(accountKeylet);
     if (!ledgerEntry)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -362,7 +362,7 @@ SetSignerList::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t 
     }
     ledgerEntry->setFieldU32(sfSignerQuorum, quorum_);
     ledgerEntry->setFieldU32(sfSignerListID, DEFAULT_SIGNER_LIST_ID);
-    if (flags)  // Only set flags if they are non-default (default is zero).
+    if (flags != 0u)  // Only set flags if they are non-default (default is zero).
         ledgerEntry->setFieldU32(sfFlags, flags);
 
     // Create the SignerListArray one SignerEntry at a time.

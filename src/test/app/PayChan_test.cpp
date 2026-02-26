@@ -8,8 +8,9 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+#include <algorithm>
+
+namespace xrpl::test {
 using namespace jtx::paychan;
 
 struct PayChan_test : public beast::unit_test::suite
@@ -1010,9 +1011,11 @@ struct PayChan_test : public beast::unit_test::suite
             BEAST_EXPECT(r[jss::result][jss::validated]);
             BEAST_EXPECT(chan1Str != chan2Str);
             for (auto const& c : {chan1Str, chan2Str})
+            {
                 BEAST_EXPECT(
                     r[jss::result][jss::channels][0u][jss::channel_id] == c ||
                     r[jss::result][jss::channels][1u][jss::channel_id] == c);
+            }
         }
     }
 
@@ -1089,7 +1092,7 @@ struct PayChan_test : public beast::unit_test::suite
         {
             auto leftToFind = bobsB58;
             auto const numFull = bobs.size() / limit;
-            auto const numNonFull = bobs.size() % limit ? 1 : 0;
+            auto const numNonFull = ((bobs.size() % limit) != 0u) ? 1 : 0;
 
             Json::Value marker = Json::nullValue;
 
@@ -1115,7 +1118,7 @@ struct PayChan_test : public beast::unit_test::suite
                 testIt(expectMarker, limit);
             }
 
-            if (numNonFull)
+            if (numNonFull != 0)
             {
                 testIt(false, bobs.size() % limit);
             }
@@ -1244,9 +1247,11 @@ struct PayChan_test : public beast::unit_test::suite
             BEAST_EXPECT(r[jss::result][jss::validated]);
             BEAST_EXPECT(chan1Str != chan2Str);
             for (auto const& c : {chan1Str, chan2Str})
+            {
                 BEAST_EXPECT(
                     r[jss::result][jss::channels][0u][jss::channel_id] == c ||
                     r[jss::result][jss::channels][1u][jss::channel_id] == c);
+            }
         }
 
         auto sliceToHex = [](Slice const& slice) {
@@ -1495,7 +1500,7 @@ struct PayChan_test : public beast::unit_test::suite
         auto const settleDelay = 3600s;
         auto const channelFunds = XRP(1000);
 
-        std::optional<NetClock::time_point> cancelAfter;
+        std::optional<NetClock::time_point> const cancelAfter;
 
         {
             auto const chan = to_string(channel(alice, bob, env.seq(alice)));
@@ -1927,5 +1932,4 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE(PayChan, app, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

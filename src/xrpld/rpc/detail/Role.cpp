@@ -83,7 +83,7 @@ requestRole(
 
     if (ipAllowed(remoteIp.address(), port.secure_gateway_nets_v4, port.secure_gateway_nets_v6))
     {
-        if (user.size())
+        if (!user.empty() != 0u)
             return Role::IDENTIFIED;
         return Role::PROXY;
     }
@@ -137,9 +137,11 @@ extractIpAddrFromField(std::string_view field)
         {
             std::size_t const firstNonSpace = ret.find_first_not_of(' ');
             if (firstNonSpace == std::string_view::npos)
+            {
                 // We know there's at least one leading space.  So if we got
                 // npos, then it must be all spaces.  Return empty string_view.
                 return {};
+            }
 
             ret = ret.substr(firstNonSpace);
         }
@@ -151,9 +153,11 @@ extractIpAddrFromField(std::string_view field)
             {
                 std::size_t const lastNonSpace = ret.find_last_not_of(" \r\n");
                 if (lastNonSpace == std::string_view::npos)
+                {
                     // We know there's at least one leading space.  So if we
                     // got npos, then it must be all spaces.
                     return {};
+                }
 
                 ret = ret.substr(0, lastNonSpace + 1);
             }
@@ -189,7 +193,7 @@ extractIpAddrFromField(std::string_view field)
 
         // We may have an IPv6 address in square brackets.  Scan up to the
         // closing square bracket.
-        auto const closeBracket = std::find_if_not(ret.begin(), ret.end(), [](unsigned char c) {
+        auto const closeBracket = std::ranges::find_if_not(ret, [](unsigned char c) {
             return std::isxdigit(c) || c == ':' || c == '.' || c == ' ';
         });
 
@@ -209,8 +213,8 @@ extractIpAddrFromField(std::string_view field)
     // then there cannot be an appended port.  In that case we're done.
     {
         // Skip any leading hex digits.
-        auto const colon = std::find_if_not(
-            ret.begin(), ret.end(), [](unsigned char c) { return std::isxdigit(c) || c == ' '; });
+        auto const colon = std::ranges::find_if_not(
+            ret, [](unsigned char c) { return std::isxdigit(c) || c == ' '; });
 
         // If the string starts with optional hex digits followed by a colon
         // it's an IVv6 address.  We're done.
@@ -220,7 +224,7 @@ extractIpAddrFromField(std::string_view field)
 
     // If there's a port appended to the IP address, strip that by
     // terminating at the colon.
-    if (std::size_t colon = ret.find(':'); colon != std::string_view::npos)
+    if (std::size_t const colon = ret.find(':'); colon != std::string_view::npos)
         ret = ret.substr(0, colon);
 
     return ret;
@@ -252,7 +256,7 @@ forwardedFor(http_request_type const& request)
 
         // We found a "for=".  Scan for the end of the IP address.
         std::size_t const pos = [&found, &it]() {
-            std::size_t pos =
+            std::size_t const pos =
                 std::string_view(found, it->value().end() - found).find_first_of(",;");
             if (pos != std::string_view::npos)
                 return pos;

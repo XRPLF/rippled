@@ -4,8 +4,7 @@
 
 #include <algorithm>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 // Helper function that returns the reserve on an account based on
 // the passed in number of owners.
@@ -304,9 +303,11 @@ struct DepositAuth_test : public beast::unit_test::suite
             auto const noRipplePrev = i & 0x1;
             auto const noRippleNext = i & 0x2;
             auto const withDepositAuth = i & 0x4;
-            testIssuer(testable_amendments(), noRipplePrev, noRippleNext, withDepositAuth);
+            testIssuer(
+                testable_amendments(), noRipplePrev != 0, noRippleNext != 0, withDepositAuth != 0);
 
-            testNonIssuer(testable_amendments(), noRipplePrev, noRippleNext, withDepositAuth);
+            testNonIssuer(
+                testable_amendments(), noRipplePrev != 0, noRippleNext != 0, withDepositAuth != 0);
         }
     }
 
@@ -1283,8 +1284,10 @@ struct DepositPreauth_test : public beast::unit_test::suite
                     auto issuer = c[jss::Issuer].asString();
 
                     if (BEAST_EXPECT(pubKey2Acc.contains(issuer)))
+                    {
                         readCreds.emplace_back(
                             pubKey2Acc.at(issuer), c["CredentialType"].asString());
+                    }
                 }
 
                 BEAST_EXPECT(std::ranges::is_sorted(readCreds));
@@ -1365,5 +1368,4 @@ struct DepositPreauth_test : public beast::unit_test::suite
 BEAST_DEFINE_TESTSUITE(DepositAuth, app, xrpl);
 BEAST_DEFINE_TESTSUITE(DepositPreauth, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

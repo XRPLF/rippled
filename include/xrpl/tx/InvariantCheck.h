@@ -77,7 +77,7 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
+    static bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
 };
 
@@ -98,7 +98,7 @@ public:
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
 /**
@@ -118,7 +118,7 @@ public:
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
 /**
@@ -164,7 +164,7 @@ public:
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
 /**
@@ -181,7 +181,7 @@ public:
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
 /**
@@ -199,7 +199,7 @@ public:
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
 /**
@@ -218,7 +218,7 @@ public:
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
 /**
@@ -257,7 +257,7 @@ private:
     bool
     isValidEntry(std::shared_ptr<SLE const> const& before, std::shared_ptr<SLE const> const& after);
 
-    STAmount
+    static STAmount
     calculateBalanceChange(
         std::shared_ptr<SLE const> const& before,
         std::shared_ptr<SLE const> const& after,
@@ -280,7 +280,7 @@ private:
         beast::Journal const& j,
         bool enforce);
 
-    bool
+    static bool
     validateFrozenState(
         BalanceChange const& change,
         bool high,
@@ -306,7 +306,7 @@ public:
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
 /**
@@ -322,7 +322,7 @@ public:
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
 /**
@@ -342,7 +342,7 @@ public:
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
 /**
@@ -371,7 +371,7 @@ public:
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
 /**
@@ -399,7 +399,7 @@ public:
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
 /**
@@ -420,7 +420,7 @@ public:
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
 class ValidMPTIssuance
@@ -439,7 +439,7 @@ public:
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
 /**
@@ -595,8 +595,8 @@ class ValidLoanBroker
     // for LoanBroker pseudo-accounts.
     std::vector<SLE::const_pointer> mpts_;
 
-    bool
-    goodZeroDirectory(ReadView const& view, SLE::const_ref dir, beast::Journal const& j) const;
+    static bool
+    goodZeroDirectory(ReadView const& view, SLE::const_ref dir, beast::Journal const& j);
 
 public:
     void

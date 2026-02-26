@@ -3,8 +3,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 struct SetAuth_test : public beast::unit_test::suite
 {
@@ -59,5 +58,4 @@ struct SetAuth_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(SetAuth, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

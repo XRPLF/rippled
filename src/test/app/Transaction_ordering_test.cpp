@@ -2,8 +2,7 @@
 
 #include <xrpl/core/JobQueue.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 struct Transaction_ordering_test : public beast::unit_test::suite
 {
@@ -97,6 +96,7 @@ struct Transaction_ordering_test : public beast::unit_test::suite
         auto const aliceSequence = env.seq(alice);
 
         std::vector<JTx> tx;
+        tx.reserve(5);
         for (auto i = 0; i < 5; ++i)
         {
             tx.emplace_back(env.jt(noop(alice), seq(aliceSequence + i), last_ledger_seq(7)));
@@ -132,5 +132,4 @@ struct Transaction_ordering_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(Transaction_ordering, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

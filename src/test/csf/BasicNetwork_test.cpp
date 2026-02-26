@@ -6,8 +6,7 @@
 #include <set>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class BasicNetwork_test : public beast::unit_test::suite
 {
@@ -33,8 +32,10 @@ public:
             if (id == 0)
             {
                 for (auto const link : net.links(this))
+                {
                     net.send(
                         this, link.target, [&, to = link.target] { to->receive(net, this, 1); });
+                }
             }
             else
             {
@@ -51,9 +52,11 @@ public:
             if (m < 5)
             {
                 for (auto const link : net.links(this))
+                {
                     net.send(this, link.target, [&, mm = m, to = link.target] {
                         to->receive(net, this, mm);
                     });
+                }
             }
         }
     };
@@ -128,5 +131,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(BasicNetwork, csf, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

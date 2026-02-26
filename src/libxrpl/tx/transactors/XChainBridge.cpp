@@ -108,7 +108,7 @@ checkAttestationPublicKey(
         if (accountFromPK == attestationSignerAccount)
         {
             // master key
-            if (sleAttestationSigningAccount->getFieldU32(sfFlags) & lsfDisableMaster)
+            if ((sleAttestationSigningAccount->getFieldU32(sfFlags) & lsfDisableMaster) != 0u)
             {
                 JLOG(j.trace()) << "Attempt to add an attestation with "
                                    "disabled master key.";
@@ -118,7 +118,7 @@ checkAttestationPublicKey(
         else
         {
             // regular key
-            if (std::optional<AccountID> regularKey =
+            if (std::optional<AccountID> const regularKey =
                     (*sleAttestationSigningAccount)[~sfRegularKey];
                 regularKey != accountFromPK)
             {
@@ -306,7 +306,7 @@ onNewAttestations(
         j);
 
     if (!r.has_value())
-        return {std::nullopt, changed};
+        return {.rewardAccounts = std::nullopt, .changed = changed};
 
     return {std::move(r.value()), changed};
 };
@@ -324,7 +324,8 @@ onClaim(
     std::unordered_map<AccountID, std::uint32_t> const& signersList,
     beast::Journal j)
 {
-    XChainClaimAttestation::MatchFields toMatch{sendingAmount, wasLockingChainSend, std::nullopt};
+    XChainClaimAttestation::MatchFields const toMatch{
+        sendingAmount, wasLockingChainSend, std::nullopt};
     return claimHelper(attestations, view, toMatch, CheckDst::ignore, quorum, signersList, j);
 }
 
@@ -384,7 +385,7 @@ transferHelper(
     {
         // Check dst tag and deposit auth
 
-        if ((sleDst->getFlags() & lsfRequireDestTag) && !dstTag)
+        if (((sleDst->getFlags() & lsfRequireDestTag) != 0u) && !dstTag)
             return tecDST_TAG_NEEDED;
 
         // If the destination is the claim owner, and this is a claim
@@ -393,7 +394,7 @@ transferHelper(
         bool const canBypassDepositAuth =
             dst == claimOwner && depositAuthPolicy == DepositAuthPolicy::dstCanBypass;
 
-        if (!canBypassDepositAuth && (sleDst->getFlags() & lsfDepositAuth) &&
+        if (!canBypassDepositAuth && ((sleDst->getFlags() & lsfDepositAuth) != 0u) &&
             !psb.exists(keylet::depositPreauth(dst, src)))
         {
             return tecNO_PERMISSION;
@@ -636,7 +637,7 @@ finalizeClaimHelper(
                 auto const round_mode = innerSb.rules().enabled(fixXChainRewardRounding)
                     ? Number::rounding_mode::downward
                     : Number::getround();
-                saveNumberRoundMode _{Number::setround(round_mode)};
+                saveNumberRoundMode const _{Number::setround(round_mode)};
 
                 STAmount const den{rewardAccounts.size()};
                 return divide(rewardPool, den, rewardPool.issue());
@@ -975,7 +976,7 @@ applyCreateAccountAttestations(
     struct ScopeResult
     {
         OnNewAttestationResult newAttResult;
-        bool createCID;
+        bool createCID{};
         XChainCreateAccountAttestations curAtts;
     };
 
@@ -1020,8 +1021,10 @@ applyCreateAccountAttestations(
 
         XChainCreateAccountAttestations curAtts = [&] {
             if (sleClaimID)
+            {
                 return XChainCreateAccountAttestations{
                     sleClaimID->getFieldArray(sfXChainCreateAccountAttestations)};
+            }
             return XChainCreateAccountAttestations{};
         }();
 
@@ -1190,8 +1193,10 @@ attestationDoApply(ApplyContext& ctx)
 {
     auto const att = toClaim<TAttestation>(ctx.tx);
     if (!att)
+    {
         // Should already be checked in preflight
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     STXChainBridge const bridgeSpec = ctx.tx[sfXChainBridge];
 
@@ -1199,7 +1204,7 @@ attestationDoApply(ApplyContext& ctx)
     {
         STXChainBridge::ChainType srcChain;
         std::unordered_map<AccountID, std::uint32_t> signersList;
-        std::uint32_t quorum;
+        std::uint32_t quorum{};
         AccountID thisDoor;
         Keylet bridgeK;
     };
@@ -1220,11 +1225,17 @@ attestationDoApply(ApplyContext& ctx)
         STXChainBridge::ChainType dstChain = STXChainBridge::ChainType::locking;
         {
             if (thisDoor == bridgeSpec.lockingChainDoor())
+            {
                 dstChain = STXChainBridge::ChainType::locking;
+            }
             else if (thisDoor == bridgeSpec.issuingChainDoor())
+            {
                 dstChain = STXChainBridge::ChainType::issuing;
+            }
             else
+            {
                 return Unexpected(tecINTERNAL);
+            }
         }
         STXChainBridge::ChainType const srcChain = STXChainBridge::otherChain(dstChain);
 
@@ -1379,7 +1390,7 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
 
         // Allowing clawing back funds would break the bridge's invariant that
         // wrapped funds are always backed by locked funds
-        if (sleIssuer->getFlags() & lsfAllowTrustLineClawback)
+        if ((sleIssuer->getFlags() & lsfAllowTrustLineClawback) != 0u)
             return tecNO_PERMISSION;
     }
 
@@ -1458,7 +1469,7 @@ BridgeModify::preflight(PreflightContext const& ctx)
     auto const reward = ctx.tx[~sfSignatureReward];
     auto const minAccountCreate = ctx.tx[~sfMinAccountCreateAmount];
     auto const bridgeSpec = ctx.tx[sfXChainBridge];
-    bool const clearAccountCreate = ctx.tx.getFlags() & tfClearAccountCreateAmount;
+    bool const clearAccountCreate = (ctx.tx.getFlags() & tfClearAccountCreateAmount) != 0u;
 
     if (!reward && !minAccountCreate && !clearAccountCreate)
     {
@@ -1516,7 +1527,7 @@ BridgeModify::doApply()
     auto const bridgeSpec = ctx_.tx[sfXChainBridge];
     auto const reward = ctx_.tx[~sfSignatureReward];
     auto const minAccountCreate = ctx_.tx[~sfMinAccountCreateAmount];
-    bool const clearAccountCreate = ctx_.tx.getFlags() & tfClearAccountCreateAmount;
+    bool const clearAccountCreate = (ctx_.tx.getFlags() & tfClearAccountCreateAmount) != 0u;
 
     auto const sleAcct = ctx_.view().peek(keylet::account(account));
     if (!sleAcct)
@@ -1585,11 +1596,17 @@ XChainClaim::preclaim(PreclaimContext const& ctx)
     bool isLockingChain = false;
     {
         if (thisDoor == bridgeSpec.lockingChainDoor())
+        {
             isLockingChain = true;
+        }
         else if (thisDoor == bridgeSpec.issuingChainDoor())
+        {
             isLockingChain = false;
+        }
         else
+        {
             return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
     }
 
     {
@@ -1618,9 +1635,13 @@ XChainClaim::preclaim(PreclaimContext const& ctx)
     auto const otherChainAmount = [&]() -> STAmount {
         STAmount r(thisChainAmount);
         if (isLockingChain)
+        {
             r.setIssue(bridgeSpec.issuingChainIssue());
+        }
         else
+        {
             r.setIssue(bridgeSpec.lockingChainIssue());
+        }
         return r;
     }();
 
@@ -1683,11 +1704,17 @@ XChainClaim::doApply()
         STXChainBridge::ChainType dstChain = STXChainBridge::ChainType::locking;
         {
             if (thisDoor == bridgeSpec.lockingChainDoor())
+            {
                 dstChain = STXChainBridge::ChainType::locking;
+            }
             else if (thisDoor == bridgeSpec.issuingChainDoor())
+            {
                 dstChain = STXChainBridge::ChainType::issuing;
+            }
             else
+            {
                 return Unexpected(tecINTERNAL);
+            }
         }
         STXChainBridge::ChainType const srcChain = STXChainBridge::otherChain(dstChain);
 
@@ -1717,11 +1744,11 @@ XChainClaim::doApply()
             return Unexpected(claimR.error());
 
         return ScopeResult{
-            claimR.value(),
-            (*sleClaimID)[sfAccount],
-            sendingAmount,
-            srcChain,
-            (*sleClaimID)[sfSignatureReward],
+            .rewardAccounts = claimR.value(),
+            .rewardPoolSrc = (*sleClaimID)[sfAccount],
+            .sendingAmount = sendingAmount,
+            .srcChain = srcChain,
+            .signatureReward = (*sleClaimID)[sfSignatureReward],
         };
     }();
 
@@ -1810,11 +1837,17 @@ XChainCommit::preclaim(PreclaimContext const& ctx)
     bool isLockingChain = false;
     {
         if (thisDoor == bridgeSpec.lockingChainDoor())
+        {
             isLockingChain = true;
+        }
         else if (thisDoor == bridgeSpec.issuingChainDoor())
+        {
             isLockingChain = false;
+        }
         else
+        {
             return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
     }
 
     if (isLockingChain)
@@ -1851,7 +1884,7 @@ XChainCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        account_, mPriorBalance, mSourceBalance};
+        .account = account_, .preFeeBalance = mPriorBalance, .postFeeBalance = mSourceBalance};
 
     auto const thTer = transferHelper(
         psb,
@@ -2081,11 +2114,17 @@ XChainCreateAccountCommit::preclaim(PreclaimContext const& ctx)
     STXChainBridge::ChainType srcChain = STXChainBridge::ChainType::locking;
     {
         if (thisDoor == bridgeSpec.lockingChainDoor())
+        {
             srcChain = STXChainBridge::ChainType::locking;
+        }
         else if (thisDoor == bridgeSpec.issuingChainDoor())
+        {
             srcChain = STXChainBridge::ChainType::issuing;
+        }
         else
+        {
             return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
     }
     STXChainBridge::ChainType const dstChain = STXChainBridge::otherChain(srcChain);
 
@@ -2120,7 +2159,7 @@ XChainCreateAccountCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        account_, mPriorBalance, mSourceBalance};
+        .account = account_, .preFeeBalance = mPriorBalance, .postFeeBalance = mSourceBalance};
     STAmount const toTransfer = amount + reward;
     auto const thTer = transferHelper(
         psb,

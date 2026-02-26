@@ -5,9 +5,7 @@
 
 #include <exception>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 uint256
 setupDomain(
@@ -20,7 +18,7 @@ setupDomain(
     env.fund(XRP(100000), domainOwner);
     env.close();
 
-    pdomain::Credentials credentials{{domainOwner, credType}};
+    pdomain::Credentials const credentials{{domainOwner, credType}};
     env(pdomain::setTx(domainOwner, credentials));
 
     auto const objects = pdomain::getObjects(domainOwner, env);
@@ -61,6 +59,4 @@ PermissionedDEX::PermissionedDEX(Env& env)
     }
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

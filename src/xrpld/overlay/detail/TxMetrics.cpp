@@ -4,15 +4,13 @@
 
 #include <numeric>
 
-namespace xrpl {
-
-namespace metrics {
+namespace xrpl::metrics {
 
 void
 TxMetrics::addMetrics(protocol::MessageType type, std::uint32_t val)
 {
     auto add = [&](auto& m, std::uint32_t val) {
-        std::lock_guard lock(mutex);
+        std::lock_guard const lock(mutex);
         m.addMetrics(val);
     };
 
@@ -41,7 +39,7 @@ TxMetrics::addMetrics(protocol::MessageType type, std::uint32_t val)
 void
 TxMetrics::addMetrics(std::uint32_t selected, std::uint32_t suppressed, std::uint32_t notenabled)
 {
-    std::lock_guard lock(mutex);
+    std::lock_guard const lock(mutex);
     selectedPeers.addMetrics(selected);
     suppressedPeers.addMetrics(suppressed);
     notEnabled.addMetrics(notenabled);
@@ -50,7 +48,7 @@ TxMetrics::addMetrics(std::uint32_t selected, std::uint32_t suppressed, std::uin
 void
 TxMetrics::addMetrics(std::uint32_t missing)
 {
-    std::lock_guard lock(mutex);
+    std::lock_guard const lock(mutex);
     missingTx.addMetrics(missing);
 }
 
@@ -94,7 +92,7 @@ SingleMetrics::addMetrics(std::uint32_t val)
 Json::Value
 TxMetrics::json() const
 {
-    std::lock_guard l(mutex);
+    std::lock_guard const l(mutex);
 
     Json::Value ret(Json::objectValue);
 
@@ -124,6 +122,4 @@ TxMetrics::json() const
     return ret;
 }
 
-}  // namespace metrics
-
-}  // namespace xrpl
+}  // namespace xrpl::metrics

@@ -30,14 +30,14 @@ SHAMapTreeNode::makeTransactionWithMeta(Slice data, SHAMapHash const& hash, bool
 
     uint256 tag;
 
-    if (s.size() < tag.bytes)
+    if (s.size() < uint256::bytes)
         Throw<std::runtime_error>("Short TXN+MD node");
 
     // FIXME: improve this interface so that the above check isn't needed
-    if (!s.getBitString(tag, s.size() - tag.bytes))
+    if (!s.getBitString(tag, s.size() - uint256::bytes))
         Throw<std::out_of_range>("Short TXN+MD node (" + std::to_string(s.size()) + ")");
 
-    s.chop(tag.bytes);
+    s.chop(uint256::bytes);
 
     auto item = make_shamapitem(tag, s.slice());
 
@@ -54,14 +54,14 @@ SHAMapTreeNode::makeAccountState(Slice data, SHAMapHash const& hash, bool hashVa
 
     uint256 tag;
 
-    if (s.size() < tag.bytes)
+    if (s.size() < uint256::bytes)
         Throw<std::runtime_error>("short AS node");
 
     // FIXME: improve this interface so that the above check isn't needed
-    if (!s.getBitString(tag, s.size() - tag.bytes))
+    if (!s.getBitString(tag, s.size() - uint256::bytes))
         Throw<std::out_of_range>("Short AS node (" + std::to_string(s.size()) + ")");
 
-    s.chop(tag.bytes);
+    s.chop(uint256::bytes);
 
     if (tag.isZero())
         Throw<std::runtime_error>("Invalid AS node");

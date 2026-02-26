@@ -3,8 +3,7 @@
 #include <xrpl/ledger/BookDirs.h>
 #include <xrpl/protocol/Feature.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 struct BookDirs_test : public beast::unit_test::suite
 {
@@ -19,7 +18,7 @@ struct BookDirs_test : public beast::unit_test::suite
         env.close();
 
         {
-            Book book(xrpIssue(), USD.issue(), std::nullopt);
+            Book const book(xrpIssue(), USD.issue(), std::nullopt);
             {
                 auto d = BookDirs(*env.current(), book);
                 BEAST_EXPECT(std::begin(d) == std::end(d));
@@ -56,8 +55,10 @@ struct BookDirs_test : public beast::unit_test::suite
         {
             auto AUD = gw["AUD"];
             for (auto i = 1, j = 3; i <= 3; ++i, --j)
+            {
                 for (auto k = 0; k < 80; ++k)
                     env(offer("alice", AUD(i), XRP(j)));
+            }
 
             auto d = BookDirs(*env.current(), Book(AUD.issue(), xrpIssue(), std::nullopt));
             BEAST_EXPECT(std::distance(d.begin(), d.end()) == 240);
@@ -87,5 +88,4 @@ struct BookDirs_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(BookDirs, ledger, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

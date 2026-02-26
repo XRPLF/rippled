@@ -196,10 +196,10 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
         auto const flags = sled->getFlags();
 
         // Check if they have disallowed incoming payment channels
-        if (flags & lsfDisallowIncomingPayChan)
+        if ((flags & lsfDisallowIncomingPayChan) != 0u)
             return tecNO_PERMISSION;
 
-        if ((flags & lsfRequireDestTag) && !ctx.tx[~sfDestinationTag])
+        if (((flags & lsfRequireDestTag) != 0u) && !ctx.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
 
         // Pseudo-accounts cannot receive payment channels, other than native
@@ -320,8 +320,10 @@ PayChanFund::doApply()
     }
 
     if (src != txAccount)
+    {
         // only the owner can add funds or extend
         return tecNO_PERMISSION;
+    }
 
     if (auto extend = ctx_.tx[~sfExpiration])
     {
@@ -398,7 +400,7 @@ PayChanClaim::preflight(PreflightContext const& ctx)
     {
         auto const flags = ctx.tx.getFlags();
 
-        if ((flags & tfClose) && (flags & tfRenew))
+        if (((flags & tfClose) != 0u) && ((flags & tfRenew) != 0u))
             return temMALFORMED;
     }
 
@@ -491,8 +493,10 @@ PayChanClaim::doApply()
             return tecUNFUNDED_PAYMENT;
 
         if (reqBalance <= chanBalance)
+        {
             // nothing requested
             return tecUNFUNDED_PAYMENT;
+        }
 
         auto const sled = ctx_.view().peek(keylet::account(dst));
         if (!sled)
@@ -511,7 +515,7 @@ PayChanClaim::doApply()
         ctx_.view().update(slep);
     }
 
-    if (ctx_.tx.getFlags() & tfRenew)
+    if ((ctx_.tx.getFlags() & tfRenew) != 0u)
     {
         if (src != txAccount)
             return tecNO_PERMISSION;
@@ -519,7 +523,7 @@ PayChanClaim::doApply()
         ctx_.view().update(slep);
     }
 
-    if (ctx_.tx.getFlags() & tfClose)
+    if ((ctx_.tx.getFlags() & tfClose) != 0u)
     {
         // Channel will close immediately if dry or the receiver closes
         if (dst == txAccount || (*slep)[sfBalance] == (*slep)[sfAmount])

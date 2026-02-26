@@ -11,9 +11,10 @@ auto
 DeferredCredits::makeKey(AccountID const& a1, AccountID const& a2, Currency const& c) -> Key
 {
     if (a1 < a2)
+    {
         return std::make_tuple(a1, a2, c);
-    else
-        return std::make_tuple(a2, a1, c);
+    }
+    return std::make_tuple(a2, a1, c);
 }
 
 void
@@ -53,9 +54,13 @@ DeferredCredits::credit(
         // only record the balance the first time, do not record it here
         auto& v = i->second;
         if (sender < receiver)
+        {
             v.highAcctCredits += amount;
+        }
         else
+        {
             v.lowAcctCredits += amount;
+        }
     }
 }
 
@@ -63,7 +68,7 @@ void
 DeferredCredits::ownerCount(AccountID const& id, std::uint32_t cur, std::uint32_t next)
 {
     auto const v = std::max(cur, next);
-    auto r = ownerCounts_.emplace(std::make_pair(id, v));
+    auto r = ownerCounts_.emplace(id, v);
     if (!r.second)
     {
         auto& mapVal = r.first->second;
@@ -101,11 +106,9 @@ DeferredCredits::adjustments(
         result.emplace(v.highAcctCredits, v.lowAcctCredits, v.lowAcctOrigBalance);
         return result;
     }
-    else
-    {
-        result.emplace(v.lowAcctCredits, v.highAcctCredits, -v.lowAcctOrigBalance);
-        return result;
-    }
+
+    result.emplace(v.lowAcctCredits, v.highAcctCredits, -v.lowAcctOrigBalance);
+    return result;
 }
 
 void
@@ -160,7 +163,7 @@ PaymentSandbox::balanceHook(
     auto delta = amount.zeroed();
     auto lastBal = amount;
     auto minBal = amount;
-    for (auto curSB = this; curSB; curSB = curSB->ps_)
+    for (auto curSB = this; curSB != nullptr; curSB = curSB->ps_)
     {
         if (auto adj = curSB->tab_.adjustments(account, issuer, currency))
         {
@@ -179,11 +182,13 @@ PaymentSandbox::balanceHook(
     adjustedAmt.setIssuer(amount.getIssuer());
 
     if (isXRP(issuer) && adjustedAmt < beast::zero)
+    {
         // A calculated negative XRP balance is not an error case. Consider a
         // payment snippet that credits a large XRP amount and then debits the
         // same amount. The credit can't be used but we subtract the debit and
         // calculate a negative value. It's not an error case.
         adjustedAmt.clear();
+    }
 
     return adjustedAmt;
 }
@@ -192,7 +197,7 @@ std::uint32_t
 PaymentSandbox::ownerCountHook(AccountID const& account, std::uint32_t count) const
 {
     std::uint32_t result = count;
-    for (auto curSB = this; curSB; curSB = curSB->ps_)
+    for (auto curSB = this; curSB != nullptr; curSB = curSB->ps_)
     {
         if (auto adj = curSB->tab_.ownerCount(account))
             result = std::max(result, *adj);

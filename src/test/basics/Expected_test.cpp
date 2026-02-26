@@ -8,8 +8,7 @@
 #include <array>
 #include <cstdint>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 struct Expected_test : beast::unit_test::suite
 {
@@ -46,7 +45,7 @@ struct Expected_test : beast::unit_test::suite
             BEAST_EXPECT(expected.value() == "Valid value");
             BEAST_EXPECT(*expected == "Valid value");
             BEAST_EXPECT(expected->at(0) == 'V');
-            std::string mv = std::move(*expected);
+            std::string const mv = std::move(*expected);
             BEAST_EXPECT(mv == "Valid value");
 
             bool throwOccurred = false;
@@ -213,5 +212,4 @@ struct Expected_test : beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(Expected, basics, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

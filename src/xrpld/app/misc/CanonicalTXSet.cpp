@@ -24,7 +24,7 @@ uint256
 CanonicalTXSet::accountKey(AccountID const& account)
 {
     uint256 ret = beast::zero;
-    memcpy(ret.begin(), account.begin(), account.size());
+    memcpy(ret.begin(), account.begin(), AccountID::size());
     ret ^= salt_;
     return ret;
 }

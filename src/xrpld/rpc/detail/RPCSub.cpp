@@ -7,6 +7,7 @@
 #include <xrpl/json/to_string.h>
 
 #include <deque>
+#include <utility>
 
 namespace xrpl {
 
@@ -19,28 +20,32 @@ public:
         boost::asio::io_context& io_context,
         JobQueue& jobQueue,
         std::string const& strUrl,
-        std::string const& strUsername,
-        std::string const& strPassword,
+        std::string strUsername,
+        std::string strPassword,
         Logs& logs)
         : RPCSub(source)
         , m_io_context(io_context)
         , m_jobQueue(jobQueue)
         , mUrl(strUrl)
-        , mSSL(false)
-        , mUsername(strUsername)
-        , mPassword(strPassword)
-        , mSending(false)
+        , mUsername(std::move(strUsername))
+        , mPassword(std::move(strPassword))
         , j_(logs.journal("RPCSub"))
         , logs_(logs)
     {
         parsedURL pUrl;
 
         if (!parseUrl(pUrl, strUrl))
+        {
             Throw<std::runtime_error>("Failed to parse url.");
+        }
         else if (pUrl.scheme == "https")
+        {
             mSSL = true;
+        }
         else if (pUrl.scheme != "http")
+        {
             Throw<std::runtime_error>("Only http and https is supported.");
+        }
 
         mSeq = 1;
 
@@ -52,17 +57,17 @@ public:
                         << " ssl= " << (mSSL ? "yes" : "no") << " path='" << mPath << "'";
     }
 
-    ~RPCSubImp() = default;
+    ~RPCSubImp() override = default;
 
     void
     send(Json::Value const& jvObj, bool broadcast) override
     {
-        std::lock_guard sl(mLock);
+        std::lock_guard const sl(mLock);
 
         auto jm = broadcast ? j_.debug() : j_.info();
         JLOG(jm) << "RPCCall::fromNetwork push: " << jvObj;
 
-        mDeque.push_back(std::make_pair(mSeq++, jvObj));
+        mDeque.emplace_back(mSeq++, jvObj);
 
         if (!mSending)
         {
@@ -77,7 +82,7 @@ public:
     void
     setUsername(std::string const& strUsername) override
     {
-        std::lock_guard sl(mLock);
+        std::lock_guard const sl(mLock);
 
         mUsername = strUsername;
     }
@@ -85,7 +90,7 @@ public:
     void
     setPassword(std::string const& strPassword) override
     {
-        std::lock_guard sl(mLock);
+        std::lock_guard const sl(mLock);
 
         mPassword = strPassword;
     }
@@ -97,13 +102,13 @@ private:
     sendThread()
     {
         Json::Value jvEvent;
-        bool bSend;
+        bool bSend = false;
 
         do
         {
             {
                 // Obtain the lock to manipulate the queue and change sending.
-                std::lock_guard sl(mLock);
+                std::lock_guard const sl(mLock);
 
                 if (mDeque.empty())
                 {
@@ -159,14 +164,14 @@ private:
     std::string mUrl;
     std::string mIp;
     std::uint16_t mPort;
-    bool mSSL;
+    bool mSSL{false};
     std::string mUsername;
     std::string mPassword;
     std::string mPath;
 
     int mSeq;  // Next id to allocate.
 
-    bool mSending;  // Sending thread is active.
+    bool mSending{false};  // Sending thread is active.
 
     std::deque<std::pair<int, Json::Value>> mDeque;
 

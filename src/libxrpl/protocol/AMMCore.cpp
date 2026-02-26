@@ -29,7 +29,7 @@ ammLPTCurrency(Currency const& cur1, Currency const& cur2)
     auto const hash = sha512Half(minC, maxC);
     Currency currency;
     *currency.begin() = AMMCurrencyCode;
-    std::copy(hash.begin(), hash.begin() + currency.size() - 1, currency.begin() + 1);
+    std::copy(hash.begin(), hash.begin() + Currency::size() - 1, currency.begin() + 1);
     return currency;
 }
 

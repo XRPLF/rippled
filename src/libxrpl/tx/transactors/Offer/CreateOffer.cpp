@@ -26,10 +26,7 @@ CreateOffer::makeTxConsequences(PreflightContext const& ctx)
 bool
 CreateOffer::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (ctx.tx.isFieldPresent(sfDomainID) && !ctx.rules.enabled(featurePermissionedDEX))
-        return false;
-
-    return true;
+    return !(ctx.tx.isFieldPresent(sfDomainID) && !ctx.rules.enabled(featurePermissionedDEX));
 }
 
 std::uint32_t
@@ -55,8 +52,8 @@ CreateOffer::preflight(PreflightContext const& ctx)
     if (tx.isFlag(tfHybrid) && !tx.isFieldPresent(sfDomainID))
         return temINVALID_FLAG;
 
-    bool const bImmediateOrCancel(uTxFlags & tfImmediateOrCancel);
-    bool const bFillOrKill(uTxFlags & tfFillOrKill);
+    bool const bImmediateOrCancel((uTxFlags & tfImmediateOrCancel) != 0u);
+    bool const bFillOrKill((uTxFlags & tfFillOrKill) != 0u);
 
     if (bImmediateOrCancel && bFillOrKill)
     {
@@ -78,8 +75,8 @@ CreateOffer::preflight(PreflightContext const& ctx)
         return temBAD_SEQUENCE;
     }
 
-    STAmount saTakerPays = tx[sfTakerPays];
-    STAmount saTakerGets = tx[sfTakerGets];
+    STAmount const saTakerPays = tx[sfTakerPays];
+    STAmount const saTakerGets = tx[sfTakerGets];
 
     if (!isLegalNet(saTakerPays) || !isLegalNet(saTakerGets))
         return temBAD_AMOUNT;
@@ -211,20 +208,22 @@ CreateOffer::checkAcceptAsset(
         JLOG(j.debug()) << "delay: can't receive IOUs from non-existent issuer: "
                         << to_string(issue.account);
 
-        return (flags & tapRETRY) ? TER{terNO_ACCOUNT} : TER{tecNO_ISSUER};
+        return ((flags & tapRETRY) != 0u) ? TER{terNO_ACCOUNT} : TER{tecNO_ISSUER};
     }
 
     if (issue.account == id)
+    {
         // An account can always accept its own issuance.
         return tesSUCCESS;
+    }
 
-    if ((*issuerAccount)[sfFlags] & lsfRequireAuth)
+    if (((*issuerAccount)[sfFlags] & lsfRequireAuth) != 0u)
     {
         auto const trustLine = view.read(keylet::line(id, issue.account, issue.currency));
 
         if (!trustLine)
         {
-            return (flags & tapRETRY) ? TER{terNO_LINE} : TER{tecNO_LINE};
+            return ((flags & tapRETRY) != 0u) ? TER{terNO_LINE} : TER{tecNO_LINE};
         }
 
         // Entries have a canonical representation, determined by a
@@ -232,13 +231,14 @@ CreateOffer::checkAcceptAsset(
         // ordering. Determine which entry we need to access.
         bool const canonical_gt(id > issue.account);
 
-        bool const is_authorized((*trustLine)[sfFlags] & (canonical_gt ? lsfLowAuth : lsfHighAuth));
+        bool const is_authorized(
+            ((*trustLine)[sfFlags] & (canonical_gt ? lsfLowAuth : lsfHighAuth)) != 0u);
 
         if (!is_authorized)
         {
             JLOG(j.debug()) << "delay: can't receive IOUs from issuer without auth.";
 
-            return (flags & tapRETRY) ? TER{terNO_AUTH} : TER{tecNO_AUTH};
+            return ((flags & tapRETRY) != 0u) ? TER{terNO_AUTH} : TER{tecNO_AUTH};
         }
     }
 
@@ -259,7 +259,7 @@ CreateOffer::checkAcceptAsset(
 
     // There's no difference which side enacted deep freeze, accepting
     // tokens shouldn't be possible.
-    bool const deepFrozen = (*trustLine)[sfFlags] & (lsfLowDeepFreeze | lsfHighDeepFreeze);
+    bool const deepFrozen = ((*trustLine)[sfFlags] & (lsfLowDeepFreeze | lsfHighDeepFreeze)) != 0u;
 
     if (deepFrozen)
     {
@@ -315,7 +315,7 @@ CreateOffer::flowCross(
         // If we're creating a passive offer adjust the threshold so we only
         // cross offers that have a better quality than this one.
         std::uint32_t const txFlags = ctx_.tx.getFlags();
-        if (txFlags & tfPassive)
+        if ((txFlags & tfPassive) != 0u)
             ++threshold;
 
         // Don't send more than our balance.
@@ -336,21 +336,25 @@ CreateOffer::flowCross(
         // Special handling for the tfSell flag.
         STAmount deliver = takerAmount.out;
         OfferCrossing offerCrossing = OfferCrossing::yes;
-        if (txFlags & tfSell)
+        if ((txFlags & tfSell) != 0u)
         {
             offerCrossing = OfferCrossing::sell;
             // We are selling, so we will accept *more* than the offer
             // specified.  Since we don't know how much they might offer,
             // we allow delivery of the largest possible amount.
             if (deliver.native())
+            {
                 deliver = STAmount{STAmount::cMaxNative};
+            }
             else
+            {
                 // We can't use the maximum possible currency here because
                 // there might be a gateway transfer rate to account for.
                 // Since the transfer rate cannot exceed 200%, we use 1/2
                 // maxValue for our limit.
                 deliver = STAmount{
                     takerAmount.out.issue(), STAmount::cMaxValue / 2, STAmount::cMaxOffset};
+            }
         }
 
         // Call the payment engine's flow() to do the actual work.
@@ -360,9 +364,9 @@ CreateOffer::flowCross(
             account_,
             account_,
             paths,
-            true,                       // default path
-            !(txFlags & tfFillOrKill),  // partial payment
-            true,                       // owner pays transfer fee
+            true,                            // default path
+            (txFlags & tfFillOrKill) == 0u,  // partial payment
+            true,                            // owner pays transfer fee
             offerCrossing,
             threshold,
             sendMax,
@@ -396,7 +400,7 @@ CreateOffer::flowCross(
             {
                 STAmount const rate{Quality{takerAmount.out, takerAmount.in}.rate()};
 
-                if (txFlags & tfSell)
+                if ((txFlags & tfSell) != 0u)
                 {
                     // If selling then scale the new out amount based on how
                     // much we sold during crossing.  This preserves the offer
@@ -408,17 +412,21 @@ CreateOffer::flowCross(
                     // gateway's transfer rate.
                     STAmount nonGatewayAmountIn = result.actualAmountIn;
                     if (gatewayXferRate.value != QUALITY_ONE)
+                    {
                         nonGatewayAmountIn = divideRound(
                             result.actualAmountIn, gatewayXferRate, takerAmount.in.issue(), true);
+                    }
 
                     afterCross.in -= nonGatewayAmountIn;
 
                     // It's possible that the divRound will cause our subtract
                     // to go slightly negative.  So limit afterCross.in to zero.
                     if (afterCross.in < beast::zero)
+                    {
                         // We should verify that the difference *is* small, but
                         // what is a good threshold to check?
                         afterCross.in.clear();
+                    }
 
                     afterCross.out =
                         divRoundStrict(afterCross.in, rate, takerAmount.out.issue(), false);
@@ -511,11 +519,11 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     std::uint32_t const uTxFlags = ctx_.tx.getFlags();
 
-    bool const bPassive(uTxFlags & tfPassive);
-    bool const bImmediateOrCancel(uTxFlags & tfImmediateOrCancel);
-    bool const bFillOrKill(uTxFlags & tfFillOrKill);
-    bool const bSell(uTxFlags & tfSell);
-    bool const bHybrid(uTxFlags & tfHybrid);
+    bool const bPassive((uTxFlags & tfPassive) != 0u);
+    bool const bImmediateOrCancel((uTxFlags & tfImmediateOrCancel) != 0u);
+    bool const bFillOrKill((uTxFlags & tfFillOrKill) != 0u);
+    bool const bSell((uTxFlags & tfSell) != 0u);
+    bool const bHybrid((uTxFlags & tfHybrid) != 0u);
 
     auto saTakerPays = ctx_.tx[sfTakerPays];
     auto saTakerGets = ctx_.tx[sfTakerGets];
@@ -719,10 +727,12 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     {
         JLOG(j_.trace()) << "Immediate or cancel: offer canceled";
         if (!crossed)
+        {
             // Any ImmediateOrCancel offer that transfers absolutely no funds
             // returns tecKILLED rather than tesSUCCESS.  Motivation for the
             // change is here: https://github.com/ripple/rippled/issues/4115
             return {tecKILLED, false};
+        }
         return {tesSUCCESS, true};
     }
 
@@ -731,7 +741,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {tefINTERNAL, false};
 
     {
-        XRPAmount reserve = sb.fees().accountReserve(sleCreator->getFieldU32(sfOwnerCount) + 1);
+        XRPAmount const reserve =
+            sb.fees().accountReserve(sleCreator->getFieldU32(sfOwnerCount) + 1);
 
         if (mPriorBalance < reserve)
         {
@@ -861,9 +872,13 @@ CreateOffer::doApply()
 
     auto const result = applyGuts(sb, sbCancel);
     if (result.second)
+    {
         sb.apply(ctx_.rawView());
+    }
     else
+    {
         sbCancel.apply(ctx_.rawView());
+    }
     return result.first;
 }
 

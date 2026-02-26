@@ -5,8 +5,7 @@
 #include <xrpl/tx/paths/RippleCalc.h>
 #include <xrpl/tx/paths/detail/FlowDebugInfo.h>
 
-namespace xrpl {
-namespace path {
+namespace xrpl::path {
 
 RippleCalc::Output
 RippleCalc::rippleCalculate(
@@ -43,9 +42,9 @@ RippleCalc::rippleCalculate(
     auto j = l.journal("Flow");
 
     {
-        bool const defaultPaths = !pInputs ? true : pInputs->defaultPathsAllowed;
+        bool const defaultPaths = (pInputs == nullptr) ? true : pInputs->defaultPathsAllowed;
 
-        bool const partialPayment = !pInputs ? false : pInputs->partialPaymentAllowed;
+        bool const partialPayment = (pInputs == nullptr) ? false : pInputs->partialPaymentAllowed;
 
         auto const limitQuality = [&]() -> std::optional<Quality> {
             if (pInputs && pInputs->limitQuality && saMaxAmountReq > beast::zero)
@@ -101,5 +100,4 @@ RippleCalc::rippleCalculate(
     return flowOut;
 }
 
-}  // namespace path
-}  // namespace xrpl
+}  // namespace xrpl::path

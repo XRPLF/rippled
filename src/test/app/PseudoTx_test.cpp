@@ -6,17 +6,16 @@
 #include <string>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 struct PseudoTx_test : public beast::unit_test::suite
 {
-    std::vector<STTx>
+    static std::vector<STTx>
     getPseudoTxs(Rules const& rules, std::uint32_t seq)
     {
         std::vector<STTx> res;
 
-        res.emplace_back(STTx(ttFEE, [&](auto& obj) {
+        res.emplace_back(ttFEE, [&](auto& obj) {
             obj[sfAccount] = AccountID();
             obj[sfLedgerSequence] = seq;
             if (rules.enabled(featureXRPFees))
@@ -32,28 +31,28 @@ struct PseudoTx_test : public beast::unit_test::suite
                 obj[sfReserveIncrement] = 0;
                 obj[sfReferenceFeeUnits] = 0;
             }
-        }));
+        });
 
-        res.emplace_back(STTx(ttAMENDMENT, [&](auto& obj) {
+        res.emplace_back(ttAMENDMENT, [&](auto& obj) {
             obj.setAccountID(sfAccount, AccountID());
             obj.setFieldH256(sfAmendment, uint256(2));
             obj.setFieldU32(sfLedgerSequence, seq);
-        }));
+        });
 
         return res;
     }
 
-    std::vector<STTx>
+    static std::vector<STTx>
     getRealTxs()
     {
         std::vector<STTx> res;
 
-        res.emplace_back(STTx(ttACCOUNT_SET, [&](auto& obj) { obj[sfAccount] = AccountID(1); }));
+        res.emplace_back(ttACCOUNT_SET, [&](auto& obj) { obj[sfAccount] = AccountID(1); });
 
-        res.emplace_back(STTx(ttPAYMENT, [&](auto& obj) {
+        res.emplace_back(ttPAYMENT, [&](auto& obj) {
             obj.setAccountID(sfAccount, AccountID(2));
             obj.setAccountID(sfDestination, AccountID(3));
-        }));
+        });
 
         return res;
     }
@@ -104,5 +103,4 @@ struct PseudoTx_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(PseudoTx, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

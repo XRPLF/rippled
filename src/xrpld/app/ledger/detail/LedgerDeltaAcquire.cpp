@@ -20,7 +20,9 @@ LedgerDeltaAcquire::LedgerDeltaAcquire(
           app,
           ledgerHash,
           LedgerReplayParameters::SUB_TASK_TIMEOUT,
-          {jtREPLAY_TASK, "LedReplDelta", LedgerReplayParameters::MAX_QUEUED_TASKS},
+          {.jobType = jtREPLAY_TASK,
+           .jobName = "LedReplDelta",
+           .jobLimit = LedgerReplayParameters::MAX_QUEUED_TASKS},
           app.journal("LedgerReplayDelta"))
     , inboundLedgers_(inboundLedgers)
     , ledgerSeq_(ledgerSeq)
@@ -70,7 +72,7 @@ LedgerDeltaAcquire::trigger(std::size_t limit, ScopedLockType& sl)
                 {
                     JLOG(journal_.trace()) << "Add a peer " << peer->id() << " for " << hash_;
                     protocol::TMReplayDeltaRequest request;
-                    request.set_ledgerhash(hash_.data(), hash_.size());
+                    request.set_ledgerhash(hash_.data(), uint256::size());
                     peerSet_->sendRequest(request, peer);
                 }
                 else
@@ -145,7 +147,7 @@ LedgerDeltaAcquire::addDataCallback(InboundLedger::Reason reason, OnDeltaDataCB&
 {
     ScopedLockType sl(mtx_);
     dataReadyCallbacks_.emplace_back(std::move(cb));
-    if (reasons_.count(reason) == 0)
+    if (!reasons_.contains(reason))
     {
         reasons_.emplace(reason);
         if (fullLedger_)
@@ -177,7 +179,7 @@ LedgerDeltaAcquire::tryBuild(std::shared_ptr<Ledger const> const& parent)
         parent->header().hash == replayTemp_->header().parentHash,
         "xrpl::LedgerDeltaAcquire::tryBuild : parent hash match");
     // build ledger
-    LedgerReplay replayData(parent, replayTemp_, std::move(orderedTxns_));
+    LedgerReplay const replayData(parent, replayTemp_, std::move(orderedTxns_));
     fullLedger_ = buildLedger(replayData, tapNONE, app_, journal_);
     if (fullLedger_ && fullLedger_->header().hash == hash_)
     {
@@ -185,14 +187,12 @@ LedgerDeltaAcquire::tryBuild(std::shared_ptr<Ledger const> const& parent)
         onLedgerBuilt(sl);
         return fullLedger_;
     }
-    else
-    {
-        failed_ = true;
-        complete_ = false;
-        JLOG(journal_.error()) << "tryBuild failed " << hash_ << " with parent "
-                               << parent->header().hash;
-        Throw<std::runtime_error>("Cannot replay ledger");
-    }
+
+    failed_ = true;
+    complete_ = false;
+    JLOG(journal_.error()) << "tryBuild failed " << hash_ << " with parent "
+                           << parent->header().hash;
+    Throw<std::runtime_error>("Cannot replay ledger");
 }
 
 void

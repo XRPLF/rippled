@@ -9,12 +9,11 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class Book_test : public beast::unit_test::suite
 {
-    std::string
+    static std::string
     getBookDir(
         jtx::Env& env,
         Issue const& in,
@@ -30,7 +29,7 @@ class Book_test : public beast::unit_test::suite
         {
             auto sleOfferDir = view->read(keylet::page(key.value()));
             uint256 offerIndex;
-            unsigned int bookEntry;
+            unsigned int bookEntry = 0;
             cdirFirst(*view, sleOfferDir->key(), sleOfferDir, bookEntry, offerIndex);
             auto sleOffer = view->read(keylet::offer(offerIndex));
             dir = to_string(sleOffer->getFieldH256(sfBookDirectory));
@@ -876,9 +875,9 @@ public:
         testcase("TrackOffers");
         using namespace jtx;
         Env env(*this);
-        Account gw{"gw"};
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
         auto wsc = makeWSClient(env.app().config());
         env.fund(XRP(20000), alice, bob, gw);
         env.close();
@@ -1185,8 +1184,8 @@ public:
         testcase("BookOffersRPC Errors");
         using namespace jtx;
         Env env(*this);
-        Account gw{"gw"};
-        Account alice{"alice"};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
         env.fund(XRP(10000), alice, gw);
         env.close();
         auto USD = gw["USD"];
@@ -1514,7 +1513,7 @@ public:
         testcase("BookOffer Limits");
         using namespace jtx;
         Env env{*this, asAdmin ? envconfig() : envconfig(no_admin)};
-        Account gw{"gw"};
+        Account const gw{"gw"};
         env.fund(XRP(200000), gw);
         // Note that calls to env.close() fail without admin permission.
         if (asAdmin)
@@ -1523,7 +1522,7 @@ public:
         auto USD = gw["USD"];
 
         for (auto i = 0; i <= RPC::Tuning::bookOffers.rmax; i++)
-            env(offer(gw, XRP(50 + 1 * i), USD(1.0 + 0.1 * i)));
+            env(offer(gw, XRP(50 + (1 * i)), USD(1.0 + (0.1 * i))));
 
         if (asAdmin)
             env.close();
@@ -1561,7 +1560,7 @@ public:
             featurePermissionedDEX};
 
         Env env(*this, all);
-        PermissionedDEX permDex(env);
+        PermissionedDEX const permDex(env);
         auto const alice = permDex.alice;
         auto const bob = permDex.bob;
         auto const carol = permDex.carol;
@@ -1684,7 +1683,7 @@ public:
             featurePermissionedDEX};
 
         Env env(*this, all);
-        PermissionedDEX permDex(env);
+        PermissionedDEX const permDex(env);
         auto const alice = permDex.alice;
         auto const bob = permDex.bob;
         auto const carol = permDex.carol;
@@ -1824,5 +1823,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_PRIO(Book, rpc, xrpl, 1);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

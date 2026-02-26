@@ -3,8 +3,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/unit_test.h>
 
-namespace xrpl {
-namespace RPC {
+namespace xrpl::RPC {
 
 class codeString_test : public beast::unit_test::suite
 {
@@ -195,5 +194,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(fillJson, rpc, RPC);
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

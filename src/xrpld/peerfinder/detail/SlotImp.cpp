@@ -2,12 +2,13 @@
 #include <xrpld/peerfinder/detail/SlotImp.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
 
-namespace xrpl {
-namespace PeerFinder {
+#include <utility>
+
+namespace xrpl::PeerFinder {
 
 SlotImp::SlotImp(
     beast::IP::Endpoint const& local_endpoint,
-    beast::IP::Endpoint const& remote_endpoint,
+    beast::IP::Endpoint remote_endpoint,
     bool fixed,
     clock_type& clock)
     : recent(clock)
@@ -15,7 +16,7 @@ SlotImp::SlotImp(
     , m_fixed(fixed)
     , m_reserved(false)
     , m_state(accept)
-    , m_remote_endpoint(remote_endpoint)
+    , m_remote_endpoint(std::move(remote_endpoint))
     , m_local_endpoint(local_endpoint)
     , m_listening_port(unknownPort)
     , checked(false)
@@ -24,13 +25,13 @@ SlotImp::SlotImp(
 {
 }
 
-SlotImp::SlotImp(beast::IP::Endpoint const& remote_endpoint, bool fixed, clock_type& clock)
+SlotImp::SlotImp(beast::IP::Endpoint remote_endpoint, bool fixed, clock_type& clock)
     : recent(clock)
     , m_inbound(false)
     , m_fixed(fixed)
     , m_reserved(false)
     , m_state(connect)
-    , m_remote_endpoint(remote_endpoint)
+    , m_remote_endpoint(std::move(remote_endpoint))
     , m_listening_port(unknownPort)
     , checked(true)
     , canAccept(true)
@@ -125,5 +126,4 @@ SlotImp::recent_t::expire()
     beast::expire(cache, Tuning::liveCacheSecondsToLive);
 }
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

@@ -76,7 +76,7 @@ deleteSLE(ApplyView& view, std::shared_ptr<SLE> const& sleCredential, beast::Jou
 
     auto const issuer = sleCredential->getAccountID(sfIssuer);
     auto const subject = sleCredential->getAccountID(sfSubject);
-    bool const accepted = sleCredential->getFlags() & lsfAccepted;
+    bool const accepted = (sleCredential->getFlags() & lsfAccepted) != 0u;
 
     auto err = delSLE(issuer, sfIssuerNode, !accepted || (subject == issuer));
     if (!isTesSuccess(err))
@@ -145,7 +145,7 @@ valid(STTx const& tx, ReadView const& view, AccountID const& src, beast::Journal
             return tecBAD_CREDENTIALS;
         }
 
-        if (!(sleCred->getFlags() & lsfAccepted))
+        if ((sleCred->getFlags() & lsfAccepted) == 0u)
         {
             JLOG(j.trace()) << "Credential isn't accepted. Cred: " << h;
             return tecBAD_CREDENTIALS;
@@ -186,7 +186,7 @@ validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
                 foundExpired = true;
                 continue;
             }
-            else if (sleCredential->getFlags() & lsfAccepted)
+            if (sleCredential->getFlags() & lsfAccepted)
                 return tesSUCCESS;
             else
                 continue;
@@ -305,7 +305,7 @@ verifyValidDomain(ApplyView& view, AccountID const& account, uint256 domainID, b
         if (!sleCredential)
             continue;  // expired, i.e. deleted in credentials::removeExpired
 
-        if (sleCredential->getFlags() & lsfAccepted)
+        if ((sleCredential->getFlags() & lsfAccepted) != 0u)
             return tesSUCCESS;
     }
 
@@ -332,14 +332,16 @@ verifyDepositPreauth(
     if (credentialsPresent && credentials::removeExpired(view, tx.getFieldV256(sfCredentialIDs), j))
         return tecEXPIRED;
 
-    if (sleDst && (sleDst->getFlags() & lsfDepositAuth))
+    if (sleDst && ((sleDst->getFlags() & lsfDepositAuth) != 0u))
     {
         if (src != dst)
         {
             if (!view.exists(keylet::depositPreauth(dst, src)))
+            {
                 return !credentialsPresent ? tecNO_PERMISSION
                                            : credentials::authorizedDepositPreauth(
                                                  view, tx.getFieldV256(sfCredentialIDs), dst);
+            }
         }
     }
 

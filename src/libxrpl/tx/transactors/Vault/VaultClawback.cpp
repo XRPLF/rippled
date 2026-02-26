@@ -27,8 +27,10 @@ VaultClawback::preflight(PreflightContext const& ctx)
     {
         // Note, zero amount is valid, it means "all". It is also the default.
         if (*amount < beast::zero)
+        {
             return temBAD_AMOUNT;
-        else if (isXRP(amount->asset()))
+        }
+        if (isXRP(amount->asset()))
         {
             JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback XRP.";
             return temMALFORMED;
@@ -330,7 +332,7 @@ VaultClawback::doApply()
         lossUnrealized <= (assetsTotal - assetsAvailable),
         "xrpl::VaultClawback::doApply : loss and assets do balance");
 
-    AccountID holder = tx[sfHolder];
+    AccountID const holder = tx[sfHolder];
     STAmount sharesDestroyed = {share};
     STAmount assetsRecovered = {vault->at(sfAsset)};
 

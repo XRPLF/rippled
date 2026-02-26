@@ -11,7 +11,7 @@ RCLCxPeerPos::RCLCxPeerPos(
     Slice const& signature,
     uint256 const& suppression,
     Proposal&& proposal)
-    : publicKey_(publicKey), suppression_(suppression), proposal_(std::move(proposal))
+    : publicKey_(publicKey), suppression_(suppression), proposal_(proposal)
 {
     // The maximum allowed size of a signature is 72 bytes; we verify
     // this elsewhere, but we want to be extra careful here:
@@ -19,7 +19,8 @@ RCLCxPeerPos::RCLCxPeerPos(
         signature.size() != 0 && signature.size() <= signature_.capacity(),
         "xrpl::RCLCxPeerPos::RCLCxPeerPos : valid signature size");
 
-    if (signature.size() != 0 && signature.size() <= signature_.capacity())
+    if (!signature.empty() &&
+        signature.size() <= boost::container::static_vector<unsigned char, 72, void>::capacity())
         signature_.assign(signature.begin(), signature.end());
 }
 
@@ -34,7 +35,7 @@ RCLCxPeerPos::getJson() const
 {
     auto ret = proposal().getJson();
 
-    if (publicKey().size())
+    if (publicKey().size() != 0u)
         ret[jss::peer_id] = toBase58(TokenType::NodePublic, publicKey());
 
     return ret;

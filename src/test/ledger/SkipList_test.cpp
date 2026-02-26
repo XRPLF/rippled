@@ -5,8 +5,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/ledger/View.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class SkipList_test : public beast::unit_test::suite
 {
@@ -16,7 +15,7 @@ class SkipList_test : public beast::unit_test::suite
         jtx::Env env(*this);
         std::vector<std::shared_ptr<Ledger>> history;
         {
-            Config config;
+            Config const config;
             auto prev = std::make_shared<Ledger>(
                 create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
             history.push_back(prev);
@@ -71,5 +70,4 @@ class SkipList_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(SkipList, ledger, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -13,8 +13,7 @@
 #include <functional>
 #include <stdexcept>
 
-namespace xrpl {
-namespace tests {
+namespace xrpl::tests {
 
 class FetchPack_test : public beast::unit_test::suite
 {
@@ -53,7 +52,7 @@ public:
         std::optional<Blob>
         getNode(SHAMapHash const& nodeHash) const override
         {
-            Map::iterator it = mMap.find(nodeHash);
+            Map::iterator const it = mMap.find(nodeHash);
             if (it == mMap.end())
             {
                 JLOG(mJournal.fatal()) << "Test filter missing node";
@@ -66,7 +65,7 @@ public:
         beast::Journal mJournal;
     };
 
-    boost::intrusive_ptr<Item>
+    static boost::intrusive_ptr<Item>
     make_random_item(beast::xor_shift_engine& r)
     {
         Serializer s;
@@ -78,7 +77,7 @@ public:
     void
     add_random_items(std::size_t n, Table& t, beast::xor_shift_engine& r)
     {
-        while (n--)
+        while ((n--) != 0u)
         {
             auto const result(t.addItem(SHAMapNodeType::tnACCOUNT_STATE, make_random_item(r)));
             assert(result);
@@ -100,7 +99,7 @@ public:
         test::SuiteJournal journal("FetchPack_test", *this);
 
         TestNodeFamily f(journal);
-        std::shared_ptr<Table> t1(std::make_shared<Table>(SHAMapType::FREE, f));
+        std::shared_ptr<Table> const t1(std::make_shared<Table>(SHAMapType::FREE, f));
 
         pass();
 
@@ -151,5 +150,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(FetchPack, shamap, xrpl);
 
-}  // namespace tests
-}  // namespace xrpl
+}  // namespace xrpl::tests

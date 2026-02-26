@@ -5,8 +5,7 @@
 
 #include <algorithm>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 struct DID_test : public beast::unit_test::suite
 {
@@ -367,5 +366,4 @@ struct DID_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(DID, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

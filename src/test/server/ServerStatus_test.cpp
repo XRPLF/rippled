@@ -24,8 +24,7 @@
 #include <random>
 #include <regex>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class ServerStatus_test : public beast::unit_test::suite, public beast::test::enable_yield_to
 {
@@ -33,7 +32,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
     {
     };
 
-    auto
+    static auto
     makeConfig(std::string const& proto, bool admin = true, bool credentials = false)
     {
         auto const section_name = boost::starts_with(proto, "h") ? "port_rpc" : "port_ws";
@@ -69,7 +68,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         return p;
     }
 
-    auto
+    static auto
     makeWSUpgrade(std::string const& host, uint16_t port)
     {
         using namespace boost::asio;
@@ -87,7 +86,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
             std::random_device rd;
             std::mt19937 e{rd()};
             std::uniform_int_distribution<> d(0, 255);
-            std::array<std::uint8_t, 16> key;
+            std::array<std::uint8_t, 16> key{};
             for (auto& v : key)
                 v = d(e);
             req.insert("Sec-WebSocket-Key", base64_encode(key.data(), key.size()));
@@ -97,7 +96,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         return req;
     }
 
-    auto
+    static auto
     makeHTTPRequest(
         std::string const& host,
         uint16_t port,
@@ -215,7 +214,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         return;
     }
 
-    auto
+    static auto
     makeAdminRequest(
         jtx::Env& env,
         std::string const& proto,
@@ -560,11 +559,10 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         // for zero limit, pick an arbitrary nonzero number of clients - all
         // should connect fine.
 
-        int testTo = (limit == 0) ? 50 : limit + 1;
+        int const testTo = (limit == 0) ? 50 : limit + 1;
         while (connectionCount < testTo)
         {
-            clients.emplace_back(
-                std::make_pair(ip::tcp::socket{ios}, boost::beast::multi_buffer{}));
+            clients.emplace_back(ip::tcp::socket{ios}, boost::beast::multi_buffer{});
             async_connect(clients.back().first, it, yield[ec]);
             BEAST_EXPECT(!ec);
             auto req = makeHTTPRequest(ip, port, to_string(jr), {});
@@ -1035,7 +1033,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         boost::system::error_code ec;
         doHTTPRequest(env, yield, false, resp, ec);
         BEAST_EXPECT(resp.result() == boost::beast::http::status::internal_server_error);
-        std::regex body{"Server cannot accept clients"};
+        std::regex const body{"Server cannot accept clients"};
         BEAST_EXPECT(std::regex_search(resp.body(), body));
     }
 
@@ -1081,5 +1079,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(ServerStatus, server, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

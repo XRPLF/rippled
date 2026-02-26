@@ -5,8 +5,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/st.h>
 
-namespace xrpl {
-namespace detail {
+namespace xrpl::detail {
 
 void
 ApplyStateTable::apply(RawView& to) const
@@ -107,7 +106,7 @@ ApplyStateTable::apply(
         Mods newMod;
         for (auto& item : items_)
         {
-            SField const* type;
+            SField const* type = nullptr;
             switch (item.second.first)
             {
                 default:
@@ -127,8 +126,8 @@ ApplyStateTable::apply(
             auto curNode = item.second.second;
             if ((type == &sfModifiedNode) && (*curNode == *origNode))
                 continue;
-            std::uint16_t nodeType = curNode ? curNode->getFieldU16(sfLedgerEntryType)
-                                             : origNode->getFieldU16(sfLedgerEntryType);
+            std::uint16_t const nodeType = curNode ? curNode->getFieldU16(sfLedgerEntryType)
+                                                   : origNode->getFieldU16(sfLedgerEntryType);
             meta.setAffectedNode(item.first, *type, nodeType);
             if (type == &sfDeletedNode)
             {
@@ -169,9 +168,11 @@ ApplyStateTable::apply(
                     "xrpl::detail::ApplyStateTable::apply : valid nodes for "
                     "modification");
 
-                if (curNode->isThreadedType(to.rules()))  // thread transaction to node
-                                                          // item modified
+                if (curNode->isThreadedType(to.rules()))
+                {  // thread transaction to node
+                   // item modified
                     threadItem(meta, curNode);
+                }
 
                 STObject prevs(sfPreviousFields);
                 for (auto const& obj : *origNode)
@@ -273,9 +274,7 @@ ApplyStateTable::exists(ReadView const& base, Keylet const& k) const
         case Action::modify:
             break;
     }
-    if (!k.check(*sle))
-        return false;
-    return true;
+    return k.check(*sle);
 }
 
 auto
@@ -513,7 +512,7 @@ void
 ApplyStateTable::threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
 {
     key_type prevTxID;
-    LedgerIndex prevLgrID;
+    LedgerIndex prevLgrID = 0;
 
     if (!sle->thread(meta.getTxID(), meta.getLgrSeq(), prevTxID, prevLgrID))
         return;
@@ -642,5 +641,4 @@ ApplyStateTable::threadOwners(
     }
 }
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail

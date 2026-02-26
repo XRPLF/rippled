@@ -10,8 +10,7 @@
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 bool
 getNoRippleFlag(
@@ -196,6 +195,7 @@ struct Flow_test : public beast::unit_test::suite
 
         //   Dan -> Bob -> Alice -> Carol; vary bobDanQIn and bobAliceQOut
         for (auto bobDanQIn : {80, 100, 120})
+        {
             for (auto bobAliceQOut : {80, 100, 120})
             {
                 Env env(*this, features);
@@ -213,12 +213,17 @@ struct Flow_test : public beast::unit_test::suite
                     txflags(tfNoRippleDirect));
                 env.require(balance(bob, USDA(90)));
                 if (bobAliceQOut > bobDanQIn)
+                {
                     env.require(
                         balance(bob, USDD(10.0 * double(bobAliceQOut) / double(bobDanQIn))));
+                }
                 else
+                {
                     env.require(balance(bob, USDD(10)));
+                }
                 env.require(balance(carol, USDA(10)));
             }
+        }
 
         // bob -> alice -> carol; vary carolAliceQIn
         for (auto carolAliceQIn : {80, 100, 120})
@@ -234,7 +239,7 @@ struct Flow_test : public beast::unit_test::suite
             env.require(balance(bob, USDA(10)));
             env(pay(bob, carol, USDA(5)), sendmax(USDA(10)));
             auto const effectiveQ = carolAliceQIn > 100 ? 1.0 : carolAliceQIn / 100.0;
-            env.require(balance(bob, USDA(10.0 - 5.0 / effectiveQ)));
+            env.require(balance(bob, USDA(10.0 - (5.0 / effectiveQ))));
         }
 
         // bob -> alice -> carol; bobAliceQOut varies.
@@ -430,7 +435,7 @@ struct Flow_test : public beast::unit_test::suite
 
             auto flowJournal = env.app().logs().journal("Flow");
             auto const flowResult = [&] {
-                STAmount deliver(USD(51));
+                STAmount const deliver(USD(51));
                 STAmount smax(BTC(61));
                 PaymentSandbox sb(env.current().get(), tapNONE);
                 STPathSet paths;
@@ -443,10 +448,10 @@ struct Flow_test : public beast::unit_test::suite
                 };
                 {
                     // BTC -> USD
-                    STPath p1({IPE(USD.issue())});
+                    STPath const p1({IPE(USD.issue())});
                     paths.push_back(p1);
                     // BTC -> EUR -> USD
-                    STPath p2({IPE(EUR.issue()), IPE(USD.issue())});
+                    STPath const p2({IPE(EUR.issue()), IPE(USD.issue())});
                     paths.push_back(p2);
                 }
 
@@ -472,8 +477,10 @@ struct Flow_test : public beast::unit_test::suite
                     return false;
                 Sandbox sb(&view, tapNONE);
                 for (auto const& o : flowResult.removableOffers)
+                {
                     if (auto ok = sb.peek(keylet::offer(o)))
                         offerDelete(sb, ok, flowJournal);
+                }
                 sb.apply(view);
                 return true;
             });
@@ -867,8 +874,10 @@ struct Flow_test : public beast::unit_test::suite
             env.close();
             env(trust(bob, USD(20)));
 
-            STAmount tinyAmt1{USD.issue(), 9000000000000000ll, -17, false, STAmount::unchecked{}};
-            STAmount tinyAmt3{USD.issue(), 9000000000000003ll, -17, false, STAmount::unchecked{}};
+            STAmount const tinyAmt1{
+                USD.issue(), 9000000000000000ll, -17, false, STAmount::unchecked{}};
+            STAmount const tinyAmt3{
+                USD.issue(), 9000000000000003ll, -17, false, STAmount::unchecked{}};
 
             env(offer(gw, drops(9000000000), tinyAmt3));
             env(pay(alice, bob, tinyAmt1),
@@ -891,8 +900,10 @@ struct Flow_test : public beast::unit_test::suite
             env.close();
             env(trust(alice, USD(20)));
 
-            STAmount tinyAmt1{USD.issue(), 9000000000000000ll, -17, false, STAmount::unchecked{}};
-            STAmount tinyAmt3{USD.issue(), 9000000000000003ll, -17, false, STAmount::unchecked{}};
+            STAmount const tinyAmt1{
+                USD.issue(), 9000000000000000ll, -17, false, STAmount::unchecked{}};
+            STAmount const tinyAmt3{
+                USD.issue(), 9000000000000003ll, -17, false, STAmount::unchecked{}};
 
             env(pay(gw, alice, tinyAmt1));
 
@@ -1277,5 +1288,4 @@ struct Flow_manual_test : public Flow_test
 BEAST_DEFINE_TESTSUITE_PRIO(Flow, app, xrpl, 2);
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Flow_manual, app, xrpl, 4);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

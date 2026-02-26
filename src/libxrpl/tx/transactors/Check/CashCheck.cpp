@@ -80,7 +80,8 @@ CashCheck::preclaim(PreclaimContext const& ctx)
             return tecNO_ENTRY;
         }
 
-        if ((sleDst->getFlags() & lsfRequireDestTag) && !sleCheck->isFieldPresent(sfDestinationTag))
+        if (((sleDst->getFlags() & lsfRequireDestTag) != 0u) &&
+            !sleCheck->isFieldPresent(sfDestinationTag))
         {
             // The tag is basically account-specific information we don't
             // understand, but we can require someone to fill it in.
@@ -153,7 +154,7 @@ CashCheck::preclaim(PreclaimContext const& ctx)
                 return tecNO_ISSUER;
             }
 
-            if (sleIssuer->at(sfFlags) & lsfRequireAuth)
+            if ((sleIssuer->at(sfFlags) & lsfRequireAuth) != 0u)
             {
                 auto const sleTrustLine = ctx.view.read(keylet::line(dstId, issuerId, currency));
 
@@ -170,7 +171,7 @@ CashCheck::preclaim(PreclaimContext const& ctx)
                 bool const canonical_gt(dstId > issuerId);
 
                 bool const is_authorized(
-                    sleTrustLine->at(sfFlags) & (canonical_gt ? lsfLowAuth : lsfHighAuth));
+                    (sleTrustLine->at(sfFlags) & (canonical_gt ? lsfLowAuth : lsfHighAuth)) != 0u);
 
                 if (!is_authorized)
                 {
@@ -265,8 +266,10 @@ CashCheck::doApply()
             }
 
             if (optDeliverMin)
+            {
                 // Set the DeliveredAmount metadata.
                 ctx_.deliver(xrpDeliver);
+            }
 
             // The source account has enough XRP so make the ledger change.
             if (TER const ter{transferXRP(psb, srcId, account_, xrpDeliver, viewJ)};
@@ -363,7 +366,7 @@ CashCheck::doApply()
             STAmount const savedLimit = sleTrustLine->at(tweakedLimit);
 
             // Make sure the tweaked limits are restored when we leave scope.
-            scope_exit fixup([&psb, &trustLineKey, &tweakedLimit, &savedLimit]() {
+            scope_exit const fixup([&psb, &trustLineKey, &tweakedLimit, &savedLimit]() {
                 if (auto const sleTrustLine = psb.peek(trustLineKey))
                     sleTrustLine->at(tweakedLimit) = savedLimit;
             });

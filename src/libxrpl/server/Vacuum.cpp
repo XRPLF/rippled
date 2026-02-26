@@ -9,7 +9,7 @@ namespace xrpl {
 bool
 doVacuumDB(DatabaseCon::Setup const& setup, beast::Journal j)
 {
-    boost::filesystem::path dbPath = setup.dataDir / TxDBName;
+    boost::filesystem::path const dbPath = setup.dataDir / TxDBName;
 
     uintmax_t const dbSize = file_size(dbPath);
     XRPL_ASSERT(dbSize != static_cast<uintmax_t>(-1), "ripple:doVacuumDB : file_size succeeded");
@@ -25,7 +25,7 @@ doVacuumDB(DatabaseCon::Setup const& setup, beast::Journal j)
 
     auto txnDB = std::make_unique<DatabaseCon>(setup, TxDBName, setup.txPragma, TxDBInit, j);
     auto& session = txnDB->getSession();
-    std::uint32_t pageSize;
+    std::uint32_t pageSize = 0;
 
     // Only the most trivial databases will fit in memory on typical
     // (recommended) hardware. Force temp files to be written to disk
@@ -37,7 +37,7 @@ doVacuumDB(DatabaseCon::Setup const& setup, beast::Journal j)
 
     session << "VACUUM;";
     XRPL_ASSERT(setup.globalPragma, "ripple:doVacuumDB : non-null global pragma");
-    for (auto const& p : *setup.globalPragma)
+    for (auto const& p : *xrpl::DatabaseCon::Setup::globalPragma)
         session << p;
     session << "PRAGMA page_size;", soci::into(pageSize);
 

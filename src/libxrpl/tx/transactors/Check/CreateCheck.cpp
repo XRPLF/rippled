@@ -60,7 +60,7 @@ CreateCheck::preclaim(PreclaimContext const& ctx)
     auto const flags = sleDst->getFlags();
 
     // Check if the destination has disallowed incoming checks
-    if (flags & lsfDisallowIncomingCheck)
+    if ((flags & lsfDisallowIncomingCheck) != 0u)
         return tecNO_PERMISSION;
 
     // Pseudo-accounts cannot cash checks. Note, this is not amendment-gated
@@ -70,7 +70,7 @@ CreateCheck::preclaim(PreclaimContext const& ctx)
     if (isPseudoAccount(sleDst))
         return tecNO_PERMISSION;
 
-    if ((flags & lsfRequireDestTag) && !ctx.tx.isFieldPresent(sfDestinationTag))
+    if (((flags & lsfRequireDestTag) != 0u) && !ctx.tx.isFieldPresent(sfDestinationTag))
     {
         // The tag is basically account-specific information we don't
         // understand, but we can require someone to fill it in.

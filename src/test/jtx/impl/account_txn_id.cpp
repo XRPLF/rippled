@@ -1,8 +1,6 @@
 #include <test/jtx/account_txn_id.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 void
 account_txn_id::operator()(Env&, JTx& jt) const
@@ -11,6 +9,4 @@ account_txn_id::operator()(Env&, JTx& jt) const
         jt["AccountTxnID"] = strHex(hash_);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

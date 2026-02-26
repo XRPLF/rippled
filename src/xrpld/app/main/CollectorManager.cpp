@@ -31,7 +31,7 @@ public:
         m_groups = beast::insight::make_Groups(m_collector);
     }
 
-    ~CollectorManagerImp() = default;
+    ~CollectorManagerImp() override = default;
 
     beast::insight::Collector::ptr const&
     collector() override

@@ -17,7 +17,7 @@ getHTTPHeaderTimestamp()
     //         sense. There's no point in doing all this work if this function
     //         gets called multiple times a second.
     char buffer[96];
-    time_t now;
+    time_t now = 0;
     time(&now);
     struct tm now_gmt{};
 #ifndef _MSC_VER

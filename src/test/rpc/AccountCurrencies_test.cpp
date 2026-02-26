@@ -3,6 +3,8 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/jss.h>
 
+#include <algorithm>
+
 namespace xrpl {
 
 class AccountCurrencies_test : public beast::unit_test::suite
@@ -114,7 +116,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
         env.fund(XRP(10000), alice, gw);
         char currencySuffix{'A'};
         std::vector<std::optional<IOU>> gwCurrencies(26);  // A - Z
-        std::generate(gwCurrencies.begin(), gwCurrencies.end(), [&]() {
+        std::ranges::generate(gwCurrencies, [&]() {
             auto gwc = gw[std::string("US") + currencySuffix++];
             env(trust(alice, gwc(100)));
             return gwc;
@@ -165,7 +167,8 @@ class AccountCurrencies_test : public beast::unit_test::suite
         env(pay(gw, alice, gw["USA"](50)));
         // USA should now be missing from receive_currencies
         result = env.rpc("json", "account_currencies", to_string(params))[jss::result];
-        decltype(gwCurrencies) gwCurrenciesNoUSA(gwCurrencies.begin() + 1, gwCurrencies.end());
+        decltype(gwCurrencies)
+            const gwCurrenciesNoUSA(gwCurrencies.begin() + 1, gwCurrencies.end());
         BEAST_EXPECT(arrayCheck(jss::receive_currencies, gwCurrenciesNoUSA));
         BEAST_EXPECT(arrayCheck(jss::send_currencies, gwCurrencies));
 

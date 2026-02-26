@@ -5,6 +5,8 @@
 #include <xrpl/tx/paths/OfferStream.h>
 #include <xrpl/tx/transactors/PermissionedDEXHelpers.h>
 
+#include <algorithm>
+
 namespace xrpl {
 
 namespace {
@@ -57,7 +59,7 @@ TOfferStreamBase<TIn, TOut>::erase(ApplyView& view)
     }
 
     auto v(p->getFieldV256(sfIndexes));
-    auto it(std::find(v.begin(), v.end(), tip_.index()));
+    auto it(std::ranges::find(v, tip_.index()));
 
     if (it == v.end())
     {
@@ -95,8 +97,10 @@ accountFundsHelper(
     beast::Journal j)
 {
     if (issue.account == id)
+    {
         // self funded
         return amtDefault;
+    }
 
     return toAmount<IOUAmount>(
         accountHolds(view, id, issue.currency, issue.account, freezeHandling, j));
@@ -199,7 +203,7 @@ TOfferStreamBase<TIn, TOut>::step()
         if (!tip_.step(j_))
             return false;
 
-        std::shared_ptr<SLE> entry = tip_.entry();
+        std::shared_ptr<SLE> const entry = tip_.entry();
 
         // If we exceed the maximum number of allowed steps, we're done.
         if (!counter_.step())

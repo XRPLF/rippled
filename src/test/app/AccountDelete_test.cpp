@@ -3,8 +3,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class AccountDelete_test : public beast::unit_test::suite
 {
@@ -452,7 +451,7 @@ public:
         // Verify the existence of the expected ledger entries.
         Keylet const aliceOwnerDirKey{keylet::ownerDir(alice.id())};
         {
-            std::shared_ptr<ReadView const> closed{env.closed()};
+            std::shared_ptr<ReadView const> const closed{env.closed()};
             BEAST_EXPECT(closed->exists(keylet::account(alice.id())));
             BEAST_EXPECT(closed->exists(aliceOwnerDirKey));
 
@@ -486,7 +485,7 @@ public:
         // Verify that alice's account root is gone as well as her directory
         // nodes and all of her offers.
         {
-            std::shared_ptr<ReadView const> closed{env.closed()};
+            std::shared_ptr<ReadView const> const closed{env.closed()};
             BEAST_EXPECT(!closed->exists(keylet::account(alice.id())));
             BEAST_EXPECT(!closed->exists(aliceOwnerDirKey));
 
@@ -539,7 +538,7 @@ public:
         env(acctdelete(gw, alice), fee(acctDelFee), ter(tecHAS_OBLIGATIONS));
         env.close();
         {
-            std::shared_ptr<ReadView const> closed{env.closed()};
+            std::shared_ptr<ReadView const> const closed{env.closed()};
             BEAST_EXPECT(closed->exists(keylet::account(alice.id())));
             BEAST_EXPECT(closed->exists(keylet::account(gw.id())));
         }
@@ -590,7 +589,7 @@ public:
         env(acctdelete(alice, env.master), fee(XRP(1)), ter(telINSUF_FEE_P));
         env.close();
         {
-            std::shared_ptr<ReadView const> closed{env.closed()};
+            std::shared_ptr<ReadView const> const closed{env.closed()};
             BEAST_EXPECT(closed->exists(keylet::account(alice.id())));
             BEAST_EXPECT(env.balance(env.master) == masterBalance);
         }
@@ -617,7 +616,7 @@ public:
         env.require(owners(bob, 250));
 
         {
-            std::shared_ptr<ReadView const> closed{env.closed()};
+            std::shared_ptr<ReadView const> const closed{env.closed()};
             BEAST_EXPECT(closed->exists(keylet::account(bob.id())));
             for (std::uint32_t i = 0; i < 250; ++i)
             {
@@ -636,7 +635,7 @@ public:
         verifyDeliveredAmount(env, bobOldBalance - acctDelFee);
         env.close();
         {
-            std::shared_ptr<ReadView const> closed{env.closed()};
+            std::shared_ptr<ReadView const> const closed{env.closed()};
             BEAST_EXPECT(!closed->exists(keylet::account(bob.id())));
             for (std::uint32_t i = 0; i < 250; ++i)
             {
@@ -1050,5 +1049,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_PRIO(AccountDelete, app, xrpl, 2);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

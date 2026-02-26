@@ -77,11 +77,17 @@ SetOracle::preclaim(PreclaimContext const& ctx)
         if (entry[~sfScale] > maxPriceScale)
             return temMALFORMED;
         if (entry.isFieldPresent(sfAssetPrice))
+        {
             pairs.emplace(key);
+        }
         else if (sle)
+        {
             pairsDel.emplace(key);
+        }
         else
+        {
             return temMALFORMED;
+        }
     }
 
     // Lambda is used to check if the value of a field, passed
@@ -111,9 +117,13 @@ SetOracle::preclaim(PreclaimContext const& ctx)
             if (!pairs.contains(key))
             {
                 if (pairsDel.contains(key))
+                {
                     pairsDel.erase(key);
+                }
                 else
+                {
                     pairs.emplace(key);
+                }
             }
         }
         if (!pairsDel.empty())
@@ -224,7 +234,7 @@ SetOracle::doApply()
         }
         STArray updatedSeries;
         for (auto const& iter : pairs)
-            updatedSeries.push_back(std::move(iter.second));
+            updatedSeries.push_back(iter.second);
         sle->setFieldArray(sfPriceDataSeries, updatedSeries);
         if (ctx_.tx.isFieldPresent(sfURI))
             sle->setFieldVL(sfURI, ctx_.tx[sfURI]);
@@ -272,7 +282,7 @@ SetOracle::doApply()
                 pairs.emplace(key, std::move(priceData));
             }
             for (auto const& iter : pairs)
-                series.push_back(std::move(iter.second));
+                series.push_back(iter.second);
         }
 
         sle->setFieldArray(sfPriceDataSeries, series);

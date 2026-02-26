@@ -13,6 +13,7 @@
 #include <xrpl/resource/Fees.h>
 #include <xrpl/tx/transactors/NFT/NFTokenUtils.h>
 
+#include <algorithm>
 #include <string>
 
 namespace xrpl {
@@ -53,7 +54,7 @@ doAccountNFTs(RPC::JsonContext& context)
     if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
 
-    unsigned int limit;
+    unsigned int limit = 0;
     if (auto err = readLimitField(limit, RPC::Tuning::accountNFTokens, context))
         return *err;
 
@@ -131,7 +132,7 @@ doAccountNFTs(RPC::JsonContext& context)
                 obj[sfIssuer.jsonName] = to_string(nft::getIssuer(nftokenID));
                 obj[sfNFTokenTaxon.jsonName] = nft::toUInt32(nft::getTaxon(nftokenID));
                 obj[jss::nft_serial] = nft::getSerial(nftokenID);
-                if (std::uint16_t xferFee = {nft::getTransferFee(nftokenID)})
+                if (std::uint16_t const xferFee = {nft::getTransferFee(nftokenID)})
                     obj[sfTransferFee.jsonName] = xferFee;
             }
 
@@ -144,9 +145,13 @@ doAccountNFTs(RPC::JsonContext& context)
         }
 
         if (auto npm = (*cp)[~sfNextPageMin])
+        {
             cp = ledger->read(Keylet(ltNFTOKEN_PAGE, *npm));
+        }
         else
+        {
             cp = nullptr;
+        }
     }
 
     if (markerSet && !markerFound)
@@ -182,7 +187,7 @@ getAccountObjects(
 
     auto typeMatchesFilter = [](std::vector<LedgerEntryType> const& typeFilter,
                                 LedgerEntryType ledgerType) {
-        auto it = std::find(typeFilter.begin(), typeFilter.end(), ledgerType);
+        auto it = std::ranges::find(typeFilter, ledgerType);
         return it != typeFilter.end();
     };
 
@@ -229,9 +234,13 @@ getAccountObjects(
             jvObjects.append(cp->getJson(JsonOptions::none));
             auto const npm = (*cp)[~sfNextPageMin];
             if (npm)
+            {
                 cp = ledger.read(Keylet(ltNFTOKEN_PAGE, *npm));
+            }
             else
+            {
                 cp = nullptr;
+            }
 
             if (--mlimit == 0)
             {
@@ -389,18 +398,19 @@ doAccountObjects(RPC::JsonContext& context)
             Json::StaticString name;
             LedgerEntryType type;
         } static constexpr deletionBlockers[] = {
-            {jss::check, ltCHECK},
-            {jss::escrow, ltESCROW},
-            {jss::nft_page, ltNFTOKEN_PAGE},
-            {jss::payment_channel, ltPAYCHAN},
-            {jss::state, ltRIPPLE_STATE},
-            {jss::xchain_owned_claim_id, ltXCHAIN_OWNED_CLAIM_ID},
-            {jss::xchain_owned_create_account_claim_id, ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
-            {jss::bridge, ltBRIDGE},
-            {jss::mpt_issuance, ltMPTOKEN_ISSUANCE},
-            {jss::mptoken, ltMPTOKEN},
-            {jss::permissioned_domain, ltPERMISSIONED_DOMAIN},
-            {jss::vault, ltVAULT},
+            {.name = jss::check, .type = ltCHECK},
+            {.name = jss::escrow, .type = ltESCROW},
+            {.name = jss::nft_page, .type = ltNFTOKEN_PAGE},
+            {.name = jss::payment_channel, .type = ltPAYCHAN},
+            {.name = jss::state, .type = ltRIPPLE_STATE},
+            {.name = jss::xchain_owned_claim_id, .type = ltXCHAIN_OWNED_CLAIM_ID},
+            {.name = jss::xchain_owned_create_account_claim_id,
+             .type = ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
+            {.name = jss::bridge, .type = ltBRIDGE},
+            {.name = jss::mpt_issuance, .type = ltMPTOKEN_ISSUANCE},
+            {.name = jss::mptoken, .type = ltMPTOKEN},
+            {.name = jss::permissioned_domain, .type = ltPERMISSIONED_DOMAIN},
+            {.name = jss::vault, .type = ltVAULT},
         };
 
         typeFilter.emplace();
@@ -429,13 +439,13 @@ doAccountObjects(RPC::JsonContext& context)
             rpcStatus.inject(result);
             return result;
         }
-        else if (type != ltANY)
+        if (type != ltANY)
         {
             typeFilter = std::vector<LedgerEntryType>({type});
         }
     }
 
-    unsigned int limit;
+    unsigned int limit = 0;
     if (auto err = readLimitField(limit, RPC::Tuning::accountObjects, context))
         return *err;
 

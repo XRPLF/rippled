@@ -44,7 +44,7 @@ operator<<(std::ostream& os, Port const& p)
 {
     os << "'" << p.name << "' (ip=" << p.ip << ":" << p.port << ", ";
 
-    if (p.admin_nets_v4.size() || p.admin_nets_v6.size())
+    if ((!p.admin_nets_v4.empty() != 0u) || (!p.admin_nets_v6.empty() != 0u))
     {
         os << "admin nets:";
         for (auto const& net : p.admin_nets_v4)
@@ -59,7 +59,7 @@ operator<<(std::ostream& os, Port const& p)
         }
     }
 
-    if (p.secure_gateway_nets_v4.size() || p.secure_gateway_nets_v6.size())
+    if ((!p.secure_gateway_nets_v4.empty() != 0u) || (!p.secure_gateway_nets_v6.empty() != 0u))
     {
         os << "secure_gateway nets:";
         for (auto const& net : p.secure_gateway_nets_v4)
@@ -98,7 +98,7 @@ populate(
     while (std::getline(ss, ip, ','))
     {
         boost::algorithm::trim(ip);
-        bool v4;
+        bool v4 = false;
         boost::asio::ip::network_v4 v4Net;
         boost::asio::ip::network_v6 v6Net;
 

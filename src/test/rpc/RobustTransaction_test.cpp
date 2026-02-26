@@ -5,8 +5,7 @@
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class RobustTransaction_test : public beast::unit_test::suite
 {
@@ -433,5 +432,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(RobustTransaction, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

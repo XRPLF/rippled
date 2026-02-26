@@ -7,6 +7,8 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/apply.h>
 
+#include <algorithm>
+
 namespace xrpl {
 
 class AccountSet_test : public beast::unit_test::suite
@@ -83,7 +85,7 @@ public:
                     continue;
                 }
 
-                if (std::find(goodFlags.begin(), goodFlags.end(), flag) != goodFlags.end())
+                if (std::ranges::find(goodFlags, flag) != goodFlags.end())
                 {
                     // Good flag
                     env.require(nflags(alice, flag));
@@ -194,7 +196,7 @@ public:
         std::size_t const maxLength = 256;
         for (std::size_t len = maxLength - 1; len <= maxLength + 1; ++len)
         {
-            std::string domain2 = std::string(len - domain.length() - 1, 'a') + "." + domain;
+            std::string const domain2 = std::string(len - domain.length() - 1, 'a') + "." + domain;
 
             BEAST_EXPECT(domain2.length() == len);
 
@@ -307,21 +309,25 @@ public:
 
                     // If the field is not present expect the default value
                     if (!(*env.le(alice))[~sfTransferRate])
+                    {
                         BEAST_EXPECT(r.get == 1.0);
+                    }
                     else
+                    {
                         BEAST_EXPECT(*(*env.le(alice))[~sfTransferRate] == r.get * QUALITY_ONE);
+                    }
                 }
             };
 
         doTests(
             testable_amendments(),
-            {{1.0, tesSUCCESS, 1.0},
-             {1.1, tesSUCCESS, 1.1},
-             {2.0, tesSUCCESS, 2.0},
-             {2.1, temBAD_TRANSFER_RATE, 2.0},
-             {0.0, tesSUCCESS, 1.0},
-             {2.0, tesSUCCESS, 2.0},
-             {0.9, temBAD_TRANSFER_RATE, 2.0}});
+            {{.set = 1.0, .code = tesSUCCESS, .get = 1.0},
+             {.set = 1.1, .code = tesSUCCESS, .get = 1.1},
+             {.set = 2.0, .code = tesSUCCESS, .get = 2.0},
+             {.set = 2.1, .code = temBAD_TRANSFER_RATE, .get = 2.0},
+             {.set = 0.0, .code = tesSUCCESS, .get = 1.0},
+             {.set = 2.0, .code = tesSUCCESS, .get = 2.0},
+             {.set = 0.9, .code = temBAD_TRANSFER_RATE, .get = 2.0}});
     }
 
     void
@@ -368,7 +374,7 @@ public:
         //
         // Two out-of-bound values are currently in the ledger (March 2020)
         // They are 4.0 and 4.294967295.  So those are the values we test.
-        for (double transferRate : {4.0, 4.294967295})
+        for (double const transferRate : {4.0, 4.294967295})
         {
             Env env(*this);
             env.fund(XRP(10000), gw, alice, bob);

@@ -26,7 +26,7 @@ RippleLineCache::getRippleLines(AccountID const& accountID, LineDirection direct
         direction == LineDirection::outgoing ? LineDirection::incoming : LineDirection::outgoing,
         hash);
 
-    std::lock_guard sl(mLock);
+    std::lock_guard const sl(mLock);
 
     auto [it, inserted] =
         [&]() {
@@ -76,7 +76,7 @@ RippleLineCache::getRippleLines(AccountID const& accountID, LineDirection direct
     {
         XRPL_ASSERT(it->second == nullptr, "xrpl::RippleLineCache::getRippleLines : null lines");
         auto lines = PathFindTrustLine::getItems(accountID, *ledger_, direction);
-        if (lines.size())
+        if (!lines.empty() != 0u)
         {
             it->second = std::make_shared<std::vector<PathFindTrustLine>>(std::move(lines));
             totalLineCount_ += it->second->size();

@@ -5,9 +5,7 @@
 
 #include <iomanip>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 #if 0
 std::ostream&
@@ -62,9 +60,13 @@ operator<<(std::ostream& os, PrettyAmount const& amount)
         if (n < c)
         {
             if (amount.value().negative())
+            {
                 os << "-" << n << " drops";
+            }
             else
+            {
                 os << n << " drops";
+            }
             return os;
         }
         auto const d = double(n) / dropsPerXRP.drops();
@@ -111,6 +113,4 @@ operator<<(std::ostream& os, IOU const& iou)
 
 any_t const any{};
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

@@ -2,8 +2,7 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class AccountOffers_test : public beast::unit_test::suite
 {
@@ -13,7 +12,7 @@ public:
     checkMarker(Json::Value const& val)
     {
         return val.isMember(jss::marker) && val[jss::marker].isString() &&
-            val[jss::marker].asString().size() > 0;
+            !val[jss::marker].asString().empty();
     }
 
     void
@@ -288,5 +287,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(AccountOffers, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

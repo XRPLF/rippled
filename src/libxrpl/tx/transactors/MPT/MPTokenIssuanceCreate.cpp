@@ -31,8 +31,8 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 {
     // If the mutable flags field is included, at least one flag must be
     // specified.
-    if (auto const mutableFlags = ctx.tx[~sfMutableFlags];
-        mutableFlags && (!*mutableFlags || *mutableFlags & tmfMPTokenIssuanceCreateMutableMask))
+    if (auto const mutableFlags = ctx.tx[~sfMutableFlags]; mutableFlags &&
+        ((*mutableFlags == 0u) || ((*mutableFlags & tmfMPTokenIssuanceCreateMutableMask) != 0u)))
         return temINVALID_FLAG;
 
     if (auto const fee = ctx.tx[~sfTransferFee])
@@ -58,7 +58,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
-        if (metadata->length() == 0 || metadata->length() > maxMPTokenMetadataLength)
+        if (metadata->empty() || metadata->length() > maxMPTokenMetadataLength)
             return temMALFORMED;
     }
 

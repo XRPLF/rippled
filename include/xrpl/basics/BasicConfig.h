@@ -33,7 +33,7 @@ private:
 
 public:
     /** Create an empty section. */
-    explicit Section(std::string const& name = "");
+    explicit Section(std::string name = "");
 
     /** Returns the name of this section. */
     std::string const&

@@ -15,7 +15,9 @@ SkipListAcquire::SkipListAcquire(
           app,
           ledgerHash,
           LedgerReplayParameters::SUB_TASK_TIMEOUT,
-          {jtREPLAY_TASK, "SkipListAcq", LedgerReplayParameters::MAX_QUEUED_TASKS},
+          {.jobType = jtREPLAY_TASK,
+           .jobName = "SkipListAcq",
+           .jobLimit = LedgerReplayParameters::MAX_QUEUED_TASKS},
           app.journal("LedgerReplaySkipList"))
     , inboundLedgers_(inboundLedgers)
     , peerSet_(std::move(peerSet))
@@ -62,8 +64,8 @@ SkipListAcquire::trigger(std::size_t limit, ScopedLockType& sl)
                 {
                     JLOG(journal_.trace()) << "Add a peer " << peer->id() << " for " << hash_;
                     protocol::TMProofPathRequest request;
-                    request.set_ledgerhash(hash_.data(), hash_.size());
-                    request.set_key(keylet::skip().key.data(), keylet::skip().key.size());
+                    request.set_ledgerhash(hash_.data(), uint256::size());
+                    request.set_key(keylet::skip().key.data(), uint256::size());
                     request.set_type(protocol::TMLedgerMapType::lmACCOUNT_STATE);
                     peerSet_->sendRequest(request, peer);
                 }
@@ -151,7 +153,7 @@ SkipListAcquire::addDataCallback(OnSkipListDataCB&& cb)
 std::shared_ptr<SkipListAcquire::SkipListData const>
 SkipListAcquire::getData() const
 {
-    ScopedLockType sl(mtx_);
+    ScopedLockType const sl(mtx_);
     return data_;
 }
 

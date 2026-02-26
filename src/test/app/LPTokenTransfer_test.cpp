@@ -2,8 +2,7 @@
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class LPTokenTransfer_test : public jtx::AMMTest
 {
@@ -299,9 +298,13 @@ class LPTokenTransfer_test : public jtx::AMMTest
 
         // with fixFrozenLPTokenTransfer enabled, bob fails to cash the check
         if (features[fixFrozenLPTokenTransfer])
+        {
             env(check::cash(bob, carolChkId, STAmount{lpIssue, 10}), ter(tecPATH_PARTIAL));
+        }
         else
+        {
             env(check::cash(bob, carolChkId, STAmount{lpIssue, 10}));
+        }
 
         env.close();
 
@@ -428,5 +431,4 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE(LPTokenTransfer, app, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

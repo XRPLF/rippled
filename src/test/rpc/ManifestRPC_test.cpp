@@ -9,8 +9,7 @@
 
 #include <string>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class ManifestRPC_test : public beast::unit_test::suite
 {
@@ -70,5 +69,4 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE(ManifestRPC, rpc, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

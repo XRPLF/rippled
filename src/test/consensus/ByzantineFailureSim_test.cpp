@@ -4,8 +4,7 @@
 
 #include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class ByzantineFailureSim_test : public beast::unit_test::suite
 {
@@ -39,7 +38,7 @@ class ByzantineFailureSim_test : public beast::unit_test::suite
         f.trustAndConnect(f + d + e + g, delay);
         g.trustAndConnect(g + a + f, delay);
 
-        PeerGroup network = a + b + c + d + e + f + g;
+        PeerGroup const network = a + b + c + d + e + f + g;
 
         StreamCollector sc{std::cout};
 
@@ -77,5 +76,4 @@ class ByzantineFailureSim_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE_MANUAL(ByzantineFailureSim, consensus, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

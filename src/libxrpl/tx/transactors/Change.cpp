@@ -7,6 +7,7 @@
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/tx/transactors/Change.h>
 
+#include <algorithm>
 #include <string_view>
 
 namespace xrpl {
@@ -142,7 +143,7 @@ Change::preCompute()
 TER
 Change::applyAmendment()
 {
-    uint256 amendment(ctx_.tx.getFieldH256(sfAmendment));
+    uint256 const amendment(ctx_.tx.getFieldH256(sfAmendment));
 
     auto const k = keylet::amendments();
 
@@ -156,7 +157,7 @@ Change::applyAmendment()
 
     STVector256 amendments = amendmentObject->getFieldV256(sfAmendments);
 
-    if (std::find(amendments.begin(), amendments.end(), amendment) != amendments.end())
+    if (std::ranges::find(amendments, amendment) != amendments.end())
         return tefALREADY;
 
     auto flags = ctx_.tx.getFlags();
@@ -222,9 +223,13 @@ Change::applyAmendment()
     }
 
     if (newMajorities.empty())
+    {
         amendmentObject->makeFieldAbsent(sfMajorities);
+    }
     else
+    {
         amendmentObject->setFieldArray(sfMajorities, newMajorities);
+    }
 
     view().update(amendmentObject);
 
@@ -288,7 +293,7 @@ Change::applyUNLModify()
         return tefFAILURE;
     }
 
-    bool const disabling = ctx_.tx.getFieldU8(sfUNLModifyDisabling);
+    bool const disabling = ctx_.tx.getFieldU8(sfUNLModifyDisabling) != 0u;
     auto const seq = ctx_.tx.getFieldU32(sfLedgerSequence);
     if (seq != view().seq())
     {

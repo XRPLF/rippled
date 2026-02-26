@@ -45,7 +45,7 @@ namespace xrpl {
 
 namespace STParsedJSONDetail {
 template <typename U, typename S>
-constexpr std::enable_if_t<std::is_unsigned<U>::value && std::is_signed<S>::value, U>
+constexpr std::enable_if_t<std::is_unsigned_v<U> && std::is_signed_v<S>, U>
 to_unsigned(S value)
 {
     if (value < 0 || std::numeric_limits<U>::max() < value)
@@ -54,7 +54,7 @@ to_unsigned(S value)
 }
 
 template <typename U1, typename U2>
-constexpr std::enable_if_t<std::is_unsigned<U1>::value && std::is_unsigned<U2>::value, U1>
+constexpr std::enable_if_t<std::is_unsigned_v<U1> && std::is_unsigned_v<U2>, U1>
 to_unsigned(U2 value)
 {
     if (std::numeric_limits<U1>::max() < value)
@@ -267,8 +267,10 @@ parseUint16(
             }
         }
         if (!ret)
+        {
             return parseUnsigned<STResult, Integer>(
                 field, json_name, fieldName, name, value, error);
+        }
     }
     catch (std::exception const&)
     {
@@ -320,8 +322,10 @@ parseUint32(
             }
         }
         if (!ret)
+        {
             return parseUnsigned<STResult, Integer>(
                 field, json_name, fieldName, name, value, error);
+        }
     }
     catch (std::exception const&)
     {
@@ -449,7 +453,7 @@ parseLeaf(
                 {
                     auto const str = value.asString();
 
-                    std::uint64_t val;
+                    std::uint64_t val = 0;
 
                     bool const useBase10 = field.shouldMeta(SField::sMD_BaseTen);
 
@@ -1089,7 +1093,7 @@ parseArray(
             auto ret = parseObject(ss.str(), objectFields, nameField, depth + 1, error);
             if (!ret)
             {
-                std::string errMsg = error["error_message"].asString();
+                std::string const errMsg = error["error_message"].asString();
                 error["error_message"] = "Error at '" + ss.str() + "'. " + errMsg;
                 return std::nullopt;
             }

@@ -22,8 +22,7 @@
 #include <stdexcept>
 #include <thread>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 using socket_type = boost::beast::tcp_stream;
 using stream_type = boost::beast::ssl_stream<socket_type>;
@@ -91,13 +90,13 @@ public:
 
     struct TestHandler
     {
-        bool
+        static bool
         onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoint)
         {
             return true;
         }
 
-        Handoff
+        static Handoff
         onHandoff(
             Session& session,
             std::unique_ptr<stream_type>&& bundle,
@@ -107,7 +106,7 @@ public:
             return Handoff{};
         }
 
-        Handoff
+        static Handoff
         onHandoff(
             Session& session,
             http_request_type&& request,
@@ -116,14 +115,18 @@ public:
             return Handoff{};
         }
 
-        void
+        static void
         onRequest(Session& session)
         {
             session.write(std::string("Hello, world!\n"));
             if (beast::rfc2616::is_keep_alive(session.request()))
+            {
                 session.complete();
+            }
             else
+            {
                 session.close(true);
+            }
         }
 
         void
@@ -278,7 +281,7 @@ public:
         TestSink sink{*this};
         TestThread thread;
         sink.threshold(beast::severities::Severity::kAll);
-        beast::Journal journal{sink};
+        beast::Journal const journal{sink};
         TestHandler handler;
         auto s = make_Server(handler, thread.get_io_context(), journal);
         std::vector<Port> serverPort(1);
@@ -299,13 +302,13 @@ public:
         testcase("stress test");
         struct NullHandler
         {
-            bool
+            static bool
             onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoint)
             {
                 return true;
             }
 
-            Handoff
+            static Handoff
             onHandoff(
                 Session& session,
                 std::unique_ptr<stream_type>&& bundle,
@@ -315,7 +318,7 @@ public:
                 return Handoff{};
             }
 
-            Handoff
+            static Handoff
             onHandoff(
                 Session& session,
                 http_request_type&& request,
@@ -373,7 +376,7 @@ public:
         std::string messages;
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
@@ -384,7 +387,7 @@ public:
         BEAST_EXPECT(messages.find("Missing 'ip' in [port_rpc]") != std::string::npos);
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
@@ -396,7 +399,7 @@ public:
         BEAST_EXPECT(messages.find("Missing 'port' in [port_rpc]") != std::string::npos);
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
@@ -410,7 +413,7 @@ public:
             messages.find("Invalid value '0' for key 'port' in [port_rpc]") == std::string::npos);
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg)["server"].set("port", "0");
@@ -422,7 +425,7 @@ public:
             messages.find("Invalid value '0' for key 'port' in [server]") != std::string::npos);
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
@@ -438,7 +441,7 @@ public:
         except([&]  // this creates a standard test config without the server
                     // section
                {
-                   Env env{
+                   Env const env{
                        *this,
                        envconfig([](std::unique_ptr<Config> cfg) {
                            cfg = std::make_unique<Config>();
@@ -467,7 +470,7 @@ public:
         except([&]  // this creates a standard test config without some of the
                     // port sections
                {
-                   Env env{
+                   Env const env{
                        *this,
                        envconfig([](std::unique_ptr<Config> cfg) {
                            cfg = std::make_unique<Config>();
@@ -497,5 +500,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Server, server, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

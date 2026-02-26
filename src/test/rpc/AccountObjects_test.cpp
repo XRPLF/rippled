@@ -13,8 +13,7 @@
 
 #include <algorithm>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 static char const* bob_account_objects[] = {
     R"json({
@@ -107,7 +106,7 @@ public:
 
         // test error on no account
         {
-            Json::Value params;
+            Json::Value const params;
             auto resp = env.rpc("json", "account_objects", to_string(params));
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Missing field 'account'.");
         }
@@ -305,9 +304,13 @@ public:
                 BEAST_EXPECT(aobjs.size() == 1);
                 auto& aobj = aobjs[0U];
                 if (i < 3)
+                {
                     BEAST_EXPECT(resp[jss::result][jss::limit] == 1);
+                }
                 else
+                {
                     BEAST_EXPECT(!resp[jss::result].isMember(jss::limit));
+                }
 
                 aobj.removeMember("PreviousTxnID");
                 aobj.removeMember("PreviousTxnLgrSeq");
@@ -484,7 +487,7 @@ public:
             params[jss::type] = jss::nft_page;
             auto resp = env.rpc("json", "account_objects", to_string(params));
             BEAST_EXPECT(!resp.isMember(jss::marker));
-            Json::Value& aobjs = resp[jss::result][jss::account_objects];
+            Json::Value const& aobjs = resp[jss::result][jss::account_objects];
             BEAST_EXPECT(aobjs.size() == 2);
         }
         // test stepped one-at-a-time with limit=1, resume from prev marker
@@ -917,7 +920,7 @@ public:
                     jss::RippleState.c_str(),
                     jss::PayChannel.c_str(),
                     jss::PermissionedDomain.c_str()};
-                std::sort(v.begin(), v.end());
+                std::ranges::sort(v);
                 return v;
             }();
 
@@ -933,7 +936,7 @@ public:
                 {
                     gotLedgerTypes.push_back(aobjs[i]["LedgerEntryType"].asString());
                 }
-                std::sort(gotLedgerTypes.begin(), gotLedgerTypes.end());
+                std::ranges::sort(gotLedgerTypes);
                 BEAST_EXPECT(gotLedgerTypes == expectedLedgerTypes);
             }
         }
@@ -958,7 +961,7 @@ public:
                 auto const objs = resp[jss::result][jss::account_objects];
                 for (auto const& obj : resp[jss::result][jss::account_objects])
                     typesOut.push_back(obj[sfLedgerEntryType.fieldName].asString());
-                std::sort(typesOut.begin(), typesOut.end());
+                std::ranges::sort(typesOut);
             };
             // Make a lambda we can use to check the number of fetched
             // account objects and their ledger type
@@ -1272,7 +1275,7 @@ public:
         // valid, because when dirIndex = 0, we will use root key to find
         // dir.
         {
-            std::string s = "0," + entryIndex;
+            std::string const s = "0," + entryIndex;
             Json::Value params;
             params[jss::account] = bob.human();
             params[jss::limit] = limit;
@@ -1342,5 +1345,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(AccountObjects, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

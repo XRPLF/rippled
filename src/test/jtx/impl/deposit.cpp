@@ -2,11 +2,7 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-
-namespace deposit {
+namespace xrpl::test::jtx::deposit {
 
 // Add DepositPreauth.
 Json::Value
@@ -66,8 +62,4 @@ unauthCredentials(jtx::Account const& account, std::vector<AuthorizeCredentials>
     return jv;
 }
 
-}  // namespace deposit
-
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::deposit

@@ -30,14 +30,14 @@ AttestationBase::AttestationBase(
     PublicKey const& publicKey_,
     Buffer signature_,
     AccountID const& sendingAccount_,
-    STAmount const& sendingAmount_,
+    STAmount sendingAmount_,
     AccountID const& rewardAccount_,
     bool wasLockingChainSend_)
     : attestationSignerAccount{attestationSignerAccount_}
     , publicKey{publicKey_}
     , signature{std::move(signature_)}
     , sendingAccount{sendingAccount_}
-    , sendingAmount{sendingAmount_}
+    , sendingAmount{std::move(sendingAmount_)}
     , rewardAccount{rewardAccount_}
     , wasLockingChainSend{wasLockingChainSend_}
 {
@@ -74,7 +74,7 @@ AttestationBase::sameEventHelper(AttestationBase const& lhs, AttestationBase con
 bool
 AttestationBase::verify(STXChainBridge const& bridge) const
 {
-    std::vector<std::uint8_t> msg = message(bridge);
+    std::vector<std::uint8_t> const msg = message(bridge);
     return xrpl::verify(publicKey, makeSlice(msg), signature);
 }
 
@@ -260,7 +260,7 @@ AttestationCreateAccount::AttestationCreateAccount(
     Buffer signature_,
     AccountID const& sendingAccount_,
     STAmount const& sendingAmount_,
-    STAmount const& rewardAmount_,
+    STAmount rewardAmount_,
     AccountID const& rewardAccount_,
     bool wasLockingChainSend_,
     std::uint64_t createCount_,
@@ -275,7 +275,7 @@ AttestationCreateAccount::AttestationCreateAccount(
           wasLockingChainSend_)
     , createCount{createCount_}
     , toCreate{toCreate_}
-    , rewardAmount{rewardAmount_}
+    , rewardAmount{std::move(rewardAmount_)}
 {
 }
 

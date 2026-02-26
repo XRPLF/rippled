@@ -7,8 +7,7 @@
 #include <chrono>
 #include <thread>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 //------------------------------------------------------------------------------
 
@@ -217,7 +216,7 @@ class ClosureCounter_test : public beast::unit_test::suite
             BEAST_EXPECT(result.copies == 0);
             BEAST_EXPECT(result.moves == 1);
             BEAST_EXPECT(result.str == "rvalue abcdefghijklmnopqrstuvwxyz!");
-            BEAST_EXPECT(strRValue.str.size() == 0);
+            BEAST_EXPECT(strRValue.str.empty());
         }
     }
 
@@ -295,7 +294,7 @@ class ClosureCounter_test : public beast::unit_test::suite
         BEAST_EXPECT(voidCounter.count() == 0);
 
         // Wait for the thread to exit.
-        while (threadExited == false)
+        while (!threadExited)
             ;
         localThread.join();
     }
@@ -313,5 +312,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(ClosureCounter, core, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

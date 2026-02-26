@@ -3,8 +3,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class RPCHelpers_test : public beast::unit_test::suite
 {
@@ -72,5 +71,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(RPCHelpers, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

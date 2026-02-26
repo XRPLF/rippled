@@ -1,7 +1,6 @@
 #include <xrpl/nodestore/detail/DatabaseNodeImp.h>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 void
 DatabaseNodeImp::store(NodeObjectType type, Blob&& data, uint256 const& hash, std::uint32_t)
@@ -99,5 +98,4 @@ DatabaseNodeImp::fetchBatch(std::vector<uint256> const& hashes)
     return results;
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

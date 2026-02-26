@@ -13,7 +13,7 @@ NFTokenModify::preflight(PreflightContext const& ctx)
 
     if (auto uri = ctx.tx[~sfURI])
     {
-        if (uri->length() == 0 || uri->length() > maxTokenURILength)
+        if (uri->empty() || uri->length() > maxTokenURILength)
             return temMALFORMED;
     }
 
@@ -30,7 +30,7 @@ NFTokenModify::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
 
     // Check if the NFT is mutable
-    if (!(nft::getFlags(ctx.tx[sfNFTokenID]) & nft::flagMutable))
+    if ((nft::getFlags(ctx.tx[sfNFTokenID]) & nft::flagMutable) == 0)
         return tecNO_PERMISSION;
 
     // Verify permissions for the issuer

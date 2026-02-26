@@ -6,8 +6,7 @@
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class PaymentSandbox_test : public beast::unit_test::suite
 {
@@ -64,7 +63,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
         env(offer(snd, USD_gw1(2), USD_gw2(2)), txflags(tfPassive));
         env(offer(snd, USD_gw2(2), USD_gw1(2)), txflags(tfPassive));
 
-        PathSet paths(Path(gw1, USD_gw2, gw2), Path(gw2, USD_gw1, gw1));
+        PathSet const paths(Path(gw1, USD_gw2, gw2), Path(gw2, USD_gw1, gw1));
 
         env(pay(snd, rcv, any(USD_gw1(4))),
             json(paths.json()),
@@ -265,16 +264,16 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
         using namespace jtx;
 
-        Env env(*this, features);
+        Env const env(*this, features);
 
         Account const gw("gw");
         Account const alice("alice");
         auto const USD = gw["USD"];
 
         auto const issue = USD.issue();
-        STAmount tinyAmt(
+        STAmount const tinyAmt(
             issue, STAmount::cMinValue, STAmount::cMinOffset + 1, false, STAmount::unchecked{});
-        STAmount hugeAmt(
+        STAmount const hugeAmt(
             issue, STAmount::cMaxValue, STAmount::cMaxOffset - 1, false, STAmount::unchecked{});
 
         ApplyViewImpl av(&*env.current(), tapNONE);
@@ -332,7 +331,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
         testcase("balanceHook");
 
         using namespace jtx;
-        Env env(*this, features);
+        Env const env(*this, features);
 
         Account const gw("gw");
         auto const USD = gw["USD"];
@@ -374,5 +373,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(PaymentSandbox, ledger, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

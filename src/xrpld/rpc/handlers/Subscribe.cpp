@@ -33,7 +33,7 @@ doSubscribe(RPC::JsonContext& context)
         if (context.role != Role::ADMIN)
             return rpcError(rpcNO_PERMISSION);
 
-        std::string strUrl = context.params[jss::url].asString();
+        std::string const strUrl = context.params[jss::url].asString();
         std::string strUsername = context.params.isMember(jss::url_username)
             ? context.params[jss::url_username].asString()
             : "";
@@ -107,7 +107,7 @@ doSubscribe(RPC::JsonContext& context)
             if (!it.isString())
                 return rpcError(rpcSTREAM_MALFORMED);
 
-            std::string streamName = it.asString();
+            std::string const streamName = it.asString();
             if (streamName == "server")
             {
                 context.netOps.subServer(ispSub, jvResult, context.role == Role::ADMIN);
@@ -281,10 +281,8 @@ doSubscribe(RPC::JsonContext& context)
                 {
                     return rpcError(rpcDOMAIN_MALFORMED);
                 }
-                else
-                {
-                    book.domain = domain;
-                }
+
+                book.domain = domain;
             }
 
             if (!isConsistent(book))

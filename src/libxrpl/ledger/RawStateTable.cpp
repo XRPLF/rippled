@@ -1,8 +1,9 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/ledger/detail/RawStateTable.h>
 
-namespace xrpl {
-namespace detail {
+#include <utility>
+
+namespace xrpl::detail {
 
 class RawStateTable::sles_iter_impl : public ReadView::sles_type::iter_base
 {
@@ -22,7 +23,7 @@ public:
         items_t::const_iterator end1,
         ReadView::sles_type::iterator iter0,
         ReadView::sles_type::iterator end0)
-        : iter0_(iter0), end0_(end0), iter1_(iter1), end1_(end1)
+        : iter0_(std::move(iter0)), end0_(std::move(end0)), iter1_(iter1), end1_(end1)
     {
         if (iter0_ != end0_)
             sle0_ = *iter0_;
@@ -94,8 +95,10 @@ public:
     dereference() const override
     {
         if (!sle1_)
+        {
             return sle0_;
-        else if (!sle0_)
+        }
+        if (!sle0_)
             return sle1_;
         if (sle1_->key() <= sle0_->key())
             return sle1_;
@@ -108,9 +111,13 @@ private:
     {
         ++iter0_;
         if (iter0_ == end0_)
+        {
             sle0_ = nullptr;
+        }
         else
+        {
             sle0_ = *iter0_;
+        }
     }
 
     void
@@ -118,9 +125,13 @@ private:
     {
         ++iter1_;
         if (iter1_ == end1_)
+        {
             sle1_ = nullptr;
+        }
         else
+        {
             sle1_ = iter1_->second.sle;
+        }
     }
 
     void
@@ -331,5 +342,4 @@ RawStateTable::slesUpperBound(ReadView const& base, uint256 const& key) const
         items_.upper_bound(key), items_.end(), base.sles.upper_bound(key), base.sles.end());
 }
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail

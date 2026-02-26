@@ -25,7 +25,7 @@ std::map<char, char const*> jsonSpecialCharacterEscape = {
     {'\r', "\\r"},
     {'\t', "\\t"}};
 
-static size_t const jsonEscapeLength = 2;
+size_t const jsonEscapeLength = 2;
 
 // All other JSON punctuation.
 char const closeBrace = '}';
@@ -36,7 +36,7 @@ char const openBrace = '{';
 char const openBracket = '[';
 char const quote = '"';
 
-static auto const integralFloatsBecomeInts = false;
+auto const integralFloatsBecomeInts = false;
 
 size_t
 lengthWithoutTrailingZeros(std::string const& s)
@@ -62,7 +62,7 @@ lengthWithoutTrailingZeros(std::string const& s)
 class Writer::Impl
 {
 public:
-    explicit Impl(Output const& output) : output_(output)
+    explicit Impl(Output output) : output_(std::move(output))
     {
     }
     ~Impl() = default;
@@ -80,9 +80,9 @@ public:
     void
     start(CollectionType ct)
     {
-        char ch = (ct == array) ? openBracket : openBrace;
+        char const ch = (ct == array) ? openBracket : openBrace;
         output({&ch, 1});
-        stack_.push(Collection());
+        stack_.emplace();
         stack_.top().type = ct;
     }
 
@@ -137,9 +137,13 @@ public:
             check(false, "Not an " + ((type == array ? "array: " : "object: ") + message));
         }
         if (stack_.top().isFirst)
+        {
             stack_.top().isFirst = false;
+        }
         else
+        {
             output_({&comma, 1});
+        }
     }
 
     void

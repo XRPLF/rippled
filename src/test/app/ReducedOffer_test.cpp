@@ -6,8 +6,7 @@
 
 #include <initializer_list>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class ReducedOffer_test : public beast::unit_test::suite
 {
@@ -92,9 +91,11 @@ public:
                 // alice's offer should be fully crossed and so gone from
                 // the ledger.
                 if (!BEAST_EXPECT(!offerInLedger(env, alice, aliceOfferSeq)))
+                {
                     // If the in-ledger offer was not consumed then further
                     // results are meaningless.
                     return 1;
+                }
 
                 // bob's offer should be in the ledger, but reduced in size.
                 unsigned int badRate = 1;
@@ -158,12 +159,12 @@ public:
                  mantissaReduce <= 5'000'000'000ull;
                  mantissaReduce += 20'000'000ull)
             {
-                STAmount aliceUSD{
+                STAmount const aliceUSD{
                     bobOffer.out.issue(),
                     bobOffer.out.mantissa() - mantissaReduce,
                     bobOffer.out.exponent()};
-                STAmount aliceXRP{bobOffer.in.issue(), bobOffer.in.mantissa() - 1};
-                Amounts aliceOffer{aliceUSD, aliceXRP};
+                STAmount const aliceXRP{bobOffer.in.issue(), bobOffer.in.mantissa() - 1};
+                Amounts const aliceOffer{aliceUSD, aliceXRP};
                 blockedCount += exerciseOfferPair(aliceOffer, bobOffer);
             }
 
@@ -290,12 +291,12 @@ public:
                  mantissaReduce <= 4'000'000'000ull;
                  mantissaReduce += 20'000'000ull)
             {
-                STAmount bobUSD{
+                STAmount const bobUSD{
                     aliceOffer.out.issue(),
                     aliceOffer.out.mantissa() - mantissaReduce,
                     aliceOffer.out.exponent()};
-                STAmount bobXRP{aliceOffer.in.issue(), aliceOffer.in.mantissa() - 1};
-                Amounts bobOffer{bobUSD, bobXRP};
+                STAmount const bobXRP{aliceOffer.in.issue(), aliceOffer.in.mantissa() - 1};
+                Amounts const bobOffer{bobUSD, bobXRP};
 
                 blockedCount += exerciseOfferPair(aliceOffer, bobOffer);
             }
@@ -443,7 +444,7 @@ public:
                 // Examine the aftermath of alice's offer.
                 {
                     bool const bobOfferGone = !offerInLedger(env, bob, bobOfferSeq);
-                    STAmount aliceBalanceUSD = env.balance(alice, USD);
+                    STAmount const aliceBalanceUSD = env.balance(alice, USD);
 #if 0
                     std::cout
                         << "bob initial: " << initialBobUSD
@@ -489,7 +490,7 @@ public:
         }
     }
 
-    Amounts
+    static Amounts
     jsonOfferToAmounts(Json::Value const& json)
     {
         STAmount const in = amountFromJson(sfTakerPays, json[sfTakerPays.jsonName]);
@@ -578,7 +579,7 @@ public:
                 {
                     Json::Value aliceOffer = ledgerEntryOffer(env, alice, aliceOfferSeq);
 
-                    Amounts aliceReducedOffer = jsonOfferToAmounts(aliceOffer[jss::node]);
+                    Amounts const aliceReducedOffer = jsonOfferToAmounts(aliceOffer[jss::node]);
 
                     BEAST_EXPECT(aliceReducedOffer.in < aliceInitialOffer.in);
                     BEAST_EXPECT(aliceReducedOffer.out < aliceInitialOffer.out);
@@ -665,5 +666,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_PRIO(ReducedOffer, app, xrpl, 2);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -1,8 +1,9 @@
 #include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/tx/transactors/PermissionedDEXHelpers.h>
 
-namespace xrpl {
-namespace permissioned_dex {
+#include <algorithm>
+
+namespace xrpl::permissioned_dex {
 
 bool
 accountInDomain(ReadView const& view, AccountID const& account, Domain const& domainID)
@@ -17,15 +18,14 @@ accountInDomain(ReadView const& view, AccountID const& account, Domain const& do
 
     auto const& credentials = sleDomain->getFieldArray(sfAcceptedCredentials);
 
-    bool const inDomain =
-        std::any_of(credentials.begin(), credentials.end(), [&](auto const& credential) {
-            auto const sleCred = view.read(
-                keylet::credential(account, credential[sfIssuer], credential[sfCredentialType]));
-            if (!sleCred || !sleCred->isFlag(lsfAccepted))
-                return false;
+    bool const inDomain = std::ranges::any_of(credentials, [&](auto const& credential) {
+        auto const sleCred = view.read(
+            keylet::credential(account, credential[sfIssuer], credential[sfCredentialType]));
+        if (!sleCred || !sleCred->isFlag(lsfAccepted))
+            return false;
 
-            return !credentials::checkExpired(sleCred, view.header().parentCloseTime);
-        });
+        return !credentials::checkExpired(sleCred, view.header().parentCloseTime);
+    });
 
     return inDomain;
 }
@@ -58,6 +58,4 @@ offerInDomain(
     return accountInDomain(view, sleOffer->getAccountID(sfAccount), domainID);
 }
 
-}  // namespace permissioned_dex
-
-}  // namespace xrpl
+}  // namespace xrpl::permissioned_dex

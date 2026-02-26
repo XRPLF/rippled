@@ -137,7 +137,7 @@ getQuality(uint256 const& uBase)
 uint256
 getTicketIndex(AccountID const& account, std::uint32_t ticketSeq)
 {
-    return indexHash(LedgerNameSpace::TICKET, account, std::uint32_t(ticketSeq));
+    return indexHash(LedgerNameSpace::TICKET, account, ticketSeq);
 }
 
 uint256
@@ -363,7 +363,7 @@ Keylet
 nftpage_min(AccountID const& owner)
 {
     std::array<std::uint8_t, 32> buf{};
-    std::memcpy(buf.data(), owner.data(), owner.size());
+    std::memcpy(buf.data(), owner.data(), AccountID::size());
     return {ltNFTOKEN_PAGE, uint256{buf}};
 }
 
@@ -371,7 +371,7 @@ Keylet
 nftpage_max(AccountID const& owner)
 {
     uint256 id = nft::pageMask;
-    std::memcpy(id.data(), owner.data(), owner.size());
+    std::memcpy(id.data(), owner.data(), AccountID::size());
     return {ltNFTOKEN_PAGE, id};
 }
 

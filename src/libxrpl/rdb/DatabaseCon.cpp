@@ -25,7 +25,7 @@ public:
     std::shared_ptr<Checkpointer>
     fromId(std::uintptr_t id)
     {
-        std::lock_guard l{mutex_};
+        std::lock_guard const l{mutex_};
         auto it = checkpointers_.find(id);
         if (it != checkpointers_.end())
             return it->second;
@@ -35,14 +35,14 @@ public:
     void
     erase(std::uintptr_t id)
     {
-        std::lock_guard lock{mutex_};
+        std::lock_guard const lock{mutex_};
         checkpointers_.erase(id);
     }
 
     std::shared_ptr<Checkpointer>
     create(std::shared_ptr<soci::session> const& session, JobQueue& jobQueue, Logs& logs)
     {
-        std::lock_guard lock{mutex_};
+        std::lock_guard const lock{mutex_};
         auto const id = nextId_++;
         auto const r = makeCheckpointer(id, session, jobQueue, logs);
         checkpointers_[id] = r;
@@ -64,7 +64,7 @@ DatabaseCon::~DatabaseCon()
     {
         checkpointers.erase(checkpointer_->id());
 
-        std::weak_ptr<Checkpointer> wk(checkpointer_);
+        std::weak_ptr<Checkpointer> const wk(checkpointer_);
         checkpointer_.reset();
 
         // The references to our Checkpointer held by 'checkpointer_' and
@@ -72,7 +72,7 @@ DatabaseCon::~DatabaseCon()
         // checkpoint is currently in progress. Wait for it to end, otherwise
         // creating a new DatabaseCon to the same database may fail due to the
         // database being locked by our (now old) Checkpointer.
-        while (wk.use_count())
+        while (wk.use_count() != 0)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
@@ -84,7 +84,7 @@ std::unique_ptr<std::vector<std::string> const> DatabaseCon::Setup::globalPragma
 void
 DatabaseCon::setupCheckpointing(JobQueue* q, Logs& l)
 {
-    if (!q)
+    if (q == nullptr)
         Throw<std::logic_error>("No JobQueue");
     checkpointer_ = checkpointers.create(session_, *q, l);
 }

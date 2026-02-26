@@ -3,8 +3,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/tx/transactors/Lending/LoanBrokerCoverDeposit.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class LoanBroker_test : public beast::unit_test::suite
 {
@@ -481,14 +480,14 @@ class LoanBroker_test : public beast::unit_test::suite
         // MPT. That'll require three corresponding SAVs.
         Env env(*this, all);
 
-        Account issuer{"issuer"};
+        Account const issuer{"issuer"};
         // For simplicity, alice will be the sole actor for the vault & brokers.
         Account alice{"alice"};
         // Evan will attempt to be naughty
         Account evan{"evan"};
         // Bystander doesn't have anything to do with the SAV or Broker, or any
         // of the relevant tokens
-        Account bystander{"bystander"};
+        Account const bystander{"bystander"};
         Vault vault{env};
 
         // Fund the accounts and trust lines with the same amount so that tests
@@ -896,8 +895,10 @@ class LoanBroker_test : public beast::unit_test::suite
                 THISLINE);
         }
         else
+        {
             // Fund the cover deposit
             env(coverDeposit(alice, brokerKeylet.key, vaultInfo.asset(10)), THISLINE);
+        }
         env.close();
 
         if (brokerTest == CoverWithdraw)
@@ -1030,7 +1031,9 @@ class LoanBroker_test : public beast::unit_test::suite
             env(del(alice, brokerKeylet.key), ter(tesSUCCESS), THISLINE);
         }
         else
+        {
             env(del(alice, brokerKeylet.key), THISLINE);
+        }
 
         if (brokerTest == Set)
         {
@@ -1085,7 +1088,7 @@ class LoanBroker_test : public beast::unit_test::suite
             env(jtx, ter(temINVALID), THISLINE);
 
             // holder == beast::zero
-            STAmount bad(Issue{USD.currency, beast::zero}, 100);
+            STAmount const bad(Issue{USD.currency, beast::zero}, 100);
             jtx.jv[sfAmount] = bad.getJson();
             jtx.stx = env.ust(jtx);
             Serializer s;
@@ -1106,7 +1109,7 @@ class LoanBroker_test : public beast::unit_test::suite
         // MPTCanClawback is not set
         testLoanBroker(
             [&](Env& env, Account const& issuer, Account const& alice) -> MPT {
-                MPTTester mpt({.env = env, .issuer = issuer, .holders = {alice}});
+                MPTTester const mpt({.env = env, .issuer = issuer, .holders = {alice}});
                 return mpt;
             },
             CoverClawback);
@@ -1208,7 +1211,7 @@ class LoanBroker_test : public beast::unit_test::suite
         // vault SLE
         OpenView ov{*env.current()};
         test::StreamSink sink{beast::severities::kWarning};
-        beast::Journal jlog{sink};
+        beast::Journal const jlog{sink};
         ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, tapNONE, jlog};
 
         if (auto sleBroker = ac.view().peek(keylet::loanbroker(brokerKeylet.key)))
@@ -1222,7 +1225,7 @@ class LoanBroker_test : public beast::unit_test::suite
 
         // Invoke preclaim against the mutated (ApplyView) view; triggers
         // nullptr deref
-        PreclaimContext pctx{env.app(), ac.view(), tesSUCCESS, tx, tapNONE, jlog};
+        PreclaimContext const pctx{env.app(), ac.view(), tesSUCCESS, tx, tapNONE, jlog};
         (void)LoanBrokerCoverDeposit::preclaim(pctx);
     }
 
@@ -1363,7 +1366,7 @@ class LoanBroker_test : public beast::unit_test::suite
         env(tx, THISLINE);
         env.close();
         auto const le = env.le(vaultKeylet);
-        VaultInfo vaultInfo = [&]() {
+        VaultInfo const vaultInfo = [&]() {
             if (BEAST_EXPECT(le))
                 return VaultInfo{asset, vaultKeylet.key, le->at(sfAccount)};
             return VaultInfo{asset, {}, {}};
@@ -1483,7 +1486,7 @@ class LoanBroker_test : public beast::unit_test::suite
             std::optional<std::uint64_t>,  // max amount
             std::uint64_t,                 // deposit amount
             TER>>                          // expected error
-            mptTests = {
+            const mptTests = {
                 // issuer can issue up to 2'000 tokens
                 {2'000, 4'000, 1'000, tesSUCCESS},
                 // issuer can issue 500 tokens (250 VaultDeposit +
@@ -1815,5 +1818,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(LoanBroker, tx, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -2,14 +2,13 @@
 
 #include <xrpl/beast/unit_test.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 // Make sure "plump" order books don't have problems
 class PlumpBook_test : public beast::unit_test::suite
 {
 public:
-    void
+    static void
     createOffers(jtx::Env& env, jtx::IOU const& iou, std::size_t n)
     {
         using namespace jtx;
@@ -64,7 +63,7 @@ BEAST_DEFINE_TESTSUITE(ThinBook, app, xrpl);
 class OversizeMeta_test : public beast::unit_test::suite
 {
 public:
-    void
+    static void
     createOffers(jtx::Env& env, jtx::IOU const& iou, std::size_t n)
     {
         using namespace jtx;
@@ -123,12 +122,14 @@ public:
                 len -= l2 + 1;
             }
             else
+            {
                 len = l2;
+            }
         }
         return lo;
     }
 
-    void
+    static void
     createOffers(jtx::Env& env, jtx::IOU const& iou, std::size_t n)
     {
         using namespace jtx;
@@ -167,5 +168,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(FindOversizeCross, app, xrpl, 50);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

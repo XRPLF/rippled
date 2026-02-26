@@ -5,8 +5,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class GatewayBalances_test : public beast::unit_test::suite
 {
@@ -240,5 +239,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(GatewayBalances, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

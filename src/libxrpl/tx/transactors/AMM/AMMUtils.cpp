@@ -51,8 +51,10 @@ ammHolds(
                                      Issue checkIssue,
                                      char const* label) -> std::optional<std::pair<Issue, Issue>> {
             if (checkIssue == issue1)
+            {
                 return std::make_optional(std::make_pair(issue1, issue2));
-            else if (checkIssue == issue2)
+            }
+            if (checkIssue == issue2)
                 return std::make_optional(std::make_pair(issue2, issue1));
             // Unreachable unless AMM corrupted.
             // LCOV_EXCL_START
@@ -64,7 +66,7 @@ ammHolds(
         {
             return singleIssue(*optIssue1, "optIssue1");
         }
-        else if (optIssue2)
+        if (optIssue2)
         {
             // Cannot have Amount2 without Amount.
             return singleIssue(*optIssue2, "optIssue2");  // LCOV_EXCL_LINE
@@ -153,7 +155,7 @@ getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
         "xrpl::getTradingFee : auction present");
     if (ammSle.isFieldPresent(sfAuctionSlot))
     {
-        auto const& auctionSlot = static_cast<STObject const&>(ammSle.peekAtField(sfAuctionSlot));
+        auto const& auctionSlot = dynamic_cast<STObject const&>(ammSle.peekAtField(sfAuctionSlot));
         // Not expired
         if (auto const expiration = auctionSlot[~sfExpiration];
             duration_cast<seconds>(view.header().parentCloseTime.time_since_epoch()).count() <
@@ -164,8 +166,10 @@ getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
             if (auctionSlot.isFieldPresent(sfAuthAccounts))
             {
                 for (auto const& acct : auctionSlot.getFieldArray(sfAuthAccounts))
+                {
                     if (acct[~sfAccount] == account)
                         return auctionSlot[sfDiscountedFee];
+                }
             }
         }
     }
@@ -321,13 +325,21 @@ initializeFeeAuctionVote(
     auctionSlot.setFieldAmount(sfPrice, STAmount{lptIssue, 0});
     // Set the fee
     if (tfee != 0)
+    {
         ammSle->setFieldU16(sfTradingFee, tfee);
+    }
     else if (ammSle->isFieldPresent(sfTradingFee))
+    {
         ammSle->makeFieldAbsent(sfTradingFee);  // LCOV_EXCL_LINE
+    }
     if (auto const dfee = tfee / AUCTION_SLOT_DISCOUNTED_FEE_FRACTION)
+    {
         auctionSlot.setFieldU16(sfDiscountedFee, dfee);
+    }
     else if (auctionSlot.isFieldPresent(sfDiscountedFee))
+    {
         auctionSlot.makeFieldAbsent(sfDiscountedFee);  // LCOV_EXCL_LINE
+    }
 }
 
 Expected<bool, TER>
@@ -388,13 +400,19 @@ isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID c
                         return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
                 }
                 else if (++nIOUTrustLines > 2)
+                {
                     return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+                }
             }
             // Another Liquidity Provider LPToken trustline
             else if (isLPTokenTrustline)
+            {
                 return false;
+            }
             else if (++nIOUTrustLines > 2)
+            {
                 return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+            }
         }
         auto const uNodeNext = ownerDir->getFieldU64(sfIndexNext);
         if (uNodeNext == 0)
@@ -416,7 +434,9 @@ verifyAndAdjustLPTokenBalance(
     AccountID const& account)
 {
     if (auto const res = isOnlyLiquidityProvider(sb, lpTokens.issue(), account); !res)
+    {
         return Unexpected<TER>(res.error());
+    }
     else if (res.value())
     {
         if (withinRelativeDistance(

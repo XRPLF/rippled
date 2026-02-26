@@ -5,6 +5,8 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
+#include <algorithm>
+
 namespace xrpl {
 
 class Ticket_test : public beast::unit_test::suite
@@ -190,8 +192,8 @@ class Ticket_test : public beast::unit_test::suite
 
         // Verify that all the expected Tickets were created.
         BEAST_EXPECT(ticketSeqs.size() == count);
-        std::sort(ticketSeqs.begin(), ticketSeqs.end());
-        BEAST_EXPECT(std::adjacent_find(ticketSeqs.begin(), ticketSeqs.end()) == ticketSeqs.end());
+        std::ranges::sort(ticketSeqs);
+        BEAST_EXPECT(std::ranges::adjacent_find(ticketSeqs) == ticketSeqs.end());
         BEAST_EXPECT(*ticketSeqs.rbegin() == acctRootFinalSeq - 1);
     }
 
@@ -286,11 +288,15 @@ class Ticket_test : public beast::unit_test::suite
 
                     BEAST_EXPECT(prevTicketCount > 0);
                     if (prevTicketCount == 1)
+                    {
                         BEAST_EXPECT(!finalFields.isMember(sfTicketCount.jsonName));
+                    }
                     else
+                    {
                         BEAST_EXPECT(
                             finalFields.isMember(sfTicketCount.jsonName) &&
                             finalFields[sfTicketCount.jsonName].asUInt() == prevTicketCount - 1);
+                    }
                 }
             }
             else if (node.isMember(sfDeletedNode.jsonName))
@@ -374,7 +380,7 @@ class Ticket_test : public beast::unit_test::suite
         {
             // Create tickets on a non-existent account.
             Env env{*this};
-            Account alice{"alice"};
+            Account const alice{"alice"};
             env.memoize(alice);
 
             env(ticket::create(alice, 1), json(jss::Sequence, 1), ter(terNO_ACCOUNT));
@@ -383,11 +389,11 @@ class Ticket_test : public beast::unit_test::suite
             // Exceed the threshold where tickets can no longer be
             // added to an account.
             Env env{*this};
-            Account alice{"alice"};
+            Account const alice{"alice"};
 
             env.fund(XRP(100000), alice);
 
-            std::uint32_t ticketSeq{env.seq(alice) + 1};
+            std::uint32_t const ticketSeq{env.seq(alice) + 1};
             env(ticket::create(alice, 250));
             checkTicketCreateMeta(env);
             env.close();
@@ -420,12 +426,12 @@ class Ticket_test : public beast::unit_test::suite
         {
             // Explore exceeding the ticket threshold from another angle.
             Env env{*this};
-            Account alice{"alice"};
+            Account const alice{"alice"};
 
             env.fund(XRP(100000), alice);
             env.close();
 
-            std::uint32_t ticketSeq_AB{env.seq(alice) + 1};
+            std::uint32_t const ticketSeq_AB{env.seq(alice) + 1};
             env(ticket::create(alice, 2));
             checkTicketCreateMeta(env);
             env.close();
@@ -458,7 +464,7 @@ class Ticket_test : public beast::unit_test::suite
 
         using namespace test::jtx;
         Env env{*this};
-        Account alice{"alice"};
+        Account const alice{"alice"};
 
         // Fund alice not quite enough to make the reserve for a Ticket.
         env.fund(env.current()->fees().accountReserve(1) - drops(1), alice);
@@ -511,7 +517,7 @@ class Ticket_test : public beast::unit_test::suite
 
         using namespace test::jtx;
         Env env{*this};
-        Account alice{"alice"};
+        Account const alice{"alice"};
 
         env.fund(XRP(10000), alice);
         env.close();
@@ -607,14 +613,14 @@ class Ticket_test : public beast::unit_test::suite
 
         using namespace test::jtx;
         Env env{*this};
-        Account alice{"alice"};
+        Account const alice{"alice"};
 
         env.fund(XRP(10000), alice);
         env.close();
 
         // Lambda that returns the hash of the most recent transaction.
         auto getTxID = [&env, this]() -> uint256 {
-            std::shared_ptr<STTx const> tx{env.tx()};
+            std::shared_ptr<STTx const> const tx{env.tx()};
             if (!BEAST_EXPECTS(tx, "Transaction not found"))
                 Throw<std::invalid_argument>("Invalid transaction ID");
 
@@ -685,7 +691,7 @@ class Ticket_test : public beast::unit_test::suite
             BEAST_EXPECT(txErrCode == rpcSUCCESS);
             if (auto txPtr = std::get_if<TxPair>(&maybeTx))
             {
-                std::shared_ptr<Transaction>& tx = txPtr->first;
+                std::shared_ptr<Transaction> const& tx = txPtr->first;
                 BEAST_EXPECT(tx->getLedger() == ledgerSeq);
                 std::shared_ptr<STTx const> const& sttx = tx->getSTransaction();
                 BEAST_EXPECT((*sttx)[sfSequence] == txSeq);
@@ -722,7 +728,7 @@ class Ticket_test : public beast::unit_test::suite
 
         using namespace test::jtx;
         Env env{*this};
-        Account alice{"alice"};
+        Account const alice{"alice"};
 
         env.fund(XRP(10000), alice);
         env.close();
@@ -808,7 +814,7 @@ class Ticket_test : public beast::unit_test::suite
         testcase("Fix both Seq and Ticket");
 
         Env env{*this, testable_amendments()};
-        Account alice{"alice"};
+        Account const alice{"alice"};
 
         env.fund(XRP(10000), alice);
         env.close();

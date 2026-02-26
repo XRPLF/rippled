@@ -7,8 +7,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class RPCOverload_test : public beast::unit_test::suite
 {
@@ -45,7 +44,9 @@ public:
                 jv = jv[jss::result];
             // When booted, we just get a null json response
             if (jv.isNull())
+            {
                 booted = true;
+            }
             else if (!(jv.isMember(jss::status) && (jv[jss::status] == "success")))
             {
                 // Don't use BEAST_EXPECT above b/c it will be called a
@@ -70,5 +71,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(RPCOverload, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

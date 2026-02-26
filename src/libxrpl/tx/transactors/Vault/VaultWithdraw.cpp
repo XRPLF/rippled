@@ -144,7 +144,9 @@ VaultWithdraw::doApply()
             assetsWithdrawn = *maybeAssets;
         }
         else
+        {
             return tefINTERNAL;  // LCOV_EXCL_LINE
+        }
     }
     catch (std::overflow_error const&)
     {

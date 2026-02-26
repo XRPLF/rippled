@@ -92,7 +92,7 @@ private:
             beast::Journal journal,
             std::chrono::milliseconds interval,
             boost::asio::io_context& ios)
-            : m_event(ev), m_journal(journal), m_probe(interval, ios), lastSample_{}
+            : m_event(std::move(ev)), m_journal(journal), m_probe(interval, ios)
         {
         }
 
@@ -278,11 +278,17 @@ public:
                       // for the job queue if the server is configured as
                       // "large" or "huge" if there are enough cores.
                       if (config->NODE_SIZE >= 4 && count >= 16)
+                      {
                           count = 6 + std::min(count, 8);
+                      }
                       else if (config->NODE_SIZE >= 3 && count >= 8)
+                      {
                           count = 4 + std::min(count, 6);
+                      }
                       else
+                      {
                           count = 2 + std::min(count, 4);
+                      }
 
                       return count;
                   }(config_),
@@ -322,7 +328,9 @@ public:
 
         , nodeFamily_(*this, *m_collectorManager)
 
-        , m_orderBookDB(make_OrderBookDB(*this, {config_->PATH_SEARCH_MAX, config_->standalone()}))
+        , m_orderBookDB(make_OrderBookDB(
+              *this,
+              {.pathSearchMax = config_->PATH_SEARCH_MAX, .standalone = config_->standalone()}))
 
         , m_pathRequests(
               std::make_unique<PathRequests>(
@@ -541,7 +549,7 @@ public:
         return *m_networkOPs;
     }
 
-    virtual ServerHandler&
+    ServerHandler&
     getServerHandler() override
     {
         XRPL_ASSERT(
@@ -600,7 +608,7 @@ public:
     }
 
     void
-    gotTXSet(std::shared_ptr<SHAMap> const& set, bool fromAcquire)
+    gotTXSet(std::shared_ptr<SHAMap> const& set, bool fromAcquire) const
     {
         if (set)
             m_networkOPs->mapComplete(set, fromAcquire);
@@ -823,7 +831,7 @@ public:
     }
 
     bool
-    initNodeStore()
+    initNodeStore() const
     {
         if (config_->doImport)
         {
@@ -1066,7 +1074,7 @@ public:
         return maxDisallowedLedger_;
     }
 
-    virtual std::optional<uint256> const&
+    std::optional<uint256> const&
     trapTxID() const override
     {
         return trapTxID_;
@@ -1398,7 +1406,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     //
     // Execute start up rpc commands.
     //
-    for (auto cmd : config_->section(SECTION_RPC_STARTUP).lines())
+    for (auto const& cmd : config_->section(SECTION_RPC_STARTUP).lines())
     {
         Json::Reader jrReader;
         Json::Value jvCommand;
@@ -1417,16 +1425,16 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         Resource::Charge loadType = Resource::feeReferenceRPC;
         Resource::Consumer c;
         RPC::JsonContext context{
-            {journal("RPCHandler"),
-             *this,
-             loadType,
-             getOPs(),
-             getLedgerMaster(),
-             c,
-             Role::ADMIN,
-             {},
-             {},
-             RPC::apiMaximumSupportedVersion},
+            {.j = journal("RPCHandler"),
+             .app = *this,
+             .loadType = loadType,
+             .netOps = getOPs(),
+             .ledgerMaster = getLedgerMaster(),
+             .consumer = c,
+             .role = Role::ADMIN,
+             .coro = {},
+             .infoSub = {},
+             .apiVersion = RPC::apiMaximumSupportedVersion},
             jvCommand};
 
         Json::Value jvResult;
@@ -1566,7 +1574,9 @@ ApplicationImp::signalStop(std::string msg)
     if (!isTimeToStop.test_and_set(std::memory_order_acquire))
     {
         if (msg.empty())
+        {
             JLOG(m_journal.warn()) << "Server stopping";
+        }
         else
             JLOG(m_journal.warn()) << "Server stopping: " << msg;
 
@@ -1790,7 +1800,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
 
             // VFALCO TODO This is the only place that
             //             constructor is used, try to remove it
-            STLedgerEntry sle(*stp.object, uIndex);
+            STLedgerEntry const sle(*stp.object, uIndex);
 
             if (!loadLedger->addSLE(sle))
             {
@@ -1861,7 +1871,7 @@ ApplicationImp::loadOldLedger(
         else
         {
             // assume by sequence
-            std::uint32_t index;
+            std::uint32_t index = 0;
 
             if (beast::lexicalCastChecked(index, ledgerID))
                 loadLedger = loadByIndex(index, *this);
@@ -2112,7 +2122,7 @@ fixConfigPorts(Config& config, Endpoints const& endpoints)
         if (optPort)
         {
             std::uint16_t const port = beast::lexicalCast<std::uint16_t>(*optPort);
-            if (!port)
+            if (port == 0u)
                 section.set("port", std::to_string(ep.port()));
         }
     }

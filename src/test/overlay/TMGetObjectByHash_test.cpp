@@ -13,8 +13,7 @@
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/messages.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 using namespace jtx;
 
@@ -59,7 +58,7 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
         {
         }
 
-        ~PeerTest() = default;
+        ~PeerTest() override = default;
 
         void
         run() override
@@ -100,10 +99,10 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
         auto stream_ptr =
             std::make_unique<stream_type>(socket_type(env.app().getIOContext()), *context_);
 
-        beast::IP::Endpoint local(boost::asio::ip::make_address("172.1.1.1"), 51235);
-        beast::IP::Endpoint remote(boost::asio::ip::make_address("172.1.1.2"), 51235);
+        beast::IP::Endpoint const local(boost::asio::ip::make_address("172.1.1.1"), 51235);
+        beast::IP::Endpoint const remote(boost::asio::ip::make_address("172.1.1.2"), 51235);
 
-        PublicKey key(std::get<0>(randomKeyPair(KeyType::ed25519)));
+        PublicKey const key(std::get<0>(randomKeyPair(KeyType::ed25519)));
         auto consumer = overlay.resourceManager().newInboundEndpoint(remote);
         auto [slot, _] = overlay.peerFinder().new_inbound_slot(local, remote);
 
@@ -121,7 +120,7 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
         return peer;
     }
 
-    std::shared_ptr<protocol::TMGetObjectByHash>
+    static std::shared_ptr<protocol::TMGetObjectByHash>
     createRequest(size_t const numObjects, Env& env)
     {
         // Store objects in the NodeStore that will be found during the query
@@ -132,7 +131,7 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
         hashes.reserve(numObjects);
         for (int i = 0; i < numObjects; ++i)
         {
-            uint256 hash(xrpl::sha512Half(i));
+            uint256 const hash(xrpl::sha512Half(i));
             hashes.push_back(hash);
 
             Blob data(100, static_cast<unsigned char>(i % 256));
@@ -199,5 +198,4 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(TMGetObjectByHash, overlay, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -4,8 +4,7 @@
 
 #include <xrpl/core/HashRouter.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class NetworkOPs_test : public beast::unit_test::suite
 {
@@ -51,5 +50,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(NetworkOPs, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

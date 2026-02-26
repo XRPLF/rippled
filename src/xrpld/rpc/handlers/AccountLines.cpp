@@ -80,7 +80,7 @@ doAccountLines(RPC::JsonContext& context)
         RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
     }
-    auto const accountID{std::move(id.value())};
+    auto const accountID{id.value()};
 
     if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
@@ -98,13 +98,13 @@ doAccountLines(RPC::JsonContext& context)
         return result;
     }
 
-    unsigned int limit;
+    unsigned int limit = 0;
     if (auto err = readLimitField(limit, RPC::Tuning::accountLines, context))
         return *err;
 
     // this flag allows the requester to ask incoming trustlines in default
     // state be omitted
-    bool ignoreDefault =
+    bool const ignoreDefault =
         params.isMember(jss::ignore_default) && params[jss::ignore_default].asBool();
 
     Json::Value& jsonLines(result[jss::lines] = Json::arrayValue);
@@ -116,7 +116,12 @@ doAccountLines(RPC::JsonContext& context)
         bool ignoreDefault;
         uint32_t foundCount;
     };
-    VisitData visitData = {{}, accountID, raPeerAccount, ignoreDefault, 0};
+    VisitData visitData = {
+        .items = {},
+        .accountID = accountID,
+        .raPeerAccount = raPeerAccount,
+        .ignoreDefault = ignoreDefault,
+        .foundCount = 0};
     uint256 startAfter = beast::zero;
     std::uint64_t startHint = 0;
 
@@ -191,9 +196,13 @@ doAccountLines(RPC::JsonContext& context)
                     if (visitData.ignoreDefault)
                     {
                         if (sleCur->getFieldAmount(sfLowLimit).getIssuer() == visitData.accountID)
+                        {
                             ignore = !(sleCur->getFieldU32(sfFlags) & lsfLowReserve);
+                        }
                         else
+                        {
                             ignore = !(sleCur->getFieldU32(sfFlags) & lsfHighReserve);
+                        }
                     }
 
                     if (!ignore && count <= limit)

@@ -14,9 +14,7 @@
 
 #include <source_location>
 
-namespace xrpl {
-
-namespace test {
+namespace xrpl::test {
 
 enum class FieldType {
     AccountField,
@@ -60,10 +58,8 @@ getFieldType(Json::StaticString fieldName)
     {
         return it->second;
     }
-    else
-    {
-        Throw<std::runtime_error>("`mappings` is missing field " + std::string(fieldName.c_str()));
-    }
+
+    Throw<std::runtime_error>("`mappings` is missing field " + std::string(fieldName.c_str()));
 }
 
 std::string
@@ -110,10 +106,12 @@ class LedgerEntry_test : public beast::unit_test::suite
         if (BEAST_EXPECT(jv.isMember(jss::status)))
             BEAST_EXPECTS(jv[jss::status] == "error", std::to_string(location.line()));
         if (BEAST_EXPECT(jv.isMember(jss::error)))
+        {
             BEAST_EXPECTS(
                 jv[jss::error] == err,
                 "Expected error " + err + ", received " + jv[jss::error].asString() + ", at line " +
                     std::to_string(location.line()) + ", " + jv.toStyledString());
+        }
         if (msg.empty())
         {
             BEAST_EXPECTS(
@@ -122,14 +120,16 @@ class LedgerEntry_test : public beast::unit_test::suite
                     "\", at line " + std::to_string(location.line()) + ", " + jv.toStyledString());
         }
         else if (BEAST_EXPECT(jv.isMember(jss::error_message)))
+        {
             BEAST_EXPECTS(
                 jv[jss::error_message] == msg,
                 "Expected error message \"" + msg + "\", received \"" +
                     jv[jss::error_message].asString() + "\", at line " +
                     std::to_string(location.line()) + ", " + jv.toStyledString());
+        }
     }
 
-    std::vector<Json::Value>
+    static std::vector<Json::Value>
     getBadValues(FieldType fieldType)
     {
         static Json::Value const injectObject = []() {
@@ -175,7 +175,7 @@ class LedgerEntry_test : public beast::unit_test::suite
             values.reserve(allBadValues.size() - indexSet.size());
             for (std::size_t i = 0; i < allBadValues.size(); ++i)
             {
-                if (indexSet.find(i) == indexSet.end())
+                if (!indexSet.contains(i))
                 {
                     values.push_back(allBadValues[i]);
                 }
@@ -223,7 +223,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         }
     }
 
-    Json::Value
+    static Json::Value
     getCorrectValue(Json::StaticString fieldName)
     {
         static Json::Value const twoAccountArray = []() {
@@ -286,10 +286,14 @@ class LedgerEntry_test : public beast::unit_test::suite
                 Json::Value const jrr = env.rpc(
                     apiVersion, "json", "ledger_entry", to_string(correctRequest))[jss::result];
                 if (apiVersion < 2u)
+                {
                     checkErrorValue(jrr, "unknownOption", "", location);
+                }
                 else
+                {
                     checkErrorValue(
                         jrr, "invalidParams", "No ledger_entry params provided.", location);
+                }
             }
             auto tryField = [&](Json::Value fieldValue) -> void {
                 correctRequest[fieldName] = fieldValue;
@@ -491,9 +495,13 @@ class LedgerEntry_test : public beast::unit_test::suite
                     env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
 
                 if (apiVersion < 2u)
+                {
                     checkErrorValue(jrr, "unknownOption", "");
+                }
                 else
+                {
                     checkErrorValue(jrr, "invalidParams", "No ledger_entry params provided.");
+                }
             }
         });
     }
@@ -585,7 +593,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         }
         {
             // Check malformed cases
-            Json::Value jvParams;
+            Json::Value const jvParams;
             testMalformedField(
                 env, jvParams, jss::account_root, FieldType::AccountField, "malformedAddress");
         }
@@ -689,7 +697,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         Account const alice{"alice"};
         env.fund(XRP(10000), alice);
         env.close();
-        AMM amm(env, alice, XRP(10), alice["USD"](1000));
+        AMM const amm(env, alice, XRP(10), alice["USD"](1000));
         env.close();
 
         {
@@ -1951,7 +1959,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         }
         {
             // Malformed DID index
-            Json::Value jvParams;
+            Json::Value const jvParams;
             testMalformedField(
                 env, jvParams, jss::did, FieldType::AccountField, "malformedAddress");
         }
@@ -1967,7 +1975,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         Env env(*this);
         Account const owner("owner");
         env.fund(XRP(1'000), owner);
-        Oracle oracle(
+        Oracle const oracle(
             env, {.owner = owner, .fee = static_cast<int>(env.current()->fees().base.drops())});
 
         {
@@ -1998,11 +2006,11 @@ class LedgerEntry_test : public beast::unit_test::suite
             Account const owner(std::string("owner") + std::to_string(i));
             env.fund(XRP(1'000), owner);
             // different accounts can have the same asset pair
-            Oracle oracle(env, {.owner = owner, .documentID = i, .fee = baseFee});
+            Oracle const oracle(env, {.owner = owner, .documentID = i, .fee = baseFee});
             accounts.push_back(owner.id());
             oracles.push_back(oracle.documentID());
             // same account can have different asset pair
-            Oracle oracle1(env, {.owner = owner, .documentID = i + 10, .fee = baseFee});
+            Oracle const oracle1(env, {.owner = owner, .documentID = i + 10, .fee = baseFee});
             accounts.push_back(owner.id());
             oracles.push_back(oracle1.documentID());
         }
@@ -2092,7 +2100,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         }
         {
             // Malformed MPTIssuance index
-            Json::Value jvParams;
+            Json::Value const jvParams;
             testMalformedField(
                 env, jvParams, jss::mptoken, FieldType::HashOrObjectField, "malformedRequest");
         }
@@ -2643,7 +2651,9 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
             BEAST_EXPECT(jv[jss::error_message] == Json::nullValue || jv[jss::error_message] == "");
         }
         else if (BEAST_EXPECT(jv.isMember(jss::error_message)))
+        {
             BEAST_EXPECT(jv[jss::error_message] == msg);
+        }
     }
 
     void
@@ -2753,7 +2763,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
         scEnv(xchain_create_claim_id(scBob, jvb, reward, mcBob));
         scEnv.close();
 
-        std::string bridge_index;
+        std::string const bridge_index;
         {
             // request the xchain_claim_id via RPC
             Json::Value jvParams;
@@ -2864,12 +2874,12 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
                     a[i].isMember(jss::Destination) && a[i][jss::Destination] == scCarol.human());
                 BEAST_EXPECT(
                     a[i].isMember(sfAttestationSignerAccount.jsonName) &&
-                    std::any_of(signers.begin(), signers.end(), [&](signer const& s) {
+                    std::ranges::any_of(signers, [&](signer const& s) {
                         return a[i][sfAttestationSignerAccount.jsonName] == s.account.human();
                     }));
                 BEAST_EXPECT(
                     a[i].isMember(sfAttestationRewardAccount.jsonName) &&
-                    std::any_of(payee.begin(), payee.end(), [&](Account const& account) {
+                    std::ranges::any_of(payee, [&](Account const& account) {
                         return a[i][sfAttestationRewardAccount.jsonName] == account.human();
                     }));
                 BEAST_EXPECT(
@@ -2913,5 +2923,4 @@ public:
 BEAST_DEFINE_TESTSUITE(LedgerEntry, rpc, xrpl);
 BEAST_DEFINE_TESTSUITE(LedgerEntry_XChain, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

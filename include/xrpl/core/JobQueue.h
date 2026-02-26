@@ -315,7 +315,7 @@ private:
     // Returns the limit of running jobs for the given job type.
     // For jobs with no limit, we return the largest int. Hopefully that
     // will be enough.
-    int
+    static int
     getJobLimit(JobType type);
 };
 

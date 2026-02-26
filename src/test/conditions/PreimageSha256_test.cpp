@@ -12,12 +12,11 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace cryptoconditions {
+namespace xrpl::cryptoconditions {
 
 class PreimageSha256_test : public beast::unit_test::suite
 {
-    inline Buffer
+    Buffer
     hexblob(std::string const& s)
     {
         auto blob = strUnHex(s);
@@ -149,7 +148,7 @@ class PreimageSha256_test : public beast::unit_test::suite
              "9CF1D5F810302"
              "0000"}};
 
-        for (auto x : others)
+        for (auto const& x : others)
         {
             std::error_code ec;
 
@@ -168,6 +167,4 @@ class PreimageSha256_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(PreimageSha256, conditions, xrpl);
 
-}  // namespace cryptoconditions
-
-}  // namespace xrpl
+}  // namespace xrpl::cryptoconditions

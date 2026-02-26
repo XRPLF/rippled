@@ -14,8 +14,7 @@
 #include <memory>
 #include <string>
 
-namespace beast {
-namespace insight {
+namespace beast::insight {
 
 namespace detail {
 
@@ -26,7 +25,7 @@ public:
 
 private:
     NullHookImpl&
-    operator=(NullHookImpl const&);
+    operator=(NullHookImpl const&) = delete;
 };
 
 //------------------------------------------------------------------------------
@@ -43,7 +42,7 @@ public:
 
 private:
     NullCounterImpl&
-    operator=(NullCounterImpl const&);
+    operator=(NullCounterImpl const&) = delete;
 };
 
 //------------------------------------------------------------------------------
@@ -60,7 +59,7 @@ public:
 
 private:
     NullEventImpl&
-    operator=(NullEventImpl const&);
+    operator=(NullEventImpl const&) = delete;
 };
 
 //------------------------------------------------------------------------------
@@ -82,7 +81,7 @@ public:
 
 private:
     NullGaugeImpl&
-    operator=(NullGaugeImpl const&);
+    operator=(NullGaugeImpl const&) = delete;
 };
 
 //------------------------------------------------------------------------------
@@ -99,7 +98,7 @@ public:
 
 private:
     NullMeterImpl&
-    operator=(NullMeterImpl const&);
+    operator=(NullMeterImpl const&) = delete;
 };
 
 //------------------------------------------------------------------------------
@@ -110,7 +109,7 @@ private:
 public:
     NullCollectorImp() = default;
 
-    ~NullCollectorImp() = default;
+    ~NullCollectorImp() override = default;
 
     Hook
     make_hook(HookImpl::HandlerType const&) override
@@ -153,5 +152,4 @@ NullCollector::New()
     return std::make_shared<detail::NullCollectorImp>();
 }
 
-}  // namespace insight
-}  // namespace beast
+}  // namespace beast::insight

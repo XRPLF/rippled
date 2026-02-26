@@ -8,7 +8,7 @@ namespace xrpl {
 NotTEC
 CancelOffer::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.tx[sfOfferSequence])
+    if (ctx.tx[sfOfferSequence] == 0u)
     {
         JLOG(ctx.j.trace()) << "CancelOffer::preflight: missing sequence";
         return temBAD_SEQUENCE;

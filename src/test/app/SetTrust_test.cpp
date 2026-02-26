@@ -3,9 +3,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-
-namespace test {
+namespace xrpl::test {
 
 class SetTrust_test : public beast::unit_test::suite
 {
@@ -151,9 +149,13 @@ public:
     testFreeTrustlines(FeatureBitset features, bool thirdLineCreatesLE, bool createOnHighAcct)
     {
         if (thirdLineCreatesLE)
+        {
             testcase("Allow two free trustlines");
+        }
         else
+        {
             testcase("Dynamic reserve for trustline");
+        }
 
         using namespace jtx;
         Env env(*this, features);
@@ -256,7 +258,7 @@ public:
         env.close();
     }
 
-    Json::Value
+    static Json::Value
     trust_explicit_amt(jtx::Account const& a, STAmount const& amt)
     {
         Json::Value jv;
@@ -283,9 +285,11 @@ public:
         for (std::uint64_t badFlag = 1u; badFlag <= std::numeric_limits<std::uint32_t>::max();
              badFlag *= 2)
         {
-            if (badFlag & tfTrustSetMask)
+            if ((badFlag & tfTrustSetMask) != 0u)
+            {
                 env(trust(alice, gw["USD"](100), static_cast<std::uint32_t>(badFlag)),
                     ter(temINVALID_FLAG));
+            }
         }
 
         // trust amount can't be XRP
@@ -594,5 +598,4 @@ public:
     }
 };
 BEAST_DEFINE_TESTSUITE(SetTrust, app, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

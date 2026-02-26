@@ -52,7 +52,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void
+    static void
     makeGet(std::string const& strPath, boost::asio::streambuf& sb, std::string const& strHost)
     {
         std::ostream osRequest(&sb);
@@ -107,11 +107,7 @@ public:
             bSSL,
             deqSites,
             std::bind(
-                &HTTPClientImp::makeGet,
-                shared_from_this(),
-                strPath,
-                std::placeholders::_1,
-                std::placeholders::_2),
+                &HTTPClientImp::makeGet, strPath, std::placeholders::_1, std::placeholders::_2),
             timeout,
             complete);
     }
@@ -340,10 +336,10 @@ public:
             {std::istreambuf_iterator<char>(&mHeader)}, std::istreambuf_iterator<char>()};
         JLOG(j_.trace()) << "Header: \"" << strHeader << "\"";
 
-        static boost::regex reStatus{"\\`HTTP/1\\S+ (\\d{3}) .*\\'"};  // HTTP/1.1 200 OK
-        static boost::regex reSize{
+        static boost::regex const reStatus{"\\`HTTP/1\\S+ (\\d{3}) .*\\'"};  // HTTP/1.1 200 OK
+        static boost::regex const reSize{
             "\\`.*\\r\\nContent-Length:\\s+([0-9]+).*\\'", boost::regex::icase};
-        static boost::regex reBody{"\\`.*\\r\\n\\r\\n(.*)\\'"};
+        static boost::regex const reBody{"\\`.*\\r\\n\\r\\n(.*)\\'"};
 
         boost::smatch smMatch;
         // Match status code.
@@ -421,7 +417,7 @@ public:
             else
             {
                 mResponse.commit(bytes_transferred);
-                std::string strBody{
+                std::string const strBody{
                     {std::istreambuf_iterator<char>(&mResponse)}, std::istreambuf_iterator<char>()};
                 invokeComplete(ecResult, mStatus, mBody + strBody);
             }
@@ -472,7 +468,7 @@ public:
 private:
     using pointer = std::shared_ptr<HTTPClient>;
 
-    bool mSSL;
+    bool mSSL{};
     AutoSocket mSocket;
     boost::asio::ip::tcp::resolver mResolver;
 
@@ -490,7 +486,7 @@ private:
     std::string mBody;
     unsigned short const mPort;
     std::size_t const maxResponseSize_;
-    int mStatus;
+    int mStatus{};
     std::function<void(boost::asio::streambuf& sb, std::string const& strHost)> mBuild;
     std::function<
         bool(boost::system::error_code const& ecResult, int iStatus, std::string const& strData)>
@@ -502,7 +498,7 @@ private:
     boost::system::error_code mShutdown;
 
     std::deque<std::string> mDeqSites;
-    std::chrono::seconds mTimeout;
+    std::chrono::seconds mTimeout{};
     beast::Journal j_;
 };
 
@@ -540,7 +536,7 @@ HTTPClient::get(
         complete,
     beast::Journal& j)
 {
-    std::deque<std::string> deqSites(1, strSite);
+    std::deque<std::string> const deqSites(1, strSite);
 
     auto client = std::make_shared<HTTPClientImp>(io_context, port, responseMax, j);
     client->get(bSSL, deqSites, strPath, timeout, complete);
@@ -560,7 +556,7 @@ HTTPClient::request(
         complete,
     beast::Journal& j)
 {
-    std::deque<std::string> deqSites(1, strSite);
+    std::deque<std::string> const deqSites(1, strSite);
 
     auto client = std::make_shared<HTTPClientImp>(io_context, port, responseMax, j);
     client->request(bSSL, deqSites, setRequest, timeout, complete);

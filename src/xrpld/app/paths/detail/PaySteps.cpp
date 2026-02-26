@@ -6,6 +6,7 @@
 #include <xrpl/tx/paths/detail/Steps.h>
 
 #include <algorithm>
+#include <ranges>
 
 namespace xrpl {
 
@@ -55,8 +56,8 @@ toStep(
 {
     auto& j = ctx.j;
 
-    if (ctx.isFirst && e1->isAccount() && (e1->getNodeType() & STPathElement::typeCurrency) &&
-        isXRP(e1->getCurrency()))
+    if (ctx.isFirst && e1->isAccount() &&
+        ((e1->getNodeType() & STPathElement::typeCurrency) != 0u) && isXRP(e1->getCurrency()))
     {
         return make_XRPEndpointStep(ctx, e1->getAccountID());
     }
@@ -83,10 +84,12 @@ toStep(
         (e2->getNodeType() & STPathElement::typeCurrency) ||
             (e2->getNodeType() & STPathElement::typeIssuer),
         "xrpl::toStep : currency or issuer");
-    auto const outCurrency =
-        e2->getNodeType() & STPathElement::typeCurrency ? e2->getCurrency() : curIssue.currency;
-    auto const outIssuer =
-        e2->getNodeType() & STPathElement::typeIssuer ? e2->getIssuerID() : curIssue.account;
+    auto const outCurrency = ((e2->getNodeType() & STPathElement::typeCurrency) != 0u)
+        ? e2->getCurrency()
+        : curIssue.currency;
+    auto const outIssuer = ((e2->getNodeType() & STPathElement::typeIssuer) != 0u)
+        ? e2->getIssuerID()
+        : curIssue.account;
 
     if (isXRP(curIssue.currency) && isXRP(outCurrency))
     {
@@ -132,12 +135,12 @@ toStrand(
     {
         auto const t = pe.getNodeType();
 
-        if ((t & ~STPathElement::typeAll) || !t)
+        if (((t & ~STPathElement::typeAll) != 0u) || (t == 0u))
             return {temBAD_PATH, Strand{}};
 
-        bool const hasAccount = t & STPathElement::typeAccount;
-        bool const hasIssuer = t & STPathElement::typeIssuer;
-        bool const hasCurrency = t & STPathElement::typeCurrency;
+        bool const hasAccount = (t & STPathElement::typeAccount) != 0u;
+        bool const hasIssuer = (t & STPathElement::typeIssuer) != 0u;
+        bool const hasCurrency = (t & STPathElement::typeCurrency) != 0u;
 
         if (hasAccount && (hasIssuer || hasCurrency))
             return {temBAD_PATH, Strand{}};
@@ -190,9 +193,9 @@ toStrand(
             // Note that for offer crossing (only) we do use an offer book
             // even if all that is changing is the Issue.account.
             STPathElement const& lastCurrency =
-                *std::find_if(normPath.rbegin(), normPath.rend(), hasCurrency);
+                *std::ranges::find_if(std::ranges::reverse_view(normPath), hasCurrency);
             if ((lastCurrency.getCurrency() != deliver.currency) ||
-                (offerCrossing && lastCurrency.getIssuerID() != deliver.account))
+                ((offerCrossing != 0u) && lastCurrency.getIssuerID() != deliver.account))
             {
                 normPath.emplace_back(std::nullopt, deliver.currency, deliver.account);
             }
@@ -264,9 +267,13 @@ toStrand(
         auto const next = &normPath[i + 1];
 
         if (cur->isAccount())
+        {
             curIssue.account = cur->getAccountID();
+        }
         else if (cur->hasIssuer())
+        {
             curIssue.account = cur->getIssuerID();
+        }
 
         if (cur->hasCurrency())
         {
@@ -313,15 +320,14 @@ toStrand(
                 if (isXRP(curIssue))
                 {
                     if (i != normPath.size() - 2)
-                        return {temBAD_PATH, Strand{}};
-                    else
                     {
-                        // Last step. insert xrp endpoint step
-                        auto msr = make_XRPEndpointStep(ctx(), next->getAccountID());
-                        if (msr.first != tesSUCCESS)
-                            return {msr.first, Strand{}};
-                        result.push_back(std::move(msr.second));
+                        return {temBAD_PATH, Strand{}};
                     }
+                    // Last step. insert xrp endpoint step
+                    auto msr = make_XRPEndpointStep(ctx(), next->getAccountID());
+                    if (msr.first != tesSUCCESS)
+                        return {msr.first, Strand{}};
+                    result.push_back(std::move(msr.second));
                 }
                 else
                 {
@@ -347,7 +353,9 @@ toStrand(
 
         auto s = toStep(ctx(/*isLast*/ i == normPath.size() - 2), cur, next, curIssue);
         if (s.first == tesSUCCESS)
+        {
             result.emplace_back(std::move(s.second));
+        }
         else
         {
             JLOG(j.debug()) << "toStep failed: " << s.first;
@@ -433,7 +441,7 @@ toStrands(
     result.reserve(1 + paths.size());
     // Insert the strand into result if it is not already part of the vector
     auto insert = [&](Strand s) {
-        bool const hasStrand = std::find(result.begin(), result.end(), s) != result.end();
+        bool const hasStrand = std::ranges::find(result, s) != result.end();
 
         if (!hasStrand)
             result.emplace_back(std::move(s));

@@ -1,13 +1,13 @@
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
 
-namespace xrpl {
-namespace PeerFinder {
+#include <utility>
 
-Endpoint::Endpoint(beast::IP::Endpoint const& ep, std::uint32_t hops_)
-    : hops(std::min(hops_, Tuning::maxHops + 1)), address(ep)
+namespace xrpl::PeerFinder {
+
+Endpoint::Endpoint(beast::IP::Endpoint ep, std::uint32_t hops_)
+    : hops(std::min(hops_, Tuning::maxHops + 1)), address(std::move(ep))
 {
 }
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

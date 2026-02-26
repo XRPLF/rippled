@@ -63,9 +63,13 @@ LoanSet::preflight(PreflightContext const& ctx)
     }
     // Principal Requested is required
     if (auto const p = tx[sfPrincipalRequested]; p <= 0)
+    {
         return temINVALID;
+    }
     else if (!validNumericRange(tx[~sfLoanOriginationFee], p))
+    {
         return temINVALID;
+    }
     if (!validNumericRange(tx[~sfInterestRate], maxInterestRate))
         return temINVALID;
     if (!validNumericRange(tx[~sfOverpaymentFee], maxOverpaymentFee))
@@ -82,14 +86,18 @@ LoanSet::preflight(PreflightContext const& ctx)
 
     if (auto const paymentInterval = tx[~sfPaymentInterval];
         !validNumericMinimum(paymentInterval, LoanSet::minPaymentInterval))
+    {
         return temINVALID;
-    // Grace period is between min default value and payment interval
+        // Grace period is between min default value and payment interval
+    }
     else if (auto const gracePeriod = tx[~sfGracePeriod];  //
              !validNumericRange(
                  gracePeriod,
                  paymentInterval.value_or(LoanSet::defaultPaymentInterval),
                  defaultGracePeriod))
+    {
         return temINVALID;
+    }
 
     // Copied from preflight2
     if (counterPartySig)
@@ -265,8 +273,10 @@ LoanSet::preclaim(PreclaimContext const& ctx)
 
     auto const vault = ctx.view.read(keylet::vault(brokerSle->at(sfVaultID)));
     if (!vault)
+    {
         // Should be impossible
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    }
 
     if (vault->at(sfAssetsMaximum) != 0 && vault->at(sfAssetsTotal) >= vault->at(sfAssetsMaximum))
     {
@@ -461,7 +471,7 @@ LoanSet::doApply()
         // Round the minimum required cover up to be conservative. This ensures
         // CoverAvailable never drops below the theoretical minimum, protecting
         // the broker's solvency.
-        NumberRoundModeGuard mg(Number::upward);
+        NumberRoundModeGuard const mg(Number::upward);
         if (brokerSle->at(sfCoverAvailable) < tenthBipsOfValue(newDebtTotal, coverRateMinimum))
         {
             JLOG(j_.warn()) << "Insufficient first-loss capital to cover the loan.";
@@ -491,9 +501,11 @@ LoanSet::doApply()
     if (auto const ter = addEmptyHolding(
             view, borrower, borrowerSle->at(sfBalance).value().xrp(), vaultAsset, j_);
         ter && ter != tecDUPLICATE)
+    {
         // ignore tecDUPLICATE. That means the holding already exists, and
         // is fine here
         return ter;
+    }
 
     if (auto const ter = requireAuth(view, vaultAsset, borrower, AuthType::StrongAuth))
         return ter;
@@ -512,9 +524,11 @@ LoanSet::doApply()
         if (auto const ter = addEmptyHolding(
                 view, brokerOwner, brokerOwnerSle->at(sfBalance).value().xrp(), vaultAsset, j_);
             ter && ter != tecDUPLICATE)
+        {
             // ignore tecDUPLICATE. That means the holding already exists,
             // and is fine here
             return ter;
+        }
     }
 
     if (auto const ter = requireAuth(view, vaultAsset, brokerOwner, AuthType::StrongAuth))

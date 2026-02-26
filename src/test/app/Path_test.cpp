@@ -23,8 +23,7 @@
 #include <string>
 #include <thread>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 //------------------------------------------------------------------------------
 
@@ -39,7 +38,7 @@ rpf(jtx::Account const& src, jtx::Account const& dst, std::uint32_t num_src)
     {
         auto& sc = (jv[jss::source_currencies] = Json::arrayValue);
         Json::Value j = Json::objectValue;
-        while (num_src--)
+        while ((num_src--) != 0u)
         {
             j[jss::currency] = std::to_string(num_src + 100);
             sc.append(j);
@@ -100,7 +99,7 @@ public:
         void
         signal()
         {
-            std::lock_guard lk(mutex_);
+            std::lock_guard const lk(mutex_);
             signaled_ = true;
             cv_.notify_all();
         }
@@ -123,16 +122,16 @@ public:
         Resource::Consumer c;
 
         RPC::JsonContext context{
-            {env.journal,
-             app,
-             loadType,
-             app.getOPs(),
-             app.getLedgerMaster(),
-             c,
-             Role::USER,
-             {},
-             {},
-             RPC::apiVersionIfUnspecified},
+            {.j = env.journal,
+             .app = app,
+             .loadType = loadType,
+             .netOps = app.getOPs(),
+             .ledgerMaster = app.getLedgerMaster(),
+             .consumer = c,
+             .role = Role::USER,
+             .coro = {},
+             .infoSub = {},
+             .apiVersion = RPC::apiVersionIfUnspecified},
             {},
             {}};
 
@@ -232,16 +231,16 @@ public:
         Resource::Consumer c;
 
         RPC::JsonContext context{
-            {env.journal,
-             app,
-             loadType,
-             app.getOPs(),
-             app.getLedgerMaster(),
-             c,
-             Role::USER,
-             {},
-             {},
-             RPC::apiVersionIfUnspecified},
+            {.j = env.journal,
+             .app = app,
+             .loadType = loadType,
+             .netOps = app.getOPs(),
+             .ledgerMaster = app.getLedgerMaster(),
+             .consumer = c,
+             .role = Role::USER,
+             .coro = {},
+             .infoSub = {},
+             .apiVersion = RPC::apiVersionIfUnspecified},
             {},
             {}};
         Json::Value result;
@@ -957,13 +956,13 @@ public:
             (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account A3{"A3"};
-        Account G1{"G1"};
-        Account G2{"G2"};
-        Account G3{"G3"};
-        Account M1{"M1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
+        Account const A3{"A3"};
+        Account const G1{"G1"};
+        Account const G2{"G2"};
+        Account const G3{"G3"};
+        Account const M1{"M1"};
 
         env.fund(XRP(100000), A1);
         env.fund(XRP(10000), A2);
@@ -1058,10 +1057,10 @@ public:
             "domain");
         using namespace jtx;
         Env env = pathTestEnv();
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account G3{"G3"};
-        Account M1{"M1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
+        Account const G3{"G3"};
+        Account const M1{"M1"};
 
         env.fund(XRP(1000), A1, A2, G3);
         env.fund(XRP(11000), M1);
@@ -1118,11 +1117,11 @@ public:
             (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account G1BS{"G1BS"};
-        Account G2SW{"G2SW"};
-        Account M1{"M1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
+        Account const G1BS{"G1BS"};
+        Account const G2SW{"G2SW"};
+        Account const M1{"M1"};
 
         env.fund(XRP(1000), G1BS, G2SW, A1, A2);
         env.fund(XRP(11000), M1);
@@ -1204,16 +1203,16 @@ public:
             (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account A3{"A3"};
-        Account A4{"A4"};
-        Account G1{"G1"};
-        Account G2{"G2"};
-        Account G3{"G3"};
-        Account G4{"G4"};
-        Account M1{"M1"};
-        Account M2{"M2"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
+        Account const A3{"A3"};
+        Account const A4{"A4"};
+        Account const G1{"G1"};
+        Account const G2{"G2"};
+        Account const G3{"G3"};
+        Account const G4{"G4"};
+        Account const M1{"M1"};
+        Account const M2{"M2"};
 
         env.fund(XRP(1000), A1, A2, A3, G1, G2, G3, G4);
         env.fund(XRP(10000), A4);
@@ -1347,12 +1346,12 @@ public:
             (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account A3{"A3"};
-        Account G1{"G1"};
-        Account G2{"G2"};
-        Account M1{"M1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
+        Account const A3{"A3"};
+        Account const G1{"G1"};
+        Account const G2{"G2"};
+        Account const M1{"M1"};
 
         env.fund(XRP(11000), M1);
         env.fund(XRP(1000), A1, A2, A3, G1, G2);
@@ -1516,7 +1515,7 @@ public:
             }
             else
             {
-                BEAST_EXPECT(st.size() == 0);
+                BEAST_EXPECT(st.empty());
                 BEAST_EXPECT(equal(sa, XRP(0)));
             }
         };
@@ -1537,16 +1536,16 @@ public:
         // lambda param that creates different types of offers
         auto testPathfind = [&](auto func, bool const domainEnabled = false) {
             Env env = pathTestEnv();
-            Account A1{"A1"};
-            Account A2{"A2"};
-            Account A3{"A3"};
-            Account A4{"A4"};
-            Account G1{"G1"};
-            Account G2{"G2"};
-            Account G3{"G3"};
-            Account G4{"G4"};
-            Account M1{"M1"};
-            Account M2{"M2"};
+            Account const A1{"A1"};
+            Account const A2{"A2"};
+            Account const A3{"A3"};
+            Account const A4{"A4"};
+            Account const G1{"G1"};
+            Account const G2{"G2"};
+            Account const G3{"G3"};
+            Account const G4{"G4"};
+            Account const M1{"M1"};
+            Account const M2{"M2"};
 
             env.fund(XRP(1000), A1, A2, A3, G1, G2, G3, G4);
             env.fund(XRP(10000), A4);
@@ -1813,9 +1812,9 @@ public:
         testcase("AMM not used in domain path");
         using namespace jtx;
         Env env = pathTestEnv();
-        PermissionedDEX permDex(env);
+        PermissionedDEX const permDex(env);
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] = permDex;
-        AMM amm(env, alice, XRP(10), USD(50));
+        AMM const amm(env, alice, XRP(10), USD(50));
 
         STPathSet st;
         STAmount sa, da;
@@ -1880,5 +1879,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Path, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

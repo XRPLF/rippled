@@ -12,9 +12,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-
-namespace test {
+namespace xrpl::test {
 
 class LedgerRPC_test : public beast::unit_test::suite
 {
@@ -30,15 +28,17 @@ class LedgerRPC_test : public beast::unit_test::suite
             BEAST_EXPECT(jv[jss::error_message] == Json::nullValue || jv[jss::error_message] == "");
         }
         else if (BEAST_EXPECT(jv.isMember(jss::error_message)))
+        {
             BEAST_EXPECTS(
                 jv[jss::error_message] == msg,
                 "Expected error message \"" + msg + "\", received \"" +
                     jv[jss::error_message].asString() + "\"");
+        }
     }
 
     // Corrupt a valid address by replacing the 10th character with '!'.
     // '!' is not part of the ripple alphabet.
-    std::string
+    static std::string
     makeBadAddress(std::string good)
     {
         std::string ret = std::move(good);
@@ -634,15 +634,19 @@ class LedgerRPC_test : public beast::unit_test::suite
             BEAST_EXPECT(jrr[jss::ledger][jss::accountState].isArray());
 
             for (auto i = 0; i < jrr[jss::ledger][jss::accountState].size(); i++)
+            {
                 if (jrr[jss::ledger][jss::accountState][i]["LedgerEntryType"] == jss::LedgerHashes)
                 {
                     index = jrr[jss::ledger][jss::accountState][i]["index"].asString();
                     hashesLedgerEntryIndex = i;
                 }
+            }
 
             for (auto const& object : jrr[jss::ledger][jss::accountState])
+            {
                 if (object["LedgerEntryType"] == jss::LedgerHashes)
                     index = object["index"].asString();
+            }
 
             // jss::type is a deprecated field
             BEAST_EXPECT(
@@ -690,5 +694,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(LedgerRPC, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

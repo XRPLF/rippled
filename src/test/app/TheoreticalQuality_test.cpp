@@ -11,8 +11,7 @@
 #include <xrpl/tx/paths/detail/StrandFlow.h>
 #include <xrpl/tx/transactors/AMM/AMMContext.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 struct RippleCalcTestParams
 {
@@ -54,9 +53,13 @@ struct RippleCalcTestParams
                         auto const currency = to_currency(pe[jss::currency].asString());
                         std::optional<AccountID> issuer;
                         if (!isXRP(currency))
+                        {
                             issuer = *parseBase58<AccountID>(pe[jss::issuer].asString());
+                        }
                         else
+                        {
                             assert(isXRP(*parseBase58<AccountID>(pe[jss::issuer].asString())));
+                        }
                         p.emplace_back(std::nullopt, currency, issuer);
                     }
                     else
@@ -144,7 +147,7 @@ public:
         jtx::Env& env,
         jtx::Account const& acc,
         jtx::Account const& peer,
-        Currency const& currency)
+        Currency const& currency) const
     {
         using namespace jtx;
         IOU const iou{acc, currency};
@@ -190,7 +193,7 @@ class TheoreticalQuality_test : public beast::unit_test::suite
     prettyQuality(Quality const& q)
     {
         std::stringstream sstr;
-        STAmount rate = q.rate();
+        STAmount const rate = q.rate();
         sstr << rate << " (" << q << ")";
         return sstr.str();
     };
@@ -211,7 +214,7 @@ class TheoreticalQuality_test : public beast::unit_test::suite
         std::shared_ptr<ReadView const> closed,
         std::optional<Quality> const& expectedQ = {})
     {
-        PaymentSandbox sb(closed.get(), tapNONE);
+        PaymentSandbox const sb(closed.get(), tapNONE);
         AMMContext ammContext(rcp.srcAccount, false);
 
         auto const sendMaxIssue = [&rcp]() -> std::optional<Issue> {
@@ -220,7 +223,7 @@ class TheoreticalQuality_test : public beast::unit_test::suite
             return std::nullopt;
         }();
 
-        beast::Journal dummyJ{beast::Journal::getNullSink()};
+        beast::Journal const dummyJ{beast::Journal::getNullSink()};
 
         auto sr = toStrands(
             sb,
@@ -360,7 +363,7 @@ public:
 
             // Accounts are set up, make the payment
             IOU const iou{accounts.back(), currency};
-            RippleCalcTestParams rcp{env.json(
+            RippleCalcTestParams const rcp{env.json(
                 pay(accounts.front(), accounts.back(), iou(paymentAmount)),
                 accountsPath,
                 txflags(tfNoRippleDirect))};
@@ -409,7 +412,7 @@ public:
             auto const USDB = bob["USD"];
             auto const EURC = carol["EUR"];
             constexpr std::size_t const numAccounts = 5;
-            std::array<Account, numAccounts> accounts{{alice, bob, carol, dan, oscar}};
+            std::array<Account, numAccounts> const accounts{{alice, bob, carol, dan, oscar}};
 
             // sendmax should be in USDB and delivered amount should be in EURC
             // normalized path should be:
@@ -441,7 +444,7 @@ public:
             // Accounts are set up, make the payment
             IOU const srcIOU{bob, usdCurrency};
             IOU const dstIOU{carol, eurCurrency};
-            RippleCalcTestParams rcp{env.json(
+            RippleCalcTestParams const rcp{env.json(
                 pay(alice, dan, dstIOU(paymentAmount)),
                 sendmax(srcIOU(100 * paymentAmount)),
                 bookPath,
@@ -488,7 +491,7 @@ public:
                 return std::nullopt;
             try
             {
-                std::size_t pos;
+                std::size_t pos = 0;
                 auto const r = stoi(s, &pos);
                 if (pos != s.size())
                     return std::nullopt;
@@ -507,5 +510,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_PRIO(TheoreticalQuality, app, xrpl, 3);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

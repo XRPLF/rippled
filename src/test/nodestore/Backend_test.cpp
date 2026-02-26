@@ -9,9 +9,7 @@
 
 #include <algorithm>
 
-namespace xrpl {
-
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 // Tests the Backend interface
 //
@@ -26,7 +24,7 @@ public:
         testcase("Backend type=" + type);
 
         Section params;
-        beast::temp_dir tempDir;
+        beast::temp_dir const tempDir;
         params.set("type", type);
         params.set("path", tempDir.path());
 
@@ -73,8 +71,8 @@ public:
             Batch copy;
             fetchCopyOfBatch(*backend, &copy, batch);
             // Canonicalize the source and destination batches
-            std::sort(batch.begin(), batch.end(), LessThan{});
-            std::sort(copy.begin(), copy.end(), LessThan{});
+            std::ranges::sort(batch, LessThan{});
+            std::ranges::sort(copy, LessThan{});
             BEAST_EXPECT(areBatchesEqual(batch, copy));
         }
     }
@@ -100,5 +98,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Backend, nodestore, xrpl);
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

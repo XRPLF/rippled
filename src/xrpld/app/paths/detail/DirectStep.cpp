@@ -195,6 +195,7 @@ private:
         }
         return false;
     }
+    friend TDerived;
 };
 
 //------------------------------------------------------------------------------
@@ -212,15 +213,15 @@ public:
     using DirectStepI<DirectIPaymentStep>::DirectStepI;
     using DirectStepI<DirectIPaymentStep>::check;
 
-    bool
-    verifyPrevStepDebtDirection(DebtDirection) const
+    static bool
+    verifyPrevStepDebtDirection(DebtDirection)
     {
         // A payment doesn't care whether or not prevStepRedeems.
         return true;
     }
 
-    bool
-    verifyDstQualityIn(std::uint32_t dstQIn) const
+    static bool
+    verifyDstQualityIn(std::uint32_t dstQIn)
     {
         // Payments have no particular expectations for what dstQIn will be.
         return true;
@@ -255,8 +256,8 @@ public:
     using DirectStepI<DirectIOfferCrossingStep>::DirectStepI;
     using DirectStepI<DirectIOfferCrossingStep>::check;
 
-    bool
-    verifyPrevStepDebtDirection(DebtDirection prevStepDir) const
+    static bool
+    verifyPrevStepDebtDirection(DebtDirection prevStepDir)
     {
         // During offer crossing we rely on the fact that prevStepRedeems
         // will *always* issue.  That's because:
@@ -268,16 +269,16 @@ public:
         return issues(prevStepDir);
     }
 
-    bool
-    verifyDstQualityIn(std::uint32_t dstQIn) const
+    static bool
+    verifyDstQualityIn(std::uint32_t dstQIn)
     {
         // Due to a couple of factors dstQIn is always QUALITY_ONE for
         // offer crossing.  If that changes we need to know.
         return dstQIn == QUALITY_ONE;
     }
 
-    std::uint32_t
-    quality(ReadView const& sb, QualityDirection qDir) const;
+    static std::uint32_t
+    quality(ReadView const& sb, QualityDirection qDir);
 
     // Compute the maximum value that can flow from src->dst at
     // the best available quality.
@@ -288,8 +289,8 @@ public:
 
     // Verify the consistency of the step.  These checks are specific to
     // offer crossing and assume that general checks were already performed.
-    TER
-    check(StrandContext const& ctx, std::shared_ptr<const SLE> const& sleSrc) const;
+    static TER
+    check(StrandContext const& ctx, std::shared_ptr<const SLE> const& sleSrc);
 
     std::string
     logString() const override
@@ -316,17 +317,19 @@ DirectIPaymentStep::quality(ReadView const& sb, QualityDirection qDir) const
         {
             // compute dst quality in
             if (this->dst_ < this->src_)
+            {
                 return sfLowQualityIn;
-            else
-                return sfHighQualityIn;
+            }
+            return sfHighQualityIn;
         }
         else
         {
             // compute src quality out
             if (this->src_ < this->dst_)
+            {
                 return sfLowQualityOut;
-            else
-                return sfHighQualityOut;
+            }
+            return sfHighQualityOut;
         }
     }();
 
@@ -334,13 +337,13 @@ DirectIPaymentStep::quality(ReadView const& sb, QualityDirection qDir) const
         return QUALITY_ONE;
 
     auto const q = (*sle)[field];
-    if (!q)
+    if (q == 0u)
         return QUALITY_ONE;
     return q;
 }
 
 std::uint32_t
-DirectIOfferCrossingStep::quality(ReadView const&, QualityDirection qDir) const
+DirectIOfferCrossingStep::quality(ReadView const&, QualityDirection qDir)
 {
     // If offer crossing then ignore trust line Quality fields.  This
     // preserves a long-standing tradition.
@@ -389,21 +392,21 @@ DirectIPaymentStep::check(StrandContext const& ctx, std::shared_ptr<const SLE> c
 
         auto const authField = (src_ > dst_) ? lsfHighAuth : lsfLowAuth;
 
-        if (((*sleSrc)[sfFlags] & lsfRequireAuth) && !((*sleLine)[sfFlags] & authField) &&
-            (*sleLine)[sfBalance] == beast::zero)
+        if ((((*sleSrc)[sfFlags] & lsfRequireAuth) != 0u) &&
+            (((*sleLine)[sfFlags] & authField) == 0u) && (*sleLine)[sfBalance] == beast::zero)
         {
             JLOG(j_.debug()) << "DirectStepI: can't receive IOUs from issuer without auth."
                              << " src: " << src_;
             return terNO_AUTH;
         }
 
-        if (ctx.prevStep)
+        if (ctx.prevStep != nullptr)
         {
             if (ctx.prevStep->bookStepBook())
             {
                 auto const noRippleSrcToDst =
                     ((*sleLine)[sfFlags] & ((src_ > dst_) ? lsfHighNoRipple : lsfLowNoRipple));
-                if (noRippleSrcToDst)
+                if (noRippleSrcToDst != 0u)
                     return terNO_RIPPLE;
             }
         }
@@ -425,7 +428,7 @@ DirectIPaymentStep::check(StrandContext const& ctx, std::shared_ptr<const SLE> c
 }
 
 TER
-DirectIOfferCrossingStep::check(StrandContext const&, std::shared_ptr<const SLE> const&) const
+DirectIOfferCrossingStep::check(StrandContext const&, std::shared_ptr<const SLE> const&)
 {
     // The standard checks are all we can do because any remaining checks
     // require the existence of a trust line.  Offer crossing does not
@@ -692,7 +695,7 @@ template <class TDerived>
 std::pair<std::uint32_t, std::uint32_t>
 DirectStepI<TDerived>::qualitiesSrcRedeems(ReadView const& sb) const
 {
-    if (!prevStep_)
+    if (prevStep_ == nullptr)
         return {QUALITY_ONE, QUALITY_ONE};
 
     auto const prevStepQIn = prevStep_->lineQualityIn(sb);
@@ -737,15 +740,13 @@ DirectStepI<TDerived>::qualities(
     {
         return qualitiesSrcRedeems(sb);
     }
-    else
-    {
-        auto const prevStepDebtDirection = [&] {
-            if (prevStep_)
-                return prevStep_->debtDirection(sb, strandDir);
-            return DebtDirection::issues;
-        }();
-        return qualitiesSrcIssues(sb, prevStepDebtDirection);
-    }
+
+    auto const prevStepDebtDirection = [&] {
+        if (prevStep_)
+            return prevStep_->debtDirection(sb, strandDir);
+        return DebtDirection::issues;
+    }();
+    return qualitiesSrcIssues(sb, prevStepDebtDirection);
 }
 
 template <class TDerived>
@@ -809,7 +810,7 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
 
     // If previous step was a direct step then we need to check
     // no ripple flags.
-    if (ctx.prevStep)
+    if (ctx.prevStep != nullptr)
     {
         if (auto prevSrc = ctx.prevStep->directStepSrcAcct())
         {
@@ -822,9 +823,9 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
         Issue const srcIssue{currency_, src_};
         Issue const dstIssue{currency_, dst_};
 
-        if (ctx.seenBookOuts.count(srcIssue))
+        if (ctx.seenBookOuts.count(srcIssue) != 0u)
         {
-            if (!ctx.prevStep)
+            if (ctx.prevStep == nullptr)
             {
                 // LCOV_EXCL_START
                 UNREACHABLE(
@@ -885,7 +886,7 @@ make_DirectStepI(
 {
     TER ter = tefINTERNAL;
     std::unique_ptr<Step> r;
-    if (ctx.offerCrossing)
+    if (ctx.offerCrossing != 0u)
     {
         auto offerCrossingStep = std::make_unique<DirectIOfferCrossingStep>(ctx, src, dst, c);
         ter = offerCrossingStep->check(ctx);

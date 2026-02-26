@@ -81,7 +81,7 @@ bool
 LedgerReplayMsgHandler::processProofPathResponse(
     std::shared_ptr<protocol::TMProofPathResponse> const& msg)
 {
-    protocol::TMProofPathResponse& reply = *msg;
+    protocol::TMProofPathResponse const& reply = *msg;
     if (reply.has_error() || !reply.has_key() || !reply.has_ledgerhash() || !reply.has_type() ||
         !reply.has_ledgerheader() || reply.path_size() == 0)
     {
@@ -97,7 +97,7 @@ LedgerReplayMsgHandler::processProofPathResponse(
 
     // deserialize the header
     auto info = deserializeHeader({reply.ledgerheader().data(), reply.ledgerheader().size()});
-    uint256 replyHash(reply.ledgerhash());
+    uint256 const replyHash(reply.ledgerhash());
     if (calculateLedgerHash(info) != replyHash)
     {
         JLOG(journal_.debug()) << "Bad message: Hash mismatch";
@@ -105,7 +105,7 @@ LedgerReplayMsgHandler::processProofPathResponse(
     }
     info.hash = replyHash;
 
-    uint256 key(reply.key());
+    uint256 const key(reply.key());
     if (key != keylet::skip().key)
     {
         JLOG(journal_.debug()) << "Bad message: we only support the short skip list for now. "
@@ -136,7 +136,7 @@ LedgerReplayMsgHandler::processProofPathResponse(
         return false;
     }
 
-    if (auto item = static_cast<SHAMapLeafNode*>(node.get())->peekItem())
+    if (auto item = dynamic_cast<SHAMapLeafNode*>(node.get())->peekItem())
     {
         replayer_.gotSkipList(info, item);
         return true;
@@ -150,7 +150,7 @@ protocol::TMReplayDeltaResponse
 LedgerReplayMsgHandler::processReplayDeltaRequest(
     std::shared_ptr<protocol::TMReplayDeltaRequest> const& msg)
 {
-    protocol::TMReplayDeltaRequest& packet = *msg;
+    protocol::TMReplayDeltaRequest const& packet = *msg;
     protocol::TMReplayDeltaResponse reply;
 
     if (!packet.has_ledgerhash() || packet.ledgerhash().size() != uint256::size())
@@ -189,7 +189,7 @@ bool
 LedgerReplayMsgHandler::processReplayDeltaResponse(
     std::shared_ptr<protocol::TMReplayDeltaResponse> const& msg)
 {
-    protocol::TMReplayDeltaResponse& reply = *msg;
+    protocol::TMReplayDeltaResponse const& reply = *msg;
     if (reply.has_error() || !reply.has_ledgerheader())
     {
         JLOG(journal_.debug()) << "Bad message: Error reply";
@@ -197,7 +197,7 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
     }
 
     auto info = deserializeHeader({reply.ledgerheader().data(), reply.ledgerheader().size()});
-    uint256 replyHash(reply.ledgerhash());
+    uint256 const replyHash(reply.ledgerhash());
     if (calculateLedgerHash(info) != replyHash)
     {
         JLOG(journal_.debug()) << "Bad message: Hash mismatch";
@@ -216,7 +216,8 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
             // -- TxShaMapItem for building a ShaMap for verification
             // -- Tx
             // -- TxMetaData for Tx ordering
-            Serializer shaMapItemData(reply.transaction(i).data(), reply.transaction(i).size());
+            Serializer const shaMapItemData(
+                reply.transaction(i).data(), reply.transaction(i).size());
 
             SerialIter txMetaSit(makeSlice(reply.transaction(i)));
             SerialIter txSit(txMetaSit.getSlice(txMetaSit.getVLDataLength()));

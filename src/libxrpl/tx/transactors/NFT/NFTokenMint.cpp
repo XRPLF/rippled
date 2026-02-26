@@ -77,7 +77,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
 
     if (auto uri = ctx.tx[~sfURI])
     {
-        if (uri->length() == 0 || uri->length() > maxTokenURILength)
+        if (uri->empty() || uri->length() > maxTokenURILength)
             return temMALFORMED;
     }
 
@@ -140,8 +140,8 @@ NFTokenMint::createNFTokenID(
     std::memcpy(ptr, &fee, sizeof(fee));
     ptr += sizeof(fee);
 
-    std::memcpy(ptr, issuer.data(), issuer.size());
-    ptr += issuer.size();
+    std::memcpy(ptr, issuer.data(), AccountID::size());
+    ptr += AccountID::size();
 
     std::memcpy(ptr, &taxon, sizeof(taxon));
     ptr += sizeof(taxon);
@@ -203,8 +203,10 @@ NFTokenMint::doApply()
     auto const tokenSeq = [this, &issuer]() -> Expected<std::uint32_t, TER> {
         auto const root = view().peek(keylet::account(issuer));
         if (root == nullptr)
+        {
             // Should not happen.  Checked in preclaim.
             return Unexpected(tecNO_ISSUER);
+        }
 
         // If the issuer hasn't minted an NFToken before we must add a
         // FirstNFTokenSequence field to the issuer's AccountRoot.  The
@@ -260,8 +262,10 @@ NFTokenMint::doApply()
         InnerObjectFormats::getInstance().findSOTemplateBySField(sfNFToken);
 
     if (nfTokenTemplate == nullptr)
+    {
         // Should never happen.
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     auto const nftokenID = createNFTokenID(
         extractNFTokenFlagsFromTxFlags(ctx_.tx.getFlags()),

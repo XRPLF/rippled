@@ -4,8 +4,7 @@
 #include <xrpl/conditions/detail/PreimageSha256.h>
 #include <xrpl/conditions/detail/utils.h>
 
-namespace xrpl {
-namespace cryptoconditions {
+namespace xrpl::cryptoconditions {
 
 bool
 match(Fulfillment const& f, Condition const& c)
@@ -128,5 +127,4 @@ Fulfillment::deserialize(Slice s, std::error_code& ec)
     return f;
 }
 
-}  // namespace cryptoconditions
-}  // namespace xrpl
+}  // namespace xrpl::cryptoconditions

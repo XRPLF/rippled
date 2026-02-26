@@ -15,8 +15,7 @@
 #include <string>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class LendingHelpers_test : public beast::unit_test::suite
 {
@@ -593,7 +592,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace xrpl::detail;
 
-        Env env{*this};
+        Env const env{*this};
         Account const issuer{"issuer"};
         PrettyAsset const asset = issuer["USD"];
         std::int32_t const loanScale = -5;
@@ -680,7 +679,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace xrpl::detail;
 
-        Env env{*this};
+        Env const env{*this};
         Account const issuer{"issuer"};
         PrettyAsset const asset = issuer["USD"];
         std::int32_t const loanScale = -5;
@@ -773,7 +772,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace xrpl::detail;
 
-        Env env{*this};
+        Env const env{*this};
         Account const issuer{"issuer"};
         PrettyAsset const asset = issuer["USD"];
         std::int32_t const loanScale = -5;
@@ -872,7 +871,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace xrpl::detail;
 
-        Env env{*this};
+        Env const env{*this};
         Account const issuer{"issuer"};
         PrettyAsset const asset = issuer["USD"];
         std::int32_t const loanScale = -5;
@@ -979,7 +978,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace xrpl::detail;
 
-        Env env{*this};
+        Env const env{*this};
         Account const issuer{"issuer"};
         PrettyAsset const asset = issuer["USD"];
         std::int32_t const loanScale = -5;
@@ -1086,7 +1085,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace xrpl::detail;
 
-        Env env{*this};
+        Env const env{*this};
         Account const issuer{"issuer"};
         PrettyAsset const asset = issuer["USD"];
         std::int32_t const loanScale = -5;
@@ -1211,5 +1210,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(LendingHelpers, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

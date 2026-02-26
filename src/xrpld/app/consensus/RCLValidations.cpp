@@ -132,7 +132,7 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
     XRPL_ASSERT(
         ledger->header().hash == hash, "xrpl::RCLValidationsAdaptor::acquire : ledger hash match");
 
-    return RCLValidatedLedger(std::move(ledger), j_);
+    return RCLValidatedLedger(ledger, j_);
 }
 
 void
@@ -205,14 +205,18 @@ handleNewValidation(
         }();
 
         if (outcome == ValStatus::conflicting)
+        {
             ls << "Byzantine Behavior Detector: " << (val->isTrusted() ? "trusted " : "untrusted ")
                << id << ": Conflicting validation for " << seq << "!\n["
                << val->getSerializer().slice() << "]";
+        }
 
         if (outcome == ValStatus::multiple)
+        {
             ls << "Byzantine Behavior Detector: " << (val->isTrusted() ? "trusted " : "untrusted ")
                << id << ": Multiple validations for " << seq << "/" << hash << "!\n["
                << val->getSerializer().slice() << "]";
+        }
     }
 }
 

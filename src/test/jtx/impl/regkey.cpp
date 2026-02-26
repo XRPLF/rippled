@@ -2,9 +2,7 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 Json::Value
 regkey(Account const& account, disabled_t)
@@ -25,6 +23,4 @@ regkey(Account const& account, Account const& signer)
     return jv;
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

@@ -11,6 +11,8 @@
 #include <boost/bimap.hpp>
 #include <boost/bimap/multiset_of.hpp>
 
+#include <algorithm>
+
 namespace xrpl {
 
 using namespace boost::bimaps;
@@ -55,14 +57,14 @@ iteratePriceData(
         if (prevChain == chain)
             return;
 
-        if (!oracle || f(*oracle) || isNew)
+        if ((oracle == nullptr) || f(*oracle) || isNew)
             return;
 
         if (++history > maxHistory)
             return;
 
-        uint256 prevTx = chain->getFieldH256(sfPreviousTxnID);
-        std::uint32_t prevSeq = chain->getFieldU32(sfPreviousTxnLgrSeq);
+        uint256 const prevTx = chain->getFieldH256(sfPreviousTxnID);
+        std::uint32_t const prevSeq = chain->getFieldU32(sfPreviousTxnLgrSeq);
 
         auto const ledger = context.ledgerMaster.getLedgerBySeq(prevSeq);
         if (!ledger)
@@ -87,8 +89,8 @@ iteratePriceData(
             if (isNew && history == 1)
                 return;
 
-            oracle = isNew ? &static_cast<STObject const&>(node.peekAtField(sfNewFields))
-                           : &static_cast<STObject const&>(node.peekAtField(sfFinalFields));
+            oracle = isNew ? &dynamic_cast<STObject const&>(node.peekAtField(sfNewFields))
+                           : &dynamic_cast<STObject const&>(node.peekAtField(sfFinalFields));
             break;
         }
     }
@@ -148,7 +150,7 @@ doGetAggregatePrice(RPC::JsonContext& context)
     // support positive int, uint, and a number represented as a string
     auto validUInt = [](Json::Value const& params, Json::StaticString const& field) {
         auto const& jv = params[field];
-        std::uint32_t v;
+        std::uint32_t v = 0;
         return jv.isUInt() || (jv.isInt() && jv.asInt() >= 0) ||
             (jv.isString() && beast::lexicalCastChecked(v, jv.asString()));
     };
@@ -246,9 +248,9 @@ doGetAggregatePrice(RPC::JsonContext& context)
         iteratePriceData(context, sle, [&](STObject const& node) {
             auto const& series = node.getFieldArray(sfPriceDataSeries);
             // find the token pair entry with the price
-            if (auto iter = std::find_if(
-                    series.begin(),
-                    series.end(),
+            if (auto iter = std::ranges::find_if(
+                    series,
+
                     [&](STObject const& o) -> bool {
                         return o.getFieldCurrency(sfBaseAsset).getText() ==
                             std::get<Json::Value>(baseAsset) &&
@@ -318,7 +320,7 @@ doGetAggregatePrice(RPC::JsonContext& context)
         auto const middle = size_ / 2;
         if ((size_ % 2) == 0)
         {
-            static STAmount two{noIssue(), 2, 0};
+            static STAmount const two{noIssue(), 2, 0};
             auto it = itAdvance(prices.right.begin(), middle - 1);
             auto const& a1 = it->first;
             auto const& a2 = (++it)->first;

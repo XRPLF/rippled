@@ -8,9 +8,7 @@
 
 #include <functional>
 
-namespace xrpl {
-
-namespace RPC {
+namespace xrpl::RPC {
 
 class LedgerRequest_test : public beast::unit_test::suite
 {
@@ -102,7 +100,7 @@ public:
         }
 
         {
-            std::string ledgerHash(64, 'q');
+            std::string const ledgerHash(64, 'q');
 
             auto const result = env.rpc("ledger_request", ledgerHash);
 
@@ -113,7 +111,7 @@ public:
         }
 
         {
-            std::string ledgerHash(64, '1');
+            std::string const ledgerHash(64, '1');
 
             auto const result = env.rpc("ledger_request", ledgerHash);
 
@@ -352,5 +350,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(LedgerRequest, rpc, xrpl);
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

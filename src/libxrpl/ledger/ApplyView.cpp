@@ -3,6 +3,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/protocol/Protocol.h>
 
+#include <algorithm>
 #include <limits>
 #include <type_traits>
 
@@ -32,11 +33,11 @@ createRoot(
 auto
 findPreviousPage(ApplyView& view, Keylet const& directory, SLE::ref start)
 {
-    std::uint64_t page = start->getFieldU64(sfIndexPrevious);
+    std::uint64_t const page = start->getFieldU64(sfIndexPrevious);
 
     auto node = start;
 
-    if (page)
+    if (page != 0u)
     {
         node = view.peek(keylet::page(directory, page));
         if (!node)
@@ -61,7 +62,7 @@ insertKey(
 {
     if (preserveOrder)
     {
-        if (std::find(indexes.begin(), indexes.end(), key) != indexes.end())
+        if (std::ranges::find(indexes, key) != indexes.end())
             LogicError("dirInsert: double insertion");  // LCOV_EXCL_LINE
 
         indexes.push_back(key);
@@ -71,9 +72,9 @@ insertKey(
         // We can't be sure if this page is already sorted because
         // it may be a legacy page we haven't yet touched. Take
         // the time to sort it.
-        std::sort(indexes.begin(), indexes.end());
+        std::ranges::sort(indexes);
 
-        auto pos = std::lower_bound(indexes.begin(), indexes.end(), key);
+        auto pos = std::ranges::lower_bound(indexes, key);
 
         if (pos != indexes.end() && key == *pos)
             LogicError("dirInsert: double insertion");  // LCOV_EXCL_LINE
@@ -254,7 +255,7 @@ ApplyView::dirRemove(Keylet const& directory, std::uint64_t page, uint256 const&
     {
         auto entries = node->getFieldV256(sfIndexes);
 
-        auto it = std::find(entries.begin(), entries.end(), key);
+        auto it = std::ranges::find(entries, key);
 
         if (entries.end() == it)
             return false;

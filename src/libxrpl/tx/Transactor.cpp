@@ -32,7 +32,7 @@ preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
 
     if (!isPseudoTx(ctx.tx) || ctx.tx.isFieldPresent(sfNetworkID))
     {
-        uint32_t nodeNID = ctx.registry.getNetworkIDService().getNetworkID();
+        uint32_t const nodeNID = ctx.registry.getNetworkIDService().getNetworkID();
         std::optional<uint32_t> txNID = ctx.tx[~sfNetworkID];
 
         if (nodeNID <= 1024)
@@ -62,7 +62,7 @@ preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
         return temINVALID;
     }
 
-    if (ctx.tx.getFlags() & flagMask)
+    if ((ctx.tx.getFlags() & flagMask) != 0u)
     {
         JLOG(ctx.j.debug()) << ctx.tx.peekAtField(sfTransactionType).getFullText()
                             << ": invalid flags.";
@@ -93,7 +93,7 @@ preflightCheckSigningKey(STObject const& sigObject, beast::Journal j)
 std::optional<NotTEC>
 preflightCheckSimulateKeys(ApplyFlags flags, STObject const& sigObject, beast::Journal j)
 {
-    if (flags & tapDRY_RUN)  // simulation
+    if ((flags & tapDRY_RUN) != 0u)  // simulation
     {
         std::optional<Slice> const signature = sigObject[~sfTxnSignature];
         if (signature && !signature->empty())
@@ -191,9 +191,11 @@ NotTEC
 Transactor::preflight2(PreflightContext const& ctx)
 {
     if (auto const ret = detail::preflightCheckSimulateKeys(ctx.flags, ctx.tx, ctx.j))
+    {
         // Skips following checks if the transaction is being simulated,
         // regardless of success or failure
         return *ret;
+    }
 
     // It should be impossible for the InnerBatchTxn flag to be set without
     // featureBatch being enabled
@@ -313,7 +315,7 @@ Transactor::minimumFee(
     Fees const& fees,
     ApplyFlags flags)
 {
-    return scaleFeeLoad(baseFee, registry.getFeeTrack(), fees, flags & tapUNLIMITED);
+    return scaleFeeLoad(baseFee, registry.getFeeTrack(), fees, (flags & tapUNLIMITED) != 0u);
 }
 
 TER
@@ -324,7 +326,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 
     auto const feePaid = ctx.tx[sfFee].xrp();
 
-    if (ctx.flags & tapBATCH)
+    if ((ctx.flags & tapBATCH) != 0u)
     {
         if (feePaid == beast::zero)
             return tesSUCCESS;
@@ -562,9 +564,13 @@ Transactor::ticketDelete(
     if (auto ticketCount = (*sleAccount)[~sfTicketCount])
     {
         if (*ticketCount == 1)
+        {
             sleAccount->makeFieldAbsent(sfTicketCount);
+        }
         else
+        {
             ticketCount = *ticketCount - 1;
+        }
     }
     else
     {
@@ -639,10 +645,12 @@ Transactor::checkSign(
         auto const sle = view.read(keylet::account(idAccount));
 
         if (view.rules().enabled(featureLendingProtocol) && isPseudoAccount(sle))
+        {
             // Pseudo-accounts can't sign transactions. This check is gated on
             // the Lending Protocol amendment because that's the project it was
             // added under, and it doesn't justify another amendment
             return tefBAD_AUTH;
+        }
     }
 
     auto const pkSigner = sigObject.getFieldVL(sfSigningPubKey);
@@ -658,7 +666,7 @@ Transactor::checkSign(
         return tesSUCCESS;
     }
 
-    if ((flags & tapDRY_RUN) && pkSigner.empty() && !sigObject.isFieldPresent(sfSigners))
+    if (((flags & tapDRY_RUN) != 0u) && pkSigner.empty() && !sigObject.isFieldPresent(sfSigners))
     {
         // simulate: skip signature validation when neither SigningPubKey nor
         // Signers are provided
@@ -784,7 +792,7 @@ Transactor::checkMultiSign(
     beast::Journal const j)
 {
     // Get id's SignerList and Quorum.
-    std::shared_ptr<STLedgerEntry const> sleAccountSigners = view.read(keylet::signers(id));
+    std::shared_ptr<STLedgerEntry const> const sleAccountSigners = view.read(keylet::signers(id));
     // If the signer list doesn't exist the account is not multi-signing.
     if (!sleAccountSigners)
     {
@@ -891,7 +899,7 @@ Transactor::checkMultiSign(
                 // Master Key.  Account may not have asfDisableMaster set.
                 std::uint32_t const signerAccountFlags = sleTxSignerRoot->getFieldU32(sfFlags);
 
-                if (signerAccountFlags & lsfDisableMaster)
+                if ((signerAccountFlags & lsfDisableMaster) != 0u)
                 {
                     JLOG(j.trace()) << "applyTransaction: Signer:Account lsfDisableMaster.";
                     return tefMASTER_DISABLED;
@@ -1082,8 +1090,8 @@ Transactor::operator()()
     //
     // raii classes for the current ledger rules.
     // fixUniversalNumber predate the rulesGuard and should be replaced.
-    NumberSO stNumberSO{view().rules().enabled(fixUniversalNumber)};
-    CurrentTransactionRulesGuard currentTransactionRulesGuard(view().rules());
+    NumberSO const stNumberSO{view().rules().enabled(fixUniversalNumber)};
+    CurrentTransactionRulesGuard const currentTransactionRulesGuard(view().rules());
 
 #ifdef DEBUG
     {
@@ -1126,7 +1134,7 @@ Transactor::operator()()
     if (ctx_.size() > oversizeMetaDataCap)
         result = tecOVERSIZE;
 
-    if (isTecClaim(result) && (view().flags() & tapFAIL_HARD))
+    if (isTecClaim(result) && ((view().flags() & tapFAIL_HARD) != 0u))
     {
         // If the tapFAIL_HARD flag is set, a tec result
         // must not do anything
@@ -1271,7 +1279,7 @@ Transactor::operator()()
         metadata = ctx_.apply(result);
     }
 
-    if (ctx_.flags() & tapDRY_RUN)
+    if ((ctx_.flags() & tapDRY_RUN) != 0u)
     {
         applied = false;
     }

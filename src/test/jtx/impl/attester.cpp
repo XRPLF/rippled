@@ -5,9 +5,7 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/XChainAttestations.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 Buffer
 sign_claim_attestation(
@@ -51,6 +49,4 @@ sign_create_account_attestation(
     return sign(pk, sk, makeSlice(toSign));
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

@@ -66,12 +66,12 @@ concept UnsignedMantissa = std::is_unsigned_v<T> || std::is_same_v<T, uint128_t>
 
 class Number::Guard
 {
-    std::uint64_t digits_;   // 16 decimal guard digits
-    std::uint8_t xbit_ : 1;  // has a non-zero digit been shifted off the end
-    std::uint8_t sbit_ : 1;  // the sign of the guard digits
+    std::uint64_t digits_{0};    // 16 decimal guard digits
+    std::uint8_t xbit_ : 1 {0};  // has a non-zero digit been shifted off the end
+    std::uint8_t sbit_ : 1 {0};  // the sign of the guard digits
 
 public:
-    explicit Guard() : digits_{0}, xbit_{0}, sbit_{0}
+    explicit Guard()
     {
     }
 
@@ -96,7 +96,7 @@ public:
     // This enables the client to round towards nearest, and on
     // tie, round towards even.
     int
-    round() noexcept;
+    round() const noexcept;
 
     // Modify the result to the correctly rounded value
     template <UnsignedMantissa T>
@@ -163,7 +163,7 @@ Number::Guard::push(T d) noexcept
 inline unsigned
 Number::Guard::pop() noexcept
 {
-    unsigned d = (digits_ & 0xF000'0000'0000'0000) >> 60;
+    unsigned const d = (digits_ & 0xF000'0000'0000'0000) >> 60;
     digits_ <<= 4;
     return d;
 }
@@ -173,7 +173,7 @@ Number::Guard::pop() noexcept
 //      0 if Guard is exactly half
 //      1 if Guard is greater than half
 int
-Number::Guard::round() noexcept
+Number::Guard::round() const noexcept
 {
     auto mode = Number::getround();
 
@@ -327,7 +327,7 @@ Number::externalToInternal(rep mantissa)
     // int128_t, negate that, and cast it back down to the internalrep
     // In practice, this is only going to cover the case of
     // std::numeric_limits<rep>::min().
-    int128_t temp = mantissa;
+    int128_t const temp = mantissa;
     return static_cast<internalrep>(-temp);
 }
 
@@ -532,7 +532,7 @@ Number::operator+=(Number const& y)
     uint128_t xm = mantissa_;
     auto xe = exponent_;
 
-    bool yn = y.negative_;
+    bool const yn = y.negative_;
     uint128_t ym = y.mantissa_;
     auto ye = y.exponent_;
     Guard g;
@@ -646,14 +646,14 @@ Number::operator*=(Number const& y)
     // *m = mantissa
     // *e = exponent
 
-    bool xn = negative_;
-    int xs = xn ? -1 : 1;
+    bool const xn = negative_;
+    int const xs = xn ? -1 : 1;
     internalrep xm = mantissa_;
     auto xe = exponent_;
 
-    bool yn = y.negative_;
-    int ys = yn ? -1 : 1;
-    internalrep ym = y.mantissa_;
+    bool const yn = y.negative_;
+    int const ys = yn ? -1 : 1;
+    internalrep const ym = y.mantissa_;
     auto ye = y.exponent_;
 
     auto zm = uint128_t(xm) * uint128_t(ym);
@@ -708,13 +708,13 @@ Number::operator/=(Number const& y)
     // *m = mantissa
     // *e = exponent
 
-    bool np = negative_;
-    int ns = (np ? -1 : 1);
+    bool const np = negative_;
+    int const ns = (np ? -1 : 1);
     auto nm = mantissa_;
     auto ne = exponent_;
 
-    bool dp = y.negative_;
-    int ds = (dp ? -1 : 1);
+    bool const dp = y.negative_;
+    int const ds = (dp ? -1 : 1);
     auto dm = y.mantissa_;
     auto de = y.exponent_;
 
@@ -730,7 +730,7 @@ Number::operator/=(Number const& y)
     // f can be up to 10^(38-19) = 10^19 safely
     static_assert(smallRange.log == 15);
     static_assert(largeRange.log == 18);
-    bool small = Number::getMantissaScale() == MantissaRange::small;
+    bool const small = Number::getMantissaScale() == MantissaRange::small;
     uint128_t const f = small ? 100'000'000'000'000'000 : 10'000'000'000'000'000'000ULL;
     XRPL_ASSERT_PARTS(f >= minMantissa * 10, "Number::operator/=", "factor expected size");
 
@@ -913,9 +913,13 @@ to_string(Number const& amount)
 
     // Assemble the output:
     if (pre_from == pre_to)
+    {
         ret.append(1, '0');
+    }
     else
+    {
         ret.append(pre_from, pre_to);
+    }
 
     if (post_to != post_from)
     {
@@ -978,8 +982,8 @@ root(Number f, unsigned d)
     auto const di = static_cast<int>(d);
     auto ex = [e = e, di = di]()  // Euclidean remainder of e/d
     {
-        int k = (e >= 0 ? e : e - (di - 1)) / di;
-        int k2 = e - k * di;
+        int const k = (e >= 0 ? e : e - (di - 1)) / di;
+        int const k2 = e - (k * di);
         if (k2 == 0)
             return 0;
         return di - k2;
@@ -996,7 +1000,7 @@ root(Number f, unsigned d)
     }
 
     // Quadratic least squares curve fit of f^(1/d) in the range [0, 1]
-    auto const D = ((6 * di + 11) * di + 6) * di + 1;
+    auto const D = (((6 * di + 11) * di + 6) * di) + 1;
     auto const a0 = 3 * di * ((2 * di - 3) * di + 1);
     auto const a1 = 24 * di * (2 * di - 1);
     auto const a2 = -30 * (di - 1) * di;

@@ -1,6 +1,8 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/ledger/OpenView.h>
 
+#include <utility>
+
 namespace xrpl {
 
 class OpenView::txs_iter_impl : public txs_type::iter_base
@@ -70,12 +72,12 @@ OpenView::OpenView(OpenView const& rhs)
 OpenView::OpenView(
     open_ledger_t,
     ReadView const* base,
-    Rules const& rules,
+    Rules rules,
     std::shared_ptr<void const> hold)
     : monotonic_resource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(
           initialBufferSize)}
     , txs_{monotonic_resource_.get()}
-    , rules_(rules)
+    , rules_(std::move(rules))
     , header_(base->header())
     , base_(base)
     , hold_(std::move(hold))
@@ -185,7 +187,7 @@ OpenView::txsEnd() const -> std::unique_ptr<txs_type::iter_base>
 bool
 OpenView::txExists(key_type const& key) const
 {
-    return txs_.find(key) != txs_.end();
+    return txs_.contains(key);
 }
 
 auto
@@ -198,9 +200,13 @@ OpenView::txRead(key_type const& key) const -> tx_type
     auto stx = std::make_shared<STTx const>(SerialIter{item.txn->slice()});
     decltype(tx_type::second) sto;
     if (item.meta)
+    {
         sto = std::make_shared<STObject const>(SerialIter{item.meta->slice()}, sfMetadata);
+    }
     else
+    {
         sto = nullptr;
+    }
     return {std::move(stx), std::move(sto)};
 }
 

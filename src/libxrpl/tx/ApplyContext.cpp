@@ -39,7 +39,7 @@ ApplyContext::discard()
 std::optional<TxMeta>
 ApplyContext::apply(TER ter)
 {
-    return view_->apply(base_, tx, ter, parentBatchId_, flags_ & tapDRY_RUN, journal);
+    return view_->apply(base_, tx, ter, parentBatchId_, (flags_ & tapDRY_RUN) != 0u, journal);
 }
 
 std::size_t
@@ -97,7 +97,7 @@ ApplyContext::checkInvariantsHelper(
         // short-circuits). While the logic is still correct, the log
         // message won't be. Every failed invariant should write to the log,
         // not just the first one.
-        std::array<bool, sizeof...(Is)> finalizers{
+        std::array<bool, sizeof...(Is)> const finalizers{
             {std::get<Is>(checkers).finalize(tx, result, fee, *view_, journal)...}};
 
         // call each check's finalizer to see that it passes
@@ -129,7 +129,7 @@ ApplyContext::checkInvariants(TER const result, XRPAmount const fee)
         "xrpl::ApplyContext::checkInvariants : is tesSUCCESS or tecCLAIM");
 
     return checkInvariantsHelper(
-        result, fee, std::make_index_sequence<std::tuple_size<InvariantChecks>::value>{});
+        result, fee, std::make_index_sequence<std::tuple_size_v<InvariantChecks>>{});
 }
 
 }  // namespace xrpl

@@ -24,7 +24,7 @@ canHaveNFTokenOfferID(
         return false;
 
     TxType const tt = serializedTx->getTxnType();
-    if (!(tt == ttNFTOKEN_MINT && serializedTx->isFieldPresent(sfAmount)) &&
+    if ((tt != ttNFTOKEN_MINT || !serializedTx->isFieldPresent(sfAmount)) &&
         tt != ttNFTOKEN_CREATE_OFFER)
         return false;
 

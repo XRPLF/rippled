@@ -23,6 +23,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 
+#include <algorithm>
 #include <utility>
 #include <vector>
 
@@ -108,8 +109,7 @@ public:
 
     txs_iter_impl(txs_iter_impl const&) = default;
 
-    txs_iter_impl(bool metadata, SHAMap::const_iterator iter)
-        : metadata_(metadata), iter_(std::move(iter))
+    txs_iter_impl(bool metadata, SHAMap::const_iterator iter) : metadata_(metadata), iter_(iter)
     {
     }
 
@@ -180,7 +180,7 @@ Ledger::Ledger(
     {
         auto sle = std::make_shared<SLE>(keylet::fees());
         // Whether featureXRPFees is supported will depend on startup options.
-        if (std::find(amendments.begin(), amendments.end(), featureXRPFees) != amendments.end())
+        if (std::ranges::find(amendments, featureXRPFees) != amendments.end())
         {
             sle->at(sfBaseFeeDrops) = config.FEES.reference_fee;
             sle->at(sfReserveBaseDrops) = config.FEES.account_reserve;
@@ -597,9 +597,13 @@ Ledger::setup()
                     if (src)
                     {
                         if (src->native())
+                        {
                             dest = src->xrp();
+                        }
                         else
+                        {
                             ret = false;
+                        }
                     }
                 };
                 assign(fees_.base, baseFeeXRP);
@@ -608,11 +612,15 @@ Ledger::setup()
                 newFees = baseFeeXRP || reserveBaseXRP || reserveIncrementXRP;
             }
             if (oldFees && newFees)
+            {
                 // Should be all of one or the other, but not both
                 ret = false;
+            }
             if (!rules_.enabled(featureXRPFees) && newFees)
+            {
                 // Can't populate the new fees before the amendment is enabled
                 ret = false;
+            }
         }
     }
     catch (SHAMapMissingNode const&)
@@ -724,7 +732,7 @@ Ledger::updateNegativeUNL()
     if (sle->isFieldPresent(sfDisabledValidators))
     {
         auto const& oldNUnl = sle->getFieldArray(sfDisabledValidators);
-        for (auto v : oldNUnl)
+        for (auto const& v : oldNUnl)
         {
             if (hasToReEnable && v.isFieldPresent(sfPublicKey) &&
                 v.getFieldVL(sfPublicKey) == sle->getFieldVL(sfValidatorToReEnable))
@@ -770,9 +778,10 @@ Ledger::walkLedger(beast::Journal j, bool parallel) const
     else
     {
         if (parallel)
+        {
             return stateMap_.walkMapParallel(missingNodes1, 32);
-        else
-            stateMap_.walkMap(missingNodes1, 32);
+        }
+        stateMap_.walkMap(missingNodes1, 32);
     }
 
     if (!missingNodes1.empty())
@@ -837,7 +846,7 @@ Ledger::updateSkipList()
     if (header_.seq == 0)  // genesis ledger has no previous ledger
         return;
 
-    std::uint32_t prevIndex = header_.seq - 1;
+    std::uint32_t const prevIndex = header_.seq - 1;
 
     // update record of every 256th ledger
     if ((prevIndex & 0xff) == 0)
@@ -846,7 +855,7 @@ Ledger::updateSkipList()
         auto sle = peek(k);
         std::vector<uint256> hashes;
 
-        bool created;
+        bool created = false;
         if (!sle)
         {
             sle = std::make_shared<SLE>(k);
@@ -864,16 +873,20 @@ Ledger::updateSkipList()
         sle->setFieldV256(sfHashes, STVector256(hashes));
         sle->setFieldU32(sfLastLedgerSequence, prevIndex);
         if (created)
+        {
             rawInsert(sle);
+        }
         else
+        {
             rawReplace(sle);
+        }
     }
 
     // update record of past 256 ledger
     auto const k = keylet::skip();
     auto sle = peek(k);
     std::vector<uint256> hashes;
-    bool created;
+    bool created = false;
     if (!sle)
     {
         sle = std::make_shared<SLE>(k);
@@ -891,9 +904,13 @@ Ledger::updateSkipList()
     sle->setFieldV256(sfHashes, STVector256(hashes));
     sle->setFieldU32(sfLastLedgerSequence, prevIndex);
     if (created)
+    {
         rawInsert(sle);
+    }
     else
+    {
         rawReplace(sle);
+    }
 }
 
 bool
@@ -1003,7 +1020,7 @@ Ledger::invariants() const
 std::shared_ptr<Ledger>
 loadLedgerHelper(LedgerHeader const& info, Application& app, bool acquire)
 {
-    bool loaded;
+    bool loaded = false;
     auto ledger = std::make_shared<Ledger>(
         info, loaded, acquire, app.config(), app.getNodeFamily(), app.journal("Ledger"));
 

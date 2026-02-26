@@ -15,8 +15,7 @@
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 
-namespace xrpl {
-namespace RPC {
+namespace xrpl::RPC {
 
 std::uint64_t
 getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID)
@@ -24,8 +23,10 @@ getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID)
     if (sle->getType() == ltRIPPLE_STATE)
     {
         if (sle->getFieldAmount(sfLowLimit).getIssuer() == accountID)
+        {
             return sle->getFieldU64(sfLowNode);
-        else if (sle->getFieldAmount(sfHighLimit).getIssuer() == accountID)
+        }
+        if (sle->getFieldAmount(sfHighLimit).getIssuer() == accountID)
             return sle->getFieldU64(sfHighNode);
     }
 
@@ -46,7 +47,7 @@ isRelatedToAccount(
         return (sle->getFieldAmount(sfLowLimit).getIssuer() == accountID) ||
             (sle->getFieldAmount(sfHighLimit).getIssuer() == accountID);
     }
-    else if (sle->isFieldPresent(sfAccount))
+    if (sle->isFieldPresent(sfAccount))
     {
         // If there's an sfAccount present, also test the sfDestination, if
         // present. This will match objects such as Escrows (ltESCROW), Payment
@@ -96,7 +97,7 @@ readLimitField(unsigned int& limit, Tuning::LimitRange const& range, JsonContext
         return std::nullopt;
 
     auto const& jvLimit = context.params[jss::limit];
-    if (!(jvLimit.isUInt() || (jvLimit.isInt() && jvLimit.asInt() >= 0)))
+    if (!jvLimit.isUInt() && (!jvLimit.isInt() || jvLimit.asInt() < 0))
         return RPC::expected_field_error(jss::limit, "unsigned integer");
 
     limit = jvLimit.asUInt();
@@ -139,7 +140,7 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error)
         {jss::seed_hex.c_str(), [](std::string const& s) {
              uint128 i;
              if (i.parseHex(s))
-                 return std::optional<Seed>(Slice(i.data(), i.size()));
+                 return std::optional<Seed>(Slice(i.data(), uint128::size()));
              return std::optional<Seed>{};
          }}};
 
@@ -234,9 +235,13 @@ keypairForSignature(Json::Value const& params, Json::Value& error, unsigned int 
         if (!keyType)
         {
             if (apiVersion > 1u)
+            {
                 error = RPC::make_error(rpcBAD_KEY_TYPE);
+            }
             else
+            {
                 error = RPC::invalid_field_error(jss::key_type);
+            }
             return {};
         }
 
@@ -279,7 +284,9 @@ keypairForSignature(Json::Value const& params, Json::Value& error, unsigned int 
     if (!seed)
     {
         if (has_key_type)
+        {
             seed = getSeedFromRPC(params, error);
+        }
         else
         {
             if (!params[jss::secret].isString())
@@ -374,5 +381,4 @@ isAccountObjectsValidType(LedgerEntryType const& type)
     }
 }
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

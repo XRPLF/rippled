@@ -74,7 +74,7 @@ struct Config
 
     /** Write the configuration into a property stream */
     void
-    onWrite(beast::PropertyStream::Map& map);
+    onWrite(beast::PropertyStream::Map& map) const;
 
     /** Make PeerFinder::Config from configuration parameters
      * @param config server's configuration
@@ -101,7 +101,7 @@ struct Endpoint
 {
     Endpoint() = default;
 
-    Endpoint(beast::IP::Endpoint const& ep, std::uint32_t hops_);
+    Endpoint(beast::IP::Endpoint ep, std::uint32_t hops_);
 
     std::uint32_t hops = 0;
     beast::IP::Endpoint address;

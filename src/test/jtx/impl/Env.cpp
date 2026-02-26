@@ -30,9 +30,7 @@
 #include <memory>
 #include <source_location>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 //------------------------------------------------------------------------------
 
@@ -76,7 +74,7 @@ Env::AppBundle::~AppBundle()
     client.reset();
     // Make sure all jobs finish, otherwise tests
     // might not get the coverage they expect.
-    if (app)
+    if (app != nullptr)
     {
         app->getJobQueue().rendezvous();
         app->signalStop("~AppBundle");
@@ -107,7 +105,9 @@ Env::close(NetClock::time_point closeTime, std::optional<std::chrono::millisecon
     // Go through the rpc interface unless we need to simulate
     // a specific consensus delay.
     if (consensusDelay)
+    {
         app().getOPs().acceptLedger(consensusDelay);
+    }
     else
     {
         auto resp = rpc("ledger_accept");
@@ -115,11 +115,17 @@ Env::close(NetClock::time_point closeTime, std::optional<std::chrono::millisecon
         {
             std::string reason = "internal error";
             if (resp.isMember("error_what"))
+            {
                 reason = resp["error_what"].asString();
+            }
             else if (resp.isMember("error_message"))
+            {
                 reason = resp["error_message"].asString();
+            }
             else if (resp.isMember("error"))
+            {
                 reason = resp["error"].asString();
+            }
 
             JLOG(journal.error()) << "Env::close() failed: " << reason;
             res = false;
@@ -199,16 +205,14 @@ Env::balance(Account const& account, MPTIssue const& mptIssue) const
         STAmount const amount{mptIssue, sle->getFieldU64(sfOutstandingAmount), 0, true};
         return {amount, lookup(issuer).name()};
     }
-    else
-    {
-        // Holder balance
-        auto const sle = le(keylet::mptoken(id, account));
-        if (!sle)
-            return {STAmount(mptIssue, 0), account.name()};
 
-        STAmount const amount{mptIssue, sle->getFieldU64(sfMPTAmount)};
-        return {amount, lookup(issuer).name()};
-    }
+    // Holder balance
+    auto const sle = le(keylet::mptoken(id, account));
+    if (!sle)
+        return {STAmount(mptIssue, 0), account.name()};
+
+    STAmount const amount{mptIssue, sle->getFieldU64(sfMPTAmount)};
+    return {amount, lookup(issuer).name()};
 }
 
 PrettyAmount
@@ -336,10 +340,14 @@ Env::parseResult(Json::Value const& jr)
             parsed.rpcCode.emplace(rpcSUCCESS);
         }
         else
+        {
             error(parsed, result);
+        }
     }
     else
+    {
         error(parsed, jr);
+    }
 
     return parsed;
 }
@@ -362,16 +370,14 @@ Env::submit(JTx const& jt, std::source_location const& loc)
 
             return jr;
         }
-        else
-        {
-            // Parsing failed or the JTx is
-            // otherwise missing the stx field.
-            parsedResult.ter = ter_ = temMALFORMED;
 
-            return Json::Value();
-        }
+        // Parsing failed or the JTx is
+        // otherwise missing the stx field.
+        parsedResult.ter = ter_ = temMALFORMED;
+
+        return Json::Value();
     }();
-    return postconditions(jt, parsedResult, jr, loc);
+    postconditions(jt, parsedResult, jr, loc);
 }
 
 void
@@ -409,7 +415,7 @@ Env::sign_and_submit(JTx const& jt, Json::Value params, std::source_location con
     test.expect(parsedResult.ter, "ter uninitialized!");
     ter_ = parsedResult.ter.value_or(telENV_RPC_FAILED);
 
-    return postconditions(jt, parsedResult, jr, loc);
+    postconditions(jt, parsedResult, jr, loc);
 }
 
 void
@@ -461,7 +467,7 @@ Env::postconditions(
         // we didn't get the expected result.
         return;
     }
-    if (trace_)
+    if (trace_ != 0)
     {
         if (trace_ > 0)
             --trace_;
@@ -504,7 +510,7 @@ Env::autofill_sig(JTx& jt)
 {
     auto& jv = jt.jv;
 
-    scope_success success([&]() {
+    scope_success const success([&]() {
         // Call all the post-signers after the main signers or autofill are done
         for (auto const& signer : jt.postSigners)
             signer(*this, jt);
@@ -533,9 +539,13 @@ Env::autofill_sig(JTx& jt)
     }
     auto const ar = le(account);
     if (ar && ar->isFieldPresent(sfRegularKey))
+    {
         jtx::sign(jv, lookup(ar->getAccountID(sfRegularKey)));
+    }
     else
+    {
         jtx::sign(jv, account);
+    }
 }
 
 void
@@ -549,7 +559,7 @@ Env::autofill(JTx& jt)
 
     if (jt.fill_netid)
     {
-        uint32_t networkID = app().getNetworkIDService().getNetworkID();
+        uint32_t const networkID = app().getNetworkIDService().getNetworkID();
         if (!jv.isMember(jss::NetworkID) && networkID > 1024)
             jv[jss::NetworkID] = std::to_string(networkID);
     }
@@ -654,6 +664,4 @@ Env::disableFeature(uint256 const feature)
     app().config().features.erase(feature);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

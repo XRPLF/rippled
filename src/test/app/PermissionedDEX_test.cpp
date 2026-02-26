@@ -27,20 +27,19 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 using namespace jtx;
 
 class PermissionedDEX_test : public beast::unit_test::suite
 {
-    [[nodiscard]] bool
+    [[nodiscard]] static bool
     offerExists(Env const& env, Account const& account, std::uint32_t offerSeq)
     {
         return static_cast<bool>(env.le(keylet::offer(account.id(), offerSeq)));
     }
 
-    [[nodiscard]] bool
+    [[nodiscard]] static bool
     checkOffer(
         Env const& env,
         Account const& account,
@@ -120,13 +119,13 @@ class PermissionedDEX_test : public beast::unit_test::suite
         return true;
     }
 
-    uint256
+    static uint256
     getBookDirKey(Book const& book, STAmount const& takerPays, STAmount const& takerGets)
     {
         return keylet::quality(keylet::book(book), getRate(takerGets, takerPays)).key;
     }
 
-    std::optional<uint256>
+    static std::optional<uint256>
     getDefaultOfferDirKey(Env const& env, Account const& account, std::uint32_t offerSeq)
     {
         if (auto const sle = env.le(keylet::offer(account.id(), offerSeq)))
@@ -135,7 +134,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
         return {};
     }
 
-    [[nodiscard]] bool
+    [[nodiscard]] static bool
     checkDirectorySize(Env const& env, uint256 directory, std::uint32_t dirSize)
     {
         std::optional<std::uint64_t> pageIndex{0};
@@ -150,7 +149,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             pageIndex = (*page)[~sfIndexNext];
             dirCnt += (*page)[sfIndexes].size();
 
-        } while (pageIndex.value_or(0));
+        } while (pageIndex.value_or(0) != 0u);
 
         return dirCnt == dirSize;
     }
@@ -182,7 +181,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
                 PermissionedDEX(env);
 
             // create devin account who is not part of the domain
-            Account devin("devin");
+            Account const devin("devin");
             env.fund(XRP(1000), devin);
             env.close();
             env.trust(USD(1000), devin);
@@ -215,7 +214,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
                 PermissionedDEX(env);
 
             // create devin account who is not part of the domain
-            Account devin("devin");
+            Account const devin("devin");
             env.fund(XRP(1000), devin);
             env.close();
             env.trust(USD(1000), devin);
@@ -401,7 +400,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             env.close();
 
             // create devin account who is not part of the domain
-            Account devin("devin");
+            Account const devin("devin");
             env.fund(XRP(1000), devin);
             env.close();
             env.trust(USD(1000), devin);
@@ -447,7 +446,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             env.close();
 
             // create devin account who is not part of the domain
-            Account devin("devin");
+            Account const devin("devin");
             env.fund(XRP(1000), devin);
             env.close();
             env.trust(USD(1000), devin);
@@ -637,7 +636,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
             // Fund devin and create USD trustline
             Account badDomainOwner("badDomainOwner");
-            Account devin("devin");
+            Account const devin("devin");
             env.fund(XRP(1000), badDomainOwner, devin);
             env.close();
             env.trust(USD(1000), devin);
@@ -646,7 +645,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             env.close();
 
             auto const badCredType = "badCred";
-            pdomain::Credentials credentials{{badDomainOwner, badCredType}};
+            pdomain::Credentials const credentials{{badDomainOwner, badCredType}};
             env(pdomain::setTx(badDomainOwner, credentials));
 
             auto objects = pdomain::getObjects(badDomainOwner, env);
@@ -693,7 +692,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             env.close();
 
             // fund devin but don't create a USD trustline with gateway
-            Account devin("devin");
+            Account const devin("devin");
             env.fund(XRP(1000), devin);
             env.close();
 
@@ -716,7 +715,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
                 PermissionedDEX(env);
 
             // create devin account who is not part of the domain
-            Account devin("devin");
+            Account const devin("devin");
             env.fund(XRP(1000), devin);
             env.close();
             env.trust(USD(1000), devin);
@@ -913,7 +912,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
         Env env(*this, features);
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
             PermissionedDEX(env);
-        AMM amm(env, alice, XRP(10), USD(50));
+        AMM const amm(env, alice, XRP(10), USD(50));
 
         // a domain payment isn't able to consume AMM
         env(pay(bob, carol, USD(5)),
@@ -1157,12 +1156,12 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
             // Fund accounts
             Account badDomainOwner("badDomainOwner");
-            Account devin("devin");
+            Account const devin("devin");
             env.fund(XRP(1000), badDomainOwner, devin);
             env.close();
 
             auto const badCredType = "badCred";
-            pdomain::Credentials credentials{{badDomainOwner, badCredType}};
+            pdomain::Credentials const credentials{{badDomainOwner, badCredType}};
             env(pdomain::setTx(badDomainOwner, credentials));
 
             auto objects = pdomain::getObjects(badDomainOwner, env);
@@ -1290,8 +1289,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         std::vector<std::uint32_t> offerSeqs;
         offerSeqs.reserve(100);
 
-        Book domainBook{Issue(XRP), Issue(USD), domainID};
-        Book openBook{Issue(XRP), Issue(USD), std::nullopt};
+        Book const domainBook{Issue(XRP), Issue(USD), domainID};
+        Book const openBook{Issue(XRP), Issue(USD), std::nullopt};
 
         auto const domainDir = getBookDirKey(domainBook, XRP(10), USD(10));
         auto const openDir = getBookDirKey(openBook, XRP(10), USD(10));
@@ -1391,5 +1390,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(PermissionedDEX, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -1,9 +1,6 @@
 #include <test/jtx.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-namespace pdomain {
+namespace xrpl::test::jtx::pdomain {
 
 // helpers
 // Make json for PermissionedDomainSet transaction
@@ -148,7 +145,4 @@ getNewDomain(std::shared_ptr<STObject const> const& meta)
     return ret;
 }
 
-}  // namespace pdomain
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::pdomain

@@ -9,9 +9,9 @@
 #include <xrpl/nodestore/Manager.h>
 #include <xrpl/rdb/DatabaseCon.h>
 
-namespace xrpl {
+#include <algorithm>
 
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 class Database_test : public TestBase
 {
@@ -191,7 +191,7 @@ public:
 
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -220,7 +220,7 @@ public:
 
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -249,7 +249,7 @@ public:
 
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -278,7 +278,7 @@ public:
 
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -306,7 +306,7 @@ public:
 
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -334,7 +334,7 @@ public:
 
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -362,7 +362,7 @@ public:
 
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -390,7 +390,7 @@ public:
 
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -445,7 +445,7 @@ public:
             }
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -468,7 +468,7 @@ public:
             }
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -491,7 +491,7 @@ public:
             }
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -515,7 +515,7 @@ public:
     {
         DummyScheduler scheduler;
 
-        beast::temp_dir node_db;
+        beast::temp_dir const node_db;
         Section srcParams;
         srcParams.set("type", srcBackendType);
         srcParams.set("path", node_db.path());
@@ -538,7 +538,7 @@ public:
                 Manager::instance().make_Database(megabytes(4), scheduler, 2, srcParams, journal_);
 
             // Set up the destination database
-            beast::temp_dir dest_db;
+            beast::temp_dir const dest_db;
             Section destParams;
             destParams.set("type", destBackendType);
             destParams.set("path", dest_db.path());
@@ -556,8 +556,8 @@ public:
         }
 
         // Canonicalize the source and destination batches
-        std::sort(batch.begin(), batch.end(), LessThan{});
-        std::sort(copy.begin(), copy.end(), LessThan{});
+        std::ranges::sort(batch, LessThan{});
+        std::ranges::sort(copy, LessThan{});
         BEAST_EXPECT(areBatchesEqual(batch, copy));
     }
 
@@ -572,11 +572,11 @@ public:
     {
         DummyScheduler scheduler;
 
-        std::string s = "NodeStore backend '" + type + "'";
+        std::string const s = "NodeStore backend '" + type + "'";
 
         testcase(s);
 
-        beast::temp_dir node_db;
+        beast::temp_dir const node_db;
         Section nodeParams;
         nodeParams.set("type", type);
         nodeParams.set("path", node_db.path());
@@ -621,8 +621,8 @@ public:
             fetchCopyOfBatch(*db, &copy, batch);
 
             // Canonicalize the source and destination batches
-            std::sort(batch.begin(), batch.end(), LessThan{});
-            std::sort(copy.begin(), copy.end(), LessThan{});
+            std::ranges::sort(batch, LessThan{});
+            std::ranges::sort(copy, LessThan{});
             BEAST_EXPECT(areBatchesEqual(batch, copy));
         }
 
@@ -639,7 +639,7 @@ public:
             try
             {
                 nodeParams.set("earliest_seq", "0");
-                std::unique_ptr<Database> db = Manager::instance().make_Database(
+                std::unique_ptr<Database> const db = Manager::instance().make_Database(
                     megabytes(4), scheduler, 2, nodeParams, journal_);
             }
             catch (std::runtime_error const& e)
@@ -662,7 +662,7 @@ public:
             {
                 // Set to default earliest ledger sequence
                 nodeParams.set("earliest_seq", std::to_string(XRP_LEDGER_EARLIEST_SEQ));
-                std::unique_ptr<Database> db2 = Manager::instance().make_Database(
+                std::unique_ptr<Database> const db2 = Manager::instance().make_Database(
                     megabytes(4), scheduler, 2, nodeParams, journal_);
             }
             catch (std::runtime_error const& e)
@@ -709,5 +709,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Database, nodestore, xrpl);
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

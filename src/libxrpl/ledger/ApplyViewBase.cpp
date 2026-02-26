@@ -1,7 +1,6 @@
 #include <xrpl/ledger/detail/ApplyViewBase.h>
 
-namespace xrpl {
-namespace detail {
+namespace xrpl::detail {
 
 ApplyViewBase::ApplyViewBase(ReadView const* base, ApplyFlags flags) : flags_(flags), base_(base)
 {
@@ -152,5 +151,4 @@ ApplyViewBase::rawDestroyXRP(XRPAmount const& fee)
     items_.destroyXRP(fee);
 }
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail

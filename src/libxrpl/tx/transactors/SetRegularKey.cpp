@@ -17,7 +17,7 @@ SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
         {
             auto const sle = view.read(keylet::account(id));
 
-            if (sle && (!(sle->getFlags() & lsfPasswordSpent)))
+            if (sle && ((sle->getFlags() & lsfPasswordSpent) == 0u))
             {
                 // flag is armed and they signed with the right account
                 return XRPAmount{0};

@@ -14,8 +14,7 @@
 
 #include <string>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class JSONRPCClient : public AbstractClient
 {
@@ -35,8 +34,10 @@ class JSONRPCClient : public AbstractClient
                 continue;
             using namespace boost::asio::ip;
             if (pp.ip && pp.ip->is_unspecified())
+            {
                 *pp.ip = pp.ip->is_v6() ? address{address_v6::loopback()}
                                         : address{address_v4::loopback()};
+            }
 
             if (!pp.port)
                 Throw<std::runtime_error>("Use fixConfigPorts with auto ports");
@@ -146,5 +147,4 @@ makeJSONRPCClient(Config const& cfg, unsigned rpc_version)
     return std::make_unique<JSONRPCClient>(cfg, rpc_version);
 }
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -16,7 +16,7 @@ public:
     Charge() = delete;
 
     /** Create a charge with the specified cost and name. */
-    Charge(value_type cost, std::string const& label = std::string());
+    Charge(value_type cost, std::string label = std::string());
 
     /** Return the human readable label associated with the charge. */
     std::string const&

@@ -13,7 +13,7 @@ struct TER_test : public beast::unit_test::suite
     {
         for (auto i = -400; i < 400; ++i)
         {
-            TER t = TER::fromInt(i);
+            TER const t = TER::fromInt(i);
             auto inRange = isTelLocal(t) || isTemMalformed(t) || isTefFailure(t) || isTerRetry(t) ||
                 isTesSuccess(t) || isTecClaim(t);
 
@@ -49,20 +49,18 @@ struct TER_test : public beast::unit_test::suite
             using To_t = std::decay_t<decltype(std::get<I1>(tup))>;
             using From_t = std::decay_t<decltype(std::get<I2>(tup))>;
             static_assert(
-                std::is_same<From_t, To_t>::value == std::is_convertible<From_t, To_t>::value,
-                "Convert err");
+                std::is_same_v<From_t, To_t> == std::is_convertible_v<From_t, To_t>, "Convert err");
             static_assert(
-                std::is_same<To_t, From_t>::value == std::is_constructible<To_t, From_t>::value,
+                std::is_same_v<To_t, From_t> == std::is_constructible_v<To_t, From_t>,
                 "Construct err");
             static_assert(
-                std::is_same<To_t, From_t>::value ==
-                    std::is_assignable<To_t&, From_t const&>::value,
+                std::is_same_v<To_t, From_t> == std::is_assignable_v<To_t&, From_t const&>,
                 "Assign err");
 
             // Assignment or conversion from integer to type should never work.
-            static_assert(!std::is_convertible<int, To_t>::value, "Convert err");
-            static_assert(!std::is_constructible<To_t, int>::value, "Construct err");
-            static_assert(!std::is_assignable<To_t&, int const&>::value, "Assign err");
+            static_assert(!std::is_convertible_v<int, To_t>, "Convert err");
+            static_assert(!std::is_constructible_v<To_t, int>, "Construct err");
+            static_assert(!std::is_assignable_v<To_t&, int const&>, "Assign err");
         }
     };
 
@@ -75,7 +73,7 @@ struct TER_test : public beast::unit_test::suite
     std::enable_if_t<I1 != 0>
     testIterate(Tup const& tup, beast::unit_test::suite& s)
     {
-        Func<I1, I2> func;
+        Func<I1, I2> const func;
         func(tup, s);
         testIterate<I1 - 1, I2, Func>(tup, s);
     }
@@ -89,9 +87,9 @@ struct TER_test : public beast::unit_test::suite
     std::enable_if_t<I1 == 0 && I2 != 0>
     testIterate(Tup const& tup, beast::unit_test::suite& s)
     {
-        Func<I1, I2> func;
+        Func<I1, I2> const func;
         func(tup, s);
-        testIterate<std::tuple_size<Tup>::value - 1, I2 - 1, Func>(tup, s);
+        testIterate<std::tuple_size_v<Tup> - 1, I2 - 1, Func>(tup, s);
     }
 
     // Finish iteration over the tuple.
@@ -103,7 +101,7 @@ struct TER_test : public beast::unit_test::suite
     std::enable_if_t<I1 == 0 && I2 == 0>
     testIterate(Tup const& tup, beast::unit_test::suite& s)
     {
-        Func<I1, I2> func;
+        Func<I1, I2> const func;
         func(tup, s);
     }
 
@@ -116,7 +114,7 @@ struct TER_test : public beast::unit_test::suite
         // Examples of each kind of enum.
         static auto const terEnums = std::make_tuple(
             telLOCAL_ERROR, temMALFORMED, tefFAILURE, terRETRY, tesSUCCESS, tecCLAIM);
-        static int const hiIndex{std::tuple_size<decltype(terEnums)>::value - 1};
+        static int const hiIndex{std::tuple_size_v<decltype(terEnums)> - 1};
 
         // Verify that enums cannot be converted to other enum types.
         testIterate<hiIndex, hiIndex, NotConvertible>(terEnums, *this);
@@ -125,9 +123,9 @@ struct TER_test : public beast::unit_test::suite
         auto isConvertible = [](auto from, auto to) {
             using From_t = std::decay_t<decltype(from)>;
             using To_t = std::decay_t<decltype(to)>;
-            static_assert(std::is_convertible<From_t, To_t>::value, "Convert err");
-            static_assert(std::is_constructible<To_t, From_t>::value, "Construct err");
-            static_assert(std::is_assignable<To_t&, From_t const&>::value, "Assign err");
+            static_assert(std::is_convertible_v<From_t, To_t>, "Convert err");
+            static_assert(std::is_constructible_v<To_t, From_t>, "Construct err");
+            static_assert(std::is_assignable_v<To_t&, From_t const&>, "Assign err");
         };
 
         // Verify the right types convert to NotTEC.
@@ -143,9 +141,9 @@ struct TER_test : public beast::unit_test::suite
         auto notConvertible = [](auto from, auto to) {
             using To_t = std::decay_t<decltype(to)>;
             using From_t = std::decay_t<decltype(from)>;
-            static_assert(!std::is_convertible<From_t, To_t>::value, "Convert err");
-            static_assert(!std::is_constructible<To_t, From_t>::value, "Construct err");
-            static_assert(!std::is_assignable<To_t&, From_t const&>::value, "Assign err");
+            static_assert(!std::is_convertible_v<From_t, To_t>, "Convert err");
+            static_assert(!std::is_constructible_v<To_t, From_t>, "Construct err");
+            static_assert(!std::is_assignable_v<To_t&, From_t const&>, "Assign err");
         };
 
         // Verify types that shouldn't convert to NotTEC.
@@ -187,17 +185,17 @@ struct TER_test : public beast::unit_test::suite
             auto const lhs = std::get<I1>(tup);
             auto const rhs = std::get<I2>(tup);
 
-            static_assert(std::is_same<decltype(operator==(lhs, rhs)), bool>::value, "== err");
+            static_assert(std::is_same_v<decltype(operator==(lhs, rhs)), bool>, "== err");
 
-            static_assert(std::is_same<decltype(operator!=(lhs, rhs)), bool>::value, "!= err");
+            static_assert(std::is_same_v<decltype(operator!=(lhs, rhs)), bool>, "!= err");
 
-            static_assert(std::is_same<decltype(operator<(lhs, rhs)), bool>::value, "< err");
+            static_assert(std::is_same_v<decltype(operator<(lhs, rhs)), bool>, "< err");
 
-            static_assert(std::is_same<decltype(operator<=(lhs, rhs)), bool>::value, "<= err");
+            static_assert(std::is_same_v<decltype(operator<=(lhs, rhs)), bool>, "<= err");
 
-            static_assert(std::is_same<decltype(operator>(lhs, rhs)), bool>::value, "> err");
+            static_assert(std::is_same_v<decltype(operator>(lhs, rhs)), bool>, "> err");
 
-            static_assert(std::is_same<decltype(operator>=(lhs, rhs)), bool>::value, ">= err");
+            static_assert(std::is_same_v<decltype(operator>=(lhs, rhs)), bool>, ">= err");
 
             // Make sure a sampling of TER types exhibit the expected behavior
             // for all comparison operators.
@@ -225,7 +223,7 @@ struct TER_test : public beast::unit_test::suite
             tecCLAIM,
             NotTEC{telLOCAL_ERROR},
             TER{tecCLAIM});
-        static int const hiIndex{std::tuple_size<decltype(ters)>::value - 1};
+        static int const hiIndex{std::tuple_size_v<decltype(ters)> - 1};
 
         // Verify that all types in the ters tuple can be compared with all
         // the other types in ters.

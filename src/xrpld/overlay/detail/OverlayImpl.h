@@ -120,7 +120,7 @@ private:
 public:
     OverlayImpl(
         Application& app,
-        Setup const& setup,
+        Setup setup,
         ServerHandler& serverHandler,
         Resource::Manager& resourceManager,
         Resolver& resolver,
@@ -429,7 +429,7 @@ private:
         http_request_type const& request,
         address_type remote_address);
 
-    std::shared_ptr<Writer>
+    static std::shared_ptr<Writer>
     makeErrorResponse(
         std::shared_ptr<PeerFinder::Slot> const& slot,
         http_request_type const& request,
@@ -474,7 +474,7 @@ private:
         Controlled through the config section [crawl] overlay=[0|1]
     */
     Json::Value
-    getOverlayInfo();
+    getOverlayInfo() const;
 
     /** Returns information about the local server.
         Reported through the /crawl API
@@ -522,7 +522,7 @@ private:
 
     /** Send once a second transactions' hashes aggregated by peers. */
     void
-    sendTxQueue();
+    sendTxQueue() const;
 
     /** Check if peers stopped relaying messages
      * and if slots stopped receiving messages from the validator */

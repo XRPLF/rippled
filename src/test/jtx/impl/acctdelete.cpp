@@ -3,9 +3,7 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 // Delete account.  If successful transfer remaining XRP to dest.
 Json::Value
@@ -38,6 +36,4 @@ incLgrSeqForAccDel(jtx::Env& env, jtx::Account const& acc, std::uint32_t margin)
     env.test.BEAST_EXPECT(openLedgerSeq(env) == env.seq(acc) + 255 - margin);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

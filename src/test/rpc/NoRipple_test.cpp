@@ -3,9 +3,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-
-namespace test {
+namespace xrpl::test {
 
 class NoRipple_test : public beast::unit_test::suite
 {
@@ -234,9 +232,13 @@ public:
 
                 auto lines = env.rpc("json", "noripple_check", to_string(params));
                 if (apiVersion < 2u)
+                {
                     BEAST_EXPECT(lines[jss::result][jss::status] == "success");
+                }
                 else
+                {
                     BEAST_EXPECT(lines[jss::result][jss::error] == "invalidParams");
+                }
             }
         }
     }
@@ -261,5 +263,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(NoRipple, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

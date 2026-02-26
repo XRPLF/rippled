@@ -3,8 +3,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/Feature.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class CrossingLimits_test : public beast::unit_test::suite
 {
@@ -490,5 +489,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(CrossingLimits, app, xrpl, 10);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

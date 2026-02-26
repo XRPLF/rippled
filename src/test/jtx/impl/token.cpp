@@ -5,10 +5,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/transactors/NFT/NFTokenMint.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-namespace token {
+namespace xrpl::test::jtx::token {
 
 Json::Value
 mint(jtx::Account const& account, std::uint32_t nfTokenTaxon)
@@ -210,7 +207,4 @@ modify(jtx::Account const& account, uint256 const& nftokenID)
     return jv;
 }
 
-}  // namespace token
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::token

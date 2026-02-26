@@ -54,7 +54,7 @@ doGatewayBalances(RPC::JsonContext& context)
     auto id = parseBase58<AccountID>(strIdent);
     if (!id)
         return rpcError(rpcACT_MALFORMED);
-    auto const accountID{std::move(id.value())};
+    auto const accountID{id.value()};
     context.loadType = Resource::feeHeavyBurdenRPC;
 
     result[jss::account] = toBase58(accountID);
@@ -75,7 +75,7 @@ doGatewayBalances(RPC::JsonContext& context)
             {
                 if (auto id = parseBase58<AccountID>(j.asString()); id)
                 {
-                    hotWallets.insert(std::move(id.value()));
+                    hotWallets.insert(id.value());
                     return true;
                 }
             }
@@ -159,7 +159,7 @@ doGatewayBalances(RPC::JsonContext& context)
             if (!rs)
                 return;
 
-            int balSign = rs->getBalance().signum();
+            int const balSign = rs->getBalance().signum();
             if (balSign == 0)
                 return;
 
@@ -169,7 +169,7 @@ doGatewayBalances(RPC::JsonContext& context)
             // A positive balance means the cold wallet has an asset
             // (unusual)
 
-            if (hotWallets.count(peer) > 0)
+            if (hotWallets.contains(peer))
             {
                 // This is a specified hot wallet
                 hotBalances[peer].push_back(-rs->getBalance());

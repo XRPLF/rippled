@@ -3,9 +3,7 @@
 
 #include <xrpl/protocol/UintTypes.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 std::unordered_map<std::pair<std::string, KeyType>, Account, beast::uhash<>> Account::cache_;
 
@@ -79,6 +77,4 @@ Account::operator[](std::string const& s) const
     return IOU(*this, currency);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

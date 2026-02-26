@@ -69,7 +69,7 @@ CreateTicket::doApply()
             return tecINSUFFICIENT_RESERVE;
     }
 
-    beast::Journal viewJ{ctx_.registry.journal("View")};
+    beast::Journal const viewJ{ctx_.registry.journal("View")};
 
     // The starting ticket sequence is the same as the current account
     // root sequence.  Before we got here to doApply(), the transaction
@@ -87,7 +87,7 @@ CreateTicket::doApply()
     {
         std::uint32_t const curTicketSeq = firstTicketSeq + i;
         Keylet const ticketKeylet = keylet::ticket(account_, curTicketSeq);
-        SLE::pointer sleTicket = std::make_shared<SLE>(ticketKeylet);
+        SLE::pointer const sleTicket = std::make_shared<SLE>(ticketKeylet);
 
         sleTicket->setAccountID(sfAccount, account_);
         sleTicket->setFieldU32(sfTicketSequence, curTicketSeq);

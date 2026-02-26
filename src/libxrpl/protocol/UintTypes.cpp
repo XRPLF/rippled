@@ -63,7 +63,7 @@ to_string(Currency const& currency)
 bool
 to_currency(Currency& currency, std::string const& code)
 {
-    if (code.empty() || !code.compare(systemCurrencyCode()))
+    if (code.empty() || (code.compare(systemCurrencyCode()) == 0))
     {
         currency = beast::zero;
         return true;
@@ -77,7 +77,7 @@ to_currency(Currency& currency, std::string const& code)
 
         currency = beast::zero;
 
-        std::copy(code.begin(), code.end(), currency.begin() + detail::isoCodeOffset);
+        std::ranges::copy(code, currency.begin() + detail::isoCodeOffset);
 
         return true;
     }

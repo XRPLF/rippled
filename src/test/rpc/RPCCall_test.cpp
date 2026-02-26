@@ -14,8 +14,7 @@
 #include <initializer_list>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 struct RPCCallTestData
 {
@@ -5854,7 +5853,7 @@ public:
                 apiVersion <= RPC::apiMaximumValidVersion))
             return;
 
-        test::jtx::Env env(*this, makeNetworkConfig(11111));  // Used only for its Journal.
+        test::jtx::Env const env(*this, makeNetworkConfig(11111));  // Used only for its Journal.
 
         // For each RPCCall test.
         for (RPCCallTestData const& rpcCallTest : rpcCallTestArray)
@@ -5927,5 +5926,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(RPCCall, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

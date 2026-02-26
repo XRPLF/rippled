@@ -21,7 +21,7 @@ namespace detail {
 class ServerDefinitions
 {
 private:
-    std::string
+    static std::string
     // translate e.g. STI_LEDGERENTRY to LedgerEntry
     translate(std::string const& inp);
 
@@ -59,9 +59,10 @@ ServerDefinitions::translate(std::string const& inp)
     {
         if (contains("512") || contains("384") || contains("256") || contains("192") ||
             contains("160") || contains("128"))
+        {
             return replace("UINT", "Hash");
-        else
-            return replace("UINT", "UInt");
+        }
+        return replace("UINT", "UInt");
     }
 
     std::unordered_map<std::string, std::string> replacements{
@@ -87,7 +88,7 @@ ServerDefinitions::translate(std::string const& inp)
     // convert snake_case to CamelCase
     for (;;)
     {
-        pos = inpToProcess.find("_");
+        pos = inpToProcess.find('_');
         if (pos == std::string::npos)
             pos = inpToProcess.size();
         std::string token = inpToProcess.substr(0, pos);
@@ -98,7 +99,9 @@ ServerDefinitions::translate(std::string const& inp)
             out += token;
         }
         else
+        {
             out += token;
+        }
         if (pos == inpToProcess.size())
             break;
         inpToProcess = inpToProcess.substr(pos + 1);
@@ -115,7 +118,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
     std::map<int32_t, std::string> typeMap{{-1, "Done"}};
     for (auto const& [rawName, typeValue] : sTypeMap)
     {
-        std::string typeName = translate(std::string(rawName).substr(4) /* remove STI_ */);
+        std::string const typeName = translate(std::string(rawName).substr(4) /* remove STI_ */);
         defs_[jss::TYPES][typeName] = typeValue;
         typeMap[typeValue] = typeName;
     }
@@ -213,7 +216,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
 
     for (auto const& [code, f] : xrpl::SField::getKnownCodeToField())
     {
-        if (f->fieldName == "")
+        if (f->fieldName.empty())
             continue;
 
         Json::Value innerObj = Json::objectValue;

@@ -12,8 +12,7 @@
 #include <chrono>
 #include <sstream>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class LedgerHistory_test : public beast::unit_test::suite
 {
@@ -137,17 +136,17 @@ public:
             Env env{*this, envconfig(), std::make_unique<CheckMessageLogs>(msg, &found)};
             LedgerHistory lh{beast::insight::NullCollector::New(), env.app()};
 
-            Account alice{"A1"};
-            Account bob{"A2"};
+            Account const alice{"A1"};
+            Account const bob{"A2"};
             env.fund(XRP(1000), alice, bob);
             env.close();
 
             auto const ledgerBase = env.app().getLedgerMaster().getClosedLedger();
 
-            JTx txAlice = env.jt(noop(alice));
+            JTx const txAlice = env.jt(noop(alice));
             auto const ledgerA = makeLedger(ledgerBase, env, lh, 4s, txAlice.stx);
 
-            JTx txBob = env.jt(noop(bob));
+            JTx const txBob = env.jt(noop(bob));
             auto const ledgerB = makeLedger(ledgerBase, env, lh, 4s, txBob.stx);
 
             lh.builtLedger(ledgerA, txAlice.stx->getTransactionID(), {});
@@ -169,5 +168,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(LedgerHistory, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

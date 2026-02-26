@@ -4,8 +4,7 @@
 
 #include <set>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class Scheduler_test : public beast::unit_test::suite
 {
@@ -66,5 +65,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Scheduler, csf, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

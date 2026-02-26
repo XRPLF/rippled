@@ -17,8 +17,7 @@
 #include <exception>
 #include <memory>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 class NuDBBackend : public Backend
 {
@@ -214,11 +213,15 @@ public:
         for (auto const& h : hashes)
         {
             std::shared_ptr<NodeObject> nObj;
-            Status status = fetch(h->begin(), &nObj);
+            Status const status = fetch(h->begin(), &nObj);
             if (status != ok)
+            {
                 results.push_back({});
+            }
             else
+            {
                 results.push_back(nObj);
+            }
         }
 
         return {results, ok};
@@ -227,7 +230,7 @@ public:
     void
     do_insert(std::shared_ptr<NodeObject> const& no)
     {
-        EncodedBlob e(no);
+        EncodedBlob const e(no);
         nudb::error_code ec;
         nudb::detail::buffer bf;
         auto const result = nodeobject_compress(e.getData(), e.getSize(), bf);
@@ -239,7 +242,7 @@ public:
     void
     store(std::shared_ptr<NodeObject> const& no) override
     {
-        BatchWriteReport report;
+        BatchWriteReport report{};
         report.writeCount = 1;
         auto const start = std::chrono::steady_clock::now();
         do_insert(no);
@@ -251,7 +254,7 @@ public:
     void
     storeBatch(Batch const& batch) override
     {
-        BatchWriteReport report;
+        BatchWriteReport report{};
         report.writeCount = batch.size();
         auto const start = std::chrono::steady_clock::now();
         for (auto const& e : batch)
@@ -349,7 +352,7 @@ private:
         auto const kp = (folder / "nudb.key").string();
 
         std::size_t const defaultSize = nudb::block_size(kp);  // Default 4K from NuDB
-        std::size_t blockSize = defaultSize;
+        std::size_t const blockSize = defaultSize;
         std::string blockSizeStr;
 
         if (!get_if_exists(keyValues, "nudb_block_size", blockSizeStr))
@@ -430,8 +433,7 @@ public:
 void
 registerNuDBFactory(Manager& manager)
 {
-    static NuDBFactory instance{manager};
+    static NuDBFactory const instance{manager};
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

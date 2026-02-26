@@ -3,9 +3,7 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/SField.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 qualityInPercent::qualityInPercent(double percent)
     : qIn_(static_cast<std::uint32_t>((percent / 100) * QUALITY_ONE))
@@ -49,6 +47,4 @@ qualityOutPercent::operator()(Env&, JTx& jt) const
     insertQualityIntoJtx(sfQualityOut, qOut_, jt);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

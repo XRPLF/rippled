@@ -5,6 +5,7 @@
 #include <xrpl/protocol/nftPageMask.h>
 #include <xrpl/tx/transactors/NFT/NFTokenUtils.h>
 
+#include <algorithm>
 #include <initializer_list>
 
 namespace xrpl {
@@ -20,7 +21,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         noisy = true,
     };
 
-    void
+    static void
     printNFTPages(test::jtx::Env& env, Volume vol)
     {
         Json::Value jvParams;
@@ -46,7 +47,7 @@ class NFTokenDir_test : public beast::unit_test::suite
                 if (state[i].isMember(sfNFTokens.jsonName) &&
                     state[i][sfNFTokens.jsonName].isArray())
                 {
-                    std::uint32_t tokenCount = state[i][sfNFTokens.jsonName].size();
+                    std::uint32_t const tokenCount = state[i][sfNFTokens.jsonName].size();
                     std::cout << tokenCount << " NFtokens in page "
                               << state[i][jss::index].asString() << std::endl;
 
@@ -57,14 +58,18 @@ class NFTokenDir_test : public beast::unit_test::suite
                     else
                     {
                         if (tokenCount > 0)
+                        {
                             std::cout
                                 << "first: " << state[i][sfNFTokens.jsonName][0u].toStyledString()
                                 << std::endl;
+                        }
                         if (tokenCount > 1)
+                        {
                             std::cout
                                 << "last: "
                                 << state[i][sfNFTokens.jsonName][tokenCount - 1].toStyledString()
                                 << std::endl;
+                        }
                     }
                 }
             }
@@ -100,7 +105,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         nftIDs.reserve(nftCount);
         for (int i = 0; i < nftCount; ++i)
         {
-            std::uint32_t taxon = toUInt32(nft::cipheredTaxon(i, nft::toTaxon(0)));
+            std::uint32_t const taxon = toUInt32(nft::cipheredTaxon(i, nft::toTaxon(0)));
             nftIDs.emplace_back(token::getNextID(env, issuer, taxon, tfTransferable));
             env(token::mint(issuer, taxon), txflags(tfTransferable));
             env.close();
@@ -117,7 +122,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         }
 
         // Buyer accepts all of the offers in reverse order.
-        std::reverse(offers.begin(), offers.end());
+        std::ranges::reverse(offers);
         for (uint256 const& offer : offers)
         {
             env(token::acceptSellOffer(buyer, offer));
@@ -156,7 +161,7 @@ class NFTokenDir_test : public beast::unit_test::suite
             // Create accounts for all of the seeds and fund those accounts.
             std::vector<Account> accounts;
             accounts.reserve(seeds.size());
-            for (std::string_view seed : seeds)
+            for (std::string_view const seed : seeds)
             {
                 Account const& account =
                     accounts.emplace_back(Account::base58Seed, std::string(seed));
@@ -226,7 +231,7 @@ class NFTokenDir_test : public beast::unit_test::suite
             {
                 uint256 ownedID;
                 BEAST_EXPECT(ownedID.parseHex(ownedNFT[sfNFTokenID.jsonName].asString()));
-                auto const foundIter = std::find(nftIDs.begin(), nftIDs.end(), ownedID);
+                auto const foundIter = std::ranges::find(nftIDs, ownedID);
 
                 // Assuming we find the NFT, erase it so we know it's been
                 // found and can't be found again.
@@ -360,7 +365,7 @@ class NFTokenDir_test : public beast::unit_test::suite
             // Create accounts for all of the seeds and fund those accounts.
             std::vector<Account> accounts;
             accounts.reserve(seeds.size());
-            for (std::string_view seed : seeds)
+            for (std::string_view const seed : seeds)
             {
                 Account const& account =
                     accounts.emplace_back(Account::base58Seed, std::string(seed));
@@ -434,7 +439,7 @@ class NFTokenDir_test : public beast::unit_test::suite
             {
                 uint256 ownedID;
                 BEAST_EXPECT(ownedID.parseHex(ownedNFT[sfNFTokenID.jsonName].asString()));
-                auto const foundIter = std::find(nftIDs.begin(), nftIDs.end(), ownedID);
+                auto const foundIter = std::ranges::find(nftIDs, ownedID);
 
                 // Assuming we find the NFT, erase it so we know it's been
                 // found and can't be found again.
@@ -591,7 +596,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         // Create accounts for all of the seeds and fund those accounts.
         std::vector<Account> accounts;
         accounts.reserve(seeds.size());
-        for (std::string_view seed : seeds)
+        for (std::string_view const seed : seeds)
         {
             Account const& account = accounts.emplace_back(Account::base58Seed, std::string(seed));
             env.fund(XRP(10000), account);
@@ -672,7 +677,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         {
             uint256 ownedID;
             BEAST_EXPECT(ownedID.parseHex(ownedNFT[sfNFTokenID.jsonName].asString()));
-            auto const foundIter = std::find(nftIDs.begin(), nftIDs.end(), ownedID);
+            auto const foundIter = std::ranges::find(nftIDs, ownedID);
 
             // Assuming we find the NFT, erase it so we know it's been found
             // and can't be found again.
@@ -754,7 +759,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         // Create accounts for all of the seeds and fund those accounts.
         std::vector<Account> accounts;
         accounts.reserve(seeds.size());
-        for (std::string_view seed : seeds)
+        for (std::string_view const seed : seeds)
         {
             Account const& account = accounts.emplace_back(Account::base58Seed, std::string(seed));
             env.fund(XRP(10000), account);
@@ -779,7 +784,7 @@ class NFTokenDir_test : public beast::unit_test::suite
             for (Account const& account : accounts)
             {
                 // Mint the NFT.  Tweak the taxon so zero is always stored.
-                std::uint32_t taxon = toUInt32(nft::cipheredTaxon(i, nft::toTaxon(0)));
+                std::uint32_t const taxon = toUInt32(nft::cipheredTaxon(i, nft::toTaxon(0)));
 
                 uint256 const& nftID = nftIDsByPage[i].emplace_back(
                     token::getNextID(env, account, taxon, tfTransferable));
@@ -827,7 +832,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         // buyer accepts all of the offers that won't cause an overflow.
         // Fill the center and outsides first to exercise different boundary
         // cases.
-        for (int i : std::initializer_list<int>{3, 6, 0, 1, 2, 5, 4})
+        for (int const i : std::initializer_list<int>{3, 6, 0, 1, 2, 5, 4})
         {
             for (uint256 const& offer : offers[i])
             {

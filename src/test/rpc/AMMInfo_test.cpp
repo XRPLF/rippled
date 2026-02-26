@@ -6,8 +6,7 @@
 
 #include <unordered_map>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class AMMInfo_test : public jtx::AMMTestBase
 {
@@ -23,8 +22,10 @@ public:
         enum TestAccount { None, Alice, Bogie };
         auto accountId = [&](AMM const& ammAlice, TestAccount v) -> std::optional<AccountID> {
             if (v == Alice)
+            {
                 return ammAlice.ammAccount();
-            else if (v == Bogie)
+            }
+            if (v == Bogie)
                 return bogie;
             else
                 return std::nullopt;
@@ -185,9 +186,13 @@ public:
                     Account a(std::to_string(i));
                     votes.insert({a.human(), 50 * (i + 1)});
                     if (!features[fixAMMv1_3])
+                    {
                         fund(env, gw, {a}, {USD(10000)}, Fund::Acct);
+                    }
                     else
+                    {
                         fund(env, gw, {a}, {USD(10001)}, Fund::Acct);
+                    }
                     ammAlice.deposit(a, 10000000);
                     ammAlice.vote(a, 50 * (i + 1));
                 }
@@ -197,6 +202,7 @@ public:
                 env.fund(XRP(1000), bob, ed, bill);
                 env(ammAlice.bid({.bidMin = 100, .authAccounts = {carol, bob, ed, bill}}));
                 if (!features[fixAMMv1_3])
+                {
                     BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
                         XRP(80000),
                         USD(80000),
@@ -204,7 +210,9 @@ public:
                         std::nullopt,
                         std::nullopt,
                         ammAlice.ammAccount()));
+                }
                 else
+                {
                     BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
                         XRPAmount(80000000005),
                         STAmount{USD, UINT64_C(80'000'00000000005), -11},
@@ -212,6 +220,7 @@ public:
                         std::nullopt,
                         std::nullopt,
                         ammAlice.ammAccount()));
+                }
                 for (auto i = 0; i < 2; ++i)
                 {
                     std::unordered_set<std::string> authAccounts = {
@@ -322,5 +331,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(AMMInfo, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -10,7 +10,7 @@ namespace xrpl {
 
 namespace RPC {
 struct JsonContext;
-}
+}  // namespace RPC
 
 // Result:
 // {
@@ -24,7 +24,7 @@ doRandom(RPC::JsonContext& context)
     try
     {
         uint256 rand;
-        beast::rngfill(rand.begin(), rand.size(), crypto_prng());
+        beast::rngfill(rand.begin(), uint256::size(), crypto_prng());
 
         Json::Value jvResult;
         jvResult[jss::random] = to_string(rand);

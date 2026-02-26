@@ -5,8 +5,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class AccountInfo_test : public beast::unit_test::suite
 {
@@ -626,5 +625,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(AccountInfo, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

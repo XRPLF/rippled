@@ -40,7 +40,7 @@ AMMClawback::preflight(PreflightContext const& ctx)
 
     auto const flags = ctx.tx.getFlags();
 
-    if (flags & tfClawTwoAssets && asset.account != asset2.account)
+    if (((flags & tfClawTwoAssets) != 0u) && asset.account != asset2.account)
     {
         JLOG(ctx.j.trace()) << "AMMClawback: tfClawTwoAssets can only be enabled when two "
                                "assets in the AMM pool are both issued by the issuer";
@@ -90,7 +90,8 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
 
     // If AllowTrustLineClawback is not set or NoFreeze is set, return no
     // permission
-    if (!(issuerFlagsIn & lsfAllowTrustLineClawback) || (issuerFlagsIn & lsfNoFreeze))
+    if (((issuerFlagsIn & lsfAllowTrustLineClawback) == 0u) ||
+        ((issuerFlagsIn & lsfNoFreeze) != 0u))
         return tecNO_PERMISSION;
 
     return tesSUCCESS;
@@ -156,6 +157,7 @@ AMMClawback::applyGuts(Sandbox& sb)
         return tecAMM_BALANCE;
 
     if (!clawAmount)
+    {
         // Because we are doing a two-asset withdrawal,
         // tfee is actually not used, so pass tfee as 0.
         std::tie(result, newLPTokenBalance, amountWithdraw, amount2Withdraw) =
@@ -174,7 +176,9 @@ AMMClawback::applyGuts(Sandbox& sb)
                 WithdrawAll::Yes,
                 mPriorBalance,
                 ctx_.journal);
+    }
     else
+    {
         std::tie(result, newLPTokenBalance, amountWithdraw, amount2Withdraw) =
             equalWithdrawMatchingOneAmount(
                 sb,
@@ -186,6 +190,7 @@ AMMClawback::applyGuts(Sandbox& sb)
                 lptAMMBalance,
                 holdLPtokens,
                 *clawAmount);
+    }
 
     if (result != tesSUCCESS)
         return result;  // LCOV_EXCL_LINE
@@ -211,7 +216,7 @@ AMMClawback::applyGuts(Sandbox& sb)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const flags = ctx_.tx.getFlags();
-    if (flags & tfClawTwoAssets)
+    if ((flags & tfClawTwoAssets) != 0u)
         return rippleCredit(sb, holder, issuer, *amount2Withdraw, true, j_);
 
     return tesSUCCESS;
@@ -235,6 +240,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
     auto const lpTokensWithdraw = toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac);
 
     if (lpTokensWithdraw > holdLPtokens)
+    {
         // if lptoken balance less than what the issuer intended to clawback,
         // clawback all the tokens. Because we are doing a two-asset withdrawal,
         // tfee is actually not used, so pass tfee as 0.
@@ -253,6 +259,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             WithdrawAll::Yes,
             mPriorBalance,
             ctx_.journal);
+    }
 
     auto const& rules = sb.rules();
     if (rules.enabled(fixAMMClawbackRounding))

@@ -11,8 +11,7 @@
 #include <string>
 #include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 /** In progress simulations for diversifying and distributing validators
  */
@@ -61,7 +60,7 @@ class DistributedValidators_test : public beast::unit_test::suite
         // Run for 10 minutes, submitting 100 tx/second
         std::chrono::nanoseconds const simDuration = 10min;
         std::chrono::nanoseconds const quiet = 10s;
-        Rate const rate{100, 1000ms};
+        Rate const rate{.count = 100, .duration = 1000ms};
 
         // Initialize timers
         HeartbeatTimer heart(sim.scheduler);
@@ -155,9 +154,9 @@ class DistributedValidators_test : public beast::unit_test::suite
         sim.run(1);
 
         // Run for 10 minutes, submitting 100 tx/second
-        std::chrono::nanoseconds simDuration = 10min;
-        std::chrono::nanoseconds quiet = 10s;
-        Rate rate{100, 1000ms};
+        std::chrono::nanoseconds const simDuration = 10min;
+        std::chrono::nanoseconds const quiet = 10s;
+        Rate const rate{.count = 100, .duration = 1000ms};
 
         // Initialize timers
         HeartbeatTimer heart(sim.scheduler);
@@ -242,5 +241,4 @@ class DistributedValidators_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(DistributedValidators, consensus, xrpl, 2);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

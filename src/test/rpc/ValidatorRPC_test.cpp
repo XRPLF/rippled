@@ -11,9 +11,7 @@
 
 #include <set>
 
-namespace xrpl {
-
-namespace test {
+namespace xrpl::test {
 
 class ValidatorRPC_test : public beast::unit_test::suite
 {
@@ -27,7 +25,7 @@ public:
 
         for (bool const isAdmin : {true, false})
         {
-            for (std::string cmd : {"validators", "validator_list_sites"})
+            for (std::string const cmd : {"validators", "validator_list_sites"})
             {
                 Env env{*this, isAdmin ? envconfig() : envconfig(no_admin)};
                 env.set_retries(isAdmin ? 5 : 0);
@@ -154,7 +152,7 @@ public:
         };
 
         // Validator keys that will be in the published list
-        std::vector<Validator> validators = {
+        std::vector<Validator> const validators = {
             TrustedPublisherServer::randomValidator(), TrustedPublisherServer::randomValidator()};
         std::set<std::string> expectedKeys;
         for (auto const& val : validators)
@@ -530,5 +528,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(ValidatorRPC, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -2,8 +2,7 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace RPC {
+namespace xrpl::RPC {
 
 void
 insertDeliverMax(Json::Value& tx_json, TxType txnType, unsigned int apiVersion)
@@ -19,5 +18,4 @@ insertDeliverMax(Json::Value& tx_json, TxType txnType, unsigned int apiVersion)
     }
 }
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

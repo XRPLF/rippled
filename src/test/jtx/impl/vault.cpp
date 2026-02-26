@@ -7,12 +7,10 @@
 
 #include <optional>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 std::tuple<Json::Value, Keylet>
-Vault::create(CreateArgs const& args)
+Vault::create(CreateArgs const& args) const
 {
     auto keylet = keylet::vault(args.owner.id(), env.seq(args.owner));
     Json::Value jv;
@@ -79,6 +77,4 @@ Vault::clawback(ClawbackArgs const& args)
     return jv;
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

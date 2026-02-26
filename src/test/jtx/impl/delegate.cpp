@@ -2,11 +2,7 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-
-namespace delegate {
+namespace xrpl::test::jtx::delegate {
 
 Json::Value
 set(jtx::Account const& account,
@@ -42,7 +38,4 @@ entry(jtx::Env& env, jtx::Account const& account, jtx::Account const& authorize)
     return env.rpc("json", "ledger_entry", to_string(jvParams));
 }
 
-}  // namespace delegate
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::delegate

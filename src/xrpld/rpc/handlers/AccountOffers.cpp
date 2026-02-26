@@ -16,7 +16,7 @@ namespace xrpl {
 void
 appendOfferJson(std::shared_ptr<SLE const> const& offer, Json::Value& offers)
 {
-    STAmount dirRate = amountFromQuality(getQuality(offer->getFieldH256(sfBookDirectory)));
+    STAmount const dirRate = amountFromQuality(getQuality(offer->getFieldH256(sfBookDirectory)));
     Json::Value& obj(offers.append(Json::objectValue));
     offer->getFieldAmount(sfTakerPays).setJson(obj[jss::taker_pays]);
     offer->getFieldAmount(sfTakerGets).setJson(obj[jss::taker_gets]);
@@ -55,7 +55,7 @@ doAccountOffers(RPC::JsonContext& context)
         RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
     }
-    auto const accountID{std::move(id.value())};
+    auto const accountID{id.value()};
 
     // Get info on account.
     result[jss::account] = toBase58(accountID);
@@ -63,7 +63,7 @@ doAccountOffers(RPC::JsonContext& context)
     if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
 
-    unsigned int limit;
+    unsigned int limit = 0;
     if (auto err = readLimitField(limit, RPC::Tuning::accountOffers, context))
         return *err;
 

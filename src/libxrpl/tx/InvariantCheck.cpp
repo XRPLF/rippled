@@ -202,7 +202,7 @@ XRPNotCreated::finalize(
     TER const,
     XRPAmount const fee,
     ReadView const&,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     // The net change should never be positive, as this would mean that the
     // transaction created XRP out of thin air. That's not possible.
@@ -262,7 +262,7 @@ XRPBalanceChecks::finalize(
     TER const,
     XRPAmount const,
     ReadView const&,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     if (bad_)
     {
@@ -306,7 +306,7 @@ NoBadOffers::finalize(
     TER const,
     XRPAmount const,
     ReadView const&,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     if (bad_)
     {
@@ -399,7 +399,7 @@ NoZeroEscrow::finalize(
     TER const,
     XRPAmount const,
     ReadView const& rv,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     if (bad_)
     {
@@ -428,7 +428,7 @@ AccountRootsNotDeleted::finalize(
     TER const result,
     XRPAmount const,
     ReadView const&,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     // AMM account root can be deleted as the result of AMM withdraw/delete
     // transaction when the total AMM LP Tokens balance goes to 0.
@@ -440,8 +440,10 @@ AccountRootsNotDeleted::finalize(
             return true;
 
         if (accountsDeleted_ == 0)
+        {
             JLOG(j.fatal()) << "Invariant failed: account deletion "
                                "succeeded without deleting an account";
+        }
         else
             JLOG(j.fatal()) << "Invariant failed: account deletion "
                                "succeeded but deleted multiple accounts!";
@@ -619,7 +621,7 @@ LedgerEntryTypesMatch::finalize(
     TER const,
     XRPAmount const,
     ReadView const&,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     if ((!typeMismatch_) && (!invalidTypeAdded_))
         return true;
@@ -661,7 +663,7 @@ NoXRPTrustLines::finalize(
     TER const,
     XRPAmount const,
     ReadView const&,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     if (!xrpTrustLine_)
         return true;
@@ -681,11 +683,11 @@ NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(
     if (after && after->getType() == ltRIPPLE_STATE)
     {
         std::uint32_t const uFlags = after->getFieldU32(sfFlags);
-        bool const lowFreeze = uFlags & lsfLowFreeze;
-        bool const lowDeepFreeze = uFlags & lsfLowDeepFreeze;
+        bool const lowFreeze = (uFlags & lsfLowFreeze) != 0u;
+        bool const lowDeepFreeze = (uFlags & lsfLowDeepFreeze) != 0u;
 
-        bool const highFreeze = uFlags & lsfHighFreeze;
-        bool const highDeepFreeze = uFlags & lsfHighDeepFreeze;
+        bool const highFreeze = (uFlags & lsfHighFreeze) != 0u;
+        bool const highDeepFreeze = (uFlags & lsfHighDeepFreeze) != 0u;
 
         deepFreezeWithoutFreeze_ = (lowDeepFreeze && !lowFreeze) || (highDeepFreeze && !highFreeze);
     }
@@ -697,7 +699,7 @@ NoDeepFreezeTrustLinesWithoutFreeze::finalize(
     TER const,
     XRPAmount const,
     ReadView const&,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     if (!deepFreezeWithoutFreeze_)
         return true;
@@ -828,7 +830,7 @@ TransfersNotFrozen::calculateBalanceChange(
     bool isDelete)
 {
     auto const getBalance = [](auto const& line, auto const& other, bool zero) {
-        STAmount amt = line ? line->at(sfBalance) : other->at(sfBalance).zeroed();
+        STAmount const amt = line ? line->at(sfBalance) : other->at(sfBalance).zeroed();
         return zero ? amt.zeroed() : amt;
     };
 
@@ -858,9 +860,13 @@ TransfersNotFrozen::recordBalance(Issue const& issue, BalanceChange change)
         "balance sign.");
     auto& changes = balanceChanges_[issue];
     if (change.balanceChangeSign < 0)
+    {
         changes.senders.emplace_back(std::move(change));
+    }
     else
+    {
         changes.receivers.emplace_back(std::move(change));
+    }
 }
 
 void
@@ -872,10 +878,14 @@ TransfersNotFrozen::recordBalanceChanges(
     auto const currency = after->at(sfBalance).getCurrency();
 
     // Change from low account's perspective, which is trust line default
-    recordBalance({currency, after->at(sfHighLimit).getIssuer()}, {after, balanceChangeSign});
+    recordBalance(
+        {currency, after->at(sfHighLimit).getIssuer()},
+        {.line = after, .balanceChangeSign = balanceChangeSign});
 
     // Change from high account's perspective, which reverses the sign.
-    recordBalance({currency, after->at(sfLowLimit).getIssuer()}, {after, -balanceChangeSign});
+    recordBalance(
+        {currency, after->at(sfLowLimit).getIssuer()},
+        {.line = after, .balanceChangeSign = -balanceChangeSign});
 }
 
 std::shared_ptr<SLE const>
@@ -968,12 +978,7 @@ TransfersNotFrozen::validateFrozenState(
         "xrpl::TransfersNotFrozen::validateFrozenState : enforce "
         "invariant.");
 
-    if (enforce)
-    {
-        return false;
-    }
-
-    return true;
+    return !enforce;
 }
 
 //------------------------------------------------------------------------------
@@ -999,7 +1004,7 @@ ValidNewAccountRoot::finalize(
     TER const result,
     XRPAmount const,
     ReadView const& view,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     if (accountsCreated_ == 0)
         return true;
@@ -1165,7 +1170,7 @@ ValidNFTokenPage::finalize(
     TER const result,
     XRPAmount const,
     ReadView const& view,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     if (badLink_)
     {
@@ -1241,7 +1246,7 @@ NFTokenCountTracking::finalize(
     TER const result,
     XRPAmount const,
     ReadView const& view,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     if (!hasPrivilege(tx, changeNFTCounts))
     {
@@ -1337,7 +1342,7 @@ ValidClawback::finalize(
     TER const result,
     XRPAmount const,
     ReadView const& view,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     if (tx.getTxnType() != ttCLAWBACK)
         return true;
@@ -1402,15 +1407,21 @@ ValidMPTIssuance::visitEntry(
     if (after && after->getType() == ltMPTOKEN_ISSUANCE)
     {
         if (isDelete)
+        {
             mptIssuancesDeleted_++;
+        }
         else if (!before)
+        {
             mptIssuancesCreated_++;
+        }
     }
 
     if (after && after->getType() == ltMPTOKEN)
     {
         if (isDelete)
+        {
             mptokensDeleted_++;
+        }
         else if (!before)
         {
             mptokensCreated_++;
@@ -1427,13 +1438,13 @@ ValidMPTIssuance::finalize(
     TER const result,
     XRPAmount const _fee,
     ReadView const& view,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     if (result == tesSUCCESS)
     {
         auto const& rules = view.rules();
         [[maybe_unused]]
-        bool enforceCreatedByIssuer =
+        bool const enforceCreatedByIssuer =
             rules.enabled(featureSingleAssetVault) || rules.enabled(featureLendingProtocol);
         if (mptCreatedByIssuer_)
         {
@@ -1505,7 +1516,7 @@ ValidMPTIssuance::finalize(
                                    "succeeded but created MPT issuances";
                 return false;
             }
-            else if (mptIssuancesDeleted_ > 0)
+            if (mptIssuancesDeleted_ > 0)
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT authorize "
                                    "succeeded but deleted issuances";
@@ -1589,7 +1600,11 @@ ValidPermissionedDomain::visitEntry(
         auto const& credentials = sle->getFieldArray(sfAcceptedCredentials);
         auto const sorted = credentials::makeSorted(credentials);
 
-        SleStatus ss{credentials.size(), false, !sorted.empty(), isDel};
+        SleStatus ss{
+            .credentialsSize_ = credentials.size(),
+            .isSorted_ = false,
+            .isUnique_ = !sorted.empty(),
+            .isDelete_ = isDel};
 
         // If array have duplicates then all the other checks are invalid
         if (ss.isUnique_)
@@ -1604,7 +1619,7 @@ ValidPermissionedDomain::visitEntry(
                     break;
             }
         }
-        sleStatus.emplace_back(std::move(ss));
+        sleStatus.emplace_back(ss);
     };
 
     if (after)
@@ -1656,9 +1671,11 @@ ValidPermissionedDomain::finalize(
     {
         // No permissioned domains should be affected if the transaction failed
         if (result != tesSUCCESS)
+        {
             // If nothing changed, all is good. If there were changes, that's
             // bad.
             return sleStatus_.empty();
+        }
 
         if (sleStatus_.size() > 1)
         {
@@ -1734,8 +1751,10 @@ ValidPseudoAccounts::visitEntry(
     std::shared_ptr<SLE const> const& after)
 {
     if (isDelete)
+    {
         // Deletion is ignored
         return;
+    }
 
     if (after && after->getType() == ltACCOUNT_ROOT)
     {
@@ -1831,9 +1850,13 @@ ValidPermissionedDEX::visitEntry(
     if (after && after->getType() == ltOFFER)
     {
         if (after->isFieldPresent(sfDomainID))
+        {
             domains_.insert(after->getFieldH256(sfDomainID));
+        }
         else
+        {
             regularOffers_ = true;
+        }
 
         // if a hybrid offer is missing domain or additional book, there's
         // something wrong
@@ -1917,7 +1940,7 @@ ValidAMM::visitEntry(
         }
         // AMM pool changed
         else if (
-            (type == ltRIPPLE_STATE && after->getFlags() & lsfAMMNode) ||
+            (type == ltRIPPLE_STATE && ((after->getFlags() & lsfAMMNode) != 0u)) ||
             (type == ltACCOUNT_ROOT && after->isFieldPresent(sfAMMID)))
         {
             ammPoolChanged_ = true;
@@ -1944,8 +1967,10 @@ validBalances(
     bool const positive =
         amount > beast::zero && amount2 > beast::zero && lptAMMBalance > beast::zero;
     if (zeroAllowed == ValidAMM::ZeroAllowed::Yes)
+    {
         return positive ||
             (amount == beast::zero && amount2 == beast::zero && lptAMMBalance == beast::zero);
+    }
     return positive;
 }
 
@@ -2125,7 +2150,9 @@ ValidAMM::finalizeDeposit(
         // LCOV_EXCL_STOP
     }
     else if (!generalInvariant(tx, view, ZeroAllowed::No, j) && enforce)
+    {
         return false;
+    }
 
     return true;
 }
@@ -2200,8 +2227,10 @@ NoModifiedUnmodifiableFields::visitEntry(
     std::shared_ptr<SLE const> const& after)
 {
     if (isDelete || !before)
+    {
         // Creation and deletion are ignored
         return;
+    }
 
     changedEntries_.emplace(before, after);
 }
@@ -2341,11 +2370,11 @@ bool
 ValidLoanBroker::goodZeroDirectory(
     ReadView const& view,
     SLE::const_ref dir,
-    beast::Journal const& j) const
+    beast::Journal const& j)
 {
     auto const next = dir->at(~sfIndexNext);
     auto const prev = dir->at(~sfIndexPrevious);
-    if ((prev && *prev) || (next && *next))
+    if ((prev && (*prev != 0u)) || (next && (*next != 0u)))
     {
         JLOG(j.fatal()) << "Invariant failed: Loan Broker with zero "
                            "OwnerCount has multiple directory pages";
@@ -2714,7 +2743,7 @@ ValidVault::finalize(
 
         return true;  // Not a vault operation
     }
-    else if (!(hasPrivilege(tx, mustModifyVault) || hasPrivilege(tx, mayModifyVault)))
+    if (!(hasPrivilege(tx, mustModifyVault) || hasPrivilege(tx, mayModifyVault)))
     {
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault updated by a wrong transaction type";
@@ -2796,7 +2825,7 @@ ValidVault::finalize(
 
         return result;
     }
-    else if (txnType == ttVAULT_DELETE)
+    if (txnType == ttVAULT_DELETE)
     {
         JLOG(j.fatal()) << "Invariant failed: vault deletion succeeded without "
                            "deleting a vault";

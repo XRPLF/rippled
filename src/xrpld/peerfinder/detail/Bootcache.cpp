@@ -4,8 +4,9 @@
 
 #include <xrpl/basics/Log.h>
 
-namespace xrpl {
-namespace PeerFinder {
+#include <algorithm>
+
+namespace xrpl::PeerFinder {
 
 Bootcache::Bootcache(Store& store, clock_type& clock, beast::Journal journal)
     : m_store(store)
@@ -131,8 +132,7 @@ Bootcache::on_success(beast::IP::Endpoint const& endpoint)
     else
     {
         Entry entry(result.first->right);
-        if (entry.valence() < 0)
-            entry.valence() = 0;
+        entry.valence() = std::max(entry.valence(), 0);
         ++entry.valence();
         m_map.erase(result.first);
         result = m_map.insert(value_type(endpoint, entry));
@@ -156,8 +156,7 @@ Bootcache::on_failure(beast::IP::Endpoint const& endpoint)
     else
     {
         Entry entry(result.first->right);
-        if (entry.valence() > 0)
-            entry.valence() = 0;
+        entry.valence() = std::min(entry.valence(), 0);
         --entry.valence();
         m_map.erase(result.first);
         result = m_map.insert(value_type(endpoint, entry));
@@ -255,5 +254,4 @@ Bootcache::flagForUpdate()
     checkUpdate();
 }
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

@@ -93,7 +93,7 @@ PathRequest::~PathRequest()
 bool
 PathRequest::isNew()
 {
-    std::lock_guard sl(mIndexLock);
+    std::lock_guard const sl(mIndexLock);
 
     // does this path request still need its first full path
     return mLastIndex == 0;
@@ -102,7 +102,7 @@ PathRequest::isNew()
 bool
 PathRequest::needsUpdate(bool newOnly, LedgerIndex index)
 {
-    std::lock_guard sl(mIndexLock);
+    std::lock_guard const sl(mIndexLock);
 
     if (mInProgress)
     {
@@ -134,7 +134,7 @@ PathRequest::hasCompletion()
 void
 PathRequest::updateComplete()
 {
-    std::lock_guard sl(mIndexLock);
+    std::lock_guard const sl(mIndexLock);
 
     XRPL_ASSERT(mInProgress, "xrpl::PathRequest::updateComplete : in progress");
     mInProgress = false;
@@ -191,7 +191,7 @@ PathRequest::isValid(std::shared_ptr<RippleLineCache> const& crCache)
     }
     else
     {
-        bool const disallowXRP(sleDest->getFlags() & lsfDisallowXRP);
+        bool const disallowXRP((sleDest->getFlags() & lsfDisallowXRP) != 0u);
 
         auto usDestCurrID = accountDestCurrencies(*raDstAccount, crCache, !disallowXRP);
 
@@ -406,10 +406,8 @@ PathRequest::parseJson(Json::Value const& jvParams)
             jvStatus = rpcError(rpcDOMAIN_MALFORMED);
             return PFR_PJ_INVALID;
         }
-        else
-        {
-            domain = num;
-        }
+
+        domain = num;
     }
 
     return PFR_PJ_NOCHANGE;
@@ -419,7 +417,7 @@ Json::Value
 PathRequest::doClose()
 {
     JLOG(m_journal.debug()) << iIdentifier << " closed";
-    std::lock_guard sl(mLock);
+    std::lock_guard const sl(mLock);
     jvStatus[jss::closed] = true;
     return jvStatus;
 }
@@ -427,7 +425,7 @@ PathRequest::doClose()
 Json::Value
 PathRequest::doStatus(Json::Value const&)
 {
-    std::lock_guard sl(mLock);
+    std::lock_guard const sl(mLock);
     jvStatus[jss::status] = jss::success;
     return jvStatus;
 }
@@ -461,9 +459,13 @@ PathRequest::getPathFinder(
         domain,
         app_);
     if (pathfinder->findPaths(level, continueCallback))
+    {
         pathfinder->computePathRanks(max_paths_, continueCallback);
+    }
     else
+    {
         pathfinder.reset();  // It's a bad request - clear it.
+    }
     return currency_map[currency] = std::move(pathfinder);
 }
 
@@ -526,7 +528,7 @@ PathRequest::findPaths(
             return *raSrcAccount;
         }();
 
-        STAmount saMaxAmount =
+        STAmount const saMaxAmount =
             saSendMax.value_or(STAmount(Issue{issue.currency, sourceAccount}, 1u, 0, true));
 
         JLOG(m_journal.debug()) << iIdentifier << " Paths found, calling rippleCalc";
@@ -607,7 +609,7 @@ PathRequest::findPaths(
         after four source currencies, 50 - (4 * 4) = 34.
     */
     int const size = sourceCurrencies.size();
-    consumer_.charge({std::clamp(size * size + 34, 50, 400), "path update"});
+    consumer_.charge({std::clamp((size * size) + 34, 50, 400), "path update"});
     return true;
 }
 
@@ -621,7 +623,7 @@ PathRequest::doUpdate(
     JLOG(m_journal.debug()) << iIdentifier << " update " << (fast ? "fast" : "normal");
 
     {
-        std::lock_guard sl(mLock);
+        std::lock_guard const sl(mLock);
 
         if (!isValid(cache))
             return jvStatus;
@@ -646,15 +648,19 @@ PathRequest::doUpdate(
     if (jvId)
         newStatus[jss::id] = jvId;
 
-    bool loaded = app_.getFeeTrack().isLoadedLocal();
+    bool const loaded = app_.getFeeTrack().isLoadedLocal();
 
     if (iLevel == 0)
     {
         // first pass
         if (loaded || fast)
+        {
             iLevel = app_.config().PATH_SEARCH_FAST;
+        }
         else
+        {
             iLevel = app_.config().PATH_SEARCH;
+        }
     }
     else if ((iLevel == app_.config().PATH_SEARCH_FAST) && !fast)
     {
@@ -705,7 +711,7 @@ PathRequest::doUpdate(
     }
 
     {
-        std::lock_guard sl(mLock);
+        std::lock_guard const sl(mLock);
         jvStatus = newStatus;
     }
 

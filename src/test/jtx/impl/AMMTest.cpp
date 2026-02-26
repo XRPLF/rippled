@@ -10,9 +10,7 @@
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/resource/Fees.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 void
 fund(
@@ -130,11 +128,17 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)>&& cb, TestAMMArg 
         BEAST_EXPECT(asset1 <= toFund1 && asset2 <= toFund2);
 
         if (!asset1.native() && !asset2.native())
+        {
             fund(env, gw, {alice, carol}, {toFund1, toFund2}, Fund::All);
+        }
         else if (asset1.native())
+        {
             fund(env, gw, {alice, carol}, toFund1, {toFund2}, Fund::All);
+        }
         else if (asset2.native())
+        {
             fund(env, gw, {alice, carol}, toFund2, {toFund1}, Fund::All);
+        }
 
         AMM ammAlice(
             env, alice, asset1, asset2, CreateArg{.log = false, .tfee = arg.tfee, .err = arg.ter});
@@ -144,13 +148,13 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)>&& cb, TestAMMArg 
 }
 
 XRPAmount
-AMMTest::reserve(jtx::Env& env, std::uint32_t count) const
+AMMTest::reserve(jtx::Env& env, std::uint32_t count)
 {
     return env.current()->fees().accountReserve(count);
 }
 
 XRPAmount
-AMMTest::ammCrtFee(jtx::Env& env) const
+AMMTest::ammCrtFee(jtx::Env& env)
 {
     return env.current()->fees().increment;
 }
@@ -185,16 +189,16 @@ AMMTest::find_paths_request(
     Resource::Consumer c;
 
     RPC::JsonContext context{
-        {env.journal,
-         app,
-         loadType,
-         app.getOPs(),
-         app.getLedgerMaster(),
-         c,
-         Role::USER,
-         {},
-         {},
-         RPC::apiVersionIfUnspecified},
+        {.j = env.journal,
+         .app = app,
+         .loadType = loadType,
+         .netOps = app.getOPs(),
+         .ledgerMaster = app.getLedgerMaster(),
+         .consumer = c,
+         .role = Role::USER,
+         .coro = {},
+         .infoSub = {},
+         .apiVersion = RPC::apiVersionIfUnspecified},
         {},
         {}};
 
@@ -272,6 +276,4 @@ AMMTest::find_paths(
     return std::make_tuple(std::move(paths), std::move(sa), std::move(da));
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

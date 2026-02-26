@@ -15,8 +15,9 @@
 #include <boost/filesystem.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
-namespace xrpl {
-namespace test {
+#include <algorithm>
+
+namespace xrpl::test {
 
 class Manifest_test : public beast::unit_test::suite
 {
@@ -75,7 +76,7 @@ public:
         {
         }
     }
-    ~Manifest_test()
+    ~Manifest_test() override
     {
         try
         {
@@ -86,7 +87,7 @@ public:
         }
     }
 
-    std::string
+    static std::string
     makeManifestString(
         PublicKey const& pk,
         SecretKey const& sk,
@@ -144,8 +145,8 @@ public:
         st.add(s);
 
         // m is non-const so it can be moved from
-        std::string m(static_cast<char const*>(s.data()), s.size());
-        if (auto r = deserializeManifest(std::move(m)))
+        std::string const m(static_cast<char const*>(s.data()), s.size());
+        if (auto r = deserializeManifest(m))
             return std::move(*r);
         Throw<std::runtime_error>("Could not create a revocation manifest");
         return *deserializeManifest(std::string{});  // Silence compiler warning.
@@ -178,15 +179,16 @@ public:
         Serializer s;
         st.add(s);
 
-        std::string m(static_cast<char const*>(s.data()),
-                      s.size());  // non-const so can be moved
-        if (auto r = deserializeManifest(std::move(m)))
+        std::string const m(
+            static_cast<char const*>(s.data()),
+            s.size());  // non-const so can be moved
+        if (auto r = deserializeManifest(m))
             return std::move(*r);
         Throw<std::runtime_error>("Could not create a manifest");
         return *deserializeManifest(std::string{});  // Silence compiler warning.
     }
 
-    Manifest
+    static Manifest
     clone(Manifest const& m)
     {
         Manifest m2(m.serialized, m.masterKey, m.signingKey, m.sequence, m.domain);
@@ -215,7 +217,7 @@ public:
                 return result;
             };
             auto sort = [](std::vector<Manifest const*> mv) -> std::vector<Manifest const*> {
-                std::sort(mv.begin(), mv.end(), [](Manifest const* lhs, Manifest const* rhs) {
+                std::ranges::sort(mv, [](Manifest const* lhs, Manifest const* rhs) {
                     return lhs->serialized < rhs->serialized;
                 });
                 return mv;
@@ -247,8 +249,9 @@ public:
             {
                 // save should store all trusted master keys to db
                 std::vector<std::string> s1;
-                std::vector<std::string> keys;
-                std::string cfgManifest;
+                std::vector<std::string> const keys;
+                std::string const cfgManifest;
+                s1.reserve(inManifests.size());
                 for (auto const& man : inManifests)
                     s1.push_back(toBase58(TokenType::NodePublic, man->masterKey));
                 unl->load({}, s1, keys);
@@ -603,12 +606,12 @@ public:
                         BEAST_EXPECT(!deserializeManifest(toString(st)));
                     }
                     {  // invalid manifest (domain too long)
-                        std::string s(254, 'a');
+                        std::string const s(254, 'a');
                         auto const st = buildManifestObject(++sequence, s + ".example.com");
                         BEAST_EXPECT(!deserializeManifest(toString(st)));
                     }
                     {  // invalid manifest (domain component too long)
-                        std::string s(72, 'a');
+                        std::string const s(72, 'a');
                         auto const st = buildManifestObject(++sequence, s + ".example.com");
                         BEAST_EXPECT(!deserializeManifest(toString(st)));
                     }
@@ -925,5 +928,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Manifest, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

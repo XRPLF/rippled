@@ -152,9 +152,9 @@ STAmount::STAmount(SerialIter& sit, SField const& name) : STBase(name)
 
     value &= ~(1023ull << (64 - 10));
 
-    if (value)
+    if (value != 0u)
     {
-        bool isNegative = (offset & 256) == 0;
+        bool const isNegative = (offset & 256) == 0;
         offset = (offset & 255) - 97;  // center the range
 
         if (value < cMinValue || value > cMaxValue || offset < cMinOffset || offset > cMaxOffset)
@@ -223,9 +223,13 @@ STAmount::STAmount(XRPAmount const& amount)
     : mAsset(xrpIssue()), mOffset(0), mIsNegative(amount < beast::zero)
 {
     if (mIsNegative)
+    {
         mValue = unsafe_cast<std::uint64_t>(-amount.drops());
+    }
     else
+    {
         mValue = unsafe_cast<std::uint64_t>(amount.drops());
+    }
 
     canonicalize();
 }
@@ -305,9 +309,13 @@ STAmount::operator=(IOUAmount const& iou)
     mOffset = iou.exponent();
     mIsNegative = iou < beast::zero;
     if (mIsNegative)
+    {
         mValue = static_cast<std::uint64_t>(-iou.mantissa());
+    }
     else
+    {
         mValue = static_cast<std::uint64_t>(iou.mantissa());
+    }
     return *this;
 }
 
@@ -402,7 +410,7 @@ operator+(STAmount const& v1, STAmount const& v2)
     // This addition cannot overflow an std::int64_t. It can overflow an
     // STAmount and the constructor will throw.
 
-    std::int64_t fv = vv1 + vv2;
+    std::int64_t const fv = vv1 + vv2;
 
     if ((fv >= -10) && (fv <= 10))
         return {v1.getFName(), v1.asset()};
@@ -445,13 +453,13 @@ getRate(STAmount const& offerOut, STAmount const& offerIn)
         return 0;
     try
     {
-        STAmount r = divide(offerIn, offerOut, noIssue());
+        STAmount const r = divide(offerIn, offerOut, noIssue());
         if (r == beast::zero)  // offer is too good
             return 0;
         XRPL_ASSERT(
             (r.exponent() >= -100) && (r.exponent() <= 155),
             "xrpl::getRate : exponent inside range");
-        std::uint64_t ret = r.exponent() + 100;
+        std::uint64_t const ret = r.exponent() + 100;
         return (ret << (64 - 8)) | r.mantissa();
     }
     catch (std::exception const&)
@@ -494,17 +502,14 @@ canAdd(STAmount const& a, STAmount const& b)
     // XRP case (overflow & underflow check)
     if (isXRP(a) && isXRP(b))
     {
-        XRPAmount A = a.xrp();
-        XRPAmount B = b.xrp();
+        XRPAmount const A = a.xrp();
+        XRPAmount const B = b.xrp();
 
-        if ((B > XRPAmount{0} &&
+        return !(
+            (B > XRPAmount{0} &&
              A > XRPAmount{std::numeric_limits<XRPAmount::value_type>::max()} - B) ||
             (B < XRPAmount{0} &&
-             A < XRPAmount{std::numeric_limits<XRPAmount::value_type>::min()} - B))
-        {
-            return false;
-        }
-        return true;
+             A < XRPAmount{std::numeric_limits<XRPAmount::value_type>::min()} - B));
     }
 
     // IOU case (precision check)
@@ -512,25 +517,21 @@ canAdd(STAmount const& a, STAmount const& b)
     {
         static STAmount const one{IOUAmount{1, 0}, noIssue()};
         static STAmount const maxLoss{IOUAmount{1, -4}, noIssue()};
-        STAmount lhs = divide((a - b) + b, a, noIssue()) - one;
-        STAmount rhs = divide((b - a) + a, b, noIssue()) - one;
+        STAmount const lhs = divide((a - b) + b, a, noIssue()) - one;
+        STAmount const rhs = divide((b - a) + a, b, noIssue()) - one;
         return ((rhs.negative() ? -rhs : rhs) + (lhs.negative() ? -lhs : lhs)) <= maxLoss;
     }
 
     // MPT (overflow & underflow check)
     if (a.holds<MPTIssue>() && b.holds<MPTIssue>())
     {
-        MPTAmount A = a.mpt();
-        MPTAmount B = b.mpt();
-        if ((B > MPTAmount{0} &&
+        MPTAmount const A = a.mpt();
+        MPTAmount const B = b.mpt();
+        return !(
+            (B > MPTAmount{0} &&
              A > MPTAmount{std::numeric_limits<MPTAmount::value_type>::max()} - B) ||
             (B < MPTAmount{0} &&
-             A < MPTAmount{std::numeric_limits<MPTAmount::value_type>::min()} - B))
-        {
-            return false;
-        }
-
-        return true;
+             A < MPTAmount{std::numeric_limits<MPTAmount::value_type>::min()} - B));
     }
     // LCOV_EXCL_START
     UNREACHABLE("STAmount::canAdd : unexpected STAmount type");
@@ -569,8 +570,8 @@ canSubtract(STAmount const& a, STAmount const& b)
     // XRP case (underflow & overflow check)
     if (isXRP(a) && isXRP(b))
     {
-        XRPAmount A = a.xrp();
-        XRPAmount B = b.xrp();
+        XRPAmount const A = a.xrp();
+        XRPAmount const B = b.xrp();
         // Check for underflow
         if (B > XRPAmount{0} && A < B)
             return false;
@@ -592,8 +593,8 @@ canSubtract(STAmount const& a, STAmount const& b)
     // MPT case (underflow & overflow check)
     if (a.holds<MPTIssue>() && b.holds<MPTIssue>())
     {
-        MPTAmount A = a.mpt();
-        MPTAmount B = b.mpt();
+        MPTAmount const A = a.mpt();
+        MPTAmount const B = b.mpt();
 
         // Underflow check
         if (B > MPTAmount{0} && A < B)
@@ -722,9 +723,13 @@ STAmount::getText() const
 
     // Assemble the output:
     if (pre_from == pre_to)
+    {
         ret.append(1, '0');
+    }
     else
+    {
         ret.append(pre_from, pre_to);
+    }
 
     if (post_to != post_from)
     {
@@ -751,9 +756,13 @@ STAmount::add(Serializer& s) const
         XRPL_ASSERT(mOffset == 0, "xrpl::STAmount::add : zero offset");
 
         if (!mIsNegative)
+        {
             s.add64(mValue | cPositive);
+        }
         else
+        {
             s.add64(mValue);
+        }
     }
     else if (mAsset.holds<MPTIssue>())
     {
@@ -767,11 +776,17 @@ STAmount::add(Serializer& s) const
     else
     {
         if (*this == beast::zero)
+        {
             s.add64(cIssuedCurrency);
-        else if (mIsNegative)  // 512 = not native
+        }
+        else if (mIsNegative)
+        {  // 512 = not native
             s.add64(mValue | (static_cast<std::uint64_t>(mOffset + 512 + 97) << (64 - 10)));
-        else  // 256 = positive
+        }
+        else
+        {  // 256 = positive
             s.add64(mValue | (static_cast<std::uint64_t>(mOffset + 512 + 256 + 97) << (64 - 10)));
+        }
         s.addBitString(mAsset.get<Issue>().currency);
         s.addBitString(mAsset.get<Issue>().account);
     }
@@ -781,7 +796,7 @@ bool
 STAmount::isEquivalent(STBase const& t) const
 {
     STAmount const* v = dynamic_cast<STAmount const*>(&t);
-    return v && (*v == *this);
+    return (v != nullptr) && (*v == *this);
 }
 
 bool
@@ -832,18 +847,24 @@ STAmount::canonicalize()
 
         if (getSTNumberSwitchover())
         {
-            Number num(mIsNegative, mValue, mOffset, Number::unchecked{});
+            Number const num(mIsNegative, mValue, mOffset, Number::unchecked{});
             auto set = [&](auto const& val) {
                 auto const value = val.value();
                 mIsNegative = value < 0;
                 mValue = mIsNegative ? -value : value;
             };
             if (native())
+            {
                 set(XRPAmount{num});
+            }
             else if (mAsset.holds<MPTIssue>())
+            {
                 set(MPTAmount{num});
+            }
             else
+            {
                 Throw<std::runtime_error>("Unknown integral asset type");
+            }
             mOffset = 0;
         }
         else
@@ -859,9 +880,13 @@ STAmount::canonicalize()
                 // N.B. do not move the overflow check to after the
                 // multiplication
                 if (native() && mValue > cMaxNativeN)
+                {
                     Throw<std::runtime_error>("Native currency amount out of range");
+                }
                 else if (!native() && mValue > maxMPTokenAmount)
+                {
                     Throw<std::runtime_error>("MPT amount out of range");
+                }
 
                 mValue *= 10;
                 --mOffset;
@@ -869,9 +894,13 @@ STAmount::canonicalize()
         }
 
         if (native() && mValue > cMaxNativeN)
+        {
             Throw<std::runtime_error>("Native currency amount out of range");
+        }
         else if (!native() && mValue > maxMPTokenAmount)
+        {
             Throw<std::runtime_error>("MPT amount out of range");
+        }
 
         return;
     }
@@ -948,8 +977,8 @@ amountFromQuality(std::uint64_t rate)
     if (rate == 0)
         return STAmount(noIssue());
 
-    std::uint64_t mantissa = rate & ~(255ull << (64 - 8));
-    int exponent = static_cast<int>(rate >> (64 - 8)) - 100;
+    std::uint64_t const mantissa = rate & ~(255ull << (64 - 8));
+    int const exponent = static_cast<int>(rate >> (64 - 8)) - 100;
 
     return STAmount(noIssue(), mantissa, exponent);
 }
@@ -1445,7 +1474,7 @@ roundToScale(STAmount const& value, std::int32_t scale, Number::rounding_mode ro
 
     STAmount const referenceValue{value.asset(), STAmount::cMinValue, scale, value.negative()};
 
-    NumberRoundModeGuard mg(rounding);
+    NumberRoundModeGuard const mg(rounding);
     // With an IOU, the the result of addition will be truncated to the
     // precision of the larger value, which in this case is referenceValue. Then
     // remove the reference value via subtraction, and we're left with the
@@ -1487,8 +1516,8 @@ mulRoundImpl(STAmount const& v1, STAmount const& v2, Asset const& asset, bool ro
 
     if (v1.native() && v2.native() && xrp)
     {
-        std::uint64_t minV = std::min(getSNValue(v1), getSNValue(v2));
-        std::uint64_t maxV = std::max(getSNValue(v1), getSNValue(v2));
+        std::uint64_t const minV = std::min(getSNValue(v1), getSNValue(v2));
+        std::uint64_t const maxV = std::max(getSNValue(v1), getSNValue(v2));
 
         if (minV > 3000000000ull)  // sqrt(cMaxNative)
             Throw<std::runtime_error>("Native value overflow");

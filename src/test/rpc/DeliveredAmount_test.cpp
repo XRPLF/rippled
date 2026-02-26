@@ -5,8 +5,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 // Helper class to track the expected number `delivered_amount` results.
 class CheckDeliveredAmount
@@ -36,9 +35,13 @@ class CheckDeliveredAmount
         if (!afterSwitchTime_)
         {
             if (partial)
+            {
                 ++numExpectedAvailable_;
+            }
             else
+            {
                 ++numExpectedSetUnavailable_;
+            }
             return;
         }
         // normal case: after switch time & successful transaction
@@ -72,7 +75,8 @@ public:
     bool
     checkExpectedCounters() const
     {
-        return !numExpectedAvailable_ && !numExpectedNotSet_ && !numExpectedSetUnavailable_;
+        return (numExpectedAvailable_ == 0) && (numExpectedNotSet_ == 0) &&
+            (numExpectedSetUnavailable_ == 0);
     }
 
     // Check if the transaction has `delivered_amount` in the metaData as
@@ -85,22 +89,32 @@ public:
         if (t[jss::TransactionType].asString() != jss::Payment)
             return true;
 
-        bool isSet = metaData.isMember(jss::delivered_amount);
+        bool const isSet = metaData.isMember(jss::delivered_amount);
         bool isSetUnavailable = false;
         bool isSetAvailable = false;
         if (isSet)
         {
             if (metaData[jss::delivered_amount] != "unavailable")
+            {
                 isSetAvailable = true;
+            }
             else
+            {
                 isSetUnavailable = true;
+            }
         }
         if (isSetAvailable)
+        {
             --numExpectedAvailable_;
+        }
         else if (isSetUnavailable)
+        {
             --numExpectedSetUnavailable_;
+        }
         else if (!isSet)
+        {
             --numExpectedNotSet_;
+        }
 
         if (isSet)
         {
@@ -178,9 +192,13 @@ class DeliveredAmount_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob, carol, gw);
             env.trust(USD(1000), alice, bob, carol);
             if (afterSwitchTime)
+            {
                 env.close(NetClock::time_point{446000000s});
+            }
             else
+            {
                 env.close();
+            }
 
             CheckDeliveredAmount checkDeliveredAmount{afterSwitchTime};
             {
@@ -265,9 +283,13 @@ class DeliveredAmount_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob, carol, gw);
             env.trust(USD(1000), alice, bob, carol);
             if (afterSwitchTime)
+            {
                 env.close(NetClock::time_point{446000000s});
+            }
             else
+            {
                 env.close();
+            }
 
             CheckDeliveredAmount checkDeliveredAmount{afterSwitchTime};
             // normal payments
@@ -287,7 +309,7 @@ class DeliveredAmount_test : public beast::unit_test::suite
             env.require(balance(carol, USD(0)));
 
             env.close();
-            std::string index;
+            std::string const index;
             Json::Value jvParams;
             jvParams[jss::ledger_index] = 4u;
             jvParams[jss::transactions] = true;
@@ -381,5 +403,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(DeliveredAmount, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -3,8 +3,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/Feature.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class DeliverMin_test : public beast::unit_test::suite
 {
@@ -128,5 +127,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(DeliverMin, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -17,7 +17,7 @@ namespace xrpl {
 class SecretKey
 {
 private:
-    std::uint8_t buf_[32];
+    std::uint8_t buf_[32]{};
 
 public:
     using const_iterator = std::uint8_t const*;

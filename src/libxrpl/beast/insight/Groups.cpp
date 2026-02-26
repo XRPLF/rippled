@@ -14,8 +14,7 @@
 #include <unordered_map>
 #include <utility>
 
-namespace beast {
-namespace insight {
+namespace beast::insight {
 
 namespace detail {
 
@@ -25,12 +24,12 @@ public:
     std::string const m_name;
     Collector::ptr m_collector;
 
-    GroupImp(std::string const& name_, Collector::ptr const& collector)
-        : m_name(name_), m_collector(collector)
+    GroupImp(std::string name_, Collector::ptr collector)
+        : m_name(std::move(name_)), m_collector(std::move(collector))
     {
     }
 
-    ~GroupImp() = default;
+    ~GroupImp() override = default;
 
     std::string const&
     name() const override
@@ -76,7 +75,7 @@ public:
 
 private:
     GroupImp&
-    operator=(GroupImp const&);
+    operator=(GroupImp const&) = delete;
 };
 
 //------------------------------------------------------------------------------
@@ -89,16 +88,16 @@ public:
     Collector::ptr m_collector;
     Items m_items;
 
-    explicit GroupsImp(Collector::ptr const& collector) : m_collector(collector)
+    explicit GroupsImp(Collector::ptr collector) : m_collector(std::move(collector))
     {
     }
 
-    ~GroupsImp() = default;
+    ~GroupsImp() override = default;
 
     Group::ptr const&
     get(std::string const& name) override
     {
-        std::pair<Items::iterator, bool> result(m_items.emplace(name, Group::ptr()));
+        std::pair<Items::iterator, bool> const result(m_items.emplace(name, Group::ptr()));
         Group::ptr& group(result.first->second);
         if (result.second)
             group = std::make_shared<GroupImp>(name, m_collector);
@@ -118,5 +117,4 @@ make_Groups(Collector::ptr const& collector)
     return std::make_unique<detail::GroupsImp>(collector);
 }
 
-}  // namespace insight
-}  // namespace beast
+}  // namespace beast::insight

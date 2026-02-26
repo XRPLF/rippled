@@ -168,7 +168,7 @@ escrowCreatePreclaimHelper<Issue>(
     AccountID const& dest,
     STAmount const& amount)
 {
-    AccountID issuer = amount.getIssuer();
+    AccountID const issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tecNO_PERMISSION
     if (issuer == account)
         return tecNO_PERMISSION;
@@ -238,7 +238,7 @@ escrowCreatePreclaimHelper<MPTIssue>(
     AccountID const& dest,
     STAmount const& amount)
 {
-    AccountID issuer = amount.getIssuer();
+    AccountID const issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tecNO_PERMISSION
     if (issuer == account)
         return tecNO_PERMISSION;
@@ -358,8 +358,7 @@ escrowLockApplyHelper<Issue>(
     if (issuer == sender)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const ter = rippleCredit(
-        view, sender, issuer, amount, amount.holds<MPTIssue>() ? false : true, journal);
+    auto const ter = rippleCredit(view, sender, issuer, amount, !amount.holds<MPTIssue>(), journal);
     if (ter != tesSUCCESS)
         return ter;  // LCOV_EXCL_LINE
     return tesSUCCESS;
@@ -419,7 +418,7 @@ EscrowCreate::doApply()
         auto const sled = ctx_.view().read(keylet::account(ctx_.tx[sfDestination]));
         if (!sled)
             return tecNO_DST;  // LCOV_EXCL_LINE
-        if (((*sled)[sfFlags] & lsfRequireDestTag) && !ctx_.tx[~sfDestinationTag])
+        if ((((*sled)[sfFlags] & lsfRequireDestTag) != 0u) && !ctx_.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
     }
 
@@ -485,7 +484,9 @@ EscrowCreate::doApply()
 
     // Deduct owner's balance
     if (isXRP(amount))
+    {
         (*sle)[sfBalance] = (*sle)[sfBalance] - amount;
+    }
     else
     {
         if (auto const ret = std::visit(
@@ -564,9 +565,13 @@ EscrowFinish::preflightSigValidated(PreflightContext const& ctx)
         if (!any(flags & (SF_CF_INVALID | SF_CF_VALID)))
         {
             if (checkCondition(*fb, *cb))
+            {
                 router.setFlags(id, SF_CF_VALID);
+            }
             else
+            {
                 router.setFlags(id, SF_CF_INVALID);
+            }
         }
     }
 
@@ -603,7 +608,7 @@ escrowFinishPreclaimHelper<Issue>(
     AccountID const& dest,
     STAmount const& amount)
 {
-    AccountID issuer = amount.getIssuer();
+    AccountID const issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tesSUCCESS
     if (issuer == dest)
         return tesSUCCESS;
@@ -626,7 +631,7 @@ escrowFinishPreclaimHelper<MPTIssue>(
     AccountID const& dest,
     STAmount const& amount)
 {
-    AccountID issuer = amount.getIssuer();
+    AccountID const issuer = amount.getIssuer();
     // If the issuer is the same as the dest, return tesSUCCESS
     if (issuer == dest)
         return tesSUCCESS;
@@ -945,9 +950,13 @@ EscrowFinish::doApply()
                 return tecINTERNAL;
 
             if (checkCondition(*fb, *cb))
+            {
                 flags = SF_CF_VALID;
+            }
             else
+            {
                 flags = SF_CF_INVALID;
+            }
 
             ctx_.registry.getHashRouter().setFlags(id, flags);
             // LCOV_EXCL_STOP
@@ -1014,7 +1023,9 @@ EscrowFinish::doApply()
     STAmount const amount = slep->getFieldAmount(sfAmount);
     // Transfer amount to destination
     if (isXRP(amount))
+    {
         (*sled)[sfBalance] = (*sled)[sfBalance] + amount;
+    }
     else
     {
         if (!ctx_.view().rules().enabled(featureTokenEscrow))
@@ -1090,7 +1101,7 @@ escrowCancelPreclaimHelper<Issue>(
     AccountID const& account,
     STAmount const& amount)
 {
-    AccountID issuer = amount.getIssuer();
+    AccountID const issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tecINTERNAL
     if (issuer == account)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -1109,7 +1120,7 @@ escrowCancelPreclaimHelper<MPTIssue>(
     AccountID const& account,
     STAmount const& amount)
 {
-    AccountID issuer = amount.getIssuer();
+    AccountID const issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tecINTERNAL
     if (issuer == account)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -1211,7 +1222,9 @@ EscrowCancel::doApply()
 
     // Transfer amount back to the owner
     if (isXRP(amount))
+    {
         (*sle)[sfBalance] = (*sle)[sfBalance] + amount;
+    }
     else
     {
         if (!ctx_.view().rules().enabled(featureTokenEscrow))

@@ -2,12 +2,14 @@
 #include <xrpl/core/LoadEvent.h>
 #include <xrpl/core/LoadMonitor.h>
 
+#include <utility>
+
 namespace xrpl {
 
-LoadEvent::LoadEvent(LoadMonitor& monitor, std::string const& name, bool shouldStart)
+LoadEvent::LoadEvent(LoadMonitor& monitor, std::string name, bool shouldStart)
     : monitor_(monitor)
     , running_(shouldStart)
-    , name_(name)
+    , name_(std::move(name))
     , mark_{std::chrono::steady_clock::now()}
     , timeWaiting_{}
     , timeRunning_{}

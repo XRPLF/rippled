@@ -4,6 +4,8 @@
 
 #include <xrpl/core/JobQueue.h>
 
+#include <algorithm>
+
 namespace xrpl {
 
 class PeerSetImpl : public PeerSet
@@ -59,9 +61,8 @@ PeerSetImpl::addPeers(
         pairs.emplace_back(score, std::move(peer));
     });
 
-    std::sort(pairs.begin(), pairs.end(), [](ScoredPeer const& lhs, ScoredPeer const& rhs) {
-        return lhs.first > rhs.first;
-    });
+    std::ranges::sort(
+        pairs, [](ScoredPeer const& lhs, ScoredPeer const& rhs) { return lhs.first > rhs.first; });
 
     std::size_t accepted = 0;
     for (auto const& pair : pairs)
@@ -108,7 +109,7 @@ public:
     {
     }
 
-    virtual std::unique_ptr<PeerSet>
+    std::unique_ptr<PeerSet>
     build() override
     {
         return std::make_unique<PeerSetImpl>(app_);
@@ -152,7 +153,7 @@ public:
     std::set<Peer::id_t> const&
     getPeerIds() const override
     {
-        static std::set<Peer::id_t> emptyPeers;
+        static std::set<Peer::id_t> const emptyPeers;
         JLOG(j_.error()) << "DummyPeerSet getPeerIds should not be called";
         return emptyPeers;
     }

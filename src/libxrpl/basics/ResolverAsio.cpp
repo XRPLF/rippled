@@ -22,6 +22,7 @@
 #include <locale>
 #include <memory>
 #include <mutex>
+#include <ranges>
 #include <string>
 #include <utility>
 #include <vector>
@@ -36,10 +37,12 @@ template <class Derived>
 class AsyncObject
 {
 protected:
+private:
     AsyncObject() : m_pending(0)
     {
     }
 
+protected:
 public:
     ~AsyncObject()
     {
@@ -93,6 +96,7 @@ public:
 private:
     // The number of handlers pending.
     std::atomic<int> m_pending;
+    friend Derived;
 };
 
 class ResolverAsioImpl : public ResolverAsio, public AsyncObject<ResolverAsioImpl>
@@ -108,7 +112,7 @@ public:
 
     std::condition_variable m_cv;
     std::mutex m_mut;
-    bool m_asyncHandlersCompleted;
+    bool m_asyncHandlersCompleted{true};
 
     std::atomic<bool> m_stop_called;
     std::atomic<bool> m_stopped;
@@ -120,7 +124,7 @@ public:
         HandlerType handler;
 
         template <class StringSequence>
-        Work(StringSequence const& names_, HandlerType const& handler_) : handler(handler_)
+        Work(StringSequence const& names_, HandlerType handler_) : handler(std::move(handler_))
         {
             names.reserve(names_.size());
 
@@ -135,7 +139,6 @@ public:
         , m_io_context(io_context)
         , m_strand(boost::asio::make_strand(io_context))
         , m_resolver(io_context)
-        , m_asyncHandlersCompleted(true)
         , m_stop_called(false)
         , m_stopped(true)
     {
@@ -152,7 +155,7 @@ public:
     void
     asyncHandlersComplete()
     {
-        std::unique_lock<std::mutex> lk{m_mut};
+        std::unique_lock<std::mutex> const lk{m_mut};
         m_asyncHandlersCompleted = true;
         m_cv.notify_all();
     }
@@ -169,10 +172,10 @@ public:
         XRPL_ASSERT(m_stopped == true, "xrpl::ResolverAsioImpl::start : stopped");
         XRPL_ASSERT(m_stop_called == false, "xrpl::ResolverAsioImpl::start : not stopping");
 
-        if (m_stopped.exchange(false) == true)
+        if (m_stopped.exchange(false))
         {
             {
-                std::lock_guard lk{m_mut};
+                std::lock_guard const lk{m_mut};
                 m_asyncHandlersCompleted = false;
             }
             addReference();
@@ -182,7 +185,7 @@ public:
     void
     stop_async() override
     {
-        if (m_stop_called.exchange(true) == false)
+        if (!m_stop_called.exchange(true))
         {
             boost::asio::dispatch(
                 m_io_context,
@@ -229,7 +232,7 @@ public:
     {
         XRPL_ASSERT(m_stop_called == true, "xrpl::ResolverAsioImpl::do_stop : stopping");
 
-        if (m_stopped.exchange(true) == false)
+        if (!m_stopped.exchange(true))
         {
             m_work.clear();
             m_resolver.cancel();
@@ -271,7 +274,7 @@ public:
                 m_strand, std::bind(&ResolverAsioImpl::do_work, this, CompletionCounter(this))));
     }
 
-    HostAndPort
+    static HostAndPort
     parseName(std::string const& str)
     {
         // first attempt to parse as an endpoint (IP addr + port).
@@ -290,9 +293,10 @@ public:
         auto const find_whitespace =
             std::bind(&std::isspace<std::string::value_type>, std::placeholders::_1, std::locale());
 
-        auto host_first = std::find_if_not(str.begin(), str.end(), find_whitespace);
+        auto host_first = std::ranges::find_if_not(str, find_whitespace);
 
-        auto port_last = std::find_if_not(str.rbegin(), str.rend(), find_whitespace).base();
+        auto port_last =
+            std::ranges::find_if_not(std::ranges::reverse_view(str), find_whitespace).base();
 
         // This should only happen for all-whitespace strings
         if (host_first >= port_last)
@@ -319,7 +323,7 @@ public:
     void
     do_work(CompletionCounter)
     {
-        if (m_stop_called == true)
+        if (m_stop_called)
             return;
 
         // We don't have any work to do at this time
@@ -327,7 +331,7 @@ public:
             return;
 
         std::string const name(m_work.front().names.back());
-        HandlerType handler(m_work.front().handler);
+        HandlerType const handler(m_work.front().handler);
 
         m_work.front().names.pop_back();
 
@@ -367,14 +371,14 @@ public:
     {
         XRPL_ASSERT(!names.empty(), "xrpl::ResolverAsioImpl::do_resolve : names non-empty");
 
-        if (m_stop_called == false)
+        if (!m_stop_called)
         {
             m_work.emplace_back(names, handler);
 
             JLOG(m_journal.debug()) << "Queued new job with " << names.size() << " tasks. "
                                     << m_work.size() << " jobs outstanding.";
 
-            if (m_work.size() > 0)
+            if (!m_work.empty())
             {
                 boost::asio::post(
                     m_io_context,

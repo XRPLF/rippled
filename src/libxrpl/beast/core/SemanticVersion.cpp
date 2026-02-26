@@ -6,6 +6,7 @@
 #include <cctype>
 #include <limits>
 #include <locale>
+#include <ranges>
 #include <stdexcept>
 #include <string>
 
@@ -29,7 +30,7 @@ print_identifiers(SemanticVersion::identifier_list const& list)
 bool
 isNumeric(std::string const& s)
 {
-    int n;
+    int n = 0;
 
     // Must be convertible to an integer
     if (!lexicalCastChecked(n, s))
@@ -58,17 +59,16 @@ chopUInt(int& value, int limit, std::string& input)
     if (input.empty())
         return false;
 
-    auto left_iter = std::find_if_not(input.begin(), input.end(), [](std::string::value_type c) {
-        return std::isdigit(c, std::locale::classic());
-    });
+    auto left_iter = std::ranges::find_if_not(
+        input, [](std::string::value_type c) { return std::isdigit(c, std::locale::classic()); });
 
-    std::string item(input.begin(), left_iter);
+    std::string const item(input.begin(), left_iter);
 
     // Must not be empty
     if (item.empty())
         return false;
 
-    int n;
+    int n = 0;
 
     // Must be convertible to an integer
     if (!lexicalCastChecked(n, item))
@@ -148,13 +148,13 @@ bool
 SemanticVersion::parse(std::string const& input)
 {
     // May not have leading or trailing whitespace
-    auto left_iter = std::find_if_not(input.begin(), input.end(), [](std::string::value_type c) {
-        return std::isspace(c, std::locale::classic());
-    });
+    auto left_iter = std::ranges::find_if_not(
+        input, [](std::string::value_type c) { return std::isspace(c, std::locale::classic()); });
 
-    auto right_iter = std::find_if_not(input.rbegin(), input.rend(), [](std::string::value_type c) {
-                          return std::isspace(c, std::locale::classic());
-                      }).base();
+    auto right_iter =
+        std::ranges::find_if_not(std::ranges::reverse_view(input), [](std::string::value_type c) {
+            return std::isspace(c, std::locale::classic());
+        }).base();
 
     // Must not be empty!
     if (left_iter >= right_iter)
@@ -234,26 +234,34 @@ int
 compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
 {
     if (lhs.majorVersion > rhs.majorVersion)
+    {
         return 1;
-    else if (lhs.majorVersion < rhs.majorVersion)
+    }
+    if (lhs.majorVersion < rhs.majorVersion)
         return -1;
 
     if (lhs.minorVersion > rhs.minorVersion)
+    {
         return 1;
-    else if (lhs.minorVersion < rhs.minorVersion)
+    }
+    if (lhs.minorVersion < rhs.minorVersion)
         return -1;
 
     if (lhs.patchVersion > rhs.patchVersion)
+    {
         return 1;
-    else if (lhs.patchVersion < rhs.patchVersion)
+    }
+    if (lhs.patchVersion < rhs.patchVersion)
         return -1;
 
     if (lhs.isPreRelease() || rhs.isPreRelease())
     {
         // Pre-releases have a lower precedence
         if (lhs.isRelease() && rhs.isPreRelease())
+        {
             return 1;
-        else if (lhs.isPreRelease() && rhs.isRelease())
+        }
+        if (lhs.isPreRelease() && rhs.isRelease())
             return -1;
 
         // Compare pre-release identifiers
@@ -263,8 +271,10 @@ compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
         {
             // A larger list of identifiers has a higher precedence
             if (i >= rhs.preReleaseIdentifiers.size())
+            {
                 return 1;
-            else if (i >= lhs.preReleaseIdentifiers.size())
+            }
+            if (i >= lhs.preReleaseIdentifiers.size())
                 return -1;
 
             std::string const& left(lhs.preReleaseIdentifiers[i]);
@@ -272,8 +282,10 @@ compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
 
             // Numeric identifiers have lower precedence
             if (!isNumeric(left) && isNumeric(right))
+            {
                 return 1;
-            else if (isNumeric(left) && !isNumeric(right))
+            }
+            if (isNumeric(left) && !isNumeric(right))
                 return -1;
 
             if (isNumeric(left))
@@ -284,15 +296,17 @@ compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
                 int const iRight(lexicalCastThrow<int>(right));
 
                 if (iLeft > iRight)
+                {
                     return 1;
-                else if (iLeft < iRight)
+                }
+                if (iLeft < iRight)
                     return -1;
             }
             else
             {
                 XRPL_ASSERT(!isNumeric(right), "beast::compare : both inputs non-numeric");
 
-                int result = left.compare(right);
+                int const result = left.compare(right);
 
                 if (result != 0)
                     return result;
