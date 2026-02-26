@@ -157,7 +157,8 @@ class Feature_test : public beast::unit_test::suite
                 feature[jss::name].asString() + " vetoed value");
             if (expectObsolete)
                 BEAST_EXPECTS(
-                    feature.isMember(jss::obsolete) && feature[jss::obsolete].asBool() == true,
+                    feature.isMember(jss::obsolete) && feature[jss::obsolete].isBool() &&
+                        feature[jss::obsolete].asBool() == true,
                     feature[jss::name].asString() + " obsolete");
             else
                 BEAST_EXPECTS(!feature.isMember(jss::obsolete), feature[jss::name].asString() + " no obsolete");
@@ -367,7 +368,8 @@ class Feature_test : public beast::unit_test::suite
                     (*it)[jss::name].asString() + " vetoed value");
                 if (expectObsolete)
                     BEAST_EXPECTS(
-                        (*it).isMember(jss::obsolete) && (*it)[jss::obsolete].asBool() == true,
+                        (*it).isMember(jss::obsolete) && (*it)[jss::obsolete].isBool() &&
+                            (*it)[jss::obsolete].asBool() == true,
                         (*it)[jss::name].asString() + " obsolete");
                 else
                     BEAST_EXPECTS(!(*it).isMember(jss::obsolete), (*it)[jss::name].asString() + " no obsolete");
@@ -446,7 +448,8 @@ class Feature_test : public beast::unit_test::suite
                 feature[jss::name].asString() + " vetoed value");
             if (expectObsolete)
                 BEAST_EXPECTS(
-                    feature.isMember(jss::obsolete) && feature[jss::obsolete].asBool() == true,
+                    feature.isMember(jss::obsolete) && feature[jss::obsolete].isBool() &&
+                        feature[jss::obsolete].asBool() == true,
                     feature[jss::name].asString() + " obsolete");
             else
                 BEAST_EXPECTS(!feature.isMember(jss::obsolete), feature[jss::name].asString() + " no obsolete");
