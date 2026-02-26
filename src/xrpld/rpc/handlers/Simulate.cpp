@@ -54,7 +54,7 @@ getAutofillSequence(
     }
     if (!sle)
     {
-        JLOG(context.registry.journal("Simulate").debug())
+        JLOG(context.app.journal("Simulate").debug())
             << "Failed to find source account "
             << "in current ledger: " << toBase58(*srcAddressID);
 
@@ -63,7 +63,7 @@ getAutofillSequence(
     if (!isCurrentLedger)
         return sle->getFieldU32(sfSequence);
 
-    return context.registry.getTxQ().nextQueuableSeq(sle).value();
+    return context.app.getTxQ().nextQueuableSeq(sle).value();
 }
 
 static std::optional<Json::Value>
@@ -137,10 +137,10 @@ autofillTx(
         {
             auto feeOrError = RPC::getCurrentNetworkFee(
                 context.role,
-                context.registry.config(),
-                context.registry.getFeeTrack(),
-                context.registry.getTxQ(),
-                context.registry,
+                context.app.config(),
+                context.app.getFeeTrack(),
+                context.app.getTxQ(),
+                context.app,
                 tx_json);
             if (feeOrError.isMember(jss::error))
                 return feeOrError;
@@ -166,7 +166,7 @@ autofillTx(
 
     if (!tx_json.isMember(jss::NetworkID))
     {
-        auto const networkId = context.registry.getNetworkIDService().getNetworkID();
+        auto const networkId = context.app.getNetworkIDService().getNetworkID();
         if (networkId > 1024)
             tx_json[jss::NetworkID] = to_string(networkId);
     }
@@ -213,7 +213,7 @@ getTxJsonFromHistory(RPC::JsonContext& context, bool const isCurrentLedger)
             return RPC::invalid_field_error(jss::ctid);
         }
         auto const [ledgerSq, txId, _] = *decodedCTID;
-        if (auto const optHash = context.registry.getLedgerMaster().txnIdFromIndex(ledgerSq, txId);
+        if (auto const optHash = context.app.getLedgerMaster().txnIdFromIndex(ledgerSq, txId);
             optHash)
         {
             hash = *optHash;
@@ -225,7 +225,7 @@ getTxJsonFromHistory(RPC::JsonContext& context, bool const isCurrentLedger)
     }
     using TxPair = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
     auto ec{rpcSUCCESS};
-    std::variant<TxPair, TxSearched> v = context.registry.getMasterTransaction().fetch(hash, ec);
+    std::variant<TxPair, TxSearched> v = context.app.getMasterTransaction().fetch(hash, ec);
     if (std::get_if<TxSearched>(&v))
     {
         return RPC::make_error(rpcTXN_NOT_FOUND);
@@ -407,7 +407,7 @@ simulateTxn(
          * cannot use `simulate` to bypass signature checks and submit
          * transactions/modify the current ledger directly.
          ***************************************/
-        auto const result = apply(context.registry, perTxView, txn, tapDRY_RUN, context.j);
+        auto const result = apply(context.app, perTxView, txn, tapDRY_RUN, context.j);
         if (isTesSuccess(result.ter) || isTecClaim(result.ter))
             perTxView.apply(view);
         jvTransactions.append(processResult(result, txn, isBinaryOutput, view));
@@ -416,8 +416,8 @@ simulateTxn(
         {
             OpenView wholeBatchView(batch_view, view);
 
-            if (auto const batchResults = applyBatchTransactions(
-                    context.registry, wholeBatchView, txn, tapDRY_RUN, context.j);
+            if (auto const batchResults =
+                    applyBatchTransactions(context.app, wholeBatchView, txn, tapDRY_RUN, context.j);
                 batchResults)
             {
                 for (int i = 0; i < batchResults->size(); ++i)
@@ -497,7 +497,7 @@ processTransaction(
     }
 
     std::string reason;
-    return std::make_shared<Transaction>(stTx, reason, context.registry);
+    return std::make_shared<Transaction>(stTx, reason, context.app);
 }
 
 // {
