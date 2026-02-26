@@ -1,8 +1,9 @@
+#include <xrpl/tx/ApplyContext.h>
+//
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/to_string.h>
-#include <xrpl/tx/ApplyContext.h>
-#include <xrpl/tx/InvariantCheck.h>
+#include <xrpl/tx/invariants/InvariantCheck.h>
 
 namespace xrpl {
 
@@ -49,12 +50,11 @@ ApplyContext::size()
 }
 
 void
-ApplyContext::visit(
-    std::function<void(
-        uint256 const&,
-        bool,
-        std::shared_ptr<SLE const> const&,
-        std::shared_ptr<SLE const> const&)> const& func)
+ApplyContext::visit(std::function<void(
+                        uint256 const&,
+                        bool,
+                        std::shared_ptr<SLE const> const&,
+                        std::shared_ptr<SLE const> const&)> const& func)
 {
     view_->visit(base_, func);
 }
