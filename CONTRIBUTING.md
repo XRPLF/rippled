@@ -264,11 +264,7 @@ This ensures that configuration changes don't introduce new warnings across the 
 
 ### Running clang-tidy locally
 
-Before running clang-tidy, you must build the project to generate required files (particularly protobuf headers). At minimum, build the `xrpl.libpb` target:
-
-```
-cmake --build build --target xrpl.libpb
-```
+Before running clang-tidy, you must build the project to generate required files (particularly protobuf headers). Refer to [`BUILD.md`](./BUILD.md) for build instructions.
 
 Then run clang-tidy on your local changes:
 
