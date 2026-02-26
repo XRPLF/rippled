@@ -80,7 +80,8 @@ doNoRippleCheck(RPC::JsonContext& context)
     // that transactions params is a boolean value, however, assigning any
     // string value works. Do not allow this. This check is for api Version 2
     // onwards only
-    if (context.apiVersion > 1u && params.isMember(jss::transactions) && !params[jss::transactions].isBool())
+    if (context.apiVersion > 1u && params.isMember(jss::transactions) &&
+        !params[jss::transactions].isBool())
     {
         return RPC::invalid_field_error(jss::transactions);
     }
@@ -166,11 +167,21 @@ doNoRippleCheck(RPC::JsonContext& context)
                     fillTransaction(context, tx, accountID, seq, *ledger);
                 }
 
-                return true;
+                    STAmount limitAmount(
+                        ownedItem->getFieldAmount(bLow ? sfLowLimit : sfHighLimit));
+                    limitAmount.setIssuer(peer);
+
+                    Json::Value& tx = jvTransactions.append(Json::objectValue);
+                    tx["TransactionType"] = jss::TrustSet;
+                    tx["LimitAmount"] = limitAmount.getJson(JsonOptions::none);
+                    tx["Flags"] = bNoRipple ? tfClearNoRipple : tfSetNoRipple;
+                    fillTransaction(context, tx, accountID, seq, *ledger);
+
+                    return true;
+                }
             }
-        }
-        return false;
-    });
+            return false;
+        });
 
     if (transactions)
         result[jss::transactions] = std::move(jvTransactions);

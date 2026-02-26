@@ -83,7 +83,8 @@ public:
         std::lock_guard sl(lock_);
 
         return std::make_pair(
-            std::max(localTxnLoadFee_, remoteTxnLoadFee_), std::max(remoteTxnLoadFee_, clusterTxnLoadFee_));
+            std::max(localTxnLoadFee_, remoteTxnLoadFee_),
+            std::max(remoteTxnLoadFee_, clusterTxnLoadFee_));
     }
 
     void
@@ -110,7 +111,8 @@ public:
     isLoadedCluster() const
     {
         std::lock_guard sl(lock_);
-        return (raiseCount_ != 0) || (localTxnLoadFee_ != lftNormalFee) || (clusterTxnLoadFee_ != lftNormalFee);
+        return (raiseCount_ != 0) || (localTxnLoadFee_ != lftNormalFee) ||
+            (clusterTxnLoadFee_ != lftNormalFee);
     }
 
 private:

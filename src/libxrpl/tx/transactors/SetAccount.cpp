@@ -16,15 +16,18 @@ SetAccount::makeTxConsequences(PreflightContext const& ctx)
     // The SetAccount may be a blocker, but only if it sets or clears
     // specific account flags.
     auto getTxConsequencesCategory = [](STTx const& tx) {
-        if (std::uint32_t const uTxFlags = tx.getFlags(); uTxFlags & (tfRequireAuth | tfOptionalAuth))
+        if (std::uint32_t const uTxFlags = tx.getFlags();
+            uTxFlags & (tfRequireAuth | tfOptionalAuth))
             return TxConsequences::blocker;
 
-        if (auto const uSetFlag = tx[~sfSetFlag];
-            uSetFlag && (*uSetFlag == asfRequireAuth || *uSetFlag == asfDisableMaster || *uSetFlag == asfAccountTxnID))
+        if (auto const uSetFlag = tx[~sfSetFlag]; uSetFlag &&
+            (*uSetFlag == asfRequireAuth || *uSetFlag == asfDisableMaster ||
+             *uSetFlag == asfAccountTxnID))
             return TxConsequences::blocker;
 
         if (auto const uClearFlag = tx[~sfClearFlag]; uClearFlag &&
-            (*uClearFlag == asfRequireAuth || *uClearFlag == asfDisableMaster || *uClearFlag == asfAccountTxnID))
+            (*uClearFlag == asfRequireAuth || *uClearFlag == asfDisableMaster ||
+             *uClearFlag == asfAccountTxnID))
             return TxConsequences::blocker;
 
         return TxConsequences::normal;
@@ -405,7 +408,8 @@ SetAccount::doApply()
     // If you have set NoFreeze, you may not clear GlobalFreeze
     // This prevents those who have set NoFreeze from using
     // GlobalFreeze strategically.
-    if ((uSetFlag != asfGlobalFreeze) && (uClearFlag == asfGlobalFreeze) && ((uFlagsOut & lsfNoFreeze) == 0))
+    if ((uSetFlag != asfGlobalFreeze) && (uClearFlag == asfGlobalFreeze) &&
+        ((uFlagsOut & lsfNoFreeze) == 0))
     {
         JLOG(j_.trace()) << "Clear GlobalFreeze flag";
         uFlagsOut &= ~lsfGlobalFreeze;

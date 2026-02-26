@@ -14,7 +14,10 @@ protected:
 
     SHAMapLeafNode(boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t cowid);
 
-    SHAMapLeafNode(boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t cowid, SHAMapHash const& hash);
+    SHAMapLeafNode(
+        boost::intrusive_ptr<SHAMapItem const> item,
+        std::uint32_t cowid,
+        SHAMapHash const& hash);
 
 public:
     SHAMapLeafNode(SHAMapLeafNode const&) = delete;

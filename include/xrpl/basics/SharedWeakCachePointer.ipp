@@ -19,7 +19,8 @@ SharedWeakCachePointer<T>::SharedWeakCachePointer(SharedWeakCachePointer&& rhs) 
 template <class T>
 template <class TT>
     requires std::convertible_to<TT*, T*>
-SharedWeakCachePointer<T>::SharedWeakCachePointer(std::shared_ptr<TT>&& rhs) : combo_{std::move(rhs)}
+SharedWeakCachePointer<T>::SharedWeakCachePointer(std::shared_ptr<TT>&& rhs)
+    : combo_{std::move(rhs)}
 {
 }
 

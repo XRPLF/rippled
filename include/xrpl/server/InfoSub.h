@@ -62,7 +62,10 @@ public:
         // for use during InfoSub destruction
         // Removes only from the server
         virtual void
-        unsubAccountInternal(std::uint64_t uListener, hash_set<AccountID> const& vnaAccountIDs, bool realTime) = 0;
+        unsubAccountInternal(
+            std::uint64_t uListener,
+            hash_set<AccountID> const& vnaAccountIDs,
+            bool realTime) = 0;
 
         /**
          * subscribe an account's new transactions and retrieve the account's
@@ -84,7 +87,10 @@ public:
         unsubAccountHistory(ref ispListener, AccountID const& account, bool historyOnly) = 0;
 
         virtual void
-        unsubAccountHistoryInternal(std::uint64_t uListener, AccountID const& account, bool historyOnly) = 0;
+        unsubAccountHistoryInternal(
+            std::uint64_t uListener,
+            AccountID const& account,
+            bool historyOnly) = 0;
 
         // VFALCO TODO Document the bool return value
         virtual bool

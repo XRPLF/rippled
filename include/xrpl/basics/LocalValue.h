@@ -103,6 +103,7 @@ LocalValue<T>::operator*()
     }
 
     return *reinterpret_cast<T*>(
-        lvs->values.emplace(this, std::make_unique<detail::LocalValues::Value<T>>(t_)).first->second->get());
+        lvs->values.emplace(this, std::make_unique<detail::LocalValues::Value<T>>(t_))
+            .first->second->get());
 }
 }  // namespace xrpl

@@ -36,7 +36,10 @@ getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID)
 }
 
 bool
-isRelatedToAccount(ReadView const& ledger, std::shared_ptr<SLE const> const& sle, AccountID const& accountID)
+isRelatedToAccount(
+    ReadView const& ledger,
+    std::shared_ptr<SLE const> const& sle,
+    AccountID const& accountID)
 {
     if (sle->getType() == ltRIPPLE_STATE)
     {
@@ -155,8 +158,8 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error)
     if (count != 1)
     {
         error = RPC::make_param_error(
-            "Exactly one of the following must be specified: " + std::string(jss::passphrase) + ", " +
-            std::string(jss::seed) + " or " + std::string(jss::seed_hex));
+            "Exactly one of the following must be specified: " + std::string(jss::passphrase) +
+            ", " + std::string(jss::seed) + " or " + std::string(jss::seed_hex));
         return std::nullopt;
     }
 
@@ -209,8 +212,9 @@ keypairForSignature(Json::Value const& params, Json::Value& error, unsigned int 
     if (count > 1)
     {
         error = RPC::make_param_error(
-            "Exactly one of the following must be specified: " + std::string(jss::passphrase) + ", " +
-            std::string(jss::secret) + ", " + std::string(jss::seed) + " or " + std::string(jss::seed_hex));
+            "Exactly one of the following must be specified: " + std::string(jss::passphrase) +
+            ", " + std::string(jss::secret) + ", " + std::string(jss::seed) + " or " +
+            std::string(jss::seed_hex));
         return {};
     }
 
@@ -240,8 +244,8 @@ keypairForSignature(Json::Value const& params, Json::Value& error, unsigned int 
         // https://developercommunity.visualstudio.com/t/assigning-constexpr-char--to-static-cha/10021357?entry=problem)
         if (strcmp(secretType, jss::secret.c_str()) == 0)
         {
-            error =
-                RPC::make_param_error("The secret field is not allowed if " + std::string(jss::key_type) + " is used.");
+            error = RPC::make_param_error(
+                "The secret field is not allowed if " + std::string(jss::key_type) + " is used.");
             return {};
         }
     }
@@ -310,7 +314,8 @@ chooseLedgerEntryType(Json::Value const& params)
     std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::OK, ltANY};
     if (params.isMember(jss::type))
     {
-        static constexpr auto types = std::to_array<std::tuple<char const*, char const*, LedgerEntryType>>({
+        static constexpr auto types =
+            std::to_array<std::tuple<char const*, char const*, LedgerEntryType>>({
 #pragma push_macro("LEDGER_ENTRY")
 #undef LEDGER_ENTRY
 
@@ -320,7 +325,7 @@ chooseLedgerEntryType(Json::Value const& params)
 
 #undef LEDGER_ENTRY
 #pragma pop_macro("LEDGER_ENTRY")
-        });
+            });
 
         auto const& p = params[jss::type];
         if (!p.isString())

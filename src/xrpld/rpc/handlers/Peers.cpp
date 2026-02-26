@@ -53,7 +53,8 @@ doPeers(RPC::JsonContext& context)
             json[jss::fee] = static_cast<double>(node.getLoadFee()) / ref;
 
         if (node.getReportTime() != NetClock::time_point{})
-            json[jss::age] = (node.getReportTime() >= now) ? 0 : (now - node.getReportTime()).count();
+            json[jss::age] =
+                (node.getReportTime() >= now) ? 0 : (now - node.getReportTime()).count();
     });
 
     return jvResult;

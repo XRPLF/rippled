@@ -36,7 +36,9 @@ PermissionedDomainDelete::preclaim(PreclaimContext const& ctx)
 TER
 PermissionedDomainDelete::doApply()
 {
-    XRPL_ASSERT(ctx_.tx.isFieldPresent(sfDomainID), "xrpl::PermissionedDomainDelete::doApply : required field present");
+    XRPL_ASSERT(
+        ctx_.tx.isFieldPresent(sfDomainID),
+        "xrpl::PermissionedDomainDelete::doApply : required field present");
 
     auto const slePd = view().peek({ltPERMISSIONED_DOMAIN, ctx_.tx.at(sfDomainID)});
     auto const page = (*slePd)[sfOwnerNode];

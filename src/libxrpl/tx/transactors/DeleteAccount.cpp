@@ -246,7 +246,8 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     Keylet const first = keylet::nftpage_min(account);
     Keylet const last = keylet::nftpage_max(account);
 
-    auto const cp = ctx.view.read(Keylet(ltNFTOKEN_PAGE, ctx.view.succ(first.key, last.key.next()).value_or(last.key)));
+    auto const cp = ctx.view.read(
+        Keylet(ltNFTOKEN_PAGE, ctx.view.succ(first.key, last.key.next()).value_or(last.key)));
     if (cp)
         return tecHAS_OBLIGATIONS;
 
@@ -271,7 +272,8 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     // their account and mints a NFToken, it is possible that the
     // NFTokenSequence of this NFToken is the same as the one that the
     // authorized minter minted in a previous ledger.
-    if ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) + (*sleAccount)[~sfMintedNFTokens].value_or(0) + seqDelta >
+    if ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) +
+            (*sleAccount)[~sfMintedNFTokens].value_or(0) + seqDelta >
         ctx.view.seq())
         return tecTOO_SOON;
 
@@ -336,7 +338,8 @@ DeleteAccount::doApply()
 
     if (ctx_.tx.isFieldPresent(sfCredentialIDs))
     {
-        if (auto err = verifyDepositPreauth(ctx_.tx, ctx_.view(), account_, dstID, dst, ctx_.journal);
+        if (auto err =
+                verifyDepositPreauth(ctx_.tx, ctx_.view(), account_, dstID, dst, ctx_.journal);
             !isTesSuccess(err))
             return err;
     }
@@ -373,7 +376,8 @@ DeleteAccount::doApply()
     (*src)[sfBalance] = (*src)[sfBalance] - mSourceBalance;
     ctx_.deliver(mSourceBalance);
 
-    XRPL_ASSERT((*src)[sfBalance] == XRPAmount(0), "xrpl::DeleteAccount::doApply : source balance is zero");
+    XRPL_ASSERT(
+        (*src)[sfBalance] == XRPAmount(0), "xrpl::DeleteAccount::doApply : source balance is zero");
 
     // If there's still an owner directory associated with the source account
     // delete it.
