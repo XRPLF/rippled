@@ -4187,6 +4187,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             // Submit a different transaction to increment Bob's sequence
             mptAlice.pay(bob, carol, 1);  // Sequence N -> N+1
+            env.close();
 
             // Attempt to replay proof (bound to sequence N) at sequence N+1
             mptAlice.send(
