@@ -121,6 +121,7 @@ else ()
                   -fstack-protector
                   -Wno-sign-compare
                   -Wno-unused-but-set-variable
+                  -Wno-missing-field-initializers
                   $<$<NOT:$<CONFIG:Debug>>:-fno-strict-aliasing>
                   # tweak gcc optimization for debug
                   $<$<AND:$<BOOL:${is_gcc}>,$<CONFIG:Debug>>:-O0>
