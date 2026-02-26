@@ -674,6 +674,7 @@ SHAMap::delItem(uint256 const& id)
 
         node = unshareNode(std::move(node), nodeID);
         node->setChild(selectBranch(nodeID, id), std::move(prevNode));
+        prevNode = intr_ptr::SharedPtr<SHAMapTreeNode>{};
 
         if (!nodeID.isRoot())
         {
@@ -682,6 +683,9 @@ SHAMap::delItem(uint256 const& id)
             int const bc = node->getBranchCount();
             if (bc == 0)
             {
+                // TODO: looks like this branch is not needed anymore because prevNode is already
+                // nullptr
+
                 // no children below this branch
                 prevNode.reset();
             }

@@ -1,6 +1,7 @@
 ---
 Checks: "-*,
-  bugprone-argument-comment
+  bugprone-argument-comment,
+  bugprone-use-after-move
   "
 # bugprone-assert-side-effect,
 # bugprone-bad-signal-to-kill-thread,
@@ -74,7 +75,6 @@ Checks: "-*,
 # bugprone-unused-local-non-trivial-variable,
 # bugprone-unused-raii,
 # bugprone-unused-return-value,
-# bugprone-use-after-move,
 # bugprone-virtual-near-miss,
 # cppcoreguidelines-init-variables,
 # cppcoreguidelines-misleading-capture-default-by-value,
