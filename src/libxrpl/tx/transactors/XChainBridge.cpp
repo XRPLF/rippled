@@ -516,8 +516,9 @@ struct FinalizeClaimHelperResult
     TER
     ter() const
     {
-        if ((!mainFundsTer || xrpl::extract(*mainFundsTer)) &&
-            (!rewardTer || xrpl::extract(*rewardTer)) && (!rmSleTer || xrpl::extract(*rmSleTer)))
+        if ((!mainFundsTer || xrpl::isTesSuccess(*mainFundsTer)) &&
+            (!rewardTer || xrpl::isTesSuccess(*rewardTer)) &&
+            (!rmSleTer || xrpl::isTesSuccess(*rmSleTer)))
             return tesSUCCESS;
 
         // if any phase return a tecINTERNAL or a tef, prefer returning those
@@ -531,11 +532,11 @@ struct FinalizeClaimHelperResult
 
         // Only after the tecINTERNAL and tef are checked, return the first
         // non-success error code.
-        if (mainFundsTer && !isTesSuccess(*mainFundsTer))
+        if (mainFundsTer && !xrpl::isTesSuccess(*mainFundsTer))
             return *mainFundsTer;
-        if (rewardTer && !isTesSuccess(*rewardTer))
+        if (rewardTer && !xrpl::isTesSuccess(*rewardTer))
             return *rewardTer;
-        if (rmSleTer && !isTesSuccess(*rmSleTer))
+        if (rmSleTer && !xrpl::isTesSuccess(*rmSleTer))
             return *rmSleTer;
         return tesSUCCESS;
     }
