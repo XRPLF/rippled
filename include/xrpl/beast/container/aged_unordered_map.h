@@ -17,5 +17,4 @@ template <
     class Allocator = std::allocator<std::pair<Key const, T>>>
 using aged_unordered_map =
     detail::aged_unordered_container<false, true, Key, T, Clock, Hash, KeyEqual, Allocator>;
-
 }
