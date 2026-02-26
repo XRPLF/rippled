@@ -418,13 +418,10 @@ public:
             {
                 JLOG(j_.trace()) << "Complete.";
             }
-            else
-            {
-                mResponse.commit(bytes_transferred);
-                std::string strBody{
-                    {std::istreambuf_iterator<char>(&mResponse)}, std::istreambuf_iterator<char>()};
-                invokeComplete(ecResult, mStatus, mBody + strBody);
-            }
+            mResponse.commit(bytes_transferred);
+            std::string strBody{
+                {std::istreambuf_iterator<char>(&mResponse)}, std::istreambuf_iterator<char>()};
+            invokeComplete(ecResult, mStatus, mBody + strBody);
         }
     }
 

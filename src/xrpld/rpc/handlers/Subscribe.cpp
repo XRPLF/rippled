@@ -57,7 +57,6 @@ doSubscribe(RPC::JsonContext& context)
             {
                 auto rspSub = make_RPCSub(
                     context.app.getOPs(),
-                    context.app.getIOContext(),
                     context.app.getJobQueue(),
                     strUrl,
                     strUsername,
