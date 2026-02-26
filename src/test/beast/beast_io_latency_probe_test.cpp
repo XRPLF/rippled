@@ -158,7 +158,9 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
         auto probe_duration = 1s;
 
         size_t const expected_probe_count_max = (probe_duration / interval);
-        size_t const expected_probe_count_min = expected_probe_count_max;
+
+        // NOLINTNEXTLINE(misc-const-correctness)
+        size_t expected_probe_count_min = expected_probe_count_max;
 #ifdef XRPL_RUNNING_IN_CI
         // adjust min expected based on measurements
         // if running in CI/VM environment
