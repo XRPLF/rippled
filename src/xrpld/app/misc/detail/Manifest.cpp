@@ -523,11 +523,12 @@ ManifestCache::load(
     if (!configRevocation.empty())
     {
         std::string revocationStr;
-        revocationStr.reserve(std::accumulate(
-            configRevocation.cbegin(),
-            configRevocation.cend(),
-            std::size_t(0),
-            [](std::size_t init, std::string const& s) { return init + s.size(); }));
+        revocationStr.reserve(
+            std::accumulate(
+                configRevocation.cbegin(),
+                configRevocation.cend(),
+                std::size_t(0),
+                [](std::size_t init, std::string const& s) { return init + s.size(); }));
 
         for (auto const& line : configRevocation)
             revocationStr += boost::algorithm::trim_copy(line);

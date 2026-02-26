@@ -2,7 +2,6 @@
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxQ.h>
-#include <xrpld/app/tx/apply.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/GRPCHandlers.h>
@@ -10,11 +9,13 @@
 #include <xrpld/rpc/detail/TransactionSign.h>
 
 #include <xrpl/core/HashRouter.h>
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/tx/apply.h>
 
 namespace xrpl {
 
@@ -128,7 +129,7 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
 
     if (!tx_json.isMember(jss::NetworkID))
     {
-        auto const networkId = context.app.config().NETWORK_ID;
+        auto const networkId = context.app.getNetworkIDService().getNetworkID();
         if (networkId > 1024)
             tx_json[jss::NetworkID] = to_string(networkId);
     }

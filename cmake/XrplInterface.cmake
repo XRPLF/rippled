@@ -33,10 +33,13 @@ target_compile_definitions(
 target_compile_options(
     opts
     INTERFACE $<$<AND:$<BOOL:${is_gcc}>,$<COMPILE_LANGUAGE:CXX>>:-Wsuggest-override>
-              $<$<BOOL:${is_gcc}>:-Wno-maybe-uninitialized> $<$<BOOL:${perf}>:-fno-omit-frame-pointer>
-              $<$<BOOL:${profile}>:-pg> $<$<AND:$<BOOL:${is_gcc}>,$<BOOL:${profile}>>:-p>)
+              $<$<BOOL:${is_gcc}>:-Wno-maybe-uninitialized>
+              $<$<BOOL:${perf}>:-fno-omit-frame-pointer>
+              $<$<BOOL:${profile}>:-pg>
+              $<$<AND:$<BOOL:${is_gcc}>,$<BOOL:${profile}>>:-p>)
 
-target_link_libraries(opts INTERFACE $<$<BOOL:${profile}>:-pg> $<$<AND:$<BOOL:${is_gcc}>,$<BOOL:${profile}>>:-p>)
+target_link_libraries(opts INTERFACE $<$<BOOL:${profile}>:-pg>
+                                     $<$<AND:$<BOOL:${is_gcc}>,$<BOOL:${profile}>>:-p>)
 
 if (jemalloc)
     find_package(jemalloc REQUIRED)

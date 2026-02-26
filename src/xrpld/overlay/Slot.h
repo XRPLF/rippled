@@ -492,13 +492,15 @@ Slot<clock_type>::getPeers() const
     auto r = std::unordered_map<id_t, std::tuple<PeerState, std::uint16_t, std::uint32_t, std::uint32_t>>();
 
     for (auto const& [id, info] : peers_)
-        r.emplace(std::make_pair(
-            id,
-            std::move(std::make_tuple(
-                info.state,
-                info.count,
-                epoch<milliseconds>(info.expire).count(),
-                epoch<milliseconds>(info.lastMessage).count()))));
+        r.emplace(
+            std::make_pair(
+                id,
+                std::move(
+                    std::make_tuple(
+                        info.state,
+                        info.count,
+                        epoch<milliseconds>(info.expire).count(),
+                        epoch<milliseconds>(info.lastMessage).count()))));
 
     return r;
 }
@@ -724,10 +726,11 @@ Slots<clock_type>::updateSlotAndSquelch(
     if (it == slots_.end())
     {
         JLOG(journal_.trace()) << "updateSlotAndSquelch: new slot " << Slice(validator);
-        auto it = slots_
-                      .emplace(std::make_pair(
-                          validator, Slot<clock_type>(handler_, logs_.journal("Slot"), maxSelectedPeers_)))
-                      .first;
+        auto it =
+            slots_
+                .emplace(
+                    std::make_pair(validator, Slot<clock_type>(handler_, logs_.journal("Slot"), maxSelectedPeers_)))
+                .first;
         it->second.update(validator, id, type, callback);
     }
     else

@@ -1,0 +1,118 @@
+#include <xrpl/basics/Log.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/tx/transactors/CreateTicket.h>
+
+namespace xrpl {
+
+TxConsequences
+CreateTicket::makeTxConsequences(PreflightContext const& ctx)
+{
+    // Create TxConsequences identifying the number of sequences consumed.
+    return TxConsequences{ctx.tx, ctx.tx[sfTicketCount]};
+}
+
+NotTEC
+CreateTicket::preflight(PreflightContext const& ctx)
+{
+    if (std::uint32_t const count = ctx.tx[sfTicketCount]; count < minValidCount || count > maxValidCount)
+        return temINVALID_COUNT;
+
+    return tesSUCCESS;
+}
+
+TER
+CreateTicket::preclaim(PreclaimContext const& ctx)
+{
+    auto const id = ctx.tx[sfAccount];
+    auto const sleAccountRoot = ctx.view.read(keylet::account(id));
+    if (!sleAccountRoot)
+        return terNO_ACCOUNT;
+
+    // Make sure the TicketCreate would not cause the account to own
+    // too many tickets.
+    std::uint32_t const curTicketCount = (*sleAccountRoot)[~sfTicketCount].value_or(0u);
+    std::uint32_t const addedTickets = ctx.tx[sfTicketCount];
+    std::uint32_t const consumedTickets = ctx.tx.getSeqProxy().isTicket() ? 1u : 0u;
+
+    // Note that unsigned integer underflow can't currently happen because
+    //  o curTicketCount   >= 0
+    //  o addedTickets     >= 1
+    //  o consumedTickets  <= 1
+    // So in the worst case addedTickets == consumedTickets and the
+    // computation yields curTicketCount.
+    if (curTicketCount + addedTickets - consumedTickets > maxTicketThreshold)
+        return tecDIR_FULL;
+
+    return tesSUCCESS;
+}
+
+TER
+CreateTicket::doApply()
+{
+    SLE::pointer const sleAccountRoot = view().peek(keylet::account(account_));
+    if (!sleAccountRoot)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
+    // Each ticket counts against the reserve of the issuing account, but we
+    // check the starting balance because we want to allow dipping into the
+    // reserve to pay fees.
+    std::uint32_t const ticketCount = ctx_.tx[sfTicketCount];
+    {
+        XRPAmount const reserve = view().fees().accountReserve(sleAccountRoot->getFieldU32(sfOwnerCount) + ticketCount);
+
+        if (mPriorBalance < reserve)
+            return tecINSUFFICIENT_RESERVE;
+    }
+
+    beast::Journal viewJ{ctx_.registry.journal("View")};
+
+    // The starting ticket sequence is the same as the current account
+    // root sequence.  Before we got here to doApply(), the transaction
+    // machinery already incremented the account root sequence if that
+    // was appropriate.
+    std::uint32_t const firstTicketSeq = (*sleAccountRoot)[sfSequence];
+
+    // Sanity check that the transaction machinery really did already
+    // increment the account root Sequence.
+    if (std::uint32_t const txSeq = ctx_.tx[sfSequence]; txSeq != 0 && txSeq != (firstTicketSeq - 1))
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
+    for (std::uint32_t i = 0; i < ticketCount; ++i)
+    {
+        std::uint32_t const curTicketSeq = firstTicketSeq + i;
+        Keylet const ticketKeylet = keylet::ticket(account_, curTicketSeq);
+        SLE::pointer sleTicket = std::make_shared<SLE>(ticketKeylet);
+
+        sleTicket->setAccountID(sfAccount, account_);
+        sleTicket->setFieldU32(sfTicketSequence, curTicketSeq);
+        view().insert(sleTicket);
+
+        auto const page = view().dirInsert(keylet::ownerDir(account_), ticketKeylet, describeOwnerDir(account_));
+
+        JLOG(j_.trace()) << "Creating ticket " << to_string(ticketKeylet.key) << ": " << (page ? "success" : "failure");
+
+        if (!page)
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
+
+        sleTicket->setFieldU64(sfOwnerNode, *page);
+    }
+
+    // Update the record of the number of Tickets this account owns.
+    std::uint32_t const oldTicketCount = (*(sleAccountRoot))[~sfTicketCount].value_or(0u);
+
+    sleAccountRoot->setFieldU32(sfTicketCount, oldTicketCount + ticketCount);
+
+    // Every added Ticket counts against the creator's reserve.
+    adjustOwnerCount(view(), sleAccountRoot, ticketCount, viewJ);
+
+    // TicketCreate is the only transaction that can cause an account root's
+    // Sequence field to increase by more than one.  October 2018.
+    sleAccountRoot->setFieldU32(sfSequence, firstTicketSeq + ticketCount);
+
+    return tesSUCCESS;
+}
+
+}  // namespace xrpl

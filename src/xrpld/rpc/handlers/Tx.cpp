@@ -10,6 +10,7 @@
 #include <xrpld/rpc/Status.h>
 
 #include <xrpl/basics/ToString.h>
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -147,7 +148,7 @@ doTxHelp(RPC::Context& context, TxArgs args)
         {
             uint32_t lgrSeq = ledger->header().seq;
             uint32_t txnIdx = meta->getAsObject().getFieldU32(sfTransactionIndex);
-            uint32_t netID = context.app.config().NETWORK_ID;
+            uint32_t netID = context.app.getNetworkIDService().getNetworkID();
 
             if (txnIdx <= 0xFFFFU && netID < 0xFFFFU && lgrSeq < 0x0FFF'FFFFUL)
                 result.ctid = RPC::encodeCTID(lgrSeq, (uint32_t)txnIdx, (uint32_t)netID);
@@ -267,7 +268,7 @@ doTxJson(RPC::JsonContext& context)
             return rpcError(rpcINVALID_PARAMS);
 
         auto const [lgr_seq, txn_idx, net_id] = *ctid;
-        if (net_id != context.app.config().NETWORK_ID)
+        if (net_id != context.app.getNetworkIDService().getNetworkID())
         {
             std::stringstream out;
             out << "Wrong network. You should submit this request to a node "

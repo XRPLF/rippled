@@ -878,18 +878,12 @@ Ledger::updateSkipList()
 bool
 Ledger::isFlagLedger() const
 {
-    return header_.seq % FLAG_LEDGER_INTERVAL == 0;
+    return ::xrpl::isFlagLedger(header_.seq);
 }
 bool
 Ledger::isVotingLedger() const
 {
-    return (header_.seq + 1) % FLAG_LEDGER_INTERVAL == 0;
-}
-
-bool
-isFlagLedger(LedgerIndex seq)
-{
-    return seq % FLAG_LEDGER_INTERVAL == 0;
+    return ::xrpl::isVotingLedger(header_.seq + 1);
 }
 
 static bool

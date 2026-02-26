@@ -1,4 +1,3 @@
-#include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
@@ -12,6 +11,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nftPageMask.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/tx/transactors/NFT/NFTokenUtils.h>
 
 #include <string>
 

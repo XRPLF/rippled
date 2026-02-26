@@ -8,11 +8,11 @@
  * To ease maintenance, you may replace any unneeded values with "..."
  * e.g. #define TRANSACTION(tag, value, name, ...)
  *
- * You must define a transactor class in the `ripple` namespace named `name`,
+ * You must define a transactor class in the `xrpl` namespace named `name`,
  * and include its header alongside the TRANSACTOR definition using this
  * format:
  * #if TRANSACTION_INCLUDE
- * #   include <xrpld/app/tx/detail/HEADER.h>
+ * #   include <xrpl/tx/transactors/HEADER.h>
  * #endif
  *
  * The `privileges` parameter of the TRANSACTION macro is a bitfield
@@ -22,7 +22,7 @@
 
 /** This transaction type executes a payment. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/Payment.h>
+#   include <xrpl/tx/transactors/Payment.h>
 #endif
 TRANSACTION(ttPAYMENT, 0, Payment,
     Delegation::delegable,
@@ -42,7 +42,7 @@ TRANSACTION(ttPAYMENT, 0, Payment,
 
 /** This transaction type creates an escrow object. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/Escrow.h>
+#   include <xrpl/tx/transactors/Escrow.h>
 #endif
 TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate,
     Delegation::delegable,
@@ -73,7 +73,7 @@ TRANSACTION(ttESCROW_FINISH, 2, EscrowFinish,
 
 /** This transaction type adjusts various account settings. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/SetAccount.h>
+#   include <xrpl/tx/transactors/SetAccount.h>
 #endif
 TRANSACTION(ttACCOUNT_SET, 3, AccountSet,
     Delegation::notDelegable,
@@ -94,7 +94,7 @@ TRANSACTION(ttACCOUNT_SET, 3, AccountSet,
 
 /** This transaction type cancels an existing escrow. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/Escrow.h>
+#   include <xrpl/tx/transactors/Escrow.h>
 #endif
 TRANSACTION(ttESCROW_CANCEL, 4, EscrowCancel,
     Delegation::delegable,
@@ -107,7 +107,7 @@ TRANSACTION(ttESCROW_CANCEL, 4, EscrowCancel,
 
 /** This transaction type sets or clears an account's "regular key". */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/SetRegularKey.h>
+#   include <xrpl/tx/transactors/SetRegularKey.h>
 #endif
 TRANSACTION(ttREGULAR_KEY_SET, 5, SetRegularKey,
     Delegation::notDelegable,
@@ -121,7 +121,7 @@ TRANSACTION(ttREGULAR_KEY_SET, 5, SetRegularKey,
 
 /** This transaction type creates an offer to trade one asset for another. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/CreateOffer.h>
+#   include <xrpl/tx/transactors/Offer/CreateOffer.h>
 #endif
 TRANSACTION(ttOFFER_CREATE, 7, OfferCreate,
     Delegation::delegable,
@@ -137,7 +137,7 @@ TRANSACTION(ttOFFER_CREATE, 7, OfferCreate,
 
 /** This transaction type cancels existing offers to trade one asset for another. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/CancelOffer.h>
+#   include <xrpl/tx/transactors/Offer/CancelOffer.h>
 #endif
 TRANSACTION(ttOFFER_CANCEL, 8, OfferCancel,
     Delegation::delegable,
@@ -151,7 +151,7 @@ TRANSACTION(ttOFFER_CANCEL, 8, OfferCancel,
 
 /** This transaction type creates a new set of tickets. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/CreateTicket.h>
+#   include <xrpl/tx/transactors/CreateTicket.h>
 #endif
 TRANSACTION(ttTICKET_CREATE, 10, TicketCreate,
     Delegation::delegable,
@@ -167,7 +167,7 @@ TRANSACTION(ttTICKET_CREATE, 10, TicketCreate,
 // The SignerEntries are optional because a SignerList is deleted by
 // setting the SignerQuorum to zero and omitting SignerEntries.
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/SetSignerList.h>
+#   include <xrpl/tx/transactors/SetSignerList.h>
 #endif
 TRANSACTION(ttSIGNER_LIST_SET, 12, SignerListSet,
     Delegation::notDelegable,
@@ -180,7 +180,7 @@ TRANSACTION(ttSIGNER_LIST_SET, 12, SignerListSet,
 
 /** This transaction type creates a new unidirectional XRP payment channel. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/PayChan.h>
+#   include <xrpl/tx/transactors/PayChan.h>
 #endif
 TRANSACTION(ttPAYCHAN_CREATE, 13, PaymentChannelCreate,
     Delegation::delegable,
@@ -222,7 +222,7 @@ TRANSACTION(ttPAYCHAN_CLAIM, 15, PaymentChannelClaim,
 
 /** This transaction type creates a new check. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/CreateCheck.h>
+#   include <xrpl/tx/transactors/Check/CreateCheck.h>
 #endif
 TRANSACTION(ttCHECK_CREATE, 16, CheckCreate,
     Delegation::delegable,
@@ -238,7 +238,7 @@ TRANSACTION(ttCHECK_CREATE, 16, CheckCreate,
 
 /** This transaction type cashes an existing check. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/CashCheck.h>
+#   include <xrpl/tx/transactors/Check/CashCheck.h>
 #endif
 TRANSACTION(ttCHECK_CASH, 17, CheckCash,
     Delegation::delegable,
@@ -252,7 +252,7 @@ TRANSACTION(ttCHECK_CASH, 17, CheckCash,
 
 /** This transaction type cancels an existing check. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/CancelCheck.h>
+#   include <xrpl/tx/transactors/Check/CancelCheck.h>
 #endif
 TRANSACTION(ttCHECK_CANCEL, 18, CheckCancel,
     Delegation::delegable,
@@ -264,7 +264,7 @@ TRANSACTION(ttCHECK_CANCEL, 18, CheckCancel,
 
 /** This transaction type grants or revokes authorization to transfer funds. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/DepositPreauth.h>
+#   include <xrpl/tx/transactors/DepositPreauth.h>
 #endif
 TRANSACTION(ttDEPOSIT_PREAUTH, 19, DepositPreauth,
     Delegation::delegable,
@@ -279,7 +279,7 @@ TRANSACTION(ttDEPOSIT_PREAUTH, 19, DepositPreauth,
 
 /** This transaction type modifies a trustline between two accounts. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/SetTrust.h>
+#   include <xrpl/tx/transactors/SetTrust.h>
 #endif
 TRANSACTION(ttTRUST_SET, 20, TrustSet,
     Delegation::delegable,
@@ -293,7 +293,7 @@ TRANSACTION(ttTRUST_SET, 20, TrustSet,
 
 /** This transaction type deletes an existing account. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/DeleteAccount.h>
+#   include <xrpl/tx/transactors/DeleteAccount.h>
 #endif
 TRANSACTION(ttACCOUNT_DELETE, 21, AccountDelete,
     Delegation::notDelegable,
@@ -309,7 +309,7 @@ TRANSACTION(ttACCOUNT_DELETE, 21, AccountDelete,
 
 /** This transaction mints a new NFT. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/NFTokenMint.h>
+#   include <xrpl/tx/transactors/NFT/NFTokenMint.h>
 #endif
 TRANSACTION(ttNFTOKEN_MINT, 25, NFTokenMint,
     Delegation::delegable,
@@ -327,7 +327,7 @@ TRANSACTION(ttNFTOKEN_MINT, 25, NFTokenMint,
 
 /** This transaction burns (i.e. destroys) an existing NFT. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/NFTokenBurn.h>
+#   include <xrpl/tx/transactors/NFT/NFTokenBurn.h>
 #endif
 TRANSACTION(ttNFTOKEN_BURN, 26, NFTokenBurn,
     Delegation::delegable,
@@ -340,7 +340,7 @@ TRANSACTION(ttNFTOKEN_BURN, 26, NFTokenBurn,
 
 /** This transaction creates a new offer to buy or sell an NFT. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/NFTokenCreateOffer.h>
+#   include <xrpl/tx/transactors/NFT/NFTokenCreateOffer.h>
 #endif
 TRANSACTION(ttNFTOKEN_CREATE_OFFER, 27, NFTokenCreateOffer,
     Delegation::delegable,
@@ -356,7 +356,7 @@ TRANSACTION(ttNFTOKEN_CREATE_OFFER, 27, NFTokenCreateOffer,
 
 /** This transaction cancels an existing offer to buy or sell an existing NFT. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/NFTokenCancelOffer.h>
+#   include <xrpl/tx/transactors/NFT/NFTokenCancelOffer.h>
 #endif
 TRANSACTION(ttNFTOKEN_CANCEL_OFFER, 28, NFTokenCancelOffer,
     Delegation::delegable,
@@ -368,7 +368,7 @@ TRANSACTION(ttNFTOKEN_CANCEL_OFFER, 28, NFTokenCancelOffer,
 
 /** This transaction accepts an existing offer to buy or sell an existing  NFT. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/NFTokenAcceptOffer.h>
+#   include <xrpl/tx/transactors/NFT/NFTokenAcceptOffer.h>
 #endif
 TRANSACTION(ttNFTOKEN_ACCEPT_OFFER, 29, NFTokenAcceptOffer,
     Delegation::delegable,
@@ -382,7 +382,7 @@ TRANSACTION(ttNFTOKEN_ACCEPT_OFFER, 29, NFTokenAcceptOffer,
 
 /** This transaction claws back issued tokens. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/Clawback.h>
+#   include <xrpl/tx/transactors/Clawback.h>
 #endif
 TRANSACTION(ttCLAWBACK, 30, Clawback,
     Delegation::delegable,
@@ -395,7 +395,7 @@ TRANSACTION(ttCLAWBACK, 30, Clawback,
 
 /** This transaction claws back tokens from an AMM pool. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/AMMClawback.h>
+#   include <xrpl/tx/transactors/AMM/AMMClawback.h>
 #endif
 TRANSACTION(ttAMM_CLAWBACK, 31, AMMClawback,
     Delegation::delegable,
@@ -410,7 +410,7 @@ TRANSACTION(ttAMM_CLAWBACK, 31, AMMClawback,
 
 /** This transaction type creates an AMM instance */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/AMMCreate.h>
+#   include <xrpl/tx/transactors/AMM/AMMCreate.h>
 #endif
 TRANSACTION(ttAMM_CREATE, 35, AMMCreate,
     Delegation::delegable,
@@ -424,7 +424,7 @@ TRANSACTION(ttAMM_CREATE, 35, AMMCreate,
 
 /** This transaction type deposits into an AMM instance */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/AMMDeposit.h>
+#   include <xrpl/tx/transactors/AMM/AMMDeposit.h>
 #endif
 TRANSACTION(ttAMM_DEPOSIT, 36, AMMDeposit,
     Delegation::delegable,
@@ -442,7 +442,7 @@ TRANSACTION(ttAMM_DEPOSIT, 36, AMMDeposit,
 
 /** This transaction type withdraws from an AMM instance */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/AMMWithdraw.h>
+#   include <xrpl/tx/transactors/AMM/AMMWithdraw.h>
 #endif
 TRANSACTION(ttAMM_WITHDRAW, 37, AMMWithdraw,
     Delegation::delegable,
@@ -459,7 +459,7 @@ TRANSACTION(ttAMM_WITHDRAW, 37, AMMWithdraw,
 
 /** This transaction type votes for the trading fee */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/AMMVote.h>
+#   include <xrpl/tx/transactors/AMM/AMMVote.h>
 #endif
 TRANSACTION(ttAMM_VOTE, 38, AMMVote,
     Delegation::delegable,
@@ -473,7 +473,7 @@ TRANSACTION(ttAMM_VOTE, 38, AMMVote,
 
 /** This transaction type bids for the auction slot */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/AMMBid.h>
+#   include <xrpl/tx/transactors/AMM/AMMBid.h>
 #endif
 TRANSACTION(ttAMM_BID, 39, AMMBid,
     Delegation::delegable,
@@ -489,7 +489,7 @@ TRANSACTION(ttAMM_BID, 39, AMMBid,
 
 /** This transaction type deletes AMM in the empty state */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/AMMDelete.h>
+#   include <xrpl/tx/transactors/AMM/AMMDelete.h>
 #endif
 TRANSACTION(ttAMM_DELETE, 40, AMMDelete,
     Delegation::delegable,
@@ -502,7 +502,7 @@ TRANSACTION(ttAMM_DELETE, 40, AMMDelete,
 
 /** This transactions creates a crosschain sequence number */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/XChainBridge.h>
+#   include <xrpl/tx/transactors/XChainBridge.h>
 #endif
 TRANSACTION(ttXCHAIN_CREATE_CLAIM_ID, 41, XChainCreateClaimID,
     Delegation::delegable,
@@ -617,7 +617,7 @@ TRANSACTION(ttXCHAIN_CREATE_BRIDGE, 48, XChainCreateBridge,
 
 /** This transaction type creates or updates a DID */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/DID.h>
+#   include <xrpl/tx/transactors/DID.h>
 #endif
 TRANSACTION(ttDID_SET, 49, DIDSet,
     Delegation::delegable,
@@ -638,7 +638,7 @@ TRANSACTION(ttDID_DELETE, 50, DIDDelete,
 
 /** This transaction type creates an Oracle instance */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/SetOracle.h>
+#   include <xrpl/tx/transactors/SetOracle.h>
 #endif
 TRANSACTION(ttORACLE_SET, 51, OracleSet,
     Delegation::delegable,
@@ -655,7 +655,7 @@ TRANSACTION(ttORACLE_SET, 51, OracleSet,
 
 /** This transaction type deletes an Oracle instance */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/DeleteOracle.h>
+#   include <xrpl/tx/transactors/DeleteOracle.h>
 #endif
 TRANSACTION(ttORACLE_DELETE, 52, OracleDelete,
     Delegation::delegable,
@@ -667,7 +667,7 @@ TRANSACTION(ttORACLE_DELETE, 52, OracleDelete,
 
 /** This transaction type fixes a problem in the ledger state */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/LedgerStateFix.h>
+#   include <xrpl/tx/transactors/LedgerStateFix.h>
 #endif
 TRANSACTION(ttLEDGER_STATE_FIX, 53, LedgerStateFix,
     Delegation::delegable,
@@ -680,7 +680,7 @@ TRANSACTION(ttLEDGER_STATE_FIX, 53, LedgerStateFix,
 
 /** This transaction type creates a MPTokensIssuance instance */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/MPTokenIssuanceCreate.h>
+#   include <xrpl/tx/transactors/MPT/MPTokenIssuanceCreate.h>
 #endif
 TRANSACTION(ttMPTOKEN_ISSUANCE_CREATE, 54, MPTokenIssuanceCreate,
     Delegation::delegable,
@@ -697,7 +697,7 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_CREATE, 54, MPTokenIssuanceCreate,
 
 /** This transaction type destroys a MPTokensIssuance instance */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/MPTokenIssuanceDestroy.h>
+#   include <xrpl/tx/transactors/MPT/MPTokenIssuanceDestroy.h>
 #endif
 TRANSACTION(ttMPTOKEN_ISSUANCE_DESTROY, 55, MPTokenIssuanceDestroy,
     Delegation::delegable,
@@ -709,7 +709,7 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_DESTROY, 55, MPTokenIssuanceDestroy,
 
 /** This transaction type sets flags on a MPTokensIssuance or MPToken instance */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/MPTokenIssuanceSet.h>
+#   include <xrpl/tx/transactors/MPT/MPTokenIssuanceSet.h>
 #endif
 TRANSACTION(ttMPTOKEN_ISSUANCE_SET, 56, MPTokenIssuanceSet,
     Delegation::delegable,
@@ -726,7 +726,7 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_SET, 56, MPTokenIssuanceSet,
 
 /** This transaction type authorizes a MPToken instance */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/MPTokenAuthorize.h>
+#   include <xrpl/tx/transactors/MPT/MPTokenAuthorize.h>
 #endif
 TRANSACTION(ttMPTOKEN_AUTHORIZE, 57, MPTokenAuthorize,
     Delegation::delegable,
@@ -739,7 +739,7 @@ TRANSACTION(ttMPTOKEN_AUTHORIZE, 57, MPTokenAuthorize,
 
 /** This transaction type create an Credential instance */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/Credentials.h>
+#   include <xrpl/tx/transactors/Credentials.h>
 #endif
 TRANSACTION(ttCREDENTIAL_CREATE, 58, CredentialCreate,
     Delegation::delegable,
@@ -775,7 +775,7 @@ TRANSACTION(ttCREDENTIAL_DELETE, 60, CredentialDelete,
 
 /** This transaction type modify a NFToken */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/NFTokenModify.h>
+#   include <xrpl/tx/transactors/NFT/NFTokenModify.h>
 #endif
 TRANSACTION(ttNFTOKEN_MODIFY, 61, NFTokenModify,
     Delegation::delegable,
@@ -789,7 +789,7 @@ TRANSACTION(ttNFTOKEN_MODIFY, 61, NFTokenModify,
 
 /** This transaction type creates or modifies a Permissioned Domain */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/PermissionedDomainSet.h>
+#   include <xrpl/tx/transactors/PermissionedDomain/PermissionedDomainSet.h>
 #endif
 TRANSACTION(ttPERMISSIONED_DOMAIN_SET, 62, PermissionedDomainSet,
     Delegation::delegable,
@@ -802,7 +802,7 @@ TRANSACTION(ttPERMISSIONED_DOMAIN_SET, 62, PermissionedDomainSet,
 
 /** This transaction type deletes a Permissioned Domain */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/PermissionedDomainDelete.h>
+#   include <xrpl/tx/transactors/PermissionedDomain/PermissionedDomainDelete.h>
 #endif
 TRANSACTION(ttPERMISSIONED_DOMAIN_DELETE, 63, PermissionedDomainDelete,
     Delegation::delegable,
@@ -814,7 +814,7 @@ TRANSACTION(ttPERMISSIONED_DOMAIN_DELETE, 63, PermissionedDomainDelete,
 
 /** This transaction type delegates authorized account specified permissions */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/DelegateSet.h>
+#   include <xrpl/tx/transactors/Delegate/DelegateSet.h>
 #endif
 TRANSACTION(ttDELEGATE_SET, 64, DelegateSet,
     Delegation::notDelegable,
@@ -827,7 +827,7 @@ TRANSACTION(ttDELEGATE_SET, 64, DelegateSet,
 
 /** This transaction creates a single asset vault. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/VaultCreate.h>
+#   include <xrpl/tx/transactors/Vault/VaultCreate.h>
 #endif
 TRANSACTION(ttVAULT_CREATE, 65, VaultCreate,
     Delegation::delegable,
@@ -845,7 +845,7 @@ TRANSACTION(ttVAULT_CREATE, 65, VaultCreate,
 
 /** This transaction updates a single asset vault. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/VaultSet.h>
+#   include <xrpl/tx/transactors/Vault/VaultSet.h>
 #endif
 TRANSACTION(ttVAULT_SET, 66, VaultSet,
     Delegation::delegable,
@@ -860,7 +860,7 @@ TRANSACTION(ttVAULT_SET, 66, VaultSet,
 
 /** This transaction deletes a single asset vault. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/VaultDelete.h>
+#   include <xrpl/tx/transactors/Vault/VaultDelete.h>
 #endif
 TRANSACTION(ttVAULT_DELETE, 67, VaultDelete,
     Delegation::delegable,
@@ -872,7 +872,7 @@ TRANSACTION(ttVAULT_DELETE, 67, VaultDelete,
 
 /** This transaction trades assets for shares with a vault. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/VaultDeposit.h>
+#   include <xrpl/tx/transactors/Vault/VaultDeposit.h>
 #endif
 TRANSACTION(ttVAULT_DEPOSIT, 68, VaultDeposit,
     Delegation::delegable,
@@ -885,7 +885,7 @@ TRANSACTION(ttVAULT_DEPOSIT, 68, VaultDeposit,
 
 /** This transaction trades shares for assets with a vault. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/VaultWithdraw.h>
+#   include <xrpl/tx/transactors/Vault/VaultWithdraw.h>
 #endif
 TRANSACTION(ttVAULT_WITHDRAW, 69, VaultWithdraw,
     Delegation::delegable,
@@ -900,7 +900,7 @@ TRANSACTION(ttVAULT_WITHDRAW, 69, VaultWithdraw,
 
 /** This transaction claws back tokens from a vault. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/VaultClawback.h>
+#   include <xrpl/tx/transactors/Vault/VaultClawback.h>
 #endif
 TRANSACTION(ttVAULT_CLAWBACK, 70, VaultClawback,
     Delegation::delegable,
@@ -914,7 +914,7 @@ TRANSACTION(ttVAULT_CLAWBACK, 70, VaultClawback,
 
 /** This transaction type batches together transactions. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/Batch.h>
+#   include <xrpl/tx/transactors/Batch.h>
 #endif
 TRANSACTION(ttBATCH, 71, Batch,
     Delegation::notDelegable,
@@ -929,7 +929,7 @@ TRANSACTION(ttBATCH, 71, Batch,
 
 /** This transaction creates and updates a Loan Broker */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/LoanBrokerSet.h>
+#   include <xrpl/tx/transactors/Lending/LoanBrokerSet.h>
 #endif
 TRANSACTION(ttLOAN_BROKER_SET, 74, LoanBrokerSet,
     Delegation::delegable,
@@ -946,7 +946,7 @@ TRANSACTION(ttLOAN_BROKER_SET, 74, LoanBrokerSet,
 
 /** This transaction deletes a Loan Broker */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/LoanBrokerDelete.h>
+#   include <xrpl/tx/transactors/Lending/LoanBrokerDelete.h>
 #endif
 TRANSACTION(ttLOAN_BROKER_DELETE, 75, LoanBrokerDelete,
     Delegation::delegable,
@@ -957,7 +957,7 @@ TRANSACTION(ttLOAN_BROKER_DELETE, 75, LoanBrokerDelete,
 
 /** This transaction deposits First Loss Capital into a Loan Broker */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/LoanBrokerCoverDeposit.h>
+#   include <xrpl/tx/transactors/Lending/LoanBrokerCoverDeposit.h>
 #endif
 TRANSACTION(ttLOAN_BROKER_COVER_DEPOSIT, 76, LoanBrokerCoverDeposit,
     Delegation::delegable,
@@ -969,7 +969,7 @@ TRANSACTION(ttLOAN_BROKER_COVER_DEPOSIT, 76, LoanBrokerCoverDeposit,
 
 /** This transaction withdraws First Loss Capital from a Loan Broker */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/LoanBrokerCoverWithdraw.h>
+#   include <xrpl/tx/transactors/Lending/LoanBrokerCoverWithdraw.h>
 #endif
 TRANSACTION(ttLOAN_BROKER_COVER_WITHDRAW, 77, LoanBrokerCoverWithdraw,
     Delegation::delegable,
@@ -984,7 +984,7 @@ TRANSACTION(ttLOAN_BROKER_COVER_WITHDRAW, 77, LoanBrokerCoverWithdraw,
 /** This transaction claws back First Loss Capital from a Loan Broker to
     the issuer of the capital */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/LoanBrokerCoverClawback.h>
+#   include <xrpl/tx/transactors/Lending/LoanBrokerCoverClawback.h>
 #endif
 TRANSACTION(ttLOAN_BROKER_COVER_CLAWBACK, 78, LoanBrokerCoverClawback,
     Delegation::delegable,
@@ -996,7 +996,7 @@ TRANSACTION(ttLOAN_BROKER_COVER_CLAWBACK, 78, LoanBrokerCoverClawback,
 
 /** This transaction creates a Loan */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/LoanSet.h>
+#   include <xrpl/tx/transactors/Lending/LoanSet.h>
 #endif
 TRANSACTION(ttLOAN_SET, 80, LoanSet,
     Delegation::delegable,
@@ -1023,7 +1023,7 @@ TRANSACTION(ttLOAN_SET, 80, LoanSet,
 
 /** This transaction deletes an existing Loan */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/LoanDelete.h>
+#   include <xrpl/tx/transactors/Lending/LoanDelete.h>
 #endif
 TRANSACTION(ttLOAN_DELETE, 81, LoanDelete,
     Delegation::delegable,
@@ -1034,7 +1034,7 @@ TRANSACTION(ttLOAN_DELETE, 81, LoanDelete,
 
 /** This transaction is used to change the delinquency status of an existing Loan */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/LoanManage.h>
+#   include <xrpl/tx/transactors/Lending/LoanManage.h>
 #endif
 TRANSACTION(ttLOAN_MANAGE, 82, LoanManage,
     Delegation::delegable,
@@ -1048,7 +1048,7 @@ TRANSACTION(ttLOAN_MANAGE, 82, LoanManage,
 
 /** The Borrower uses this transaction to make a Payment on the Loan. */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/LoanPay.h>
+#   include <xrpl/tx/transactors/Lending/LoanPay.h>
 #endif
 TRANSACTION(ttLOAN_PAY, 84, LoanPay,
     Delegation::delegable,
@@ -1063,7 +1063,7 @@ TRANSACTION(ttLOAN_PAY, 84, LoanPay,
     For details, see: https://xrpl.org/amendments.html
  */
 #if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/Change.h>
+#   include <xrpl/tx/transactors/Change.h>
 #endif
 TRANSACTION(ttAMENDMENT, 100, EnableAmendment,
     Delegation::notDelegable,
