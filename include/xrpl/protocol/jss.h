@@ -305,6 +305,7 @@ JSS(index);                   // in: LedgerEntry
                               //      LedgerEntry, TxHistory, LedgerData
 JSS(info);                    // out: ServerInfo, ConsensusInfo, FetchInfo
 JSS(initial_sync_duration_us);
+JSS(inner_transactions);      // out: tx (Batch)
 JSS(internal_command);        // in: Internal
 JSS(invalid_API_version);     // out: Many, when a request has an invalid
                               //      version

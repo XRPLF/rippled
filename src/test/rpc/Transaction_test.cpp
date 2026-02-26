@@ -1,5 +1,6 @@
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/batch.h>
 #include <test/jtx/envconfig.h>
 
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
@@ -7,7 +8,9 @@
 
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/serialize.h>
 
@@ -842,6 +845,112 @@ class Transaction_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testBatchInnerTransactions(FeatureBitset features, unsigned apiVersion)
+    {
+        testcase("Test Batch inner_transactions API version " + std::to_string(apiVersion));
+
+        using namespace test::jtx;
+        using std::to_string;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        auto const aliceSeq = env.seq(alice);
+
+        // Create a Batch transaction with two inner Payment transactions
+        auto const batchFee = batch::calcBatchFee(env, 0, 2);
+        auto batchTxn = env.jt(
+            batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+            batch::inner(pay(alice, bob, XRP(100)), aliceSeq + 1),
+            batch::inner(pay(alice, bob, XRP(200)), aliceSeq + 2));
+        env(batchTxn, ter(tesSUCCESS));
+        env.close();
+
+        // Get the batch transaction ID and inner transaction IDs
+        auto const batchID = batchTxn.stx->getTransactionID();
+        auto const innerIDs = batchTxn.stx->getBatchTransactionIDs();
+        BEAST_EXPECT(innerIDs.size() == 2);
+
+        // Test non-binary mode
+        {
+            Json::Value params{Json::objectValue};
+            params[jss::transaction] = to_string(batchID);
+            params[jss::binary] = false;
+            params[jss::api_version] = apiVersion;
+            auto const result = env.client().invoke("tx", params);
+
+            BEAST_EXPECT(result[jss::result][jss::status] == jss::success);
+            BEAST_EXPECT(result[jss::result][jss::validated] == true);
+
+            // Check inner_transactions field exists
+            if (BEAST_EXPECT(result[jss::result].isMember(jss::inner_transactions)))
+            {
+                auto const& innerTxns = result[jss::result][jss::inner_transactions];
+                if (BEAST_EXPECT(innerTxns.isArray() && innerTxns.size() == 2))
+                {
+                    // Check first inner transaction
+                    auto const& inner0 = innerTxns[0u];
+                    BEAST_EXPECT(inner0[jss::hash] == to_string(innerIDs[0]));
+                    BEAST_EXPECT(inner0[jss::engine_result] == "tesSUCCESS");
+                    BEAST_EXPECT(inner0.isMember(jss::tx_json));
+                    BEAST_EXPECT(inner0.isMember(jss::meta));
+                    BEAST_EXPECT(inner0[jss::tx_json][jss::TransactionType] == "Payment");
+                    // Validate ParentBatchID in metadata matches outer Batch hash
+                    BEAST_EXPECT(inner0[jss::meta][sfParentBatchID.jsonName] == to_string(batchID));
+
+                    // Check second inner transaction
+                    auto const& inner1 = innerTxns[1u];
+                    BEAST_EXPECT(inner1[jss::hash] == to_string(innerIDs[1]));
+                    BEAST_EXPECT(inner1[jss::engine_result] == "tesSUCCESS");
+                    BEAST_EXPECT(inner1.isMember(jss::tx_json));
+                    BEAST_EXPECT(inner1.isMember(jss::meta));
+                    BEAST_EXPECT(inner1[jss::tx_json][jss::TransactionType] == "Payment");
+                    // Validate ParentBatchID in metadata matches outer Batch hash
+                    BEAST_EXPECT(inner1[jss::meta][sfParentBatchID.jsonName] == to_string(batchID));
+                }
+            }
+        }
+
+        // Test binary mode
+        {
+            Json::Value params{Json::objectValue};
+            params[jss::transaction] = to_string(batchID);
+            params[jss::binary] = true;
+            params[jss::api_version] = apiVersion;
+            auto const result = env.client().invoke("tx", params);
+
+            BEAST_EXPECT(result[jss::result][jss::status] == jss::success);
+            BEAST_EXPECT(result[jss::result][jss::validated] == true);
+
+            // Check inner_transactions field exists in binary mode
+            if (BEAST_EXPECT(result[jss::result].isMember(jss::inner_transactions)))
+            {
+                auto const& innerTxns = result[jss::result][jss::inner_transactions];
+                if (BEAST_EXPECT(innerTxns.isArray() && innerTxns.size() == 2))
+                {
+                    // Check first inner transaction has binary blobs
+                    auto const& inner0 = innerTxns[0u];
+                    BEAST_EXPECT(inner0[jss::hash] == to_string(innerIDs[0]));
+                    BEAST_EXPECT(inner0[jss::engine_result] == "tesSUCCESS");
+                    BEAST_EXPECT(inner0.isMember(jss::tx_blob));
+                    BEAST_EXPECT(inner0.isMember(jss::meta_blob));
+
+                    // Check second inner transaction has binary blobs
+                    auto const& inner1 = innerTxns[1u];
+                    BEAST_EXPECT(inner1[jss::hash] == to_string(innerIDs[1]));
+                    BEAST_EXPECT(inner1[jss::engine_result] == "tesSUCCESS");
+                    BEAST_EXPECT(inner1.isMember(jss::tx_blob));
+                    BEAST_EXPECT(inner1.isMember(jss::meta_blob));
+                }
+            }
+        }
+    }
+
 public:
     void
     run() override
@@ -861,6 +970,8 @@ public:
         testCTIDValidation(features);
         testRPCsForCTID(features);
         forAllApiVersions(std::bind_front(&Transaction_test::testRequest, this, features));
+        forAllApiVersions(
+            std::bind_front(&Transaction_test::testBatchInnerTransactions, this, features));
     }
 };
 

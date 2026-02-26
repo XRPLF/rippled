@@ -160,6 +160,90 @@ doTxHelp(RPC::Context& context, TxArgs args)
     return {result, rpcSUCCESS};
 }
 
+// Helper function to fetch and format inner transaction results for Batch
+// transactions
+static void
+insertBatchInnerTransactions(
+    Json::Value& response,
+    std::shared_ptr<STTx const> const& sttx,
+    TxArgs const& args,
+    RPC::JsonContext const& context)
+{
+    auto const& innerTxnIds = sttx->getBatchTransactionIDs();
+    if (innerTxnIds.empty())
+        return;
+
+    Json::Value innerTxns(Json::arrayValue);
+
+    for (auto const& innerTxnId : innerTxnIds)
+    {
+        Json::Value innerResult(Json::objectValue);
+        innerResult[jss::hash] = to_string(innerTxnId);
+
+        // Fetch the inner transaction
+        auto ec = rpcSUCCESS;
+        auto v = context.app.getMasterTransaction().fetch(innerTxnId, ec);
+
+        if (auto txPair =
+                std::get_if<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>>(&v))
+        {
+            auto const& [innerTxn, innerMeta] = *txPair;
+            if (innerTxn && innerMeta)
+            {
+                // Add transaction result code
+                auto const ter = innerMeta->getResultTER();
+                innerResult[jss::engine_result] = transToken(ter);
+
+                if (!args.binary)
+                {
+                    // Add the full transaction JSON
+                    auto const& innerSttx = innerTxn->getSTransaction();
+                    if (context.apiVersion > 1)
+                    {
+                        constexpr auto optionsJson =
+                            JsonOptions::include_date | JsonOptions::disable_API_prior_V2;
+                        innerResult[jss::tx_json] = innerTxn->getJson(optionsJson);
+                        RPC::insertDeliverMax(
+                            innerResult[jss::tx_json], innerSttx->getTxnType(), context.apiVersion);
+                    }
+                    else
+                    {
+                        innerResult[jss::tx_json] = innerTxn->getJson(JsonOptions::include_date);
+                        RPC::insertDeliverMax(
+                            innerResult[jss::tx_json], innerSttx->getTxnType(), context.apiVersion);
+                    }
+
+                    // Add metadata
+                    innerResult[jss::meta] = innerMeta->getJson(JsonOptions::none);
+                    insertDeliveredAmount(innerResult[jss::meta], context, innerTxn, *innerMeta);
+                    RPC::insertNFTSyntheticInJson(innerResult, innerSttx, *innerMeta);
+                    RPC::insertMPTokenIssuanceID(innerResult[jss::meta], innerSttx, *innerMeta);
+                }
+                else
+                {
+                    // Binary mode
+                    if (context.apiVersion > 1)
+                    {
+                        innerResult[jss::tx_blob] = innerTxn->getJson(
+                            JsonOptions::include_date | JsonOptions::disable_API_prior_V2, true);
+                    }
+                    else
+                    {
+                        innerResult[jss::tx_blob] =
+                            innerTxn->getJson(JsonOptions::include_date, true);
+                    }
+                    innerResult[jss::meta_blob] =
+                        strHex(innerMeta->getAsObject().getSerializer().getData());
+                }
+            }
+        }
+
+        innerTxns.append(innerResult);
+    }
+
+    response[jss::inner_transactions] = innerTxns;
+}
+
 Json::Value
 populateJsonResponse(
     std::pair<TxResult, RPC::Status> const& res,
@@ -243,6 +327,10 @@ populateJsonResponse(
 
         if (result.ctid)
             response[jss::ctid] = *(result.ctid);
+
+        // For Batch transactions, include inner transaction results
+        if (result.validated && sttx->getTxnType() == ttBATCH)
+            insertBatchInnerTransactions(response, sttx, args, context);
     }
     return response;
 }
