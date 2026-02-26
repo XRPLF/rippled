@@ -246,7 +246,7 @@ floatFromUintImpl(uint64_t x, int32_t mode)
 }
 
 Expected<Bytes, HostFunctionError>
-floatSetImpl(int64_t mantissa, int32_t exponent, int32_t mode)
+floatSetImpl(int32_t exponent, int64_t mantissa, int32_t mode)
 {
     try
     {
@@ -492,9 +492,9 @@ WasmHostFunctionsImpl::floatFromUint(uint64_t x, int32_t mode)
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::floatSet(int64_t mantissa, int32_t exponent, int32_t mode)
+WasmHostFunctionsImpl::floatSet(int32_t exponent, int64_t mantissa, int32_t mode)
 {
-    return wasm_float::floatSetImpl(mantissa, exponent, mode);
+    return wasm_float::floatSetImpl(exponent, mantissa, mode);
 }
 
 Expected<int32_t, HostFunctionError>

@@ -30,6 +30,7 @@ elseif (is_clang)
 elseif (is_msvc)
     # MSVC-specific fixes
     add_compile_options(/wd4068) # Ignore unknown pragmas
+    add_compile_options(/Zc:preprocessor) # Use conforming preprocessor for __VA_OPT__ support
 endif ()
 
 # Enable ccache to speed up builds.

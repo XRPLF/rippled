@@ -34,14 +34,20 @@ WasmHostFunctionsImpl::getBaseFee()
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::isAmendmentEnabled(uint256 const& amendmentId)
+WasmHostFunctionsImpl::isAmendmentEnabled(Slice const& data)
 {
-    return ctx.view().rules().enabled(amendmentId);
-}
+    // If the slice is exactly 32 bytes, interpret as amendment ID (uint256)
+    if (data.size() == uint256::bytes)
+    {
+        if (ctx.view().rules().enabled(uint256::fromVoid(data.data())))
+            return 1;
+    }
 
-Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::isAmendmentEnabled(std::string_view const& amendmentName)
-{
+    // Otherwise interpret as amendment name string
+    if (data.size() > 64)
+        return Unexpected(HostFunctionError::DATA_FIELD_TOO_LARGE);
+
+    auto const amendmentName = std::string_view(reinterpret_cast<char const*>(data.data()), data.size());
     auto const& table = ctx.registry.getAmendmentTable();
     auto const amendment = table.find(std::string(amendmentName));
     return ctx.view().rules().enabled(amendment);

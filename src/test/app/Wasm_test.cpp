@@ -460,7 +460,7 @@ struct Wasm_test : public beast::unit_test::suite
 
             std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
             auto re = runEscrowWasm(floatTestWasm, hfs, funcName, {}, 200'000);
-            checkResult(re, 1, 110'699);
+            checkResult(re, 1, 110'693);
             env.close();
         }
 

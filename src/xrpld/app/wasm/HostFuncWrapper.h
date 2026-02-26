@@ -2,257 +2,89 @@
 
 #include <xrpld/app/wasm/WasmiVM.h>
 
+#include <cstdint>
+
 namespace xrpl {
 
-using getLedgerSqn_proto = int32_t(uint8_t*, int32_t);
-wasm_trap_t*
-getLedgerSqn_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+#pragma push_macro("INT32_PARAM")
+#pragma push_macro("INT64_PARAM")
+#pragma push_macro("UINT32_PARAM")
+#pragma push_macro("UINT64_PARAM")
+#pragma push_macro("SFIELD_PARAM")
+#pragma push_macro("SLICE_PARAM")
+#pragma push_macro("ACCOUNT_PARAM")
+#pragma push_macro("UINT256_PARAM")
+#pragma push_macro("ASSET_PARAM")
+#pragma push_macro("CURRENCY_PARAM")
+#pragma push_macro("MPTID_PARAM")
+#pragma push_macro("STRING_VIEW_PARAM")
+#pragma push_macro("STAMOUNT_PARAM")
+#pragma push_macro("BOOL_PARAM")
+#pragma push_macro("BYTES_PARAM")
+#pragma push_macro("HOST_FUNCTION_BYTES_RETURN")
+#pragma push_macro("HOST_FUNCTION_HASH_RETURN")
+#pragma push_macro("HOST_FUNCTION_NO_RETURN")
+#pragma push_macro("HOST_FUNCTION_INT_RETURN")
+#pragma push_macro("HOST_FUNCTION_UINT_RETURN")
 
-using getParentLedgerTime_proto = int32_t(uint8_t*, int32_t);
-wasm_trap_t*
-getParentLedgerTime_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+#define INT32_PARAM int32_t
+#define INT64_PARAM int64_t
+#define UINT32_PARAM uint8_t const*, int32_t
+#define UINT64_PARAM uint8_t const*, int32_t
+#define SFIELD_PARAM int32_t
+#define SLICE_PARAM uint8_t const*, int32_t
+#define ACCOUNT_PARAM uint8_t const*, int32_t
+#define UINT256_PARAM uint8_t const*, int32_t
+#define ASSET_PARAM uint8_t const*, int32_t
+#define CURRENCY_PARAM uint8_t const*, int32_t
+#define MPTID_PARAM uint8_t const*, int32_t
+#define STRING_VIEW_PARAM uint8_t const*, int32_t
+#define STAMOUNT_PARAM uint8_t const*, int32_t
+#define BOOL_PARAM int32_t
+#define BYTES_PARAM uint8_t const*, int32_t
 
-using getParentLedgerHash_proto = int32_t(uint8_t*, int32_t);
-wasm_trap_t*
-getParentLedgerHash_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+// Declare wrapper function for each host function
+#define DECLARE_WRAP(NAME) wasm_trap_t* NAME##_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 
-using getBaseFee_proto = int32_t(uint8_t*, int32_t);
-wasm_trap_t*
-getBaseFee_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+#define HOST_FUNCTION_BYTES_RETURN(NAME, ...)                                   \
+    using NAME##_proto = int32_t(__VA_ARGS__ __VA_OPT__(, ) uint8_t*, int32_t); \
+    DECLARE_WRAP(NAME);
+#define HOST_FUNCTION_HASH_RETURN(NAME, ...)                                    \
+    using NAME##_proto = int32_t(__VA_ARGS__ __VA_OPT__(, ) uint8_t*, int32_t); \
+    DECLARE_WRAP(NAME);
+#define HOST_FUNCTION_NO_RETURN(NAME, ...)     \
+    using NAME##_proto = int32_t(__VA_ARGS__); \
+    DECLARE_WRAP(NAME);
+#define HOST_FUNCTION_INT_RETURN(NAME, ...)    \
+    using NAME##_proto = int32_t(__VA_ARGS__); \
+    DECLARE_WRAP(NAME);
+#define HOST_FUNCTION_UINT_RETURN(NAME, ...)                                    \
+    using NAME##_proto = int32_t(__VA_ARGS__ __VA_OPT__(, ) uint8_t*, int32_t); \
+    DECLARE_WRAP(NAME);
 
-using isAmendmentEnabled_proto = int32_t(uint8_t const*, int32_t);
-wasm_trap_t*
-isAmendmentEnabled_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+#include <xrpld/app/wasm/host_functions.macro>
 
-using cacheLedgerObj_proto = int32_t(uint8_t const*, int32_t, int32_t);
-wasm_trap_t*
-cacheLedgerObj_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+#undef DECLARE_WRAP
 
-using getTxField_proto = int32_t(int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-getTxField_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using getCurrentLedgerObjField_proto = int32_t(int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-getCurrentLedgerObjField_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using getLedgerObjField_proto = int32_t(int32_t, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-getLedgerObjField_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using getTxNestedField_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-getTxNestedField_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using getCurrentLedgerObjNestedField_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-getCurrentLedgerObjNestedField_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using getLedgerObjNestedField_proto = int32_t(int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-getLedgerObjNestedField_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using getTxArrayLen_proto = int32_t(int32_t);
-wasm_trap_t*
-getTxArrayLen_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using getCurrentLedgerObjArrayLen_proto = int32_t(int32_t);
-wasm_trap_t*
-getCurrentLedgerObjArrayLen_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using getLedgerObjArrayLen_proto = int32_t(int32_t, int32_t);
-wasm_trap_t*
-getLedgerObjArrayLen_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using getTxNestedArrayLen_proto = int32_t(uint8_t const*, int32_t);
-wasm_trap_t*
-getTxNestedArrayLen_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using getCurrentLedgerObjNestedArrayLen_proto = int32_t(uint8_t const*, int32_t);
-wasm_trap_t*
-getCurrentLedgerObjNestedArrayLen_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using getLedgerObjNestedArrayLen_proto = int32_t(int32_t, uint8_t const*, int32_t);
-wasm_trap_t*
-getLedgerObjNestedArrayLen_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using updateData_proto = int32_t(uint8_t const*, int32_t);
-wasm_trap_t*
-updateData_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using checkSignature_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t const*, int32_t);
-wasm_trap_t*
-checkSignature_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using computeSha512HalfHash_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-computeSha512HalfHash_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using accountKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-accountKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using ammKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-ammKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using checkKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-checkKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using credentialKeylet_proto =
-    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-credentialKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using delegateKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-delegateKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using depositPreauthKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-depositPreauthKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using didKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-didKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using escrowKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-escrowKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using lineKeylet_proto =
-    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-lineKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using mptIssuanceKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-mptIssuanceKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using mptokenKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-mptokenKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using nftOfferKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-nftOfferKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using offerKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-offerKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using oracleKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-oracleKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using paychanKeylet_proto =
-    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-paychanKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using permissionedDomainKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-permissionedDomainKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using signersKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-signersKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using ticketKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-ticketKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using vaultKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-vaultKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using getNFT_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-getNFT_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using getNFTIssuer_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-getNFTIssuer_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using getNFTTaxon_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-getNFTTaxon_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using getNFTFlags_proto = int32_t(uint8_t const*, int32_t);
-wasm_trap_t*
-getNFTFlags_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using getNFTTransferFee_proto = int32_t(uint8_t const*, int32_t);
-wasm_trap_t*
-getNFTTransferFee_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using getNFTSerial_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-getNFTSerial_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using trace_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, int32_t);
-wasm_trap_t*
-trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using traceNum_proto = int32_t(uint8_t const*, int32_t, int64_t);
-wasm_trap_t*
-traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using traceAccount_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t);
-wasm_trap_t*
-traceAccount_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using traceFloat_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t);
-wasm_trap_t*
-traceFloat_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using traceAmount_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t);
-wasm_trap_t*
-traceAmount_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using floatFromInt_proto = int32_t(int64_t, uint8_t*, int32_t, int32_t);
-wasm_trap_t*
-floatFromInt_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using floatFromUint_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t, int32_t);
-wasm_trap_t*
-floatFromUint_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using floatSet_proto = int32_t(int32_t, int64_t, uint8_t*, int32_t, int32_t);
-wasm_trap_t*
-floatSet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using floatCompare_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t);
-wasm_trap_t*
-floatCompare_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using floatAdd_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t, int32_t);
-wasm_trap_t*
-floatAdd_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using floatSubtract_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t, int32_t);
-wasm_trap_t*
-floatSubtract_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using floatMultiply_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t, int32_t);
-wasm_trap_t*
-floatMultiply_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using floatDivide_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t, int32_t);
-wasm_trap_t*
-floatDivide_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using floatRoot_proto = int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t, int32_t);
-wasm_trap_t*
-floatRoot_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using floatPower_proto = int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t, int32_t);
-wasm_trap_t*
-floatPower_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using floatLog_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t, int32_t);
-wasm_trap_t*
-floatLog_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+#pragma pop_macro("HOST_FUNCTION_UINT_RETURN")
+#pragma pop_macro("HOST_FUNCTION_INT_RETURN")
+#pragma pop_macro("HOST_FUNCTION_NO_RETURN")
+#pragma pop_macro("HOST_FUNCTION_HASH_RETURN")
+#pragma pop_macro("HOST_FUNCTION_BYTES_RETURN")
+#pragma pop_macro("BYTES_PARAM")
+#pragma pop_macro("BOOL_PARAM")
+#pragma pop_macro("STAMOUNT_PARAM")
+#pragma pop_macro("STRING_VIEW_PARAM")
+#pragma pop_macro("MPTID_PARAM")
+#pragma pop_macro("CURRENCY_PARAM")
+#pragma pop_macro("ASSET_PARAM")
+#pragma pop_macro("UINT256_PARAM")
+#pragma pop_macro("ACCOUNT_PARAM")
+#pragma pop_macro("SLICE_PARAM")
+#pragma pop_macro("SFIELD_PARAM")
+#pragma pop_macro("UINT64_PARAM")
+#pragma pop_macro("UINT32_PARAM")
+#pragma pop_macro("INT64_PARAM")
+#pragma pop_macro("INT32_PARAM")
 
 }  // namespace xrpl

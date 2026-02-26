@@ -95,14 +95,16 @@ public:
     }
 
     Expected<int32_t, HostFunctionError>
-    isAmendmentEnabled(uint256 const& amendmentId) override
+    isAmendmentEnabled(Slice const& data) override
     {
-        return 1;
-    }
+        if (data.size() == uint256::bytes)
+        {
+            return 1;
+        }
+        // Otherwise interpret as amendment name string
+        if (data.size() > 64)
+            return Unexpected(HostFunctionError::DATA_FIELD_TOO_LARGE);
 
-    Expected<int32_t, HostFunctionError>
-    isAmendmentEnabled(std::string_view const& amendmentName) override
-    {
         return 1;
     }
 
@@ -455,9 +457,9 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
-    floatSet(int64_t mantissa, int32_t exponent, int32_t mode) override
+    floatSet(int32_t exponent, int64_t mantissa, int32_t mode) override
     {
-        return wasm_float::floatSetImpl(mantissa, exponent, mode);
+        return wasm_float::floatSetImpl(exponent, mantissa, mode);
     }
 
     Expected<int32_t, HostFunctionError>
@@ -572,14 +574,18 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<int32_t, HostFunctionError>
-    isAmendmentEnabled(uint256 const& amendmentId) override
+    isAmendmentEnabled(Slice const& data) override
     {
-        return env_.current()->rules().enabled(amendmentId);
-    }
+        if (data.size() == uint256::bytes)
+        {
+            if (env_.current()->rules().enabled(uint256::fromVoid(data.data())))
+                return 1;
+        }
+        // Otherwise interpret as amendment name string
+        if (data.size() > 64)
+            return Unexpected(HostFunctionError::DATA_FIELD_TOO_LARGE);
 
-    Expected<int32_t, HostFunctionError>
-    isAmendmentEnabled(std::string_view const& amendmentName) override
-    {
+        auto const amendmentName = std::string_view(reinterpret_cast<char const*>(data.data()), data.size());
         auto const& table = env_.app().getAmendmentTable();
         auto const amendment = table.find(std::string(amendmentName));
         return env_.current()->rules().enabled(amendment);
