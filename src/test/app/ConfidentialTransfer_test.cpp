@@ -3765,50 +3765,41 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
         mptAlice.mergeInbox({.account = carol});
 
-        // Specify which ciphertext to forge
-        enum class ForgeTarget { Sender, Dest, Issuer };
+        // Common data - generated once
+        uint64_t const sendAmount = 10;
+        size_t const nRecipients = 3;
+        auto const version = mptAlice.getMPTokenVersion(bob);
 
-        // Test all three variants using a loop
-        // Variant A: Forge destination ciphertext (Enc(20) instead of Enc(10))
-        // Variant B: Forge sender's ciphertext (Enc(5) instead of Enc(10))
-        // Variant C: Forge issuer's ciphertext (Enc(100) instead of Enc(10))
-        for (auto const& [target, forgedAmount] :
-             {std::pair{ForgeTarget::Dest, uint64_t{20}},
-              std::pair{ForgeTarget::Sender, uint64_t{5}},
-              std::pair{ForgeTarget::Issuer, uint64_t{100}}})
-        {
-            uint64_t const sendAmount = 10;
+        Buffer const blindingFactor = generateBlindingFactor();
+        auto const senderAmt = mptAlice.encryptAmount(bob, sendAmount, blindingFactor);
+        auto const destAmt = mptAlice.encryptAmount(carol, sendAmount, blindingFactor);
+        auto const issuerAmt = mptAlice.encryptAmount(alice, sendAmount, blindingFactor);
 
-            Buffer const blindingFactor = generateBlindingFactor();
+        auto const amountBlindingFactor = generateBlindingFactor();
+        auto const amountCommitment = mptAlice.getPedersenCommitment(sendAmount, amountBlindingFactor);
 
-            // Generate valid ciphertexts for the actual sendAmount
-            auto const senderAmt = mptAlice.encryptAmount(bob, sendAmount, blindingFactor);
-            auto const destAmt = mptAlice.encryptAmount(carol, sendAmount, blindingFactor);
-            auto const issuerAmt = mptAlice.encryptAmount(alice, sendAmount, blindingFactor);
+        auto const prevSpending = mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+        BEAST_EXPECT(prevSpending.has_value());
+        auto const balanceBlindingFactor = generateBlindingFactor();
+        auto const balanceCommitment = mptAlice.getPedersenCommitment(*prevSpending, balanceBlindingFactor);
 
-            auto const amountBlindingFactor = generateBlindingFactor();
-            auto const amountCommitment = mptAlice.getPedersenCommitment(sendAmount, amountBlindingFactor);
+        // Store pub keys in long-lived buffers to avoid dangling Slice
+        Buffer const bobPubKey = *mptAlice.getPubKey(bob);
+        Buffer const carolPubKey = *mptAlice.getPubKey(carol);
+        Buffer const alicePubKey = *mptAlice.getPubKey(alice);
 
-            auto const prevSpending = mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
-            BEAST_EXPECT(prevSpending.has_value());
-            auto const balanceBlindingFactor = generateBlindingFactor();
-            auto const balanceCommitment = mptAlice.getPedersenCommitment(*prevSpending, balanceBlindingFactor);
+        std::vector<ConfidentialRecipient> recipients;
+        recipients.push_back({Slice(bobPubKey), senderAmt});
+        recipients.push_back({Slice(carolPubKey), destAmt});
+        recipients.push_back({Slice(alicePubKey), issuerAmt});
 
-            auto const version = mptAlice.getMPTokenVersion(bob);
+        auto const prevEncryptedSpending = mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+        BEAST_EXPECT(prevEncryptedSpending.has_value());
+
+        // Helper to generate proof with current sequence
+        auto const generateProof = [&]() {
             auto const ctxHash = getSendContextHash(bob.id(), env.seq(bob), mptAlice.issuanceID(), carol.id(), version);
-
-            size_t const nRecipients = 3;
-            std::vector<ConfidentialRecipient> recipients;
-            recipients.push_back({Slice(*mptAlice.getPubKey(bob)), senderAmt});
-            recipients.push_back({Slice(*mptAlice.getPubKey(carol)), destAmt});
-            recipients.push_back({Slice(*mptAlice.getPubKey(alice)), issuerAmt});
-
-            auto const prevEncryptedSpending = mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
-            BEAST_EXPECT(prevEncryptedSpending.has_value());
-
-            // Generate valid proof with original ciphertexts
-            // The proof's Fiat-Shamir challenge is bound to these ciphertexts
-            auto const validProof = mptAlice.getConfidentialSendProof(
+            return mptAlice.getConfidentialSendProof(
                 bob,
                 sendAmount,
                 recipients,
@@ -3823,38 +3814,68 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .amt = *prevSpending,
                  .encryptedAmt = *prevEncryptedSpending,
                  .blindingFactor = balanceBlindingFactor});
+        };
 
-            if (!BEAST_EXPECT(validProof.has_value()))
-                continue;
+        // Forge destination ciphertext (Enc(20) instead of Enc(10))
+        {
+            auto const proof = generateProof();
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
 
-            // Generate forged ciphertext for the target
             Buffer const forgedBlindingFactor = generateBlindingFactor();
-            Buffer forgedSenderAmt = senderAmt;
-            Buffer forgedDestAmt = destAmt;
-            Buffer forgedIssuerAmt = issuerAmt;
+            auto const forgedDestAmt = mptAlice.encryptAmount(carol, 20, forgedBlindingFactor);
 
-            switch (target)
-            {
-                case ForgeTarget::Sender:
-                    forgedSenderAmt = mptAlice.encryptAmount(bob, forgedAmount, forgedBlindingFactor);
-                    break;
-                case ForgeTarget::Dest:
-                    forgedDestAmt = mptAlice.encryptAmount(carol, forgedAmount, forgedBlindingFactor);
-                    break;
-                case ForgeTarget::Issuer:
-                    forgedIssuerAmt = mptAlice.encryptAmount(alice, forgedAmount, forgedBlindingFactor);
-                    break;
-            }
-
-            // Submit with forged ciphertext - verification fails because
-            // the Fiat-Shamir challenge no longer matches
             mptAlice.send(
                 {.account = bob,
                  .dest = carol,
                  .amt = sendAmount,
-                 .proof = strHex(*validProof),
-                 .senderEncryptedAmt = forgedSenderAmt,
+                 .proof = strHex(*proof),
+                 .senderEncryptedAmt = senderAmt,
                  .destEncryptedAmt = forgedDestAmt,
+                 .issuerEncryptedAmt = issuerAmt,
+                 .amountCommitment = amountCommitment,
+                 .balanceCommitment = balanceCommitment,
+                 .err = tecBAD_PROOF});
+        }
+
+        // Forge sender's ciphertext (Enc(5) instead of Enc(10))
+        {
+            auto const proof = generateProof();
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
+
+            Buffer const forgedBlindingFactor = generateBlindingFactor();
+            auto const forgedSenderAmt = mptAlice.encryptAmount(bob, 5, forgedBlindingFactor);
+
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = sendAmount,
+                 .proof = strHex(*proof),
+                 .senderEncryptedAmt = forgedSenderAmt,
+                 .destEncryptedAmt = destAmt,
+                 .issuerEncryptedAmt = issuerAmt,
+                 .amountCommitment = amountCommitment,
+                 .balanceCommitment = balanceCommitment,
+                 .err = tecBAD_PROOF});
+        }
+
+        // Forge issuer's ciphertext (Enc(100) instead of Enc(10))
+        {
+            auto const proof = generateProof();
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
+
+            Buffer const forgedBlindingFactor = generateBlindingFactor();
+            auto const forgedIssuerAmt = mptAlice.encryptAmount(alice, 100, forgedBlindingFactor);
+
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = sendAmount,
+                 .proof = strHex(*proof),
+                 .senderEncryptedAmt = senderAmt,
+                 .destEncryptedAmt = destAmt,
                  .issuerEncryptedAmt = forgedIssuerAmt,
                  .amountCommitment = amountCommitment,
                  .balanceCommitment = balanceCommitment,
@@ -4016,6 +4037,206 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     void
+    testFiatShamirBinding(FeatureBitset features)
+    {
+        testcase("test Fiat-Shamir Binding");
+
+        // =================================================================
+        // FIAT-SHAMIR BINDING TEST
+        // =================================================================
+        //
+        // BACKGROUND:
+        // The Fiat-Shamir transformation converts interactive proofs into
+        // non-interactive ones by replacing the verifier's random challenge
+        // with a hash of the proof transcript. In our confidential transfer
+        // proofs, the challenge is computed as:
+        //
+        //   challenge = Hash(ciphertexts || commitments || context_id || ...)
+        //
+        // Both the prover and verifier compute this challenge independently.
+        // Security relies on the challenge being bound to ALL public inputs.
+        //
+        // SECURITY PROPERTY:
+        // Any modification to transcript-bound inputs after proof generation
+        // causes the verifier to compute a different challenge than the prover
+        // used, making the proof invalid.
+        //
+        // =================================================================
+
+        using namespace test::jtx;
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+        mptAlice.create({.ownerCount = 1, .flags = tfMPTCanLock | tfMPTCanPrivacy | tfMPTCanTransfer});
+        mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = carol});
+
+        mptAlice.pay(alice, bob, 1000);
+        mptAlice.pay(alice, carol, 1000);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+        mptAlice.generateKeyPair(carol);
+
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+        mptAlice.convert({.account = bob, .amt = 100, .holderPubKey = mptAlice.getPubKey(bob)});
+        mptAlice.mergeInbox({.account = bob});
+
+        mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
+        mptAlice.mergeInbox({.account = carol});
+
+        // Common data - generated once
+        uint64_t const sendAmount = 10;
+        size_t const nRecipients = 3;
+        auto const version = mptAlice.getMPTokenVersion(bob);
+
+        Buffer const blindingFactor = generateBlindingFactor();
+        auto const senderAmt = mptAlice.encryptAmount(bob, sendAmount, blindingFactor);
+        auto const destAmt = mptAlice.encryptAmount(carol, sendAmount, blindingFactor);
+        auto const issuerAmt = mptAlice.encryptAmount(alice, sendAmount, blindingFactor);
+
+        auto const amountBlindingFactor = generateBlindingFactor();
+        auto const amountCommitment = mptAlice.getPedersenCommitment(sendAmount, amountBlindingFactor);
+
+        auto const prevSpending = mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+        BEAST_EXPECT(prevSpending.has_value());
+        auto const balanceBlindingFactor = generateBlindingFactor();
+        auto const balanceCommitment = mptAlice.getPedersenCommitment(*prevSpending, balanceBlindingFactor);
+
+        // Store pub keys in long-lived buffers to avoid dangling Slice
+        Buffer const bobPubKey = *mptAlice.getPubKey(bob);
+        Buffer const carolPubKey = *mptAlice.getPubKey(carol);
+        Buffer const alicePubKey = *mptAlice.getPubKey(alice);
+
+        std::vector<ConfidentialRecipient> recipients;
+        recipients.push_back({Slice(bobPubKey), senderAmt});
+        recipients.push_back({Slice(carolPubKey), destAmt});
+        recipients.push_back({Slice(alicePubKey), issuerAmt});
+
+        auto const prevEncryptedSpending = mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+        BEAST_EXPECT(prevEncryptedSpending.has_value());
+
+        // Helper to generate proof with current sequence
+        auto const generateProof = [&]() {
+            auto const ctxHash = getSendContextHash(bob.id(), env.seq(bob), mptAlice.issuanceID(), carol.id(), version);
+            return mptAlice.getConfidentialSendProof(
+                bob,
+                sendAmount,
+                recipients,
+                blindingFactor,
+                nRecipients,
+                ctxHash,
+                {.pedersenCommitment = amountCommitment,
+                 .amt = sendAmount,
+                 .encryptedAmt = senderAmt,
+                 .blindingFactor = amountBlindingFactor},
+                {.pedersenCommitment = balanceCommitment,
+                 .amt = *prevSpending,
+                 .encryptedAmt = *prevEncryptedSpending,
+                 .blindingFactor = balanceBlindingFactor});
+        };
+
+        // Variant A: Modify transcript input (commitment) after proof generation
+        // -----------------------------------------------------------------
+        // Attack: Generate valid proof, then swap the amount commitment
+        // with a forged one committing to a different value.
+        //
+        // Why it fails: The Pedersen linkage proof binds the commitment to
+        // the proof. When the verifier recomputes the challenge using the
+        // forged commitment, it gets a different challenge than what the
+        // prover used, causing the response scalars to fail verification.
+        {
+            auto const proof = generateProof();
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
+
+            auto const forgedBlindingFactor = generateBlindingFactor();
+            auto const forgedCommitment = mptAlice.getPedersenCommitment(sendAmount + 5, forgedBlindingFactor);
+
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = sendAmount,
+                 .proof = strHex(*proof),
+                 .senderEncryptedAmt = senderAmt,
+                 .destEncryptedAmt = destAmt,
+                 .issuerEncryptedAmt = issuerAmt,
+                 .amountCommitment = forgedCommitment,
+                 .balanceCommitment = balanceCommitment,
+                 .err = tecBAD_PROOF});
+        }
+
+        // Variant B: Proof replay under different TransactionContextID
+        // -----------------------------------------------------------------
+        // Attack: Generate valid proof at sequence N, then attempt to
+        // replay the same proof after the sequence has changed to N+1.
+        //
+        // Why it fails: The context hash (account, sequence, issuance ID,
+        // destination) is included in the Fiat-Shamir challenge. When the
+        // verifier computes the challenge with the new sequence, it differs
+        // from the challenge the prover used, invalidating the proof.
+        // This prevents replay attacks across different transactions.
+        {
+            auto const proof = generateProof();  // Generated at sequence N
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
+
+            // Submit a different transaction to increment Bob's sequence
+            mptAlice.pay(bob, carol, 1);  // Sequence N -> N+1
+
+            // Attempt to replay proof (bound to sequence N) at sequence N+1
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = sendAmount,
+                 .proof = strHex(*proof),
+                 .senderEncryptedAmt = senderAmt,
+                 .destEncryptedAmt = destAmt,
+                 .issuerEncryptedAmt = issuerAmt,
+                 .amountCommitment = amountCommitment,
+                 .balanceCommitment = balanceCommitment,
+                 .err = tecBAD_PROOF});
+        }
+
+        // Variant C: Tamper with challenge-dependent response scalars
+        // -----------------------------------------------------------------
+        // Attack: Generate valid proof, then flip bits in the middle of
+        // the proof data, corrupting the response scalars (s-values).
+        //
+        // Why it fails: In a Schnorr-style proof, the response scalar is
+        // computed as s = r + c * secret, where c is the challenge. Even
+        // if the challenge matches, corrupted s-values won't satisfy the
+        // verification equation: s*G == R + c*PubKey. The verifier detects
+        // this inconsistency and rejects the proof.
+        {
+            auto const proof = generateProof();
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
+
+            Buffer tamperedProof(proof->size());
+            std::memcpy(tamperedProof.data(), proof->data(), proof->size());
+            size_t const tamperOffset = tamperedProof.size() / 2;
+            tamperedProof.data()[tamperOffset] ^= 0xFF;
+
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = sendAmount,
+                 .proof = strHex(tamperedProof),
+                 .senderEncryptedAmt = senderAmt,
+                 .destEncryptedAmt = destAmt,
+                 .issuerEncryptedAmt = issuerAmt,
+                 .amountCommitment = amountCommitment,
+                 .balanceCommitment = balanceCommitment,
+                 .err = tecBAD_PROOF});
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         // ConfidentialMPTConvert
@@ -4058,9 +4279,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         testMutatePrivacy(features);
 
-        // Additional integration tests
+        // Security tests
         testForgedEqualityProof(features);
         testForgedRangeProof(features);
+        testFiatShamirBinding(features);
     }
 
 public:
