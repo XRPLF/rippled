@@ -508,7 +508,8 @@ struct FinalizeClaimHelperResult
     bool
     isTesSuccess() const
     {
-        return xrpl::isTesSuccess(mainFundsTer) && xrpl::isTesSuccess(rewardTer) &&
+        return (!mainFundsTer || xrpl::isTesSuccess(*mainFundsTer)) &&
+            (!rewardTer || xrpl::isTesSuccess(*rewardTer)) &&
             (!rmSleTer || xrpl::isTesSuccess(*rmSleTer));
     }
 
@@ -530,11 +531,11 @@ struct FinalizeClaimHelperResult
 
         // Only after the tecINTERNAL and tef are checked, return the first
         // non-success error code.
-        if (mainFundsTer && !isTesSuccess(mainFundsTer))
+        if (mainFundsTer && !isTesSuccess(*mainFundsTer))
             return *mainFundsTer;
-        if (rewardTer && !isTesSuccess(rewardTer))
+        if (rewardTer && !isTesSuccess(*rewardTer))
             return *rewardTer;
-        if (rmSleTer && !isTesSuccess(rmSleTer))
+        if (rmSleTer && !isTesSuccess(*rmSleTer))
             return *rmSleTer;
         return tesSUCCESS;
     }

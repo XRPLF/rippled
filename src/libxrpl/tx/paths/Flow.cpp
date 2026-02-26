@@ -15,7 +15,7 @@ static auto
 finishFlow(PaymentSandbox& sb, Issue const& srcIssue, Issue const& dstIssue, FlowResult&& f)
 {
     path::RippleCalc::Output result;
-    if (f.isTesSuccess(ter))
+    if (isTesSuccess(f.ter))
         f.sandbox->apply(sb);
     else
         result.removableOffers = std::move(f.removableOffers);
