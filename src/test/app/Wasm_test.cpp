@@ -686,7 +686,7 @@ struct Wasm_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
         Env env(*this);
-        std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
+        TestHostFunctions hfs(env, 0);
 
         testcase("Wasm invalid params");
 
@@ -866,8 +866,8 @@ struct Wasm_test : public beast::unit_test::suite
         Env env{*this};
         auto& engine = WasmEngine::instance();
 
-        std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
-        auto imports = createWasmImport(*hfs);
+        TestHostFunctions hfs(env, 0);
+        auto imports = createWasmImport(hfs);
         env.close();
 
         {
@@ -876,7 +876,7 @@ struct Wasm_test : public beast::unit_test::suite
                            int64_t cost = -1,
                            std::source_location const location = std::source_location::current()) {
                 auto const lineStr = " (" + std::to_string(location.line()) + ")";
-                auto re = engine.run(code, "all_instructions", {}, imports, hfs, 1'000'000, env.journal);
+                auto re = engine.run(code, hfs, "all_instructions", {}, imports, 1'000'000, env.journal);
                 if (BEAST_EXPECTS(re.has_value() == good, transToken(re.error()) + lineStr) && good)
                     BEAST_EXPECTS(re->cost == cost, std::to_string(re->cost) + lineStr);
             };
