@@ -105,7 +105,7 @@ DatabaseRotatingImp::fetchNodeObject(
         std::shared_ptr<NodeObject> nodeObject;
         try
         {
-            status = backend->fetch(hash.data(), &nodeObject);
+            status = backend->fetch(hash, &nodeObject);
         }
         catch (std::exception const& e)
         {
