@@ -69,7 +69,7 @@ verifyProofs(STTx const& tx, std::shared_ptr<SLE const> const& issuance, std::sh
     auto const holderPubKey = (*mptoken)[sfHolderElGamalPublicKey];
 
     auto const contextHash = getConvertBackContextHash(
-        account, tx[sfSequence], mptIssuanceID, amount, (*mptoken)[~sfConfidentialBalanceVersion].value_or(0));
+        account, mptIssuanceID, tx.getSeqProxy().value(), (*mptoken)[~sfConfidentialBalanceVersion].value_or(0));
 
     // Prepare Auditor Info
     std::optional<ConfidentialRecipient> auditor;
