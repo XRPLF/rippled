@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 // MODULES: ../impl/chrono_io.cpp
 
 #include <xrpl/beast/clock/abstract_clock.h>
@@ -42,8 +23,7 @@ public:
         std::this_thread::sleep_for(std::chrono::milliseconds(1500));
         auto const t2(c.now());
 
-        log << "t1= " << t1.time_since_epoch().count()
-            << ", t2= " << t2.time_since_epoch().count()
+        log << "t1= " << t1.time_since_epoch().count() << ", t2= " << t2.time_since_epoch().count()
             << ", elapsed= " << (t2 - t1).count() << std::endl;
 
         pass();
@@ -65,8 +45,7 @@ public:
         c.set(clock_type::time_point(std::chrono::seconds(2)));
         auto c3 = c.now().time_since_epoch();
 
-        log << "[" << c1.count() << "," << c2.count() << "," << c3.count()
-            << "]" << std::endl;
+        log << "[" << c1.count() << "," << c2.count() << "," << c3.count() << "]" << std::endl;
 
         pass();
     }
@@ -76,9 +55,7 @@ public:
     {
         test("steady_clock", get_abstract_clock<std::chrono::steady_clock>());
         test("system_clock", get_abstract_clock<std::chrono::system_clock>());
-        test(
-            "high_resolution_clock",
-            get_abstract_clock<std::chrono::high_resolution_clock>());
+        test("high_resolution_clock", get_abstract_clock<std::chrono::high_resolution_clock>());
 
         test_manual();
     }

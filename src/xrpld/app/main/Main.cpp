@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/rdb/Vacuum.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/core/TimeKeeper.h>
@@ -27,6 +7,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/protocol/BuildInfo.h>
+#include <xrpl/server/Vacuum.h>
 
 #include <boost/asio/io_context.hpp>
 #include <boost/process/v1/args.hpp>
@@ -72,7 +53,7 @@
 
 namespace po = boost::program_options;
 
-namespace ripple {
+namespace xrpl {
 
 bool
 adjustDescriptorLimit(int needed, beast::Journal j)
@@ -105,11 +86,10 @@ adjustDescriptorLimit(int needed, beast::Journal j)
 
     if (needed > available)
     {
-        j.fatal() << "Insufficient number of file descriptors: " << needed
-                  << " are needed, but only " << available << " are available.";
+        j.fatal() << "Insufficient number of file descriptors: " << needed << " are needed, but only " << available
+                  << " are available.";
 
-        std::cerr << "Insufficient number of file descriptors: " << needed
-                  << " are needed, but only " << available
+        std::cerr << "Insufficient number of file descriptors: " << needed << " are needed, but only " << available
                   << " are available.\n";
 
         return false;
@@ -122,69 +102,68 @@ adjustDescriptorLimit(int needed, beast::Journal j)
 void
 printHelp(po::options_description const& desc)
 {
-    std::cerr
-        << systemName() << "d [options] <command> <params>\n"
-        << desc << std::endl
-        << "Commands: \n"
-           "     account_currencies <account> [<ledger>]\n"
-           "     account_info <account>|<key> [<ledger>]\n"
-           "     account_lines <account> <account>|\"\" [<ledger>]\n"
-           "     account_channels <account> <account>|\"\" [<ledger>]\n"
-           "     account_objects <account> [<ledger>]\n"
-           "     account_offers <account>|<account_public_key> [<ledger>]\n"
-           "     account_tx accountID [ledger_index_min [ledger_index_max "
-           "[limit "
-           "]]] [binary]\n"
-           "     book_changes [<ledger hash|id>]\n"
-           "     book_offers <taker_pays> <taker_gets> [<taker [<ledger> "
-           "[<limit> [<proof> [<marker>]]]]]\n"
-           "     can_delete [<ledgerid>|<ledgerhash>|now|always|never]\n"
-           "     channel_authorize <private_key> <channel_id> <drops>\n"
-           "     channel_verify <public_key> <channel_id> <drops> <signature>\n"
-           "     connect <ip> [<port>]\n"
-           "     consensus_info\n"
-           "     deposit_authorized <source_account> <destination_account> "
-           "[<ledger> [<credentials>, ...]]\n"
-           "     feature [<feature> [accept|reject]]\n"
-           "     fetch_info [clear]\n"
-           "     gateway_balances [<ledger>] <issuer_account> [ <hotwallet> [ "
-           "<hotwallet> ]]\n"
-           "     get_counts\n"
-           "     json <method> <json>\n"
-           "     ledger [<id>|current|closed|validated] [full]\n"
-           "     ledger_accept\n"
-           "     ledger_cleaner\n"
-           "     ledger_closed\n"
-           "     ledger_current\n"
-           "     ledger_request <ledger>\n"
-           "     log_level [[<partition>] <severity>]\n"
-           "     logrotate\n"
-           "     manifest <public_key>\n"
-           "     peers\n"
-           "     ping\n"
-           "     random\n"
-           "     peer_reservations_add <public_key> [<description>]\n"
-           "     peer_reservations_del <public_key>\n"
-           "     peer_reservations_list\n"
-           "     ripple ...\n"
-           "     ripple_path_find <json> [<ledger>]\n"
-           "     server_definitions [<hash>]\n"
-           "     server_info [counters]\n"
-           "     server_state [counters]\n"
-           "     sign <private_key> <tx_json> [offline]\n"
-           "     sign_for <signer_address> <signer_private_key> <tx_json> "
-           "[offline] [<signature_field>]\n"
-           "     stop\n"
-           "     simulate [<tx_blob>|<tx_json>] [<binary>]\n"
-           "     submit <tx_blob>|[<private_key> <tx_json>]\n"
-           "     submit_multisigned <tx_json>\n"
-           "     tx <id>\n"
-           "     validation_create [<seed>|<pass_phrase>|<key>]\n"
-           "     validator_info\n"
-           "     validators\n"
-           "     validator_list_sites\n"
-           "     version\n"
-           "     wallet_propose [<passphrase>]\n";
+    std::cerr << systemName() << "d [options] <command> <params>\n"
+              << desc << std::endl
+              << "Commands: \n"
+                 "     account_currencies <account> [<ledger>]\n"
+                 "     account_info <account>|<key> [<ledger>]\n"
+                 "     account_lines <account> <account>|\"\" [<ledger>]\n"
+                 "     account_channels <account> <account>|\"\" [<ledger>]\n"
+                 "     account_objects <account> [<ledger>]\n"
+                 "     account_offers <account>|<account_public_key> [<ledger>]\n"
+                 "     account_tx accountID [ledger_index_min [ledger_index_max "
+                 "[limit "
+                 "]]] [binary]\n"
+                 "     book_changes [<ledger hash|id>]\n"
+                 "     book_offers <taker_pays> <taker_gets> [<taker [<ledger> "
+                 "[<limit> [<proof> [<marker>]]]]]\n"
+                 "     can_delete [<ledgerid>|<ledgerhash>|now|always|never]\n"
+                 "     channel_authorize <private_key> <channel_id> <drops>\n"
+                 "     channel_verify <public_key> <channel_id> <drops> <signature>\n"
+                 "     connect <ip> [<port>]\n"
+                 "     consensus_info\n"
+                 "     deposit_authorized <source_account> <destination_account> "
+                 "[<ledger> [<credentials>, ...]]\n"
+                 "     feature [<feature> [accept|reject]]\n"
+                 "     fetch_info [clear]\n"
+                 "     gateway_balances [<ledger>] <issuer_account> [ <hotwallet> [ "
+                 "<hotwallet> ]]\n"
+                 "     get_counts\n"
+                 "     json <method> <json>\n"
+                 "     ledger [<id>|current|closed|validated] [full]\n"
+                 "     ledger_accept\n"
+                 "     ledger_cleaner\n"
+                 "     ledger_closed\n"
+                 "     ledger_current\n"
+                 "     ledger_request <ledger>\n"
+                 "     log_level [[<partition>] <severity>]\n"
+                 "     logrotate\n"
+                 "     manifest <public_key>\n"
+                 "     peers\n"
+                 "     ping\n"
+                 "     random\n"
+                 "     peer_reservations_add <public_key> [<description>]\n"
+                 "     peer_reservations_del <public_key>\n"
+                 "     peer_reservations_list\n"
+                 "     ripple ...\n"
+                 "     ripple_path_find <json> [<ledger>]\n"
+                 "     server_definitions [<hash>]\n"
+                 "     server_info [counters]\n"
+                 "     server_state [counters]\n"
+                 "     sign <private_key> <tx_json> [offline]\n"
+                 "     sign_for <signer_address> <signer_private_key> <tx_json> "
+                 "[offline] [<signature_field>]\n"
+                 "     stop\n"
+                 "     simulate [<tx_blob>|<tx_json>] [<binary>]\n"
+                 "     submit <tx_blob>|[<private_key> <tx_json>]\n"
+                 "     submit_multisigned <tx_json>\n"
+                 "     tx <id>\n"
+                 "     validation_create [<seed>|<pass_phrase>|<key>]\n"
+                 "     validator_info\n"
+                 "     validators\n"
+                 "     validator_list_sites\n"
+                 "     version\n"
+                 "     wallet_propose [<passphrase>]\n";
 }
 
 //------------------------------------------------------------------------------
@@ -207,8 +186,7 @@ public:
         std::for_each(v.begin(), v.end(), [this](std::string s) {
             boost::trim(s);
             if (selectors_.empty() || !s.empty())
-                selectors_.emplace_back(
-                    beast::unit_test::selector::automatch, s);
+                selectors_.emplace_back(beast::unit_test::selector::automatch, s);
         });
     }
 
@@ -246,9 +224,7 @@ anyMissing(Runner& runner, multi_selector const& pred)
     {
         auto const missing = pred.size() - runner.suites();
         runner.add_failures(missing);
-        std::cout << "Failed: " << missing
-                  << " filters did not match any existing test suites"
-                  << std::endl;
+        std::cout << "Failed: " << missing << " filters did not match any existing test suites" << std::endl;
         return true;
     }
     return false;
@@ -267,9 +243,9 @@ runUnitTests(
     char** argv)
 {
     using namespace beast::unit_test;
-    using namespace ripple::test;
+    using namespace xrpl::test;
 
-    ripple::test::envUseIPv4 = (!ipv6);
+    xrpl::test::envUseIPv4 = (!ipv6);
 
     if (!child && num_jobs == 1)
     {
@@ -278,8 +254,7 @@ runUnitTests(
         multi_runner_child child_runner{num_jobs, quiet, log};
         child_runner.arg(argument);
         multi_selector pred(pattern);
-        auto const any_failed =
-            child_runner.run_multi(pred) || anyMissing(child_runner, pred);
+        auto const any_failed = child_runner.run_multi(pred) || anyMissing(child_runner, pred);
 
         if (any_failed)
             return EXIT_FAILURE;
@@ -300,9 +275,7 @@ runUnitTests(
         }
 
         for (std::size_t i = 0; i < num_jobs; ++i)
-            children.emplace_back(
-                boost::process::v1::exe = exe_name,
-                boost::process::v1::args = args);
+            children.emplace_back(boost::process::v1::exe = exe_name, boost::process::v1::args = args);
 
         int bad_child_exits = 0;
         int terminated_child_exits = 0;
@@ -350,8 +323,7 @@ run(int argc, char** argv)
 {
     using namespace std;
 
-    beast::setCurrentThreadName(
-        "rippled: main " + BuildInfo::getVersionString());
+    beast::setCurrentThreadName("xrpld-main");
 
     po::variables_map vm;
 
@@ -368,42 +340,27 @@ run(int argc, char** argv)
     // Set up option parsing.
     //
     po::options_description gen("General Options");
-    gen.add_options()(
-        "conf", po::value<std::string>(), "Specify the configuration file.")(
-        "debug", "Enable normally suppressed debug logging")(
-        "help,h", "Display this message.")(
+    gen.add_options()("conf", po::value<std::string>(), "Specify the configuration file.")(
+        "debug", "Enable normally suppressed debug logging")("help,h", "Display this message.")(
         "newnodeid", "Generate a new node identity for this server.")(
-        "nodeid",
-        po::value<std::string>(),
-        "Specify the node identity for this server.")(
-        "quorum",
-        po::value<std::size_t>(),
-        "Override the minimum validation quorum.")(
-        "silent", "No output to the console after startup.")(
-        "standalone,a", "Run with no peers.")("verbose,v", "Verbose logging.")
+        "nodeid", po::value<std::string>(), "Specify the node identity for this server.")(
+        "quorum", po::value<std::size_t>(), "Override the minimum validation quorum.")(
+        "silent", "No output to the console after startup.")("standalone,a", "Run with no peers.")(
+        "verbose,v", "Verbose logging.")
 
         ("force_ledger_present_range",
          po::value<std::string>(),
          "Specify the range of present ledgers for testing purposes. Min and "
-         "max values are comma separated.")(
-            "version", "Display the build version.");
+         "max values are comma separated.")("version", "Display the build version.");
 
     po::options_description data("Ledger/Data Options");
     data.add_options()("import", importText.c_str())(
-        "ledger",
-        po::value<std::string>(),
-        "Load the specified ledger and start from the value given.")(
-        "ledgerfile",
-        po::value<std::string>(),
-        "Load the specified ledger file.")(
-        "load", "Load the current ledger from the local DB.")(
-        "net", "Get the initial ledger from the network.")(
+        "ledger", po::value<std::string>(), "Load the specified ledger and start from the value given.")(
+        "ledgerfile", po::value<std::string>(), "Load the specified ledger file.")(
+        "load", "Load the current ledger from the local DB.")("net", "Get the initial ledger from the network.")(
         "replay", "Replay a ledger close.")(
-        "trap_tx_hash",
-        po::value<std::string>(),
-        "Trap a specific transaction during replay.")(
-        "start", "Start from a fresh Ledger.")(
-        "vacuum", "VACUUM the transaction db.")(
+        "trap_tx_hash", po::value<std::string>(), "Trap a specific transaction during replay.")(
+        "start", "Start from a fresh Ledger.")("vacuum", "VACUUM the transaction db.")(
         "valid", "Consider the initial ledger a valid network ledger.");
 
     po::options_description rpc("RPC Client Options");
@@ -438,16 +395,12 @@ run(int argc, char** argv)
         "is made available to each suite that runs. Interpretation of the "
         "argument is handled individually by any suite that accesses it -- "
         "as such, it typically only make sense to provide this when running "
-        "a single suite.")(
-        "unittest-ipv6",
-        "Use IPv6 localhost when running unittests (default is IPv4).")(
+        "a single suite.")("unittest-ipv6", "Use IPv6 localhost when running unittests (default is IPv4).")(
         "unittest-log",
         "Force unit test log message output. Only useful in combination with "
         "--quiet, in which case log messages will print but suite/case names "
         "will not.")(
-        "unittest-jobs",
-        po::value<std::size_t>(),
-        "Number of unittest jobs to run in parallel (child processes).");
+        "unittest-jobs", po::value<std::size_t>(), "Number of unittest jobs to run in parallel (child processes).");
 #endif  // ENABLE_TESTS
 
     // These are hidden options, not intended to be shown in the usage/help
@@ -461,11 +414,9 @@ run(int argc, char** argv)
         "purpose, "
         "so this option is not needed for users")
 #ifdef ENABLE_TESTS
-        ("unittest-child",
-         "For internal use only when spawning child unit test processes.")
+        ("unittest-child", "For internal use only when spawning child unit test processes.")
 #else
-        ("unittest", "Disabled in this build.")(
-            "unittest-child", "Disabled in this build.")
+        ("unittest", "Disabled in this build.")("unittest-child", "Disabled in this build.")
 #endif  // ENABLE_TESTS
             ("fg", "Deprecated: server always in foreground mode.");
 
@@ -517,8 +468,7 @@ run(int argc, char** argv)
 
     if (vm.count("version"))
     {
-        std::cout << "rippled version " << BuildInfo::getVersionString()
-                  << std::endl;
+        std::cout << "rippled version " << BuildInfo::getVersionString() << std::endl;
 #ifdef GIT_COMMIT_HASH
         std::cout << "Git commit hash: " << GIT_COMMIT_HASH << std::endl;
 #endif
@@ -580,15 +530,10 @@ run(int argc, char** argv)
 
     auto config = std::make_unique<Config>();
 
-    auto configFile =
-        vm.count("conf") ? vm["conf"].as<std::string>() : std::string();
+    auto configFile = vm.count("conf") ? vm["conf"].as<std::string>() : std::string();
 
     // config file, quiet flag.
-    config->setup(
-        configFile,
-        bool(vm.count("quiet")),
-        bool(vm.count("silent")),
-        bool(vm.count("standalone")));
+    config->setup(configFile, bool(vm.count("quiet")), bool(vm.count("silent")), bool(vm.count("standalone")));
 
     if (vm.count("vacuum"))
     {
@@ -606,8 +551,7 @@ run(int argc, char** argv)
         }
         catch (std::exception const& e)
         {
-            std::cerr << "exception " << e.what() << " in function " << __func__
-                      << std::endl;
+            std::cerr << "exception " << e.what() << " in function " << __func__ << std::endl;
             return -1;
         }
 
@@ -621,9 +565,7 @@ run(int argc, char** argv)
             auto const r = [&vm]() -> std::vector<std::uint32_t> {
                 std::vector<std::string> strVec;
                 boost::split(
-                    strVec,
-                    vm["force_ledger_present_range"].as<std::string>(),
-                    boost::algorithm::is_any_of(","));
+                    strVec, vm["force_ledger_present_range"].as<std::string>(), boost::algorithm::is_any_of(","));
                 std::vector<std::uint32_t> result;
                 for (auto& s : strVec)
                 {
@@ -638,15 +580,13 @@ run(int argc, char** argv)
             {
                 if (r[0] > r[1])
                 {
-                    throw std::runtime_error(
-                        "Invalid force_ledger_present_range parameter");
+                    throw std::runtime_error("Invalid force_ledger_present_range parameter");
                 }
                 config->FORCED_LEDGER_RANGE_PRESENT.emplace(r[0], r[1]);
             }
             else
             {
-                throw std::runtime_error(
-                    "Invalid force_ledger_present_range parameter");
+                throw std::runtime_error("Invalid force_ledger_present_range parameter");
             }
         }
         catch (std::exception const& e)
@@ -661,7 +601,7 @@ run(int argc, char** argv)
 
     if (vm.count("start"))
     {
-        config->START_UP = Config::FRESH;
+        config->START_UP = StartUpType::FRESH;
     }
 
     if (vm.count("import"))
@@ -672,7 +612,7 @@ run(int argc, char** argv)
         config->START_LEDGER = vm["ledger"].as<std::string>();
         if (vm.count("replay"))
         {
-            config->START_UP = Config::REPLAY;
+            config->START_UP = StartUpType::REPLAY;
             if (vm.count("trap_tx_hash"))
             {
                 uint256 tmp = {};
@@ -691,36 +631,33 @@ run(int argc, char** argv)
             }
         }
         else
-            config->START_UP = Config::LOAD;
+            config->START_UP = StartUpType::LOAD;
     }
     else if (vm.count("ledgerfile"))
     {
         config->START_LEDGER = vm["ledgerfile"].as<std::string>();
-        config->START_UP = Config::LOAD_FILE;
+        config->START_UP = StartUpType::LOAD_FILE;
     }
     else if (vm.count("load") || config->FAST_LOAD)
     {
-        config->START_UP = Config::LOAD;
+        config->START_UP = StartUpType::LOAD;
     }
 
     if (vm.count("trap_tx_hash") && vm.count("replay") == 0)
     {
-        std::cerr << "Cannot use trap option without replay option"
-                  << std::endl;
+        std::cerr << "Cannot use trap option without replay option" << std::endl;
         return -1;
     }
 
     if (vm.count("net") && !config->FAST_LOAD)
     {
-        if ((config->START_UP == Config::LOAD) ||
-            (config->START_UP == Config::REPLAY))
+        if ((config->START_UP == StartUpType::LOAD) || (config->START_UP == StartUpType::REPLAY))
         {
-            std::cerr << "Net and load/replay options are incompatible"
-                      << std::endl;
+            std::cerr << "Net and load/replay options are incompatible" << std::endl;
             return -1;
         }
 
-        config->START_UP = Config::NETWORK;
+        config->START_UP = StartUpType::NETWORK;
     }
 
     if (vm.count("valid"))
@@ -732,12 +669,10 @@ run(int argc, char** argv)
     // happen after the config file is loaded.
     if (vm.count("rpc_ip"))
     {
-        auto endpoint = beast::IP::Endpoint::from_string_checked(
-            vm["rpc_ip"].as<std::string>());
+        auto endpoint = beast::IP::Endpoint::from_string_checked(vm["rpc_ip"].as<std::string>());
         if (!endpoint)
         {
-            std::cerr << "Invalid rpc_ip = " << vm["rpc_ip"].as<std::string>()
-                      << "\n";
+            std::cerr << "Invalid rpc_ip = " << vm["rpc_ip"].as<std::string>() << "\n";
             return -1;
         }
 
@@ -749,8 +684,7 @@ run(int argc, char** argv)
                 std::cerr << "WARNING: using deprecated rpc_port param.\n";
                 try
                 {
-                    endpoint =
-                        endpoint->at_port(vm["rpc_port"].as<std::uint16_t>());
+                    endpoint = endpoint->at_port(vm["rpc_port"].as<std::uint16_t>());
                     if (endpoint->port() == 0)
                         throw std::domain_error("0");
                 }
@@ -779,8 +713,7 @@ run(int argc, char** argv)
         }
         catch (std::exception const& e)
         {
-            std::cerr << "Invalid value specified for --quorum (" << e.what()
-                      << ")\n";
+            std::cerr << "Invalid value specified for --quorum (" << e.what() << ")\n";
             return -1;
         }
     }
@@ -803,13 +736,12 @@ run(int argc, char** argv)
         // say 1.7 or higher
         if (config->had_trailing_comments())
         {
-            JLOG(logs->journal("Application").warn())
-                << "Trailing comments were seen in your config file. "
-                << "The treatment of inline/trailing comments has changed "
-                   "recently. "
-                << "Any `#` characters NOT intended to delimit comments should "
-                   "be "
-                << "preceded by a \\";
+            JLOG(logs->journal("Application").warn()) << "Trailing comments were seen in your config file. "
+                                                      << "The treatment of inline/trailing comments has changed "
+                                                         "recently. "
+                                                      << "Any `#` characters NOT intended to delimit comments should "
+                                                         "be "
+                                                      << "preceded by a \\";
         }
 
         // We want at least 1024 file descriptors. We'll
@@ -820,16 +752,14 @@ run(int argc, char** argv)
         if (vm.count("debug"))
             setDebugLogSink(logs->makeSink("Debug", beast::severities::kTrace));
 
-        auto app = make_Application(
-            std::move(config), std::move(logs), std::make_unique<TimeKeeper>());
+        auto app = make_Application(std::move(config), std::move(logs), std::make_unique<TimeKeeper>());
 
         if (!app->setup(vm))
             return -1;
 
         // With our configuration parsed, ensure we have
         // enough file descriptors available:
-        if (!adjustDescriptorLimit(
-                app->fdRequired(), app->logs().journal("Application")))
+        if (!adjustDescriptorLimit(app->fdRequired(), app->logs().journal("Application")))
             return -1;
 
         // Start the server
@@ -843,12 +773,11 @@ run(int argc, char** argv)
 
     // We have an RPC command to process:
     beast::setCurrentThreadName("rippled: rpc");
-    return RPCCall::fromCommandLine(
-        *config, vm["parameters"].as<std::vector<std::string>>(), *logs);
+    return RPCCall::fromCommandLine(*config, vm["parameters"].as<std::vector<std::string>>(), *logs);
     // LCOV_EXCL_STOP
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 int
 main(int argc, char** argv)
@@ -873,5 +802,5 @@ main(int argc, char** argv)
 
     atexit(&google::protobuf::ShutdownProtobufLibrary);
 
-    return ripple::run(argc, argv);
+    return xrpl::run(argc, argv);
 }

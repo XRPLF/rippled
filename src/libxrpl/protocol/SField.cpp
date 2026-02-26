@@ -1,29 +1,10 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/SField.h>
 
 #include <map>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 // Storage for static const members.
 SField::IsSigning const SField::notSigning;
@@ -41,8 +22,7 @@ static SField::private_access_tag_t access;
 
 template <class T>
 template <class... Args>
-TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
-    : SField(pat, std::forward<Args>(args)...)
+TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args) : SField(pat, std::forward<Args>(args)...)
 {
 }
 
@@ -56,19 +36,10 @@ TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
 #undef TYPED_SFIELD
 
 #define UNTYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) \
-    SField const sfName(                                   \
-        access,                                            \
-        STI_##stiSuffix,                                   \
-        fieldValue,                                        \
-        std::string_view(#sfName).substr(2).data(),        \
-        ##__VA_ARGS__);
+    SField const sfName(access, STI_##stiSuffix, fieldValue, std::string_view(#sfName).substr(2).data(), ##__VA_ARGS__);
 #define TYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) \
     SF_##stiSuffix const sfName(                         \
-        access,                                          \
-        STI_##stiSuffix,                                 \
-        fieldValue,                                      \
-        std::string_view(#sfName).substr(2).data(),      \
-        ##__VA_ARGS__);
+        access, STI_##stiSuffix, fieldValue, std::string_view(#sfName).substr(2).data(), ##__VA_ARGS__);
 
 // SFields which, for historical reasons, do not follow naming conventions.
 SField const sfInvalid(access, -1, "");
@@ -85,13 +56,7 @@ SField const sfIndex(access, STI_UINT256, 258, "index");
 #undef UNTYPED_SFIELD
 #pragma pop_macro("UNTYPED_SFIELD")
 
-SField::SField(
-    private_access_tag_t,
-    SerializedTypeID tid,
-    int fv,
-    char const* fn,
-    int meta,
-    IsSigning signing)
+SField::SField(private_access_tag_t, SerializedTypeID tid, int fv, char const* fn, int meta, IsSigning signing)
     : fieldCode(field_code(tid, fv))
     , fieldType(tid)
     , fieldValue(fv)
@@ -102,11 +67,9 @@ SField::SField(
     , jsonName(fieldName.c_str())
 {
     XRPL_ASSERT(
-        !knownCodeToField.contains(fieldCode),
-        "ripple::SField::SField(tid,fv,fn,meta,signing) : fieldCode is unique");
+        !knownCodeToField.contains(fieldCode), "xrpl::SField::SField(tid,fv,fn,meta,signing) : fieldCode is unique");
     XRPL_ASSERT(
-        !knownNameToField.contains(fieldName),
-        "ripple::SField::SField(tid,fv,fn,meta,signing) : fieldName is unique");
+        !knownNameToField.contains(fieldName), "xrpl::SField::SField(tid,fv,fn,meta,signing) : fieldName is unique");
     knownCodeToField[fieldCode] = this;
     knownNameToField[fieldName] = this;
 }
@@ -121,12 +84,8 @@ SField::SField(private_access_tag_t, int fc, char const* fn)
     , signingField(IsSigning::yes)
     , jsonName(fieldName.c_str())
 {
-    XRPL_ASSERT(
-        !knownCodeToField.contains(fieldCode),
-        "ripple::SField::SField(fc,fn) : fieldCode is unique");
-    XRPL_ASSERT(
-        !knownNameToField.contains(fieldName),
-        "ripple::SField::SField(fc,fn) : fieldName is unique");
+    XRPL_ASSERT(!knownCodeToField.contains(fieldCode), "xrpl::SField::SField(fc,fn) : fieldCode is unique");
+    XRPL_ASSERT(!knownNameToField.contains(fieldName), "xrpl::SField::SField(fc,fn) : fieldName is unique");
     knownCodeToField[fieldCode] = this;
     knownNameToField[fieldName] = this;
 }
@@ -171,4 +130,4 @@ SField::getField(std::string const& fieldName)
     return sfInvalid;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

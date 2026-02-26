@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2012-2015 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
 
@@ -24,7 +5,7 @@
 
 #include <iomanip>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -93,15 +74,13 @@ operator<<(std::ostream& os, PrettyAmount const& amount)
     }
     else if (amount.value().holds<Issue>())
     {
-        os << amount.value().getText() << "/"
-           << to_string(amount.value().issue().currency) << "(" << amount.name()
+        os << amount.value().getText() << "/" << to_string(amount.value().issue().currency) << "(" << amount.name()
            << ")";
     }
     else
     {
         auto const& mptIssue = amount.value().asset().get<MPTIssue>();
-        os << amount.value().getText() << "/" << to_string(mptIssue) << "("
-           << amount.name() << ")";
+        os << amount.value().getText() << "/" << to_string(mptIssue) << "(" << amount.name() << ")";
     }
     return os;
 }
@@ -119,8 +98,7 @@ IOU::operator()(epsilon_t) const
 PrettyAmount
 IOU::operator()(detail::epsilon_multiple m) const
 {
-    return {
-        STAmount(issue(), safe_cast<std::uint64_t>(m.n), -81), account.name()};
+    return {STAmount(issue(), safe_cast<std::uint64_t>(m.n), -81), account.name()};
 }
 
 std::ostream&
@@ -134,4 +112,4 @@ any_t const any{};
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

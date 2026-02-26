@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_CONSENSUS_VALIDATIONS_H_INCLUDED
-#define RIPPLE_CONSENSUS_VALIDATIONS_H_INCLUDED
+#pragma once
 
 #include <xrpld/consensus/LedgerTrie.h>
 
@@ -35,7 +15,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 /** Timing parameters to control validation staleness and expiration.
 
@@ -159,10 +139,8 @@ isCurrent(
     // promoted from unsigned 32 bit to signed 64 bit prior
     // to computation.
 
-    return (signTime > (now - p.validationCURRENT_EARLY)) &&
-        (signTime < (now + p.validationCURRENT_WALL)) &&
-        ((seenTime == NetClock::time_point{}) ||
-         (seenTime < (now + p.validationCURRENT_LOCAL)));
+    return (signTime > (now - p.validationCURRENT_EARLY)) && (signTime < (now + p.validationCURRENT_WALL)) &&
+        ((seenTime == NetClock::time_point{}) || (seenTime < (now + p.validationCURRENT_LOCAL)));
 }
 
 /** Status of validation we received */
@@ -296,8 +274,7 @@ class Validations
     using NodeID = typename Validation::NodeID;
     using NodeKey = typename Validation::NodeKey;
 
-    using WrappedValidationType = std::decay_t<
-        std::invoke_result_t<decltype(&Validation::unwrap), Validation>>;
+    using WrappedValidationType = std::decay_t<std::invoke_result_t<decltype(&Validation::unwrap), Validation>>;
 
     // Manages concurrent access to members
     mutable Mutex mutex_;
@@ -312,20 +289,10 @@ class Validations
     hash_map<NodeID, SeqEnforcer<Seq>> seqEnforcers_;
 
     //! Validations from listed nodes, indexed by ledger id (partial and full)
-    beast::aged_unordered_map<
-        ID,
-        hash_map<NodeID, Validation>,
-        std::chrono::steady_clock,
-        beast::uhash<>>
-        byLedger_;
+    beast::aged_unordered_map<ID, hash_map<NodeID, Validation>, std::chrono::steady_clock, beast::uhash<>> byLedger_;
 
     // Partial and full validations indexed by sequence
-    beast::aged_unordered_map<
-        Seq,
-        hash_map<NodeID, Validation>,
-        std::chrono::steady_clock,
-        beast::uhash<>>
-        bySequence_;
+    beast::aged_unordered_map<Seq, hash_map<NodeID, Validation>, std::chrono::steady_clock, beast::uhash<>> bySequence_;
 
     // A range [low_, high_) of validations to keep from expire
     struct KeepRange
@@ -355,14 +322,10 @@ class Validations
 private:
     // Remove support of a validated ledger
     void
-    removeTrie(
-        std::lock_guard<Mutex> const&,
-        NodeID const& nodeID,
-        Validation const& val)
+    removeTrie(std::lock_guard<Mutex> const&, NodeID const& nodeID, Validation const& val)
     {
         {
-            auto it =
-                acquiring_.find(std::make_pair(val.seq(), val.ledgerID()));
+            auto it = acquiring_.find(std::make_pair(val.seq(), val.ledgerID()));
             if (it != acquiring_.end())
             {
                 it->second.erase(nodeID);
@@ -386,8 +349,7 @@ private:
     {
         for (auto it = acquiring_.begin(); it != acquiring_.end();)
         {
-            if (std::optional<Ledger> ledger =
-                    adaptor_.acquire(it->first.second))
+            if (std::optional<Ledger> ledger = adaptor_.acquire(it->first.second))
             {
                 for (NodeID const& nodeID : it->second)
                     updateTrie(lock, nodeID, *ledger);
@@ -401,10 +363,7 @@ private:
 
     // Update the trie to reflect a new validated ledger
     void
-    updateTrie(
-        std::lock_guard<Mutex> const&,
-        NodeID const& nodeID,
-        Ledger ledger)
+    updateTrie(std::lock_guard<Mutex> const&, NodeID const& nodeID, Ledger ledger)
     {
         auto const [it, inserted] = lastLedger_.emplace(nodeID, ledger);
         if (!inserted)
@@ -435,9 +394,7 @@ private:
         Validation const& val,
         std::optional<std::pair<Seq, ID>> prior)
     {
-        XRPL_ASSERT(
-            val.trusted(),
-            "ripple::Validations::updateTrie : trusted input validation");
+        XRPL_ASSERT(val.trusted(), "xrpl::Validations::updateTrie : trusted input validation");
 
         // Clear any prior acquiring ledger for this node
         if (prior)
@@ -474,9 +431,9 @@ private:
         are checked and any stale validations are flushed from the trie.
 
         @param lock Existing lock of mutex_
-        @param f Invokable with signature (LedgerTrie<Ledger> &)
+        @param f Invocable with signature (LedgerTrie<Ledger> &)
 
-        @warning The invokable `f` is expected to be a simple transformation of
+        @warning The invocable `f` is expected to be a simple transformation of
                  its arguments and will be called with mutex_ under lock.
 
     */
@@ -495,14 +452,14 @@ private:
         Iterate current validations, flushing any which are stale.
 
         @param lock Existing lock of mutex_
-        @param pre Invokable with signature (std::size_t) called prior to
+        @param pre Invocable with signature (std::size_t) called prior to
                    looping.
-        @param f Invokable with signature (NodeID const &, Validations const &)
+        @param f Invocable with signature (NodeID const &, Validations const &)
                  for each current validation.
 
-        @note The invokable `pre` is called _prior_ to checking for staleness
+        @note The invocable `pre` is called _prior_ to checking for staleness
               and reflects an upper-bound on the number of calls to `f.
-        @warning The invokable `f` is expected to be a simple transformation of
+        @warning The invocable `f` is expected to be a simple transformation of
                  its arguments and will be called with mutex_ under lock.
     */
 
@@ -516,8 +473,7 @@ private:
         while (it != current_.end())
         {
             // Check for staleness
-            if (!isCurrent(
-                    parms_, t, it->second.signTime(), it->second.seenTime()))
+            if (!isCurrent(parms_, t, it->second.signTime(), it->second.seenTime()))
             {
                 removeTrie(lock, it->first, it->second);
                 it = current_.erase(it);
@@ -536,21 +492,17 @@ private:
 
         @param lock Existing lock on mutex_
         @param ledgerID The identifier of the ledger
-        @param pre Invokable with signature(std::size_t)
-        @param f Invokable with signature (NodeID const &, Validation const &)
+        @param pre Invocable with signature(std::size_t)
+        @param f Invocable with signature (NodeID const &, Validation const &)
 
-        @note The invokable `pre` is called prior to iterating validations. The
+        @note The invocable `pre` is called prior to iterating validations. The
               argument is the number of times `f` will be called.
-        @warning The invokable f is expected to be a simple transformation of
+        @warning The invocable f is expected to be a simple transformation of
        its arguments and will be called with mutex_ under lock.
     */
     template <class Pre, class F>
     void
-    byLedger(
-        std::lock_guard<Mutex> const&,
-        ID const& ledgerID,
-        Pre&& pre,
-        F&& f)
+    byLedger(std::lock_guard<Mutex> const&, ID const& ledgerID, Pre&& pre, F&& f)
     {
         auto it = byLedger_.find(ledgerID);
         if (it != byLedger_.end())
@@ -571,14 +523,8 @@ public:
         @param ts Parameters for constructing Adaptor instance
     */
     template <class... Ts>
-    Validations(
-        ValidationParms const& p,
-        beast::abstract_clock<std::chrono::steady_clock>& c,
-        Ts&&... ts)
-        : byLedger_(c)
-        , bySequence_(c)
-        , parms_(p)
-        , adaptor_(std::forward<Ts>(ts)...)
+    Validations(ValidationParms const& p, beast::abstract_clock<std::chrono::steady_clock>& c, Ts&&... ts)
+        : byLedger_(c), bySequence_(c), parms_(p), adaptor_(std::forward<Ts>(ts)...)
     {
     }
 
@@ -634,19 +580,16 @@ public:
             // additional work to detect Byzantine validations
             auto const now = byLedger_.clock().now();
 
-            auto const [seqit, seqinserted] =
-                bySequence_[val.seq()].emplace(nodeID, val);
+            auto const [seqit, seqinserted] = bySequence_[val.seq()].emplace(nodeID, val);
 
             if (!seqinserted)
             {
                 // Check if the entry we're already tracking was signed
                 // long enough ago that we can disregard it.
-                auto const diff =
-                    std::max(seqit->second.signTime(), val.signTime()) -
+                auto const diff = std::max(seqit->second.signTime(), val.signTime()) -
                     std::min(seqit->second.signTime(), val.signTime());
 
-                if (diff > parms_.validationCURRENT_WALL &&
-                    val.signTime() > seqit->second.signTime())
+                if (diff > parms_.validationCURRENT_WALL && val.signTime() > seqit->second.signTime())
                     seqit->second = val;
             }
 
@@ -716,8 +659,7 @@ public:
     setSeqToKeep(Seq const& low, Seq const& high)
     {
         std::lock_guard lock{mutex_};
-        XRPL_ASSERT(
-            low < high, "ripple::Validations::setSeqToKeep : valid inputs");
+        XRPL_ASSERT(low < high, "xrpl::Validations::setSeqToKeep : valid inputs");
         toKeep_ = {low, high};
     }
 
@@ -737,21 +679,18 @@ public:
                 // We only need to refresh the keep range when it's just about
                 // to expire. Track the next time we need to refresh.
                 static std::chrono::steady_clock::time_point refreshTime;
-                if (auto const now = byLedger_.clock().now();
-                    refreshTime <= now)
+                if (auto const now = byLedger_.clock().now(); refreshTime <= now)
                 {
                     // The next refresh time is shortly before the expiration
                     // time from now.
-                    refreshTime = now + parms_.validationSET_EXPIRES -
-                        parms_.validationFRESHNESS;
+                    refreshTime = now + parms_.validationSET_EXPIRES - parms_.validationFRESHNESS;
 
                     for (auto i = byLedger_.begin(); i != byLedger_.end(); ++i)
                     {
                         auto const& validationMap = i->second;
                         if (!validationMap.empty())
                         {
-                            auto const seq =
-                                validationMap.begin()->second.seq();
+                            auto const seq = validationMap.begin()->second.seq();
                             if (toKeep_->low_ <= seq && seq < toKeep_->high_)
                             {
                                 byLedger_.touch(i);
@@ -759,11 +698,9 @@ public:
                         }
                     }
 
-                    for (auto i = bySequence_.begin(); i != bySequence_.end();
-                         ++i)
+                    for (auto i = bySequence_.begin(); i != bySequence_.end(); ++i)
                     {
-                        if (toKeep_->low_ <= i->first &&
-                            i->first < toKeep_->high_)
+                        if (toKeep_->low_ <= i->first && i->first < toKeep_->high_)
                         {
                             bySequence_.touch(i);
                         }
@@ -776,9 +713,7 @@ public:
         }
         JLOG(j.debug())
             << "Validations sets sweep lock duration "
-            << std::chrono::duration_cast<std::chrono::milliseconds>(
-                   std::chrono::steady_clock::now() - start)
-                   .count()
+            << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count()
             << "ms";
     }
 
@@ -851,28 +786,20 @@ public:
     {
         std::lock_guard lock{mutex_};
         std::optional<SpanTip<Ledger>> preferred =
-            withTrie(lock, [this](LedgerTrie<Ledger>& trie) {
-                return trie.getPreferred(localSeqEnforcer_.largest());
-            });
+            withTrie(lock, [this](LedgerTrie<Ledger>& trie) { return trie.getPreferred(localSeqEnforcer_.largest()); });
         // No trusted validations to determine branch
         if (!preferred)
         {
             // fall back to majority over acquiring ledgers
-            auto it = std::max_element(
-                acquiring_.begin(),
-                acquiring_.end(),
-                [](auto const& a, auto const& b) {
-                    std::pair<Seq, ID> const& aKey = a.first;
-                    typename hash_set<NodeID>::size_type const& aSize =
-                        a.second.size();
-                    std::pair<Seq, ID> const& bKey = b.first;
-                    typename hash_set<NodeID>::size_type const& bSize =
-                        b.second.size();
-                    // order by number of trusted peers validating that ledger
-                    // break ties with ledger ID
-                    return std::tie(aSize, aKey.second) <
-                        std::tie(bSize, bKey.second);
-                });
+            auto it = std::max_element(acquiring_.begin(), acquiring_.end(), [](auto const& a, auto const& b) {
+                std::pair<Seq, ID> const& aKey = a.first;
+                typename hash_set<NodeID>::size_type const& aSize = a.second.size();
+                std::pair<Seq, ID> const& bKey = b.first;
+                typename hash_set<NodeID>::size_type const& bSize = b.second.size();
+                // order by number of trusted peers validating that ledger
+                // break ties with ledger ID
+                return std::tie(aSize, aKey.second) < std::tie(bSize, bKey.second);
+            });
             if (it != acquiring_.end())
                 return it->first;
             return std::nullopt;
@@ -880,8 +807,7 @@ public:
 
         // If we are the parent of the preferred ledger, stick with our
         // current ledger since we might be about to generate it
-        if (preferred->seq == curr.seq() + Seq{1} &&
-            preferred->ancestor(curr.seq()) == curr.id())
+        if (preferred->seq == curr.seq() + Seq{1} && preferred->ancestor(curr.seq()) == curr.id())
             return std::make_pair(curr.seq(), curr.id());
 
         // A ledger ahead of us is preferred regardless of whether it is
@@ -933,10 +859,7 @@ public:
               does not know their sequence number
     */
     ID
-    getPreferredLCL(
-        Ledger const& lcl,
-        Seq minSeq,
-        hash_map<ID, std::uint32_t> const& peerCounts)
+    getPreferredLCL(Ledger const& lcl, Seq minSeq, hash_map<ID, std::uint32_t> const& peerCounts)
     {
         std::optional<std::pair<Seq, ID>> preferred = getPreferred(lcl);
 
@@ -946,13 +869,11 @@ public:
             return (preferred->first >= minSeq) ? preferred->second : lcl.id();
 
         // Otherwise, rely on peer ledgers
-        auto it = std::max_element(
-            peerCounts.begin(), peerCounts.end(), [](auto& a, auto& b) {
-                // Prefer larger counts, then larger ids on ties
-                // (max_element expects this to return true if a < b)
-                return std::tie(a.second, a.first) <
-                    std::tie(b.second, b.first);
-            });
+        auto it = std::max_element(peerCounts.begin(), peerCounts.end(), [](auto& a, auto& b) {
+            // Prefer larger counts, then larger ids on ties
+            // (max_element expects this to return true if a < b)
+            return std::tie(a.second, a.first) < std::tie(b.second, b.first);
+        });
 
         if (it != peerCounts.end())
             return it->first;
@@ -982,14 +903,10 @@ public:
             });
 
         // Count parent ledgers as fallback
-        return std::count_if(
-            lastLedger_.begin(),
-            lastLedger_.end(),
-            [&ledgerID](auto const& it) {
-                auto const& curr = it.second;
-                return curr.seq() > Seq{0} &&
-                    curr[curr.seq() - Seq{1}] == ledgerID;
-            });
+        return std::count_if(lastLedger_.begin(), lastLedger_.end(), [&ledgerID](auto const& it) {
+            auto const& curr = it.second;
+            return curr.seq() > Seq{0} && curr[curr.seq() - Seq{1}] == ledgerID;
+        });
     }
 
     /** Get the currently trusted full validations
@@ -1133,8 +1050,7 @@ public:
             std::lock_guard{mutex_},
             [](std::size_t) {},
             [&](NodeID const&, Validation const& v) {
-                if (adaptor_.now() <
-                        v.seenTime() + parms_.validationFRESHNESS &&
+                if (adaptor_.now() < v.seenTime() + parms_.validationFRESHNESS &&
                     trustedKeys.find(v.key()) != trustedKeys.end())
                 {
                     trustedKeys.erase(v.key());
@@ -1175,5 +1091,4 @@ public:
     }
 };
 
-}  // namespace ripple
-#endif
+}  // namespace xrpl

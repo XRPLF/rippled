@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/misc/PermissionedDEXHelpers.h>
 #include <xrpld/app/paths/RippleCalc.h>
@@ -30,14 +11,13 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 TxConsequences
 Payment::makeTxConsequences(PreflightContext const& ctx)
 {
     auto calculateMaxXRPSpend = [](STTx const& tx) -> XRPAmount {
-        STAmount const maxAmount =
-            tx.isFieldPresent(sfSendMax) ? tx[sfSendMax] : tx[sfAmount];
+        STAmount const maxAmount = tx.isFieldPresent(sfSendMax) ? tx[sfSendMax] : tx[sfAmount];
 
         // If there's no sfSendMax in XRP, and the sfAmount isn't
         // in XRP, then the transaction does not spend XRP.
@@ -48,10 +28,7 @@ Payment::makeTxConsequences(PreflightContext const& ctx)
 }
 
 STAmount
-getMaxSourceAmount(
-    AccountID const& account,
-    STAmount const& dstAmount,
-    std::optional<STAmount> const& sendMax)
+getMaxSourceAmount(AccountID const& account, STAmount const& dstAmount, std::optional<STAmount> const& sendMax)
 {
     if (sendMax)
         return *sendMax;
@@ -68,11 +45,9 @@ getMaxSourceAmount(
 bool
 Payment::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
-        !ctx.rules.enabled(featureCredentials))
+    if (ctx.tx.isFieldPresent(sfCredentialIDs) && !ctx.rules.enabled(featureCredentials))
         return false;
-    if (ctx.tx.isFieldPresent(sfDomainID) &&
-        !ctx.rules.enabled(featurePermissionedDEX))
+    if (ctx.tx.isFieldPresent(sfDomainID) && !ctx.rules.enabled(featurePermissionedDEX))
         return false;
 
     return true;
@@ -115,16 +90,13 @@ Payment::preflight(PreflightContext const& ctx)
     auto const deliverMin = tx[~sfDeliverMin];
 
     auto const account = tx.getAccountID(sfAccount);
-    STAmount const maxSourceAmount =
-        getMaxSourceAmount(account, dstAmount, tx[~sfSendMax]);
+    STAmount const maxSourceAmount = getMaxSourceAmount(account, dstAmount, tx[~sfSendMax]);
 
     if ((mptDirect && dstAmount.asset() != maxSourceAmount.asset()) ||
         (!mptDirect && maxSourceAmount.holds<MPTIssue>()))
     {
-        JLOG(j.trace()) << "Malformed transaction: inconsistent issues: "
-                        << dstAmount.getFullText() << " "
-                        << maxSourceAmount.getFullText() << " "
-                        << deliverMin.value_or(STAmount{}).getFullText();
+        JLOG(j.trace()) << "Malformed transaction: inconsistent issues: " << dstAmount.getFullText() << " "
+                        << maxSourceAmount.getFullText() << " " << deliverMin.value_or(STAmount{}).getFullText();
         return temMALFORMED;
     }
 
@@ -146,14 +118,12 @@ Payment::preflight(PreflightContext const& ctx)
     }
     if (hasMax && maxSourceAmount <= beast::zero)
     {
-        JLOG(j.trace()) << "Malformed transaction: bad max amount: "
-                        << maxSourceAmount.getFullText();
+        JLOG(j.trace()) << "Malformed transaction: bad max amount: " << maxSourceAmount.getFullText();
         return temBAD_AMOUNT;
     }
     if (dstAmount <= beast::zero)
     {
-        JLOG(j.trace()) << "Malformed transaction: bad dst amount: "
-                        << dstAmount.getFullText();
+        JLOG(j.trace()) << "Malformed transaction: bad dst amount: " << dstAmount.getFullText();
         return temBAD_AMOUNT;
     }
     if (badCurrency() == srcAsset || badCurrency() == dstAsset)
@@ -166,8 +136,8 @@ Payment::preflight(PreflightContext const& ctx)
         // You're signing yourself a payment.
         // If hasPaths is true, you might be trying some arbitrage.
         JLOG(j.trace()) << "Malformed transaction: "
-                        << "Redundant payment from " << to_string(account)
-                        << " to self without path for " << to_string(dstAsset);
+                        << "Redundant payment from " << to_string(account) << " to self without path for "
+                        << to_string(dstAsset);
         return temREDUNDANT;
     }
     if (xrpDirect && hasMax)
@@ -194,17 +164,15 @@ Payment::preflight(PreflightContext const& ctx)
     if ((xrpDirect || mptDirect) && limitQuality)
     {
         // Consistent but redundant transaction.
-        JLOG(j.trace())
-            << "Malformed transaction: "
-            << "Limit quality specified for XRP to XRP or MPT to MPT.";
+        JLOG(j.trace()) << "Malformed transaction: "
+                        << "Limit quality specified for XRP to XRP or MPT to MPT.";
         return temBAD_SEND_XRP_LIMIT;
     }
     if ((xrpDirect || mptDirect) && !defaultPathsAllowed)
     {
         // Consistent but redundant transaction.
-        JLOG(j.trace())
-            << "Malformed transaction: "
-            << "No ripple direct specified for XRP to XRP or MPT to MPT.";
+        JLOG(j.trace()) << "Malformed transaction: "
+                        << "No ripple direct specified for XRP to XRP or MPT to MPT.";
         return temBAD_SEND_XRP_NO_DIRECT;
     }
 
@@ -221,30 +189,26 @@ Payment::preflight(PreflightContext const& ctx)
         auto const dMin = *deliverMin;
         if (!isLegalNet(dMin) || dMin <= beast::zero)
         {
-            JLOG(j.trace())
-                << "Malformed transaction: Invalid " << jss::DeliverMin.c_str()
-                << " amount. " << dMin.getFullText();
+            JLOG(j.trace()) << "Malformed transaction: Invalid " << jss::DeliverMin.c_str() << " amount. "
+                            << dMin.getFullText();
             return temBAD_AMOUNT;
         }
         if (dMin.asset() != dstAmount.asset())
         {
-            JLOG(j.trace())
-                << "Malformed transaction: Dst issue differs "
-                   "from "
-                << jss::DeliverMin.c_str() << ". " << dMin.getFullText();
+            JLOG(j.trace()) << "Malformed transaction: Dst issue differs "
+                               "from "
+                            << jss::DeliverMin.c_str() << ". " << dMin.getFullText();
             return temBAD_AMOUNT;
         }
         if (dMin > dstAmount)
         {
-            JLOG(j.trace())
-                << "Malformed transaction: Dst amount less than "
-                << jss::DeliverMin.c_str() << ". " << dMin.getFullText();
+            JLOG(j.trace()) << "Malformed transaction: Dst amount less than " << jss::DeliverMin.c_str() << ". "
+                            << dMin.getFullText();
             return temBAD_AMOUNT;
         }
     }
 
-    if (auto const err = credentials::checkFields(ctx.tx, ctx.j);
-        !isTesSuccess(err))
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.j); !isTesSuccess(err))
         return err;
 
     return tesSUCCESS;
@@ -273,13 +237,10 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
     auto const& amountAsset = dstAmount.asset();
 
     // Granular permissions are only valid for direct payments.
-    if ((tx.isFieldPresent(sfSendMax) &&
-         tx[sfSendMax].asset() != amountAsset) ||
-        tx.isFieldPresent(sfPaths))
+    if ((tx.isFieldPresent(sfSendMax) && tx[sfSendMax].asset() != amountAsset) || tx.isFieldPresent(sfPaths))
         return terNO_DELEGATE_PERMISSION;
 
-    if (granularPermissions.contains(PaymentMint) && !isXRP(amountAsset) &&
-        amountAsset.getIssuer() == tx[sfAccount])
+    if (granularPermissions.contains(PaymentMint) && !isXRP(amountAsset) && amountAsset.getIssuer() == tx[sfAccount])
         return tesSUCCESS;
 
     if (granularPermissions.contains(PaymentBurn) && !isXRP(amountAsset) &&
@@ -309,8 +270,7 @@ Payment::preclaim(PreclaimContext const& ctx)
         // Destination account does not exist.
         if (!dstAmount.native())
         {
-            JLOG(ctx.j.trace())
-                << "Delay transaction: Destination account does not exist.";
+            JLOG(ctx.j.trace()) << "Delay transaction: Destination account does not exist.";
 
             // Another transaction could create the account and then this
             // transaction would succeed.
@@ -331,27 +291,23 @@ Payment::preclaim(PreclaimContext const& ctx)
         {
             // accountReserve is the minimum amount that an account can have.
             // Reserve is not scaled by load.
-            JLOG(ctx.j.trace())
-                << "Delay transaction: Destination account does not exist. "
-                << "Insufficent payment to create account.";
+            JLOG(ctx.j.trace()) << "Delay transaction: Destination account does not exist. "
+                                << "Insufficent payment to create account.";
 
-            // TODO: dedupe
+            // TODO: de-dupe
             // Another transaction could create the account and then this
             // transaction would succeed.
             return tecNO_DST_INSUF_XRP;
         }
     }
-    else if (
-        (sleDst->getFlags() & lsfRequireDestTag) &&
-        !ctx.tx.isFieldPresent(sfDestinationTag))
+    else if ((sleDst->getFlags() & lsfRequireDestTag) && !ctx.tx.isFieldPresent(sfDestinationTag))
     {
         // The tag is basically account-specific information we don't
         // understand, but we can require someone to fill it in.
 
         // We didn't make this test for a newly-formed account because there's
         // no way for this field to be set.
-        JLOG(ctx.j.trace())
-            << "Malformed transaction: DestinationTag required.";
+        JLOG(ctx.j.trace()) << "Malformed transaction: DestinationTag required.";
 
         return tecDST_TAG_NEEDED;
     }
@@ -362,27 +318,21 @@ Payment::preclaim(PreclaimContext const& ctx)
         STPathSet const& paths = ctx.tx.getFieldPathSet(sfPaths);
 
         if (paths.size() > MaxPathSize ||
-            std::any_of(paths.begin(), paths.end(), [](STPath const& path) {
-                return path.size() > MaxPathLength;
-            }))
+            std::any_of(paths.begin(), paths.end(), [](STPath const& path) { return path.size() > MaxPathLength; }))
         {
             return telBAD_PATH_COUNT;
         }
     }
 
-    if (auto const err =
-            credentials::valid(ctx.tx, ctx.view, ctx.tx[sfAccount], ctx.j);
-        !isTesSuccess(err))
+    if (auto const err = credentials::valid(ctx.tx, ctx.view, ctx.tx[sfAccount], ctx.j); !isTesSuccess(err))
         return err;
 
     if (ctx.tx.isFieldPresent(sfDomainID))
     {
-        if (!permissioned_dex::accountInDomain(
-                ctx.view, ctx.tx[sfAccount], ctx.tx[sfDomainID]))
+        if (!permissioned_dex::accountInDomain(ctx.view, ctx.tx[sfAccount], ctx.tx[sfDomainID]))
             return tecNO_PERMISSION;
 
-        if (!permissioned_dex::accountInDomain(
-                ctx.view, ctx.tx[sfDestination], ctx.tx[sfDomainID]))
+        if (!permissioned_dex::accountInDomain(ctx.view, ctx.tx[sfDestination], ctx.tx[sfDomainID]))
             return tecNO_PERMISSION;
     }
 
@@ -405,11 +355,9 @@ Payment::doApply()
     AccountID const dstAccountID(ctx_.tx.getAccountID(sfDestination));
     STAmount const dstAmount(ctx_.tx.getFieldAmount(sfAmount));
     bool const mptDirect = dstAmount.holds<MPTIssue>();
-    STAmount const maxSourceAmount =
-        getMaxSourceAmount(account_, dstAmount, sendMax);
+    STAmount const maxSourceAmount = getMaxSourceAmount(account_, dstAmount, sendMax);
 
-    JLOG(j_.trace()) << "maxSourceAmount=" << maxSourceAmount.getFullText()
-                     << " dstAmount=" << dstAmount.getFullText();
+    JLOG(j_.trace()) << "maxSourceAmount=" << maxSourceAmount.getFullText() << " dstAmount=" << dstAmount.getFullText();
 
     // Open a ledger for editing.
     auto const k = keylet::account(dstAccountID);
@@ -417,14 +365,10 @@ Payment::doApply()
 
     if (!sleDst)
     {
-        std::uint32_t const seqno{
-            view().rules().enabled(featureDeletableAccounts) ? view().seq()
-                                                             : 1};
-
         // Create the account.
         sleDst = std::make_shared<SLE>(k);
         sleDst->setAccountID(sfAccount, dstAccountID);
-        sleDst->setFieldU32(sfSequence, seqno);
+        sleDst->setFieldU32(sfSequence, view().seq());
 
         view().insert(sleDst);
     }
@@ -436,43 +380,21 @@ Payment::doApply()
         view().update(sleDst);
     }
 
-    // Determine whether the destination requires deposit authorization.
-    bool const depositAuth = view().rules().enabled(featureDepositAuth);
-    bool const reqDepositAuth =
-        sleDst->getFlags() & lsfDepositAuth && depositAuth;
-
-    bool const depositPreauth = view().rules().enabled(featureDepositPreauth);
-
-    bool const ripple =
-        (hasPaths || sendMax || !dstAmount.native()) && !mptDirect;
-
-    // If the destination has lsfDepositAuth set, then only direct XRP
-    // payments (no intermediate steps) are allowed to the destination.
-    if (!depositPreauth && ripple && reqDepositAuth)
-        return tecNO_PERMISSION;
+    bool const ripple = (hasPaths || sendMax || !dstAmount.native()) && !mptDirect;
 
     if (ripple)
     {
         // Ripple payment with at least one intermediate step and uses
         // transitive balances.
 
-        if (depositPreauth && depositAuth)
-        {
-            // If depositPreauth is enabled, then an account that requires
-            // authorization has two ways to get an IOU Payment in:
-            //  1. If Account == Destination, or
-            //  2. If Account is deposit preauthorized by destination.
+        // An account that requires authorization has two ways to get an
+        // IOU Payment in:
+        //  1. If Account == Destination, or
+        //  2. If Account is deposit preauthorized by destination.
 
-            if (auto err = verifyDepositPreauth(
-                    ctx_.tx,
-                    ctx_.view(),
-                    account_,
-                    dstAccountID,
-                    sleDst,
-                    ctx_.journal);
-                !isTesSuccess(err))
-                return err;
-        }
+        if (auto err = verifyDepositPreauth(ctx_.tx, ctx_.view(), account_, dstAccountID, sleDst, ctx_.journal);
+            !isTesSuccess(err))
+            return err;
 
         path::RippleCalc::Input rcInput;
         rcInput.partialPaymentAllowed = partialPaymentAllowed;
@@ -483,8 +405,7 @@ Payment::doApply()
         path::RippleCalc::Output rc;
         {
             PaymentSandbox pv(&view());
-            JLOG(j_.debug()) << "Entering RippleCalc in payment: "
-                             << ctx_.tx.getTransactionID();
+            JLOG(j_.debug()) << "Entering RippleCalc in payment: " << ctx_.tx.getTransactionID();
             rc = path::RippleCalc::rippleCalculate(
                 pv,
                 maxSourceAmount,
@@ -526,26 +447,16 @@ Payment::doApply()
         JLOG(j_.trace()) << " dstAmount=" << dstAmount.getFullText();
         auto const& mptIssue = dstAmount.get<MPTIssue>();
 
-        if (auto const ter = requireAuth(view(), mptIssue, account_);
-            ter != tesSUCCESS)
+        if (auto const ter = requireAuth(view(), mptIssue, account_); ter != tesSUCCESS)
             return ter;
 
-        if (auto const ter = requireAuth(view(), mptIssue, dstAccountID);
-            ter != tesSUCCESS)
+        if (auto const ter = requireAuth(view(), mptIssue, dstAccountID); ter != tesSUCCESS)
             return ter;
 
-        if (auto const ter =
-                canTransfer(view(), mptIssue, account_, dstAccountID);
-            ter != tesSUCCESS)
+        if (auto const ter = canTransfer(view(), mptIssue, account_, dstAccountID); ter != tesSUCCESS)
             return ter;
 
-        if (auto err = verifyDepositPreauth(
-                ctx_.tx,
-                ctx_.view(),
-                account_,
-                dstAccountID,
-                sleDst,
-                ctx_.journal);
+        if (auto err = verifyDepositPreauth(ctx_.tx, ctx_.view(), account_, dstAccountID, sleDst, ctx_.journal);
             !isTesSuccess(err))
             return err;
 
@@ -583,22 +494,19 @@ Payment::doApply()
             amountDeliver = divide(maxSourceAmount, rate);
         }
 
-        if (requiredMaxSourceAmount > maxSourceAmount ||
-            (deliverMin && amountDeliver < *deliverMin))
+        if (requiredMaxSourceAmount > maxSourceAmount || (deliverMin && amountDeliver < *deliverMin))
             return tecPATH_PARTIAL;
 
         PaymentSandbox pv(&view());
-        auto res = accountSend(
-            pv, account_, dstAccountID, amountDeliver, ctx_.journal);
+        auto res = accountSend(pv, account_, dstAccountID, amountDeliver, ctx_.journal);
         if (res == tesSUCCESS)
         {
             pv.apply(ctx_.rawView());
 
             // If the actual amount delivered is different from the original
             // amount due to partial payment or transfer fee, we need to update
-            // DelieveredAmount using the actual delivered amount
-            if (view().rules().enabled(fixMPTDeliveredAmount) &&
-                amountDeliver != dstAmount)
+            // DeliveredAmount using the actual delivered amount
+            if (view().rules().enabled(fixMPTDeliveredAmount) && amountDeliver != dstAmount)
                 ctx_.deliver(amountDeliver);
         }
         else if (res == tecINSUFFICIENT_FUNDS || res == tecPATH_DRY)
@@ -607,7 +515,7 @@ Payment::doApply()
         return res;
     }
 
-    XRPL_ASSERT(dstAmount.native(), "ripple::Payment::doApply : amount is XRP");
+    XRPL_ASSERT(dstAmount.native(), "xrpl::Payment::doApply : amount is XRP");
 
     // Direct XRP payment.
 
@@ -631,10 +539,8 @@ Payment::doApply()
     {
         // Vote no. However the transaction might succeed, if applied in
         // a different order.
-        JLOG(j_.trace()) << "Delay transaction: Insufficient funds: "
-                         << to_string(mPriorBalance) << " / "
-                         << to_string(dstAmount.xrp() + mmm) << " ("
-                         << to_string(reserve) << ")";
+        JLOG(j_.trace()) << "Delay transaction: Insufficient funds: " << to_string(mPriorBalance) << " / "
+                         << to_string(dstAmount.xrp() + mmm) << " (" << to_string(reserve) << ")";
 
         return tecUNFUNDED_PAYMENT;
     }
@@ -649,49 +555,38 @@ Payment::doApply()
 
     // The source account does have enough money.  Make sure the
     // source account has authority to deposit to the destination.
-    if (depositAuth)
+    // An account that requires authorization has three ways to get an XRP
+    // Payment in:
+    //  1. If Account == Destination, or
+    //  2. If Account is deposit preauthorized by destination, or
+    //  3. If the destination's XRP balance is
+    //    a. less than or equal to the base reserve and
+    //    b. the deposit amount is less than or equal to the base reserve,
+    // then we allow the deposit.
+    //
+    // Rule 3 is designed to keep an account from getting wedged
+    // in an unusable state if it sets the lsfDepositAuth flag and
+    // then consumes all of its XRP.  Without the rule if an
+    // account with lsfDepositAuth set spent all of its XRP, it
+    // would be unable to acquire more XRP required to pay fees.
+    //
+    // We choose the base reserve as our bound because it is
+    // a small number that seldom changes but is always sufficient
+    // to get the account un-wedged.
+
+    // Get the base reserve.
+    XRPAmount const dstReserve{view().fees().reserve};
+
+    if (dstAmount > dstReserve || sleDst->getFieldAmount(sfBalance) > dstReserve)
     {
-        // If depositPreauth is enabled, then an account that requires
-        // authorization has three ways to get an XRP Payment in:
-        //  1. If Account == Destination, or
-        //  2. If Account is deposit preauthorized by destination, or
-        //  3. If the destination's XRP balance is
-        //    a. less than or equal to the base reserve and
-        //    b. the deposit amount is less than or equal to the base reserve,
-        // then we allow the deposit.
-        //
-        // Rule 3 is designed to keep an account from getting wedged
-        // in an unusable state if it sets the lsfDepositAuth flag and
-        // then consumes all of its XRP.  Without the rule if an
-        // account with lsfDepositAuth set spent all of its XRP, it
-        // would be unable to acquire more XRP required to pay fees.
-        //
-        // We choose the base reserve as our bound because it is
-        // a small number that seldom changes but is always sufficient
-        // to get the account un-wedged.
-
-        // Get the base reserve.
-        XRPAmount const dstReserve{view().fees().reserve};
-
-        if (dstAmount > dstReserve ||
-            sleDst->getFieldAmount(sfBalance) > dstReserve)
-        {
-            if (auto err = verifyDepositPreauth(
-                    ctx_.tx,
-                    ctx_.view(),
-                    account_,
-                    dstAccountID,
-                    sleDst,
-                    ctx_.journal);
-                !isTesSuccess(err))
-                return err;
-        }
+        if (auto err = verifyDepositPreauth(ctx_.tx, ctx_.view(), account_, dstAccountID, sleDst, ctx_.journal);
+            !isTesSuccess(err))
+            return err;
     }
 
     // Do the arithmetic for the transfer and make the ledger change.
     sleSrc->setFieldAmount(sfBalance, mSourceBalance - dstAmount);
-    sleDst->setFieldAmount(
-        sfBalance, sleDst->getFieldAmount(sfBalance) + dstAmount);
+    sleDst->setFieldAmount(sfBalance, sleDst->getFieldAmount(sfBalance) + dstAmount);
 
     // Re-arm the password change fee if we can and need to.
     if ((sleDst->getFlags() & lsfPasswordSpent))
@@ -700,4 +595,4 @@ Payment::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

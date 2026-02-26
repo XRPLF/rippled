@@ -1,37 +1,14 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2021 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/rdb/PeerFinder.h>
 
-namespace ripple {
+namespace xrpl {
 
 void
-initPeerFinderDB(
-    soci::session& session,
-    BasicConfig const& config,
-    beast::Journal j)
+initPeerFinderDB(soci::session& session, BasicConfig const& config, beast::Journal j)
 {
     DBConfig m_sociConfig(config, "peerfinder");
     m_sociConfig.open(session);
 
-    JLOG(j.info()) << "Opening database at '" << m_sociConfig.connectionString()
-                   << "'";
+    JLOG(j.info()) << "Opening database at '" << m_sociConfig.connectionString() << "'";
 
     soci::transaction tr(session);
     session << "PRAGMA encoding=\"UTF-8\";";
@@ -58,10 +35,7 @@ initPeerFinderDB(
 }
 
 void
-updatePeerFinderDB(
-    soci::session& session,
-    int currentSchemaVersion,
-    beast::Journal j)
+updatePeerFinderDB(soci::session& session, int currentSchemaVersion, beast::Journal j)
 {
     soci::transaction tr(session);
     // get version
@@ -83,13 +57,11 @@ updatePeerFinderDB(
     {
         if (version < currentSchemaVersion)
         {
-            JLOG(j.info()) << "Updating database to version "
-                           << currentSchemaVersion;
+            JLOG(j.info()) << "Updating database to version " << currentSchemaVersion;
         }
         else if (version > currentSchemaVersion)
         {
-            Throw<std::runtime_error>(
-                "The PeerFinder database version is higher than expected");
+            Throw<std::runtime_error>("The PeerFinder database version is higher than expected");
         }
     }
 
@@ -112,8 +84,7 @@ updatePeerFinderDB(
                    "  ( address ); ";
 
         std::size_t count;
-        session << "SELECT COUNT(*) FROM PeerFinder_BootstrapCache;",
-            soci::into(count);
+        session << "SELECT COUNT(*) FROM PeerFinder_BootstrapCache;", soci::into(count);
 
         std::vector<PeerFinder::Store::Entry> list;
 
@@ -141,8 +112,7 @@ updatePeerFinderDB(
                 }
                 else
                 {
-                    JLOG(j.error()) << "Bad address string '" << s
-                                    << "' in Bootcache table";
+                    JLOG(j.error()) << "Bad address string '" << s << "' in Bootcache table";
                 }
             }
         }
@@ -214,9 +184,7 @@ updatePeerFinderDB(
 }
 
 void
-readPeerFinderDB(
-    soci::session& session,
-    std::function<void(std::string const&, int)> const& func)
+readPeerFinderDB(soci::session& session, std::function<void(std::string const&, int)> const& func)
 {
     std::string s;
     int valence;
@@ -236,9 +204,7 @@ readPeerFinderDB(
 }
 
 void
-savePeerFinderDB(
-    soci::session& session,
-    std::vector<PeerFinder::Store::Entry> const& v)
+savePeerFinderDB(soci::session& session, std::vector<PeerFinder::Store::Entry> const& v)
 {
     soci::transaction tr(session);
     session << "DELETE FROM PeerFinder_BootstrapCache;";
@@ -268,4 +234,4 @@ savePeerFinderDB(
     tr.commit();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_QUALITY_H_INCLUDED
-#define RIPPLE_PROTOCOL_QUALITY_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/IOUAmount.h>
@@ -29,7 +9,7 @@
 #include <cstdint>
 #include <ostream>
 
-namespace ripple {
+namespace xrpl {
 
 /** Represents a pair of input and output currencies.
 
@@ -134,15 +114,13 @@ public:
 
     /** Create a quality from the ratio of two amounts. */
     template <class In, class Out>
-    explicit Quality(TAmounts<In, Out> const& amount)
-        : Quality(Amounts(toSTAmount(amount.in), toSTAmount(amount.out)))
+    explicit Quality(TAmounts<In, Out> const& amount) : Quality(Amounts(toSTAmount(amount.in), toSTAmount(amount.out)))
     {
     }
 
     /** Create a quality from the ratio of two amounts. */
     template <class In, class Out>
-    Quality(Out const& out, In const& in)
-        : Quality(Amounts(toSTAmount(in), toSTAmount(out)))
+    Quality(Out const& out, In const& in) : Quality(Amounts(toSTAmount(in), toSTAmount(out)))
     {
     }
 
@@ -192,15 +170,11 @@ public:
     // low order bits that could influence rounding decisions.  This "strict"
     // method uses underlying functions that pay attention to all the bits.
     [[nodiscard]] Amounts
-    ceil_in_strict(Amounts const& amount, STAmount const& limit, bool roundUp)
-        const;
+    ceil_in_strict(Amounts const& amount, STAmount const& limit, bool roundUp) const;
 
     template <class In, class Out>
     [[nodiscard]] TAmounts<In, Out>
-    ceil_in_strict(
-        TAmounts<In, Out> const& amount,
-        In const& limit,
-        bool roundUp) const;
+    ceil_in_strict(TAmounts<In, Out> const& amount, In const& limit, bool roundUp) const;
 
     /** Returns the scaled amount with out capped.
         Math is avoided if the result is exact. The input is clamped
@@ -217,26 +191,17 @@ public:
     // low order bits that could influence rounding decisions.  This "strict"
     // method uses underlying functions that pay attention to all the bits.
     [[nodiscard]] Amounts
-    ceil_out_strict(Amounts const& amount, STAmount const& limit, bool roundUp)
-        const;
+    ceil_out_strict(Amounts const& amount, STAmount const& limit, bool roundUp) const;
 
     template <class In, class Out>
     [[nodiscard]] TAmounts<In, Out>
-    ceil_out_strict(
-        TAmounts<In, Out> const& amount,
-        Out const& limit,
-        bool roundUp) const;
+    ceil_out_strict(TAmounts<In, Out> const& amount, Out const& limit, bool roundUp) const;
 
 private:
     // The ceil_in and ceil_out methods that deal in TAmount all convert
-    // their arguments to STAoumout and convert the result back to TAmount.
+    // their arguments to STAmount and convert the result back to TAmount.
     // This helper function takes care of all the conversion operations.
-    template <
-        class In,
-        class Out,
-        class Lim,
-        typename FnPtr,
-        std::same_as<bool>... Round>
+    template <class In, class Out, class Lim, typename FnPtr, std::same_as<bool>... Round>
     [[nodiscard]] TAmounts<In, Out>
     ceil_TAmounts_helper(
         TAmounts<In, Out> const& amount,
@@ -298,29 +263,22 @@ public:
     friend double
     relativeDistance(Quality const& q1, Quality const& q2)
     {
-        XRPL_ASSERT(
-            q1.m_value > 0 && q2.m_value > 0,
-            "ripple::Quality::relativeDistance : minimum inputs");
+        XRPL_ASSERT(q1.m_value > 0 && q2.m_value > 0, "xrpl::Quality::relativeDistance : minimum inputs");
 
         if (q1.m_value == q2.m_value)  // make expected common case fast
             return 0;
 
         auto const [minV, maxV] = std::minmax(q1.m_value, q2.m_value);
 
-        auto mantissa = [](std::uint64_t rate) {
-            return rate & ~(255ull << (64 - 8));
-        };
-        auto exponent = [](std::uint64_t rate) {
-            return static_cast<int>(rate >> (64 - 8)) - 100;
-        };
+        auto mantissa = [](std::uint64_t rate) { return rate & ~(255ull << (64 - 8)); };
+        auto exponent = [](std::uint64_t rate) { return static_cast<int>(rate >> (64 - 8)) - 100; };
 
         auto const minVMantissa = mantissa(minV);
         auto const maxVMantissa = mantissa(maxV);
         auto const expDiff = exponent(maxV) - exponent(minV);
 
         double const minVD = static_cast<double>(minVMantissa);
-        double const maxVD = expDiff ? maxVMantissa * pow(10, expDiff)
-                                     : static_cast<double>(maxVMantissa);
+        double const maxVD = expDiff ? maxVMantissa * pow(10, expDiff) : static_cast<double>(maxVMantissa);
 
         // maxVD and minVD are scaled so they have the same exponents. Dividing
         // cancels out the exponents, so we only need to deal with the (scaled)
@@ -329,12 +287,7 @@ public:
     }
 };
 
-template <
-    class In,
-    class Out,
-    class Lim,
-    typename FnPtr,
-    std::same_as<bool>... Round>
+template <class In, class Out, class Lim, typename FnPtr, std::same_as<bool>... Round>
 TAmounts<In, Out>
 Quality::ceil_TAmounts_helper(
     TAmounts<In, Out> const& amount,
@@ -359,25 +312,20 @@ TAmounts<In, Out>
 Quality::ceil_in(TAmounts<In, Out> const& amount, In const& limit) const
 {
     // Construct a function pointer to the function we want to call.
-    static constexpr Amounts (Quality::*ceil_in_fn_ptr)(
-        Amounts const&, STAmount const&) const = &Quality::ceil_in;
+    static constexpr Amounts (Quality::*ceil_in_fn_ptr)(Amounts const&, STAmount const&) const = &Quality::ceil_in;
 
     return ceil_TAmounts_helper(amount, limit, amount.in, ceil_in_fn_ptr);
 }
 
 template <class In, class Out>
 TAmounts<In, Out>
-Quality::ceil_in_strict(
-    TAmounts<In, Out> const& amount,
-    In const& limit,
-    bool roundUp) const
+Quality::ceil_in_strict(TAmounts<In, Out> const& amount, In const& limit, bool roundUp) const
 {
     // Construct a function pointer to the function we want to call.
-    static constexpr Amounts (Quality::*ceil_in_fn_ptr)(
-        Amounts const&, STAmount const&, bool) const = &Quality::ceil_in_strict;
+    static constexpr Amounts (Quality::*ceil_in_fn_ptr)(Amounts const&, STAmount const&, bool) const =
+        &Quality::ceil_in_strict;
 
-    return ceil_TAmounts_helper(
-        amount, limit, amount.in, ceil_in_fn_ptr, roundUp);
+    return ceil_TAmounts_helper(amount, limit, amount.in, ceil_in_fn_ptr, roundUp);
 }
 
 template <class In, class Out>
@@ -385,26 +333,20 @@ TAmounts<In, Out>
 Quality::ceil_out(TAmounts<In, Out> const& amount, Out const& limit) const
 {
     // Construct a function pointer to the function we want to call.
-    static constexpr Amounts (Quality::*ceil_out_fn_ptr)(
-        Amounts const&, STAmount const&) const = &Quality::ceil_out;
+    static constexpr Amounts (Quality::*ceil_out_fn_ptr)(Amounts const&, STAmount const&) const = &Quality::ceil_out;
 
     return ceil_TAmounts_helper(amount, limit, amount.out, ceil_out_fn_ptr);
 }
 
 template <class In, class Out>
 TAmounts<In, Out>
-Quality::ceil_out_strict(
-    TAmounts<In, Out> const& amount,
-    Out const& limit,
-    bool roundUp) const
+Quality::ceil_out_strict(TAmounts<In, Out> const& amount, Out const& limit, bool roundUp) const
 {
     // Construct a function pointer to the function we want to call.
-    static constexpr Amounts (Quality::*ceil_out_fn_ptr)(
-        Amounts const&, STAmount const&, bool) const =
+    static constexpr Amounts (Quality::*ceil_out_fn_ptr)(Amounts const&, STAmount const&, bool) const =
         &Quality::ceil_out_strict;
 
-    return ceil_TAmounts_helper(
-        amount, limit, amount.out, ceil_out_fn_ptr, roundUp);
+    return ceil_TAmounts_helper(amount, limit, amount.out, ceil_out_fn_ptr, roundUp);
 }
 
 /** Calculate the quality of a two-hop path given the two hops.
@@ -414,6 +356,4 @@ Quality::ceil_out_strict(
 Quality
 composed_quality(Quality const& lhs, Quality const& rhs);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

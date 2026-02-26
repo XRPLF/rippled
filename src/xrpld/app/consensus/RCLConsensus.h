@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_CONSENSUS_RCLCONSENSUS_H_INCLUDED
-#define RIPPLE_APP_CONSENSUS_RCLCONSENSUS_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/consensus/RCLCensorshipDetector.h>
 #include <xrpld/app/consensus/RCLCxLedger.h>
@@ -27,9 +7,9 @@
 #include <xrpld/app/misc/FeeVote.h>
 #include <xrpld/app/misc/NegativeUNLVote.h>
 #include <xrpld/consensus/Consensus.h>
-#include <xrpld/core/JobQueue.h>
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/shamap/SHAMap.h>
 
@@ -40,7 +20,7 @@
 #include <sstream>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 class InboundTransactions;
 class LocalTxs;
@@ -78,12 +58,11 @@ class RCLConsensus
         // The timestamp of the last validation we used
         NetClock::time_point lastValidationTime_;
 
-        // These members are queried via public accesors and are atomic for
+        // These members are queried via public accessors and are atomic for
         // thread safety.
         std::atomic<bool> validating_{false};
         std::atomic<std::size_t> prevProposers_{0};
-        std::atomic<std::chrono::milliseconds> prevRoundTime_{
-            std::chrono::milliseconds{0}};
+        std::atomic<std::chrono::milliseconds> prevRoundTime_{std::chrono::milliseconds{0}};
         std::atomic<ConsensusMode> mode_{ConsensusMode::observing};
 
         RCLCensorshipDetector<TxID, LedgerIndex> censorshipDetector_;
@@ -138,9 +117,7 @@ class RCLConsensus
             @return Whether we enter the round proposing
         */
         bool
-        preStartRound(
-            RCLCxLedger const& prevLedger,
-            hash_set<NodeID> const& nowTrusted);
+        preStartRound(RCLCxLedger const& prevLedger, hash_set<NodeID> const& nowTrusted);
 
         bool
         haveValidated() const;
@@ -152,8 +129,7 @@ class RCLConsensus
         getQuorumKeys() const;
 
         std::size_t
-        laggards(Ledger_t::Seq const seq, hash_set<NodeKey_t>& trustedKeys)
-            const;
+        laggards(Ledger_t::Seq const seq, hash_set<NodeKey_t>& trustedKeys) const;
 
         /** Whether I am a validator.
          *
@@ -281,10 +257,7 @@ class RCLConsensus
                   the ledger matching ledgerID from the network
          */
         uint256
-        getPrevLedger(
-            uint256 ledgerID,
-            RCLCxLedger const& ledger,
-            ConsensusMode mode);
+        getPrevLedger(uint256 ledgerID, RCLCxLedger const& ledger, ConsensusMode mode);
 
         /** Notified of change in consensus mode
 
@@ -302,10 +275,7 @@ class RCLConsensus
            @return Tentative consensus result
         */
         Result
-        onClose(
-            RCLCxLedger const& ledger,
-            NetClock::time_point const& closeTime,
-            ConsensusMode mode);
+        onClose(RCLCxLedger const& ledger, NetClock::time_point const& closeTime, ConsensusMode mode);
 
         /** Process the accepted ledger.
 
@@ -351,10 +321,7 @@ class RCLConsensus
             @param haveCorrectLCL Whether we believe we have the correct LCL.
         */
         void
-        notify(
-            protocol::NodeEvent ne,
-            RCLCxLedger const& ledger,
-            bool haveCorrectLCL);
+        notify(protocol::NodeEvent ne, RCLCxLedger const& ledger, bool haveCorrectLCL);
 
         /** Accept a new ledger based on the given transactions.
 
@@ -411,10 +378,7 @@ class RCLConsensus
                              but are still around and trying to catch up.
         */
         void
-        validate(
-            RCLCxLedger const& ledger,
-            RCLTxSet const& txns,
-            bool proposing);
+        validate(RCLCxLedger const& ledger, RCLTxSet const& txns, bool proposing);
     };
 
 public:
@@ -493,9 +457,7 @@ public:
 
     //! @see Consensus::timerEntry
     void
-    timerEntry(
-        NetClock::time_point const& now,
-        std::unique_ptr<std::stringstream> const& clog = {});
+    timerEntry(NetClock::time_point const& now, std::unique_ptr<std::stringstream> const& clog = {});
 
     //! @see Consensus::gotTxSet
     void
@@ -511,15 +473,11 @@ public:
 
     //! @see Consensus::simulate
     void
-    simulate(
-        NetClock::time_point const& now,
-        std::optional<std::chrono::milliseconds> consensusDelay);
+    simulate(NetClock::time_point const& now, std::optional<std::chrono::milliseconds> consensusDelay);
 
     //! @see Consensus::proposal
     bool
-    peerProposal(
-        NetClock::time_point const& now,
-        RCLCxPeerPos const& newProposal);
+    peerProposal(NetClock::time_point const& now, RCLCxPeerPos const& newProposal);
 
     ConsensusParms const&
     parms() const
@@ -555,10 +513,7 @@ class RclConsensusLogger
     std::chrono::steady_clock::time_point start_;
 
 public:
-    explicit RclConsensusLogger(
-        char const* label,
-        bool validating,
-        beast::Journal j);
+    explicit RclConsensusLogger(char const* label, bool validating, beast::Journal j);
     ~RclConsensusLogger();
 
     std::unique_ptr<std::stringstream> const&
@@ -567,6 +522,4 @@ public:
         return ss_;
     }
 };
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

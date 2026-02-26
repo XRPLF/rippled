@@ -1,7 +1,7 @@
 ISC License
 
 Copyright (c) 2011, Arthur Britto, David Schwartz, Jed McCaleb, Vinnie Falco, Bob Way, Eric Lombrozo, Nikolaos D. Bougalis, Howard Hinnant.
-Copyright (c) 2012-2020, the XRP Ledger developers.
+Copyright (c) 2012-2025, the XRP Ledger developers.
 
 Permission to use, copy, modify, and distribute this software for any
 purpose with or without fee is hereby granted, provided that the above

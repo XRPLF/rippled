@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_BASICS_CHRONO_H_INCLUDED
-#define RIPPLE_BASICS_CHRONO_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/clock/basic_seconds_clock.h>
@@ -31,16 +11,13 @@
 #include <ratio>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 // A few handy aliases
 
-using days = std::chrono::duration<
-    int,
-    std::ratio_multiply<std::chrono::hours::period, std::ratio<24>>>;
+using days = std::chrono::duration<int, std::ratio_multiply<std::chrono::hours::period, std::ratio<24>>>;
 
-using weeks = std::chrono::
-    duration<int, std::ratio_multiply<days::period, std::ratio<7>>>;
+using weeks = std::chrono::duration<int, std::ratio_multiply<days::period, std::ratio<7>>>;
 
 /** Clock for measuring the network time.
 
@@ -53,8 +30,7 @@ using weeks = std::chrono::
 */
 
 constexpr static std::chrono::seconds epoch_offset =
-    date::sys_days{date::year{2000} / 1 / 1} -
-    date::sys_days{date::year{1970} / 1 / 1};
+    date::sys_days{date::year{2000} / 1 / 1} - date::sys_days{date::year{1970} / 1 / 1};
 
 static_assert(epoch_offset.count() == 946684800);
 
@@ -83,8 +59,7 @@ to_string(NetClock::time_point tp)
 {
     // 2000-01-01 00:00:00 UTC is 946684800s from 1970-01-01 00:00:00 UTC
     using namespace std::chrono;
-    return to_string(
-        system_clock::time_point{tp.time_since_epoch() + epoch_offset});
+    return to_string(system_clock::time_point{tp.time_since_epoch() + epoch_offset});
 }
 
 template <class Duration>
@@ -101,8 +76,7 @@ to_string_iso(NetClock::time_point tp)
     // 2000-01-01 00:00:00 UTC is 946684800s from 1970-01-01 00:00:00 UTC
     // Note, NetClock::duration is seconds, as checked by static_assert
     static_assert(std::is_same_v<NetClock::duration::period, std::ratio<1>>);
-    return to_string_iso(date::sys_time<NetClock::duration>{
-        tp.time_since_epoch() + epoch_offset});
+    return to_string_iso(date::sys_time<NetClock::duration>{tp.time_since_epoch() + epoch_offset});
 }
 
 /** A clock for measuring elapsed time.
@@ -123,6 +97,4 @@ stopwatch()
     return beast::get_abstract_clock<Facade, Clock>();
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

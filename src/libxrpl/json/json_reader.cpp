@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
@@ -123,9 +104,7 @@ Reader::parse(char const* beginDoc, char const* endDoc, Value& root)
         token.type_ = tokenError;
         token.start_ = beginDoc;
         token.end_ = endDoc;
-        addError(
-            "A valid JSON document must be either an array or an object value.",
-            token);
+        addError("A valid JSON document must be either an array or an object value.", token);
         return false;
     }
 
@@ -176,8 +155,7 @@ Reader::readValue(unsigned depth)
             break;
 
         default:
-            return addError(
-                "Syntax error: value, object or array expected.", token);
+            return addError("Syntax error: value, object or array expected.", token);
     }
 
     return successful;
@@ -260,7 +238,7 @@ Reader::readToken(Token& token)
 
         case 'f':
             token.type_ = tokenFalse;
-            ok = match("alse", 4);
+            ok = match("alse", 4);  // cspell:disable-line
             break;
 
         case 'n':
@@ -380,10 +358,7 @@ Reader::readNumber()
         {
             if (!std::isdigit(static_cast<unsigned char>(*current_)))
             {
-                auto ret = std::find(
-                    std::begin(extended_tokens),
-                    std::end(extended_tokens),
-                    *current_);
+                auto ret = std::find(std::begin(extended_tokens), std::end(extended_tokens), *current_);
 
                 if (ret == std::end(extended_tokens))
                     break;
@@ -448,8 +423,7 @@ Reader::readObject(Token& tokenStart, unsigned depth)
 
         if (!readToken(colon) || colon.type_ != tokenMemberSeparator)
         {
-            return addErrorAndRecover(
-                "Missing ':' after object member name", colon, tokenObjectEnd);
+            return addErrorAndRecover("Missing ':' after object member name", colon, tokenObjectEnd);
         }
 
         // Reject duplicate names
@@ -467,13 +441,9 @@ Reader::readObject(Token& tokenStart, unsigned depth)
         Token comma;
 
         if (!readToken(comma) ||
-            (comma.type_ != tokenObjectEnd &&
-             comma.type_ != tokenArraySeparator && comma.type_ != tokenComment))
+            (comma.type_ != tokenObjectEnd && comma.type_ != tokenArraySeparator && comma.type_ != tokenComment))
         {
-            return addErrorAndRecover(
-                "Missing ',' or '}' in object declaration",
-                comma,
-                tokenObjectEnd);
+            return addErrorAndRecover("Missing ',' or '}' in object declaration", comma, tokenObjectEnd);
         }
 
         bool finalizeTokenOk = true;
@@ -485,8 +455,7 @@ Reader::readObject(Token& tokenStart, unsigned depth)
             return true;
     }
 
-    return addErrorAndRecover(
-        "Missing '}' or object member name", tokenName, tokenObjectEnd);
+    return addErrorAndRecover("Missing '}' or object member name", tokenName, tokenObjectEnd);
 }
 
 bool
@@ -523,16 +492,11 @@ Reader::readArray(Token& tokenStart, unsigned depth)
             ok = readToken(token);
         }
 
-        bool badTokenType =
-            (token.type_ != tokenArraySeparator &&
-             token.type_ != tokenArrayEnd);
+        bool badTokenType = (token.type_ != tokenArraySeparator && token.type_ != tokenArrayEnd);
 
         if (!ok || badTokenType)
         {
-            return addErrorAndRecover(
-                "Missing ',' or ']' in array declaration",
-                token,
-                tokenArrayEnd);
+            return addErrorAndRecover("Missing ',' or ']' in array declaration", token, tokenArrayEnd);
         }
 
         if (token.type_ == tokenArrayEnd)
@@ -553,19 +517,14 @@ Reader::decodeNumber(Token& token)
 
     if (current == token.end_)
     {
-        return addError(
-            "'" + std::string(token.start_, token.end_) +
-                "' is not a valid number.",
-            token);
+        return addError("'" + std::string(token.start_, token.end_) + "' is not a valid number.", token);
     }
 
     // The existing Json integers are 32-bit so using a 64-bit value here avoids
     // overflows in the conversion code below.
     std::int64_t value = 0;
 
-    static_assert(
-        sizeof(value) > sizeof(Value::maxUInt),
-        "The JSON integer overflow logic will need to be reworked.");
+    static_assert(sizeof(value) > sizeof(Value::maxUInt), "The JSON integer overflow logic will need to be reworked.");
 
     while (current < token.end_ && (value <= Value::maxUInt))
     {
@@ -573,10 +532,7 @@ Reader::decodeNumber(Token& token)
 
         if (c < '0' || c > '9')
         {
-            return addError(
-                "'" + std::string(token.start_, token.end_) +
-                    "' is not a number.",
-                token);
+            return addError("'" + std::string(token.start_, token.end_) + "' is not a number.", token);
         }
 
         value = (value * 10) + (c - '0');
@@ -585,10 +541,7 @@ Reader::decodeNumber(Token& token)
     // More tokens left -> input is larger than largest possible return value
     if (current != token.end_)
     {
-        return addError(
-            "'" + std::string(token.start_, token.end_) +
-                "' exceeds the allowable range.",
-            token);
+        return addError("'" + std::string(token.start_, token.end_) + "' exceeds the allowable range.", token);
     }
 
     if (isNegative)
@@ -597,10 +550,7 @@ Reader::decodeNumber(Token& token)
 
         if (value < Value::minInt || value > Value::maxInt)
         {
-            return addError(
-                "'" + std::string(token.start_, token.end_) +
-                    "' exceeds the allowable range.",
-                token);
+            return addError("'" + std::string(token.start_, token.end_) + "' exceeds the allowable range.", token);
         }
 
         currentValue() = static_cast<Value::Int>(value);
@@ -609,10 +559,7 @@ Reader::decodeNumber(Token& token)
     {
         if (value > Value::maxUInt)
         {
-            return addError(
-                "'" + std::string(token.start_, token.end_) +
-                    "' exceeds the allowable range.",
-                token);
+            return addError("'" + std::string(token.start_, token.end_) + "' exceeds the allowable range.", token);
         }
 
         // If it's representable as a signed integer, construct it as one.
@@ -656,9 +603,7 @@ Reader::decodeDouble(Token& token)
         count = sscanf(buffer.c_str(), format, &value);
     }
     if (count != 1)
-        return addError(
-            "'" + std::string(token.start_, token.end_) + "' is not a number.",
-            token);
+        return addError("'" + std::string(token.start_, token.end_) + "' is not a number.", token);
     currentValue() = value;
     return true;
 }
@@ -691,8 +636,7 @@ Reader::decodeString(Token& token, std::string& decoded)
         else if (c == '\\')
         {
             if (current == end)
-                return addError(
-                    "Empty escape sequence in string", token, current);
+                return addError("Empty escape sequence in string", token, current);
 
             Char escape = *current++;
 
@@ -741,8 +685,7 @@ Reader::decodeString(Token& token, std::string& decoded)
                 break;
 
                 default:
-                    return addError(
-                        "Bad escape sequence in string", token, current);
+                    return addError("Bad escape sequence in string", token, current);
             }
         }
         else
@@ -755,11 +698,7 @@ Reader::decodeString(Token& token, std::string& decoded)
 }
 
 bool
-Reader::decodeUnicodeCodePoint(
-    Token& token,
-    Location& current,
-    Location end,
-    unsigned int& unicode)
+Reader::decodeUnicodeCodePoint(Token& token, Location& current, Location end, unsigned int& unicode)
 {
     if (!decodeUnicodeEscapeSequence(token, current, end, unicode))
         return false;
@@ -780,8 +719,7 @@ Reader::decodeUnicodeCodePoint(
         {
             if (decodeUnicodeEscapeSequence(token, current, end, surrogatePair))
             {
-                unicode = 0x10000 + ((unicode & 0x3FF) << 10) +
-                    (surrogatePair & 0x3FF);
+                unicode = 0x10000 + ((unicode & 0x3FF) << 10) + (surrogatePair & 0x3FF);
             }
             else
                 return false;
@@ -798,17 +736,10 @@ Reader::decodeUnicodeCodePoint(
 }
 
 bool
-Reader::decodeUnicodeEscapeSequence(
-    Token& token,
-    Location& current,
-    Location end,
-    unsigned int& unicode)
+Reader::decodeUnicodeEscapeSequence(Token& token, Location& current, Location end, unsigned int& unicode)
 {
     if (end - current < 4)
-        return addError(
-            "Bad unicode escape sequence in string: four digits expected.",
-            token,
-            current);
+        return addError("Bad unicode escape sequence in string: four digits expected.", token, current);
 
     unicode = 0;
 
@@ -865,10 +796,7 @@ Reader::recoverFromError(TokenType skipUntilToken)
 }
 
 bool
-Reader::addErrorAndRecover(
-    std::string const& message,
-    Token& token,
-    TokenType skipUntilToken)
+Reader::addErrorAndRecover(std::string const& message, Token& token, TokenType skipUntilToken)
 {
     addError(message, token);
     return recoverFromError(skipUntilToken);
@@ -890,8 +818,7 @@ Reader::getNextChar()
 }
 
 void
-Reader::getLocationLineAndColumn(Location location, int& line, int& column)
-    const
+Reader::getLocationLineAndColumn(Location location, int& line, int& column) const
 {
     Location current = begin_;
     Location lastLineStart = current;
@@ -926,27 +853,22 @@ Reader::getLocationLineAndColumn(Location location) const
 {
     int line, column;
     getLocationLineAndColumn(location, line, column);
-    return "Line " + std::to_string(line) + ", Column " +
-        std::to_string(column);
+    return "Line " + std::to_string(line) + ", Column " + std::to_string(column);
 }
 
 std::string
-Reader::getFormatedErrorMessages() const
+Reader::getFormattedErrorMessages() const
 {
     std::string formattedMessage;
 
-    for (Errors::const_iterator itError = errors_.begin();
-         itError != errors_.end();
-         ++itError)
+    for (Errors::const_iterator itError = errors_.begin(); itError != errors_.end(); ++itError)
     {
         ErrorInfo const& error = *itError;
-        formattedMessage +=
-            "* " + getLocationLineAndColumn(error.token_.start_) + "\n";
+        formattedMessage += "* " + getLocationLineAndColumn(error.token_.start_) + "\n";
         formattedMessage += "  " + error.message_ + "\n";
 
         if (error.extra_)
-            formattedMessage += "See " +
-                getLocationLineAndColumn(error.extra_) + " for detail.\n";
+            formattedMessage += "See " + getLocationLineAndColumn(error.extra_) + " for detail.\n";
     }
 
     return formattedMessage;
@@ -960,7 +882,7 @@ operator>>(std::istream& sin, Value& root)
 
     // XRPL_ASSERT(ok, "Json::operator>>() : parse succeeded");
     if (!ok)
-        ripple::Throw<std::runtime_error>(reader.getFormatedErrorMessages());
+        xrpl::Throw<std::runtime_error>(reader.getFormattedErrorMessages());
 
     return sin;
 }

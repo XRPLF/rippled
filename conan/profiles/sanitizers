@@ -1,0 +1,59 @@
+include(default)
+{% set compiler, version, compiler_exe = detect_api.detect_default_compiler() %}
+{% set sanitizers = os.getenv("SANITIZERS") %}
+
+[conf]
+{% if sanitizers %}
+    {% if compiler == "gcc" %}
+        {% if "address" in sanitizers or "thread" in sanitizers or "undefinedbehavior" in sanitizers %}
+            {% set sanitizer_list = [] %}
+            {% set model_code = "" %}
+            {% set extra_cxxflags = ["-fno-omit-frame-pointer", "-O1", "-Wno-stringop-overflow"] %}
+
+            {% if "address" in sanitizers %}
+                {% set _ = sanitizer_list.append("address") %}
+                {% set model_code = "-mcmodel=large" %}
+            {% elif "thread" in sanitizers %}
+                {% set _ = sanitizer_list.append("thread") %}
+                {% set model_code = "-mcmodel=medium" %}
+                {% set _ = extra_cxxflags.append("-Wno-tsan") %}
+            {% endif %}
+
+            {% if "undefinedbehavior" in sanitizers %}
+                {% set _ = sanitizer_list.append("undefined") %}
+                {% set _ = sanitizer_list.append("float-divide-by-zero") %}
+            {% endif %}
+
+            {% set sanitizer_flags = "-fsanitize=" ~ ",".join(sanitizer_list) ~ " " ~ model_code %}
+
+            tools.build:cxxflags+=['{{sanitizer_flags}} {{" ".join(extra_cxxflags)}}']
+            tools.build:sharedlinkflags+=['{{sanitizer_flags}}']
+            tools.build:exelinkflags+=['{{sanitizer_flags}}']
+        {% endif %}
+    {% elif compiler == "apple-clang" or compiler == "clang" %}
+        {% if "address" in sanitizers or "thread" in sanitizers or "undefinedbehavior" in sanitizers %}
+            {% set sanitizer_list = [] %}
+            {% set extra_cxxflags = ["-fno-omit-frame-pointer", "-O1"] %}
+
+            {% if "address" in sanitizers %}
+                {% set _ = sanitizer_list.append("address") %}
+            {% elif "thread" in sanitizers %}
+                {% set _ = sanitizer_list.append("thread") %}
+            {% endif %}
+
+            {% if "undefinedbehavior" in sanitizers %}
+                {% set _ = sanitizer_list.append("undefined") %}
+                {% set _ = sanitizer_list.append("float-divide-by-zero") %}
+                {% set _ = sanitizer_list.append("unsigned-integer-overflow") %}
+            {% endif %}
+
+            {% set sanitizer_flags = "-fsanitize=" ~ ",".join(sanitizer_list) %}
+
+            tools.build:cxxflags+=['{{sanitizer_flags}} {{" ".join(extra_cxxflags)}}']
+            tools.build:sharedlinkflags+=['{{sanitizer_flags}}']
+            tools.build:exelinkflags+=['{{sanitizer_flags}}']
+        {% endif %}
+    {% endif %}
+{% endif %}
+
+tools.info.package_id:confs+=["tools.build:cxxflags", "tools.build:exelinkflags", "tools.build:sharedlinkflags"]

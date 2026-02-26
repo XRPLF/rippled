@@ -1,31 +1,11 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_RPC_TRANSACTIONSIGN_H_INCLUDED
-#define RIPPLE_RPC_TRANSACTIONSIGN_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
-namespace ripple {
+namespace xrpl {
 
 // Forward declarations
 class Application;
@@ -84,20 +64,14 @@ checkFee(
     Application const& app);
 
 // Return a std::function<> that calls NetworkOPs::processTransaction.
-using ProcessTransactionFn = std::function<void(
-    std::shared_ptr<Transaction>& transaction,
-    bool bUnlimited,
-    bool bLocal,
-    NetworkOPs::FailHard failType)>;
+using ProcessTransactionFn = std::function<
+    void(std::shared_ptr<Transaction>& transaction, bool bUnlimited, bool bLocal, NetworkOPs::FailHard failType)>;
 
 inline ProcessTransactionFn
 getProcessTxnFn(NetworkOPs& netOPs)
 {
     return [&netOPs](
-               std::shared_ptr<Transaction>& transaction,
-               bool bUnlimited,
-               bool bLocal,
-               NetworkOPs::FailHard failType) {
+               std::shared_ptr<Transaction>& transaction, bool bUnlimited, bool bLocal, NetworkOPs::FailHard failType) {
         netOPs.processTransaction(transaction, bUnlimited, bLocal, failType);
     };
 }
@@ -145,6 +119,4 @@ transactionSubmitMultiSigned(
     ProcessTransactionFn const& processTransaction);
 
 }  // namespace RPC
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

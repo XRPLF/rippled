@@ -1,30 +1,10 @@
-﻿//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_MISC_NETWORKOPS_H_INCLUDED
-#define RIPPLE_APP_MISC_NETWORKOPS_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/ledger/Ledger.h>
-#include <xrpld/core/JobQueue.h>
 #include <xrpld/rpc/InfoSub.h>
 
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/messages.h>
@@ -33,7 +13,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 // Operations that clients may wish to perform against the network
 // Master operational handler, server sequencer, network tracker
@@ -50,9 +30,9 @@ class CanonicalTXSet;
 // should use this interface. The RPC code will primarily be a light wrapper
 // over this code.
 //
-// Eventually, it will check the node's operating mode (synched, unsynched,
-// etectera) and defer to the correct means of processing. The current
-// code assumes this node is synched (and will continue to do so until
+// Eventually, it will check the node's operating mode (synced, unsynced,
+// etcetera) and defer to the correct means of processing. The current
+// code assumes this node is synced (and will continue to do so until
 // there's a functional network.
 //
 
@@ -111,8 +91,7 @@ public:
     virtual OperatingMode
     getOperatingMode() const = 0;
     virtual std::string
-    strOperatingMode(OperatingMode const mode, bool const admin = false)
-        const = 0;
+    strOperatingMode(OperatingMode const mode, bool const admin = false) const = 0;
     virtual std::string
     strOperatingMode(bool const admin = false) const = 0;
 
@@ -135,11 +114,7 @@ public:
      * @param failType fail_hard setting from transaction submission.
      */
     virtual void
-    processTransaction(
-        std::shared_ptr<Transaction>& transaction,
-        bool bUnlimited,
-        bool bLocal,
-        FailHard failType) = 0;
+    processTransaction(std::shared_ptr<Transaction>& transaction, bool bUnlimited, bool bLocal, FailHard failType) = 0;
 
     /**
      * Process a set of transactions synchronously, and ensuring that they are
@@ -156,9 +131,7 @@ public:
     //
 
     virtual Json::Value
-    getOwnerInfo(
-        std::shared_ptr<ReadView const> lpLedger,
-        AccountID const& account) = 0;
+    getOwnerInfo(std::shared_ptr<ReadView const> lpLedger, AccountID const& account) = 0;
 
     //--------------------------------------------------------------------------
     //
@@ -182,18 +155,14 @@ public:
     processTrustedProposal(RCLCxPeerPos peerPos) = 0;
 
     virtual bool
-    recvValidation(
-        std::shared_ptr<STValidation> const& val,
-        std::string const& source) = 0;
+    recvValidation(std::shared_ptr<STValidation> const& val, std::string const& source) = 0;
 
     virtual void
     mapComplete(std::shared_ptr<SHAMap> const& map, bool fromAcquire) = 0;
 
     // network state machine
     virtual bool
-    beginConsensus(
-        uint256 const& netLCL,
-        std::unique_ptr<std::stringstream> const& clog) = 0;
+    beginConsensus(uint256 const& netLCL, std::unique_ptr<std::stringstream> const& clog) = 0;
     virtual void
     endConsensus(std::unique_ptr<std::stringstream> const& clog) = 0;
     virtual void
@@ -248,9 +217,7 @@ public:
         proposing being accepted.
     */
     virtual std::uint32_t
-    acceptLedger(
-        std::optional<std::chrono::milliseconds> consensusDelay =
-            std::nullopt) = 0;
+    acceptLedger(std::optional<std::chrono::milliseconds> consensusDelay = std::nullopt) = 0;
 
     virtual void
     reportFeeChange() = 0;
@@ -294,6 +261,4 @@ make_NetworkOPs(
     beast::Journal journal,
     beast::insight::Collector::ptr const& collector);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

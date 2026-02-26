@@ -1,37 +1,17 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/OrderBookDB.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/JobQueue.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/Indexes.h>
 
-namespace ripple {
+namespace xrpl {
 
-OrderBookDB::OrderBookDB(Application& app)
-    : app_(app), seq_(0), j_(app.journal("OrderBookDB"))
+OrderBookDB::OrderBookDB(Application& app) : app_(app), seq_(0), j_(app.journal("OrderBookDB"))
 {
 }
 
@@ -58,18 +38,14 @@ OrderBookDB::setup(std::shared_ptr<ReadView const> const& ledger)
     if (seq_.exchange(ledger->seq()) != seq)
         return;
 
-    JLOG(j_.debug()) << "Full order book update: " << seq << " to "
-                     << ledger->seq();
+    JLOG(j_.debug()) << "Full order book update: " << seq << " to " << ledger->seq();
 
     if (app_.config().PATH_SEARCH_MAX != 0)
     {
         if (app_.config().standalone())
             update(ledger);
         else
-            app_.getJobQueue().addJob(
-                jtUPDATE_PF,
-                "OrderBookDB::update: " + std::to_string(ledger->seq()),
-                [this, ledger]() { update(ledger); });
+            app_.getJobQueue().addJob(jtUPDATE_PF, "OrderBookUpd", [this, ledger]() { update(ledger); });
     }
 }
 
@@ -82,8 +58,7 @@ OrderBookDB::update(std::shared_ptr<ReadView const> const& ledger)
     // A newer full update job is pending
     if (auto const seq = seq_.load(); seq > ledger->seq())
     {
-        JLOG(j_.debug()) << "Eliding update for " << ledger->seq()
-                         << " because of pending update to later " << seq;
+        JLOG(j_.debug()) << "Eliding update for " << ledger->seq() << " because of pending update to later " << seq;
         return;
     }
 
@@ -106,14 +81,12 @@ OrderBookDB::update(std::shared_ptr<ReadView const> const& ledger)
         {
             if (app_.isStopping())
             {
-                JLOG(j_.info())
-                    << "Update halted because the process is stopping";
+                JLOG(j_.info()) << "Update halted because the process is stopping";
                 seq_.store(0);
                 return;
             }
 
-            if (sle->getType() == ltDIR_NODE &&
-                sle->isFieldPresent(sfExchangeRate) &&
+            if (sle->getType() == ltDIR_NODE && sle->isFieldPresent(sfExchangeRate) &&
                 sle->getFieldH256(sfRootIndex) == sle->key())
             {
                 Book book;
@@ -125,7 +98,7 @@ OrderBookDB::update(std::shared_ptr<ReadView const> const& ledger)
                 book.domain = (*sle)[~sfDomainID];
 
                 if (book.domain)
-                    domainBooks_[{book.in, *book.domain}].insert(book.out);
+                    domainBooks[{book.in, *book.domain}].insert(book.out);
                 else
                     allBooks[book.in].insert(book.out);
 
@@ -155,14 +128,12 @@ OrderBookDB::update(std::shared_ptr<ReadView const> const& ledger)
     }
     catch (SHAMapMissingNode const& mn)
     {
-        JLOG(j_.info()) << "Missing node in " << ledger->seq()
-                        << " during update: " << mn.what();
+        JLOG(j_.info()) << "Missing node in " << ledger->seq() << " during update: " << mn.what();
         seq_.store(0);
         return;
     }
 
-    JLOG(j_.debug()) << "Update completed (" << ledger->seq() << "): " << cnt
-                     << " books found";
+    JLOG(j_.debug()) << "Update completed (" << ledger->seq() << "): " << cnt << " books found";
 
     {
         std::lock_guard sl(mLock);
@@ -195,9 +166,7 @@ OrderBookDB::addOrderBook(Book const& book)
 
 // return list of all orderbooks that want this issuerID and currencyID
 std::vector<Book>
-OrderBookDB::getBooksByTakerPays(
-    Issue const& issue,
-    std::optional<uint256> const& domain)
+OrderBookDB::getBooksByTakerPays(Issue const& issue, std::optional<uint256> const& domain)
 {
     std::vector<Book> ret;
 
@@ -225,9 +194,7 @@ OrderBookDB::getBooksByTakerPays(
 }
 
 int
-OrderBookDB::getBookSize(
-    Issue const& issue,
-    std::optional<uint256> const& domain)
+OrderBookDB::getBookSize(Issue const& issue, std::optional<uint256> const& domain)
 {
     std::lock_guard sl(mLock);
 
@@ -238,8 +205,7 @@ OrderBookDB::getBookSize(
     }
     else
     {
-        if (auto it = domainBooks_.find({issue, *domain});
-            it != domainBooks_.end())
+        if (auto it = domainBooks_.find({issue, *domain}); it != domainBooks_.end())
             return static_cast<int>(it->second.size());
     }
 
@@ -268,7 +234,7 @@ OrderBookDB::makeBookListeners(Book const& book)
         mListeners[book] = ret;
         XRPL_ASSERT(
             getBookListeners(book) == ret,
-            "ripple::OrderBookDB::makeBookListeners : result roundtrip "
+            "xrpl::OrderBookDB::makeBookListeners : result roundtrip "
             "lookup");
     }
 
@@ -312,10 +278,8 @@ OrderBookDB::processTxn(
             if (node.getFieldU16(sfLedgerEntryType) == ltOFFER)
             {
                 auto process = [&, this](SField const& field) {
-                    if (auto data = dynamic_cast<STObject const*>(
-                            node.peekAtPField(field));
-                        data && data->isFieldPresent(sfTakerPays) &&
-                        data->isFieldPresent(sfTakerGets))
+                    if (auto data = dynamic_cast<STObject const*>(node.peekAtPField(field));
+                        data && data->isFieldPresent(sfTakerPays) && data->isFieldPresent(sfTakerGets))
                     {
                         auto listeners = getBookListeners(
                             {data->getFieldAmount(sfTakerGets).issue(),
@@ -338,10 +302,9 @@ OrderBookDB::processTxn(
         }
         catch (std::exception const& ex)
         {
-            JLOG(j_.info())
-                << "processTxn: field not found (" << ex.what() << ")";
+            JLOG(j_.info()) << "processTxn: field not found (" << ex.what() << ")";
         }
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

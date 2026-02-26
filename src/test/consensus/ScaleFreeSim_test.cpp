@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2016 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/csf.h>
 #include <test/csf/random.h>
 
@@ -24,7 +5,7 @@
 
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class ScaleFreeSim_test : public beast::unit_test::suite
@@ -48,20 +29,13 @@ class ScaleFreeSim_test : public beast::unit_test::suite
         PeerGroup network = sim.createGroup(N);
 
         // generate trust ranks
-        std::vector<double> const ranks =
-            sample(network.size(), PowerLawDistribution{1, 3}, sim.rng);
+        std::vector<double> const ranks = sample(network.size(), PowerLawDistribution{1, 3}, sim.rng);
 
         // generate scale-free trust graph
-        randomRankedTrust(
-            network,
-            ranks,
-            numUNLs,
-            std::uniform_int_distribution<>{minUNLSize, maxUNLSize},
-            sim.rng);
+        randomRankedTrust(network, ranks, numUNLs, std::uniform_int_distribution<>{minUNLSize, maxUNLSize}, sim.rng);
 
         // nodes with a trust line in either direction are network-connected
-        network.connectFromTrust(
-            round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
+        network.connectFromTrust(round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
 
         // Initialize collectors to track statistics to report
         TxCollector txCollector;
@@ -75,14 +49,13 @@ class ScaleFreeSim_test : public beast::unit_test::suite
         // Initialize timers
         HeartbeatTimer heart(sim.scheduler, seconds(10s));
 
-        // Run for 10 minues, submitting 100 tx/second
+        // Run for 10 minutes, submitting 100 tx/second
         std::chrono::nanoseconds const simDuration = 10min;
         std::chrono::nanoseconds const quiet = 10s;
         Rate const rate{100, 1000ms};
 
         // txs, start/stop/step, target
-        auto peerSelector =
-            makeSelector(network.begin(), network.end(), ranks, sim.rng);
+        auto peerSelector = makeSelector(network.begin(), network.end(), ranks, sim.rng);
         auto txSubmitter = makeSubmitter(
             ConstantDistribution{rate.inv()},
             sim.scheduler.now() + quiet,
@@ -101,12 +74,9 @@ class ScaleFreeSim_test : public beast::unit_test::suite
         // TODO: Clean up this formatting mess!!
 
         log << "Peers: " << network.size() << std::endl;
-        log << "Simulated Duration: "
-            << duration_cast<milliseconds>(simDuration).count() << " ms"
-            << std::endl;
+        log << "Simulated Duration: " << duration_cast<milliseconds>(simDuration).count() << " ms" << std::endl;
         log << "Branches: " << sim.branches() << std::endl;
-        log << "Synchronized: " << (sim.synchronized() ? "Y" : "N")
-            << std::endl;
+        log << "Synchronized: " << (sim.synchronized() ? "Y" : "N") << std::endl;
         log << std::endl;
 
         txCollector.report(simDuration, log);
@@ -119,7 +89,7 @@ class ScaleFreeSim_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(ScaleFreeSim, consensus, ripple, 80);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(ScaleFreeSim, consensus, xrpl, 80);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

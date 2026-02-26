@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_STVALIDATION_H_INCLUDED
-#define RIPPLE_PROTOCOL_STVALIDATION_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -31,7 +11,7 @@
 #include <optional>
 #include <sstream>
 
-namespace ripple {
+namespace xrpl {
 
 // Validation flags
 
@@ -73,10 +53,7 @@ public:
         @note Throws if the object is not valid
     */
     template <class LookupNodeID>
-    STValidation(
-        SerialIter& sit,
-        LookupNodeID&& lookupNodeID,
-        bool checkSignature);
+    STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, bool checkSignature);
 
     /** Construct, sign and trust a new STValidation issued by this node.
 
@@ -87,12 +64,7 @@ public:
         @param f callback function to "fill" the validation with necessary data
     */
     template <typename F>
-    STValidation(
-        NetClock::time_point signTime,
-        PublicKey const& pk,
-        SecretKey const& sk,
-        NodeID const& nodeID,
-        F&& f);
+    STValidation(NetClock::time_point signTime, PublicKey const& pk, SecretKey const& sk, NodeID const& nodeID, F&& f);
 
     // Hash of the validated ledger
     uint256
@@ -145,14 +117,10 @@ public:
     render() const
     {
         std::stringstream ss;
-        ss << "validation: " << " ledger_hash: " << getLedgerHash()
-           << " consensus_hash: " << getConsensusHash()
-           << " sign_time: " << to_string(getSignTime())
-           << " seen_time: " << to_string(getSeenTime())
-           << " signer_public_key: " << getSignerPublic()
-           << " node_id: " << getNodeID() << " is_valid: " << isValid()
-           << " is_full: " << isFull() << " is_trusted: " << isTrusted()
-           << " signing_hash: " << getSigningHash()
+        ss << "validation: " << " ledger_hash: " << getLedgerHash() << " consensus_hash: " << getConsensusHash()
+           << " sign_time: " << to_string(getSignTime()) << " seen_time: " << to_string(getSeenTime())
+           << " signer_public_key: " << getSignerPublic() << " node_id: " << getNodeID() << " is_valid: " << isValid()
+           << " is_full: " << isFull() << " is_trusted: " << isTrusted() << " signing_hash: " << getSigningHash()
            << " base58: " << toBase58(TokenType::NodePublic, getSignerPublic());
         return ss.str();
     }
@@ -170,10 +138,7 @@ private:
 };
 
 template <class LookupNodeID>
-STValidation::STValidation(
-    SerialIter& sit,
-    LookupNodeID&& lookupNodeID,
-    bool checkSignature)
+STValidation::STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, bool checkSignature)
     : STObject(validationFormat(), sit, sfValidation)
     , signingPubKey_([this]() {
         auto const spk = getFieldVL(sfSigningPubKey);
@@ -187,14 +152,11 @@ STValidation::STValidation(
 {
     if (checkSignature && !isValid())
     {
-        JLOG(debugLog().error()) << "Invalid signature in validation: "
-                                 << getJson(JsonOptions::none);
+        JLOG(debugLog().error()) << "Invalid signature in validation: " << getJson(JsonOptions::none);
         Throw<std::runtime_error>("Invalid signature in validation");
     }
 
-    XRPL_ASSERT(
-        nodeID_.isNonZero(),
-        "ripple::STValidation::STValidation(SerialIter) : nonzero node");
+    XRPL_ASSERT(nodeID_.isNonZero(), "xrpl::STValidation::STValidation(SerialIter) : nonzero node");
 }
 
 /** Construct, sign and trust a new STValidation issued by this node.
@@ -212,14 +174,11 @@ STValidation::STValidation(
     SecretKey const& sk,
     NodeID const& nodeID,
     F&& f)
-    : STObject(validationFormat(), sfValidation)
-    , signingPubKey_(pk)
-    , nodeID_(nodeID)
-    , seenTime_(signTime)
+    : STObject(validationFormat(), sfValidation), signingPubKey_(pk), nodeID_(nodeID), seenTime_(signTime)
 {
     XRPL_ASSERT(
         nodeID_.isNonZero(),
-        "ripple::STValidation::STValidation(PublicKey, SecretKey) : nonzero "
+        "xrpl::STValidation::STValidation(PublicKey, SecretKey) : nonzero "
         "node");
 
     // First, set our own public key:
@@ -241,9 +200,7 @@ STValidation::STValidation(
     for (auto const& e : validationFormat())
     {
         if (e.style() == soeREQUIRED && !isFieldPresent(e.sField()))
-            LogicError(
-                "Required field '" + e.sField().getName() +
-                "' missing from validation.");
+            LogicError("Required field '" + e.sField().getName() + "' missing from validation.");
     }
 
     // We just signed this, so it should be valid.
@@ -286,6 +243,4 @@ STValidation::setSeen(NetClock::time_point s)
     seenTime_ = s;
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

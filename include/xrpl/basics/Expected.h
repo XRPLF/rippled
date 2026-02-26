@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2021 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_BASICS_EXPECTED_H_INCLUDED
-#define RIPPLE_BASICS_EXPECTED_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/contract.h>
 
@@ -26,7 +6,7 @@
 
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 
 /** Expected is an approximation of std::expected (hoped for in C++23)
 
@@ -127,23 +107,20 @@ Unexpected(E (&)[N]) -> Unexpected<E const*>;
 
 // Definition of Expected.  All of the machinery comes from boost::result.
 template <class T, class E>
-class [[nodiscard]] Expected
-    : private boost::outcome_v2::result<T, E, detail::throw_policy>
+class [[nodiscard]] Expected : private boost::outcome_v2::result<T, E, detail::throw_policy>
 {
     using Base = boost::outcome_v2::result<T, E, detail::throw_policy>;
 
 public:
     template <typename U>
         requires std::convertible_to<U, T>
-    constexpr Expected(U&& r)
-        : Base(boost::outcome_v2::in_place_type_t<T>{}, std::forward<U>(r))
+    constexpr Expected(U&& r) : Base(boost::outcome_v2::in_place_type_t<T>{}, std::forward<U>(r))
     {
     }
 
     template <typename U>
         requires std::convertible_to<U, E> && (!std::is_reference_v<U>)
-    constexpr Expected(Unexpected<U> e)
-        : Base(boost::outcome_v2::in_place_type_t<E>{}, std::move(e.value()))
+    constexpr Expected(Unexpected<U> e) : Base(boost::outcome_v2::in_place_type_t<E>{}, std::move(e.value()))
     {
     }
 
@@ -214,8 +191,7 @@ public:
 // Specialization of Expected<void, E>.  Allows returning either success
 // (without a value) or the reason for the failure.
 template <class E>
-class [[nodiscard]] Expected<void, E>
-    : private boost::outcome_v2::result<void, E, detail::throw_policy>
+class [[nodiscard]] Expected<void, E> : private boost::outcome_v2::result<void, E, detail::throw_policy>
 {
     using Base = boost::outcome_v2::result<void, E, detail::throw_policy>;
 
@@ -251,6 +227,4 @@ public:
     }
 };
 
-}  // namespace ripple
-
-#endif  // RIPPLE_BASICS_EXPECTED_H_INCLUDED
+}  // namespace xrpl

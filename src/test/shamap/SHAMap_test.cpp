@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/shamap/common.h>
 #include <test/unit_test/SuiteJournal.h>
 
@@ -26,7 +7,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/shamap/SHAMap.h>
 
-namespace ripple {
+namespace xrpl {
 namespace tests {
 
 #ifndef __INTELLISENSE__
@@ -136,16 +117,11 @@ public:
         tests::TestNodeFamily f(journal);
 
         // h3 and h4 differ only in the leaf, same terminal node (level 19)
-        constexpr uint256 h1(
-            "092891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
-        constexpr uint256 h2(
-            "436ccbac3347baa1f1e53baeef1f43334da88f1f6d70d963b833afd6dfa289fe");
-        constexpr uint256 h3(
-            "b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
-        constexpr uint256 h4(
-            "b92891fe4ef6cee585fdc6fda2e09eb4d386363158ec3321b8123e5a772c6ca8");
-        constexpr uint256 h5(
-            "a92891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
+        constexpr uint256 h1("092891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
+        constexpr uint256 h2("436ccbac3347baa1f1e53baeef1f43334da88f1f6d70d963b833afd6dfa289fe");
+        constexpr uint256 h3("b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
+        constexpr uint256 h4("b92891fe4ef6cee585fdc6fda2e09eb4d386363158ec3321b8123e5a772c6ca8");
+        constexpr uint256 h5("a92891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
 
         SHAMap sMap(SHAMapType::FREE, f);
         sMap.invariants();
@@ -158,15 +134,9 @@ public:
         auto i4 = make_shamapitem(h4, IntToVUC(4));
         auto i5 = make_shamapitem(h5, IntToVUC(5));
 
-        unexpected(
-            !sMap.addItem(
-                SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(*i2)),
-            "no add");
+        unexpected(!sMap.addItem(SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(*i2)), "no add");
         sMap.invariants();
-        unexpected(
-            !sMap.addItem(
-                SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(*i1)),
-            "no add");
+        unexpected(!sMap.addItem(SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(*i1)), "no add");
         sMap.invariants();
 
         auto i = sMap.begin();
@@ -268,9 +238,7 @@ public:
             BEAST_EXPECT(map.getHash() == beast::zero);
             for (int k = 0; k < keys.size(); ++k)
             {
-                BEAST_EXPECT(map.addItem(
-                    SHAMapNodeType::tnTRANSACTION_NM,
-                    make_shamapitem(keys[k], IntToVUC(k))));
+                BEAST_EXPECT(map.addItem(SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(keys[k], IntToVUC(k))));
                 BEAST_EXPECT(map.getHash().as_uint256() == hashes[k]);
                 map.invariants();
             }
@@ -313,9 +281,7 @@ public:
                 map.setUnbacked();
             for (auto const& k : keys)
             {
-                map.addItem(
-                    SHAMapNodeType::tnTRANSACTION_NM,
-                    make_shamapitem(k, IntToVUC(0)));
+                map.addItem(SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(k, IntToVUC(0)));
                 map.invariants();
             }
 
@@ -347,9 +313,7 @@ class SHAMapPathProof_test : public beast::unit_test::suite
         for (unsigned char c = 1; c < 100; ++c)
         {
             uint256 k(c);
-            map.addItem(
-                SHAMapNodeType::tnACCOUNT_STATE,
-                make_shamapitem(k, Slice{k.data(), k.size()}));
+            map.addItem(SHAMapNodeType::tnACCOUNT_STATE, make_shamapitem(k, Slice{k.data(), k.size()}));
             map.invariants();
 
             auto root = map.getHash().as_uint256();
@@ -401,7 +365,7 @@ class SHAMapPathProof_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(SHAMap, shamap, ripple);
-BEAST_DEFINE_TESTSUITE(SHAMapPathProof, shamap, ripple);
+BEAST_DEFINE_TESTSUITE(SHAMap, shamap, xrpl);
+BEAST_DEFINE_TESTSUITE(SHAMapPathProof, shamap, xrpl);
 }  // namespace tests
-}  // namespace ripple
+}  // namespace xrpl

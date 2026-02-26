@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_NODESTORE_DATABASE_H_INCLUDED
-#define RIPPLE_NODESTORE_DATABASE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
@@ -30,7 +10,7 @@
 
 #include <condition_variable>
 
-namespace ripple {
+namespace xrpl {
 
 namespace NodeStore {
 
@@ -59,11 +39,7 @@ public:
         @param config The configuration settings
         @param journal Destination for logging output.
     */
-    Database(
-        Scheduler& scheduler,
-        int readThreads,
-        Section const& config,
-        beast::Journal j);
+    Database(Scheduler& scheduler, int readThreads, Section const& config, beast::Journal j);
 
     /** Destroy the node store.
         All pending operations are completed, pending writes flushed,
@@ -101,11 +77,7 @@ public:
         @return `true` if the object was stored?
     */
     virtual void
-    store(
-        NodeObjectType type,
-        Blob&& data,
-        uint256 const& hash,
-        std::uint32_t ledgerSeq) = 0;
+    store(NodeObjectType type, Blob&& data, uint256 const& hash, std::uint32_t ledgerSeq) = 0;
 
     /* Check if two ledgers are in the same database
 
@@ -160,10 +132,6 @@ public:
         uint256 const& hash,
         std::uint32_t ledgerSeq,
         std::function<void(std::shared_ptr<NodeObject> const&)>&& callback);
-
-    /** Remove expired entries from the positive and negative caches. */
-    virtual void
-    sweep() = 0;
 
     /** Gather statistics pertaining to read and write activities.
      *
@@ -247,9 +215,7 @@ protected:
     void
     storeStats(std::uint64_t count, std::uint64_t sz)
     {
-        XRPL_ASSERT(
-            count <= sz,
-            "ripple::NodeStore::Database::storeStats : valid inputs");
+        XRPL_ASSERT(count <= sz, "xrpl::NodeStore::Database::storeStats : valid inputs");
         storeCount_ += count;
         storeSz_ += sz;
     }
@@ -277,11 +243,7 @@ private:
     std::condition_variable readCondVar_;
 
     // reads to do
-    std::map<
-        uint256,
-        std::vector<std::pair<
-            std::uint32_t,
-            std::function<void(std::shared_ptr<NodeObject> const&)>>>>
+    std::map<uint256, std::vector<std::pair<std::uint32_t, std::function<void(std::shared_ptr<NodeObject> const&)>>>>
         read_;
 
     std::atomic<bool> readStopping_ = false;
@@ -289,11 +251,7 @@ private:
     std::atomic<int> runningThreads_ = 0;
 
     virtual std::shared_ptr<NodeObject>
-    fetchNodeObject(
-        uint256 const& hash,
-        std::uint32_t ledgerSeq,
-        FetchReport& fetchReport,
-        bool duplicate) = 0;
+    fetchNodeObject(uint256 const& hash, std::uint32_t ledgerSeq, FetchReport& fetchReport, bool duplicate) = 0;
 
     /** Visit every object in the database
         This is usually called during import.
@@ -310,6 +268,4 @@ private:
 };
 
 }  // namespace NodeStore
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

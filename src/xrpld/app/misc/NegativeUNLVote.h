@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2020 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_MISC_NEGATIVEUNLVOTE_H_INCLUDED
-#define RIPPLE_APP_MISC_NEGATIVEUNLVOTE_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/Ledger.h>
 
@@ -29,7 +9,7 @@
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 template <class Adaptor>
 class Validations;
@@ -53,20 +33,17 @@ public:
      * An unreliable validator is a candidate to be disabled by the NegativeUNL
      * protocol.
      */
-    static constexpr size_t negativeUNLLowWaterMark =
-        FLAG_LEDGER_INTERVAL * 50 / 100;
+    static constexpr size_t negativeUNLLowWaterMark = FLAG_LEDGER_INTERVAL * 50 / 100;
     /**
      * An unreliable validator must have more than negativeUNLHighWaterMark
      * validations in the last flag ledger period to be re-enabled.
      */
-    static constexpr size_t negativeUNLHighWaterMark =
-        FLAG_LEDGER_INTERVAL * 80 / 100;
+    static constexpr size_t negativeUNLHighWaterMark = FLAG_LEDGER_INTERVAL * 80 / 100;
     /**
      * The minimum number of validations of the local node for it to
      * participate in the voting.
      */
-    static constexpr size_t negativeUNLMinLocalValsToVote =
-        FLAG_LEDGER_INTERVAL * 90 / 100;
+    static constexpr size_t negativeUNLMinLocalValsToVote = FLAG_LEDGER_INTERVAL * 90 / 100;
     /**
      * We don't want to disable new validators immediately after adding them.
      * So we skip voting for disabling them for 2 flag ledgers.
@@ -148,11 +125,7 @@ private:
      * @param initialSet the transaction set
      */
     void
-    addTx(
-        LedgerIndex seq,
-        PublicKey const& vp,
-        NegativeUNLModify modify,
-        std::shared_ptr<SHAMap> const& initialSet);
+    addTx(LedgerIndex seq, PublicKey const& vp, NegativeUNLModify modify, std::shared_ptr<SHAMap> const& initialSet);
 
     /**
      * Pick one candidate from a vector of candidates.
@@ -213,6 +186,4 @@ private:
     friend class test::NegativeUNLVoteScoreTable_test;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

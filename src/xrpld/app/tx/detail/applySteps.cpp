@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/applySteps.h>
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
@@ -37,7 +18,7 @@
 
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 
 namespace {
 
@@ -53,8 +34,37 @@ struct UnknownTxnType : std::exception
 // throw an "UnknownTxnType" exception on error
 template <class F>
 auto
-with_txn_type(TxType txnType, F&& f)
+with_txn_type(Rules const& rules, TxType txnType, F&& f)
 {
+    // These global updates really should have been for every Transaction
+    // step: preflight, preclaim, calculateBaseFee, and doApply. Unfortunately,
+    // they were only included in doApply (via Transactor::operator()). That may
+    // have been sufficient when the changes were only related to operations
+    // that mutated data, but some features will now change how they read data,
+    // so these need to be more global.
+    //
+    // To prevent unintentional side effects on existing checks, they will be
+    // set for every operation only once SingleAssetVault (or later
+    // LendingProtocol) are enabled.
+    //
+    // See also Transactor::operator().
+    //
+    std::optional<NumberSO> stNumberSO;
+    std::optional<CurrentTransactionRulesGuard> rulesGuard;
+    std::optional<NumberMantissaScaleGuard> mantissaScaleGuard;
+    if (rules.enabled(featureSingleAssetVault) || rules.enabled(featureLendingProtocol))
+    {
+        // raii classes for the current ledger rules.
+        // fixUniversalNumber predates the rulesGuard and should be replaced.
+        stNumberSO.emplace(rules.enabled(fixUniversalNumber));
+        rulesGuard.emplace(rules);
+    }
+    else
+    {
+        // Without those features enabled, always use the old number rules.
+        mantissaScaleGuard.emplace(MantissaRange::small);
+    }
+
     switch (txnType)
     {
 #pragma push_macro("TRANSACTION")
@@ -118,21 +128,17 @@ invoke_preflight(PreflightContext const& ctx)
 {
     try
     {
-        return with_txn_type(ctx.tx.getTxnType(), [&]<typename T>() {
+        return with_txn_type(ctx.rules, ctx.tx.getTxnType(), [&]<typename T>() {
             auto const tec = Transactor::invokePreflight<T>(ctx);
-            return std::make_pair(
-                tec,
-                isTesSuccess(tec) ? consequences_helper<T>(ctx)
-                                  : TxConsequences{tec});
+            return std::make_pair(tec, isTesSuccess(tec) ? consequences_helper<T>(ctx) : TxConsequences{tec});
         });
     }
     catch (UnknownTxnType const& e)
     {
         // Should never happen
         // LCOV_EXCL_START
-        JLOG(ctx.j.fatal())
-            << "Unknown transaction type in preflight: " << e.txnType;
-        UNREACHABLE("ripple::invoke_preflight : unknown transaction type");
+        JLOG(ctx.j.fatal()) << "Unknown transaction type in preflight: " << e.txnType;
+        UNREACHABLE("xrpl::invoke_preflight : unknown transaction type");
         return {temUNKNOWN, TxConsequences{temUNKNOWN}};
         // LCOV_EXCL_STOP
     }
@@ -145,7 +151,7 @@ invoke_preclaim(PreclaimContext const& ctx)
     {
         // use name hiding to accomplish compile-time polymorphism of static
         // class functions for Transactor and derived classes.
-        return with_txn_type(ctx.tx.getTxnType(), [&]<typename T>() -> TER {
+        return with_txn_type(ctx.view.rules(), ctx.tx.getTxnType(), [&]<typename T>() -> TER {
             // preclaim functionality is divided into two sections:
             // 1. Up to and including the signature check: returns NotTEC.
             //    All transaction checks before and including checkSign
@@ -163,16 +169,13 @@ invoke_preclaim(PreclaimContext const& ctx)
             if (id != beast::zero)
             {
                 if (NotTEC const preSigResult = [&]() -> NotTEC {
-                        if (NotTEC const result =
-                                T::checkSeqProxy(ctx.view, ctx.tx, ctx.j))
+                        if (NotTEC const result = T::checkSeqProxy(ctx.view, ctx.tx, ctx.j))
                             return result;
 
-                        if (NotTEC const result =
-                                T::checkPriorTxAndLastLedger(ctx))
+                        if (NotTEC const result = T::checkPriorTxAndLastLedger(ctx))
                             return result;
 
-                        if (NotTEC const result =
-                                T::checkPermission(ctx.view, ctx.tx))
+                        if (NotTEC const result = T::checkPermission(ctx.view, ctx.tx))
                             return result;
 
                         if (NotTEC const result = T::checkSign(ctx))
@@ -182,8 +185,7 @@ invoke_preclaim(PreclaimContext const& ctx)
                     }())
                     return preSigResult;
 
-                if (TER const result =
-                        T::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx)))
+                if (TER const result = T::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx)))
                     return result;
             }
 
@@ -194,9 +196,8 @@ invoke_preclaim(PreclaimContext const& ctx)
     {
         // Should never happen
         // LCOV_EXCL_START
-        JLOG(ctx.j.fatal())
-            << "Unknown transaction type in preclaim: " << e.txnType;
-        UNREACHABLE("ripple::invoke_preclaim : unknown transaction type");
+        JLOG(ctx.j.fatal()) << "Unknown transaction type in preclaim: " << e.txnType;
+        UNREACHABLE("xrpl::invoke_preclaim : unknown transaction type");
         return temUNKNOWN;
         // LCOV_EXCL_STOP
     }
@@ -223,57 +224,48 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     try
     {
-        return with_txn_type(tx.getTxnType(), [&]<typename T>() {
-            return T::calculateBaseFee(view, tx);
-        });
+        return with_txn_type(
+            view.rules(), tx.getTxnType(), [&]<typename T>() { return T::calculateBaseFee(view, tx); });
     }
     catch (UnknownTxnType const& e)
     {
         // LCOV_EXCL_START
-        UNREACHABLE(
-            "ripple::invoke_calculateBaseFee : unknown transaction type");
+        UNREACHABLE("xrpl::invoke_calculateBaseFee : unknown transaction type");
         return XRPAmount{0};
         // LCOV_EXCL_STOP
     }
 }
 
-TxConsequences::TxConsequences(NotTEC pfresult)
+TxConsequences::TxConsequences(NotTEC pfResult)
     : isBlocker_(false)
     , fee_(beast::zero)
     , potentialSpend_(beast::zero)
     , seqProx_(SeqProxy::sequence(0))
     , sequencesConsumed_(0)
 {
-    XRPL_ASSERT(
-        !isTesSuccess(pfresult),
-        "ripple::TxConsequences::TxConsequences : is not tesSUCCESS");
+    XRPL_ASSERT(!isTesSuccess(pfResult), "xrpl::TxConsequences::TxConsequences : is not tesSUCCESS");
 }
 
 TxConsequences::TxConsequences(STTx const& tx)
     : isBlocker_(false)
-    , fee_(
-          tx[sfFee].native() && !tx[sfFee].negative() ? tx[sfFee].xrp()
-                                                      : beast::zero)
+    , fee_(tx[sfFee].native() && !tx[sfFee].negative() ? tx[sfFee].xrp() : beast::zero)
     , potentialSpend_(beast::zero)
     , seqProx_(tx.getSeqProxy())
     , sequencesConsumed_(tx.getSeqProxy().isSeq() ? 1 : 0)
 {
 }
 
-TxConsequences::TxConsequences(STTx const& tx, Category category)
-    : TxConsequences(tx)
+TxConsequences::TxConsequences(STTx const& tx, Category category) : TxConsequences(tx)
 {
     isBlocker_ = (category == blocker);
 }
 
-TxConsequences::TxConsequences(STTx const& tx, XRPAmount potentialSpend)
-    : TxConsequences(tx)
+TxConsequences::TxConsequences(STTx const& tx, XRPAmount potentialSpend) : TxConsequences(tx)
 {
     potentialSpend_ = potentialSpend;
 }
 
-TxConsequences::TxConsequences(STTx const& tx, std::uint32_t sequencesConsumed)
-    : TxConsequences(tx)
+TxConsequences::TxConsequences(STTx const& tx, std::uint32_t sequencesConsumed) : TxConsequences(tx)
 {
     sequencesConsumed_ = sequencesConsumed;
 }
@@ -283,7 +275,7 @@ invoke_apply(ApplyContext& ctx)
 {
     try
     {
-        return with_txn_type(ctx.tx.getTxnType(), [&]<typename T>() {
+        return with_txn_type(ctx.view().rules(), ctx.tx.getTxnType(), [&]<typename T>() {
             T p(ctx);
             return p();
         });
@@ -292,31 +284,25 @@ invoke_apply(ApplyContext& ctx)
     {
         // Should never happen
         // LCOV_EXCL_START
-        JLOG(ctx.journal.fatal())
-            << "Unknown transaction type in apply: " << e.txnType;
-        UNREACHABLE("ripple::invoke_apply : unknown transaction type");
+        JLOG(ctx.journal.fatal()) << "Unknown transaction type in apply: " << e.txnType;
+        UNREACHABLE("xrpl::invoke_apply : unknown transaction type");
         return {temUNKNOWN, false};
         // LCOV_EXCL_STOP
     }
 }
 
 PreflightResult
-preflight(
-    Application& app,
-    Rules const& rules,
-    STTx const& tx,
-    ApplyFlags flags,
-    beast::Journal j)
+preflight(Application& app, Rules const& rules, STTx const& tx, ApplyFlags flags, beast::Journal j)
 {
-    PreflightContext const pfctx(app, tx, rules, flags, j);
+    PreflightContext const pfCtx(app, tx, rules, flags, j);
     try
     {
-        return {pfctx, invoke_preflight(pfctx)};
+        return {pfCtx, invoke_preflight(pfCtx)};
     }
     catch (std::exception const& e)
     {
         JLOG(j.fatal()) << "apply (preflight): " << e.what();
-        return {pfctx, {tefEXCEPTION, TxConsequences{tx}}};
+        return {pfCtx, {tefEXCEPTION, TxConsequences{tx}}};
     }
 }
 
@@ -329,23 +315,20 @@ preflight(
     ApplyFlags flags,
     beast::Journal j)
 {
-    PreflightContext const pfctx(app, tx, parentBatchId, rules, flags, j);
+    PreflightContext const pfCtx(app, tx, parentBatchId, rules, flags, j);
     try
     {
-        return {pfctx, invoke_preflight(pfctx)};
+        return {pfCtx, invoke_preflight(pfCtx)};
     }
     catch (std::exception const& e)
     {
         JLOG(j.fatal()) << "apply (preflight): " << e.what();
-        return {pfctx, {tefEXCEPTION, TxConsequences{tx}}};
+        return {pfCtx, {tefEXCEPTION, TxConsequences{tx}}};
     }
 }
 
 PreclaimResult
-preclaim(
-    PreflightResult const& preflightResult,
-    Application& app,
-    OpenView const& view)
+preclaim(PreflightResult const& preflightResult, Application& app, OpenView const& view)
 {
     std::optional<PreclaimContext const> ctx;
     if (preflightResult.rules != view.rules())
@@ -360,12 +343,7 @@ preclaim(
                     preflightResult.flags,
                     preflightResult.j);
 
-            return preflight(
-                app,
-                view.rules(),
-                preflightResult.tx,
-                preflightResult.flags,
-                preflightResult.j);
+            return preflight(app, view.rules(), preflightResult.tx, preflightResult.flags, preflightResult.j);
         }();
 
         ctx.emplace(
@@ -445,4 +423,4 @@ doApply(PreclaimResult const& preclaimResult, Application& app, OpenView& view)
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

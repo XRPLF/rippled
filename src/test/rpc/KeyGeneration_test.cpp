@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2015 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx/TestSuite.h>
 
 #include <xrpld/rpc/detail/RPCHelpers.h>
@@ -27,7 +8,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace RPC {
 
@@ -46,8 +27,7 @@ struct key_strings
 
 namespace common {
 static char const* passphrase = "REINDEER FLOTILLA";
-static char const* master_key =
-    "SCAT BERN ISLE FOR ROIL BUS SOAK AQUA FREE FOR DRAM BRIG";
+static char const* master_key = "SCAT BERN ISLE FOR ROIL BUS SOAK AQUA FREE FOR DRAM BRIG";
 static char const* master_seed = "snMwVWs2hZzfDUF3p2tHZ3EgmyhFs";
 static char const* master_seed_hex = "BE6A670A19B209E112146D0A7ED2AAD7";
 }  // namespace common
@@ -94,7 +74,7 @@ static key_strings const strong_brain_strings = {
     "attacks.",
 };
 
-class WalletPropose_test : public ripple::TestSuite
+class WalletPropose_test : public xrpl::TestSuite
 {
 public:
     void
@@ -113,10 +93,7 @@ public:
         BEAST_EXPECT(result.isMember(jss::public_key_hex));
         BEAST_EXPECT(result.isMember(jss::key_type));
 
-        expectEquals(
-            result[jss::key_type],
-            params.isMember(jss::key_type) ? params[jss::key_type]
-                                           : "secp256k1");
+        expectEquals(result[jss::key_type], params.isMember(jss::key_type) ? params[jss::key_type] : "secp256k1");
         BEAST_EXPECT(!result.isMember(jss::warning));
 
         std::string seed = result[jss::master_seed].asString();
@@ -138,17 +115,12 @@ public:
         expectEquals(result[jss::master_seed_hex], s.master_seed_hex);
         expectEquals(result[jss::public_key], s.public_key);
         expectEquals(result[jss::public_key_hex], s.public_key_hex);
-        expectEquals(
-            result[jss::key_type],
-            params.isMember(jss::key_type) ? params[jss::key_type]
-                                           : "secp256k1");
+        expectEquals(result[jss::key_type], params.isMember(jss::key_type) ? params[jss::key_type] : "secp256k1");
         return result;
     }
 
     void
-    testSeed(
-        std::optional<std::string> const& keyType,
-        key_strings const& strings)
+    testSeed(std::optional<std::string> const& keyType, key_strings const& strings)
     {
         testcase("seed");
 
@@ -162,9 +134,7 @@ public:
     }
 
     void
-    testSeedHex(
-        std::optional<std::string> const& keyType,
-        key_strings const& strings)
+    testSeedHex(std::optional<std::string> const& keyType, key_strings const& strings)
     {
         testcase("seed_hex");
 
@@ -178,10 +148,7 @@ public:
     }
 
     void
-    testLegacyPassphrase(
-        char const* value,
-        std::optional<std::string> const& keyType,
-        key_strings const& strings)
+    testLegacyPassphrase(char const* value, std::optional<std::string> const& keyType, key_strings const& strings)
     {
         Json::Value params;
         if (keyType)
@@ -196,9 +163,7 @@ public:
     }
 
     void
-    testLegacyPassphrase(
-        std::optional<std::string> const& keyType,
-        key_strings const& strings)
+    testLegacyPassphrase(std::optional<std::string> const& keyType, key_strings const& strings)
     {
         testcase("passphrase");
 
@@ -209,9 +174,7 @@ public:
     }
 
     void
-    testKeyType(
-        std::optional<std::string> const& keyType,
-        key_strings const& strings)
+    testKeyType(std::optional<std::string> const& keyType, key_strings const& strings)
     {
         testcase(keyType ? *keyType : "no key_type");
 
@@ -242,9 +205,7 @@ public:
             params[jss::passphrase] = 20160506;
             auto result = walletPropose(params);
             BEAST_EXPECT(contains_error(result));
-            BEAST_EXPECT(
-                result[jss::error_message] ==
-                "Invalid field 'passphrase', not string.");
+            BEAST_EXPECT(result[jss::error_message] == "Invalid field 'passphrase', not string.");
         }
 
         {
@@ -253,9 +214,7 @@ public:
             params[jss::seed] = Json::objectValue;
             auto result = walletPropose(params);
             BEAST_EXPECT(contains_error(result));
-            BEAST_EXPECT(
-                result[jss::error_message] ==
-                "Invalid field 'seed', not string.");
+            BEAST_EXPECT(result[jss::error_message] == "Invalid field 'seed', not string.");
         }
 
         {
@@ -264,9 +223,7 @@ public:
             params[jss::seed_hex] = Json::arrayValue;
             auto result = walletPropose(params);
             BEAST_EXPECT(contains_error(result));
-            BEAST_EXPECT(
-                result[jss::error_message] ==
-                "Invalid field 'seed_hex', not string.");
+            BEAST_EXPECT(result[jss::error_message] == "Invalid field 'seed_hex', not string.");
         }
 
         // Specifying multiple items at once
@@ -300,9 +257,7 @@ public:
             params[jss::seed_hex] = common::master_seed_hex;
             auto result = walletPropose(params);
             BEAST_EXPECT(contains_error(result));
-            BEAST_EXPECT(
-                result[jss::error_message] ==
-                "Invalid field 'key_type', not string.");
+            BEAST_EXPECT(result[jss::error_message] == "Invalid field 'key_type', not string.");
         }
 
         {
@@ -311,22 +266,16 @@ public:
             params[jss::seed] = common::master_seed;
             auto result = walletPropose(params);
             BEAST_EXPECT(contains_error(result));
-            BEAST_EXPECT(
-                result[jss::error_message] ==
-                "Invalid field 'key_type', not string.");
+            BEAST_EXPECT(result[jss::error_message] == "Invalid field 'key_type', not string.");
         }
     }
 
     void
-    testKeypairForSignature(
-        std::optional<std::string> keyType,
-        key_strings const& strings)
+    testKeypairForSignature(std::optional<std::string> keyType, key_strings const& strings)
     {
-        testcase(
-            "keypairForSignature - " + (keyType ? *keyType : "no key_type"));
+        testcase("keypairForSignature - " + (keyType ? *keyType : "no key_type"));
 
-        auto const publicKey = parseBase58<PublicKey>(
-            TokenType::AccountPublic, strings.public_key);
+        auto const publicKey = parseBase58<PublicKey>(TokenType::AccountPublic, strings.public_key);
         BEAST_EXPECT(publicKey);
 
         if (!keyType)
@@ -436,9 +385,7 @@ public:
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
             BEAST_EXPECT(!ret);
-            BEAST_EXPECT(
-                error[jss::error_message] ==
-                "Invalid field 'secret', not string.");
+            BEAST_EXPECT(error[jss::error_message] == "Invalid field 'secret', not string.");
         }
 
         {
@@ -450,9 +397,7 @@ public:
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
             BEAST_EXPECT(!ret);
-            BEAST_EXPECT(
-                error[jss::error_message] ==
-                "Invalid field 'secret', not string.");
+            BEAST_EXPECT(error[jss::error_message] == "Invalid field 'secret', not string.");
         }
 
         {
@@ -465,9 +410,7 @@ public:
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
             BEAST_EXPECT(!ret);
-            BEAST_EXPECT(
-                error[jss::error_message] ==
-                "Invalid field 'secret', not string.");
+            BEAST_EXPECT(error[jss::error_message] == "Invalid field 'secret', not string.");
         }
 
         // Specify "secret" and "key_type"
@@ -480,9 +423,7 @@ public:
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
             BEAST_EXPECT(!ret);
-            BEAST_EXPECT(
-                error[jss::error_message] ==
-                "The secret field is not allowed if key_type is used.");
+            BEAST_EXPECT(error[jss::error_message] == "The secret field is not allowed if key_type is used.");
         }
 
         // Specify unknown or bad "key_type"
@@ -495,8 +436,7 @@ public:
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
             BEAST_EXPECT(!ret);
-            BEAST_EXPECT(
-                error[jss::error_message] == "Invalid field 'key_type'.");
+            BEAST_EXPECT(error[jss::error_message] == "Invalid field 'key_type'.");
         }
 
         {
@@ -508,9 +448,7 @@ public:
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
             BEAST_EXPECT(!ret);
-            BEAST_EXPECT(
-                error[jss::error_message] ==
-                "Invalid field 'key_type', not string.");
+            BEAST_EXPECT(error[jss::error_message] == "Invalid field 'key_type', not string.");
         }
 
         {
@@ -522,9 +460,7 @@ public:
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
             BEAST_EXPECT(!ret);
-            BEAST_EXPECT(
-                error[jss::error_message] ==
-                "Invalid field 'key_type', not string.");
+            BEAST_EXPECT(error[jss::error_message] == "Invalid field 'key_type', not string.");
         }
 
         // Specify non-string passphrase
@@ -537,9 +473,7 @@ public:
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
             BEAST_EXPECT(!ret);
-            BEAST_EXPECT(
-                error[jss::error_message] ==
-                "Invalid field 'passphrase', not string.");
+            BEAST_EXPECT(error[jss::error_message] == "Invalid field 'passphrase', not string.");
         }
 
         {  // not a passphrase: object
@@ -551,9 +485,7 @@ public:
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
             BEAST_EXPECT(!ret);
-            BEAST_EXPECT(
-                error[jss::error_message] ==
-                "Invalid field 'passphrase', not string.");
+            BEAST_EXPECT(error[jss::error_message] == "Invalid field 'passphrase', not string.");
         }
 
         {  // not a passphrase: array
@@ -565,9 +497,7 @@ public:
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
             BEAST_EXPECT(!ret);
-            BEAST_EXPECT(
-                error[jss::error_message] ==
-                "Invalid field 'passphrase', not string.");
+            BEAST_EXPECT(error[jss::error_message] == "Invalid field 'passphrase', not string.");
         }
 
         {  // not a passphrase: empty string
@@ -592,9 +522,7 @@ public:
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
             BEAST_EXPECT(!ret);
-            BEAST_EXPECT(
-                error[jss::error_message] ==
-                "Invalid field 'seed', not string.");
+            BEAST_EXPECT(error[jss::error_message] == "Invalid field 'seed', not string.");
         }
 
         {  // not a string: object
@@ -606,9 +534,7 @@ public:
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
             BEAST_EXPECT(!ret);
-            BEAST_EXPECT(
-                error[jss::error_message] ==
-                "Invalid field 'seed', not string.");
+            BEAST_EXPECT(error[jss::error_message] == "Invalid field 'seed', not string.");
         }
 
         {  // not a string: array
@@ -620,9 +546,7 @@ public:
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
             BEAST_EXPECT(!ret);
-            BEAST_EXPECT(
-                error[jss::error_message] ==
-                "Invalid field 'seed', not string.");
+            BEAST_EXPECT(error[jss::error_message] == "Invalid field 'seed', not string.");
         }
 
         {  // not a seed: empty
@@ -671,9 +595,7 @@ public:
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
             BEAST_EXPECT(!ret);
-            BEAST_EXPECT(
-                error[jss::error_message] ==
-                "Invalid field 'seed_hex', not string.");
+            BEAST_EXPECT(error[jss::error_message] == "Invalid field 'seed_hex', not string.");
         }
 
         {  // not a string: object
@@ -685,9 +607,7 @@ public:
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
             BEAST_EXPECT(!ret);
-            BEAST_EXPECT(
-                error[jss::error_message] ==
-                "Invalid field 'seed_hex', not string.");
+            BEAST_EXPECT(error[jss::error_message] == "Invalid field 'seed_hex', not string.");
         }
 
         {  // not a string: array
@@ -699,9 +619,7 @@ public:
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
             BEAST_EXPECT(!ret);
-            BEAST_EXPECT(
-                error[jss::error_message] ==
-                "Invalid field 'seed_hex', not string.");
+            BEAST_EXPECT(error[jss::error_message] == "Invalid field 'seed_hex', not string.");
         }
 
         {  // empty
@@ -744,8 +662,7 @@ public:
             Json::Value params;
             Json::Value error;
             params[jss::key_type] = "secp256k1";
-            params[jss::seed_hex] =
-                "BE6A670A19B209E112146D0A7ED2AAD72567D0FC913";
+            params[jss::seed_hex] = "BE6A670A19B209E112146D0A7ED2AAD72567D0FC913";
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
@@ -786,9 +703,7 @@ public:
                 auto ret = keypairForSignature(params, error);
 
                 BEAST_EXPECT(contains_error(error));
-                BEAST_EXPECT(
-                    error[jss::error_message] ==
-                    "Specified seed is for an Ed25519 wallet.");
+                BEAST_EXPECT(error[jss::error_message] == "Specified seed is for an Ed25519 wallet.");
             }
 
             {
@@ -818,60 +733,26 @@ public:
                 auto ret = keypairForSignature(params, error);
 
                 BEAST_EXPECT(contains_error(error));
-                BEAST_EXPECT(
-                    error[jss::error_message] ==
-                    "Specified seed is for an Ed25519 wallet.");
+                BEAST_EXPECT(error[jss::error_message] == "Specified seed is for an Ed25519 wallet.");
             }
         };
 
-        test(
-            "sEdVWZmeUDgQdMEFKTK9kYVX71FKB7o",
-            "r34XnDB2zS11NZ1wKJzpU1mjWExGVugTaQ");
-        test(
-            "sEd7zJoVnqg1FxB9EuaHC1AB5UPfHWz",
-            "rDw51qRrBEeMw7Na1Nh79LN7HYZDo7nZFE");
-        test(
-            "sEdSxVntbihdLyabbfttMCqsaaucVR9",
-            "rwiyBDfAYegXZyaQcN2L1vAbKRYn2wNFMq");
-        test(
-            "sEdSVwJjEXTYCztqDK4JD9WByH3otDX",
-            "rQJ4hZzNGkLQhLtKPCmu1ywEw1ai2vgUJN");
-        test(
-            "sEdV3jXjKuUoQTSr1Rb4yw8Kyn9r46U",
-            "rERRw2Pxbau4tevE61V5vZUwD7Rus5Y6vW");
-        test(
-            "sEdVeUZjuYT47Uy51FQCnzivsuWyiwB",
-            "rszewT5gRjUgWNEmnfMjvVYzJCkhvWY32i");
-        test(
-            "sEd7MHTewdw4tFYeS7rk7XT4qHiA9jH",
-            "rBB2rvnf4ztwjgNhinFXQJ91nAZjkFgR3p");
-        test(
-            "sEd7A5jFBSdWbNeKGriQvLr1thBScJh",
-            "rLAXz8Nz7aDivz7PwThsLFqaKrizepNCdA");
-        test(
-            "sEdVPU9M2uyzVNT4Yb5Dn4tUtYjbFAw",
-            "rHbHRFPCxD5fnn98TBzsQHJ7SsRq7eHkRj");
-        test(
-            "sEdVfF2zhAmS8gfMYzJ4yWBMeR4BZKc",
-            "r9PsneKHcAE7kUfiTixomM5Mnwi28tCc7h");
-        test(
-            "sEdTjRtcsQkwthDXUSLi9DHNyJcR8GW",
-            "rM4soF4XS3wZrmLurvE6ZmudG16Lk5Dur5");
-        test(
-            "sEdVNKeu1Lhpfh7Nf6tRDbxnmMyZ4Dv",
-            "r4ZwJxq6FDtWjapDtCGhjG6mtNm1nWdJcD");
-        test(
-            "sEd7bK4gf5BHJ1WbaEWx8pKMA9MLHpC",
-            "rD6tnn51m4o1uXeEK9CFrZ3HR7DcFhiYnp");
-        test(
-            "sEd7jCh3ppnQMsLdGcZ6TZayZaHhBLg",
-            "rTcBkiRQ1EfFQ4FCCwqXNHpn1yUTAACkj");
-        test(
-            "sEdTFJezurQwSJAbkLygj2gQXBut2wh",
-            "rnXaMacNbRwcJddbbPbqdcpSUQcfzFmrR8");
-        test(
-            "sEdSWajfQAAWFuDvVZF3AiGucReByLt",
-            "rBJtow6V3GTdsWMamrxetRDwWs6wwTxcKa");
+        test("sEdVWZmeUDgQdMEFKTK9kYVX71FKB7o", "r34XnDB2zS11NZ1wKJzpU1mjWExGVugTaQ");
+        test("sEd7zJoVnqg1FxB9EuaHC1AB5UPfHWz", "rDw51qRrBEeMw7Na1Nh79LN7HYZDo7nZFE");
+        test("sEdSxVntbihdLyabbfttMCqsaaucVR9", "rwiyBDfAYegXZyaQcN2L1vAbKRYn2wNFMq");
+        test("sEdSVwJjEXTYCztqDK4JD9WByH3otDX", "rQJ4hZzNGkLQhLtKPCmu1ywEw1ai2vgUJN");
+        test("sEdV3jXjKuUoQTSr1Rb4yw8Kyn9r46U", "rERRw2Pxbau4tevE61V5vZUwD7Rus5Y6vW");
+        test("sEdVeUZjuYT47Uy51FQCnzivsuWyiwB", "rszewT5gRjUgWNEmnfMjvVYzJCkhvWY32i");
+        test("sEd7MHTewdw4tFYeS7rk7XT4qHiA9jH", "rBB2rvnf4ztwjgNhinFXQJ91nAZjkFgR3p");
+        test("sEd7A5jFBSdWbNeKGriQvLr1thBScJh", "rLAXz8Nz7aDivz7PwThsLFqaKrizepNCdA");
+        test("sEdVPU9M2uyzVNT4Yb5Dn4tUtYjbFAw", "rHbHRFPCxD5fnn98TBzsQHJ7SsRq7eHkRj");
+        test("sEdVfF2zhAmS8gfMYzJ4yWBMeR4BZKc", "r9PsneKHcAE7kUfiTixomM5Mnwi28tCc7h");
+        test("sEdTjRtcsQkwthDXUSLi9DHNyJcR8GW", "rM4soF4XS3wZrmLurvE6ZmudG16Lk5Dur5");
+        test("sEdVNKeu1Lhpfh7Nf6tRDbxnmMyZ4Dv", "r4ZwJxq6FDtWjapDtCGhjG6mtNm1nWdJcD");
+        test("sEd7bK4gf5BHJ1WbaEWx8pKMA9MLHpC", "rD6tnn51m4o1uXeEK9CFrZ3HR7DcFhiYnp");
+        test("sEd7jCh3ppnQMsLdGcZ6TZayZaHhBLg", "rTcBkiRQ1EfFQ4FCCwqXNHpn1yUTAACkj");
+        test("sEdTFJezurQwSJAbkLygj2gQXBut2wh", "rnXaMacNbRwcJddbbPbqdcpSUQcfzFmrR8");
+        test("sEdSWajfQAAWFuDvVZF3AiGucReByLt", "rBJtow6V3GTdsWMamrxetRDwWs6wwTxcKa");
     }
 
     void
@@ -894,7 +775,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(WalletPropose, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(WalletPropose, rpc, xrpl);
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,28 +1,11 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2020 Dev Null Productions
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+// Copyright (c) 2020 Dev Null Productions
 
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
 
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class NetworkID_test : public beast::unit_test::suite
@@ -54,9 +37,7 @@ public:
 
         auto const alice = Account{"alice"};
 
-        auto const runTx = [&](test::jtx::Env& env,
-                               Json::Value const& jv,
-                               TER expectedOutcome) {
+        auto const runTx = [&](test::jtx::Env& env, Json::Value const& jv, TER expectedOutcome) {
             env.memoize(env.master);
             env.memoize(alice);
 
@@ -129,15 +110,12 @@ public:
                 jvn[jss::TransactionType] = jss::AccountSet;
                 jvn[jss::Fee] = to_string(env.current()->fees().base);
                 jvn[jss::Sequence] = env.seq(alice);
-                jvn[jss::LastLedgerSequence] = env.current()->info().seq + 2;
+                jvn[jss::LastLedgerSequence] = env.current()->header().seq + 2;
                 auto jt = env.jtnofill(jvn);
                 Serializer s;
                 jt.stx->add(s);
                 BEAST_EXPECT(
-                    env.rpc(
-                        "submit",
-                        strHex(s.slice()))[jss::result][jss::engine_result] ==
-                    "telREQUIRES_NETWORK_ID");
+                    env.rpc("submit", strHex(s.slice()))[jss::result][jss::engine_result] == "telREQUIRES_NETWORK_ID");
                 env.close();
             }
 
@@ -159,7 +137,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NetworkID, app, ripple);
+BEAST_DEFINE_TESTSUITE(NetworkID, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

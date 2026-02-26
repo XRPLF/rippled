@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/paths/Flow.h>
 #include <xrpld/app/paths/RippleCalc.h>
 #include <xrpld/app/paths/detail/FlowDebugInfo.h>
@@ -25,7 +6,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 
-namespace ripple {
+namespace xrpl {
 namespace path {
 
 RippleCalc::Output
@@ -62,32 +43,19 @@ RippleCalc::rippleCalculate(
     PaymentSandbox flowSB(&view);
     auto j = l.journal("Flow");
 
-    if (!view.rules().enabled(featureFlow))
     {
-        // The new payment engine was enabled several years ago. New transaction
-        // should never use the old rules. Assume this is a replay
-        j.fatal()
-            << "Old payment rules are required for this transaction. Assuming "
-               "this is a replay and running with the new rules.";
-    }
+        bool const defaultPaths = !pInputs ? true : pInputs->defaultPathsAllowed;
 
-    {
-        bool const defaultPaths =
-            !pInputs ? true : pInputs->defaultPathsAllowed;
-
-        bool const partialPayment =
-            !pInputs ? false : pInputs->partialPaymentAllowed;
+        bool const partialPayment = !pInputs ? false : pInputs->partialPaymentAllowed;
 
         auto const limitQuality = [&]() -> std::optional<Quality> {
-            if (pInputs && pInputs->limitQuality &&
-                saMaxAmountReq > beast::zero)
+            if (pInputs && pInputs->limitQuality && saMaxAmountReq > beast::zero)
                 return Quality{Amounts(saMaxAmountReq, saDstAmountReq)};
             return std::nullopt;
         }();
 
         auto const sendMax = [&]() -> std::optional<STAmount> {
-            if (saMaxAmountReq >= beast::zero ||
-                saMaxAmountReq.getCurrency() != saDstAmountReq.getCurrency() ||
+            if (saMaxAmountReq >= beast::zero || saMaxAmountReq.getCurrency() != saDstAmountReq.getCurrency() ||
                 saMaxAmountReq.getIssuer() != uSrcAccountID)
             {
                 return saMaxAmountReq;
@@ -125,10 +93,8 @@ RippleCalc::rippleCalculate(
     }
 
     j.debug() << "RippleCalc Result> "
-              << " actualIn: " << flowOut.actualAmountIn
-              << ", actualOut: " << flowOut.actualAmountOut
-              << ", result: " << flowOut.result()
-              << ", dstAmtReq: " << saDstAmountReq
+              << " actualIn: " << flowOut.actualAmountIn << ", actualOut: " << flowOut.actualAmountOut
+              << ", result: " << flowOut.result() << ", dstAmtReq: " << saDstAmountReq
               << ", sendMax: " << saMaxAmountReq;
 
     flowSB.apply(view);
@@ -136,4 +102,4 @@ RippleCalc::rippleCalculate(
 }
 
 }  // namespace path
-}  // namespace ripple
+}  // namespace xrpl

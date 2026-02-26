@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/json/json_value.h>
@@ -26,24 +7,17 @@
 
 #include <chrono>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
-Database::Database(
-    Scheduler& scheduler,
-    int readThreads,
-    Section const& config,
-    beast::Journal journal)
+Database::Database(Scheduler& scheduler, int readThreads, Section const& config, beast::Journal journal)
     : j_(journal)
     , scheduler_(scheduler)
-    , earliestLedgerSeq_(
-          get<std::uint32_t>(config, "earliest_seq", XRP_LEDGER_EARLIEST_SEQ))
+    , earliestLedgerSeq_(get<std::uint32_t>(config, "earliest_seq", XRP_LEDGER_EARLIEST_SEQ))
     , requestBundle_(get<int>(config, "rq_bundle", 4))
     , readThreads_(std::max(1, readThreads))
 {
-    XRPL_ASSERT(
-        readThreads,
-        "ripple::NodeStore::Database::Database : nonzero threads input");
+    XRPL_ASSERT(readThreads, "xrpl::NodeStore::Database::Database : nonzero threads input");
 
     if (earliestLedgerSeq_ < 1)
         Throw<std::runtime_error>("Invalid earliest_seq");
@@ -57,8 +31,7 @@ Database::Database(
             [this](int i) {
                 runningThreads_++;
 
-                beast::setCurrentThreadName(
-                    "db prefetch #" + std::to_string(i));
+                beast::setCurrentThreadName("db prefetch #" + std::to_string(i));
 
                 decltype(read_) read;
 
@@ -82,9 +55,7 @@ Database::Database(
 
                         // extract multiple object at a time to minimize the
                         // overhead of acquiring the mutex.
-                        for (int cnt = 0;
-                             !read_.empty() && cnt != requestBundle_;
-                             ++cnt)
+                        for (int cnt = 0; !read_.empty() && cnt != requestBundle_; ++cnt)
                             read.insert(read_.extract(read_.begin()));
                     }
 
@@ -92,15 +63,14 @@ Database::Database(
                     {
                         XRPL_ASSERT(
                             !it->second.empty(),
-                            "ripple::NodeStore::Database::Database : non-empty "
+                            "xrpl::NodeStore::Database::Database : non-empty "
                             "data");
 
                         auto const& hash = it->first;
                         auto const& data = it->second;
                         auto const seqn = data[0].first;
 
-                        auto obj =
-                            fetchNodeObject(hash, seqn, FetchType::async);
+                        auto obj = fetchNodeObject(hash, seqn, FetchType::async);
 
                         // This could be further optimized: if there are
                         // multiple requests for sequence numbers mapping to
@@ -112,8 +82,7 @@ Database::Database(
                             req.second(
                                 (seqn == req.first) || isSameDB(req.first, seqn)
                                     ? obj
-                                    : fetchNodeObject(
-                                          hash, req.first, FetchType::async));
+                                    : fetchNodeObject(hash, req.first, FetchType::async));
                         }
                     }
 
@@ -167,17 +136,13 @@ Database::stop()
 
     while (readThreads_.load() != 0)
     {
-        XRPL_ASSERT(
-            steady_clock::now() - start < 30s,
-            "ripple::NodeStore::Database::stop : maximum stop duration");
+        XRPL_ASSERT(steady_clock::now() - start < 30s, "xrpl::NodeStore::Database::stop : maximum stop duration");
         std::this_thread::yield();
     }
 
     JLOG(j_.debug()) << "Stop request completed in "
-                     << duration_cast<std::chrono::milliseconds>(
-                            steady_clock::now() - start)
-                            .count()
-                     << " millseconds";
+                     << duration_cast<std::chrono::milliseconds>(steady_clock::now() - start).count()
+                     << " milliseconds";
 }
 
 void
@@ -207,8 +172,7 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
         }
         catch (std::exception const& e)
         {
-            JLOG(j_.error()) << "Exception caught in function " << fname
-                             << ". Error: " << e.what();
+            JLOG(j_.error()) << "Exception caught in function " << fname << ". Error: " << e.what();
             return;
         }
 
@@ -220,9 +184,7 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
     };
 
     srcDB.for_each([&](std::shared_ptr<NodeObject> nodeObject) {
-        XRPL_ASSERT(
-            nodeObject,
-            "ripple::NodeStore::Database::importInternal : non-null node");
+        XRPL_ASSERT(nodeObject, "xrpl::NodeStore::Database::importInternal : non-null node");
         if (!nodeObject)  // This should never happen
             return;
 
@@ -237,11 +199,7 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
 
 // Perform a fetch and report the time it took
 std::shared_ptr<NodeObject>
-Database::fetchNodeObject(
-    uint256 const& hash,
-    std::uint32_t ledgerSeq,
-    FetchType fetchType,
-    bool duplicate)
+Database::fetchNodeObject(uint256 const& hash, std::uint32_t ledgerSeq, FetchType fetchType, bool duplicate)
 {
     FetchReport fetchReport(fetchType);
 
@@ -266,9 +224,7 @@ Database::fetchNodeObject(
 void
 Database::getCountsJson(Json::Value& obj)
 {
-    XRPL_ASSERT(
-        obj.isObject(),
-        "ripple::NodeStore::Database::getCountsJson : valid input type");
+    XRPL_ASSERT(obj.isObject(), "xrpl::NodeStore::Database::getCountsJson : valid input type");
 
     {
         std::unique_lock<std::mutex> lock(readLock_);
@@ -288,4 +244,4 @@ Database::getCountsJson(Json::Value& obj)
 }
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl

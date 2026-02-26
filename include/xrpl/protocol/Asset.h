@@ -1,42 +1,20 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2024 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_ASSET_H_INCLUDED
-#define RIPPLE_PROTOCOL_ASSET_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Asset;
 class STAmount;
 
 template <typename TIss>
-concept ValidIssueType =
-    std::is_same_v<TIss, Issue> || std::is_same_v<TIss, MPTIssue>;
+concept ValidIssueType = std::is_same_v<TIss, Issue> || std::is_same_v<TIss, MPTIssue>;
 
 template <typename A>
-concept AssetType =
-    std::is_convertible_v<A, Asset> || std::is_convertible_v<A, Issue> ||
+concept AssetType = std::is_convertible_v<A, Asset> || std::is_convertible_v<A, Issue> ||
     std::is_convertible_v<A, MPTIssue> || std::is_convertible_v<A, MPTID>;
 
 /* Asset is an abstraction of three different issue types: XRP, IOU, MPT.
@@ -100,7 +78,27 @@ public:
     bool
     native() const
     {
-        return holds<Issue>() && get<Issue>().native();
+        return std::visit(
+            [&]<ValidIssueType TIss>(TIss const& issue) {
+                if constexpr (std::is_same_v<TIss, Issue>)
+                    return issue.native();
+                if constexpr (std::is_same_v<TIss, MPTIssue>)
+                    return false;
+            },
+            issue_);
+    }
+
+    bool
+    integral() const
+    {
+        return std::visit(
+            [&]<ValidIssueType TIss>(TIss const& issue) {
+                if constexpr (std::is_same_v<TIss, Issue>)
+                    return issue.native();
+                if constexpr (std::is_same_v<TIss, MPTIssue>)
+                    return true;
+            },
+            issue_);
     }
 
     friend constexpr bool
@@ -162,8 +160,7 @@ constexpr bool
 operator==(Asset const& lhs, Asset const& rhs)
 {
     return std::visit(
-        [&]<typename TLhs, typename TRhs>(
-            TLhs const& issLhs, TRhs const& issRhs) {
+        [&]<typename TLhs, typename TRhs>(TLhs const& issLhs, TRhs const& issRhs) {
             if constexpr (std::is_same_v<TLhs, TRhs>)
                 return issLhs == issRhs;
             else
@@ -177,12 +174,10 @@ constexpr std::weak_ordering
 operator<=>(Asset const& lhs, Asset const& rhs)
 {
     return std::visit(
-        []<ValidIssueType TLhs, ValidIssueType TRhs>(
-            TLhs const& lhs_, TRhs const& rhs_) {
+        []<ValidIssueType TLhs, ValidIssueType TRhs>(TLhs const& lhs_, TRhs const& rhs_) {
             if constexpr (std::is_same_v<TLhs, TRhs>)
                 return std::weak_ordering(lhs_ <=> rhs_);
-            else if constexpr (
-                std::is_same_v<TLhs, Issue> && std::is_same_v<TRhs, MPTIssue>)
+            else if constexpr (std::is_same_v<TLhs, Issue> && std::is_same_v<TRhs, MPTIssue>)
                 return std::weak_ordering::greater;
             else
                 return std::weak_ordering::less;
@@ -201,14 +196,10 @@ constexpr bool
 equalTokens(Asset const& lhs, Asset const& rhs)
 {
     return std::visit(
-        [&]<typename TLhs, typename TRhs>(
-            TLhs const& issLhs, TRhs const& issRhs) {
-            if constexpr (
-                std::is_same_v<TLhs, Issue> && std::is_same_v<TRhs, Issue>)
+        [&]<typename TLhs, typename TRhs>(TLhs const& issLhs, TRhs const& issRhs) {
+            if constexpr (std::is_same_v<TLhs, Issue> && std::is_same_v<TRhs, Issue>)
                 return issLhs.currency == issRhs.currency;
-            else if constexpr (
-                std::is_same_v<TLhs, MPTIssue> &&
-                std::is_same_v<TRhs, MPTIssue>)
+            else if constexpr (std::is_same_v<TLhs, MPTIssue> && std::is_same_v<TRhs, MPTIssue>)
                 return issLhs.getMptID() == issRhs.getMptID();
             else
                 return false;
@@ -232,6 +223,4 @@ validJSONAsset(Json::Value const& jv);
 Asset
 assetFromJson(Json::Value const& jv);
 
-}  // namespace ripple
-
-#endif  // RIPPLE_PROTOCOL_ASSET_H_INCLUDED
+}  // namespace xrpl

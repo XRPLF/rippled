@@ -1,43 +1,25 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/Transaction.h>
-#include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/rpc/CTID.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/MPTokenIssuanceID.h>
+#include <xrpld/rpc/Status.h>
 
 #include <xrpl/basics/ToString.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/rdb/RelationalDatabase.h>
 
 #include <regex>
 
-namespace ripple {
+namespace xrpl {
 
 static bool
 isValidated(LedgerMaster& ledgerMaster, std::uint32_t seq, uint256 const& hash)
@@ -45,7 +27,7 @@ isValidated(LedgerMaster& ledgerMaster, std::uint32_t seq, uint256 const& hash)
     if (!ledgerMaster.haveLedger(seq))
         return false;
 
-    if (seq > ledgerMaster.getValidatedLedger()->info().seq)
+    if (seq > ledgerMaster.getValidatedLedger()->header().seq)
         return false;
 
     return ledgerMaster.getHashBySeq(seq) == hash;
@@ -87,26 +69,22 @@ doTxHelp(RPC::Context& context, TxArgs args)
         if (args.ledgerRange->second - args.ledgerRange->first > MAX_RANGE)
             return {result, rpcEXCESSIVE_LGR_RANGE};
 
-        range = ClosedInterval<uint32_t>(
-            args.ledgerRange->first, args.ledgerRange->second);
+        range = ClosedInterval<uint32_t>(args.ledgerRange->first, args.ledgerRange->second);
     }
 
     auto ec{rpcSUCCESS};
 
-    using TxPair =
-        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
+    using TxPair = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
 
     result.searchedAll = TxSearched::unknown;
     std::variant<TxPair, TxSearched> v;
 
     if (args.ctid)
     {
-        args.hash = context.app.getLedgerMaster().txnIdFromIndex(
-            args.ctid->first, args.ctid->second);
+        args.hash = context.app.getLedgerMaster().txnIdFromIndex(args.ctid->first, args.ctid->second);
 
         if (args.hash)
-            range =
-                ClosedInterval<uint32_t>(args.ctid->first, args.ctid->second);
+            range = ClosedInterval<uint32_t>(args.ctid->first, args.ctid->second);
     }
 
     if (!args.hash)
@@ -145,11 +123,10 @@ doTxHelp(RPC::Context& context, TxArgs args)
         return {result, rpcSUCCESS};
     }
 
-    std::shared_ptr<Ledger const> ledger =
-        context.ledgerMaster.getLedgerBySeq(txn->getLedger());
+    std::shared_ptr<Ledger const> ledger = context.ledgerMaster.getLedgerBySeq(txn->getLedger());
 
     if (ledger && !ledger->open())
-        result.ledgerHash = ledger->info().hash;
+        result.ledgerHash = ledger->header().hash;
 
     if (ledger && meta)
     {
@@ -161,23 +138,19 @@ doTxHelp(RPC::Context& context, TxArgs args)
         {
             result.meta = meta;
         }
-        result.validated = isValidated(
-            context.ledgerMaster, ledger->info().seq, ledger->info().hash);
+        result.validated = isValidated(context.ledgerMaster, ledger->header().seq, ledger->header().hash);
         if (result.validated)
-            result.closeTime =
-                context.ledgerMaster.getCloseTimeBySeq(txn->getLedger());
+            result.closeTime = context.ledgerMaster.getCloseTimeBySeq(txn->getLedger());
 
         // compute outgoing CTID
         if (meta->getAsObject().isFieldPresent(sfTransactionIndex))
         {
-            uint32_t lgrSeq = ledger->info().seq;
-            uint32_t txnIdx =
-                meta->getAsObject().getFieldU32(sfTransactionIndex);
+            uint32_t lgrSeq = ledger->header().seq;
+            uint32_t txnIdx = meta->getAsObject().getFieldU32(sfTransactionIndex);
             uint32_t netID = context.app.config().NETWORK_ID;
 
             if (txnIdx <= 0xFFFFU && netID < 0xFFFFU && lgrSeq < 0x0FFF'FFFFUL)
-                result.ctid =
-                    RPC::encodeCTID(lgrSeq, (uint32_t)txnIdx, (uint32_t)netID);
+                result.ctid = RPC::encodeCTID(lgrSeq, (uint32_t)txnIdx, (uint32_t)netID);
         }
     }
 
@@ -185,10 +158,7 @@ doTxHelp(RPC::Context& context, TxArgs args)
 }
 
 Json::Value
-populateJsonResponse(
-    std::pair<TxResult, RPC::Status> const& res,
-    TxArgs const& args,
-    RPC::JsonContext const& context)
+populateJsonResponse(std::pair<TxResult, RPC::Status> const& res, TxArgs const& args, RPC::JsonContext const& context)
 {
     Json::Value response;
     RPC::Status const& error = res.second;
@@ -196,12 +166,10 @@ populateJsonResponse(
     // handle errors
     if (error.toErrorCode() != rpcSUCCESS)
     {
-        if (error.toErrorCode() == rpcTXN_NOT_FOUND &&
-            result.searchedAll != TxSearched::unknown)
+        if (error.toErrorCode() == rpcTXN_NOT_FOUND && result.searchedAll != TxSearched::unknown)
         {
             response = Json::Value(Json::objectValue);
-            response[jss::searched_all] =
-                (result.searchedAll == TxSearched::all);
+            response[jss::searched_all] = (result.searchedAll == TxSearched::all);
             error.inject(response);
         }
         else
@@ -215,17 +183,13 @@ populateJsonResponse(
         auto const& sttx = result.txn->getSTransaction();
         if (context.apiVersion > 1)
         {
-            constexpr auto optionsJson =
-                JsonOptions::include_date | JsonOptions::disable_API_prior_V2;
+            constexpr auto optionsJson = JsonOptions::include_date | JsonOptions::disable_API_prior_V2;
             if (args.binary)
                 response[jss::tx_blob] = result.txn->getJson(optionsJson, true);
             else
             {
                 response[jss::tx_json] = result.txn->getJson(optionsJson);
-                RPC::insertDeliverMax(
-                    response[jss::tx_json],
-                    sttx->getTxnType(),
-                    context.apiVersion);
+                RPC::insertDeliverMax(response[jss::tx_json], sttx->getTxnType(), context.apiVersion);
             }
 
             // Note, result.ledgerHash is only set in a closed or validated
@@ -238,26 +202,21 @@ populateJsonResponse(
             {
                 response[jss::ledger_index] = result.txn->getLedger();
                 if (result.closeTime)
-                    response[jss::close_time_iso] =
-                        to_string_iso(*result.closeTime);
+                    response[jss::close_time_iso] = to_string_iso(*result.closeTime);
             }
         }
         else
         {
-            response =
-                result.txn->getJson(JsonOptions::include_date, args.binary);
+            response = result.txn->getJson(JsonOptions::include_date, args.binary);
             if (!args.binary)
-                RPC::insertDeliverMax(
-                    response, sttx->getTxnType(), context.apiVersion);
+                RPC::insertDeliverMax(response, sttx->getTxnType(), context.apiVersion);
         }
 
         // populate binary metadata
         if (auto blob = std::get_if<Blob>(&result.meta))
         {
-            XRPL_ASSERT(
-                args.binary, "ripple::populateJsonResponse : binary is set");
-            auto json_meta =
-                (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
+            XRPL_ASSERT(args.binary, "xrpl::populateJsonResponse : binary is set");
+            auto json_meta = (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
             response[json_meta] = strHex(makeSlice(*blob));
         }
         // populate meta data
@@ -267,8 +226,7 @@ populateJsonResponse(
             if (meta)
             {
                 response[jss::meta] = meta->getJson(JsonOptions::none);
-                insertDeliveredAmount(
-                    response[jss::meta], context, result.txn, *meta);
+                insertDeliveredAmount(response[jss::meta], context, result.txn, *meta);
                 RPC::insertNFTSyntheticInJson(response, sttx, *meta);
                 RPC::insertMPTokenIssuanceID(response[jss::meta], sttx, *meta);
             }
@@ -291,8 +249,7 @@ doTxJson(RPC::JsonContext& context)
 
     TxArgs args;
 
-    if (context.params.isMember(jss::transaction) &&
-        context.params.isMember(jss::ctid))
+    if (context.params.isMember(jss::transaction) && context.params.isMember(jss::ctid))
         // specifying both is ambiguous
         return rpcError(rpcINVALID_PARAMS);
 
@@ -323,17 +280,14 @@ doTxJson(RPC::JsonContext& context)
     else
         return rpcError(rpcINVALID_PARAMS);
 
-    args.binary = context.params.isMember(jss::binary) &&
-        context.params[jss::binary].asBool();
+    args.binary = context.params.isMember(jss::binary) && context.params[jss::binary].asBool();
 
-    if (context.params.isMember(jss::min_ledger) &&
-        context.params.isMember(jss::max_ledger))
+    if (context.params.isMember(jss::min_ledger) && context.params.isMember(jss::max_ledger))
     {
         try
         {
-            args.ledgerRange = std::make_pair(
-                context.params[jss::min_ledger].asUInt(),
-                context.params[jss::max_ledger].asUInt());
+            args.ledgerRange =
+                std::make_pair(context.params[jss::min_ledger].asUInt(), context.params[jss::max_ledger].asUInt());
         }
         catch (...)
         {
@@ -346,4 +300,4 @@ doTxJson(RPC::JsonContext& context)
     return populateJsonResponse(res, args, context);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

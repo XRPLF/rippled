@@ -1,30 +1,11 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_MAIN_APPLICATION_H_INCLUDED
-#define RIPPLE_APP_MAIN_APPLICATION_H_INCLUDED
+#pragma once
 
 #include <xrpld/core/Config.h>
-#include <xrpld/overlay/PeerReservationTable.h>
 
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/core/PeerReservationTable.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/shamap/TreeNodeCache.h>
 
@@ -33,7 +14,7 @@
 
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 
 namespace unl {
 class Manager;
@@ -110,7 +91,7 @@ class Validations;
 class RCLValidationsAdaptor;
 using RCLValidations = Validations<RCLValidationsAdaptor>;
 
-class Application : public beast::PropertyStream::Source
+class Application : public ServiceRegistry, public beast::PropertyStream::Source
 {
 public:
     /* VFALCO NOTE
@@ -131,8 +112,6 @@ public:
 public:
     Application();
 
-    virtual ~Application() = default;
-
     virtual bool
     setup(boost::program_options::variables_map const& options) = 0;
 
@@ -146,8 +125,6 @@ public:
     checkSigs() const = 0;
     virtual void
     checkSigs(bool) = 0;
-    virtual bool
-    isStopping() const = 0;
 
     //
     // ---
@@ -157,78 +134,8 @@ public:
     virtual std::uint64_t
     instanceID() const = 0;
 
-    virtual Logs&
-    logs() = 0;
     virtual Config&
     config() = 0;
-
-    virtual boost::asio::io_context&
-    getIOContext() = 0;
-
-    virtual CollectorManager&
-    getCollectorManager() = 0;
-    virtual Family&
-    getNodeFamily() = 0;
-    virtual TimeKeeper&
-    timeKeeper() = 0;
-    virtual JobQueue&
-    getJobQueue() = 0;
-    virtual NodeCache&
-    getTempNodeCache() = 0;
-    virtual CachedSLEs&
-    cachedSLEs() = 0;
-    virtual AmendmentTable&
-    getAmendmentTable() = 0;
-    virtual HashRouter&
-    getHashRouter() = 0;
-    virtual LoadFeeTrack&
-    getFeeTrack() = 0;
-    virtual LoadManager&
-    getLoadManager() = 0;
-    virtual Overlay&
-    overlay() = 0;
-    virtual TxQ&
-    getTxQ() = 0;
-    virtual ValidatorList&
-    validators() = 0;
-    virtual ValidatorSite&
-    validatorSites() = 0;
-    virtual ManifestCache&
-    validatorManifests() = 0;
-    virtual ManifestCache&
-    publisherManifests() = 0;
-    virtual Cluster&
-    cluster() = 0;
-    virtual PeerReservationTable&
-    peerReservations() = 0;
-    virtual RCLValidations&
-    getValidations() = 0;
-    virtual NodeStore::Database&
-    getNodeStore() = 0;
-    virtual InboundLedgers&
-    getInboundLedgers() = 0;
-    virtual InboundTransactions&
-    getInboundTransactions() = 0;
-
-    virtual TaggedCache<uint256, AcceptedLedger>&
-    getAcceptedLedgerCache() = 0;
-
-    virtual LedgerMaster&
-    getLedgerMaster() = 0;
-    virtual LedgerCleaner&
-    getLedgerCleaner() = 0;
-    virtual LedgerReplayer&
-    getLedgerReplayer() = 0;
-    virtual NetworkOPs&
-    getOPs() = 0;
-    virtual OrderBookDB&
-    getOrderBookDB() = 0;
-    virtual ServerHandler&
-    getServerHandler() = 0;
-    virtual TransactionMaster&
-    getMasterTransaction() = 0;
-    virtual perf::PerfLog&
-    getPerfLog() = 0;
 
     virtual std::pair<PublicKey, SecretKey> const&
     nodeIdentity() = 0;
@@ -236,29 +143,11 @@ public:
     virtual std::optional<PublicKey const>
     getValidationPublicKey() const = 0;
 
-    virtual Resource::Manager&
-    getResourceManager() = 0;
-    virtual PathRequests&
-    getPathRequests() = 0;
-    virtual SHAMapStore&
-    getSHAMapStore() = 0;
-    virtual PendingSaves&
-    pendingSaves() = 0;
-    virtual OpenLedger&
-    openLedger() = 0;
-    virtual OpenLedger const&
-    openLedger() const = 0;
-    virtual RelationalDatabase&
-    getRelationalDatabase() = 0;
-
     virtual std::chrono::milliseconds
     getIOLatency() = 0;
 
     virtual bool
     serverOkay(std::string& reason) = 0;
-
-    virtual beast::Journal
-    journal(std::string const& name) = 0;
 
     /* Returns the number of file descriptors the application needs */
     virtual int
@@ -278,11 +167,6 @@ public:
 };
 
 std::unique_ptr<Application>
-make_Application(
-    std::unique_ptr<Config> config,
-    std::unique_ptr<Logs> logs,
-    std::unique_ptr<TimeKeeper> timeKeeper);
+make_Application(std::unique_ptr<Config> config, std::unique_ptr<Logs> logs, std::unique_ptr<TimeKeeper> timeKeeper);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-This file is part of rippled: https://github.com/ripple/rippled
-Copyright (c) 2018 Ripple Labs Inc.
-
-Permission to use, copy, modify, and/or distribute this software for any
-purpose  with  or without fee is hereby granted, provided that the above
-copyright notice and this permission notice appear in all copies.
-
-THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef TEST_UNIT_TEST_DIRGUARD_H
-#define TEST_UNIT_TEST_DIRGUARD_H
+#pragma once
 
 #include <test/jtx/TestSuite.h>
 
@@ -28,7 +8,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <fstream>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 /**
@@ -52,8 +32,7 @@ protected:
         if (is_directory(toRm) && is_empty(toRm))
             remove(toRm);
         else
-            test_.log << "Expected " << toRm.string()
-                      << " to be an empty existing directory." << std::endl;
+            test_.log << "Expected " << toRm.string() << " to be an empty existing directory." << std::endl;
     }
 
 public:
@@ -76,8 +55,7 @@ public:
         {
             // Cannot run the test. Someone created a file where we want to
             // put our directory
-            Throw<std::runtime_error>(
-                "Cannot create directory: " + subDir_.string());
+            Throw<std::runtime_error>("Cannot create directory: " + subDir_.string());
         }
     }
 
@@ -121,8 +99,7 @@ public:
         std::string const& contents,
         bool useCounter = true,
         bool create = true)
-        : DirGuard(test, subDir, useCounter)
-        , file_(file.is_absolute() ? file : subdir() / file)
+        : DirGuard(test, subDir, useCounter), file_(file.is_absolute() ? file : subdir() / file)
     {
         if (!exists(file_))
         {
@@ -135,8 +112,7 @@ public:
         }
         else
         {
-            Throw<std::runtime_error>(
-                "Refusing to overwrite existing file: " + file_.string());
+            Throw<std::runtime_error>("Refusing to overwrite existing file: " + file_.string());
         }
     }
 
@@ -152,8 +128,7 @@ public:
             else
             {
                 if (created_)
-                    test_.log << "Expected " << file_.string()
-                              << " to be an existing file." << std::endl;
+                    test_.log << "Expected " << file_.string() << " to be an existing file." << std::endl;
             }
         }
         catch (std::exception& e)
@@ -177,6 +152,4 @@ public:
 };
 
 }  // namespace detail
-}  // namespace ripple
-
-#endif  // TEST_UNIT_TEST_DIRGUARD_H
+}  // namespace xrpl

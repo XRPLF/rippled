@@ -1,0 +1,16 @@
+# The idea is to empty this file gradually by fixing the underlying issues and removing suppresions.
+
+# Suppress leaks detected by asan in rippled code.
+leak:src/libxrpl/net/HTTPClient.cpp
+leak:src/libxrpl/net/RegisterSSLCerts.cpp
+leak:src/tests/libxrpl/net/HTTPClient.cpp
+leak:xrpl/net/AutoSocket.h
+leak:xrpl/net/HTTPClient.h
+leak:xrpl/net/HTTPClientSSLContext.h
+leak:xrpl/net/RegisterSSLCerts.h
+leak:ripple::HTTPClient
+leak:ripple::HTTPClientImp
+
+# Suppress leaks detected by asan in boost code.
+leak:boost::asio
+leak:boost/asio

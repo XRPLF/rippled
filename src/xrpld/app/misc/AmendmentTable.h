@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_MISC_AMENDMENTTABLE_H_INCLUDED
-#define RIPPLE_APP_MISC_AMENDMENTTABLE_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/core/ConfigSections.h>
@@ -29,7 +9,7 @@
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 /** The amendment table stores the list of enabled and potential amendments.
     Individuals amendments are voted on by validators during the consensus
@@ -41,8 +21,7 @@ public:
     struct FeatureInfo
     {
         FeatureInfo() = delete;
-        FeatureInfo(std::string const& n, uint256 const& f, VoteBehavior v)
-            : name(n), feature(f), vote(v)
+        FeatureInfo(std::string const& n, uint256 const& f, VoteBehavior v) : name(n), feature(f), vote(v)
         {
         }
 
@@ -90,8 +69,7 @@ public:
 
     /** Called when a new fully-validated ledger is accepted. */
     void
-    doValidatedLedger(
-        std::shared_ptr<ReadView const> const& lastValidatedLedger)
+    doValidatedLedger(std::shared_ptr<ReadView const> const& lastValidatedLedger)
     {
         if (needValidatedLedger(lastValidatedLedger->seq()))
             doValidatedLedger(
@@ -162,27 +140,23 @@ public:
         // Inject appropriate pseudo-transactions
         for (auto const& it : actions)
         {
-            STTx amendTx(
-                ttAMENDMENT,
-                [&it, seq = lastClosedLedger->seq() + 1](auto& obj) {
-                    obj.setAccountID(sfAccount, AccountID());
-                    obj.setFieldH256(sfAmendment, it.first);
-                    obj.setFieldU32(sfLedgerSequence, seq);
+            STTx amendTx(ttAMENDMENT, [&it, seq = lastClosedLedger->seq() + 1](auto& obj) {
+                obj.setAccountID(sfAccount, AccountID());
+                obj.setFieldH256(sfAmendment, it.first);
+                obj.setFieldU32(sfLedgerSequence, seq);
 
-                    if (it.second != 0)
-                        obj.setFieldU32(sfFlags, it.second);
-                });
+                if (it.second != 0)
+                    obj.setFieldU32(sfFlags, it.second);
+            });
 
             Serializer s;
             amendTx.add(s);
 
-            JLOG(j.debug()) << "Amendments: Adding pseudo-transaction: "
-                            << amendTx.getTransactionID() << ": "
+            JLOG(j.debug()) << "Amendments: Adding pseudo-transaction: " << amendTx.getTransactionID() << ": "
                             << strHex(s.slice()) << ": " << amendTx;
 
             initialPosition->addGiveItem(
-                SHAMapNodeType::tnTRANSACTION_NM,
-                make_shamapitem(amendTx.getTransactionID(), s.slice()));
+                SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(amendTx.getTransactionID(), s.slice()));
         }
     }
 };
@@ -196,6 +170,4 @@ make_AmendmentTable(
     Section const& vetoed,
     beast::Journal journal);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

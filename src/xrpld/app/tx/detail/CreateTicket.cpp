@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2014 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/detail/CreateTicket.h>
 
 #include <xrpl/basics/Log.h>
@@ -24,7 +5,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 TxConsequences
 CreateTicket::makeTxConsequences(PreflightContext const& ctx)
@@ -36,8 +17,7 @@ CreateTicket::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 CreateTicket::preflight(PreflightContext const& ctx)
 {
-    if (std::uint32_t const count = ctx.tx[sfTicketCount];
-        count < minValidCount || count > maxValidCount)
+    if (std::uint32_t const count = ctx.tx[sfTicketCount]; count < minValidCount || count > maxValidCount)
         return temINVALID_COUNT;
 
     return tesSUCCESS;
@@ -53,11 +33,9 @@ CreateTicket::preclaim(PreclaimContext const& ctx)
 
     // Make sure the TicketCreate would not cause the account to own
     // too many tickets.
-    std::uint32_t const curTicketCount =
-        (*sleAccountRoot)[~sfTicketCount].value_or(0u);
+    std::uint32_t const curTicketCount = (*sleAccountRoot)[~sfTicketCount].value_or(0u);
     std::uint32_t const addedTickets = ctx.tx[sfTicketCount];
-    std::uint32_t const consumedTickets =
-        ctx.tx.getSeqProxy().isTicket() ? 1u : 0u;
+    std::uint32_t const consumedTickets = ctx.tx.getSeqProxy().isTicket() ? 1u : 0u;
 
     // Note that unsigned integer underflow can't currently happen because
     //  o curTicketCount   >= 0
@@ -83,8 +61,7 @@ CreateTicket::doApply()
     // reserve to pay fees.
     std::uint32_t const ticketCount = ctx_.tx[sfTicketCount];
     {
-        XRPAmount const reserve = view().fees().accountReserve(
-            sleAccountRoot->getFieldU32(sfOwnerCount) + ticketCount);
+        XRPAmount const reserve = view().fees().accountReserve(sleAccountRoot->getFieldU32(sfOwnerCount) + ticketCount);
 
         if (mPriorBalance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -100,8 +77,7 @@ CreateTicket::doApply()
 
     // Sanity check that the transaction machinery really did already
     // increment the account root Sequence.
-    if (std::uint32_t const txSeq = ctx_.tx[sfSequence];
-        txSeq != 0 && txSeq != (firstTicketSeq - 1))
+    if (std::uint32_t const txSeq = ctx_.tx[sfSequence]; txSeq != 0 && txSeq != (firstTicketSeq - 1))
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     for (std::uint32_t i = 0; i < ticketCount; ++i)
@@ -114,13 +90,9 @@ CreateTicket::doApply()
         sleTicket->setFieldU32(sfTicketSequence, curTicketSeq);
         view().insert(sleTicket);
 
-        auto const page = view().dirInsert(
-            keylet::ownerDir(account_),
-            ticketKeylet,
-            describeOwnerDir(account_));
+        auto const page = view().dirInsert(keylet::ownerDir(account_), ticketKeylet, describeOwnerDir(account_));
 
-        JLOG(j_.trace()) << "Creating ticket " << to_string(ticketKeylet.key)
-                         << ": " << (page ? "success" : "failure");
+        JLOG(j_.trace()) << "Creating ticket " << to_string(ticketKeylet.key) << ": " << (page ? "success" : "failure");
 
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
@@ -129,8 +101,7 @@ CreateTicket::doApply()
     }
 
     // Update the record of the number of Tickets this account owns.
-    std::uint32_t const oldTicketCount =
-        (*(sleAccountRoot))[~sfTicketCount].value_or(0u);
+    std::uint32_t const oldTicketCount = (*(sleAccountRoot))[~sfTicketCount].value_or(0u);
 
     sleAccountRoot->setFieldU32(sfTicketCount, oldTicketCount + ticketCount);
 
@@ -144,4 +115,4 @@ CreateTicket::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

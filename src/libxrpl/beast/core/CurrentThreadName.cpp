@@ -1,29 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
-
-    Portions of this file are from JUCE.
-    Copyright (c) 2013 - Raw Material Software Ltd.
-    Please visit http://www.juce.com
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/beast/core/CurrentThreadName.h>
-
-#include <boost/predef.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <string>
 #include <string_view>
@@ -66,8 +42,7 @@ setCurrentThreadNameImpl(std::string_view name)
 #pragma warning(disable : 6320 6322)
     __try
     {
-        RaiseException(
-            0x406d1388, 0, sizeof(ni) / sizeof(ULONG_PTR), (ULONG_PTR*)&ni);
+        RaiseException(0x406d1388, 0, sizeof(ni) / sizeof(ULONG_PTR), (ULONG_PTR*)&ni);
     }
     __except (EXCEPTION_CONTINUE_EXECUTION)
     {
@@ -96,12 +71,31 @@ setCurrentThreadNameImpl(std::string_view name)
 #if BOOST_OS_LINUX
 #include <pthread.h>
 
+#include <iostream>
+
 namespace beast::detail {
 
 inline void
 setCurrentThreadNameImpl(std::string_view name)
 {
-    pthread_setname_np(pthread_self(), name.data());
+    // truncate and set the thread name.
+    char boundedName[maxThreadNameLength + 1];
+    std::snprintf(boundedName, sizeof(boundedName), "%.*s", static_cast<int>(maxThreadNameLength), name.data());
+
+    pthread_setname_np(pthread_self(), boundedName);
+
+#ifdef TRUNCATED_THREAD_NAME_LOGS
+    if (name.size() > maxThreadNameLength)
+    {
+        std::cerr << "WARNING: Thread name \"" << name << "\" (length " << name.size() << ") exceeds maximum of "
+                  << maxThreadNameLength << " characters on Linux.\n";
+
+        XRPL_ASSERT(
+            false,
+            "beast::detail::setCurrentThreadNameImpl : Thread name exceeds "
+            "maximum length for Linux");
+    }
+#endif
 }
 
 }  // namespace beast::detail

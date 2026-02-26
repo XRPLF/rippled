@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2020 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_LEDGER_LEDGERREPLAYTASK_H_INCLUDED
-#define RIPPLE_APP_LEDGER_LEDGERREPLAYTASK_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
@@ -26,7 +6,7 @@
 
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 class InboundLedgers;
 class Ledger;
 class LedgerDeltaAcquire;
@@ -36,10 +16,9 @@ namespace test {
 class LedgerReplayClient;
 }  // namespace test
 
-class LedgerReplayTask final
-    : public TimeoutCounter,
-      public std::enable_shared_from_this<LedgerReplayTask>,
-      public CountedObject<LedgerReplayTask>
+class LedgerReplayTask final : public TimeoutCounter,
+                               public std::enable_shared_from_this<LedgerReplayTask>,
+                               public CountedObject<LedgerReplayTask>
 {
 public:
     class TaskParameter
@@ -63,10 +42,7 @@ public:
          * @param finishLedgerHash  hash of the last ledger in the range
          * @param totalNumLedgers  number of ledgers to download
          */
-        TaskParameter(
-            InboundLedger::Reason r,
-            uint256 const& finishLedgerHash,
-            std::uint32_t totalNumLedgers);
+        TaskParameter(InboundLedger::Reason r, uint256 const& finishLedgerHash, std::uint32_t totalNumLedgers);
 
         /**
          * fill all the fields that was not filled during construction
@@ -78,10 +54,7 @@ public:
          *         true on success
          */
         bool
-        update(
-            uint256 const& hash,
-            std::uint32_t seq,
-            std::vector<uint256> const& sList);
+        update(uint256 const& hash, std::uint32_t seq, std::vector<uint256> const& sList);
 
         /** check if this task can be merged into an existing task */
         bool
@@ -142,10 +115,7 @@ private:
      * @param sList  skip list
      */
     void
-    updateSkipList(
-        uint256 const& hash,
-        std::uint32_t seq,
-        std::vector<uint256> const& sList);
+    updateSkipList(uint256 const& hash, std::uint32_t seq, std::vector<uint256> const& sList);
 
     /**
      * Notify this task (by a LedgerDeltaAcquire subtask) that a delta is ready
@@ -180,6 +150,4 @@ private:
     friend class test::LedgerReplayClient;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

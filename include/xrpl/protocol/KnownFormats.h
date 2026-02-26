@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_KNOWNFORMATS_H_INCLUDED
-#define RIPPLE_PROTOCOL_KNOWNFORMATS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/type_name.h>
@@ -29,7 +9,7 @@
 #include <algorithm>
 #include <forward_list>
 
-namespace ripple {
+namespace xrpl {
 
 /** Manages a list of known formats.
 
@@ -56,8 +36,7 @@ public:
         {
             // Verify that KeyType is appropriate.
             static_assert(
-                std::is_enum<KeyType>::value ||
-                    std::is_integral<KeyType>::value,
+                std::is_enum<KeyType>::value || std::is_integral<KeyType>::value,
                 "KnownFormats KeyType must be integral or enum.");
         }
 
@@ -119,8 +98,7 @@ public:
         if (auto const result = findByName(name))
             return result->getType();
         Throw<std::runtime_error>(
-            name_ + ": Unknown format name '" +
-            name.substr(0, std::min(name.size(), std::size_t(32))) + "'");
+            name_ + ": Unknown format name '" + name.substr(0, std::min(name.size(), std::size_t(32))) + "'");
     }
 
     /** Retrieve a format based on its type.
@@ -176,9 +154,7 @@ protected:
     {
         if (auto const item = findByType(type))
         {
-            LogicError(
-                std::string("Duplicate key for item '") + name +
-                "': already maps to " + item->getName());
+            LogicError(std::string("Duplicate key for item '") + name + "': already maps to " + item->getName());
         }
 
         formats_.emplace_front(name, type, uniqueFields, commonFields);
@@ -202,6 +178,4 @@ private:
     boost::container::flat_map<KeyType, Item const*> types_;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2024 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TX_BATCH_H_INCLUDED
-#define RIPPLE_TX_BATCH_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/tx/detail/Transactor.h>
 #include <xrpld/core/Config.h>
@@ -26,7 +6,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Indexes.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Batch : public Transactor
 {
@@ -54,8 +34,29 @@ public:
 
     TER
     doApply() override;
+
+    static constexpr auto disabledTxTypes = std::to_array<TxType>({
+        ttVAULT_CREATE,
+        ttVAULT_SET,
+        ttVAULT_DELETE,
+        ttVAULT_DEPOSIT,
+        ttVAULT_WITHDRAW,
+        ttVAULT_CLAWBACK,
+        ttLOAN_BROKER_SET,
+        ttLOAN_BROKER_DELETE,
+        ttLOAN_BROKER_COVER_DEPOSIT,
+        ttLOAN_BROKER_COVER_WITHDRAW,
+        ttLOAN_BROKER_COVER_CLAWBACK,
+        ttLOAN_SET,
+        ttLOAN_DELETE,
+        ttLOAN_MANAGE,
+        ttLOAN_PAY,
+        ttCONFIDENTIAL_MPT_SEND,
+        ttCONFIDENTIAL_MPT_CONVERT,
+        ttCONFIDENTIAL_MPT_CONVERT_BACK,
+        ttCONFIDENTIAL_MPT_MERGE_INBOX,
+        ttCONFIDENTIAL_MPT_CLAWBACK,
+    });
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

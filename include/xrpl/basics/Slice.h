@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_BASICS_SLICE_H_INCLUDED
-#define RIPPLE_BASICS_SLICE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
@@ -34,7 +14,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 /** An immutable linear range of bytes.
 
@@ -60,8 +40,7 @@ public:
     operator=(Slice const&) noexcept = default;
 
     /** Create a slice pointing to existing memory. */
-    Slice(void const* data, std::size_t size) noexcept
-        : data_(reinterpret_cast<std::uint8_t const*>(data)), size_(size)
+    Slice(void const* data, std::size_t size) noexcept : data_(reinterpret_cast<std::uint8_t const*>(data)), size_(size)
     {
     }
 
@@ -104,9 +83,7 @@ public:
     std::uint8_t
     operator[](std::size_t i) const noexcept
     {
-        XRPL_ASSERT(
-            i < size_,
-            "ripple::Slice::operator[](std::size_t) const : valid input");
+        XRPL_ASSERT(i < size_, "xrpl::Slice::operator[](std::size_t) const : valid input");
         return data_[i];
     }
 
@@ -171,8 +148,8 @@ public:
 
     /** Return a "sub slice" of given length starting at the given position
 
-        Note that the subslice encompasses the range [pos, pos + rcount),
-        where rcount is the smaller of count and size() - pos.
+        Note that the subslice encompasses the range [pos, pos + rCount),
+        where rCount is the smaller of count and size() - pos.
 
         @param pos position of the first character
         @count requested length
@@ -181,9 +158,7 @@ public:
         @throws std::out_of_range if pos > size()
      */
     Slice
-    substr(
-        std::size_t pos,
-        std::size_t count = std::numeric_limits<std::size_t>::max()) const
+    substr(std::size_t pos, std::size_t count = std::numeric_limits<std::size_t>::max()) const
     {
         if (pos > size())
             throw std::out_of_range("Requested sub-slice is out of bounds");
@@ -222,11 +197,7 @@ operator!=(Slice const& lhs, Slice const& rhs) noexcept
 inline bool
 operator<(Slice const& lhs, Slice const& rhs) noexcept
 {
-    return std::lexicographical_compare(
-        lhs.data(),
-        lhs.data() + lhs.size(),
-        rhs.data(),
-        rhs.data() + rhs.size());
+    return std::lexicographical_compare(lhs.data(), lhs.data() + lhs.size(), rhs.data(), rhs.data() + rhs.size());
 }
 
 template <class Stream>
@@ -238,18 +209,14 @@ operator<<(Stream& s, Slice const& v)
 }
 
 template <class T, std::size_t N>
-std::enable_if_t<
-    std::is_same<T, char>::value || std::is_same<T, unsigned char>::value,
-    Slice>
+std::enable_if_t<std::is_same<T, char>::value || std::is_same<T, unsigned char>::value, Slice>
 makeSlice(std::array<T, N> const& a)
 {
     return Slice(a.data(), a.size());
 }
 
 template <class T, class Alloc>
-std::enable_if_t<
-    std::is_same<T, char>::value || std::is_same<T, unsigned char>::value,
-    Slice>
+std::enable_if_t<std::is_same<T, char>::value || std::is_same<T, unsigned char>::value, Slice>
 makeSlice(std::vector<T, Alloc> const& v)
 {
     return Slice(v.data(), v.size());
@@ -262,6 +229,4 @@ makeSlice(std::basic_string<char, Traits, Alloc> const& s)
     return Slice(s.data(), s.size());
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2020 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_LEDGER_SKIPLISTACQUIRE_H_INCLUDED
-#define RIPPLE_APP_LEDGER_SKIPLISTACQUIRE_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/Ledger.h>
@@ -27,7 +7,7 @@
 
 #include <xrpl/shamap/SHAMap.h>
 
-namespace ripple {
+namespace xrpl {
 class InboundLedgers;
 class PeerSet;
 namespace test {
@@ -38,10 +18,9 @@ class LedgerReplayClient;
  * Manage the retrieval of a skip list in a ledger from the network.
  * Before asking peers, always check if the local node has the ledger.
  */
-class SkipListAcquire final
-    : public TimeoutCounter,
-      public std::enable_shared_from_this<SkipListAcquire>,
-      public CountedObject<SkipListAcquire>
+class SkipListAcquire final : public TimeoutCounter,
+                              public std::enable_shared_from_this<SkipListAcquire>,
+                              public CountedObject<SkipListAcquire>
 {
 public:
     /**
@@ -49,17 +28,14 @@ public:
      * @param successful  if the skipList data was acquired successfully
      * @param hash  hash of the ledger that has the skipList
      */
-    using OnSkipListDataCB =
-        std::function<void(bool successful, uint256 const& hash)>;
+    using OnSkipListDataCB = std::function<void(bool successful, uint256 const& hash)>;
 
     struct SkipListData
     {
         std::uint32_t const ledgerSeq;
-        std::vector<ripple::uint256> const skipList;
+        std::vector<xrpl::uint256> const skipList;
 
-        SkipListData(
-            std::uint32_t const ledgerSeq,
-            std::vector<ripple::uint256> const& skipList)
+        SkipListData(std::uint32_t const ledgerSeq, std::vector<xrpl::uint256> const& skipList)
             : ledgerSeq(ledgerSeq), skipList(skipList)
         {
         }
@@ -94,9 +70,7 @@ public:
      * @note ledgerSeq and item must have been verified against the ledger hash
      */
     void
-    processData(
-        std::uint32_t ledgerSeq,
-        boost::intrusive_ptr<SHAMapItem const> const& item);
+    processData(std::uint32_t ledgerSeq, boost::intrusive_ptr<SHAMapItem const> const& item);
 
     /**
      * Add a callback that will be called when the skipList is ready or failed.
@@ -130,9 +104,7 @@ private:
      * @param sl  lock. this function must be called with the lock
      */
     void
-    retrieveSkipList(
-        std::shared_ptr<Ledger const> const& ledger,
-        ScopedLockType& sl);
+    retrieveSkipList(std::shared_ptr<Ledger const> const& ledger, ScopedLockType& sl);
 
     /**
      * Process the skip list
@@ -141,10 +113,7 @@ private:
      * @param sl  lock. this function must be called with the lock
      */
     void
-    onSkipListAcquired(
-        std::vector<uint256> const& skipList,
-        std::uint32_t ledgerSeq,
-        ScopedLockType& sl);
+    onSkipListAcquired(std::vector<uint256> const& skipList, std::uint32_t ledgerSeq, ScopedLockType& sl);
 
     /**
      * Call the OnSkipListDataCB callbacks
@@ -163,6 +132,4 @@ private:
     friend class test::LedgerReplayClient;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

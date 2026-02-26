@@ -1,25 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2014, Howard Hinnant <howard.hinnant@gmail.com>,
-        Vinnie Falco <vinnie.falco@gmail.com
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef BEAST_HASH_HASH_APPEND_H_INCLUDED
-#define BEAST_HASH_HASH_APPEND_H_INCLUDED
+#pragma once
 
 #include <boost/container/flat_set.hpp>
 #include <boost/endian/conversion.hpp>
@@ -47,8 +26,7 @@ template <class T>
 inline void
 reverse_bytes(T& t)
 {
-    unsigned char* bytes = static_cast<unsigned char*>(
-        std::memmove(std::addressof(t), std::addressof(t), sizeof(T)));
+    unsigned char* bytes = static_cast<unsigned char*>(std::memmove(std::addressof(t), std::addressof(t), sizeof(T)));
     for (unsigned i = 0; i < sizeof(T) / 2; ++i)
         std::swap(bytes[i], bytes[sizeof(T) - 1 - i]);
 }
@@ -73,11 +51,7 @@ template <class T, class Hasher>
 inline void
 maybe_reverse_bytes(T& t, Hasher&)
 {
-    maybe_reverse_bytes(
-        t,
-        std::integral_constant<
-            bool,
-            Hasher::endian != boost::endian::order::native>{});
+    maybe_reverse_bytes(t, std::integral_constant<bool, Hasher::endian != boost::endian::order::native>{});
 }
 
 }  // namespace detail
@@ -91,10 +65,8 @@ maybe_reverse_bytes(T& t, Hasher&)
 
 template <class T>
 struct is_uniquely_represented
-    : public std::integral_constant<
-          bool,
-          std::is_integral<T>::value || std::is_enum<T>::value ||
-              std::is_pointer<T>::value>
+    : public std::
+          integral_constant<bool, std::is_integral<T>::value || std::is_enum<T>::value || std::is_pointer<T>::value>
 {
     explicit is_uniquely_represented() = default;
 };
@@ -112,8 +84,7 @@ struct is_uniquely_represented<T volatile> : public is_uniquely_represented<T>
 };
 
 template <class T>
-struct is_uniquely_represented<T const volatile>
-    : public is_uniquely_represented<T>
+struct is_uniquely_represented<T const volatile> : public is_uniquely_represented<T>
 {
     explicit is_uniquely_represented() = default;
 };
@@ -124,8 +95,7 @@ template <class T, class U>
 struct is_uniquely_represented<std::pair<T, U>>
     : public std::integral_constant<
           bool,
-          is_uniquely_represented<T>::value &&
-              is_uniquely_represented<U>::value &&
+          is_uniquely_represented<T>::value && is_uniquely_represented<U>::value &&
               sizeof(T) + sizeof(U) == sizeof(std::pair<T, U>)>
 {
     explicit is_uniquely_represented() = default;
@@ -137,8 +107,7 @@ template <class... T>
 struct is_uniquely_represented<std::tuple<T...>>
     : public std::integral_constant<
           bool,
-          std::conjunction_v<is_uniquely_represented<T>...> &&
-              sizeof(std::tuple<T...>) == (sizeof(T) + ...)>
+          std::conjunction_v<is_uniquely_represented<T>...> && sizeof(std::tuple<T...>) == (sizeof(T) + ...)>
 {
     explicit is_uniquely_represented() = default;
 };
@@ -155,10 +124,8 @@ struct is_uniquely_represented<T[N]> : public is_uniquely_represented<T>
 
 template <class T, std::size_t N>
 struct is_uniquely_represented<std::array<T, N>>
-    : public std::integral_constant<
-          bool,
-          is_uniquely_represented<T>::value &&
-              sizeof(T) * N == sizeof(std::array<T, N>)>
+    : public std::
+          integral_constant<bool, is_uniquely_represented<T>::value && sizeof(T) * N == sizeof(std::array<T, N>)>
 {
     explicit is_uniquely_represented() = default;
 };
@@ -178,12 +145,10 @@ struct is_uniquely_represented<std::array<T, N>>
 */
 /** @{ */
 template <class T, class HashAlgorithm>
-struct is_contiguously_hashable
-    : public std::integral_constant<
-          bool,
-          is_uniquely_represented<T>::value &&
-              (sizeof(T) == 1 ||
-               HashAlgorithm::endian == boost::endian::order::native)>
+struct is_contiguously_hashable : public std::integral_constant<
+                                      bool,
+                                      is_uniquely_represented<T>::value &&
+                                          (sizeof(T) == 1 || HashAlgorithm::endian == boost::endian::order::native)>
 {
     explicit is_contiguously_hashable() = default;
 };
@@ -193,8 +158,7 @@ struct is_contiguously_hashable<T[N], HashAlgorithm>
     : public std::integral_constant<
           bool,
           is_uniquely_represented<T[N]>::value &&
-              (sizeof(T) == 1 ||
-               HashAlgorithm::endian == boost::endian::order::native)>
+              (sizeof(T) == 1 || HashAlgorithm::endian == boost::endian::order::native)>
 {
     explicit is_contiguously_hashable() = default;
 };
@@ -223,7 +187,7 @@ struct is_contiguously_hashable<T[N], HashAlgorithm>
         Throws:
             Never
         Effect:
-            Returns the reslting hash of all the input data.
+            Returns the resulting hash of all the input data.
 */
 /** @{ */
 
@@ -239,8 +203,7 @@ hash_append(Hasher& h, T const& t) noexcept
 template <class Hasher, class T>
 inline std::enable_if_t<
     !is_contiguously_hashable<T, Hasher>::value &&
-    (std::is_integral<T>::value || std::is_pointer<T>::value ||
-     std::is_enum<T>::value)>
+    (std::is_integral<T>::value || std::is_pointer<T>::value || std::is_enum<T>::value)>
 hash_append(Hasher& h, T t) noexcept
 {
     detail::reverse_bytes(t);
@@ -274,15 +237,11 @@ hash_append(Hasher& h, T (&a)[N]) noexcept;
 
 template <class Hasher, class CharT, class Traits, class Alloc>
 std::enable_if_t<!is_contiguously_hashable<CharT, Hasher>::value>
-hash_append(
-    Hasher& h,
-    std::basic_string<CharT, Traits, Alloc> const& s) noexcept;
+hash_append(Hasher& h, std::basic_string<CharT, Traits, Alloc> const& s) noexcept;
 
 template <class Hasher, class CharT, class Traits, class Alloc>
 std::enable_if_t<is_contiguously_hashable<CharT, Hasher>::value>
-hash_append(
-    Hasher& h,
-    std::basic_string<CharT, Traits, Alloc> const& s) noexcept;
+hash_append(Hasher& h, std::basic_string<CharT, Traits, Alloc> const& s) noexcept;
 
 template <class Hasher, class T, class U>
 std::enable_if_t<!is_contiguously_hashable<std::pair<T, U>, Hasher>::value>
@@ -314,14 +273,10 @@ hash_append(Hasher& h, std::unordered_set<Key, Hash, Pred, Alloc> const& s);
 
 template <class Hasher, class Key, class Compare, class Alloc>
 std::enable_if_t<!is_contiguously_hashable<Key, Hasher>::value>
-hash_append(
-    Hasher& h,
-    boost::container::flat_set<Key, Compare, Alloc> const& v) noexcept;
+hash_append(Hasher& h, boost::container::flat_set<Key, Compare, Alloc> const& v) noexcept;
 template <class Hasher, class Key, class Compare, class Alloc>
 std::enable_if_t<is_contiguously_hashable<Key, Hasher>::value>
-hash_append(
-    Hasher& h,
-    boost::container::flat_set<Key, Compare, Alloc> const& v) noexcept;
+hash_append(Hasher& h, boost::container::flat_set<Key, Compare, Alloc> const& v) noexcept;
 template <class Hasher, class T0, class T1, class... T>
 void
 hash_append(Hasher& h, T0 const& t0, T1 const& t1, T const&... t) noexcept;
@@ -340,9 +295,7 @@ hash_append(Hasher& h, T (&a)[N]) noexcept
 
 template <class Hasher, class CharT, class Traits, class Alloc>
 inline std::enable_if_t<!is_contiguously_hashable<CharT, Hasher>::value>
-hash_append(
-    Hasher& h,
-    std::basic_string<CharT, Traits, Alloc> const& s) noexcept
+hash_append(Hasher& h, std::basic_string<CharT, Traits, Alloc> const& s) noexcept
 {
     for (auto c : s)
         hash_append(h, c);
@@ -351,9 +304,7 @@ hash_append(
 
 template <class Hasher, class CharT, class Traits, class Alloc>
 inline std::enable_if_t<is_contiguously_hashable<CharT, Hasher>::value>
-hash_append(
-    Hasher& h,
-    std::basic_string<CharT, Traits, Alloc> const& s) noexcept
+hash_append(Hasher& h, std::basic_string<CharT, Traits, Alloc> const& s) noexcept
 {
     h(s.data(), s.size() * sizeof(CharT));
     hash_append(h, s.size());
@@ -362,8 +313,7 @@ hash_append(
 // pair
 
 template <class Hasher, class T, class U>
-inline std::enable_if_t<
-    !is_contiguously_hashable<std::pair<T, U>, Hasher>::value>
+inline std::enable_if_t<!is_contiguously_hashable<std::pair<T, U>, Hasher>::value>
 hash_append(Hasher& h, std::pair<T, U> const& p) noexcept
 {
     hash_append(h, p.first, p.second);
@@ -400,18 +350,14 @@ hash_append(Hasher& h, std::array<T, N> const& a) noexcept
 
 template <class Hasher, class Key, class Compare, class Alloc>
 std::enable_if_t<!is_contiguously_hashable<Key, Hasher>::value>
-hash_append(
-    Hasher& h,
-    boost::container::flat_set<Key, Compare, Alloc> const& v) noexcept
+hash_append(Hasher& h, boost::container::flat_set<Key, Compare, Alloc> const& v) noexcept
 {
     for (auto const& t : v)
         hash_append(h, t);
 }
 template <class Hasher, class Key, class Compare, class Alloc>
 std::enable_if_t<is_contiguously_hashable<Key, Hasher>::value>
-hash_append(
-    Hasher& h,
-    boost::container::flat_set<Key, Compare, Alloc> const& v) noexcept
+hash_append(Hasher& h, boost::container::flat_set<Key, Compare, Alloc> const& v) noexcept
 {
     h(&(v.begin()), v.size() * sizeof(Key));
 }
@@ -434,10 +380,7 @@ hash_one(Hasher& h, T const& t) noexcept
 
 template <class Hasher, class... T, std::size_t... I>
 inline void
-tuple_hash(
-    Hasher& h,
-    std::tuple<T...> const& t,
-    std::index_sequence<I...>) noexcept
+tuple_hash(Hasher& h, std::tuple<T...> const& t, std::index_sequence<I...>) noexcept
 {
     for_each_item(hash_one(h, std::get<I>(t))...);
 }
@@ -445,8 +388,7 @@ tuple_hash(
 }  // namespace detail
 
 template <class Hasher, class... T>
-inline std::enable_if_t<
-    !is_contiguously_hashable<std::tuple<T...>, Hasher>::value>
+inline std::enable_if_t<!is_contiguously_hashable<std::tuple<T...>, Hasher>::value>
 hash_append(Hasher& h, std::tuple<T...> const& t) noexcept
 {
     detail::tuple_hash(h, t, std::index_sequence_for<T...>{});
@@ -472,9 +414,7 @@ hash_append(Hasher& h, std::chrono::duration<Rep, Period> const& d) noexcept
 
 template <class Hasher, class Clock, class Duration>
 inline void
-hash_append(
-    Hasher& h,
-    std::chrono::time_point<Clock, Duration> const& tp) noexcept
+hash_append(Hasher& h, std::chrono::time_point<Clock, Duration> const& tp) noexcept
 {
     hash_append(h, tp.time_since_epoch());
 }
@@ -499,5 +439,3 @@ hash_append(HashAlgorithm& h, std::error_code const& ec)
 }
 
 }  // namespace beast
-
-#endif

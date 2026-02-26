@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2012-2016 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
 
@@ -25,7 +6,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 class TrustAndBalance_test : public beast::unit_test::suite
 {
@@ -76,36 +57,24 @@ class TrustAndBalance_test : public beast::unit_test::suite
 
         jrr = ledgerEntryState(env, gw, alice, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "0");
-        BEAST_EXPECT(
-            jrr[jss::node][sfHighLimit.fieldName][jss::value] == "800");
-        BEAST_EXPECT(
-            jrr[jss::node][sfHighLimit.fieldName][jss::issuer] ==
-            alice.human());
-        BEAST_EXPECT(
-            jrr[jss::node][sfHighLimit.fieldName][jss::currency] == "USD");
+        BEAST_EXPECT(jrr[jss::node][sfHighLimit.fieldName][jss::value] == "800");
+        BEAST_EXPECT(jrr[jss::node][sfHighLimit.fieldName][jss::issuer] == alice.human());
+        BEAST_EXPECT(jrr[jss::node][sfHighLimit.fieldName][jss::currency] == "USD");
         BEAST_EXPECT(jrr[jss::node][sfLowLimit.fieldName][jss::value] == "0");
-        BEAST_EXPECT(
-            jrr[jss::node][sfLowLimit.fieldName][jss::issuer] == gw.human());
-        BEAST_EXPECT(
-            jrr[jss::node][sfLowLimit.fieldName][jss::currency] == "USD");
+        BEAST_EXPECT(jrr[jss::node][sfLowLimit.fieldName][jss::issuer] == gw.human());
+        BEAST_EXPECT(jrr[jss::node][sfLowLimit.fieldName][jss::currency] == "USD");
 
         // modify the credit limit
         env(trust(alice, gw["USD"](700)));
 
         jrr = ledgerEntryState(env, gw, alice, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "0");
-        BEAST_EXPECT(
-            jrr[jss::node][sfHighLimit.fieldName][jss::value] == "700");
-        BEAST_EXPECT(
-            jrr[jss::node][sfHighLimit.fieldName][jss::issuer] ==
-            alice.human());
-        BEAST_EXPECT(
-            jrr[jss::node][sfHighLimit.fieldName][jss::currency] == "USD");
+        BEAST_EXPECT(jrr[jss::node][sfHighLimit.fieldName][jss::value] == "700");
+        BEAST_EXPECT(jrr[jss::node][sfHighLimit.fieldName][jss::issuer] == alice.human());
+        BEAST_EXPECT(jrr[jss::node][sfHighLimit.fieldName][jss::currency] == "USD");
         BEAST_EXPECT(jrr[jss::node][sfLowLimit.fieldName][jss::value] == "0");
-        BEAST_EXPECT(
-            jrr[jss::node][sfLowLimit.fieldName][jss::issuer] == gw.human());
-        BEAST_EXPECT(
-            jrr[jss::node][sfLowLimit.fieldName][jss::currency] == "USD");
+        BEAST_EXPECT(jrr[jss::node][sfLowLimit.fieldName][jss::issuer] == gw.human());
+        BEAST_EXPECT(jrr[jss::node][sfLowLimit.fieldName][jss::currency] == "USD");
 
         // set negative limit - expect failure
         env(trust(alice, gw["USD"](-1)), ter(temBAD_LIMIT));
@@ -128,17 +97,12 @@ class TrustAndBalance_test : public beast::unit_test::suite
         // check the ledger state for the trust line
         jrr = ledgerEntryState(env, alice, bob, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "0");
-        BEAST_EXPECT(
-            jrr[jss::node][sfHighLimit.fieldName][jss::value] == "500");
-        BEAST_EXPECT(
-            jrr[jss::node][sfHighLimit.fieldName][jss::issuer] == bob.human());
-        BEAST_EXPECT(
-            jrr[jss::node][sfHighLimit.fieldName][jss::currency] == "USD");
+        BEAST_EXPECT(jrr[jss::node][sfHighLimit.fieldName][jss::value] == "500");
+        BEAST_EXPECT(jrr[jss::node][sfHighLimit.fieldName][jss::issuer] == bob.human());
+        BEAST_EXPECT(jrr[jss::node][sfHighLimit.fieldName][jss::currency] == "USD");
         BEAST_EXPECT(jrr[jss::node][sfLowLimit.fieldName][jss::value] == "600");
-        BEAST_EXPECT(
-            jrr[jss::node][sfLowLimit.fieldName][jss::issuer] == alice.human());
-        BEAST_EXPECT(
-            jrr[jss::node][sfLowLimit.fieldName][jss::currency] == "USD");
+        BEAST_EXPECT(jrr[jss::node][sfLowLimit.fieldName][jss::issuer] == alice.human());
+        BEAST_EXPECT(jrr[jss::node][sfLowLimit.fieldName][jss::currency] == "USD");
     }
 
     void
@@ -186,8 +150,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
     testWithTransferFee(bool subscribe, bool with_rate, FeatureBitset features)
     {
         testcase(
-            std::string("Direct Payment: ") +
-            (with_rate ? "With " : "Without ") + " Xfer Fee, " +
+            std::string("Direct Payment: ") + (with_rate ? "With " : "Without ") + " Xfer Fee, " +
             (subscribe ? "With " : "Without ") + " Subscribe");
         using namespace test::jtx;
 
@@ -252,12 +215,9 @@ class TrustAndBalance_test : public beast::unit_test::suite
                 auto const& t = jval[jss::transaction];
                 return t[jss::TransactionType] == jss::Payment;
             }));
-            BEAST_EXPECT(wsc->findMsg(5s, [](auto const& jval) {
-                return jval[jss::type] == "ledgerClosed";
-            }));
+            BEAST_EXPECT(wsc->findMsg(5s, [](auto const& jval) { return jval[jss::type] == "ledgerClosed"; }));
 
-            BEAST_EXPECT(
-                wsc->invoke("unsubscribe", jv)[jss::status] == "success");
+            BEAST_EXPECT(wsc->invoke("unsubscribe", jv)[jss::status] == "success");
         }
     }
 
@@ -302,9 +262,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
 
         // alice sends bob issues to bob with a max spend in alice issues.
         // expect fail since gw is not involved
-        env(pay(alice, bob, bob["AUD"](1)),
-            sendmax(alice["AUD"](1.1)),
-            ter(tecPATH_DRY));
+        env(pay(alice, bob, bob["AUD"](1)), sendmax(alice["AUD"](1.1)), ter(tecPATH_DRY));
 
         env.require(balance(alice, gw["AUD"](1.1)));
         env.require(balance(bob, gw["AUD"](3)));
@@ -354,9 +312,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
     void
     testIndirectMultiPath(bool with_rate, FeatureBitset features)
     {
-        testcase(
-            std::string("Indirect Payment, Multi Path, ") +
-            (with_rate ? "With " : "Without ") + " Xfer Fee, ");
+        testcase(std::string("Indirect Payment, Multi Path, ") + (with_rate ? "With " : "Without ") + " Xfer Fee, ");
         using namespace test::jtx;
 
         Env env{*this, features};
@@ -389,20 +345,12 @@ class TrustAndBalance_test : public beast::unit_test::suite
                 test::jtx::path(bob),
                 test::jtx::path(carol));
         else
-            env(pay(alice, amazon, gw["USD"](150)),
-                test::jtx::path(bob),
-                test::jtx::path(carol));
+            env(pay(alice, amazon, gw["USD"](150)), test::jtx::path(bob), test::jtx::path(carol));
 
         if (with_rate)
         {
-            env.require(balance(
-                alice,
-                STAmount(
-                    carol["USD"].issue(),
-                    6500000000000000ull,
-                    -14,
-                    true,
-                    STAmount::unchecked{})));
+            env.require(
+                balance(alice, STAmount(carol["USD"].issue(), 6500000000000000ull, -14, true, STAmount::unchecked{})));
             env.require(balance(carol, gw["USD"](35)));
         }
         else
@@ -435,24 +383,20 @@ class TrustAndBalance_test : public beast::unit_test::suite
         jvs[jss::streams].append("transactions");
         BEAST_EXPECT(wsc->invoke("subscribe", jvs)[jss::status] == "success");
 
-        char const* invoiceid =
-            "243F6A8885A308D313198A2E03707344A4093822299F31D0082EFA98EC4E6C89";
+        char const* invoiceId = "243F6A8885A308D313198A2E03707344A4093822299F31D0082EFA98EC4E6C89";
 
         Json::Value jv;
-        auto tx = env.jt(
-            pay(env.master, alice, XRP(10000)),
-            json(sfInvoiceID.fieldName, invoiceid));
+        auto tx = env.jt(pay(env.master, alice, XRP(10000)), json(sfInvoiceID.fieldName, invoiceId));
         jv[jss::tx_blob] = strHex(tx.stx->getSerializer().slice());
         auto jrr = wsc->invoke("submit", jv)[jss::result];
         BEAST_EXPECT(jrr[jss::status] == "success");
-        BEAST_EXPECT(jrr[jss::tx_json][sfInvoiceID.fieldName] == invoiceid);
+        BEAST_EXPECT(jrr[jss::tx_json][sfInvoiceID.fieldName] == invoiceId);
         env.close();
 
         using namespace std::chrono_literals;
-        BEAST_EXPECT(wsc->findMsg(2s, [invoiceid](auto const& jval) {
+        BEAST_EXPECT(wsc->findMsg(2s, [invoiceId](auto const& jval) {
             auto const& t = jval[jss::transaction];
-            return t[jss::TransactionType] == jss::Payment &&
-                t[sfInvoiceID.fieldName] == invoiceid;
+            return t[jss::TransactionType] == jss::Payment && t[sfInvoiceID.fieldName] == invoiceId;
         }));
 
         BEAST_EXPECT(wsc->invoke("unsubscribe", jv)[jss::status] == "success");
@@ -486,6 +430,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(TrustAndBalance, app, ripple);
+BEAST_DEFINE_TESTSUITE(TrustAndBalance, app, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

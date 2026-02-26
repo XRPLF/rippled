@@ -1,29 +1,9 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2015 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_LEDGER_BOOK_DIRS_H_INCLUDED
-#define RIPPLE_LEDGER_BOOK_DIRS_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
 
-namespace ripple {
+namespace xrpl {
 
 class BookDirs
 {
@@ -87,10 +67,7 @@ public:
 private:
     friend class BookDirs;
 
-    const_iterator(
-        ReadView const& view,
-        uint256 const& root,
-        uint256 const& dir_key)
+    const_iterator(ReadView const& view, uint256 const& root, uint256 const& dir_key)
         : view_(&view), root_(root), key_(dir_key), cur_key_(dir_key)
     {
     }
@@ -108,6 +85,4 @@ private:
     static beast::Journal j_;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

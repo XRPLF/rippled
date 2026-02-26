@@ -1,35 +1,16 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright 2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx/Env.h>
 
-#include <xrpld/app/misc/Manifest.h>
 #include <xrpld/app/misc/ValidatorKeys.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/basics/base64.h>
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/server/Manifest.h>
 
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class ValidatorKeys_test : public beast::unit_test::suite
@@ -38,8 +19,7 @@ class ValidatorKeys_test : public beast::unit_test::suite
     std::string const seed = "shUwVw52ofnCUX5m7kPTKzJdr4HEH";
 
     // Used with [validation_token]
-    std::string const tokenSecretStr =
-        "paQmjZ37pKKPMrgadBLsuf9ab7Y7EUNzh27LQrZqoexpAs31nJi";
+    std::string const tokenSecretStr = "paQmjZ37pKKPMrgadBLsuf9ab7Y7EUNzh27LQrZqoexpAs31nJi";
 
     std::vector<std::string> const tokenBlob = {
         "    "
@@ -80,26 +60,18 @@ public:
     {
         // We're only using Env for its Journal.  That Journal gives better
         // coverage in unit tests.
-        test::jtx::Env env{
-            *this,
-            test::jtx::envconfig(),
-            nullptr,
-            beast::severities::kDisabled};
+        test::jtx::Env env{*this, test::jtx::envconfig(), nullptr, beast::severities::kDisabled};
         beast::Journal journal{env.app().journal("ValidatorKeys_test")};
 
         // Keys/ID when using [validation_seed]
-        SecretKey const seedSecretKey =
-            generateSecretKey(KeyType::secp256k1, *parseBase58<Seed>(seed));
-        PublicKey const seedPublicKey =
-            derivePublicKey(KeyType::secp256k1, seedSecretKey);
+        SecretKey const seedSecretKey = generateSecretKey(KeyType::secp256k1, *parseBase58<Seed>(seed));
+        PublicKey const seedPublicKey = derivePublicKey(KeyType::secp256k1, seedSecretKey);
         NodeID const seedNodeID = calcNodeID(seedPublicKey);
 
         // Keys when using [validation_token]
-        auto const tokenSecretKey =
-            *parseBase58<SecretKey>(TokenType::NodePrivate, tokenSecretStr);
+        auto const tokenSecretKey = *parseBase58<SecretKey>(TokenType::NodePrivate, tokenSecretStr);
 
-        auto const tokenPublicKey =
-            derivePublicKey(KeyType::secp256k1, tokenSecretKey);
+        auto const tokenPublicKey = derivePublicKey(KeyType::secp256k1, tokenSecretKey);
 
         auto const m = deserializeManifest(base64_decode(tokenManifest));
         BEAST_EXPECT(m);
@@ -190,7 +162,7 @@ public:
     }
 };  // namespace test
 
-BEAST_DEFINE_TESTSUITE(ValidatorKeys, app, ripple);
+BEAST_DEFINE_TESTSUITE(ValidatorKeys, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

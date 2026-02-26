@@ -17,7 +17,7 @@
 #include <thread>
 #include <variant>
 
-namespace ripple {
+namespace xrpl {
 namespace tests {
 
 /**
@@ -96,13 +96,11 @@ public:
     {
         for (int i = 0; i < maxStates; ++i)
         {
-            state[i].store(
-                TrackedState::uninitialized, std::memory_order_release);
+            state[i].store(TrackedState::uninitialized, std::memory_order_release);
         }
         nextId.store(0, std::memory_order_release);
         if (resetCallback)
-            TIBase::tracingCallback_ = [](TrackedState,
-                                          std::optional<TrackedState>) {};
+            TIBase::tracingCallback_ = [](TrackedState, std::optional<TrackedState>) {};
     }
 
     struct ResetStatesGuard
@@ -129,8 +127,7 @@ public:
         using enum TrackedState;
 
         assert(state.size() > id_);
-        tracingCallback_(
-            state[id_].load(std::memory_order_relaxed), deletedStarted);
+        tracingCallback_(state[id_].load(std::memory_order_relaxed), deletedStarted);
 
         assert(state.size() > id_);
         // Use relaxed memory order to try to avoid atomic operations from
@@ -152,9 +149,7 @@ public:
         using enum TrackedState;
 
         assert(state.size() > id_);
-        tracingCallback_(
-            state[id_].load(std::memory_order_relaxed),
-            partiallyDeletedStarted);
+        tracingCallback_(state[id_].load(std::memory_order_relaxed), partiallyDeletedStarted);
 
         assert(state.size() > id_);
         state[id_].store(partiallyDeletedStarted, std::memory_order_relaxed);
@@ -167,8 +162,7 @@ public:
         tracingCallback_(partiallyDeleted, std::nullopt);
     }
 
-    static std::function<void(TrackedState, std::optional<TrackedState>)>
-        tracingCallback_;
+    static std::function<void(TrackedState, std::optional<TrackedState>)> tracingCallback_;
 
     int id_;
 
@@ -183,8 +177,8 @@ private:
 std::array<std::atomic<TrackedState>, TIBase::maxStates> TIBase::state;
 std::atomic<int> TIBase::nextId{0};
 
-std::function<void(TrackedState, std::optional<TrackedState>)>
-    TIBase::tracingCallback_ = [](TrackedState, std::optional<TrackedState>) {};
+std::function<void(TrackedState, std::optional<TrackedState>)> TIBase::tracingCallback_ =
+    [](TrackedState, std::optional<TrackedState>) {};
 
 }  // namespace
 
@@ -387,16 +381,15 @@ public:
         bool destructorRan = false;
         bool partialDeleteRan = false;
         std::latch partialDeleteStartedSyncPoint{2};
-        strong->tracingCallback_ = [&](TrackedState cur,
-                                       std::optional<TrackedState> next) {
+        strong->tracingCallback_ = [&](TrackedState cur, std::optional<TrackedState> next) {
             using enum TrackedState;
             if (next == deletedStarted)
             {
                 // strong goes out of scope while weak is still in scope
                 // This checks that partialDelete has run to completion
-                // before the desturctor is called. A sleep is inserted
+                // before the destructor is called. A sleep is inserted
                 // inside the partial delete to make sure the destructor is
-                // given an opportunity to run durring partial delete.
+                // given an opportunity to run during partial delete.
                 BEAST_EXPECT(cur == partiallyDeleted);
             }
             if (next == partiallyDeletedStarted)
@@ -455,8 +448,7 @@ public:
         bool destructorRan = false;
         bool partialDeleteRan = false;
         std::latch weakResetSyncPoint{2};
-        strong->tracingCallback_ = [&](TrackedState cur,
-                                       std::optional<TrackedState> next) {
+        strong->tracingCallback_ = [&](TrackedState cur, std::optional<TrackedState> next) {
             using enum TrackedState;
             if (next == partiallyDeleted)
             {
@@ -502,14 +494,9 @@ public:
             int s = destructionState.load(std::memory_order_relaxed);
             return {(s & 1) != 0, (s & 2) != 0};
         };
-        auto setDestructorRan = [&]() -> void {
-            destructionState.fetch_or(1, std::memory_order_acq_rel);
-        };
-        auto setPartialDeleteRan = [&]() -> void {
-            destructionState.fetch_or(2, std::memory_order_acq_rel);
-        };
-        auto tracingCallback = [&](TrackedState cur,
-                                   std::optional<TrackedState> next) {
+        auto setDestructorRan = [&]() -> void { destructionState.fetch_or(1, std::memory_order_acq_rel); };
+        auto setPartialDeleteRan = [&]() -> void { destructionState.fetch_or(2, std::memory_order_acq_rel); };
+        auto tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
             using enum TrackedState;
             auto [destructorRan, partialDeleteRan] = getDestructorState();
             if (next == partiallyDeleted)
@@ -523,13 +510,9 @@ public:
                 setDestructorRan();
             }
         };
-        auto createVecOfPointers = [&](auto const& toClone,
-                                       std::default_random_engine& eng)
-            -> std::vector<
-                std::variant<SharedIntrusive<TIBase>, WeakIntrusive<TIBase>>> {
-            std::vector<
-                std::variant<SharedIntrusive<TIBase>, WeakIntrusive<TIBase>>>
-                result;
+        auto createVecOfPointers = [&](auto const& toClone, std::default_random_engine& eng)
+            -> std::vector<std::variant<SharedIntrusive<TIBase>, WeakIntrusive<TIBase>>> {
+            std::vector<std::variant<SharedIntrusive<TIBase>, WeakIntrusive<TIBase>>> result;
             std::uniform_int_distribution<> toCreateDist(4, 64);
             std::uniform_int_distribution<> isStrongDist(0, 1);
             auto numToCreate = toCreateDist(eng);
@@ -581,8 +564,7 @@ public:
                     // clear the temporary variables.
 
                     rsg.emplace(false);
-                    auto [destructorRan, partialDeleteRan] =
-                        getDestructorState();
+                    auto [destructorRan, partialDeleteRan] = getDestructorState();
                     BEAST_EXPECT(!i || destructorRan);
                     destructionState.store(0, std::memory_order_release);
 
@@ -596,8 +578,7 @@ public:
                 // ------ Sync Point ------
                 postCreateToCloneSyncPoint.arrive_and_wait();
 
-                auto v =
-                    createVecOfPointers(toClone[threadId], engines[threadId]);
+                auto v = createVecOfPointers(toClone[threadId], engines[threadId]);
                 toClone[threadId].reset();
 
                 // ------ Sync Point ------
@@ -642,14 +623,9 @@ public:
             int s = destructionState.load(std::memory_order_relaxed);
             return {(s & 1) != 0, (s & 2) != 0};
         };
-        auto setDestructorRan = [&]() -> void {
-            destructionState.fetch_or(1, std::memory_order_acq_rel);
-        };
-        auto setPartialDeleteRan = [&]() -> void {
-            destructionState.fetch_or(2, std::memory_order_acq_rel);
-        };
-        auto tracingCallback = [&](TrackedState cur,
-                                   std::optional<TrackedState> next) {
+        auto setDestructorRan = [&]() -> void { destructionState.fetch_or(1, std::memory_order_acq_rel); };
+        auto setPartialDeleteRan = [&]() -> void { destructionState.fetch_or(2, std::memory_order_acq_rel); };
+        auto tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
             using enum TrackedState;
             auto [destructorRan, partialDeleteRan] = getDestructorState();
             if (next == partiallyDeleted)
@@ -664,8 +640,7 @@ public:
             }
         };
         auto createVecOfPointers = [&](auto const& toClone,
-                                       std::default_random_engine& eng)
-            -> std::vector<SharedWeakUnion<TIBase>> {
+                                       std::default_random_engine& eng) -> std::vector<SharedWeakUnion<TIBase>> {
             std::vector<SharedWeakUnion<TIBase>> result;
             std::uniform_int_distribution<> toCreateDist(4, 64);
             auto numToCreate = toCreateDist(eng);
@@ -710,8 +685,7 @@ public:
                     // thread will also check that the destructor ran and
                     // clear the temporary variables.
                     rsg.emplace(false);
-                    auto [destructorRan, partialDeleteRan] =
-                        getDestructorState();
+                    auto [destructorRan, partialDeleteRan] = getDestructorState();
                     BEAST_EXPECT(!i || destructorRan);
                     destructionState.store(0, std::memory_order_release);
 
@@ -725,8 +699,7 @@ public:
                 // ------ Sync Point ------
                 postCreateToCloneSyncPoint.arrive_and_wait();
 
-                auto v =
-                    createVecOfPointers(toClone[threadId], engines[threadId]);
+                auto v = createVecOfPointers(toClone[threadId], engines[threadId]);
                 toClone[threadId].reset();
 
                 // ------ Sync Point ------
@@ -785,14 +758,9 @@ public:
             int s = destructionState.load(std::memory_order_relaxed);
             return {(s & 1) != 0, (s & 2) != 0};
         };
-        auto setDestructorRan = [&]() -> void {
-            destructionState.fetch_or(1, std::memory_order_acq_rel);
-        };
-        auto setPartialDeleteRan = [&]() -> void {
-            destructionState.fetch_or(2, std::memory_order_acq_rel);
-        };
-        auto tracingCallback = [&](TrackedState cur,
-                                   std::optional<TrackedState> next) {
+        auto setDestructorRan = [&]() -> void { destructionState.fetch_or(1, std::memory_order_acq_rel); };
+        auto setPartialDeleteRan = [&]() -> void { destructionState.fetch_or(2, std::memory_order_acq_rel); };
+        auto tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
             using enum TrackedState;
             auto [destructorRan, partialDeleteRan] = getDestructorState();
             if (next == partiallyDeleted)
@@ -833,8 +801,7 @@ public:
                     // thread will also check that the destructor ran and
                     // clear the temporary variables.
                     rsg.emplace(false);
-                    auto [destructorRan, partialDeleteRan] =
-                        getDestructorState();
+                    auto [destructorRan, partialDeleteRan] = getDestructorState();
                     BEAST_EXPECT(!i || destructorRan);
                     destructionState.store(0, std::memory_order_release);
 
@@ -887,6 +854,6 @@ public:
     }
 };  // namespace tests
 
-BEAST_DEFINE_TESTSUITE(IntrusiveShared, basics, ripple);
+BEAST_DEFINE_TESTSUITE(IntrusiveShared, basics, xrpl);
 }  // namespace tests
-}  // namespace ripple
+}  // namespace xrpl

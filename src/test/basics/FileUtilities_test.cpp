@@ -1,29 +1,10 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2018 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/unit_test/FileDirGuard.h>
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/beast/unit_test.h>
 
-namespace ripple {
+namespace xrpl {
 
 class FileUtilities_test : public beast::unit_test::suite
 {
@@ -31,17 +12,12 @@ public:
     void
     testGetFileContents()
     {
-        using namespace ripple::detail;
+        using namespace xrpl::detail;
         using namespace boost::system;
 
-        constexpr char const* expectedContents =
-            "This file is very short. That's all we need.";
+        constexpr char const* expectedContents = "This file is very short. That's all we need.";
 
-        FileDirGuard file(
-            *this,
-            "test_file",
-            "test.txt",
-            "This is temporary text that should get overwritten");
+        FileDirGuard file(*this, "test_file", "test.txt", "This is temporary text that should get overwritten");
 
         error_code ec;
         auto const path = file.file();
@@ -66,8 +42,7 @@ public:
         {
             // Test with small max
             auto const bad = getFileContents(ec, path, 16);
-            BEAST_EXPECT(
-                ec && ec.value() == boost::system::errc::file_too_large);
+            BEAST_EXPECT(ec && ec.value() == boost::system::errc::file_too_large);
             BEAST_EXPECT(bad.empty());
         }
     }
@@ -79,6 +54,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(FileUtilities, basics, ripple);
+BEAST_DEFINE_TESTSUITE(FileUtilities, basics, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

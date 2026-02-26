@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PEERFINDER_LIVECACHE_H_INCLUDED
-#define RIPPLE_PEERFINDER_LIVECACHE_H_INCLUDED
+#pragma once
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
@@ -34,7 +14,7 @@
 
 #include <algorithm>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 template <class>
@@ -57,8 +37,7 @@ protected:
         Endpoint endpoint;
     };
 
-    using list_type = boost::intrusive::
-        make_list<Element, boost::intrusive::constant_time_size<false>>::type;
+    using list_type = boost::intrusive::make_list<Element, boost::intrusive::constant_time_size<false>>::type;
 
 public:
     /** A list of Endpoint at the same hops
@@ -85,14 +64,11 @@ public:
         };
 
     public:
-        using iterator = boost::
-            transform_iterator<Transform, typename list_type::const_iterator>;
+        using iterator = boost::transform_iterator<Transform, typename list_type::const_iterator>;
 
         using const_iterator = iterator;
 
-        using reverse_iterator = boost::transform_iterator<
-            Transform,
-            typename list_type::const_reverse_iterator>;
+        using reverse_iterator = boost::transform_iterator<Transform, typename list_type::const_reverse_iterator>;
 
         using const_reverse_iterator = reverse_iterator;
 
@@ -154,17 +130,13 @@ public:
         }
 
     private:
-        explicit Hop(
-            typename beast::maybe_const<IsConst, list_type>::type& list)
-            : m_list(list)
+        explicit Hop(typename beast::maybe_const<IsConst, list_type>::type& list) : m_list(list)
         {
         }
 
         friend class LivecacheBase;
 
-        std::reference_wrapper<
-            typename beast::maybe_const<IsConst, list_type>::type>
-            m_list;
+        std::reference_wrapper<typename beast::maybe_const<IsConst, list_type>::type> m_list;
     };
 
 protected:
@@ -184,25 +156,21 @@ protected:
 /** The Livecache holds the short-lived relayed Endpoint messages.
 
     Since peers only advertise themselves when they have open slots,
-    we want these messags to expire rather quickly after the peer becomes
+    we want these messages to expire rather quickly after the peer becomes
     full.
 
     Addresses added to the cache are not connection-tested to see if
-    they are connectible (with one small exception regarding neighbors).
+    they are connectable (with one small exception regarding neighbors).
     Therefore, these addresses are not suitable for persisting across
     launches or for bootstrapping, because they do not have verifiable
-    and locally observed uptime and connectibility information.
+    and locally observed uptime and connectability information.
 */
 template <class Allocator = std::allocator<char>>
 class Livecache : protected detail::LivecacheBase
 {
 private:
-    using cache_type = beast::aged_map<
-        beast::IP::Endpoint,
-        Element,
-        std::chrono::steady_clock,
-        std::less<beast::IP::Endpoint>,
-        Allocator>;
+    using cache_type = beast::
+        aged_map<beast::IP::Endpoint, Element, std::chrono::steady_clock, std::less<beast::IP::Endpoint>, Allocator>;
 
     beast::Journal m_journal;
     cache_type m_cache;
@@ -211,10 +179,7 @@ public:
     using allocator_type = Allocator;
 
     /** Create the cache. */
-    Livecache(
-        clock_type& clock,
-        beast::Journal journal,
-        Allocator alloc = Allocator());
+    Livecache(clock_type& clock, beast::Journal journal, Allocator alloc = Allocator());
 
     //
     // Iteration by hops
@@ -243,29 +208,21 @@ public:
             explicit Transform() = default;
 
             Hop<IsConst>
-            operator()(typename beast::maybe_const<
-                       IsConst,
-                       typename lists_type::value_type>::type& list) const
+            operator()(typename beast::maybe_const<IsConst, typename lists_type::value_type>::type& list) const
             {
                 return make_hop<IsConst>(list);
             }
         };
 
     public:
-        using iterator = boost::
-            transform_iterator<Transform<false>, typename lists_type::iterator>;
+        using iterator = boost::transform_iterator<Transform<false>, typename lists_type::iterator>;
 
-        using const_iterator = boost::transform_iterator<
-            Transform<true>,
-            typename lists_type::const_iterator>;
+        using const_iterator = boost::transform_iterator<Transform<true>, typename lists_type::const_iterator>;
 
-        using reverse_iterator = boost::transform_iterator<
-            Transform<false>,
-            typename lists_type::reverse_iterator>;
+        using reverse_iterator = boost::transform_iterator<Transform<false>, typename lists_type::reverse_iterator>;
 
-        using const_reverse_iterator = boost::transform_iterator<
-            Transform<true>,
-            typename lists_type::const_reverse_iterator>;
+        using const_reverse_iterator =
+            boost::transform_iterator<Transform<true>, typename lists_type::const_reverse_iterator>;
 
         iterator
         begin()
@@ -394,10 +351,7 @@ public:
 //------------------------------------------------------------------------------
 
 template <class Allocator>
-Livecache<Allocator>::Livecache(
-    clock_type& clock,
-    beast::Journal journal,
-    Allocator alloc)
+Livecache<Allocator>::Livecache(clock_type& clock, beast::Journal journal, Allocator alloc)
     : m_journal(journal), m_cache(clock, alloc), hops(alloc)
 {
 }
@@ -407,10 +361,8 @@ void
 Livecache<Allocator>::expire()
 {
     std::size_t n(0);
-    typename cache_type::time_point const expired(
-        m_cache.clock().now() - Tuning::liveCacheSecondsToLive);
-    for (auto iter(m_cache.chronological.begin());
-         iter != m_cache.chronological.end() && iter.when() <= expired;)
+    typename cache_type::time_point const expired(m_cache.clock().now() - Tuning::liveCacheSecondsToLive);
+    for (auto iter(m_cache.chronological.begin()); iter != m_cache.chronological.end() && iter.when() <= expired;)
     {
         Element& e(iter->second);
         hops.remove(e);
@@ -419,8 +371,7 @@ Livecache<Allocator>::expire()
     }
     if (n > 0)
     {
-        JLOG(m_journal.debug()) << beast::leftw(18) << "Livecache expired " << n
-                                << ((n > 1) ? " entries" : " entry");
+        JLOG(m_journal.debug()) << beast::leftw(18) << "Livecache expired " << n << ((n > 1) ? " entries" : " entry");
     }
 }
 
@@ -434,24 +385,20 @@ Livecache<Allocator>::insert(Endpoint const& ep)
     // but we will use it to make connections and hand it out
     // when redirecting.
     //
-    XRPL_ASSERT(
-        ep.hops <= (Tuning::maxHops + 1),
-        "ripple::PeerFinder::Livecache::insert : maximum input hops");
+    XRPL_ASSERT(ep.hops <= (Tuning::maxHops + 1), "xrpl::PeerFinder::Livecache::insert : maximum input hops");
     auto result = m_cache.emplace(ep.address, ep);
     Element& e(result.first->second);
     if (result.second)
     {
         hops.insert(e);
-        JLOG(m_journal.debug()) << beast::leftw(18) << "Livecache insert "
-                                << ep.address << " at hops " << ep.hops;
+        JLOG(m_journal.debug()) << beast::leftw(18) << "Livecache insert " << ep.address << " at hops " << ep.hops;
         return;
     }
     else if (!result.second && (ep.hops > e.endpoint.hops))
     {
         // Drop duplicates at higher hops
         std::size_t const excess(ep.hops - e.endpoint.hops);
-        JLOG(m_journal.trace()) << beast::leftw(18) << "Livecache drop "
-                                << ep.address << " at hops +" << excess;
+        JLOG(m_journal.trace()) << beast::leftw(18) << "Livecache drop " << ep.address << " at hops +" << excess;
         return;
     }
 
@@ -461,13 +408,11 @@ Livecache<Allocator>::insert(Endpoint const& ep)
     if (ep.hops < e.endpoint.hops)
     {
         hops.reinsert(e, ep.hops);
-        JLOG(m_journal.debug()) << beast::leftw(18) << "Livecache update "
-                                << ep.address << " at hops " << ep.hops;
+        JLOG(m_journal.debug()) << beast::leftw(18) << "Livecache update " << ep.address << " at hops " << ep.hops;
     }
     else
     {
-        JLOG(m_journal.trace()) << beast::leftw(18) << "Livecache refresh "
-                                << ep.address << " at hops " << ep.hops;
+        JLOG(m_journal.trace()) << beast::leftw(18) << "Livecache refresh " << ep.address << " at hops " << ep.hops;
     }
 }
 
@@ -475,8 +420,7 @@ template <class Allocator>
 void
 Livecache<Allocator>::onWrite(beast::PropertyStream::Map& map)
 {
-    typename cache_type::time_point const expired(
-        m_cache.clock().now() - Tuning::liveCacheSecondsToLive);
+    typename cache_type::time_point const expired(m_cache.clock().now() - Tuning::liveCacheSecondsToLive);
     map["size"] = size();
     map["hist"] = hops.histogram();
     beast::PropertyStream::Set set("entries", map);
@@ -535,8 +479,7 @@ void
 Livecache<Allocator>::hops_t::insert(Element& e)
 {
     XRPL_ASSERT(
-        e.endpoint.hops <= Tuning::maxHops + 1,
-        "ripple::PeerFinder::Livecache::hops_t::insert : maximum input hops");
+        e.endpoint.hops <= Tuning::maxHops + 1, "xrpl::PeerFinder::Livecache::hops_t::insert : maximum input hops");
     // This has security implications without a shuffle
     m_lists[e.endpoint.hops].push_front(e);
     ++m_hist[e.endpoint.hops];
@@ -546,9 +489,7 @@ template <class Allocator>
 void
 Livecache<Allocator>::hops_t::reinsert(Element& e, std::uint32_t numHops)
 {
-    XRPL_ASSERT(
-        numHops <= Tuning::maxHops + 1,
-        "ripple::PeerFinder::Livecache::hops_t::reinsert : maximum hops input");
+    XRPL_ASSERT(numHops <= Tuning::maxHops + 1, "xrpl::PeerFinder::Livecache::hops_t::reinsert : maximum hops input");
 
     auto& list = m_lists[e.endpoint.hops];
     list.erase(list.iterator_to(e));
@@ -570,6 +511,4 @@ Livecache<Allocator>::hops_t::remove(Element& e)
 }
 
 }  // namespace PeerFinder
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

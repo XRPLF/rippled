@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_OVERLAY_ZEROCOPYSTREAM_H_INCLUDED
-#define RIPPLE_OVERLAY_ZEROCOPYSTREAM_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -26,7 +6,7 @@
 
 #include <google/protobuf/io/zero_copy_stream.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Implements ZeroCopyInputStream around a buffer sequence.
     @tparam Buffers A type meeting the requirements of ConstBufferSequence.
@@ -68,9 +48,7 @@ public:
 
 template <class Buffers>
 ZeroCopyInputStream<Buffers>::ZeroCopyInputStream(Buffers const& buffers)
-    : last_(buffers.end())
-    , first_(buffers.begin())
-    , pos_((first_ != last_) ? *first_ : const_buffer(nullptr, 0))
+    : last_(buffers.end()), first_(buffers.begin()), pos_((first_ != last_) ? *first_ : const_buffer(nullptr, 0))
 {
 }
 
@@ -162,13 +140,8 @@ public:
 //------------------------------------------------------------------------------
 
 template <class Streambuf>
-ZeroCopyOutputStream<Streambuf>::ZeroCopyOutputStream(
-    Streambuf& streambuf,
-    std::size_t blockSize)
-    : streambuf_(streambuf)
-    , blockSize_(blockSize)
-    , buffers_(streambuf_.prepare(blockSize_))
-    , pos_(buffers_.begin())
+ZeroCopyOutputStream<Streambuf>::ZeroCopyOutputStream(Streambuf& streambuf, std::size_t blockSize)
+    : streambuf_(streambuf), blockSize_(blockSize), buffers_(streambuf_.prepare(blockSize_)), pos_(buffers_.begin())
 {
 }
 
@@ -206,14 +179,11 @@ template <class Streambuf>
 void
 ZeroCopyOutputStream<Streambuf>::BackUp(int count)
 {
-    XRPL_ASSERT(
-        count <= commit_, "ripple::ZeroCopyOutputStream::BackUp : valid input");
+    XRPL_ASSERT(count <= commit_, "xrpl::ZeroCopyOutputStream::BackUp : valid input");
     auto const n = commit_ - count;
     streambuf_.commit(n);
     count_ += n;
     commit_ = 0;
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

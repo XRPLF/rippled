@@ -1,32 +1,11 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2024 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace RPC {
 
 bool
-canHaveMPTokenIssuanceID(
-    std::shared_ptr<STTx const> const& serializedTx,
-    TxMeta const& transactionMeta)
+canHaveMPTokenIssuanceID(std::shared_ptr<STTx const> const& serializedTx, TxMeta const& transactionMeta)
 {
     if (!serializedTx)
         return false;
@@ -47,14 +26,11 @@ getIDFromCreatedIssuance(TxMeta const& transactionMeta)
 {
     for (STObject const& node : transactionMeta.getNodes())
     {
-        if (node.getFieldU16(sfLedgerEntryType) != ltMPTOKEN_ISSUANCE ||
-            node.getFName() != sfCreatedNode)
+        if (node.getFieldU16(sfLedgerEntryType) != ltMPTOKEN_ISSUANCE || node.getFName() != sfCreatedNode)
             continue;
 
-        auto const& mptNode =
-            node.peekAtField(sfNewFields).downcast<STObject>();
-        return makeMptID(
-            mptNode.getFieldU32(sfSequence), mptNode.getAccountID(sfIssuer));
+        auto const& mptNode = node.peekAtField(sfNewFields).downcast<STObject>();
+        return makeMptID(mptNode.getFieldU32(sfSequence), mptNode.getAccountID(sfIssuer));
     }
 
     return std::nullopt;
@@ -75,4 +51,4 @@ insertMPTokenIssuanceID(
 }
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl

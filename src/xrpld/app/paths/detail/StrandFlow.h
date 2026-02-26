@@ -1,28 +1,7 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_PATHS_IMPL_STRANDFLOW_H_INCLUDED
-#define RIPPLE_APP_PATHS_IMPL_STRANDFLOW_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/paths/AMMContext.h>
-#include <xrpld/app/paths/Credit.h>
 #include <xrpld/app/paths/Flow.h>
 #include <xrpld/app/paths/detail/AmountSpec.h>
 #include <xrpld/app/paths/detail/FlatSets.h>
@@ -30,6 +9,7 @@
 #include <xrpld/app/paths/detail/Steps.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/Credit.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -40,7 +20,7 @@
 #include <iterator>
 #include <numeric>
 
-namespace ripple {
+namespace xrpl {
 
 /** Result of flow() execution of a single Strand. */
 template <class TInAmt, class TOutAmt>
@@ -79,12 +59,8 @@ struct StrandResult
     {
     }
 
-    StrandResult(
-        Strand const& strand,
-        boost::container::flat_set<uint256> ofrsToRm_)
-        : success(false)
-        , ofrsToRm(std::move(ofrsToRm_))
-        , ofrsUsed(offersUsed(strand))
+    StrandResult(Strand const& strand, boost::container::flat_set<uint256> ofrsToRm_)
+        : success(false), ofrsToRm(std::move(ofrsToRm_)), ofrsUsed(offersUsed(strand))
     {
     }
 };
@@ -153,8 +129,7 @@ flow(
                     limitingStep = i;
 
                     // re-execute the limiting step
-                    r = strand[i]->fwd(
-                        *sb, *afView, ofrsToRm, EitherAmount(*maxIn));
+                    r = strand[i]->fwd(*sb, *afView, ofrsToRm, EitherAmount(*maxIn));
                     limitStepOut = r.second;
 
                     if (strand[i]->isZero(r.second))
@@ -168,12 +143,10 @@ flow(
                         // throwing out the sandbox can only increase liquidity
                         // yet the limiting is still limiting
                         // LCOV_EXCL_START
-                        JLOG(j.fatal())
-                            << "Re-executed limiting step failed. r.first: "
-                            << to_string(get<TInAmt>(r.first))
-                            << " maxIn: " << to_string(*maxIn);
+                        JLOG(j.fatal()) << "Re-executed limiting step failed. r.first: "
+                                        << to_string(get<TInAmt>(r.first)) << " maxIn: " << to_string(*maxIn);
                         UNREACHABLE(
-                            "ripple::flow : first step re-executing the "
+                            "xrpl::flow : first step re-executing the "
                             "limiting step failed");
                         return Result{strand, std::move(ofrsToRm)};
                         // LCOV_EXCL_STOP
@@ -206,14 +179,13 @@ flow(
                         // yet the limiting is still limiting
                         // LCOV_EXCL_START
 #ifndef NDEBUG
-                        JLOG(j.fatal())
-                            << "Re-executed limiting step failed. r.second: "
-                            << r.second << " stepOut: " << stepOut;
+                        JLOG(j.fatal()) << "Re-executed limiting step failed. r.second: " << r.second
+                                        << " stepOut: " << stepOut;
 #else
                         JLOG(j.fatal()) << "Re-executed limiting step failed";
 #endif
                         UNREACHABLE(
-                            "ripple::flow : limiting step re-executing the "
+                            "xrpl::flow : limiting step re-executing the "
                             "limiting step failed");
                         return Result{strand, std::move(ofrsToRm)};
                         // LCOV_EXCL_STOP
@@ -244,14 +216,12 @@ flow(
                     // new limit
                     // LCOV_EXCL_START
 #ifndef NDEBUG
-                    JLOG(j.fatal())
-                        << "Re-executed forward pass failed. r.first: "
-                        << r.first << " stepIn: " << stepIn;
+                    JLOG(j.fatal()) << "Re-executed forward pass failed. r.first: " << r.first << " stepIn: " << stepIn;
 #else
                     JLOG(j.fatal()) << "Re-executed forward pass failed";
 #endif
                     UNREACHABLE(
-                        "ripple::flow : non-limiting step re-executing the "
+                        "xrpl::flow : non-limiting step re-executing the "
                         "forward pass failed");
                     return Result{strand, std::move(ofrsToRm)};
                     // LCOV_EXCL_STOP
@@ -273,12 +243,10 @@ flow(
             for (auto i = 0; i < s; ++i)
             {
                 bool valid;
-                std::tie(valid, stepIn) =
-                    strand[i]->validFwd(checkSB, checkAfView, stepIn);
+                std::tie(valid, stepIn) = strand[i]->validFwd(checkSB, checkAfView, stepIn);
                 if (!valid)
                 {
-                    JLOG(j.warn())
-                        << "Strand re-execute check failed. Step: " << i;
+                    JLOG(j.warn()) << "Strand re-execute check failed. Step: " << i;
                     break;
                 }
             }
@@ -286,17 +254,10 @@ flow(
 #endif
 
         bool const inactive = std::any_of(
-            strand.begin(),
-            strand.end(),
-            [](std::unique_ptr<Step> const& step) { return step->inactive(); });
+            strand.begin(), strand.end(), [](std::unique_ptr<Step> const& step) { return step->inactive(); });
 
         return Result(
-            strand,
-            get<TInAmt>(strandIn),
-            get<TOutAmt>(strandOut),
-            std::move(*sb),
-            std::move(ofrsToRm),
-            inactive);
+            strand, get<TInAmt>(strandIn), get<TOutAmt>(strandOut), std::move(*sb), std::move(ofrsToRm), inactive);
     }
     catch (FlowException const&)
     {
@@ -321,24 +282,15 @@ struct FlowResult
         TOutAmt const& out_,
         PaymentSandbox&& sandbox_,
         boost::container::flat_set<uint256> ofrsToRm)
-        : in(in_)
-        , out(out_)
-        , sandbox(std::move(sandbox_))
-        , removableOffers(std::move(ofrsToRm))
-        , ter(tesSUCCESS)
+        : in(in_), out(out_), sandbox(std::move(sandbox_)), removableOffers(std::move(ofrsToRm)), ter(tesSUCCESS)
     {
     }
 
-    FlowResult(TER ter_, boost::container::flat_set<uint256> ofrsToRm)
-        : removableOffers(std::move(ofrsToRm)), ter(ter_)
+    FlowResult(TER ter_, boost::container::flat_set<uint256> ofrsToRm) : removableOffers(std::move(ofrsToRm)), ter(ter_)
     {
     }
 
-    FlowResult(
-        TER ter_,
-        TInAmt const& in_,
-        TOutAmt const& out_,
-        boost::container::flat_set<uint256> ofrsToRm)
+    FlowResult(TER ter_, TInAmt const& in_, TOutAmt const& out_, boost::container::flat_set<uint256> ofrsToRm)
         : in(in_), out(out_), removableOffers(std::move(ofrsToRm)), ter(ter_)
     {
     }
@@ -374,19 +326,14 @@ qualityUpperBound(ReadView const& v, Strand const& strand)
  */
 template <typename TOutAmt>
 inline TOutAmt
-limitOut(
-    ReadView const& v,
-    Strand const& strand,
-    TOutAmt const& remainingOut,
-    Quality const& limitQuality)
+limitOut(ReadView const& v, Strand const& strand, TOutAmt const& remainingOut, Quality const& limitQuality)
 {
     std::optional<QualityFunction> stepQualityFunc;
     std::optional<QualityFunction> qf;
     DebtDirection dir = DebtDirection::issues;
     for (auto const& step : strand)
     {
-        if (std::tie(stepQualityFunc, dir) = step->getQualityFunc(v, dir);
-            stepQualityFunc)
+        if (std::tie(stepQualityFunc, dir) = step->getQualityFunc(v, dir); stepQualityFunc)
         {
             if (!qf)
                 qf = stepQualityFunc;
@@ -409,8 +356,7 @@ limitOut(
         else if constexpr (std::is_same_v<TOutAmt, IOUAmount>)
             return IOUAmount{*out};
         else
-            return STAmount{
-                remainingOut.issue(), out->mantissa(), out->exponent()};
+            return STAmount{remainingOut.issue(), out->mantissa(), out->exponent()};
     }();
     // A tiny difference could be due to the round off
     if (withinRelativeDistance(out, remainingOut, Number(1, -9)))
@@ -452,10 +398,10 @@ public:
         // add the strands in `next_` to `cur_`, sorted by theoretical quality.
         // Best quality first.
         cur_.clear();
-        if (v.rules().enabled(featureFlowSortStrands) && !next_.empty())
+        if (!next_.empty())
         {
-            std::vector<std::pair<Quality, Strand const*>> strandQuals;
-            strandQuals.reserve(next_.size());
+            std::vector<std::pair<Quality, Strand const*>> strandQualities;
+            strandQualities.reserve(next_.size());
             if (next_.size() > 1)  // no need to sort one strand
             {
                 for (Strand const* strand : next_)
@@ -477,21 +423,18 @@ public:
                             // an unusual corner case.
                             continue;
                         }
-                        strandQuals.push_back({*qual, strand});
+                        strandQualities.push_back({*qual, strand});
                     }
                 }
                 // must stable sort for deterministic order across different c++
                 // standard library implementations
-                std::stable_sort(
-                    strandQuals.begin(),
-                    strandQuals.end(),
-                    [](auto const& lhs, auto const& rhs) {
-                        // higher qualities first
-                        return std::get<Quality>(lhs) > std::get<Quality>(rhs);
-                    });
+                std::stable_sort(strandQualities.begin(), strandQualities.end(), [](auto const& lhs, auto const& rhs) {
+                    // higher qualities first
+                    return std::get<Quality>(lhs) > std::get<Quality>(rhs);
+                });
                 next_.clear();
-                next_.reserve(strandQuals.size());
-                for (auto const& sq : strandQuals)
+                next_.reserve(strandQualities.size());
+                for (auto const& sq : strandQualities)
                 {
                     next_.push_back(std::get<Strand const*>(sq));
                 }
@@ -506,7 +449,7 @@ public:
         if (i >= cur_.size())
         {
             // LCOV_EXCL_START
-            UNREACHABLE("ripple::ActiveStrands::get : input out of range");
+            UNREACHABLE("xrpl::ActiveStrands::get : input out of range");
             return nullptr;
             // LCOV_EXCL_STOP
         }
@@ -594,11 +537,7 @@ flow(
             PaymentSandbox&& sb_,
             Strand const& strand_,
             Quality const& quality_)
-            : in(in_)
-            , out(out_)
-            , sb(std::move(sb_))
-            , strand(strand_)
-            , quality(quality_)
+            : in(in_), out(out_), sb(std::move(sb_)), strand(strand_), quality(quality_)
         {
         }
     };
@@ -612,14 +551,10 @@ flow(
     // values if `remainingIn` is initialized through a copy constructor. We can
     // get similar warnings for `sendMax` if it is initialized in the most
     // natural way. Using `make_optional`, allows us to work around this bug.
-    TInAmt const sendMaxInit =
-        sendMaxST ? toAmount<TInAmt>(*sendMaxST) : TInAmt{beast::zero};
+    TInAmt const sendMaxInit = sendMaxST ? toAmount<TInAmt>(*sendMaxST) : TInAmt{beast::zero};
     std::optional<TInAmt> const sendMax =
-        (sendMaxST && sendMaxInit >= beast::zero)
-        ? std::make_optional(sendMaxInit)
-        : std::nullopt;
-    std::optional<TInAmt> remainingIn =
-        !!sendMax ? std::make_optional(sendMaxInit) : std::nullopt;
+        (sendMaxST && sendMaxInit >= beast::zero) ? std::make_optional(sendMaxInit) : std::nullopt;
+    std::optional<TInAmt> remainingIn = !!sendMax ? std::make_optional(sendMaxInit) : std::nullopt;
     // std::optional<TInAmt> remainingIn{sendMax};
 
     TOutAmt remainingOut(outReq);
@@ -648,8 +583,7 @@ flow(
     // successful
     boost::container::flat_set<uint256> ofrsToRmOnFail;
 
-    while (remainingOut > beast::zero &&
-           (!remainingIn || *remainingIn > beast::zero))
+    while (remainingOut > beast::zero && (!remainingIn || *remainingIn > beast::zero))
     {
         ++curTry;
         if (curTry >= maxTries)
@@ -679,9 +613,7 @@ flow(
         // offers Constructed as `false,0` to workaround a gcc warning about
         // uninitialized variables
         std::optional<std::size_t> markInactiveOnUse;
-        for (size_t strandIndex = 0, sie = activeStrands.size();
-             strandIndex != sie;
-             ++strandIndex)
+        for (size_t strandIndex = 0, sie = activeStrands.size(); strandIndex != sie; ++strandIndex)
         {
             Strand const* strand = activeStrands.get(strandIndex);
             if (!strand)
@@ -699,8 +631,7 @@ flow(
                 if (!strandQ || *strandQ < *limitQuality)
                     continue;
             }
-            auto f = flow<TInAmt, TOutAmt>(
-                sb, *strand, remainingIn, limitRemainingOut, j);
+            auto f = flow<TInAmt, TOutAmt>(sb, *strand, remainingIn, limitRemainingOut, j);
 
             // rm bad offers even if the strand fails
             SetUnion(ofrsToRm, f.ofrsToRm);
@@ -711,73 +642,37 @@ flow(
                 continue;
 
             if (flowDebugInfo)
-                flowDebugInfo->pushLiquiditySrc(
-                    EitherAmount(f.in), EitherAmount(f.out));
+                flowDebugInfo->pushLiquiditySrc(EitherAmount(f.in), EitherAmount(f.out));
 
             XRPL_ASSERT(
-                f.out <= remainingOut && f.sandbox &&
-                    (!remainingIn || f.in <= *remainingIn),
-                "ripple::flow : remaining constraints");
+                f.out <= remainingOut && f.sandbox && (!remainingIn || f.in <= *remainingIn),
+                "xrpl::flow : remaining constraints");
 
             Quality const q(f.out, f.in);
 
-            JLOG(j.trace())
-                << "New flow iter (iter, in, out): " << curTry - 1 << " "
-                << to_string(f.in) << " " << to_string(f.out);
+            JLOG(j.trace()) << "New flow iter (iter, in, out): " << curTry - 1 << " " << to_string(f.in) << " "
+                            << to_string(f.out);
 
             // limitOut() finds output to generate exact requested
             // limitQuality. But the actual limit quality might be slightly
             // off due to the round off.
             if (limitQuality && q < *limitQuality &&
-                (!adjustedRemOut ||
-                 !withinRelativeDistance(q, *limitQuality, Number(1, -7))))
+                (!adjustedRemOut || !withinRelativeDistance(q, *limitQuality, Number(1, -7))))
             {
-                JLOG(j.trace())
-                    << "Path rejected by limitQuality"
-                    << " limit: " << *limitQuality << " path q: " << q;
+                JLOG(j.trace()) << "Path rejected by limitQuality"
+                                << " limit: " << *limitQuality << " path q: " << q;
                 continue;
             }
 
-            if (baseView.rules().enabled(featureFlowSortStrands))
-            {
-                XRPL_ASSERT(!best, "ripple::flow : best is unset");
-                if (!f.inactive)
-                    activeStrands.push(strand);
-                best.emplace(f.in, f.out, std::move(*f.sandbox), *strand, q);
-                activeStrands.pushRemainingCurToNext(strandIndex + 1);
-                break;
-            }
-
-            activeStrands.push(strand);
-
-            if (!best || best->quality < q ||
-                (best->quality == q && best->out < f.out))
-            {
-                // If this strand is inactive (because it consumed too many
-                // offers) and ends up having the best quality, remove it
-                // from the activeStrands. If it doesn't end up having the
-                // best quality, keep it active.
-
-                if (f.inactive)
-                {
-                    // This should be `nextSize`, not `size`. This issue is
-                    // fixed in featureFlowSortStrands.
-                    markInactiveOnUse = activeStrands.size() - 1;
-                }
-                else
-                {
-                    markInactiveOnUse.reset();
-                }
-
-                best.emplace(f.in, f.out, std::move(*f.sandbox), *strand, q);
-            }
+            XRPL_ASSERT(!best, "xrpl::flow : best is unset");
+            if (!f.inactive)
+                activeStrands.push(strand);
+            best.emplace(f.in, f.out, std::move(*f.sandbox), *strand, q);
+            activeStrands.pushRemainingCurToNext(strandIndex + 1);
+            break;
         }
 
-        bool const shouldBreak = [&] {
-            if (baseView.rules().enabled(featureFlowSortStrands))
-                return !best || offersConsidered >= maxOffersToConsider;
-            return !best;
-        }();
+        bool const shouldBreak = !best || offersConsidered >= maxOffersToConsider;
 
         if (best)
         {
@@ -793,13 +688,9 @@ flow(
                 remainingIn = *sendMax - sum(savedIns);
 
             if (flowDebugInfo)
-                flowDebugInfo->pushPass(
-                    EitherAmount(best->in),
-                    EitherAmount(best->out),
-                    activeStrands.size());
+                flowDebugInfo->pushPass(EitherAmount(best->in), EitherAmount(best->out), activeStrands.size());
 
-            JLOG(j.trace()) << "Best path: in: " << to_string(best->in)
-                            << " out: " << to_string(best->out)
+            JLOG(j.trace()) << "Best path: in: " << to_string(best->in) << " out: " << to_string(best->out)
                             << " remainingOut: " << to_string(remainingOut);
 
             best->sb.apply(sb);
@@ -829,8 +720,7 @@ flow(
     auto const actualOut = sum(savedOuts);
     auto const actualIn = sum(savedIns);
 
-    JLOG(j.trace()) << "Total flow: in: " << to_string(actualIn)
-                    << " out: " << to_string(actualOut);
+    JLOG(j.trace()) << "Total flow: in: " << to_string(actualIn) << " out: " << to_string(actualOut);
 
     /* flowCross doesn't handle offer crossing with tfFillOrKill flag correctly.
      * 1. If tfFillOrKill is set then the owner must receive the full
@@ -854,7 +744,7 @@ flow(
             // running debug builds of rippled. While this issue still needs to
             // be resolved, the assert is causing more harm than good at this
             // point.
-            // UNREACHABLE("ripple::flow : rounding error");
+            // UNREACHABLE("xrpl::flow : rounding error");
 
             return {tefEXCEPTION, std::move(ofrsToRmOnFail)};
         }
@@ -867,22 +757,15 @@ flow(
             // fixFillOrKill amendment:
             //   That case is handled here if tfSell is also not set; i.e,
             //   case 1.
-            if (!offerCrossing ||
-                (fillOrKillEnabled && offerCrossing != OfferCrossing::sell))
-                return {
-                    tecPATH_PARTIAL,
-                    actualIn,
-                    actualOut,
-                    std::move(ofrsToRmOnFail)};
+            if (!offerCrossing || (fillOrKillEnabled && offerCrossing != OfferCrossing::sell))
+                return {tecPATH_PARTIAL, actualIn, actualOut, std::move(ofrsToRmOnFail)};
         }
         else if (actualOut == beast::zero)
         {
             return {tecPATH_DRY, std::move(ofrsToRmOnFail)};
         }
     }
-    if (offerCrossing &&
-        (!partialPayment &&
-         (!fillOrKillEnabled || offerCrossing == OfferCrossing::sell)))
+    if (offerCrossing && (!partialPayment && (!fillOrKillEnabled || offerCrossing == OfferCrossing::sell)))
     {
         // If we're offer crossing and partialPayment is *not* true, then
         // we're handling a FillOrKill offer.  In this case remainingIn must
@@ -891,18 +774,12 @@ flow(
         //   Handles both cases 1. and 2.
         // fixFillOrKill amendment:
         //   Handles 2. 1. is handled above and falls through for tfSell.
-        XRPL_ASSERT(remainingIn, "ripple::flow : nonzero remainingIn");
+        XRPL_ASSERT(remainingIn, "xrpl::flow : nonzero remainingIn");
         if (remainingIn && *remainingIn != beast::zero)
-            return {
-                tecPATH_PARTIAL,
-                actualIn,
-                actualOut,
-                std::move(ofrsToRmOnFail)};
+            return {tecPATH_PARTIAL, actualIn, actualOut, std::move(ofrsToRmOnFail)};
     }
 
     return {actualIn, actualOut, std::move(sb), std::move(ofrsToRmOnFail)};
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

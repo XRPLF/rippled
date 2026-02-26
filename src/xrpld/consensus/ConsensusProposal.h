@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVID_tED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_CONSENSUS_CONSENSUSPROPOSAL_H_INCLUDED
-#define RIPPLE_CONSENSUS_CONSENSUSPROPOSAL_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
@@ -31,7 +11,7 @@
 #include <optional>
 #include <sstream>
 
-namespace ripple {
+namespace xrpl {
 /** Represents a proposed position taken during a round of consensus.
 
     During consensus, peers seek agreement on a set of transactions to
@@ -171,10 +151,7 @@ public:
         @param now the time The new position was taken
      */
     void
-    changePosition(
-        Position_t const& newPosition,
-        NetClock::time_point newCloseTime,
-        NetClock::time_point now)
+    changePosition(Position_t const& newPosition, NetClock::time_point newCloseTime, NetClock::time_point now)
     {
         signingHash_.reset();
         position_ = newPosition;
@@ -202,11 +179,9 @@ public:
     render() const
     {
         std::stringstream ss;
-        ss << "proposal: previous_ledger: " << previousLedger_
-           << " proposal_seq: " << proposeSeq_ << " position: " << position_
-           << " close_time: " << to_string(closeTime_)
-           << " now: " << to_string(time_) << " is_bow_out:" << isBowOut()
-           << " node_id: " << nodeID_;
+        ss << "proposal: previous_ledger: " << previousLedger_ << " proposal_seq: " << proposeSeq_
+           << " position: " << position_ << " close_time: " << to_string(closeTime_) << " now: " << to_string(time_)
+           << " is_bow_out:" << isBowOut() << " node_id: " << nodeID_;
         return ss.str();
     }
 
@@ -225,8 +200,7 @@ public:
             ret[jss::propose_seq] = proposeSeq();
         }
 
-        ret[jss::close_time] =
-            to_string(closeTime().time_since_epoch().count());
+        ret[jss::close_time] = to_string(closeTime().time_since_epoch().count());
 
         return ret;
     }
@@ -277,9 +251,7 @@ operator==(
     ConsensusProposal<NodeID_t, LedgerID_t, Position_t> const& a,
     ConsensusProposal<NodeID_t, LedgerID_t, Position_t> const& b)
 {
-    return a.nodeID() == b.nodeID() && a.proposeSeq() == b.proposeSeq() &&
-        a.prevLedger() == b.prevLedger() && a.position() == b.position() &&
-        a.closeTime() == b.closeTime() && a.seenTime() == b.seenTime();
+    return a.nodeID() == b.nodeID() && a.proposeSeq() == b.proposeSeq() && a.prevLedger() == b.prevLedger() &&
+        a.position() == b.position() && a.closeTime() == b.closeTime() && a.seenTime() == b.seenTime();
 }
-}  // namespace ripple
-#endif
+}  // namespace xrpl

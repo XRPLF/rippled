@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_LEDGER_READVIEW_H_INCLUDED
-#define RIPPLE_LEDGER_READVIEW_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/hash/uhash.h>
@@ -37,7 +17,7 @@
 #include <optional>
 #include <unordered_set>
 
-namespace ripple {
+namespace xrpl {
 
 //------------------------------------------------------------------------------
 
@@ -50,8 +30,7 @@ namespace ripple {
 class ReadView
 {
 public:
-    using tx_type =
-        std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>;
+    using tx_type = std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>;
 
     using key_type = uint256;
 
@@ -99,8 +78,8 @@ public:
     }
 
     /** Returns information about the ledger. */
-    virtual LedgerInfo const&
-    info() const = 0;
+    virtual LedgerHeader const&
+    header() const = 0;
 
     /** Returns true if this reflects an open ledger. */
     virtual bool
@@ -110,14 +89,14 @@ public:
     NetClock::time_point
     parentCloseTime() const
     {
-        return info().parentCloseTime;
+        return header().parentCloseTime;
     }
 
     /** Returns the sequence number of the base ledger. */
     LedgerIndex
     seq() const
     {
-        return info().seq;
+        return header().seq;
     }
 
     /** Returns the fees for the base ledger. */
@@ -149,9 +128,7 @@ public:
         interval (key, last).
     */
     virtual std::optional<key_type>
-    succ(
-        key_type const& key,
-        std::optional<key_type> const& last = std::nullopt) const = 0;
+    succ(key_type const& key, std::optional<key_type> const& last = std::nullopt) const = 0;
 
     /** Return the state item associated with a key.
 
@@ -175,10 +152,7 @@ public:
     // balances so newly acquired assets are not counted toward the balance.
     // This is required to support PaymentSandbox.
     virtual STAmount
-    balanceHook(
-        AccountID const& account,
-        AccountID const& issuer,
-        STAmount const& amount) const
+    balanceHook(AccountID const& account, AccountID const& issuer, STAmount const& amount) const
     {
         return amount;
     }
@@ -273,12 +247,8 @@ Rules
 makeRulesGivenLedger(DigestAwareReadView const& ledger, Rules const& current);
 
 Rules
-makeRulesGivenLedger(
-    DigestAwareReadView const& ledger,
-    std::unordered_set<uint256, beast::uhash<>> const& presets);
+makeRulesGivenLedger(DigestAwareReadView const& ledger, std::unordered_set<uint256, beast::uhash<>> const& presets);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #include <xrpl/ledger/detail/ReadViewFwdRange.ipp>
-
-#endif

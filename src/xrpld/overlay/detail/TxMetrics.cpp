@@ -1,29 +1,10 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2020 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/overlay/detail/TxMetrics.h>
 
 #include <xrpl/protocol/jss.h>
 
 #include <numeric>
 
-namespace ripple {
+namespace xrpl {
 
 namespace metrics {
 
@@ -58,10 +39,7 @@ TxMetrics::addMetrics(protocol::MessageType type, std::uint32_t val)
 }
 
 void
-TxMetrics::addMetrics(
-    std::uint32_t selected,
-    std::uint32_t suppressed,
-    std::uint32_t notenabled)
+TxMetrics::addMetrics(std::uint32_t selected, std::uint32_t suppressed, std::uint32_t notenabled)
 {
     std::lock_guard lock(mutex);
     selectedPeers.addMetrics(selected);
@@ -96,17 +74,15 @@ SingleMetrics::addMetrics(std::uint32_t val)
     accum += val;
     N++;
     auto const timeElapsed = clock_type::now() - intervalStart;
-    auto const timeElapsedInSecs =
-        std::chrono::duration_cast<std::chrono::seconds>(timeElapsed);
+    auto const timeElapsedInSecs = std::chrono::duration_cast<std::chrono::seconds>(timeElapsed);
 
     if (timeElapsedInSecs >= 1s)
     {
         auto const avg = accum / (perTimeUnit ? timeElapsedInSecs.count() : N);
-        rollingAvgAggreg.push_back(avg);
+        rollingAvgAggregate.push_back(avg);
 
-        auto const total = std::accumulate(
-            rollingAvgAggreg.begin(), rollingAvgAggreg.end(), 0ull);
-        rollingAvg = total / rollingAvgAggreg.size();
+        auto const total = std::accumulate(rollingAvgAggregate.begin(), rollingAvgAggregate.end(), 0ull);
+        rollingAvg = total / rollingAvgAggregate.size();
 
         intervalStart = clock_type::now();
         accum = 0;
@@ -149,4 +125,4 @@ TxMetrics::json() const
 
 }  // namespace metrics
 
-}  // namespace ripple
+}  // namespace xrpl

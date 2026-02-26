@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TEST_JTX_DIRECTORY_H_INCLUDED
-#define RIPPLE_TEST_JTX_DIRECTORY_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
@@ -29,7 +9,7 @@
 #include <cstdint>
 #include <limits>
 
-namespace ripple::test::jtx {
+namespace xrpl::test::jtx {
 
 /** Directory operations. */
 namespace directory {
@@ -56,8 +36,7 @@ bumpLastPage(
     Env& env,
     std::uint64_t newLastPage,
     Keylet directory,
-    std::function<bool(ApplyView&, uint256, std::uint64_t)> adjust)
-    -> Expected<void, Error>;
+    std::function<bool(ApplyView&, uint256, std::uint64_t)> adjust) -> Expected<void, Error>;
 
 /// Implementation of adjust for the most common ledger entry, i.e. one where
 /// page index is stored in sfOwnerNode (and only there). Pass this function
@@ -76,6 +55,4 @@ maximumPageIndex(Env const& env) -> std::uint64_t
 
 }  // namespace directory
 
-}  // namespace ripple::test::jtx
-
-#endif
+}  // namespace xrpl::test::jtx

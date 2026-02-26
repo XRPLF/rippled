@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/app/tx/detail/AMMVote.h>
 
@@ -25,7 +6,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 AMMVote::checkExtraFeatures(PreflightContext const& ctx)
@@ -36,8 +17,7 @@ AMMVote::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 AMMVote::preflight(PreflightContext const& ctx)
 {
-    if (auto const res = invalidAMMAssetPair(
-            ctx.tx[sfAsset].get<Issue>(), ctx.tx[sfAsset2].get<Issue>()))
+    if (auto const res = invalidAMMAssetPair(ctx.tx[sfAsset].get<Issue>(), ctx.tx[sfAsset2].get<Issue>()))
     {
         JLOG(ctx.j.debug()) << "AMM Vote: invalid asset pair.";
         return res;
@@ -55,17 +35,14 @@ AMMVote::preflight(PreflightContext const& ctx)
 TER
 AMMVote::preclaim(PreclaimContext const& ctx)
 {
-    if (auto const ammSle =
-            ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
-        !ammSle)
+    if (auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2])); !ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Vote: Invalid asset pair.";
         return terNO_AMM;
     }
     else if (ammSle->getFieldAmount(sfLPTokenBalance) == beast::zero)
         return tecAMM_EMPTY;
-    else if (auto const lpTokensNew =
-                 ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
+    else if (auto const lpTokensNew = ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
              lpTokensNew == beast::zero)
     {
         JLOG(ctx.j.debug()) << "AMM Vote: account is not LP.";
@@ -76,11 +53,7 @@ AMMVote::preclaim(PreclaimContext const& ctx)
 }
 
 static std::pair<TER, bool>
-applyVote(
-    ApplyContext& ctx_,
-    Sandbox& sb,
-    AccountID const& account_,
-    beast::Journal j_)
+applyVote(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Journal j_)
 {
     auto const feeNew = ctx_.tx[sfTradingFee];
     auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
@@ -108,8 +81,7 @@ applyVote(
         auto lpTokens = ammLPHolds(sb, *ammSle, account, ctx_.journal);
         if (lpTokens == beast::zero)
         {
-            JLOG(j_.debug())
-                << "AMMVote::applyVote, account " << account << " is not LP";
+            JLOG(j_.debug()) << "AMMVote::applyVote, account " << account << " is not LP";
             continue;
         }
         auto feeVal = entry[sfTradingFee];
@@ -128,16 +100,13 @@ applyVote(
         if (feeVal != 0)
             newEntry.setFieldU16(sfTradingFee, feeVal);
         newEntry.setFieldU32(
-            sfVoteWeight,
-            static_cast<std::int64_t>(
-                Number(lpTokens) * VOTE_WEIGHT_SCALE_FACTOR / lptAMMBalance));
+            sfVoteWeight, static_cast<std::int64_t>(Number(lpTokens) * VOTE_WEIGHT_SCALE_FACTOR / lptAMMBalance));
 
         // Find an entry with the least tokens/fee. Make the order deterministic
         // if the tokens/fees are equal.
         if (!minTokens ||
             (lpTokens < *minTokens ||
-             (lpTokens == *minTokens &&
-              (feeVal < minFee || (feeVal == minFee && account < minAccount)))))
+             (lpTokens == *minTokens && (feeVal < minFee || (feeVal == minFee && account < minAccount)))))
         {
             minTokens = lpTokens;
             minPos = updatedVoteSlots.size();
@@ -150,16 +119,13 @@ applyVote(
     // The account doesn't have the vote entry.
     if (!foundAccount)
     {
-        auto update = [&](std::optional<std::uint8_t> const& minPos =
-                              std::nullopt) {
+        auto update = [&](std::optional<std::uint8_t> const& minPos = std::nullopt) {
             STObject newEntry = STObject::makeInnerObject(sfVoteEntry);
             if (feeNew != 0)
                 newEntry.setFieldU16(sfTradingFee, feeNew);
             newEntry.setFieldU32(
                 sfVoteWeight,
-                static_cast<std::int64_t>(
-                    Number(lpTokensNew) * VOTE_WEIGHT_SCALE_FACTOR /
-                    lptAMMBalance));
+                static_cast<std::int64_t>(Number(lpTokensNew) * VOTE_WEIGHT_SCALE_FACTOR / lptAMMBalance));
             newEntry.setAccountID(sfAccount, account_);
             num += feeNew * lpTokensNew;
             den += lpTokensNew;
@@ -174,9 +140,7 @@ applyVote(
             update();
         // Add the entry if the account has more tokens than
         // the least token holder or same tokens and higher fee.
-        else if (
-            lpTokensNew > *minTokens ||
-            (lpTokensNew == *minTokens && feeNew > minFee))
+        else if (lpTokensNew > *minTokens || (lpTokensNew == *minTokens && feeNew > minFee))
         {
             auto const entry = updatedVoteSlots.begin() + minPos;
             // Remove the least token vote entry.
@@ -194,9 +158,8 @@ applyVote(
     }
 
     XRPL_ASSERT(
-        !ctx_.view().rules().enabled(fixInnerObjTemplate) ||
-            ammSle->isFieldPresent(sfAuctionSlot),
-        "ripple::applyVote : has auction slot");
+        !ctx_.view().rules().enabled(fixInnerObjTemplate) || ammSle->isFieldPresent(sfAuctionSlot),
+        "xrpl::applyVote : has auction slot");
 
     // Update the vote entries and the trading/discounted fee.
     ammSle->setFieldArray(sfVoteSlots, updatedVoteSlots);
@@ -206,8 +169,7 @@ applyVote(
         if (ammSle->isFieldPresent(sfAuctionSlot))
         {
             auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
-            if (auto const discountedFee =
-                    fee / AUCTION_SLOT_DISCOUNTED_FEE_FRACTION)
+            if (auto const discountedFee = fee / AUCTION_SLOT_DISCOUNTED_FEE_FRACTION)
                 auctionSlot.setFieldU16(sfDiscountedFee, discountedFee);
             else if (auctionSlot.isFieldPresent(sfDiscountedFee))
                 auctionSlot.makeFieldAbsent(sfDiscountedFee);
@@ -243,4 +205,4 @@ AMMVote::doApply()
     return result.first;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

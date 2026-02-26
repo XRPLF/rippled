@@ -1,24 +1,6 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright 2014, Nikolaos D. Bougalis <nikb@bougalis.net>
+// Copyright (c) 2014, Nikolaos D. Bougalis <nikb@bougalis.net>
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef BEAST_UTILITY_TAGGED_INTEGER_H_INCLUDED
-#define BEAST_UTILITY_TAGGED_INTEGER_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/hash/hash_append.h>
 
@@ -27,7 +9,7 @@
 #include <iostream>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 
 /** A type-safe wrap around standard integral types
 
@@ -48,9 +30,7 @@ class tagged_integer
               tagged_integer<Int, Tag>,
               boost::bitwise<
                   tagged_integer<Int, Tag>,
-                  boost::unit_steppable<
-                      tagged_integer<Int, Tag>,
-                      boost::shiftable<tagged_integer<Int, Tag>>>>>>
+                  boost::unit_steppable<tagged_integer<Int, Tag>, boost::shiftable<tagged_integer<Int, Tag>>>>>>
 {
 private:
     Int m_value;
@@ -63,14 +43,10 @@ public:
 
     template <
         class OtherInt,
-        class = typename std::enable_if<
-            std::is_integral<OtherInt>::value &&
-            sizeof(OtherInt) <= sizeof(Int)>::type>
+        class = typename std::enable_if<std::is_integral<OtherInt>::value && sizeof(OtherInt) <= sizeof(Int)>::type>
     explicit constexpr tagged_integer(OtherInt value) noexcept : m_value(value)
     {
-        static_assert(
-            sizeof(tagged_integer) == sizeof(Int),
-            "tagged_integer is adding padding");
+        static_assert(sizeof(tagged_integer) == sizeof(Int), "tagged_integer is adding padding");
     }
 
     bool
@@ -214,15 +190,14 @@ public:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 namespace beast {
 template <class Int, class Tag, class HashAlgorithm>
-struct is_contiguously_hashable<ripple::tagged_integer<Int, Tag>, HashAlgorithm>
+struct is_contiguously_hashable<xrpl::tagged_integer<Int, Tag>, HashAlgorithm>
     : public is_contiguously_hashable<Int, HashAlgorithm>
 {
     explicit is_contiguously_hashable() = default;
 };
 
 }  // namespace beast
-#endif

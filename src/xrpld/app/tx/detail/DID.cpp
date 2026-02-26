@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/detail/DID.h>
 
 #include <xrpl/basics/Log.h>
@@ -26,7 +7,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 /*
     DID
@@ -45,13 +26,11 @@ namespace ripple {
 NotTEC
 DIDSet::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.tx.isFieldPresent(sfURI) &&
-        !ctx.tx.isFieldPresent(sfDIDDocument) && !ctx.tx.isFieldPresent(sfData))
+    if (!ctx.tx.isFieldPresent(sfURI) && !ctx.tx.isFieldPresent(sfDIDDocument) && !ctx.tx.isFieldPresent(sfData))
         return temEMPTY_DID;
 
-    if (ctx.tx.isFieldPresent(sfURI) && ctx.tx[sfURI].empty() &&
-        ctx.tx.isFieldPresent(sfDIDDocument) && ctx.tx[sfDIDDocument].empty() &&
-        ctx.tx.isFieldPresent(sfData) && ctx.tx[sfData].empty())
+    if (ctx.tx.isFieldPresent(sfURI) && ctx.tx[sfURI].empty() && ctx.tx.isFieldPresent(sfDIDDocument) &&
+        ctx.tx[sfDIDDocument].empty() && ctx.tx.isFieldPresent(sfData) && ctx.tx[sfData].empty())
         return temEMPTY_DID;
 
     auto isTooLong = [&](auto const& sField, std::size_t length) -> bool {
@@ -60,8 +39,7 @@ DIDSet::preflight(PreflightContext const& ctx)
         return false;
     };
 
-    if (isTooLong(sfURI, maxDIDURILength) ||
-        isTooLong(sfDIDDocument, maxDIDDocumentLength) ||
+    if (isTooLong(sfURI, maxDIDURILength) || isTooLong(sfDIDDocument, maxDIDDocumentLength) ||
         isTooLong(sfData, maxDIDAttestationLength))
         return temMALFORMED;
 
@@ -69,10 +47,7 @@ DIDSet::preflight(PreflightContext const& ctx)
 }
 
 TER
-addSLE(
-    ApplyContext& ctx,
-    std::shared_ptr<SLE> const& sle,
-    AccountID const& owner)
+addSLE(ApplyContext& ctx, std::shared_ptr<SLE> const& sle, AccountID const& owner)
 {
     auto const sleAccount = ctx.view().peek(keylet::account(owner));
     if (!sleAccount)
@@ -81,8 +56,7 @@ addSLE(
     // Check reserve availability for new object creation
     {
         auto const balance = STAmount((*sleAccount)[sfBalance]).xrp();
-        auto const reserve =
-            ctx.view().fees().accountReserve((*sleAccount)[sfOwnerCount] + 1);
+        auto const reserve = ctx.view().fees().accountReserve((*sleAccount)[sfOwnerCount] + 1);
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -93,8 +67,7 @@ addSLE(
 
     // Add ledger object to owner's page
     {
-        auto page = ctx.view().dirInsert(
-            keylet::ownerDir(owner), sle->key(), describeOwnerDir(owner));
+        auto page = ctx.view().dirInsert(keylet::ownerDir(owner), sle->key(), describeOwnerDir(owner));
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*sle)[sfOwnerNode] = *page;
@@ -129,9 +102,7 @@ DIDSet::doApply()
         update(sfDIDDocument);
         update(sfData);
 
-        if (!sleDID->isFieldPresent(sfURI) &&
-            !sleDID->isFieldPresent(sfDIDDocument) &&
-            !sleDID->isFieldPresent(sfData))
+        if (!sleDID->isFieldPresent(sfURI) && !sleDID->isFieldPresent(sfDIDDocument) && !sleDID->isFieldPresent(sfData))
         {
             return tecEMPTY_DID;
         }
@@ -151,10 +122,8 @@ DIDSet::doApply()
     set(sfURI);
     set(sfDIDDocument);
     set(sfData);
-    if (ctx_.view().rules().enabled(fixEmptyDID) &&
-        !sleDID->isFieldPresent(sfURI) &&
-        !sleDID->isFieldPresent(sfDIDDocument) &&
-        !sleDID->isFieldPresent(sfData))
+    if (ctx_.view().rules().enabled(fixEmptyDID) && !sleDID->isFieldPresent(sfURI) &&
+        !sleDID->isFieldPresent(sfDIDDocument) && !sleDID->isFieldPresent(sfData))
     {
         return tecEMPTY_DID;
     }
@@ -179,15 +148,10 @@ DIDDelete::deleteSLE(ApplyContext& ctx, Keylet sleKeylet, AccountID const owner)
 }
 
 TER
-DIDDelete::deleteSLE(
-    ApplyView& view,
-    std::shared_ptr<SLE> sle,
-    AccountID const owner,
-    beast::Journal j)
+DIDDelete::deleteSLE(ApplyView& view, std::shared_ptr<SLE> sle, AccountID const owner, beast::Journal j)
 {
     // Remove object from owner directory
-    if (!view.dirRemove(
-            keylet::ownerDir(owner), (*sle)[sfOwnerNode], sle->key(), true))
+    if (!view.dirRemove(keylet::ownerDir(owner), (*sle)[sfOwnerNode], sle->key(), true))
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "Unable to delete DID Token from owner.";
@@ -213,4 +177,4 @@ DIDDelete::doApply()
     return deleteSLE(ctx_, keylet::did(account_), account_);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,30 +1,10 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_OVERLAY_CONNECTATTEMPT_H_INCLUDED
-#define RIPPLE_OVERLAY_CONNECTATTEMPT_H_INCLUDED
+#pragma once
 
 #include <xrpld/overlay/detail/OverlayImpl.h>
 
 #include <chrono>
 
-namespace ripple {
+namespace xrpl {
 
 /**
  * @class ConnectAttempt
@@ -57,16 +37,13 @@ namespace ripple {
  *       as part of the peer discovery and connection management system.
  *
  */
-class ConnectAttempt : public OverlayImpl::Child,
-                       public std::enable_shared_from_this<ConnectAttempt>
+class ConnectAttempt : public OverlayImpl::Child, public std::enable_shared_from_this<ConnectAttempt>
 {
 private:
     using error_code = boost::system::error_code;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
-    using request_type =
-        boost::beast::http::request<boost::beast::http::empty_body>;
-    using response_type =
-        boost::beast::http::response<boost::beast::http::dynamic_body>;
+    using request_type = boost::beast::http::request<boost::beast::http::empty_body>;
+    using response_type = boost::beast::http::response<boost::beast::http::dynamic_body>;
     using socket_type = boost::asio::ip::tcp::socket;
     using middle_type = boost::beast::tcp_stream;
     using stream_type = boost::beast::ssl_stream<middle_type>;
@@ -283,8 +260,7 @@ private:
         is >> bep;
         if (is.fail())
         {
-            ec = boost::system::errc::make_error_code(
-                boost::system::errc::invalid_argument);
+            ec = boost::system::errc::make_error_code(boost::system::errc::invalid_argument);
             return boost::asio::ip::tcp::endpoint{};
         }
 
@@ -292,6 +268,4 @@ private:
     }
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

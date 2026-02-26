@@ -1,27 +1,8 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2022 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 
 #include <xrpl/basics/strHex.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Memo_test : public beast::unit_test::suite
 {
@@ -54,16 +35,14 @@ public:
         {
             // Make sure that too big a memo is flagged as invalid.
             JTx memoSize = makeJtxWithMemo();
-            memoSize.jv[sfMemos.jsonName][0u][sfMemo.jsonName]
-                       [sfMemoData.jsonName] = std::string(2020, '0');
+            memoSize.jv[sfMemos.jsonName][0u][sfMemo.jsonName][sfMemoData.jsonName] = std::string(2020, '0');
             env(memoSize,
                 rpc("invalidTransaction",
                     "fails local checks: The memo exceeds the maximum allowed "
                     "size."));
 
             // This memo is just barely small enough.
-            memoSize.jv[sfMemos.jsonName][0u][sfMemo.jsonName]
-                       [sfMemoData.jsonName] = std::string(2018, '1');
+            memoSize.jv[sfMemos.jsonName][0u][sfMemo.jsonName][sfMemoData.jsonName] = std::string(2018, '1');
             env(memoSize);
         }
         {
@@ -83,9 +62,7 @@ public:
         {
             // Put an invalid field in a Memo object.
             JTx memoExtra = makeJtxWithMemo();
-            memoExtra
-                .jv[sfMemos.jsonName][0u][sfMemo.jsonName][sfFlags.jsonName] =
-                13;
+            memoExtra.jv[sfMemos.jsonName][0u][sfMemo.jsonName][sfFlags.jsonName] = 13;
             env(memoExtra,
                 rpc("invalidTransaction",
                     "fails local checks: A memo may contain only MemoType, "
@@ -94,8 +71,7 @@ public:
         {
             // Put a character that is not allowed in a URL in a MemoType field.
             JTx memoBadChar = makeJtxWithMemo();
-            memoBadChar.jv[sfMemos.jsonName][0u][sfMemo.jsonName]
-                          [sfMemoType.jsonName] =
+            memoBadChar.jv[sfMemos.jsonName][0u][sfMemo.jsonName][sfMemoType.jsonName] =
                 strHex(std::string_view("ONE<INFINITY"));
             env(memoBadChar,
                 rpc("invalidTransaction",
@@ -107,16 +83,14 @@ public:
             // Put a character that is not allowed in a URL in a MemoData field.
             // That's okay.
             JTx memoLegitChar = makeJtxWithMemo();
-            memoLegitChar.jv[sfMemos.jsonName][0u][sfMemo.jsonName]
-                            [sfMemoData.jsonName] =
+            memoLegitChar.jv[sfMemos.jsonName][0u][sfMemo.jsonName][sfMemoData.jsonName] =
                 strHex(std::string_view("ONE<INFINITY"));
             env(memoLegitChar);
         }
         {
             // Put a character that is not allowed in a URL in a MemoFormat.
             JTx memoBadChar = makeJtxWithMemo();
-            memoBadChar.jv[sfMemos.jsonName][0u][sfMemo.jsonName]
-                          [sfMemoFormat.jsonName] =
+            memoBadChar.jv[sfMemos.jsonName][0u][sfMemo.jsonName][sfMemoFormat.jsonName] =
                 strHex(std::string_view("NoBraces{}InURL"));
             env(memoBadChar,
                 rpc("invalidTransaction",
@@ -135,6 +109,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Memo, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(Memo, protocol, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

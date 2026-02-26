@@ -1,28 +1,9 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2024 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/STIssue.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class STIssue_test : public beast::unit_test::suite
@@ -142,12 +123,8 @@ public:
         BEAST_EXPECT(STIssue(sfAsset, asset1) != asset3);
         BEAST_EXPECT(STIssue(sfAsset, asset1) == asset1);
         BEAST_EXPECT(STIssue(sfAsset, asset1).getText() == "XRP");
-        BEAST_EXPECT(
-            STIssue(sfAsset, asset2).getText() ==
-            "USD/rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn");
-        BEAST_EXPECT(
-            STIssue(sfAsset, asset3).getText() ==
-            "000000000000000000000000000000000000000000000002");
+        BEAST_EXPECT(STIssue(sfAsset, asset2).getText() == "USD/rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn");
+        BEAST_EXPECT(STIssue(sfAsset, asset3).getText() == "000000000000000000000000000000000000000000000002");
     }
 
     void
@@ -159,7 +136,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(STIssue, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(STIssue, protocol, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

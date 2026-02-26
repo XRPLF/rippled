@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_RPC_HANDLER_H_INCLUDED
-#define RIPPLE_RPC_HANDLER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/NetworkOPs.h>
@@ -32,7 +12,7 @@ namespace Json {
 class Object;
 }
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 
 // Under what condition can we call this RPC?
@@ -63,9 +43,7 @@ getHandler(unsigned int version, bool betaEnabled, std::string const&);
 /** Return a Json::objectValue with a single entry. */
 template <class Value>
 Json::Value
-makeObjectValue(
-    Value const& value,
-    Json::StaticString const& field = jss::message)
+makeObjectValue(Value const& value, Json::StaticString const& field = jss::message)
 {
     Json::Value result(Json::objectValue);
     result[field] = value;
@@ -80,34 +58,28 @@ template <class T>
 error_code_i
 conditionMet(Condition condition_required, T& context)
 {
-    if (context.app.getOPs().isAmendmentBlocked() &&
-        (condition_required != NO_CONDITION))
+    if (context.app.getOPs().isAmendmentBlocked() && (condition_required != NO_CONDITION))
     {
         return rpcAMENDMENT_BLOCKED;
     }
 
-    if (context.app.getOPs().isUNLBlocked() &&
-        (condition_required != NO_CONDITION))
+    if (context.app.getOPs().isUNLBlocked() && (condition_required != NO_CONDITION))
     {
         return rpcEXPIRED_VALIDATOR_LIST;
     }
 
-    if ((condition_required != NO_CONDITION) &&
-        (context.netOps.getOperatingMode() < OperatingMode::SYNCING))
+    if ((condition_required != NO_CONDITION) && (context.netOps.getOperatingMode() < OperatingMode::SYNCING))
     {
-        JLOG(context.j.info()) << "Insufficient network mode for RPC: "
-                               << context.netOps.strOperatingMode();
+        JLOG(context.j.info()) << "Insufficient network mode for RPC: " << context.netOps.strOperatingMode();
 
         if (context.apiVersion == 1)
             return rpcNO_NETWORK;
         return rpcNOT_SYNCED;
     }
 
-    if (!context.app.config().standalone() &&
-        condition_required != NO_CONDITION)
+    if (!context.app.config().standalone() && condition_required != NO_CONDITION)
     {
-        if (context.ledgerMaster.getValidatedLedgerAge() >
-            Tuning::maxValidatedLedgerAge)
+        if (context.ledgerMaster.getValidatedLedgerAge() > Tuning::maxValidatedLedgerAge)
         {
             if (context.apiVersion == 1)
                 return rpcNO_CURRENT;
@@ -119,17 +91,15 @@ conditionMet(Condition condition_required, T& context)
 
         if (cID + 10 < vID)
         {
-            JLOG(context.j.debug())
-                << "Current ledger ID(" << cID
-                << ") is less than validated ledger ID(" << vID << ")";
+            JLOG(context.j.debug()) << "Current ledger ID(" << cID << ") is less than validated ledger ID(" << vID
+                                    << ")";
             if (context.apiVersion == 1)
                 return rpcNO_CURRENT;
             return rpcNOT_SYNCED;
         }
     }
 
-    if ((condition_required != NO_CONDITION) &&
-        !context.ledgerMaster.getClosedLedger())
+    if ((condition_required != NO_CONDITION) && !context.ledgerMaster.getClosedLedger())
     {
         if (context.apiVersion == 1)
             return rpcNO_CLOSED;
@@ -140,6 +110,4 @@ conditionMet(Condition condition_required, T& context)
 }
 
 }  // namespace RPC
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

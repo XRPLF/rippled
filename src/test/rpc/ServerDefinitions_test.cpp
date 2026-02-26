@@ -1,28 +1,9 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 
@@ -43,8 +24,7 @@ public:
             BEAST_EXPECT(result[jss::result][jss::status] == "success");
             BEAST_EXPECT(result[jss::result].isMember(jss::FIELDS));
             BEAST_EXPECT(result[jss::result].isMember(jss::LEDGER_ENTRY_TYPES));
-            BEAST_EXPECT(
-                result[jss::result].isMember(jss::TRANSACTION_RESULTS));
+            BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_RESULTS));
             BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_TYPES));
             BEAST_EXPECT(result[jss::result].isMember(jss::TYPES));
             BEAST_EXPECT(result[jss::result].isMember(jss::hash));
@@ -55,26 +35,17 @@ public:
             {
                 auto const firstField = result[jss::result][jss::FIELDS][0u];
                 BEAST_EXPECT(firstField[0u].asString() == "Generic");
-                BEAST_EXPECT(
-                    firstField[1][jss::isSerialized].asBool() == false);
-                BEAST_EXPECT(
-                    firstField[1][jss::isSigningField].asBool() == false);
+                BEAST_EXPECT(firstField[1][jss::isSerialized].asBool() == false);
+                BEAST_EXPECT(firstField[1][jss::isSigningField].asBool() == false);
                 BEAST_EXPECT(firstField[1][jss::isVLEncoded].asBool() == false);
                 BEAST_EXPECT(firstField[1][jss::nth].asUInt() == 0);
                 BEAST_EXPECT(firstField[1][jss::type].asString() == "Unknown");
             }
 
-            BEAST_EXPECT(
-                result[jss::result][jss::LEDGER_ENTRY_TYPES]["AccountRoot"]
-                    .asUInt() == 97);
-            BEAST_EXPECT(
-                result[jss::result][jss::TRANSACTION_RESULTS]["tecDIR_FULL"]
-                    .asUInt() == 121);
-            BEAST_EXPECT(
-                result[jss::result][jss::TRANSACTION_TYPES]["Payment"]
-                    .asUInt() == 0);
-            BEAST_EXPECT(
-                result[jss::result][jss::TYPES]["AccountID"].asUInt() == 8);
+            BEAST_EXPECT(result[jss::result][jss::LEDGER_ENTRY_TYPES]["AccountRoot"].asUInt() == 97);
+            BEAST_EXPECT(result[jss::result][jss::TRANSACTION_RESULTS]["tecDIR_FULL"].asUInt() == 121);
+            BEAST_EXPECT(result[jss::result][jss::TRANSACTION_TYPES]["Payment"].asUInt() == 0);
+            BEAST_EXPECT(result[jss::result][jss::TYPES]["AccountID"].asUInt() == 8);
 
             // check exception SFields
             {
@@ -115,18 +86,14 @@ public:
             Env env(*this);
             auto const firstResult = env.rpc("server_definitions");
             auto const hash = firstResult[jss::result][jss::hash].asString();
-            auto const hashParam =
-                std::string("{ ") + "\"hash\": \"" + hash + "\"}";
+            auto const hashParam = std::string("{ ") + "\"hash\": \"" + hash + "\"}";
 
-            auto const result =
-                env.rpc("json", "server_definitions", hashParam);
+            auto const result = env.rpc("json", "server_definitions", hashParam);
             BEAST_EXPECT(!result[jss::result].isMember(jss::error));
             BEAST_EXPECT(result[jss::result][jss::status] == "success");
             BEAST_EXPECT(!result[jss::result].isMember(jss::FIELDS));
-            BEAST_EXPECT(
-                !result[jss::result].isMember(jss::LEDGER_ENTRY_TYPES));
-            BEAST_EXPECT(
-                !result[jss::result].isMember(jss::TRANSACTION_RESULTS));
+            BEAST_EXPECT(!result[jss::result].isMember(jss::LEDGER_ENTRY_TYPES));
+            BEAST_EXPECT(!result[jss::result].isMember(jss::TRANSACTION_RESULTS));
             BEAST_EXPECT(!result[jss::result].isMember(jss::TRANSACTION_TYPES));
             BEAST_EXPECT(!result[jss::result].isMember(jss::TYPES));
             BEAST_EXPECT(result[jss::result].isMember(jss::hash));
@@ -138,17 +105,14 @@ public:
             std::string const hash =
                 "54296160385A27154BFA70A239DD8E8FD4CC2DB7BA32D970BA3A5B132CF749"
                 "D1";
-            auto const hashParam =
-                std::string("{ ") + "\"hash\": \"" + hash + "\"}";
+            auto const hashParam = std::string("{ ") + "\"hash\": \"" + hash + "\"}";
 
-            auto const result =
-                env.rpc("json", "server_definitions", hashParam);
+            auto const result = env.rpc("json", "server_definitions", hashParam);
             BEAST_EXPECT(!result[jss::result].isMember(jss::error));
             BEAST_EXPECT(result[jss::result][jss::status] == "success");
             BEAST_EXPECT(result[jss::result].isMember(jss::FIELDS));
             BEAST_EXPECT(result[jss::result].isMember(jss::LEDGER_ENTRY_TYPES));
-            BEAST_EXPECT(
-                result[jss::result].isMember(jss::TRANSACTION_RESULTS));
+            BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_RESULTS));
             BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_TYPES));
             BEAST_EXPECT(result[jss::result].isMember(jss::TYPES));
             BEAST_EXPECT(result[jss::result].isMember(jss::hash));
@@ -162,7 +126,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ServerDefinitions, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(ServerDefinitions, rpc, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

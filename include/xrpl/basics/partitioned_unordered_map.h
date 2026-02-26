@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2021 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_BASICS_PARTITIONED_UNORDERED_MAP_H
-#define RIPPLE_BASICS_PARTITIONED_UNORDERED_MAP_H
+#pragma once
 
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -31,7 +11,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 template <typename Key>
 static std::size_t
@@ -70,8 +50,7 @@ public:
     using const_reference = value_type const&;
     using pointer = value_type*;
     using const_pointer = value_type const*;
-    using map_type = std::
-        unordered_map<key_type, mapped_type, hasher, key_equal, allocator_type>;
+    using map_type = std::unordered_map<key_type, mapped_type, hasher, key_equal, allocator_type>;
     using partition_map_type = std::vector<map_type>;
 
     struct iterator
@@ -132,8 +111,7 @@ public:
         friend bool
         operator==(iterator const& lhs, iterator const& rhs)
         {
-            return lhs.map_ == rhs.map_ && lhs.ait_ == rhs.ait_ &&
-                lhs.mit_ == rhs.mit_;
+            return lhs.map_ == rhs.map_ && lhs.ait_ == rhs.ait_ && lhs.mit_ == rhs.mit_;
         }
 
         friend bool
@@ -209,8 +187,7 @@ public:
         friend bool
         operator==(const_iterator const& lhs, const_iterator const& rhs)
         {
-            return lhs.map_ == rhs.map_ && lhs.ait_ == rhs.ait_ &&
-                lhs.mit_ == rhs.mit_;
+            return lhs.map_ == rhs.map_ && lhs.ait_ == rhs.ait_ && lhs.mit_ == rhs.mit_;
         }
 
         friend bool
@@ -250,18 +227,15 @@ private:
     }
 
 public:
-    partitioned_unordered_map(
-        std::optional<std::size_t> partitions = std::nullopt)
+    partitioned_unordered_map(std::optional<std::size_t> partitions = std::nullopt)
     {
         // Set partitions to the number of hardware threads if the parameter
         // is either empty or set to 0.
-        partitions_ = partitions && *partitions
-            ? *partitions
-            : std::thread::hardware_concurrency();
+        partitions_ = partitions && *partitions ? *partitions : std::thread::hardware_concurrency();
         map_.resize(partitions_);
         XRPL_ASSERT(
             partitions_,
-            "ripple::partitioned_unordered_map::partitioned_unordered_map : "
+            "xrpl::partitioned_unordered_map::partitioned_unordered_map : "
             "nonzero partitions");
     }
 
@@ -356,10 +330,8 @@ public:
         auto const& key = std::get<0>(keyTuple);
         iterator it(&map_);
         it.ait_ = it.map_->begin() + partitioner(key);
-        auto [eit, inserted] = it.ait_->emplace(
-            std::piecewise_construct,
-            std::forward<T>(keyTuple),
-            std::forward<U>(valueTuple));
+        auto [eit, inserted] =
+            it.ait_->emplace(std::piecewise_construct, std::forward<T>(keyTuple), std::forward<U>(valueTuple));
         it.mit_ = eit;
         return {it, inserted};
     }
@@ -370,8 +342,7 @@ public:
     {
         iterator it(&map_);
         it.ait_ = it.map_->begin() + partitioner(key);
-        auto [eit, inserted] =
-            it.ait_->emplace(std::forward<T>(key), std::forward<U>(val));
+        auto [eit, inserted] = it.ait_->emplace(std::forward<T>(key), std::forward<U>(val));
         it.mit_ = eit;
         return {it, inserted};
     }
@@ -420,6 +391,4 @@ private:
     mutable partition_map_type map_{};
 };
 
-}  // namespace ripple
-
-#endif  // RIPPLE_BASICS_PARTITIONED_UNORDERED_MAP_H
+}  // namespace xrpl

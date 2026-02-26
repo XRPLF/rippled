@@ -1,25 +1,7 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/paths/TrustLine.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/ledger/ReadView.h>
@@ -28,7 +10,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 void
 addLine(Json::Value& jsonLines, RPCTrustLine const& line)
@@ -122,8 +104,7 @@ doAccountLines(RPC::JsonContext& context)
 
     // this flag allows the requester to ask incoming trustlines in default
     // state be omitted
-    bool ignoreDefault = params.isMember(jss::ignore_default) &&
-        params[jss::ignore_default].asBool();
+    bool ignoreDefault = params.isMember(jss::ignore_default) && params[jss::ignore_default].asBool();
 
     Json::Value& jsonLines(result[jss::lines] = Json::arrayValue);
     struct VisitData
@@ -186,12 +167,11 @@ doAccountLines(RPC::JsonContext& context)
                 startAfter,
                 startHint,
                 limit + 1,
-                [&visitData, &count, &marker, &limit, &nextHint](
-                    std::shared_ptr<SLE const> const& sleCur) {
+                [&visitData, &count, &marker, &limit, &nextHint](std::shared_ptr<SLE const> const& sleCur) {
                     if (!sleCur)
                     {
                         // LCOV_EXCL_START
-                        UNREACHABLE("ripple::doAccountLines : null SLE");
+                        UNREACHABLE("xrpl::doAccountLines : null SLE");
                         return false;
                         // LCOV_EXCL_STOP
                     }
@@ -199,8 +179,7 @@ doAccountLines(RPC::JsonContext& context)
                     if (++count == limit)
                     {
                         marker = sleCur->key();
-                        nextHint =
-                            RPC::getStartHint(sleCur, visitData.accountID);
+                        nextHint = RPC::getStartHint(sleCur, visitData.accountID);
                     }
 
                     if (sleCur->getType() != ltRIPPLE_STATE)
@@ -209,24 +188,17 @@ doAccountLines(RPC::JsonContext& context)
                     bool ignore = false;
                     if (visitData.ignoreDefault)
                     {
-                        if (sleCur->getFieldAmount(sfLowLimit).getIssuer() ==
-                            visitData.accountID)
-                            ignore =
-                                !(sleCur->getFieldU32(sfFlags) & lsfLowReserve);
+                        if (sleCur->getFieldAmount(sfLowLimit).getIssuer() == visitData.accountID)
+                            ignore = !(sleCur->getFieldU32(sfFlags) & lsfLowReserve);
                         else
-                            ignore = !(
-                                sleCur->getFieldU32(sfFlags) & lsfHighReserve);
+                            ignore = !(sleCur->getFieldU32(sfFlags) & lsfHighReserve);
                     }
 
                     if (!ignore && count <= limit)
                     {
-                        auto const line =
-                            RPCTrustLine::makeItem(visitData.accountID, sleCur);
+                        auto const line = RPCTrustLine::makeItem(visitData.accountID, sleCur);
 
-                        if (line &&
-                            (!visitData.raPeerAccount ||
-                             *visitData.raPeerAccount ==
-                                 line->getAccountIDPeer()))
+                        if (line && (!visitData.raPeerAccount || *visitData.raPeerAccount == line->getAccountIDPeer()))
                         {
                             visitData.items.emplace_back(*line);
                         }
@@ -245,8 +217,7 @@ doAccountLines(RPC::JsonContext& context)
     if (count == limit + 1 && marker)
     {
         result[jss::limit] = limit;
-        result[jss::marker] =
-            to_string(*marker) + "," + std::to_string(nextHint);
+        result[jss::marker] = to_string(*marker) + "," + std::to_string(nextHint);
     }
 
     result[jss::account] = toBase58(accountID);
@@ -258,4 +229,4 @@ doAccountLines(RPC::JsonContext& context)
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

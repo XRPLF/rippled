@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2025 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/app/tx/detail/MPTokenIssuanceCreate.h>
 #include <xrpld/app/tx/detail/VaultCreate.h>
@@ -30,10 +11,11 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 VaultCreate::checkExtraFeatures(PreflightContext const& ctx)
@@ -41,8 +23,10 @@ VaultCreate::checkExtraFeatures(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureMPTokensV1))
         return false;
 
-    return !ctx.tx.isFieldPresent(sfDomainID) ||
-        ctx.rules.enabled(featurePermissionedDomains);
+    if (ctx.tx.isFieldPresent(sfDomainID) && !ctx.rules.enabled(featurePermissionedDomains))
+        return false;
+
+    return true;
 }
 
 std::uint32_t
@@ -80,8 +64,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
 
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
-        if (metadata->length() == 0 ||
-            metadata->length() > maxMPTokenMetadataLength)
+        if (metadata->length() == 0 || metadata->length() > maxMPTokenMetadataLength)
             return temMALFORMED;
     }
 
@@ -96,13 +79,6 @@ VaultCreate::preflight(PreflightContext const& ctx)
     }
 
     return tesSUCCESS;
-}
-
-XRPAmount
-VaultCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
-{
-    // One reserve increment is typically much greater than one base fee.
-    return calculateOwnerReserveFee(view, tx);
 }
 
 TER
@@ -129,15 +105,13 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
 
     if (auto const domain = ctx.tx[~sfDomainID])
     {
-        auto const sleDomain =
-            ctx.view.read(keylet::permissionedDomain(*domain));
+        auto const sleDomain = ctx.view.read(keylet::permissionedDomain(*domain));
         if (!sleDomain)
             return tecOBJECT_NOT_FOUND;
     }
 
     auto const sequence = ctx.tx.getSeqValue();
-    if (auto const accountId = pseudoAccountAddress(
-            ctx.view, keylet::vault(account, sequence).key);
+    if (auto const accountId = pseudoAccountAddress(ctx.view, keylet::vault(account, sequence).key);
         accountId == beast::zero)
         return terADDRESS_COLLISION;
 
@@ -161,8 +135,9 @@ VaultCreate::doApply()
 
     if (auto ter = dirLink(view(), account_, vault))
         return ter;
-    adjustOwnerCount(view(), owner, 1, j_);
-    auto ownerCount = owner->at(sfOwnerCount);
+    // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
+    adjustOwnerCount(view(), owner, 2, j_);
+    auto const ownerCount = owner->at(sfOwnerCount);
     if (mPriorBalance < view().fees().accountReserve(ownerCount))
         return tecINSUFFICIENT_RESERVE;
 
@@ -173,13 +148,11 @@ VaultCreate::doApply()
     auto pseudoId = pseudo->at(sfAccount);
     auto asset = tx[sfAsset];
 
-    if (auto ter = addEmptyHolding(view(), pseudoId, mPriorBalance, asset, j_);
-        !isTesSuccess(ter))
+    if (auto ter = addEmptyHolding(view(), pseudoId, mPriorBalance, asset, j_); !isTesSuccess(ter))
         return ter;
 
-    std::uint8_t const scale = (asset.holds<MPTIssue>() || asset.native())
-        ? 0
-        : ctx_.tx[~sfScale].value_or(vaultDefaultIOUScale);
+    std::uint8_t const scale =
+        (asset.holds<MPTIssue>() || asset.native()) ? 0 : ctx_.tx[~sfScale].value_or(vaultDefaultIOUScale);
 
     auto txFlags = tx.getFlags();
     std::uint32_t mptFlags = 0;
@@ -232,27 +205,22 @@ VaultCreate::doApply()
     view().insert(vault);
 
     // Explicitly create MPToken for the vault owner
-    if (auto const err = authorizeMPToken(
-            view(), mPriorBalance, mptIssuanceID, account_, ctx_.journal);
+    if (auto const err = authorizeMPToken(view(), mPriorBalance, mptIssuanceID, account_, ctx_.journal);
         !isTesSuccess(err))
         return err;
 
     // If the vault is private, set the authorized flag for the vault owner
     if (txFlags & tfVaultPrivate)
     {
-        if (auto const err = authorizeMPToken(
-                view(),
-                mPriorBalance,
-                mptIssuanceID,
-                pseudoId,
-                ctx_.journal,
-                {},
-                account_);
+        if (auto const err =
+                authorizeMPToken(view(), mPriorBalance, mptIssuanceID, pseudoId, ctx_.journal, {}, account_);
             !isTesSuccess(err))
             return err;
     }
 
+    associateAsset(*vault, asset);
+
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

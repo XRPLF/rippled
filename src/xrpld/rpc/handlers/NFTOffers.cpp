@@ -1,24 +1,6 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2022 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/json/json_value.h>
@@ -29,13 +11,10 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 static void
-appendNftOfferJson(
-    Application const& app,
-    std::shared_ptr<SLE const> const& offer,
-    Json::Value& offers)
+appendNftOfferJson(Application const& app, std::shared_ptr<SLE const> const& offer, Json::Value& offers)
 {
     Json::Value& obj(offers.append(Json::objectValue));
 
@@ -60,10 +39,7 @@ appendNftOfferJson(
 //   marker: opaque                 // optional, resume previous query
 // }
 static Json::Value
-enumerateNFTOffers(
-    RPC::JsonContext& context,
-    uint256 const& nftId,
-    Keylet const& directory)
+enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const& directory)
 {
     unsigned int limit;
     if (auto err = readLimitField(limit, RPC::Tuning::nftOffers, context))
@@ -115,12 +91,7 @@ enumerateNFTOffers(
     }
 
     if (!forEachItemAfter(
-            *ledger,
-            directory,
-            startAfter,
-            startHint,
-            reserve,
-            [&offers](std::shared_ptr<SLE const> const& offer) {
+            *ledger, directory, startAfter, startHint, reserve, [&offers](std::shared_ptr<SLE const> const& offer) {
                 if (offer->getType() == ltNFTOKEN_OFFER)
                 {
                     offers.emplace_back(offer);
@@ -175,4 +146,4 @@ doNFTBuyOffers(RPC::JsonContext& context)
     return enumerateNFTOffers(context, nftId, keylet::nft_buys(nftId));
 }
 
-}  // namespace ripple
+}  // namespace xrpl

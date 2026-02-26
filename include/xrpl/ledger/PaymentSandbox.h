@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_LEDGER_PAYMENTSANDBOX_H_INCLUDED
-#define RIPPLE_LEDGER_PAYMENTSANDBOX_H_INCLUDED
+#pragma once
 
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/Sandbox.h>
@@ -27,7 +7,7 @@
 
 #include <map>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -38,8 +18,7 @@ class DeferredCredits
 public:
     struct Adjustment
     {
-        Adjustment(STAmount const& d, STAmount const& c, STAmount const& b)
-            : debits(d), credits(c), origBalance(b)
+        Adjustment(STAmount const& d, STAmount const& c, STAmount const& b) : debits(d), credits(c), origBalance(b)
         {
         }
         STAmount debits;
@@ -50,10 +29,7 @@ public:
     // Get the adjustments for the balance between main and other.
     // Returns the debits, credits and the original balance
     std::optional<Adjustment>
-    adjustments(
-        AccountID const& main,
-        AccountID const& other,
-        Currency const& currency) const;
+    adjustments(AccountID const& main, AccountID const& other, Currency const& currency) const;
 
     void
     credit(
@@ -121,8 +97,7 @@ public:
 
     PaymentSandbox(PaymentSandbox&&) = default;
 
-    PaymentSandbox(ReadView const* base, ApplyFlags flags)
-        : ApplyViewBase(base, flags)
+    PaymentSandbox(ReadView const* base, ApplyFlags flags) : ApplyViewBase(base, flags)
     {
     }
 
@@ -144,39 +119,27 @@ public:
     //        or a PaymentSandbox-derived class, we MUST go through
     //        one of these constructors or invariants will be broken.
     /** @{ */
-    explicit PaymentSandbox(PaymentSandbox const* base)
-        : ApplyViewBase(base, base->flags()), ps_(base)
+    explicit PaymentSandbox(PaymentSandbox const* base) : ApplyViewBase(base, base->flags()), ps_(base)
     {
     }
 
-    explicit PaymentSandbox(PaymentSandbox* base)
-        : ApplyViewBase(base, base->flags()), ps_(base)
+    explicit PaymentSandbox(PaymentSandbox* base) : ApplyViewBase(base, base->flags()), ps_(base)
     {
     }
     /** @} */
 
     STAmount
-    balanceHook(
-        AccountID const& account,
-        AccountID const& issuer,
-        STAmount const& amount) const override;
+    balanceHook(AccountID const& account, AccountID const& issuer, STAmount const& amount) const override;
 
     void
-    creditHook(
-        AccountID const& from,
-        AccountID const& to,
-        STAmount const& amount,
-        STAmount const& preCreditBalance) override;
+    creditHook(AccountID const& from, AccountID const& to, STAmount const& amount, STAmount const& preCreditBalance)
+        override;
 
     void
-    adjustOwnerCountHook(
-        AccountID const& account,
-        std::uint32_t cur,
-        std::uint32_t next) override;
+    adjustOwnerCountHook(AccountID const& account, std::uint32_t cur, std::uint32_t next) override;
 
     std::uint32_t
-    ownerCountHook(AccountID const& account, std::uint32_t count)
-        const override;
+    ownerCountHook(AccountID const& account, std::uint32_t count) const override;
 
     /** Apply changes to base view.
 
@@ -207,6 +170,4 @@ private:
     PaymentSandbox const* ps_ = nullptr;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

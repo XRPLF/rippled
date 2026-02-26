@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_OVERLAY_OVERLAY_H_INCLUDED
-#define RIPPLE_OVERLAY_OVERLAY_H_INCLUDED
+#pragma once
 
 #include <xrpld/overlay/Peer.h>
 
@@ -42,7 +22,7 @@ class context;
 }  // namespace asio
 }  // namespace boost
 
-namespace ripple {
+namespace xrpl {
 
 /** Manages the set of connected peers. */
 class Overlay : public beast::PropertyStream::Source
@@ -113,7 +93,7 @@ public:
     size() const = 0;
 
     /** Return diagnostics on the status of all peers.
-        @deprecated This is superceded by PropertyStream
+        @deprecated This is superseded by PropertyStream
     */
     virtual Json::Value
     json() = 0;
@@ -153,10 +133,7 @@ public:
      * @return the set of peers which have already sent us this proposal
      */
     virtual std::set<Peer::id_t>
-    relay(
-        protocol::TMProposeSet& m,
-        uint256 const& uid,
-        PublicKey const& validator) = 0;
+    relay(protocol::TMProposeSet& m, uint256 const& uid, PublicKey const& validator) = 0;
 
     /** Relay a validation.
      * @param m the serialized validation
@@ -165,10 +142,7 @@ public:
      * @return the set of peers which have already sent us this validation
      */
     virtual std::set<Peer::id_t>
-    relay(
-        protocol::TMValidation& m,
-        uint256 const& uid,
-        PublicKey const& validator) = 0;
+    relay(protocol::TMValidation& m, uint256 const& uid, PublicKey const& validator) = 0;
 
     /** Relay a transaction. If the tx reduce-relay feature is enabled then
      * randomly select peers to relay to and queue transaction's hash
@@ -234,6 +208,4 @@ public:
     txMetrics() const = 0;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

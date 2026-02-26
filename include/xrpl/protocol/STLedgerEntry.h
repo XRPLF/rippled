@@ -1,29 +1,9 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_STLEDGERENTRY_H_INCLUDED
-#define RIPPLE_PROTOCOL_STLEDGERENTRY_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/STObject.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Rules;
 namespace test {
@@ -75,11 +55,7 @@ public:
     isThreadedType(Rules const& rules) const;
 
     bool
-    thread(
-        uint256 const& txID,
-        std::uint32_t ledgerSeq,
-        uint256& prevTxID,
-        std::uint32_t& prevLedgerID);
+    thread(uint256 const& txID, std::uint32_t ledgerSeq, uint256& prevTxID, std::uint32_t& prevLedgerID);
 
 private:
     /*  Make STObject comply with the template for this SLE type
@@ -101,13 +77,11 @@ private:
 
 using SLE = STLedgerEntry;
 
-inline STLedgerEntry::STLedgerEntry(LedgerEntryType type, uint256 const& key)
-    : STLedgerEntry(Keylet(type, key))
+inline STLedgerEntry::STLedgerEntry(LedgerEntryType type, uint256 const& key) : STLedgerEntry(Keylet(type, key))
 {
 }
 
-inline STLedgerEntry::STLedgerEntry(SerialIter&& sit, uint256 const& index)
-    : STLedgerEntry(sit, index)
+inline STLedgerEntry::STLedgerEntry(SerialIter&& sit, uint256 const& index) : STLedgerEntry(sit, index)
 {
 }
 
@@ -127,6 +101,4 @@ STLedgerEntry::getType() const
     return type_;
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

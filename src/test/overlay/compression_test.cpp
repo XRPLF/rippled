@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright 2020 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/WSClient.h>
@@ -49,17 +30,17 @@
 
 #include <algorithm>
 
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 
-using namespace ripple::test;
-using namespace ripple::test::jtx;
+using namespace xrpl::test;
+using namespace xrpl::test::jtx;
 
 static uint256
-ledgerHash(LedgerInfo const& info)
+ledgerHash(LedgerHeader const& info)
 {
-    return ripple::sha512Half(
+    return xrpl::sha512Half(
         HashPrefix::ledgerMaster,
         std::uint32_t(info.seq),
         std::uint64_t(info.drops.drops()),
@@ -84,11 +65,7 @@ public:
 
     template <typename T>
     void
-    doTest(
-        std::shared_ptr<T> proto,
-        protocol::MessageType mt,
-        uint16_t nbuffers,
-        std::string msg)
+    doTest(std::shared_ptr<T> proto, protocol::MessageType mt, uint16_t nbuffers, std::string msg)
     {
         testcase("Compress/Decompress: " + msg);
 
@@ -103,16 +80,13 @@ public:
         for (int i = 0; i < nbuffers; i++)
         {
             auto start = buffer.begin() + sz * i;
-            auto end = i < nbuffers - 1 ? (buffer.begin() + sz * (i + 1))
-                                        : buffer.end();
+            auto end = i < nbuffers - 1 ? (buffer.begin() + sz * (i + 1)) : buffer.end();
             std::vector<std::uint8_t> slice(start, end);
-            buffers.commit(boost::asio::buffer_copy(
-                buffers.prepare(slice.size()), boost::asio::buffer(slice)));
+            buffers.commit(boost::asio::buffer_copy(buffers.prepare(slice.size()), boost::asio::buffer(slice)));
         }
 
         boost::system::error_code ec;
-        auto header = ripple::detail::parseMessageHeader(
-            ec, buffers.data(), buffer.size());
+        auto header = xrpl::detail::parseMessageHeader(ec, buffers.data(), buffer.size());
 
         BEAST_EXPECT(header);
 
@@ -122,27 +96,20 @@ public:
         std::vector<std::uint8_t> decompressed;
         decompressed.resize(header->uncompressed_size);
 
-        BEAST_EXPECT(
-            header->payload_wire_size == buffer.size() - header->header_size);
+        BEAST_EXPECT(header->payload_wire_size == buffer.size() - header->header_size);
 
         ZeroCopyInputStream stream(buffers.data());
         stream.Skip(header->header_size);
 
-        auto decompressedSize = ripple::compression::decompress(
-            stream,
-            header->payload_wire_size,
-            decompressed.data(),
-            header->uncompressed_size);
+        auto decompressedSize = xrpl::compression::decompress(
+            stream, header->payload_wire_size, decompressed.data(), header->uncompressed_size);
         BEAST_EXPECT(decompressedSize == header->uncompressed_size);
         auto const proto1 = std::make_shared<T>();
 
-        BEAST_EXPECT(
-            proto1->ParseFromArray(decompressed.data(), decompressedSize));
+        BEAST_EXPECT(proto1->ParseFromArray(decompressed.data(), decompressedSize));
         auto uncompressed = m.getBuffer(Compressed::Off);
         BEAST_EXPECT(std::equal(
-            uncompressed.begin() + ripple::compression::headerBytes,
-            uncompressed.end(),
-            decompressed.begin()));
+            uncompressed.begin() + xrpl::compression::headerBytes, uncompressed.end(), decompressed.begin()));
     }
 
     std::shared_ptr<protocol::TMManifests>
@@ -158,20 +125,9 @@ public:
             st[sfSequence] = i;
             st[sfPublicKey] = std::get<0>(master);
             st[sfSigningPubKey] = std::get<0>(signing);
-            st[sfDomain] = makeSlice(
-                std::string("example") + std::to_string(i) +
-                std::string(".com"));
-            sign(
-                st,
-                HashPrefix::manifest,
-                KeyType::ed25519,
-                std::get<1>(master),
-                sfMasterSignature);
-            sign(
-                st,
-                HashPrefix::manifest,
-                KeyType::ed25519,
-                std::get<1>(signing));
+            st[sfDomain] = makeSlice(std::string("example") + std::to_string(i) + std::string(".com"));
+            sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(master), sfMasterSignature);
+            sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(signing));
             Serializer s;
             st.add(s);
             auto* manifest = manifests->add_list();
@@ -210,21 +166,18 @@ public:
         auto toBinary = [this](std::string const& text) {
             auto blob = strUnHex(text);
             BEAST_EXPECT(blob);
-            return std::string{
-                reinterpret_cast<char const*>(blob->data()), blob->size()};
+            return std::string{reinterpret_cast<char const*>(blob->data()), blob->size()};
         };
 
         std::string usdTxBlob = "";
         auto wsc = makeWSClient(env.app().config());
         {
-            Json::Value jrequestUsd;
-            jrequestUsd[jss::secret] = toBase58(generateSeed("bob"));
-            jrequestUsd[jss::tx_json] =
-                pay("bob", "alice", bob["USD"](fund / 2));
-            Json::Value jreply_usd = wsc->invoke("sign", jrequestUsd);
+            Json::Value requestUSD;
+            requestUSD[jss::secret] = toBase58(generateSeed("bob"));
+            requestUSD[jss::tx_json] = pay("bob", "alice", bob["USD"](fund / 2));
+            Json::Value replyUSD = wsc->invoke("sign", requestUSD);
 
-            usdTxBlob =
-                toBinary(jreply_usd[jss::result][jss::tx_blob].asString());
+            usdTxBlob = toBinary(replyUSD[jss::result][jss::tx_blob].asString());
         }
 
         auto transaction = std::make_shared<protocol::TMTransaction>();
@@ -242,10 +195,10 @@ public:
         auto getLedger = std::make_shared<protocol::TMGetLedger>();
         getLedger->set_itype(protocol::liTS_CANDIDATE);
         getLedger->set_ltype(protocol::TMLedgerType::ltACCEPTED);
-        uint256 const hash(ripple::sha512Half(123456789));
+        uint256 const hash(xrpl::sha512Half(123456789));
         getLedger->set_ledgerhash(hash.begin(), hash.size());
         getLedger->set_ledgerseq(123456789);
-        ripple::SHAMapNodeID sha(64, hash);
+        xrpl::SHAMapNodeID sha(64, hash);
         getLedger->add_nodeids(sha.getRawString());
         getLedger->set_requestcookie(123456789);
         getLedger->set_querytype(protocol::qtINDIRECT);
@@ -257,7 +210,7 @@ public:
     buildLedgerData(uint32_t n, Logs& logs)
     {
         auto ledgerData = std::make_shared<protocol::TMLedgerData>();
-        uint256 const hash(ripple::sha512Half(12356789));
+        uint256 const hash(xrpl::sha512Half(12356789));
         ledgerData->set_ledgerhash(hash.data(), hash.size());
         ledgerData->set_ledgerseq(123456789);
         ledgerData->set_type(protocol::TMLedgerInfoType::liAS_NODE);
@@ -271,12 +224,12 @@ public:
 
         for (int i = 0; i < n; i++)
         {
-            LedgerInfo info;
+            LedgerHeader info;
             info.seq = i;
             info.parentCloseTime = ct;
-            info.hash = ripple::sha512Half(i);
-            info.txHash = ripple::sha512Half(i + 1);
-            info.accountHash = ripple::sha512Half(i + 2);
+            info.hash = xrpl::sha512Half(i);
+            info.txHash = xrpl::sha512Half(i + 1);
+            info.accountHash = xrpl::sha512Half(i + 2);
             info.parentHash = parentHash;
             info.drops = XRPAmount(10);
             info.closeTimeResolution = resolution;
@@ -284,9 +237,8 @@ public:
             ct += resolution;
             parentHash = ledgerHash(info);
             Serializer nData;
-            ripple::addRaw(info, nData);
-            ledgerData->add_nodes()->set_nodedata(
-                nData.getDataPtr(), nData.getLength());
+            xrpl::addRaw(info, nData);
+            ledgerData->add_nodes()->set_nodedata(nData.getDataPtr(), nData.getLength());
         }
 
         return ledgerData;
@@ -297,19 +249,18 @@ public:
     {
         auto getObject = std::make_shared<protocol::TMGetObjectByHash>();
 
-        getObject->set_type(protocol::TMGetObjectByHash_ObjectType::
-                                TMGetObjectByHash_ObjectType_otTRANSACTION);
+        getObject->set_type(protocol::TMGetObjectByHash_ObjectType::TMGetObjectByHash_ObjectType_otTRANSACTION);
         getObject->set_query(true);
         getObject->set_seq(123456789);
-        uint256 hash(ripple::sha512Half(123456789));
+        uint256 hash(xrpl::sha512Half(123456789));
         getObject->set_ledgerhash(hash.data(), hash.size());
         getObject->set_fat(true);
         for (int i = 0; i < 100; i++)
         {
-            uint256 hash(ripple::sha512Half(i));
+            uint256 hash(xrpl::sha512Half(i));
             auto object = getObject->add_objects();
             object->set_hash(hash.data(), hash.size());
-            ripple::SHAMapNodeID sha(64, hash);
+            xrpl::SHAMapNodeID sha(64, hash);
             object->set_nodeid(sha.getRawString());
             object->set_index("");
             object->set_data("");
@@ -330,20 +281,14 @@ public:
         st[sfPublicKey] = std::get<0>(master);
         st[sfSigningPubKey] = std::get<0>(signing);
         st[sfDomain] = makeSlice(std::string("example.com"));
-        sign(
-            st,
-            HashPrefix::manifest,
-            KeyType::ed25519,
-            std::get<1>(master),
-            sfMasterSignature);
+        sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(master), sfMasterSignature);
         sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(signing));
         Serializer s;
         st.add(s);
         list->set_manifest(s.data(), s.size());
         list->set_version(3);
         STObject signature(sfSignature);
-        ripple::sign(
-            st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(signing));
+        xrpl::sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(signing));
         Serializer s1;
         st.add(s1);
         list->set_signature(s1.data(), s1.size());
@@ -363,20 +308,14 @@ public:
         st[sfPublicKey] = std::get<0>(master);
         st[sfSigningPubKey] = std::get<0>(signing);
         st[sfDomain] = makeSlice(std::string("example.com"));
-        sign(
-            st,
-            HashPrefix::manifest,
-            KeyType::ed25519,
-            std::get<1>(master),
-            sfMasterSignature);
+        sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(master), sfMasterSignature);
         sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(signing));
         Serializer s;
         st.add(s);
         list->set_manifest(s.data(), s.size());
         list->set_version(4);
         STObject signature(sfSignature);
-        ripple::sign(
-            st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(signing));
+        xrpl::sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(signing));
         Serializer s1;
         st.add(s1);
         auto& blob = *list->add_blobs();
@@ -409,60 +348,24 @@ public:
         // 1.3KB
         doTest(buildEndpoints(100), protocol::mtENDPOINTS, 4, "TMEndpoints100");
         // 242B
-        doTest(
-            buildTransaction(*logs),
-            protocol::mtTRANSACTION,
-            1,
-            "TMTransaction");
+        doTest(buildTransaction(*logs), protocol::mtTRANSACTION, 1, "TMTransaction");
         // 87B
         doTest(buildGetLedger(), protocol::mtGET_LEDGER, 1, "TMGetLedger");
         // 61KB
-        doTest(
-            buildLedgerData(500, *logs),
-            protocol::mtLEDGER_DATA,
-            10,
-            "TMLedgerData500");
+        doTest(buildLedgerData(500, *logs), protocol::mtLEDGER_DATA, 10, "TMLedgerData500");
         // 122 KB
-        doTest(
-            buildLedgerData(1000, *logs),
-            protocol::mtLEDGER_DATA,
-            20,
-            "TMLedgerData1000");
+        doTest(buildLedgerData(1000, *logs), protocol::mtLEDGER_DATA, 20, "TMLedgerData1000");
         // 1.2MB
-        doTest(
-            buildLedgerData(10000, *logs),
-            protocol::mtLEDGER_DATA,
-            50,
-            "TMLedgerData10000");
+        doTest(buildLedgerData(10000, *logs), protocol::mtLEDGER_DATA, 50, "TMLedgerData10000");
         // 12MB
-        doTest(
-            buildLedgerData(100000, *logs),
-            protocol::mtLEDGER_DATA,
-            100,
-            "TMLedgerData100000");
+        doTest(buildLedgerData(100000, *logs), protocol::mtLEDGER_DATA, 100, "TMLedgerData100000");
         // 61MB
-        doTest(
-            buildLedgerData(500000, *logs),
-            protocol::mtLEDGER_DATA,
-            100,
-            "TMLedgerData500000");
+        doTest(buildLedgerData(500000, *logs), protocol::mtLEDGER_DATA, 100, "TMLedgerData500000");
         // 7.7KB
-        doTest(
-            buildGetObjectByHash(),
-            protocol::mtGET_OBJECTS,
-            4,
-            "TMGetObjectByHash");
+        doTest(buildGetObjectByHash(), protocol::mtGET_OBJECTS, 4, "TMGetObjectByHash");
         // 895B
-        doTest(
-            buildValidatorList(),
-            protocol::mtVALIDATORLIST,
-            4,
-            "TMValidatorList");
-        doTest(
-            buildValidatorListCollection(),
-            protocol::mtVALIDATORLISTCOLLECTION,
-            4,
-            "TMValidatorListCollection");
+        doTest(buildValidatorList(), protocol::mtVALIDATOR_LIST, 4, "TMValidatorList");
+        doTest(buildValidatorListCollection(), protocol::mtVALIDATOR_LIST_COLLECTION, 4, "TMValidatorListCollection");
     }
 
     void
@@ -479,16 +382,14 @@ public:
             c.loadFromString(str.str());
             auto env = std::make_shared<jtx::Env>(*this);
             env->app().config().COMPRESSION = c.COMPRESSION;
-            env->app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE =
-                c.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE;
+            env->app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = c.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE;
             return env;
         };
         auto handshake = [&](int outboundEnable, int inboundEnable) {
-            beast::IP::Address addr =
-                boost::asio::ip::make_address("172.1.1.100");
+            beast::IP::Address addr = boost::asio::ip::make_address("172.1.1.100");
 
             auto env = getEnv(outboundEnable);
-            auto request = ripple::makeRequest(
+            auto request = xrpl::makeRequest(
                 true,
                 env->app().config().COMPRESSION,
                 false,
@@ -502,25 +403,15 @@ public:
             auto const peerEnabled = inboundEnable && outboundEnable;
             // inbound is enabled if the request's header has the feature
             // enabled and the peer's configuration is enabled
-            auto const inboundEnabled = peerFeatureEnabled(
-                http_request, FEATURE_COMPR, "lz4", inboundEnable);
+            auto const inboundEnabled = peerFeatureEnabled(http_request, FEATURE_COMPR, "lz4", inboundEnable);
             BEAST_EXPECT(!(peerEnabled ^ inboundEnabled));
 
             env.reset();
             env = getEnv(inboundEnable);
-            auto http_resp = ripple::makeResponse(
-                true,
-                http_request,
-                addr,
-                addr,
-                uint256{1},
-                1,
-                {1, 0},
-                env->app());
+            auto http_resp = xrpl::makeResponse(true, http_request, addr, addr, uint256{1}, 1, {1, 0}, env->app());
             // outbound is enabled if the response's header has the feature
             // enabled and the peer's configuration is enabled
-            auto const outboundEnabled = peerFeatureEnabled(
-                http_resp, FEATURE_COMPR, "lz4", outboundEnable);
+            auto const outboundEnabled = peerFeatureEnabled(http_resp, FEATURE_COMPR, "lz4", outboundEnable);
             BEAST_EXPECT(!(peerEnabled ^ outboundEnabled));
         };
         handshake(1, 1);
@@ -537,7 +428,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(compression, overlay, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(compression, overlay, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

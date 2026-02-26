@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_BASICS_STRINGUTILITIES_H_INCLUDED
-#define RIPPLE_BASICS_STRINGUTILITIES_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/strHex.h>
@@ -31,7 +11,7 @@
 #include <optional>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 /** Format arbitrary binary data as an SQLite "blob literal".
 
@@ -50,7 +30,7 @@ template <class Iterator>
 std::optional<Blob>
 strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 {
-    static constexpr std::array<int, 256> const unxtab = []() {
+    static constexpr std::array<int, 256> const digitLookupTable = []() {
         std::array<int, 256> t{};
 
         for (auto& x : t)
@@ -76,7 +56,7 @@ strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 
     if (strSize & 1)
     {
-        int c = unxtab[*iter++];
+        int c = digitLookupTable[*iter++];
 
         if (c < 0)
             return {};
@@ -86,12 +66,12 @@ strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 
     while (iter != end)
     {
-        int cHigh = unxtab[*iter++];
+        int cHigh = digitLookupTable[*iter++];
 
         if (cHigh < 0)
             return {};
 
-        int cLow = unxtab[*iter++];
+        int cLow = digitLookupTable[*iter++];
 
         if (cLow < 0)
             return {};
@@ -128,8 +108,7 @@ struct parsedURL
     bool
     operator==(parsedURL const& other) const
     {
-        return scheme == other.scheme && domain == other.domain &&
-            port == other.port && path == other.path;
+        return scheme == other.scheme && domain == other.domain && port == other.port && path == other.path;
     }
 };
 
@@ -151,6 +130,4 @@ to_uint64(std::string const& s);
 bool
 isProperlyFormedTomlDomain(std::string_view domain);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

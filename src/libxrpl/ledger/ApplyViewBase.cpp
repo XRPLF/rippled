@@ -1,29 +1,9 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/ledger/detail/ApplyViewBase.h>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
-ApplyViewBase::ApplyViewBase(ReadView const* base, ApplyFlags flags)
-    : flags_(flags), base_(base)
+ApplyViewBase::ApplyViewBase(ReadView const* base, ApplyFlags flags) : flags_(flags), base_(base)
 {
 }
 
@@ -35,10 +15,10 @@ ApplyViewBase::open() const
     return base_->open();
 }
 
-LedgerInfo const&
-ApplyViewBase::info() const
+LedgerHeader const&
+ApplyViewBase::header() const
 {
-    return base_->info();
+    return base_->header();
 }
 
 Fees const&
@@ -60,8 +40,7 @@ ApplyViewBase::exists(Keylet const& k) const
 }
 
 auto
-ApplyViewBase::succ(key_type const& key, std::optional<key_type> const& last)
-    const -> std::optional<key_type>
+ApplyViewBase::succ(key_type const& key, std::optional<key_type> const& last) const -> std::optional<key_type>
 {
     return items_.succ(*base_, key, last);
 }
@@ -85,8 +64,7 @@ ApplyViewBase::slesEnd() const -> std::unique_ptr<sles_type::iter_base>
 }
 
 auto
-ApplyViewBase::slesUpperBound(uint256 const& key) const
-    -> std::unique_ptr<sles_type::iter_base>
+ApplyViewBase::slesUpperBound(uint256 const& key) const -> std::unique_ptr<sles_type::iter_base>
 {
     return base_->slesUpperBound(key);
 }
@@ -174,4 +152,4 @@ ApplyViewBase::rawDestroyXRP(XRPAmount const& fee)
 }
 
 }  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl

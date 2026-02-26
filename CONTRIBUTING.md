@@ -24,7 +24,7 @@ your verifying key. Please set up [signature verification][signing].
 
 In general, external contributions should be developed in your personal
 [fork][forking]. Contributions from developers with write permissions
-should be done in [the main repository][rippled] in a branch with
+should be done in [the main repository][xrpld] in a branch with
 a permitted prefix. Permitted prefixes are:
 
 - XLS-[a-zA-Z0-9]+/.+
@@ -47,12 +47,17 @@ choose the next available standard number, and open a discussion with an
 appropriate title to propose your draft standard.
 
 When you submit a pull request, please link the corresponding XLS in the
-description. An XLS still in draft status is considered a
+description. An XLS still in `Draft` status is considered a
 work-in-progress and open for discussion. Please allow time for
 questions, suggestions, and changes to the XLS draft. It is the
 responsibility of the XLS author to update the draft to match the final
 implementation when its corresponding pull request is merged, unless the
 author delegates that responsibility to others.
+
+Any amendment or major RPC change requires either a new XLS or an update
+to an existing XLS. Neither change will be released (in an amendment's
+case, marked as `Supported::yes`) until the corresponding XLS's status
+is `Final`.
 
 ## Before making a pull request
 
@@ -68,7 +73,7 @@ Ensure that your code compiles according to the build instructions in
 
 Please write tests for your code.
 If your test can be run offline, in under 60 seconds, then it can be an
-automatic test run by `rippled --unittest`.
+automatic test run by `xrpld --unittest`.
 Otherwise, it must be a manual test.
 
 If you create new source files, they must be organized as follows:
@@ -251,13 +256,13 @@ pre-commit install
 We are using [Antithesis](https://antithesis.com/) for continuous fuzzing,
 and keep a copy of [Antithesis C++ SDK](https://github.com/antithesishq/antithesis-sdk-cpp/)
 in `external/antithesis-sdk`. One of the aims of fuzzing is to identify bugs
-by finding external conditions which cause contracts violations inside `rippled`.
+by finding external conditions which cause contracts violations inside `xrpld`.
 The contracts are expressed as `XRPL_ASSERT` or `UNREACHABLE` (defined in
 `include/xrpl/beast/utility/instrumentation.h`), which are effectively (outside
 of Antithesis) wrappers for `assert(...)` with added name. The purpose of name
 is to provide contracts with stable identity which does not rely on line numbers.
 
-When `rippled` is built with the Antithesis instrumentation enabled
+When `xrpld` is built with the Antithesis instrumentation enabled
 (using `voidstar` CMake option) and ran on the Antithesis platform, the
 contracts become
 [test properties](https://antithesis.com/docs/using_antithesis/properties.html);
@@ -299,7 +304,7 @@ For this reason:
 - Example **bad** name
   `"RFC1751::insert(char* s, int x, int start, int length) : length is greater than or equal zero"`
   (missing namespace, unnecessary full function signature, description too verbose).
-  Good name: `"ripple::RFC1751::insert : minimum length"`.
+  Good name: `"xrpl::RFC1751::insert : minimum length"`.
 - In **few** well-justified cases a non-standard name can be used, in which case a
   comment should be placed to explain the rationale (example in `contract.cpp`)
 - Do **not** rename a contract without a good reason (e.g. the name no longer
@@ -313,7 +318,7 @@ For this reason:
 
 To execute all unit tests:
 
-`rippled --unittest --unittest-jobs=<number of cores>`
+`xrpld --unittest --unittest-jobs=<number of cores>`
 
 (Note: Using multiple cores on a Mac M1 can cause spurious test failures. The
 cause is still under investigation. If you observe this problem, try specifying fewer jobs.)
@@ -321,7 +326,7 @@ cause is still under investigation. If you observe this problem, try specifying 
 To run a specific set of test suites:
 
 ```
-rippled --unittest TestSuiteName
+xrpld --unittest TestSuiteName
 ```
 
 Note: In this example, all tests with prefix `TestSuiteName` will be run, so if
@@ -550,16 +555,16 @@ Rippled uses a linear workflow model that can be summarized as:
 git fetch --multiple upstreams user1 user2 user3 [...]
 git checkout -B release-next --no-track upstream/develop
 
-# Only do an ff-only merge if prbranch1 is either already
+# Only do an ff-only merge if pr-branch1 is either already
 # squashed, or needs to be merged with separate commits,
 # and has no merge commits.
-# Use -S on the ff-only merge if prbranch1 isn't signed.
-git merge [-S] --ff-only user1/prbranch1
+# Use -S on the ff-only merge if pr-branch1 isn't signed.
+git merge [-S] --ff-only user1/pr-branch1
 
-git merge --squash user2/prbranch2
+git merge --squash user2/pr-branch2
 git commit -S # Use the commit message provided on the PR
 
-git merge --squash user3/prbranch3
+git merge --squash user3/pr-branch3
 git commit -S # Use the commit message provided on the PR
 
 [...]
@@ -867,11 +872,12 @@ git push --delete upstream-push master-next
 11. [Create a new release on
     Github](https://github.com/XRPLF/rippled/releases). Be sure that
     "Set as the latest release" is checked.
-12. Finally [reverse merge the release into `develop`](#follow-up-reverse-merge).
+12. Open a PR to update the [API-CHANGELOG](API-CHANGELOG.md) and `API-VERSION-[n].md` with the changes for this release (if any are missing).
+13. Finally, [reverse merge the release into `develop`](#follow-up-reverse-merge).
 
 #### Special cases: point releases, hotfixes, etc.
 
-On occassion, a bug or issue is discovered in a version that already
+On occasion, a bug or issue is discovered in a version that already
 had a final release. Most of the time, development will have started
 on the next version, and will usually have changes in `develop`
 and often in `release`.
@@ -1070,7 +1076,7 @@ git fetch upstreams
 [contrib]: https://docs.github.com/en/get-started/quickstart/contributing-to-projects
 [squash]: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges#squash-and-merge-your-commits
 [forking]: https://github.com/XRPLF/rippled/fork
-[rippled]: https://github.com/XRPLF/rippled
+[xrpld]: https://github.com/XRPLF/rippled
 [signing]: https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification
 [setup-upstreams]: ./bin/git/setup-upstreams.sh
 [squash-branches]: ./bin/git/squash-branches.sh

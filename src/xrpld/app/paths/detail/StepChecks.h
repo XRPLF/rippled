@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2015 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_PATHS_IMPL_STEP_CHECKS_H_INCLUDED
-#define RIPPLE_APP_PATHS_IMPL_STEP_CHECKS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -27,16 +7,12 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/UintTypes.h>
 
-namespace ripple {
+namespace xrpl {
 
 inline TER
-checkFreeze(
-    ReadView const& view,
-    AccountID const& src,
-    AccountID const& dst,
-    Currency const& currency)
+checkFreeze(ReadView const& view, AccountID const& src, AccountID const& dst, Currency const& currency)
 {
-    XRPL_ASSERT(src != dst, "ripple::checkFreeze : unequal input accounts");
+    XRPL_ASSERT(src != dst, "xrpl::checkFreeze : unequal input accounts");
 
     // check freeze
     if (auto sle = view.read(keylet::account(dst)))
@@ -63,18 +39,13 @@ checkFreeze(
 
     if (view.rules().enabled(fixFrozenLPTokenTransfer))
     {
-        if (auto const sleDst = view.read(keylet::account(dst));
-            sleDst && sleDst->isFieldPresent(sfAMMID))
+        if (auto const sleDst = view.read(keylet::account(dst)); sleDst && sleDst->isFieldPresent(sfAMMID))
         {
             auto const sleAmm = view.read(keylet::amm((*sleDst)[sfAMMID]));
             if (!sleAmm)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
-            if (isLPTokenFrozen(
-                    view,
-                    src,
-                    (*sleAmm)[sfAsset].get<Issue>(),
-                    (*sleAmm)[sfAsset2].get<Issue>()))
+            if (isLPTokenFrozen(view, src, (*sleAmm)[sfAsset].get<Issue>(), (*sleAmm)[sfAsset2].get<Issue>()))
             {
                 return terNO_LINE;
             }
@@ -104,14 +75,11 @@ checkNoRipple(
     if ((*sleIn)[sfFlags] & ((cur > prev) ? lsfHighNoRipple : lsfLowNoRipple) &&
         (*sleOut)[sfFlags] & ((cur > next) ? lsfHighNoRipple : lsfLowNoRipple))
     {
-        JLOG(j.info()) << "Path violates noRipple constraint between " << prev
-                       << ", " << cur << " and " << next;
+        JLOG(j.info()) << "Path violates noRipple constraint between " << prev << ", " << cur << " and " << next;
 
         return terNO_RIPPLE;
     }
     return tesSUCCESS;
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

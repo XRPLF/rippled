@@ -1,29 +1,9 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TEST_CSF_RANDOM_H_INCLUDED
-#define RIPPLE_TEST_CSF_RANDOM_H_INCLUDED
+#pragma once
 
 #include <random>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -91,11 +71,7 @@ public:
         @param w Vector of weights of size list-first
         @param g the pseudo-random number generator
     */
-    Selector(
-        RAIter first,
-        RAIter last,
-        std::vector<double> const& w,
-        Generator& g)
+    Selector(RAIter first, RAIter last, std::vector<double> const& w, Generator& g)
         : first_{first}, last_{last}, dd_{w.begin(), w.end()}, g_{g}
     {
         using tag = typename std::iterator_traits<RAIter>::iterator_category;
@@ -175,6 +151,4 @@ public:
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

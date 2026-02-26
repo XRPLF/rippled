@@ -1,34 +1,13 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_NET_INFOSUB_H_INCLUDED
-#define RIPPLE_NET_INFOSUB_H_INCLUDED
-
-#include <xrpld/app/misc/Manifest.h>
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/resource/Consumer.h>
+#include <xrpl/server/Manifest.h>
 
-namespace ripple {
+namespace xrpl {
 
 // Operations that clients may wish to perform against the network
 // Master operational handler, server sequencer, network tracker
@@ -74,25 +53,16 @@ public:
         // you get transactions as they occur or once their
         // results are confirmed
         virtual void
-        subAccount(
-            ref ispListener,
-            hash_set<AccountID> const& vnaAccountIDs,
-            bool realTime) = 0;
+        subAccount(ref ispListener, hash_set<AccountID> const& vnaAccountIDs, bool realTime) = 0;
 
         // for normal use, removes from InfoSub and server
         virtual void
-        unsubAccount(
-            ref isplistener,
-            hash_set<AccountID> const& vnaAccountIDs,
-            bool realTime) = 0;
+        unsubAccount(ref isplistener, hash_set<AccountID> const& vnaAccountIDs, bool realTime) = 0;
 
         // for use during InfoSub destruction
         // Removes only from the server
         virtual void
-        unsubAccountInternal(
-            std::uint64_t uListener,
-            hash_set<AccountID> const& vnaAccountIDs,
-            bool realTime) = 0;
+        unsubAccountInternal(std::uint64_t uListener, hash_set<AccountID> const& vnaAccountIDs, bool realTime) = 0;
 
         /**
          * subscribe an account's new transactions and retrieve the account's
@@ -111,16 +81,10 @@ public:
          * transactions.
          */
         virtual void
-        unsubAccountHistory(
-            ref ispListener,
-            AccountID const& account,
-            bool historyOnly) = 0;
+        unsubAccountHistory(ref ispListener, AccountID const& account, bool historyOnly) = 0;
 
         virtual void
-        unsubAccountHistoryInternal(
-            std::uint64_t uListener,
-            AccountID const& account,
-            bool historyOnly) = 0;
+        unsubAccountHistoryInternal(std::uint64_t uListener, AccountID const& account, bool historyOnly) = 0;
 
         // VFALCO TODO Document the bool return value
         virtual bool
@@ -256,6 +220,4 @@ private:
     }
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

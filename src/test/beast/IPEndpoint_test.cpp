@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 // MODULES: ../impl/IPEndpoint.cpp ../impl/IPAddressV4.cpp
 // ../impl/IPAddressV6.cpp
 
@@ -39,10 +20,7 @@ class IPEndpoint_test : public unit_test::suite
 {
 public:
     void
-    shouldParseAddrV4(
-        std::string const& s,
-        std::uint32_t value,
-        std::string const& normal = "")
+    shouldParseAddrV4(std::string const& s, std::uint32_t value, std::string const& normal = "")
     {
         boost::system::error_code ec;
         Address const result{boost::asio::ip::make_address(s, ec)};
@@ -50,12 +28,9 @@ public:
             return;
         if (!BEAST_EXPECTS(result.is_v4(), s + " not v4"))
             return;
-        if (!BEAST_EXPECTS(
-                result.to_v4().to_uint() == value, s + " value mismatch"))
+        if (!BEAST_EXPECTS(result.to_v4().to_uint() == value, s + " value mismatch"))
             return;
-        BEAST_EXPECTS(
-            result.to_string() == (normal.empty() ? s : normal),
-            s + " as string");
+        BEAST_EXPECTS(result.to_string() == (normal.empty() ? s : normal), s + " as string");
     }
 
     void
@@ -234,14 +209,8 @@ public:
         shouldParseEPV4("1.2.3.4:5    ", {{1, 2, 3, 4}}, 5, "1.2.3.4:5");
         shouldParseEPV4("1.2.3.4   ", {{1, 2, 3, 4}}, 0, "1.2.3.4");
         shouldParseEPV4("  1.2.3.4", {{1, 2, 3, 4}}, 0, "1.2.3.4");
-        shouldParseEPV6(
-            "2001:db8:a0b:12f0::1",
-            {{32, 01, 13, 184, 10, 11, 18, 240, 0, 0, 0, 0, 0, 0, 0, 1}},
-            0);
-        shouldParseEPV6(
-            "[2001:db8:a0b:12f0::1]:8",
-            {{32, 01, 13, 184, 10, 11, 18, 240, 0, 0, 0, 0, 0, 0, 0, 1}},
-            8);
+        shouldParseEPV6("2001:db8:a0b:12f0::1", {{32, 01, 13, 184, 10, 11, 18, 240, 0, 0, 0, 0, 0, 0, 0, 1}}, 0);
+        shouldParseEPV6("[2001:db8:a0b:12f0::1]:8", {{32, 01, 13, 184, 10, 11, 18, 240, 0, 0, 0, 0, 0, 0, 0, 1}}, 8);
         shouldParseEPV6(
             "[2001:2002:2003:2004:2005:2006:2007:2008]:65535",
             {{32, 1, 32, 2, 32, 3, 32, 4, 32, 5, 32, 6, 32, 7, 32, 8}},
@@ -263,10 +232,7 @@ public:
         BEAST_EXPECT(is_loopback(ep));
         BEAST_EXPECT(to_string(ep) == "127.0.0.1:80");
         // same address as v4 mapped in ipv6
-        ep = Endpoint(
-            boost::asio::ip::make_address_v6(
-                boost::asio::ip::v4_mapped, AddressV4{d}),
-            80);
+        ep = Endpoint(boost::asio::ip::make_address_v6(boost::asio::ip::v4_mapped, AddressV4{d}), 80);
         BEAST_EXPECT(!is_unspecified(ep));
         BEAST_EXPECT(!is_public(ep));
         BEAST_EXPECT(is_private(ep));
@@ -284,11 +250,8 @@ public:
         BEAST_EXPECT(!is_loopback(ep));
         BEAST_EXPECT(to_string(ep) == "10.0.0.1");
         // same address as v4 mapped in ipv6
-        ep = Endpoint(boost::asio::ip::make_address_v6(
-            boost::asio::ip::v4_mapped, AddressV4{d}));
-        BEAST_EXPECT(
-            get_class(boost::asio::ip::make_address_v4(
-                boost::asio::ip::v4_mapped, ep.to_v6())) == 'A');
+        ep = Endpoint(boost::asio::ip::make_address_v6(boost::asio::ip::v4_mapped, AddressV4{d}));
+        BEAST_EXPECT(get_class(boost::asio::ip::make_address_v4(boost::asio::ip::v4_mapped, ep.to_v6())) == 'A');
         BEAST_EXPECT(!is_unspecified(ep));
         BEAST_EXPECT(!is_public(ep));
         BEAST_EXPECT(is_private(ep));
@@ -305,8 +268,7 @@ public:
         BEAST_EXPECT(!is_loopback(ep));
         BEAST_EXPECT(to_string(ep) == "166.78.151.147");
         // same address as v4 mapped in ipv6
-        ep = Endpoint(boost::asio::ip::make_address_v6(
-            boost::asio::ip::v4_mapped, AddressV4{d}));
+        ep = Endpoint(boost::asio::ip::make_address_v6(boost::asio::ip::v4_mapped, AddressV4{d}));
         BEAST_EXPECT(!is_unspecified(ep));
         BEAST_EXPECT(is_public(ep));
         BEAST_EXPECT(!is_private(ep));
@@ -315,8 +277,7 @@ public:
         BEAST_EXPECTS(to_string(ep) == "::ffff:166.78.151.147", to_string(ep));
 
         // a private IPv6
-        AddressV6::bytes_type d2 = {
-            {253, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}};
+        AddressV6::bytes_type d2 = {{253, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}};
         ep = Endpoint(AddressV6{d2});
         BEAST_EXPECT(!is_unspecified(ep));
         BEAST_EXPECT(!is_public(ep));
@@ -399,7 +360,7 @@ public:
         float max_lf{0};
         for (auto i = 0; i < items; ++i)
         {
-            eps.insert(randomEP(ripple::rand_int(0, 1) == 1));
+            eps.insert(randomEP(xrpl::rand_int(0, 1) == 1));
             max_lf = std::max(max_lf, eps.load_factor());
         }
         BEAST_EXPECT(eps.bucket_count() >= items);
@@ -424,9 +385,7 @@ public:
         using namespace std::literals;
         T t;
         BEAST_EXPECT(parse(text, t));
-        BEAST_EXPECTS(
-            to_string(t) == (normal.empty() ? text : normal),
-            "string mismatch for "s + text);
+        BEAST_EXPECTS(to_string(t) == (normal.empty() ? text : normal), "string mismatch for "s + text);
     }
 
     template <typename T>

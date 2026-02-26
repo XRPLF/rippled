@@ -1,26 +1,7 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/contract.h>
 #include <xrpl/ledger/detail/RawStateTable.h>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 class RawStateTable::sles_iter_impl : public ReadView::sles_type::iter_base
@@ -65,7 +46,7 @@ public:
         {
             XRPL_ASSERT(
                 end1_ == p->end1_ && end0_ == p->end0_,
-                "ripple::detail::RawStateTable::equal : matching end "
+                "xrpl::detail::RawStateTable::equal : matching end "
                 "iterators");
             return iter1_ == p->iter1_ && iter0_ == p->iter0_;
         }
@@ -78,7 +59,7 @@ public:
     {
         XRPL_ASSERT(
             sle1_ || sle0_,
-            "ripple::detail::RawStateTable::increment : either SLE is "
+            "xrpl::detail::RawStateTable::increment : either SLE is "
             "non-null");
 
         if (sle1_ && !sle0_)
@@ -145,8 +126,7 @@ private:
     void
     skip()
     {
-        while (iter1_ != end1_ && iter1_->second.action == Action::erase &&
-               sle0_->key() == sle1_->key())
+        while (iter1_ != end1_ && iter1_->second.action == Action::erase && sle0_->key() == sle1_->key())
         {
             inc1();
             inc0();
@@ -185,9 +165,7 @@ RawStateTable::apply(RawView& to) const
 bool
 RawStateTable::exists(ReadView const& base, Keylet const& k) const
 {
-    XRPL_ASSERT(
-        k.key.isNonZero(),
-        "ripple::detail::RawStateTable::exists : nonzero key");
+    XRPL_ASSERT(k.key.isNonZero(), "xrpl::detail::RawStateTable::exists : nonzero key");
     auto const iter = items_.find(k.key);
     if (iter == items_.end())
         return base.exists(k);
@@ -204,10 +182,8 @@ RawStateTable::exists(ReadView const& base, Keylet const& k) const
     the lower of the two.
 */
 auto
-RawStateTable::succ(
-    ReadView const& base,
-    key_type const& key,
-    std::optional<key_type> const& last) const -> std::optional<key_type>
+RawStateTable::succ(ReadView const& base, key_type const& key, std::optional<key_type> const& last) const
+    -> std::optional<key_type>
 {
     std::optional<key_type> next = key;
     items_t::const_iterator iter;
@@ -243,9 +219,7 @@ RawStateTable::erase(std::shared_ptr<SLE> const& sle)
 {
     // The base invariant is checked during apply
     auto const result = items_.emplace(
-        std::piecewise_construct,
-        std::forward_as_tuple(sle->key()),
-        std::forward_as_tuple(Action::erase, sle));
+        std::piecewise_construct, std::forward_as_tuple(sle->key()), std::forward_as_tuple(Action::erase, sle));
     if (result.second)
         return;
     auto& item = result.first->second;
@@ -268,9 +242,7 @@ void
 RawStateTable::insert(std::shared_ptr<SLE> const& sle)
 {
     auto const result = items_.emplace(
-        std::piecewise_construct,
-        std::forward_as_tuple(sle->key()),
-        std::forward_as_tuple(Action::insert, sle));
+        std::piecewise_construct, std::forward_as_tuple(sle->key()), std::forward_as_tuple(Action::insert, sle));
     if (result.second)
         return;
     auto& item = result.first->second;
@@ -293,9 +265,7 @@ void
 RawStateTable::replace(std::shared_ptr<SLE> const& sle)
 {
     auto const result = items_.emplace(
-        std::piecewise_construct,
-        std::forward_as_tuple(sle->key()),
-        std::forward_as_tuple(Action::replace, sle));
+        std::piecewise_construct, std::forward_as_tuple(sle->key()), std::forward_as_tuple(Action::replace, sle));
     if (result.second)
         return;
     auto& item = result.first->second;
@@ -336,26 +306,21 @@ RawStateTable::destroyXRP(XRPAmount const& fee)
 std::unique_ptr<ReadView::sles_type::iter_base>
 RawStateTable::slesBegin(ReadView const& base) const
 {
-    return std::make_unique<sles_iter_impl>(
-        items_.begin(), items_.end(), base.sles.begin(), base.sles.end());
+    return std::make_unique<sles_iter_impl>(items_.begin(), items_.end(), base.sles.begin(), base.sles.end());
 }
 
 std::unique_ptr<ReadView::sles_type::iter_base>
 RawStateTable::slesEnd(ReadView const& base) const
 {
-    return std::make_unique<sles_iter_impl>(
-        items_.end(), items_.end(), base.sles.end(), base.sles.end());
+    return std::make_unique<sles_iter_impl>(items_.end(), items_.end(), base.sles.end(), base.sles.end());
 }
 
 std::unique_ptr<ReadView::sles_type::iter_base>
 RawStateTable::slesUpperBound(ReadView const& base, uint256 const& key) const
 {
     return std::make_unique<sles_iter_impl>(
-        items_.upper_bound(key),
-        items_.end(),
-        base.sles.upper_bound(key),
-        base.sles.end());
+        items_.upper_bound(key), items_.end(), base.sles.upper_bound(key), base.sles.end());
 }
 
 }  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl

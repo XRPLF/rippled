@@ -1,79 +1,43 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2012-2015 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_LEDGER_TESTS_PATHSET_H_INCLUDED
-#define RIPPLE_LEDGER_TESTS_PATHSET_H_INCLUDED
+#pragma once
 
 #include <test/jtx.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 /** Count offer
  */
 inline std::size_t
-countOffers(
-    jtx::Env& env,
-    jtx::Account const& account,
-    Issue const& takerPays,
-    Issue const& takerGets)
+countOffers(jtx::Env& env, jtx::Account const& account, Issue const& takerPays, Issue const& takerGets)
 {
     size_t count = 0;
-    forEachItem(
-        *env.current(), account, [&](std::shared_ptr<SLE const> const& sle) {
-            if (sle->getType() == ltOFFER &&
-                sle->getFieldAmount(sfTakerPays).issue() == takerPays &&
-                sle->getFieldAmount(sfTakerGets).issue() == takerGets)
-                ++count;
-        });
+    forEachItem(*env.current(), account, [&](std::shared_ptr<SLE const> const& sle) {
+        if (sle->getType() == ltOFFER && sle->getFieldAmount(sfTakerPays).issue() == takerPays &&
+            sle->getFieldAmount(sfTakerGets).issue() == takerGets)
+            ++count;
+    });
     return count;
 }
 
 inline std::size_t
-countOffers(
-    jtx::Env& env,
-    jtx::Account const& account,
-    STAmount const& takerPays,
-    STAmount const& takerGets)
+countOffers(jtx::Env& env, jtx::Account const& account, STAmount const& takerPays, STAmount const& takerGets)
 {
     size_t count = 0;
-    forEachItem(
-        *env.current(), account, [&](std::shared_ptr<SLE const> const& sle) {
-            if (sle->getType() == ltOFFER &&
-                sle->getFieldAmount(sfTakerPays) == takerPays &&
-                sle->getFieldAmount(sfTakerGets) == takerGets)
-                ++count;
-        });
+    forEachItem(*env.current(), account, [&](std::shared_ptr<SLE const> const& sle) {
+        if (sle->getType() == ltOFFER && sle->getFieldAmount(sfTakerPays) == takerPays &&
+            sle->getFieldAmount(sfTakerGets) == takerGets)
+            ++count;
+    });
     return count;
 }
 
 /** An offer exists
  */
 inline bool
-isOffer(
-    jtx::Env& env,
-    jtx::Account const& account,
-    STAmount const& takerPays,
-    STAmount const& takerGets)
+isOffer(jtx::Env& env, jtx::Account const& account, STAmount const& takerPays, STAmount const& takerGets)
 {
     return countOffers(env, account, takerPays, takerGets) > 0;
 }
@@ -81,11 +45,7 @@ isOffer(
 /** An offer exists
  */
 inline bool
-isOffer(
-    jtx::Env& env,
-    jtx::Account const& account,
-    Issue const& takerPays,
-    Issue const& takerGets)
+isOffer(jtx::Env& env, jtx::Account const& account, Issue const& takerPays, Issue const& takerGets)
 {
     return countOffers(env, account, takerPays, takerGets) > 0;
 }
@@ -133,11 +93,7 @@ Path::push_back(STPathElement const& pe)
 inline Path&
 Path::push_back(Issue const& iss)
 {
-    path.emplace_back(
-        STPathElement::typeCurrency | STPathElement::typeIssuer,
-        beast::zero,
-        iss.currency,
-        iss.account);
+    path.emplace_back(STPathElement::typeCurrency | STPathElement::typeIssuer, beast::zero, iss.currency, iss.account);
     return *this;
 }
 
@@ -201,6 +157,4 @@ private:
 };
 
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

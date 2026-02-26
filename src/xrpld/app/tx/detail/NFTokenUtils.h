@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2021 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TX_IMPL_DETAILS_NFTOKENUTILS_H_INCLUDED
-#define RIPPLE_TX_IMPL_DETAILS_NFTOKENUTILS_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
@@ -28,17 +8,14 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/nft.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace nft {
 
 /** Delete up to a specified number of offers from the specified token offer
  * directory. */
 std::size_t
-removeTokenOffersWithLimit(
-    ApplyView& view,
-    Keylet const& directory,
-    std::size_t maxDeletableOffers);
+removeTokenOffersWithLimit(ApplyView& view, Keylet const& directory, std::size_t maxDeletableOffers);
 
 /** Returns tesSUCCESS if NFToken has few enough offers that it can be burned */
 TER
@@ -46,10 +23,7 @@ notTooManyOffers(ReadView const& view, uint256 const& nftokenID);
 
 /** Finds the specified token in the owner's token directory. */
 std::optional<STObject>
-findToken(
-    ReadView const& view,
-    AccountID const& owner,
-    uint256 const& nftokenID);
+findToken(ReadView const& view, AccountID const& owner, uint256 const& nftokenID);
 
 /** Finds the token in the owner's token directory.  Returns token and page. */
 struct TokenAndPage
@@ -57,16 +31,12 @@ struct TokenAndPage
     STObject token;
     std::shared_ptr<SLE> page;
 
-    TokenAndPage(STObject const& token_, std::shared_ptr<SLE> page_)
-        : token(token_), page(std::move(page_))
+    TokenAndPage(STObject const& token_, std::shared_ptr<SLE> page_) : token(token_), page(std::move(page_))
     {
     }
 };
 std::optional<TokenAndPage>
-findTokenAndPage(
-    ApplyView& view,
-    AccountID const& owner,
-    uint256 const& nftokenID);
+findTokenAndPage(ApplyView& view, AccountID const& owner, uint256 const& nftokenID);
 
 /** Insert the token in the owner's token directory. */
 TER
@@ -77,11 +47,7 @@ TER
 removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID);
 
 TER
-removeToken(
-    ApplyView& view,
-    AccountID const& owner,
-    uint256 const& nftokenID,
-    std::shared_ptr<SLE>&& page);
+removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, std::shared_ptr<SLE>&& page);
 
 /** Deletes the given token offer.
 
@@ -110,7 +76,7 @@ changeTokenURI(
     ApplyView& view,
     AccountID const& owner,
     uint256 const& nftokenID,
-    std::optional<ripple::Slice> const& uri);
+    std::optional<xrpl::Slice> const& uri);
 
 /** Preflight checks shared by NFTokenCreateOffer and NFTokenMint */
 NotTEC
@@ -153,21 +119,11 @@ tokenOfferCreateApply(
     std::uint32_t txFlags = lsfSellNFToken);
 
 TER
-checkTrustlineAuthorized(
-    ReadView const& view,
-    AccountID const id,
-    beast::Journal const j,
-    Issue const& issue);
+checkTrustlineAuthorized(ReadView const& view, AccountID const id, beast::Journal const j, Issue const& issue);
 
 TER
-checkTrustlineDeepFrozen(
-    ReadView const& view,
-    AccountID const id,
-    beast::Journal const j,
-    Issue const& issue);
+checkTrustlineDeepFrozen(ReadView const& view, AccountID const id, beast::Journal const j, Issue const& issue);
 
 }  // namespace nft
 
-}  // namespace ripple
-
-#endif  // RIPPLE_TX_IMPL_DETAILS_NFTOKENUTILS_H_INCLUDED
+}  // namespace xrpl

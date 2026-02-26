@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2021 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/detail/NFTokenMint.h>
 
 #include <xrpl/basics/Expected.h>
@@ -30,7 +11,7 @@
 
 #include <array>
 
-namespace ripple {
+namespace xrpl {
 
 static std::uint16_t
 extractNFTokenFlagsFromTxFlags(std::uint32_t txFlags)
@@ -41,8 +22,7 @@ extractNFTokenFlagsFromTxFlags(std::uint32_t txFlags)
 static bool
 hasOfferFields(PreflightContext const& ctx)
 {
-    return ctx.tx.isFieldPresent(sfAmount) ||
-        ctx.tx.isFieldPresent(sfDestination) ||
+    return ctx.tx.isFieldPresent(sfAmount) || ctx.tx.isFieldPresent(sfDestination) ||
         ctx.tx.isFieldPresent(sfExpiration);
 }
 
@@ -68,14 +48,11 @@ NFTokenMint::getFlagsMask(PreflightContext const& ctx)
     // The fixRemoveNFTokenAutoTrustLine amendment disables minting with the
     // tfTrustLine flag as a way to prevent the attack.  But until the
     // amendment passes we still need to keep the old behavior available.
-    std::uint32_t const nfTokenMintMask =
-        ctx.rules.enabled(fixRemoveNFTokenAutoTrustLine)
+    std::uint32_t const nfTokenMintMask = ctx.rules.enabled(fixRemoveNFTokenAutoTrustLine)
         // if featureDynamicNFT enabled then new flag allowing mutable URI
         // available
-        ? ctx.rules.enabled(featureDynamicNFT) ? tfNFTokenMintMaskWithMutable
-                                               : tfNFTokenMintMask
-        : ctx.rules.enabled(featureDynamicNFT) ? tfNFTokenMintOldMaskWithMutable
-                                               : tfNFTokenMintOldMask;
+        ? ctx.rules.enabled(featureDynamicNFT) ? tfNFTokenMintMaskWithMutable : tfNFTokenMintMask
+        : ctx.rules.enabled(featureDynamicNFT) ? tfNFTokenMintOldMaskWithMutable : tfNFTokenMintOldMask;
 
     return nfTokenMintMask;
 }
@@ -173,7 +150,7 @@ NFTokenMint::createNFTokenID(
     ptr += sizeof(tokenSeq);
     XRPL_ASSERT(
         std::distance(buf.data(), ptr) == buf.size(),
-        "ripple::NFTokenMint::createNFTokenID : data size matches the buffer");
+        "xrpl::NFTokenMint::createNFTokenID : data size matches the buffer");
 
     return uint256::fromVoid(buf.data());
 }
@@ -190,8 +167,7 @@ NFTokenMint::preclaim(PreclaimContext const& ctx)
         if (!sle)
             return tecNO_ISSUER;
 
-        if (auto const minter = (*sle)[~sfNFTokenMinter];
-            minter != ctx.tx[sfAccount])
+        if (auto const minter = (*sle)[~sfNFTokenMinter]; minter != ctx.tx[sfAccount])
             return tecNO_PERMISSION;
     }
 
@@ -250,14 +226,10 @@ NFTokenMint::doApply()
             std::uint32_t const acctSeq = root->at(sfSequence);
 
             root->at(sfFirstNFTokenSequence) =
-                ctx_.tx.isFieldPresent(sfIssuer) ||
-                    ctx_.tx.getSeqProxy().isTicket()
-                ? acctSeq
-                : acctSeq - 1;
+                ctx_.tx.isFieldPresent(sfIssuer) || ctx_.tx.getSeqProxy().isTicket() ? acctSeq : acctSeq - 1;
         }
 
-        std::uint32_t const mintedNftCnt =
-            (*root)[~sfMintedNFTokens].value_or(0u);
+        std::uint32_t const mintedNftCnt = (*root)[~sfMintedNFTokens].value_or(0u);
 
         (*root)[sfMintedNFTokens] = mintedNftCnt + 1u;
         if ((*root)[sfMintedNFTokens] == 0u)
@@ -279,12 +251,10 @@ NFTokenMint::doApply()
     if (!tokenSeq.has_value())
         return (tokenSeq.error());
 
-    std::uint32_t const ownerCountBefore =
-        view().read(keylet::account(account_))->getFieldU32(sfOwnerCount);
+    std::uint32_t const ownerCountBefore = view().read(keylet::account(account_))->getFieldU32(sfOwnerCount);
 
     // Assemble the new NFToken.
-    SOTemplate const* nfTokenTemplate =
-        InnerObjectFormats::getInstance().findSOTemplateBySField(sfNFToken);
+    SOTemplate const* nfTokenTemplate = InnerObjectFormats::getInstance().findSOTemplateBySField(sfNFToken);
 
     if (nfTokenTemplate == nullptr)
         // Should never happen.
@@ -297,17 +267,14 @@ NFTokenMint::doApply()
         nft::toTaxon(ctx_.tx[sfNFTokenTaxon]),
         tokenSeq.value());
 
-    STObject newToken(
-        *nfTokenTemplate, sfNFToken, [this, &nftokenID](STObject& object) {
-            object.setFieldH256(sfNFTokenID, nftokenID);
+    STObject newToken(*nfTokenTemplate, sfNFToken, [this, &nftokenID](STObject& object) {
+        object.setFieldH256(sfNFTokenID, nftokenID);
 
-            if (auto const uri = ctx_.tx[~sfURI])
-                object.setFieldVL(sfURI, *uri);
-        });
+        if (auto const uri = ctx_.tx[~sfURI])
+            object.setFieldVL(sfURI, *uri);
+    });
 
-    if (TER const ret =
-            nft::insertToken(ctx_.view(), account_, std::move(newToken));
-        ret != tesSUCCESS)
+    if (TER const ret = nft::insertToken(ctx_.view(), account_, std::move(newToken)); ret != tesSUCCESS)
         return ret;
 
     if (ctx_.tx.isFieldPresent(sfAmount))
@@ -333,15 +300,13 @@ NFTokenMint::doApply()
     // allows NFTs to be added to the page (and burn fees) without
     // requiring the reserve to be met each time.  The reserve is
     // only managed when a new NFT page or sell offer is added.
-    if (auto const ownerCountAfter =
-            view().read(keylet::account(account_))->getFieldU32(sfOwnerCount);
+    if (auto const ownerCountAfter = view().read(keylet::account(account_))->getFieldU32(sfOwnerCount);
         ownerCountAfter > ownerCountBefore)
     {
-        if (auto const reserve = view().fees().accountReserve(ownerCountAfter);
-            mPriorBalance < reserve)
+        if (auto const reserve = view().fees().accountReserve(ownerCountAfter); mPriorBalance < reserve)
             return tecINSUFFICIENT_RESERVE;
     }
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

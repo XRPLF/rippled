@@ -1,0 +1,237 @@
+# The idea is to empty this file gradually by fixing the underlying issues and removing suppresions.
+
+# Suppress UBSan errors in external code by source file path
+# This matches any source file under the external/ directory
+alignment:external
+bool:external
+bounds:external
+cfi:external
+enum:external
+float-cast-overflow:external
+float-divide-by-zero:external
+function:external
+implicit-integer-sign-change:external
+implicit-signed-integer-truncation::external
+implicit-signed-integer-truncation:external
+implicit-unsigned-integer-truncation:external
+integer-divide-by-zero:external
+invalid-builtin-use:external
+invalid-objc-cast:external
+nonnull-attribute:external
+null:external
+nullability-arg:external
+nullability-assign:external
+nullability-return:external
+object-size:external
+pointer-overflow:external
+return:external
+returns-nonnull-attribute:external
+shift-base:external
+shift-exponent:external
+signed-integer-overflow:external
+undefined:external
+unreachable:external
+unsigned-integer-overflow:external
+vla-bound:external
+vptr_check:external
+vptr:external
+
+# Suppress all UBSan errors in Boost libraries
+# This matches any files containing "boost" in its path or name
+alignment:boost
+bool:boost
+bounds:boost
+cfi:boost
+enum:boost
+float-cast-overflow:boost
+float-divide-by-zero:boost
+function:boost
+implicit-integer-sign-change:boost
+implicit-signed-integer-truncation:boost
+implicit-unsigned-integer-truncation:boost
+integer-divide-by-zero:boost
+invalid-builtin-use:boost
+invalid-objc-cast:boost
+nonnull-attribute:boost
+null:boost
+nullability-arg:boost
+nullability-assign:boost
+nullability-return:boost
+object-size:boost
+pointer-overflow:boost
+return:boost
+returns-nonnull-attribute:boost
+shift-base:boost
+shift-exponent:boost
+signed-integer-overflow:boost
+undefined:boost
+unreachable:boost
+unsigned-integer-overflow:boost
+vla-bound:boost
+vptr_check:boost
+vptr:boost
+
+# Google protobuf
+undefined:protobuf
+
+# Suppress UBSan errors in rippled code by source file path
+undefined:src/libxrpl/basics/base64.cpp
+undefined:src/libxrpl/basics/Number.cpp
+undefined:src/libxrpl/beast/utility/beast_Journal.cpp
+undefined:src/libxrpl/crypto/RFC1751.cpp
+undefined:src/libxrpl/ledger/ApplyView.cpp
+undefined:src/libxrpl/ledger/View.cpp
+undefined:src/libxrpl/protocol/Permissions.cpp
+undefined:src/libxrpl/protocol/STAmount.cpp
+undefined:src/libxrpl/protocol/STPathSet.cpp
+undefined:src/libxrpl/protocol/tokens.cpp
+undefined:src/libxrpl/shamap/SHAMap.cpp
+undefined:src/test/app/Batch_test.cpp
+undefined:src/test/app/Invariants_test.cpp
+undefined:src/test/app/NFToken_test.cpp
+undefined:src/test/app/Offer_test.cpp
+undefined:src/test/app/Path_test.cpp
+undefined:src/test/basics/XRPAmount_test.cpp
+undefined:src/test/beast/LexicalCast_test.cpp
+undefined:src/test/jtx/impl/acctdelete.cpp
+undefined:src/test/ledger/SkipList_test.cpp
+undefined:src/test/rpc/Subscribe_test.cpp
+undefined:src/tests/libxrpl/basics/RangeSet.cpp
+undefined:src/xrpld/app/main/BasicApp.cpp
+undefined:src/xrpld/app/main/BasicApp.cpp
+undefined:src/xrpld/app/misc/detail/AmendmentTable.cpp
+undefined:src/xrpld/app/misc/NetworkOPs.cpp
+undefined:src/libxrpl/json/json_value.cpp
+undefined:src/xrpld/app/paths/detail/StrandFlow.h
+undefined:src/xrpld/app/tx/detail/NFTokenMint.cpp
+undefined:src/xrpld/app/tx/detail/SetOracle.cpp
+undefined:src/xrpld/core/detail/JobQueue.cpp
+undefined:src/xrpld/core/detail/Workers.cpp
+undefined:src/xrpld/rpc/detail/Role.cpp
+undefined:src/xrpld/rpc/handlers/GetAggregatePrice.cpp
+undefined:xrpl/basics/base_uint.h
+undefined:xrpl/basics/DecayingSample.h
+undefined:xrpl/beast/test/yield_to.h
+undefined:xrpl/beast/xor_shift_engine.h
+undefined:xrpl/nodestore/detail/varint.h
+undefined:xrpl/peerfinder/detail/Counts.h
+undefined:xrpl/protocol/nft.h
+
+# basic_string.h:483:51: runtime error: unsigned integer overflow
+unsigned-integer-overflow:basic_string.h
+unsigned-integer-overflow:bits/chrono.h
+unsigned-integer-overflow:bits/random.h
+unsigned-integer-overflow:bits/random.tcc
+unsigned-integer-overflow:bits/stl_algobase.h
+unsigned-integer-overflow:bits/uniform_int_dist.h
+unsigned-integer-overflow:string_view
+
+# runtime error: unsigned integer overflow: 0 - 1 cannot be represented in type 'std::size_t' (aka 'unsigned long')
+unsigned-integer-overflow:src/libxrpl/basics/base64.cpp
+unsigned-integer-overflow:src/libxrpl/basics/Number.cpp
+unsigned-integer-overflow:src/libxrpl/crypto/RFC1751.cpp
+unsigned-integer-overflow:rc/libxrpl/json/json_value.cpp
+unsigned-integer-overflow:src/libxrpl/ledger/ApplyView.cpp
+unsigned-integer-overflow:src/libxrpl/ledger/View.cpp
+unsigned-integer-overflow:src/libxrpl/protocol/Permissions.cpp
+unsigned-integer-overflow:src/libxrpl/protocol/STAmount.cpp
+unsigned-integer-overflow:src/libxrpl/protocol/STPathSet.cpp
+unsigned-integer-overflow:src/libxrpl/protocol/tokens.cpp
+unsigned-integer-overflow:src/libxrpl/shamap/SHAMap.cpp
+unsigned-integer-overflow:src/test/app/Batch_test.cpp
+unsigned-integer-overflow:src/test/app/Invariants_test.cpp
+unsigned-integer-overflow:src/test/app/NFToken_test.cpp
+unsigned-integer-overflow:src/test/app/Offer_test.cpp
+unsigned-integer-overflow:src/test/app/Path_test.cpp
+unsigned-integer-overflow:src/test/basics/XRPAmount_test.cpp
+unsigned-integer-overflow:src/test/beast/LexicalCast_test.cpp
+unsigned-integer-overflow:src/test/jtx/impl/acctdelete.cpp
+unsigned-integer-overflow:src/test/ledger/SkipList_test.cpp
+unsigned-integer-overflow:src/test/rpc/Subscribe_test.cpp
+unsigned-integer-overflow:src/tests/libxrpl/basics/RangeSet.cpp
+unsigned-integer-overflow:src/xrpld/app/main/BasicApp.cpp
+unsigned-integer-overflow:src/xrpld/app/misc/detail/AmendmentTable.cpp
+unsigned-integer-overflow:src/xrpld/app/misc/NetworkOPs.cpp
+unsigned-integer-overflow:src/xrpld/app/paths/detail/StrandFlow.h
+unsigned-integer-overflow:src/xrpld/app/tx/detail/NFTokenMint.cpp
+unsigned-integer-overflow:src/xrpld/app/tx/detail/SetOracle.cpp
+unsigned-integer-overflow:src/xrpld/rpc/detail/Role.cpp
+unsigned-integer-overflow:src/xrpld/rpc/handlers/GetAggregatePrice.cpp
+unsigned-integer-overflow:xrpl/basics/base_uint.h
+unsigned-integer-overflow:xrpl/basics/DecayingSample.h
+unsigned-integer-overflow:xrpl/beast/test/yield_to.h
+unsigned-integer-overflow:xrpl/beast/xor_shift_engine.h
+unsigned-integer-overflow:xrpl/nodestore/detail/varint.h
+unsigned-integer-overflow:xrpl/peerfinder/detail/Counts.h
+unsigned-integer-overflow:xrpl/protocol/nft.h
+
+# Rippled intentional overflows and operations
+# STAmount uses intentional negation of INT64_MIN and overflow in arithmetic
+signed-integer-overflow:src/libxrpl/protocol/STAmount.cpp
+unsigned-integer-overflow:src/libxrpl/protocol/STAmount.cpp
+
+# XRPAmount test intentional overflows
+signed-integer-overflow:src/test/basics/XRPAmount_test.cpp
+
+# Peerfinder intentional overflow in counter arithmetic
+unsigned-integer-overflow:src/xrpld/peerfinder/detail/Counts.h
+
+# Signed integer overflow suppressions
+signed-integer-overflow:src/test/beast/LexicalCast_test.cpp
+
+# External library suppressions
+unsigned-integer-overflow:nudb/detail/xxhash.hpp
+
+# Protobuf intentional overflows in hash functions
+# Protobuf uses intentional unsigned overflow for hash computation (stringpiece.h:393)
+unsigned-integer-overflow:google/protobuf/stubs/stringpiece.h
+
+# gRPC intentional overflows
+# gRPC uses intentional overflow in timer calculations
+unsigned-integer-overflow:grpc
+unsigned-integer-overflow:timer_manager.cc
+
+# Standard library intentional overflows
+# These are intentional overflows in random number generation and character conversion
+unsigned-integer-overflow:__random/seed_seq.h
+unsigned-integer-overflow:__charconv/traits.h
+
+
+# Suppress errors in RocksDB
+# RocksDB uses intentional unsigned integer overflows in hash functions and CRC calculations
+unsigned-integer-overflow:rocks*/*/util/xxhash.h
+unsigned-integer-overflow:rocks*/*/util/xxph3.h
+unsigned-integer-overflow:rocks*/*/util/hash.cc
+unsigned-integer-overflow:rocks*/*/util/crc32c.cc
+unsigned-integer-overflow:rocks*/*/util/crc32c.h
+unsigned-integer-overflow:rocks*/*/include/rocksdb/utilities/options_type.h
+unsigned-integer-overflow:rocks*/*/table/format.h
+unsigned-integer-overflow:rocks*/*/table/format.cc
+unsigned-integer-overflow:rocks*/*/table/block_based/block_based_table_builder.cc
+unsigned-integer-overflow:rocks*/*/table/block_based/reader_common.cc
+unsigned-integer-overflow:rocks*/*/db/version_set.cc
+
+# RocksDB misaligned loads (intentional for performance on ARM64)
+alignment:rocks*/*/util/crc32c_arm64.cc
+
+# nudb intentional overflows in hash functions
+unsigned-integer-overflow:nudb/detail/xxhash.hpp
+alignment:nudb/detail/xxhash.hpp
+
+# Snappy compression library intentional overflows
+unsigned-integer-overflow:snappy.cc
+
+# Abseil intentional overflows
+unsigned-integer-overflow:absl/strings/numbers.cc
+unsigned-integer-overflow:absl/strings/internal/cord_rep_flat.h
+unsigned-integer-overflow:absl/base/internal/low_level_alloc.cc
+unsigned-integer-overflow:absl/hash/internal/hash.h
+unsigned-integer-overflow:absl/container/internal/raw_hash_set.h
+
+# Standard library intentional overflows in chrono duration arithmetic
+unsigned-integer-overflow:__chrono/duration.h
+
+# Suppress undefined errors in RocksDB and nudb
+undefined:rocks.*/*/util/crc32c_arm64.cc
+undefined:rocks.*/*/util/xxhash.h
+undefined:nudb

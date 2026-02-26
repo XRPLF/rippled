@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc
-
-    Permission target use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TEST_CSF_DIGRAPH_H_INCLUDED
-#define RIPPLE_TEST_CSF_DIGRAPH_H_INCLUDED
+#pragma once
 
 #include <boost/container/flat_map.hpp>
 #include <boost/range/adaptor/transformed.hpp>
@@ -29,7 +9,7 @@
 #include <type_traits>
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 // Dummy class when no edge data needed for graph
 struct NoEdgeData
@@ -148,9 +128,7 @@ public:
     auto
     outVertices() const
     {
-        return boost::adaptors::transform(
-            graph_,
-            [](typename Graph::value_type const& v) { return v.first; });
+        return boost::adaptors::transform(graph_, [](typename Graph::value_type const& v) { return v.first; });
     }
 
     /** Range over target vertices
@@ -161,9 +139,7 @@ public:
     auto
     outVertices(Vertex source) const
     {
-        auto transform = [](typename Links::value_type const& link) {
-            return link.first;
-        };
+        auto transform = [](typename Links::value_type const& link) { return link.first; };
         auto it = graph_.find(source);
         if (it != graph_.end())
             return boost::adaptors::transform(it->second, transform);
@@ -218,7 +194,7 @@ public:
 
         Save a GraphViz dot description of the graph
         @param fileName The output file (creates)
-        @param vertexName A invokable T vertexName(Vertex const &) that
+        @param vertexName A invocable T vertexName(Vertex const &) that
                           returns the name target use for the vertex in the file
                           T must be ostream-able
     */
@@ -250,5 +226,4 @@ public:
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
-#endif
+}  // namespace xrpl

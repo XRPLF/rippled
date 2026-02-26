@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/json_errors.h>
 #include <xrpl/json/json_value.h>
@@ -29,7 +10,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 std::string
 Issue::getText() const
@@ -69,6 +50,12 @@ Issue::native() const
 }
 
 bool
+Issue::integral() const
+{
+    return native();
+}
+
+bool
 isConsistent(Issue const& ac)
 {
     return isXRP(ac.currency) == isXRP(ac.account);
@@ -96,14 +83,12 @@ issueFromJson(Json::Value const& v)
 {
     if (!v.isObject())
     {
-        Throw<std::runtime_error>(
-            "issueFromJson can only be specified with an 'object' Json value");
+        Throw<std::runtime_error>("issueFromJson can only be specified with an 'object' Json value");
     }
 
     if (v.isMember(jss::mpt_issuance_id))
     {
-        Throw<std::runtime_error>(
-            "issueFromJson, Issue should not have mpt_issuance_id");
+        Throw<std::runtime_error>("issueFromJson, Issue should not have mpt_issuance_id");
     }
 
     Json::Value const curStr = v[jss::currency];
@@ -111,8 +96,7 @@ issueFromJson(Json::Value const& v)
 
     if (!curStr.isString())
     {
-        Throw<Json::error>(
-            "issueFromJson currency must be a string Json value");
+        Throw<Json::error>("issueFromJson currency must be a string Json value");
     }
 
     auto const currency = to_currency(curStr.asString());
@@ -151,4 +135,4 @@ operator<<(std::ostream& os, Issue const& x)
     return os;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

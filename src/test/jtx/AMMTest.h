@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TEST_JTX_AMMTEST_H_INCLUDED
-#define RIPPLE_TEST_JTX_AMMTEST_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
@@ -27,7 +7,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Feature.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -40,7 +20,11 @@ struct TestAMMArg
     std::optional<std::pair<STAmount, STAmount>> pool = std::nullopt;
     std::uint16_t tfee = 0;
     std::optional<jtx::ter> ter = std::nullopt;
-    std::vector<FeatureBitset> features = {testable_amendments()};
+    std::vector<FeatureBitset> features = {
+        // For now, just disable SAV entirely, which locks in the small Number
+        // mantissas
+        jtx::testable_amendments() - featureSingleAssetVault - featureLendingProtocol};
+
     bool noLog = false;
 };
 
@@ -85,6 +69,14 @@ protected:
 public:
     AMMTestBase();
 
+    static FeatureBitset
+    testable_amendments()
+    {
+        // For now, just disable SAV entirely, which locks in the small Number
+        // mantissas
+        return jtx::testable_amendments() - featureSingleAssetVault - featureLendingProtocol;
+    }
+
 protected:
     /** testAMM() funds 30,000XRP and 30,000IOU
      * for each non-XRP asset to Alice and Carol
@@ -98,9 +90,7 @@ protected:
         std::vector<FeatureBitset> const& features = {testable_amendments()});
 
     void
-    testAMM(
-        std::function<void(jtx::AMM&, jtx::Env&)>&& cb,
-        TestAMMArg const& arg);
+    testAMM(std::function<void(jtx::AMM&, jtx::Env&)>&& cb, TestAMMArg const& arg);
 };
 
 class AMMTest : public jtx::AMMTestBase
@@ -167,6 +157,4 @@ protected:
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
-
-#endif  // RIPPLE_TEST_JTX_AMMTEST_H_INCLUDED
+}  // namespace xrpl

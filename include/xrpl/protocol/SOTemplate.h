@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_SOTEMPLATE_H_INCLUDED
-#define RIPPLE_PROTOCOL_SOTEMPLATE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/SField.h>
@@ -27,7 +7,7 @@
 #include <initializer_list>
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 
 /** Kind of element in each entry of an SOTemplate. */
 enum SOEStyle {
@@ -61,24 +41,19 @@ private:
             auto nm = std::to_string(fieldName.getCode());
             if (fieldName.hasName())
                 nm += ": '" + fieldName.getName() + "'";
-            Throw<std::runtime_error>(
-                "SField (" + nm + ") in SOElement must be useful.");
+            Throw<std::runtime_error>("SField (" + nm + ") in SOElement must be useful.");
         }
     }
 
 public:
-    SOElement(SField const& fieldName, SOEStyle style)
-        : sField_(fieldName), style_(style)
+    SOElement(SField const& fieldName, SOEStyle style) : sField_(fieldName), style_(style)
     {
         init(fieldName);
     }
 
     template <typename T>
         requires(std::is_same_v<T, STAmount> || std::is_same_v<T, STIssue>)
-    SOElement(
-        TypedField<T> const& fieldName,
-        SOEStyle style,
-        SOETxMPTIssue supportMpt = soeMPTNotSupported)
+    SOElement(TypedField<T> const& fieldName, SOEStyle style, SOETxMPTIssue supportMpt = soeMPTNotSupported)
         : sField_(fieldName), style_(style), supportMpt_(supportMpt)
     {
         init(fieldName);
@@ -122,9 +97,7 @@ public:
         After creating the template fields cannot be
         added, modified, or removed.
     */
-    SOTemplate(
-        std::initializer_list<SOElement> uniqueFields,
-        std::initializer_list<SOElement> commonFields = {});
+    SOTemplate(std::initializer_list<SOElement> uniqueFields, std::initializer_list<SOElement> commonFields = {});
 
     /* Provide for the enumeration of fields */
     std::vector<SOElement>::const_iterator
@@ -173,6 +146,4 @@ private:
     std::vector<int> indices_;  // field num -> index
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

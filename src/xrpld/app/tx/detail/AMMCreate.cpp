@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/OrderBookDB.h>
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
@@ -29,7 +10,7 @@
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 AMMCreate::checkExtraFeatures(PreflightContext const& ctx)
@@ -45,8 +26,7 @@ AMMCreate::preflight(PreflightContext const& ctx)
 
     if (amount.issue() == amount2.issue())
     {
-        JLOG(ctx.j.debug())
-            << "AMM Instance: tokens can not have the same currency/issuer.";
+        JLOG(ctx.j.debug()) << "AMM Instance: tokens can not have the same currency/issuer.";
         return temBAD_AMM_TOKENS;
     }
 
@@ -86,32 +66,26 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     auto const amount2 = ctx.tx[sfAmount2];
 
     // Check if AMM already exists for the token pair
-    if (auto const ammKeylet = keylet::amm(amount.issue(), amount2.issue());
-        ctx.view.read(ammKeylet))
+    if (auto const ammKeylet = keylet::amm(amount.issue(), amount2.issue()); ctx.view.read(ammKeylet))
     {
         JLOG(ctx.j.debug()) << "AMM Instance: ltAMM already exists.";
         return tecDUPLICATE;
     }
 
-    if (auto const ter = requireAuth(ctx.view, amount.issue(), accountID);
-        ter != tesSUCCESS)
+    if (auto const ter = requireAuth(ctx.view, amount.issue(), accountID); ter != tesSUCCESS)
     {
-        JLOG(ctx.j.debug())
-            << "AMM Instance: account is not authorized, " << amount.issue();
+        JLOG(ctx.j.debug()) << "AMM Instance: account is not authorized, " << amount.issue();
         return ter;
     }
 
-    if (auto const ter = requireAuth(ctx.view, amount2.issue(), accountID);
-        ter != tesSUCCESS)
+    if (auto const ter = requireAuth(ctx.view, amount2.issue(), accountID); ter != tesSUCCESS)
     {
-        JLOG(ctx.j.debug())
-            << "AMM Instance: account is not authorized, " << amount2.issue();
+        JLOG(ctx.j.debug()) << "AMM Instance: account is not authorized, " << amount2.issue();
         return ter;
     }
 
     // Globally or individually frozen
-    if (isFrozen(ctx.view, accountID, amount.issue()) ||
-        isFrozen(ctx.view, accountID, amount2.issue()))
+    if (isFrozen(ctx.view, accountID, amount.issue()) || isFrozen(ctx.view, accountID, amount2.issue()))
     {
         JLOG(ctx.j.debug()) << "AMM Instance: involves frozen asset.";
         return tecFROZEN;
@@ -121,15 +95,13 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         if (isXRP(issue))
             return false;
 
-        if (auto const issuerAccount =
-                view.read(keylet::account(issue.account)))
+        if (auto const issuerAccount = view.read(keylet::account(issue.account)))
             return (issuerAccount->getFlags() & lsfDefaultRipple) == 0;
 
         return false;
     };
 
-    if (noDefaultRipple(ctx.view, amount.issue()) ||
-        noDefaultRipple(ctx.view, amount2.issue()))
+    if (noDefaultRipple(ctx.view, amount.issue()) || noDefaultRipple(ctx.view, amount2.issue()))
     {
         JLOG(ctx.j.debug()) << "AMM Instance: DefaultRipple not set";
         return terNO_RIPPLE;
@@ -148,39 +120,30 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         if (isXRP(asset))
             return xrpBalance < asset;
         return accountID != asset.issue().account &&
-            accountHolds(
-                ctx.view,
-                accountID,
-                asset.issue(),
-                FreezeHandling::fhZERO_IF_FROZEN,
-                ctx.j) < asset;
+            accountHolds(ctx.view, accountID, asset.issue(), FreezeHandling::fhZERO_IF_FROZEN, ctx.j) < asset;
     };
 
     if (insufficientBalance(amount) || insufficientBalance(amount2))
     {
-        JLOG(ctx.j.debug())
-            << "AMM Instance: insufficient funds, " << amount << " " << amount2;
+        JLOG(ctx.j.debug()) << "AMM Instance: insufficient funds, " << amount << " " << amount2;
         return tecUNFUNDED_AMM;
     }
 
     auto isLPToken = [&](STAmount const& amount) -> bool {
-        if (auto const sle =
-                ctx.view.read(keylet::account(amount.issue().account)))
+        if (auto const sle = ctx.view.read(keylet::account(amount.issue().account)))
             return sle->isFieldPresent(sfAMMID);
         return false;
     };
 
     if (isLPToken(amount) || isLPToken(amount2))
     {
-        JLOG(ctx.j.debug()) << "AMM Instance: can't create with LPTokens "
-                            << amount << " " << amount2;
+        JLOG(ctx.j.debug()) << "AMM Instance: can't create with LPTokens " << amount << " " << amount2;
         return tecAMM_INVALID_TOKENS;
     }
 
     if (ctx.view.rules().enabled(featureSingleAssetVault))
     {
-        if (auto const accountId = pseudoAccountAddress(
-                ctx.view, keylet::amm(amount.issue(), amount2.issue()).key);
+        if (auto const accountId = pseudoAccountAddress(ctx.view, keylet::amm(amount.issue(), amount2.issue()).key);
             accountId == beast::zero)
             return terADDRESS_COLLISION;
     }
@@ -195,8 +158,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     auto clawbackDisabled = [&](Issue const& issue) -> TER {
         if (isXRP(issue))
             return tesSUCCESS;
-        if (auto const sle = ctx.view.read(keylet::account(issue.account));
-            !sle)
+        if (auto const sle = ctx.view.read(keylet::account(issue.account)); !sle)
             return tecINTERNAL;  // LCOV_EXCL_LINE
         else if (sle->getFlags() & lsfAllowTrustLineClawback)
             return tecNO_PERMISSION;
@@ -209,11 +171,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
 }
 
 static std::pair<TER, bool>
-applyCreate(
-    ApplyContext& ctx_,
-    Sandbox& sb,
-    AccountID const& account_,
-    beast::Journal j_)
+applyCreate(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Journal j_)
 {
     auto const amount = ctx_.tx[sfAmount];
     auto const amount2 = ctx_.tx[sfAmount2];
@@ -232,8 +190,7 @@ applyCreate(
     auto const accountId = (*account)[sfAccount];
 
     // LP Token already exists. (should not happen)
-    auto const lptIss = ammLPTIssue(
-        amount.issue().currency, amount2.issue().currency, accountId);
+    auto const lptIss = ammLPTIssue(amount.issue().currency, amount2.issue().currency, accountId);
     if (sb.read(keylet::line(accountId, lptIss)))
     {
         JLOG(j_.error()) << "AMM Instance: LP Token already exists.";
@@ -257,8 +214,7 @@ applyCreate(
     ammSle->setFieldIssue(sfAsset, STIssue{sfAsset, issue1});
     ammSle->setFieldIssue(sfAsset2, STIssue{sfAsset2, issue2});
     // AMM creator gets the auction slot and the voting slot.
-    initializeFeeAuctionVote(
-        ctx_.view(), ammSle, account_, lptIss, ctx_.tx[sfTradingFee]);
+    initializeFeeAuctionVote(ctx_.view(), ammSle, account_, lptIss, ctx_.tx[sfTradingFee]);
 
     // Add owner directory to link the root account and AMM object.
     if (auto ter = dirLink(sb, accountId, ammSle); ter)
@@ -277,20 +233,12 @@ applyCreate(
     }
 
     auto sendAndTrustSet = [&](STAmount const& amount) -> TER {
-        if (auto const res = accountSend(
-                sb,
-                account_,
-                accountId,
-                amount,
-                ctx_.journal,
-                WaiveTransferFee::Yes))
+        if (auto const res = accountSend(sb, account_, accountId, amount, ctx_.journal, WaiveTransferFee::Yes))
             return res;
         // Set AMM flag on AMM trustline
         if (!isXRP(amount))
         {
-            if (SLE::pointer sleRippleState =
-                    sb.peek(keylet::line(accountId, amount.issue()));
-                !sleRippleState)
+            if (SLE::pointer sleRippleState = sb.peek(keylet::line(accountId, amount.issue())); !sleRippleState)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             else
             {
@@ -318,17 +266,14 @@ applyCreate(
         return {res, false};
     }
 
-    JLOG(j_.debug()) << "AMM Instance: success " << accountId << " "
-                     << ammKeylet.key << " " << lpTokens << " " << amount << " "
-                     << amount2;
-    auto addOrderBook =
-        [&](Issue const& issueIn, Issue const& issueOut, std::uint64_t uRate) {
-            Book const book{issueIn, issueOut, std::nullopt};
-            auto const dir = keylet::quality(keylet::book(book), uRate);
-            if (auto const bookExisted = static_cast<bool>(sb.read(dir));
-                !bookExisted)
-                ctx_.app.getOrderBookDB().addOrderBook(book);
-        };
+    JLOG(j_.debug()) << "AMM Instance: success " << accountId << " " << ammKeylet.key << " " << lpTokens << " "
+                     << amount << " " << amount2;
+    auto addOrderBook = [&](Issue const& issueIn, Issue const& issueOut, std::uint64_t uRate) {
+        Book const book{issueIn, issueOut, std::nullopt};
+        auto const dir = keylet::quality(keylet::book(book), uRate);
+        if (auto const bookExisted = static_cast<bool>(sb.read(dir)); !bookExisted)
+            ctx_.app.getOrderBookDB().addOrderBook(book);
+    };
     addOrderBook(amount.issue(), amount2.issue(), getRate(amount2, amount));
     addOrderBook(amount2.issue(), amount.issue(), getRate(amount, amount2));
 
@@ -349,4 +294,4 @@ AMMCreate::doApply()
     return result.first;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

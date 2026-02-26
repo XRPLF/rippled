@@ -1,20 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/JSONRPCClient.h>
 #include <test/jtx/WSClient.h>
@@ -24,7 +7,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class RPCOverload_test : public beast::unit_test::suite
@@ -44,9 +27,8 @@ public:
         Account const bob{"bob"};
         env.fund(XRP(10000), alice, bob);
 
-        std::unique_ptr<AbstractClient> client = useWS
-            ? makeWSClient(env.app().config())
-            : makeJSONRPCClient(env.app().config());
+        std::unique_ptr<AbstractClient> client =
+            useWS ? makeWSClient(env.app().config()) : makeJSONRPCClient(env.app().config());
 
         Json::Value tx = Json::objectValue;
         tx[jss::tx_json] = pay(alice, bob, XRP(1));
@@ -64,8 +46,7 @@ public:
             // When booted, we just get a null json response
             if (jv.isNull())
                 booted = true;
-            else if (!(jv.isMember(jss::status) &&
-                       (jv[jss::status] == "success")))
+            else if (!(jv.isMember(jss::status) && (jv[jss::status] == "success")))
             {
                 // Don't use BEAST_EXPECT above b/c it will be called a
                 // non-deterministic number of times and the number of tests run
@@ -87,7 +68,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(RPCOverload, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(RPCOverload, rpc, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

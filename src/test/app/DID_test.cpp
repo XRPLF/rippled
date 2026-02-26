@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 
 #include <xrpl/protocol/Feature.h>
@@ -24,7 +5,7 @@
 
 #include <algorithm>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 struct DID_test : public beast::unit_test::suite
@@ -79,9 +60,7 @@ struct DID_test : public beast::unit_test::suite
 
         // Pay alice almost enough to make the reserve for a DID.
         env(pay(env.master, alice, drops(incReserve + 2 * baseFee - 1)));
-        BEAST_EXPECT(
-            env.balance(alice) ==
-            acctReserve + incReserve + drops(baseFee - 1));
+        BEAST_EXPECT(env.balance(alice) == acctReserve + incReserve + drops(baseFee - 1));
         env.close();
 
         // alice still does not have enough XRP for the reserve of a DID.
@@ -132,11 +111,7 @@ struct DID_test : public beast::unit_test::suite
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
         // all empty fields
-        env(did::set(alice),
-            did::uri(""),
-            did::document(""),
-            did::data(""),
-            ter(temEMPTY_DID));
+        env(did::set(alice), did::uri(""), did::document(""), did::data(""), ter(temEMPTY_DID));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
@@ -152,19 +127,14 @@ struct DID_test : public beast::unit_test::suite
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
         // attestation is too long
-        env(did::set(alice),
-            did::document("data"),
-            did::data(longString),
-            ter(temMALFORMED));
+        env(did::set(alice), did::document("data"), did::data(longString), ter(temMALFORMED));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
         // some empty fields, some optional fields
         // pre-fix amendment
         auto const fixEnabled = env.current()->rules().enabled(fixEmptyDID);
-        env(did::set(alice),
-            did::uri(""),
-            fixEnabled ? ter(tecEMPTY_DID) : ter(tesSUCCESS));
+        env(did::set(alice), did::uri(""), fixEnabled ? ter(tecEMPTY_DID) : ter(tesSUCCESS));
         env.close();
         auto const expectedOwnerReserve = fixEnabled ? 0 : 1;
         BEAST_EXPECT(ownerCount(env, alice) == expectedOwnerReserve);
@@ -250,10 +220,7 @@ struct DID_test : public beast::unit_test::suite
         BEAST_EXPECT(ownerCount(env, francis) == 1);
 
         // URI + DIDDocument + Data
-        env(did::set(george),
-            did::uri("uri"),
-            did::document("data"),
-            did::data("attest"));
+        env(did::set(george), did::uri("uri"), did::document("data"), did::data("attest"));
         BEAST_EXPECT(ownerCount(env, george) == 1);
     }
 
@@ -398,7 +365,7 @@ struct DID_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(DID, app, ripple);
+BEAST_DEFINE_TESTSUITE(DID, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

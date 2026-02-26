@@ -1,20 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 
 #include <xrpl/basics/random.h>
@@ -28,7 +11,7 @@
 #include <algorithm>
 #include <limits>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 struct Directory_test : public beast::unit_test::suite
@@ -106,8 +89,7 @@ struct Directory_test : public beast::unit_test::suite
 
             do
             {
-                auto p =
-                    view->read(keylet::page(keylet::ownerDir(alice), page));
+                auto p = view->read(keylet::page(keylet::ownerDir(alice), page));
 
                 // Ensure that the entries in the page are sorted
                 auto const& v = p->getFieldV256(sfIndexes);
@@ -115,8 +97,7 @@ struct Directory_test : public beast::unit_test::suite
 
                 // Ensure that the page contains the correct orders by
                 // calculating which sequence numbers belong here.
-                std::uint32_t const minSeq =
-                    firstOfferSeq + (page * dirNodeMaxEntries);
+                std::uint32_t const minSeq = firstOfferSeq + (page * dirNodeMaxEntries);
                 std::uint32_t const maxSeq = minSeq + dirNodeMaxEntries;
 
                 for (auto const& e : v)
@@ -133,8 +114,7 @@ struct Directory_test : public beast::unit_test::suite
 
         // Now check the orderbook: it should be in the order we placed
         // the offers.
-        auto book = BookDirs(
-            *env.current(), Book({xrpIssue(), USD.issue(), std::nullopt}));
+        auto book = BookDirs(*env.current(), Book({xrpIssue(), USD.issue(), std::nullopt}));
         int count = 1;
 
         for (auto const& offer : book)
@@ -184,7 +164,7 @@ struct Directory_test : public beast::unit_test::suite
             return c;
         }();
 
-        // First, Alices creates a lot of trustlines, and then
+        // First, Alice creates a lot of trustlines, and then
         // deletes them in a different order:
         {
             auto cl = currencies;
@@ -283,8 +263,7 @@ struct Directory_test : public beast::unit_test::suite
         {
             for (int i = 0; i < dirNodeMaxEntries; ++i)
             {
-                env(offer_cancel(
-                    alice, firstOfferSeq + page * dirNodeMaxEntries + i));
+                env(offer_cancel(alice, firstOfferSeq + page * dirNodeMaxEntries + i));
                 env.close();
             }
         }
@@ -293,8 +272,7 @@ struct Directory_test : public beast::unit_test::suite
         // should have no entries and be empty:
         {
             Sandbox sb(env.closed().get(), tapNONE);
-            uint256 const bookBase =
-                getBookBase({xrpIssue(), USD.issue(), std::nullopt});
+            uint256 const bookBase = getBookBase({xrpIssue(), USD.issue(), std::nullopt});
 
             BEAST_EXPECT(dirIsEmpty(sb, keylet::page(bookBase)));
             BEAST_EXPECT(!sb.succ(bookBase, getQualityNext(bookBase)));
@@ -326,11 +304,9 @@ struct Directory_test : public beast::unit_test::suite
         env.fund(XRP(10000), alice);
         env.close();
 
-        constexpr uint256 base(
-            "fb71c9aa3310141da4b01d6c744a98286af2d72ab5448d5adc0910ca0c910880");
+        constexpr uint256 base("fb71c9aa3310141da4b01d6c744a98286af2d72ab5448d5adc0910ca0c910880");
 
-        constexpr uint256 item(
-            "bad0f021aa3b2f6754a8fe82a5779730aa0bbbab82f17201ef24900efc2c7312");
+        constexpr uint256 item("bad0f021aa3b2f6754a8fe82a5779730aa0bbbab82f17201ef24900efc2c7312");
 
         {
             // Create a chain of three pages:
@@ -350,8 +326,7 @@ struct Directory_test : public beast::unit_test::suite
 
             // Now, try to delete the item from the middle
             // page. This should cause all pages to be deleted:
-            BEAST_EXPECT(sb.dirRemove(
-                keylet::page(base, 0), 1, keylet::unchecked(item), false));
+            BEAST_EXPECT(sb.dirRemove(keylet::page(base, 0), 1, keylet::unchecked(item), false));
             BEAST_EXPECT(!sb.peek(keylet::page(base, 2)));
             BEAST_EXPECT(!sb.peek(keylet::page(base, 1)));
             BEAST_EXPECT(!sb.peek(keylet::page(base, 0)));
@@ -384,8 +359,7 @@ struct Directory_test : public beast::unit_test::suite
             // Now, try to delete the item from page 2.
             // This should cause pages 2 and 3 to be
             // deleted:
-            BEAST_EXPECT(sb.dirRemove(
-                keylet::page(base, 0), 2, keylet::unchecked(item), false));
+            BEAST_EXPECT(sb.dirRemove(keylet::page(base, 0), 2, keylet::unchecked(item), false));
             BEAST_EXPECT(!sb.peek(keylet::page(base, 3)));
             BEAST_EXPECT(!sb.peek(keylet::page(base, 2)));
 
@@ -415,8 +389,7 @@ struct Directory_test : public beast::unit_test::suite
             Json::Value params;
             params[jss::type] = jss::directory;
             params[jss::ledger_index] = "validated";
-            auto const result =
-                env.rpc("json", "ledger_data", to_string(params))[jss::result];
+            auto const result = env.rpc("json", "ledger_data", to_string(params))[jss::result];
             BEAST_EXPECT(!result.isMember(jss::marker));
             return result;
         };
@@ -435,9 +408,7 @@ struct Directory_test : public beast::unit_test::suite
             BEAST_EXPECTS(checkArraySize(jstate, 2), jrr.toStyledString());
             for (auto const& directory : jstate)
             {
-                BEAST_EXPECT(
-                    directory["LedgerEntryType"] ==
-                    jss::DirectoryNode);  // sanity check
+                BEAST_EXPECT(directory["LedgerEntryType"] == jss::DirectoryNode);  // sanity check
                 // The PreviousTxnID and PreviousTxnLgrSeq fields should not be
                 // on the DirectoryNode object when the amendment is disabled
                 BEAST_EXPECT(!directory.isMember("PreviousTxnID"));
@@ -453,7 +424,7 @@ struct Directory_test : public beast::unit_test::suite
         // exist
         env(offer(alice, XRP(1), USD(1)));
         auto const txID = to_string(env.tx()->getTransactionID());
-        auto const ledgerSeq = env.current()->info().seq;
+        auto const ledgerSeq = env.current()->header().seq;
         env.close();
         // Make sure the fields only exist if the object is touched
         env(noop(gw));
@@ -465,9 +436,7 @@ struct Directory_test : public beast::unit_test::suite
             BEAST_EXPECTS(checkArraySize(jstate, 3), jrr.toStyledString());
             for (auto const& directory : jstate)
             {
-                BEAST_EXPECT(
-                    directory["LedgerEntryType"] ==
-                    jss::DirectoryNode);  // sanity check
+                BEAST_EXPECT(directory["LedgerEntryType"] == jss::DirectoryNode);  // sanity check
                 if (directory[jss::Owner] == gw.human())
                 {
                     // gw's directory did not get touched, so it
@@ -480,9 +449,7 @@ struct Directory_test : public beast::unit_test::suite
                     // All of the other directories, including the order
                     // book, did get touched, so they should have those
                     // fields
-                    BEAST_EXPECT(
-                        directory.isMember("PreviousTxnID") &&
-                        directory["PreviousTxnID"].asString() == txID);
+                    BEAST_EXPECT(directory.isMember("PreviousTxnID") && directory["PreviousTxnID"].asString() == txID);
                     BEAST_EXPECT(
                         directory.isMember("PreviousTxnLgrSeq") &&
                         directory["PreviousTxnLgrSeq"].asUInt() == ledgerSeq);
@@ -519,8 +486,7 @@ struct Directory_test : public beast::unit_test::suite
                 env,
                 lastPage,
                 keylet::ownerDir(alice.id()),
-                [lastPage, this](
-                    ApplyView& view, uint256 key, std::uint64_t page) {
+                [lastPage, this](ApplyView& view, uint256 key, std::uint64_t page) {
                     auto sle = view.peek({ltCREDENTIAL, key});
                     if (!BEAST_EXPECT(sle))
                         return false;
@@ -542,8 +508,7 @@ struct Directory_test : public beast::unit_test::suite
 
             // Destroy all objects in directory
             for (int i = 0; i < 64; ++i)
-                env(credentials::deleteCred(
-                    alice, alice, alice, std::to_string(i)));
+                env(credentials::deleteCred(alice, alice, alice, std::to_string(i)));
 
             if (!full)
                 env(credentials::deleteCred(alice, alice, alice, "foo"));
@@ -556,12 +521,10 @@ struct Directory_test : public beast::unit_test::suite
             env.close();
         };
 
-        testCase(
-            testable_amendments() - fixDirectoryLimit,
-            [this](Env&) -> std::tuple<std::uint64_t, bool> {
-                testcase("directory full without fixDirectoryLimit");
-                return {dirNodeMaxPages - 1, true};
-            });
+        testCase(testable_amendments() - fixDirectoryLimit, [this](Env&) -> std::tuple<std::uint64_t, bool> {
+            testcase("directory full without fixDirectoryLimit");
+            return {dirNodeMaxPages - 1, true};
+        });
         testCase(
             testable_amendments(),  //
             [this](Env&) -> std::tuple<std::uint64_t, bool> {
@@ -588,7 +551,7 @@ struct Directory_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(Directory, ledger, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(Directory, ledger, xrpl, 1);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

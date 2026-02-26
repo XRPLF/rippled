@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2019 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/handlers/Handlers.h>
 
@@ -30,7 +11,7 @@
 #include <string>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doPeerReservationsAdd(RPC::JsonContext& context)
@@ -68,14 +49,12 @@ doPeerReservationsAdd(RPC::JsonContext& context)
 
     // channel_verify takes a key in both base58 and hex.
     // @nikb prefers that we take only base58.
-    std::optional<PublicKey> optPk = parseBase58<PublicKey>(
-        TokenType::NodePublic, params[jss::public_key].asString());
+    std::optional<PublicKey> optPk = parseBase58<PublicKey>(TokenType::NodePublic, params[jss::public_key].asString());
     if (!optPk)
         return rpcError(rpcPUBLIC_MALFORMED);
     PublicKey const& nodeId = *optPk;
 
-    auto const previous = context.app.peerReservations().insert_or_assign(
-        PeerReservation{nodeId, desc});
+    auto const previous = context.app.peerReservations().insert_or_assign(PeerReservation{nodeId, desc});
 
     Json::Value result{Json::objectValue};
     if (previous)
@@ -96,8 +75,7 @@ doPeerReservationsDel(RPC::JsonContext& context)
     if (!params[jss::public_key].isString())
         return RPC::expected_field_error(jss::public_key, "a string");
 
-    std::optional<PublicKey> optPk = parseBase58<PublicKey>(
-        TokenType::NodePublic, params[jss::public_key].asString());
+    std::optional<PublicKey> optPk = parseBase58<PublicKey>(TokenType::NodePublic, params[jss::public_key].asString());
     if (!optPk)
         return rpcError(rpcPUBLIC_MALFORMED);
     PublicKey const& nodeId = *optPk;
@@ -127,4 +105,4 @@ doPeerReservationsList(RPC::JsonContext& context)
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

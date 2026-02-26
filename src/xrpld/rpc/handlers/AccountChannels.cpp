@@ -1,24 +1,6 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/ledger/ReadView.h>
@@ -29,7 +11,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 void
 addChannel(Json::Value& jsonLines, SLE const& line)
@@ -162,12 +144,11 @@ doAccountChannels(RPC::JsonContext& context)
             startAfter,
             startHint,
             limit + 1,
-            [&visitData, &accountID, &count, &limit, &marker, &nextHint](
-                std::shared_ptr<SLE const> const& sleCur) {
+            [&visitData, &accountID, &count, &limit, &marker, &nextHint](std::shared_ptr<SLE const> const& sleCur) {
                 if (!sleCur)
                 {
                     // LCOV_EXCL_START
-                    UNREACHABLE("ripple::doAccountChannels : null SLE");
+                    UNREACHABLE("xrpl::doAccountChannels : null SLE");
                     return false;
                     // LCOV_EXCL_STOP
                 }
@@ -178,10 +159,8 @@ doAccountChannels(RPC::JsonContext& context)
                     nextHint = RPC::getStartHint(sleCur, visitData.accountID);
                 }
 
-                if (count <= limit && sleCur->getType() == ltPAYCHAN &&
-                    (*sleCur)[sfAccount] == accountID &&
-                    (!visitData.raDstAccount ||
-                     *visitData.raDstAccount == (*sleCur)[sfDestination]))
+                if (count <= limit && sleCur->getType() == ltPAYCHAN && (*sleCur)[sfAccount] == accountID &&
+                    (!visitData.raDstAccount || *visitData.raDstAccount == (*sleCur)[sfDestination]))
                 {
                     visitData.items.emplace_back(sleCur);
                 }
@@ -198,8 +177,7 @@ doAccountChannels(RPC::JsonContext& context)
     if (count == limit + 1 && marker)
     {
         result[jss::limit] = limit;
-        result[jss::marker] =
-            to_string(*marker) + "," + std::to_string(nextHint);
+        result[jss::marker] = to_string(*marker) + "," + std::to_string(nextHint);
     }
 
     result[jss::account] = toBase58(accountID);
@@ -212,4 +190,4 @@ doAccountChannels(RPC::JsonContext& context)
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

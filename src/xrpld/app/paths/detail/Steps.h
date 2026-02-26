@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_PATHS_IMPL_PAYSTEPS_H_INCLUDED
-#define RIPPLE_APP_PATHS_IMPL_PAYSTEPS_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/paths/detail/AmountSpec.h>
 
@@ -33,7 +13,7 @@
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 class PaymentSandbox;
 class ReadView;
 class ApplyView;
@@ -312,9 +292,7 @@ inline std::pair<std::optional<QualityFunction>, DebtDirection>
 Step::getQualityFunc(ReadView const& v, DebtDirection prevStepDir) const
 {
     if (auto const res = qualityUpperBound(v, prevStepDir); res.first)
-        return {
-            QualityFunction{*res.first, QualityFunction::CLOBLikeTag{}},
-            res.second};
+        return {QualityFunction{*res.first, QualityFunction::CLOBLikeTag{}}, res.second};
     else
         return {std::nullopt, res.second};
 }
@@ -462,8 +440,7 @@ struct StepImp : public Step
         boost::container::flat_set<uint256>& ofrsToRm,
         EitherAmount const& out) override
     {
-        auto const r = static_cast<TDerived*>(this)->revImp(
-            sb, afView, ofrsToRm, get<TOut>(out));
+        auto const r = static_cast<TDerived*>(this)->revImp(sb, afView, ofrsToRm, get<TOut>(out));
         return {EitherAmount(r.first), EitherAmount(r.second)};
     }
 
@@ -475,8 +452,7 @@ struct StepImp : public Step
         boost::container::flat_set<uint256>& ofrsToRm,
         EitherAmount const& in) override
     {
-        auto const r = static_cast<TDerived*>(this)->fwdImp(
-            sb, afView, ofrsToRm, get<TIn>(in));
+        auto const r = static_cast<TDerived*>(this)->fwdImp(sb, afView, ofrsToRm, get<TIn>(in));
         return {EitherAmount(r.first), EitherAmount(r.second)};
     }
 
@@ -507,8 +483,7 @@ class FlowException : public std::runtime_error
 public:
     TER ter;
 
-    FlowException(TER t, std::string const& msg)
-        : std::runtime_error(msg), ter(t)
+    FlowException(TER t, std::string const& msg) : std::runtime_error(msg), ter(t)
     {
     }
 
@@ -536,13 +511,12 @@ struct StrandContext
     AccountID const strandDst;                  ///< Strand destination account
     Issue const strandDeliver;                  ///< Issue strand delivers
     std::optional<Quality> const limitQuality;  ///< Worst accepted quality
-    bool const isFirst;               ///< true if Step is first in Strand
-    bool const isLast = false;        ///< true if Step is last in Strand
-    bool const ownerPaysTransferFee;  ///< true if owner, not sender, pays fee
-    OfferCrossing const
-        offerCrossing;         ///< Yes/Sell if offer crossing, not payment
-    bool const isDefaultPath;  ///< true if Strand is default path
-    size_t const strandSize;   ///< Length of Strand
+    bool const isFirst;                         ///< true if Step is first in Strand
+    bool const isLast = false;                  ///< true if Step is last in Strand
+    bool const ownerPaysTransferFee;            ///< true if owner, not sender, pays fee
+    OfferCrossing const offerCrossing;          ///< Yes/Sell if offer crossing, not payment
+    bool const isDefaultPath;                   ///< true if Strand is default path
+    size_t const strandSize;                    ///< Length of Strand
     /** The previous step in the strand. Needed to check the no ripple
         constraint
      */
@@ -575,10 +549,8 @@ struct StrandContext
         bool ownerPaysTransferFee_,
         OfferCrossing offerCrossing_,
         bool isDefaultPath_,
-        std::array<boost::container::flat_set<Issue>, 2>&
-            seenDirectIssues_,  ///< For detecting currency loops
-        boost::container::flat_set<Issue>&
-            seenBookOuts_,  ///< For detecting book loops
+        std::array<boost::container::flat_set<Issue>, 2>& seenDirectIssues_,  ///< For detecting currency loops
+        boost::container::flat_set<Issue>& seenBookOuts_,                     ///< For detecting book loops
         AMMContext& ammContext_,
         std::optional<uint256> const& domainID,
         beast::Journal j_);  ///< Journal for logging
@@ -588,25 +560,17 @@ struct StrandContext
 namespace test {
 // Needed for testing
 bool
-directStepEqual(
-    Step const& step,
-    AccountID const& src,
-    AccountID const& dst,
-    Currency const& currency);
+directStepEqual(Step const& step, AccountID const& src, AccountID const& dst, Currency const& currency);
 
 bool
 xrpEndpointStepEqual(Step const& step, AccountID const& acc);
 
 bool
-bookStepEqual(Step const& step, ripple::Book const& book);
+bookStepEqual(Step const& step, xrpl::Book const& book);
 }  // namespace test
 
 std::pair<TER, std::unique_ptr<Step>>
-make_DirectStepI(
-    StrandContext const& ctx,
-    AccountID const& src,
-    AccountID const& dst,
-    Currency const& c);
+make_DirectStepI(StrandContext const& ctx, AccountID const& src, AccountID const& dst, Currency const& c);
 
 std::pair<TER, std::unique_ptr<Step>>
 make_BookStepII(StrandContext const& ctx, Issue const& in, Issue const& out);
@@ -625,6 +589,4 @@ bool
 isDirectXrpToXrp(Strand const& strand);
 /// @endcond
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

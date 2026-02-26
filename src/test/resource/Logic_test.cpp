@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/unit_test/SuiteJournal.h>
 
 #include <xrpl/basics/chrono.h>
@@ -30,22 +11,20 @@
 
 #include <functional>
 
-namespace ripple {
+namespace xrpl {
 namespace Resource {
 
 class ResourceManager_test : public beast::unit_test::suite
 {
 public:
-    class TestLogic : private boost::base_from_member<TestStopwatch>,
-                      public Logic
+    class TestLogic : private boost::base_from_member<TestStopwatch>, public Logic
 
     {
     private:
         using clock_type = boost::base_from_member<TestStopwatch>;
 
     public:
-        explicit TestLogic(beast::Journal journal)
-            : Logic(beast::insight::NullCollector::New(), member, journal)
+        explicit TestLogic(beast::Journal journal) : Logic(beast::insight::NullCollector::New(), member, journal)
         {
         }
 
@@ -74,8 +53,7 @@ public:
         {
             Gossip::Item item;
             item.balance = 100 + rand_int(499);
-            beast::IP::AddressV4::bytes_type d = {
-                {192, 0, 2, static_cast<std::uint8_t>(v + i)}};
+            beast::IP::AddressV4::bytes_type d = {{192, 0, 2, static_cast<std::uint8_t>(v + i)}};
             item.address = beast::IP::Endpoint{beast::IP::AddressV4{d}};
             gossip.items.push_back(item);
         }
@@ -94,16 +72,11 @@ public:
         TestLogic logic(j);
 
         Charge const fee(dropThreshold + 1);
-        beast::IP::Endpoint const addr(
-            beast::IP::Endpoint::from_string("192.0.2.2"));
+        beast::IP::Endpoint const addr(beast::IP::Endpoint::from_string("192.0.2.2"));
 
         std::function<Consumer(beast::IP::Endpoint)> ep = limited
-            ? std::bind(
-                  &TestLogic::newInboundEndpoint, &logic, std::placeholders::_1)
-            : std::bind(
-                  &TestLogic::newUnlimitedEndpoint,
-                  &logic,
-                  std::placeholders::_1);
+            ? std::bind(&TestLogic::newInboundEndpoint, &logic, std::placeholders::_1)
+            : std::bind(&TestLogic::newUnlimitedEndpoint, &logic, std::placeholders::_1);
 
         {
             Consumer c(ep(addr));
@@ -241,34 +214,28 @@ public:
         TestLogic logic(j);
 
         {
-            beast::IP::Endpoint address(
-                beast::IP::Endpoint::from_string("192.0.2.1"));
+            beast::IP::Endpoint address(beast::IP::Endpoint::from_string("192.0.2.1"));
             Consumer c(logic.newInboundEndpoint(address));
             Charge fee(1000);
-            JLOG(j.info()) << "Charging " << c.to_string() << " " << fee
-                           << " per second";
+            JLOG(j.info()) << "Charging " << c.to_string() << " " << fee << " per second";
             c.charge(fee);
             for (int i = 0; i < 128; ++i)
             {
-                JLOG(j.info()) << "Time= "
-                               << logic.clock().now().time_since_epoch().count()
+                JLOG(j.info()) << "Time= " << logic.clock().now().time_since_epoch().count()
                                << ", Balance = " << c.balance();
                 logic.advance();
             }
         }
 
         {
-            beast::IP::Endpoint address(
-                beast::IP::Endpoint::from_string("192.0.2.2"));
+            beast::IP::Endpoint address(beast::IP::Endpoint::from_string("192.0.2.2"));
             Consumer c(logic.newInboundEndpoint(address));
             Charge fee(1000);
-            JLOG(j.info()) << "Charging " << c.to_string() << " " << fee
-                           << " per second";
+            JLOG(j.info()) << "Charging " << c.to_string() << " " << fee << " per second";
             for (int i = 0; i < 128; ++i)
             {
                 c.charge(fee);
-                JLOG(j.info()) << "Time= "
-                               << logic.clock().now().time_since_epoch().count()
+                JLOG(j.info()) << "Time= " << logic.clock().now().time_since_epoch().count()
                                << ", Balance = " << c.balance();
                 logic.advance();
             }
@@ -291,7 +258,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ResourceManager, resource, ripple);
+BEAST_DEFINE_TESTSUITE(ResourceManager, resource, xrpl);
 
 }  // namespace Resource
-}  // namespace ripple
+}  // namespace xrpl

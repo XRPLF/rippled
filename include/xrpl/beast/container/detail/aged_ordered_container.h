@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef BEAST_CONTAINER_DETAIL_AGED_ORDERED_CONTAINER_H_INCLUDED
-#define BEAST_CONTAINER_DETAIL_AGED_ORDERED_CONTAINER_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/container/aged_container.h>
@@ -49,8 +29,7 @@ struct is_boost_reverse_iterator : std::false_type
 };
 
 template <class It>
-struct is_boost_reverse_iterator<boost::intrusive::reverse_iterator<It>>
-    : std::true_type
+struct is_boost_reverse_iterator<boost::intrusive::reverse_iterator<It>> : std::true_type
 {
     explicit is_boost_reverse_iterator() = default;
 };
@@ -78,8 +57,7 @@ template <
     class T,
     class Clock = std::chrono::steady_clock,
     class Compare = std::less<Key>,
-    class Allocator = std::allocator<
-        typename std::conditional<IsMap, std::pair<Key const, T>, Key>::type>>
+    class Allocator = std::allocator<typename std::conditional<IsMap, std::pair<Key const, T>, Key>::type>>
 class aged_ordered_container
 {
 public:
@@ -88,8 +66,7 @@ public:
     using duration = typename clock_type::duration;
     using key_type = Key;
     using mapped_type = T;
-    using value_type =
-        typename std::conditional<IsMap, std::pair<Key const, T>, Key>::type;
+    using value_type = typename std::conditional<IsMap, std::pair<Key const, T>, Key>::type;
     using size_type = std::size_t;
     using difference_type = std::ptrdiff_t;
 
@@ -106,11 +83,8 @@ private:
     }
 
     // VFALCO TODO hoist to remove template argument dependencies
-    struct element
-        : boost::intrusive::set_base_hook<
-              boost::intrusive::link_mode<boost::intrusive::normal_link>>,
-          boost::intrusive::list_base_hook<
-              boost::intrusive::link_mode<boost::intrusive::normal_link>>
+    struct element : boost::intrusive::set_base_hook<boost::intrusive::link_mode<boost::intrusive::normal_link>>,
+                     boost::intrusive::list_base_hook<boost::intrusive::link_mode<boost::intrusive::normal_link>>
     {
         // Stash types here so the iterator doesn't
         // need to see the container declaration.
@@ -122,22 +96,18 @@ private:
             using time_point = typename aged_ordered_container::time_point;
         };
 
-        element(time_point const& when_, value_type const& value_)
-            : value(value_), when(when_)
+        element(time_point const& when_, value_type const& value_) : value(value_), when(when_)
         {
         }
 
-        element(time_point const& when_, value_type&& value_)
-            : value(std::move(value_)), when(when_)
+        element(time_point const& when_, value_type&& value_) : value(std::move(value_)), when(when_)
         {
         }
 
         template <
             class... Args,
-            class = typename std::enable_if<
-                std::is_constructible<value_type, Args...>::value>::type>
-        element(time_point const& when_, Args&&... args)
-            : value(std::forward<Args>(args)...), when(when_)
+            class = typename std::enable_if<std::is_constructible<value_type, Args...>::value>::type>
+        element(time_point const& when_, Args&&... args) : value(std::forward<Args>(args)...), when(when_)
         {
         }
 
@@ -221,8 +191,7 @@ private:
         }
     };
 
-    using list_type = typename boost::intrusive::
-        make_list<element, boost::intrusive::constant_time_size<false>>::type;
+    using list_type = typename boost::intrusive::make_list<element, boost::intrusive::constant_time_size<false>>::type;
 
     using cont_type = typename std::conditional<
         IsMulti,
@@ -230,51 +199,39 @@ private:
             element,
             boost::intrusive::constant_time_size<true>,
             boost::intrusive::compare<KeyValueCompare>>::type,
-        typename boost::intrusive::make_set<
-            element,
-            boost::intrusive::constant_time_size<true>,
-            boost::intrusive::compare<KeyValueCompare>>::type>::type;
+        typename boost::intrusive::
+            make_set<element, boost::intrusive::constant_time_size<true>, boost::intrusive::compare<KeyValueCompare>>::
+                type>::type;
 
-    using ElementAllocator = typename std::allocator_traits<
-        Allocator>::template rebind_alloc<element>;
+    using ElementAllocator = typename std::allocator_traits<Allocator>::template rebind_alloc<element>;
 
     using ElementAllocatorTraits = std::allocator_traits<ElementAllocator>;
 
-    class config_t
-        : private KeyValueCompare,
-          public beast::detail::empty_base_optimization<ElementAllocator>
+    class config_t : private KeyValueCompare, public beast::detail::empty_base_optimization<ElementAllocator>
     {
     public:
         explicit config_t(clock_type& clock_) : clock(clock_)
         {
         }
 
-        config_t(clock_type& clock_, Compare const& comp)
-            : KeyValueCompare(comp), clock(clock_)
+        config_t(clock_type& clock_, Compare const& comp) : KeyValueCompare(comp), clock(clock_)
         {
         }
 
         config_t(clock_type& clock_, Allocator const& alloc_)
-            : beast::detail::empty_base_optimization<ElementAllocator>(alloc_)
-            , clock(clock_)
+            : beast::detail::empty_base_optimization<ElementAllocator>(alloc_), clock(clock_)
         {
         }
 
-        config_t(
-            clock_type& clock_,
-            Compare const& comp,
-            Allocator const& alloc_)
-            : KeyValueCompare(comp)
-            , beast::detail::empty_base_optimization<ElementAllocator>(alloc_)
-            , clock(clock_)
+        config_t(clock_type& clock_, Compare const& comp, Allocator const& alloc_)
+            : KeyValueCompare(comp), beast::detail::empty_base_optimization<ElementAllocator>(alloc_), clock(clock_)
         {
         }
 
         config_t(config_t const& other)
             : KeyValueCompare(other.key_compare())
             , beast::detail::empty_base_optimization<ElementAllocator>(
-                  ElementAllocatorTraits::select_on_container_copy_construction(
-                      other.alloc()))
+                  ElementAllocatorTraits::select_on_container_copy_construction(other.alloc()))
             , clock(other.clock)
         {
         }
@@ -288,8 +245,7 @@ private:
 
         config_t(config_t&& other)
             : KeyValueCompare(std::move(other.key_compare()))
-            , beast::detail::empty_base_optimization<ElementAllocator>(
-                  std::move(other))
+            , beast::detail::empty_base_optimization<ElementAllocator>(std::move(other))
             , clock(other.clock)
         {
         }
@@ -349,15 +305,13 @@ private:
         ElementAllocator&
         alloc()
         {
-            return beast::detail::empty_base_optimization<
-                ElementAllocator>::member();
+            return beast::detail::empty_base_optimization<ElementAllocator>::member();
         }
 
         ElementAllocator const&
         alloc() const
         {
-            return beast::detail::empty_base_optimization<
-                ElementAllocator>::member();
+            return beast::detail::empty_base_optimization<ElementAllocator>::member();
         }
 
         std::reference_wrapper<clock_type> clock;
@@ -382,13 +336,8 @@ private:
         };
 
         std::unique_ptr<element, Deleter> p(
-            ElementAllocatorTraits::allocate(m_config.alloc(), 1),
-            Deleter(m_config.alloc()));
-        ElementAllocatorTraits::construct(
-            m_config.alloc(),
-            p.get(),
-            clock().now(),
-            std::forward<Args>(args)...);
+            ElementAllocatorTraits::allocate(m_config.alloc(), 1), Deleter(m_config.alloc()));
+        ElementAllocatorTraits::construct(m_config.alloc(), p.get(), clock().now(), std::forward<Args>(args)...);
         return p.release();
     }
 
@@ -396,8 +345,7 @@ private:
     delete_element(element const* p)
     {
         ElementAllocatorTraits::destroy(m_config.alloc(), p);
-        ElementAllocatorTraits::deallocate(
-            m_config.alloc(), const_cast<element*>(p), 1);
+        ElementAllocatorTraits::deallocate(m_config.alloc(), const_cast<element*>(p), 1);
     }
 
     void
@@ -410,25 +358,19 @@ private:
 
 public:
     using key_compare = Compare;
-    using value_compare =
-        typename std::conditional<IsMap, pair_value_compare, Compare>::type;
+    using value_compare = typename std::conditional<IsMap, pair_value_compare, Compare>::type;
     using allocator_type = Allocator;
     using reference = value_type&;
     using const_reference = value_type const&;
     using pointer = typename std::allocator_traits<Allocator>::pointer;
-    using const_pointer =
-        typename std::allocator_traits<Allocator>::const_pointer;
+    using const_pointer = typename std::allocator_traits<Allocator>::const_pointer;
 
     // A set iterator (IsMap==false) is always const
     // because the elements of a set are immutable.
-    using iterator = beast::detail::
-        aged_container_iterator<!IsMap, typename cont_type::iterator>;
-    using const_iterator = beast::detail::
-        aged_container_iterator<true, typename cont_type::iterator>;
-    using reverse_iterator = beast::detail::
-        aged_container_iterator<!IsMap, typename cont_type::reverse_iterator>;
-    using const_reverse_iterator = beast::detail::
-        aged_container_iterator<true, typename cont_type::reverse_iterator>;
+    using iterator = beast::detail::aged_container_iterator<!IsMap, typename cont_type::iterator>;
+    using const_iterator = beast::detail::aged_container_iterator<true, typename cont_type::iterator>;
+    using reverse_iterator = beast::detail::aged_container_iterator<!IsMap, typename cont_type::reverse_iterator>;
+    using const_reverse_iterator = beast::detail::aged_container_iterator<true, typename cont_type::reverse_iterator>;
 
     //--------------------------------------------------------------------------
     //
@@ -444,15 +386,11 @@ public:
     public:
         // A set iterator (IsMap==false) is always const
         // because the elements of a set are immutable.
-        using iterator = beast::detail::
-            aged_container_iterator<!IsMap, typename list_type::iterator>;
-        using const_iterator = beast::detail::
-            aged_container_iterator<true, typename list_type::iterator>;
-        using reverse_iterator = beast::detail::aged_container_iterator<
-            !IsMap,
-            typename list_type::reverse_iterator>;
-        using const_reverse_iterator = beast::detail::
-            aged_container_iterator<true, typename list_type::reverse_iterator>;
+        using iterator = beast::detail::aged_container_iterator<!IsMap, typename list_type::iterator>;
+        using const_iterator = beast::detail::aged_container_iterator<true, typename list_type::iterator>;
+        using reverse_iterator = beast::detail::aged_container_iterator<!IsMap, typename list_type::reverse_iterator>;
+        using const_reverse_iterator =
+            beast::detail::aged_container_iterator<true, typename list_type::reverse_iterator>;
 
         iterator
         begin()
@@ -529,23 +467,17 @@ public:
         iterator
         iterator_to(value_type& value)
         {
-            static_assert(
-                std::is_standard_layout<element>::value,
-                "must be standard layout");
+            static_assert(std::is_standard_layout<element>::value, "must be standard layout");
             return list.iterator_to(*reinterpret_cast<element*>(
-                reinterpret_cast<uint8_t*>(&value) -
-                ((std::size_t)std::addressof(((element*)0)->member))));
+                reinterpret_cast<uint8_t*>(&value) - ((std::size_t)std::addressof(((element*)0)->member))));
         }
 
         const_iterator
         iterator_to(value_type const& value) const
         {
-            static_assert(
-                std::is_standard_layout<element>::value,
-                "must be standard layout");
+            static_assert(std::is_standard_layout<element>::value, "must be standard layout");
             return list.iterator_to(*reinterpret_cast<element const*>(
-                reinterpret_cast<uint8_t const*>(&value) -
-                ((std::size_t)std::addressof(((element*)0)->member))));
+                reinterpret_cast<uint8_t const*>(&value) - ((std::size_t)std::addressof(((element*)0)->member))));
         }
 
     private:
@@ -574,61 +506,33 @@ public:
 
     aged_ordered_container(clock_type& clock, Allocator const& alloc);
 
-    aged_ordered_container(
-        clock_type& clock,
-        Compare const& comp,
-        Allocator const& alloc);
+    aged_ordered_container(clock_type& clock, Compare const& comp, Allocator const& alloc);
 
     template <class InputIt>
     aged_ordered_container(InputIt first, InputIt last, clock_type& clock);
 
     template <class InputIt>
-    aged_ordered_container(
-        InputIt first,
-        InputIt last,
-        clock_type& clock,
-        Compare const& comp);
+    aged_ordered_container(InputIt first, InputIt last, clock_type& clock, Compare const& comp);
 
     template <class InputIt>
-    aged_ordered_container(
-        InputIt first,
-        InputIt last,
-        clock_type& clock,
-        Allocator const& alloc);
+    aged_ordered_container(InputIt first, InputIt last, clock_type& clock, Allocator const& alloc);
 
     template <class InputIt>
-    aged_ordered_container(
-        InputIt first,
-        InputIt last,
-        clock_type& clock,
-        Compare const& comp,
-        Allocator const& alloc);
+    aged_ordered_container(InputIt first, InputIt last, clock_type& clock, Compare const& comp, Allocator const& alloc);
 
     aged_ordered_container(aged_ordered_container const& other);
 
-    aged_ordered_container(
-        aged_ordered_container const& other,
-        Allocator const& alloc);
+    aged_ordered_container(aged_ordered_container const& other, Allocator const& alloc);
 
     aged_ordered_container(aged_ordered_container&& other);
 
-    aged_ordered_container(
-        aged_ordered_container&& other,
-        Allocator const& alloc);
+    aged_ordered_container(aged_ordered_container&& other, Allocator const& alloc);
 
-    aged_ordered_container(
-        std::initializer_list<value_type> init,
-        clock_type& clock);
+    aged_ordered_container(std::initializer_list<value_type> init, clock_type& clock);
 
-    aged_ordered_container(
-        std::initializer_list<value_type> init,
-        clock_type& clock,
-        Compare const& comp);
+    aged_ordered_container(std::initializer_list<value_type> init, clock_type& clock, Compare const& comp);
 
-    aged_ordered_container(
-        std::initializer_list<value_type> init,
-        clock_type& clock,
-        Allocator const& alloc);
+    aged_ordered_container(std::initializer_list<value_type> init, clock_type& clock, Allocator const& alloc);
 
     aged_ordered_container(
         std::initializer_list<value_type> init,
@@ -782,21 +686,17 @@ public:
     iterator
     iterator_to(value_type& value)
     {
-        static_assert(
-            std::is_standard_layout<element>::value, "must be standard layout");
+        static_assert(std::is_standard_layout<element>::value, "must be standard layout");
         return m_cont.iterator_to(*reinterpret_cast<element*>(
-            reinterpret_cast<uint8_t*>(&value) -
-            ((std::size_t)std::addressof(((element*)0)->member))));
+            reinterpret_cast<uint8_t*>(&value) - ((std::size_t)std::addressof(((element*)0)->member))));
     }
 
     const_iterator
     iterator_to(value_type const& value) const
     {
-        static_assert(
-            std::is_standard_layout<element>::value, "must be standard layout");
+        static_assert(std::is_standard_layout<element>::value, "must be standard layout");
         return m_cont.iterator_to(*reinterpret_cast<element const*>(
-            reinterpret_cast<uint8_t const*>(&value) -
-            ((std::size_t)std::addressof(((element*)0)->member))));
+            reinterpret_cast<uint8_t const*>(&value) - ((std::size_t)std::addressof(((element*)0)->member))));
     }
 
     //--------------------------------------------------------------------------
@@ -835,35 +735,29 @@ public:
     // map, set
     template <bool maybe_multi = IsMulti>
     auto
-    insert(value_type const& value) ->
-        typename std::enable_if<!maybe_multi, std::pair<iterator, bool>>::type;
+    insert(value_type const& value) -> typename std::enable_if<!maybe_multi, std::pair<iterator, bool>>::type;
 
     // multimap, multiset
     template <bool maybe_multi = IsMulti>
     auto
-    insert(value_type const& value) ->
-        typename std::enable_if<maybe_multi, iterator>::type;
+    insert(value_type const& value) -> typename std::enable_if<maybe_multi, iterator>::type;
 
     // set
     template <bool maybe_multi = IsMulti, bool maybe_map = IsMap>
     auto
-    insert(value_type&& value) -> typename std::enable_if<
-                                   !maybe_multi && !maybe_map,
-                                   std::pair<iterator, bool>>::type;
+    insert(value_type&& value) -> typename std::enable_if<!maybe_multi && !maybe_map, std::pair<iterator, bool>>::type;
 
     // multiset
     template <bool maybe_multi = IsMulti, bool maybe_map = IsMap>
     auto
-    insert(value_type&& value) ->
-        typename std::enable_if<maybe_multi && !maybe_map, iterator>::type;
+    insert(value_type&& value) -> typename std::enable_if<maybe_multi && !maybe_map, iterator>::type;
 
     //---
 
     // map, set
     template <bool maybe_multi = IsMulti>
     auto
-    insert(const_iterator hint, value_type const& value) ->
-        typename std::enable_if<!maybe_multi, iterator>::type;
+    insert(const_iterator hint, value_type const& value) -> typename std::enable_if<!maybe_multi, iterator>::type;
 
     // multimap, multiset
     template <bool maybe_multi = IsMulti>
@@ -877,8 +771,7 @@ public:
     // map, set
     template <bool maybe_multi = IsMulti>
     auto
-    insert(const_iterator hint, value_type&& value) ->
-        typename std::enable_if<!maybe_multi, iterator>::type;
+    insert(const_iterator hint, value_type&& value) -> typename std::enable_if<!maybe_multi, iterator>::type;
 
     // multimap, multiset
     template <bool maybe_multi = IsMulti>
@@ -893,10 +786,8 @@ public:
     template <class P, bool maybe_map = IsMap>
     typename std::enable_if<
         maybe_map && std::is_constructible<value_type, P&&>::value,
-        typename std::
-            conditional<IsMulti, iterator, std::pair<iterator, bool>>::type>::
-        type
-        insert(P&& value)
+        typename std::conditional<IsMulti, iterator, std::pair<iterator, bool>>::type>::type
+    insert(P&& value)
     {
         return emplace(std::forward<P>(value));
     }
@@ -905,10 +796,8 @@ public:
     template <class P, bool maybe_map = IsMap>
     typename std::enable_if<
         maybe_map && std::is_constructible<value_type, P&&>::value,
-        typename std::
-            conditional<IsMulti, iterator, std::pair<iterator, bool>>::type>::
-        type
-        insert(const_iterator hint, P&& value)
+        typename std::conditional<IsMulti, iterator, std::pair<iterator, bool>>::type>::type
+    insert(const_iterator hint, P&& value)
     {
         return emplace_hint(hint, std::forward<P>(value));
     }
@@ -930,14 +819,12 @@ public:
     // map, set
     template <bool maybe_multi = IsMulti, class... Args>
     auto
-    emplace(Args&&... args) ->
-        typename std::enable_if<!maybe_multi, std::pair<iterator, bool>>::type;
+    emplace(Args&&... args) -> typename std::enable_if<!maybe_multi, std::pair<iterator, bool>>::type;
 
     // multiset, multimap
     template <bool maybe_multi = IsMulti, class... Args>
     auto
-    emplace(Args&&... args) ->
-        typename std::enable_if<maybe_multi, iterator>::type;
+    emplace(Args&&... args) -> typename std::enable_if<maybe_multi, iterator>::type;
 
     // map, set
     template <bool maybe_multi = IsMulti, class... Args>
@@ -955,19 +842,13 @@ public:
     }
 
     // enable_if prevents erase (reverse_iterator pos) from compiling
-    template <
-        bool is_const,
-        class Iterator,
-        class = std::enable_if_t<!is_boost_reverse_iterator<Iterator>::value>>
+    template <bool is_const, class Iterator, class = std::enable_if_t<!is_boost_reverse_iterator<Iterator>::value>>
     beast::detail::aged_container_iterator<false, Iterator>
     erase(beast::detail::aged_container_iterator<is_const, Iterator> pos);
 
     // enable_if prevents erase (reverse_iterator first, reverse_iterator last)
     // from compiling
-    template <
-        bool is_const,
-        class Iterator,
-        class = std::enable_if_t<!is_boost_reverse_iterator<Iterator>::value>>
+    template <bool is_const, class Iterator, class = std::enable_if_t<!is_boost_reverse_iterator<Iterator>::value>>
     beast::detail::aged_container_iterator<false, Iterator>
     erase(
         beast::detail::aged_container_iterator<is_const, Iterator> first,
@@ -983,10 +864,7 @@ public:
     //--------------------------------------------------------------------------
 
     // enable_if prevents touch (reverse_iterator pos) from compiling
-    template <
-        bool is_const,
-        class Iterator,
-        class = std::enable_if_t<!is_boost_reverse_iterator<Iterator>::value>>
+    template <bool is_const, class Iterator, class = std::enable_if_t<!is_boost_reverse_iterator<Iterator>::value>>
     void
     touch(beast::detail::aged_container_iterator<is_const, Iterator> pos)
     {
@@ -1024,8 +902,7 @@ public:
     const_iterator
     find(K const& k) const
     {
-        return const_iterator(
-            m_cont.find(k, std::cref(m_config.key_compare())));
+        return const_iterator(m_cont.find(k, std::cref(m_config.key_compare())));
     }
 
     // VFALCO TODO Respect is_transparent (c++14)
@@ -1043,8 +920,7 @@ public:
     equal_range(K const& k) const
     {
         auto const r(m_cont.equal_range(k, std::cref(m_config.key_compare())));
-        return std::make_pair(
-            const_iterator(r.first), const_iterator(r.second));
+        return std::make_pair(const_iterator(r.first), const_iterator(r.second));
     }
 
     // VFALCO TODO Respect is_transparent (c++14)
@@ -1052,8 +928,7 @@ public:
     iterator
     lower_bound(K const& k)
     {
-        return iterator(
-            m_cont.lower_bound(k, std::cref(m_config.key_compare())));
+        return iterator(m_cont.lower_bound(k, std::cref(m_config.key_compare())));
     }
 
     // VFALCO TODO Respect is_transparent (c++14)
@@ -1061,8 +936,7 @@ public:
     const_iterator
     lower_bound(K const& k) const
     {
-        return const_iterator(
-            m_cont.lower_bound(k, std::cref(m_config.key_compare())));
+        return const_iterator(m_cont.lower_bound(k, std::cref(m_config.key_compare())));
     }
 
     // VFALCO TODO Respect is_transparent (c++14)
@@ -1070,8 +944,7 @@ public:
     iterator
     upper_bound(K const& k)
     {
-        return iterator(
-            m_cont.upper_bound(k, std::cref(m_config.key_compare())));
+        return iterator(m_cont.upper_bound(k, std::cref(m_config.key_compare())));
     }
 
     // VFALCO TODO Respect is_transparent (c++14)
@@ -1079,8 +952,7 @@ public:
     const_iterator
     upper_bound(K const& k) const
     {
-        return const_iterator(
-            m_cont.upper_bound(k, std::cref(m_config.key_compare())));
+        return const_iterator(m_cont.upper_bound(k, std::cref(m_config.key_compare())));
     }
 
     //--------------------------------------------------------------------------
@@ -1112,139 +984,69 @@ public:
     // is only done on the key portion of the value type, ignoring
     // the mapped type.
     //
-    template <
-        bool OtherIsMulti,
-        bool OtherIsMap,
-        class OtherT,
-        class OtherDuration,
-        class OtherAllocator>
+    template <bool OtherIsMulti, bool OtherIsMap, class OtherT, class OtherDuration, class OtherAllocator>
     bool
-    operator==(aged_ordered_container<
-               OtherIsMulti,
-               OtherIsMap,
-               Key,
-               OtherT,
-               OtherDuration,
-               Compare,
-               OtherAllocator> const& other) const;
+    operator==(
+        aged_ordered_container<OtherIsMulti, OtherIsMap, Key, OtherT, OtherDuration, Compare, OtherAllocator> const&
+            other) const;
 
-    template <
-        bool OtherIsMulti,
-        bool OtherIsMap,
-        class OtherT,
-        class OtherDuration,
-        class OtherAllocator>
+    template <bool OtherIsMulti, bool OtherIsMap, class OtherT, class OtherDuration, class OtherAllocator>
     bool
-    operator!=(aged_ordered_container<
-               OtherIsMulti,
-               OtherIsMap,
-               Key,
-               OtherT,
-               OtherDuration,
-               Compare,
-               OtherAllocator> const& other) const
+    operator!=(
+        aged_ordered_container<OtherIsMulti, OtherIsMap, Key, OtherT, OtherDuration, Compare, OtherAllocator> const&
+            other) const
     {
         return !(this->operator==(other));
     }
 
-    template <
-        bool OtherIsMulti,
-        bool OtherIsMap,
-        class OtherT,
-        class OtherDuration,
-        class OtherAllocator>
+    template <bool OtherIsMulti, bool OtherIsMap, class OtherT, class OtherDuration, class OtherAllocator>
     bool
-    operator<(aged_ordered_container<
-              OtherIsMulti,
-              OtherIsMap,
-              Key,
-              OtherT,
-              OtherDuration,
-              Compare,
-              OtherAllocator> const& other) const
+    operator<(
+        aged_ordered_container<OtherIsMulti, OtherIsMap, Key, OtherT, OtherDuration, Compare, OtherAllocator> const&
+            other) const
     {
         value_compare const comp(value_comp());
-        return std::lexicographical_compare(
-            cbegin(), cend(), other.cbegin(), other.cend(), comp);
+        return std::lexicographical_compare(cbegin(), cend(), other.cbegin(), other.cend(), comp);
     }
 
-    template <
-        bool OtherIsMulti,
-        bool OtherIsMap,
-        class OtherT,
-        class OtherDuration,
-        class OtherAllocator>
+    template <bool OtherIsMulti, bool OtherIsMap, class OtherT, class OtherDuration, class OtherAllocator>
     bool
-    operator<=(aged_ordered_container<
-               OtherIsMulti,
-               OtherIsMap,
-               Key,
-               OtherT,
-               OtherDuration,
-               Compare,
-               OtherAllocator> const& other) const
+    operator<=(
+        aged_ordered_container<OtherIsMulti, OtherIsMap, Key, OtherT, OtherDuration, Compare, OtherAllocator> const&
+            other) const
     {
         return !(other < *this);
     }
 
-    template <
-        bool OtherIsMulti,
-        bool OtherIsMap,
-        class OtherT,
-        class OtherDuration,
-        class OtherAllocator>
+    template <bool OtherIsMulti, bool OtherIsMap, class OtherT, class OtherDuration, class OtherAllocator>
     bool
-    operator>(aged_ordered_container<
-              OtherIsMulti,
-              OtherIsMap,
-              Key,
-              OtherT,
-              OtherDuration,
-              Compare,
-              OtherAllocator> const& other) const
+    operator>(
+        aged_ordered_container<OtherIsMulti, OtherIsMap, Key, OtherT, OtherDuration, Compare, OtherAllocator> const&
+            other) const
     {
         return other < *this;
     }
 
-    template <
-        bool OtherIsMulti,
-        bool OtherIsMap,
-        class OtherT,
-        class OtherDuration,
-        class OtherAllocator>
+    template <bool OtherIsMulti, bool OtherIsMap, class OtherT, class OtherDuration, class OtherAllocator>
     bool
-    operator>=(aged_ordered_container<
-               OtherIsMulti,
-               OtherIsMap,
-               Key,
-               OtherT,
-               OtherDuration,
-               Compare,
-               OtherAllocator> const& other) const
+    operator>=(
+        aged_ordered_container<OtherIsMulti, OtherIsMap, Key, OtherT, OtherDuration, Compare, OtherAllocator> const&
+            other) const
     {
         return !(*this < other);
     }
 
 private:
     // enable_if prevents erase (reverse_iterator pos, now) from compiling
-    template <
-        bool is_const,
-        class Iterator,
-        class = std::enable_if_t<!is_boost_reverse_iterator<Iterator>::value>>
+    template <bool is_const, class Iterator, class = std::enable_if_t<!is_boost_reverse_iterator<Iterator>::value>>
     void
-    touch(
-        beast::detail::aged_container_iterator<is_const, Iterator> pos,
-        typename clock_type::time_point const& now);
+    touch(beast::detail::aged_container_iterator<is_const, Iterator> pos, typename clock_type::time_point const& now);
 
-    template <
-        bool maybe_propagate = std::allocator_traits<
-            Allocator>::propagate_on_container_swap::value>
+    template <bool maybe_propagate = std::allocator_traits<Allocator>::propagate_on_container_swap::value>
     typename std::enable_if<maybe_propagate>::type
     swap_data(aged_ordered_container& other) noexcept;
 
-    template <
-        bool maybe_propagate = std::allocator_traits<
-            Allocator>::propagate_on_container_swap::value>
+    template <bool maybe_propagate = std::allocator_traits<Allocator>::propagate_on_container_swap::value>
     typename std::enable_if<!maybe_propagate>::type
     swap_data(aged_ordered_container& other) noexcept;
 
@@ -1255,152 +1057,88 @@ private:
 
 //------------------------------------------------------------------------------
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    aged_ordered_container(clock_type& clock)
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::aged_ordered_container(clock_type& clock)
     : m_config(clock)
 {
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    aged_ordered_container(clock_type& clock, Compare const& comp)
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::aged_ordered_container(
+    clock_type& clock,
+    Compare const& comp)
     : m_config(clock, comp), m_cont(comp)
 {
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    aged_ordered_container(clock_type& clock, Allocator const& alloc)
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::aged_ordered_container(
+    clock_type& clock,
+    Allocator const& alloc)
     : m_config(clock, alloc)
 {
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    aged_ordered_container(
-        clock_type& clock,
-        Compare const& comp,
-        Allocator const& alloc)
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::aged_ordered_container(
+    clock_type& clock,
+    Compare const& comp,
+    Allocator const& alloc)
     : m_config(clock, comp, alloc), m_cont(comp)
 {
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 template <class InputIt>
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    aged_ordered_container(InputIt first, InputIt last, clock_type& clock)
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::aged_ordered_container(
+    InputIt first,
+    InputIt last,
+    clock_type& clock)
     : m_config(clock)
 {
     insert(first, last);
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 template <class InputIt>
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    aged_ordered_container(
-        InputIt first,
-        InputIt last,
-        clock_type& clock,
-        Compare const& comp)
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::aged_ordered_container(
+    InputIt first,
+    InputIt last,
+    clock_type& clock,
+    Compare const& comp)
     : m_config(clock, comp), m_cont(comp)
 {
     insert(first, last);
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 template <class InputIt>
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    aged_ordered_container(
-        InputIt first,
-        InputIt last,
-        clock_type& clock,
-        Allocator const& alloc)
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::aged_ordered_container(
+    InputIt first,
+    InputIt last,
+    clock_type& clock,
+    Allocator const& alloc)
     : m_config(clock, alloc)
 {
     insert(first, last);
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 template <class InputIt>
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    aged_ordered_container(
-        InputIt first,
-        InputIt last,
-        clock_type& clock,
-        Compare const& comp,
-        Allocator const& alloc)
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::aged_ordered_container(
+    InputIt first,
+    InputIt last,
+    clock_type& clock,
+    Compare const& comp,
+    Allocator const& alloc)
     : m_config(clock, comp, alloc), m_cont(comp)
 {
     insert(first, last);
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    aged_ordered_container(aged_ordered_container const& other)
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::aged_ordered_container(
+    aged_ordered_container const& other)
     : m_config(other.m_config)
 #if BOOST_VERSION >= 108000
     , m_cont(other.m_cont.get_comp())
@@ -1411,18 +1149,10 @@ aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
     insert(other.cbegin(), other.cend());
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    aged_ordered_container(
-        aged_ordered_container const& other,
-        Allocator const& alloc)
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::aged_ordered_container(
+    aged_ordered_container const& other,
+    Allocator const& alloc)
     : m_config(other.m_config, alloc)
 #if BOOST_VERSION >= 108000
     , m_cont(other.m_cont.get_comp())
@@ -1433,33 +1163,18 @@ aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
     insert(other.cbegin(), other.cend());
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    aged_ordered_container(aged_ordered_container&& other)
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::aged_ordered_container(
+    aged_ordered_container&& other)
     : m_config(std::move(other.m_config)), m_cont(std::move(other.m_cont))
 {
     chronological.list = std::move(other.chronological.list);
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    aged_ordered_container(
-        aged_ordered_container&& other,
-        Allocator const& alloc)
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::aged_ordered_container(
+    aged_ordered_container&& other,
+    Allocator const& alloc)
     : m_config(std::move(other.m_config), alloc)
 #if BOOST_VERSION >= 108000
     , m_cont(std::move(other.m_cont.get_comp()))
@@ -1472,103 +1187,56 @@ aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
     other.clear();
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    aged_ordered_container(
-        std::initializer_list<value_type> init,
-        clock_type& clock)
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::aged_ordered_container(
+    std::initializer_list<value_type> init,
+    clock_type& clock)
     : m_config(clock)
 {
     insert(init.begin(), init.end());
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    aged_ordered_container(
-        std::initializer_list<value_type> init,
-        clock_type& clock,
-        Compare const& comp)
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::aged_ordered_container(
+    std::initializer_list<value_type> init,
+    clock_type& clock,
+    Compare const& comp)
     : m_config(clock, comp), m_cont(comp)
 {
     insert(init.begin(), init.end());
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    aged_ordered_container(
-        std::initializer_list<value_type> init,
-        clock_type& clock,
-        Allocator const& alloc)
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::aged_ordered_container(
+    std::initializer_list<value_type> init,
+    clock_type& clock,
+    Allocator const& alloc)
     : m_config(clock, alloc)
 {
     insert(init.begin(), init.end());
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    aged_ordered_container(
-        std::initializer_list<value_type> init,
-        clock_type& clock,
-        Compare const& comp,
-        Allocator const& alloc)
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::aged_ordered_container(
+    std::initializer_list<value_type> init,
+    clock_type& clock,
+    Compare const& comp,
+    Allocator const& alloc)
     : m_config(clock, comp, alloc), m_cont(comp)
 {
     insert(init.begin(), init.end());
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    ~aged_ordered_container()
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::~aged_ordered_container()
 {
     clear();
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 auto
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-operator=(aged_ordered_container const& other) -> aged_ordered_container&
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::operator=(
+    aged_ordered_container const& other) -> aged_ordered_container&
 {
     if (this != &other)
     {
@@ -1579,17 +1247,10 @@ operator=(aged_ordered_container const& other) -> aged_ordered_container&
     return *this;
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 auto
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-operator=(aged_ordered_container&& other) -> aged_ordered_container&
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::operator=(aged_ordered_container&& other)
+    -> aged_ordered_container&
 {
     clear();
     this->m_config = std::move(other.m_config);
@@ -1598,17 +1259,10 @@ operator=(aged_ordered_container&& other) -> aged_ordered_container&
     return *this;
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 auto
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-operator=(std::initializer_list<value_type> init) -> aged_ordered_container&
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::operator=(
+    std::initializer_list<value_type> init) -> aged_ordered_container&
 {
     clear();
     insert(init);
@@ -1617,18 +1271,10 @@ operator=(std::initializer_list<value_type> init) -> aged_ordered_container&
 
 //------------------------------------------------------------------------------
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 template <class K, bool maybe_multi, bool maybe_map, class>
 typename std::conditional<IsMap, T, void*>::type&
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::at(
-    K const& k)
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::at(K const& k)
 {
     auto const iter(m_cont.find(k, std::cref(m_config.key_compare())));
     if (iter == m_cont.end())
@@ -1636,18 +1282,10 @@ aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::at(
     return iter->value.second;
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 template <class K, bool maybe_multi, bool maybe_map, class>
 typename std::conditional<IsMap, T, void*>::type const&
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::at(
-    K const& k) const
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::at(K const& k) const
 {
     auto const iter(m_cont.find(k, std::cref(m_config.key_compare())));
     if (iter == m_cont.end())
@@ -1655,28 +1293,16 @@ aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::at(
     return iter->value.second;
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 template <bool maybe_multi, bool maybe_map, class>
 typename std::conditional<IsMap, T, void*>::type&
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-operator[](Key const& key)
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::operator[](Key const& key)
 {
     typename cont_type::insert_commit_data d;
-    auto const result(
-        m_cont.insert_check(key, std::cref(m_config.key_compare()), d));
+    auto const result(m_cont.insert_check(key, std::cref(m_config.key_compare()), d));
     if (result.second)
     {
-        element* const p(new_element(
-            std::piecewise_construct,
-            std::forward_as_tuple(key),
-            std::forward_as_tuple()));
+        element* const p(new_element(std::piecewise_construct, std::forward_as_tuple(key), std::forward_as_tuple()));
         m_cont.insert_commit(*p, d);
         chronological.list.push_back(*p);
         return p->value.second;
@@ -1684,28 +1310,17 @@ operator[](Key const& key)
     return result.first->value.second;
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 template <bool maybe_multi, bool maybe_map, class>
 typename std::conditional<IsMap, T, void*>::type&
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-operator[](Key&& key)
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::operator[](Key&& key)
 {
     typename cont_type::insert_commit_data d;
-    auto const result(
-        m_cont.insert_check(key, std::cref(m_config.key_compare()), d));
+    auto const result(m_cont.insert_check(key, std::cref(m_config.key_compare()), d));
     if (result.second)
     {
-        element* const p(new_element(
-            std::piecewise_construct,
-            std::forward_as_tuple(std::move(key)),
-            std::forward_as_tuple()));
+        element* const p(
+            new_element(std::piecewise_construct, std::forward_as_tuple(std::move(key)), std::forward_as_tuple()));
         m_cont.insert_commit(*p, d);
         chronological.list.push_back(*p);
         return p->value.second;
@@ -1715,43 +1330,25 @@ operator[](Key&& key)
 
 //------------------------------------------------------------------------------
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 void
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    clear()
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::clear()
 {
-    for (auto iter(chronological.list.begin());
-         iter != chronological.list.end();)
+    for (auto iter(chronological.list.begin()); iter != chronological.list.end();)
         delete_element(&*iter++);
     chronological.list.clear();
     m_cont.clear();
 }
 
 // map, set
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 template <bool maybe_multi>
 auto
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    insert(value_type const& value) ->
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::insert(value_type const& value) ->
     typename std::enable_if<!maybe_multi, std::pair<iterator, bool>>::type
 {
     typename cont_type::insert_commit_data d;
-    auto const result(m_cont.insert_check(
-        extract(value), std::cref(m_config.key_compare()), d));
+    auto const result(m_cont.insert_check(extract(value), std::cref(m_config.key_compare()), d));
     if (result.second)
     {
         element* const p(new_element(value));
@@ -1763,22 +1360,13 @@ aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
 }
 
 // multimap, multiset
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 template <bool maybe_multi>
 auto
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    insert(value_type const& value) ->
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::insert(value_type const& value) ->
     typename std::enable_if<maybe_multi, iterator>::type
 {
-    auto const before(
-        m_cont.upper_bound(extract(value), std::cref(m_config.key_compare())));
+    auto const before(m_cont.upper_bound(extract(value), std::cref(m_config.key_compare())));
     element* const p(new_element(value));
     chronological.list.push_back(*p);
     auto const iter(m_cont.insert_before(before, *p));
@@ -1786,24 +1374,14 @@ aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
 }
 
 // set
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 template <bool maybe_multi, bool maybe_map>
 auto
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    insert(value_type&& value) ->
-    typename std::
-        enable_if<!maybe_multi && !maybe_map, std::pair<iterator, bool>>::type
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::insert(value_type&& value) ->
+    typename std::enable_if<!maybe_multi && !maybe_map, std::pair<iterator, bool>>::type
 {
     typename cont_type::insert_commit_data d;
-    auto const result(m_cont.insert_check(
-        extract(value), std::cref(m_config.key_compare()), d));
+    auto const result(m_cont.insert_check(extract(value), std::cref(m_config.key_compare()), d));
     if (result.second)
     {
         element* const p(new_element(std::move(value)));
@@ -1815,22 +1393,13 @@ aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
 }
 
 // multiset
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 template <bool maybe_multi, bool maybe_map>
 auto
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    insert(value_type&& value) ->
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::insert(value_type&& value) ->
     typename std::enable_if<maybe_multi && !maybe_map, iterator>::type
 {
-    auto const before(
-        m_cont.upper_bound(extract(value), std::cref(m_config.key_compare())));
+    auto const before(m_cont.upper_bound(extract(value), std::cref(m_config.key_compare())));
     element* const p(new_element(std::move(value)));
     chronological.list.push_back(*p);
     auto const iter(m_cont.insert_before(before, *p));
@@ -1840,23 +1409,15 @@ aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
 //---
 
 // map, set
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 template <bool maybe_multi>
 auto
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    insert(const_iterator hint, value_type const& value) ->
-    typename std::enable_if<!maybe_multi, iterator>::type
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::insert(
+    const_iterator hint,
+    value_type const& value) -> typename std::enable_if<!maybe_multi, iterator>::type
 {
     typename cont_type::insert_commit_data d;
-    auto const result(m_cont.insert_check(
-        hint.iterator(), extract(value), std::cref(m_config.key_compare()), d));
+    auto const result(m_cont.insert_check(hint.iterator(), extract(value), std::cref(m_config.key_compare()), d));
     if (result.second)
     {
         element* const p(new_element(value));
@@ -1868,23 +1429,15 @@ aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
 }
 
 // map, set
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 template <bool maybe_multi>
 auto
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    insert(const_iterator hint, value_type&& value) ->
-    typename std::enable_if<!maybe_multi, iterator>::type
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::insert(
+    const_iterator hint,
+    value_type&& value) -> typename std::enable_if<!maybe_multi, iterator>::type
 {
     typename cont_type::insert_commit_data d;
-    auto const result(m_cont.insert_check(
-        hint.iterator(), extract(value), std::cref(m_config.key_compare()), d));
+    auto const result(m_cont.insert_check(hint.iterator(), extract(value), std::cref(m_config.key_compare()), d));
     if (result.second)
     {
         element* const p(new_element(std::move(value)));
@@ -1896,26 +1449,17 @@ aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
 }
 
 // map, set
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 template <bool maybe_multi, class... Args>
 auto
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    emplace(Args&&... args) ->
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::emplace(Args&&... args) ->
     typename std::enable_if<!maybe_multi, std::pair<iterator, bool>>::type
 {
     // VFALCO NOTE Its unfortunate that we need to
     //             construct element here
     element* const p(new_element(std::forward<Args>(args)...));
     typename cont_type::insert_commit_data d;
-    auto const result(m_cont.insert_check(
-        extract(p->value), std::cref(m_config.key_compare()), d));
+    auto const result(m_cont.insert_check(extract(p->value), std::cref(m_config.key_compare()), d));
     if (result.second)
     {
         auto const iter(m_cont.insert_commit(*p, d));
@@ -1927,52 +1471,32 @@ aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
 }
 
 // multiset, multimap
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 template <bool maybe_multi, class... Args>
 auto
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    emplace(Args&&... args) ->
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::emplace(Args&&... args) ->
     typename std::enable_if<maybe_multi, iterator>::type
 {
     element* const p(new_element(std::forward<Args>(args)...));
-    auto const before(m_cont.upper_bound(
-        extract(p->value), std::cref(m_config.key_compare())));
+    auto const before(m_cont.upper_bound(extract(p->value), std::cref(m_config.key_compare())));
     chronological.list.push_back(*p);
     auto const iter(m_cont.insert_before(before, *p));
     return iterator(iter);
 }
 
 // map, set
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 template <bool maybe_multi, class... Args>
 auto
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    emplace_hint(const_iterator hint, Args&&... args) ->
-    typename std::enable_if<!maybe_multi, std::pair<iterator, bool>>::type
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::emplace_hint(
+    const_iterator hint,
+    Args&&... args) -> typename std::enable_if<!maybe_multi, std::pair<iterator, bool>>::type
 {
     // VFALCO NOTE Its unfortunate that we need to
     //             construct element here
     element* const p(new_element(std::forward<Args>(args)...));
     typename cont_type::insert_commit_data d;
-    auto const result(m_cont.insert_check(
-        hint.iterator(),
-        extract(p->value),
-        std::cref(m_config.key_compare()),
-        d));
+    auto const result(m_cont.insert_check(hint.iterator(), extract(p->value), std::cref(m_config.key_compare()), d));
     if (result.second)
     {
         auto const iter(m_cont.insert_commit(*p, d));
@@ -1983,58 +1507,33 @@ aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
     return std::make_pair(iterator(result.first), false);
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 template <bool is_const, class Iterator, class>
 beast::detail::aged_container_iterator<false, Iterator>
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    erase(beast::detail::aged_container_iterator<is_const, Iterator> pos)
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::erase(
+    beast::detail::aged_container_iterator<is_const, Iterator> pos)
 {
     unlink_and_delete_element(&*((pos++).iterator()));
-    return beast::detail::aged_container_iterator<false, Iterator>(
-        pos.iterator());
+    return beast::detail::aged_container_iterator<false, Iterator>(pos.iterator());
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 template <bool is_const, class Iterator, class>
 beast::detail::aged_container_iterator<false, Iterator>
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    erase(
-        beast::detail::aged_container_iterator<is_const, Iterator> first,
-        beast::detail::aged_container_iterator<is_const, Iterator> last)
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::erase(
+    beast::detail::aged_container_iterator<is_const, Iterator> first,
+    beast::detail::aged_container_iterator<is_const, Iterator> last)
 {
     for (; first != last;)
         unlink_and_delete_element(&*((first++).iterator()));
 
-    return beast::detail::aged_container_iterator<false, Iterator>(
-        first.iterator());
+    return beast::detail::aged_container_iterator<false, Iterator>(first.iterator());
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 template <class K>
 auto
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    erase(K const& k) -> size_type
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::erase(K const& k) -> size_type
 {
     auto iter(m_cont.find(k, std::cref(m_config.key_compare())));
     if (iter == m_cont.end())
@@ -2052,17 +1551,9 @@ aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
     return n;
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 void
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::swap(
-    aged_ordered_container& other) noexcept
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::swap(aged_ordered_container& other) noexcept
 {
     swap_data(other);
     std::swap(chronological, other.chronological);
@@ -2071,18 +1562,10 @@ aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::swap(
 
 //------------------------------------------------------------------------------
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 template <class K>
 auto
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    touch(K const& k) -> size_type
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::touch(K const& k) -> size_type
 {
     auto const now(clock().now());
     size_type n(0);
@@ -2097,39 +1580,14 @@ aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
 
 //------------------------------------------------------------------------------
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
-template <
-    bool OtherIsMulti,
-    bool OtherIsMap,
-    class OtherT,
-    class OtherDuration,
-    class OtherAllocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
+template <bool OtherIsMulti, bool OtherIsMap, class OtherT, class OtherDuration, class OtherAllocator>
 bool
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-operator==(aged_ordered_container<
-           OtherIsMulti,
-           OtherIsMap,
-           Key,
-           OtherT,
-           OtherDuration,
-           Compare,
-           OtherAllocator> const& other) const
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::operator==(
+    aged_ordered_container<OtherIsMulti, OtherIsMap, Key, OtherT, OtherDuration, Compare, OtherAllocator> const& other)
+    const
 {
-    using Other = aged_ordered_container<
-        OtherIsMulti,
-        OtherIsMap,
-        Key,
-        OtherT,
-        OtherDuration,
-        Compare,
-        OtherAllocator>;
+    using Other = aged_ordered_container<OtherIsMulti, OtherIsMap, Key, OtherT, OtherDuration, Compare, OtherAllocator>;
     if (size() != other.size())
         return false;
     std::equal_to<void> eq;
@@ -2138,28 +1596,19 @@ operator==(aged_ordered_container<
         cend(),
         other.cbegin(),
         other.cend(),
-        [&eq, &other](
-            value_type const& lhs, typename Other::value_type const& rhs) {
+        [&eq, &other](value_type const& lhs, typename Other::value_type const& rhs) {
             return eq(extract(lhs), other.extract(rhs));
         });
 }
 
 //------------------------------------------------------------------------------
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 template <bool is_const, class Iterator, class>
 void
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    touch(
-        beast::detail::aged_container_iterator<is_const, Iterator> pos,
-        typename clock_type::time_point const& now)
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::touch(
+    beast::detail::aged_container_iterator<is_const, Iterator> pos,
+    typename clock_type::time_point const& now)
 {
     auto& e(*pos.iterator());
     e.when = now;
@@ -2167,36 +1616,22 @@ aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
     chronological.list.push_back(e);
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 template <bool maybe_propagate>
 typename std::enable_if<maybe_propagate>::type
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    swap_data(aged_ordered_container& other) noexcept
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::swap_data(
+    aged_ordered_container& other) noexcept
 {
     std::swap(m_config.key_compare(), other.m_config.key_compare());
     std::swap(m_config.alloc(), other.m_config.alloc());
     std::swap(m_config.clock, other.m_config.clock);
 }
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 template <bool maybe_propagate>
 typename std::enable_if<!maybe_propagate>::type
-aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    swap_data(aged_ordered_container& other) noexcept
+aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::swap_data(
+    aged_ordered_container& other) noexcept
 {
     std::swap(m_config.key_compare(), other.m_config.key_compare());
     std::swap(m_config.clock, other.m_config.clock);
@@ -2206,54 +1641,20 @@ aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
 
 //------------------------------------------------------------------------------
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
-struct is_aged_container<beast::detail::aged_ordered_container<
-    IsMulti,
-    IsMap,
-    Key,
-    T,
-    Clock,
-    Compare,
-    Allocator>> : std::true_type
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
+struct is_aged_container<beast::detail::aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>>
+    : std::true_type
 {
     explicit is_aged_container() = default;
 };
 
 // Free functions
 
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Compare,
-    class Allocator>
+template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 void
 swap(
-    beast::detail::aged_ordered_container<
-        IsMulti,
-        IsMap,
-        Key,
-        T,
-        Clock,
-        Compare,
-        Allocator>& lhs,
-    beast::detail::aged_ordered_container<
-        IsMulti,
-        IsMap,
-        Key,
-        T,
-        Clock,
-        Compare,
-        Allocator>& rhs) noexcept
+    beast::detail::aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>& lhs,
+    beast::detail::aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>& rhs) noexcept
 {
     lhs.swap(rhs);
 }
@@ -2271,20 +1672,12 @@ template <
     class Period>
 std::size_t
 expire(
-    detail::aged_ordered_container<
-        IsMulti,
-        IsMap,
-        Key,
-        T,
-        Clock,
-        Compare,
-        Allocator>& c,
+    detail::aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>& c,
     std::chrono::duration<Rep, Period> const& age)
 {
     std::size_t n(0);
     auto const expired(c.clock().now() - age);
-    for (auto iter(c.chronological.cbegin());
-         iter != c.chronological.cend() && iter.when() <= expired;)
+    for (auto iter(c.chronological.cbegin()); iter != c.chronological.cend() && iter.when() <= expired;)
     {
         iter = c.erase(iter);
         ++n;
@@ -2293,5 +1686,3 @@ expire(
 }
 
 }  // namespace beast
-
-#endif

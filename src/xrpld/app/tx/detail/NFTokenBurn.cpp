@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2021 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/detail/NFTokenBurn.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 
@@ -24,7 +5,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 NotTEC
 NFTokenBurn::preflight(PreflightContext const& ctx)
@@ -52,13 +33,11 @@ NFTokenBurn::preclaim(PreclaimContext const& ctx)
         if (!(nft::getFlags(ctx.tx[sfNFTokenID]) & nft::flagBurnable))
             return tecNO_PERMISSION;
 
-        if (auto const issuer = nft::getIssuer(ctx.tx[sfNFTokenID]);
-            issuer != account)
+        if (auto const issuer = nft::getIssuer(ctx.tx[sfNFTokenID]); issuer != account)
         {
             if (auto const sle = ctx.view.read(keylet::account(issuer)); sle)
             {
-                if (auto const minter = (*sle)[~sfNFTokenMinter];
-                    minter != account)
+                if (auto const minter = (*sle)[~sfNFTokenMinter]; minter != account)
                     return tecNO_PERMISSION;
             }
         }
@@ -73,19 +52,16 @@ NFTokenBurn::doApply()
     // Remove the token, effectively burning it:
     auto const ret = nft::removeToken(
         view(),
-        ctx_.tx.isFieldPresent(sfOwner) ? ctx_.tx.getAccountID(sfOwner)
-                                        : ctx_.tx.getAccountID(sfAccount),
+        ctx_.tx.isFieldPresent(sfOwner) ? ctx_.tx.getAccountID(sfOwner) : ctx_.tx.getAccountID(sfAccount),
         ctx_.tx[sfNFTokenID]);
 
     // Should never happen since preclaim() verified the token is present.
     if (!isTesSuccess(ret))
         return ret;
 
-    if (auto issuer =
-            view().peek(keylet::account(nft::getIssuer(ctx_.tx[sfNFTokenID]))))
+    if (auto issuer = view().peek(keylet::account(nft::getIssuer(ctx_.tx[sfNFTokenID]))))
     {
-        (*issuer)[~sfBurnedNFTokens] =
-            (*issuer)[~sfBurnedNFTokens].value_or(0) + 1;
+        (*issuer)[~sfBurnedNFTokens] = (*issuer)[~sfBurnedNFTokens].value_or(0) + 1;
         view().update(issuer);
     }
 
@@ -93,20 +69,16 @@ NFTokenBurn::doApply()
     // Because the number of sell offers is likely to be less than
     // the number of buy offers, we prioritize the deletion of sell
     // offers in order to clean up sell offer directory
-    std::size_t const deletedSellOffers = nft::removeTokenOffersWithLimit(
-        view(),
-        keylet::nft_sells(ctx_.tx[sfNFTokenID]),
-        maxDeletableTokenOfferEntries);
+    std::size_t const deletedSellOffers =
+        nft::removeTokenOffersWithLimit(view(), keylet::nft_sells(ctx_.tx[sfNFTokenID]), maxDeletableTokenOfferEntries);
 
     if (maxDeletableTokenOfferEntries > deletedSellOffers)
     {
         nft::removeTokenOffersWithLimit(
-            view(),
-            keylet::nft_buys(ctx_.tx[sfNFTokenID]),
-            maxDeletableTokenOfferEntries - deletedSellOffers);
+            view(), keylet::nft_buys(ctx_.tx[sfNFTokenID]), maxDeletableTokenOfferEntries - deletedSellOffers);
     }
 
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

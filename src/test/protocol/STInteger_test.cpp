@@ -1,29 +1,10 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/TxFormats.h>
 
-namespace ripple {
+namespace xrpl {
 
 struct STInteger_test : public beast::unit_test::suite
 {
@@ -40,9 +21,7 @@ struct STInteger_test : public beast::unit_test::suite
         // there is some special handling for sfTransactionResult
         STUInt8 tr(sfTransactionResult, 0);
         BEAST_EXPECT(tr.value() == 0);
-        BEAST_EXPECT(
-            tr.getText() ==
-            "The transaction was applied. Only final in a validated ledger.");
+        BEAST_EXPECT(tr.getText() == "The transaction was applied. Only final in a validated ledger.");
         BEAST_EXPECT(tr.getSType() == STI_UINT8);
         BEAST_EXPECT(tr.getJson(JsonOptions::none) == "tesSUCCESS");
 
@@ -120,8 +99,7 @@ struct STInteger_test : public beast::unit_test::suite
         BEAST_EXPECT(u64_2.value() == 0xFFFFFFFFFFFFFFFFull);
         BEAST_EXPECT(u64_2.getText() == "18446744073709551615");
         BEAST_EXPECT(u64_2.getSType() == STI_UINT64);
-        BEAST_EXPECT(
-            u64_2.getJson(JsonOptions::none) == "18446744073709551615");
+        BEAST_EXPECT(u64_2.getJson(JsonOptions::none) == "18446744073709551615");
     }
 
     void
@@ -158,6 +136,6 @@ struct STInteger_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(STInteger, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(STInteger, protocol, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

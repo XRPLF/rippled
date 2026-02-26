@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright(c) 2025 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_SERVER_SPAWN_H_INCLUDED
-#define RIPPLE_SERVER_SPAWN_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 
@@ -28,13 +8,11 @@
 #include <concepts>
 #include <type_traits>
 
-namespace ripple::util {
+namespace xrpl::util {
 namespace impl {
 
 template <typename T>
-concept IsStrand = std::same_as<
-    std::decay_t<T>,
-    boost::asio::strand<typename std::decay_t<T>::inner_executor_type>>;
+concept IsStrand = std::same_as<std::decay_t<T>, boost::asio::strand<typename std::decay_t<T>::inner_executor_type>>;
 
 /**
  * @brief A completion handler that restores `boost::asio::spawn`'s behaviour
@@ -88,21 +66,15 @@ spawn(Ctx&& ctx, F&& func)
 {
     if constexpr (impl::IsStrand<Ctx>)
     {
-        boost::asio::spawn(
-            std::forward<Ctx>(ctx),
-            std::forward<F>(func),
-            impl::kPROPAGATE_EXCEPTIONS);
+        boost::asio::spawn(std::forward<Ctx>(ctx), std::forward<F>(func), impl::kPROPAGATE_EXCEPTIONS);
     }
     else
     {
         boost::asio::spawn(
-            boost::asio::make_strand(
-                boost::asio::get_associated_executor(std::forward<Ctx>(ctx))),
+            boost::asio::make_strand(boost::asio::get_associated_executor(std::forward<Ctx>(ctx))),
             std::forward<F>(func),
             impl::kPROPAGATE_EXCEPTIONS);
     }
 }
 
-}  // namespace ripple::util
-
-#endif
+}  // namespace xrpl::util

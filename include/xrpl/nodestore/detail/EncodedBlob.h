@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_NODESTORE_ENCODEDBLOB_H_INCLUDED
-#define RIPPLE_NODESTORE_ENCODEDBLOB_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/nodestore/NodeObject.h>
@@ -29,7 +9,7 @@
 #include <array>
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 /** Convert a NodeObject from in-memory to database format.
@@ -63,10 +43,7 @@ class EncodedBlob
          1024 more bytes. The precise size is calculated automatically
          at compile time so as to avoid wasting space on padding bytes.
      */
-    std::array<
-        std::uint8_t,
-        boost::alignment::align_up(9 + 1024, alignof(std::uint32_t))>
-        payload_;
+    std::array<std::uint8_t, boost::alignment::align_up(9 + 1024, alignof(std::uint32_t))> payload_;
 
     /** The size of the serialized data. */
     std::uint32_t size_;
@@ -81,19 +58,14 @@ class EncodedBlob
 public:
     explicit EncodedBlob(std::shared_ptr<NodeObject> const& obj)
         : size_([&obj]() {
-            XRPL_ASSERT(
-                obj,
-                "ripple::NodeStore::EncodedBlob::EncodedBlob : non-null input");
+            XRPL_ASSERT(obj, "xrpl::NodeStore::EncodedBlob::EncodedBlob : non-null input");
 
             if (!obj)
-                throw std::runtime_error(
-                    "EncodedBlob: unseated std::shared_ptr used.");
+                throw std::runtime_error("EncodedBlob: unseated std::shared_ptr used.");
 
             return obj->getData().size() + 9;
         }())
-        , ptr_(
-              (size_ <= payload_.size()) ? payload_.data()
-                                         : new std::uint8_t[size_])
+        , ptr_((size_ <= payload_.size()) ? payload_.data() : new std::uint8_t[size_])
     {
         std::fill_n(ptr_, 8, std::uint8_t{0});
         ptr_[8] = static_cast<std::uint8_t>(obj->getType());
@@ -106,7 +78,7 @@ public:
         XRPL_ASSERT(
             ((ptr_ == payload_.data()) && (size_ <= payload_.size())) ||
                 ((ptr_ != payload_.data()) && (size_ > payload_.size())),
-            "ripple::NodeStore::EncodedBlob::~EncodedBlob : valid payload "
+            "xrpl::NodeStore::EncodedBlob::~EncodedBlob : valid payload "
             "pointer");
 
         if (ptr_ != payload_.data())
@@ -133,6 +105,4 @@ public:
 };
 
 }  // namespace NodeStore
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

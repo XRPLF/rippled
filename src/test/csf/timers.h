@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TEST_CSF_TIMERS_H_INCLUDED
-#define RIPPLE_TEST_CSF_TIMERS_H_INCLUDED
+#pragma once
 
 #include <test/csf/Scheduler.h>
 #include <test/csf/SimTime.h>
@@ -26,7 +6,7 @@
 #include <chrono>
 #include <ostream>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -45,10 +25,7 @@ class HeartbeatTimer
     SimTime startSimTime_;
 
 public:
-    HeartbeatTimer(
-        Scheduler& sched,
-        SimDuration interval = std::chrono::seconds{60},
-        std::ostream& out = std::cerr)
+    HeartbeatTimer(Scheduler& sched, SimDuration interval = std::chrono::seconds{60}, std::ostream& out = std::cerr)
         : scheduler_{sched}
         , interval_{interval}
         , out_{out}
@@ -72,10 +49,8 @@ public:
 
         RealDuration realDuration = realTime - startRealTime_;
         SimDuration simDuration = simTime - startSimTime_;
-        out_ << "Heartbeat. Time Elapsed: {sim: "
-             << duration_cast<seconds>(simDuration).count()
-             << "s | real: " << duration_cast<seconds>(realDuration).count()
-             << "s}\n"
+        out_ << "Heartbeat. Time Elapsed: {sim: " << duration_cast<seconds>(simDuration).count()
+             << "s | real: " << duration_cast<seconds>(realDuration).count() << "s}\n"
              << std::flush;
 
         scheduler_.in(interval_, [this]() { beat(scheduler_.now()); });
@@ -84,6 +59,4 @@ public:
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

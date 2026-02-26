@@ -1,25 +1,6 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2024 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 namespace pdomain {
@@ -27,10 +8,7 @@ namespace pdomain {
 // helpers
 // Make json for PermissionedDomainSet transaction
 Json::Value
-setTx(
-    AccountID const& account,
-    Credentials const& credentials,
-    std::optional<uint256> domain)
+setTx(AccountID const& account, Credentials const& credentials, std::optional<uint256> domain)
 {
     Json::Value jv;
     jv[sfTransactionType] = jss::PermissionedDomainSet;
@@ -81,8 +59,7 @@ getObjects(Account const& account, Env& env, bool withType)
             if (withType)
             {  // impossible to get there
                 Throw<std::runtime_error>(
-                    "Invalid object type: " +
-                    object["LedgerEntryType"].asString());  // LCOV_EXCL_LINE
+                    "Invalid object type: " + object["LedgerEntryType"].asString());  // LCOV_EXCL_LINE
             }
             continue;
         }
@@ -102,8 +79,7 @@ objectExists(uint256 const& objID, Env& env)
     Json::Value params;
     params[jss::index] = to_string(objID);
 
-    auto const result =
-        env.rpc("json", "ledger_entry", to_string(params))["result"];
+    auto const result = env.rpc("json", "ledger_entry", to_string(params))["result"];
 
     if ((result["status"] == "error") && (result["error"] == "entryNotFound"))
         return false;
@@ -119,9 +95,7 @@ objectExists(uint256 const& objID, Env& env)
 
 // Extract credentials from account_object object
 Credentials
-credentialsFromJson(
-    Json::Value const& object,
-    std::unordered_map<std::string, Account> const& human2Acc)
+credentialsFromJson(Json::Value const& object, std::unordered_map<std::string, Account> const& human2Acc)
 {
     Credentials ret;
     Json::Value credentials(Json::arrayValue);
@@ -133,9 +107,7 @@ credentialsFromJson(
         auto const& issuer = obj[jss::Issuer];
         auto const& credentialType = obj["CredentialType"];
         auto blob = strUnHex(credentialType.asString()).value();
-        ret.push_back(
-            {human2Acc.at(issuer.asString()),
-             std::string(blob.begin(), blob.end())});
+        ret.push_back({human2Acc.at(issuer.asString()), std::string(blob.begin(), blob.end())});
     }
     return ret;
 }
@@ -161,13 +133,11 @@ getNewDomain(std::shared_ptr<STObject const> const& meta)
 
     for (auto const& node : a)
     {
-        if (!node.isMember("CreatedNode") ||
-            node["CreatedNode"]["LedgerEntryType"] != "PermissionedDomain")
+        if (!node.isMember("CreatedNode") || node["CreatedNode"]["LedgerEntryType"] != "PermissionedDomain")
         {
             continue;
         }
-        std::ignore =
-            ret.parseHex(node["CreatedNode"]["LedgerIndex"].asString());
+        std::ignore = ret.parseHex(node["CreatedNode"]["LedgerIndex"].asString());
         break;
     }
 
@@ -177,4 +147,4 @@ getNewDomain(std::shared_ptr<STObject const> const& meta)
 }  // namespace pdomain
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_MISC_TRANSACTION_H_INCLUDED
-#define RIPPLE_APP_MISC_TRANSACTION_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/RangeSet.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -28,11 +8,12 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxMeta.h>
+#include <xrpl/protocol/TxSearched.h>
 
 #include <optional>
 #include <variant>
 
-namespace ripple {
+namespace xrpl {
 
 //
 // Transactions should be constructed in JSON with. Use STObject::parseJson to
@@ -55,21 +36,15 @@ enum TransStatus {
     INCOMPLETE = 8   // needs more signatures
 };
 
-enum class TxSearched { all, some, unknown };
-
 // This class is for constructing and examining transactions.
 // Transactions are static so manipulation functions are unnecessary.
-class Transaction : public std::enable_shared_from_this<Transaction>,
-                    public CountedObject<Transaction>
+class Transaction : public std::enable_shared_from_this<Transaction>, public CountedObject<Transaction>
 {
 public:
     using pointer = std::shared_ptr<Transaction>;
     using ref = pointer const&;
 
-    Transaction(
-        std::shared_ptr<STTx const> const&,
-        std::string&,
-        Application&) noexcept;
+    Transaction(std::shared_ptr<STTx const> const&, std::string&, Application&) noexcept;
 
     // The two boost::optional parameters are because SOCI requires
     // boost::optional (not std::optional) parameters.
@@ -240,7 +215,7 @@ public:
     }
 
     /**
-     * @brief setQueued Set this flag once was put into heldtxns queue
+     * @brief setQueued Set this flag once was put into held-txns queue
      */
     void
     setQueued()
@@ -270,15 +245,8 @@ public:
     {
         CurrentLedgerState() = delete;
 
-        CurrentLedgerState(
-            LedgerIndex li,
-            XRPAmount fee,
-            std::uint32_t accSeqNext,
-            std::uint32_t accSeqAvail)
-            : validatedLedger{li}
-            , minFeeRequired{fee}
-            , accountSeqNext{accSeqNext}
-            , accountSeqAvail{accSeqAvail}
+        CurrentLedgerState(LedgerIndex li, XRPAmount fee, std::uint32_t accSeqNext, std::uint32_t accSeqAvail)
+            : validatedLedger{li}, minFeeRequired{fee}, accountSeqNext{accSeqNext}, accountSeqAvail{accSeqAvail}
         {
         }
 
@@ -312,8 +280,7 @@ public:
         std::uint32_t accountSeq,
         std::uint32_t availableSeq)
     {
-        currentLedgerState_.emplace(
-            validatedLedger, fee, accountSeq, availableSeq);
+        currentLedgerState_.emplace(validatedLedger, fee, accountSeq, availableSeq);
     }
 
     Json::Value
@@ -325,8 +292,7 @@ public:
     // at the time of search.
     struct Locator
     {
-        std::variant<std::pair<uint256, uint32_t>, ClosedInterval<uint32_t>>
-            locator;
+        std::variant<std::pair<uint256, uint32_t>, ClosedInterval<uint32_t>> locator;
 
         // @return true if transaction was found, false otherwise
         //
@@ -336,8 +302,7 @@ public:
         bool
         isFound()
         {
-            return std::holds_alternative<std::pair<uint256, uint32_t>>(
-                locator);
+            return std::holds_alternative<std::pair<uint256, uint32_t>>(locator);
         }
 
         // @return key used to find transaction in nodestore
@@ -371,29 +336,15 @@ public:
     static Locator
     locate(uint256 const& id, Application& app);
 
-    static std::variant<
-        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-        TxSearched>
+    static std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
     load(uint256 const& id, Application& app, error_code_i& ec);
 
-    static std::variant<
-        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-        TxSearched>
-    load(
-        uint256 const& id,
-        Application& app,
-        ClosedInterval<uint32_t> const& range,
-        error_code_i& ec);
+    static std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
+    load(uint256 const& id, Application& app, ClosedInterval<uint32_t> const& range, error_code_i& ec);
 
 private:
-    static std::variant<
-        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-        TxSearched>
-    load(
-        uint256 const& id,
-        Application& app,
-        std::optional<ClosedInterval<uint32_t>> const& range,
-        error_code_i& ec);
+    static std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
+    load(uint256 const& id, Application& app, std::optional<ClosedInterval<uint32_t>> const& range, error_code_i& ec);
 
     uint256 mTransactionID;
 
@@ -432,6 +383,4 @@ private:
     beast::Journal j_;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

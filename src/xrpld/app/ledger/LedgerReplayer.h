@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2020 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_LEDGER_LEDGERREPLAYER_H_INCLUDED
-#define RIPPLE_APP_LEDGER_LEDGERREPLAYER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerReplayTask.h>
@@ -29,7 +9,7 @@
 #include <mutex>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 class LedgerReplayClient;
@@ -72,10 +52,7 @@ std::uint32_t constexpr MAX_QUEUED_TASKS = 100;
 class LedgerReplayer final
 {
 public:
-    LedgerReplayer(
-        Application& app,
-        InboundLedgers& inboundLedgers,
-        std::unique_ptr<PeerSetBuilder> peerSetBuilder);
+    LedgerReplayer(Application& app, InboundLedgers& inboundLedgers, std::unique_ptr<PeerSetBuilder> peerSetBuilder);
 
     ~LedgerReplayer();
 
@@ -87,10 +64,7 @@ public:
      * @note totalNumLedgers must > 0 && totalNumLedgers must <= 256
      */
     void
-    replay(
-        InboundLedger::Reason r,
-        uint256 const& finishLedgerHash,
-        std::uint32_t totalNumLedgers);
+    replay(InboundLedger::Reason r, uint256 const& finishLedgerHash, std::uint32_t totalNumLedgers);
 
     /** Create LedgerDeltaAcquire subtasks for the LedgerReplayTask task */
     void
@@ -103,9 +77,7 @@ public:
      * @note  info and data must have been verified against the ledger hash
      */
     void
-    gotSkipList(
-        LedgerInfo const& info,
-        boost::intrusive_ptr<SHAMapItem const> const& data);
+    gotSkipList(LedgerHeader const& info, boost::intrusive_ptr<SHAMapItem const> const& data);
 
     /**
      * Process a ledger delta (extracted from a TMReplayDeltaResponse message)
@@ -114,9 +86,7 @@ public:
      * @note info and txns must have been verified against the ledger hash
      */
     void
-    gotReplayDelta(
-        LedgerInfo const& info,
-        std::map<std::uint32_t, std::shared_ptr<STTx const>>&& txns);
+    gotReplayDelta(LedgerHeader const& info, std::map<std::uint32_t, std::shared_ptr<STTx const>>&& txns);
 
     /** Remove completed tasks */
     void
@@ -160,6 +130,4 @@ private:
     friend class test::LedgerReplayClient;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

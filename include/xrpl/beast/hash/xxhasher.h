@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2014, Vinnie Falco <vinnie.falco@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef BEAST_HASH_XXHASHER_H_INCLUDED
-#define BEAST_HASH_XXHASHER_H_INCLUDED
+#pragma once
 
 #include <boost/endian/conversion.hpp>
 
@@ -68,8 +48,7 @@ private:
         {
             std::memcpy(writeBuffer_.data(), data, len);
             writeBuffer_ = writeBuffer_.subspan(len);
-            readBuffer_ = std::span{
-                std::begin(buffer_), buffer_.size() - writeBuffer_.size()};
+            readBuffer_ = std::span{std::begin(buffer_), buffer_.size() - writeBuffer_.size()};
         }
     }
 
@@ -117,8 +96,7 @@ private:
         {
             if (seed_.has_value())
             {
-                return XXH3_64bits_withSeed(
-                    readBuffer_.data(), readBuffer_.size(), *seed_);
+                return XXH3_64bits_withSeed(readBuffer_.data(), readBuffer_.size(), *seed_);
             }
             else
             {
@@ -147,17 +125,13 @@ public:
         }
     }
 
-    template <
-        class Seed,
-        std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
+    template <class Seed, std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
     explicit xxhasher(Seed seed) : seed_(seed)
     {
         resetBuffers();
     }
 
-    template <
-        class Seed,
-        std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
+    template <class Seed, std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
     xxhasher(Seed seed, Seed) : seed_(seed)
     {
         resetBuffers();
@@ -177,5 +151,3 @@ public:
 };
 
 }  // namespace beast
-
-#endif

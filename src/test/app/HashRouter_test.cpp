@@ -1,29 +1,10 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2015 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class HashRouter_test : public beast::unit_test::suite
@@ -368,7 +349,7 @@ class HashRouter_test : public beast::unit_test::suite
             h.set("hold_time", "alice");
             h.set("relay_time", "bob");
             auto const setup = setup_HashRouter(cfg);
-            // The set function ignores values that don't covert, so the
+            // The set function ignores values that don't convert, so the
             // defaults are left unchanged
             BEAST_EXPECT(setup.holdTime == 300s);
             BEAST_EXPECT(setup.relayTime == 30s);
@@ -387,9 +368,7 @@ class HashRouter_test : public beast::unit_test::suite
         HF f2 = HF::SAVED;
         HF combined = f1 | f2;
 
-        BEAST_EXPECT(
-            static_cast<UHF>(combined) ==
-            (static_cast<UHF>(f1) | static_cast<UHF>(f2)));
+        BEAST_EXPECT(static_cast<UHF>(combined) == (static_cast<UHF>(f1) | static_cast<UHF>(f2)));
 
         HF temp = f1;
         temp |= f2;
@@ -423,7 +402,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(HashRouter, app, ripple);
+BEAST_DEFINE_TESTSUITE(HashRouter, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

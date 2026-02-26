@@ -1,21 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2020 Dev Null Productions, LLC
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+// Copyright (c) 2020 Dev Null Productions
 
 #include <test/jtx.h>
 
@@ -27,7 +10,7 @@
 #include <string>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class ValidatorInfo_test : public beast::unit_test::suite
@@ -42,8 +25,7 @@ public:
         {
             Env env(*this);
             auto const info = env.rpc("validator_info");
-            BEAST_EXPECT(
-                info[jss::result][jss::error_message] == "not a validator");
+            BEAST_EXPECT(info[jss::result][jss::error_message] == "not a validator");
         }
     }
 
@@ -86,10 +68,8 @@ public:
             "VUSmEydzBpMjFlcTNNWXl3TFZKWm5GT3I3QzBrdzJBaVR6U0NqSXpkaXRROD0ifQ=="
             "\n"};
 
-        std::string const master_key =
-            "nHBt9fsb4849WmZiCds4r5TXyBeQjqnH5kzPtqgMAQMgi39YZRPa";
-        std::string const ephemeral_key =
-            "n9KsDYGKhABVc4wK5u3MnVhgPinyJimyKGpr9VJYuBaY8EnJXR2x";
+        std::string const master_key = "nHBt9fsb4849WmZiCds4r5TXyBeQjqnH5kzPtqgMAQMgi39YZRPa";
+        std::string const ephemeral_key = "n9KsDYGKhABVc4wK5u3MnVhgPinyJimyKGpr9VJYuBaY8EnJXR2x";
         std::string const manifest =
             "JAAAAAFxIe1FtwmimvGtH2iCcMJqC9gVFKilGfw1/"
             "vCxHXXLplc2GnMhAkE1agqXxBwDwDbID6OMSYuM0FDAlpAgNk8SKFn7MO2fdkcwRQI"
@@ -107,8 +87,7 @@ public:
             BEAST_EXPECT(info[jss::result][jss::seq] == 1);
             BEAST_EXPECT(info[jss::result][jss::master_key] == master_key);
             BEAST_EXPECT(info[jss::result][jss::manifest] == manifest);
-            BEAST_EXPECT(
-                info[jss::result][jss::ephemeral_key] == ephemeral_key);
+            BEAST_EXPECT(info[jss::result][jss::ephemeral_key] == ephemeral_key);
         }
     }
 
@@ -121,6 +100,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ValidatorInfo, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(ValidatorInfo, rpc, xrpl);
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

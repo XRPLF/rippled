@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2019 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
 
@@ -24,7 +5,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 // Helper class to track the expected number `delivered_amount` results.
@@ -65,8 +46,7 @@ class CheckDeliveredAmount
     }
 
 public:
-    explicit CheckDeliveredAmount(bool afterSwitchTime)
-        : afterSwitchTime_(afterSwitchTime)
+    explicit CheckDeliveredAmount(bool afterSwitchTime) : afterSwitchTime_(afterSwitchTime)
     {
     }
 
@@ -92,8 +72,7 @@ public:
     bool
     checkExpectedCounters() const
     {
-        return !numExpectedAvailable_ && !numExpectedNotSet_ &&
-            !numExpectedSetUnavailable_;
+        return !numExpectedAvailable_ && !numExpectedNotSet_ && !numExpectedSetUnavailable_;
     }
 
     // Check if the transaction has `delivered_amount` in the metaData as
@@ -127,8 +106,7 @@ public:
         {
             if (metaData.isMember(sfDeliveredAmount.jsonName))
             {
-                if (metaData[jss::delivered_amount] !=
-                    metaData[sfDeliveredAmount.jsonName])
+                if (metaData[jss::delivered_amount] != metaData[sfDeliveredAmount.jsonName])
                     return false;
             }
             else
@@ -239,11 +217,8 @@ class DeliveredAmount_test : public beast::unit_test::suite
                 auto jv = wsc->invoke("subscribe", stream);
                 if (wsc->version() == 2)
                 {
-                    BEAST_EXPECT(
-                        jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                    BEAST_EXPECT(
-                        jv.isMember(jss::ripplerpc) &&
-                        jv[jss::ripplerpc] == "2.0");
+                    BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                    BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
                     BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
                 }
                 BEAST_EXPECT(jv[jss::result][jss::ledger_index] == 3);
@@ -253,17 +228,14 @@ class DeliveredAmount_test : public beast::unit_test::suite
                 // Check stream update
                 while (true)
                 {
-                    auto const r = wsc->findMsg(1s, [&](auto const& jv) {
-                        return jv[jss::ledger_index] == 4;
-                    });
+                    auto const r = wsc->findMsg(1s, [&](auto const& jv) { return jv[jss::ledger_index] == 4; });
                     if (!r)
                         break;
 
                     if (!r->isMember(jss::transaction))
                         continue;
 
-                    BEAST_EXPECT(checkDeliveredAmount.checkTxn(
-                        (*r)[jss::transaction], (*r)[jss::meta]));
+                    BEAST_EXPECT(checkDeliveredAmount.checkTxn((*r)[jss::transaction], (*r)[jss::meta]));
                 }
             }
             BEAST_EXPECT(checkDeliveredAmount.checkExpectedCounters());
@@ -318,14 +290,10 @@ class DeliveredAmount_test : public beast::unit_test::suite
             jvParams[jss::ledger_index] = 4u;
             jvParams[jss::transactions] = true;
             jvParams[jss::expand] = true;
-            auto const jtxn = env.rpc(
-                "json",
-                "ledger",
-                to_string(
-                    jvParams))[jss::result][jss::ledger][jss::transactions];
+            auto const jtxn =
+                env.rpc("json", "ledger", to_string(jvParams))[jss::result][jss::ledger][jss::transactions];
             for (auto const& t : jtxn)
-                BEAST_EXPECT(
-                    checkDeliveredAmount.checkTxn(t, t[jss::metaData]));
+                BEAST_EXPECT(checkDeliveredAmount.checkTxn(t, t[jss::metaData]));
             BEAST_EXPECT(checkDeliveredAmount.checkExpectedCounters());
         }
     }
@@ -341,14 +309,9 @@ class DeliveredAmount_test : public beast::unit_test::suite
         Account const bob("bob");
         Env env{*this, features};
 
-        MPTTester mptAlice(
-            env, alice, {.holders = {bob, carol}, .close = false});
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol}, .close = false});
 
-        mptAlice.create(
-            {.transferFee = 25000,
-             .ownerCount = 1,
-             .holderCount = 0,
-             .flags = tfMPTCanTransfer});
+        mptAlice.create({.transferFee = 25000, .ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
         auto const MPT = mptAlice["MPT"];
 
         mptAlice.authorize({.account = bob});
@@ -362,29 +325,21 @@ class DeliveredAmount_test : public beast::unit_test::suite
         env.close();
 
         // Get the hash for the most recent transaction.
-        std::string txHash{
-            env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
+        std::string txHash{env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
         Json::Value meta = env.rpc("tx", txHash)[jss::result][jss::meta];
 
         if (features[fixMPTDeliveredAmount])
         {
-            BEAST_EXPECT(
-                meta[sfDeliveredAmount.jsonName] ==
-                STAmount{MPT(800)}.getJson(JsonOptions::none));
-            BEAST_EXPECT(
-                meta[jss::delivered_amount] ==
-                STAmount{MPT(800)}.getJson(JsonOptions::none));
+            BEAST_EXPECT(meta[sfDeliveredAmount.jsonName] == STAmount{MPT(800)}.getJson(JsonOptions::none));
+            BEAST_EXPECT(meta[jss::delivered_amount] == STAmount{MPT(800)}.getJson(JsonOptions::none));
         }
         else
         {
             BEAST_EXPECT(!meta.isMember(sfDeliveredAmount.jsonName));
-            BEAST_EXPECT(
-                meta[jss::delivered_amount] = Json::Value("unavailable"));
+            BEAST_EXPECT(meta[jss::delivered_amount] = Json::Value("unavailable"));
         }
 
-        env(pay(bob, carol, MPT(1000)),
-            sendmax(MPT(1200)),
-            txflags(tfPartialPayment));
+        env(pay(bob, carol, MPT(1000)), sendmax(MPT(1200)), txflags(tfPartialPayment));
         env.close();
 
         txHash = env.tx()->getJson(JsonOptions::none)[jss::hash].asString();
@@ -392,18 +347,13 @@ class DeliveredAmount_test : public beast::unit_test::suite
 
         if (features[fixMPTDeliveredAmount])
         {
-            BEAST_EXPECT(
-                meta[sfDeliveredAmount.jsonName] ==
-                STAmount{MPT(960)}.getJson(JsonOptions::none));
-            BEAST_EXPECT(
-                meta[jss::delivered_amount] ==
-                STAmount{MPT(960)}.getJson(JsonOptions::none));
+            BEAST_EXPECT(meta[sfDeliveredAmount.jsonName] == STAmount{MPT(960)}.getJson(JsonOptions::none));
+            BEAST_EXPECT(meta[jss::delivered_amount] == STAmount{MPT(960)}.getJson(JsonOptions::none));
         }
         else
         {
             BEAST_EXPECT(!meta.isMember(sfDeliveredAmount.jsonName));
-            BEAST_EXPECT(
-                meta[jss::delivered_amount] = Json::Value("unavailable"));
+            BEAST_EXPECT(meta[jss::delivered_amount] = Json::Value("unavailable"));
         }
     }
 
@@ -422,7 +372,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(DeliveredAmount, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(DeliveredAmount, rpc, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

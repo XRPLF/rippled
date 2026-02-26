@@ -1,46 +1,22 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/shamap/SHAMapLeafNode.h>
 
-namespace ripple {
+namespace xrpl {
 
-SHAMapLeafNode::SHAMapLeafNode(
-    boost::intrusive_ptr<SHAMapItem const> item,
-    std::uint32_t cowid)
+SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t cowid)
     : SHAMapTreeNode(cowid), item_(std::move(item))
 {
     XRPL_ASSERT(
         item_->size() >= 12,
-        "ripple::SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<"
+        "xrpl::SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<"
         "SHAMapItem const>, std::uint32_t) : minimum input size");
 }
 
-SHAMapLeafNode::SHAMapLeafNode(
-    boost::intrusive_ptr<SHAMapItem const> item,
-    std::uint32_t cowid,
-    SHAMapHash const& hash)
+SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t cowid, SHAMapHash const& hash)
     : SHAMapTreeNode(cowid, hash), item_(std::move(item))
 {
     XRPL_ASSERT(
         item_->size() >= 12,
-        "ripple::SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<"
+        "xrpl::SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<"
         "SHAMapItem const>, std::uint32_t, SHAMapHash const&) : minimum input "
         "size");
 }
@@ -54,7 +30,7 @@ SHAMapLeafNode::peekItem() const
 bool
 SHAMapLeafNode::setItem(boost::intrusive_ptr<SHAMapItem const> item)
 {
-    XRPL_ASSERT(cowid_, "ripple::SHAMapLeafNode::setItem : nonzero cowid");
+    XRPL_ASSERT(cowid_, "xrpl::SHAMapLeafNode::setItem : nonzero cowid");
     item_ = std::move(item);
 
     auto const oldHash = hash_;
@@ -92,9 +68,8 @@ SHAMapLeafNode::getString(SHAMapNodeID const& id) const
 void
 SHAMapLeafNode::invariants(bool) const
 {
-    XRPL_ASSERT(
-        hash_.isNonZero(), "ripple::SHAMapLeafNode::invariants : nonzero hash");
-    XRPL_ASSERT(item_, "ripple::SHAMapLeafNode::invariants : non-null item");
+    XRPL_ASSERT(hash_.isNonZero(), "xrpl::SHAMapLeafNode::invariants : nonzero hash");
+    XRPL_ASSERT(item_, "xrpl::SHAMapLeafNode::invariants : non-null item");
 }
 
-}  // namespace ripple
+}  // namespace xrpl

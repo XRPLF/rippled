@@ -1,26 +1,7 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/contract.h>
 #include <xrpl/ledger/OpenView.h>
 
-namespace ripple {
+namespace xrpl {
 
 class OpenView::txs_iter_impl : public txs_type::iter_base
 {
@@ -29,8 +10,7 @@ private:
     txs_map::const_iterator iter_;
 
 public:
-    explicit txs_iter_impl(bool metadata, txs_map::const_iterator iter)
-        : metadata_(metadata), iter_(iter)
+    explicit txs_iter_impl(bool metadata, txs_map::const_iterator iter) : metadata_(metadata), iter_(iter)
     {
     }
 
@@ -76,42 +56,35 @@ public:
 OpenView::OpenView(OpenView const& rhs)
     : ReadView(rhs)
     , TxsRawView(rhs)
-    , monotonic_resource_{std::make_unique<
-          boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
+    , monotonic_resource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
     , txs_{rhs.txs_, monotonic_resource_.get()}
     , rules_{rhs.rules_}
-    , info_{rhs.info_}
+    , header_{rhs.header_}
     , base_{rhs.base_}
     , items_{rhs.items_}
     , hold_{rhs.hold_}
     , open_{rhs.open_} {};
 
-OpenView::OpenView(
-    open_ledger_t,
-    ReadView const* base,
-    Rules const& rules,
-    std::shared_ptr<void const> hold)
-    : monotonic_resource_{std::make_unique<
-          boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
+OpenView::OpenView(open_ledger_t, ReadView const* base, Rules const& rules, std::shared_ptr<void const> hold)
+    : monotonic_resource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
     , txs_{monotonic_resource_.get()}
     , rules_(rules)
-    , info_(base->info())
+    , header_(base->header())
     , base_(base)
     , hold_(std::move(hold))
 {
-    info_.validated = false;
-    info_.accepted = false;
-    info_.seq = base_->info().seq + 1;
-    info_.parentCloseTime = base_->info().closeTime;
-    info_.parentHash = base_->info().hash;
+    header_.validated = false;
+    header_.accepted = false;
+    header_.seq = base_->header().seq + 1;
+    header_.parentCloseTime = base_->header().closeTime;
+    header_.parentHash = base_->header().hash;
 }
 
 OpenView::OpenView(ReadView const* base, std::shared_ptr<void const> hold)
-    : monotonic_resource_{std::make_unique<
-          boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
+    : monotonic_resource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
     , txs_{monotonic_resource_.get()}
     , rules_(base->rules())
-    , info_(base->info())
+    , header_(base->header())
     , base_(base)
     , hold_(std::move(hold))
     , open_(base->open())
@@ -134,10 +107,10 @@ OpenView::apply(TxsRawView& to) const
 
 //---
 
-LedgerInfo const&
-OpenView::info() const
+LedgerHeader const&
+OpenView::header() const
 {
-    return info_;
+    return header_;
 }
 
 Fees const&
@@ -159,8 +132,7 @@ OpenView::exists(Keylet const& k) const
 }
 
 auto
-OpenView::succ(key_type const& key, std::optional<key_type> const& last) const
-    -> std::optional<key_type>
+OpenView::succ(key_type const& key, std::optional<key_type> const& last) const -> std::optional<key_type>
 {
     return items_.succ(*base_, key, last);
 }
@@ -184,8 +156,7 @@ OpenView::slesEnd() const -> std::unique_ptr<sles_type::iter_base>
 }
 
 auto
-OpenView::slesUpperBound(uint256 const& key) const
-    -> std::unique_ptr<sles_type::iter_base>
+OpenView::slesUpperBound(uint256 const& key) const -> std::unique_ptr<sles_type::iter_base>
 {
     return items_.slesUpperBound(*base_, key);
 }
@@ -218,8 +189,7 @@ OpenView::txRead(key_type const& key) const -> tx_type
     auto stx = std::make_shared<STTx const>(SerialIter{item.txn->slice()});
     decltype(tx_type::second) sto;
     if (item.meta)
-        sto = std::make_shared<STObject const>(
-            SerialIter{item.meta->slice()}, sfMetadata);
+        sto = std::make_shared<STObject const>(SerialIter{item.meta->slice()}, sfMetadata);
     else
         sto = nullptr;
     return {std::move(stx), std::move(sto)};
@@ -249,7 +219,7 @@ void
 OpenView::rawDestroyXRP(XRPAmount const& fee)
 {
     items_.destroyXRP(fee);
-    // VFALCO Deduct from info_.totalDrops ?
+    // VFALCO Deduct from header_.totalDrops ?
     //        What about child views?
 }
 
@@ -261,12 +231,10 @@ OpenView::rawTxInsert(
     std::shared_ptr<Serializer const> const& txn,
     std::shared_ptr<Serializer const> const& metaData)
 {
-    auto const result = txs_.emplace(
-        std::piecewise_construct,
-        std::forward_as_tuple(key),
-        std::forward_as_tuple(txn, metaData));
+    auto const result =
+        txs_.emplace(std::piecewise_construct, std::forward_as_tuple(key), std::forward_as_tuple(txn, metaData));
     if (!result.second)
         LogicError("rawTxInsert: duplicate TX id: " + to_string(key));
 }
 
-}  // namespace ripple
+}  // namespace xrpl

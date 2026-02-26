@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2020 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerReplayer.h>
 #include <xrpld/app/ledger/detail/LedgerReplayMsgHandler.h>
@@ -26,26 +7,20 @@
 
 #include <memory>
 
-namespace ripple {
-LedgerReplayMsgHandler::LedgerReplayMsgHandler(
-    Application& app,
-    LedgerReplayer& replayer)
-    : app_(app)
-    , replayer_(replayer)
-    , journal_(app.journal("LedgerReplayMsgHandler"))
+namespace xrpl {
+LedgerReplayMsgHandler::LedgerReplayMsgHandler(Application& app, LedgerReplayer& replayer)
+    : app_(app), replayer_(replayer), journal_(app.journal("LedgerReplayMsgHandler"))
 {
 }
 
 protocol::TMProofPathResponse
-LedgerReplayMsgHandler::processProofPathRequest(
-    std::shared_ptr<protocol::TMProofPathRequest> const& msg)
+LedgerReplayMsgHandler::processProofPathRequest(std::shared_ptr<protocol::TMProofPathRequest> const& msg)
 {
     protocol::TMProofPathRequest& packet = *msg;
     protocol::TMProofPathResponse reply;
 
     if (!packet.has_key() || !packet.has_ledgerhash() || !packet.has_type() ||
-        packet.ledgerhash().size() != uint256::size() ||
-        packet.key().size() != uint256::size() ||
+        packet.ledgerhash().size() != uint256::size() || packet.key().size() != uint256::size() ||
         !protocol::TMLedgerMapType_IsValid(packet.type()))
     {
         JLOG(journal_.debug()) << "getProofPath: Invalid request";
@@ -61,8 +36,7 @@ LedgerReplayMsgHandler::processProofPathRequest(
     auto ledger = app_.getLedgerMaster().getLedgerByHash(ledgerHash);
     if (!ledger)
     {
-        JLOG(journal_.debug())
-            << "getProofPath: Don't have ledger " << ledgerHash;
+        JLOG(journal_.debug()) << "getProofPath: Don't have ledger " << ledgerHash;
         reply.set_error(protocol::TMReplyError::reNO_LEDGER);
         return reply;
     }
@@ -72,7 +46,7 @@ LedgerReplayMsgHandler::processProofPathRequest(
         {
             case protocol::lmACCOUNT_STATE:
                 return ledger->stateMap().getProofPath(key);
-            case protocol::lmTRANASCTION:
+            case protocol::lmTRANSACTION:
                 return ledger->txMap().getProofPath(key);
             default:
                 // should not be here
@@ -83,34 +57,30 @@ LedgerReplayMsgHandler::processProofPathRequest(
 
     if (!path)
     {
-        JLOG(journal_.debug()) << "getProofPath: Don't have the node " << key
-                               << " of ledger " << ledgerHash;
+        JLOG(journal_.debug()) << "getProofPath: Don't have the node " << key << " of ledger " << ledgerHash;
         reply.set_error(protocol::TMReplyError::reNO_NODE);
         return reply;
     }
 
     // pack header
     Serializer nData(128);
-    addRaw(ledger->info(), nData);
+    addRaw(ledger->header(), nData);
     reply.set_ledgerheader(nData.getDataPtr(), nData.getLength());
     // pack path
     for (auto const& b : *path)
         reply.add_path(b.data(), b.size());
 
-    JLOG(journal_.debug()) << "getProofPath for the node " << key
-                           << " of ledger " << ledgerHash << " path length "
+    JLOG(journal_.debug()) << "getProofPath for the node " << key << " of ledger " << ledgerHash << " path length "
                            << path->size();
     return reply;
 }
 
 bool
-LedgerReplayMsgHandler::processProofPathResponse(
-    std::shared_ptr<protocol::TMProofPathResponse> const& msg)
+LedgerReplayMsgHandler::processProofPathResponse(std::shared_ptr<protocol::TMProofPathResponse> const& msg)
 {
     protocol::TMProofPathResponse& reply = *msg;
-    if (reply.has_error() || !reply.has_key() || !reply.has_ledgerhash() ||
-        !reply.has_type() || !reply.has_ledgerheader() ||
-        reply.path_size() == 0)
+    if (reply.has_error() || !reply.has_key() || !reply.has_ledgerhash() || !reply.has_type() ||
+        !reply.has_ledgerheader() || reply.path_size() == 0)
     {
         JLOG(journal_.debug()) << "Bad message: Error reply";
         return false;
@@ -118,14 +88,12 @@ LedgerReplayMsgHandler::processProofPathResponse(
 
     if (reply.type() != protocol::lmACCOUNT_STATE)
     {
-        JLOG(journal_.debug())
-            << "Bad message: we only support the state ShaMap for now";
+        JLOG(journal_.debug()) << "Bad message: we only support the state ShaMap for now";
         return false;
     }
 
     // deserialize the header
-    auto info = deserializeHeader(
-        {reply.ledgerheader().data(), reply.ledgerheader().size()});
+    auto info = deserializeHeader({reply.ledgerheader().data(), reply.ledgerheader().size()});
     uint256 replyHash(reply.ledgerhash());
     if (calculateLedgerHash(info) != replyHash)
     {
@@ -137,10 +105,9 @@ LedgerReplayMsgHandler::processProofPathResponse(
     uint256 key(reply.key());
     if (key != keylet::skip().key)
     {
-        JLOG(journal_.debug())
-            << "Bad message: we only support the short skip list for now. "
-               "Key in reply "
-            << key;
+        JLOG(journal_.debug()) << "Bad message: we only support the short skip list for now. "
+                                  "Key in reply "
+                               << key;
         return false;
     }
 
@@ -177,14 +144,12 @@ LedgerReplayMsgHandler::processProofPathResponse(
 }
 
 protocol::TMReplayDeltaResponse
-LedgerReplayMsgHandler::processReplayDeltaRequest(
-    std::shared_ptr<protocol::TMReplayDeltaRequest> const& msg)
+LedgerReplayMsgHandler::processReplayDeltaRequest(std::shared_ptr<protocol::TMReplayDeltaRequest> const& msg)
 {
     protocol::TMReplayDeltaRequest& packet = *msg;
     protocol::TMReplayDeltaResponse reply;
 
-    if (!packet.has_ledgerhash() ||
-        packet.ledgerhash().size() != uint256::size())
+    if (!packet.has_ledgerhash() || packet.ledgerhash().size() != uint256::size())
     {
         JLOG(journal_.debug()) << "getReplayDelta: Invalid request";
         reply.set_error(protocol::TMReplyError::reBAD_REQUEST);
@@ -196,31 +161,28 @@ LedgerReplayMsgHandler::processReplayDeltaRequest(
     auto ledger = app_.getLedgerMaster().getLedgerByHash(ledgerHash);
     if (!ledger || !ledger->isImmutable())
     {
-        JLOG(journal_.debug())
-            << "getReplayDelta: Don't have ledger " << ledgerHash;
+        JLOG(journal_.debug()) << "getReplayDelta: Don't have ledger " << ledgerHash;
         reply.set_error(protocol::TMReplyError::reNO_LEDGER);
         return reply;
     }
 
     // pack header
     Serializer nData(128);
-    addRaw(ledger->info(), nData);
+    addRaw(ledger->header(), nData);
     reply.set_ledgerheader(nData.getDataPtr(), nData.getLength());
     // pack transactions
     auto const& txMap = ledger->txMap();
-    txMap.visitLeaves(
-        [&](boost::intrusive_ptr<SHAMapItem const> const& txNode) {
-            reply.add_transaction(txNode->data(), txNode->size());
-        });
+    txMap.visitLeaves([&](boost::intrusive_ptr<SHAMapItem const> const& txNode) {
+        reply.add_transaction(txNode->data(), txNode->size());
+    });
 
-    JLOG(journal_.debug()) << "getReplayDelta for ledger " << ledgerHash
-                           << " txMap hash " << txMap.getHash().as_uint256();
+    JLOG(journal_.debug()) << "getReplayDelta for ledger " << ledgerHash << " txMap hash "
+                           << txMap.getHash().as_uint256();
     return reply;
 }
 
 bool
-LedgerReplayMsgHandler::processReplayDeltaResponse(
-    std::shared_ptr<protocol::TMReplayDeltaResponse> const& msg)
+LedgerReplayMsgHandler::processReplayDeltaResponse(std::shared_ptr<protocol::TMReplayDeltaResponse> const& msg)
 {
     protocol::TMReplayDeltaResponse& reply = *msg;
     if (reply.has_error() || !reply.has_ledgerheader())
@@ -229,8 +191,7 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
         return false;
     }
 
-    auto info = deserializeHeader(
-        {reply.ledgerheader().data(), reply.ledgerheader().size()});
+    auto info = deserializeHeader({reply.ledgerheader().data(), reply.ledgerheader().size()});
     uint256 replyHash(reply.ledgerhash());
     if (calculateLedgerHash(info) != replyHash)
     {
@@ -250,8 +211,7 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
             // -- TxShaMapItem for building a ShaMap for verification
             // -- Tx
             // -- TxMetaData for Tx ordering
-            Serializer shaMapItemData(
-                reply.transaction(i).data(), reply.transaction(i).size());
+            Serializer shaMapItemData(reply.transaction(i).data(), reply.transaction(i).size());
 
             SerialIter txMetaSit(makeSlice(reply.transaction(i)));
             SerialIter txSit(txMetaSit.getSlice(txMetaSit.getVLDataLength()));
@@ -267,9 +227,7 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
             STObject meta(metaSit, sfMetadata);
             orderedTxns.emplace(meta[sfTransactionIndex], std::move(tx));
 
-            if (!txMap.addGiveItem(
-                    SHAMapNodeType::tnTRANSACTION_MD,
-                    make_shamapitem(tid, shaMapItemData.slice())))
+            if (!txMap.addGiveItem(SHAMapNodeType::tnTRANSACTION_MD, make_shamapitem(tid, shaMapItemData.slice())))
             {
                 JLOG(journal_.debug()) << "Bad message: Cannot deserialize";
                 return false;
@@ -292,4 +250,4 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
     return true;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

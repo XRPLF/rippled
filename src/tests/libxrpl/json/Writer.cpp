@@ -1,41 +1,22 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/json/Writer.h>
 
-#include <doctest/doctest.h>
 #include <google/protobuf/stubs/port.h>
+#include <gtest/gtest.h>
 
 #include <memory>
 #include <string>
 
-using namespace ripple;
+using namespace xrpl;
 using namespace Json;
 
-TEST_SUITE_BEGIN("JsonWriter");
-
-struct WriterFixture
+class WriterFixture : public ::testing::Test
 {
+protected:
     std::string output;
     std::unique_ptr<Writer> writer;
 
-    WriterFixture()
+    void
+    SetUp() override
     {
         writer = std::make_unique<Writer>(stringOutput(output));
     }
@@ -50,7 +31,7 @@ struct WriterFixture
     void
     expectOutput(std::string const& expected) const
     {
-        CHECK(output == expected);
+        EXPECT_EQ(output, expected);
     }
 
     void
@@ -61,20 +42,20 @@ struct WriterFixture
     }
 };
 
-TEST_CASE_FIXTURE(WriterFixture, "trivial")
+TEST_F(WriterFixture, trivial)
 {
-    CHECK(output.empty());
+    EXPECT_TRUE(output.empty());
     checkOutputAndReset("");
 }
 
-TEST_CASE_FIXTURE(WriterFixture, "near trivial")
+TEST_F(WriterFixture, near_trivial)
 {
-    CHECK(output.empty());
+    EXPECT_TRUE(output.empty());
     writer->output(0);
     checkOutputAndReset("0");
 }
 
-TEST_CASE_FIXTURE(WriterFixture, "primitives")
+TEST_F(WriterFixture, primitives)
 {
     writer->output(true);
     checkOutputAndReset("true");
@@ -98,7 +79,7 @@ TEST_CASE_FIXTURE(WriterFixture, "primitives")
     checkOutputAndReset("null");
 }
 
-TEST_CASE_FIXTURE(WriterFixture, "empty")
+TEST_F(WriterFixture, empty)
 {
     writer->startRoot(Writer::array);
     writer->finish();
@@ -109,7 +90,7 @@ TEST_CASE_FIXTURE(WriterFixture, "empty")
     checkOutputAndReset("{}");
 }
 
-TEST_CASE_FIXTURE(WriterFixture, "escaping")
+TEST_F(WriterFixture, escaping)
 {
     writer->output("\\");
     checkOutputAndReset(R"("\\")");
@@ -127,7 +108,7 @@ TEST_CASE_FIXTURE(WriterFixture, "escaping")
     checkOutputAndReset(R"("\b\f\n\r\t")");
 }
 
-TEST_CASE_FIXTURE(WriterFixture, "array")
+TEST_F(WriterFixture, array)
 {
     writer->startRoot(Writer::array);
     writer->append(12);
@@ -135,7 +116,7 @@ TEST_CASE_FIXTURE(WriterFixture, "array")
     checkOutputAndReset("[12]");
 }
 
-TEST_CASE_FIXTURE(WriterFixture, "long array")
+TEST_F(WriterFixture, long_array)
 {
     writer->startRoot(Writer::array);
     writer->append(12);
@@ -145,7 +126,7 @@ TEST_CASE_FIXTURE(WriterFixture, "long array")
     checkOutputAndReset(R"([12,true,"hello"])");
 }
 
-TEST_CASE_FIXTURE(WriterFixture, "embedded array simple")
+TEST_F(WriterFixture, embedded_array_simple)
 {
     writer->startRoot(Writer::array);
     writer->startAppend(Writer::array);
@@ -154,7 +135,7 @@ TEST_CASE_FIXTURE(WriterFixture, "embedded array simple")
     checkOutputAndReset("[[]]");
 }
 
-TEST_CASE_FIXTURE(WriterFixture, "object")
+TEST_F(WriterFixture, object)
 {
     writer->startRoot(Writer::object);
     writer->set("hello", "world");
@@ -162,7 +143,7 @@ TEST_CASE_FIXTURE(WriterFixture, "object")
     checkOutputAndReset(R"({"hello":"world"})");
 }
 
-TEST_CASE_FIXTURE(WriterFixture, "complex object")
+TEST_F(WriterFixture, complex_object)
 {
     writer->startRoot(Writer::object);
     writer->set("hello", "world");
@@ -175,11 +156,10 @@ TEST_CASE_FIXTURE(WriterFixture, "complex object")
     writer->startSet(Writer::array, "subarray");
     writer->append(23.5);
     writer->finishAll();
-    checkOutputAndReset(
-        R"({"hello":"world","array":[true,12,[{"goodbye":"cruel world.","subarray":[23.5]}]]})");
+    checkOutputAndReset(R"({"hello":"world","array":[true,12,[{"goodbye":"cruel world.","subarray":[23.5]}]]})");
 }
 
-TEST_CASE_FIXTURE(WriterFixture, "json value")
+TEST_F(WriterFixture, json_value)
 {
     Json::Value value(Json::objectValue);
     value["foo"] = 23;
@@ -188,5 +168,3 @@ TEST_CASE_FIXTURE(WriterFixture, "json value")
     writer->finish();
     checkOutputAndReset(R"({"hello":{"foo":23}})");
 }
-
-TEST_SUITE_END();

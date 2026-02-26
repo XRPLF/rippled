@@ -1,31 +1,11 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_STVECTOR256_H_INCLUDED
-#define RIPPLE_PROTOCOL_STVECTOR256_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/STInteger.h>
 
-namespace ripple {
+namespace xrpl {
 
 class STVector256 : public STBase, public CountedObject<STVector256>
 {
@@ -126,15 +106,11 @@ inline STVector256::STVector256(SField const& n) : STBase(n)
 {
 }
 
-inline STVector256::STVector256(std::vector<uint256> const& vector)
-    : mValue(vector)
+inline STVector256::STVector256(std::vector<uint256> const& vector) : mValue(vector)
 {
 }
 
-inline STVector256::STVector256(
-    SField const& n,
-    std::vector<uint256> const& vector)
-    : STBase(n), mValue(vector)
+inline STVector256::STVector256(SField const& n, std::vector<uint256> const& vector) : STBase(n), mValue(vector)
 {
 }
 
@@ -201,9 +177,7 @@ STVector256::value() const
 }
 
 inline std::vector<uint256>::iterator
-STVector256::insert(
-    std::vector<uint256>::const_iterator pos,
-    uint256 const& value)
+STVector256::insert(std::vector<uint256>::const_iterator pos, uint256 const& value)
 {
     return mValue.insert(pos, value);
 }
@@ -256,6 +230,4 @@ STVector256::clear() noexcept
     return mValue.clear();
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

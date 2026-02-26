@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2019 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_RPC_CTID_H_INCLUDED
-#define RIPPLE_RPC_CTID_H_INCLUDED
+#pragma once
 
 #include <boost/regex.hpp>
 
@@ -26,7 +6,7 @@
 #include <regex>
 #include <sstream>
 
-namespace ripple {
+namespace xrpl {
 
 namespace RPC {
 
@@ -56,17 +36,14 @@ encodeCTID(uint32_t ledgerSeq, uint32_t txnIndex, uint32_t networkID) noexcept
     constexpr uint32_t maxTxnIndex = 0xFFFF;
     constexpr uint32_t maxNetworkID = 0xFFFF;
 
-    if (ledgerSeq > maxLedgerSeq || txnIndex > maxTxnIndex ||
-        networkID > maxNetworkID)
+    if (ledgerSeq > maxLedgerSeq || txnIndex > maxTxnIndex || networkID > maxNetworkID)
         return std::nullopt;
 
-    uint64_t ctidValue =
-        ((0xC000'0000ULL + static_cast<uint64_t>(ledgerSeq)) << 32) |
+    uint64_t ctidValue = ((0xC000'0000ULL + static_cast<uint64_t>(ledgerSeq)) << 32) |
         ((static_cast<uint64_t>(txnIndex) << 16) | networkID);
 
     std::stringstream buffer;
-    buffer << std::hex << std::uppercase << std::setfill('0') << std::setw(16)
-           << ctidValue;
+    buffer << std::hex << std::uppercase << std::setfill('0') << std::setw(16) << ctidValue;
     return buffer.str();
 }
 
@@ -85,8 +62,8 @@ decodeCTID(T const ctid) noexcept
     uint64_t ctidValue = 0;
 
     if constexpr (
-        std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view> ||
-        std::is_same_v<T, char*> || std::is_same_v<T, char const*>)
+        std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view> || std::is_same_v<T, char*> ||
+        std::is_same_v<T, char const*>)
     {
         std::string const ctidString(ctid);
 
@@ -132,6 +109,4 @@ decodeCTID(T const ctid) noexcept
 }
 
 }  // namespace RPC
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

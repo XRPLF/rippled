@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/detail/DeleteOracle.h>
 
 #include <xrpl/ledger/View.h>
@@ -24,7 +5,7 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 NotTEC
 DeleteOracle::preflight(PreflightContext const& ctx)
@@ -38,8 +19,7 @@ DeleteOracle::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.exists(keylet::account(ctx.tx.getAccountID(sfAccount))))
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
-    if (auto const sle = ctx.view.read(keylet::oracle(
-            ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID]));
+    if (auto const sle = ctx.view.read(keylet::oracle(ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID]));
         !sle)
     {
         JLOG(ctx.j.debug()) << "Oracle Delete: Oracle does not exist.";
@@ -57,17 +37,12 @@ DeleteOracle::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-DeleteOracle::deleteOracle(
-    ApplyView& view,
-    std::shared_ptr<SLE> const& sle,
-    AccountID const& account,
-    beast::Journal j)
+DeleteOracle::deleteOracle(ApplyView& view, std::shared_ptr<SLE> const& sle, AccountID const& account, beast::Journal j)
 {
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (!view.dirRemove(
-            keylet::ownerDir(account), (*sle)[sfOwnerNode], sle->key(), true))
+    if (!view.dirRemove(keylet::ownerDir(account), (*sle)[sfOwnerNode], sle->key(), true))
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "Unable to delete Oracle from owner.";
@@ -79,8 +54,7 @@ DeleteOracle::deleteOracle(
     if (!sleOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const count =
-        sle->getFieldArray(sfPriceDataSeries).size() > 5 ? -2 : -1;
+    auto const count = sle->getFieldArray(sfPriceDataSeries).size() > 5 ? -2 : -1;
 
     adjustOwnerCount(view, sleOwner, count, j);
 
@@ -92,11 +66,10 @@ DeleteOracle::deleteOracle(
 TER
 DeleteOracle::doApply()
 {
-    if (auto sle = ctx_.view().peek(
-            keylet::oracle(account_, ctx_.tx[sfOracleDocumentID])))
+    if (auto sle = ctx_.view().peek(keylet::oracle(account_, ctx_.tx[sfOracleDocumentID])))
         return deleteOracle(ctx_.view(), sle, account_, j_);
 
     return tecINTERNAL;  // LCOV_EXCL_LINE
 }
 
-}  // namespace ripple
+}  // namespace xrpl

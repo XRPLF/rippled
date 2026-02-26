@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/rpc/RPCCall.h>
 #include <xrpld/rpc/RPCSub.h>
 
@@ -27,7 +8,7 @@
 
 #include <deque>
 
-namespace ripple {
+namespace xrpl {
 
 // Subscription object for JSON-RPC
 class RPCSubImp : public RPCSub
@@ -67,10 +48,8 @@ public:
         mPort = (!pUrl.port) ? (mSSL ? 443 : 80) : *pUrl.port;
         mPath = pUrl.path;
 
-        JLOG(j_.info()) << "RPCCall::fromNetwork sub: ip=" << mIp
-                        << " port=" << mPort
-                        << " ssl= " << (mSSL ? "yes" : "no") << " path='"
-                        << mPath << "'";
+        JLOG(j_.info()) << "RPCCall::fromNetwork sub: ip=" << mIp << " port=" << mPort
+                        << " ssl= " << (mSSL ? "yes" : "no") << " path='" << mPath << "'";
     }
 
     ~RPCSubImp() = default;
@@ -90,10 +69,7 @@ public:
             // Start a sending thread.
             JLOG(j_.info()) << "RPCCall::fromNetwork start";
 
-            mSending = m_jobQueue.addJob(
-                jtCLIENT_SUBSCRIBE, "RPCSub::sendThread", [this]() {
-                    sendThread();
-                });
+            mSending = m_jobQueue.addJob(jtCLIENT_SUBSCRIBE, "RPCSubSendThr", [this]() { sendThread(); });
         }
     }
 
@@ -155,22 +131,11 @@ private:
                     JLOG(j_.info()) << "RPCCall::fromNetwork: " << mIp;
 
                     RPCCall::fromNetwork(
-                        m_io_context,
-                        mIp,
-                        mPort,
-                        mUsername,
-                        mPassword,
-                        mPath,
-                        "event",
-                        jvEvent,
-                        mSSL,
-                        true,
-                        logs_);
+                        m_io_context, mIp, mPort, mUsername, mPassword, mPath, "event", jvEvent, mSSL, true, logs_);
                 }
                 catch (std::exception const& e)
                 {
-                    JLOG(j_.info())
-                        << "RPCCall::fromNetwork exception: " << e.what();
+                    JLOG(j_.info()) << "RPCCall::fromNetwork exception: " << e.what();
                 }
             }
         } while (bSend);
@@ -190,7 +155,7 @@ private:
 
     int mSeq;  // Next id to allocate.
 
-    bool mSending;  // Sending threead is active.
+    bool mSending;  // Sending thread is active.
 
     std::deque<std::pair<int, Json::Value>> mDeque;
 
@@ -215,13 +180,7 @@ make_RPCSub(
     Logs& logs)
 {
     return std::make_shared<RPCSubImp>(
-        std::ref(source),
-        std::ref(io_context),
-        std::ref(jobQueue),
-        strUrl,
-        strUsername,
-        strPassword,
-        logs);
+        std::ref(source), std::ref(io_context), std::ref(jobQueue), strUrl, strUsername, strPassword, logs);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

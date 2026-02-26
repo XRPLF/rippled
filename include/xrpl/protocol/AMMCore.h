@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_AMMCORE_H_INCLUDED
-#define RIPPLE_PROTOCOL_AMMCORE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/AccountID.h>
@@ -26,7 +6,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 
-namespace ripple {
+namespace xrpl {
 
 std::uint16_t constexpr TRADING_FEE_THRESHOLD = 1000;  // 1%
 
@@ -37,8 +17,7 @@ std::uint16_t constexpr AUCTION_SLOT_MAX_AUTH_ACCOUNTS = 4;
 std::uint32_t constexpr AUCTION_SLOT_FEE_SCALE_FACTOR = 100000;
 std::uint32_t constexpr AUCTION_SLOT_DISCOUNTED_FEE_FRACTION = 10;
 std::uint32_t constexpr AUCTION_SLOT_MIN_FEE_FRACTION = 25;
-std::uint32_t constexpr AUCTION_SLOT_INTERVAL_DURATION =
-    TOTAL_TIME_SLOT_SECS / AUCTION_SLOT_TIME_INTERVALS;
+std::uint32_t constexpr AUCTION_SLOT_INTERVAL_DURATION = TOTAL_TIME_SLOT_SECS / AUCTION_SLOT_TIME_INTERVALS;
 
 // Votes
 std::uint16_t constexpr VOTE_MAX_SLOTS = 8;
@@ -56,10 +35,7 @@ ammLPTCurrency(Currency const& cur1, Currency const& cur2);
 /** Calculate LPT Issue from AMM asset pair.
  */
 Issue
-ammLPTIssue(
-    Currency const& cur1,
-    Currency const& cur2,
-    AccountID const& ammAccountID);
+ammLPTIssue(Currency const& cur1, Currency const& cur2, AccountID const& ammAccountID);
 
 /** Validate the amount.
  * If validZero is false and amount is beast::zero then invalid amount.
@@ -73,9 +49,7 @@ invalidAMMAmount(
     bool validZero = false);
 
 NotTEC
-invalidAMMAsset(
-    Issue const& issue,
-    std::optional<std::pair<Issue, Issue>> const& pair = std::nullopt);
+invalidAMMAsset(Issue const& issue, std::optional<std::pair<Issue, Issue>> const& pair = std::nullopt);
 
 NotTEC
 invalidAMMAssetPair(
@@ -121,6 +95,4 @@ feeMultHalf(std::uint16_t tfee)
     return 1 - getFee(tfee) / 2;
 }
 
-}  // namespace ripple
-
-#endif  // RIPPLE_PROTOCOL_AMMCORE_H_INCLUDED
+}  // namespace xrpl

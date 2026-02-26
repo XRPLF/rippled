@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_BASICS_LOG_H_INCLUDED
-#define RIPPLE_BASICS_LOG_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -32,7 +12,7 @@
 #include <mutex>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 // DEPRECATED use beast::severities::Severity instead
 enum LogSeverity {
@@ -58,22 +38,17 @@ private:
         std::string partition_;
 
     public:
-        Sink(
-            std::string const& partition,
-            beast::severities::Severity thresh,
-            Logs& logs);
+        Sink(std::string const& partition, beast::severities::Severity thresh, Logs& logs);
 
         Sink(Sink const&) = delete;
         Sink&
         operator=(Sink const&) = delete;
 
         void
-        write(beast::severities::Severity level, std::string const& text)
-            override;
+        write(beast::severities::Severity level, std::string const& text) override;
 
         void
-        writeAlways(beast::severities::Severity level, std::string const& text)
-            override;
+        writeAlways(beast::severities::Severity level, std::string const& text) override;
     };
 
     /** Manages a system file containing logged output.
@@ -159,11 +134,7 @@ private:
     };
 
     std::mutex mutable mutex_;
-    std::map<
-        std::string,
-        std::unique_ptr<beast::Journal::Sink>,
-        boost::beast::iless>
-        sinks_;
+    std::map<std::string, std::unique_ptr<beast::Journal::Sink>, boost::beast::iless> sinks_;
     beast::severities::Severity thresh_;
     File file_;
     bool silent_ = false;
@@ -199,11 +170,7 @@ public:
     partition_severities() const;
 
     void
-    write(
-        beast::severities::Severity level,
-        std::string const& partition,
-        std::string const& text,
-        bool console);
+    write(beast::severities::Severity level, std::string const& partition, std::string const& text, bool console);
 
     std::string
     rotate();
@@ -220,9 +187,7 @@ public:
     }
 
     virtual std::unique_ptr<beast::Journal::Sink>
-    makeSink(
-        std::string const& partition,
-        beast::severities::Severity startingLevel);
+    makeSink(std::string const& partition, beast::severities::Severity startingLevel);
 
 public:
     static LogSeverity
@@ -240,7 +205,8 @@ public:
 private:
     enum {
         // Maximum line length for log messages.
-        // If the message exceeds this length it will be truncated with elipses.
+        // If the message exceeds this length it will be truncated with
+        // ellipses.
         maximumMessageCharacters = 12 * 1024
     };
 
@@ -290,6 +256,4 @@ setDebugLogSink(std::unique_ptr<beast::Journal::Sink> sink);
 beast::Journal
 debugLog();
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

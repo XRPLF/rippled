@@ -1,22 +1,6 @@
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright 2022, Nikolaos D. Bougalis <nikb@bougalis.net>
+// Copyright (c) 2022, Nikolaos D. Bougalis <nikb@bougalis.net>
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-
-#ifndef RIPPLE_BASICS_SPINLOCK_H_INCLUDED
-#define RIPPLE_BASICS_SPINLOCK_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -28,7 +12,7 @@
 #include <immintrin.h>
 #endif
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 /** Inform the processor that we are in a tight spin-wait loop.
@@ -115,12 +99,9 @@ public:
         @note For performance reasons, you should strive to have `lock` be
               on a cacheline by itself.
      */
-    packed_spinlock(std::atomic<T>& lock, int index)
-        : bits_(lock), mask_(static_cast<T>(1) << index)
+    packed_spinlock(std::atomic<T>& lock, int index) : bits_(lock), mask_(static_cast<T>(1) << index)
     {
-        XRPL_ASSERT(
-            index >= 0 && (mask_ != 0),
-            "ripple::packed_spinlock::packed_spinlock : valid index and mask");
+        XRPL_ASSERT(index >= 0 && (mask_ != 0), "xrpl::packed_spinlock::packed_spinlock : valid index and mask");
     }
 
     [[nodiscard]] bool
@@ -193,10 +174,7 @@ public:
         T expected = 0;
 
         return lock_.compare_exchange_weak(
-            expected,
-            std::numeric_limits<T>::max(),
-            std::memory_order_acquire,
-            std::memory_order_relaxed);
+            expected, std::numeric_limits<T>::max(), std::memory_order_acquire, std::memory_order_relaxed);
     }
 
     void
@@ -221,6 +199,4 @@ public:
 };
 /** @} */
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

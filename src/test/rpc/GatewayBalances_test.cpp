@@ -1,20 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
 
@@ -22,7 +5,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class GatewayBalances_test : public beast::unit_test::suite
@@ -94,8 +77,7 @@ public:
             if (wsc->version() == 2)
             {
                 expect(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                expect(
-                    jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                expect(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
                 expect(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
 
@@ -115,9 +97,7 @@ public:
                 auto c2 = hwBalance[1u][jss::currency];
                 expect(c1 == "USD" || c2 == "USD");
                 expect(c1 == "JPY" || c2 == "JPY");
-                expect(
-                    hwBalance[0u][jss::value] == "5000" &&
-                    hwBalance[1u][jss::value] == "5000");
+                expect(hwBalance[0u][jss::value] == "5000" && hwBalance[1u][jss::value] == "5000");
             }
 
             {
@@ -182,8 +162,7 @@ public:
             expect(jv[jss::status] == "error");
 
             auto response = jv[jss::result];
-            auto const error =
-                apiVersion < 2u ? "invalidHotWallet" : "invalidParams";
+            auto const error = apiVersion < 2u ? "invalidHotWallet" : "invalidParams";
             BEAST_EXPECT(response[jss::error] == error);
         });
     }
@@ -202,8 +181,7 @@ public:
         auto USD = alice["USD"];
 
         // The largest valid STAmount of USD:
-        STAmount const maxUSD(
-            USD.issue(), STAmount::cMaxValue, STAmount::cMaxOffset);
+        STAmount const maxUSD(USD.issue(), STAmount::cMaxValue, STAmount::cMaxOffset);
 
         // Create a hotwallet
         Account const hw{"hw"};
@@ -260,7 +238,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(GatewayBalances, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(GatewayBalances, rpc, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

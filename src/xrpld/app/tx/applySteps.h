@@ -1,29 +1,9 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TX_APPLYSTEPS_H_INCLUDED
-#define RIPPLE_TX_APPLYSTEPS_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Application;
 class STTx;
@@ -35,8 +15,7 @@ struct ApplyResult
     bool applied;
     std::optional<TxMeta> metadata;
 
-    ApplyResult(TER t, bool a, std::optional<TxMeta> m = std::nullopt)
-        : ter(t), applied(a), metadata(std::move(m))
+    ApplyResult(TER t, bool a, std::optional<TxMeta> m = std::nullopt) : ter(t), applied(a), metadata(std::move(m))
     {
     }
 };
@@ -83,7 +62,7 @@ private:
 public:
     // Constructor if preflight returns a value other than tesSUCCESS.
     // Asserts if tesSUCCESS is passed.
-    explicit TxConsequences(NotTEC pfresult);
+    explicit TxConsequences(NotTEC pfResult);
 
     /// Constructor if the STTx has no notable consequences for the TxQ.
     explicit TxConsequences(STTx const& tx);
@@ -180,9 +159,7 @@ public:
 
     /// Constructor
     template <class Context>
-    PreflightResult(
-        Context const& ctx_,
-        std::pair<NotTEC, TxConsequences> const& result)
+    PreflightResult(Context const& ctx_, std::pair<NotTEC, TxConsequences> const& result)
         : tx(ctx_.tx)
         , parentBatchId(ctx_.parentBatchId)
         , rules(ctx_.rules)
@@ -263,12 +240,7 @@ public:
 */
 /** @{ */
 PreflightResult
-preflight(
-    Application& app,
-    Rules const& rules,
-    STTx const& tx,
-    ApplyFlags flags,
-    beast::Journal j);
+preflight(Application& app, Rules const& rules, STTx const& tx, ApplyFlags flags, beast::Journal j);
 
 PreflightResult
 preflight(
@@ -309,10 +281,7 @@ preflight(
     this transaction.
 */
 PreclaimResult
-preclaim(
-    PreflightResult const& preflightResult,
-    Application& app,
-    OpenView const& view);
+preclaim(PreflightResult const& preflightResult, Application& app, OpenView const& view);
 
 /** Compute only the expected base fee for a transaction.
 
@@ -366,6 +335,4 @@ calculateDefaultBaseFee(ReadView const& view, STTx const& tx);
 ApplyResult
 doApply(PreclaimResult const& preclaimResult, Application& app, OpenView& view);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

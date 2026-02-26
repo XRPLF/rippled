@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PATH_IMPL_AMOUNTSPEC_H_INCLUDED
-#define RIPPLE_PATH_IMPL_AMOUNTSPEC_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/STAmount.h>
@@ -26,7 +6,7 @@
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 struct AmountSpec
 {
@@ -125,8 +105,7 @@ template <>
 inline IOUAmount&
 get<IOUAmount>(EitherAmount& amt)
 {
-    XRPL_ASSERT(
-        !amt.native, "ripple::get<IOUAmount>(EitherAmount&) : is not XRP");
+    XRPL_ASSERT(!amt.native, "xrpl::get<IOUAmount>(EitherAmount&) : is not XRP");
     return amt.iou;
 }
 
@@ -134,7 +113,7 @@ template <>
 inline XRPAmount&
 get<XRPAmount>(EitherAmount& amt)
 {
-    XRPL_ASSERT(amt.native, "ripple::get<XRPAmount>(EitherAmount&) : is XRP");
+    XRPL_ASSERT(amt.native, "xrpl::get<XRPAmount>(EitherAmount&) : is XRP");
     return amt.xrp;
 }
 
@@ -150,9 +129,7 @@ template <>
 inline IOUAmount const&
 get<IOUAmount>(EitherAmount const& amt)
 {
-    XRPL_ASSERT(
-        !amt.native,
-        "ripple::get<IOUAmount>(EitherAmount const&) : is not XRP");
+    XRPL_ASSERT(!amt.native, "xrpl::get<IOUAmount>(EitherAmount const&) : is not XRP");
     return amt.iou;
 }
 
@@ -160,8 +137,7 @@ template <>
 inline XRPAmount const&
 get<XRPAmount>(EitherAmount const& amt)
 {
-    XRPL_ASSERT(
-        amt.native, "ripple::get<XRPAmount>(EitherAmount const&) : is XRP");
+    XRPL_ASSERT(amt.native, "xrpl::get<XRPAmount>(EitherAmount const&) : is XRP");
     return amt.xrp;
 }
 
@@ -170,10 +146,9 @@ toAmountSpec(STAmount const& amt)
 {
     XRPL_ASSERT(
         amt.mantissa() < std::numeric_limits<std::int64_t>::max(),
-        "ripple::toAmountSpec(STAmount const&) : maximum mantissa");
+        "xrpl::toAmountSpec(STAmount const&) : maximum mantissa");
     bool const isNeg = amt.negative();
-    std::int64_t const sMant =
-        isNeg ? -std::int64_t(amt.mantissa()) : amt.mantissa();
+    std::int64_t const sMant = isNeg ? -std::int64_t(amt.mantissa()) : amt.mantissa();
     AmountSpec result;
 
     result.native = isXRP(amt);
@@ -207,7 +182,7 @@ toAmountSpec(EitherAmount const& ea, std::optional<Currency> const& c)
     r.currency = c;
     XRPL_ASSERT(
         ea.native == r.native,
-        "ripple::toAmountSpec(EitherAmount const&&, std::optional<Currency>) : "
+        "xrpl::toAmountSpec(EitherAmount const&&, std::optional<Currency>) : "
         "matching native");
     if (r.native)
     {
@@ -220,6 +195,4 @@ toAmountSpec(EitherAmount const& ea, std::optional<Currency> const& c)
     return r;
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2012-2016 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/PathSet.h>
@@ -27,7 +8,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Discrepancy_test : public beast::unit_test::suite
 {
@@ -88,20 +69,14 @@ class Discrepancy_test : public beast::unit_test::suite
         env.close();
 
         test::PathSet payPaths{
-            test::Path{A2["JPY"], A2},
-            test::Path{XRP, A2["JPY"], A2},
-            test::Path{A6, XRP, A2["JPY"], A2}};
+            test::Path{A2["JPY"], A2}, test::Path{XRP, A2["JPY"], A2}, test::Path{A6, XRP, A2["JPY"], A2}};
 
-        env(pay(A1, A1, A2["JPY"](1000)),
-            json(payPaths.json()),
-            txflags(tfPartialPayment),
-            sendmax(A3["CNY"](56)));
+        env(pay(A1, A1, A2["JPY"](1000)), json(payPaths.json()), txflags(tfPartialPayment), sendmax(A3["CNY"](56)));
         env.close();
 
         Json::Value jrq2;
         jrq2[jss::binary] = false;
-        jrq2[jss::transaction] =
-            env.tx()->getJson(JsonOptions::none)[jss::hash];
+        jrq2[jss::transaction] = env.tx()->getJson(JsonOptions::none)[jss::hash];
         jrq2[jss::id] = 3;
         auto jrr = env.rpc("json", "tx", to_string(jrq2))[jss::result];
         uint64_t fee{jrr[jss::Fee].asUInt()};
@@ -121,19 +96,14 @@ class Discrepancy_test : public beast::unit_test::suite
 
             if (node && node[sfLedgerEntryType.fieldName] == jss::AccountRoot)
             {
-                Json::Value prevFields =
-                    node.isMember(sfPreviousFields.fieldName)
-                    ? node[sfPreviousFields.fieldName]
-                    : node[sfNewFields.fieldName];
-                Json::Value finalFields = node.isMember(sfFinalFields.fieldName)
-                    ? node[sfFinalFields.fieldName]
-                    : node[sfNewFields.fieldName];
+                Json::Value prevFields = node.isMember(sfPreviousFields.fieldName) ? node[sfPreviousFields.fieldName]
+                                                                                   : node[sfNewFields.fieldName];
+                Json::Value finalFields = node.isMember(sfFinalFields.fieldName) ? node[sfFinalFields.fieldName]
+                                                                                 : node[sfNewFields.fieldName];
                 if (prevFields)
-                    sumPrev += beast::lexicalCastThrow<std::uint64_t>(
-                        prevFields[sfBalance.fieldName].asString());
+                    sumPrev += beast::lexicalCastThrow<std::uint64_t>(prevFields[sfBalance.fieldName].asString());
                 if (finalFields)
-                    sumFinal += beast::lexicalCastThrow<std::uint64_t>(
-                        finalFields[sfBalance.fieldName].asString());
+                    sumFinal += beast::lexicalCastThrow<std::uint64_t>(finalFields[sfBalance.fieldName].asString());
             }
         }
         // the difference in balances (final and prev) should be the
@@ -152,6 +122,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Discrepancy, app, ripple);
+BEAST_DEFINE_TESTSUITE(Discrepancy, app, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

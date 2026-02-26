@@ -1,28 +1,8 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_LEDGERFORMATS_H_INCLUDED
-#define RIPPLE_PROTOCOL_LEDGERFORMATS_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/KnownFormats.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Identifiers for on-ledger objects.
 
@@ -187,8 +167,10 @@ enum LedgerSpecificFlags {
     lsfMPTCanTrade = 0x00000010,
     lsfMPTCanTransfer = 0x00000020,
     lsfMPTCanClawback = 0x00000040,
-    lsfMPTNoConfidentialTransfer = 0x00000080,
+    lsfMPTCanPrivacy = 0x00000080,
 
+    // Mutable flags (lsmf prefix) control whether the issuer can change
+    // corresponding feature flags after issuance via MPTokenIssuanceSet.
     lsmfMPTCanMutateCanLock = 0x00000002,
     lsmfMPTCanMutateRequireAuth = 0x00000004,
     lsmfMPTCanMutateCanEscrow = 0x00000008,
@@ -197,6 +179,12 @@ enum LedgerSpecificFlags {
     lsmfMPTCanMutateCanClawback = 0x00000040,
     lsmfMPTCanMutateMetadata = 0x00010000,
     lsmfMPTCanMutateTransferFee = 0x00020000,
+    // Controls mutability of lsfMPTCanPrivacy. Note the inverted naming:
+    // - Other mutable flags: "CanMutate" means issuer CAN change the setting
+    // - This flag: "CannotMutate" means issuer CANNOT change the setting
+    // By default (flag not set), issuer can toggle lsfMPTCanPrivacy on/off.
+    // If set, lsfMPTCanPrivacy is permanently locked to its creation value.
+    lsmfMPTCannotMutatePrivacy = 0x00040000,
 
     // ltMPTOKEN
     lsfMPTAuthorized = 0x00000002,
@@ -206,6 +194,11 @@ enum LedgerSpecificFlags {
 
     // ltVAULT
     lsfVaultPrivate = 0x00010000,
+
+    // ltLOAN
+    lsfLoanDefault = 0x00010000,
+    lsfLoanImpaired = 0x00020000,
+    lsfLoanOverpayment = 0x00040000, // True, loan allows overpayments
 };
 
 //------------------------------------------------------------------------------
@@ -225,6 +218,4 @@ public:
     getInstance();
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

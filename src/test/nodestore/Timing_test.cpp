@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
 
@@ -46,17 +27,13 @@
 #define NODESTORE_TIMING_DO_VERIFY 0
 #endif
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 std::unique_ptr<Backend>
-make_Backend(
-    Section const& config,
-    Scheduler& scheduler,
-    beast::Journal journal)
+make_Backend(Section const& config, Scheduler& scheduler, beast::Journal journal)
 {
-    return Manager::instance().make_Backend(
-        config, megabytes(4), scheduler, journal);
+    return Manager::instance().make_Backend(config, megabytes(4), scheduler, journal);
 }
 
 // Fill memory with random bits
@@ -123,8 +100,7 @@ public:
         rngcpy(data + 1, key.size() - 1, gen_);
         Blob value(d_size_(gen_));
         rngcpy(&value[0], value.size(), gen_);
-        return NodeObject::createObject(
-            safe_cast<NodeObjectType>(d_type_(gen_)), std::move(value), key);
+        return NodeObject::createObject(safe_cast<NodeObjectType>(d_type_(gen_)), std::move(value), key);
     }
 
     // returns a batch of NodeObjects starting at n
@@ -169,8 +145,7 @@ public:
     {
         std::string s;
         for (auto iter = config.begin(); iter != config.end(); ++iter)
-            s += (iter != config.begin() ? "," : "") + iter->first + "=" +
-                iter->second;
+            s += (iter != config.begin() ? "," : "") + iter->first + "=" + iter->second;
         return s;
     }
 
@@ -204,8 +179,7 @@ public:
         std::atomic<std::size_t>& c_;
 
     public:
-        parallel_for_lambda(std::size_t n, std::atomic<std::size_t>& c)
-            : n_(n), c_(c)
+        parallel_for_lambda(std::size_t n, std::atomic<std::size_t>& c) : n_(n), c_(c)
         {
         }
 
@@ -232,10 +206,7 @@ public:
     */
     template <class Body, class... Args>
     void
-    parallel_for(
-        std::size_t const n,
-        std::size_t number_of_threads,
-        Args const&... args)
+    parallel_for(std::size_t const n, std::size_t number_of_threads, Args const&... args)
     {
         std::atomic<std::size_t> c(0);
         std::vector<beast::unit_test::thread> t;
@@ -248,10 +219,7 @@ public:
 
     template <class Body, class... Args>
     void
-    parallel_for_id(
-        std::size_t const n,
-        std::size_t number_of_threads,
-        Args const&... args)
+    parallel_for_id(std::size_t const n, std::size_t number_of_threads, Args const&... args)
     {
         std::atomic<std::size_t> c(0);
         std::vector<beast::unit_test::thread> t;
@@ -266,10 +234,7 @@ public:
 
     // Insert only
     void
-    do_insert(
-        Section const& config,
-        Params const& params,
-        beast::Journal journal)
+    do_insert(Section const& config, Params const& params, beast::Journal journal)
     {
         DummyScheduler scheduler;
         auto backend = make_Backend(config, scheduler, journal);
@@ -284,8 +249,7 @@ public:
             Sequence seq_;
 
         public:
-            explicit Body(suite& s, Backend& backend)
-                : suite_(s), backend_(backend), seq_(1)
+            explicit Body(suite& s, Backend& backend) : suite_(s), backend_(backend), seq_(1)
             {
             }
 
@@ -305,11 +269,7 @@ public:
 
         try
         {
-            parallel_for<Body>(
-                params.items,
-                params.threads,
-                std::ref(*this),
-                std::ref(*backend));
+            parallel_for<Body>(params.items, params.threads, std::ref(*this), std::ref(*backend));
         }
         catch (std::exception const&)
         {
@@ -323,10 +283,7 @@ public:
 
     // Fetch existing keys
     void
-    do_fetch(
-        Section const& config,
-        Params const& params,
-        beast::Journal journal)
+    do_fetch(Section const& config, Params const& params, beast::Journal journal)
     {
         DummyScheduler scheduler;
         auto backend = make_Backend(config, scheduler, journal);
@@ -343,16 +300,8 @@ public:
             std::uniform_int_distribution<std::size_t> dist_;
 
         public:
-            Body(
-                std::size_t id,
-                suite& s,
-                Params const& params,
-                Backend& backend)
-                : suite_(s)
-                , backend_(backend)
-                , seq1_(1)
-                , gen_(id + 1)
-                , dist_(0, params.items - 1)
+            Body(std::size_t id, suite& s, Params const& params, Backend& backend)
+                : suite_(s), backend_(backend), seq1_(1), gen_(id + 1), dist_(0, params.items - 1)
             {
             }
 
@@ -375,12 +324,7 @@ public:
         };
         try
         {
-            parallel_for_id<Body>(
-                params.items,
-                params.threads,
-                std::ref(*this),
-                std::ref(params),
-                std::ref(*backend));
+            parallel_for_id<Body>(params.items, params.threads, std::ref(*this), std::ref(params), std::ref(*backend));
         }
         catch (std::exception const&)
         {
@@ -394,10 +338,7 @@ public:
 
     // Perform lookups of non-existent keys
     void
-    do_missing(
-        Section const& config,
-        Params const& params,
-        beast::Journal journal)
+    do_missing(Section const& config, Params const& params, beast::Journal journal)
     {
         DummyScheduler scheduler;
         auto backend = make_Backend(config, scheduler, journal);
@@ -415,11 +356,7 @@ public:
             std::uniform_int_distribution<std::size_t> dist_;
 
         public:
-            Body(
-                std::size_t id,
-                suite& s,
-                Params const& params,
-                Backend& backend)
+            Body(std::size_t id, suite& s, Params const& params, Backend& backend)
                 : suite_(s)
                 //, params_ (params)
                 , backend_(backend)
@@ -448,12 +385,7 @@ public:
 
         try
         {
-            parallel_for_id<Body>(
-                params.items,
-                params.threads,
-                std::ref(*this),
-                std::ref(params),
-                std::ref(*backend));
+            parallel_for_id<Body>(params.items, params.threads, std::ref(*this), std::ref(params), std::ref(*backend));
         }
         catch (std::exception const&)
         {
@@ -467,10 +399,7 @@ public:
 
     // Fetch with present and missing keys
     void
-    do_mixed(
-        Section const& config,
-        Params const& params,
-        beast::Journal journal)
+    do_mixed(Section const& config, Params const& params, beast::Journal journal)
     {
         DummyScheduler scheduler;
         auto backend = make_Backend(config, scheduler, journal);
@@ -490,11 +419,7 @@ public:
             std::uniform_int_distribution<std::size_t> dist_;
 
         public:
-            Body(
-                std::size_t id,
-                suite& s,
-                Params const& params,
-                Backend& backend)
+            Body(std::size_t id, suite& s, Params const& params, Backend& backend)
                 : suite_(s)
                 //, params_ (params)
                 , backend_(backend)
@@ -536,12 +461,7 @@ public:
 
         try
         {
-            parallel_for_id<Body>(
-                params.items,
-                params.threads,
-                std::ref(*this),
-                std::ref(params),
-                std::ref(*backend));
+            parallel_for_id<Body>(params.items, params.threads, std::ref(*this), std::ref(params), std::ref(*backend));
         }
         catch (std::exception const&)
         {
@@ -580,11 +500,7 @@ public:
             std::uniform_int_distribution<std::size_t> older_;
 
         public:
-            Body(
-                std::size_t id,
-                suite& s,
-                Params const& params,
-                Backend& backend)
+            Body(std::size_t id, suite& s, Params const& params, Backend& backend)
                 : suite_(s)
                 , params_(params)
                 , backend_(backend)
@@ -650,12 +566,7 @@ public:
 
         try
         {
-            parallel_for_id<Body>(
-                params.items,
-                params.threads,
-                std::ref(*this),
-                std::ref(params),
-                std::ref(*backend));
+            parallel_for_id<Body>(params.items, params.threads, std::ref(*this), std::ref(params), std::ref(*backend));
         }
         catch (std::exception const&)
         {
@@ -669,36 +580,26 @@ public:
 
     //--------------------------------------------------------------------------
 
-    using test_func =
-        void (Timing_test::*)(Section const&, Params const&, beast::Journal);
+    using test_func = void (Timing_test::*)(Section const&, Params const&, beast::Journal);
     using test_list = std::vector<std::pair<std::string, test_func>>;
 
     duration_type
-    do_test(
-        test_func f,
-        Section const& config,
-        Params const& params,
-        beast::Journal journal)
+    do_test(test_func f, Section const& config, Params const& params, beast::Journal journal)
     {
         auto const start = clock_type::now();
         (this->*f)(config, params, journal);
-        return std::chrono::duration_cast<duration_type>(
-            clock_type::now() - start);
+        return std::chrono::duration_cast<duration_type>(clock_type::now() - start);
     }
 
     void
-    do_tests(
-        std::size_t threads,
-        test_list const& tests,
-        std::vector<std::string> const& config_strings)
+    do_tests(std::size_t threads, test_list const& tests, std::vector<std::string> const& config_strings)
     {
         using std::setw;
         int w = 8;
         for (auto const& test : tests)
             if (w < test.first.size())
                 w = test.first.size();
-        log << threads << " Thread" << (threads > 1 ? "s" : "") << ", "
-            << default_items << " Objects" << std::endl;
+        log << threads << " Thread" << (threads > 1 ? "s" : "") << ", " << default_items << " Objects" << std::endl;
         {
             std::stringstream ss;
             ss << std::left << setw(10) << "Backend" << std::right;
@@ -721,12 +622,9 @@ public:
                 Section config = parse(config_string);
                 config.set("path", tempDir.path());
                 std::stringstream ss;
-                ss << std::left << setw(10)
-                   << get(config, "type", std::string()) << std::right;
+                ss << std::left << setw(10) << get(config, "type", std::string()) << std::right;
                 for (auto const& test : tests)
-                    ss << " " << setw(w)
-                       << to_string(
-                              do_test(test.second, config, params, journal));
+                    ss << " " << setw(w) << to_string(do_test(test.second, config, params, journal));
                 ss << "   " << to_string(config);
                 log << ss.str() << std::endl;
             }
@@ -746,7 +644,7 @@ public:
         */
         std::string default_args =
             "type=nudb"
-#if RIPPLE_ROCKSDB_AVAILABLE
+#if XRPL_ROCKSDB_AVAILABLE
             ";type=rocksdb,open_files=2000,filter_bits=12,cache_mb=256,"
             "file_size_mb=8,file_size_mult=2"
 #endif
@@ -778,7 +676,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Timing, nodestore, ripple, 1);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Timing, nodestore, xrpl, 1);
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl

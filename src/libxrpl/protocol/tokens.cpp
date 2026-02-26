@@ -1,21 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
 //
 /* The base58 encoding & decoding routines in the b58_ref namespace are taken
  * from Bitcoin but have been modified from the original.
@@ -137,10 +119,9 @@ of another base), and doing the multi-precision computations with larger
 coefficients sizes greatly speeds up the multi-precision computations.
 */
 
-namespace ripple {
+namespace xrpl {
 
-static constexpr char const* alphabetForward =
-    "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
+static constexpr char const* alphabetForward = "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
 
 static constexpr std::array<int, 256> const alphabetReverse = []() {
     std::array<int, 256> map{};
@@ -160,11 +141,7 @@ digest(void const* data, std::size_t size) noexcept
     return static_cast<typename Hasher::result_type>(h);
 }
 
-template <
-    class Hasher,
-    class T,
-    std::size_t N,
-    class = std::enable_if_t<sizeof(T) == 1>>
+template <class Hasher, class T, std::size_t N, class = std::enable_if_t<sizeof(T) == 1>>
 static typename Hasher::result_type
 digest(std::array<T, N> const& v)
 {
@@ -220,11 +197,7 @@ namespace b58_ref {
 namespace detail {
 
 std::string
-encodeBase58(
-    void const* message,
-    std::size_t size,
-    void* temp,
-    std::size_t temp_size)
+encodeBase58(void const* message, std::size_t size, void* temp, std::size_t temp_size)
 {
     auto pbegin = reinterpret_cast<unsigned char const*>(message);
     auto const pend = pbegin + size;
@@ -252,8 +225,7 @@ encodeBase58(
             iter[-1] = carry % 58;
             carry /= 58;
         }
-        XRPL_ASSERT(
-            carry == 0, "ripple::b58_ref::detail::encodeBase58 : zero carry");
+        XRPL_ASSERT(carry == 0, "xrpl::b58_ref::detail::encodeBase58 : zero carry");
         pbegin++;
     }
 
@@ -303,14 +275,12 @@ decodeBase58(std::string const& s)
             *iter = carry % 256;
             carry /= 256;
         }
-        XRPL_ASSERT(
-            carry == 0, "ripple::b58_ref::detail::decodeBase58 : zero carry");
+        XRPL_ASSERT(carry == 0, "xrpl::b58_ref::detail::decodeBase58 : zero carry");
         ++psz;
         --remain;
     }
     // Skip leading zeroes in b256.
-    auto iter = std::find_if(
-        b256.begin(), b256.end(), [](unsigned char c) { return c != 0; });
+    auto iter = std::find_if(b256.begin(), b256.end(), [](unsigned char c) { return c != 0; });
     std::string result;
     result.reserve(zeroes + (b256.end() - iter));
     result.assign(zeroes, 0x00);
@@ -341,8 +311,7 @@ encodeBase58Token(TokenType type, void const* token, std::size_t size)
         std::memcpy(buf.data() + 1, token, size);
     checksum(buf.data() + 1 + size, buf.data(), 1 + size);
 
-    return detail::encodeBase58(
-        buf.data(), expanded, buf.data() + expanded, bufsize - expanded);
+    return detail::encodeBase58(buf.data(), expanded, buf.data() + expanded, bufsize - expanded);
 }
 
 std::string
@@ -385,8 +354,7 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
         return Unexpected(TokenCodecErrc::inputTooLarge);
     };
 
-    auto count_leading_zeros =
-        [](std::span<std::uint8_t const> const& col) -> std::size_t {
+    auto count_leading_zeros = [](std::span<std::uint8_t const> const& col) -> std::size_t {
         std::size_t count = 0;
         for (auto const& c : col)
         {
@@ -405,8 +373,7 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
     // Allocate enough base 2^64 coeff for encoding 38 bytes
     // log(2^(38*8),2^64)) ~= 4.75. So 5 coeff are enough
     std::array<std::uint64_t, 5> base_2_64_coeff_buf{};
-    std::span<std::uint64_t> const base_2_64_coeff =
-        [&]() -> std::span<std::uint64_t> {
+    std::span<std::uint64_t> const base_2_64_coeff = [&]() -> std::span<std::uint64_t> {
         // convert input from big endian to native u64, lowest coeff first
         std::size_t num_coeff = 0;
         for (int i = 0; i < base_2_64_coeff_buf.size(); ++i)
@@ -418,10 +385,8 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
             auto const src_i_end = input.size() - i * 8;
             if (src_i_end >= 8)
             {
-                std::memcpy(
-                    &base_2_64_coeff_buf[num_coeff], &input[src_i_end - 8], 8);
-                boost::endian::big_to_native_inplace(
-                    base_2_64_coeff_buf[num_coeff]);
+                std::memcpy(&base_2_64_coeff_buf[num_coeff], &input[src_i_end - 8], 8);
+                boost::endian::big_to_native_inplace(base_2_64_coeff_buf[num_coeff]);
             }
             else
             {
@@ -448,8 +413,7 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
     while (cur_2_64_end > 0)
     {
         base_58_10_coeff[num_58_10_coeffs] =
-            ripple::b58_fast::detail::inplace_bigint_div_rem(
-                base_2_64_coeff.subspan(0, cur_2_64_end), B_58_10);
+            xrpl::b58_fast::detail::inplace_bigint_div_rem(base_2_64_coeff.subspan(0, cur_2_64_end), B_58_10);
         num_58_10_coeffs += 1;
         if (base_2_64_coeff[cur_2_64_end - 1] == 0)
         {
@@ -459,8 +423,7 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
 
     // Translate the result into the alphabet
     // Put all the zeros at the beginning, then all the values from the output
-    std::fill(
-        out.begin(), out.begin() + input_zeros, ::ripple::alphabetForward[0]);
+    std::fill(out.begin(), out.begin() + input_zeros, ::xrpl::alphabetForward[0]);
 
     // iterate through the base 58^10 coeff
     // convert to base 58 big endian then
@@ -478,8 +441,7 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
         {
             return Unexpected(TokenCodecErrc::inputTooLarge);
         }
-        std::array<std::uint8_t, 10> const b58_be =
-            ripple::b58_fast::detail::b58_10_to_b58_be(base_58_10_coeff[i]);
+        std::array<std::uint8_t, 10> const b58_be = xrpl::b58_fast::detail::b58_10_to_b58_be(base_58_10_coeff[i]);
         std::size_t to_skip = 0;
         std::span<std::uint8_t const> b58_be_s{b58_be.data(), b58_be.size()};
         if (skip_zeros)
@@ -493,7 +455,7 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
         }
         for (auto b58_coeff : b58_be_s.subspan(to_skip))
         {
-            out[out_index] = ::ripple::alphabetForward[b58_coeff];
+            out[out_index] = ::xrpl::alphabetForward[b58_coeff];
             out_index += 1;
         }
     }
@@ -522,7 +484,7 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
         std::size_t count = 0;
         for (auto const& c : col)
         {
-            if (c != ::ripple::alphabetForward[0])
+            if (c != ::xrpl::alphabetForward[0])
             {
                 return count;
             }
@@ -537,16 +499,13 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
     // (33 bytes for nodepublic + 1 byte token + 4 bytes checksum)
     // log(2^(38*8),58^10)) ~= 5.18. So 6 coeff are enough
     std::array<std::uint64_t, 6> b_58_10_coeff{};
-    auto [num_full_coeffs, partial_coeff_len] =
-        ripple::b58_fast::detail::div_rem(input.size(), 10);
+    auto [num_full_coeffs, partial_coeff_len] = xrpl::b58_fast::detail::div_rem(input.size(), 10);
     auto const num_partial_coeffs = partial_coeff_len ? 1 : 0;
     auto const num_b_58_10_coeffs = num_full_coeffs + num_partial_coeffs;
-    XRPL_ASSERT(
-        num_b_58_10_coeffs <= b_58_10_coeff.size(),
-        "ripple::b58_fast::detail::b58_to_b256_be : maximum coeff");
+    XRPL_ASSERT(num_b_58_10_coeffs <= b_58_10_coeff.size(), "xrpl::b58_fast::detail::b58_to_b256_be : maximum coeff");
     for (unsigned char c : input.substr(0, partial_coeff_len))
     {
-        auto cur_val = ::ripple::alphabetReverse[c];
+        auto cur_val = ::xrpl::alphabetReverse[c];
         if (cur_val < 0)
         {
             return Unexpected(TokenCodecErrc::invalidEncodingChar);
@@ -559,7 +518,7 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
         for (int j = 0; j < num_full_coeffs; ++j)
         {
             unsigned char c = input[partial_coeff_len + j * 10 + i];
-            auto cur_val = ::ripple::alphabetReverse[c];
+            auto cur_val = ::xrpl::alphabetReverse[c];
             if (cur_val < 0)
             {
                 return Unexpected(TokenCodecErrc::invalidEncodingChar);
@@ -580,16 +539,14 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
         std::uint64_t const c = b_58_10_coeff[i];
 
         {
-            auto code = ripple::b58_fast::detail::inplace_bigint_mul(
-                std::span(&result[0], cur_result_size + 1), B_58_10);
+            auto code = xrpl::b58_fast::detail::inplace_bigint_mul(std::span(&result[0], cur_result_size + 1), B_58_10);
             if (code != TokenCodecErrc::success)
             {
                 return Unexpected(code);
             }
         }
         {
-            auto code = ripple::b58_fast::detail::inplace_bigint_add(
-                std::span(&result[0], cur_result_size + 1), c);
+            auto code = xrpl::b58_fast::detail::inplace_bigint_add(std::span(&result[0], cur_result_size + 1), c);
             if (code != TokenCodecErrc::success)
             {
                 return Unexpected(code);
@@ -641,10 +598,7 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
 }  // namespace detail
 
 B58Result<std::span<std::uint8_t>>
-encodeBase58Token(
-    TokenType token_type,
-    std::span<std::uint8_t const> input,
-    std::span<std::uint8_t> out)
+encodeBase58Token(TokenType token_type, std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
 {
     constexpr std::size_t tmpBufSize = 128;
     std::array<std::uint8_t, tmpBufSize> buf;
@@ -667,19 +621,15 @@ encodeBase58Token(
     return detail::b256_to_b58_be(b58Span, out);
 }
 // Convert from base 58 to base 256, largest coefficients first
-// The input is encoded in XPRL format, with the token in the first
+// The input is encoded in XRPL format, with the token in the first
 // byte and the checksum in the last four bytes.
 // The decoded base 256 value does not include the token type or checksum.
 // It is an error if the token type or checksum does not match.
 B58Result<std::span<std::uint8_t>>
-decodeBase58Token(
-    TokenType type,
-    std::string_view s,
-    std::span<std::uint8_t> outBuf)
+decodeBase58Token(TokenType type, std::string_view s, std::span<std::uint8_t> outBuf)
 {
     std::array<std::uint8_t, 64> tmpBuf;
-    auto const decodeResult =
-        detail::b58_to_b256_be(s, std::span(tmpBuf.data(), tmpBuf.size()));
+    auto const decodeResult = detail::b58_to_b256_be(s, std::span(tmpBuf.data(), tmpBuf.size()));
 
     if (!decodeResult)
         return decodeResult;
@@ -721,10 +671,8 @@ encodeBase58Token(TokenType type, void const* token, std::size_t size)
     // over-allocation, this function uses 128 (again, over-allocation assuming
     // 2 base 58 char per byte)
     sr.resize(128);
-    std::span<std::uint8_t> outSp(
-        reinterpret_cast<std::uint8_t*>(sr.data()), sr.size());
-    std::span<std::uint8_t const> inSp(
-        reinterpret_cast<std::uint8_t const*>(token), size);
+    std::span<std::uint8_t> outSp(reinterpret_cast<std::uint8_t*>(sr.data()), sr.size());
+    std::span<std::uint8_t const> inSp(reinterpret_cast<std::uint8_t const*>(token), size);
     auto r = b58_fast::encodeBase58Token(type, inSp, outSp);
     if (!r)
         return {};
@@ -739,8 +687,7 @@ decodeBase58Token(std::string const& s, TokenType type)
     // The largest object encoded as base58 is 33 bytes; 64 is plenty (and
     // there's no benefit making it smaller)
     sr.resize(64);
-    std::span<std::uint8_t> outSp(
-        reinterpret_cast<std::uint8_t*>(sr.data()), sr.size());
+    std::span<std::uint8_t> outSp(reinterpret_cast<std::uint8_t*>(sr.data()), sr.size());
     auto r = b58_fast::decodeBase58Token(type, s, outSp);
     if (!r)
         return {};
@@ -750,4 +697,4 @@ decodeBase58Token(std::string const& s, TokenType type)
 
 }  // namespace b58_fast
 #endif  // _MSC_VER
-}  // namespace ripple
+}  // namespace xrpl

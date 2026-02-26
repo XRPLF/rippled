@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/beast/IPEndpointCommon.h>
 #include <test/unit_test/SuiteJournal.h>
 
@@ -28,7 +9,7 @@
 
 #include <boost/algorithm/string.hpp>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 bool
@@ -139,9 +120,7 @@ public:
         constexpr auto num_eps = 40;
         Livecache<> c(clock_, journal_);
         for (auto i = 0; i < num_eps; ++i)
-            add(beast::IP::randomEP(true),
-                c,
-                ripple::rand_int<std::uint32_t>());
+            add(beast::IP::randomEP(true), c, xrpl::rand_int<std::uint32_t>());
         auto h = c.hops.histogram();
         if (!BEAST_EXPECT(!h.empty()))
             return;
@@ -163,57 +142,32 @@ public:
         testcase("Shuffle");
         Livecache<> c(clock_, journal_);
         for (auto i = 0; i < 100; ++i)
-            add(beast::IP::randomEP(true),
-                c,
-                ripple::rand_int(Tuning::maxHops + 1));
+            add(beast::IP::randomEP(true), c, xrpl::rand_int(Tuning::maxHops + 1));
 
-        using at_hop = std::vector<ripple::PeerFinder::Endpoint>;
+        using at_hop = std::vector<xrpl::PeerFinder::Endpoint>;
         using all_hops = std::array<at_hop, 1 + Tuning::maxHops + 1>;
 
         auto cmp_EP = [](Endpoint const& a, Endpoint const& b) {
-            return (
-                b.hops < a.hops || (b.hops == a.hops && b.address < a.address));
+            return (b.hops < a.hops || (b.hops == a.hops && b.address < a.address));
         };
         all_hops before;
         all_hops before_sorted;
-        for (auto i = std::make_pair(0, c.hops.begin());
-             i.second != c.hops.end();
-             ++i.first, ++i.second)
+        for (auto i = std::make_pair(0, c.hops.begin()); i.second != c.hops.end(); ++i.first, ++i.second)
         {
-            std::copy(
-                (*i.second).begin(),
-                (*i.second).end(),
-                std::back_inserter(before[i.first]));
-            std::copy(
-                (*i.second).begin(),
-                (*i.second).end(),
-                std::back_inserter(before_sorted[i.first]));
-            std::sort(
-                before_sorted[i.first].begin(),
-                before_sorted[i.first].end(),
-                cmp_EP);
+            std::copy((*i.second).begin(), (*i.second).end(), std::back_inserter(before[i.first]));
+            std::copy((*i.second).begin(), (*i.second).end(), std::back_inserter(before_sorted[i.first]));
+            std::sort(before_sorted[i.first].begin(), before_sorted[i.first].end(), cmp_EP);
         }
 
         c.hops.shuffle();
 
         all_hops after;
         all_hops after_sorted;
-        for (auto i = std::make_pair(0, c.hops.begin());
-             i.second != c.hops.end();
-             ++i.first, ++i.second)
+        for (auto i = std::make_pair(0, c.hops.begin()); i.second != c.hops.end(); ++i.first, ++i.second)
         {
-            std::copy(
-                (*i.second).begin(),
-                (*i.second).end(),
-                std::back_inserter(after[i.first]));
-            std::copy(
-                (*i.second).begin(),
-                (*i.second).end(),
-                std::back_inserter(after_sorted[i.first]));
-            std::sort(
-                after_sorted[i.first].begin(),
-                after_sorted[i.first].end(),
-                cmp_EP);
+            std::copy((*i.second).begin(), (*i.second).end(), std::back_inserter(after[i.first]));
+            std::copy((*i.second).begin(), (*i.second).end(), std::back_inserter(after_sorted[i.first]));
+            std::sort(after_sorted[i.first].begin(), after_sorted[i.first].end(), cmp_EP);
         }
 
         // each hop bucket should contain the same items
@@ -239,7 +193,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Livecache, peerfinder, ripple);
+BEAST_DEFINE_TESTSUITE(Livecache, peerfinder, xrpl);
 
 }  // namespace PeerFinder
-}  // namespace ripple
+}  // namespace xrpl

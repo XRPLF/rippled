@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2020 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_SHAMAP_TAGGEDPOINTER_H_INCLUDED
-#define RIPPLE_SHAMAP_TAGGEDPOINTER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
@@ -27,7 +7,7 @@
 #include <cstdint>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 /** TaggedPointer is a combination of a pointer and a mask stored in the
     lowest two bits.
@@ -59,9 +39,7 @@ namespace ripple {
 class TaggedPointer
 {
 private:
-    static_assert(
-        alignof(SHAMapHash) >= 4,
-        "Bad alignment: Tag pointer requires low two bits to be zero.");
+    static_assert(alignof(SHAMapHash) >= 4, "Bad alignment: Tag pointer requires low two bits to be zero.");
     /** Upper bits are the pointer, lowest two bits are the tag
         A moved-from object will have a tp_ of zero.
     */
@@ -111,10 +89,7 @@ public:
         @param toAllocate allocate space for at least this number of children
         (must be <= branchFactor)
     */
-    explicit TaggedPointer(
-        TaggedPointer&& other,
-        std::uint16_t isBranch,
-        std::uint8_t toAllocate);
+    explicit TaggedPointer(TaggedPointer&& other, std::uint16_t isBranch, std::uint8_t toAllocate);
 
     /** Given `other` with the specified children in `srcBranches`, create a
         new TaggedPointer with the allocated number of children and the
@@ -171,9 +146,8 @@ public:
     /** Get the number of elements in each array and a pointer to the start
         of each array.
     */
-    [[nodiscard]] std::
-        tuple<std::uint8_t, SHAMapHash*, intr_ptr::SharedPtr<SHAMapTreeNode>*>
-        getHashesAndChildren() const;
+    [[nodiscard]] std::tuple<std::uint8_t, SHAMapHash*, intr_ptr::SharedPtr<SHAMapTreeNode>*>
+    getHashesAndChildren() const;
 
     /** Get the `hashes` array */
     [[nodiscard]] SHAMapHash*
@@ -245,6 +219,4 @@ popcnt16(std::uint16_t a)
 #endif
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

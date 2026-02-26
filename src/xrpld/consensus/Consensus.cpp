@@ -1,27 +1,8 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/consensus/Consensus.h>
 
 #include <xrpl/basics/Log.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 shouldCloseLedger(
@@ -30,34 +11,28 @@ shouldCloseLedger(
     std::size_t proposersClosed,
     std::size_t proposersValidated,
     std::chrono::milliseconds prevRoundTime,
-    std::chrono::milliseconds
-        timeSincePrevClose,              // Time since last ledger's close time
-    std::chrono::milliseconds openTime,  // Time waiting to close this ledger
+    std::chrono::milliseconds timeSincePrevClose,  // Time since last ledger's close time
+    std::chrono::milliseconds openTime,            // Time waiting to close this ledger
     std::chrono::milliseconds idleInterval,
     ConsensusParms const& parms,
     beast::Journal j,
     std::unique_ptr<std::stringstream> const& clog)
 {
-    CLOG(clog) << "shouldCloseLedger params anyTransactions: "
-               << anyTransactions << ", prevProposers: " << prevProposers
-               << ", proposersClosed: " << proposersClosed
-               << ", proposersValidated: " << proposersValidated
-               << ", prevRoundTime: " << prevRoundTime.count() << "ms"
+    CLOG(clog) << "shouldCloseLedger params anyTransactions: " << anyTransactions
+               << ", prevProposers: " << prevProposers << ", proposersClosed: " << proposersClosed
+               << ", proposersValidated: " << proposersValidated << ", prevRoundTime: " << prevRoundTime.count() << "ms"
                << ", timeSincePrevClose: " << timeSincePrevClose.count() << "ms"
                << ", openTime: " << openTime.count() << "ms"
                << ", idleInterval: " << idleInterval.count() << "ms"
                << ", ledgerMIN_CLOSE: " << parms.ledgerMIN_CLOSE.count() << "ms"
                << ". ";
     using namespace std::chrono_literals;
-    if ((prevRoundTime < -1s) || (prevRoundTime > 10min) ||
-        (timeSincePrevClose > 10min))
+    if ((prevRoundTime < -1s) || (prevRoundTime > 10min) || (timeSincePrevClose > 10min))
     {
         // These are unexpected cases, we just close the ledger
         std::stringstream ss;
-        ss << "shouldCloseLedger Trans=" << (anyTransactions ? "yes" : "no")
-           << " Prop: " << prevProposers << "/" << proposersClosed
-           << " Secs: " << timeSincePrevClose.count()
-           << " (last: " << prevRoundTime.count() << ")";
+        ss << "shouldCloseLedger Trans=" << (anyTransactions ? "yes" : "no") << " Prop: " << prevProposers << "/"
+           << proposersClosed << " Secs: " << timeSincePrevClose.count() << " (last: " << prevRoundTime.count() << ")";
 
         JLOG(j.warn()) << ss.str();
         CLOG(clog) << "closing ledger: " << ss.str() << ". ";
@@ -112,9 +87,8 @@ checkConsensusReached(
     bool stalled,
     std::unique_ptr<std::stringstream> const& clog)
 {
-    CLOG(clog) << "checkConsensusReached params: agreeing: " << agreeing
-               << ", total: " << total << ", count_self: " << count_self
-               << ", minConsensusPct: " << minConsensusPct
+    CLOG(clog) << "checkConsensusReached params: agreeing: " << agreeing << ", total: " << total
+               << ", count_self: " << count_self << ", minConsensusPct: " << minConsensusPct
                << ", reachedMax: " << reachedMax << ". ";
 
     // If we are alone for too long, we have consensus.
@@ -130,9 +104,8 @@ checkConsensusReached(
     {
         if (reachedMax)
         {
-            CLOG(clog)
-                << "Consensus reached because nobody shares our position and "
-                   "maximum duration has passed.";
+            CLOG(clog) << "Consensus reached because nobody shares our position and "
+                          "maximum duration has passed.";
             return true;
         }
         CLOG(clog) << "Consensus not reached and nobody shares our position. ";
@@ -141,7 +114,7 @@ checkConsensusReached(
 
     // We only get stalled when there are disputed transactions and all of them
     // unequivocally have 80% (minConsensusPct) agreement, either for or
-    // against. That is: either under 20% or over 80% consensus (repectively
+    // against. That is: either under 20% or over 80% consensus (respectively
     // "nay" or "yay"). This prevents manipulation by a minority of byzantine
     // peers of which transactions make the cut to get into the ledger.
     if (stalled)
@@ -154,8 +127,7 @@ checkConsensusReached(
     {
         ++agreeing;
         ++total;
-        CLOG(clog) << "agreeing and total adjusted: " << agreeing << ','
-                   << total << ". ";
+        CLOG(clog) << "agreeing and total adjusted: " << agreeing << ',' << total << ". ";
     }
 
     std::size_t currentPercentage = (agreeing * 100) / total;
@@ -187,17 +159,12 @@ checkConsensus(
     beast::Journal j,
     std::unique_ptr<std::stringstream> const& clog)
 {
-    CLOG(clog) << "checkConsensus: prop=" << currentProposers << "/"
-               << prevProposers << " agree=" << currentAgree
-               << " validated=" << currentFinished
-               << " time=" << currentAgreeTime.count() << "/"
+    CLOG(clog) << "checkConsensus: prop=" << currentProposers << "/" << prevProposers << " agree=" << currentAgree
+               << " validated=" << currentFinished << " time=" << currentAgreeTime.count() << "/"
                << previousAgreeTime.count() << " proposing? " << proposing
-               << " minimum duration to reach consensus: "
-               << parms.ledgerMIN_CONSENSUS.count() << "ms"
-               << " max consensus time " << parms.ledgerMAX_CONSENSUS.count()
-               << "ms"
-               << " minimum consensus percentage: " << parms.minCONSENSUS_PCT
-               << ". ";
+               << " minimum duration to reach consensus: " << parms.ledgerMIN_CONSENSUS.count() << "ms"
+               << " max consensus time " << parms.ledgerMAX_CONSENSUS.count() << "ms"
+               << " minimum consensus percentage: " << parms.minCONSENSUS_PCT << ". ";
 
     if (currentAgreeTime <= parms.ledgerMIN_CONSENSUS)
     {
@@ -228,8 +195,7 @@ checkConsensus(
             stalled,
             clog))
     {
-        JLOG((stalled ? j.warn() : j.debug()))
-            << "normal consensus" << (stalled ? ", but stalled" : "");
+        JLOG((stalled ? j.warn() : j.debug())) << "normal consensus" << (stalled ? ", but stalled" : "");
         CLOG(clog) << "reached" << (stalled ? ", but stalled." : ".");
         return ConsensusState::Yes;
     }
@@ -250,12 +216,8 @@ checkConsensus(
         return ConsensusState::MovedOn;
     }
 
-    std::chrono::milliseconds const maxAgreeTime =
-        previousAgreeTime * parms.ledgerABANDON_CONSENSUS_FACTOR;
-    if (currentAgreeTime > std::clamp(
-                               maxAgreeTime,
-                               parms.ledgerMAX_CONSENSUS,
-                               parms.ledgerABANDON_CONSENSUS))
+    std::chrono::milliseconds const maxAgreeTime = previousAgreeTime * parms.ledgerABANDON_CONSENSUS_FACTOR;
+    if (currentAgreeTime > std::clamp(maxAgreeTime, parms.ledgerMAX_CONSENSUS, parms.ledgerABANDON_CONSENSUS))
     {
         JLOG(j.warn()) << "consensus taken too long";
         CLOG(clog) << "Consensus taken too long. ";
@@ -269,4 +231,4 @@ checkConsensus(
     return ConsensusState::No;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

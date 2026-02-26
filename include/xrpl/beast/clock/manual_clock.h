@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef BEAST_CHRONO_MANUAL_CLOCK_H_INCLUDED
-#define BEAST_CHRONO_MANUAL_CLOCK_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -48,8 +28,7 @@ private:
     time_point now_;
 
 public:
-    explicit manual_clock(time_point const& now = time_point(duration(0)))
-        : now_(now)
+    explicit manual_clock(time_point const& now = time_point(duration(0))) : now_(now)
     {
     }
 
@@ -63,9 +42,7 @@ public:
     void
     set(time_point const& when)
     {
-        XRPL_ASSERT(
-            !Clock::is_steady || when >= now_,
-            "beast::manual_clock::set(time_point) : forward input");
+        XRPL_ASSERT(!Clock::is_steady || when >= now_, "beast::manual_clock::set(time_point) : forward input");
         now_ = when;
     }
 
@@ -83,8 +60,7 @@ public:
     advance(std::chrono::duration<Rep, Period> const& elapsed)
     {
         XRPL_ASSERT(
-            !Clock::is_steady || (now_ + elapsed) >= now_,
-            "beast::manual_clock::advance(duration) : forward input");
+            !Clock::is_steady || (now_ + elapsed) >= now_, "beast::manual_clock::advance(duration) : forward input");
         now_ += elapsed;
     }
 
@@ -98,5 +74,3 @@ public:
 };
 
 }  // namespace beast
-
-#endif

@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-This file is part of rippled: https://github.com/ripple/rippled
-Copyright (c) 2025 Ripple Labs Inc.
-
-Permission to use, copy, modify, and/or distribute this software for any
-purpose  with  or without fee is hereby granted, provided that the above
-copyright notice and this permission notice appear in all copies.
-
-THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/beast/hash/xxhasher.h>
 #include <xrpl/beast/unit_test.h>
 
@@ -35,9 +16,7 @@ public:
         std::string objectToHash{"Hello, xxHash!"};
         hasher(objectToHash.data(), objectToHash.size());
 
-        BEAST_EXPECT(
-            static_cast<xxhasher::result_type>(hasher) ==
-            16042857369214894119ULL);
+        BEAST_EXPECT(static_cast<xxhasher::result_type>(hasher) == 16042857369214894119ULL);
     }
 
     void
@@ -50,28 +29,23 @@ public:
         std::string objectToHash{"Hello, xxHash!"};
         hasher(objectToHash.data(), objectToHash.size());
 
-        BEAST_EXPECT(
-            static_cast<xxhasher::result_type>(hasher) ==
-            14440132435660934800ULL);
+        BEAST_EXPECT(static_cast<xxhasher::result_type>(hasher) == 14440132435660934800ULL);
     }
 
     void
     testWithTwoSeeds()
     {
         testcase("With two seeds");
-        xxhasher hasher{
-            static_cast<std::uint32_t>(102), static_cast<std::uint32_t>(103)};
+        xxhasher hasher{static_cast<std::uint32_t>(102), static_cast<std::uint32_t>(103)};
 
         std::string objectToHash{"Hello, xxHash!"};
         hasher(objectToHash.data(), objectToHash.size());
 
-        BEAST_EXPECT(
-            static_cast<xxhasher::result_type>(hasher) ==
-            14440132435660934800ULL);
+        BEAST_EXPECT(static_cast<xxhasher::result_type>(hasher) == 14440132435660934800ULL);
     }
 
     void
-    testBigObjectWithMultiupleSmallUpdatesWithoutSeed()
+    testBigObjectWithMultipleSmallUpdatesWithoutSeed()
     {
         testcase("Big object with multiple small updates without seed");
         xxhasher hasher{};
@@ -82,13 +56,11 @@ public:
             hasher(objectToHash.data(), objectToHash.size());
         }
 
-        BEAST_EXPECT(
-            static_cast<xxhasher::result_type>(hasher) ==
-            15296278154063476002ULL);
+        BEAST_EXPECT(static_cast<xxhasher::result_type>(hasher) == 15296278154063476002ULL);
     }
 
     void
-    testBigObjectWithMultiupleSmallUpdatesWithSeed()
+    testBigObjectWithMultipleSmallUpdatesWithSeed()
     {
         testcase("Big object with multiple small updates with seed");
         xxhasher hasher{static_cast<std::uint32_t>(103)};
@@ -99,9 +71,7 @@ public:
             hasher(objectToHash.data(), objectToHash.size());
         }
 
-        BEAST_EXPECT(
-            static_cast<xxhasher::result_type>(hasher) ==
-            17285302196561698791ULL);
+        BEAST_EXPECT(static_cast<xxhasher::result_type>(hasher) == 17285302196561698791ULL);
     }
 
     void
@@ -120,9 +90,7 @@ public:
         hasher(bigObject.data(), bigObject.size());
         hasher(objectToHash.data(), objectToHash.size());
 
-        BEAST_EXPECT(
-            static_cast<xxhasher::result_type>(hasher) ==
-            1865045178324729219ULL);
+        BEAST_EXPECT(static_cast<xxhasher::result_type>(hasher) == 1865045178324729219ULL);
     }
 
     void
@@ -141,9 +109,7 @@ public:
         hasher(bigObject.data(), bigObject.size());
         hasher(objectToHash.data(), objectToHash.size());
 
-        BEAST_EXPECT(
-            static_cast<xxhasher::result_type>(hasher) ==
-            16189862915636005281ULL);
+        BEAST_EXPECT(static_cast<xxhasher::result_type>(hasher) == 16189862915636005281ULL);
     }
 
     void
@@ -159,9 +125,7 @@ public:
         }
         hasher(objectToHash.data(), objectToHash.size());
 
-        BEAST_EXPECT(
-            static_cast<xxhasher::result_type>(hasher) ==
-            15296278154063476002ULL);
+        BEAST_EXPECT(static_cast<xxhasher::result_type>(hasher) == 15296278154063476002ULL);
     }
 
     void
@@ -177,9 +141,7 @@ public:
         }
         hasher(objectToHash.data(), objectToHash.size());
 
-        BEAST_EXPECT(
-            static_cast<xxhasher::result_type>(hasher) ==
-            17285302196561698791ULL);
+        BEAST_EXPECT(static_cast<xxhasher::result_type>(hasher) == 17285302196561698791ULL);
     }
 
     void
@@ -218,8 +180,8 @@ public:
         testWithoutSeed();
         testWithSeed();
         testWithTwoSeeds();
-        testBigObjectWithMultiupleSmallUpdatesWithoutSeed();
-        testBigObjectWithMultiupleSmallUpdatesWithSeed();
+        testBigObjectWithMultipleSmallUpdatesWithoutSeed();
+        testBigObjectWithMultipleSmallUpdatesWithSeed();
         testBigObjectWithSmallAndBigUpdatesWithoutSeed();
         testBigObjectWithSmallAndBigUpdatesWithSeed();
         testBigObjectWithOneUpdateWithoutSeed();

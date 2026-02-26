@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TEST_CSF_SIM_H_INCLUDED
-#define RIPPLE_TEST_CSF_SIM_H_INCLUDED
+#pragma once
 
 #include <test/csf/BasicNetwork.h>
 #include <test/csf/CollectorRef.h>
@@ -33,7 +13,7 @@
 #include <iostream>
 #include <random>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -43,8 +23,7 @@ class BasicSink : public beast::Journal::Sink
     Scheduler::clock_type const& clock_;
 
 public:
-    BasicSink(Scheduler::clock_type const& clock)
-        : Sink(beast::severities::kDisabled, false), clock_{clock}
+    BasicSink(Scheduler::clock_type const& clock) : Sink(beast::severities::kDisabled, false), clock_{clock}
     {
     }
 
@@ -54,16 +33,13 @@ public:
         if (level < threshold())
             return;
 
-        std::cout << clock_.now().time_since_epoch().count() << " " << text
-                  << std::endl;
+        std::cout << clock_.now().time_since_epoch().count() << " " << text << std::endl;
     }
 
     void
-    writeAlways(beast::severities::Severity level, std::string const& text)
-        override
+    writeAlways(beast::severities::Severity level, std::string const& text) override
     {
-        std::cout << clock_.now().time_since_epoch().count() << " " << text
-                  << std::endl;
+        std::cout << clock_.now().time_since_epoch().count() << " " << text << std::endl;
     }
 };
 
@@ -113,13 +89,7 @@ public:
         for (std::size_t i = 0; i < numPeers; ++i)
         {
             peers.emplace_back(
-                PeerID{static_cast<std::uint32_t>(peers.size())},
-                scheduler,
-                oracle,
-                net,
-                trustGraph,
-                collectors,
-                j);
+                PeerID{static_cast<std::uint32_t>(peers.size())}, scheduler, oracle, net, trustGraph, collectors, j);
             newPeers.emplace_back(&peers.back());
         }
         PeerGroup res{newPeers};
@@ -176,6 +146,4 @@ public:
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

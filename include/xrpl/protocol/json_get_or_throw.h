@@ -1,5 +1,4 @@
-#ifndef PROTOCOL_GET_OR_THROW_H_
-#define PROTOCOL_GET_OR_THROW_H_
+#pragma once
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -35,8 +34,7 @@ struct JsonTypeMismatchError : std::exception
     char const* const key;
     std::string const expectedType;
     mutable std::string msg;
-    JsonTypeMismatchError(Json::StaticString const& k, std::string et)
-        : key{k.c_str()}, expectedType{std::move(et)}
+    JsonTypeMismatchError(Json::StaticString const& k, std::string et) : key{k.c_str()}, expectedType{std::move(et)}
     {
     }
     char const*
@@ -44,8 +42,7 @@ struct JsonTypeMismatchError : std::exception
     {
         if (msg.empty())
         {
-            msg = std::string("Type mismatch on json key: ") + key +
-                "; expected type: " + expectedType;
+            msg = std::string("Type mismatch on json key: ") + key + "; expected type: " + expectedType;
         }
         return msg.c_str();
     }
@@ -53,16 +50,16 @@ struct JsonTypeMismatchError : std::exception
 
 template <class T>
 T
-getOrThrow(Json::Value const& v, ripple::SField const& field)
+getOrThrow(Json::Value const& v, xrpl::SField const& field)
 {
     static_assert(sizeof(T) == -1, "This function must be specialized");
 }
 
 template <>
 inline std::string
-getOrThrow(Json::Value const& v, ripple::SField const& field)
+getOrThrow(Json::Value const& v, xrpl::SField const& field)
 {
-    using namespace ripple;
+    using namespace xrpl;
     Json::StaticString const& key = field.getJsonName();
     if (!v.isMember(key))
         Throw<JsonMissingKeyError>(key);
@@ -76,9 +73,9 @@ getOrThrow(Json::Value const& v, ripple::SField const& field)
 // Note, this allows integer numeric fields to act as bools
 template <>
 inline bool
-getOrThrow(Json::Value const& v, ripple::SField const& field)
+getOrThrow(Json::Value const& v, xrpl::SField const& field)
 {
-    using namespace ripple;
+    using namespace xrpl;
     Json::StaticString const& key = field.getJsonName();
     if (!v.isMember(key))
         Throw<JsonMissingKeyError>(key);
@@ -93,9 +90,9 @@ getOrThrow(Json::Value const& v, ripple::SField const& field)
 
 template <>
 inline std::uint64_t
-getOrThrow(Json::Value const& v, ripple::SField const& field)
+getOrThrow(Json::Value const& v, xrpl::SField const& field)
 {
-    using namespace ripple;
+    using namespace xrpl;
     Json::StaticString const& key = field.getJsonName();
     if (!v.isMember(key))
         Throw<JsonMissingKeyError>(key);
@@ -125,10 +122,10 @@ getOrThrow(Json::Value const& v, ripple::SField const& field)
 }
 
 template <>
-inline ripple::Buffer
-getOrThrow(Json::Value const& v, ripple::SField const& field)
+inline xrpl::Buffer
+getOrThrow(Json::Value const& v, xrpl::SField const& field)
 {
-    using namespace ripple;
+    using namespace xrpl;
     std::string const hex = getOrThrow<std::string>(v, field);
     if (auto const r = strUnHex(hex))
     {
@@ -141,7 +138,7 @@ getOrThrow(Json::Value const& v, ripple::SField const& field)
 // This function may be used by external projects (like the witness server).
 template <class T>
 std::optional<T>
-getOptional(Json::Value const& v, ripple::SField const& field)
+getOptional(Json::Value const& v, xrpl::SField const& field)
 {
     try
     {
@@ -154,5 +151,3 @@ getOptional(Json::Value const& v, ripple::SField const& field)
 }
 
 }  // namespace Json
-
-#endif  // PROTOCOL_GET_OR_THROW_H_

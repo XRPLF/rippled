@@ -1,12 +1,8 @@
-//
-// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
-//
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_UNIT_TEST_REPORTER_HPP
-#define BEAST_UNIT_TEST_REPORTER_HPP
+#pragma once
 
 #include <xrpl/beast/unit_test/amount.h>
 #include <xrpl/beast/unit_test/recorder.h>
@@ -143,10 +139,7 @@ reporter<_>::results::add(suite_results const& r)
     if (elapsed >= std::chrono::seconds{1})
     {
         auto const iter = std::lower_bound(
-            top.begin(),
-            top.end(),
-            elapsed,
-            [](run_time const& t1, typename clock_type::duration const& t2) {
+            top.begin(), top.end(), elapsed, [](run_time const& t1, typename clock_type::duration const& t2) {
                 return t1.second > t2;
             });
         if (iter != top.end())
@@ -179,10 +172,8 @@ reporter<_>::~reporter()
             os_ << std::setw(8) << fmtdur(i.second) << " " << i.first << '\n';
     }
     auto const elapsed = clock_type::now() - results_.start;
-    os_ << fmtdur(elapsed) << ", " << amount{results_.suites, "suite"} << ", "
-        << amount{results_.cases, "case"} << ", "
-        << amount{results_.total, "test"} << " total, "
-        << amount{results_.failed, "failure"} << std::endl;
+    os_ << fmtdur(elapsed) << ", " << amount{results_.suites, "suite"} << ", " << amount{results_.cases, "case"} << ", "
+        << amount{results_.total, "test"} << " total, " << amount{results_.failed, "failure"} << std::endl;
 }
 
 template <class _>
@@ -217,9 +208,7 @@ void
 reporter<_>::on_case_begin(std::string const& name)
 {
     case_results_ = case_results(name);
-    os_ << suite_results_.name
-        << (case_results_.name.empty() ? "" : (" " + case_results_.name))
-        << std::endl;
+    os_ << suite_results_.name << (case_results_.name.empty() ? "" : (" " + case_results_.name)) << std::endl;
 }
 
 template <class _>
@@ -242,8 +231,7 @@ reporter<_>::on_fail(std::string const& reason)
 {
     ++case_results_.failed;
     ++case_results_.total;
-    os_ << "#" << case_results_.total << " failed"
-        << (reason.empty() ? "" : ": ") << reason << std::endl;
+    os_ << "#" << case_results_.total << " failed" << (reason.empty() ? "" : ": ") << reason << std::endl;
 }
 
 template <class _>
@@ -259,5 +247,3 @@ using reporter = detail::reporter<>;
 
 }  // namespace unit_test
 }  // namespace beast
-
-#endif

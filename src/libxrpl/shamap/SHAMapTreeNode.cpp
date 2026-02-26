@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/IntrusivePointer.ipp>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/contract.h>
@@ -29,29 +10,21 @@
 #include <xrpl/shamap/SHAMapTxLeafNode.h>
 #include <xrpl/shamap/SHAMapTxPlusMetaLeafNode.h>
 
-namespace ripple {
+namespace xrpl {
 
 intr_ptr::SharedPtr<SHAMapTreeNode>
-SHAMapTreeNode::makeTransaction(
-    Slice data,
-    SHAMapHash const& hash,
-    bool hashValid)
+SHAMapTreeNode::makeTransaction(Slice data, SHAMapHash const& hash, bool hashValid)
 {
-    auto item =
-        make_shamapitem(sha512Half(HashPrefix::transactionID, data), data);
+    auto item = make_shamapitem(sha512Half(HashPrefix::transactionID, data), data);
 
     if (hashValid)
-        return intr_ptr::make_shared<SHAMapTxLeafNode>(
-            std::move(item), 0, hash);
+        return intr_ptr::make_shared<SHAMapTxLeafNode>(std::move(item), 0, hash);
 
     return intr_ptr::make_shared<SHAMapTxLeafNode>(std::move(item), 0);
 }
 
 intr_ptr::SharedPtr<SHAMapTreeNode>
-SHAMapTreeNode::makeTransactionWithMeta(
-    Slice data,
-    SHAMapHash const& hash,
-    bool hashValid)
+SHAMapTreeNode::makeTransactionWithMeta(Slice data, SHAMapHash const& hash, bool hashValid)
 {
     Serializer s(data.data(), data.size());
 
@@ -62,25 +35,20 @@ SHAMapTreeNode::makeTransactionWithMeta(
 
     // FIXME: improve this interface so that the above check isn't needed
     if (!s.getBitString(tag, s.size() - tag.bytes))
-        Throw<std::out_of_range>(
-            "Short TXN+MD node (" + std::to_string(s.size()) + ")");
+        Throw<std::out_of_range>("Short TXN+MD node (" + std::to_string(s.size()) + ")");
 
     s.chop(tag.bytes);
 
     auto item = make_shamapitem(tag, s.slice());
 
     if (hashValid)
-        return intr_ptr::make_shared<SHAMapTxPlusMetaLeafNode>(
-            std::move(item), 0, hash);
+        return intr_ptr::make_shared<SHAMapTxPlusMetaLeafNode>(std::move(item), 0, hash);
 
     return intr_ptr::make_shared<SHAMapTxPlusMetaLeafNode>(std::move(item), 0);
 }
 
 intr_ptr::SharedPtr<SHAMapTreeNode>
-SHAMapTreeNode::makeAccountState(
-    Slice data,
-    SHAMapHash const& hash,
-    bool hashValid)
+SHAMapTreeNode::makeAccountState(Slice data, SHAMapHash const& hash, bool hashValid)
 {
     Serializer s(data.data(), data.size());
 
@@ -91,8 +59,7 @@ SHAMapTreeNode::makeAccountState(
 
     // FIXME: improve this interface so that the above check isn't needed
     if (!s.getBitString(tag, s.size() - tag.bytes))
-        Throw<std::out_of_range>(
-            "Short AS node (" + std::to_string(s.size()) + ")");
+        Throw<std::out_of_range>("Short AS node (" + std::to_string(s.size()) + ")");
 
     s.chop(tag.bytes);
 
@@ -102,11 +69,9 @@ SHAMapTreeNode::makeAccountState(
     auto item = make_shamapitem(tag, s.slice());
 
     if (hashValid)
-        return intr_ptr::make_shared<SHAMapAccountStateLeafNode>(
-            std::move(item), 0, hash);
+        return intr_ptr::make_shared<SHAMapAccountStateLeafNode>(std::move(item), 0, hash);
 
-    return intr_ptr::make_shared<SHAMapAccountStateLeafNode>(
-        std::move(item), 0);
+    return intr_ptr::make_shared<SHAMapAccountStateLeafNode>(std::move(item), 0);
 }
 
 intr_ptr::SharedPtr<SHAMapTreeNode>
@@ -137,8 +102,7 @@ SHAMapTreeNode::makeFromWire(Slice rawNode)
     if (type == wireTypeTransactionWithMeta)
         return makeTransactionWithMeta(rawNode, hash, hashValid);
 
-    Throw<std::runtime_error>(
-        "wire: Unknown type (" + std::to_string(type) + ")");
+    Throw<std::runtime_error>("wire: Unknown type (" + std::to_string(type) + ")");
 }
 
 intr_ptr::SharedPtr<SHAMapTreeNode>
@@ -150,10 +114,8 @@ SHAMapTreeNode::makeFromPrefix(Slice rawNode, SHAMapHash const& hash)
     // FIXME: Use SerialIter::get32?
     // Extract the prefix
     auto const type = safe_cast<HashPrefix>(
-        (safe_cast<std::uint32_t>(rawNode[0]) << 24) +
-        (safe_cast<std::uint32_t>(rawNode[1]) << 16) +
-        (safe_cast<std::uint32_t>(rawNode[2]) << 8) +
-        (safe_cast<std::uint32_t>(rawNode[3])));
+        (safe_cast<std::uint32_t>(rawNode[0]) << 24) + (safe_cast<std::uint32_t>(rawNode[1]) << 16) +
+        (safe_cast<std::uint32_t>(rawNode[2]) << 8) + (safe_cast<std::uint32_t>(rawNode[3])));
 
     rawNode.remove_prefix(4);
 
@@ -172,9 +134,7 @@ SHAMapTreeNode::makeFromPrefix(Slice rawNode, SHAMapHash const& hash)
         return makeTransactionWithMeta(rawNode, hash, hashValid);
 
     Throw<std::runtime_error>(
-        "prefix: unknown type (" +
-        std::to_string(safe_cast<std::underlying_type_t<HashPrefix>>(type)) +
-        ")");
+        "prefix: unknown type (" + std::to_string(safe_cast<std::underlying_type_t<HashPrefix>>(type)) + ")");
 }
 
 std::string
@@ -183,4 +143,4 @@ SHAMapTreeNode::getString(SHAMapNodeID const& id) const
     return to_string(id);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

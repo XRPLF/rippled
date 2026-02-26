@@ -1,27 +1,8 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2018 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class DepositAuthorized_test : public beast::unit_test::suite
@@ -77,47 +58,27 @@ public:
 
         // becky is authorized to deposit to herself.
         validateDepositAuthResult(
-            env.rpc(
-                "json",
-                "deposit_authorized",
-                depositAuthArgs(becky, becky, "validated").toStyledString()),
-            true);
+            env.rpc("json", "deposit_authorized", depositAuthArgs(becky, becky, "validated").toStyledString()), true);
 
         // alice should currently be authorized to deposit to becky.
         validateDepositAuthResult(
-            env.rpc(
-                "json",
-                "deposit_authorized",
-                depositAuthArgs(alice, becky, "validated").toStyledString()),
-            true);
+            env.rpc("json", "deposit_authorized", depositAuthArgs(alice, becky, "validated").toStyledString()), true);
 
         // becky sets the DepositAuth flag in the current ledger.
         env(fset(becky, asfDepositAuth));
 
         // alice is no longer authorized to deposit to becky in current ledger.
         validateDepositAuthResult(
-            env.rpc(
-                "json",
-                "deposit_authorized",
-                depositAuthArgs(alice, becky).toStyledString()),
-            false);
+            env.rpc("json", "deposit_authorized", depositAuthArgs(alice, becky).toStyledString()), false);
         env.close();
 
         // becky is still authorized to deposit to herself.
         validateDepositAuthResult(
-            env.rpc(
-                "json",
-                "deposit_authorized",
-                depositAuthArgs(becky, becky, "validated").toStyledString()),
-            true);
+            env.rpc("json", "deposit_authorized", depositAuthArgs(becky, becky, "validated").toStyledString()), true);
 
         // It's not a reciprocal arrangement.  becky can deposit to alice.
         validateDepositAuthResult(
-            env.rpc(
-                "json",
-                "deposit_authorized",
-                depositAuthArgs(becky, alice, "current").toStyledString()),
-            true);
+            env.rpc("json", "deposit_authorized", depositAuthArgs(becky, alice, "current").toStyledString()), true);
 
         // becky creates a deposit authorization for alice.
         env(deposit::auth(becky, alice));
@@ -125,38 +86,22 @@ public:
 
         // alice is now authorized to deposit to becky.
         validateDepositAuthResult(
-            env.rpc(
-                "json",
-                "deposit_authorized",
-                depositAuthArgs(alice, becky, "closed").toStyledString()),
-            true);
+            env.rpc("json", "deposit_authorized", depositAuthArgs(alice, becky, "closed").toStyledString()), true);
 
         // carol is still not authorized to deposit to becky.
         validateDepositAuthResult(
-            env.rpc(
-                "json",
-                "deposit_authorized",
-                depositAuthArgs(carol, becky).toStyledString()),
-            false);
+            env.rpc("json", "deposit_authorized", depositAuthArgs(carol, becky).toStyledString()), false);
 
         // becky clears the DepositAuth flag so carol becomes authorized.
         env(fclear(becky, asfDepositAuth));
         env.close();
 
         validateDepositAuthResult(
-            env.rpc(
-                "json",
-                "deposit_authorized",
-                depositAuthArgs(carol, becky).toStyledString()),
-            true);
+            env.rpc("json", "deposit_authorized", depositAuthArgs(carol, becky).toStyledString()), true);
 
         // alice is still authorized to deposit to becky.
         validateDepositAuthResult(
-            env.rpc(
-                "json",
-                "deposit_authorized",
-                depositAuthArgs(alice, becky).toStyledString()),
-            true);
+            env.rpc("json", "deposit_authorized", depositAuthArgs(alice, becky).toStyledString()), true);
     }
 
     // Test malformed cases.
@@ -169,10 +114,7 @@ public:
         Account const becky{"becky"};
 
         // Lambda that checks the (error) result of deposit_authorized.
-        auto verifyErr = [this](
-                             Json::Value const& result,
-                             char const* error,
-                             char const* errorMsg) {
+        auto verifyErr = [this](Json::Value const& result, char const* error, char const* errorMsg) {
             BEAST_EXPECT(result[jss::result][jss::status] == jss::error);
             BEAST_EXPECT(result[jss::result][jss::error] == error);
             BEAST_EXPECT(result[jss::result][jss::error_message] == errorMsg);
@@ -183,88 +125,67 @@ public:
             // Missing source_account field.
             Json::Value args{depositAuthArgs(alice, becky)};
             args.removeMember(jss::source_account);
-            Json::Value const result{
-                env.rpc("json", "deposit_authorized", args.toStyledString())};
-            verifyErr(
-                result, "invalidParams", "Missing field 'source_account'.");
+            Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
+            verifyErr(result, "invalidParams", "Missing field 'source_account'.");
         }
         {
             // Non-string source_account field.
             Json::Value args{depositAuthArgs(alice, becky)};
             args[jss::source_account] = 7.3;
-            Json::Value const result{
-                env.rpc("json", "deposit_authorized", args.toStyledString())};
-            verifyErr(
-                result,
-                "invalidParams",
-                "Invalid field 'source_account', not a string.");
+            Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
+            verifyErr(result, "invalidParams", "Invalid field 'source_account', not a string.");
         }
         {
             // Corrupt source_account field.
             Json::Value args{depositAuthArgs(alice, becky)};
             args[jss::source_account] = "rG1QQv2nh2gr7RCZ!P8YYcBUKCCN633jCn";
-            Json::Value const result{
-                env.rpc("json", "deposit_authorized", args.toStyledString())};
+            Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(result, "actMalformed", "Account malformed.");
         }
         {
             // Missing destination_account field.
             Json::Value args{depositAuthArgs(alice, becky)};
             args.removeMember(jss::destination_account);
-            Json::Value const result{
-                env.rpc("json", "deposit_authorized", args.toStyledString())};
-            verifyErr(
-                result,
-                "invalidParams",
-                "Missing field 'destination_account'.");
+            Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
+            verifyErr(result, "invalidParams", "Missing field 'destination_account'.");
         }
         {
             // Non-string destination_account field.
             Json::Value args{depositAuthArgs(alice, becky)};
             args[jss::destination_account] = 7.3;
-            Json::Value const result{
-                env.rpc("json", "deposit_authorized", args.toStyledString())};
-            verifyErr(
-                result,
-                "invalidParams",
-                "Invalid field 'destination_account', not a string.");
+            Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
+            verifyErr(result, "invalidParams", "Invalid field 'destination_account', not a string.");
         }
         {
             // Corrupt destination_account field.
             Json::Value args{depositAuthArgs(alice, becky)};
-            args[jss::destination_account] =
-                "rP6P9ypfAmc!pw8SZHNwM4nvZHFXDraQas";
-            Json::Value const result{
-                env.rpc("json", "deposit_authorized", args.toStyledString())};
+            args[jss::destination_account] = "rP6P9ypfAmc!pw8SZHNwM4nvZHFXDraQas";
+            Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(result, "actMalformed", "Account malformed.");
         }
         {
             // Request an invalid ledger.
             Json::Value args{depositAuthArgs(alice, becky, "-1")};
-            Json::Value const result{
-                env.rpc("json", "deposit_authorized", args.toStyledString())};
-            verifyErr(result, "invalidParams", "ledgerIndexMalformed");
+            Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
+            verifyErr(result, "invalidParams", "Invalid field 'ledger_index', not string or number.");
         }
         {
             // Request a ledger that doesn't exist yet as a string.
             Json::Value args{depositAuthArgs(alice, becky, "17")};
-            Json::Value const result{
-                env.rpc("json", "deposit_authorized", args.toStyledString())};
+            Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(result, "lgrNotFound", "ledgerNotFound");
         }
         {
             // Request a ledger that doesn't exist yet.
             Json::Value args{depositAuthArgs(alice, becky)};
             args[jss::ledger_index] = 17;
-            Json::Value const result{
-                env.rpc("json", "deposit_authorized", args.toStyledString())};
+            Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(result, "lgrNotFound", "ledgerNotFound");
         }
         {
             // alice is not yet funded.
             Json::Value args{depositAuthArgs(alice, becky)};
-            Json::Value const result{
-                env.rpc("json", "deposit_authorized", args.toStyledString())};
+            Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(result, "srcActNotFound", "Source account not found.");
         }
         env.fund(XRP(1000), alice);
@@ -272,18 +193,15 @@ public:
         {
             // becky is not yet funded.
             Json::Value args{depositAuthArgs(alice, becky)};
-            Json::Value const result{
-                env.rpc("json", "deposit_authorized", args.toStyledString())};
-            verifyErr(
-                result, "dstActNotFound", "Destination account not found.");
+            Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
+            verifyErr(result, "dstActNotFound", "Destination account not found.");
         }
         env.fund(XRP(1000), becky);
         env.close();
         {
             // Once becky is funded try it again and see it succeed.
             Json::Value args{depositAuthArgs(alice, becky)};
-            Json::Value const result{
-                env.rpc("json", "deposit_authorized", args.toStyledString())};
+            Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             validateDepositAuthResult(result, true);
         }
     }
@@ -297,14 +215,11 @@ public:
         std::vector<std::string> credentialIDs = {},
         std::string_view error = "")
     {
-        BEAST_EXPECT(
-            result[jss::status] == authorized ? jss::success : jss::error);
+        BEAST_EXPECT(result[jss::status] == authorized ? jss::success : jss::error);
         if (result.isMember(jss::deposit_authorized))
             BEAST_EXPECT(result[jss::deposit_authorized] == authorized);
         if (authorized)
-            BEAST_EXPECT(
-                result.isMember(jss::deposit_authorized) &&
-                (result[jss::deposit_authorized] == true));
+            BEAST_EXPECT(result.isMember(jss::deposit_authorized) && (result[jss::deposit_authorized] == true));
 
         BEAST_EXPECT(result.isMember(jss::error) == !error.empty());
         if (!error.empty())
@@ -366,16 +281,13 @@ public:
         env.close();
 
         {
-            testcase(
-                "deposit_authorized with credentials failure: empty array.");
+            testcase("deposit_authorized with credentials failure: empty array.");
 
             auto args = depositAuthArgs(alice, becky, "validated");
             args[jss::credentials] = Json::arrayValue;
 
-            auto const jv =
-                env.rpc("json", "deposit_authorized", args.toStyledString());
-            checkCredentialsResponse(
-                jv[jss::result], alice, becky, false, {}, "invalidParams");
+            auto const jv = env.rpc("json", "deposit_authorized", args.toStyledString());
+            checkCredentialsResponse(jv[jss::result], alice, becky, false, {}, "invalidParams");
         }
 
         {
@@ -388,10 +300,8 @@ public:
             args[jss::credentials].append(1);
             args[jss::credentials].append(3);
 
-            auto const jv =
-                env.rpc("json", "deposit_authorized", args.toStyledString());
-            checkCredentialsResponse(
-                jv[jss::result], alice, becky, false, {}, "invalidParams");
+            auto const jv = env.rpc("json", "deposit_authorized", args.toStyledString());
+            checkCredentialsResponse(jv[jss::result], alice, becky, false, {}, "invalidParams");
         }
 
         {
@@ -403,15 +313,8 @@ public:
             args[jss::credentials] = Json::arrayValue;
             args[jss::credentials].append("hello world");
 
-            auto const jv =
-                env.rpc("json", "deposit_authorized", args.toStyledString());
-            checkCredentialsResponse(
-                jv[jss::result],
-                alice,
-                becky,
-                false,
-                {"hello world"},
-                "invalidParams");
+            auto const jv = env.rpc("json", "deposit_authorized", args.toStyledString());
+            checkCredentialsResponse(jv[jss::result], alice, becky, false, {"hello world"}, "invalidParams");
         }
 
         {
@@ -426,8 +329,7 @@ public:
                 {"0127AB8B4B29CCDBB61AA51C0799A8A6BB80B86A9899807C11ED576AF8516"
                  "473"});
 
-            auto const jv =
-                env.rpc("json", "deposit_authorized", args.toStyledString());
+            auto const jv = env.rpc("json", "deposit_authorized", args.toStyledString());
             checkCredentialsResponse(
                 jv[jss::result],
                 alice,
@@ -443,17 +345,8 @@ public:
                 "deposit_authorized with credentials not authorized: "
                 "credential not accepted");
             auto const jv = env.rpc(
-                "json",
-                "deposit_authorized",
-                depositAuthArgs(alice, becky, "validated", {credIdx})
-                    .toStyledString());
-            checkCredentialsResponse(
-                jv[jss::result],
-                alice,
-                becky,
-                false,
-                {credIdx},
-                "badCredentials");
+                "json", "deposit_authorized", depositAuthArgs(alice, becky, "validated", {credIdx}).toStyledString());
+            checkCredentialsResponse(jv[jss::result], alice, becky, false, {credIdx}, "badCredentials");
         }
 
         // alice accept credentials
@@ -465,15 +358,8 @@ public:
             auto const jv = env.rpc(
                 "json",
                 "deposit_authorized",
-                depositAuthArgs(alice, becky, "validated", {credIdx, credIdx})
-                    .toStyledString());
-            checkCredentialsResponse(
-                jv[jss::result],
-                alice,
-                becky,
-                false,
-                {credIdx, credIdx},
-                "badCredentials");
+                depositAuthArgs(alice, becky, "validated", {credIdx, credIdx}).toStyledString());
+            checkCredentialsResponse(jv[jss::result], alice, becky, false, {credIdx, credIdx}, "badCredentials");
         }
 
         {
@@ -500,23 +386,15 @@ public:
 
             testcase("deposit_authorized too long credentials");
             auto const jv = env.rpc(
-                "json",
-                "deposit_authorized",
-                depositAuthArgs(alice, becky, "validated", credIds)
-                    .toStyledString());
-            checkCredentialsResponse(
-                jv[jss::result], alice, becky, false, credIds, "invalidParams");
+                "json", "deposit_authorized", depositAuthArgs(alice, becky, "validated", credIds).toStyledString());
+            checkCredentialsResponse(jv[jss::result], alice, becky, false, credIds, "invalidParams");
         }
 
         {
             testcase("deposit_authorized with credentials");
             auto const jv = env.rpc(
-                "json",
-                "deposit_authorized",
-                depositAuthArgs(alice, becky, "validated", {credIdx})
-                    .toStyledString());
-            checkCredentialsResponse(
-                jv[jss::result], alice, becky, true, {credIdx});
+                "json", "deposit_authorized", depositAuthArgs(alice, becky, "validated", {credIdx}).toStyledString());
+            checkCredentialsResponse(jv[jss::result], alice, becky, true, {credIdx});
         }
 
         {
@@ -528,17 +406,12 @@ public:
 
             // retrieve the index of the credentials
             auto jv = credentials::ledgerEntry(env, becky, diana, credType);
-            std::string const credBecky =
-                jv[jss::result][jss::index].asString();
+            std::string const credBecky = jv[jss::result][jss::index].asString();
 
             testcase("deposit_authorized account without preauth");
             jv = env.rpc(
-                "json",
-                "deposit_authorized",
-                depositAuthArgs(becky, alice, "validated", {credBecky})
-                    .toStyledString());
-            checkCredentialsResponse(
-                jv[jss::result], becky, alice, true, {credBecky});
+                "json", "deposit_authorized", depositAuthArgs(becky, alice, "validated", {credBecky}).toStyledString());
+            checkCredentialsResponse(jv[jss::result], becky, alice, true, {credBecky});
         }
 
         {
@@ -549,34 +422,20 @@ public:
             env.close();
             // retrieve the index of the credentials
             auto jv = credentials::ledgerEntry(env, alice, carol, credType);
-            std::string const credDiana =
-                jv[jss::result][jss::index].asString();
+            std::string const credDiana = jv[jss::result][jss::index].asString();
 
             // alice try to use credential for different account
             jv = env.rpc(
-                "json",
-                "deposit_authorized",
-                depositAuthArgs(becky, alice, "validated", {credDiana})
-                    .toStyledString());
-            checkCredentialsResponse(
-                jv[jss::result],
-                becky,
-                alice,
-                false,
-                {credDiana},
-                "badCredentials");
+                "json", "deposit_authorized", depositAuthArgs(becky, alice, "validated", {credDiana}).toStyledString());
+            checkCredentialsResponse(jv[jss::result], becky, alice, false, {credDiana}, "badCredentials");
         }
 
         {
             testcase("deposit_authorized with expired credentials");
 
             // check expired credentials
-            char const credType2[] = "fghijk";
-            std::uint32_t const x = env.current()
-                                        ->info()
-                                        .parentCloseTime.time_since_epoch()
-                                        .count() +
-                40;
+            char const credType2[] = "random";
+            std::uint32_t const x = env.current()->header().parentCloseTime.time_since_epoch().count() + 40;
 
             // create credentials with expire time 40s
             auto jv = credentials::create(alice, carol, credType2);
@@ -601,10 +460,8 @@ public:
                 jv = env.rpc(
                     "json",
                     "deposit_authorized",
-                    depositAuthArgs(alice, becky, "validated", {credIdx2})
-                        .toStyledString());
-                checkCredentialsResponse(
-                    jv[jss::result], alice, becky, true, {credIdx2});
+                    depositAuthArgs(alice, becky, "validated", {credIdx2}).toStyledString());
+                checkCredentialsResponse(jv[jss::result], alice, becky, true, {credIdx2});
             }
 
             // increase timer by 20s
@@ -615,16 +472,9 @@ public:
                 jv = env.rpc(
                     "json",
                     "deposit_authorized",
-                    depositAuthArgs(alice, becky, "validated", {credIdx2})
-                        .toStyledString());
+                    depositAuthArgs(alice, becky, "validated", {credIdx2}).toStyledString());
 
-                checkCredentialsResponse(
-                    jv[jss::result],
-                    alice,
-                    becky,
-                    false,
-                    {credIdx2},
-                    "badCredentials");
+                checkCredentialsResponse(jv[jss::result], alice, becky, false, {credIdx2}, "badCredentials");
             }
         }
     }
@@ -638,7 +488,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(DepositAuthorized, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(DepositAuthorized, rpc, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

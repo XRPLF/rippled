@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TEST_CSF_PEERGROUP_H_INCLUDED
-#define RIPPLE_TEST_CSF_PEERGROUP_H_INCLUDED
+#pragma once
 
 #include <test/csf/Peer.h>
 #include <test/csf/random.h>
@@ -26,7 +6,7 @@
 #include <algorithm>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -105,9 +85,7 @@ public:
     bool
     contains(PeerID id)
     {
-        return std::find_if(peers_.begin(), peers_.end(), [id](Peer const* p) {
-                   return p->id == id;
-               }) != peers_.end();
+        return std::find_if(peers_.begin(), peers_.end(), [id](Peer const* p) { return p->id == id; }) != peers_.end();
     }
 
     std::size_t
@@ -212,7 +190,7 @@ public:
     /** Establish network connections based on trust relations
 
         For each peers in this group, create outbound network connection
-        to the set of peers it trusts. If a coonnection already exists, it is
+        to the set of peers it trusts. If a connection already exists, it is
         not recreated.
 
         @param delay The fixed messaging delay for all established connections
@@ -236,11 +214,7 @@ public:
     {
         PeerGroup res;
         std::set_union(
-            a.peers_.begin(),
-            a.peers_.end(),
-            b.peers_.begin(),
-            b.peers_.end(),
-            std::back_inserter(res.peers_));
+            a.peers_.begin(), a.peers_.end(), b.peers_.begin(), b.peers_.end(), std::back_inserter(res.peers_));
         return res;
     }
 
@@ -251,11 +225,7 @@ public:
         PeerGroup res;
 
         std::set_difference(
-            a.peers_.begin(),
-            a.peers_.end(),
-            b.peers_.begin(),
-            b.peers_.end(),
-            std::back_inserter(res.peers_));
+            a.peers_.begin(), a.peers_.end(), b.peers_.begin(), b.peers_.end(), std::back_inserter(res.peers_));
 
         return res;
     }
@@ -332,8 +302,7 @@ randomRankedTrust(
     RandomNumberDistribution sizeDist,
     Generator& g)
 {
-    std::vector<PeerGroup> const groups =
-        randomRankedGroups(peers, ranks, numGroups, sizeDist, g);
+    std::vector<PeerGroup> const groups = randomRankedGroups(peers, ranks, numGroups, sizeDist, g);
 
     std::uniform_int_distribution<int> u(0, groups.size() - 1);
     for (auto& peer : peers)
@@ -357,8 +326,7 @@ randomRankedConnect(
     Generator& g,
     SimDuration delay)
 {
-    std::vector<PeerGroup> const groups =
-        randomRankedGroups(peers, ranks, numGroups, sizeDist, g);
+    std::vector<PeerGroup> const groups = randomRankedGroups(peers, ranks, numGroups, sizeDist, g);
 
     std::uniform_int_distribution<int> u(0, groups.size() - 1);
     for (auto& peer : peers)
@@ -370,5 +338,4 @@ randomRankedConnect(
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
-#endif
+}  // namespace xrpl

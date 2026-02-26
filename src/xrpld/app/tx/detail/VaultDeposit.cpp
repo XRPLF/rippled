@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/app/tx/detail/VaultDeposit.h>
 
@@ -28,10 +9,11 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 NotTEC
 VaultDeposit::preflight(PreflightContext const& ctx)
@@ -55,41 +37,17 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (!vault)
         return tecNO_ENTRY;
 
-    auto const account = ctx.tx[sfAccount];
+    auto const& account = ctx.tx[sfAccount];
     auto const assets = ctx.tx[sfAmount];
     auto const vaultAsset = vault->at(sfAsset);
     if (assets.asset() != vaultAsset)
         return tecWRONG_ASSET;
 
-    if (vaultAsset.native())
-        ;  // No special checks for XRP
-    else if (vaultAsset.holds<MPTIssue>())
+    auto const& vaultAccount = vault->at(sfAccount);
+    if (auto ter = canTransfer(ctx.view, vaultAsset, account, vaultAccount); !isTesSuccess(ter))
     {
-        auto mptID = vaultAsset.get<MPTIssue>().getMptID();
-        auto issuance = ctx.view.read(keylet::mptIssuance(mptID));
-        if (!issuance)
-            return tecOBJECT_NOT_FOUND;
-        if (!issuance->isFlag(lsfMPTCanTransfer))
-        {
-            // LCOV_EXCL_START
-            JLOG(ctx.j.error())
-                << "VaultDeposit: vault assets are non-transferable.";
-            return tecNO_AUTH;
-            // LCOV_EXCL_STOP
-        }
-    }
-    else if (vaultAsset.holds<Issue>())
-    {
-        auto const issuer =
-            ctx.view.read(keylet::account(vaultAsset.getIssuer()));
-        if (!issuer)
-        {
-            // LCOV_EXCL_START
-            JLOG(ctx.j.error())
-                << "VaultDeposit: missing issuer of vault assets.";
-            return tefINTERNAL;
-            // LCOV_EXCL_STOP
-        }
+        JLOG(ctx.j.debug()) << "VaultDeposit: vault assets are non-transferable.";
+        return ter;
     }
 
     auto const mptIssuanceID = vault->at(sfShareMPTID);
@@ -97,8 +55,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (vaultShare == assets.asset())
     {
         // LCOV_EXCL_START
-        JLOG(ctx.j.error())
-            << "VaultDeposit: vault shares and assets cannot be same.";
+        JLOG(ctx.j.error()) << "VaultDeposit: vault shares and assets cannot be same.";
         return tefINTERNAL;
         // LCOV_EXCL_STOP
     }
@@ -107,8 +64,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
-        JLOG(ctx.j.error())
-            << "VaultDeposit: missing issuance of vault shares.";
+        JLOG(ctx.j.error()) << "VaultDeposit: missing issuance of vault shares.";
         return tefINTERNAL;
         // LCOV_EXCL_STOP
     }
@@ -116,8 +72,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (sleIssuance->isFlag(lsfMPTLocked))
     {
         // LCOV_EXCL_START
-        JLOG(ctx.j.error())
-            << "VaultDeposit: issuance of vault shares is locked.";
+        JLOG(ctx.j.error()) << "VaultDeposit: issuance of vault shares is locked.";
         return tefINTERNAL;
         // LCOV_EXCL_STOP
     }
@@ -142,8 +97,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         {
             // As per validDomain documentation, we suppress tecEXPIRED error
             // here, so we can delete any expired credentials inside doApply.
-            if (auto const err =
-                    credentials::validDomain(ctx.view, *maybeDomainID, account);
+            if (auto const err = credentials::validDomain(ctx.view, *maybeDomainID, account);
                 !isTesSuccess(err) && err != tecEXPIRED)
                 return err;
         }
@@ -152,20 +106,17 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     }
 
     // Source MPToken must exist (if asset is an MPT)
-    if (auto const ter = requireAuth(ctx.view, vaultAsset, account);
-        !isTesSuccess(ter))
+    if (auto const ter = requireAuth(ctx.view, vaultAsset, account); !isTesSuccess(ter))
         return ter;
 
-    // Asset issuer does not have any balance, they can just create funds by
-    // depositing in the vault.
-    if ((vaultAsset.native() || vaultAsset.getIssuer() != account) &&
-        accountHolds(
+    if (accountHolds(
             ctx.view,
             account,
             vaultAsset,
             FreezeHandling::fhZERO_IF_FROZEN,
             AuthHandling::ahZERO_IF_UNAUTHORIZED,
-            ctx.j) < assets)
+            ctx.j,
+            SpendableHandling::shFULL_BALANCE) < assets)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -177,6 +128,7 @@ VaultDeposit::doApply()
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
+    auto const vaultAsset = vault->at(sfAsset);
 
     auto const amount = ctx_.tx[sfAmount];
     // Make sure the depositor can hold shares.
@@ -194,8 +146,7 @@ VaultDeposit::doApply()
     // Note, vault owner is always authorized
     if (vault->isFlag(lsfVaultPrivate) && account_ != vault->at(sfOwner))
     {
-        if (auto const err = enforceMPTokenAuthorization(
-                ctx_.view(), mptIssuanceID, account_, mPriorBalance, j_);
+        if (auto const err = enforceMPTokenAuthorization(ctx_.view(), mptIssuanceID, account_, mPriorBalance, j_);
             !isTesSuccess(err))
             return err;
     }
@@ -204,12 +155,8 @@ VaultDeposit::doApply()
         // No authorization needed, but must ensure there is MPToken
         if (!view().exists(keylet::mptoken(mptIssuanceID, account_)))
         {
-            if (auto const err = authorizeMPToken(
-                    view(),
-                    mPriorBalance,
-                    mptIssuanceID->value(),
-                    account_,
-                    ctx_.journal);
+            if (auto const err =
+                    authorizeMPToken(view(), mPriorBalance, mptIssuanceID->value(), account_, ctx_.journal);
                 !isTesSuccess(err))
                 return err;
         }
@@ -218,9 +165,7 @@ VaultDeposit::doApply()
         if (vault->isFlag(lsfVaultPrivate))
         {
             // This follows from the reverse of the outer enclosing if condition
-            XRPL_ASSERT(
-                account_ == vault->at(sfOwner),
-                "ripple::VaultDeposit::doApply : account is owner");
+            XRPL_ASSERT(account_ == vault->at(sfOwner), "xrpl::VaultDeposit::doApply : account is owner");
             if (auto const err = authorizeMPToken(
                     view(),
                     mPriorBalance,              // priorBalance
@@ -240,8 +185,7 @@ VaultDeposit::doApply()
     {
         // Compute exchange before transferring any amounts.
         {
-            auto const maybeShares =
-                assetsToSharesDeposit(vault, sleIssuance, amount);
+            auto const maybeShares = assetsToSharesDeposit(vault, sleIssuance, amount);
             if (!maybeShares)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             sharesCreated = *maybeShares;
@@ -249,8 +193,7 @@ VaultDeposit::doApply()
         if (sharesCreated == beast::zero)
             return tecPRECISION_LOSS;
 
-        auto const maybeAssets =
-            sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
+        auto const maybeAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
         if (!maybeAssets)
             return tecINTERNAL;  // LCOV_EXCL_LINE
         else if (*maybeAssets > amount)
@@ -270,14 +213,12 @@ VaultDeposit::doApply()
             << "VaultDeposit: overflow error with"
             << " scale=" << (int)vault->at(sfScale).value()  //
             << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
-            << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
-            << ", amount=" << amount;
+            << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount) << ", amount=" << amount;
         return tecPATH_DRY;
     }
 
     XRPL_ASSERT(
-        sharesCreated.asset() != assetsDeposited.asset(),
-        "ripple::VaultDeposit::doApply : assets are not shares");
+        sharesCreated.asset() != assetsDeposited.asset(), "xrpl::VaultDeposit::doApply : assets are not shares");
 
     vault->at(sfAssetsTotal) += assetsDeposited;
     vault->at(sfAssetsAvailable) += assetsDeposited;
@@ -289,13 +230,7 @@ VaultDeposit::doApply()
         return tecLIMIT_EXCEEDED;
 
     // Transfer assets from depositor to vault.
-    if (auto const ter = accountSend(
-            view(),
-            account_,
-            vaultAccount,
-            assetsDeposited,
-            j_,
-            WaiveTransferFee::Yes);
+    if (auto const ter = accountSend(view(), account_, vaultAccount, assetsDeposited, j_, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 
@@ -315,17 +250,13 @@ VaultDeposit::doApply()
     }
 
     // Transfer shares from vault to depositor.
-    if (auto const ter = accountSend(
-            view(),
-            vaultAccount,
-            account_,
-            sharesCreated,
-            j_,
-            WaiveTransferFee::Yes);
+    if (auto const ter = accountSend(view(), vaultAccount, account_, sharesCreated, j_, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
+
+    associateAsset(*vault, vaultAsset);
 
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

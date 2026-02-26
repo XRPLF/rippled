@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_BASICS_BASICCONFIG_H_INCLUDED
-#define RIPPLE_BASICS_BASICCONFIG_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/contract.h>
 
@@ -31,10 +11,9 @@
 #include <unordered_map>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
-using IniFileSections =
-    std::unordered_map<std::string, std::vector<std::string>>;
+using IniFileSections = std::unordered_map<std::string, std::vector<std::string>>;
 
 //------------------------------------------------------------------------------
 
@@ -105,8 +84,7 @@ public:
         if (lines_.empty())
             return "";
         if (lines_.size() > 1)
-            Throw<std::runtime_error>(
-                "A legacy value must have exactly one line. Section: " + name_);
+            Throw<std::runtime_error>("A legacy value must have exactly one line. Section: " + name_);
         return lines_[0];
     }
 
@@ -252,10 +230,7 @@ public:
         The previous value, if any, is overwritten.
     */
     void
-    overwrite(
-        std::string const& section,
-        std::string const& key,
-        std::string const& value);
+    overwrite(std::string const& section, std::string const& key, std::string const& value);
 
     /** Remove all the key/value pairs from the section.
      */
@@ -293,9 +268,7 @@ public:
     bool
     had_trailing_comments() const
     {
-        return std::any_of(map_.cbegin(), map_.cend(), [](auto s) {
-            return s.second.had_trailing_comments();
-        });
+        return std::any_of(map_.cbegin(), map_.cend(), [](auto s) { return s.second.had_trailing_comments(); });
     }
 
 protected:
@@ -334,10 +307,7 @@ set(T& target, std::string const& name, Section const& section)
 */
 template <class T>
 bool
-set(T& target,
-    T const& defaultValue,
-    std::string const& name,
-    Section const& section)
+set(T& target, T const& defaultValue, std::string const& name, Section const& section)
 {
     bool found_and_valid = set<T>(target, name, section);
     if (!found_and_valid)
@@ -352,9 +322,7 @@ set(T& target,
 // NOTE This routine might be more clumsy than the previous two
 template <class T = std::string>
 T
-get(Section const& section,
-    std::string const& name,
-    T const& defaultValue = T{})
+get(Section const& section, std::string const& name, T const& defaultValue = T{})
 {
     try
     {
@@ -399,6 +367,4 @@ get_if_exists<bool>(Section const& section, std::string const& name, bool& v)
     return stat;
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

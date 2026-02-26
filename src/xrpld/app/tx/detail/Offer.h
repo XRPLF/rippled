@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2014 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_BOOK_OFFER_H_INCLUDED
-#define RIPPLE_APP_BOOK_OFFER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
@@ -30,7 +10,7 @@
 
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 
 template <class TIn, class TOut>
 class TOfferBase
@@ -139,14 +119,10 @@ public:
     issueOut() const;
 
     TAmounts<TIn, TOut>
-    limitOut(
-        TAmounts<TIn, TOut> const& offrAmt,
-        TOut const& limit,
-        bool roundUp) const;
+    limitOut(TAmounts<TIn, TOut> const& offerAmount, TOut const& limit, bool roundUp) const;
 
     TAmounts<TIn, TOut>
-    limitIn(TAmounts<TIn, TOut> const& offrAmt, TIn const& limit, bool roundUp)
-        const;
+    limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& limit, bool roundUp) const;
 
     template <typename... Args>
     static TER
@@ -178,11 +154,9 @@ public:
         if (consumed.in > m_amounts.in || consumed.out > m_amounts.out)
         {
             // LCOV_EXCL_START
-            JLOG(j.error())
-                << "AMMOffer::checkInvariant failed: consumed "
-                << to_string(consumed.in) << " " << to_string(consumed.out)
-                << " amounts " << to_string(m_amounts.in) << " "
-                << to_string(m_amounts.out);
+            JLOG(j.error()) << "AMMOffer::checkInvariant failed: consumed " << to_string(consumed.in) << " "
+                            << to_string(consumed.out) << " amounts " << to_string(m_amounts.in) << " "
+                            << to_string(m_amounts.out);
 
             return false;
             // LCOV_EXCL_STOP
@@ -196,9 +170,7 @@ using Offer = TOffer<>;
 
 template <class TIn, class TOut>
 TOffer<TIn, TOut>::TOffer(SLE::pointer const& entry, Quality quality)
-    : m_entry(entry)
-    , m_quality(quality)
-    , m_account(m_entry->getAccountID(sfAccount))
+    : m_entry(entry), m_quality(quality), m_account(m_entry->getAccountID(sfAccount))
 {
     auto const tp = m_entry->getFieldAmount(sfTakerPays);
     auto const tg = m_entry->getFieldAmount(sfTakerGets);
@@ -209,15 +181,11 @@ TOffer<TIn, TOut>::TOffer(SLE::pointer const& entry, Quality quality)
 }
 
 template <>
-inline TOffer<STAmount, STAmount>::TOffer(
-    SLE::pointer const& entry,
-    Quality quality)
+inline TOffer<STAmount, STAmount>::TOffer(SLE::pointer const& entry, Quality quality)
     : m_entry(entry)
     , m_quality(quality)
     , m_account(m_entry->getAccountID(sfAccount))
-    , m_amounts(
-          m_entry->getFieldAmount(sfTakerPays),
-          m_entry->getFieldAmount(sfTakerGets))
+    , m_amounts(m_entry->getFieldAmount(sfTakerPays), m_entry->getFieldAmount(sfTakerGets))
 {
 }
 
@@ -227,7 +195,7 @@ TOffer<TIn, TOut>::setFieldAmounts()
 {
     // LCOV_EXCL_START
 #ifdef _MSC_VER
-    UNREACHABLE("ripple::TOffer::setFieldAmounts : must be specialized");
+    UNREACHABLE("xrpl::TOffer::setFieldAmounts : must be specialized");
 #else
     static_assert(sizeof(TOut) == -1, "Must be specialized");
 #endif
@@ -236,31 +204,24 @@ TOffer<TIn, TOut>::setFieldAmounts()
 
 template <class TIn, class TOut>
 TAmounts<TIn, TOut>
-TOffer<TIn, TOut>::limitOut(
-    TAmounts<TIn, TOut> const& offrAmt,
-    TOut const& limit,
-    bool roundUp) const
+TOffer<TIn, TOut>::limitOut(TAmounts<TIn, TOut> const& offerAmount, TOut const& limit, bool roundUp) const
 {
     // It turns out that the ceil_out implementation has some slop in
     // it, which ceil_out_strict removes.
-    return quality().ceil_out_strict(offrAmt, limit, roundUp);
+    return quality().ceil_out_strict(offerAmount, limit, roundUp);
 }
 
 template <class TIn, class TOut>
 TAmounts<TIn, TOut>
-TOffer<TIn, TOut>::limitIn(
-    TAmounts<TIn, TOut> const& offrAmt,
-    TIn const& limit,
-    bool roundUp) const
+TOffer<TIn, TOut>::limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& limit, bool roundUp) const
 {
-    if (auto const& rules = getCurrentTransactionRules();
-        rules && rules->enabled(fixReducedOffersV2))
+    if (auto const& rules = getCurrentTransactionRules(); rules && rules->enabled(fixReducedOffersV2))
         // It turns out that the ceil_in implementation has some slop in
         // it.  ceil_in_strict removes that slop.  But removing that slop
         // affects transaction outcomes, so the change must be made using
         // an amendment.
-        return quality().ceil_in_strict(offrAmt, limit, roundUp);
-    return m_quality.ceil_in(offrAmt, limit);
+        return quality().ceil_in_strict(offerAmount, limit, roundUp);
+    return m_quality.ceil_in(offerAmount, limit);
 }
 
 template <class TIn, class TOut>
@@ -338,6 +299,4 @@ operator<<(std::ostream& os, TOffer<TIn, TOut> const& offer)
     return os << offer.id();
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/contract.h>
 #include <xrpl/nodestore/Factory.h>
 #include <xrpl/nodestore/Manager.h>
@@ -28,7 +9,7 @@
 #include <memory>
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 struct MemoryDB
@@ -65,8 +46,7 @@ public:
     open(std::string const& path)
     {
         std::lock_guard _(mutex_);
-        auto const result = map_.emplace(
-            std::piecewise_construct, std::make_tuple(path), std::make_tuple());
+        auto const result = map_.emplace(std::piecewise_construct, std::make_tuple(path), std::make_tuple());
         MemoryDB& db = result.first->second;
         if (db.open)
             Throw<std::runtime_error>("already open");
@@ -95,10 +75,7 @@ private:
     MemoryDB* db_{nullptr};
 
 public:
-    MemoryBackend(
-        size_t keyBytes,
-        Section const& keyValues,
-        beast::Journal journal)
+    MemoryBackend(size_t keyBytes, Section const& keyValues, beast::Journal journal)
         : name_(get(keyValues, "path")), journal_(journal)
     {
         boost::ignore_unused(journal_);  // Keep unused journal_ just in case.
@@ -140,8 +117,7 @@ public:
     Status
     fetch(void const* key, std::shared_ptr<NodeObject>* pObject) override
     {
-        XRPL_ASSERT(
-            db_, "ripple::NodeStore::MemoryBackend::fetch : non-null database");
+        XRPL_ASSERT(db_, "xrpl::NodeStore::MemoryBackend::fetch : non-null database");
         uint256 const hash(uint256::fromVoid(key));
 
         std::lock_guard _(db_->mutex);
@@ -177,8 +153,7 @@ public:
     void
     store(std::shared_ptr<NodeObject> const& object) override
     {
-        XRPL_ASSERT(
-            db_, "ripple::NodeStore::MemoryBackend::store : non-null database");
+        XRPL_ASSERT(db_, "xrpl::NodeStore::MemoryBackend::store : non-null database");
         std::lock_guard _(db_->mutex);
         db_->table.emplace(object->getHash(), object);
     }
@@ -198,9 +173,7 @@ public:
     void
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
-        XRPL_ASSERT(
-            db_,
-            "ripple::NodeStore::MemoryBackend::for_each : non-null database");
+        XRPL_ASSERT(db_, "xrpl::NodeStore::MemoryBackend::for_each : non-null database");
         for (auto const& e : db_->table)
             f(e.second);
     }
@@ -248,4 +221,4 @@ MemoryFactory::createInstance(
 }
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl

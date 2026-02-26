@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_OVERLAY_PROTOCOLMESSAGE_H_INCLUDED
-#define RIPPLE_OVERLAY_PROTOCOLMESSAGE_H_INCLUDED
+#pragma once
 
 #include <xrpld/overlay/Compression.h>
 #include <xrpld/overlay/Message.h>
@@ -35,7 +15,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 inline protocol::MessageType
 protocolMessageType(protocol::TMGetLedger const&)
@@ -82,9 +62,9 @@ protocolMessageName(int type)
             return "status";
         case protocol::mtHAVE_SET:
             return "have_set";
-        case protocol::mtVALIDATORLIST:
+        case protocol::mtVALIDATOR_LIST:
             return "validator_list";
-        case protocol::mtVALIDATORLISTCOLLECTION:
+        case protocol::mtVALIDATOR_LIST_COLLECTION:
             return "validator_list_collection";
         case protocol::mtVALIDATION:
             return "validation";
@@ -133,7 +113,7 @@ struct MessageHeader
     std::uint16_t message_type = 0;
 
     /** Indicates which compression algorithm the payload is compressed with.
-     * Currenly only lz4 is supported. If None then the message is not
+     * Currently only lz4 is supported. If None then the message is not
      * compressed.
      */
     compression::Algorithm algorithm = compression::Algorithm::None;
@@ -143,16 +123,14 @@ template <typename BufferSequence>
 auto
 buffersBegin(BufferSequence const& bufs)
 {
-    return boost::asio::buffers_iterator<BufferSequence, std::uint8_t>::begin(
-        bufs);
+    return boost::asio::buffers_iterator<BufferSequence, std::uint8_t>::begin(bufs);
 }
 
 template <typename BufferSequence>
 auto
 buffersEnd(BufferSequence const& bufs)
 {
-    return boost::asio::buffers_iterator<BufferSequence, std::uint8_t>::end(
-        bufs);
+    return boost::asio::buffers_iterator<BufferSequence, std::uint8_t>::end(bufs);
 }
 
 /** Parse a message header
@@ -166,18 +144,13 @@ buffersEnd(BufferSequence const& bufs)
  */
 template <class BufferSequence>
 std::optional<MessageHeader>
-parseMessageHeader(
-    boost::system::error_code& ec,
-    BufferSequence const& bufs,
-    std::size_t size)
+parseMessageHeader(boost::system::error_code& ec, BufferSequence const& bufs, std::size_t size)
 {
-    using namespace ripple::compression;
+    using namespace xrpl::compression;
 
     MessageHeader hdr;
     auto iter = buffersBegin(bufs);
-    XRPL_ASSERT(
-        iter != buffersEnd(bufs),
-        "ripple::detail::parseMessageHeader : non-empty buffer");
+    XRPL_ASSERT(iter != buffersEnd(bufs), "xrpl::detail::parseMessageHeader : non-empty buffer");
 
     // Check valid header compressed message:
     // - 4 bits are the compression algorithm, 1st bit is always set to 1
@@ -257,11 +230,7 @@ parseMessageHeader(
     return std::nullopt;
 }
 
-template <
-    class T,
-    class Buffers,
-    class = std::enable_if_t<
-        std::is_base_of<::google::protobuf::Message, T>::value>>
+template <class T, class Buffers, class = std::enable_if_t<std::is_base_of<::google::protobuf::Message, T>::value>>
 std::shared_ptr<T>
 parseMessageContent(MessageHeader const& header, Buffers const& buffers)
 {
@@ -275,12 +244,8 @@ parseMessageContent(MessageHeader const& header, Buffers const& buffers)
         std::vector<std::uint8_t> payload;
         payload.resize(header.uncompressed_size);
 
-        auto const payloadSize = ripple::compression::decompress(
-            stream,
-            header.payload_wire_size,
-            payload.data(),
-            header.uncompressed_size,
-            header.algorithm);
+        auto const payloadSize = xrpl::compression::decompress(
+            stream, header.payload_wire_size, payload.data(), header.uncompressed_size, header.algorithm);
 
         if (payloadSize == 0 || !m->ParseFromArray(payload.data(), payloadSize))
             return {};
@@ -295,8 +260,7 @@ template <
     class T,
     class Buffers,
     class Handler,
-    class = std::enable_if_t<
-        std::is_base_of<::google::protobuf::Message, T>::value>>
+    class = std::enable_if_t<std::is_base_of<::google::protobuf::Message, T>::value>>
 bool
 invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
 {
@@ -304,7 +268,7 @@ invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
     if (!m)
         return false;
 
-    using namespace ripple::compression;
+    using namespace xrpl::compression;
     handler.onMessageBegin(
         header.message_type,
         m,
@@ -333,10 +297,7 @@ invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
 */
 template <class Buffers, class Handler>
 std::pair<std::size_t, boost::system::error_code>
-invokeProtocolMessage(
-    Buffers const& buffers,
-    Handler& handler,
-    std::size_t& hint)
+invokeProtocolMessage(Buffers const& buffers, Handler& handler, std::size_t& hint)
 {
     std::pair<std::size_t, boost::system::error_code> result = {0, {}};
 
@@ -359,16 +320,14 @@ invokeProtocolMessage(
     // whose size exceeds this may result in the connection being dropped. A
     // larger message size may be supported in the future or negotiated as
     // part of a protocol upgrade.
-    if (header->payload_wire_size > maximiumMessageSize ||
-        header->uncompressed_size > maximiumMessageSize)
+    if (header->payload_wire_size > maximumMessageSize || header->uncompressed_size > maximumMessageSize)
     {
         result.second = make_error_code(boost::system::errc::message_size);
         return result;
     }
 
     // We requested uncompressed messages from the peer but received compressed.
-    if (!handler.compressionEnabled() &&
-        header->algorithm != compression::Algorithm::None)
+    if (!handler.compressionEnabled() && header->algorithm != compression::Algorithm::None)
     {
         result.second = make_error_code(boost::system::errc::protocol_error);
         return result;
@@ -387,88 +346,67 @@ invokeProtocolMessage(
     switch (header->message_type)
     {
         case protocol::mtMANIFESTS:
-            success = detail::invoke<protocol::TMManifests>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMManifests>(*header, buffers, handler);
             break;
         case protocol::mtPING:
-            success =
-                detail::invoke<protocol::TMPing>(*header, buffers, handler);
+            success = detail::invoke<protocol::TMPing>(*header, buffers, handler);
             break;
         case protocol::mtCLUSTER:
-            success =
-                detail::invoke<protocol::TMCluster>(*header, buffers, handler);
+            success = detail::invoke<protocol::TMCluster>(*header, buffers, handler);
             break;
         case protocol::mtENDPOINTS:
-            success = detail::invoke<protocol::TMEndpoints>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMEndpoints>(*header, buffers, handler);
             break;
         case protocol::mtTRANSACTION:
-            success = detail::invoke<protocol::TMTransaction>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMTransaction>(*header, buffers, handler);
             break;
         case protocol::mtGET_LEDGER:
-            success = detail::invoke<protocol::TMGetLedger>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMGetLedger>(*header, buffers, handler);
             break;
         case protocol::mtLEDGER_DATA:
-            success = detail::invoke<protocol::TMLedgerData>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMLedgerData>(*header, buffers, handler);
             break;
         case protocol::mtPROPOSE_LEDGER:
-            success = detail::invoke<protocol::TMProposeSet>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMProposeSet>(*header, buffers, handler);
             break;
         case protocol::mtSTATUS_CHANGE:
-            success = detail::invoke<protocol::TMStatusChange>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMStatusChange>(*header, buffers, handler);
             break;
         case protocol::mtHAVE_SET:
-            success = detail::invoke<protocol::TMHaveTransactionSet>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMHaveTransactionSet>(*header, buffers, handler);
             break;
         case protocol::mtVALIDATION:
-            success = detail::invoke<protocol::TMValidation>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMValidation>(*header, buffers, handler);
             break;
-        case protocol::mtVALIDATORLIST:
-            success = detail::invoke<protocol::TMValidatorList>(
-                *header, buffers, handler);
+        case protocol::mtVALIDATOR_LIST:
+            success = detail::invoke<protocol::TMValidatorList>(*header, buffers, handler);
             break;
-        case protocol::mtVALIDATORLISTCOLLECTION:
-            success = detail::invoke<protocol::TMValidatorListCollection>(
-                *header, buffers, handler);
+        case protocol::mtVALIDATOR_LIST_COLLECTION:
+            success = detail::invoke<protocol::TMValidatorListCollection>(*header, buffers, handler);
             break;
         case protocol::mtGET_OBJECTS:
-            success = detail::invoke<protocol::TMGetObjectByHash>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMGetObjectByHash>(*header, buffers, handler);
             break;
         case protocol::mtHAVE_TRANSACTIONS:
-            success = detail::invoke<protocol::TMHaveTransactions>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMHaveTransactions>(*header, buffers, handler);
             break;
         case protocol::mtTRANSACTIONS:
-            success = detail::invoke<protocol::TMTransactions>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMTransactions>(*header, buffers, handler);
             break;
         case protocol::mtSQUELCH:
-            success =
-                detail::invoke<protocol::TMSquelch>(*header, buffers, handler);
+            success = detail::invoke<protocol::TMSquelch>(*header, buffers, handler);
             break;
         case protocol::mtPROOF_PATH_REQ:
-            success = detail::invoke<protocol::TMProofPathRequest>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMProofPathRequest>(*header, buffers, handler);
             break;
         case protocol::mtPROOF_PATH_RESPONSE:
-            success = detail::invoke<protocol::TMProofPathResponse>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMProofPathResponse>(*header, buffers, handler);
             break;
         case protocol::mtREPLAY_DELTA_REQ:
-            success = detail::invoke<protocol::TMReplayDeltaRequest>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMReplayDeltaRequest>(*header, buffers, handler);
             break;
         case protocol::mtREPLAY_DELTA_RESPONSE:
-            success = detail::invoke<protocol::TMReplayDeltaResponse>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMReplayDeltaResponse>(*header, buffers, handler);
             break;
         default:
             handler.onMessageUnknown(header->message_type);
@@ -484,6 +422,4 @@ invokeProtocolMessage(
     return result;
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

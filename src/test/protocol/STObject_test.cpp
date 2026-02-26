@@ -1,25 +1,6 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 
-namespace ripple {
+namespace xrpl {
 
 class STObject_test : public beast::unit_test::suite
 {
@@ -32,8 +13,7 @@ public:
         unexpected(sfGeneric.isUseful(), "sfGeneric must not be useful");
         {
             // Try to put sfGeneric in an SOTemplate.
-            except<std::runtime_error>(
-                [&]() { SOTemplate elements{{sfGeneric, soeREQUIRED}}; });
+            except<std::runtime_error>([&]() { SOTemplate elements{{sfGeneric, soeREQUIRED}}; });
         }
 
         unexpected(sfInvalid.isUseful(), "sfInvalid must not be useful");
@@ -51,8 +31,7 @@ public:
         }
         {
             // Try to put sfInvalid in an SOTemplate.
-            except<std::runtime_error>(
-                [&]() { SOTemplate elements{{sfInvalid, soeREQUIRED}}; });
+            except<std::runtime_error>([&]() { SOTemplate elements{{sfInvalid, soeREQUIRED}}; });
         }
         {
             // Try to put the same SField into an SOTemplate twice.
@@ -82,21 +61,15 @@ public:
         STObject object1(elements, sfTestObject);
         STObject object2(object1);
 
-        unexpected(
-            object1.getSerializer() != object2.getSerializer(),
-            "STObject error 1");
+        unexpected(object1.getSerializer() != object2.getSerializer(), "STObject error 1");
 
-        unexpected(
-            object1.isFieldPresent(sfTestH256) ||
-                !object1.isFieldPresent(sfTestVL),
-            "STObject error");
+        unexpected(object1.isFieldPresent(sfTestH256) || !object1.isFieldPresent(sfTestVL), "STObject error");
 
         object1.makeFieldPresent(sfTestH256);
 
         unexpected(!object1.isFieldPresent(sfTestH256), "STObject Error 2");
 
-        unexpected(
-            object1.getFieldH256(sfTestH256) != uint256(), "STObject error 3");
+        unexpected(object1.getFieldH256(sfTestH256) != uint256(), "STObject error 3");
 
         if (object1.getSerializer() == object2.getSerializer())
         {
@@ -115,9 +88,7 @@ public:
 
         unexpected(object1.getFlags() != 0, "STObject error 6");
 
-        unexpected(
-            object1.getSerializer() != object2.getSerializer(),
-            "STObject error 7");
+        unexpected(object1.getSerializer() != object2.getSerializer(), "STObject error 7");
 
         STObject copy(object1);
 
@@ -125,15 +96,11 @@ public:
 
         unexpected(copy.isFieldPresent(sfTestH256), "STObject error 9");
 
-        unexpected(
-            object1.getSerializer() != copy.getSerializer(),
-            "STObject error 10");
+        unexpected(object1.getSerializer() != copy.getSerializer(), "STObject error 10");
 
         copy.setFieldU32(sfTestU32, 1);
 
-        unexpected(
-            object1.getSerializer() == copy.getSerializer(),
-            "STObject error 11");
+        unexpected(object1.getSerializer() == copy.getSerializer(), "STObject error 11");
 
         for (int i = 0; i < 1000; i++)
         {
@@ -358,11 +325,7 @@ public:
         {
             STObject st(sfGeneric);
             auto const v = ~st[~sf1Outer];
-            static_assert(
-                std::is_same<
-                    std::decay_t<decltype(v)>,
-                    std::optional<std::uint32_t>>::value,
-                "");
+            static_assert(std::is_same<std::decay_t<decltype(v)>, std::optional<std::uint32_t>>::value, "");
         }
 
         // UDT scalar fields
@@ -416,8 +379,7 @@ public:
         {
             STObject st(sfGeneric);
             BEAST_EXPECT(!st[~sf5]);
-            auto const kp = generateKeyPair(
-                KeyType::secp256k1, generateSeed("masterpassphrase"));
+            auto const kp = generateKeyPair(KeyType::secp256k1, generateSeed("masterpassphrase"));
             st[sf5] = kp.first;
             st[~sf5] = std::nullopt;
         }
@@ -437,11 +399,7 @@ public:
             BEAST_EXPECT(cst[~sf]->size() == 2);
             BEAST_EXPECT(cst[sf][0] == 1);
             BEAST_EXPECT(cst[sf][1] == 2);
-            static_assert(
-                std::is_same<
-                    decltype(cst[sfIndexes]),
-                    std::vector<uint256> const&>::value,
-                "");
+            static_assert(std::is_same<decltype(cst[sfIndexes]), std::vector<uint256> const&>::value, "");
         }
 
         // Default by reference field
@@ -477,7 +435,7 @@ public:
             st[sf3] = std::vector<uint256>{};
             BEAST_EXPECT(cst[sf3].size() == 0);
         }
-    }  // namespace ripple
+    }  // namespace xrpl
 
     void
     testMalformed()
@@ -486,8 +444,7 @@ public:
 
         try
         {
-            std::array<std::uint8_t, 7> const payload{
-                {0xe9, 0x12, 0xab, 0xcd, 0x12, 0xfe, 0xdc}};
+            std::array<std::uint8_t, 7> const payload{{0xe9, 0x12, 0xab, 0xcd, 0x12, 0xfe, 0xdc}};
             SerialIter sit{makeSlice(payload)};
             auto obj = std::make_shared<STArray>(sit, sfMetadata);
             BEAST_EXPECT(!obj);
@@ -522,6 +479,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(STObject, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(STObject, protocol, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

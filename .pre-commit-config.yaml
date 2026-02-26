@@ -26,14 +26,39 @@ repos:
         args: [--style=file]
         "types_or": [c++, c, proto]
 
+  - repo: https://github.com/cheshirekow/cmake-format-precommit
+    rev: e2c2116d86a80e72e7146a06e68b7c228afc6319 # frozen: v0.6.13
+    hooks:
+      - id: cmake-format
+        additional_dependencies: [PyYAML]
+
   - repo: https://github.com/rbubley/mirrors-prettier
     rev: 5ba47274f9b181bce26a5150a725577f3c336011 # frozen: v3.6.2
     hooks:
       - id: prettier
 
+  - repo: https://github.com/psf/black-pre-commit-mirror
+    rev: 831207fd435b47aeffdf6af853097e64322b4d44 # frozen: v25.12.0
+    hooks:
+      - id: black
+
+  - repo: https://github.com/streetsidesoftware/cspell-cli
+    rev: 1cfa010f078c354f3ffb8413616280cc28f5ba21 # frozen: v9.4.0
+    hooks:
+      - id: cspell # Spell check changed files
+        exclude: .config/cspell.config.yaml
+      - id: cspell # Spell check the commit message
+        name: check commit message spelling
+        args:
+          - --no-must-find-files
+          - --no-progress
+          - --no-summary
+          - --files
+          - .git/COMMIT_EDITMSG
+        stages: [commit-msg]
+
 exclude: |
   (?x)^(
       external/.*|
-      .github/scripts/levelization/results/.*\.txt|
-      conan\.lock
+      .github/scripts/levelization/results/.*\.txt
   )$

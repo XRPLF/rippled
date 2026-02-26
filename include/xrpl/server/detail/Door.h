@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_SERVER_DOOR_H_INCLUDED
-#define RIPPLE_SERVER_DOOR_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
@@ -54,12 +34,11 @@
 #include <optional>
 #include <sstream>
 
-namespace ripple {
+namespace xrpl {
 
 /** A listening socket. */
 template <class Handler>
-class Door : public io_list::work,
-             public std::enable_shared_from_this<Door<Handler>>
+class Door : public io_list::work, public std::enable_shared_from_this<Door<Handler>>
 {
 private:
     using clock_type = std::chrono::steady_clock;
@@ -73,8 +52,7 @@ private:
     using stream_type = boost::beast::tcp_stream;
 
     // Detects SSL on a socket
-    class Detector : public io_list::work,
-                     public std::enable_shared_from_this<Detector>
+    class Detector : public io_list::work, public std::enable_shared_from_this<Detector>
     {
     private:
         Port const& port_;
@@ -134,11 +112,7 @@ private:
     should_throttle_for_fds();
 
 public:
-    Door(
-        Handler& handler,
-        boost::asio::io_context& io_context,
-        Port const& port,
-        beast::Journal j);
+    Door(Handler& handler, boost::asio::io_context& io_context, Port const& port, beast::Journal j);
 
     // Work-around because we can't call shared_from_this in ctor
     void
@@ -162,11 +136,7 @@ public:
 private:
     template <class ConstBufferSequence>
     void
-    create(
-        bool ssl,
-        ConstBufferSequence const& buffers,
-        stream_type&& stream,
-        endpoint_type remote_address);
+    create(bool ssl, ConstBufferSequence const& buffers, stream_type&& stream, endpoint_type remote_address);
 
     void
     do_accept(yield_context yield);
@@ -195,12 +165,7 @@ template <class Handler>
 void
 Door<Handler>::Detector::run()
 {
-    util::spawn(
-        strand_,
-        std::bind(
-            &Detector::do_detect,
-            this->shared_from_this(),
-            std::placeholders::_1));
+    util::spawn(strand_, std::bind(&Detector::do_detect, this->shared_from_this(), std::placeholders::_1));
 }
 
 template <class Handler>
@@ -224,31 +189,18 @@ Door<Handler>::Detector::do_detect(boost::asio::yield_context do_yield)
         if (ssl)
         {
             if (auto sp = ios().template emplace<SSLHTTPPeer<Handler>>(
-                    port_,
-                    handler_,
-                    ioc_,
-                    j_,
-                    remote_address_,
-                    buf.data(),
-                    std::move(stream_)))
+                    port_, handler_, ioc_, j_, remote_address_, buf.data(), std::move(stream_)))
                 sp->run();
             return;
         }
         if (auto sp = ios().template emplace<PlainHTTPPeer<Handler>>(
-                port_,
-                handler_,
-                ioc_,
-                j_,
-                remote_address_,
-                buf.data(),
-                std::move(stream_)))
+                port_, handler_, ioc_, j_, remote_address_, buf.data(), std::move(stream_)))
             sp->run();
         return;
     }
     if (ec != boost::asio::error::operation_aborted)
     {
-        JLOG(j_.trace()) << "Error detecting ssl: " << ec.message() << " from "
-                         << remote_address_;
+        JLOG(j_.trace()) << "Error detecting ssl: " << ec.message() << " from " << remote_address_;
     }
 }
 
@@ -266,8 +218,7 @@ Door<Handler>::reOpen()
         if (ec)
         {
             std::stringstream ss;
-            ss << "Can't close acceptor: " << port_.name << ", "
-               << ec.message();
+            ss << "Can't close acceptor: " << port_.name << ", " << ec.message();
             JLOG(j_.error()) << ss.str();
             Throw<std::runtime_error>(ss.str());
         }
@@ -278,33 +229,28 @@ Door<Handler>::reOpen()
     acceptor_.open(local_address.protocol(), ec);
     if (ec)
     {
-        JLOG(j_.error()) << "Open port '" << port_.name
-                         << "' failed:" << ec.message();
+        JLOG(j_.error()) << "Open port '" << port_.name << "' failed:" << ec.message();
         Throw<std::exception>();
     }
 
-    acceptor_.set_option(
-        boost::asio::ip::tcp::acceptor::reuse_address(true), ec);
+    acceptor_.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true), ec);
     if (ec)
     {
-        JLOG(j_.error()) << "Option for port '" << port_.name
-                         << "' failed:" << ec.message();
+        JLOG(j_.error()) << "Option for port '" << port_.name << "' failed:" << ec.message();
         Throw<std::exception>();
     }
 
     acceptor_.bind(local_address, ec);
     if (ec)
     {
-        JLOG(j_.error()) << "Bind port '" << port_.name
-                         << "' failed:" << ec.message();
+        JLOG(j_.error()) << "Bind port '" << port_.name << "' failed:" << ec.message();
         Throw<std::exception>();
     }
 
     acceptor_.listen(boost::asio::socket_base::max_listen_connections, ec);
     if (ec)
     {
-        JLOG(j_.error()) << "Listen on port '" << port_.name
-                         << "' failed:" << ec.message();
+        JLOG(j_.error()) << "Listen on port '" << port_.name << "' failed:" << ec.message();
         Throw<std::exception>();
     }
 
@@ -312,11 +258,7 @@ Door<Handler>::reOpen()
 }
 
 template <class Handler>
-Door<Handler>::Door(
-    Handler& handler,
-    boost::asio::io_context& io_context,
-    Port const& port,
-    beast::Journal j)
+Door<Handler>::Door(Handler& handler, boost::asio::io_context& io_context, Port const& port, beast::Journal j)
     : j_(j)
     , port_(port)
     , handler_(handler)
@@ -324,12 +266,9 @@ Door<Handler>::Door(
     , acceptor_(io_context)
     , strand_(boost::asio::make_strand(io_context))
     , ssl_(
-          port_.protocol.count("https") > 0 ||
-          port_.protocol.count("wss") > 0 || port_.protocol.count("wss2") > 0 ||
+          port_.protocol.count("https") > 0 || port_.protocol.count("wss") > 0 || port_.protocol.count("wss2") > 0 ||
           port_.protocol.count("peer") > 0)
-    , plain_(
-          port_.protocol.count("http") > 0 || port_.protocol.count("ws") > 0 ||
-          port_.protocol.count("ws2"))
+    , plain_(port_.protocol.count("http") > 0 || port_.protocol.count("ws") > 0 || port_.protocol.count("ws2"))
     , backoff_timer_(io_context)
 {
     reOpen();
@@ -339,12 +278,7 @@ template <class Handler>
 void
 Door<Handler>::run()
 {
-    util::spawn(
-        strand_,
-        std::bind(
-            &Door<Handler>::do_accept,
-            this->shared_from_this(),
-            std::placeholders::_1));
+    util::spawn(strand_, std::bind(&Door<Handler>::do_accept, this->shared_from_this(), std::placeholders::_1));
 }
 
 template <class Handler>
@@ -352,9 +286,7 @@ void
 Door<Handler>::close()
 {
     if (!strand_.running_in_this_thread())
-        return boost::asio::post(
-            strand_,
-            std::bind(&Door<Handler>::close, this->shared_from_this()));
+        return boost::asio::post(strand_, std::bind(&Door<Handler>::close, this->shared_from_this()));
     backoff_timer_.cancel();
     error_code ec;
     acceptor_.close(ec);
@@ -365,33 +297,17 @@ Door<Handler>::close()
 template <class Handler>
 template <class ConstBufferSequence>
 void
-Door<Handler>::create(
-    bool ssl,
-    ConstBufferSequence const& buffers,
-    stream_type&& stream,
-    endpoint_type remote_address)
+Door<Handler>::create(bool ssl, ConstBufferSequence const& buffers, stream_type&& stream, endpoint_type remote_address)
 {
     if (ssl)
     {
         if (auto sp = ios().template emplace<SSLHTTPPeer<Handler>>(
-                port_,
-                handler_,
-                ioc_,
-                j_,
-                remote_address,
-                buffers,
-                std::move(stream)))
+                port_, handler_, ioc_, j_, remote_address, buffers, std::move(stream)))
             sp->run();
         return;
     }
     if (auto sp = ios().template emplace<PlainHTTPPeer<Handler>>(
-            port_,
-            handler_,
-            ioc_,
-            j_,
-            remote_address,
-            buffers,
-            std::move(stream)))
+            port_, handler_, ioc_, j_, remote_address, buffers, std::move(stream)))
         sp->run();
 }
 
@@ -407,8 +323,7 @@ Door<Handler>::do_accept(boost::asio::yield_context do_yield)
             boost::system::error_code tec;
             backoff_timer_.async_wait(do_yield[tec]);
             accept_delay_ = std::min(accept_delay_ * 2, MAX_ACCEPT_DELAY);
-            JLOG(j_.warn()) << "Throttling do_accept for "
-                            << accept_delay_.count() << "ms.";
+            JLOG(j_.warn()) << "Throttling do_accept for " << accept_delay_.count() << "ms.";
             continue;
         }
 
@@ -422,11 +337,9 @@ Door<Handler>::do_accept(boost::asio::yield_context do_yield)
             if (ec == boost::asio::error::operation_aborted)
                 break;
 
-            if (ec == boost::asio::error::no_descriptors ||
-                ec == boost::asio::error::no_buffer_space)
+            if (ec == boost::asio::error::no_descriptors || ec == boost::asio::error::no_buffer_space)
             {
-                JLOG(j_.warn()) << "accept: Too many open files. Pausing for "
-                                << accept_delay_.count() << "ms.";
+                JLOG(j_.warn()) << "accept: Too many open files. Pausing for " << accept_delay_.count() << "ms.";
 
                 backoff_timer_.expires_after(accept_delay_);
                 boost::system::error_code tec;
@@ -445,22 +358,13 @@ Door<Handler>::do_accept(boost::asio::yield_context do_yield)
 
         if (ssl_ && plain_)
         {
-            if (auto sp = ios().template emplace<Detector>(
-                    port_,
-                    handler_,
-                    ioc_,
-                    std::move(stream),
-                    remote_address,
-                    j_))
+            if (auto sp =
+                    ios().template emplace<Detector>(port_, handler_, ioc_, std::move(stream), remote_address, j_))
                 sp->run();
         }
         else if (ssl_ || plain_)
         {
-            create(
-                ssl_,
-                boost::asio::null_buffers{},
-                std::move(stream),
-                remote_address);
+            create(ssl_, boost::asio::null_buffers{}, std::move(stream), remote_address);
         }
     }
 }
@@ -509,8 +413,7 @@ Door<Handler>::should_throttle_for_fds()
 
     auto const& s = *stats;
     auto const free = (s.limit > s.used) ? (s.limit - s.used) : 0ull;
-    double const free_ratio =
-        static_cast<double>(free) / static_cast<double>(s.limit);
+    double const free_ratio = static_cast<double>(free) / static_cast<double>(s.limit);
     if (free_ratio < FREE_FD_THRESHOLD)
     {
         return true;
@@ -519,6 +422,4 @@ Door<Handler>::should_throttle_for_fds()
 #endif
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

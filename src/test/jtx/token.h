@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2021 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TEST_JTX_NFT_H_INCLUDED
-#define RIPPLE_TEST_JTX_NFT_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -28,7 +8,7 @@
 
 #include <initializer_list>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -123,10 +103,7 @@ burn(jtx::Account const& account, uint256 const& nftokenID);
 
 /** Create an NFTokenOffer. */
 Json::Value
-createOffer(
-    jtx::Account const& account,
-    uint256 const& nftokenID,
-    STAmount const& amount);
+createOffer(jtx::Account const& account, uint256 const& nftokenID, STAmount const& amount);
 
 /** Sets the optional Owner on an NFTokenOffer. */
 class owner
@@ -175,14 +152,10 @@ public:
 
 /** Cancel NFTokenOffers. */
 Json::Value
-cancelOffer(
-    jtx::Account const& account,
-    std::initializer_list<uint256> const& nftokenOffers = {});
+cancelOffer(jtx::Account const& account, std::initializer_list<uint256> const& nftokenOffers = {});
 
 Json::Value
-cancelOffer(
-    jtx::Account const& account,
-    std::vector<uint256> const& nftokenOffers);
+cancelOffer(jtx::Account const& account, std::vector<uint256> const& nftokenOffers);
 
 /** Sets the optional RootIndex field when canceling NFTokenOffers. */
 class rootIndex
@@ -209,10 +182,7 @@ acceptSellOffer(jtx::Account const& account, uint256 const& offerIndex);
 
 /** Broker two NFToken offers. */
 Json::Value
-brokerOffers(
-    jtx::Account const& account,
-    uint256 const& buyOfferIndex,
-    uint256 const& sellOfferIndex);
+brokerOffers(jtx::Account const& account, uint256 const& buyOfferIndex, uint256 const& sellOfferIndex);
 
 /** Sets the optional NFTokenBrokerFee field in a brokerOffer transaction. */
 class brokerFee
@@ -246,6 +216,4 @@ modify(jtx::Account const& account, uint256 const& nftokenID);
 }  // namespace jtx
 
 }  // namespace test
-}  // namespace ripple
-
-#endif  // RIPPLE_TEST_JTX_NFT_H_INCLUDED
+}  // namespace xrpl

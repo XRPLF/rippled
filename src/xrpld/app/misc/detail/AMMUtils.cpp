@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
 
@@ -25,7 +6,7 @@
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/STObject.h>
 
-namespace ripple {
+namespace xrpl {
 
 std::pair<STAmount, STAmount>
 ammPoolHolds(
@@ -36,10 +17,8 @@ ammPoolHolds(
     FreezeHandling freezeHandling,
     beast::Journal const j)
 {
-    auto const assetInBalance =
-        accountHolds(view, ammAccountID, issue1, freezeHandling, j);
-    auto const assetOutBalance =
-        accountHolds(view, ammAccountID, issue2, freezeHandling, j);
+    auto const assetInBalance = accountHolds(view, ammAccountID, issue1, freezeHandling, j);
+    auto const assetOutBalance = accountHolds(view, ammAccountID, issue2, freezeHandling, j);
     return std::make_pair(assetInBalance, assetOutBalance);
 }
 
@@ -57,32 +36,25 @@ ammHolds(
         auto const issue2 = ammSle[sfAsset2].get<Issue>();
         if (optIssue1 && optIssue2)
         {
-            if (invalidAMMAssetPair(
-                    *optIssue1,
-                    *optIssue2,
-                    std::make_optional(std::make_pair(issue1, issue2))))
+            if (invalidAMMAssetPair(*optIssue1, *optIssue2, std::make_optional(std::make_pair(issue1, issue2))))
             {
                 // This error can only be hit if the AMM is corrupted
                 // LCOV_EXCL_START
-                JLOG(j.debug()) << "ammHolds: Invalid optIssue1 or optIssue2 "
-                                << *optIssue1 << " " << *optIssue2;
+                JLOG(j.debug()) << "ammHolds: Invalid optIssue1 or optIssue2 " << *optIssue1 << " " << *optIssue2;
                 return std::nullopt;
                 // LCOV_EXCL_STOP
             }
             return std::make_optional(std::make_pair(*optIssue1, *optIssue2));
         }
-        auto const singleIssue =
-            [&issue1, &issue2, &j](
-                Issue checkIssue,
-                char const* label) -> std::optional<std::pair<Issue, Issue>> {
+        auto const singleIssue = [&issue1, &issue2, &j](
+                                     Issue checkIssue, char const* label) -> std::optional<std::pair<Issue, Issue>> {
             if (checkIssue == issue1)
                 return std::make_optional(std::make_pair(issue1, issue2));
             else if (checkIssue == issue2)
                 return std::make_optional(std::make_pair(issue2, issue1));
             // Unreachable unless AMM corrupted.
             // LCOV_EXCL_START
-            JLOG(j.debug())
-                << "ammHolds: Invalid " << label << " " << checkIssue;
+            JLOG(j.debug()) << "ammHolds: Invalid " << label << " " << checkIssue;
             return std::nullopt;
             // LCOV_EXCL_STOP
         };
@@ -99,13 +71,8 @@ ammHolds(
     }();
     if (!issues)
         return Unexpected(tecAMM_INVALID_TOKENS);
-    auto const [asset1, asset2] = ammPoolHolds(
-        view,
-        ammSle.getAccountID(sfAccount),
-        issues->first,
-        issues->second,
-        freezeHandling,
-        j);
+    auto const [asset1, asset2] =
+        ammPoolHolds(view, ammSle.getAccountID(sfAccount), issues->first, issues->second, freezeHandling, j);
     return std::make_tuple(asset1, asset2, ammSle[sfLPTokenBalance]);
 }
 
@@ -131,15 +98,13 @@ ammLPHolds(
     {
         amount.clear(Issue{currency, ammAccount});
         JLOG(j.trace()) << "ammLPHolds: no SLE "
-                        << " lpAccount=" << to_string(lpAccount)
-                        << " amount=" << amount.getFullText();
+                        << " lpAccount=" << to_string(lpAccount) << " amount=" << amount.getFullText();
     }
     else if (isFrozen(view, lpAccount, currency, ammAccount))
     {
         amount.clear(Issue{currency, ammAccount});
         JLOG(j.trace()) << "ammLPHolds: frozen currency "
-                        << " lpAccount=" << to_string(lpAccount)
-                        << " amount=" << amount.getFullText();
+                        << " lpAccount=" << to_string(lpAccount) << " amount=" << amount.getFullText();
     }
     else
     {
@@ -152,19 +117,14 @@ ammLPHolds(
         amount.setIssuer(ammAccount);
 
         JLOG(j.trace()) << "ammLPHolds:"
-                        << " lpAccount=" << to_string(lpAccount)
-                        << " amount=" << amount.getFullText();
+                        << " lpAccount=" << to_string(lpAccount) << " amount=" << amount.getFullText();
     }
 
     return view.balanceHook(lpAccount, ammAccount, amount);
 }
 
 STAmount
-ammLPHolds(
-    ReadView const& view,
-    SLE const& ammSle,
-    AccountID const& lpAccount,
-    beast::Journal const j)
+ammLPHolds(ReadView const& view, SLE const& ammSle, AccountID const& lpAccount, beast::Journal const j)
 {
     return ammLPHolds(
         view,
@@ -180,25 +140,20 @@ getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
 {
     using namespace std::chrono;
     XRPL_ASSERT(
-        !view.rules().enabled(fixInnerObjTemplate) ||
-            ammSle.isFieldPresent(sfAuctionSlot),
-        "ripple::getTradingFee : auction present");
+        !view.rules().enabled(fixInnerObjTemplate) || ammSle.isFieldPresent(sfAuctionSlot),
+        "xrpl::getTradingFee : auction present");
     if (ammSle.isFieldPresent(sfAuctionSlot))
     {
-        auto const& auctionSlot =
-            static_cast<STObject const&>(ammSle.peekAtField(sfAuctionSlot));
+        auto const& auctionSlot = static_cast<STObject const&>(ammSle.peekAtField(sfAuctionSlot));
         // Not expired
         if (auto const expiration = auctionSlot[~sfExpiration];
-            duration_cast<seconds>(
-                view.info().parentCloseTime.time_since_epoch())
-                .count() < expiration)
+            duration_cast<seconds>(view.header().parentCloseTime.time_since_epoch()).count() < expiration)
         {
             if (auctionSlot[~sfAccount] == account)
                 return auctionSlot[sfDiscountedFee];
             if (auctionSlot.isFieldPresent(sfAuthAccounts))
             {
-                for (auto const& acct :
-                     auctionSlot.getFieldArray(sfAuthAccounts))
+                for (auto const& acct : auctionSlot.getFieldArray(sfAuthAccounts))
                     if (acct[~sfAccount] == account)
                         return auctionSlot[sfDiscountedFee];
             }
@@ -208,20 +163,15 @@ getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
 }
 
 STAmount
-ammAccountHolds(
-    ReadView const& view,
-    AccountID const& ammAccountID,
-    Issue const& issue)
+ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Issue const& issue)
 {
     if (isXRP(issue))
     {
         if (auto const sle = view.read(keylet::account(ammAccountID)))
             return (*sle)[sfBalance];
     }
-    else if (auto const sle = view.read(
-                 keylet::line(ammAccountID, issue.account, issue.currency));
-             sle &&
-             !isFrozen(view, ammAccountID, issue.currency, issue.account))
+    else if (auto const sle = view.read(keylet::line(ammAccountID, issue.account, issue.currency));
+             sle && !isFrozen(view, ammAccountID, issue.currency, issue.account))
     {
         auto amount = (*sle)[sfBalance];
         if (ammAccountID > issue.account)
@@ -234,18 +184,12 @@ ammAccountHolds(
 }
 
 static TER
-deleteAMMTrustLines(
-    Sandbox& sb,
-    AccountID const& ammAccountID,
-    std::uint16_t maxTrustlinesToDelete,
-    beast::Journal j)
+deleteAMMTrustLines(Sandbox& sb, AccountID const& ammAccountID, std::uint16_t maxTrustlinesToDelete, beast::Journal j)
 {
     return cleanupOnAccountDelete(
         sb,
         keylet::ownerDir(ammAccountID),
-        [&](LedgerEntryType nodeType,
-            uint256 const&,
-            std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
+        [&](LedgerEntryType nodeType, uint256 const&, std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
             // Skip AMM
             if (nodeType == LedgerEntryType::ltAMM)
                 return {tesSUCCESS, SkipEntry::Yes};
@@ -253,9 +197,7 @@ deleteAMMTrustLines(
             if (nodeType != LedgerEntryType::ltRIPPLE_STATE)
             {
                 // LCOV_EXCL_START
-                JLOG(j.error())
-                    << "deleteAMMTrustLines: deleting non-trustline "
-                    << nodeType;
+                JLOG(j.error()) << "deleteAMMTrustLines: deleting non-trustline " << nodeType;
                 return {tecINTERNAL, SkipEntry::No};
                 // LCOV_EXCL_STOP
             }
@@ -264,34 +206,26 @@ deleteAMMTrustLines(
             if (sleItem->getFieldAmount(sfBalance) != beast::zero)
             {
                 // LCOV_EXCL_START
-                JLOG(j.error())
-                    << "deleteAMMTrustLines: deleting trustline with "
-                       "non-zero balance.";
+                JLOG(j.error()) << "deleteAMMTrustLines: deleting trustline with "
+                                   "non-zero balance.";
                 return {tecINTERNAL, SkipEntry::No};
                 // LCOV_EXCL_STOP
             }
 
-            return {
-                deleteAMMTrustLine(sb, sleItem, ammAccountID, j),
-                SkipEntry::No};
+            return {deleteAMMTrustLine(sb, sleItem, ammAccountID, j), SkipEntry::No};
         },
         j,
         maxTrustlinesToDelete);
 }
 
 TER
-deleteAMMAccount(
-    Sandbox& sb,
-    Issue const& asset,
-    Issue const& asset2,
-    beast::Journal j)
+deleteAMMAccount(Sandbox& sb, Issue const& asset, Issue const& asset2, beast::Journal j)
 {
     auto ammSle = sb.peek(keylet::amm(asset, asset2));
     if (!ammSle)
     {
         // LCOV_EXCL_START
-        JLOG(j.error()) << "deleteAMMAccount: AMM object does not exist "
-                        << asset << " " << asset2;
+        JLOG(j.error()) << "deleteAMMAccount: AMM object does not exist " << asset << " " << asset2;
         return tecINTERNAL;
         // LCOV_EXCL_STOP
     }
@@ -301,20 +235,16 @@ deleteAMMAccount(
     if (!sleAMMRoot)
     {
         // LCOV_EXCL_START
-        JLOG(j.error()) << "deleteAMMAccount: AMM account does not exist "
-                        << to_string(ammAccountID);
+        JLOG(j.error()) << "deleteAMMAccount: AMM account does not exist " << to_string(ammAccountID);
         return tecINTERNAL;
         // LCOV_EXCL_STOP
     }
 
-    if (auto const ter =
-            deleteAMMTrustLines(sb, ammAccountID, maxDeletableAMMTrustLines, j);
-        ter != tesSUCCESS)
+    if (auto const ter = deleteAMMTrustLines(sb, ammAccountID, maxDeletableAMMTrustLines, j); ter != tesSUCCESS)
         return ter;
 
     auto const ownerDirKeylet = keylet::ownerDir(ammAccountID);
-    if (!sb.dirRemove(
-            ownerDirKeylet, (*ammSle)[sfOwnerNode], ammSle->key(), false))
+    if (!sb.dirRemove(ownerDirKeylet, (*ammSle)[sfOwnerNode], ammSle->key(), false))
     {
         // LCOV_EXCL_START
         JLOG(j.error()) << "deleteAMMAccount: failed to remove dir link";
@@ -324,8 +254,7 @@ deleteAMMAccount(
     if (sb.exists(ownerDirKeylet) && !sb.emptyDirDelete(ownerDirKeylet))
     {
         // LCOV_EXCL_START
-        JLOG(j.error()) << "deleteAMMAccount: cannot delete root dir node of "
-                        << toBase58(ammAccountID);
+        JLOG(j.error()) << "deleteAMMAccount: cannot delete root dir node of " << toBase58(ammAccountID);
         return tecINTERNAL;
         // LCOV_EXCL_STOP
     }
@@ -357,8 +286,7 @@ initializeFeeAuctionVote(
     // AMM creator gets the auction slot for free.
     // AuctionSlot is created on AMMCreate and updated on AMMDeposit
     // when AMM is in an empty state
-    if (rules.enabled(fixInnerObjTemplate) &&
-        !ammSle->isFieldPresent(sfAuctionSlot))
+    if (rules.enabled(fixInnerObjTemplate) && !ammSle->isFieldPresent(sfAuctionSlot))
     {
         STObject auctionSlot = STObject::makeInnerObject(sfAuctionSlot);
         ammSle->set(std::move(auctionSlot));
@@ -366,9 +294,8 @@ initializeFeeAuctionVote(
     STObject& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
     auctionSlot.setAccountID(sfAccount, account);
     // current + sec in 24h
-    auto const expiration = std::chrono::duration_cast<std::chrono::seconds>(
-                                view.info().parentCloseTime.time_since_epoch())
-                                .count() +
+    auto const expiration =
+        std::chrono::duration_cast<std::chrono::seconds>(view.header().parentCloseTime.time_since_epoch()).count() +
         TOTAL_TIME_SLOT_SECS;
     auctionSlot.setFieldU32(sfExpiration, expiration);
     auctionSlot.setFieldAmount(sfPrice, STAmount{lptIssue, 0});
@@ -384,10 +311,7 @@ initializeFeeAuctionVote(
 }
 
 Expected<bool, TER>
-isOnlyLiquidityProvider(
-    ReadView const& view,
-    Issue const& ammIssue,
-    AccountID const& lpAccount)
+isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID const& lpAccount)
 {
     // Liquidity Provider (LP) must have one LPToken trustline
     std::uint8_t nLPTokenTrustLines = 0;
@@ -429,10 +353,8 @@ isOnlyLiquidityProvider(
                 return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
             auto const lowLimit = sle->getFieldAmount(sfLowLimit);
             auto const highLimit = sle->getFieldAmount(sfHighLimit);
-            auto const isLPTrustline = lowLimit.getIssuer() == lpAccount ||
-                highLimit.getIssuer() == lpAccount;
-            auto const isLPTokenTrustline =
-                lowLimit.issue() == ammIssue || highLimit.issue() == ammIssue;
+            auto const isLPTrustline = lowLimit.getIssuer() == lpAccount || highLimit.getIssuer() == lpAccount;
+            auto const isLPTokenTrustline = lowLimit.issue() == ammIssue || highLimit.issue() == ammIssue;
 
             // Liquidity Provider trustline
             if (isLPTrustline)
@@ -455,8 +377,7 @@ isOnlyLiquidityProvider(
         auto const uNodeNext = ownerDir->getFieldU64(sfIndexNext);
         if (uNodeNext == 0)
         {
-            if (nLPTokenTrustLines != 1 || nIOUTrustLines == 0 ||
-                nIOUTrustLines > 2)
+            if (nLPTokenTrustLines != 1 || nIOUTrustLines == 0 || nIOUTrustLines > 2)
                 return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
             return true;
         }
@@ -472,15 +393,11 @@ verifyAndAdjustLPTokenBalance(
     std::shared_ptr<SLE>& ammSle,
     AccountID const& account)
 {
-    if (auto const res = isOnlyLiquidityProvider(sb, lpTokens.issue(), account);
-        !res)
+    if (auto const res = isOnlyLiquidityProvider(sb, lpTokens.issue(), account); !res)
         return Unexpected<TER>(res.error());
     else if (res.value())
     {
-        if (withinRelativeDistance(
-                lpTokens,
-                ammSle->getFieldAmount(sfLPTokenBalance),
-                Number{1, -3}))
+        if (withinRelativeDistance(lpTokens, ammSle->getFieldAmount(sfLPTokenBalance), Number{1, -3}))
         {
             ammSle->setFieldAmount(sfLPTokenBalance, lpTokens);
             sb.update(ammSle);
@@ -493,4 +410,4 @@ verifyAndAdjustLPTokenBalance(
     return true;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef BEAST_UTILITY_JOURNAL_H_INCLUDED
-#define BEAST_UTILITY_JOURNAL_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -149,8 +129,7 @@ public:
     class ScopedStream
     {
     public:
-        ScopedStream(ScopedStream const& other)
-            : ScopedStream(other.m_sink, other.m_level)
+        ScopedStream(ScopedStream const& other) : ScopedStream(other.m_sink, other.m_level)
         {
         }
 
@@ -186,16 +165,12 @@ public:
     };
 
 #ifndef __INTELLISENSE__
-    static_assert(
-        std::is_default_constructible<ScopedStream>::value == false,
-        "");
+    static_assert(std::is_default_constructible<ScopedStream>::value == false, "");
     static_assert(std::is_copy_constructible<ScopedStream>::value == true, "");
     static_assert(std::is_move_constructible<ScopedStream>::value == true, "");
     static_assert(std::is_copy_assignable<ScopedStream>::value == false, "");
     static_assert(std::is_move_assignable<ScopedStream>::value == false, "");
-    static_assert(
-        std::is_nothrow_destructible<ScopedStream>::value == true,
-        "");
+    static_assert(std::is_nothrow_destructible<ScopedStream>::value == true, "");
 #endif
 
     //--------------------------------------------------------------------------
@@ -205,8 +180,7 @@ public:
     {
     public:
         /** Create a stream which produces no output. */
-        explicit Stream()
-            : m_sink(getNullSink()), m_level(severities::kDisabled)
+        explicit Stream() : m_sink(getNullSink()), m_level(severities::kDisabled)
         {
         }
 
@@ -216,9 +190,7 @@ public:
         */
         Stream(Sink& sink, Severity level) : m_sink(sink), m_level(level)
         {
-            XRPL_ASSERT(
-                m_level < severities::kDisabled,
-                "beast::Journal::Stream::Stream : maximum level");
+            XRPL_ASSERT(m_level < severities::kDisabled, "beast::Journal::Stream::Stream : maximum level");
         }
 
         /** Construct or copy another Stream. */
@@ -449,8 +421,7 @@ class basic_logstream : public std::basic_ostream<CharT, Traits>
     detail::logstream_buf<CharT, Traits> buf_;
 
 public:
-    explicit basic_logstream(beast::Journal::Stream const& strm)
-        : std::basic_ostream<CharT, Traits>(&buf_), buf_(strm)
+    explicit basic_logstream(beast::Journal::Stream const& strm) : std::basic_ostream<CharT, Traits>(&buf_), buf_(strm)
     {
     }
 };
@@ -459,5 +430,3 @@ using logstream = basic_logstream<char>;
 using logwstream = basic_logstream<wchar_t>;
 
 }  // namespace beast
-
-#endif

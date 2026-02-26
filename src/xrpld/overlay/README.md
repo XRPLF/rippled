@@ -373,7 +373,7 @@ command. The key is in the `pubkey_node` value, and is a text string
 beginning with the letter `n`. The key is maintained across runs in a
 database.
 
-Cluster members are configured in the `rippled.cfg` file under
+Cluster members are configured in the `xrpld.cfg` file under
 `[cluster_nodes]`. Each member should be configured on a line beginning
 with the node public key, followed optionally by a space and a friendly
 name.

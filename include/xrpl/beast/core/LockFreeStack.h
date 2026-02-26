@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef BEAST_INTRUSIVE_LOCKFREESTACK_H_INCLUDED
-#define BEAST_INTRUSIVE_LOCKFREESTACK_H_INCLUDED
+#pragma once
 
 #include <atomic>
 #include <iterator>
@@ -33,21 +13,16 @@ class LockFreeStackIterator
 {
 protected:
     using Node = typename Container::Node;
-    using NodePtr =
-        typename std::conditional<IsConst, Node const*, Node*>::type;
+    using NodePtr = typename std::conditional<IsConst, Node const*, Node*>::type;
 
 public:
     using iterator_category = std::forward_iterator_tag;
     using value_type = typename Container::value_type;
     using difference_type = typename Container::difference_type;
-    using pointer = typename std::conditional<
-        IsConst,
-        typename Container::const_pointer,
-        typename Container::pointer>::type;
-    using reference = typename std::conditional<
-        IsConst,
-        typename Container::const_reference,
-        typename Container::reference>::type;
+    using pointer =
+        typename std::conditional<IsConst, typename Container::const_pointer, typename Container::pointer>::type;
+    using reference =
+        typename std::conditional<IsConst, typename Container::const_reference, typename Container::reference>::type;
 
     LockFreeStackIterator() : m_node()
     {
@@ -58,9 +33,7 @@ public:
     }
 
     template <bool OtherIsConst>
-    explicit LockFreeStackIterator(
-        LockFreeStackIterator<Container, OtherIsConst> const& other)
-        : m_node(other.m_node)
+    explicit LockFreeStackIterator(LockFreeStackIterator<Container, OtherIsConst> const& other) : m_node(other.m_node)
     {
     }
 
@@ -179,8 +152,7 @@ public:
     using size_type = std::size_t;
     using difference_type = std::ptrdiff_t;
     using iterator = LockFreeStackIterator<LockFreeStack<Element, Tag>, false>;
-    using const_iterator =
-        LockFreeStackIterator<LockFreeStack<Element, Tag>, true>;
+    using const_iterator = LockFreeStackIterator<LockFreeStack<Element, Tag>, true>;
 
     LockFreeStack() : m_end(nullptr), m_head(&m_end)
     {
@@ -218,11 +190,7 @@ public:
         {
             first = (old_head == &m_end);
             node->m_next = old_head;
-        } while (!m_head.compare_exchange_strong(
-            old_head,
-            node,
-            std::memory_order_release,
-            std::memory_order_relaxed));
+        } while (!m_head.compare_exchange_strong(old_head, node, std::memory_order_release, std::memory_order_relaxed));
         return first;
     }
 
@@ -245,11 +213,7 @@ public:
             if (node == &m_end)
                 return nullptr;
             new_head = node->m_next.load();
-        } while (!m_head.compare_exchange_strong(
-            node,
-            new_head,
-            std::memory_order_release,
-            std::memory_order_relaxed));
+        } while (!m_head.compare_exchange_strong(node, new_head, std::memory_order_release, std::memory_order_relaxed));
         return static_cast<Element*>(node);
     }
 
@@ -303,5 +267,3 @@ private:
 };
 
 }  // namespace beast
-
-#endif

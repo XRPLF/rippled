@@ -1,31 +1,12 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 // {
 //   ledger_hash : <ledger>,
@@ -74,35 +55,28 @@ doTransactionEntry(RPC::JsonContext& context)
         {
             if (context.apiVersion > 1)
             {
-                jvResult[jss::tx_json] =
-                    sttx->getJson(JsonOptions::disable_API_prior_V2);
+                jvResult[jss::tx_json] = sttx->getJson(JsonOptions::disable_API_prior_V2);
                 jvResult[jss::hash] = to_string(sttx->getTransactionID());
 
                 if (!lpLedger->open())
-                    jvResult[jss::ledger_hash] = to_string(
-                        context.ledgerMaster.getHashBySeq(lpLedger->seq()));
+                    jvResult[jss::ledger_hash] = to_string(context.ledgerMaster.getHashBySeq(lpLedger->seq()));
 
-                bool const validated =
-                    context.ledgerMaster.isValidated(*lpLedger);
+                bool const validated = context.ledgerMaster.isValidated(*lpLedger);
 
                 jvResult[jss::validated] = validated;
                 if (validated)
                 {
                     jvResult[jss::ledger_index] = lpLedger->seq();
-                    if (auto closeTime = context.ledgerMaster.getCloseTimeBySeq(
-                            lpLedger->seq()))
-                        jvResult[jss::close_time_iso] =
-                            to_string_iso(*closeTime);
+                    if (auto closeTime = context.ledgerMaster.getCloseTimeBySeq(lpLedger->seq()))
+                        jvResult[jss::close_time_iso] = to_string_iso(*closeTime);
                 }
             }
             else
                 jvResult[jss::tx_json] = sttx->getJson(JsonOptions::none);
 
-            RPC::insertDeliverMax(
-                jvResult[jss::tx_json], sttx->getTxnType(), context.apiVersion);
+            RPC::insertDeliverMax(jvResult[jss::tx_json], sttx->getTxnType(), context.apiVersion);
 
-            auto const json_meta =
-                (context.apiVersion > 1 ? jss::meta : jss::metadata);
+            auto const json_meta = (context.apiVersion > 1 ? jss::meta : jss::metadata);
             if (stobj)
                 jvResult[json_meta] = stobj->getJson(JsonOptions::none);
             // 'accounts'
@@ -114,4 +88,4 @@ doTransactionEntry(RPC::JsonContext& context)
     return jvResult;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
