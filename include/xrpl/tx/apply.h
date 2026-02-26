@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/tx/applySteps.h>
