@@ -182,6 +182,7 @@ words:
   - NOLINTNEXTLINE
   - nonxrp
   - noripple
+  - nostd
   - nudb
   - nullptr
   - nunl
@@ -314,3 +315,9 @@ words:
   - xrplf
   - xxhash
   - xxhasher
+  - xychart
+  - otelc
+  - zpages
+  - traceql
+  - Gantt
+  - gantt
