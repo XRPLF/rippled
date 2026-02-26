@@ -236,8 +236,14 @@ jobs:
         if: ${{ failure() && !inputs.build_only }}
         working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
         run: |
-          grep -E "failed" unittest.log || echo "No failure details found in log"
+          if [ ! -f unittest.log ]; then
+            echo "unittest.log not found; embedded tests may not have run."
+            exit 0
+          fi
 
+          if ! grep -E "failed" unittest.log; then
+            echo "Log present but no failure lines found in unittest.log."
+          fi
       - name: Debug failure (Linux)
         if: ${{ failure() && runner.os == 'Linux' && !inputs.build_only }}
         run: |
