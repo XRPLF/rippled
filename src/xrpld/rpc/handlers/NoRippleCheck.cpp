@@ -171,16 +171,6 @@ doNoRippleCheck(RPC::JsonContext& context)
                         fillTransaction(context, tx, accountID, seq, *ledger);
                     }
 
-                    STAmount limitAmount(
-                        ownedItem->getFieldAmount(bLow ? sfLowLimit : sfHighLimit));
-                    limitAmount.setIssuer(peer);
-
-                    Json::Value& tx = jvTransactions.append(Json::objectValue);
-                    tx["TransactionType"] = jss::TrustSet;
-                    tx["LimitAmount"] = limitAmount.getJson(JsonOptions::none);
-                    tx["Flags"] = bNoRipple ? tfClearNoRipple : tfSetNoRipple;
-                    fillTransaction(context, tx, accountID, seq, *ledger);
-
                     return true;
                 }
             }
