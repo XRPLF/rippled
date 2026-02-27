@@ -37,7 +37,8 @@ public:
         auto const minMantissa = Number::minMantissa();
         try
         {
-            Number const x = Number{false, minMantissa * 10, 32768, Number::normalized{}};
+            [[maybe_unused]] Number const x =
+                Number{false, minMantissa * 10, 32768, Number::normalized{}};
         }
         catch (std::overflow_error const&)
         {

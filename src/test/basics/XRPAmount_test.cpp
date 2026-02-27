@@ -230,7 +230,9 @@ public:
 
         {
             // Similar test as above, but for negative values
-            XRPAmount const big(minXRP);
+            // Note: intentionally not const for now to prevent constant folding (leads to overflow
+            // error at compile time)
+            XRPAmount big(minXRP);
             BEAST_EXPECT(big == mulRatio(big, maxUInt32, maxUInt32, true));
             // rounding mode shouldn't matter as the result is exact
             BEAST_EXPECT(big == mulRatio(big, maxUInt32, maxUInt32, false));
