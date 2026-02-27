@@ -158,7 +158,7 @@ public:
     virtual LedgerIndex
     getMaxDisallowedLedger() = 0;
 
-    /** Returns the number of threads the application is running on. */
+    /** Returns the number of io_context (I/O worker) threads used by the application. */
     virtual size_t
     getNumberOfThreads() const = 0;
 };
