@@ -1149,6 +1149,11 @@ EscrowFinish::doApply()
 
         if (auto const& data = ledgerDataProvider->getData(); data.has_value())
         {
+            if (data->size() > maxWasmDataLength)
+            {
+                // should already be checked in the updateData host function
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+            }
             slep->setFieldVL(sfData, makeSlice(*data));
             ctx_.view().update(slep);
         }
