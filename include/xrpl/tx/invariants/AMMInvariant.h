@@ -3,7 +3,6 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 

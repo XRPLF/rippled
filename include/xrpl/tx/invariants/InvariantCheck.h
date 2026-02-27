@@ -3,10 +3,8 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
-
 #include <xrpl/tx/invariants/AMMInvariant.h>
 #include <xrpl/tx/invariants/FreezeInvariant.h>
 #include <xrpl/tx/invariants/LoanInvariant.h>

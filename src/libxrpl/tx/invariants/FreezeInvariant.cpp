@@ -1,10 +1,9 @@
+#include <xrpl/tx/invariants/FreezeInvariant.h>
+//
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TxFormats.h>
-#include <xrpl/tx/invariants/FreezeInvariant.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
 namespace xrpl {

@@ -1,6 +1,7 @@
+#include <xrpl/tx/invariants/InvariantCheck.h>
+//
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -9,9 +10,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/SystemParameters.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
-#include <xrpl/tx/invariants/InvariantCheck.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
 #include <cstdint>
@@ -1006,7 +1005,5 @@ NoModifiedUnmodifiableFields::finalize(
     }
     return true;
 }
-
-//------------------------------------------------------------------------------
 
 }  // namespace xrpl

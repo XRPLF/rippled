@@ -2,7 +2,6 @@
 
 #include <xrpl/protocol/STTx.h>
 
-#include <cstdint>
 #include <type_traits>
 
 namespace xrpl {
