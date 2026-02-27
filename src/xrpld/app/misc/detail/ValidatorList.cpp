@@ -1477,7 +1477,7 @@ ValidatorList::removePublisherList(
 std::size_t
 ValidatorList::count(ValidatorList::shared_lock const&) const
 {
-    return publisherLists_.size() + (localPublisherList.list.empty() > 0);
+    return publisherLists_.size() + (localPublisherList.list.size() > 0);
 }
 
 std::size_t
