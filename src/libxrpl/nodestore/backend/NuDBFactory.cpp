@@ -179,17 +179,17 @@ public:
     }
 
     Status
-    fetch(void const* key, std::shared_ptr<NodeObject>* pno) override
+    fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pno) override
     {
         Status status;
         pno->reset();
         nudb::error_code ec;
         db_.fetch(
-            key,
-            [key, pno, &status](void const* data, std::size_t size) {
+            hash.data(),
+            [&hash, pno, &status](void const* data, std::size_t size) {
                 nudb::detail::buffer bf;
                 auto const result = nodeobject_decompress(data, size, bf);
-                DecodedBlob decoded(key, result.first, result.second);
+                DecodedBlob decoded(hash.data(), result.first, result.second);
                 if (!decoded.wasOk())
                 {
                     status = dataCorrupt;
@@ -207,14 +207,14 @@ public:
     }
 
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
-    fetchBatch(std::vector<uint256 const*> const& hashes) override
+    fetchBatch(std::vector<uint256> const& hashes) override
     {
         std::vector<std::shared_ptr<NodeObject>> results;
         results.reserve(hashes.size());
         for (auto const& h : hashes)
         {
             std::shared_ptr<NodeObject> nObj;
-            Status status = fetch(h->begin(), &nObj);
+            Status status = fetch(h, &nObj);
             if (status != ok)
                 results.push_back({});
             else
