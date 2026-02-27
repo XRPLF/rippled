@@ -33,7 +33,7 @@ DatabaseNodeImp::fetchNodeObject(
 
     try
     {
-        status = backend_->fetch(hash.data(), &nodeObject);
+        status = backend_->fetch(hash, &nodeObject);
     }
     catch (std::exception const& e)
     {
@@ -68,18 +68,10 @@ DatabaseNodeImp::fetchBatch(std::vector<uint256> const& hashes)
     using namespace std::chrono;
     auto const before = steady_clock::now();
 
-    std::vector<uint256 const*> batch{};
-    batch.reserve(hashes.size());
-    for (size_t i = 0; i < hashes.size(); ++i)
-    {
-        auto const& hash = hashes[i];
-        batch.push_back(&hash);
-    }
-
     // Get the node objects that match the hashes from the backend. To protect
     // against the backends returning fewer or more results than expected, the
     // container is resized to the number of hashes.
-    auto results = backend_->fetchBatch(batch).first;
+    auto results = backend_->fetchBatch(hashes).first;
     XRPL_ASSERT(
         results.size() == hashes.size() || results.empty(),
         "number of output objects either matches number of input hashes or is empty");
