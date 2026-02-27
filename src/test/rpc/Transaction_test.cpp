@@ -775,6 +775,23 @@ class Transaction_test : public beast::unit_test::suite
                 result[jss::result][jss::ledger_hash] ==
                 "B41882E20F0EC6228417D28B9AE0F33833645D35F6799DFB782AC97FC4BB51"
                 "D2");
+
+            auto const& tx_json = result[jss::result][jss::tx_json];
+            if (apiVersion >= 3)
+            {
+                // In API v3, server-added lower-case fields must not appear
+                // inside tx_json; they are at the result level.
+                BEAST_EXPECT(!tx_json.isMember(jss::date));
+                BEAST_EXPECT(!tx_json.isMember(jss::ledger_index));
+                BEAST_EXPECT(!tx_json.isMember(jss::ctid));
+            }
+            else
+            {
+                // In API v2, date and ledger_index are still included in
+                // tx_json for backwards compatibility.
+                BEAST_EXPECT(tx_json.isMember(jss::date));
+                BEAST_EXPECT(tx_json.isMember(jss::ledger_index));
+            }
         }
 
         for (auto memberIt = expected.begin(); memberIt != expected.end(); memberIt++)

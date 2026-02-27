@@ -6,6 +6,13 @@ For info about how [API versioning](https://xrpl.org/request-formatting.html#api
 
 ## Breaking Changes
 
+### Modifications to `tx` and `account_tx`
+
+In API versions 1 and 2, the `tx_json` field in `tx` and `account_tx` responses includes server-added lower-case fields (`date`, `ledger_index`, and `ctid`) that are not part of the canonical signed transaction. In API version 3, these fields are removed from `tx_json` and are only present at the top-level `result` object.
+
+- **Before (API v1 and v2)**: The `tx_json` object in the response contained `date`, `ledger_index`, and `ctid` fields alongside the canonical PascalCase transaction fields.
+- **After (API v3)**: The `tx_json` object contains only the canonical signed transaction fields. The `date`, `ledger_index`, and `ctid` fields appear exclusively at the top-level `result` object.
+
 ### Modifications to `amm_info`
 
 The order of error checks has been changed to provide more specific error messages. ([#4924](https://github.com/XRPLF/rippled/pull/4924))

@@ -127,20 +127,49 @@ class AccountTx_test : public beast::unit_test::suite
                     {
                         auto const& payment = j[jss::result][jss::transactions][1u];
 
-                        return (payment.isMember(jss::tx_json)) &&
-                            (payment[jss::tx_json][jss::TransactionType] == jss::Payment) &&
-                            (payment[jss::tx_json][jss::DeliverMax] == "10000000010") &&
-                            (!payment[jss::tx_json].isMember(jss::Amount)) &&
-                            (!payment[jss::tx_json].isMember(jss::hash)) &&
-                            (payment[jss::hash] ==
-                             "9F3085D85F472D1CC29627F260DF68EDE59D42D1D0C33E345"
-                             "ECF0D4CE981D0A8") &&
-                            (payment[jss::validated] == true) &&
-                            (payment[jss::ledger_index] == 3) &&
-                            (payment[jss::ledger_hash] ==
-                             "5476DCD816EA04CBBA57D47BBF1FC58A5217CC93A5ADD79CB"
-                             "580A5AFDD727E33") &&
-                            (payment[jss::close_time_iso] == "2000-01-01T00:00:10Z");
+                        if (apiVersion >= 3)
+                        {
+                            // In API v3, server-added lower-case fields must
+                            // not be in tx_json
+                            return (payment.isMember(jss::tx_json)) &&
+                                (payment[jss::tx_json][jss::TransactionType] == jss::Payment) &&
+                                (payment[jss::tx_json][jss::DeliverMax] == "10000000010") &&
+                                (!payment[jss::tx_json].isMember(jss::Amount)) &&
+                                (!payment[jss::tx_json].isMember(jss::hash)) &&
+                                (!payment[jss::tx_json].isMember(jss::date)) &&
+                                (!payment[jss::tx_json].isMember(jss::ledger_index)) &&
+                                (!payment[jss::tx_json].isMember(jss::ctid)) &&
+                                (payment[jss::hash] ==
+                                 "9F3085D85F472D1CC29627F260DF68EDE59D42D1D0C33E345"
+                                 "ECF0D4CE981D0A8") &&
+                                (payment[jss::validated] == true) &&
+                                (payment[jss::ledger_index] == 3) &&
+                                (payment[jss::ledger_hash] ==
+                                 "5476DCD816EA04CBBA57D47BBF1FC58A5217CC93A5ADD79CB"
+                                 "580A5AFDD727E33") &&
+                                (payment[jss::close_time_iso] == "2000-01-01T00:00:10Z");
+                        }
+                        else
+                        {
+                            // In API v2, date and ledger_index are still in
+                            // tx_json for backwards compatibility
+                            return (payment.isMember(jss::tx_json)) &&
+                                (payment[jss::tx_json][jss::TransactionType] == jss::Payment) &&
+                                (payment[jss::tx_json][jss::DeliverMax] == "10000000010") &&
+                                (!payment[jss::tx_json].isMember(jss::Amount)) &&
+                                (!payment[jss::tx_json].isMember(jss::hash)) &&
+                                (payment[jss::tx_json].isMember(jss::date)) &&
+                                (payment[jss::tx_json].isMember(jss::ledger_index)) &&
+                                (payment[jss::hash] ==
+                                 "9F3085D85F472D1CC29627F260DF68EDE59D42D1D0C33E345"
+                                 "ECF0D4CE981D0A8") &&
+                                (payment[jss::validated] == true) &&
+                                (payment[jss::ledger_index] == 3) &&
+                                (payment[jss::ledger_hash] ==
+                                 "5476DCD816EA04CBBA57D47BBF1FC58A5217CC93A5ADD79CB"
+                                 "580A5AFDD727E33") &&
+                                (payment[jss::close_time_iso] == "2000-01-01T00:00:10Z");
+                        }
                     }
                     else
                     {

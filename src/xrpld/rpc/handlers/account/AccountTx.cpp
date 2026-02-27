@@ -289,8 +289,12 @@ populateJsonResponse(
                     auto const json_tx = (context.apiVersion > 1 ? jss::tx_json : jss::tx);
                     if (context.apiVersion > 1)
                     {
-                        jvObj[json_tx] = txn->getJson(
-                            JsonOptions::include_date | JsonOptions::disable_API_prior_V2, false);
+                        auto const opts = context.apiVersion >= 3
+                            ? JsonOptions::disable_API_prior_V2 |
+                                JsonOptions::disable_API_prior_V3
+                            : JsonOptions::include_date |
+                                JsonOptions::disable_API_prior_V2;
+                        jvObj[json_tx] = txn->getJson(opts, false);
                         jvObj[jss::hash] = to_string(txn->getID());
                         jvObj[jss::ledger_index] = txn->getLedger();
                         jvObj[jss::ledger_hash] =

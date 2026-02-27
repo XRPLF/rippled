@@ -23,9 +23,10 @@ struct JsonOptions
         none                        = 0b0000'0000,
         include_date                = 0b0000'0001,
         disable_API_prior_V2        = 0b0000'0010,
+        disable_API_prior_V3        = 0b0000'0100,
 
         // IMPORTANT `_all` must be union of all of the above; see also operator~
-        _all                        = 0b0000'0011
+        _all                        = 0b0000'0111
         // clang-format on
     };
 

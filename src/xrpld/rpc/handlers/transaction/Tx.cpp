@@ -190,8 +190,14 @@ populateJsonResponse(
         auto const& sttx = result.txn->getSTransaction();
         if (context.apiVersion > 1)
         {
-            constexpr auto optionsJson =
+            // In API v2, include_date and disable_API_prior_V2 are used to
+            // include date/ledger_index/ctid in tx_json. In API v3+, those
+            // fields are excluded from tx_json and are only at result level.
+            constexpr auto optionsV2 =
                 JsonOptions::include_date | JsonOptions::disable_API_prior_V2;
+            constexpr auto optionsV3 =
+                JsonOptions::disable_API_prior_V2 | JsonOptions::disable_API_prior_V3;
+            auto const optionsJson = context.apiVersion >= 3 ? optionsV3 : optionsV2;
             if (args.binary)
             {
                 response[jss::tx_blob] = result.txn->getJson(optionsJson, true);
