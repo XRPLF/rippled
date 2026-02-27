@@ -556,7 +556,7 @@ struct MultiApiJson_test : beast::unit_test::suite
             static_assert([](auto&& v) {
                 return !requires {
                     v.visitor(
-                        declval<decltype(v)>(),  // cannot bind rvalue
+                        std::move(v),  // cannot bind rvalue
                         1,
                         [](Json::Value&, auto) {});
                 };
