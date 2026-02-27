@@ -157,6 +157,10 @@ public:
      * than the last ledger it persisted. */
     virtual LedgerIndex
     getMaxDisallowedLedger() = 0;
+
+    /** Returns the number of threads the application is running on. */
+    virtual size_t
+    getNumberOfThreads() const = 0;
 };
 
 std::unique_ptr<Application>

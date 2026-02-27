@@ -425,6 +425,9 @@ public:
     [[nodiscard]] bool
     syncClose(std::chrono::system_clock::duration timeout = std::chrono::seconds{1})
     {
+        XRPL_ASSERT(
+            app().getNumberOfThreads() == 1,
+            "syncClose() is only useful on an application with a single thread");
         auto const result = close();
         std::promise<void> server_barrier;
         boost::asio::post(app().getIOContext(), [&]() { server_barrier.set_value(); });

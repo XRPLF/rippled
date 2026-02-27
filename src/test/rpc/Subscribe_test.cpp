@@ -26,7 +26,7 @@ public:
     {
         using namespace std::chrono_literals;
         using namespace jtx;
-        Env env(*this);
+        Env env{*this, single_thread_io(envconfig())};
         auto wsc = makeWSClient(env.app().config());
         Json::Value stream;
 
@@ -92,7 +92,7 @@ public:
     {
         using namespace std::chrono_literals;
         using namespace jtx;
-        Env env(*this);
+        Env env{*this, single_thread_io(envconfig())};
         auto wsc = makeWSClient(env.app().config());
         Json::Value stream;
 
@@ -150,7 +150,7 @@ public:
     {
         using namespace std::chrono_literals;
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, single_thread_io(envconfig()));
         auto baseFee = env.current()->fees().base.drops();
         auto wsc = makeWSClient(env.app().config());
         Json::Value stream;
@@ -288,6 +288,7 @@ public:
         using namespace jtx;
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
             cfg->FEES.reference_fee = 10;
+            cfg = single_thread_io(std::move(cfg));
             return cfg;
         }));
         auto wsc = makeWSClient(env.app().config());
@@ -360,7 +361,7 @@ public:
     testManifests()
     {
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, single_thread_io(envconfig()));
         auto wsc = makeWSClient(env.app().config());
         Json::Value stream;
 
@@ -394,7 +395,7 @@ public:
     {
         using namespace jtx;
 
-        Env env{*this, envconfig(validator, ""), features};
+        Env env{*this, single_thread_io(envconfig(validator, "")), features};
         auto& cfg = env.app().config();
         if (!BEAST_EXPECT(cfg.section(SECTION_VALIDATION_SEED).empty()))
             return;
@@ -505,7 +506,7 @@ public:
     {
         using namespace jtx;
         testcase("Subscribe by url");
-        Env env{*this};
+        Env env{*this, single_thread_io(envconfig())};
 
         Json::Value jv;
         jv[jss::url] = "http://localhost/events";
@@ -536,7 +537,7 @@ public:
         auto const method = subscribe ? "subscribe" : "unsubscribe";
         testcase << "Error cases for " << method;
 
-        Env env{*this};
+        Env env{*this, single_thread_io(envconfig())};
         auto wsc = makeWSClient(env.app().config());
 
         {
@@ -572,7 +573,7 @@ public:
         }
 
         {
-            Env env_nonadmin{*this, no_admin(envconfig())};
+            Env env_nonadmin{*this, single_thread_io(no_admin(envconfig()))};
             Json::Value jv;
             jv[jss::url] = "no-url";
             auto jr = env_nonadmin.rpc("json", method, to_string(jv))[jss::result];
@@ -946,7 +947,7 @@ public:
              *
              * also test subscribe to the account before it is created
              */
-            Env env(*this);
+            Env env(*this, single_thread_io(envconfig()));
             auto wscTxHistory = makeWSClient(env.app().config());
             Json::Value request;
             request[jss::account_history_tx_stream] = Json::objectValue;
@@ -989,7 +990,7 @@ public:
              * subscribe genesis account tx history without txns
              * subscribe to bob's account after it is created
              */
-            Env env(*this);
+            Env env(*this, single_thread_io(envconfig()));
             auto wscTxHistory = makeWSClient(env.app().config());
             Json::Value request;
             request[jss::account_history_tx_stream] = Json::objectValue;
@@ -1066,7 +1067,7 @@ public:
              * subscribe account and subscribe account tx history
              * and compare txns streamed
              */
-            Env env(*this);
+            Env env(*this, single_thread_io(envconfig()));
             auto wscAccount = makeWSClient(env.app().config());
             auto wscTxHistory = makeWSClient(env.app().config());
 
@@ -1135,7 +1136,7 @@ public:
              * alice issues USD to carol
              * mix USD and XRP payments
              */
-            Env env(*this);
+            Env env(*this, single_thread_io(envconfig()));
             auto const USD_a = alice["USD"];
 
             std::array<Account, 2> accounts = {alice, carol};
@@ -1174,7 +1175,7 @@ public:
             /*
              * long transaction history
              */
-            Env env(*this);
+            Env env(*this, single_thread_io(envconfig()));
             std::array<Account, 2> accounts = {alice, carol};
             env.fund(XRP(444444), accounts);
             BEAST_EXPECT(env.syncClose());
@@ -1228,7 +1229,7 @@ public:
             jtx::testable_amendments() | featurePermissionedDomains | featureCredentials |
             featurePermissionedDEX};
 
-        Env env(*this, all);
+        Env env(*this, single_thread_io(envconfig()), all);
         PermissionedDEX permDex(env);
         auto const alice = permDex.alice;
         auto const bob = permDex.bob;
@@ -1290,7 +1291,7 @@ public:
         Account const bob{"bob"};
         Account const broker{"broker"};
 
-        Env env{*this, features};
+        Env env{*this, single_thread_io(envconfig()), features};
         env.fund(XRP(10000), alice, bob, broker);
         BEAST_EXPECT(env.syncClose());
 
