@@ -219,7 +219,11 @@ populateJsonResponse(
             {
                 response[jss::ledger_index] = result.txn->getLedger();
                 if (result.closeTime)
+                {
                     response[jss::close_time_iso] = to_string_iso(*result.closeTime);
+                    if (context.apiVersion >= 3)
+                        response[jss::date] = result.closeTime->time_since_epoch().count();
+                }
             }
         }
         else

@@ -130,7 +130,7 @@ class AccountTx_test : public beast::unit_test::suite
                         if (apiVersion >= 3)
                         {
                             // In API v3, server-added lower-case fields must
-                            // not be in tx_json
+                            // not be in tx_json, but must be at result level
                             return (payment.isMember(jss::tx_json)) &&
                                 (payment[jss::tx_json][jss::TransactionType] == jss::Payment) &&
                                 (payment[jss::tx_json][jss::DeliverMax] == "10000000010") &&
@@ -139,6 +139,9 @@ class AccountTx_test : public beast::unit_test::suite
                                 (!payment[jss::tx_json].isMember(jss::date)) &&
                                 (!payment[jss::tx_json].isMember(jss::ledger_index)) &&
                                 (!payment[jss::tx_json].isMember(jss::ctid)) &&
+                                // date and ctid must be at the transaction
+                                // object level (outside tx_json) in API v3
+                                (payment.isMember(jss::date)) && (payment.isMember(jss::ctid)) &&
                                 (payment[jss::hash] ==
                                  "9F3085D85F472D1CC29627F260DF68EDE59D42D1D0C33E345"
                                  "ECF0D4CE981D0A8") &&

@@ -784,6 +784,8 @@ class Transaction_test : public beast::unit_test::suite
                 BEAST_EXPECT(!tx_json.isMember(jss::date));
                 BEAST_EXPECT(!tx_json.isMember(jss::ledger_index));
                 BEAST_EXPECT(!tx_json.isMember(jss::ctid));
+                // date must be at result level in API v3
+                BEAST_EXPECT(result[jss::result].isMember(jss::date));
             }
             else
             {
