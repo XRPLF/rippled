@@ -229,8 +229,21 @@ jobs:
         env:
           BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
         run: |
-          ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}"
+          set -o pipefail
+          ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee unittest.log
 
+      - name: Show test failure summary
+        if: ${{ failure() && !inputs.build_only }}
+        working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
+        run: |
+          if [ ! -f unittest.log ]; then
+            echo "unittest.log not found; embedded tests may not have run."
+            exit 0
+          fi
+
+          if ! grep -E "failed" unittest.log; then
+            echo "Log present but no failure lines found in unittest.log."
+          fi
       - name: Debug failure (Linux)
         if: ${{ failure() && runner.os == 'Linux' && !inputs.build_only }}
         run: |
