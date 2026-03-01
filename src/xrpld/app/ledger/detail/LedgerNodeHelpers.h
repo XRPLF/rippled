@@ -16,7 +16,7 @@ namespace xrpl {
 /**
  * @brief Validates a ledger node proto message.
  *
- * This function checks whether a ledger node has the expected fields:
+ * This function checks whether a ledger node has the expected fields (for non-ledger base data):
  * - The node must have `nodedata`.
  * - If the legacy `nodeid` field is present then the new `id` and `depth` fields must not be
  *   present.
