@@ -1,0 +1,6 @@
+import xrpl
+
+# Generate a new wallet
+wallet = xrpl.wallet.Wallet.create()
+print("Address:", wallet.classic_address)
+print("Seed:", wallet.seed)
