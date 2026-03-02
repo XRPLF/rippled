@@ -635,8 +635,8 @@ addEmptyHolding(
         /*deepFreeze*/ false,
         /*saBalance=*/STAmount{Issue{currency, noAccount()}},
         /*saLimit=*/STAmount{Issue{currency, dstId}},
-        /*uSrcQualityIn=*/0,
-        /*uSrcQualityOut=*/0,
+        /*uQualityIn=*/0,
+        /*uQualityOut=*/0,
         journal);
 }
 

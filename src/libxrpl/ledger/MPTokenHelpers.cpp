@@ -270,10 +270,6 @@ removeEmptyHolding(
     );
 }
 
-// Forward declarations for functions in RippleStateHelpers/View
-TER
-requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, AuthType authType);
-
 [[nodiscard]] TER
 requireAuth(
     ReadView const& view,
@@ -484,13 +480,6 @@ canTransfer(
     }
     return tesSUCCESS;
 }
-
-// Helper function forward declarations
-bool
-canSubtract(STAmount const& a, STAmount const& b);
-
-bool
-canAdd(STAmount const& a, STAmount const& b);
 
 TER
 rippleLockEscrowMPT(
