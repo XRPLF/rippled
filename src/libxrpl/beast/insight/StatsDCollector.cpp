@@ -87,6 +87,9 @@ public:
 
     ~StatsDCounterImpl() override;
 
+    StatsDCounterImpl&
+    operator=(StatsDCounterImpl const&) = delete;
+
     void
     increment(CounterImpl::value_type amount) override;
 
@@ -98,9 +101,6 @@ public:
     do_process() override;
 
 private:
-    StatsDCounterImpl&
-    operator=(StatsDCounterImpl const&) = delete;
-
     std::shared_ptr<StatsDCollectorImp> m_impl;
     std::string m_name;
     CounterImpl::value_type m_value{0};
@@ -116,6 +116,9 @@ public:
 
     ~StatsDEventImpl() override = default;
 
+    StatsDEventImpl&
+    operator=(StatsDEventImpl const&);
+
     void
     notify(EventImpl::value_type const& value) override;
 
@@ -125,9 +128,6 @@ public:
     do_process();
 
 private:
-    StatsDEventImpl&
-    operator=(StatsDEventImpl const&);
-
     std::shared_ptr<StatsDCollectorImp> m_impl;
     std::string m_name;
 };
@@ -140,6 +140,9 @@ public:
     StatsDGaugeImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl);
 
     ~StatsDGaugeImpl() override;
+
+    StatsDGaugeImpl&
+    operator=(StatsDGaugeImpl const&) = delete;
 
     void
     set(GaugeImpl::value_type value) override;
@@ -156,9 +159,6 @@ public:
     do_process() override;
 
 private:
-    StatsDGaugeImpl&
-    operator=(StatsDGaugeImpl const&) = delete;
-
     std::shared_ptr<StatsDCollectorImp> m_impl;
     std::string m_name;
     GaugeImpl::value_type m_last_value{0};
@@ -175,6 +175,9 @@ public:
 
     ~StatsDMeterImpl() override;
 
+    StatsDMeterImpl&
+    operator=(StatsDMeterImpl const&) = delete;
+
     void
     increment(MeterImpl::value_type amount) override;
 
@@ -186,9 +189,6 @@ public:
     do_process() override;
 
 private:
-    StatsDMeterImpl&
-    operator=(StatsDMeterImpl const&) = delete;
-
     std::shared_ptr<StatsDCollectorImp> m_impl;
     std::string m_name;
     MeterImpl::value_type m_value{0};

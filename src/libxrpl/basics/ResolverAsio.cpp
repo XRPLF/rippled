@@ -36,13 +36,11 @@ namespace xrpl {
 template <class Derived>
 class AsyncObject
 {
-protected:
 private:
     AsyncObject() : m_pending(0)
     {
     }
 
-protected:
 public:
     ~AsyncObject()
     {

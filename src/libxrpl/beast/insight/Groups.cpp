@@ -29,8 +29,6 @@ public:
     {
     }
 
-    ~GroupImp() override = default;
-
     std::string const&
     name() const override
     {

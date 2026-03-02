@@ -234,23 +234,20 @@ int
 compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
 {
     if (lhs.majorVersion > rhs.majorVersion)
-    {
         return 1;
-    }
+
     if (lhs.majorVersion < rhs.majorVersion)
         return -1;
 
     if (lhs.minorVersion > rhs.minorVersion)
-    {
         return 1;
-    }
+
     if (lhs.minorVersion < rhs.minorVersion)
         return -1;
 
     if (lhs.patchVersion > rhs.patchVersion)
-    {
         return 1;
-    }
+
     if (lhs.patchVersion < rhs.patchVersion)
         return -1;
 
@@ -258,9 +255,8 @@ compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
     {
         // Pre-releases have a lower precedence
         if (lhs.isRelease() && rhs.isPreRelease())
-        {
             return 1;
-        }
+
         if (lhs.isPreRelease() && rhs.isRelease())
             return -1;
 
@@ -271,9 +267,8 @@ compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
         {
             // A larger list of identifiers has a higher precedence
             if (i >= rhs.preReleaseIdentifiers.size())
-            {
                 return 1;
-            }
+
             if (i >= lhs.preReleaseIdentifiers.size())
                 return -1;
 
@@ -282,9 +277,8 @@ compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
 
             // Numeric identifiers have lower precedence
             if (!isNumeric(left) && isNumeric(right))
-            {
                 return 1;
-            }
+
             if (isNumeric(left) && !isNumeric(right))
                 return -1;
 
@@ -296,9 +290,8 @@ compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
                 int const iRight(lexicalCastThrow<int>(right));
 
                 if (iLeft > iRight)
-                {
                     return 1;
-                }
+
                 if (iLeft < iRight)
                     return -1;
             }
