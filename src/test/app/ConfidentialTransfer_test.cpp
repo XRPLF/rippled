@@ -87,6 +87,111 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         return strHex(buf);
     }
 
+    // Helper struct to encapsulate common setup for confidential send ZKP
+    // tests. Reduces redundancy across testForgedEqualityProof,
+    // testFiatShamirBinding, testProofComponentReuse, and
+    // testNegativeValueMalleability.
+    struct ConfidentialSendTestSetup
+    {
+        // Constants
+        uint64_t sendAmount;
+        size_t nRecipients;
+        uint32_t version;
+
+        // Blinding factors
+        Buffer blindingFactor;
+        Buffer amountBlindingFactor;
+        Buffer balanceBlindingFactor;
+
+        // Encrypted amounts
+        Buffer senderAmt;
+        Buffer destAmt;
+        Buffer issuerAmt;
+        std::optional<Buffer> auditorAmt;
+
+        // Commitments
+        Buffer amountCommitment;
+
+        // Long-lived pub key buffers (to avoid dangling Slice)
+        Buffer senderPubKey;
+        Buffer destPubKey;
+        Buffer issuerPubKey;
+        std::optional<Buffer> auditorPubKey;
+
+        // Balance data
+        uint64_t prevSpending;
+        Buffer prevEncryptedSpending;
+
+        // Balance commitment (declared after prevSpending for init order)
+        Buffer balanceCommitment;
+
+        // Recipients vector
+        std::vector<ConfidentialRecipient> recipients;
+
+        // Constructor that performs all common setup
+        ConfidentialSendTestSetup(
+            test::jtx::MPTTester& mpt,
+            test::jtx::Account const& sender,
+            test::jtx::Account const& dest,
+            test::jtx::Account const& issuer,
+            uint64_t amount,
+            std::optional<std::reference_wrapper<test::jtx::Account const>> auditor = std::nullopt)
+            : sendAmount(amount)
+            , nRecipients(auditor ? 4 : 3)
+            , version(mpt.getMPTokenVersion(sender))
+            , blindingFactor(generateBlindingFactor())
+            , amountBlindingFactor(generateBlindingFactor())
+            , balanceBlindingFactor(generateBlindingFactor())
+            , senderAmt(mpt.encryptAmount(sender, amount, blindingFactor))
+            , destAmt(mpt.encryptAmount(dest, amount, blindingFactor))
+            , issuerAmt(mpt.encryptAmount(issuer, amount, blindingFactor))
+            , auditorAmt(
+                  auditor ? std::optional<Buffer>(mpt.encryptAmount(auditor->get(), amount, blindingFactor))
+                          : std::nullopt)
+            , amountCommitment(mpt.getPedersenCommitment(amount, amountBlindingFactor))
+            , senderPubKey(*mpt.getPubKey(sender))
+            , destPubKey(*mpt.getPubKey(dest))
+            , issuerPubKey(*mpt.getPubKey(issuer))
+            , auditorPubKey(auditor ? std::optional<Buffer>(*mpt.getPubKey(auditor->get())) : std::nullopt)
+            , prevSpending(*mpt.getDecryptedBalance(sender, test::jtx::MPTTester::HOLDER_ENCRYPTED_SPENDING))
+            , prevEncryptedSpending(*mpt.getEncryptedBalance(sender, test::jtx::MPTTester::HOLDER_ENCRYPTED_SPENDING))
+            , balanceCommitment(mpt.getPedersenCommitment(prevSpending, balanceBlindingFactor))
+        {
+            recipients.push_back({Slice(senderPubKey), senderAmt});
+            recipients.push_back({Slice(destPubKey), destAmt});
+            recipients.push_back({Slice(issuerPubKey), issuerAmt});
+            if (auditor)
+                recipients.push_back({Slice(*auditorPubKey), *auditorAmt});
+        }
+
+        // Generate proof with current account sequence
+        std::optional<Buffer>
+        generateProof(
+            test::jtx::MPTTester& mpt,
+            test::jtx::Env& env,
+            test::jtx::Account const& sender,
+            test::jtx::Account const& dest) const
+        {
+            auto const ctxHash = getSendContextHash(sender.id(), env.seq(sender), mpt.issuanceID(), dest.id(), version);
+
+            return mpt.getConfidentialSendProof(
+                sender,
+                sendAmount,
+                recipients,
+                blindingFactor,
+                nRecipients,
+                ctxHash,
+                {.pedersenCommitment = amountCommitment,
+                 .amt = sendAmount,
+                 .encryptedAmt = senderAmt,
+                 .blindingFactor = amountBlindingFactor},
+                {.pedersenCommitment = balanceCommitment,
+                 .amt = prevSpending,
+                 .encryptedAmt = prevEncryptedSpending,
+                 .blindingFactor = balanceBlindingFactor});
+        }
+    };
+
     void
     testConvert(FeatureBitset features)
     {
@@ -3765,60 +3870,12 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
         mptAlice.mergeInbox({.account = carol});
 
-        // Common data - generated once
-        uint64_t const sendAmount = 10;
-        size_t const nRecipients = 3;
-        auto const version = mptAlice.getMPTokenVersion(bob);
-
-        Buffer const blindingFactor = generateBlindingFactor();
-        auto const senderAmt = mptAlice.encryptAmount(bob, sendAmount, blindingFactor);
-        auto const destAmt = mptAlice.encryptAmount(carol, sendAmount, blindingFactor);
-        auto const issuerAmt = mptAlice.encryptAmount(alice, sendAmount, blindingFactor);
-
-        auto const amountBlindingFactor = generateBlindingFactor();
-        auto const amountCommitment = mptAlice.getPedersenCommitment(sendAmount, amountBlindingFactor);
-
-        auto const prevSpending = mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
-        BEAST_EXPECT(prevSpending.has_value());
-        auto const balanceBlindingFactor = generateBlindingFactor();
-        auto const balanceCommitment = mptAlice.getPedersenCommitment(*prevSpending, balanceBlindingFactor);
-
-        // Store pub keys in long-lived buffers to avoid dangling Slice
-        Buffer const bobPubKey = *mptAlice.getPubKey(bob);
-        Buffer const carolPubKey = *mptAlice.getPubKey(carol);
-        Buffer const alicePubKey = *mptAlice.getPubKey(alice);
-
-        std::vector<ConfidentialRecipient> recipients;
-        recipients.push_back({Slice(bobPubKey), senderAmt});
-        recipients.push_back({Slice(carolPubKey), destAmt});
-        recipients.push_back({Slice(alicePubKey), issuerAmt});
-
-        auto const prevEncryptedSpending = mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
-        BEAST_EXPECT(prevEncryptedSpending.has_value());
-
-        // Helper to generate proof with current sequence
-        auto const generateProof = [&]() {
-            auto const ctxHash = getSendContextHash(bob.id(), env.seq(bob), mptAlice.issuanceID(), carol.id(), version);
-            return mptAlice.getConfidentialSendProof(
-                bob,
-                sendAmount,
-                recipients,
-                blindingFactor,
-                nRecipients,
-                ctxHash,
-                {.pedersenCommitment = amountCommitment,
-                 .amt = sendAmount,
-                 .encryptedAmt = senderAmt,
-                 .blindingFactor = amountBlindingFactor},
-                {.pedersenCommitment = balanceCommitment,
-                 .amt = *prevSpending,
-                 .encryptedAmt = *prevEncryptedSpending,
-                 .blindingFactor = balanceBlindingFactor});
-        };
+        // Use struct for common setup
+        ConfidentialSendTestSetup setup(mptAlice, bob, carol, alice, 10);
 
         // Forge destination ciphertext (Enc(20) instead of Enc(10))
         {
-            auto const proof = generateProof();
+            auto const proof = setup.generateProof(mptAlice, env, bob, carol);
             if (!BEAST_EXPECT(proof.has_value()))
                 return;
 
@@ -3828,19 +3885,19 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.send(
                 {.account = bob,
                  .dest = carol,
-                 .amt = sendAmount,
+                 .amt = setup.sendAmount,
                  .proof = strHex(*proof),
-                 .senderEncryptedAmt = senderAmt,
+                 .senderEncryptedAmt = setup.senderAmt,
                  .destEncryptedAmt = forgedDestAmt,
-                 .issuerEncryptedAmt = issuerAmt,
-                 .amountCommitment = amountCommitment,
-                 .balanceCommitment = balanceCommitment,
+                 .issuerEncryptedAmt = setup.issuerAmt,
+                 .amountCommitment = setup.amountCommitment,
+                 .balanceCommitment = setup.balanceCommitment,
                  .err = tecBAD_PROOF});
         }
 
         // Forge sender's ciphertext (Enc(5) instead of Enc(10))
         {
-            auto const proof = generateProof();
+            auto const proof = setup.generateProof(mptAlice, env, bob, carol);
             if (!BEAST_EXPECT(proof.has_value()))
                 return;
 
@@ -3850,19 +3907,19 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.send(
                 {.account = bob,
                  .dest = carol,
-                 .amt = sendAmount,
+                 .amt = setup.sendAmount,
                  .proof = strHex(*proof),
                  .senderEncryptedAmt = forgedSenderAmt,
-                 .destEncryptedAmt = destAmt,
-                 .issuerEncryptedAmt = issuerAmt,
-                 .amountCommitment = amountCommitment,
-                 .balanceCommitment = balanceCommitment,
+                 .destEncryptedAmt = setup.destAmt,
+                 .issuerEncryptedAmt = setup.issuerAmt,
+                 .amountCommitment = setup.amountCommitment,
+                 .balanceCommitment = setup.balanceCommitment,
                  .err = tecBAD_PROOF});
         }
 
         // Forge issuer's ciphertext (Enc(100) instead of Enc(10))
         {
-            auto const proof = generateProof();
+            auto const proof = setup.generateProof(mptAlice, env, bob, carol);
             if (!BEAST_EXPECT(proof.has_value()))
                 return;
 
@@ -3872,13 +3929,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.send(
                 {.account = bob,
                  .dest = carol,
-                 .amt = sendAmount,
+                 .amt = setup.sendAmount,
                  .proof = strHex(*proof),
-                 .senderEncryptedAmt = senderAmt,
-                 .destEncryptedAmt = destAmt,
+                 .senderEncryptedAmt = setup.senderAmt,
+                 .destEncryptedAmt = setup.destAmt,
                  .issuerEncryptedAmt = forgedIssuerAmt,
-                 .amountCommitment = amountCommitment,
-                 .balanceCommitment = balanceCommitment,
+                 .amountCommitment = setup.amountCommitment,
+                 .balanceCommitment = setup.balanceCommitment,
                  .err = tecBAD_PROOF});
         }
     }
@@ -3974,10 +4031,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         auto const ctxHash = getSendContextHash(bob.id(), env.seq(bob), mptAlice.issuanceID(), carol.id(), version);
 
         size_t const nRecipients = 3;
+        Buffer const bobPubKey = *mptAlice.getPubKey(bob);
+        Buffer const carolPubKey = *mptAlice.getPubKey(carol);
+        Buffer const alicePubKey = *mptAlice.getPubKey(alice);
         std::vector<ConfidentialRecipient> recipients;
-        recipients.push_back({Slice(*mptAlice.getPubKey(bob)), senderAmt});
-        recipients.push_back({Slice(*mptAlice.getPubKey(carol)), destAmt});
-        recipients.push_back({Slice(*mptAlice.getPubKey(alice)), issuerAmt});
+        recipients.push_back({Slice(bobPubKey), senderAmt});
+        recipients.push_back({Slice(carolPubKey), destAmt});
+        recipients.push_back({Slice(alicePubKey), issuerAmt});
 
         auto const prevEncryptedSpending = mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
         BEAST_EXPECT(prevEncryptedSpending.has_value());
@@ -4037,6 +4097,140 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     void
+    testNegativeValueMalleability(FeatureBitset features)
+    {
+        testcase("test Negative Value Malleability");
+
+        // =================================================================
+        // NEGATIVE VALUE FROM CIPHERTEXT MALLEABILITY
+        // =================================================================
+        //
+        // BACKGROUND:
+        // Bulletproofs prove that Pedersen-committed values lie in [0, 2^64-1].
+        // In confidential sends, the verifier derives the remaining balance
+        // commitment as:
+        //   PC_remaining = PC_balance - sendAmount * G
+        //
+        // A Pedersen commitment is an elliptic curve point:
+        //   PC(v, r) = v * G + r * H
+        //
+        // ATTACK SCENARIO:
+        // Bob has a confidential balance of 10 tokens and sends all 10. The
+        // honest remaining balance is 0. The attacker replaces the legitimate
+        // bulletproof with one that instead claims the remaining balance is
+        // static_cast<uint64_t>(-10) = 0xFFFFFFFFFFFFFFF6.
+        //
+        // This value is -10 reinterpreted as a 64-bit unsigned integer via
+        // two's complement wraparound. It is the value an attacker would claim
+        // as their "remaining balance" when attempting to send 20 tokens while
+        // holding only 10: the subtraction underflows in 64-bit arithmetic and
+        // wraps to a large positive number. Since both sendAmount (10) and the
+        // wrapped negative (0xFFFFFFFFFFFFFFF6) individually lie in [0, 2^64-1],
+        // a bulletproof for those two values CAN be generated — making this a
+        // plausible attempt to mint tokens from nothing and break the supply
+        // invariant.
+        //
+        // WHY THE ATTACK FAILS:
+        // The verifier independently derives:
+        //   PC_remaining = PC_balance - 10*G = PC(10) - 10*G = PC(0)
+        //
+        // The forged bulletproof was constructed for PC(0xFFFFFFFFFFFFFFF6),
+        // which is a completely different curve point than PC(0). Bulletproof
+        // soundness (under the discrete log assumption) guarantees that no valid
+        // proof exists for the wrong commitment: the verifier rejects the
+        // transaction with tecBAD_PROOF.
+        //
+        // RESULT:
+        // The supply invariant is preserved. Negative balances cannot be
+        // disguised as large uint64 values via 64-bit integer wraparound, and
+        // the range proof is sound against this ciphertext malleability vector.
+        // =================================================================
+
+        using namespace test::jtx;
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+        mptAlice.create({.ownerCount = 1, .flags = tfMPTCanLock | tfMPTCanPrivacy | tfMPTCanTransfer});
+        mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = carol});
+
+        mptAlice.pay(alice, bob, 1000);
+        mptAlice.pay(alice, carol, 1000);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+        mptAlice.generateKeyPair(carol);
+
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+        // Bob converts exactly 10 tokens — the minimum needed to execute
+        // a send of 10, leaving an honest remaining balance of 0.
+        mptAlice.convert({.account = bob, .amt = 10, .holderPubKey = mptAlice.getPubKey(bob)});
+        mptAlice.mergeInbox({.account = bob});
+
+        mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
+        mptAlice.mergeInbox({.account = carol});
+
+        // -10 reinterpreted as uint64_t via two's complement wraparound.
+        // Represents the "remaining balance" an attacker would claim when
+        // overdrafting 10 tokens from a zero balance (or 20 from a balance of 10).
+        uint64_t const negativeRemaining = static_cast<uint64_t>(-10);  // 0xFFFFFFFFFFFFFFF6
+
+        // Use struct for common setup
+        ConfidentialSendTestSetup setup(mptAlice, bob, carol, alice, 10);
+
+        auto const ctxHash =
+            getSendContextHash(bob.id(), env.seq(bob), mptAlice.issuanceID(), carol.id(), setup.version);
+
+        // Generate a fully valid proof for the legitimate send (sendAmount == balance,
+        // honest remaining == 0). The equality and linkage proofs in this proof are
+        // valid and will be reused; only the bulletproof will be replaced.
+        auto const validProof = setup.generateProof(mptAlice, env, bob, carol);
+        if (!BEAST_EXPECT(validProof.has_value()))
+            return;
+
+        // Forge a bulletproof claiming:
+        //   sendAmount  (10)                 is in [0, 2^64-1]  ← true
+        //   remaining   (0xFFFFFFFFFFFFFFF6) is in [0, 2^64-1]  ← technically true,
+        //                                                           but represents -10
+        //
+        // The proof is internally consistent (both values are valid uint64s), yet
+        // the verifier independently derives:
+        //   PC_remaining = PC_balance - 10*G = PC(10) - 10*G = PC(0)
+        //
+        // PC(0) != PC(0xFFFFFFFFFFFFFFF6), so the bulletproof is rejected.
+        auto const forgedBulletproof = mptAlice.getBulletproof(
+            {setup.sendAmount, negativeRemaining}, {setup.amountBlindingFactor, setup.balanceBlindingFactor}, ctxHash);
+
+        // Proof layout: [equality proof | amount linkage | balance linkage | bulletproof]
+        size_t const equalityProofSize = secp256k1_mpt_prove_same_plaintext_multi_size(setup.nRecipients);
+        size_t const bulletproofOffset = equalityProofSize + ecPedersenProofLength + ecPedersenProofLength;
+
+        Buffer forgedProof(validProof->size());
+        std::memcpy(forgedProof.data(), validProof->data(), bulletproofOffset);
+        std::memcpy(forgedProof.data() + bulletproofOffset, forgedBulletproof.data(), ecDoubleBulletproofLength);
+
+        // Submit the tampered proof. The system must reject it: the bulletproof
+        // proves a wrapped negative remaining balance, not the honest value (0).
+        // Acceptance would allow an attacker to spend tokens while fraudulently
+        // claiming a non-zero (effectively infinite) remaining balance.
+        mptAlice.send(
+            {.account = bob,
+             .dest = carol,
+             .amt = setup.sendAmount,
+             .proof = strHex(forgedProof),
+             .senderEncryptedAmt = setup.senderAmt,
+             .destEncryptedAmt = setup.destAmt,
+             .issuerEncryptedAmt = setup.issuerAmt,
+             .amountCommitment = setup.amountCommitment,
+             .balanceCommitment = setup.balanceCommitment,
+             .err = tecBAD_PROOF});
+    }
+
+    void
     testFiatShamirBinding(FeatureBitset features)
     {
         testcase("test Fiat-Shamir Binding");
@@ -4089,56 +4283,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
         mptAlice.mergeInbox({.account = carol});
 
-        // Common data - generated once
-        uint64_t const sendAmount = 10;
-        size_t const nRecipients = 3;
-        auto const version = mptAlice.getMPTokenVersion(bob);
-
-        Buffer const blindingFactor = generateBlindingFactor();
-        auto const senderAmt = mptAlice.encryptAmount(bob, sendAmount, blindingFactor);
-        auto const destAmt = mptAlice.encryptAmount(carol, sendAmount, blindingFactor);
-        auto const issuerAmt = mptAlice.encryptAmount(alice, sendAmount, blindingFactor);
-
-        auto const amountBlindingFactor = generateBlindingFactor();
-        auto const amountCommitment = mptAlice.getPedersenCommitment(sendAmount, amountBlindingFactor);
-
-        auto const prevSpending = mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
-        BEAST_EXPECT(prevSpending.has_value());
-        auto const balanceBlindingFactor = generateBlindingFactor();
-        auto const balanceCommitment = mptAlice.getPedersenCommitment(*prevSpending, balanceBlindingFactor);
-
-        // Store pub keys in long-lived buffers to avoid dangling Slice
-        Buffer const bobPubKey = *mptAlice.getPubKey(bob);
-        Buffer const carolPubKey = *mptAlice.getPubKey(carol);
-        Buffer const alicePubKey = *mptAlice.getPubKey(alice);
-
-        std::vector<ConfidentialRecipient> recipients;
-        recipients.push_back({Slice(bobPubKey), senderAmt});
-        recipients.push_back({Slice(carolPubKey), destAmt});
-        recipients.push_back({Slice(alicePubKey), issuerAmt});
-
-        auto const prevEncryptedSpending = mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
-        BEAST_EXPECT(prevEncryptedSpending.has_value());
-
-        // Helper to generate proof with current sequence
-        auto const generateProof = [&]() {
-            auto const ctxHash = getSendContextHash(bob.id(), env.seq(bob), mptAlice.issuanceID(), carol.id(), version);
-            return mptAlice.getConfidentialSendProof(
-                bob,
-                sendAmount,
-                recipients,
-                blindingFactor,
-                nRecipients,
-                ctxHash,
-                {.pedersenCommitment = amountCommitment,
-                 .amt = sendAmount,
-                 .encryptedAmt = senderAmt,
-                 .blindingFactor = amountBlindingFactor},
-                {.pedersenCommitment = balanceCommitment,
-                 .amt = *prevSpending,
-                 .encryptedAmt = *prevEncryptedSpending,
-                 .blindingFactor = balanceBlindingFactor});
-        };
+        // Use struct for common setup
+        ConfidentialSendTestSetup setup(mptAlice, bob, carol, alice, 10);
 
         // Variant A: Modify transcript input (commitment) after proof generation
         // -----------------------------------------------------------------
@@ -4150,23 +4296,23 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // forged commitment, it gets a different challenge than what the
         // prover used, causing the response scalars to fail verification.
         {
-            auto const proof = generateProof();
+            auto const proof = setup.generateProof(mptAlice, env, bob, carol);
             if (!BEAST_EXPECT(proof.has_value()))
                 return;
 
             auto const forgedBlindingFactor = generateBlindingFactor();
-            auto const forgedCommitment = mptAlice.getPedersenCommitment(sendAmount + 5, forgedBlindingFactor);
+            auto const forgedCommitment = mptAlice.getPedersenCommitment(setup.sendAmount + 5, forgedBlindingFactor);
 
             mptAlice.send(
                 {.account = bob,
                  .dest = carol,
-                 .amt = sendAmount,
+                 .amt = setup.sendAmount,
                  .proof = strHex(*proof),
-                 .senderEncryptedAmt = senderAmt,
-                 .destEncryptedAmt = destAmt,
-                 .issuerEncryptedAmt = issuerAmt,
+                 .senderEncryptedAmt = setup.senderAmt,
+                 .destEncryptedAmt = setup.destAmt,
+                 .issuerEncryptedAmt = setup.issuerAmt,
                  .amountCommitment = forgedCommitment,
-                 .balanceCommitment = balanceCommitment,
+                 .balanceCommitment = setup.balanceCommitment,
                  .err = tecBAD_PROOF});
         }
 
@@ -4181,7 +4327,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // from the challenge the prover used, invalidating the proof.
         // This prevents replay attacks across different transactions.
         {
-            auto const proof = generateProof();  // Generated at sequence N
+            auto const proof = setup.generateProof(mptAlice, env, bob, carol);  // Generated at sequence N
             if (!BEAST_EXPECT(proof.has_value()))
                 return;
 
@@ -4193,13 +4339,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.send(
                 {.account = bob,
                  .dest = carol,
-                 .amt = sendAmount,
+                 .amt = setup.sendAmount,
                  .proof = strHex(*proof),
-                 .senderEncryptedAmt = senderAmt,
-                 .destEncryptedAmt = destAmt,
-                 .issuerEncryptedAmt = issuerAmt,
-                 .amountCommitment = amountCommitment,
-                 .balanceCommitment = balanceCommitment,
+                 .senderEncryptedAmt = setup.senderAmt,
+                 .destEncryptedAmt = setup.destAmt,
+                 .issuerEncryptedAmt = setup.issuerAmt,
+                 .amountCommitment = setup.amountCommitment,
+                 .balanceCommitment = setup.balanceCommitment,
                  .err = tecBAD_PROOF});
         }
 
@@ -4214,7 +4360,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // verification equation: s*G == R + c*PubKey. The verifier detects
         // this inconsistency and rejects the proof.
         {
-            auto const proof = generateProof();
+            auto const proof = setup.generateProof(mptAlice, env, bob, carol);
             if (!BEAST_EXPECT(proof.has_value()))
                 return;
 
@@ -4226,13 +4372,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.send(
                 {.account = bob,
                  .dest = carol,
-                 .amt = sendAmount,
+                 .amt = setup.sendAmount,
                  .proof = strHex(tamperedProof),
-                 .senderEncryptedAmt = senderAmt,
-                 .destEncryptedAmt = destAmt,
-                 .issuerEncryptedAmt = issuerAmt,
-                 .amountCommitment = amountCommitment,
-                 .balanceCommitment = balanceCommitment,
+                 .senderEncryptedAmt = setup.senderAmt,
+                 .destEncryptedAmt = setup.destAmt,
+                 .issuerEncryptedAmt = setup.issuerAmt,
+                 .amountCommitment = setup.amountCommitment,
+                 .balanceCommitment = setup.balanceCommitment,
                  .err = tecBAD_PROOF});
         }
     }
@@ -4293,14 +4439,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.convert({.account = dan, .amt = 50, .holderPubKey = mptAlice.getPubKey(dan)});
         mptAlice.mergeInbox({.account = dan});
 
-        // Store pub keys in long-lived buffers to avoid dangling Slice
-        Buffer const bobPubKey = *mptAlice.getPubKey(bob);
-        Buffer const carolPubKey = *mptAlice.getPubKey(carol);
-        Buffer const alicePubKey = *mptAlice.getPubKey(alice);
-        Buffer const danPubKey = *mptAlice.getPubKey(dan);
-
         uint64_t const sendAmount = 10;
-        size_t const nRecipients = 3;
 
         // Variant A: Replay proof to same destination (sequence changed)
         // -----------------------------------------------------------------
@@ -4312,46 +4451,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // The proof was bound to sequence N, but verifier computes challenge
         // with sequence N+1, causing a mismatch.
         {
-            auto const version = mptAlice.getMPTokenVersion(bob);
+            // Fresh setup for Variant A
+            ConfidentialSendTestSetup setup(mptAlice, bob, carol, alice, sendAmount);
 
-            Buffer const blindingFactor = generateBlindingFactor();
-            auto const senderAmt = mptAlice.encryptAmount(bob, sendAmount, blindingFactor);
-            auto const destAmt = mptAlice.encryptAmount(carol, sendAmount, blindingFactor);
-            auto const issuerAmt = mptAlice.encryptAmount(alice, sendAmount, blindingFactor);
-
-            auto const amountBlindingFactor = generateBlindingFactor();
-            auto const amountCommitment = mptAlice.getPedersenCommitment(sendAmount, amountBlindingFactor);
-
-            auto const prevSpending = mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
-            BEAST_EXPECT(prevSpending.has_value());
-            auto const balanceBlindingFactor = generateBlindingFactor();
-            auto const balanceCommitment = mptAlice.getPedersenCommitment(*prevSpending, balanceBlindingFactor);
-
-            std::vector<ConfidentialRecipient> recipients;
-            recipients.push_back({Slice(bobPubKey), senderAmt});
-            recipients.push_back({Slice(carolPubKey), destAmt});
-            recipients.push_back({Slice(alicePubKey), issuerAmt});
-
-            auto const prevEncryptedSpending = mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
-            BEAST_EXPECT(prevEncryptedSpending.has_value());
-
-            auto const ctxHash = getSendContextHash(bob.id(), env.seq(bob), mptAlice.issuanceID(), carol.id(), version);
-            auto const proof = mptAlice.getConfidentialSendProof(
-                bob,
-                sendAmount,
-                recipients,
-                blindingFactor,
-                nRecipients,
-                ctxHash,
-                {.pedersenCommitment = amountCommitment,
-                 .amt = sendAmount,
-                 .encryptedAmt = senderAmt,
-                 .blindingFactor = amountBlindingFactor},
-                {.pedersenCommitment = balanceCommitment,
-                 .amt = *prevSpending,
-                 .encryptedAmt = *prevEncryptedSpending,
-                 .blindingFactor = balanceBlindingFactor});
-
+            auto const proof = setup.generateProof(mptAlice, env, bob, carol);
             if (!BEAST_EXPECT(proof.has_value()))
                 return;
 
@@ -4359,13 +4462,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.send(
                 {.account = bob,
                  .dest = carol,
-                 .amt = sendAmount,
+                 .amt = setup.sendAmount,
                  .proof = strHex(*proof),
-                 .senderEncryptedAmt = senderAmt,
-                 .destEncryptedAmt = destAmt,
-                 .issuerEncryptedAmt = issuerAmt,
-                 .amountCommitment = amountCommitment,
-                 .balanceCommitment = balanceCommitment});
+                 .senderEncryptedAmt = setup.senderAmt,
+                 .destEncryptedAmt = setup.destAmt,
+                 .issuerEncryptedAmt = setup.issuerAmt,
+                 .amountCommitment = setup.amountCommitment,
+                 .balanceCommitment = setup.balanceCommitment});
             mptAlice.mergeInbox({.account = carol});
 
             // Attempt to replay exact same proof to same destination (sequence N+1)
@@ -4373,13 +4476,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.send(
                 {.account = bob,
                  .dest = carol,
-                 .amt = sendAmount,
+                 .amt = setup.sendAmount,
                  .proof = strHex(*proof),
-                 .senderEncryptedAmt = senderAmt,
-                 .destEncryptedAmt = destAmt,
-                 .issuerEncryptedAmt = issuerAmt,
-                 .amountCommitment = amountCommitment,
-                 .balanceCommitment = balanceCommitment,
+                 .senderEncryptedAmt = setup.senderAmt,
+                 .destEncryptedAmt = setup.destAmt,
+                 .issuerEncryptedAmt = setup.issuerAmt,
+                 .amountCommitment = setup.amountCommitment,
+                 .balanceCommitment = setup.balanceCommitment,
                  .err = tecBAD_PROOF});
         }
 
@@ -4392,46 +4495,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // When verifier recomputes challenge with Dan's address instead of
         // Carol's, it gets a different challenge than what the prover used.
         {
-            auto const version = mptAlice.getMPTokenVersion(bob);
+            // Fresh setup for Variant B (balance changed after Variant A)
+            ConfidentialSendTestSetup setup(mptAlice, bob, carol, alice, sendAmount);
 
-            Buffer const blindingFactor = generateBlindingFactor();
-            auto const senderAmt = mptAlice.encryptAmount(bob, sendAmount, blindingFactor);
-            auto const destAmt = mptAlice.encryptAmount(carol, sendAmount, blindingFactor);
-            auto const issuerAmt = mptAlice.encryptAmount(alice, sendAmount, blindingFactor);
-
-            auto const amountBlindingFactor = generateBlindingFactor();
-            auto const amountCommitment = mptAlice.getPedersenCommitment(sendAmount, amountBlindingFactor);
-
-            auto const prevSpending = mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
-            BEAST_EXPECT(prevSpending.has_value());
-            auto const balanceBlindingFactor = generateBlindingFactor();
-            auto const balanceCommitment = mptAlice.getPedersenCommitment(*prevSpending, balanceBlindingFactor);
-
-            std::vector<ConfidentialRecipient> recipients;
-            recipients.push_back({Slice(bobPubKey), senderAmt});
-            recipients.push_back({Slice(carolPubKey), destAmt});
-            recipients.push_back({Slice(alicePubKey), issuerAmt});
-
-            auto const prevEncryptedSpending = mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
-            BEAST_EXPECT(prevEncryptedSpending.has_value());
-
-            auto const ctxHash = getSendContextHash(bob.id(), env.seq(bob), mptAlice.issuanceID(), carol.id(), version);
-            auto const proof = mptAlice.getConfidentialSendProof(
-                bob,
-                sendAmount,
-                recipients,
-                blindingFactor,
-                nRecipients,
-                ctxHash,
-                {.pedersenCommitment = amountCommitment,
-                 .amt = sendAmount,
-                 .encryptedAmt = senderAmt,
-                 .blindingFactor = amountBlindingFactor},
-                {.pedersenCommitment = balanceCommitment,
-                 .amt = *prevSpending,
-                 .encryptedAmt = *prevEncryptedSpending,
-                 .blindingFactor = balanceBlindingFactor});
-
+            auto const proof = setup.generateProof(mptAlice, env, bob, carol);
             if (!BEAST_EXPECT(proof.has_value()))
                 return;
 
@@ -4439,30 +4506,30 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.send(
                 {.account = bob,
                  .dest = carol,
-                 .amt = sendAmount,
+                 .amt = setup.sendAmount,
                  .proof = strHex(*proof),
-                 .senderEncryptedAmt = senderAmt,
-                 .destEncryptedAmt = destAmt,
-                 .issuerEncryptedAmt = issuerAmt,
-                 .amountCommitment = amountCommitment,
-                 .balanceCommitment = balanceCommitment});
+                 .senderEncryptedAmt = setup.senderAmt,
+                 .destEncryptedAmt = setup.destAmt,
+                 .issuerEncryptedAmt = setup.issuerAmt,
+                 .amountCommitment = setup.amountCommitment,
+                 .balanceCommitment = setup.balanceCommitment});
             mptAlice.mergeInbox({.account = carol});
 
             // Generate fresh ciphertexts for Dan (different destination)
-            auto const destAmtDan = mptAlice.encryptAmount(dan, sendAmount, blindingFactor);
-            auto const issuerAmtDan = mptAlice.encryptAmount(alice, sendAmount, blindingFactor);
+            auto const destAmtDan = mptAlice.encryptAmount(dan, sendAmount, setup.blindingFactor);
+            auto const issuerAmtDan = mptAlice.encryptAmount(alice, sendAmount, setup.blindingFactor);
 
             // Attempt to reuse proof extracted from Bob->Carol for Bob->Dan
             mptAlice.send(
                 {.account = bob,
                  .dest = dan,
-                 .amt = sendAmount,
+                 .amt = setup.sendAmount,
                  .proof = strHex(*proof),
-                 .senderEncryptedAmt = senderAmt,
+                 .senderEncryptedAmt = setup.senderAmt,
                  .destEncryptedAmt = destAmtDan,
                  .issuerEncryptedAmt = issuerAmtDan,
-                 .amountCommitment = amountCommitment,
-                 .balanceCommitment = balanceCommitment,
+                 .amountCommitment = setup.amountCommitment,
+                 .balanceCommitment = setup.balanceCommitment,
                  .err = tecBAD_PROOF});
         }
     }
@@ -4510,9 +4577,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         testMutatePrivacy(features);
 
-        // Security tests
+        // Zero knowledge proof tests
         testForgedEqualityProof(features);
         testForgedRangeProof(features);
+        testNegativeValueMalleability(features);
         testFiatShamirBinding(features);
         testProofComponentReuse(features);
     }
