@@ -231,4 +231,11 @@ makeSlice(std::basic_string<char, Traits, Alloc> const& s)
     return Slice(s.data(), s.size());
 }
 
+template <class Traits>
+Slice
+makeSlice(std::basic_string_view<char, Traits> const& s)
+{
+    return Slice(s.data(), s.size());
+}
+
 }  // namespace xrpl

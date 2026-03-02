@@ -28,7 +28,7 @@ validateLedgerNode(protocol::TMLedgerNode const& ledger_node)
 }
 
 std::optional<intr_ptr::SharedPtr<SHAMapTreeNode>>
-getTreeNode(std::string const& data)
+getTreeNode(std::string_view data)
 {
     auto const slice = makeSlice(data);
     try

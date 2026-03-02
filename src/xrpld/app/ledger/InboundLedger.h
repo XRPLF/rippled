@@ -9,6 +9,7 @@
 
 #include <mutex>
 #include <set>
+#include <string_view>
 #include <utility>
 
 namespace xrpl {
@@ -131,16 +132,16 @@ private:
     processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& data);
 
     bool
-    takeHeader(std::string const& data);
+    takeHeader(std::string_view data);
 
     void
     receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode& san);
 
     bool
-    takeTxRootNode(std::string const& data, SHAMapAddNode& san);
+    takeTxRootNode(std::string_view data, SHAMapAddNode& san);
 
     bool
-    takeAsRootNode(std::string const& data, SHAMapAddNode& san);
+    takeAsRootNode(std::string_view data, SHAMapAddNode& san);
 
     std::vector<uint256>
     neededTxHashes(int max, SHAMapSyncFilter* filter) const;

@@ -755,7 +755,7 @@ InboundLedger::filterNodes(
 */
 // data must not have hash prefix
 bool
-InboundLedger::takeHeader(std::string const& data)
+InboundLedger::takeHeader(std::string_view data)
 {
     // Return value: true=normal, false=bad data
     JLOG(journal_.trace()) << "got header acquiring ledger " << hash_;
@@ -903,7 +903,7 @@ InboundLedger::receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode& san)
     Call with a lock
 */
 bool
-InboundLedger::takeAsRootNode(std::string const& data, SHAMapAddNode& san)
+InboundLedger::takeAsRootNode(std::string_view data, SHAMapAddNode& san)
 {
     if (failed_ || mHaveState)
     {
@@ -937,7 +937,7 @@ InboundLedger::takeAsRootNode(std::string const& data, SHAMapAddNode& san)
     Call with a lock
 */
 bool
-InboundLedger::takeTxRootNode(std::string const& data, SHAMapAddNode& san)
+InboundLedger::takeTxRootNode(std::string_view data, SHAMapAddNode& san)
 {
     if (failed_ || mHaveTransactions)
     {

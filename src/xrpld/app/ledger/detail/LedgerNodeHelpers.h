@@ -5,7 +5,7 @@
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <optional>
-#include <string>
+#include <string_view>
 
 namespace protocol {
 class TMLedgerNode;
@@ -42,7 +42,7 @@ validateLedgerNode(protocol::TMLedgerNode const& ledger_node);
  *         deserialization fails.
  */
 [[nodiscard]] std::optional<intr_ptr::SharedPtr<SHAMapTreeNode>>
-getTreeNode(std::string const& data);
+getTreeNode(std::string_view data);
 
 /**
  * @brief Extracts or reconstructs the SHAMapNodeID from a ledger node proto message.
