@@ -842,13 +842,6 @@ InboundLedger::receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode& san)
 
         for (auto const& ledger_node : packet.nodes())
         {
-            if (!validateLedgerNode(ledger_node))
-            {
-                JLOG(journal_.warn()) << "Got malformed ledger node";
-                san.incInvalid();
-                return;
-            }
-
             auto treeNode = getTreeNode(ledger_node.nodedata());
             if (!treeNode)
             {
