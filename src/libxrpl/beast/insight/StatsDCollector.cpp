@@ -85,8 +85,10 @@ class StatsDCounterImpl : public CounterImpl, public StatsDMetricBase
 {
 public:
     StatsDCounterImpl(std::string const& name, std::shared_ptr<StatsDCollectorImp> const& impl);
-
     ~StatsDCounterImpl() override;
+
+    StatsDCounterImpl&
+    operator=(StatsDCounterImpl const&) = delete;
 
     void
     increment(CounterImpl::value_type amount) override;
@@ -99,9 +101,6 @@ public:
     do_process() override;
 
 private:
-    StatsDCounterImpl&
-    operator=(StatsDCounterImpl const&);
-
     std::shared_ptr<StatsDCollectorImp> m_impl;
     std::string m_name;
     CounterImpl::value_type m_value;
@@ -114,8 +113,10 @@ class StatsDEventImpl : public EventImpl
 {
 public:
     StatsDEventImpl(std::string const& name, std::shared_ptr<StatsDCollectorImp> const& impl);
-
     ~StatsDEventImpl() = default;
+
+    StatsDEventImpl&
+    operator=(StatsDEventImpl const&) = delete;
 
     void
     notify(EventImpl::value_type const& value) override;
@@ -126,9 +127,6 @@ public:
     do_process();
 
 private:
-    StatsDEventImpl&
-    operator=(StatsDEventImpl const&);
-
     std::shared_ptr<StatsDCollectorImp> m_impl;
     std::string m_name;
 };
@@ -139,8 +137,10 @@ class StatsDGaugeImpl : public GaugeImpl, public StatsDMetricBase
 {
 public:
     StatsDGaugeImpl(std::string const& name, std::shared_ptr<StatsDCollectorImp> const& impl);
-
     ~StatsDGaugeImpl() override;
+
+    StatsDGaugeImpl&
+    operator=(StatsDGaugeImpl const&) = delete;
 
     void
     set(GaugeImpl::value_type value) override;
@@ -157,9 +157,6 @@ public:
     do_process() override;
 
 private:
-    StatsDGaugeImpl&
-    operator=(StatsDGaugeImpl const&);
-
     std::shared_ptr<StatsDCollectorImp> m_impl;
     std::string m_name;
     GaugeImpl::value_type m_last_value;
@@ -178,6 +175,9 @@ public:
 
     ~StatsDMeterImpl() override;
 
+    StatsDMeterImpl&
+    operator=(StatsDMeterImpl const&) = delete;
+
     void
     increment(MeterImpl::value_type amount) override;
 
@@ -189,9 +189,6 @@ public:
     do_process() override;
 
 private:
-    StatsDMeterImpl&
-    operator=(StatsDMeterImpl const&);
-
     std::shared_ptr<StatsDCollectorImp> m_impl;
     std::string m_name;
     MeterImpl::value_type m_value;
