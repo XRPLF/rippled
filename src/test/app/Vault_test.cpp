@@ -26,10 +26,10 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
+#include <iostream>
 #include <optional>
 
 namespace xrpl {
-
 class Vault_test : public beast::unit_test::suite
 {
     using PrettyAsset = xrpl::test::jtx::PrettyAsset;
