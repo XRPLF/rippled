@@ -241,7 +241,7 @@ public:
                     newNode->getHash().as_uint256(), std::make_shared<Blob>(s.begin(), s.end()));
             }
         }
-        catch (std::exception const&)
+        catch (std::exception const&)  // NOLINT(bugprone-empty-catch)
         {
         }
     }
