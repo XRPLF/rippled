@@ -24,8 +24,9 @@ class NullHookImpl : public HookImpl
 public:
     explicit NullHookImpl() = default;
 
+private:
     NullHookImpl&
-    operator=(NullHookImpl const&) = delete;
+    operator=(NullHookImpl const&);
 };
 
 //------------------------------------------------------------------------------
@@ -35,13 +36,14 @@ class NullCounterImpl : public CounterImpl
 public:
     explicit NullCounterImpl() = default;
 
-    NullCounterImpl&
-    operator=(NullCounterImpl const&) = delete;
-
     void
     increment(value_type) override
     {
     }
+
+private:
+    NullCounterImpl&
+    operator=(NullCounterImpl const&);
 };
 
 //------------------------------------------------------------------------------
@@ -51,13 +53,14 @@ class NullEventImpl : public EventImpl
 public:
     explicit NullEventImpl() = default;
 
-    NullEventImpl&
-    operator=(NullEventImpl const&) = delete;
-
     void
     notify(value_type const&) override
     {
     }
+
+private:
+    NullEventImpl&
+    operator=(NullEventImpl const&);
 };
 
 //------------------------------------------------------------------------------
@@ -66,9 +69,6 @@ class NullGaugeImpl : public GaugeImpl
 {
 public:
     explicit NullGaugeImpl() = default;
-
-    NullGaugeImpl&
-    operator=(NullGaugeImpl const&) = delete;
 
     void
     set(value_type) override
@@ -79,6 +79,10 @@ public:
     increment(difference_type) override
     {
     }
+
+private:
+    NullGaugeImpl&
+    operator=(NullGaugeImpl const&);
 };
 
 //------------------------------------------------------------------------------
@@ -88,13 +92,14 @@ class NullMeterImpl : public MeterImpl
 public:
     explicit NullMeterImpl() = default;
 
-    NullMeterImpl&
-    operator=(NullMeterImpl const&) = delete;
-
     void
     increment(value_type) override
     {
     }
+
+private:
+    NullMeterImpl&
+    operator=(NullMeterImpl const&);
 };
 
 //------------------------------------------------------------------------------

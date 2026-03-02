@@ -32,9 +32,6 @@ public:
 
     ~GroupImp() = default;
 
-    GroupImp&
-    operator=(GroupImp const&) = delete;
-
     std::string const&
     name() const override
     {
@@ -76,6 +73,10 @@ public:
     {
         return m_collector->make_meter(make_name(name));
     }
+
+private:
+    GroupImp&
+    operator=(GroupImp const&);
 };
 
 //------------------------------------------------------------------------------
@@ -91,6 +92,8 @@ public:
     explicit GroupsImp(Collector::ptr const& collector) : m_collector(collector)
     {
     }
+
+    ~GroupsImp() = default;
 
     Group::ptr const&
     get(std::string const& name) override
