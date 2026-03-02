@@ -24,7 +24,7 @@ struct WithdrawResult
 
 // Proof-of-concept Vault implementing the XLS-0065 share pricing model.
 // Uses STAmount for typed asset/share values and Number for arithmetic.
-class Vault
+class Vault : public beast::unit_test::suite
 {
     Asset asset_;
     MPTIssue shareAsset_;
@@ -132,12 +132,14 @@ public:
     void
     borrow(Number const& principal, Number const& interest)
     {
-        XRPL_ASSERT(
-            principal > 0 && interest >= 0,
-            "xrpl::Vault::borrow requires positive principal and non-negative interest");
-        XRPL_ASSERT(
-            principal <= assetsAvailable_,
-            "xrpl::Vault::borrow principal exceeds assets available");
+        if (!BEAST_EXPECTS(
+                principal > 0 && interest >= 0,
+                "xrpl::Vault::borrow requires positive principal and non-negative interest"))
+            return;
+        if (!BEAST_EXPECTS(
+                principal <= assetsAvailable_,
+                "xrpl::Vault::borrow principal exceeds assets available"))
+            return;
 
         assetsAvailable_ -= principal;
 
@@ -151,17 +153,19 @@ public:
         Number const& interest,
         std::optional<Number const> extraInterest = std::nullopt)
     {
-        XRPL_ASSERT(
-            principal > 0 && interest >= 0,
-            "xrpl::Vault::repay requires positive principal and non-negative interest");
-        XRPL_ASSERT(
-            principal + interest + assetsAvailable_ <= assetsTotal_,
-            "xrpl::Vault::repay exceeds total assets");
+        if (!BEAST_EXPECTS(
+                principal > 0 && interest >= 0 && (!extraInterest || *extraInterest >= 0),
+                "xrpl::Vault::repay requires positive principal and non-negative interest"))
+            return;
+        if (!BEAST_EXPECTS(
+                principal + interest + assetsAvailable_ <= assetsTotal_,
+                "xrpl::Vault::repay exceeds total assets"))
+            return;
 
         assetsAvailable_ += principal + interest;
         interestUnrealized_ -= interest;
 
-        if (extraInterest && *extraInterest > 0)
+        if (extraInterest)
         {
             assetsTotal_ += extraInterest.value();
             assetsAvailable_ += extraInterest.value();
@@ -171,14 +175,16 @@ public:
     void
     addPaperLoss(Number const& principal, Number const& interest)
     {
-        XRPL_ASSERT(
-            principal > 0 && interest >= 0,
-            "xrpl::Vault::addPaperLoss requires positive principal and non-negative interest");
+        if (!BEAST_EXPECTS(
+                principal > 0 && interest >= 0,
+                "xrpl::Vault::addPaperLoss requires positive principal and non-negative interest"))
+            return;
         // Spec invariant: lossUnrealized <= assetsTotal - assetsAvailable
         // (paper loss cannot exceed total outstanding loan exposure: principal + interest)
-        XRPL_ASSERT(
-            lossUnrealized_ + principal + interest <= assetsTotal_ - assetsAvailable_,
-            "xrpl::Vault::addPaperLoss exceeds outstanding loan exposure");
+        if (!BEAST_EXPECTS(
+                lossUnrealized_ + principal + interest <= assetsTotal_ - assetsAvailable_,
+                "xrpl::Vault::addPaperLoss exceeds outstanding loan exposure"))
+            return;
 
         lossUnrealized_ += principal + interest;
     }
@@ -186,12 +192,15 @@ public:
     void
     clearPaperLoss(Number const& principal, Number const& interest)
     {
-        XRPL_ASSERT(
-            principal > 0 && interest >= 0,
-            "xrpl::Vault::clearPaperLoss requires positive principal and non-negative interest");
-        XRPL_ASSERT(
-            principal + interest <= lossUnrealized_,
-            "xrpl::Vault::clearPaperLoss exceeds unrealized loss");
+        if (!BEAST_EXPECTS(
+                principal > 0 && interest >= 0,
+                "xrpl::Vault::clearPaperLoss requires positive principal and non-negative "
+                "interest"))
+            return;
+        if (!BEAST_EXPECTS(
+                principal + interest <= lossUnrealized_,
+                "xrpl::Vault::clearPaperLoss exceeds unrealized loss"))
+            return;
 
         lossUnrealized_ -= principal + interest;
     }
@@ -199,14 +208,17 @@ public:
     void
     defaultLoan(Number const& principal, Number const& interest, bool hasPaperLoss = false)
     {
-        XRPL_ASSERT(
-            principal > 0 && interest >= 0,
-            "xrpl::Vault::default requires positive principal and non-negative interest");
-        XRPL_ASSERT(
-            principal + interest <= assetsTotal_, "xrpl::Vault::default exceeds total assets");
-        XRPL_ASSERT(
-            interest <= interestUnrealized_,
-            "xrpl::Vault::default interest exceeds unrealized interest");
+        if (!BEAST_EXPECTS(
+                principal > 0 && interest >= 0,
+                "xrpl::Vault::default requires positive principal and non-negative interest"))
+            return;
+        if (!BEAST_EXPECTS(
+                principal + interest <= assetsTotal_, "xrpl::Vault::default exceeds total assets"))
+            return;
+        if (!BEAST_EXPECTS(
+                interest <= interestUnrealized_,
+                "xrpl::Vault::default interest exceeds unrealized interest"))
+            return;
 
         assetsTotal_ -= principal + interest;
         interestUnrealized_ -= interest;
@@ -1230,7 +1242,7 @@ public:
         vault.deposit(STAmount{usd, 1000}).value();
 
         // Create asymmetry: omega=100 (unrealized interest), iota=150 (paper loss)
-        vault.borrow(Number(400), Number(100));      // assetsTotal=1100, omega=100, assetsAvailable=600
+        vault.borrow(Number(400), Number(100));  // assetsTotal=1100, omega=100, assetsAvailable=600
         vault.addPaperLoss(Number(150), Number(0));  // iota=150
 
         // depositNAV   = 1100 - 100       = 1000
@@ -1251,7 +1263,8 @@ public:
         auto const out = vault.redeem(STAmount{vault.shareAsset(), 100}).value();
         BEAST_EXPECT(out == expectedAmt);
         // assetsAvailable = 700 - 100*950/1100 (STAmount-truncated)
-        STAmount const expectedAvailAmt{usd, Number(700) - Number(100) * Number(950) / Number(1100)};
+        STAmount const expectedAvailAmt{
+            usd, Number(700) - Number(100) * Number(950) / Number(1100)};
         BEAST_EXPECT(vault.assetsAvailable() == expectedAvailAmt);
 
         // Confirm: new depositor paid 100 per 100 shares, redeemer got ~86.36 per 100 shares
