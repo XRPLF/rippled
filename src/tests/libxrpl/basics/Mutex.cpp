@@ -2,11 +2,11 @@
 
 #include <gtest/gtest.h>
 
+#include <memory>
 #include <mutex>
 #include <shared_mutex>
 #include <string>
 #include <vector>
-#include <memory>
 
 using namespace xrpl;
 
@@ -54,6 +54,13 @@ TEST_F(MutexDirectConstructionTest, default_constructor)
     Mutex<std::string> m;
     auto lock = m.lock();
     EXPECT_TRUE(lock->empty());
+}
+
+TEST_F(MutexDirectConstructionTest, default_initialization)
+{
+    Mutex<int> m;
+    auto lock = m.lock();
+    EXPECT_EQ(*lock, 0);
 }
 
 TEST_F(MutexDirectConstructionTest, constructor_with_value)

@@ -101,7 +101,7 @@ template <typename ProtectedDataType, typename MutexType = std::mutex>
 class Mutex
 {
     mutable MutexType mutex_;
-    ProtectedDataType data_;
+    ProtectedDataType data_{};
 
 public:
     Mutex() = default;
