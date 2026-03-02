@@ -429,10 +429,10 @@ public:
             app().getNumberOfThreads() == 1,
             "syncClose() is only useful on an application with a single thread");
         auto const result = close();
-        auto server_barrier = std::make_shared<std::promise<void>>();
-        auto future = server_barrier->get_future();
+        auto serverBarrier = std::make_shared<std::promise<void>>();
+        auto future = serverBarrier->get_future();
         boost::asio::post(
-            app().getIOContext(), [server_barrier]() { server_barrier->set_value(); });
+            app().getIOContext(), [serverBarrier]() { serverBarrier->set_value(); });
         auto const status = future.wait_for(timeout);
         return result && status == std::future_status::ready;
     }
