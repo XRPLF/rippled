@@ -246,10 +246,10 @@ STTx::checkSign(Rules const& rules, STObject const& sigObject) const
         return signingPubKey.empty() ? checkMultiSign(rules, sigObject)
                                      : checkSingleSign(sigObject);
     }
-    catch (std::exception const&)
+    catch (...)
     {
+        return Unexpected("Internal signature check failure.");
     }
-    return Unexpected("Internal signature check failure.");
 }
 
 Expected<void, std::string>
