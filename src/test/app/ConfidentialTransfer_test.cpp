@@ -3826,7 +3826,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         {
             uint32_t const seqA = env.seq(bob);
             uint32_t const oldVersion = currentVersion - 1;
-            uint256 const badContextHash = getConvertBackContextHash(bob, seqA, mptAlice.issuanceID(), amt, oldVersion);
+            uint256 const badContextHash = getConvertBackContextHash(bob, mptAlice.issuanceID(), seqA, oldVersion);
+            ;
 
             Buffer const proof = mptAlice.getConvertBackProof(
                 bob,
@@ -3858,7 +3859,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             uint32_t const seqB = env.seq(bob);
             uint32_t const oldSeq = seqB - 1;
             uint256 const badContextHash =
-                getConvertBackContextHash(bob, oldSeq, mptAlice.issuanceID(), amt, currentVersion);
+                getConvertBackContextHash(bob, mptAlice.issuanceID(), oldSeq, currentVersion);
+            ;
 
             Buffer const proof = mptAlice.getConvertBackProof(
                 bob,
@@ -3887,8 +3889,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         {
             // Fetch updated sequence once more
             uint32_t const seqC = env.seq(bob);
-            uint256 const goodContextHash =
-                getConvertBackContextHash(bob, seqC, mptAlice.issuanceID(), amt, currentVersion);
+            uint256 const goodContextHash = getConvertBackContextHash(bob, mptAlice.issuanceID(), seqC, currentVersion);
+            ;
 
             Buffer const proof = mptAlice.getConvertBackProof(
                 bob,
@@ -3958,7 +3960,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // Generate a valid proof pi for Amount m1 = 10
         uint64_t const amtA = 10;
         uint32_t const currentSeq = env.seq(bob);
-        uint256 const contextHashA = getConvertBackContextHash(bob, currentSeq, mptAlice.issuanceID(), amtA, version);
+        uint256 const contextHashA = getConvertBackContextHash(bob, mptAlice.issuanceID(), currentSeq, version);
 
         Buffer const proofA = mptAlice.getConvertBackProof(
             bob,
@@ -4046,7 +4048,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // Attack: Attempt to reuse proof tied to Version v at ledger Version v+1
         uint32_t const currentSeq = env.seq(bob);
         // Proof is explicitly generated using the outdated Version v
-        uint256 const oldContextHash = getConvertBackContextHash(bob, currentSeq, mptAlice.issuanceID(), amt, versionV);
+        uint256 const oldContextHash = getConvertBackContextHash(bob, mptAlice.issuanceID(), currentSeq, versionV);
 
         Buffer const oldProof = mptAlice.getConvertBackProof(
             bob,
