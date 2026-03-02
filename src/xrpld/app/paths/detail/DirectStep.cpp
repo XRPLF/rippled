@@ -66,6 +66,7 @@ protected:
     std::pair<std::uint32_t, std::uint32_t>
     qualities(ReadView const& sb, DebtDirection srcDebtDir, StrandDirection strandDir) const;
 
+private:
     DirectStepI(
         StrandContext const& ctx,
         AccountID const& src,
