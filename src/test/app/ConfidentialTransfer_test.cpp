@@ -91,7 +91,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     // tests. Reduces redundancy across testForgedEqualityProof,
     // testFiatShamirBinding, testProofComponentReuse, and
     // testNegativeValueMalleability.
-    struct ConfidentialSendTestSetup
+    struct ZkpTestSetup
     {
         // Constants
         uint64_t sendAmount;
@@ -129,7 +129,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         std::vector<ConfidentialRecipient> recipients;
 
         // Constructor that performs all common setup
-        ConfidentialSendTestSetup(
+        ZkpTestSetup(
             test::jtx::MPTTester& mpt,
             test::jtx::Account const& sender,
             test::jtx::Account const& dest,
@@ -3871,7 +3871,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.mergeInbox({.account = carol});
 
         // Use struct for common setup
-        ConfidentialSendTestSetup setup(mptAlice, bob, carol, alice, 10);
+        ZkpTestSetup setup(mptAlice, bob, carol, alice, 10);
 
         // Forge destination ciphertext (Enc(20) instead of Enc(10))
         {
@@ -4180,7 +4180,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         uint64_t const negativeRemaining = static_cast<uint64_t>(-10);  // 0xFFFFFFFFFFFFFFF6
 
         // Use struct for common setup
-        ConfidentialSendTestSetup setup(mptAlice, bob, carol, alice, 10);
+        ZkpTestSetup setup(mptAlice, bob, carol, alice, 10);
 
         auto const ctxHash =
             getSendContextHash(bob.id(), env.seq(bob), mptAlice.issuanceID(), carol.id(), setup.version);
@@ -4284,7 +4284,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.mergeInbox({.account = carol});
 
         // Use struct for common setup
-        ConfidentialSendTestSetup setup(mptAlice, bob, carol, alice, 10);
+        ZkpTestSetup setup(mptAlice, bob, carol, alice, 10);
 
         // Variant A: Modify transcript input (commitment) after proof generation
         // -----------------------------------------------------------------
@@ -4452,7 +4452,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // with sequence N+1, causing a mismatch.
         {
             // Fresh setup for Variant A
-            ConfidentialSendTestSetup setup(mptAlice, bob, carol, alice, sendAmount);
+            ZkpTestSetup setup(mptAlice, bob, carol, alice, sendAmount);
 
             auto const proof = setup.generateProof(mptAlice, env, bob, carol);
             if (!BEAST_EXPECT(proof.has_value()))
@@ -4496,7 +4496,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // Carol's, it gets a different challenge than what the prover used.
         {
             // Fresh setup for Variant B (balance changed after Variant A)
-            ConfidentialSendTestSetup setup(mptAlice, bob, carol, alice, sendAmount);
+            ZkpTestSetup setup(mptAlice, bob, carol, alice, sendAmount);
 
             auto const proof = setup.generateProof(mptAlice, env, bob, carol);
             if (!BEAST_EXPECT(proof.has_value()))
