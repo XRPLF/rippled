@@ -63,7 +63,7 @@ protected:
 
     std::optional<Cache> cache_;
 
-public:
+private:
     BookStep(StrandContext const& ctx, Issue const& in, Issue const& out)
         : book_(in, out, ctx.domainID)
         , strandSrc_(ctx.strandSrc)
@@ -84,6 +84,7 @@ public:
                 ctx.j);
     }
 
+public:
     Book const&
     book() const
     {
@@ -223,6 +224,8 @@ private:
     // whichever is a better quality.
     std::optional<QualityFunction>
     tipOfferQualityF(ReadView const& view) const;
+
+    friend TDerived;
 };
 
 //------------------------------------------------------------------------------
@@ -240,7 +243,11 @@ class BookPaymentStep : public BookStep<TIn, TOut, BookPaymentStep<TIn, TOut>>
 public:
     explicit BookPaymentStep() = default;
 
-    using BookStep<TIn, TOut, BookPaymentStep<TIn, TOut>>::BookStep;
+    BookPaymentStep(StrandContext const& ctx, Issue const& in, Issue const& out)
+        : BookStep<TIn, TOut, BookPaymentStep<TIn, TOut>>(ctx, in, out)
+    {
+    }
+
     using BookStep<TIn, TOut, BookPaymentStep<TIn, TOut>>::qualityUpperBound;
     using typename BookStep<TIn, TOut, BookPaymentStep<TIn, TOut>>::OfferType;
 
