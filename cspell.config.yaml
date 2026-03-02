@@ -176,6 +176,8 @@ words:
   - nixfmt
   - nixos
   - nixpkgs
+  - NOLINT
+  - NOLINTNEXTLINE
   - nonxrp
   - noripple
   - nudb
