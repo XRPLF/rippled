@@ -423,7 +423,7 @@ public:
                 false otherwise
     */
     [[nodiscard]] bool
-    syncClose(std::chrono::system_clock::duration timeout = std::chrono::seconds{1})
+    syncClose(std::chrono::steady_clock::duration timeout = std::chrono::seconds{1})
     {
         XRPL_ASSERT(
             app().getNumberOfThreads() == 1,
