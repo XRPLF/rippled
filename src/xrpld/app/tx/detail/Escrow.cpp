@@ -1,4 +1,5 @@
 #include <xrpld/app/misc/HashRouter.h>
+#include <xrpld/app/rdb/WasmTrace.h>
 #include <xrpld/app/tx/detail/Escrow.h>
 #include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/app/wasm/HostFuncImpl.h>
@@ -16,6 +17,8 @@
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
+
+#include <algorithm>
 
 namespace xrpl {
 
@@ -1146,6 +1149,29 @@ EscrowFinish::doApply()
         std::uint32_t allowance = ctx_.tx[sfComputationAllowance];
         auto re = runEscrowWasm(wasm, ledgerDataProvider, ESCROW_FUNCTION_NAME, {}, allowance);
         JLOG(j_.trace()) << "Escrow WASM ran";
+        auto const& logs = ledgerDataProvider.getLogs();
+        if (ctx_.app.config().useTxTables() && !logs.empty())
+        {
+            // Capture by value to avoid lifetime issues
+            auto txId = ctx_.tx.getTransactionID();
+            auto keylet = k;
+            auto logsCopy = logs;
+
+            ctx_.app.getJobQueue().addJob(
+                jtWRITE_RPC_DEBUG, "writeWasmTrace", [&app = ctx_.app, txId, keylet, logsCopy = std::move(logsCopy)]() {
+                    try
+                    {
+                        auto db = app.getWasmTraceDB().checkoutDb();
+                        addWasmTraceLogs(*db, txId, keylet, logsCopy);
+                    }
+                    catch (std::exception const& e)
+                    {
+                        // Log error but don't crash - debug logs are
+                        // non-critical
+                        JLOG(app.journal("WasmTrace").warn()) << "Failed to write WASM debug logs: " << e.what();
+                    }
+                });
+        }
 
         if (auto const& data = ledgerDataProvider->getData(); data.has_value())
         {

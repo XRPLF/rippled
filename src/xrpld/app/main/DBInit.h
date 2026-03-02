@@ -115,4 +115,18 @@ inline constexpr std::array<char const*, 6> WalletDBInit{
 
      "END TRANSACTION;"}};
 
+inline constexpr auto WasmTraceDBName{"wasm_trace.db"};
+
+inline constexpr std::array<char const*, 3> WasmTraceDBInit{
+    {"BEGIN TRANSACTION;",
+
+     "CREATE TABLE IF NOT EXISTS WasmTraceLogs ("
+     "  TransID                CHARACTER(64) NOT NULL,"
+     "  ObjID                  CHARACTER(64) NOT NULL,"
+     "  Data                   TEXT NOT NULL,"
+     "  PRIMARY KEY(TransID, ObjID)"
+     ");",
+
+     "END TRANSACTION;"}};
+
 }  // namespace xrpl

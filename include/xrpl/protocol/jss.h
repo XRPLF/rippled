@@ -241,6 +241,7 @@ JSS(engine_result);           // out: NetworkOPs, TransactionSign, Submit
 JSS(engine_result_code);      // out: NetworkOPs, TransactionSign, Submit
 JSS(engine_result_message);   // out: NetworkOPs, TransactionSign, Submit
 JSS(entire_set);              // out: get_aggregate_price
+JSS(entry_id);                // out: tx
 JSS(ephemeral_key);           // out: ValidatorInfo
                               // in/out: Manifest
 JSS(error);                   // out: error
@@ -608,6 +609,7 @@ JSS(total);                   // out: counters
 JSS(total_bytes_recv);        // out: Peers
 JSS(total_bytes_sent);        // out: Peers
 JSS(total_coins);             // out: LedgerToJson
+JSS(traces);                  // out: tx
 JSS(trading_fee);             // out: amm_info
 JSS(transTreeHash);           // out: ledger/Ledger.cpp
 JSS(transaction);             // in: Tx
@@ -692,6 +694,7 @@ JSS(vote_slots);                // out: amm_info
 JSS(vote_weight);               // out: amm_info
 JSS(warning);                   // rpc:
 JSS(warnings);                  // out: server_info, server_state
+JSS(wasm_traces);           // out: tx
 JSS(workers);
 JSS(write_load);              // out: GetCounts
 // clang-format on

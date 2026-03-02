@@ -77,6 +77,7 @@ private:
         add(jtADMIN,             "administration",       maxLimit,     0ms,     0ms);
         add(jtMISSING_TXN,       "handleHaveTransactions",   1200,     0ms,     0ms);
         add(jtREQUESTED_TXN,     "doTransactions",           1200,     0ms,     0ms);
+        add(jtWRITE_RPC_DEBUG,   "writeRPCDebug",        maxLimit,     0ms,     0ms);
 
         add(jtPEER,              "peerCommand",                 0,   200ms,  2500ms);
         add(jtDISK,              "diskAccess",                  0,   500ms,  1000ms);

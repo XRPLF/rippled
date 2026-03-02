@@ -10,6 +10,7 @@ class WasmHostFunctionsImpl : public HostFunctions
     Keylet leKey;
     std::shared_ptr<SLE const> currentLedgerObj = nullptr;
     bool isLedgerObjCached = false;
+    std::vector<std::string> logs_;
 
     static int constexpr MAX_CACHE = 256;
     std::array<std::shared_ptr<SLE const>, MAX_CACHE> cache;
@@ -52,11 +53,13 @@ class WasmHostFunctionsImpl : public HostFunctions
             return;
         auto j = getJournal().trace();
 #endif
-        j << "WasmTrace[" << to_short_string(leKey.key) << "]: " << msg << " " << dataFn();
+        auto const data = dataFn();
+        j << "WasmTrace[" << to_short_string(leKey.key) << "]: " << msg << " " << data;
 
 #ifdef DEBUG_OUTPUT
         j << std::endl;
 #endif
+        logs_.emplace_back(std::string(msg) + " " + data);
     }
 
 public:
@@ -80,6 +83,12 @@ public:
     getData() const
     {
         return data_;
+    }
+
+    std::vector<std::string> const&
+    getLogs() const
+    {
+        return logs_;
     }
 
     Expected<std::uint32_t, HostFunctionError>

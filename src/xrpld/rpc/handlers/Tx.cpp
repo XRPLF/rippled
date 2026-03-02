@@ -4,6 +4,7 @@
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/rdb/RelationalDatabase.h>
+#include <xrpld/app/rdb/WasmTrace.h>
 #include <xrpld/rpc/CTID.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
@@ -41,6 +42,7 @@ struct TxResult
     std::optional<NetClock::time_point> closeTime;
     std::optional<uint256> ledgerHash;
     TxSearched searchedAll;
+    std::map<TxID, std::vector<std::string>> WasmTraceLogs;
 };
 
 struct TxArgs
@@ -153,6 +155,13 @@ doTxHelp(RPC::Context& context, TxArgs args)
         }
     }
 
+    if (txn->getSTransaction()->isFieldPresent(sfComputationAllowance))
+    {
+        auto db = context.app.getWasmTraceDB().checkoutDb();
+        auto const logs = getWasmTraceByTxID(*db, txn->getID());
+        result.WasmTraceLogs = logs;
+    }
+
     return {result, rpcSUCCESS};
 }
 
@@ -234,6 +243,22 @@ populateJsonResponse(std::pair<TxResult, RPC::Status> const& res, TxArgs const& 
 
         if (result.ctid)
             response[jss::ctid] = *(result.ctid);
+
+        if (!result.WasmTraceLogs.empty())
+        {
+            response[jss::wasm_traces] = Json::Value(Json::arrayValue);
+            for (auto const& [entryId, logs] : result.WasmTraceLogs)
+            {
+                Json::Value logEntry = Json::objectValue;
+                logEntry[jss::entry_id] = to_string(entryId);
+                logEntry[jss::traces] = Json::arrayValue;
+                for (auto& log : logs)
+                {
+                    logEntry[jss::traces].append(log);
+                }
+                response[jss::wasm_traces].append(logEntry);
+            }
+        }
     }
     return response;
 }

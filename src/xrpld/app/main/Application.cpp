@@ -27,6 +27,7 @@
 #include <xrpld/app/paths/PathRequests.h>
 #include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/app/rdb/Wallet.h>
+#include <xrpld/app/rdb/WasmTrace.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/core/DatabaseCon.h>
 #include <xrpld/overlay/Cluster.h>
@@ -194,6 +195,7 @@ public:
 
     std::unique_ptr<RelationalDatabase> mRelationalDatabase;
     std::unique_ptr<DatabaseCon> mWalletDB;
+    std::unique_ptr<DatabaseCon> mWasmTraceDB;
     std::unique_ptr<Overlay> overlay_;
     std::optional<uint256> trapTxID_;
 
@@ -744,6 +746,16 @@ public:
         return *mWalletDB;
     }
 
+    DatabaseCon&
+    getWasmTraceDB() override
+    {
+        XRPL_ASSERT(
+            mWasmTraceDB,
+            "xrpl::ApplicationImp::getWasmTraceDB : null wasm debug "
+            "database");
+        return *mWasmTraceDB;
+    }
+
     bool
     serverOkay(std::string& reason) override;
 
@@ -759,16 +771,25 @@ public:
             mWalletDB.get() == nullptr,
             "xrpl::ApplicationImp::initRelationalDatabase : null wallet "
             "database");
+        XRPL_ASSERT(
+            mWasmTraceDB.get() == nullptr,
+            "xrpl::ApplicationImp::initRelationalDatabase : null wasm debug "
+            "database");
 
         try
         {
             mRelationalDatabase = RelationalDatabase::init(*this, *config_, *m_jobQueue);
 
-            // wallet database
             auto setup = setup_DatabaseCon(*config_, m_journal);
             setup.useGlobalPragma = false;
 
+            // wallet database
             mWalletDB = makeWalletDB(setup, m_journal);
+            if (config().useTxTables())
+            {
+                // wasm debug database
+                mWasmTraceDB = makeWasmTraceDB(setup, m_journal);
+            }
         }
         catch (std::exception const& e)
         {
