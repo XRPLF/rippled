@@ -511,7 +511,7 @@ SHAMap::addRootNode(
     if (backed_)
         canonicalize(hash, rootNode);
 
-    root_ = rootNode;
+    root_ = std::move(rootNode);
 
     if (root_->isLeaf())
         clearSynching();
