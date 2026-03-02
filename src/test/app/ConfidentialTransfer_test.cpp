@@ -4238,6 +4238,236 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     void
+    testProofComponentReuse(FeatureBitset features)
+    {
+        testcase("test Proof Component Reuse");
+
+        // =================================================================
+        // PROOF COMPONENT REUSE TEST
+        // =================================================================
+        //
+        // BACKGROUND:
+        // A valid proof binds cryptographic components (equality proof,
+        // linkage proofs, bulletproofs) to specific public inputs via the
+        // Fiat-Shamir challenge. Attackers may attempt to extract proof
+        // components from a valid transaction and reuse them in a new
+        // context to bypass proof generation.
+        //
+        // SECURITY PROPERTY:
+        // Proof components are cryptographically bound to the full statement
+        // (ciphertexts, commitments, context ID, recipients). Reusing
+        // components in a different context causes verification to fail.
+        //
+        // =================================================================
+
+        using namespace test::jtx;
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        Account const dan("dan");
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol, dan}});
+
+        mptAlice.create({.ownerCount = 1, .flags = tfMPTCanLock | tfMPTCanPrivacy | tfMPTCanTransfer});
+        mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = carol});
+        mptAlice.authorize({.account = dan});
+
+        mptAlice.pay(alice, bob, 1000);
+        mptAlice.pay(alice, carol, 1000);
+        mptAlice.pay(alice, dan, 1000);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+        mptAlice.generateKeyPair(carol);
+        mptAlice.generateKeyPair(dan);
+
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+        mptAlice.convert({.account = bob, .amt = 100, .holderPubKey = mptAlice.getPubKey(bob)});
+        mptAlice.mergeInbox({.account = bob});
+
+        mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
+        mptAlice.mergeInbox({.account = carol});
+
+        mptAlice.convert({.account = dan, .amt = 50, .holderPubKey = mptAlice.getPubKey(dan)});
+        mptAlice.mergeInbox({.account = dan});
+
+        // Store pub keys in long-lived buffers to avoid dangling Slice
+        Buffer const bobPubKey = *mptAlice.getPubKey(bob);
+        Buffer const carolPubKey = *mptAlice.getPubKey(carol);
+        Buffer const alicePubKey = *mptAlice.getPubKey(alice);
+        Buffer const danPubKey = *mptAlice.getPubKey(dan);
+
+        uint64_t const sendAmount = 10;
+        size_t const nRecipients = 3;
+
+        // Variant A: Replay proof to same destination (sequence changed)
+        // -----------------------------------------------------------------
+        // Attack: Extract proof from a successful Bob->Carol transaction,
+        // then replay it to the same destination (Carol) in a new transaction.
+        //
+        // Why it fails: The context hash includes the account sequence.
+        // After the first transaction, Bob's sequence increments from N to N+1.
+        // The proof was bound to sequence N, but verifier computes challenge
+        // with sequence N+1, causing a mismatch.
+        {
+            auto const version = mptAlice.getMPTokenVersion(bob);
+
+            Buffer const blindingFactor = generateBlindingFactor();
+            auto const senderAmt = mptAlice.encryptAmount(bob, sendAmount, blindingFactor);
+            auto const destAmt = mptAlice.encryptAmount(carol, sendAmount, blindingFactor);
+            auto const issuerAmt = mptAlice.encryptAmount(alice, sendAmount, blindingFactor);
+
+            auto const amountBlindingFactor = generateBlindingFactor();
+            auto const amountCommitment = mptAlice.getPedersenCommitment(sendAmount, amountBlindingFactor);
+
+            auto const prevSpending = mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            BEAST_EXPECT(prevSpending.has_value());
+            auto const balanceBlindingFactor = generateBlindingFactor();
+            auto const balanceCommitment = mptAlice.getPedersenCommitment(*prevSpending, balanceBlindingFactor);
+
+            std::vector<ConfidentialRecipient> recipients;
+            recipients.push_back({Slice(bobPubKey), senderAmt});
+            recipients.push_back({Slice(carolPubKey), destAmt});
+            recipients.push_back({Slice(alicePubKey), issuerAmt});
+
+            auto const prevEncryptedSpending = mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            BEAST_EXPECT(prevEncryptedSpending.has_value());
+
+            auto const ctxHash = getSendContextHash(bob.id(), env.seq(bob), mptAlice.issuanceID(), carol.id(), version);
+            auto const proof = mptAlice.getConfidentialSendProof(
+                bob,
+                sendAmount,
+                recipients,
+                blindingFactor,
+                nRecipients,
+                ctxHash,
+                {.pedersenCommitment = amountCommitment,
+                 .amt = sendAmount,
+                 .encryptedAmt = senderAmt,
+                 .blindingFactor = amountBlindingFactor},
+                {.pedersenCommitment = balanceCommitment,
+                 .amt = *prevSpending,
+                 .encryptedAmt = *prevEncryptedSpending,
+                 .blindingFactor = balanceBlindingFactor});
+
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
+
+            // Submit successful transaction Bob -> Carol (sequence N)
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = sendAmount,
+                 .proof = strHex(*proof),
+                 .senderEncryptedAmt = senderAmt,
+                 .destEncryptedAmt = destAmt,
+                 .issuerEncryptedAmt = issuerAmt,
+                 .amountCommitment = amountCommitment,
+                 .balanceCommitment = balanceCommitment});
+            mptAlice.mergeInbox({.account = carol});
+
+            // Attempt to replay exact same proof to same destination (sequence N+1)
+            // Uses identical ciphertexts and commitments - only sequence differs
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = sendAmount,
+                 .proof = strHex(*proof),
+                 .senderEncryptedAmt = senderAmt,
+                 .destEncryptedAmt = destAmt,
+                 .issuerEncryptedAmt = issuerAmt,
+                 .amountCommitment = amountCommitment,
+                 .balanceCommitment = balanceCommitment,
+                 .err = tecBAD_PROOF});
+        }
+
+        // Variant B: Replay proof to different destination
+        // -----------------------------------------------------------------
+        // Attack: Extract proof from a successful Bob->Carol transaction,
+        // then attempt to reuse it for Bob->Dan (different destination).
+        //
+        // Why it fails: The context hash includes the destination account.
+        // When verifier recomputes challenge with Dan's address instead of
+        // Carol's, it gets a different challenge than what the prover used.
+        {
+            auto const version = mptAlice.getMPTokenVersion(bob);
+
+            Buffer const blindingFactor = generateBlindingFactor();
+            auto const senderAmt = mptAlice.encryptAmount(bob, sendAmount, blindingFactor);
+            auto const destAmt = mptAlice.encryptAmount(carol, sendAmount, blindingFactor);
+            auto const issuerAmt = mptAlice.encryptAmount(alice, sendAmount, blindingFactor);
+
+            auto const amountBlindingFactor = generateBlindingFactor();
+            auto const amountCommitment = mptAlice.getPedersenCommitment(sendAmount, amountBlindingFactor);
+
+            auto const prevSpending = mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            BEAST_EXPECT(prevSpending.has_value());
+            auto const balanceBlindingFactor = generateBlindingFactor();
+            auto const balanceCommitment = mptAlice.getPedersenCommitment(*prevSpending, balanceBlindingFactor);
+
+            std::vector<ConfidentialRecipient> recipients;
+            recipients.push_back({Slice(bobPubKey), senderAmt});
+            recipients.push_back({Slice(carolPubKey), destAmt});
+            recipients.push_back({Slice(alicePubKey), issuerAmt});
+
+            auto const prevEncryptedSpending = mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            BEAST_EXPECT(prevEncryptedSpending.has_value());
+
+            auto const ctxHash = getSendContextHash(bob.id(), env.seq(bob), mptAlice.issuanceID(), carol.id(), version);
+            auto const proof = mptAlice.getConfidentialSendProof(
+                bob,
+                sendAmount,
+                recipients,
+                blindingFactor,
+                nRecipients,
+                ctxHash,
+                {.pedersenCommitment = amountCommitment,
+                 .amt = sendAmount,
+                 .encryptedAmt = senderAmt,
+                 .blindingFactor = amountBlindingFactor},
+                {.pedersenCommitment = balanceCommitment,
+                 .amt = *prevSpending,
+                 .encryptedAmt = *prevEncryptedSpending,
+                 .blindingFactor = balanceBlindingFactor});
+
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
+
+            // Submit successful transaction Bob -> Carol
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = sendAmount,
+                 .proof = strHex(*proof),
+                 .senderEncryptedAmt = senderAmt,
+                 .destEncryptedAmt = destAmt,
+                 .issuerEncryptedAmt = issuerAmt,
+                 .amountCommitment = amountCommitment,
+                 .balanceCommitment = balanceCommitment});
+            mptAlice.mergeInbox({.account = carol});
+
+            // Generate fresh ciphertexts for Dan (different destination)
+            auto const destAmtDan = mptAlice.encryptAmount(dan, sendAmount, blindingFactor);
+            auto const issuerAmtDan = mptAlice.encryptAmount(alice, sendAmount, blindingFactor);
+
+            // Attempt to reuse proof extracted from Bob->Carol for Bob->Dan
+            mptAlice.send(
+                {.account = bob,
+                 .dest = dan,
+                 .amt = sendAmount,
+                 .proof = strHex(*proof),
+                 .senderEncryptedAmt = senderAmt,
+                 .destEncryptedAmt = destAmtDan,
+                 .issuerEncryptedAmt = issuerAmtDan,
+                 .amountCommitment = amountCommitment,
+                 .balanceCommitment = balanceCommitment,
+                 .err = tecBAD_PROOF});
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         // ConfidentialMPTConvert
@@ -4284,6 +4514,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testForgedEqualityProof(features);
         testForgedRangeProof(features);
         testFiatShamirBinding(features);
+        testProofComponentReuse(features);
     }
 
 public:
