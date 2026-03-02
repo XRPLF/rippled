@@ -4,6 +4,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/digest.h>
+
 #include <algorithm>
 #include <limits>
 
