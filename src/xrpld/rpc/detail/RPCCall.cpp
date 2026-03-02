@@ -446,7 +446,8 @@ private:
             std::size_t colon = ip.find_last_of(":");
             jvRequest[jss::ip] = std::string{ip, 0, colon};
 
-            if (auto const port = jvParseUInt(std::string{ip, colon + 1}))
+            Json::Value portJson(std::string{ip, colon + 1});
+            if (auto const port = jvParseUInt(portJson))
                 jvRequest[jss::port] = *port;
             else
                 return RPC::invalid_field_error(jss::port);
