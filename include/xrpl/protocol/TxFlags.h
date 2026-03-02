@@ -77,6 +77,8 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
 // Note: MASK_ADJ is used when a universal flag should be invalid for a specific transaction.
 // For example, Batch uses MASK_ADJ(tfInnerBatchTxn) because the outer Batch transaction
 // must not have tfInnerBatchTxn set (only inner transactions should have it).
+//
+// TODO: Consider rewriting this using reflection in C++26 or later. Alternatively this could be a DSL processed by a script at build time.
 #define XMACRO(TRANSACTION, TF_FLAG, TF_FLAG2, MASK_ADJ)                                                                                                       \
     TRANSACTION(AccountSet,                                                                                                                                    \
         TF_FLAG(tfRequireDestTag, 0x00010000)                                                                                                                  \
