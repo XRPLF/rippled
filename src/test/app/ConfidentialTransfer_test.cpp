@@ -2068,8 +2068,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Buffer const convertBlindingFactor = generateBlindingFactor();
             auto const convertHolderCiphertext = mptAlice.encryptAmount(bob, maxMPTokenAmount, convertBlindingFactor);
             auto const convertIssuerCiphertext = mptAlice.encryptAmount(alice, maxMPTokenAmount, convertBlindingFactor);
-            auto const convertContextHash =
-                getConvertContextHash(bob.id(), env.seq(bob), mptAlice.issuanceID(), maxMPTokenAmount);
+            auto const convertContextHash = getConvertContextHash(bob.id(), mptAlice.issuanceID(), env.seq(bob));
             auto const schnorrProof = mptAlice.getSchnorrProof(bob, convertContextHash);
             BEAST_EXPECT(schnorrProof.has_value());
 
@@ -2121,7 +2120,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             // Generate the proof using known spending balance value
             auto const version = mptAlice.getMPTokenVersion(bob);
             uint256 const convertBackContextHash =
-                getConvertBackContextHash(bob.id(), env.seq(bob), mptAlice.issuanceID(), convertBackAmt, version);
+                getConvertBackContextHash(bob.id(), mptAlice.issuanceID(), env.seq(bob), version);
 
             Buffer const proof = mptAlice.getConvertBackProof(
                 bob,
@@ -3408,8 +3407,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // The proof uses PC(1, rho) but the transaction submits PC(balance, rho).
         // Verification fails because the proof doesn't match the submitted commitment.
         {
-            uint256 const contextHash =
-                getConvertBackContextHash(bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
+            uint256 const contextHash = getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
             Buffer const badPedersenCommitment = mptAlice.getPedersenCommitment(1, pcBlindingFactor);
             Buffer const proof = mptAlice.getConvertBackProof(
                 bob,
@@ -3437,8 +3435,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // The pedersen commitment PC = balance*G + rho*H requires the same rho
         // used in proof generation. Using a different rho breaks the linkage.
         {
-            uint256 const contextHash =
-                getConvertBackContextHash(bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
+            uint256 const contextHash = getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
 
             Buffer const proof = mptAlice.getConvertBackProof(
                 bob,
@@ -3466,8 +3463,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // The proof claims balance=1 but the encrypted spending balance contains
         // the actual balance. Verification fails because the values don't match.
         {
-            uint256 const contextHash =
-                getConvertBackContextHash(bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
+            uint256 const contextHash = getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
 
             Buffer const proof = mptAlice.getConvertBackProof(
                 bob,
@@ -3496,8 +3492,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // different pedersen commitment. Verification fails because the
         // submitted commitment doesn't match what the proof was generated for.
         {
-            uint256 const contextHash =
-                getConvertBackContextHash(bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
+            uint256 const contextHash = getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
             Buffer const badPedersenCommitment = mptAlice.getPedersenCommitment(1, pcBlindingFactor);
             Buffer const proof = mptAlice.getConvertBackProof(
                 bob,
@@ -3526,8 +3521,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // sequence, issuanceID, amount, version). Using a different context hash
         // makes the proof invalid for this transaction, preventing replay attacks.
         {
-            uint256 const contextHash =
-                getConvertBackContextHash(bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
+            uint256 const contextHash = getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
             uint256 const badContextHash{1};
             Buffer const pedersenProof = mptAlice.getBalanceLinkageProof(
                 bob,
@@ -3560,8 +3554,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // Test 6: Correct proof to verify the test setup is valid.
         // All parameters are correct, so the transaction should succeed.
         {
-            uint256 const contextHash =
-                getConvertBackContextHash(bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
+            uint256 const contextHash = getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
 
             Buffer const proof = mptAlice.getConvertBackProof(
                 bob,
@@ -3675,8 +3668,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // commitment was created with (balance - amount). The verifier computes
         // PC_rem = PC - amount*G and checks if the bulletproof matches, which fails.
         {
-            uint256 const contextHash =
-                getConvertBackContextHash(bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
+            uint256 const contextHash = getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
 
             Buffer const bulletproof = mptAlice.getBulletproof(
                 {1},  // wrong remaining balance
@@ -3701,8 +3693,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // commitment PC = (balance - amount)*G + rho*H. Using a different rho
         // creates a commitment mismatch and verification fails.
         {
-            uint256 const contextHash =
-                getConvertBackContextHash(bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
+            uint256 const contextHash = getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
 
             Buffer const bulletproof = mptAlice.getBulletproof(
                 {*spendingBalance - amt},
@@ -3727,8 +3718,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // sequence, issuanceID, amount, version). Using a different context hash
         // makes the proof invalid for this transaction, preventing replay attacks.
         {
-            uint256 const contextHash =
-                getConvertBackContextHash(bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
+            uint256 const contextHash = getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
 
             uint256 const badContextHash{1};
             Buffer const bulletproof = mptAlice.getBulletproof(
@@ -3752,8 +3742,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // Test 4: Correct proof to verify the test setup is valid.
         // All parameters are correct, so the transaction should succeed.
         {
-            uint256 const contextHash =
-                getConvertBackContextHash(bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
+            uint256 const contextHash = getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
 
             Buffer const proof = mptAlice.getConvertBackProof(
                 bob,

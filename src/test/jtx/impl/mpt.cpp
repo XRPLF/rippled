@@ -1057,7 +1057,7 @@ MPTTester::convert(MPTConvert const& arg)
         // if fillSchnorrProof is explicitly set, follow its value;
         // otherwise, default to generating the proof only if holder pub key is
         // present.
-        auto const contextHash = getConvertContextHash(arg.account->id(), env_.seq(*arg.account), *id_, *arg.amt);
+        auto const contextHash = getConvertContextHash(arg.account->id(), *id_, env_.seq(*arg.account));
 
         auto const proof = getSchnorrProof(*arg.account, contextHash);
         if (proof)
@@ -1257,7 +1257,7 @@ MPTTester::send(MPTConfidentialSend const& arg)
     {
         auto const version = getMPTokenVersion(*arg.account);
         auto const ctxHash =
-            getSendContextHash(arg.account->id(), env_.seq(*arg.account), *id_, arg.dest->id(), version);
+            getSendContextHash(arg.account->id(), *id_, env_.seq(*arg.account), arg.dest->id(), version);
 
         auto const nRecipients = getConfidentialRecipientCount(auditorAmt.has_value());
         std::vector<ConfidentialRecipient> recipients;
@@ -1427,7 +1427,7 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
     else
     {
         std::uint32_t const seq = env_.seq(account);
-        uint256 const contextHash = getClawbackContextHash(account.id(), seq, *id_, *arg.amt, arg.holder->id());
+        uint256 const contextHash = getClawbackContextHash(account.id(), *id_, seq, arg.holder->id());
 
         auto const privKey = getPrivKey(account);
         if (!privKey || privKey->size() != ecPrivKeyLength)
@@ -1707,8 +1707,7 @@ MPTTester::convertBack(MPTConvertBack const& arg)
 
         // if the caller generated ciphertexts themselves, they should also
         // generate the proof themselves from the blinding factor
-        uint256 const contextHash =
-            getConvertBackContextHash(arg.account->id(), env_.seq(*arg.account), *id_, *arg.amt, version);
+        uint256 const contextHash = getConvertBackContextHash(arg.account->id(), *id_, env_.seq(*arg.account), version);
         auto const prevEncryptedSpendingBalance = getEncryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
 
         Buffer proof;

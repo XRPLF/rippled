@@ -50,15 +50,15 @@ incrementConfidentialVersion(STObject& mptoken)
 /**
  * @brief Adds common fields to a serializer for ZKP context hash generation.
  *
- * Serializes the transaction type, account, sequence number, and issuance ID
+ * Serializes the transaction type, account, issuance ID and sequence/ticket number
  * into the provided serializer. These fields form the base of all context
  * hashes used in zero-knowledge proofs.
  *
  * @param s          The serializer to append fields to.
  * @param txType     The transaction type identifier.
  * @param account    The account ID of the transaction sender.
- * @param sequence   The transaction sequence number.
  * @param issuanceID The MPToken Issuance ID.
+ * @param sequence   The transaction sequence number or ticket number.
  */
 void
 addCommonZKPFields(
@@ -75,8 +75,8 @@ addCommonZKPFields(
  * this specific send transaction, preventing proof reuse across transactions.
  *
  * @param account     The sender's account ID.
- * @param sequence    The transaction sequence number.
  * @param issuanceID  The MPToken Issuance ID.
+ * @param sequence    The transaction sequence number or ticket number.
  * @param destination The destination account ID.
  * @param version     The sender's confidential balance version.
  * @return A 256-bit context hash unique to this transaction.
@@ -84,8 +84,8 @@ addCommonZKPFields(
 uint256
 getSendContextHash(
     AccountID const& account,
-    std::uint32_t sequence,
     uint192 const& issuanceID,
+    std::uint32_t sequence,
     AccountID const& destination,
     std::uint32_t version);
 
@@ -96,18 +96,16 @@ getSendContextHash(
  * specific clawback transaction.
  *
  * @param account    The issuer's account ID.
- * @param sequence   The transaction sequence number.
  * @param issuanceID The MPToken Issuance ID.
- * @param amount     The amount being clawed back.
+ * @param sequence   The transaction sequence number or ticket number.
  * @param holder     The holder's account ID being clawed back from.
  * @return A 256-bit context hash unique to this transaction.
  */
 uint256
 getClawbackContextHash(
     AccountID const& account,
-    std::uint32_t sequence,
     uint192 const& issuanceID,
-    std::uint64_t amount,
+    std::uint32_t sequence,
     AccountID const& holder);
 
 /**
@@ -117,17 +115,12 @@ getClawbackContextHash(
  * registration) to this specific convert transaction.
  *
  * @param account    The holder's account ID.
- * @param sequence   The transaction sequence number.
  * @param issuanceID The MPToken Issuance ID.
- * @param amount     The amount being converted to confidential.
+ * @param sequence   The transaction sequence number or a ticket number.
  * @return A 256-bit context hash unique to this transaction.
  */
 uint256
-getConvertContextHash(
-    AccountID const& account,
-    std::uint32_t sequence,
-    uint192 const& issuanceID,
-    std::uint64_t amount);
+getConvertContextHash(AccountID const& account, uint192 const& issuanceID, std::uint32_t sequence);
 
 /**
  * @brief Generates the context hash for ConfidentialMPTConvertBack transactions.
@@ -136,18 +129,16 @@ getConvertContextHash(
  * this specific convert-back transaction.
  *
  * @param account    The holder's account ID.
- * @param sequence   The transaction sequence number.
  * @param issuanceID The MPToken Issuance ID.
- * @param amount     The amount being converted back to public.
+ * @param sequence   The transaction sequence number or a ticket number.
  * @param version    The holder's confidential balance version.
  * @return A 256-bit context hash unique to this transaction.
  */
 uint256
 getConvertBackContextHash(
     AccountID const& account,
-    std::uint32_t sequence,
     uint192 const& issuanceID,
-    std::uint64_t amount,
+    std::uint32_t sequence,
     std::uint32_t version);
 
 /**
