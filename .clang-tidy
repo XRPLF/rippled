@@ -85,7 +85,6 @@ Checks: "-*,
 # checks that have some issues that need to be resolved:
 #
 # bugprone-empty-catch,
-# bugprone-crtp-constructor-accessibility,
 # bugprone-inc-dec-in-conditions,
 # bugprone-reserved-identifier,
 # bugprone-move-forwarding-reference,
