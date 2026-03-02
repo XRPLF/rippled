@@ -8,7 +8,7 @@
 #include <test/jtx/envconfig.h>
 #include <test/jtx/require.h>
 #include <test/jtx/tags.h>
-#include <test/jtx/vault.h>
+#include <test/jtx/vault.h
 #include <test/unit_test/SuiteJournal.h>
 
 #include <xrpld/app/ledger/Ledger.h>
@@ -431,8 +431,7 @@ public:
         auto const result = close();
         auto serverBarrier = std::make_shared<std::promise<void>>();
         auto future = serverBarrier->get_future();
-        boost::asio::post(
-            app().getIOContext(), [serverBarrier]() { serverBarrier->set_value(); });
+        boost::asio::post(app().getIOContext(), [serverBarrier]() { serverBarrier->set_value(); });
         auto const status = future.wait_for(timeout);
         return result && status == std::future_status::ready;
     }
