@@ -80,3 +80,6 @@ DerivedData
 
 # clangd cache
 /.cache
+
+# python cache
+__pycache__
