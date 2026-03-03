@@ -49,7 +49,7 @@ struct MutexDirectConstructionTest : ::testing::Test
 
 TEST_F(MutexDirectConstructionTest, default_constructor)
 {
-    // Note: int is not initialized by default, so we use a type with a proper
+    // Test default construction with a type that has a non-trivial
     // default constructor
     Mutex<std::string> m;
     auto lock = m.lock();
