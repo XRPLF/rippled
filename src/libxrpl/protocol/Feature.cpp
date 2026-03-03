@@ -408,9 +408,9 @@ enforceMaxFeatureNameSize(char const (&n)[N]) -> char const*
 #define XRPL_FEATURE(name, supported, vote) \
     uint256 const feature##name =           \
         registerFeature(enforceMaxFeatureNameSize(#name), supported, vote);
-#define XRPL_FIX(name, supported, vote)        \
-    uint256 const fix##name = registerFeature( \
-        enforceMaxFeatureNameSize("fix" #name), supported, vote);
+#define XRPL_FIX(name, supported, vote) \
+    uint256 const fix##name =           \
+        registerFeature(enforceMaxFeatureNameSize("fix" #name), supported, vote);
 
 // clang-format off
 #define XRPL_RETIRE_FEATURE(name)                                       \

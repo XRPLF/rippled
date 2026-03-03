@@ -174,10 +174,8 @@ class Feature_test : public beast::unit_test::suite
         BEAST_EXPECTS(jrr[jss::status] == jss::success, "status");
         jrr.removeMember(jss::status);
         BEAST_EXPECT(jrr.size() == 1);
-        auto const expected =
-            to_string(sha512Half(Slice(name.data(), name.size())));
-        char const sha[] =
-            "12523DF04B553A0B1AD74F42DDB741DE8DC06A03FC089A0EF197E2A87F1D8107";
+        auto const expected = to_string(sha512Half(Slice(name.data(), name.size())));
+        char const sha[] = "12523DF04B553A0B1AD74F42DDB741DE8DC06A03FC089A0EF197E2A87F1D8107";
         BEAST_EXPECT(expected == sha);
         BEAST_EXPECT(jrr.isMember(expected));
         auto feature = *(jrr.begin());
