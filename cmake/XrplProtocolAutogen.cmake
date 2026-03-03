@@ -2,6 +2,13 @@
    Protocol Autogen - Code generation for protocol wrapper classes
 #]===================================================================]
 
+# Options for code generation
+set(CODEGEN_VENV_DIR
+    ""
+    CACHE PATH
+          "Path to Python virtual environment for code generation. If provided, automatic venv setup is skipped."
+)
+
 # Function to set up code generation for protocol_autogen module
 # This runs at configure time to generate C++ wrapper classes from macro files
 function (setup_protocol_autogen)
@@ -42,7 +49,14 @@ function (setup_protocol_autogen)
     message(STATUS "Using Python3 for code generation: ${Python3_EXECUTABLE}")
 
     # Set up Python virtual environment for code generation
-    set(VENV_DIR "${CMAKE_CURRENT_BINARY_DIR}/codegen_venv")
+    if (CODEGEN_VENV_DIR)
+        # User-provided venv - skip automatic setup
+        set(VENV_DIR "${CODEGEN_VENV_DIR}")
+        message(STATUS "Using user-provided Python venv: ${VENV_DIR}")
+    else ()
+        # Use default venv in build directory
+        set(VENV_DIR "${CMAKE_CURRENT_BINARY_DIR}/codegen_venv")
+    endif ()
 
     # Determine the Python executable path in the venv
     if (WIN32)
@@ -53,41 +67,51 @@ function (setup_protocol_autogen)
         set(VENV_PIP "${VENV_DIR}/bin/pip")
     endif ()
 
-    # Check if venv needs to be created or updated
-    set(VENV_NEEDS_UPDATE FALSE)
-    if (NOT EXISTS "${VENV_PYTHON}")
-        set(VENV_NEEDS_UPDATE TRUE)
-        message(STATUS "Creating Python virtual environment for code generation...")
-    elseif ("${REQUIREMENTS_FILE}" IS_NEWER_THAN "${VENV_DIR}/.requirements_installed")
-        set(VENV_NEEDS_UPDATE TRUE)
-        message(STATUS "Updating Python virtual environment (requirements changed)...")
-    endif ()
-
-    # Create/update virtual environment if needed
-    if (VENV_NEEDS_UPDATE)
-        message(STATUS "Setting up Python virtual environment at ${VENV_DIR}")
-        execute_process(COMMAND ${Python3_EXECUTABLE} -m venv "${VENV_DIR}"
-                        RESULT_VARIABLE VENV_RESULT ERROR_VARIABLE VENV_ERROR)
-        if (NOT VENV_RESULT EQUAL 0)
-            message(FATAL_ERROR "Failed to create virtual environment: ${VENV_ERROR}")
+    # Only auto-setup venv if not user-provided
+    if (NOT CODEGEN_VENV_DIR)
+        # Check if venv needs to be created or updated
+        set(VENV_NEEDS_UPDATE FALSE)
+        if (NOT EXISTS "${VENV_PYTHON}")
+            set(VENV_NEEDS_UPDATE TRUE)
+            message(STATUS "Creating Python virtual environment for code generation...")
+        elseif ("${REQUIREMENTS_FILE}" IS_NEWER_THAN "${VENV_DIR}/.requirements_installed")
+            set(VENV_NEEDS_UPDATE TRUE)
+            message(STATUS "Updating Python virtual environment (requirements changed)...")
         endif ()
 
-        message(STATUS "Installing Python dependencies...")
-        execute_process(COMMAND ${VENV_PIP} install --upgrade pip RESULT_VARIABLE PIP_UPGRADE_RESULT
-                        OUTPUT_QUIET ERROR_VARIABLE PIP_UPGRADE_ERROR)
-        if (NOT PIP_UPGRADE_RESULT EQUAL 0)
-            message(WARNING "Failed to upgrade pip: ${PIP_UPGRADE_ERROR}")
-        endif ()
+        # Create/update virtual environment if needed
+        if (VENV_NEEDS_UPDATE)
+            message(STATUS "Setting up Python virtual environment at ${VENV_DIR}")
+            execute_process(COMMAND ${Python3_EXECUTABLE} -m venv "${VENV_DIR}"
+                            RESULT_VARIABLE VENV_RESULT ERROR_VARIABLE VENV_ERROR)
+            if (NOT VENV_RESULT EQUAL 0)
+                message(WARNING "Failed to create virtual environment: ${VENV_ERROR}")
+                message(WARNING "Code generation skipped. Build will continue with existing generated files."
+                )
+                return()
+            endif ()
 
-        execute_process(COMMAND ${VENV_PIP} install -r "${REQUIREMENTS_FILE}"
-                        RESULT_VARIABLE PIP_INSTALL_RESULT ERROR_VARIABLE PIP_INSTALL_ERROR)
-        if (NOT PIP_INSTALL_RESULT EQUAL 0)
-            message(FATAL_ERROR "Failed to install Python dependencies: ${PIP_INSTALL_ERROR}")
-        endif ()
+            message(STATUS "Installing Python dependencies...")
+            execute_process(COMMAND ${VENV_PIP} install --upgrade pip
+                            RESULT_VARIABLE PIP_UPGRADE_RESULT OUTPUT_QUIET
+                            ERROR_VARIABLE PIP_UPGRADE_ERROR)
+            if (NOT PIP_UPGRADE_RESULT EQUAL 0)
+                message(WARNING "Failed to upgrade pip: ${PIP_UPGRADE_ERROR}")
+            endif ()
 
-        # Mark requirements as installed
-        file(TOUCH "${VENV_DIR}/.requirements_installed")
-        message(STATUS "Python virtual environment ready")
+            execute_process(COMMAND ${VENV_PIP} install -r "${REQUIREMENTS_FILE}"
+                            RESULT_VARIABLE PIP_INSTALL_RESULT ERROR_VARIABLE PIP_INSTALL_ERROR)
+            if (NOT PIP_INSTALL_RESULT EQUAL 0)
+                message(WARNING "Failed to install Python dependencies: ${PIP_INSTALL_ERROR}")
+                message(WARNING "Code generation skipped. Build will continue with existing generated files."
+                )
+                return()
+            endif ()
+
+            # Mark requirements as installed
+            file(TOUCH "${VENV_DIR}/.requirements_installed")
+            message(STATUS "Python virtual environment ready")
+        endif ()
     endif ()
 
     # Generate transaction classes at configure time
@@ -100,7 +124,8 @@ function (setup_protocol_autogen)
                     OUTPUT_VARIABLE TX_GEN_OUTPUT
                     ERROR_VARIABLE TX_GEN_ERROR)
     if (NOT TX_GEN_RESULT EQUAL 0)
-        message(FATAL_ERROR "Failed to generate transaction classes:\n${TX_GEN_ERROR}")
+        message(WARNING "Failed to generate transaction classes:\n${TX_GEN_ERROR}")
+        message(WARNING "Build will continue with existing generated files.")
     else ()
         message(STATUS "Transaction classes generated successfully")
     endif ()
@@ -115,18 +140,24 @@ function (setup_protocol_autogen)
                     OUTPUT_VARIABLE LEDGER_GEN_OUTPUT
                     ERROR_VARIABLE LEDGER_GEN_ERROR)
     if (NOT LEDGER_GEN_RESULT EQUAL 0)
-        message(FATAL_ERROR "Failed to generate ledger entry classes:\n${LEDGER_GEN_ERROR}")
+        message(WARNING "Failed to generate ledger entry classes:\n${LEDGER_GEN_ERROR}")
+        message(WARNING "Build will continue with existing generated files.")
     else ()
         message(STATUS "Ledger entry classes generated successfully")
     endif ()
 
-    # Add the generated header directory to the module's include path
-    target_include_directories(
-        xrpl.libxrpl.protocol_autogen PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                                             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+    # Register dependencies so CMake reconfigures when these files change
+    set_property(DIRECTORY
+                 APPEND
+                 PROPERTY CMAKE_CONFIGURE_DEPENDS
+                          "${TRANSACTIONS_MACRO}"
+                          "${LEDGER_ENTRIES_MACRO}"
+                          "${SFIELDS_MACRO}"
+                          "${GENERATE_TX_SCRIPT}"
+                          "${GENERATE_LEDGER_SCRIPT}"
+                          "${SCRIPTS_DIR}/macro_parser_common.py"
+                          "${SCRIPTS_DIR}/templates/Transaction.h.jinja2"
+                          "${SCRIPTS_DIR}/templates/LedgerEntry.h.jinja2"
+                          "${REQUIREMENTS_FILE}")
 
-    # Install generated headers
-    install(DIRECTORY "${AUTOGEN_HEADER_DIR}/"
-            DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/xrpl/protocol_autogen" FILES_MATCHING
-            PATTERN "*.h")
 endfunction ()

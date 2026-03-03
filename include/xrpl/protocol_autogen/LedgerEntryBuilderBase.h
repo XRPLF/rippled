@@ -1,9 +1,14 @@
 #pragma once
 
-#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAccount.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STBlob.h>
+#include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol_autogen/STObjectValidation.h>
 
 namespace xrpl::ledger_entries {
 
@@ -15,6 +20,31 @@ template <typename Derived>
 class LedgerEntryBuilderBase
 {
 public:
+    LedgerEntryBuilderBase(
+        SF_UINT16::type::value_type ledgerEntryType,
+        SF_UINT32::type::value_type flags = 0)
+    {
+        object_[sfLedgerEntryType] = ledgerEntryType;
+        object_[sfFlags] = flags;
+    }
+
+    /**
+     * @brief Validate the ledger entry
+     * @return true if validation passes, false otherwise
+     */
+    [[nodiscard]]
+    bool
+    validate()
+    {
+        if (!object_.isFieldPresent(sfLedgerEntryType))
+        {
+            return false;
+        }
+        auto ledgerEntryType = static_cast<LedgerEntryType>(object_.getFieldU16(sfLedgerEntryType));
+        return protocol_autogen::validateSTObject(
+            object_, LedgerFormats::getInstance().findByType(ledgerEntryType)->getSOTemplate());
+    }
+
     /**
      * Set the ledger index.
      * @param value Ledger index
@@ -37,20 +67,6 @@ public:
     {
         object_.setFieldU32(sfFlags, value);
         return static_cast<Derived&>(*this);
-    }
-
-    /**
-     * @brief Factory method to create a new instance of the derived builder.
-     *
-     * Creates a default-constructed builder instance. It is recommended to use
-     * this factory method instead of directly constructing the derived type to
-     * avoid creating unnecessary temporary objects.
-     * @return A new instance of the derived builder type
-     */
-    static Derived
-    create()
-    {
-        return Derived{};
     }
 
     /**

@@ -80,7 +80,3 @@ DerivedData
 
 # clangd cache
 /.cache
-
-# Auto-generated protocol wrapper classes (generated at CMake configure time)
-/include/xrpl/protocol_autogen/transactions/
-/include/xrpl/protocol_autogen/ledger_objects/

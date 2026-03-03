@@ -8,6 +8,7 @@ and ledger_entries.macro files using pcpp and pyparsing.
 # cspell:words sfields
 
 import re
+from pathlib import Path
 import pyparsing as pp
 from pcpp import Preprocessor
 
@@ -98,9 +99,9 @@ def parse_sfields_macro(sfields_path):
                 "getter_method": "at",
                 "setter_method": "",
                 "setter_use_brackets": True,
-                "setter_type": f"SF_{sti_suffix}::type::value_type const&",
+                "setter_type": f"std::decay_t<typename SF_{sti_suffix}::type::value_type> const&",
                 "return_type": f"SF_{sti_suffix}::type::value_type",
-                "return_type_optional": f"std::optional<SF_{sti_suffix}::type::value_type>",
+                "return_type_optional": f"protocol_autogen::Optional<SF_{sti_suffix}::type::value_type>",
             },
         }
 
@@ -191,3 +192,41 @@ def parse_field_list(fields_str):
         return fields
     except pp.ParseException as e:
         raise ValueError(f"Failed to parse field list: {e}")
+
+
+def generate_cpp_class(entry_info, header_dir, jinja_env, field_types, template_name):
+    """Generate C++ header file from a template.
+
+    Args:
+        entry_info: Dict containing entry information (name, fields, etc.)
+        header_dir: Output directory for generated header files
+        jinja_env: Jinja2 Environment for loading templates
+        field_types: Dict mapping field names to type information
+        template_name: Name of the Jinja2 template file to use
+    """
+    # Enrich field information with type data
+    for field in entry_info["fields"]:
+        field_name = field["name"]
+        if field_name in field_types:
+            field["typed"] = field_types[field_name]["typed"]
+            field["paramName"] = field_name[2].lower() + field_name[3:]
+            field["stiSuffix"] = field_types[field_name]["stiSuffix"]
+            field["typeData"] = field_types[field_name]["typeData"]
+        else:
+            # Unknown field - assume typed for safety
+            field["typed"] = True
+            field["paramName"] = ""
+            field["stiSuffix"] = None
+            field["typeData"] = None
+
+    template = jinja_env.get_template(template_name)
+
+    # Render the template - pass entry_info directly so templates can access any field
+    header_content = template.render(**entry_info)
+
+    # Write header file
+    header_path = Path(header_dir) / f"{entry_info['name']}.h"
+    with open(header_path, "w") as f:
+        f.write(header_content)
+
+    print(f"Generated {header_path}")

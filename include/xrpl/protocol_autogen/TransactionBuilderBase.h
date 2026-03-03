@@ -1,8 +1,15 @@
 #pragma once
 
-#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAccount.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STBlob.h>
+#include <xrpl/protocol/STInteger.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STXChainBridge.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol_autogen/STObjectValidation.h>
 
 namespace xrpl::transactions {
 
@@ -14,6 +21,39 @@ template <typename Derived>
 class TransactionBuilderBase
 {
 public:
+    TransactionBuilderBase() = default;
+
+    TransactionBuilderBase(
+        SF_ACCOUNT::type::value_type account,
+        SF_UINT32::type::value_type sequence,
+        SF_AMOUNT::type::value_type fee,
+        SF_VL::type::value_type signingPubKey,
+        SF_UINT16::type::value_type transactionType)
+    {
+        object_[sfTransactionType] = transactionType;
+        setAccount(account);
+        setSequence(sequence);
+        setFee(fee);
+        setSigningPubKey(signingPubKey);
+    }
+
+    /**
+     * @brief Validate the transaction
+     * @return true if validation passes, false otherwise
+     */
+    [[nodiscard]]
+    bool
+    validate()
+    {
+        if (!object_.isFieldPresent(sfTransactionType))
+        {
+            return false;
+        }
+        auto transactionType = static_cast<TxType>(object_.getFieldU16(sfTransactionType));
+        return protocol_autogen::validateSTObject(
+            object_, TxFormats::getInstance().findByType(transactionType)->getSOTemplate());
+    }
+
     /**
      * Set the account that is sending the transaction.
      * @param value Account address (typically as a string)
@@ -22,7 +62,7 @@ public:
     Derived&
     setAccount(AccountID const& value)
     {
-        set(object_, sfAccount, value);
+        object_[sfAccount] = value;
         return static_cast<Derived&>(*this);
     }
 
@@ -34,7 +74,7 @@ public:
     Derived&
     setFee(STAmount const& value)
     {
-        set(object_, sfFee, value);
+        object_[sfFee] = value;
         return static_cast<Derived&>(*this);
     }
 
@@ -46,7 +86,7 @@ public:
     Derived&
     setSequence(std::uint32_t const& value)
     {
-        set(object_, sfSequence, value);
+        object_[sfSequence] = value;
         return static_cast<Derived&>(*this);
     }
 
@@ -56,9 +96,9 @@ public:
      * @return Reference to the derived builder for method chaining.
      */
     Derived&
-    setSigningPubKey(Blob const& value)
+    setSigningPubKey(Slice const& value)
     {
-        set(object_, sfSigningPubKey, value);
+        object_[sfSigningPubKey] = value;
         return static_cast<Derived&>(*this);
     }
 
@@ -70,7 +110,7 @@ public:
     Derived&
     setFlags(std::uint32_t const& value)
     {
-        set(object_, sfFlags, value);
+        object_[sfFlags] = value;
         return static_cast<Derived&>(*this);
     }
 
@@ -82,7 +122,7 @@ public:
     Derived&
     setSourceTag(std::uint32_t const& value)
     {
-        set(object_, sfSourceTag, value);
+        object_[sfSourceTag] = value;
         return static_cast<Derived&>(*this);
     }
 
@@ -94,7 +134,7 @@ public:
     Derived&
     setLastLedgerSequence(std::uint32_t const& value)
     {
-        set(object_, sfLastLedgerSequence, value);
+        object_[sfLastLedgerSequence] = value;
         return static_cast<Derived&>(*this);
     }
 
@@ -104,21 +144,10 @@ public:
      * @return Reference to the derived builder for method chaining.
      */
     Derived&
-    setAccountTxnID(STUInt256 const& value)
+    setAccountTxnID(uint256 const& value)
     {
-        set(object_, sfAccountTxnID, value);
+        object_[sfAccountTxnID] = value;
         return static_cast<Derived&>(*this);
-    }
-
-    /**
-     * @brief Factory method to create an instance of the derived builder.
-     *
-     * @return A new instance of the derived builder type
-     */
-    static Derived
-    create()
-    {
-        return Derived{};
     }
 
 protected:

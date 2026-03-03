@@ -10,6 +10,8 @@
 #include <stdexcept>
 #include <optional>
 
+# cspell:words equalto
+
 namespace xrpl::transactions {
 
 // Forward declaration
@@ -124,11 +126,20 @@ public:
  */
 class {{ name }}Builder : public TransactionBuilderBase<{{ name }}Builder>
 {
+{%- set required_fields = fields | selectattr('requirement', 'equalto', 'soeREQUIRED') | list %}
 public:
-    {{ name }}Builder()
+    {{ name }}Builder(SF_ACCOUNT::type::value_type account,
+                     SF_UINT32::type::value_type sequence,
+                     SF_AMOUNT::type::value_type fee,
+                     SF_VL::type::value_type signingPubKey{% if required_fields %},{% endif %}
+                     {%- for field in required_fields %}
+                     {{ field.typeData.setter_type }} {{ field.paramName }}{% if not loop.last %},{% endif %}
+                     {%- endfor %})
+        : TransactionBuilderBase<{{ name }}Builder>(account, sequence, fee, signingPubKey, {{ tag }})
     {
-        // Initialize with transaction type
-        object_[sfTransactionType]  = {{ tag }};
+        {%- for field in required_fields %}
+        set{{ field.name[2:] }}({{ field.paramName }});
+        {%- endfor %}
     }
 
     {{ name }}Builder(STTx const& tx)

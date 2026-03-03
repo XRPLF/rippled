@@ -14,8 +14,11 @@ repos:
     rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # frozen: v6.0.0
     hooks:
       - id: trailing-whitespace
+        exclude: ^include/xrpl/protocol_autogen/(transactions|ledger_objects)/
       - id: end-of-file-fixer
+        exclude: ^include/xrpl/protocol_autogen/(transactions|ledger_objects)/
       - id: mixed-line-ending
+        exclude: ^include/xrpl/protocol_autogen/(transactions|ledger_objects)/
       - id: check-merge-conflict
         args: [--assume-in-merge]
 
@@ -25,6 +28,7 @@ repos:
       - id: clang-format
         args: [--style=file]
         "types_or": [c++, c, proto]
+        exclude: ^include/xrpl/protocol_autogen/(transactions|ledger_objects)/
 
   - repo: https://github.com/cheshirekow/cmake-format-precommit
     rev: e2c2116d86a80e72e7146a06e68b7c228afc6319 # frozen: v0.6.13
@@ -46,7 +50,7 @@ repos:
     rev: 1cfa010f078c354f3ffb8413616280cc28f5ba21 # frozen: v9.4.0
     hooks:
       - id: cspell # Spell check changed files
-        exclude: .config/cspell.config.yaml
+        exclude: (.config/cspell.config.yaml|^include/xrpl/protocol_autogen/(transactions|ledger_objects)/)
       - id: cspell # Spell check the commit message
         name: check commit message spelling
         args:

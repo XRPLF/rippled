@@ -14,7 +14,12 @@ from jinja2 import Environment, FileSystemLoader
 import pyparsing as pp
 
 # Import common utilities
-from macro_parser_common import CppCleaner, parse_sfields_macro, parse_field_list
+from macro_parser_common import (
+    CppCleaner,
+    parse_sfields_macro,
+    parse_field_list,
+    generate_cpp_class,
+)
 
 
 def create_transaction_parser():
@@ -70,7 +75,7 @@ def parse_transaction_args(args_list):
     delegable = args_list[3]
     amendments = args_list[4]
     privileges = args_list[5]
-    fields_str = args_list[6]
+    fields_str = args_list[-1]
 
     # Parse fields: ({field1, field2, ...})
     fields = parse_field_list(fields_str)
@@ -117,35 +122,6 @@ def parse_macro_file(filepath):
     return transactions
 
 
-def generate_cpp_class(tx_info, header_dir, jinja_env, field_types):
-    """Generate a header-only template class for a transaction using Jinja2 templates."""
-    class_name = tx_info["name"]
-
-    # Enrich field information with type data
-    for field in tx_info["fields"]:
-        field_name = field["name"]
-        if field_name in field_types:
-            field["typed"] = field_types[field_name]["typed"]
-            field["stiSuffix"] = field_types[field_name]["stiSuffix"]
-            field["typeData"] = field_types[field_name]["typeData"]
-        else:
-            # Unknown field - assume typed for safety
-            field["typed"] = True
-            field["stiSuffix"] = None
-            field["typeData"] = None
-
-    # Load template
-    header_template = jinja_env.get_template("Transaction.h.jinja2")
-
-    # Render header
-    header_content = header_template.render(tx_info)
-    header_path = header_dir / f"{class_name}.h"
-    with open(header_path, "w") as f:
-        f.write(header_content)
-
-    return header_path
-
-
 # TransactionBase is a static file in the repository at:
 # - include/xrpl/protocol/TransactionBase.h
 # - src/libxrpl/protocol/TransactionBase.cpp
@@ -160,7 +136,7 @@ def main():
     parser.add_argument(
         "--header-dir",
         help="Output directory for header files",
-        default="include/xrpl/protocol/transactions",
+        default="include/xrpl/protocol_autogen/transactions",
     )
     parser.add_argument(
         "--sfields-macro",
@@ -212,12 +188,14 @@ def main():
 
     generated_files = []
     for tx_info in transactions:
-        header_path = generate_cpp_class(tx_info, header_dir, jinja_env, field_types)
+        header_path = generate_cpp_class(
+            tx_info, header_dir, jinja_env, field_types, "Transaction.h.jinja2"
+        )
         generated_files.append(header_path)
         print(f"  Generated: {tx_info['name']}.h")
 
     print(
-        f"\n✓ Successfully generated {len(transactions)} transaction classes ({len(generated_files)} header files)"
+        f"\n Successfully generated {len(transactions)} transaction classes ({len(generated_files)} header files)"
     )
     print(f"  Headers: {header_dir.absolute()}")
 

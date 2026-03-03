@@ -6,6 +6,8 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol_autogen/STObjectValidation.h>
+#include <xrpl/protocol_autogen/Utils.h>
 
 #include <optional>
 #include <string>
@@ -31,15 +33,15 @@ public:
     }
 
     /**
-     * @brief Validate the transaction using passesLocalChecks.
-     * @param reason Output parameter for validation failure reason
+     * @brief Validate the transaction
      * @return true if validation passes, false otherwise
      */
     [[nodiscard]]
     bool
-    validate(std::string& reason) const
+    validate() const
     {
-        return passesLocalChecks(tx_, reason);
+        return protocol_autogen::validateSTObject(
+            tx_, TxFormats::getInstance().findByType(tx_.getTxnType())->getSOTemplate());
     }
 
     /**

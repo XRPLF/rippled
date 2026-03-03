@@ -10,6 +10,8 @@
 #include <stdexcept>
 #include <optional>
 
+# cspell:words equalto
+
 namespace xrpl::ledger_entries {
 
 // Forward declaration
@@ -121,16 +123,21 @@ public:
  */
 class {{ name }}Builder : public LedgerEntryBuilderBase<{{ name }}Builder>
 {
+{%- set required_fields = fields | selectattr('requirement', 'equalto', 'soeREQUIRED') | list %}
 public:
-    {{ name }}Builder()
+    {{ name }}Builder({%- for field in required_fields %}
+                {{ field.typeData.setter_type }} {{ field.paramName }}{% if not loop.last %},{% endif %}
+                {%- endfor %})
+        : LedgerEntryBuilderBase<{{ name }}Builder>({{ tag }})
     {
-        // Initialize with ledger entry type
-        object_[sfLedgerEntryType] = {{ tag }};
+        {%- for field in required_fields %}
+        set{{ field.name[2:] }}({{ field.paramName }});
+        {%- endfor %}
     }
 
     {{ name }}Builder(SLE const& sle)
     {
-        if (object_[sfLedgerEntryType] != {{ tag }})
+        if (sle[sfLedgerEntryType] != {{ tag }})
         {
             throw std::runtime_error("Invalid ledger entry type for {{ name }}");
         }

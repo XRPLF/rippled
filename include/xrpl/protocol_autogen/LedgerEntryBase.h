@@ -3,6 +3,8 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol_autogen/STObjectValidation.h>
+#include <xrpl/protocol_autogen/Utils.h>
 
 #include <optional>
 #include <string>
@@ -27,6 +29,23 @@ public:
      */
     explicit LedgerEntryBase(SLE const& sle) : sle_(sle)
     {
+    }
+
+    /**
+     * @brief Validate the ledger entry
+     * @return true if validation passes, false otherwise
+     */
+    [[nodiscard]]
+    bool
+    validate()
+    {
+        if (!sle_.isFieldPresent(sfLedgerEntryType))
+        {
+            return false;
+        }
+        auto ledgerEntryType = static_cast<LedgerEntryType>(sle_.getFieldU16(sfLedgerEntryType));
+        return protocol_autogen::validateSTObject(
+            sle_, LedgerFormats::getInstance().findByType(ledgerEntryType)->getSOTemplate());
     }
 
     /**

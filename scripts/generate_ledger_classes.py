@@ -17,7 +17,12 @@ from jinja2 import Environment, FileSystemLoader
 import pyparsing as pp
 
 # Import common utilities
-from macro_parser_common import CppCleaner, parse_sfields_macro, parse_field_list
+from macro_parser_common import (
+    CppCleaner,
+    parse_sfields_macro,
+    parse_field_list,
+    generate_cpp_class,
+)
 
 
 def create_ledger_entry_parser():
@@ -70,7 +75,7 @@ def parse_ledger_entry_args(args_list):
     value = args_list[1]
     name = args_list[2]
     rpc_name = args_list[3]
-    fields_str = args_list[4]
+    fields_str = args_list[-1]
 
     # Parse fields: ({field1, field2, ...})
     fields = parse_field_list(fields_str)
@@ -115,40 +120,6 @@ def parse_macro_file(file_path):
     return entries
 
 
-def generate_cpp_class(entry_info, header_dir, jinja_env, field_types):
-    """Generate C++ header file for a ledger entry type."""
-    # Enrich field information with type data
-    for field in entry_info["fields"]:
-        field_name = field["name"]
-        if field_name in field_types:
-            field["typed"] = field_types[field_name]["typed"]
-            field["stiSuffix"] = field_types[field_name]["stiSuffix"]
-            field["typeData"] = field_types[field_name]["typeData"]
-        else:
-            # Unknown field - assume typed for safety
-            field["typed"] = True
-            field["stiSuffix"] = None
-            field["typeData"] = None
-
-    template = jinja_env.get_template("LedgerEntry.h.jinja2")
-
-    # Render the template
-    header_content = template.render(
-        name=entry_info["name"],
-        tag=entry_info["tag"],
-        value=entry_info["value"],
-        rpc_name=entry_info["rpc_name"],
-        fields=entry_info["fields"],
-    )
-
-    # Write header file
-    header_path = Path(header_dir) / f"{entry_info['name']}.h"
-    with open(header_path, "w") as f:
-        f.write(header_content)
-
-    print(f"Generated {header_path}")
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Generate C++ ledger entry classes from ledger_entries.macro"
@@ -157,7 +128,7 @@ def main():
     parser.add_argument(
         "--header-dir",
         help="Output directory for header files",
-        default="include/xrpl/protocol/ledger_objects",
+        default="include/xrpl/protocol_autogen/ledger_objects",
     )
     parser.add_argument(
         "--sfields-macro",
@@ -207,7 +178,9 @@ def main():
     header_dir.mkdir(parents=True, exist_ok=True)
 
     for entry in entries:
-        generate_cpp_class(entry, header_dir, jinja_env, field_types)
+        generate_cpp_class(
+            entry, header_dir, jinja_env, field_types, "LedgerEntry.h.jinja2"
+        )
 
     print(f"\nGenerated {len(entries)} ledger entry classes")
 

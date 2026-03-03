@@ -44,16 +44,15 @@ These are isolated in a virtual environment and won't affect your system Python 
 
 ## Version Control
 
-The generated `.h` files are **not checked into version control** - they are listed in `.gitignore`.
-This means:
+The generated `.h` files **are checked into version control**. This means:
 
-- Every developer needs Python 3 installed to configure the project
-- CI/CD systems must run CMake configure to generate the files
-- Generated files are always fresh and match the current macro definitions
+- Developers without Python 3 can still build the project using the committed files
+- CI/CD systems don't need to run code generation if files are up to date
+- Changes to generated files are visible in code review
 
 ## Modifying Generated Code
 
-**Do not manually edit files in this directory.** Any changes will be overwritten the next time CMake configure runs.
+**Do not manually edit generated files.** Any changes will be overwritten the next time CMake configure runs.
 
 To modify the generated classes:
 
@@ -62,3 +61,21 @@ To modify the generated classes:
 - Edit the generation scripts in `scripts/`
 - Update Python dependencies in `scripts/requirements.txt`
 - Run CMake configure to regenerate
+
+## Adding Common Fields
+
+If you add a new common field to `TxFormats.cpp` or `LedgerFormats.cpp`, you should also update the corresponding base classes and templates manually:
+
+Base classes:
+
+- `TransactionBase.h` - Add getters for new common transaction fields
+- `TransactionBuilderBase.h` - Add setters, and if the field is required, add it to the constructor parameters
+- `LedgerEntryBase.h` - Add getters for new common ledger entry fields
+- `LedgerEntryBuilderBase.h` - Add setters, and if the field is required, add it to the constructor parameters
+
+Templates (update to pass required common fields to base class constructors):
+
+- `scripts/templates/Transaction.h.jinja2`
+- `scripts/templates/LedgerEntry.h.jinja2`
+
+These files are **not auto-generated** and must be updated by hand.

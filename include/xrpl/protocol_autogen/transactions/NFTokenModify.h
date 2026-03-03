@@ -1,0 +1,179 @@
+#pragma once
+
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol_autogen/TransactionBase.h>
+#include <xrpl/protocol_autogen/TransactionBuilderBase.h>
+#include <xrpl/json/json_value.h>
+
+#include <stdexcept>
+#include <optional>
+
+# cspell:words equalto
+
+namespace xrpl::transactions {
+
+// Forward declaration
+class NFTokenModifyBuilder;
+
+/**
+ * Transaction: NFTokenModify
+ * Type: ttNFTOKEN_MODIFY (61)
+ * Delegable: Delegation::delegable
+ * Amendment: featureDynamicNFT
+ * Privileges: noPriv
+ *
+ * Immutable wrapper around STTx providing type-safe field access.
+ * Use NFTokenModifyBuilder to construct new transactions.
+ */
+class NFTokenModify : public TransactionBase
+{
+public:
+    static constexpr xrpl::TxType txType = ttNFTOKEN_MODIFY;
+
+    /**
+     * Construct a NFTokenModify transaction wrapper from an existing STTx object.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
+    explicit NFTokenModify(STTx const& tx)
+        : TransactionBase(tx)
+    {
+        // Verify transaction type
+        if (tx.getTxnType() != txType)
+        {
+            throw std::runtime_error("Invalid transaction type for NFTokenModify");
+        }
+    }
+
+    // Transaction-specific field getters
+
+    /**
+     * Get sfNFTokenID (soeREQUIRED)
+     */
+    [[nodiscard]]
+    SF_UINT256::type::value_type
+    getNFTokenID() const
+    {
+        return this->tx_.at(sfNFTokenID);
+    }
+
+    /**
+     * Get sfOwner (soeOPTIONAL)
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    getOwner() const
+    {
+        if (hasOwner())
+        {
+            return this->tx_.at(sfOwner);
+        }
+        return std::nullopt;
+    }
+
+    [[nodiscard]]
+    bool
+    hasOwner() const
+    {
+        return this->tx_.isFieldPresent(sfOwner);
+    }
+
+    /**
+     * Get sfURI (soeOPTIONAL)
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getURI() const
+    {
+        if (hasURI())
+        {
+            return this->tx_.at(sfURI);
+        }
+        return std::nullopt;
+    }
+
+    [[nodiscard]]
+    bool
+    hasURI() const
+    {
+        return this->tx_.isFieldPresent(sfURI);
+    }
+};
+
+/**
+ * Builder for NFTokenModify transactions.
+ * Provides a fluent interface for constructing transactions with method chaining.
+ * Uses Json::Value internally for flexible transaction construction.
+ * Inherits common field setters from TransactionBuilderBase.
+ */
+class NFTokenModifyBuilder : public TransactionBuilderBase<NFTokenModifyBuilder>
+{
+public:
+    NFTokenModifyBuilder(SF_ACCOUNT::type::value_type account,
+                     SF_UINT32::type::value_type sequence,
+                     SF_AMOUNT::type::value_type fee,
+                     SF_VL::type::value_type signingPubKey,
+                     std::decay_t<typename SF_UINT256::type::value_type> const& nFTokenID)
+        : TransactionBuilderBase<NFTokenModifyBuilder>(account, sequence, fee, signingPubKey, ttNFTOKEN_MODIFY)
+    {
+        setNFTokenID(nFTokenID);
+    }
+
+    NFTokenModifyBuilder(STTx const& tx)
+    {
+        if (tx.getTxnType() != ttNFTOKEN_MODIFY)
+        {
+            throw std::runtime_error("Invalid transaction type for NFTokenModifyBuilder");
+        }
+        object_ = tx;
+    }
+
+    // Transaction-specific field setters
+
+    /**
+     * Set sfNFTokenID (soeREQUIRED)
+     * @return Reference to this builder for method chaining.
+     */
+    NFTokenModifyBuilder&
+    setNFTokenID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    {
+        object_[sfNFTokenID] = value;
+        return *this;
+    }
+
+    /**
+     * Set sfOwner (soeOPTIONAL)
+     * @return Reference to this builder for method chaining.
+     */
+    NFTokenModifyBuilder&
+    setOwner(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    {
+        object_[sfOwner] = value;
+        return *this;
+    }
+
+    /**
+     * Set sfURI (soeOPTIONAL)
+     * @return Reference to this builder for method chaining.
+     */
+    NFTokenModifyBuilder&
+    setURI(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfURI] = value;
+        return *this;
+    }
+
+    /**
+     * Build and return the completed NFTokenModify wrapper.
+     * @return The constructed transaction wrapper.
+     * @throws std::runtime_error if the JSON cannot be parsed into a valid transaction.
+     */
+    NFTokenModify
+    build()
+    {
+        return NFTokenModify(STTx(std::move(object_)));
+    }
+};
+
+}  // namespace xrpl::transactions
