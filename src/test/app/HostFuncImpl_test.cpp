@@ -2215,6 +2215,12 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             auto const result = hfs.floatSet(10, -1, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == float1);
         }
+
+        {
+            auto const result = hfs.floatSet(1, Number::maxExponent + normalExp + 1, 0);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        }
     }
 
     void
