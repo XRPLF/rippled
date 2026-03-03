@@ -291,34 +291,19 @@ class Feature_test : public beast::unit_test::suite
         testcase("No Params, Some Enabled");
 
         using namespace test::jtx;
-        Env env{*this, testable_amendments() | fixTest};
+        Env env{*this, FeatureBitset{}};
 
         std::map<std::string, VoteBehavior> const& votes = xrpl::detail::supportedAmendments();
 
         auto jrr = env.rpc("feature")[jss::result];
-
-        env.close();
-        BEAST_EXPECT(env.closed()->rules().enabled(fixTest));
-        BEAST_EXPECT(env.app().getAmendmentTable().isEnabled(fixTest));
-
-        std::cout << "Test: " << to_string(fixTest) << std::endl;
-
         if (!BEAST_EXPECT(jrr.isMember(jss::features)))
             return;
         for (auto it = jrr[jss::features].begin(); it != jrr[jss::features].end(); ++it)
         {
-            std::cout << it.key().asString() << std::endl;
-            std::cout << "Enabled: " << (*it)[jss::enabled].asBool() << std::endl;
             uint256 id;
             (void)id.parseHex(it.key().asString().c_str());
             if (!BEAST_EXPECT((*it).isMember(jss::name)))
                 return;
-
-            if (it.key().asString() == to_string(featureDeepFreeze))
-            {
-                std::cout << "Found" << std::endl;
-            }
-
             bool expectEnabled = env.app().getAmendmentTable().isEnabled(id);
             bool expectSupported = env.app().getAmendmentTable().isSupported(id);
             bool expectVeto = (votes.at((*it)[jss::name].asString()) == VoteBehavior::DefaultNo);
@@ -537,16 +522,16 @@ public:
     void
     run() override
     {
-        //        testInternals();
-        //        testFeatureLookups();
-        //        testNoParams();
-        //        testSingleFeature();
-        //        testInvalidFeature();
-        //        testNonAdmin();
+        testInternals();
+        testFeatureLookups();
+        testNoParams();
+        testSingleFeature();
+        testInvalidFeature();
+        testNonAdmin();
         testSomeEnabled();
-        //        testWithMajorities();
-        //        testVeto();
-        //        testObsolete();
+        testWithMajorities();
+        testVeto();
+        testObsolete();
     }
 };
 
