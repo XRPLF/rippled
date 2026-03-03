@@ -73,7 +73,7 @@ public:
         return lock_;
     }
 
-    operator LockType<MutexType> const&() const &
+    operator LockType<MutexType> const&() const&
     {
         return lock_;
     }
