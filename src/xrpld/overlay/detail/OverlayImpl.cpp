@@ -907,9 +907,9 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
     std::string server_state = info[jss::server_state].asString();
     auto load_factor = info[jss::load_factor_server].asDouble() / info[jss::load_base].asDouble();
 
-    enum { healthy, warning, critical };
-    int health = healthy;
-    auto set_health = [&health](int state) {
+    enum class HealthState { healthy, warning, critical };
+    auto health = HealthState::healthy;
+    auto set_health = [&health](HealthState state) {
         if (health < state)
             health = state;
     };
@@ -919,24 +919,24 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
     {
         msg.body()[jss::info][jss::validated_ledger] = last_validated_ledger_age;
         if (last_validated_ledger_age < 20)
-            set_health(warning);
+            set_health(HealthState::warning);
         else
-            set_health(critical);
+            set_health(HealthState::critical);
     }
 
     if (amendment_blocked)
     {
         msg.body()[jss::info][jss::amendment_blocked] = true;
-        set_health(critical);
+        set_health(HealthState::critical);
     }
 
     if (number_peers <= 7)
     {
         msg.body()[jss::info][jss::peers] = number_peers;
         if (number_peers != 0)
-            set_health(warning);
+            set_health(HealthState::warning);
         else
-            set_health(critical);
+            set_health(HealthState::critical);
     }
 
     if (!(server_state == "full" || server_state == "validating" || server_state == "proposing"))
@@ -944,30 +944,30 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
         msg.body()[jss::info][jss::server_state] = server_state;
         if (server_state == "syncing" || server_state == "tracking" || server_state == "connected")
         {
-            set_health(warning);
+            set_health(HealthState::warning);
         }
         else
-            set_health(critical);
+            set_health(HealthState::critical);
     }
 
     if (load_factor > 100)
     {
         msg.body()[jss::info][jss::load_factor] = load_factor;
         if (load_factor < 1000)
-            set_health(warning);
+            set_health(HealthState::warning);
         else
-            set_health(critical);
+            set_health(HealthState::critical);
     }
 
     switch (health)
     {
-        case healthy:
+        case HealthState::healthy:
             msg.result(boost::beast::http::status::ok);
             break;
-        case warning:
+        case HealthState::warning:
             msg.result(boost::beast::http::status::service_unavailable);
             break;
-        case critical:
+        case HealthState::critical:
             msg.result(boost::beast::http::status::internal_server_error);
             break;
     }

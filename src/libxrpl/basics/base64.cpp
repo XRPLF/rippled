@@ -133,6 +133,7 @@ encode(void* dest, void const* src, std::size_t len)
             break;
 
         case 0:
+        default:
             break;
     }
 
