@@ -250,8 +250,7 @@ public:
 
         // Bob creates an escrow of MPT to Alice.
         auto const MPT = mpt["MPT"];
-        env(escrow::create(bob, alice, MPT(100)),
-            escrow::finish_time(env.now() + 10s));
+        env(escrow::create(bob, alice, MPT(100)), escrow::finish_time(env.now() + 10s));
         env.close();
 
         // Query gateway_balances for Bob.
