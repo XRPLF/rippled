@@ -69,21 +69,6 @@ public:
         return static_cast<Derived&>(*this);
     }
 
-    /**
-     * @brief Factory method to create an instance of the derived builder from an existing SLE.
-     *
-     * Creates a builder instance initialized with data from an existing serialized
-     * ledger entry. It is recommended to use this factory method instead of directly
-     * constructing the derived type to avoid creating unnecessary temporary objects.
-     * @param sle The existing serialized ledger entry to initialize from
-     * @return A new instance of the derived builder type initialized with the SLE data
-     */
-    static Derived
-    create(SLE const& sle)
-    {
-        return Derived{sle};
-    }
-
 protected:
     STObject object_{sfLedgerEntry};
 };
