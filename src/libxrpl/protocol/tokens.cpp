@@ -121,7 +121,8 @@ coefficients sizes greatly speeds up the multi-precision computations.
 
 namespace xrpl {
 
-static constexpr char const* alphabetForward = "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
+static constexpr char const* alphabetForward =
+    "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
 
 static constexpr std::array<int, 256> const alphabetReverse = []() {
     std::array<int, 256> map{};
@@ -412,8 +413,8 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
     // compute the base 58^10 coeffs
     while (cur_2_64_end > 0)
     {
-        base_58_10_coeff[num_58_10_coeffs] =
-            xrpl::b58_fast::detail::inplace_bigint_div_rem(base_2_64_coeff.subspan(0, cur_2_64_end), B_58_10);
+        base_58_10_coeff[num_58_10_coeffs] = xrpl::b58_fast::detail::inplace_bigint_div_rem(
+            base_2_64_coeff.subspan(0, cur_2_64_end), B_58_10);
         num_58_10_coeffs += 1;
         if (base_2_64_coeff[cur_2_64_end - 1] == 0)
         {
@@ -441,7 +442,8 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
         {
             return Unexpected(TokenCodecErrc::inputTooLarge);
         }
-        std::array<std::uint8_t, 10> const b58_be = xrpl::b58_fast::detail::b58_10_to_b58_be(base_58_10_coeff[i]);
+        std::array<std::uint8_t, 10> const b58_be =
+            xrpl::b58_fast::detail::b58_10_to_b58_be(base_58_10_coeff[i]);
         std::size_t to_skip = 0;
         std::span<std::uint8_t const> b58_be_s{b58_be.data(), b58_be.size()};
         if (skip_zeros)
@@ -502,7 +504,9 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
     auto [num_full_coeffs, partial_coeff_len] = xrpl::b58_fast::detail::div_rem(input.size(), 10);
     auto const num_partial_coeffs = partial_coeff_len ? 1 : 0;
     auto const num_b_58_10_coeffs = num_full_coeffs + num_partial_coeffs;
-    XRPL_ASSERT(num_b_58_10_coeffs <= b_58_10_coeff.size(), "xrpl::b58_fast::detail::b58_to_b256_be : maximum coeff");
+    XRPL_ASSERT(
+        num_b_58_10_coeffs <= b_58_10_coeff.size(),
+        "xrpl::b58_fast::detail::b58_to_b256_be : maximum coeff");
     for (unsigned char c : input.substr(0, partial_coeff_len))
     {
         auto cur_val = ::xrpl::alphabetReverse[c];
@@ -539,14 +543,16 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
         std::uint64_t const c = b_58_10_coeff[i];
 
         {
-            auto code = xrpl::b58_fast::detail::inplace_bigint_mul(std::span(&result[0], cur_result_size + 1), B_58_10);
+            auto code = xrpl::b58_fast::detail::inplace_bigint_mul(
+                std::span(&result[0], cur_result_size + 1), B_58_10);
             if (code != TokenCodecErrc::success)
             {
                 return Unexpected(code);
             }
         }
         {
-            auto code = xrpl::b58_fast::detail::inplace_bigint_add(std::span(&result[0], cur_result_size + 1), c);
+            auto code = xrpl::b58_fast::detail::inplace_bigint_add(
+                std::span(&result[0], cur_result_size + 1), c);
             if (code != TokenCodecErrc::success)
             {
                 return Unexpected(code);
@@ -598,7 +604,10 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
 }  // namespace detail
 
 B58Result<std::span<std::uint8_t>>
-encodeBase58Token(TokenType token_type, std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
+encodeBase58Token(
+    TokenType token_type,
+    std::span<std::uint8_t const> input,
+    std::span<std::uint8_t> out)
 {
     constexpr std::size_t tmpBufSize = 128;
     std::array<std::uint8_t, tmpBufSize> buf;

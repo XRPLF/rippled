@@ -6,6 +6,7 @@ ignorePaths:
   - docs/**/*.puml
   - cmake/**
   - LICENSE.md
+  - .clang-tidy
   - src/test/app/wasm_fixtures/**/*.wat
   - src/test/app/wasm_fixtures/*.c
 language: en
@@ -175,6 +176,9 @@ words:
   - nftokens
   - nftpage
   - nikb
+  - nixfmt
+  - nixos
+  - nixpkgs
   - nonxrp
   - noripple
   - nudb

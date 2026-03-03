@@ -264,9 +264,10 @@ transCode(std::string const& token)
     static auto const results = [] {
         auto& byTer = transResults();
         auto range = boost::make_iterator_range(byTer.begin(), byTer.end());
-        auto tRange =
-            boost::adaptors::transform(range, [](auto const& r) { return std::make_pair(r.second.first, r.first); });
-        std::unordered_map<std::string, TERUnderlyingType> const byToken(tRange.begin(), tRange.end());
+        auto tRange = boost::adaptors::transform(
+            range, [](auto const& r) { return std::make_pair(r.second.first, r.first); });
+        std::unordered_map<std::string, TERUnderlyingType> const byToken(
+            tRange.begin(), tRange.end());
         return byToken;
     }();
 

@@ -358,7 +358,8 @@ Reader::readNumber()
         {
             if (!std::isdigit(static_cast<unsigned char>(*current_)))
             {
-                auto ret = std::find(std::begin(extended_tokens), std::end(extended_tokens), *current_);
+                auto ret =
+                    std::find(std::begin(extended_tokens), std::end(extended_tokens), *current_);
 
                 if (ret == std::end(extended_tokens))
                     break;
@@ -423,7 +424,8 @@ Reader::readObject(Token& tokenStart, unsigned depth)
 
         if (!readToken(colon) || colon.type_ != tokenMemberSeparator)
         {
-            return addErrorAndRecover("Missing ':' after object member name", colon, tokenObjectEnd);
+            return addErrorAndRecover(
+                "Missing ':' after object member name", colon, tokenObjectEnd);
         }
 
         // Reject duplicate names
@@ -441,9 +443,11 @@ Reader::readObject(Token& tokenStart, unsigned depth)
         Token comma;
 
         if (!readToken(comma) ||
-            (comma.type_ != tokenObjectEnd && comma.type_ != tokenArraySeparator && comma.type_ != tokenComment))
+            (comma.type_ != tokenObjectEnd && comma.type_ != tokenArraySeparator &&
+             comma.type_ != tokenComment))
         {
-            return addErrorAndRecover("Missing ',' or '}' in object declaration", comma, tokenObjectEnd);
+            return addErrorAndRecover(
+                "Missing ',' or '}' in object declaration", comma, tokenObjectEnd);
         }
 
         bool finalizeTokenOk = true;
@@ -496,7 +500,8 @@ Reader::readArray(Token& tokenStart, unsigned depth)
 
         if (!ok || badTokenType)
         {
-            return addErrorAndRecover("Missing ',' or ']' in array declaration", token, tokenArrayEnd);
+            return addErrorAndRecover(
+                "Missing ',' or ']' in array declaration", token, tokenArrayEnd);
         }
 
         if (token.type_ == tokenArrayEnd)
@@ -517,14 +522,17 @@ Reader::decodeNumber(Token& token)
 
     if (current == token.end_)
     {
-        return addError("'" + std::string(token.start_, token.end_) + "' is not a valid number.", token);
+        return addError(
+            "'" + std::string(token.start_, token.end_) + "' is not a valid number.", token);
     }
 
     // The existing Json integers are 32-bit so using a 64-bit value here avoids
     // overflows in the conversion code below.
     std::int64_t value = 0;
 
-    static_assert(sizeof(value) > sizeof(Value::maxUInt), "The JSON integer overflow logic will need to be reworked.");
+    static_assert(
+        sizeof(value) > sizeof(Value::maxUInt),
+        "The JSON integer overflow logic will need to be reworked.");
 
     while (current < token.end_ && (value <= Value::maxUInt))
     {
@@ -532,7 +540,8 @@ Reader::decodeNumber(Token& token)
 
         if (c < '0' || c > '9')
         {
-            return addError("'" + std::string(token.start_, token.end_) + "' is not a number.", token);
+            return addError(
+                "'" + std::string(token.start_, token.end_) + "' is not a number.", token);
         }
 
         value = (value * 10) + (c - '0');
@@ -541,7 +550,8 @@ Reader::decodeNumber(Token& token)
     // More tokens left -> input is larger than largest possible return value
     if (current != token.end_)
     {
-        return addError("'" + std::string(token.start_, token.end_) + "' exceeds the allowable range.", token);
+        return addError(
+            "'" + std::string(token.start_, token.end_) + "' exceeds the allowable range.", token);
     }
 
     if (isNegative)
@@ -550,7 +560,9 @@ Reader::decodeNumber(Token& token)
 
         if (value < Value::minInt || value > Value::maxInt)
         {
-            return addError("'" + std::string(token.start_, token.end_) + "' exceeds the allowable range.", token);
+            return addError(
+                "'" + std::string(token.start_, token.end_) + "' exceeds the allowable range.",
+                token);
         }
 
         currentValue() = static_cast<Value::Int>(value);
@@ -559,7 +571,9 @@ Reader::decodeNumber(Token& token)
     {
         if (value > Value::maxUInt)
         {
-            return addError("'" + std::string(token.start_, token.end_) + "' exceeds the allowable range.", token);
+            return addError(
+                "'" + std::string(token.start_, token.end_) + "' exceeds the allowable range.",
+                token);
         }
 
         // If it's representable as a signed integer, construct it as one.
@@ -736,10 +750,15 @@ Reader::decodeUnicodeCodePoint(Token& token, Location& current, Location end, un
 }
 
 bool
-Reader::decodeUnicodeEscapeSequence(Token& token, Location& current, Location end, unsigned int& unicode)
+Reader::decodeUnicodeEscapeSequence(
+    Token& token,
+    Location& current,
+    Location end,
+    unsigned int& unicode)
 {
     if (end - current < 4)
-        return addError("Bad unicode escape sequence in string: four digits expected.", token, current);
+        return addError(
+            "Bad unicode escape sequence in string: four digits expected.", token, current);
 
     unicode = 0;
 

@@ -11,7 +11,7 @@ namespace xrpl {
 // =========================================================
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::getNFT(AccountID const& account, uint256 const& nftId)
+WasmHostFunctionsImpl::getNFT(AccountID const& account, uint256 const& nftId) const
 {
     if (!account)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -19,7 +19,7 @@ WasmHostFunctionsImpl::getNFT(AccountID const& account, uint256 const& nftId)
     if (!nftId)
         return Unexpected(HostFunctionError::INVALID_PARAMS);
 
-    auto obj = nft::findToken(ctx.view(), account, nftId);
+    auto obj = nft::findToken(ctx_.view(), account, nftId);
     if (!obj)
         return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
 
@@ -32,7 +32,7 @@ WasmHostFunctionsImpl::getNFT(AccountID const& account, uint256 const& nftId)
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::getNFTIssuer(uint256 const& nftId)
+WasmHostFunctionsImpl::getNFTIssuer(uint256 const& nftId) const
 {
     auto const issuer = nft::getIssuer(nftId);
     if (!issuer)
@@ -42,25 +42,25 @@ WasmHostFunctionsImpl::getNFTIssuer(uint256 const& nftId)
 }
 
 Expected<std::uint32_t, HostFunctionError>
-WasmHostFunctionsImpl::getNFTTaxon(uint256 const& nftId)
+WasmHostFunctionsImpl::getNFTTaxon(uint256 const& nftId) const
 {
     return nft::toUInt32(nft::getTaxon(nftId));
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::getNFTFlags(uint256 const& nftId)
+WasmHostFunctionsImpl::getNFTFlags(uint256 const& nftId) const
 {
     return nft::getFlags(nftId);
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::getNFTTransferFee(uint256 const& nftId)
+WasmHostFunctionsImpl::getNFTTransferFee(uint256 const& nftId) const
 {
     return nft::getTransferFee(nftId);
 }
 
 Expected<std::uint32_t, HostFunctionError>
-WasmHostFunctionsImpl::getNFTSerial(uint256 const& nftId)
+WasmHostFunctionsImpl::getNFTSerial(uint256 const& nftId) const
 {
     return nft::getSerial(nftId);
 }

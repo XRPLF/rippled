@@ -418,7 +418,9 @@ public:
     }
 
     // Trait tells enable_if which types are allowed for construction.
-    template <typename T, typename = std::enable_if_t<Trait<std::remove_cv_t<std::remove_reference_t<T>>>::value>>
+    template <
+        typename T,
+        typename = std::enable_if_t<Trait<std::remove_cv_t<std::remove_reference_t<T>>>::value>>
     constexpr TERSubset(T rhs) : code_(TERtoInt(rhs))
     {
     }
@@ -487,7 +489,8 @@ public:
 template <typename L, typename R>
 constexpr auto
 operator==(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same<decltype(TERtoInt(lhs)), int>::value && std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    std::is_same<decltype(TERtoInt(lhs)), int>::value &&
+        std::is_same<decltype(TERtoInt(rhs)), int>::value,
     bool>
 {
     return TERtoInt(lhs) == TERtoInt(rhs);
@@ -496,7 +499,8 @@ operator==(L const& lhs, R const& rhs) -> std::enable_if_t<
 template <typename L, typename R>
 constexpr auto
 operator!=(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same<decltype(TERtoInt(lhs)), int>::value && std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    std::is_same<decltype(TERtoInt(lhs)), int>::value &&
+        std::is_same<decltype(TERtoInt(rhs)), int>::value,
     bool>
 {
     return TERtoInt(lhs) != TERtoInt(rhs);
@@ -505,7 +509,8 @@ operator!=(L const& lhs, R const& rhs) -> std::enable_if_t<
 template <typename L, typename R>
 constexpr auto
 operator<(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same<decltype(TERtoInt(lhs)), int>::value && std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    std::is_same<decltype(TERtoInt(lhs)), int>::value &&
+        std::is_same<decltype(TERtoInt(rhs)), int>::value,
     bool>
 {
     return TERtoInt(lhs) < TERtoInt(rhs);
@@ -514,7 +519,8 @@ operator<(L const& lhs, R const& rhs) -> std::enable_if_t<
 template <typename L, typename R>
 constexpr auto
 operator<=(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same<decltype(TERtoInt(lhs)), int>::value && std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    std::is_same<decltype(TERtoInt(lhs)), int>::value &&
+        std::is_same<decltype(TERtoInt(rhs)), int>::value,
     bool>
 {
     return TERtoInt(lhs) <= TERtoInt(rhs);
@@ -523,7 +529,8 @@ operator<=(L const& lhs, R const& rhs) -> std::enable_if_t<
 template <typename L, typename R>
 constexpr auto
 operator>(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same<decltype(TERtoInt(lhs)), int>::value && std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    std::is_same<decltype(TERtoInt(lhs)), int>::value &&
+        std::is_same<decltype(TERtoInt(rhs)), int>::value,
     bool>
 {
     return TERtoInt(lhs) > TERtoInt(rhs);
@@ -532,7 +539,8 @@ operator>(L const& lhs, R const& rhs) -> std::enable_if_t<
 template <typename L, typename R>
 constexpr auto
 operator>=(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same<decltype(TERtoInt(lhs)), int>::value && std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    std::is_same<decltype(TERtoInt(lhs)), int>::value &&
+        std::is_same<decltype(TERtoInt(rhs)), int>::value,
     bool>
 {
     return TERtoInt(lhs) >= TERtoInt(rhs);

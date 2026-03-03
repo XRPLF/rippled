@@ -63,7 +63,9 @@ public:
 
     /** Report that we have validated a particular ledger */
     void
-    validatedLedger(std::shared_ptr<Ledger const> const&, std::optional<uint256> const& consensusHash);
+    validatedLedger(
+        std::shared_ptr<Ledger const> const&,
+        std::optional<uint256> const& consensusHash);
 
     /** Repair a hash to index mapping
         @param ledgerIndex The index whose mapping is to be repaired

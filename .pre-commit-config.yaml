@@ -57,6 +57,24 @@ repos:
           - .git/COMMIT_EDITMSG
         stages: [commit-msg]
 
+  - repo: local
+    hooks:
+      - id: nix-fmt
+        name: Format Nix files
+        entry: |
+          bash -c '
+            if command -v nix &> /dev/null || [ "$GITHUB_ACTIONS" = "true" ]; then
+              nix --extra-experimental-features "nix-command flakes" fmt "$@"
+            else
+              echo "Skipping nix-fmt: nix not installed and not in GitHub Actions"
+              exit 0
+            fi
+          ' --
+        language: system
+        types:
+          - nix
+        pass_filenames: true
+
 exclude: |
   (?x)^(
       external/.*|

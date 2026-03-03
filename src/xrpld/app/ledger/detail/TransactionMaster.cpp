@@ -9,7 +9,13 @@
 namespace xrpl {
 
 TransactionMaster::TransactionMaster(Application& app)
-    : mApp(app), mCache("TransactionCache", 65536, std::chrono::minutes{30}, stopwatch(), mApp.journal("TaggedCache"))
+    : mApp(app)
+    , mCache(
+          "TransactionCache",
+          65536,
+          std::chrono::minutes{30},
+          stopwatch(),
+          mApp.journal("TaggedCache"))
 {
 }
 
@@ -57,7 +63,10 @@ TransactionMaster::fetch(uint256 const& txnID, error_code_i& ec)
 }
 
 std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
-TransactionMaster::fetch(uint256 const& txnID, ClosedInterval<uint32_t> const& range, error_code_i& ec)
+TransactionMaster::fetch(
+    uint256 const& txnID,
+    ClosedInterval<uint32_t> const& range,
+    error_code_i& ec)
 {
     using TxPair = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
 
@@ -78,7 +87,10 @@ TransactionMaster::fetch(uint256 const& txnID, ClosedInterval<uint32_t> const& r
 }
 
 std::shared_ptr<STTx const>
-TransactionMaster::fetch(boost::intrusive_ptr<SHAMapItem> const& item, SHAMapNodeType type, std::uint32_t uCommitLedger)
+TransactionMaster::fetch(
+    boost::intrusive_ptr<SHAMapItem> const& item,
+    SHAMapNodeType type,
+    std::uint32_t uCommitLedger)
 {
     std::shared_ptr<STTx const> txn;
     auto iTx = fetch_from_cache(item->key());

@@ -46,7 +46,10 @@ getTxNestedField_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* r
 
 using getCurrentLedgerObjNestedField_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
-getCurrentLedgerObjNestedField_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+getCurrentLedgerObjNestedField_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
 
 using getLedgerObjNestedField_proto = int32_t(int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
@@ -70,7 +73,10 @@ getTxNestedArrayLen_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t
 
 using getCurrentLedgerObjNestedArrayLen_proto = int32_t(uint8_t const*, int32_t);
 wasm_trap_t*
-getCurrentLedgerObjNestedArrayLen_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+getCurrentLedgerObjNestedArrayLen_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
 
 using getLedgerObjNestedArrayLen_proto = int32_t(int32_t, uint8_t const*, int32_t);
 wasm_trap_t*
@@ -80,7 +86,8 @@ using updateData_proto = int32_t(uint8_t const*, int32_t);
 wasm_trap_t*
 updateData_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using checkSignature_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t const*, int32_t);
+using checkSignature_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t const*, int32_t);
 wasm_trap_t*
 checkSignature_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
@@ -92,24 +99,35 @@ using accountKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
 accountKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using ammKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
+using ammKeylet_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
 ammKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using checkKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
+using checkKeylet_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
 checkKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using credentialKeylet_proto =
-    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
+using credentialKeylet_proto = int32_t(
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t);
 wasm_trap_t*
 credentialKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using delegateKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
+using delegateKeylet_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
 delegateKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using depositPreauthKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
+using depositPreauthKeylet_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
 depositPreauthKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
@@ -117,41 +135,62 @@ using didKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
 didKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using escrowKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
+using escrowKeylet_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
 escrowKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using lineKeylet_proto =
-    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
+using lineKeylet_proto = int32_t(
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t);
 wasm_trap_t*
 lineKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using mptIssuanceKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
+using mptIssuanceKeylet_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
 mptIssuanceKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using mptokenKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
+using mptokenKeylet_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
 mptokenKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using nftOfferKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
+using nftOfferKeylet_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
 nftOfferKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using offerKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
+using offerKeylet_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
 offerKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using oracleKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
+using oracleKeylet_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
 oracleKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using paychanKeylet_proto =
-    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
+using paychanKeylet_proto = int32_t(
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t);
 wasm_trap_t*
 paychanKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using permissionedDomainKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
+using permissionedDomainKeylet_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
 permissionedDomainKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
@@ -159,11 +198,13 @@ using signersKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
 signersKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using ticketKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
+using ticketKeylet_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
 ticketKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using vaultKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
+using vaultKeylet_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
 vaultKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
@@ -227,19 +268,23 @@ using floatCompare_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int3
 wasm_trap_t*
 floatCompare_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using floatAdd_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t, int32_t);
+using floatAdd_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t, int32_t);
 wasm_trap_t*
 floatAdd_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using floatSubtract_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t, int32_t);
+using floatSubtract_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t, int32_t);
 wasm_trap_t*
 floatSubtract_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using floatMultiply_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t, int32_t);
+using floatMultiply_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t, int32_t);
 wasm_trap_t*
 floatMultiply_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using floatDivide_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t, int32_t);
+using floatDivide_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t, int32_t);
 wasm_trap_t*
 floatDivide_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 

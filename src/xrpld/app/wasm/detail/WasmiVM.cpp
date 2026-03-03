@@ -30,7 +30,8 @@ print_wasm_error(std::string_view msg, wasm_trap_t* trap, beast::Journal jlog)
 
         if (error_message.size)
         {
-            j << "WASMI Error: " << msg << ", " << std::string_view(error_message.data, error_message.size - 1);
+            j << "WASMI Error: " << msg << ", "
+              << std::string_view(error_message.data, error_message.size - 1);
         }
         else
             j << "WASMI Error: " << msg;
@@ -51,10 +52,16 @@ print_wasm_error(std::string_view msg, wasm_trap_t* trap, beast::Journal jlog)
 }  // namespace
 
 InstancePtr
-InstanceWrapper::init(StorePtr& s, ModulePtr& m, WasmExternVec& expt, WasmExternVec const& imports, beast::Journal j)
+InstanceWrapper::init(
+    StorePtr& s,
+    ModulePtr& m,
+    WasmExternVec& expt,
+    WasmExternVec const& imports,
+    beast::Journal j)
 {
     wasm_trap_t* trap = nullptr;
-    InstancePtr mi = InstancePtr(wasm_instance_new(s.get(), m.get(), &imports.vec_, &trap), &wasm_instance_delete);
+    InstancePtr mi = InstancePtr(
+        wasm_instance_new(s.get(), m.get(), &imports.vec_, &trap), &wasm_instance_delete);
 
     if (!mi || trap)
     {
@@ -76,7 +83,11 @@ InstanceWrapper::InstanceWrapper(InstanceWrapper&& o) : instance_(nullptr, &wasm
 }
 // LCOV_EXCL_STOP
 
-InstanceWrapper::InstanceWrapper(StorePtr& s, ModulePtr& m, WasmExternVec const& imports, beast::Journal j)
+InstanceWrapper::InstanceWrapper(
+    StorePtr& s,
+    ModulePtr& m,
+    WasmExternVec const& imports,
+    beast::Journal j)
     : store_(s.get()), instance_(init(s, m, exports_, imports, j)), j_(j)
 {
 }
@@ -233,7 +244,7 @@ ModuleWrapper::ModuleWrapper(
     StorePtr& s,
     Bytes const& wasmBin,
     bool instantiate,
-    std::shared_ptr<ImportVec> const& imports,
+    ImportVec const& imports,
     beast::Journal j)
     : module_(init(s, wasmBin, j)), j_(j)
 {
@@ -321,14 +332,14 @@ makeImpReturn(WasmImportFunc const& imp)
 }
 
 WasmExternVec
-ModuleWrapper::buildImports(StorePtr& s, std::shared_ptr<ImportVec> const& imports)
+ModuleWrapper::buildImports(StorePtr& s, ImportVec const& imports)
 {
     WasmImporttypeVec importTypes;
     wasm_module_imports(module_.get(), &importTypes.vec_);
 
     if (!importTypes.vec_.size)
         return {};
-    if (!imports)
+    if (imports.empty())
         throw std::runtime_error("Missing imports");
 
     WasmExternVec wimports(importTypes.vec_.size);
@@ -345,14 +356,15 @@ ModuleWrapper::buildImports(StorePtr& s, std::shared_ptr<ImportVec> const& impor
 
         wasm_externkind_t const itype = wasm_externtype_kind(wasm_importtype_type(importType));
         if ((itype) != WASM_EXTERN_FUNC)
-            throw std::runtime_error("Invalid import type " + std::to_string(itype));  // LCOV_EXCL_LINE
+            throw std::runtime_error(
+                "Invalid import type " + std::to_string(itype));  // LCOV_EXCL_LINE
 
         // for multi-module support
         // if ((W_ENV != modName) && (W_HOST_LIB != modName))
         //     continue;
 
         bool impSet = false;
-        for (auto const& obj : *imports)
+        for (auto const& obj : imports)
         {
             auto const& imp = obj.second;
             if (imp.name != fieldName)
@@ -368,7 +380,11 @@ ModuleWrapper::buildImports(StorePtr& s, std::shared_ptr<ImportVec> const& impor
             results.release();
 
             wasm_func_t* func = wasm_func_new_with_env(
-                s.get(), ftype.get(), reinterpret_cast<wasm_func_callback_with_env_t>(imp.wrap), (void*)&obj, nullptr);
+                s.get(),
+                ftype.get(),
+                reinterpret_cast<wasm_func_callback_with_env_t>(imp.wrap),
+                (void*)&obj,
+                nullptr);
             if (!func)
             {
                 // LCOV_EXCL_START
@@ -416,7 +432,8 @@ ModuleWrapper::getFuncType(std::string_view funcName) const
         auto const* exp_type(exportTypes_.vec_.data[i]);
         wasm_name_t const* name = wasm_exporttype_name(exp_type);
         wasm_externtype_t const* exn_type = wasm_exporttype_type(exp_type);
-        if (wasm_externtype_kind(exn_type) == WASM_EXTERN_FUNC && funcName == std::string_view(name->data, name->size))
+        if (wasm_externtype_kind(exn_type) == WASM_EXTERN_FUNC &&
+            funcName == std::string_view(name->data, name->size))
         {
             return wasm_externtype_as_functype(const_cast<wasm_externtype_t*>(exn_type));
         }
@@ -502,7 +519,11 @@ WasmiEngine::WasmiEngine() : engine_(init()), store_(nullptr, &wasm_store_delete
 }
 
 int
-WasmiEngine::addModule(Bytes const& wasmCode, bool instantiate, int64_t gas)
+WasmiEngine::addModule(
+    Bytes const& wasmCode,
+    bool instantiate,
+    ImportVec const& imports,
+    int64_t gas)
 {
     moduleWrap_.reset();
     store_.reset();  // to free the memory before creating new store
@@ -520,7 +541,7 @@ WasmiEngine::addModule(Bytes const& wasmCode, bool instantiate, int64_t gas)
         // LCOV_EXCL_STOP
     }
 
-    moduleWrap_ = std::make_unique<ModuleWrapper>(store_, wasmCode, instantiate, imports_, j_);
+    moduleWrap_ = std::make_unique<ModuleWrapper>(store_, wasmCode, instantiate, imports, j_);
 
     if (!moduleWrap_)
         throw std::runtime_error("can't create module wrapper");  // LCOV_EXCL_LINE
@@ -535,7 +556,7 @@ WasmiEngine::addModule(Bytes const& wasmCode, bool instantiate, int64_t gas)
 // }
 
 FuncInfo
-WasmiEngine::getFunc(std::string_view funcName)
+WasmiEngine::getFunc(std::string_view funcName) const
 {
     return moduleWrap_->getFunc(funcName);
 }
@@ -556,19 +577,6 @@ WasmiEngine::convertParams(std::vector<WasmParam> const& params)
             case WT_I64:
                 v.push_back(WASM_I64_VAL(p.of.i64));
                 break;
-            // LCOV_EXCL_STOP
-            case WT_U8V: {
-                auto mem = getMem();
-                if (!mem.s)
-                    throw std::runtime_error("no memory exported");  // LCOV_EXCL_LINE
-                auto const sz = p.of.u8v.sz;
-                auto const ptr = allocate(sz);
-                memcpy(mem.p + ptr, p.of.u8v.d, sz);
-                v.push_back(WASM_I32_VAL(ptr));
-                v.push_back(WASM_I32_VAL(sz));
-            }
-            break;
-            // LCOV_EXCL_START
             default:
                 throw std::runtime_error("unknown parameter type: " + std::to_string(p.type));
                 break;
@@ -653,7 +661,8 @@ WasmiEngine::call(FuncInfo const& f, std::vector<wasm_val_t>& in)
     // if (NR)  {   wasm_val_vec_new_uninitialized(&ret, NR);    //
     // wasm_val_vec_new(&ret, NR, &rs[0]);    // ret = WASM_ARRAY_VEC(rs);    }
 
-    wasm_val_vec_t const inv = in.empty() ? wasm_val_vec_t WASM_EMPTY_VEC : wasm_val_vec_t{in.size(), in.data()};
+    wasm_val_vec_t const inv =
+        in.empty() ? wasm_val_vec_t WASM_EMPTY_VEC : wasm_val_vec_t{in.size(), in.data()};
 
 #ifdef SHOW_CALL_TIME
     auto const start = usecs();
@@ -697,22 +706,6 @@ WasmiEngine::call(FuncInfo const& f, std::vector<wasm_val_t>& in, std::int64_t p
 
 template <int NR, class... Types>
 WasmiResult
-WasmiEngine::call(FuncInfo const& f, std::vector<wasm_val_t>& in, uint8_t const* d, int32_t sz, Types&&... args)
-{
-    auto mem = getMem();
-    if (!mem.s)
-        throw std::runtime_error("no memory exported");  // LCOV_EXCL_LINE
-
-    auto const ptr = allocate(sz);
-    memcpy(mem.p + ptr, d, sz);
-
-    add_param(in, ptr);
-    add_param(in, static_cast<int32_t>(sz));
-    return call<NR>(f, in, std::forward<Types>(args)...);
-}
-
-template <int NR, class... Types>
-WasmiResult
 WasmiEngine::call(FuncInfo const& f, std::vector<wasm_val_t>& in, Bytes const& p, Types&&... args)
 {
     return call<NR>(f, in, p.data(), p.size(), std::forward<Types>(args)...);
@@ -731,29 +724,19 @@ checkImports(ImportVec const& imports, HostFunctions* hfs)
 Expected<WasmResult<int32_t>, TER>
 WasmiEngine::run(
     Bytes const& wasmCode,
+    HostFunctions& hfs,
     int64_t gas,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
     std::shared_ptr<ImportVec> const& imports,
-    std::shared_ptr<HostFunctions> const& hfs,
     beast::Journal j)
 {
     j_ = j;
 
-    if (!wasmCode.empty())
-    {  // save values for reuse
-        imports_ = imports;
-        hfs_ = hfs;
-    }
-
-    if (gas < 0)
-        return Unexpected<TER>(temBAD_AMOUNT);
-
     try
     {
-        if (imports_)
-            checkImports(*imports_, hfs.get());
-        return runHlp(wasmCode, gas, funcName, params);
+        checkImports(*imports, &hfs);
+        return runHlp(wasmCode, hfs, funcName, params, *imports, gas);
     }
     catch (std::exception const& e)
     {
@@ -769,22 +752,29 @@ WasmiEngine::run(
 }
 
 Expected<WasmResult<int32_t>, TER>
-WasmiEngine::runHlp(Bytes const& wasmCode, int64_t gas, std::string_view funcName, std::vector<WasmParam> const& params)
+WasmiEngine::runHlp(
+    Bytes const& wasmCode,
+    HostFunctions& hfs,
+    std::string_view funcName,
+    std::vector<WasmParam> const& params,
+    ImportVec const& imports,
+    int64_t gas)
 {
     // currently only 1 module support, possible parallel UT run
     std::lock_guard<decltype(m_)> lg(m_);
 
+    if (wasmCode.empty())
+        throw std::runtime_error("empty module");
+    if (!hfs.checkSelf())
+        throw std::runtime_error("hfs isn't clean");
+
     // Create and instantiate the module.
-    if (!wasmCode.empty())
-    {
-        [[maybe_unused]] int const m = addModule(wasmCode, true, gas);
-    }
+    [[maybe_unused]] int const m = addModule(wasmCode, true, imports, gas);
 
     if (!moduleWrap_ || !moduleWrap_->instanceWrap_)
         throw std::runtime_error("no instance");  // LCOV_EXCL_LINE
 
-    if (hfs_)
-        hfs_->setRT(&getRT());
+    hfs.setRT(&getRT());
 
     // Call main
     auto const f = getFunc(!funcName.empty() ? funcName : "_start");
@@ -802,11 +792,12 @@ WasmiEngine::runHlp(Bytes const& wasmCode, int64_t gas, std::string_view funcNam
     if (res.f)
         throw std::runtime_error("<" + std::string(funcName) + "> failure");
     else if (!res.r.vec_.size)
-        throw std::runtime_error("<" + std::string(funcName) + "> return nothing");  // LCOV_EXCL_LINE
+        throw std::runtime_error(
+            "<" + std::string(funcName) + "> return nothing");  // LCOV_EXCL_LINE
     else if (res.r.vec_.data[0].kind != WASM_I32)
         throw std::runtime_error(
-            "<" + std::string(funcName) +
-            "> return type mismatch, ret: " + std::to_string(static_cast<int>(res.r.vec_.data[0].kind)));
+            "<" + std::string(funcName) + "> return type mismatch, ret: " +
+            std::to_string(static_cast<int>(res.r.vec_.data[0].kind)));
 
     if (gas == -1)
         gas = std::numeric_limits<decltype(gas)>::max();
@@ -825,25 +816,18 @@ WasmiEngine::runHlp(Bytes const& wasmCode, int64_t gas, std::string_view funcNam
 NotTEC
 WasmiEngine::check(
     Bytes const& wasmCode,
+    HostFunctions& hfs,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
-    std::shared_ptr<ImportVec> const& imports,
-    std::shared_ptr<HostFunctions> const& hfs,
+    ImportVec const& imports,
     beast::Journal j)
 {
     j_ = j;
 
-    if (!wasmCode.empty())
-    {
-        imports_ = imports;
-        hfs_ = hfs;
-    }
-
     try
     {
-        if (imports_)
-            checkImports(*imports_, hfs_.get());
-        return checkHlp(wasmCode, funcName, params);
+        checkImports(imports, &hfs);
+        return checkHlp(wasmCode, hfs, funcName, params, imports);
     }
     catch (std::exception const& e)
     {
@@ -860,7 +844,12 @@ WasmiEngine::check(
 }
 
 NotTEC
-WasmiEngine::checkHlp(Bytes const& wasmCode, std::string_view funcName, std::vector<WasmParam> const& params)
+WasmiEngine::checkHlp(
+    Bytes const& wasmCode,
+    HostFunctions& hfs,
+    std::string_view funcName,
+    std::vector<WasmParam> const& params,
+    ImportVec const& imports)
 {
     // currently only 1 module support, possible parallel UT run
     std::lock_guard<decltype(m_)> lg(m_);
@@ -869,7 +858,7 @@ WasmiEngine::checkHlp(Bytes const& wasmCode, std::string_view funcName, std::vec
     if (wasmCode.empty())
         throw std::runtime_error("empty nodule");
 
-    int const m = addModule(wasmCode, false, -1);
+    int const m = addModule(wasmCode, false, imports, -1);
     if ((m < 0) || !moduleWrap_)
         throw std::runtime_error("no module");  // LCOV_EXCL_LINE
 
@@ -886,7 +875,7 @@ WasmiEngine::checkHlp(Bytes const& wasmCode, std::string_view funcName, std::vec
 
 // LCOV_EXCL_START
 std::int64_t
-WasmiEngine::getGas()
+WasmiEngine::getGas() const
 {
     return moduleWrap_ ? moduleWrap_->getGas() : -1;
 }
@@ -899,30 +888,11 @@ WasmiEngine::getMem() const
 }
 
 InstanceWrapper const&
-WasmiEngine::getRT(int m, int i)
+WasmiEngine::getRT(int m, int i) const
 {
     if (!moduleWrap_)
         throw std::runtime_error("no module");
     return moduleWrap_->getInstance(i);
-}
-
-int32_t
-WasmiEngine::allocate(int32_t sz)
-{
-    if (sz <= 0)
-        throw std::runtime_error("can't allocate memory, " + std::to_string(sz) + " bytes");
-
-    auto res = call<1>(W_ALLOC, sz);
-
-    if (res.f || !res.r.vec_.size || (res.r.vec_.data[0].kind != WASM_I32))
-        throw std::runtime_error("can't allocate memory, " + std::to_string(sz) + " bytes");  // LCOV_EXCL_LINE
-
-    int32_t const p = res.r.vec_.data[0].of.i32;
-    auto const mem = getMem();
-    if (p <= 0 || p + sz > mem.s)
-        throw std::runtime_error("invalid memory allocation, " + std::to_string(sz) + " bytes");
-
-    return p;
 }
 
 wasm_trap_t*

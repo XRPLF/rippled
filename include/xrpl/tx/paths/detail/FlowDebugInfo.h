@@ -205,44 +205,52 @@ struct FlowDebugInfo
                 }
                 ostr << ']';
             };
-            auto writeXrpAmtList = [&write_list](std::vector<EitherAmount> const& amts, char delim = ';') {
-                auto get_val = [](EitherAmount const& a) -> std::string { return xrpl::to_string(a.xrp); };
+            auto writeXrpAmtList = [&write_list](
+                                       std::vector<EitherAmount> const& amts, char delim = ';') {
+                auto get_val = [](EitherAmount const& a) -> std::string {
+                    return xrpl::to_string(a.xrp);
+                };
                 write_list(amts, get_val, delim);
             };
-            auto writeIouAmtList = [&write_list](std::vector<EitherAmount> const& amts, char delim = ';') {
-                auto get_val = [](EitherAmount const& a) -> std::string { return xrpl::to_string(a.iou); };
+            auto writeIouAmtList = [&write_list](
+                                       std::vector<EitherAmount> const& amts, char delim = ';') {
+                auto get_val = [](EitherAmount const& a) -> std::string {
+                    return xrpl::to_string(a.iou);
+                };
                 write_list(amts, get_val, delim);
             };
             auto writeIntList = [&write_list](std::vector<size_t> const& vals, char delim = ';') {
                 auto get_val = [](size_t const& v) -> size_t const& { return v; };
                 write_list(vals, get_val);
             };
-            auto writeNestedIouAmtList = [&ostr, &writeIouAmtList](std::vector<std::vector<EitherAmount>> const& amts) {
-                ostr << '[';
-                if (!amts.empty())
-                {
-                    writeIouAmtList(amts[0], '|');
-                    for (size_t i = 1, e = amts.size(); i < e; ++i)
+            auto writeNestedIouAmtList =
+                [&ostr, &writeIouAmtList](std::vector<std::vector<EitherAmount>> const& amts) {
+                    ostr << '[';
+                    if (!amts.empty())
                     {
-                        ostr << ';';
-                        writeIouAmtList(amts[i], '|');
+                        writeIouAmtList(amts[0], '|');
+                        for (size_t i = 1, e = amts.size(); i < e; ++i)
+                        {
+                            ostr << ';';
+                            writeIouAmtList(amts[i], '|');
+                        }
                     }
-                }
-                ostr << ']';
-            };
-            auto writeNestedXrpAmtList = [&ostr, &writeXrpAmtList](std::vector<std::vector<EitherAmount>> const& amts) {
-                ostr << '[';
-                if (!amts.empty())
-                {
-                    writeXrpAmtList(amts[0], '|');
-                    for (size_t i = 1, e = amts.size(); i < e; ++i)
+                    ostr << ']';
+                };
+            auto writeNestedXrpAmtList =
+                [&ostr, &writeXrpAmtList](std::vector<std::vector<EitherAmount>> const& amts) {
+                    ostr << '[';
+                    if (!amts.empty())
                     {
-                        ostr << ';';
-                        writeXrpAmtList(amts[i], '|');
+                        writeXrpAmtList(amts[0], '|');
+                        for (size_t i = 1, e = amts.size(); i < e; ++i)
+                        {
+                            ostr << ';';
+                            writeXrpAmtList(amts[i], '|');
+                        }
                     }
-                }
-                ostr << ']';
-            };
+                    ostr << ']';
+                };
 
             ostr << ", in_pass: ";
             if (passInfo.nativeIn)
@@ -276,7 +284,9 @@ struct FlowDebugInfo
 };
 
 inline void
-writeDiffElement(std::ostringstream& ostr, std::pair<std::tuple<AccountID, AccountID, Currency>, STAmount> const& elem)
+writeDiffElement(
+    std::ostringstream& ostr,
+    std::pair<std::tuple<AccountID, AccountID, Currency>, STAmount> const& elem)
 {
     using namespace std;
     auto const k = elem.first;
@@ -302,7 +312,8 @@ writeDiffs(std::ostringstream& ostr, Iter begin, Iter end)
     ostr << ']';
 };
 
-using BalanceDiffs = std::pair<std::map<std::tuple<AccountID, AccountID, Currency>, STAmount>, XRPAmount>;
+using BalanceDiffs =
+    std::pair<std::map<std::tuple<AccountID, AccountID, Currency>, STAmount>, XRPAmount>;
 
 inline BalanceDiffs
 balanceDiffs(PaymentSandbox const& sb, ReadView const& rv)

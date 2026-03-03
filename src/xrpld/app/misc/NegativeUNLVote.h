@@ -125,7 +125,11 @@ private:
      * @param initialSet the transaction set
      */
     void
-    addTx(LedgerIndex seq, PublicKey const& vp, NegativeUNLModify modify, std::shared_ptr<SHAMap> const& initialSet);
+    addTx(
+        LedgerIndex seq,
+        PublicKey const& vp,
+        NegativeUNLModify modify,
+        std::shared_ptr<SHAMap> const& initialSet);
 
     /**
      * Pick one candidate from a vector of candidates.

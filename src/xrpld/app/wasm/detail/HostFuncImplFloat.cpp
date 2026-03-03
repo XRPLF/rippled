@@ -143,7 +143,8 @@ public:
         auto const data = msg.getData();
 
 #ifdef DEBUG_OUTPUT
-        std::cout << "m: " << std::setw(20) << mantissa() << ", e: " << std::setw(12) << exponent() << ", hex: ";
+        std::cout << "m: " << std::setw(20) << mantissa() << ", e: " << std::setw(12) << exponent()
+                  << ", hex: ";
         std::cout << std::hex << std::uppercase << std::setfill('0');
         for (auto const& c : data)
             std::cout << std::setw(2) << (unsigned)c << " ";
@@ -162,7 +163,8 @@ struct FloatState
     MantissaRange::mantissa_scale oldScale_;
     bool good_;
 
-    FloatState(int32_t mode) : oldMode_(Number::getround()), oldScale_(Number::getMantissaScale()), good_(false)
+    FloatState(int32_t mode)
+        : oldMode_(Number::getround()), oldScale_(Number::getMantissaScale()), good_(false)
     {
         if (mode < Number::rounding_mode::to_nearest || mode > Number::rounding_mode::upward)
             return;
@@ -480,67 +482,67 @@ floatLogImpl(Slice const& x, int32_t mode)
 // =========================================================
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::floatFromInt(int64_t x, int32_t mode)
+WasmHostFunctionsImpl::floatFromInt(int64_t x, int32_t mode) const
 {
     return wasm_float::floatFromIntImpl(x, mode);
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::floatFromUint(uint64_t x, int32_t mode)
+WasmHostFunctionsImpl::floatFromUint(uint64_t x, int32_t mode) const
 {
     return wasm_float::floatFromUintImpl(x, mode);
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::floatSet(int64_t mantissa, int32_t exponent, int32_t mode)
+WasmHostFunctionsImpl::floatSet(int64_t mantissa, int32_t exponent, int32_t mode) const
 {
     return wasm_float::floatSetImpl(mantissa, exponent, mode);
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::floatCompare(Slice const& x, Slice const& y)
+WasmHostFunctionsImpl::floatCompare(Slice const& x, Slice const& y) const
 {
     return wasm_float::floatCompareImpl(x, y);
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::floatAdd(Slice const& x, Slice const& y, int32_t mode)
+WasmHostFunctionsImpl::floatAdd(Slice const& x, Slice const& y, int32_t mode) const
 {
     return wasm_float::floatAddImpl(x, y, mode);
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::floatSubtract(Slice const& x, Slice const& y, int32_t mode)
+WasmHostFunctionsImpl::floatSubtract(Slice const& x, Slice const& y, int32_t mode) const
 {
     return wasm_float::floatSubtractImpl(x, y, mode);
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::floatMultiply(Slice const& x, Slice const& y, int32_t mode)
+WasmHostFunctionsImpl::floatMultiply(Slice const& x, Slice const& y, int32_t mode) const
 {
     return wasm_float::floatMultiplyImpl(x, y, mode);
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::floatDivide(Slice const& x, Slice const& y, int32_t mode)
+WasmHostFunctionsImpl::floatDivide(Slice const& x, Slice const& y, int32_t mode) const
 {
     return wasm_float::floatDivideImpl(x, y, mode);
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::floatRoot(Slice const& x, int32_t n, int32_t mode)
+WasmHostFunctionsImpl::floatRoot(Slice const& x, int32_t n, int32_t mode) const
 {
     return wasm_float::floatRootImpl(x, n, mode);
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::floatPower(Slice const& x, int32_t n, int32_t mode)
+WasmHostFunctionsImpl::floatPower(Slice const& x, int32_t n, int32_t mode) const
 {
     return wasm_float::floatPowerImpl(x, n, mode);
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::floatLog(Slice const& x, int32_t mode)
+WasmHostFunctionsImpl::floatLog(Slice const& x, int32_t mode) const
 {
     return wasm_float::floatLogImpl(x, mode);
 }

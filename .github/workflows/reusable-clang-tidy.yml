@@ -1,0 +1,55 @@
+name: Clang-tidy check
+
+on:
+  workflow_call:
+    inputs:
+      check_only_changed:
+        description: "Check only changed files in PR. If false, checks all files in the repository."
+        type: boolean
+        default: false
+      create_issue_on_failure:
+        description: "Whether to create an issue if the check failed"
+        type: boolean
+        default: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  determine-files:
+    name: Determine files to check
+    if: ${{ inputs.check_only_changed }}
+    runs-on: ubuntu-latest
+    outputs:
+      clang_tidy_config_changed: ${{ steps.changed_clang_tidy.outputs.any_changed }}
+      any_cpp_changed: ${{ steps.changed_files.outputs.any_changed }}
+      all_changed_files: ${{ steps.changed_files.outputs.all_changed_files }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Get changed C++ files
+        id: changed_files
+        uses: tj-actions/changed-files@7dee1b0c1557f278e5c7dc244927139d78c0e22a # v47.0.4
+        with:
+          files: |
+            **/*.cpp
+            **/*.h
+            **/*.ipp
+          separator: " "
+
+      - name: Get changed clang-tidy configuration
+        id: changed_clang_tidy
+        uses: tj-actions/changed-files@7dee1b0c1557f278e5c7dc244927139d78c0e22a # v47.0.4
+        with:
+          files: |
+            .clang-tidy
+
+  run-clang-tidy:
+    needs: [determine-files]
+    if: ${{ always() && !cancelled() && (!inputs.check_only_changed || needs.determine-files.outputs.any_cpp_changed == 'true' || needs.determine-files.outputs.clang_tidy_config_changed == 'true') }}
+    uses: ./.github/workflows/reusable-clang-tidy-files.yml
+    with:
+      files: ${{ (needs.determine-files.outputs.clang_tidy_config_changed == 'true' && '') || (inputs.check_only_changed && needs.determine-files.outputs.all_changed_files || '') }}
+      create_issue_on_failure: ${{ inputs.create_issue_on_failure }}
