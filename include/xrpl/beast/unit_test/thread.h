@@ -1,12 +1,8 @@
-//
-// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
-//
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_UNIT_TEST_THREAD_HPP
-#define BEAST_UNIT_TEST_THREAD_HPP
+#pragma once
 
 #include <xrpl/beast/unit_test/suite.h>
 
@@ -48,8 +44,7 @@ public:
     template <class F, class... Args>
     explicit thread(suite& s, F&& f, Args&&... args) : s_(&s)
     {
-        std::function<void(void)> b =
-            std::bind(std::forward<F>(f), std::forward<Args>(args)...);
+        std::function<void(void)> b = std::bind(std::forward<F>(f), std::forward<Args>(args)...);
         t_ = std::thread(&thread::run, this, std::move(b));
     }
 
@@ -115,5 +110,3 @@ private:
 
 }  // namespace unit_test
 }  // namespace beast
-
-#endif

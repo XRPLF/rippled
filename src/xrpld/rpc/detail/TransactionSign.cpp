@@ -1,48 +1,31 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/paths/Pathfinder.h>
-#include <xrpld/app/tx/apply.h>  // Validity::Valid
-#include <xrpld/app/tx/applySteps.h>
 #include <xrpld/rpc/detail/LegacyPathFind.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/mulDiv.h>
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/InnerObjectFormats.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/tx/apply.h>  // Validity::Valid
+#include <xrpl/tx/applySteps.h>
 
 #include <algorithm>
 #include <iterator>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 namespace detail {
 
@@ -54,6 +37,7 @@ private:
     AccountID const* const multiSigningAcctID_;
     std::optional<PublicKey> multiSignPublicKey_;
     Buffer multiSignature_;
+    std::optional<std::reference_wrapper<SField const>> signatureTarget_;
 
 public:
     explicit SigningForParams() : multiSigningAcctID_(nullptr)
@@ -62,8 +46,7 @@ public:
 
     SigningForParams(SigningForParams const& rhs) = delete;
 
-    SigningForParams(AccountID const& multiSigningAcctID)
-        : multiSigningAcctID_(&multiSigningAcctID)
+    SigningForParams(AccountID const& multiSigningAcctID) : multiSigningAcctID_(&multiSigningAcctID)
     {
     }
 
@@ -89,8 +72,7 @@ public:
     bool
     validMultiSign() const
     {
-        return isMultiSigning() && multiSignPublicKey_ &&
-            multiSignature_.size();
+        return isMultiSigning() && multiSignPublicKey_ && multiSignature_.size();
     }
 
     // Don't call this method unless isMultiSigning() returns true.
@@ -116,10 +98,22 @@ public:
         return multiSignature_;
     }
 
+    std::optional<std::reference_wrapper<SField const>> const&
+    getSignatureTarget() const
+    {
+        return signatureTarget_;
+    }
+
     void
     setPublicKey(PublicKey const& multiSignPublicKey)
     {
         multiSignPublicKey_ = multiSignPublicKey;
+    }
+
+    void
+    setSignatureTarget(std::optional<std::reference_wrapper<SField const>> const& field)
+    {
+        signatureTarget_ = field;
     }
 
     void
@@ -159,8 +153,7 @@ acctMatchesPubKey(
     }
 
     // The last gasp is that we have public Regular key.
-    if ((sle.isFieldPresent(sfRegularKey)) &&
-        (publicKeyAcctID == sle.getAccountID(sfRegularKey)))
+    if ((sle.isFieldPresent(sfRegularKey)) && (publicKeyAcctID == sle.getAccountID(sfRegularKey)))
     {
         return rpcSUCCESS;
     }
@@ -187,8 +180,7 @@ checkPayment(
         {
             if (tx_json[jss::DeliverMax] != tx_json[jss::Amount])
                 return RPC::make_error(
-                    rpcINVALID_PARAMS,
-                    "Cannot specify differing 'Amount' and 'DeliverMax'");
+                    rpcINVALID_PARAMS, "Cannot specify differing 'Amount' and 'DeliverMax'");
         }
         else
             tx_json[jss::Amount] = tx_json[jss::DeliverMax];
@@ -207,21 +199,17 @@ checkPayment(
     if (!tx_json.isMember(jss::Destination))
         return RPC::missing_field_error("tx_json.Destination");
 
-    auto const dstAccountID =
-        parseBase58<AccountID>(tx_json[jss::Destination].asString());
+    auto const dstAccountID = parseBase58<AccountID>(tx_json[jss::Destination].asString());
     if (!dstAccountID)
         return RPC::invalid_field_error("tx_json.Destination");
 
-    if (params.isMember(jss::build_path) &&
-        ((doPath == false) || amount.holds<MPTIssue>()))
+    if (params.isMember(jss::build_path) && ((doPath == false) || amount.holds<MPTIssue>()))
         return RPC::make_error(
-            rpcINVALID_PARAMS,
-            "Field 'build_path' not allowed in this context.");
+            rpcINVALID_PARAMS, "Field 'build_path' not allowed in this context.");
 
     if (tx_json.isMember(jss::Paths) && params.isMember(jss::build_path))
         return RPC::make_error(
-            rpcINVALID_PARAMS,
-            "Cannot specify both 'tx_json.Paths' and 'build_path'");
+            rpcINVALID_PARAMS, "Cannot specify both 'tx_json.Paths' and 'build_path'");
 
     std::optional<uint256> domain;
     if (tx_json.isMember(sfDomainID.jsonName))
@@ -230,8 +218,7 @@ checkPayment(
         if (!tx_json[sfDomainID.jsonName].isString() ||
             !num.parseHex(tx_json[sfDomainID.jsonName].asString()))
         {
-            return RPC::make_error(
-                rpcDOMAIN_MALFORMED, "Unable to parse 'DomainID'.");
+            return RPC::make_error(rpcDOMAIN_MALFORMED, "Unable to parse 'DomainID'.");
         }
         else
         {
@@ -256,8 +243,7 @@ checkPayment(
         }
 
         if (sendMax.native() && amount.native())
-            return RPC::make_error(
-                rpcINVALID_PARAMS, "Cannot build XRP to XRP paths.");
+            return RPC::make_error(rpcINVALID_PARAMS, "Cannot build XRP to XRP paths.");
 
         {
             LegacyPathFind lpf(isUnlimited(role), app);
@@ -269,8 +255,7 @@ checkPayment(
             if (auto ledger = app.openLedger().current())
             {
                 Pathfinder pf(
-                    std::make_shared<RippleLineCache>(
-                        ledger, app.journal("RippleLineCache")),
+                    std::make_shared<RippleLineCache>(ledger, app.journal("RippleLineCache")),
                     srcAddressID,
                     *dstAccountID,
                     sendMax.issue().currency,
@@ -281,18 +266,16 @@ checkPayment(
                     app);
                 if (pf.findPaths(app.config().PATH_SEARCH_OLD))
                 {
-                    // 4 is the maxium paths
+                    // 4 is the maximum paths
                     pf.computePathRanks(4);
                     STPath fullLiquidityPath;
                     STPathSet paths;
-                    result = pf.getBestPaths(
-                        4, fullLiquidityPath, paths, sendMax.issue().account);
+                    result = pf.getBestPaths(4, fullLiquidityPath, paths, sendMax.issue().account);
                 }
             }
 
             auto j = app.journal("RPCHandler");
-            JLOG(j.debug()) << "transactionSign: build_path: "
-                            << result.getJson(JsonOptions::none);
+            JLOG(j.debug()) << "transactionSign: build_path: " << result.getJson(JsonOptions::none);
 
             if (!result.empty())
                 tx_json[jss::Paths] = result.getJson(JsonOptions::none);
@@ -337,25 +320,22 @@ checkTxJsonFields(
 
     if (!tx_json.isMember(jss::Account))
     {
-        ret.first = RPC::make_error(
-            rpcSRC_ACT_MISSING, RPC::missing_field_message("tx_json.Account"));
+        ret.first =
+            RPC::make_error(rpcSRC_ACT_MISSING, RPC::missing_field_message("tx_json.Account"));
         return ret;
     }
 
-    auto const srcAddressID =
-        parseBase58<AccountID>(tx_json[jss::Account].asString());
+    auto const srcAddressID = parseBase58<AccountID>(tx_json[jss::Account].asString());
 
     if (!srcAddressID)
     {
-        ret.first = RPC::make_error(
-            rpcSRC_ACT_MALFORMED,
-            RPC::invalid_field_message("tx_json.Account"));
+        ret.first =
+            RPC::make_error(rpcSRC_ACT_MALFORMED, RPC::invalid_field_message("tx_json.Account"));
         return ret;
     }
 
     // Check for current ledger.
-    if (verify && !config.standalone() &&
-        (validatedLedgerAge > Tuning::maxValidatedLedgerAge))
+    if (verify && !config.standalone() && (validatedLedgerAge > Tuning::maxValidatedLedgerAge))
     {
         if (apiVersion == 1)
             ret.first = rpcError(rpcNO_CURRENT);
@@ -394,8 +374,7 @@ struct transactionPreProcessResult
     transactionPreProcessResult&
     operator=(transactionPreProcessResult&&) = delete;
 
-    transactionPreProcessResult(Json::Value&& json)
-        : first(std::move(json)), second()
+    transactionPreProcessResult(Json::Value&& json) : first(std::move(json)), second()
     {
     }
 
@@ -416,16 +395,35 @@ transactionPreProcessImpl(
     auto j = app.journal("RPCHandler");
 
     Json::Value jvResult;
-    std::optional<std::pair<PublicKey, SecretKey>> keyPair =
-        keypairForSignature(params, jvResult);
+    std::optional<std::pair<PublicKey, SecretKey>> keyPair = keypairForSignature(params, jvResult);
     if (!keyPair || contains_error(jvResult))
         return jvResult;
 
     PublicKey const& pk = keyPair->first;
     SecretKey const& sk = keyPair->second;
 
-    bool const verify =
-        !(params.isMember(jss::offline) && params[jss::offline].asBool());
+    bool const verify = !(params.isMember(jss::offline) && params[jss::offline].asBool());
+
+    auto const signatureTarget =
+        [&params]() -> std::optional<std::reference_wrapper<SField const>> {
+        if (params.isMember(jss::signature_target))
+            return SField::getField(params[jss::signature_target].asString());
+        return std::nullopt;
+    }();
+
+    // Make sure the signature target field is valid, if specified, and save the
+    // template for use later
+    auto const signatureTemplate = signatureTarget
+        ? InnerObjectFormats::getInstance().findSOTemplateBySField(*signatureTarget)
+        : nullptr;
+    if (signatureTarget)
+    {
+        if (!signatureTemplate)
+        {  // Invalid target field
+            return RPC::make_error(rpcINVALID_PARAMS, signatureTarget->get().getName());
+        }
+        signingArgs.setSignatureTarget(signatureTarget);
+    }
 
     if (!params.isMember(jss::tx_json))
         return RPC::missing_field_error(jss::tx_json);
@@ -468,23 +466,20 @@ transactionPreProcessImpl(
     {
         if (!tx_json.isMember(jss::Sequence))
         {
-            bool const hasTicketSeq =
-                tx_json.isMember(sfTicketSequence.jsonName);
+            bool const hasTicketSeq = tx_json.isMember(sfTicketSequence.jsonName);
             if (!hasTicketSeq && !sle)
             {
-                JLOG(j.debug())
-                    << "transactionSign: Failed to find source account "
-                    << "in current ledger: " << toBase58(srcAddressID);
+                JLOG(j.debug()) << "transactionSign: Failed to find source account "
+                                << "in current ledger: " << toBase58(srcAddressID);
 
                 return rpcError(rpcSRC_ACT_NOT_FOUND);
             }
-            tx_json[jss::Sequence] =
-                hasTicketSeq ? 0 : app.getTxQ().nextQueuableSeq(sle).value();
+            tx_json[jss::Sequence] = hasTicketSeq ? 0 : app.getTxQ().nextQueuableSeq(sle).value();
         }
 
         if (!tx_json.isMember(jss::NetworkID))
         {
-            auto const networkId = app.config().NETWORK_ID;
+            auto const networkId = app.getNetworkIDService().getNetworkID();
             if (networkId > 1024)
                 tx_json[jss::NetworkID] = to_string(networkId);
         }
@@ -506,12 +501,7 @@ transactionPreProcessImpl(
 
     {
         Json::Value err = checkPayment(
-            params,
-            tx_json,
-            srcAddressID,
-            role,
-            app,
-            verify && signingArgs.editFields());
+            params, tx_json, srcAddressID, role, app, verify && signingArgs.editFields());
 
         if (RPC::contains_error(err))
             return err;
@@ -541,9 +531,10 @@ transactionPreProcessImpl(
         JLOG(j.trace()) << "verify: " << toBase58(calcAccountID(pk)) << " : "
                         << toBase58(srcAddressID);
 
-        // Don't do this test if multisigning since the account and secret
-        // probably don't belong together in that case.
-        if (!signingArgs.isMultiSigning())
+        // Don't do this test if multisigning or if the signature is going into
+        // an alternate field since the account and secret probably don't belong
+        // together in that case.
+        if (!signingArgs.isMultiSigning() && !signatureTarget)
         {
             // Make sure the account and secret belong together.
             if (tx_json.isMember(sfDelegate.jsonName))
@@ -557,18 +548,16 @@ transactionPreProcessImpl(
                 if (!ptrDelegatedAddressID)
                 {
                     return RPC::make_error(
-                        rpcSRC_ACT_MALFORMED,
-                        RPC::invalid_field_message("tx_json.Delegate"));
+                        rpcSRC_ACT_MALFORMED, RPC::invalid_field_message("tx_json.Delegate"));
                 }
 
                 auto delegatedAddressID = *ptrDelegatedAddressID;
-                auto delegatedSle = app.openLedger().current()->read(
-                    keylet::account(delegatedAddressID));
+                auto delegatedSle =
+                    app.openLedger().current()->read(keylet::account(delegatedAddressID));
                 if (!delegatedSle)
                     return rpcError(rpcDELEGATE_ACT_NOT_FOUND);
 
-                auto const err =
-                    acctMatchesPubKey(delegatedSle, delegatedAddressID, pk);
+                auto const err = acctMatchesPubKey(delegatedSle, delegatedAddressID, pk);
 
                 if (err != rpcSUCCESS)
                     return rpcError(err);
@@ -598,9 +587,17 @@ transactionPreProcessImpl(
     {
         // If we're generating a multi-signature the SigningPubKey must be
         // empty, otherwise it must be the master account's public key.
-        parsed.object->setFieldVL(
-            sfSigningPubKey,
-            signingArgs.isMultiSigning() ? Slice(nullptr, 0) : pk.slice());
+        STObject* sigObject = &*parsed.object;
+        if (signatureTarget)
+        {
+            // If the target object doesn't exist, make one.
+            if (!parsed.object->isFieldPresent(*signatureTarget))
+                parsed.object->setFieldObject(
+                    *signatureTarget, STObject{*signatureTemplate, *signatureTarget});
+            sigObject = &parsed.object->peekFieldObject(*signatureTarget);
+        }
+        sigObject->setFieldVL(
+            sfSigningPubKey, signingArgs.isMultiSigning() ? Slice(nullptr, 0) : pk.slice());
 
         stTx = std::make_shared<STTx>(std::move(parsed.object.value()));
     }
@@ -611,8 +608,7 @@ transactionPreProcessImpl(
     catch (std::exception&)
     {
         return RPC::make_error(
-            rpcINTERNAL,
-            "Exception occurred constructing serialized transaction");
+            rpcINTERNAL, "Exception occurred constructing serialized transaction");
     }
 
     std::string reason;
@@ -624,13 +620,13 @@ transactionPreProcessImpl(
     {
         Serializer s = buildMultiSigningData(*stTx, signingArgs.getSigner());
 
-        auto multisig = ripple::sign(pk, sk, s.slice());
+        auto multisig = xrpl::sign(pk, sk, s.slice());
 
         signingArgs.moveMultiSignature(std::move(multisig));
     }
     else if (signingArgs.isSingleSigning())
     {
-        stTx->sign(pk, sk);
+        stTx->sign(pk, sk, signatureTarget);
     }
 
     return transactionPreProcessResult{std::move(stTx)};
@@ -651,8 +647,7 @@ transactionConstructImpl(
         tpTrans = std::make_shared<Transaction>(stTx, reason, app);
         if (tpTrans->getStatus() != NEW)
         {
-            ret.first = RPC::make_error(
-                rpcINTERNAL, "Unable to construct transaction: " + reason);
+            ret.first = RPC::make_error(rpcINTERNAL, "Unable to construct transaction: " + reason);
             return ret;
         }
     }
@@ -672,25 +667,19 @@ transactionConstructImpl(
             auto sttxNew = std::make_shared<STTx const>(sit);
             if (!app.checkSigs())
                 forceValidity(
-                    app.getHashRouter(),
-                    sttxNew->getTransactionID(),
-                    Validity::SigGoodOnly);
-            if (checkValidity(
-                    app.getHashRouter(), *sttxNew, rules, app.config())
-                    .first != Validity::Valid)
+                    app.getHashRouter(), sttxNew->getTransactionID(), Validity::SigGoodOnly);
+            if (checkValidity(app.getHashRouter(), *sttxNew, rules).first != Validity::Valid)
             {
                 ret.first = RPC::make_error(rpcINTERNAL, "Invalid signature.");
                 return ret;
             }
 
             std::string reason;
-            auto tpTransNew =
-                std::make_shared<Transaction>(sttxNew, reason, app);
+            auto tpTransNew = std::make_shared<Transaction>(sttxNew, reason, app);
 
             if (tpTransNew)
             {
-                if (!tpTransNew->getSTransaction()->isEquivalent(
-                        *tpTrans->getSTransaction()))
+                if (!tpTransNew->getSTransaction()->isEquivalent(*tpTrans->getSTransaction()))
                 {
                     tpTransNew.reset();
                 }
@@ -706,8 +695,7 @@ transactionConstructImpl(
 
     if (!tpTrans)
     {
-        ret.first =
-            RPC::make_error(rpcINTERNAL, "Unable to sterilize transaction.");
+        ret.first = RPC::make_error(rpcINTERNAL, "Unable to sterilize transaction.");
         return ret;
     }
     ret.second = std::move(tpTrans);
@@ -722,20 +710,16 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
     {
         if (apiVersion > 1)
         {
-            jvResult[jss::tx_json] =
-                tpTrans->getJson(JsonOptions::disable_API_prior_V2);
+            jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::disable_API_prior_V2);
             jvResult[jss::hash] = to_string(tpTrans->getID());
         }
         else
             jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::none);
 
         RPC::insertDeliverMax(
-            jvResult[jss::tx_json],
-            tpTrans->getSTransaction()->getTxnType(),
-            apiVersion);
+            jvResult[jss::tx_json], tpTrans->getSTransaction()->getTxnType(), apiVersion);
 
-        jvResult[jss::tx_blob] =
-            strHex(tpTrans->getSTransaction()->getSerializer().peekData());
+        jvResult[jss::tx_blob] = strHex(tpTrans->getSTransaction()->getSerializer().peekData());
 
         if (temUNCERTAIN != tpTrans->getResult())
         {
@@ -751,8 +735,7 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
     }
     catch (std::exception&)
     {
-        jvResult = RPC::make_error(
-            rpcINTERNAL, "Exception occurred during JSON handling.");
+        jvResult = RPC::make_error(rpcINTERNAL, "Exception occurred during JSON handling.");
     }
     return jvResult;
 }
@@ -792,14 +775,13 @@ getTxFee(Application const& app, Config const& config, Json::Value tx)
         if (!tx[jss::Signers].isArray())
             return config.FEES.reference_fee;
 
-        if (tx[jss::Signers].size() > STTx::maxMultiSigners(&ledger->rules()))
+        if (tx[jss::Signers].size() > STTx::maxMultiSigners)
             return config.FEES.reference_fee;
 
         // check multi-signed signers
         for (auto& signer : tx[jss::Signers])
         {
-            if (!signer.isMember(jss::Signer) ||
-                !signer[jss::Signer].isObject())
+            if (!signer.isMember(jss::Signer) || !signer[jss::Signer].isObject())
                 return config.FEES.reference_fee;
             if (!signer[jss::Signer].isMember(jss::SigningPubKey))
             {
@@ -850,14 +832,12 @@ getCurrentNetworkFee(
 
     auto ledger = app.openLedger().current();
     // Administrative and identified endpoints are exempt from local fees.
-    XRPAmount const loadFee =
-        scaleFeeLoad(feeDefault, feeTrack, ledger->fees(), isUnlimited(role));
+    XRPAmount const loadFee = scaleFeeLoad(feeDefault, feeTrack, ledger->fees(), isUnlimited(role));
     XRPAmount fee = loadFee;
     {
         auto const metrics = txQ.getMetrics(*ledger);
         auto const baseFee = ledger->fees().base;
-        auto escalatedFee =
-            toDrops(metrics.openLedgerFeeLevel - FeeLevel64(1), baseFee) + 1;
+        auto escalatedFee = toDrops(metrics.openLedgerFeeLevel - FeeLevel64(1), baseFee) + 1;
         fee = std::max(fee, escalatedFee);
     }
 
@@ -868,8 +848,7 @@ getCurrentNetworkFee(
     if (fee > *limit)
     {
         std::stringstream ss;
-        ss << "Fee of " << fee << " exceeds the requested tx limit of "
-           << *limit;
+        ss << "Fee of " << fee << " exceeds the requested tx limit of " << *limit;
         return RPC::make_error(rpcHIGH_FEE, ss.str());
     }
 
@@ -903,15 +882,12 @@ checkFee(
             if (mult < 0)
                 return RPC::make_error(
                     rpcINVALID_PARAMS,
-                    RPC::expected_field_message(
-                        jss::fee_mult_max, "a positive integer"));
+                    RPC::expected_field_message(jss::fee_mult_max, "a positive integer"));
         }
         else
         {
             return RPC::make_error(
-                rpcHIGH_FEE,
-                RPC::expected_field_message(
-                    jss::fee_mult_max, "a positive integer"));
+                rpcHIGH_FEE, RPC::expected_field_message(jss::fee_mult_max, "a positive integer"));
         }
     }
     if (request.isMember(jss::fee_div_max))
@@ -922,20 +898,16 @@ checkFee(
             if (div <= 0)
                 return RPC::make_error(
                     rpcINVALID_PARAMS,
-                    RPC::expected_field_message(
-                        jss::fee_div_max, "a positive integer"));
+                    RPC::expected_field_message(jss::fee_div_max, "a positive integer"));
         }
         else
         {
             return RPC::make_error(
-                rpcHIGH_FEE,
-                RPC::expected_field_message(
-                    jss::fee_div_max, "a positive integer"));
+                rpcHIGH_FEE, RPC::expected_field_message(jss::fee_div_max, "a positive integer"));
         }
     }
 
-    auto feeOrError =
-        getCurrentNetworkFee(role, config, feeTrack, txQ, app, tx, mult, div);
+    auto feeOrError = getCurrentNetworkFee(role, config, feeTrack, txQ, app, tx, mult, div);
     if (feeOrError.isMember(jss::error))
         return feeOrError;
     tx[jss::Fee] = std::move(feeOrError);
@@ -961,8 +933,8 @@ transactionSign(
 
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
-    transactionPreProcessResult preprocResult = transactionPreProcessImpl(
-        jvRequest, role, signForParams, validatedLedgerAge, app);
+    transactionPreProcessResult preprocResult =
+        transactionPreProcessImpl(jvRequest, role, signForParams, validatedLedgerAge, app);
 
     if (!preprocResult.second)
         return preprocResult.first;
@@ -997,8 +969,8 @@ transactionSubmit(
 
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
-    transactionPreProcessResult preprocResult = transactionPreProcessImpl(
-        jvRequest, role, signForParams, validatedLedgerAge, app);
+    transactionPreProcessResult preprocResult =
+        transactionPreProcessImpl(jvRequest, role, signForParams, validatedLedgerAge, app);
 
     if (!preprocResult.second)
         return preprocResult.first;
@@ -1013,13 +985,12 @@ transactionSubmit(
     // Finally, submit the transaction.
     try
     {
-        // FIXME: For performance, should use asynch interface
+        // FIXME: For performance, should use async interface
         processTransaction(txn.second, isUnlimited(role), true, failType);
     }
     catch (std::exception&)
     {
-        return RPC::make_error(
-            rpcINTERNAL, "Exception occurred during transaction submission.");
+        return RPC::make_error(rpcINTERNAL, "Exception occurred during transaction submission.");
     }
 
     return transactionFormatResultImpl(txn.second, apiVersion);
@@ -1048,10 +1019,13 @@ checkMultiSignFields(Json::Value const& jvRequest)
     if (!tx_json.isMember(sfSigningPubKey.getJsonName()))
         return RPC::missing_field_error("tx_json.SigningPubKey");
 
-    if (!tx_json[sfSigningPubKey.getJsonName()].asString().empty())
+    // Multi-signing into a signature_target object field is fine,
+    // because it means the signature is not for the transaction
+    // Account.
+    if (!jvRequest.isMember(jss::signature_target) &&
+        !tx_json[sfSigningPubKey.getJsonName()].asString().empty())
         return RPC::make_error(
-            rpcINVALID_PARAMS,
-            "When multi-signing 'tx_json.SigningPubKey' must be empty.");
+            rpcINVALID_PARAMS, "When multi-signing 'tx_json.SigningPubKey' must be empty.");
 
     return Json::Value();
 }
@@ -1066,41 +1040,32 @@ sortAndValidateSigners(STArray& signers, AccountID const& signingForID)
         return RPC::make_param_error("Signers array may not be empty.");
 
     // Signers must be sorted by Account.
-    std::sort(
-        signers.begin(),
-        signers.end(),
-        [](STObject const& a, STObject const& b) {
-            return (a[sfAccount] < b[sfAccount]);
-        });
+    std::sort(signers.begin(), signers.end(), [](STObject const& a, STObject const& b) {
+        return (a[sfAccount] < b[sfAccount]);
+    });
 
     // Signers may not contain any duplicates.
     auto const dupIter = std::adjacent_find(
-        signers.begin(),
-        signers.end(),
-        [](STObject const& a, STObject const& b) {
+        signers.begin(), signers.end(), [](STObject const& a, STObject const& b) {
             return (a[sfAccount] == b[sfAccount]);
         });
 
     if (dupIter != signers.end())
     {
         std::ostringstream err;
-        err << "Duplicate Signers:Signer:Account entries ("
-            << toBase58((*dupIter)[sfAccount]) << ") are not allowed.";
+        err << "Duplicate Signers:Signer:Account entries (" << toBase58((*dupIter)[sfAccount])
+            << ") are not allowed.";
         return RPC::make_param_error(err.str());
     }
 
     // An account may not sign for itself.
     if (signers.end() !=
-        std::find_if(
-            signers.begin(),
-            signers.end(),
-            [&signingForID](STObject const& elem) {
-                return elem[sfAccount] == signingForID;
-            }))
+        std::find_if(signers.begin(), signers.end(), [&signingForID](STObject const& elem) {
+            return elem[sfAccount] == signingForID;
+        }))
     {
         std::ostringstream err;
-        err << "A Signer may not be the transaction's Account ("
-            << toBase58(signingForID) << ").";
+        err << "A Signer may not be the transaction's Account (" << toBase58(signingForID) << ").";
         return RPC::make_param_error(err.str());
     }
     return {};
@@ -1129,12 +1094,10 @@ transactionSignFor(
         return RPC::missing_field_error(accountField);
 
     // Turn the signer's account into an AccountID for multi-sign.
-    auto const signerAccountID =
-        parseBase58<AccountID>(jvRequest[accountField].asString());
+    auto const signerAccountID = parseBase58<AccountID>(jvRequest[accountField].asString());
     if (!signerAccountID)
     {
-        return RPC::make_error(
-            rpcSRC_ACT_MALFORMED, RPC::invalid_field_message(accountField));
+        return RPC::make_error(rpcSRC_ACT_MALFORMED, RPC::invalid_field_message(accountField));
     }
 
     if (!jvRequest.isMember(jss::tx_json))
@@ -1164,22 +1127,20 @@ transactionSignFor(
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams(*signerAccountID);
 
-    transactionPreProcessResult preprocResult = transactionPreProcessImpl(
-        jvRequest, role, signForParams, validatedLedgerAge, app);
+    transactionPreProcessResult preprocResult =
+        transactionPreProcessImpl(jvRequest, role, signForParams, validatedLedgerAge, app);
 
     if (!preprocResult.second)
         return preprocResult.first;
 
     XRPL_ASSERT(
-        signForParams.validMultiSign(),
-        "ripple::RPC::transactionSignFor : valid multi-signature");
+        signForParams.validMultiSign(), "xrpl::RPC::transactionSignFor : valid multi-signature");
 
     {
-        std::shared_ptr<SLE const> account_state =
-            ledger->read(keylet::account(*signerAccountID));
+        std::shared_ptr<SLE const> account_state = ledger->read(keylet::account(*signerAccountID));
         // Make sure the account and secret belong together.
-        auto const err = acctMatchesPubKey(
-            account_state, *signerAccountID, signForParams.getPublicKey());
+        auto const err =
+            acctMatchesPubKey(account_state, *signerAccountID, signForParams.getPublicKey());
 
         if (err != rpcSUCCESS)
             return rpcError(err);
@@ -1192,14 +1153,19 @@ transactionSignFor(
         STObject signer = STObject::makeInnerObject(sfSigner);
         signer[sfAccount] = *signerAccountID;
         signer.setFieldVL(sfTxnSignature, signForParams.getSignature());
-        signer.setFieldVL(
-            sfSigningPubKey, signForParams.getPublicKey().slice());
+        signer.setFieldVL(sfSigningPubKey, signForParams.getPublicKey().slice());
 
+        STObject& sigTarget = [&]() -> STObject& {
+            auto const target = signForParams.getSignatureTarget();
+            if (target)
+                return sttx->peekFieldObject(*target);
+            return *sttx;
+        }();
         // If there is not yet a Signers array, make one.
-        if (!sttx->isFieldPresent(sfSigners))
-            sttx->setFieldArray(sfSigners, {});
+        if (!sigTarget.isFieldPresent(sfSigners))
+            sigTarget.setFieldArray(sfSigners, {});
 
-        auto& signers = sttx->peekFieldArray(sfSigners);
+        auto& signers = sigTarget.peekFieldArray(sfSigners);
         signers.emplace_back(std::move(signer));
 
         // The array must be sorted and validated.
@@ -1256,28 +1222,20 @@ transactionSubmitMultiSigned(
     if (RPC::contains_error(txJsonResult))
         return std::move(txJsonResult);
 
-    std::shared_ptr<SLE const> sle =
-        ledger->read(keylet::account(srcAddressID));
+    std::shared_ptr<SLE const> sle = ledger->read(keylet::account(srcAddressID));
 
     if (!sle)
     {
         // If did not find account, error.
-        JLOG(j.debug())
-            << "transactionSubmitMultiSigned: Failed to find source account "
-            << "in current ledger: " << toBase58(srcAddressID);
+        JLOG(j.debug()) << "transactionSubmitMultiSigned: Failed to find source account "
+                        << "in current ledger: " << toBase58(srcAddressID);
 
         return rpcError(rpcSRC_ACT_NOT_FOUND);
     }
 
     {
-        Json::Value err = checkFee(
-            jvRequest,
-            role,
-            false,
-            app.config(),
-            app.getFeeTrack(),
-            app.getTxQ(),
-            app);
+        Json::Value err =
+            checkFee(jvRequest, role, false, app.config(), app.getFeeTrack(), app.getTxQ(), app);
 
         if (RPC::contains_error(err))
             return err;
@@ -1302,8 +1260,7 @@ transactionSubmitMultiSigned(
         }
         try
         {
-            stTx =
-                std::make_shared<STTx>(std::move(parsedTx_json.object.value()));
+            stTx = std::make_shared<STTx>(std::move(parsedTx_json.object.value()));
         }
         catch (STObject::FieldErr& err)
         {
@@ -1313,8 +1270,7 @@ transactionSubmitMultiSigned(
         {
             std::string reason(ex.what());
             return RPC::make_error(
-                rpcINTERNAL,
-                "Exception while serializing transaction: " + reason);
+                rpcINTERNAL, "Exception while serializing transaction: " + reason);
         }
         std::string reason;
         if (!passesLocalChecks(*stTx, reason))
@@ -1345,15 +1301,13 @@ transactionSubmitMultiSigned(
         if (!isLegalNet(fee))
         {
             std::ostringstream err;
-            err << "Invalid " << sfFee.fieldName
-                << " field.  Fees must be specified in XRP.";
+            err << "Invalid " << sfFee.fieldName << " field.  Fees must be specified in XRP.";
             return RPC::make_error(rpcINVALID_PARAMS, err.str());
         }
         if (fee <= STAmount{0})
         {
             std::ostringstream err;
-            err << "Invalid " << sfFee.fieldName
-                << " field.  Fees must be greater than zero.";
+            err << "Invalid " << sfFee.fieldName << " field.  Fees must be greater than zero.";
             return RPC::make_error(rpcINVALID_PARAMS, err.str());
         }
     }
@@ -1370,18 +1324,15 @@ transactionSubmitMultiSigned(
         return RPC::make_param_error("tx_json.Signers array may not be empty.");
 
     // The Signers array may only contain Signer objects.
-    if (std::find_if_not(
-            signers.begin(), signers.end(), [](STObject const& obj) {
-                return (
-                    // A Signer object always contains these fields and no
-                    // others.
-                    obj.isFieldPresent(sfAccount) &&
-                    obj.isFieldPresent(sfSigningPubKey) &&
-                    obj.isFieldPresent(sfTxnSignature) && obj.getCount() == 3);
-            }) != signers.end())
+    if (std::find_if_not(signers.begin(), signers.end(), [](STObject const& obj) {
+            return (
+                // A Signer object always contains these fields and no
+                // others.
+                obj.isFieldPresent(sfAccount) && obj.isFieldPresent(sfSigningPubKey) &&
+                obj.isFieldPresent(sfTxnSignature) && obj.getCount() == 3);
+        }) != signers.end())
     {
-        return RPC::make_param_error(
-            "Signers array may only contain Signer entries.");
+        return RPC::make_param_error("Signers array may only contain Signer entries.");
     }
 
     // The array must be sorted and validated.
@@ -1399,17 +1350,16 @@ transactionSubmitMultiSigned(
     // Finally, submit the transaction.
     try
     {
-        // FIXME: For performance, should use asynch interface
+        // FIXME: For performance, should use async interface
         processTransaction(txn.second, isUnlimited(role), true, failType);
     }
     catch (std::exception&)
     {
-        return RPC::make_error(
-            rpcINTERNAL, "Exception occurred during transaction submission.");
+        return RPC::make_error(rpcINTERNAL, "Exception occurred during transaction submission.");
     }
 
     return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl

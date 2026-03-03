@@ -1,27 +1,6 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_OVERLAY_OVERLAYIMPL_H_INCLUDED
-#define RIPPLE_OVERLAY_OVERLAYIMPL_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
-#include <xrpld/core/Job.h>
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/Slot.h>
@@ -35,9 +14,11 @@
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/resource/ResourceManager.h>
 #include <xrpl/server/Handoff.h>
 
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/context.hpp>
@@ -53,7 +34,7 @@
 #include <optional>
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 
 class PeerImp;
 class BasicConfig;
@@ -100,9 +81,9 @@ private:
     };
 
     Application& app_;
-    boost::asio::io_service& io_service_;
-    std::optional<boost::asio::io_service::work> work_;
-    boost::asio::io_service::strand strand_;
+    boost::asio::io_context& io_context_;
+    std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
+    boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     mutable std::recursive_mutex mutex_;  // VFALCO use std::mutex
     std::condition_variable_any cond_;
     std::weak_ptr<Timer> timer_;
@@ -143,7 +124,7 @@ public:
         ServerHandler& serverHandler,
         Resource::Manager& resourceManager,
         Resolver& resolver,
-        boost::asio::io_service& io_service,
+        boost::asio::io_context& io_context,
         BasicConfig const& config,
         beast::insight::Collector::ptr const& collector);
 
@@ -212,7 +193,8 @@ public:
         std::size_t& disabled,
         std::size_t& enabledInSkip) const;
 
-    void checkTracking(std::uint32_t) override;
+    void
+    checkTracking(std::uint32_t) override;
 
     std::shared_ptr<Peer>
     findPeerByShortID(Peer::id_t const& id) const override;
@@ -227,16 +209,10 @@ public:
     broadcast(protocol::TMValidation& m) override;
 
     std::set<Peer::id_t>
-    relay(
-        protocol::TMProposeSet& m,
-        uint256 const& uid,
-        PublicKey const& validator) override;
+    relay(protocol::TMProposeSet& m, uint256 const& uid, PublicKey const& validator) override;
 
     std::set<Peer::id_t>
-    relay(
-        protocol::TMValidation& m,
-        uint256 const& uid,
-        PublicKey const& validator) override;
+    relay(protocol::TMValidation& m, uint256 const& uid, PublicKey const& validator) override;
 
     void
     relay(
@@ -311,8 +287,7 @@ public:
     {
         if (!is_upgrade(response))
             return false;
-        return response.result() ==
-            boost::beast::http::status::switching_protocols;
+        return response.result() == boost::beast::http::status::switching_protocols;
     }
 
     template <class Fields>
@@ -323,8 +298,7 @@ public:
             return false;
         if (req.method() != boost::beast::http::verb::get)
             return false;
-        if (!boost::beast::http::token_list{req["Connection"]}.exists(
-                "upgrade"))
+        if (!boost::beast::http::token_list{req["Connection"]}.exists("upgrade"))
             return false;
         return true;
     }
@@ -335,8 +309,7 @@ public:
     {
         if (req.version() < 11)
             return false;
-        if (!boost::beast::http::token_list{req["Connection"]}.exists(
-                "upgrade"))
+        if (!boost::beast::http::token_list{req["Connection"]}.exists("upgrade"))
             return false;
         return true;
     }
@@ -437,19 +410,15 @@ public:
     addTxMetrics(Args... args)
     {
         if (!strand_.running_in_this_thread())
-            return post(
-                strand_,
-                std::bind(&OverlayImpl::addTxMetrics<Args...>, this, args...));
+            return post(strand_, std::bind(&OverlayImpl::addTxMetrics<Args...>, this, args...));
 
         txMetrics_.addMetrics(args...);
     }
 
 private:
     void
-    squelch(
-        PublicKey const& validator,
-        Peer::id_t const id,
-        std::uint32_t squelchDuration) const override;
+    squelch(PublicKey const& validator, Peer::id_t const id, std::uint32_t squelchDuration)
+        const override;
 
     void
     unsquelch(PublicKey const& validator, Peer::id_t id) const override;
@@ -477,7 +446,7 @@ private:
 
     /** Handles validator list requests.
         Using a /vl/<hex-encoded public key> URL, will retrieve the
-        latest valdiator list (or UNL) that this node has for that
+        latest validator list (or UNL) that this node has for that
         public key, if the node trusts that public key.
 
         @return true if the request was handled.
@@ -563,9 +532,7 @@ private:
 private:
     struct TrafficGauges
     {
-        TrafficGauges(
-            std::string const& name,
-            beast::insight::Collector::ptr const& collector)
+        TrafficGauges(std::string const& name, beast::insight::Collector::ptr const& collector)
             : name(name)
             , bytesIn(collector->make_gauge(name, "Bytes_In"))
             , bytesOut(collector->make_gauge(name, "Bytes_Out"))
@@ -586,10 +553,8 @@ private:
         Stats(
             Handler const& handler,
             beast::insight::Collector::ptr const& collector,
-            std::unordered_map<TrafficCount::category, TrafficGauges>&&
-                trafficGauges_)
-            : peerDisconnects(
-                  collector->make_gauge("Overlay", "Peer_Disconnects"))
+            std::unordered_map<TrafficCount::category, TrafficGauges>&& trafficGauges_)
+            : peerDisconnects(collector->make_gauge("Overlay", "Peer_Disconnects"))
             , trafficGauges(std::move(trafficGauges_))
             , hook(collector->make_hook(handler))
         {
@@ -611,7 +576,7 @@ private:
         std::lock_guard lock(m_statsMutex);
         XRPL_ASSERT(
             counts.size() == m_stats.trafficGauges.size(),
-            "ripple::OverlayImpl::collect_metrics : counts size do match");
+            "xrpl::OverlayImpl::collect_metrics : counts size do match");
 
         for (auto const& [key, value] : counts)
         {
@@ -623,7 +588,7 @@ private:
 
             XRPL_ASSERT(
                 gauge.name == value.name,
-                "ripple::OverlayImpl::collect_metrics : gauge and counter "
+                "xrpl::OverlayImpl::collect_metrics : gauge and counter "
                 "match");
 
             gauge.bytesIn = value.bytesIn;
@@ -636,6 +601,4 @@ private:
     }
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

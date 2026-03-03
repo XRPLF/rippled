@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 // MODULES: ../impl/IPEndpoint.cpp ../impl/IPAddressV4.cpp
 // ../impl/IPAddressV6.cpp
 
@@ -39,30 +20,24 @@ class IPEndpoint_test : public unit_test::suite
 {
 public:
     void
-    shouldParseAddrV4(
-        std::string const& s,
-        std::uint32_t value,
-        std::string const& normal = "")
+    shouldParseAddrV4(std::string const& s, std::uint32_t value, std::string const& normal = "")
     {
         boost::system::error_code ec;
-        Address const result{Address::from_string(s, ec)};
+        Address const result{boost::asio::ip::make_address(s, ec)};
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
         if (!BEAST_EXPECTS(result.is_v4(), s + " not v4"))
             return;
-        if (!BEAST_EXPECTS(
-                result.to_v4().to_ulong() == value, s + " value mismatch"))
+        if (!BEAST_EXPECTS(result.to_v4().to_uint() == value, s + " value mismatch"))
             return;
-        BEAST_EXPECTS(
-            result.to_string() == (normal.empty() ? s : normal),
-            s + " as string");
+        BEAST_EXPECTS(result.to_string() == (normal.empty() ? s : normal), s + " as string");
     }
 
     void
     failParseAddr(std::string const& s)
     {
         boost::system::error_code ec;
-        auto a = Address::from_string(s, ec);
+        auto a = boost::asio::ip::make_address(s, ec);
         BEAST_EXPECTS(ec, s + " parses as " + a.to_string());
     }
 
@@ -71,24 +46,24 @@ public:
     {
         testcase("AddressV4");
 
-        BEAST_EXPECT(AddressV4{}.to_ulong() == 0);
+        BEAST_EXPECT(AddressV4{}.to_uint() == 0);
         BEAST_EXPECT(is_unspecified(AddressV4{}));
-        BEAST_EXPECT(AddressV4{0x01020304}.to_ulong() == 0x01020304);
+        BEAST_EXPECT(AddressV4{0x01020304}.to_uint() == 0x01020304);
 
         {
             AddressV4::bytes_type d = {{1, 2, 3, 4}};
-            BEAST_EXPECT(AddressV4{d}.to_ulong() == 0x01020304);
+            BEAST_EXPECT(AddressV4{d}.to_uint() == 0x01020304);
 
             unexpected(is_unspecified(AddressV4{d}));
         }
 
         AddressV4 const v1{1};
-        BEAST_EXPECT(AddressV4{v1}.to_ulong() == 1);
+        BEAST_EXPECT(AddressV4{v1}.to_uint() == 1);
 
         {
             AddressV4 v;
             v = v1;
-            BEAST_EXPECT(v.to_ulong() == v1.to_ulong());
+            BEAST_EXPECT(v.to_uint() == v1.to_uint());
         }
 
         {
@@ -99,7 +74,7 @@ public:
             d[2] = 3;
             d[3] = 4;
             v = AddressV4{d};
-            BEAST_EXPECT(v.to_ulong() == 0x01020304);
+            BEAST_EXPECT(v.to_uint() == 0x01020304);
         }
 
         BEAST_EXPECT(AddressV4(0x01020304).to_string() == "1.2.3.4");
@@ -161,7 +136,7 @@ public:
         testcase("Address");
 
         boost::system::error_code ec;
-        Address result{Address::from_string("1.2.3.4", ec)};
+        Address result{boost::asio::ip::make_address("1.2.3.4", ec)};
         AddressV4::bytes_type d = {{1, 2, 3, 4}};
         BEAST_EXPECT(!ec);
         BEAST_EXPECT(result.is_v4() && result.to_v4() == AddressV4{d});
@@ -263,7 +238,8 @@ public:
         BEAST_EXPECT(is_loopback(ep));
         BEAST_EXPECT(to_string(ep) == "127.0.0.1:80");
         // same address as v4 mapped in ipv6
-        ep = Endpoint(AddressV6::v4_mapped(AddressV4{d}), 80);
+        ep = Endpoint(
+            boost::asio::ip::make_address_v6(boost::asio::ip::v4_mapped, AddressV4{d}), 80);
         BEAST_EXPECT(!is_unspecified(ep));
         BEAST_EXPECT(!is_public(ep));
         BEAST_EXPECT(is_private(ep));
@@ -281,8 +257,10 @@ public:
         BEAST_EXPECT(!is_loopback(ep));
         BEAST_EXPECT(to_string(ep) == "10.0.0.1");
         // same address as v4 mapped in ipv6
-        ep = Endpoint(AddressV6::v4_mapped(AddressV4{d}));
-        BEAST_EXPECT(get_class(ep.to_v6().to_v4()) == 'A');
+        ep = Endpoint(boost::asio::ip::make_address_v6(boost::asio::ip::v4_mapped, AddressV4{d}));
+        BEAST_EXPECT(
+            get_class(boost::asio::ip::make_address_v4(boost::asio::ip::v4_mapped, ep.to_v6())) ==
+            'A');
         BEAST_EXPECT(!is_unspecified(ep));
         BEAST_EXPECT(!is_public(ep));
         BEAST_EXPECT(is_private(ep));
@@ -299,7 +277,7 @@ public:
         BEAST_EXPECT(!is_loopback(ep));
         BEAST_EXPECT(to_string(ep) == "166.78.151.147");
         // same address as v4 mapped in ipv6
-        ep = Endpoint(AddressV6::v4_mapped(AddressV4{d}));
+        ep = Endpoint(boost::asio::ip::make_address_v6(boost::asio::ip::v4_mapped, AddressV4{d}));
         BEAST_EXPECT(!is_unspecified(ep));
         BEAST_EXPECT(is_public(ep));
         BEAST_EXPECT(!is_private(ep));
@@ -308,8 +286,7 @@ public:
         BEAST_EXPECTS(to_string(ep) == "::ffff:166.78.151.147", to_string(ep));
 
         // a private IPv6
-        AddressV6::bytes_type d2 = {
-            {253, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}};
+        AddressV6::bytes_type d2 = {{253, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}};
         ep = Endpoint(AddressV6{d2});
         BEAST_EXPECT(!is_unspecified(ep));
         BEAST_EXPECT(!is_public(ep));
@@ -366,9 +343,9 @@ public:
 
 #if BOOST_OS_WINDOWS
         // windows asio bugs...false positives
-        shouldParseEPV4("255", {{ 0, 0, 0, 255 }}, 0, "0.0.0.255");
-        shouldParseEPV4("512", {{ 0, 0, 2, 0 }}, 0, "0.0.2.0");
-        shouldParseEPV4("1.2.3:80", {{ 1, 2, 0, 3 }}, 80, "1.2.0.3:80");
+        shouldParseEPV4("255", {{0, 0, 0, 255}}, 0, "0.0.0.255");
+        shouldParseEPV4("512", {{0, 0, 2, 0}}, 0, "0.0.2.0");
+        shouldParseEPV4("1.2.3:80", {{1, 2, 0, 3}}, 80, "1.2.0.3:80");
 #else
         failParseEP("255");
         failParseEP("512");
@@ -392,7 +369,7 @@ public:
         float max_lf{0};
         for (auto i = 0; i < items; ++i)
         {
-            eps.insert(randomEP(ripple::rand_int(0, 1) == 1));
+            eps.insert(randomEP(xrpl::rand_int(0, 1) == 1));
             max_lf = std::max(max_lf, eps.load_factor());
         }
         BEAST_EXPECT(eps.bucket_count() >= items);
@@ -418,8 +395,7 @@ public:
         T t;
         BEAST_EXPECT(parse(text, t));
         BEAST_EXPECTS(
-            to_string(t) == (normal.empty() ? text : normal),
-            "string mismatch for "s + text);
+            to_string(t) == (normal.empty() ? text : normal), "string mismatch for "s + text);
     }
 
     template <typename T>
@@ -478,7 +454,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(IPEndpoint, net, beast);
+BEAST_DEFINE_TESTSUITE(IPEndpoint, beast, beast);
 
 }  // namespace IP
 }  // namespace beast

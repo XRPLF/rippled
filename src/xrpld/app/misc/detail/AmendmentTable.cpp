@@ -1,31 +1,10 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/AmendmentTable.h>
-#include <xrpld/app/rdb/Wallet.h>
-#include <xrpld/core/ConfigSections.h>
-
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/Wallet.h>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
@@ -35,7 +14,7 @@
 #include <algorithm>
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 
 static std::vector<std::pair<uint256, std::string>>
 parseSection(Section const& section)
@@ -56,15 +35,13 @@ parseSection(Section const& section)
         boost::smatch match;
 
         if (!boost::regex_match(line, match, re1))
-            Throw<std::runtime_error>(
-                "Invalid entry '" + line + "' in [" + section.name() + "]");
+            Throw<std::runtime_error>("Invalid entry '" + line + "' in [" + section.name() + "]");
 
         uint256 id;
 
         if (!id.parseHex(match[1]))
             Throw<std::runtime_error>(
-                "Invalid amendment ID '" + match[1] + "' in [" +
-                section.name() + "]");
+                "Invalid amendment ID '" + match[1] + "' in [" + section.name() + "]");
 
         names.push_back(std::make_pair(id, match[2]));
     }
@@ -117,9 +94,7 @@ public:
     //
     // Call with AmendmentTable::mutex_ locked.
     void
-    trustChanged(
-        hash_set<PublicKey> const& allTrusted,
-        std::lock_guard<std::mutex> const& lock)
+    trustChanged(hash_set<PublicKey> const& allTrusted, std::lock_guard<std::mutex> const& lock)
     {
         decltype(recordedVotes_) newRecordedVotes;
         newRecordedVotes.reserve(allTrusted.size());
@@ -177,8 +152,7 @@ public:
         // validators with these newest votes.
         for (auto const& val : valSet)
         {
-            auto const pkHuman =
-                toBase58(TokenType::NodePublic, val->getSignerPublic());
+            auto const pkHuman = toBase58(TokenType::NodePublic, val->getSignerPublic());
             // If this validation comes from one of our trusted validators...
             if (auto const iter = recordedVotes_.find(val->getSignerPublic());
                 iter != recordedVotes_.end())
@@ -188,14 +162,12 @@ public:
                 {
                     auto const& choices = val->getFieldV256(sfAmendments);
                     iter->second.upVotes.assign(choices.begin(), choices.end());
-                    JLOG(j.debug())
-                        << "recordVotes: Validation from trusted " << pkHuman
-                        << " has " << choices.size() << " amendment votes: "
-                        << boost::algorithm::join(
-                               iter->second.upVotes |
-                                   boost::adaptors::transformed(
-                                       to_string<256, void>),
-                               ", ");
+                    JLOG(j.debug()) << "recordVotes: Validation from trusted " << pkHuman << " has "
+                                    << choices.size() << " amendment votes: "
+                                    << boost::algorithm::join(
+                                           iter->second.upVotes |
+                                               boost::adaptors::transformed(to_string<256, void>),
+                                           ", ");
                     // TODO: Maybe transform using to_short_string once #5126 is
                     // merged
                     //
@@ -206,15 +178,13 @@ public:
                 {
                     // This validator does not upVote any amendments right now.
                     iter->second.upVotes.clear();
-                    JLOG(j.debug()) << "recordVotes: Validation from trusted "
-                                    << pkHuman << " has no amendment votes.";
+                    JLOG(j.debug()) << "recordVotes: Validation from trusted " << pkHuman
+                                    << " has no amendment votes.";
                 }
             }
             else
             {
-                JLOG(j.debug())
-                    << "recordVotes: Ignoring validation from untrusted "
-                    << pkHuman;
+                JLOG(j.debug()) << "recordVotes: Ignoring validation from untrusted " << pkHuman;
             }
         }
 
@@ -222,26 +192,21 @@ public:
         std::for_each(
             recordedVotes_.begin(),
             recordedVotes_.end(),
-            [&closeTime, newTimeout, &j](
-                decltype(recordedVotes_)::value_type& votes) {
-                auto const pkHuman =
-                    toBase58(TokenType::NodePublic, votes.first);
+            [&closeTime, newTimeout, &j](decltype(recordedVotes_)::value_type& votes) {
+                auto const pkHuman = toBase58(TokenType::NodePublic, votes.first);
                 if (!votes.second.timeout)
                 {
                     XRPL_ASSERT(
                         votes.second.upVotes.empty(),
-                        "ripple::TrustedVotes::recordVotes : received no "
+                        "xrpl::TrustedVotes::recordVotes : received no "
                         "upvotes");
-                    JLOG(j.debug())
-                        << "recordVotes: Have not received any "
-                           "amendment votes from "
-                        << pkHuman << " since last timeout or startup";
+                    JLOG(j.debug()) << "recordVotes: Have not received any "
+                                       "amendment votes from "
+                                    << pkHuman << " since last timeout or startup";
                 }
                 else if (closeTime > votes.second.timeout)
                 {
-                    JLOG(j.debug())
-                        << "recordVotes: Timeout: Clearing votes from "
-                        << pkHuman;
+                    JLOG(j.debug()) << "recordVotes: Timeout: Clearing votes from " << pkHuman;
                     votes.second.timeout.reset();
                     votes.second.upVotes.clear();
                 }
@@ -249,11 +214,10 @@ public:
                 {
                     XRPL_ASSERT(
                         votes.second.timeout < newTimeout,
-                        "ripple::TrustedVotes::recordVotes : votes not "
+                        "xrpl::TrustedVotes::recordVotes : votes not "
                         "expired");
                     using namespace std::chrono;
-                    auto const age = duration_cast<minutes>(
-                        newTimeout - *votes.second.timeout);
+                    auto const age = duration_cast<minutes>(newTimeout - *votes.second.timeout);
                     JLOG(j.debug()) << "recordVotes: Using " << age.count()
                                     << "min old cached votes from " << pkHuman;
                 }
@@ -271,9 +235,8 @@ public:
         for (auto& validatorVotes : recordedVotes_)
         {
             XRPL_ASSERT(
-                validatorVotes.second.timeout ||
-                    validatorVotes.second.upVotes.empty(),
-                "ripple::TrustedVotes::getVotes : valid votes");
+                validatorVotes.second.timeout || validatorVotes.second.upVotes.empty(),
+                "xrpl::TrustedVotes::getVotes : valid votes");
             if (validatorVotes.second.timeout)
                 ++available;
             for (uint256 const& amendment : validatorVotes.second.upVotes)
@@ -316,36 +279,16 @@ class AmendmentSet
 private:
     // How many yes votes each amendment received
     hash_map<uint256, int> votes_;
-    Rules const& rules_;
     // number of trusted validations
     int trustedValidations_ = 0;
     // number of votes needed
     int threshold_ = 0;
-
-    void
-    computeThreshold(int trustedValidations, Rules const& rules)
-    {
-        threshold_ = !rules_.enabled(fixAmendmentMajorityCalc)
-            ? std::max(
-                  1L,
-                  static_cast<long>(
-                      (trustedValidations_ *
-                       preFixAmendmentMajorityCalcThreshold.num) /
-                      preFixAmendmentMajorityCalcThreshold.den))
-            : std::max(
-                  1L,
-                  static_cast<long>(
-                      (trustedValidations_ *
-                       postFixAmendmentMajorityCalcThreshold.num) /
-                      postFixAmendmentMajorityCalcThreshold.den));
-    }
 
 public:
     AmendmentSet(
         Rules const& rules,
         TrustedVotes const& trustedVotes,
         std::lock_guard<std::mutex> const& lock)
-        : rules_(rules)
     {
         // process validations for ledger before flag ledger.
         auto [trustedCount, newVotes] = trustedVotes.getVotes(rules, lock);
@@ -353,7 +296,11 @@ public:
         trustedValidations_ = trustedCount;
         votes_.swap(newVotes);
 
-        computeThreshold(trustedValidations_, rules);
+        threshold_ = std::max(
+            1L,
+            static_cast<long>(
+                (trustedValidations_ * amendmentMajorityCalcThreshold.num) /
+                amendmentMajorityCalcThreshold.den));
     }
 
     bool
@@ -364,13 +311,9 @@ public:
         if (it == votes_.end())
             return false;
 
-        // Before this fix, it was possible for an amendment to activate with a
-        // percentage slightly less than 80% because we compared for "greater
-        // than or equal to" instead of strictly "greater than".
         // One validator is an exception, otherwise it is not possible
         // to gain majority.
-        if (!rules_.enabled(fixAmendmentMajorityCalc) ||
-            trustedValidations_ == 1)
+        if (trustedValidations_ == 1)
             return it->second >= threshold_;
 
         return it->second > threshold_;
@@ -448,8 +391,7 @@ private:
     get(uint256 const& amendment, std::lock_guard<std::mutex> const& lock);
 
     AmendmentState const*
-    get(uint256 const& amendment,
-        std::lock_guard<std::mutex> const& lock) const;
+    get(uint256 const& amendment, std::lock_guard<std::mutex> const& lock) const;
 
     // Injects amendment json into v.  Must be called with mutex_ locked.
     void
@@ -461,14 +403,11 @@ private:
         std::lock_guard<std::mutex> const& lock) const;
 
     void
-    persistVote(
-        uint256 const& amendment,
-        std::string const& name,
-        AmendmentVote vote) const;
+    persistVote(uint256 const& amendment, std::string const& name, AmendmentVote vote) const;
 
 public:
     AmendmentTableImpl(
-        Application& app,
+        ServiceRegistry& registry,
         std::chrono::seconds majorityTime,
         std::vector<FeatureInfo> const& supported,
         Section const& enabled,
@@ -532,7 +471,7 @@ public:
 //------------------------------------------------------------------------------
 
 AmendmentTableImpl::AmendmentTableImpl(
-    Application& app,
+    ServiceRegistry& registry,
     std::chrono::seconds majorityTime,
     std::vector<FeatureInfo> const& supported,
     Section const& enabled,
@@ -542,7 +481,7 @@ AmendmentTableImpl::AmendmentTableImpl(
     , majorityTime_(majorityTime)
     , unsupportedEnabled_(false)
     , j_(journal)
-    , db_(app.getWalletDB())
+    , db_(registry.getWalletDB())
 {
     std::lock_guard lock(mutex_);
 
@@ -602,9 +541,8 @@ AmendmentTableImpl::AmendmentTableImpl(
     {
         if (featureVotesExist)
         {  // If the table existed, warn about duplicate config info
-            JLOG(j_.warn())
-                << "[veto_amendments] section in config file ignored"
-                   " in favor of data in db/wallet.db.";
+            JLOG(j_.warn()) << "[veto_amendments] section in config file ignored"
+                               " in favor of data in db/wallet.db.";
             break;
         }
         else
@@ -615,10 +553,9 @@ AmendmentTableImpl::AmendmentTableImpl(
             }
             else
             {
-                JLOG(j_.warn())
-                    << "[veto_amendments] section in config has amendment "
-                    << '(' << a.first << ", " << a.second
-                    << ") both [veto_amendments] and [amendments].";
+                JLOG(j_.warn()) << "[veto_amendments] section in config has amendment " << '('
+                                << a.first << ", " << a.second
+                                << ") both [veto_amendments] and [amendments].";
             }
         }
     }
@@ -634,22 +571,20 @@ AmendmentTableImpl::AmendmentTableImpl(
             if (!amendment_hash || !amendment_name || !vote)
             {
                 // These fields should never have nulls, but check
-                Throw<std::runtime_error>(
-                    "Invalid FeatureVotes row in wallet.db");
+                Throw<std::runtime_error>("Invalid FeatureVotes row in wallet.db");
             }
             if (!amend_hash.parseHex(*amendment_hash))
             {
                 Throw<std::runtime_error>(
-                    "Invalid amendment ID '" + *amendment_hash +
-                    " in wallet.db");
+                    "Invalid amendment ID '" + *amendment_hash + " in wallet.db");
             }
             if (*vote == AmendmentVote::down)
             {
                 // Unknown amendments are effectively vetoed already
                 if (auto s = get(amend_hash, lock))
                 {
-                    JLOG(j_.info()) << "Amendment {" << *amendment_name << ", "
-                                    << amend_hash << "} is downvoted.";
+                    JLOG(j_.info()) << "Amendment {" << *amendment_name << ", " << amend_hash
+                                    << "} is downvoted.";
                     if (!amendment_name->empty())
                         s->name = *amendment_name;
                     // An obsolete amendment's vote can never be changed
@@ -661,8 +596,8 @@ AmendmentTableImpl::AmendmentTableImpl(
             {
                 AmendmentState& s = add(amend_hash, lock);
 
-                JLOG(j_.debug()) << "Amendment {" << *amendment_name << ", "
-                                 << amend_hash << "} is upvoted.";
+                JLOG(j_.debug()) << "Amendment {" << *amendment_name << ", " << amend_hash
+                                 << "} is upvoted.";
                 if (!amendment_name->empty())
                     s.name = *amendment_name;
                 // An obsolete amendment's vote can never be changed
@@ -673,28 +608,21 @@ AmendmentTableImpl::AmendmentTableImpl(
 }
 
 AmendmentState&
-AmendmentTableImpl::add(
-    uint256 const& amendmentHash,
-    std::lock_guard<std::mutex> const&)
+AmendmentTableImpl::add(uint256 const& amendmentHash, std::lock_guard<std::mutex> const&)
 {
     // call with the mutex held
     return amendmentMap_[amendmentHash];
 }
 
 AmendmentState*
-AmendmentTableImpl::get(
-    uint256 const& amendmentHash,
-    std::lock_guard<std::mutex> const& lock)
+AmendmentTableImpl::get(uint256 const& amendmentHash, std::lock_guard<std::mutex> const& lock)
 {
     // Forward to the const version of get.
-    return const_cast<AmendmentState*>(
-        std::as_const(*this).get(amendmentHash, lock));
+    return const_cast<AmendmentState*>(std::as_const(*this).get(amendmentHash, lock));
 }
 
 AmendmentState const*
-AmendmentTableImpl::get(
-    uint256 const& amendmentHash,
-    std::lock_guard<std::mutex> const&) const
+AmendmentTableImpl::get(uint256 const& amendmentHash, std::lock_guard<std::mutex> const&) const
 {
     // call with the mutex held
     auto ret = amendmentMap_.find(amendmentHash);
@@ -727,7 +655,7 @@ AmendmentTableImpl::persistVote(
 {
     XRPL_ASSERT(
         vote != AmendmentVote::obsolete,
-        "ripple::AmendmentTableImpl::persistVote : valid vote input");
+        "xrpl::AmendmentTableImpl::persistVote : valid vote input");
     auto db = db_.checkoutDb();
     voteAmendment(*db, amendment, name, vote);
 }
@@ -771,8 +699,7 @@ AmendmentTableImpl::enable(uint256 const& amendment)
 
     if (!s.supported)
     {
-        JLOG(j_.error()) << "Unsupported amendment " << amendment
-                         << " activated.";
+        JLOG(j_.error()) << "Unsupported amendment " << amendment << " activated.";
         unsupportedEnabled_ = true;
     }
 
@@ -851,9 +778,9 @@ AmendmentTableImpl::doVoting(
     majorityAmendments_t const& majorityAmendments,
     std::vector<std::shared_ptr<STValidation>> const& valSet)
 {
-    JLOG(j_.trace()) << "voting at " << closeTime.time_since_epoch().count()
-                     << ": " << enabledAmendments.size() << ", "
-                     << majorityAmendments.size() << ", " << valSet.size();
+    JLOG(j_.trace()) << "voting at " << closeTime.time_since_epoch().count() << ": "
+                     << enabledAmendments.size() << ", " << majorityAmendments.size() << ", "
+                     << valSet.size();
 
     std::lock_guard lock(mutex_);
 
@@ -861,11 +788,9 @@ AmendmentTableImpl::doVoting(
     previousTrustedVotes_.recordVotes(rules, valSet, closeTime, j_, lock);
 
     // Tally the most recent votes.
-    auto vote =
-        std::make_unique<AmendmentSet>(rules, previousTrustedVotes_, lock);
+    auto vote = std::make_unique<AmendmentSet>(rules, previousTrustedVotes_, lock);
     JLOG(j_.debug()) << "Counted votes from " << vote->trustedValidations()
-                     << " valid trusted validations, threshold is: "
-                     << vote->threshold();
+                     << " valid trusted validations, threshold is: " << vote->threshold();
 
     // Map of amendments to the action to be taken for each one. The action is
     // the value of the flags in the pseudo-transaction
@@ -894,13 +819,12 @@ AmendmentTableImpl::doVoting(
 
         auto const logStr = [&entry, &vote]() {
             std::stringstream ss;
-            ss << entry.first << " (" << entry.second.name << ") has "
-               << vote->votes(entry.first) << " votes";
+            ss << entry.first << " (" << entry.second.name << ") has " << vote->votes(entry.first)
+               << " votes";
             return ss.str();
         }();
 
-        if (hasValMajority && !hasLedgerMajority &&
-            entry.second.vote == AmendmentVote::up)
+        if (hasValMajority && !hasLedgerMajority && entry.second.vote == AmendmentVote::up)
         {
             // Ledger says no majority, validators say yes, and voting yes
             // locally
@@ -914,8 +838,7 @@ AmendmentTableImpl::doVoting(
             actions[entry.first] = tfLostMajority;
         }
         else if (
-            hasLedgerMajority &&
-            ((*majorityTime + majorityTime_) <= closeTime) &&
+            hasLedgerMajority && ((*majorityTime + majorityTime_) <= closeTime) &&
             entry.second.vote == AmendmentVote::up)
         {
             // Ledger says majority held
@@ -925,9 +848,7 @@ AmendmentTableImpl::doVoting(
         // Logging only below this point
         else if (hasValMajority && hasLedgerMajority)
         {
-            JLOG(j_.debug())
-                << logStr
-                << ": amendment holding majority, waiting to be enabled";
+            JLOG(j_.debug()) << logStr << ": amendment holding majority, waiting to be enabled";
         }
         else if (!hasValMajority)
         {
@@ -978,8 +899,8 @@ AmendmentTableImpl::doValidatedLedger(
 
         if (!s.supported)
         {
-            JLOG(j_.info()) << "Unsupported amendment " << hash
-                            << " reached majority at " << to_string(time);
+            JLOG(j_.info()) << "Unsupported amendment " << hash << " reached majority at "
+                            << to_string(time);
             if (!firstUnsupportedExpected_ || firstUnsupportedExpected_ > time)
                 firstUnsupportedExpected_ = time;
         }
@@ -1039,11 +960,7 @@ AmendmentTableImpl::getJson(bool isAdmin) const
         for (auto const& e : amendmentMap_)
         {
             injectJson(
-                ret[to_string(e.first)] = Json::objectValue,
-                e.first,
-                e.second,
-                isAdmin,
-                lock);
+                ret[to_string(e.first)] = Json::objectValue, e.first, e.second, isAdmin, lock);
         }
     }
     return ret;
@@ -1059,8 +976,7 @@ AmendmentTableImpl::getJson(uint256 const& amendmentID, bool isAdmin) const
         AmendmentState const* a = get(amendmentID, lock);
         if (a)
         {
-            Json::Value& jAmendment =
-                (ret[to_string(amendmentID)] = Json::objectValue);
+            Json::Value& jAmendment = (ret[to_string(amendmentID)] = Json::objectValue);
             injectJson(jAmendment, amendmentID, *a, isAdmin, lock);
         }
     }
@@ -1070,7 +986,7 @@ AmendmentTableImpl::getJson(uint256 const& amendmentID, bool isAdmin) const
 
 std::unique_ptr<AmendmentTable>
 make_AmendmentTable(
-    Application& app,
+    ServiceRegistry& registry,
     std::chrono::seconds majorityTime,
     std::vector<AmendmentTable::FeatureInfo> const& supported,
     Section const& enabled,
@@ -1078,7 +994,7 @@ make_AmendmentTable(
     beast::Journal journal)
 {
     return std::make_unique<AmendmentTableImpl>(
-        app, majorityTime, supported, enabled, vetoed, journal);
+        registry, majorityTime, supported, enabled, vetoed, journal);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

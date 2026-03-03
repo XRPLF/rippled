@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_BASICS_BUFFER_H_INCLUDED
-#define RIPPLE_BASICS_BUFFER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -27,7 +7,7 @@
 #include <cstring>
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 /** Like std::vector<char> but better.
     Meets the requirements of BufferFactory.
@@ -44,8 +24,7 @@ public:
     Buffer() = default;
 
     /** Create an uninitialized buffer with the given size. */
-    explicit Buffer(std::size_t size)
-        : p_(size ? new std::uint8_t[size] : nullptr), size_(size)
+    explicit Buffer(std::size_t size) : p_(size ? new std::uint8_t[size] : nullptr), size_(size)
     {
     }
 
@@ -81,8 +60,7 @@ public:
     /** Move-construct.
         The other buffer is reset.
     */
-    Buffer(Buffer&& other) noexcept
-        : p_(std::move(other.p_)), size_(other.size_)
+    Buffer(Buffer&& other) noexcept : p_(std::move(other.p_)), size_(other.size_)
     {
         other.size_ = 0;
     }
@@ -113,9 +91,8 @@ public:
     {
         // Ensure the slice isn't a subset of the buffer.
         XRPL_ASSERT(
-            s.size() == 0 || size_ == 0 || s.data() < p_.get() ||
-                s.data() >= p_.get() + size_,
-            "ripple::Buffer::operator=(Slice) : input not a subset");
+            s.size() == 0 || size_ == 0 || s.data() < p_.get() || s.data() >= p_.get() + size_,
+            "xrpl::Buffer::operator=(Slice) : input not a subset");
 
         if (auto p = alloc(s.size()))
             std::memcpy(p, s.data(), s.size());
@@ -234,6 +211,4 @@ operator!=(Buffer const& lhs, Buffer const& rhs) noexcept
     return !(lhs == rhs);
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

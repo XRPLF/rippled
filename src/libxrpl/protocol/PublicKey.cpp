@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
@@ -32,7 +13,6 @@
 #include <boost/multiprecision/number.hpp>
 
 #include <ed25519.h>
-#include <secp256k1.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -41,7 +21,7 @@
 #include <ostream>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 std::ostream&
 operator<<(std::ostream& os, PublicKey const& pk)
@@ -107,8 +87,9 @@ sliceToHex(Slice const& slice)
     }
     for (int i = 0; i < slice.size(); ++i)
     {
-        s += "0123456789ABCDEF"[((slice[i] & 0xf0) >> 4)];
-        s += "0123456789ABCDEF"[((slice[i] & 0x0f) >> 0)];
+        constexpr char hex[] = "0123456789ABCDEF";
+        s += hex[((slice[i] & 0xf0) >> 4)];
+        s += hex[((slice[i] & 0x0f) >> 0)];
     }
     return s;
 }
@@ -128,16 +109,14 @@ sliceToHex(Slice const& slice)
 std::optional<ECDSACanonicality>
 ecdsaCanonicality(Slice const& sig)
 {
-    using uint264 =
-        boost::multiprecision::number<boost::multiprecision::cpp_int_backend<
-            264,
-            264,
-            boost::multiprecision::signed_magnitude,
-            boost::multiprecision::unchecked,
-            void>>;
+    using uint264 = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<
+        264,
+        264,
+        boost::multiprecision::signed_magnitude,
+        boost::multiprecision::unchecked,
+        void>>;
 
-    static uint264 const G(
-        "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
+    static uint264 const G("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
 
     // The format of a signature should be:
     // <30> <len> [ <02> <lenR> <R> ] [ <02> <lenS> <S> ]
@@ -246,8 +225,7 @@ verifyDigest(
     auto const canonicality = ecdsaCanonicality(sig);
     if (!canonicality)
         return false;
-    if (mustBeFullyCanonical &&
-        (*canonicality != ECDSACanonicality::fullyCanonical))
+    if (mustBeFullyCanonical && (*canonicality != ECDSACanonicality::fullyCanonical))
         return false;
 
     secp256k1_pubkey pubkey_imp;
@@ -268,8 +246,7 @@ verifyDigest(
     if (*canonicality != ECDSACanonicality::fullyCanonical)
     {
         secp256k1_ecdsa_signature sig_norm;
-        if (secp256k1_ecdsa_signature_normalize(
-                secp256k1Context(), &sig_norm, &sig_imp) != 1)
+        if (secp256k1_ecdsa_signature_normalize(secp256k1Context(), &sig_norm, &sig_imp) != 1)
             return false;
         return secp256k1_ecdsa_verify(
                    secp256k1Context(),
@@ -285,18 +262,13 @@ verifyDigest(
 }
 
 bool
-verify(
-    PublicKey const& publicKey,
-    Slice const& m,
-    Slice const& sig,
-    bool mustBeFullyCanonical) noexcept
+verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
 {
     if (auto const type = publicKeyType(publicKey))
     {
         if (*type == KeyType::secp256k1)
         {
-            return verifyDigest(
-                publicKey, sha512Half(m), sig, mustBeFullyCanonical);
+            return verifyDigest(publicKey, sha512Half(m), sig);
         }
         else if (*type == KeyType::ed25519)
         {
@@ -307,9 +279,7 @@ verify(
             // byte to distinguish them from secp256k1 keys
             // so when verifying the signature, we need to
             // first strip that prefix.
-            return ed25519_sign_open(
-                       m.data(), m.size(), publicKey.data() + 1, sig.data()) ==
-                0;
+            return ed25519_sign_open(m.data(), m.size(), publicKey.data() + 1, sig.data()) == 0;
         }
     }
     return false;
@@ -325,4 +295,4 @@ calcNodeID(PublicKey const& pk)
     return NodeID{static_cast<ripesha_hasher::result_type>(h)};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

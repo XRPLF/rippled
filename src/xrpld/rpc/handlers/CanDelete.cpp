@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/SHAMapStore.h>
@@ -28,7 +9,7 @@
 
 #include <boost/algorithm/string/case_conv.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 // can_delete [<ledgerid>|<ledgerhash>|now|always|never]
 Json::Value
@@ -53,8 +34,7 @@ doCanDelete(RPC::JsonContext& context)
             std::string canDeleteStr = canDelete.asString();
             boost::to_lower(canDeleteStr);
 
-            if (canDeleteStr.find_first_not_of("0123456789") ==
-                std::string::npos)
+            if (canDeleteStr.find_first_not_of("0123456789") == std::string::npos)
             {
                 canDeleteSeq = beast::lexicalCast<std::uint32_t>(canDeleteStr);
             }
@@ -79,7 +59,7 @@ doCanDelete(RPC::JsonContext& context)
                 if (!ledger)
                     return RPC::make_error(rpcLGR_NOT_FOUND, "ledgerNotFound");
 
-                canDeleteSeq = ledger->info().seq;
+                canDeleteSeq = ledger->header().seq;
             }
             else
             {
@@ -87,8 +67,7 @@ doCanDelete(RPC::JsonContext& context)
             }
         }
 
-        ret[jss::can_delete] =
-            context.app.getSHAMapStore().setCanDelete(canDeleteSeq);
+        ret[jss::can_delete] = context.app.getSHAMapStore().setCanDelete(canDeleteSeq);
     }
     else
     {
@@ -98,4 +77,4 @@ doCanDelete(RPC::JsonContext& context)
     return ret;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

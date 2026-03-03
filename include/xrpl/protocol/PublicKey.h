@@ -1,26 +1,7 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_PUBLICKEY_H_INCLUDED
-#define RIPPLE_PROTOCOL_PUBLICKEY_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Slice.h>
+#include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/STExchange.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -33,7 +14,7 @@
 #include <optional>
 #include <ostream>
 
-namespace ripple {
+namespace xrpl {
 
 /** A public key.
 
@@ -145,10 +126,7 @@ inline bool
 operator<(PublicKey const& lhs, PublicKey const& rhs)
 {
     return std::lexicographical_compare(
-        lhs.data(),
-        lhs.data() + lhs.size(),
-        rhs.data(),
-        rhs.data() + rhs.size());
+        lhs.data(), lhs.data() + lhs.size(), rhs.data(), rhs.data() + rhs.size());
 }
 
 template <class Hasher>
@@ -249,11 +227,7 @@ verifyDigest(
     SHA512-Half, and the resulting digest is signed.
 */
 [[nodiscard]] bool
-verify(
-    PublicKey const& publicKey,
-    Slice const& m,
-    Slice const& sig,
-    bool mustBeFullyCanonical = true) noexcept;
+verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept;
 
 /** Calculate the 160-bit node ID from a node public key. */
 NodeID
@@ -264,23 +238,40 @@ calcNodeID(PublicKey const&);
 AccountID
 calcAccountID(PublicKey const& pk);
 
-}  // namespace ripple
+inline std::string
+getFingerprint(
+    beast::IP::Endpoint const& address,
+    std::optional<PublicKey> const& publicKey = std::nullopt,
+    std::optional<std::string> const& id = std::nullopt)
+{
+    std::stringstream ss;
+    ss << "IP Address: " << address;
+    if (publicKey.has_value())
+    {
+        ss << ", Public Key: " << toBase58(TokenType::NodePublic, *publicKey);
+    }
+    if (id.has_value())
+    {
+        ss << ", Id: " << id.value();
+    }
+    return ss.str();
+}
+}  // namespace xrpl
 
 //------------------------------------------------------------------------------
 
 namespace Json {
 template <>
-inline ripple::PublicKey
-getOrThrow(Json::Value const& v, ripple::SField const& field)
+inline xrpl::PublicKey
+getOrThrow(Json::Value const& v, xrpl::SField const& field)
 {
-    using namespace ripple;
+    using namespace xrpl;
     std::string const b58 = getOrThrow<std::string>(v, field);
     if (auto pubKeyBlob = strUnHex(b58); publicKeyType(makeSlice(*pubKeyBlob)))
     {
         return PublicKey{makeSlice(*pubKeyBlob)};
     }
-    for (auto const tokenType :
-         {TokenType::NodePublic, TokenType::AccountPublic})
+    for (auto const tokenType : {TokenType::NodePublic, TokenType::AccountPublic})
     {
         if (auto const pk = parseBase58<PublicKey>(tokenType, b58))
             return *pk;
@@ -288,5 +279,3 @@ getOrThrow(Json::Value const& v, ripple::SField const& field)
     Throw<JsonTypeMismatchError>(field.getJsonName(), "PublicKey");
 }
 }  // namespace Json
-
-#endif

@@ -1,0 +1,99 @@
+#pragma once
+
+#include <xrpl/beast/hash/hash_append.h>
+#include <xrpl/beast/hash/uhash.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/PublicKey.h>
+
+#include <mutex>
+#include <optional>
+#include <string>
+#include <unordered_set>
+#include <vector>
+
+namespace xrpl {
+
+class DatabaseCon;
+
+// Value type for reservations.
+struct PeerReservation final
+{
+public:
+    PublicKey nodeId;
+    std::string description{};
+
+    auto
+    toJson() const -> Json::Value;
+
+    template <typename Hasher>
+    friend void
+    hash_append(Hasher& h, PeerReservation const& x) noexcept
+    {
+        using beast::hash_append;
+        hash_append(h, x.nodeId);
+    }
+
+    friend bool
+    operator<(PeerReservation const& a, PeerReservation const& b)
+    {
+        return a.nodeId < b.nodeId;
+    }
+};
+
+// TODO: When C++20 arrives, take advantage of "equivalence" instead of
+// "equality". Add an overload for `(PublicKey, PeerReservation)`, and just
+// pass a `PublicKey` directly to `unordered_set.find`.
+struct KeyEqual final
+{
+    bool
+    operator()(PeerReservation const& lhs, PeerReservation const& rhs) const
+    {
+        return lhs.nodeId == rhs.nodeId;
+    }
+};
+
+class PeerReservationTable final
+{
+public:
+    explicit PeerReservationTable(
+        beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
+        : journal_(journal)
+    {
+    }
+
+    std::vector<PeerReservation>
+    list() const;
+
+    bool
+    contains(PublicKey const& nodeId)
+    {
+        std::lock_guard lock(this->mutex_);
+        return table_.find({nodeId}) != table_.end();
+    }
+
+    // Because `ApplicationImp` has two-phase initialization, so must we.
+    // Our dependencies are not prepared until the second phase.
+    bool
+    load(DatabaseCon& connection);
+
+    /**
+     * @return the replaced reservation if it existed
+     * @throw soci::soci_error
+     */
+    std::optional<PeerReservation>
+    insert_or_assign(PeerReservation const& reservation);
+
+    /**
+     * @return the erased reservation if it existed
+     */
+    std::optional<PeerReservation>
+    erase(PublicKey const& nodeId);
+
+private:
+    beast::Journal mutable journal_;
+    std::mutex mutable mutex_;
+    DatabaseCon* connection_;
+    std::unordered_set<PeerReservation, beast::uhash<>, KeyEqual> table_;
+};
+
+}  // namespace xrpl

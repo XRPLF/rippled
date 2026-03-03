@@ -1,0 +1,102 @@
+# The idea is to empty this file gradually by fixing the underlying issues and removing suppresions.
+
+# Suppress race in Boost ASIO scheduler detected by GCC-15
+# This is a false positive in Boost's internal pipe() synchronization
+race:boost/asio/
+race:boost/context/
+race:boost/asio/executor.hpp
+race:boost::asio
+
+# Suppress tsan related issues in rippled code.
+race:src/libxrpl/basics/make_SSLContext.cpp
+race:src/libxrpl/basics/Number.cpp
+race:src/libxrpl/json/json_value.cpp
+race:src/libxrpl/json/to_string.cpp
+race:src/libxrpl/ledger/OpenView.cpp
+race:src/libxrpl/net/HTTPClient.cpp
+race:src/libxrpl/nodestore/backend/NuDBFactory.cpp
+race:src/libxrpl/protocol/InnerObjectFormats.cpp
+race:src/libxrpl/protocol/STParsedJSON.cpp
+race:src/libxrpl/resource/ResourceManager.cpp
+race:src/test/app/Flow_test.cpp
+race:src/test/app/LedgerReplay_test.cpp
+race:src/test/app/NFToken_test.cpp
+race:src/test/app/Offer_test.cpp
+race:src/test/app/ValidatorSite_test.cpp
+race:src/test/consensus/NegativeUNL_test.cpp
+race:src/test/jtx/impl/Env.cpp
+race:src/test/jtx/impl/JSONRPCClient.cpp
+race:src/test/jtx/impl/pay.cpp
+race:src/test/jtx/impl/token.cpp
+race:src/test/rpc/Book_test.cpp
+race:src/xrpld/app/ledger/detail/InboundTransactions.cpp
+race:src/xrpld/app/main/Application.cpp
+race:src/xrpld/app/main/BasicApp.cpp
+race:src/xrpld/app/main/GRPCServer.cpp
+race:src/xrpld/app/misc/detail/AmendmentTable.cpp
+race:src/xrpld/app/misc/FeeVoteImpl.cpp
+race:src/xrpld/app/rdb/detail/Wallet.cpp
+race:src/xrpld/overlay/detail/OverlayImpl.cpp
+race:src/xrpld/peerfinder/detail/PeerfinderManager.cpp
+race:src/xrpld/peerfinder/detail/SourceStrings.cpp
+race:src/xrpld/rpc/detail/ServerHandler.cpp
+race:xrpl/server/detail/Door.h
+race:xrpl/server/detail/Spawn.h
+race:xrpl/server/detail/ServerImpl.h
+race:xrpl/nodestore/detail/DatabaseNodeImp.h
+race:src/libxrpl/beast/utility/beast_Journal.cpp
+race:src/test/beast/LexicalCast_test.cpp
+race:ripple::ServerHandler
+
+# More suppressions in external library code.
+race:crtstuff.c
+race:pipe
+
+# Deadlock / lock-order-inversion suppressions
+# Note: GCC's TSAN may not fully support all deadlock suppression patterns
+deadlock:src/libxrpl/beast/utility/beast_Journal.cpp
+deadlock:src/libxrpl/beast/utility/beast_PropertyStream.cpp
+deadlock:src/test/beast/beast_PropertyStream_test.cpp
+deadlock:src/xrpld/core/detail/Workers.cpp
+deadlock:src/xrpld/app/misc/detail/Manifest.cpp
+deadlock:src/xrpld/app/misc/detail/ValidatorList.cpp
+deadlock:src/xrpld/app/misc/detail/ValidatorSite.cpp
+
+signal:src/libxrpl/beast/utility/beast_Journal.cpp
+signal:src/xrpld/core/detail/Workers.cpp
+signal:src/xrpld/core/JobQueue.cpp
+signal:ripple::Workers::Worker
+
+# Aggressive suppressing of deadlock tsan errors
+deadlock:pthread_create
+deadlock:pthread_rwlock_rdlock
+deadlock:boost::asio
+
+# Suppress SEGV crashes in TSAN itself during stringbuf operations
+# This appears to be a GCC-15 TSAN instrumentation issue with basic_stringbuf::str()
+# Commonly triggered in beast::Journal::ScopedStream destructor
+signal:std::__cxx11::basic_stringbuf
+signal:basic_stringbuf
+signal:basic_ostringstream
+
+called_from_lib:libclang_rt
+race:ostreambuf_iterator
+race:basic_ostream
+
+# Suppress SEGV in Boost ASIO memory allocation with GCC-15 TSAN
+signal:boost::asio::aligned_new
+signal:boost::asio::detail::memory
+
+# Suppress SEGV in execute_native_thread_routine
+signal:execute_native_thread_routine
+
+# Suppress data race in Boost Context fiber management
+# This is a false positive in Boost's exception state management during fiber context switching
+race:__cxxabiv1::manage_exception_state
+race:boost::context::fiber::resume
+race:boost::asio::detail::spawned_fiber_thread
+race:boost::asio::detail::spawned_fiber_thread::suspend_with
+race:boost::asio::detail::spawned_fiber_thread::destroy
+
+# Suppress data race in __tsan_memcpy called from Boost fiber operations
+race:__tsan_memcpy

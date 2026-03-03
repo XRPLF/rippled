@@ -1,37 +1,18 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/InboundTransactions.h>
 #include <xrpld/app/ledger/detail/TransactionAcquire.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/NetworkOPs.h>
-#include <xrpld/core/JobQueue.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/server/NetworkOPs.h>
 
 #include <memory>
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 
 enum {
     // Ideal number of peers to start with
@@ -75,8 +56,8 @@ public:
         , m_peerSetBuilder(std::move(peerSetBuilder))
         , j_(app_.journal("InboundTransactions"))
     {
-        m_zeroSet.mSet = std::make_shared<SHAMap>(
-            SHAMapType::TRANSACTION, uint256(), app_.getNodeFamily());
+        m_zeroSet.mSet =
+            std::make_shared<SHAMap>(SHAMapType::TRANSACTION, uint256(), app_.getNodeFamily());
         m_zeroSet.mSet->setUnbacked();
     }
 
@@ -118,8 +99,7 @@ public:
             if (!acquire || stopping_)
                 return std::shared_ptr<SHAMap>();
 
-            ta = std::make_shared<TransactionAcquire>(
-                app_, hash, m_peerSetBuilder->build());
+            ta = std::make_shared<TransactionAcquire>(app_, hash, m_peerSetBuilder->build());
 
             auto& obj = m_map[hash];
             obj.mAcquire = ta;
@@ -179,10 +159,7 @@ public:
     }
 
     void
-    giveSet(
-        uint256 const& hash,
-        std::shared_ptr<SHAMap> const& set,
-        bool fromAcquire) override
+    giveSet(uint256 const& hash, std::shared_ptr<SHAMap> const& set, bool fromAcquire) override
     {
         bool isNew = true;
 
@@ -220,8 +197,7 @@ public:
 
             auto it = m_map.begin();
 
-            std::uint32_t const minSeq =
-                (seq < setKeepRounds) ? 0 : (seq - setKeepRounds);
+            std::uint32_t const minSeq = (seq < setKeepRounds) ? 0 : (seq - setKeepRounds);
             std::uint32_t maxSeq = seq + setKeepRounds;
 
             while (it != m_map.end())
@@ -277,4 +253,4 @@ make_InboundTransactions(
         app, collector, std::move(gotSet), make_PeerSetBuilder(app));
 }
 
-}  // namespace ripple
+}  // namespace xrpl

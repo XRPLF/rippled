@@ -1,43 +1,23 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <xrpld/app/paths/Credit.h>
-#include <xrpld/app/paths/detail/AmountSpec.h>
 #include <xrpld/app/paths/detail/StepChecks.h>
-#include <xrpld/app/paths/detail/Steps.h>
-#include <xrpld/ledger/PaymentSandbox.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/Credit.h>
+#include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/paths/detail/AmountSpec.h>
+#include <xrpl/tx/paths/detail/Steps.h>
 
 #include <boost/container/flat_set.hpp>
 
 #include <sstream>
 
-namespace ripple {
+namespace xrpl {
 
 template <class TDerived>
-class XRPEndpointStep
-    : public StepImp<XRPAmount, XRPAmount, XRPEndpointStep<TDerived>>
+class XRPEndpointStep : public StepImp<XRPAmount, XRPAmount, XRPEndpointStep<TDerived>>
 {
 private:
     AccountID acc_;
@@ -96,8 +76,7 @@ public:
     }
 
     std::pair<std::optional<Quality>, DebtDirection>
-    qualityUpperBound(ReadView const& v, DebtDirection prevStepDir)
-        const override;
+    qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const override;
 
     std::pair<XRPAmount, XRPAmount>
     revImp(
@@ -114,8 +93,7 @@ public:
         XRPAmount const& in);
 
     std::pair<bool, EitherAmount>
-    validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmount const& in)
-        override;
+    validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmount const& in) override;
 
     // Check for errors and violations of frozen constraints.
     TER
@@ -125,7 +103,7 @@ protected:
     XRPAmount
     xrpLiquidImpl(ReadView& sb, std::int32_t reserveReduction) const
     {
-        return ripple::xrpLiquid(sb, acc_, reserveReduction, j_);
+        return xrpl::xrpLiquid(sb, acc_, reserveReduction, j_);
     }
 
     std::string
@@ -188,8 +166,7 @@ public:
 };
 
 // Offer crossing XRPEndpointStep class (not a payment).
-class XRPEndpointOfferCrossingStep
-    : public XRPEndpointStep<XRPEndpointOfferCrossingStep>
+class XRPEndpointOfferCrossingStep : public XRPEndpointStep<XRPEndpointOfferCrossingStep>
 {
 private:
     // For historical reasons, offer crossing is allowed to dig further
@@ -234,22 +211,16 @@ private:
 
 template <class TDerived>
 inline bool
-operator==(
-    XRPEndpointStep<TDerived> const& lhs,
-    XRPEndpointStep<TDerived> const& rhs)
+operator==(XRPEndpointStep<TDerived> const& lhs, XRPEndpointStep<TDerived> const& rhs)
 {
     return lhs.acc_ == rhs.acc_ && lhs.isLast_ == rhs.isLast_;
 }
 
 template <class TDerived>
 std::pair<std::optional<Quality>, DebtDirection>
-XRPEndpointStep<TDerived>::qualityUpperBound(
-    ReadView const& v,
-    DebtDirection prevStepDir) const
+XRPEndpointStep<TDerived>::qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const
 {
-    return {
-        Quality{STAmount::uRateOne},
-        this->debtDirection(v, StrandDirection::forward)};
+    return {Quality{STAmount::uRateOne}, this->debtDirection(v, StrandDirection::forward)};
 }
 
 template <class TDerived>
@@ -282,7 +253,7 @@ XRPEndpointStep<TDerived>::fwdImp(
     boost::container::flat_set<uint256>& ofrsToRm,
     XRPAmount const& in)
 {
-    XRPL_ASSERT(cache_, "ripple::XRPEndpointStep::fwdImp : cache is set");
+    XRPL_ASSERT(cache_, "xrpl::XRPEndpointStep::fwdImp : cache is set");
     auto const balance = static_cast<TDerived const*>(this)->xrpLiquid(sb);
 
     auto const result = isLast_ ? in : std::min(balance, in);
@@ -299,10 +270,7 @@ XRPEndpointStep<TDerived>::fwdImp(
 
 template <class TDerived>
 std::pair<bool, EitherAmount>
-XRPEndpointStep<TDerived>::validFwd(
-    PaymentSandbox& sb,
-    ApplyView& afView,
-    EitherAmount const& in)
+XRPEndpointStep<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmount const& in)
 {
     if (!cache_)
     {
@@ -310,7 +278,7 @@ XRPEndpointStep<TDerived>::validFwd(
         return {false, EitherAmount(XRPAmount(beast::zero))};
     }
 
-    XRPL_ASSERT(in.native, "ripple::XRPEndpointStep::validFwd : input is XRP");
+    XRPL_ASSERT(in.native, "xrpl::XRPEndpointStep::validFwd : input is XRP");
 
     auto const& xrpIn = in.xrp;
     auto const balance = static_cast<TDerived const*>(this)->xrpLiquid(sb);
@@ -362,16 +330,12 @@ XRPEndpointStep<TDerived>::check(StrandContext const& ctx) const
     if (ter != tesSUCCESS)
         return ter;
 
-    if (ctx.view.rules().enabled(fix1781))
+    auto const issuesIndex = isLast_ ? 0 : 1;
+    if (!ctx.seenDirectIssues[issuesIndex].insert(xrpIssue()).second)
     {
-        auto const issuesIndex = isLast_ ? 0 : 1;
-        if (!ctx.seenDirectIssues[issuesIndex].insert(xrpIssue()).second)
-        {
-            JLOG(j_.debug())
-                << "XRPEndpointStep: loop detected: Index: " << ctx.strandSize
-                << ' ' << *this;
-            return temBAD_PATH_LOOP;
-        }
+        JLOG(j_.debug()) << "XRPEndpointStep: loop detected: Index: " << ctx.strandSize << ' '
+                         << *this;
+        return temBAD_PATH_LOOP;
     }
 
     return tesSUCCESS;
@@ -384,8 +348,7 @@ namespace test {
 bool
 xrpEndpointStepEqual(Step const& step, AccountID const& acc)
 {
-    if (auto xs =
-            dynamic_cast<XRPEndpointStep<XRPEndpointPaymentStep> const*>(&step))
+    if (auto xs = dynamic_cast<XRPEndpointStep<XRPEndpointPaymentStep> const*>(&step))
     {
         return xs->acc() == acc;
     }
@@ -402,8 +365,7 @@ make_XRPEndpointStep(StrandContext const& ctx, AccountID const& acc)
     std::unique_ptr<Step> r;
     if (ctx.offerCrossing)
     {
-        auto offerCrossingStep =
-            std::make_unique<XRPEndpointOfferCrossingStep>(ctx, acc);
+        auto offerCrossingStep = std::make_unique<XRPEndpointOfferCrossingStep>(ctx, acc);
         ter = offerCrossingStep->check(ctx);
         r = std::move(offerCrossingStep);
     }
@@ -419,4 +381,4 @@ make_XRPEndpointStep(StrandContext const& ctx, AccountID const& acc)
     return {tesSUCCESS, std::move(r)};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

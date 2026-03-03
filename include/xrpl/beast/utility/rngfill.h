@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2014, Vinnie Falco <vinnie.falco@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef BEAST_RANDOM_RNGFILL_H_INCLUDED
-#define BEAST_RANDOM_RNGFILL_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -31,38 +11,28 @@ namespace beast {
 
 template <class Generator>
 void
-rngfill(void* buffer, std::size_t bytes, Generator& g)
+rngfill(void* const buffer, std::size_t const bytes, Generator& g)
 {
     using result_type = typename Generator::result_type;
+    constexpr std::size_t result_size = sizeof(result_type);
 
-    while (bytes >= sizeof(result_type))
+    std::uint8_t* const buffer_start = static_cast<std::uint8_t*>(buffer);
+    std::size_t const complete_iterations = bytes / result_size;
+    std::size_t const bytes_remaining = bytes % result_size;
+
+    for (std::size_t count = 0; count < complete_iterations; ++count)
     {
-        auto const v = g();
-        std::memcpy(buffer, &v, sizeof(v));
-        buffer = reinterpret_cast<std::uint8_t*>(buffer) + sizeof(v);
-        bytes -= sizeof(v);
+        result_type const v = g();
+        std::size_t const offset = count * result_size;
+        std::memcpy(buffer_start + offset, &v, result_size);
     }
 
-    XRPL_ASSERT(
-        bytes < sizeof(result_type), "beast::rngfill(void*) : maximum bytes");
-
-#ifdef __GNUC__
-    // gcc 11.1 (falsely) warns about an array-bounds overflow in release mode.
-    // gcc 12.1 (also falsely) warns about an string overflow in release mode.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Warray-bounds"
-#pragma GCC diagnostic ignored "-Wstringop-overflow"
-#endif
-
-    if (bytes > 0)
+    if (bytes_remaining > 0)
     {
-        auto const v = g();
-        std::memcpy(buffer, &v, bytes);
+        result_type const v = g();
+        std::size_t const offset = complete_iterations * result_size;
+        std::memcpy(buffer_start + offset, &v, bytes_remaining);
     }
-
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
 }
 
 template <
@@ -80,5 +50,3 @@ rngfill(std::array<std::uint8_t, N>& a, Generator& g)
 }
 
 }  // namespace beast
-
-#endif

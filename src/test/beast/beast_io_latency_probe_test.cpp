@@ -1,29 +1,11 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2018 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/beast/asio/io_latency_probe.h>
 #include <xrpl/beast/test/yield_to.h>
 #include <xrpl/beast/unit_test.h>
 
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/deadline_timer.hpp>
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/io_context.hpp>
 
 #include <algorithm>
 #include <mutex>
@@ -33,13 +15,11 @@
 
 using namespace std::chrono_literals;
 
-class io_latency_probe_test : public beast::unit_test::suite,
-                              public beast::test::enable_yield_to
+class io_latency_probe_test : public beast::unit_test::suite, public beast::test::enable_yield_to
 {
-    using MyTimer =
-        boost::asio::basic_waitable_timer<std::chrono::steady_clock>;
+    using MyTimer = boost::asio::basic_waitable_timer<std::chrono::steady_clock>;
 
-#ifdef RIPPLED_RUNNING_IN_CI
+#ifdef XRPL_RUNNING_IN_CI
     /**
      * @brief attempt to measure inaccuracy of asio waitable timers
      *
@@ -47,9 +27,7 @@ class io_latency_probe_test : public beast::unit_test::suite,
      * timer inaccuracy impacts the io_probe tests below.
      *
      */
-    template <
-        class Clock,
-        class MeasureClock = std::chrono::high_resolution_clock>
+    template <class Clock, class MeasureClock = std::chrono::high_resolution_clock>
     struct measure_asio_timers
     {
         using duration = typename Clock::duration;
@@ -60,8 +38,9 @@ class io_latency_probe_test : public beast::unit_test::suite,
         measure_asio_timers(duration interval = 100ms, size_t num_samples = 50)
         {
             using namespace std::chrono;
-            boost::asio::io_service ios;
-            std::optional<boost::asio::io_service::work> work{ios};
+            boost::asio::io_context ios;
+            std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>>
+                work{boost::asio::make_work_guard(ios)};
             std::thread worker{[&] { ios.run(); }};
             boost::asio::basic_waitable_timer<Clock> timer{ios};
             elapsed_times_.reserve(num_samples);
@@ -100,8 +79,7 @@ class io_latency_probe_test : public beast::unit_test::suite,
             double sum = {0};
             for (auto const& v : elapsed_times_)
             {
-                sum += static_cast<double>(
-                    std::chrono::duration_cast<D>(v).count());
+                sum += static_cast<double>(std::chrono::duration_cast<D>(v).count());
             }
             return sum / elapsed_times_.size();
         }
@@ -111,8 +89,7 @@ class io_latency_probe_test : public beast::unit_test::suite,
         getMax()
         {
             return std::chrono::duration_cast<D>(
-                       *std::max_element(
-                           elapsed_times_.begin(), elapsed_times_.end()))
+                       *std::max_element(elapsed_times_.begin(), elapsed_times_.end()))
                 .count();
         }
 
@@ -121,8 +98,7 @@ class io_latency_probe_test : public beast::unit_test::suite,
         getMin()
         {
             return std::chrono::duration_cast<D>(
-                       *std::min_element(
-                           elapsed_times_.begin(), elapsed_times_.end()))
+                       *std::min_element(elapsed_times_.begin(), elapsed_times_.end()))
                 .count();
         }
     };
@@ -133,9 +109,7 @@ class io_latency_probe_test : public beast::unit_test::suite,
         beast::io_latency_probe<std::chrono::steady_clock> probe_;
         std::vector<std::chrono::steady_clock::duration> durations_;
 
-        test_sampler(
-            std::chrono::milliseconds interval,
-            boost::asio::io_service& ios)
+        test_sampler(std::chrono::milliseconds interval, boost::asio::io_context& ios)
             : probe_(interval, ios)
         {
         }
@@ -164,9 +138,9 @@ class io_latency_probe_test : public beast::unit_test::suite,
     {
         testcase << "sample one";
         boost::system::error_code ec;
-        test_sampler io_probe{100ms, get_io_service()};
+        test_sampler io_probe{100ms, get_io_context()};
         io_probe.start_one();
-        MyTimer timer{get_io_service(), 1s};
+        MyTimer timer{get_io_context(), 1s};
         timer.async_wait(yield[ec]);
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
@@ -185,22 +159,19 @@ class io_latency_probe_test : public beast::unit_test::suite,
 
         size_t expected_probe_count_max = (probe_duration / interval);
         size_t expected_probe_count_min = expected_probe_count_max;
-#ifdef RIPPLED_RUNNING_IN_CI
+#ifdef XRPL_RUNNING_IN_CI
         // adjust min expected based on measurements
         // if running in CI/VM environment
         measure_asio_timers<steady_clock> tt{interval};
-        log << "measured mean for timers: " << tt.getMean<milliseconds>()
-            << "ms\n";
-        log << "measured max for timers: " << tt.getMax<milliseconds>()
-            << "ms\n";
+        log << "measured mean for timers: " << tt.getMean<milliseconds>() << "ms\n";
+        log << "measured max for timers: " << tt.getMax<milliseconds>() << "ms\n";
         expected_probe_count_min =
-            static_cast<size_t>(
-                duration_cast<milliseconds>(probe_duration).count()) /
+            static_cast<size_t>(duration_cast<milliseconds>(probe_duration).count()) /
             static_cast<size_t>(tt.getMean<milliseconds>());
 #endif
-        test_sampler io_probe{interval, get_io_service()};
+        test_sampler io_probe{interval, get_io_context()};
         io_probe.start();
-        MyTimer timer{get_io_service(), probe_duration};
+        MyTimer timer{get_io_context(), probe_duration};
         timer.async_wait(yield[ec]);
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
@@ -212,7 +183,7 @@ class io_latency_probe_test : public beast::unit_test::suite,
         io_probe.probe_.cancel_async();
         // wait again in order to flush the remaining
         // probes from the work queue
-        timer.expires_from_now(1s);
+        timer.expires_after(1s);
         timer.async_wait(yield[ec]);
     }
 
@@ -220,7 +191,7 @@ class io_latency_probe_test : public beast::unit_test::suite,
     testCanceled(boost::asio::yield_context& yield)
     {
         testcase << "canceled";
-        test_sampler io_probe{100ms, get_io_service()};
+        test_sampler io_probe{100ms, get_io_context()};
         io_probe.probe_.cancel_async();
         except<std::logic_error>([&io_probe]() { io_probe.start_one(); });
         except<std::logic_error>([&io_probe]() { io_probe.start(); });
@@ -238,4 +209,4 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(io_latency_probe, asio, beast);
+BEAST_DEFINE_TESTSUITE(io_latency_probe, beast, beast);

@@ -1,31 +1,12 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerCleaner.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/misc/LoadFeeTrack.h>
 
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/LoadFeeTrack.h>
 
-namespace ripple {
+namespace xrpl {
 
 /*
 
@@ -72,8 +53,7 @@ class LedgerCleanerImp : public LedgerCleaner
 
     //--------------------------------------------------------------------------
 public:
-    LedgerCleanerImp(Application& app, beast::Journal journal)
-        : app_(app), j_(journal)
+    LedgerCleanerImp(Application& app, beast::Journal journal) : app_(app), j_(journal)
     {
     }
 
@@ -227,14 +207,10 @@ private:
             {
                 std::unique_lock<std::mutex> lock(mutex_);
                 state_ = State::notCleaning;
-                wakeup_.wait(lock, [this]() {
-                    return (shouldExit_ || state_ == State::cleaning);
-                });
+                wakeup_.wait(lock, [this]() { return (shouldExit_ || state_ == State::cleaning); });
                 if (shouldExit_)
                     break;
-                XRPL_ASSERT(
-                    state_ == State::cleaning,
-                    "ripple::LedgerCleanerImp::run : is cleaning");
+                XRPL_ASSERT(state_ == State::cleaning, "xrpl::LedgerCleanerImp::run : is cleaning");
             }
             doLedgerCleaner();
         }
@@ -251,12 +227,9 @@ private:
         }
         catch (SHAMapMissingNode const& mn)
         {
-            JLOG(j_.warn())
-                << "Ledger #" << ledger->info().seq << ": " << mn.what();
+            JLOG(j_.warn()) << "Ledger #" << ledger->header().seq << ": " << mn.what();
             app_.getInboundLedgers().acquire(
-                ledger->info().hash,
-                ledger->info().seq,
-                InboundLedger::Reason::GENERIC);
+                ledger->header().hash, ledger->header().seq, InboundLedger::Reason::GENERIC);
         }
         return hash ? *hash : beast::zero;  // kludge
     }
@@ -287,19 +260,17 @@ private:
         }
 
         auto dbLedger = loadByIndex(ledgerIndex, app_);
-        if (!dbLedger || (dbLedger->info().hash != ledgerHash) ||
-            (dbLedger->info().parentHash != nodeLedger->info().parentHash))
+        if (!dbLedger || (dbLedger->header().hash != ledgerHash) ||
+            (dbLedger->header().parentHash != nodeLedger->header().parentHash))
         {
             // Ideally we'd also check for more than one ledger with that index
-            JLOG(j_.debug())
-                << "Ledger " << ledgerIndex << " mismatches SQL DB";
+            JLOG(j_.debug()) << "Ledger " << ledgerIndex << " mismatches SQL DB";
             doTxns = true;
         }
 
         if (!app_.getLedgerMaster().fixIndex(ledgerIndex, ledgerHash))
         {
-            JLOG(j_.debug())
-                << "ledger " << ledgerIndex << " had wrong entry in history";
+            JLOG(j_.debug()) << "ledger " << ledgerIndex << " had wrong entry in history";
             doTxns = true;
         }
 
@@ -327,13 +298,11 @@ private:
         @return The hash of the ledger. This will be all-bits-zero if not found.
     */
     LedgerHash
-    getHash(
-        LedgerIndex const& ledgerIndex,
-        std::shared_ptr<ReadView const>& referenceLedger)
+    getHash(LedgerIndex const& ledgerIndex, std::shared_ptr<ReadView const>& referenceLedger)
     {
         LedgerHash ledgerHash;
 
-        if (!referenceLedger || (referenceLedger->info().seq < ledgerIndex))
+        if (!referenceLedger || (referenceLedger->header().seq < ledgerIndex))
         {
             referenceLedger = app_.getLedgerMaster().getValidatedLedger();
             if (!referenceLedger)
@@ -343,7 +312,7 @@ private:
             }
         }
 
-        if (referenceLedger->info().seq >= ledgerIndex)
+        if (referenceLedger->header().seq >= ledgerIndex)
         {
             // See if the hash for the ledger we need is in the reference ledger
             ledgerHash = getLedgerHash(referenceLedger, ledgerIndex);
@@ -356,9 +325,7 @@ private:
                 LedgerHash refHash = getLedgerHash(referenceLedger, refIndex);
 
                 bool const nonzero(refHash.isNonZero());
-                XRPL_ASSERT(
-                    nonzero,
-                    "ripple::LedgerCleanerImp::getHash : nonzero hash");
+                XRPL_ASSERT(nonzero, "xrpl::LedgerCleanerImp::getHash : nonzero hash");
                 if (nonzero)
                 {
                     // We found the hash and sequence of a better reference
@@ -366,8 +333,7 @@ private:
                     referenceLedger = app_.getInboundLedgers().acquire(
                         refHash, refIndex, InboundLedger::Reason::GENERIC);
                     if (referenceLedger)
-                        ledgerHash =
-                            getLedgerHash(referenceLedger, ledgerIndex);
+                        ledgerHash = getLedgerHash(referenceLedger, ledgerIndex);
                 }
             }
         }
@@ -404,8 +370,7 @@ private:
 
             {
                 std::lock_guard lock(mutex_);
-                if ((minRange_ > maxRange_) || (maxRange_ == 0) ||
-                    (minRange_ == 0))
+                if ((minRange_ > maxRange_) || (maxRange_ == 0) || (minRange_ == 0))
                 {
                     minRange_ = maxRange_ = 0;
                     return;
@@ -420,8 +385,7 @@ private:
             bool fail = false;
             if (ledgerHash.isZero())
             {
-                JLOG(j_.info())
-                    << "Unable to get hash for ledger " << ledgerIndex;
+                JLOG(j_.info()) << "Unable to get hash for ledger " << ledgerIndex;
                 fail = true;
             }
             else if (!doLedger(ledgerIndex, ledgerHash, doNodes, doTxns))
@@ -462,4 +426,4 @@ make_LedgerCleaner(Application& app, beast::Journal journal)
     return std::make_unique<LedgerCleanerImp>(app, journal);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

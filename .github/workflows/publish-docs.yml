@@ -1,0 +1,86 @@
+# This workflow builds the documentation for the repository, and publishes it to
+# GitHub Pages when changes are merged into the default branch.
+name: Build and publish documentation
+
+on:
+  push:
+    branches:
+      - "develop"
+      - "release*"
+    paths:
+      - ".github/workflows/publish-docs.yml"
+      - "*.md"
+      - "**/*.md"
+      - "docs/**"
+      - "include/**"
+      - "src/libxrpl/**"
+      - "src/xrpld/**"
+  pull_request:
+    paths:
+      - ".github/workflows/publish-docs.yml"
+      - "*.md"
+      - "**/*.md"
+      - "docs/**"
+      - "include/**"
+      - "src/libxrpl/**"
+      - "src/xrpld/**"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  BUILD_DIR: build
+  # ubuntu-latest has only 2 CPUs for private repositories
+  # https://docs.github.com/en/actions/reference/runners/github-hosted-runners#standard-github-hosted-runners-for--private-repositories
+  NPROC_SUBTRACT: ${{ github.event.repository.private && '1' || '2' }}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    container: ghcr.io/xrplf/ci/tools-rippled-documentation:sha-a8c7be1
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Get number of processors
+        uses: XRPLF/actions/get-nproc@cf0433aa74563aead044a1e395610c96d65a37cf
+        id: nproc
+        with:
+          subtract: ${{ env.NPROC_SUBTRACT }}
+
+      - name: Check configuration
+        run: |
+          echo 'Checking path.'
+          echo ${PATH} | tr ':' '\n'
+
+          echo 'Checking environment variables.'
+          env | sort
+
+          echo 'Checking CMake version.'
+          cmake --version
+
+          echo 'Checking Doxygen version.'
+          doxygen --version
+
+      - name: Build documentation
+        env:
+          BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
+        run: |
+          mkdir -p "${BUILD_DIR}"
+          cd "${BUILD_DIR}"
+          cmake -Donly_docs=ON ..
+          cmake --build . --target docs --parallel ${BUILD_NPROC}
+
+      - name: Publish documentation
+        if: ${{ github.event_name == 'push' }}
+        uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # v4.0.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ${{ env.BUILD_DIR }}/docs/html

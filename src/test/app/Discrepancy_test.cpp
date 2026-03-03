@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2012-2016 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/PathSet.h>
@@ -27,7 +8,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Discrepancy_test : public beast::unit_test::suite
 {
@@ -100,8 +81,7 @@ class Discrepancy_test : public beast::unit_test::suite
 
         Json::Value jrq2;
         jrq2[jss::binary] = false;
-        jrq2[jss::transaction] =
-            env.tx()->getJson(JsonOptions::none)[jss::hash];
+        jrq2[jss::transaction] = env.tx()->getJson(JsonOptions::none)[jss::hash];
         jrq2[jss::id] = 3;
         auto jrr = env.rpc("json", "tx", to_string(jrq2))[jss::result];
         uint64_t fee{jrr[jss::Fee].asUInt()};
@@ -121,8 +101,7 @@ class Discrepancy_test : public beast::unit_test::suite
 
             if (node && node[sfLedgerEntryType.fieldName] == jss::AccountRoot)
             {
-                Json::Value prevFields =
-                    node.isMember(sfPreviousFields.fieldName)
+                Json::Value prevFields = node.isMember(sfPreviousFields.fieldName)
                     ? node[sfPreviousFields.fieldName]
                     : node[sfNewFields.fieldName];
                 Json::Value finalFields = node.isMember(sfFinalFields.fieldName)
@@ -146,13 +125,12 @@ public:
     run() override
     {
         using namespace test::jtx;
-        auto const sa = supported_amendments();
-        testXRPDiscrepancy(sa - featureFlowCross - featurePermissionedDEX);
+        auto const sa = testable_amendments();
         testXRPDiscrepancy(sa - featurePermissionedDEX);
         testXRPDiscrepancy(sa);
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Discrepancy, app, ripple);
+BEAST_DEFINE_TESTSUITE(Discrepancy, app, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

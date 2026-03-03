@@ -1,36 +1,18 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/paths/TrustLine.h>
-#include <xrpld/ledger/ReadView.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/LoadFeeTrack.h>
 
-namespace ripple {
+namespace xrpl {
 
 static void
 fillTransaction(
@@ -45,9 +27,7 @@ fillTransaction(
     auto& fees = ledger.fees();
     // Convert the reference transaction cost in fee units to drops
     // scaled to represent the current fee load.
-    txArray["Fee"] =
-        scaleFeeLoad(fees.base, context.app.getFeeTrack(), fees, false)
-            .jsonClipped();
+    txArray["Fee"] = scaleFeeLoad(fees.base, context.app.getFeeTrack(), fees, false).jsonClipped();
 }
 
 // {
@@ -56,7 +36,7 @@ fillTransaction(
 //   ledger_index : <ledger_index>
 //   limit: integer                 // optional, number of problems
 //   role: gateway|user             // account role to assume
-//   transactions: true             // optional, reccommend transactions
+//   transactions: true             // optional, recommend transactions
 // }
 Json::Value
 doNoRippleCheck(RPC::JsonContext& context)
@@ -144,19 +124,13 @@ doNoRippleCheck(RPC::JsonContext& context)
     }
 
     forEachItemAfter(
-        *ledger,
-        accountID,
-        uint256(),
-        0,
-        limit,
-        [&](std::shared_ptr<SLE const> const& ownedItem) {
+        *ledger, accountID, uint256(), 0, limit, [&](std::shared_ptr<SLE const> const& ownedItem) {
             if (ownedItem->getType() == ltRIPPLE_STATE)
             {
-                bool const bLow = accountID ==
-                    ownedItem->getFieldAmount(sfLowLimit).getIssuer();
+                bool const bLow = accountID == ownedItem->getFieldAmount(sfLowLimit).getIssuer();
 
-                bool const bNoRipple = ownedItem->getFieldU32(sfFlags) &
-                    (bLow ? lsfLowNoRipple : lsfHighNoRipple);
+                bool const bNoRipple =
+                    ownedItem->getFieldU32(sfFlags) & (bLow ? lsfLowNoRipple : lsfHighNoRipple);
 
                 std::string problem;
                 bool needFix = false;
@@ -167,25 +141,21 @@ doNoRippleCheck(RPC::JsonContext& context)
                 }
                 else if (!roleGateway & !bNoRipple)
                 {
-                    problem =
-                        "You should probably set the no ripple flag on your ";
+                    problem = "You should probably set the no ripple flag on your ";
                     needFix = true;
                 }
                 if (needFix)
                 {
                     AccountID peer =
-                        ownedItem
-                            ->getFieldAmount(bLow ? sfHighLimit : sfLowLimit)
-                            .getIssuer();
-                    STAmount peerLimit = ownedItem->getFieldAmount(
-                        bLow ? sfHighLimit : sfLowLimit);
+                        ownedItem->getFieldAmount(bLow ? sfHighLimit : sfLowLimit).getIssuer();
+                    STAmount peerLimit = ownedItem->getFieldAmount(bLow ? sfHighLimit : sfLowLimit);
                     problem += to_string(peerLimit.getCurrency());
                     problem += " line to ";
                     problem += to_string(peerLimit.getIssuer());
                     problems.append(problem);
 
-                    STAmount limitAmount(ownedItem->getFieldAmount(
-                        bLow ? sfLowLimit : sfHighLimit));
+                    STAmount limitAmount(
+                        ownedItem->getFieldAmount(bLow ? sfLowLimit : sfHighLimit));
                     limitAmount.setIssuer(peer);
 
                     Json::Value& tx = jvTransactions.append(Json::objectValue);
@@ -203,4 +173,4 @@ doNoRippleCheck(RPC::JsonContext& context)
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
