@@ -92,12 +92,12 @@ setCommonHostFunctions(HostFunctions* hfs, ImportVec& i)
 ImportVec
 createWasmImport(HostFunctions& hfs)
 {
-    ImportVec import;
+    ImportVec i;
 
-    setCommonHostFunctions(&hfs, import);
-    WASM_IMPORT_FUNC2(import, updateData, "update_data", &hfs, 1000);
+    setCommonHostFunctions(&hfs, i);
+    WASM_IMPORT_FUNC2(i, updateData, "update_data", &hfs, 1000);
 
-    return import;
+    return i;
 }
 
 Expected<EscrowResult, TER>
