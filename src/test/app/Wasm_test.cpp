@@ -109,8 +109,8 @@ struct Wasm_test : public beast::unit_test::suite
         auto& vm = WasmEngine::instance();
 
         HostFunctions hfs;
-        auto imports = std::make_shared<ImportVec>();
-        WasmImpFunc<Add_proto>(*imports, "func-add", reinterpret_cast<void*>(&Add), &hfs);
+        ImportVec imports;
+        WasmImpFunc<Add_proto>(imports, "func-add", reinterpret_cast<void*>(&Add), &hfs);
 
         auto re = vm.run(wasm, hfs, 10'000'000, "addTwo", wasmParams(1234, 5678), imports);
 
@@ -178,8 +178,8 @@ struct Wasm_test : public beast::unit_test::suite
 
         Env env{*this};
         TestLedgerDataProvider hfs(env);
-        auto imports = std::make_shared<ImportVec>();
-        WASM_IMPORT_FUNC2(*imports, getLedgerSqn, "get_ledger_sqn", &hfs, 33);
+        ImportVec imports;
+        WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", &hfs, 33);
         auto& engine = WasmEngine::instance();
 
         auto re = engine.run(
@@ -224,8 +224,8 @@ struct Wasm_test : public beast::unit_test::suite
             auto& engine = WasmEngine::instance();
 
             TestHostFunctions hfs(env, 0);
-            auto imp = std::make_shared<ImportVec>(createWasmImport(hfs));
-            for (auto& i : *imp)
+            auto imp = createWasmImport(hfs);
+            for (auto& i : imp)
                 i.second.gas = 0;
 
             auto re = engine.run(
@@ -248,7 +248,7 @@ struct Wasm_test : public beast::unit_test::suite
             auto& engine = WasmEngine::instance();
 
             TestHostFunctions hfs(env, 0);
-            auto const imp = std::make_shared<ImportVec>(createWasmImport(hfs));
+            auto const imp = createWasmImport(hfs);
 
             auto re = engine.run(
                 allHostFuncWasm, hfs, 1'000'000, ESCROW_FUNCTION_NAME, {}, imp, env.journal);
@@ -265,7 +265,7 @@ struct Wasm_test : public beast::unit_test::suite
             auto& engine = WasmEngine::instance();
 
             TestHostFunctions hfs(env, 0);
-            auto const imp = std::make_shared<ImportVec>(createWasmImport(hfs));
+            auto const imp = createWasmImport(hfs);
 
             auto re =
                 engine.run(allHostFuncWasm, hfs, 200, ESCROW_FUNCTION_NAME, {}, imp, env.journal);
@@ -392,8 +392,8 @@ struct Wasm_test : public beast::unit_test::suite
             // expected import not provided
             auto const lgrSqnWasm = hexToBytes(ledgerSqnWasmHex);
             TestLedgerDataProvider hfs(env);
-            auto imports = std::make_shared<ImportVec>();
-            WASM_IMPORT_FUNC2(*imports, getLedgerSqn, "get_ledger_sqn2", &hfs);
+            ImportVec imports;
+            WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn2", &hfs);
 
             auto& engine = WasmEngine::instance();
 
@@ -407,9 +407,9 @@ struct Wasm_test : public beast::unit_test::suite
             // bad import format
             auto const lgrSqnWasm = hexToBytes(ledgerSqnWasmHex);
             TestLedgerDataProvider hfs(env);
-            auto imports = std::make_shared<ImportVec>();
-            WASM_IMPORT_FUNC2(*imports, getLedgerSqn, "get_ledger_sqn", &hfs);
-            (*imports)[0].first = nullptr;
+            ImportVec imports;
+            WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", &hfs);
+            imports[0].first = nullptr;
 
             auto& engine = WasmEngine::instance();
 
@@ -423,8 +423,8 @@ struct Wasm_test : public beast::unit_test::suite
             // bad function name
             auto const lgrSqnWasm = hexToBytes(ledgerSqnWasmHex);
             TestLedgerDataProvider hfs(env);
-            auto imports = std::make_shared<ImportVec>();
-            WASM_IMPORT_FUNC2(*imports, getLedgerSqn, "get_ledger_sqn", &hfs);
+            ImportVec imports;
+            WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", &hfs);
 
             auto& engine = WasmEngine::instance();
             auto re = engine.run(lgrSqnWasm, hfs, 1'000'000, "func1", {}, imports, env.journal);
@@ -611,13 +611,7 @@ struct Wasm_test : public beast::unit_test::suite
         BEAST_EXPECTS(checkRes == tesSUCCESS, std::to_string(TERtoInt(checkRes)));
 
         auto re = engine.run(
-            startLoopWasm,
-            hfs,
-            1'000'000,
-            ESCROW_FUNCTION_NAME,
-            {},
-            std::make_shared<ImportVec>(imports),
-            env.journal);
+            startLoopWasm, hfs, 1'000'000, ESCROW_FUNCTION_NAME, {}, imports, env.journal);
         BEAST_EXPECTS(re.error() == tecFAILED_PROCESSING, std::to_string(TERtoInt(re.error())));
     }
 
@@ -633,7 +627,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         Env env{*this};
         TestHostFunctions hfs(env, 0);
-        auto imports = std::make_shared<ImportVec>(createWasmImport(hfs));
+        auto imports = createWasmImport(hfs);
 
         {  // Calls float_from_uint with bad alignment.
            // Can be checked through codecov
@@ -823,7 +817,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         Env env{*this};
         TestHostFunctions hfs(env, 0);
-        auto imports = std::make_shared<ImportVec>(createWasmImport(hfs));
+        auto imports = createWasmImport(hfs);
 
         // add 1k parameter (max that wasmi support)
         std::vector<WasmParam> params;
@@ -894,7 +888,7 @@ struct Wasm_test : public beast::unit_test::suite
         auto& engine = WasmEngine::instance();
 
         TestHostFunctions hfs(env, 0);
-        auto imports = std::make_shared<ImportVec>(createWasmImport(hfs));
+        auto imports = createWasmImport(hfs);
         env.close();
 
         {

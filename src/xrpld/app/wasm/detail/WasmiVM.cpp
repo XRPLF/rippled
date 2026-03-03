@@ -728,15 +728,15 @@ WasmiEngine::run(
     int64_t gas,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
-    std::shared_ptr<ImportVec> const& imports,
+    ImportVec const& imports,
     beast::Journal j)
 {
     j_ = j;
 
     try
     {
-        checkImports(*imports, &hfs);
-        return runHlp(wasmCode, hfs, funcName, params, *imports, gas);
+        checkImports(imports, &hfs);
+        return runHlp(wasmCode, hfs, funcName, params, imports, gas);
     }
     catch (std::exception const& e)
     {

@@ -112,14 +112,8 @@ runEscrowWasm(
     auto& vm = WasmEngine::instance();
     // vm.initMaxPages(MAX_PAGES);
 
-    auto const ret = vm.run(
-        wasmCode,
-        hfs,
-        gasLimit,
-        funcName,
-        params,
-        std::make_shared<ImportVec>(createWasmImport(hfs)),
-        hfs.getJournal());
+    auto const ret =
+        vm.run(wasmCode, hfs, gasLimit, funcName, params, createWasmImport(hfs), hfs.getJournal());
 
     // std::cout << "runEscrowWasm, mod size: " << wasmCode.size()
     //           << ", gasLimit: " << gasLimit << ", funcName: " << funcName;
@@ -175,7 +169,7 @@ WasmEngine::run(
     int64_t gasLimit,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
-    std::shared_ptr<ImportVec> const& imports,
+    ImportVec const& imports,
     beast::Journal j)
 {
     return impl_->run(wasmCode, hfs, gasLimit, funcName, params, imports, j);

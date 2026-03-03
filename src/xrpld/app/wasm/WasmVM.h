@@ -47,7 +47,7 @@ public:
         int64_t gasLimit,
         std::string_view funcName = {},
         std::vector<WasmParam> const& params = {},
-        std::shared_ptr<ImportVec> const& imports = {},
+        ImportVec const& imports = {},
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
     NotTEC
