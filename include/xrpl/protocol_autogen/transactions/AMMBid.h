@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::transactions {
 
 // Forward declaration
@@ -140,12 +138,10 @@ class AMMBidBuilder : public TransactionBuilderBase<AMMBidBuilder>
 {
 public:
     AMMBidBuilder(SF_ACCOUNT::type::value_type account,
-                     SF_UINT32::type::value_type sequence,
-                     SF_AMOUNT::type::value_type fee,
-                     SF_VL::type::value_type signingPubKey,
-                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset,
-                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset2)
-        : TransactionBuilderBase<AMMBidBuilder>(account, sequence, fee, signingPubKey, ttAMM_BID)
+                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset,                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset2,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<AMMBidBuilder>(ttAMM_BID, account, sequence, fee)
     {
         setAsset(asset);
         setAsset2(asset2);

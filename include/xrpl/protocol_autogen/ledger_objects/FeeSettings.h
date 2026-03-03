@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::ledger_entries {
 
 // Forward declaration

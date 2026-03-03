@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::ledger_entries {
 
 // Forward declaration
@@ -212,15 +210,7 @@ public:
 class CheckBuilder : public LedgerEntryBuilderBase<CheckBuilder>
 {
 public:
-    CheckBuilder(
-                std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,
-                std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,
-                std::decay_t<typename SF_AMOUNT::type::value_type> const& sendMax,
-                std::decay_t<typename SF_UINT32::type::value_type> const& sequence,
-                std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,
-                std::decay_t<typename SF_UINT64::type::value_type> const& destinationNode,
-                std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,
-                std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    CheckBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,std::decay_t<typename SF_AMOUNT::type::value_type> const& sendMax,std::decay_t<typename SF_UINT32::type::value_type> const& sequence,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT64::type::value_type> const& destinationNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<CheckBuilder>(ltCHECK)
     {
         setAccount(account);

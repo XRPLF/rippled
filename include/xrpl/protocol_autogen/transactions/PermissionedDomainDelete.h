@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::transactions {
 
 // Forward declaration
@@ -69,11 +67,10 @@ class PermissionedDomainDeleteBuilder : public TransactionBuilderBase<Permission
 {
 public:
     PermissionedDomainDeleteBuilder(SF_ACCOUNT::type::value_type account,
-                     SF_UINT32::type::value_type sequence,
-                     SF_AMOUNT::type::value_type fee,
-                     SF_VL::type::value_type signingPubKey,
-                     std::decay_t<typename SF_UINT256::type::value_type> const& domainID)
-        : TransactionBuilderBase<PermissionedDomainDeleteBuilder>(account, sequence, fee, signingPubKey, ttPERMISSIONED_DOMAIN_DELETE)
+                     std::decay_t<typename SF_UINT256::type::value_type> const& domainID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<PermissionedDomainDeleteBuilder>(ttPERMISSIONED_DOMAIN_DELETE, account, sequence, fee)
     {
         setDomainID(domainID);
     }

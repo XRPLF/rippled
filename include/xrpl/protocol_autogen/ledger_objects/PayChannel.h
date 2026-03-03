@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::ledger_entries {
 
 // Forward declaration
@@ -260,16 +258,7 @@ public:
 class PayChannelBuilder : public LedgerEntryBuilderBase<PayChannelBuilder>
 {
 public:
-    PayChannelBuilder(
-                std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,
-                std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,
-                std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,
-                std::decay_t<typename SF_AMOUNT::type::value_type> const& balance,
-                std::decay_t<typename SF_VL::type::value_type> const& publicKey,
-                std::decay_t<typename SF_UINT32::type::value_type> const& settleDelay,
-                std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,
-                std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,
-                std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    PayChannelBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,std::decay_t<typename SF_AMOUNT::type::value_type> const& balance,std::decay_t<typename SF_VL::type::value_type> const& publicKey,std::decay_t<typename SF_UINT32::type::value_type> const& settleDelay,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<PayChannelBuilder>(ltPAYCHAN)
     {
         setAccount(account);

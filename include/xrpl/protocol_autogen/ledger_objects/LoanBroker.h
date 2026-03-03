@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::ledger_entries {
 
 // Forward declaration
@@ -298,16 +296,7 @@ public:
 class LoanBrokerBuilder : public LedgerEntryBuilderBase<LoanBrokerBuilder>
 {
 public:
-    LoanBrokerBuilder(
-                std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,
-                std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq,
-                std::decay_t<typename SF_UINT32::type::value_type> const& sequence,
-                std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,
-                std::decay_t<typename SF_UINT64::type::value_type> const& vaultNode,
-                std::decay_t<typename SF_UINT256::type::value_type> const& vaultID,
-                std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,
-                std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,
-                std::decay_t<typename SF_UINT32::type::value_type> const& loanSequence)
+    LoanBrokerBuilder(std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq,std::decay_t<typename SF_UINT32::type::value_type> const& sequence,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT64::type::value_type> const& vaultNode,std::decay_t<typename SF_UINT256::type::value_type> const& vaultID,std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,std::decay_t<typename SF_UINT32::type::value_type> const& loanSequence)
         : LedgerEntryBuilderBase<LoanBrokerBuilder>(ltLOAN_BROKER)
     {
         setPreviousTxnID(previousTxnID);

@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::transactions {
 
 // Forward declaration
@@ -69,11 +67,10 @@ class MPTokenIssuanceDestroyBuilder : public TransactionBuilderBase<MPTokenIssua
 {
 public:
     MPTokenIssuanceDestroyBuilder(SF_ACCOUNT::type::value_type account,
-                     SF_UINT32::type::value_type sequence,
-                     SF_AMOUNT::type::value_type fee,
-                     SF_VL::type::value_type signingPubKey,
-                     std::decay_t<typename SF_UINT192::type::value_type> const& mPTokenIssuanceID)
-        : TransactionBuilderBase<MPTokenIssuanceDestroyBuilder>(account, sequence, fee, signingPubKey, ttMPTOKEN_ISSUANCE_DESTROY)
+                     std::decay_t<typename SF_UINT192::type::value_type> const& mPTokenIssuanceID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<MPTokenIssuanceDestroyBuilder>(ttMPTOKEN_ISSUANCE_DESTROY, account, sequence, fee)
     {
         setMPTokenIssuanceID(mPTokenIssuanceID);
     }

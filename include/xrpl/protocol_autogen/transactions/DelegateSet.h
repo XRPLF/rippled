@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::transactions {
 
 // Forward declaration
@@ -79,12 +77,10 @@ class DelegateSetBuilder : public TransactionBuilderBase<DelegateSetBuilder>
 {
 public:
     DelegateSetBuilder(SF_ACCOUNT::type::value_type account,
-                     SF_UINT32::type::value_type sequence,
-                     SF_AMOUNT::type::value_type fee,
-                     SF_VL::type::value_type signingPubKey,
-                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& authorize,
-                     STArray const& permissions)
-        : TransactionBuilderBase<DelegateSetBuilder>(account, sequence, fee, signingPubKey, ttDELEGATE_SET)
+                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& authorize,                     STArray const& permissions,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<DelegateSetBuilder>(ttDELEGATE_SET, account, sequence, fee)
     {
         setAuthorize(authorize);
         setPermissions(permissions);

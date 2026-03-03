@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::transactions {
 
 // Forward declaration
@@ -69,11 +67,10 @@ class OracleDeleteBuilder : public TransactionBuilderBase<OracleDeleteBuilder>
 {
 public:
     OracleDeleteBuilder(SF_ACCOUNT::type::value_type account,
-                     SF_UINT32::type::value_type sequence,
-                     SF_AMOUNT::type::value_type fee,
-                     SF_VL::type::value_type signingPubKey,
-                     std::decay_t<typename SF_UINT32::type::value_type> const& oracleDocumentID)
-        : TransactionBuilderBase<OracleDeleteBuilder>(account, sequence, fee, signingPubKey, ttORACLE_DELETE)
+                     std::decay_t<typename SF_UINT32::type::value_type> const& oracleDocumentID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<OracleDeleteBuilder>(ttORACLE_DELETE, account, sequence, fee)
     {
         setOracleDocumentID(oracleDocumentID);
     }

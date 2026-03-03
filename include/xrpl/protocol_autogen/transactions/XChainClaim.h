@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::transactions {
 
 // Forward declaration
@@ -120,14 +118,10 @@ class XChainClaimBuilder : public TransactionBuilderBase<XChainClaimBuilder>
 {
 public:
     XChainClaimBuilder(SF_ACCOUNT::type::value_type account,
-                     SF_UINT32::type::value_type sequence,
-                     SF_AMOUNT::type::value_type fee,
-                     SF_VL::type::value_type signingPubKey,
-                     std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,
-                     std::decay_t<typename SF_UINT64::type::value_type> const& xChainClaimID,
-                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,
-                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount)
-        : TransactionBuilderBase<XChainClaimBuilder>(account, sequence, fee, signingPubKey, ttXCHAIN_CLAIM)
+                     std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,                     std::decay_t<typename SF_UINT64::type::value_type> const& xChainClaimID,                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<XChainClaimBuilder>(ttXCHAIN_CLAIM, account, sequence, fee)
     {
         setXChainBridge(xChainBridge);
         setXChainClaimID(xChainClaimID);

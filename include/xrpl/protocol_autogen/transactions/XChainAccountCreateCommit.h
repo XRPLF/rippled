@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::transactions {
 
 // Forward declaration
@@ -99,14 +97,10 @@ class XChainAccountCreateCommitBuilder : public TransactionBuilderBase<XChainAcc
 {
 public:
     XChainAccountCreateCommitBuilder(SF_ACCOUNT::type::value_type account,
-                     SF_UINT32::type::value_type sequence,
-                     SF_AMOUNT::type::value_type fee,
-                     SF_VL::type::value_type signingPubKey,
-                     std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,
-                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,
-                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,
-                     std::decay_t<typename SF_AMOUNT::type::value_type> const& signatureReward)
-        : TransactionBuilderBase<XChainAccountCreateCommitBuilder>(account, sequence, fee, signingPubKey, ttXCHAIN_ACCOUNT_CREATE_COMMIT)
+                     std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& signatureReward,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<XChainAccountCreateCommitBuilder>(ttXCHAIN_ACCOUNT_CREATE_COMMIT, account, sequence, fee)
     {
         setXChainBridge(xChainBridge);
         setDestination(destination);

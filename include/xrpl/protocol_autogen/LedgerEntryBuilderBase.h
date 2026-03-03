@@ -20,6 +20,8 @@ template <typename Derived>
 class LedgerEntryBuilderBase
 {
 public:
+    LedgerEntryBuilderBase() = default;
+
     LedgerEntryBuilderBase(
         SF_UINT16::type::value_type ledgerEntryType,
         SF_UINT32::type::value_type flags = 0)

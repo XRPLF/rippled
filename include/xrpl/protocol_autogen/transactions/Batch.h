@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::transactions {
 
 // Forward declaration
@@ -88,11 +86,10 @@ class BatchBuilder : public TransactionBuilderBase<BatchBuilder>
 {
 public:
     BatchBuilder(SF_ACCOUNT::type::value_type account,
-                     SF_UINT32::type::value_type sequence,
-                     SF_AMOUNT::type::value_type fee,
-                     SF_VL::type::value_type signingPubKey,
-                     STArray const& rawTransactions)
-        : TransactionBuilderBase<BatchBuilder>(account, sequence, fee, signingPubKey, ttBATCH)
+                     STArray const& rawTransactions,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<BatchBuilder>(ttBATCH, account, sequence, fee)
     {
         setRawTransactions(rawTransactions);
     }

@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::transactions {
 
 // Forward declaration
@@ -122,12 +120,10 @@ class LoanBrokerCoverWithdrawBuilder : public TransactionBuilderBase<LoanBrokerC
 {
 public:
     LoanBrokerCoverWithdrawBuilder(SF_ACCOUNT::type::value_type account,
-                     SF_UINT32::type::value_type sequence,
-                     SF_AMOUNT::type::value_type fee,
-                     SF_VL::type::value_type signingPubKey,
-                     std::decay_t<typename SF_UINT256::type::value_type> const& loanBrokerID,
-                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount)
-        : TransactionBuilderBase<LoanBrokerCoverWithdrawBuilder>(account, sequence, fee, signingPubKey, ttLOAN_BROKER_COVER_WITHDRAW)
+                     std::decay_t<typename SF_UINT256::type::value_type> const& loanBrokerID,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<LoanBrokerCoverWithdrawBuilder>(ttLOAN_BROKER_COVER_WITHDRAW, account, sequence, fee)
     {
         setLoanBrokerID(loanBrokerID);
         setAmount(amount);

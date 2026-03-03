@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::ledger_entries {
 
 // Forward declaration
@@ -249,13 +247,7 @@ public:
 class MPTokenIssuanceBuilder : public LedgerEntryBuilderBase<MPTokenIssuanceBuilder>
 {
 public:
-    MPTokenIssuanceBuilder(
-                std::decay_t<typename SF_ACCOUNT::type::value_type> const& issuer,
-                std::decay_t<typename SF_UINT32::type::value_type> const& sequence,
-                std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,
-                std::decay_t<typename SF_UINT64::type::value_type> const& outstandingAmount,
-                std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,
-                std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    MPTokenIssuanceBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& issuer,std::decay_t<typename SF_UINT32::type::value_type> const& sequence,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT64::type::value_type> const& outstandingAmount,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<MPTokenIssuanceBuilder>(ltMPTOKEN_ISSUANCE)
     {
         setIssuer(issuer);

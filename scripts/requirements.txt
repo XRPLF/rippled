@@ -11,4 +11,4 @@ pcpp>=1.30
 pyparsing>=3.0.0
 
 # Template engine - used to generate C++ code from templates
-Jinja2>=3.0.0
+Mako>=1.2.0

@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::ledger_entries {
 
 // Forward declaration
@@ -104,8 +102,7 @@ public:
 class LedgerHashesBuilder : public LedgerEntryBuilderBase<LedgerHashesBuilder>
 {
 public:
-    LedgerHashesBuilder(
-                std::decay_t<typename SF_VECTOR256::type::value_type> const& hashes)
+    LedgerHashesBuilder(std::decay_t<typename SF_VECTOR256::type::value_type> const& hashes)
         : LedgerEntryBuilderBase<LedgerHashesBuilder>(ltLEDGER_HASHES)
     {
         setHashes(hashes);

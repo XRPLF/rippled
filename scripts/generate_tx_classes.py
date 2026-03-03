@@ -10,7 +10,6 @@ Uses pcpp to preprocess the macro file and pyparsing to parse the DSL.
 import io
 import argparse
 from pathlib import Path
-from jinja2 import Environment, FileSystemLoader
 import pyparsing as pp
 
 # Import common utilities
@@ -181,15 +180,14 @@ def main():
     print(f"\nGenerating header-only template classes...")
     print(f"  Headers: {header_dir}\n")
 
-    # Set up Jinja2 environment
+    # Set up template directory
     script_dir = Path(__file__).parent
     template_dir = script_dir / "templates"
-    jinja_env = Environment(loader=FileSystemLoader(template_dir))
 
     generated_files = []
     for tx_info in transactions:
         header_path = generate_cpp_class(
-            tx_info, header_dir, jinja_env, field_types, "Transaction.h.jinja2"
+            tx_info, header_dir, template_dir, field_types, "Transaction.h.mako"
         )
         generated_files.append(header_path)
         print(f"  Generated: {tx_info['name']}.h")

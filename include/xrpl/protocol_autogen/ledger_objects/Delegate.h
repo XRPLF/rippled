@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::ledger_entries {
 
 // Forward declaration
@@ -68,7 +66,7 @@ public:
 
     /**
      * Get sfPermissions (soeREQUIRED)
-     * Note: This is an untyped field ().
+     * Note: This is an untyped field (unknown).
      */
     [[nodiscard]]
     STArray const&
@@ -117,13 +115,7 @@ public:
 class DelegateBuilder : public LedgerEntryBuilderBase<DelegateBuilder>
 {
 public:
-    DelegateBuilder(
-                std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,
-                std::decay_t<typename SF_ACCOUNT::type::value_type> const& authorize,
-                STArray const& permissions,
-                std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,
-                std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,
-                std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    DelegateBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_ACCOUNT::type::value_type> const& authorize,STArray const& permissions,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<DelegateBuilder>(ltDELEGATE)
     {
         setAccount(account);

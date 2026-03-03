@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::transactions {
 
 // Forward declaration
@@ -142,12 +140,10 @@ class CheckCreateBuilder : public TransactionBuilderBase<CheckCreateBuilder>
 {
 public:
     CheckCreateBuilder(SF_ACCOUNT::type::value_type account,
-                     SF_UINT32::type::value_type sequence,
-                     SF_AMOUNT::type::value_type fee,
-                     SF_VL::type::value_type signingPubKey,
-                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,
-                     std::decay_t<typename SF_AMOUNT::type::value_type> const& sendMax)
-        : TransactionBuilderBase<CheckCreateBuilder>(account, sequence, fee, signingPubKey, ttCHECK_CREATE)
+                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& sendMax,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<CheckCreateBuilder>(ttCHECK_CREATE, account, sequence, fee)
     {
         setDestination(destination);
         setSendMax(sendMax);

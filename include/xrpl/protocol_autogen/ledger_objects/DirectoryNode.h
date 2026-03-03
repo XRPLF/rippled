@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::ledger_entries {
 
 // Forward declaration
@@ -304,9 +302,7 @@ public:
 class DirectoryNodeBuilder : public LedgerEntryBuilderBase<DirectoryNodeBuilder>
 {
 public:
-    DirectoryNodeBuilder(
-                std::decay_t<typename SF_VECTOR256::type::value_type> const& indexes,
-                std::decay_t<typename SF_UINT256::type::value_type> const& rootIndex)
+    DirectoryNodeBuilder(std::decay_t<typename SF_VECTOR256::type::value_type> const& indexes,std::decay_t<typename SF_UINT256::type::value_type> const& rootIndex)
         : LedgerEntryBuilderBase<DirectoryNodeBuilder>(ltDIR_NODE)
     {
         setIndexes(indexes);

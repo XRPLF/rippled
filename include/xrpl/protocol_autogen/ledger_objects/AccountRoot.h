@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::ledger_entries {
 
 // Forward declaration
@@ -439,13 +437,7 @@ public:
 class AccountRootBuilder : public LedgerEntryBuilderBase<AccountRootBuilder>
 {
 public:
-    AccountRootBuilder(
-                std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,
-                std::decay_t<typename SF_UINT32::type::value_type> const& sequence,
-                std::decay_t<typename SF_AMOUNT::type::value_type> const& balance,
-                std::decay_t<typename SF_UINT32::type::value_type> const& ownerCount,
-                std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,
-                std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    AccountRootBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_UINT32::type::value_type> const& sequence,std::decay_t<typename SF_AMOUNT::type::value_type> const& balance,std::decay_t<typename SF_UINT32::type::value_type> const& ownerCount,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<AccountRootBuilder>(ltACCOUNT_ROOT)
     {
         setAccount(account);

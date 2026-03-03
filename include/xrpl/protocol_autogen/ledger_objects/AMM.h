@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::ledger_entries {
 
 // Forward declaration
@@ -77,7 +75,7 @@ public:
 
     /**
      * Get sfVoteSlots (soeOPTIONAL)
-     * Note: This is an untyped field ().
+     * Note: This is an untyped field (unknown).
      */
     [[nodiscard]]
     std::optional<std::reference_wrapper<STArray const>>
@@ -97,7 +95,7 @@ public:
 
     /**
      * Get sfAuctionSlot (soeOPTIONAL)
-     * Note: This is an untyped field ().
+     * Note: This is an untyped field (unknown).
      */
     [[nodiscard]]
     std::optional<STObject>
@@ -203,12 +201,7 @@ public:
 class AMMBuilder : public LedgerEntryBuilderBase<AMMBuilder>
 {
 public:
-    AMMBuilder(
-                std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,
-                std::decay_t<typename SF_AMOUNT::type::value_type> const& lPTokenBalance,
-                std::decay_t<typename SF_ISSUE::type::value_type> const& asset,
-                std::decay_t<typename SF_ISSUE::type::value_type> const& asset2,
-                std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode)
+    AMMBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_AMOUNT::type::value_type> const& lPTokenBalance,std::decay_t<typename SF_ISSUE::type::value_type> const& asset,std::decay_t<typename SF_ISSUE::type::value_type> const& asset2,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode)
         : LedgerEntryBuilderBase<AMMBuilder>(ltAMM)
     {
         setAccount(account);

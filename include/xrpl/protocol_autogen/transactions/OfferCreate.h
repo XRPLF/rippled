@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::transactions {
 
 // Forward declaration
@@ -142,12 +140,10 @@ class OfferCreateBuilder : public TransactionBuilderBase<OfferCreateBuilder>
 {
 public:
     OfferCreateBuilder(SF_ACCOUNT::type::value_type account,
-                     SF_UINT32::type::value_type sequence,
-                     SF_AMOUNT::type::value_type fee,
-                     SF_VL::type::value_type signingPubKey,
-                     std::decay_t<typename SF_AMOUNT::type::value_type> const& takerPays,
-                     std::decay_t<typename SF_AMOUNT::type::value_type> const& takerGets)
-        : TransactionBuilderBase<OfferCreateBuilder>(account, sequence, fee, signingPubKey, ttOFFER_CREATE)
+                     std::decay_t<typename SF_AMOUNT::type::value_type> const& takerPays,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& takerGets,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<OfferCreateBuilder>(ttOFFER_CREATE, account, sequence, fee)
     {
         setTakerPays(takerPays);
         setTakerGets(takerGets);

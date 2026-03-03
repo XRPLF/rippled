@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::transactions {
 
 // Forward declaration
@@ -69,11 +67,10 @@ class VaultDeleteBuilder : public TransactionBuilderBase<VaultDeleteBuilder>
 {
 public:
     VaultDeleteBuilder(SF_ACCOUNT::type::value_type account,
-                     SF_UINT32::type::value_type sequence,
-                     SF_AMOUNT::type::value_type fee,
-                     SF_VL::type::value_type signingPubKey,
-                     std::decay_t<typename SF_UINT256::type::value_type> const& vaultID)
-        : TransactionBuilderBase<VaultDeleteBuilder>(account, sequence, fee, signingPubKey, ttVAULT_DELETE)
+                     std::decay_t<typename SF_UINT256::type::value_type> const& vaultID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<VaultDeleteBuilder>(ttVAULT_DELETE, account, sequence, fee)
     {
         setVaultID(vaultID);
     }

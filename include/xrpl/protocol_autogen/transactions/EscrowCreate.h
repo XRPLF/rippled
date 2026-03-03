@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::transactions {
 
 // Forward declaration
@@ -164,12 +162,10 @@ class EscrowCreateBuilder : public TransactionBuilderBase<EscrowCreateBuilder>
 {
 public:
     EscrowCreateBuilder(SF_ACCOUNT::type::value_type account,
-                     SF_UINT32::type::value_type sequence,
-                     SF_AMOUNT::type::value_type fee,
-                     SF_VL::type::value_type signingPubKey,
-                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,
-                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount)
-        : TransactionBuilderBase<EscrowCreateBuilder>(account, sequence, fee, signingPubKey, ttESCROW_CREATE)
+                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<EscrowCreateBuilder>(ttESCROW_CREATE, account, sequence, fee)
     {
         setDestination(destination);
         setAmount(amount);

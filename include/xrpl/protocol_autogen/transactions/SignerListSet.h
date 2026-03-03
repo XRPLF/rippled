@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::transactions {
 
 // Forward declaration
@@ -88,11 +86,10 @@ class SignerListSetBuilder : public TransactionBuilderBase<SignerListSetBuilder>
 {
 public:
     SignerListSetBuilder(SF_ACCOUNT::type::value_type account,
-                     SF_UINT32::type::value_type sequence,
-                     SF_AMOUNT::type::value_type fee,
-                     SF_VL::type::value_type signingPubKey,
-                     std::decay_t<typename SF_UINT32::type::value_type> const& signerQuorum)
-        : TransactionBuilderBase<SignerListSetBuilder>(account, sequence, fee, signingPubKey, ttSIGNER_LIST_SET)
+                     std::decay_t<typename SF_UINT32::type::value_type> const& signerQuorum,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<SignerListSetBuilder>(ttSIGNER_LIST_SET, account, sequence, fee)
     {
         setSignerQuorum(signerQuorum);
     }

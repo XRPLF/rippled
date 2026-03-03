@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::ledger_entries {
 
 // Forward declaration
@@ -86,7 +84,7 @@ public:
 
     /**
      * Get sfNFTokens (soeREQUIRED)
-     * Note: This is an untyped field ().
+     * Note: This is an untyped field (unknown).
      */
     [[nodiscard]]
     STArray const&
@@ -125,10 +123,7 @@ public:
 class NFTokenPageBuilder : public LedgerEntryBuilderBase<NFTokenPageBuilder>
 {
 public:
-    NFTokenPageBuilder(
-                STArray const& nFTokens,
-                std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,
-                std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    NFTokenPageBuilder(STArray const& nFTokens,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<NFTokenPageBuilder>(ltNFTOKEN_PAGE)
     {
         setNFTokens(nFTokens);

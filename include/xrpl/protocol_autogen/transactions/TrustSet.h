@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::transactions {
 
 // Forward declaration
@@ -122,10 +120,10 @@ class TrustSetBuilder : public TransactionBuilderBase<TrustSetBuilder>
 {
 public:
     TrustSetBuilder(SF_ACCOUNT::type::value_type account,
-                     SF_UINT32::type::value_type sequence,
-                     SF_AMOUNT::type::value_type fee,
-                     SF_VL::type::value_type signingPubKey)
-        : TransactionBuilderBase<TrustSetBuilder>(account, sequence, fee, signingPubKey, ttTRUST_SET)
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<TrustSetBuilder>(ttTRUST_SET, account, sequence, fee)
     {
     }
 

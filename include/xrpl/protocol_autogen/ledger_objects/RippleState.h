@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::ledger_entries {
 
 // Forward declaration
@@ -220,12 +218,7 @@ public:
 class RippleStateBuilder : public LedgerEntryBuilderBase<RippleStateBuilder>
 {
 public:
-    RippleStateBuilder(
-                std::decay_t<typename SF_AMOUNT::type::value_type> const& balance,
-                std::decay_t<typename SF_AMOUNT::type::value_type> const& lowLimit,
-                std::decay_t<typename SF_AMOUNT::type::value_type> const& highLimit,
-                std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,
-                std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    RippleStateBuilder(std::decay_t<typename SF_AMOUNT::type::value_type> const& balance,std::decay_t<typename SF_AMOUNT::type::value_type> const& lowLimit,std::decay_t<typename SF_AMOUNT::type::value_type> const& highLimit,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<RippleStateBuilder>(ltRIPPLE_STATE)
     {
         setBalance(balance);

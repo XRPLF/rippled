@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::transactions {
 
 // Forward declaration
@@ -101,12 +99,10 @@ class VaultClawbackBuilder : public TransactionBuilderBase<VaultClawbackBuilder>
 {
 public:
     VaultClawbackBuilder(SF_ACCOUNT::type::value_type account,
-                     SF_UINT32::type::value_type sequence,
-                     SF_AMOUNT::type::value_type fee,
-                     SF_VL::type::value_type signingPubKey,
-                     std::decay_t<typename SF_UINT256::type::value_type> const& vaultID,
-                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& holder)
-        : TransactionBuilderBase<VaultClawbackBuilder>(account, sequence, fee, signingPubKey, ttVAULT_CLAWBACK)
+                     std::decay_t<typename SF_UINT256::type::value_type> const& vaultID,                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& holder,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<VaultClawbackBuilder>(ttVAULT_CLAWBACK, account, sequence, fee)
     {
         setVaultID(vaultID);
         setHolder(holder);

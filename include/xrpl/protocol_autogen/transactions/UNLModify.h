@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::transactions {
 
 // Forward declaration
@@ -89,13 +87,10 @@ class UNLModifyBuilder : public TransactionBuilderBase<UNLModifyBuilder>
 {
 public:
     UNLModifyBuilder(SF_ACCOUNT::type::value_type account,
-                     SF_UINT32::type::value_type sequence,
-                     SF_AMOUNT::type::value_type fee,
-                     SF_VL::type::value_type signingPubKey,
-                     std::decay_t<typename SF_UINT8::type::value_type> const& uNLModifyDisabling,
-                     std::decay_t<typename SF_UINT32::type::value_type> const& ledgerSequence,
-                     std::decay_t<typename SF_VL::type::value_type> const& uNLModifyValidator)
-        : TransactionBuilderBase<UNLModifyBuilder>(account, sequence, fee, signingPubKey, ttUNL_MODIFY)
+                     std::decay_t<typename SF_UINT8::type::value_type> const& uNLModifyDisabling,                     std::decay_t<typename SF_UINT32::type::value_type> const& ledgerSequence,                     std::decay_t<typename SF_VL::type::value_type> const& uNLModifyValidator,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<UNLModifyBuilder>(ttUNL_MODIFY, account, sequence, fee)
     {
         setUNLModifyDisabling(uNLModifyDisabling);
         setLedgerSequence(ledgerSequence);

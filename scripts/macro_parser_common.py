@@ -194,16 +194,20 @@ def parse_field_list(fields_str):
         raise ValueError(f"Failed to parse field list: {e}")
 
 
-def generate_cpp_class(entry_info, header_dir, jinja_env, field_types, template_name):
-    """Generate C++ header file from a template.
+def generate_cpp_class(
+    entry_info, header_dir, template_dir, field_types, template_name
+):
+    """Generate C++ header file from a Mako template.
 
     Args:
         entry_info: Dict containing entry information (name, fields, etc.)
         header_dir: Output directory for generated header files
-        jinja_env: Jinja2 Environment for loading templates
+        template_dir: Directory containing Mako templates
         field_types: Dict mapping field names to type information
-        template_name: Name of the Jinja2 template file to use
+        template_name: Name of the Mako template file to use
     """
+    from mako.template import Template
+
     # Enrich field information with type data
     for field in entry_info["fields"]:
         field_name = field["name"]
@@ -219,7 +223,8 @@ def generate_cpp_class(entry_info, header_dir, jinja_env, field_types, template_
             field["stiSuffix"] = None
             field["typeData"] = None
 
-    template = jinja_env.get_template(template_name)
+    template_path = Path(template_dir) / template_name
+    template = Template(filename=str(template_path))
 
     # Render the template - pass entry_info directly so templates can access any field
     header_content = template.render(**entry_info)

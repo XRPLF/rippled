@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::ledger_entries {
 
 // Forward declaration
@@ -173,13 +171,7 @@ public:
 class CredentialBuilder : public LedgerEntryBuilderBase<CredentialBuilder>
 {
 public:
-    CredentialBuilder(
-                std::decay_t<typename SF_ACCOUNT::type::value_type> const& subject,
-                std::decay_t<typename SF_ACCOUNT::type::value_type> const& issuer,
-                std::decay_t<typename SF_VL::type::value_type> const& credentialType,
-                std::decay_t<typename SF_UINT64::type::value_type> const& issuerNode,
-                std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,
-                std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    CredentialBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& subject,std::decay_t<typename SF_ACCOUNT::type::value_type> const& issuer,std::decay_t<typename SF_VL::type::value_type> const& credentialType,std::decay_t<typename SF_UINT64::type::value_type> const& issuerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<CredentialBuilder>(ltCREDENTIAL)
     {
         setSubject(subject);

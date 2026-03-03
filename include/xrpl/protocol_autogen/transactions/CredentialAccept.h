@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::transactions {
 
 // Forward declaration
@@ -79,12 +77,10 @@ class CredentialAcceptBuilder : public TransactionBuilderBase<CredentialAcceptBu
 {
 public:
     CredentialAcceptBuilder(SF_ACCOUNT::type::value_type account,
-                     SF_UINT32::type::value_type sequence,
-                     SF_AMOUNT::type::value_type fee,
-                     SF_VL::type::value_type signingPubKey,
-                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& issuer,
-                     std::decay_t<typename SF_VL::type::value_type> const& credentialType)
-        : TransactionBuilderBase<CredentialAcceptBuilder>(account, sequence, fee, signingPubKey, ttCREDENTIAL_ACCEPT)
+                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& issuer,                     std::decay_t<typename SF_VL::type::value_type> const& credentialType,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<CredentialAcceptBuilder>(ttCREDENTIAL_ACCEPT, account, sequence, fee)
     {
         setIssuer(issuer);
         setCredentialType(credentialType);

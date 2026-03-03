@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::transactions {
 
 // Forward declaration
@@ -111,11 +109,10 @@ class XChainModifyBridgeBuilder : public TransactionBuilderBase<XChainModifyBrid
 {
 public:
     XChainModifyBridgeBuilder(SF_ACCOUNT::type::value_type account,
-                     SF_UINT32::type::value_type sequence,
-                     SF_AMOUNT::type::value_type fee,
-                     SF_VL::type::value_type signingPubKey,
-                     std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge)
-        : TransactionBuilderBase<XChainModifyBridgeBuilder>(account, sequence, fee, signingPubKey, ttXCHAIN_MODIFY_BRIDGE)
+                     std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<XChainModifyBridgeBuilder>(ttXCHAIN_MODIFY_BRIDGE, account, sequence, fee)
     {
         setXChainBridge(xChainBridge);
     }

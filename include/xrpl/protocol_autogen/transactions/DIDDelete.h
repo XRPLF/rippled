@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::transactions {
 
 // Forward declaration
@@ -59,10 +57,10 @@ class DIDDeleteBuilder : public TransactionBuilderBase<DIDDeleteBuilder>
 {
 public:
     DIDDeleteBuilder(SF_ACCOUNT::type::value_type account,
-                     SF_UINT32::type::value_type sequence,
-                     SF_AMOUNT::type::value_type fee,
-                     SF_VL::type::value_type signingPubKey)
-        : TransactionBuilderBase<DIDDeleteBuilder>(account, sequence, fee, signingPubKey, ttDID_DELETE)
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<DIDDeleteBuilder>(ttDID_DELETE, account, sequence, fee)
     {
     }
 

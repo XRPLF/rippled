@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::ledger_entries {
 
 // Forward declaration
@@ -176,7 +174,7 @@ public:
 
     /**
      * Get sfAdditionalBooks (soeOPTIONAL)
-     * Note: This is an untyped field ().
+     * Note: This is an untyped field (unknown).
      */
     [[nodiscard]]
     std::optional<std::reference_wrapper<STArray const>>
@@ -204,16 +202,7 @@ public:
 class OfferBuilder : public LedgerEntryBuilderBase<OfferBuilder>
 {
 public:
-    OfferBuilder(
-                std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,
-                std::decay_t<typename SF_UINT32::type::value_type> const& sequence,
-                std::decay_t<typename SF_AMOUNT::type::value_type> const& takerPays,
-                std::decay_t<typename SF_AMOUNT::type::value_type> const& takerGets,
-                std::decay_t<typename SF_UINT256::type::value_type> const& bookDirectory,
-                std::decay_t<typename SF_UINT64::type::value_type> const& bookNode,
-                std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,
-                std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,
-                std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    OfferBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_UINT32::type::value_type> const& sequence,std::decay_t<typename SF_AMOUNT::type::value_type> const& takerPays,std::decay_t<typename SF_AMOUNT::type::value_type> const& takerGets,std::decay_t<typename SF_UINT256::type::value_type> const& bookDirectory,std::decay_t<typename SF_UINT64::type::value_type> const& bookNode,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<OfferBuilder>(ltOFFER)
     {
         setAccount(account);

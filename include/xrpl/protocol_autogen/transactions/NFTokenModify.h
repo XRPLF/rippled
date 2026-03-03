@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::transactions {
 
 // Forward declaration
@@ -111,11 +109,10 @@ class NFTokenModifyBuilder : public TransactionBuilderBase<NFTokenModifyBuilder>
 {
 public:
     NFTokenModifyBuilder(SF_ACCOUNT::type::value_type account,
-                     SF_UINT32::type::value_type sequence,
-                     SF_AMOUNT::type::value_type fee,
-                     SF_VL::type::value_type signingPubKey,
-                     std::decay_t<typename SF_UINT256::type::value_type> const& nFTokenID)
-        : TransactionBuilderBase<NFTokenModifyBuilder>(account, sequence, fee, signingPubKey, ttNFTOKEN_MODIFY)
+                     std::decay_t<typename SF_UINT256::type::value_type> const& nFTokenID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<NFTokenModifyBuilder>(ttNFTOKEN_MODIFY, account, sequence, fee)
     {
         setNFTokenID(nFTokenID);
     }

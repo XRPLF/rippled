@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::ledger_entries {
 
 // Forward declaration
@@ -88,7 +86,7 @@ public:
 
     /**
      * Get sfXChainClaimAttestations (soeREQUIRED)
-     * Note: This is an untyped field ().
+     * Note: This is an untyped field (unknown).
      */
     [[nodiscard]]
     STArray const&
@@ -147,16 +145,7 @@ public:
 class XChainOwnedClaimIDBuilder : public LedgerEntryBuilderBase<XChainOwnedClaimIDBuilder>
 {
 public:
-    XChainOwnedClaimIDBuilder(
-                std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,
-                std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,
-                std::decay_t<typename SF_UINT64::type::value_type> const& xChainClaimID,
-                std::decay_t<typename SF_ACCOUNT::type::value_type> const& otherChainSource,
-                STArray const& xChainClaimAttestations,
-                std::decay_t<typename SF_AMOUNT::type::value_type> const& signatureReward,
-                std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,
-                std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,
-                std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    XChainOwnedClaimIDBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,std::decay_t<typename SF_UINT64::type::value_type> const& xChainClaimID,std::decay_t<typename SF_ACCOUNT::type::value_type> const& otherChainSource,STArray const& xChainClaimAttestations,std::decay_t<typename SF_AMOUNT::type::value_type> const& signatureReward,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<XChainOwnedClaimIDBuilder>(ltXCHAIN_OWNED_CLAIM_ID)
     {
         setAccount(account);

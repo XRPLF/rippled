@@ -19,7 +19,7 @@ The generation happens automatically when you **configure** the project (not dur
 2. Installs Python dependencies from `scripts/requirements.txt` into the venv (only if needed)
 3. Runs the Python generation scripts using the venv Python interpreter
 4. Parses the macro files to extract type definitions
-5. Generates type-safe C++ wrapper classes using Jinja2 templates
+5. Generates type-safe C++ wrapper classes using Mako templates
 6. Places the generated headers in this directory
 
 ### When Regeneration Happens
@@ -38,7 +38,7 @@ The code generation requires the following Python packages (automatically instal
 
 - `pcpp` - C preprocessor for Python
 - `pyparsing` - Parser combinator library
-- `Jinja2` - Template engine
+- `Mako` - Template engine
 
 These are isolated in a virtual environment and won't affect your system Python installation.
 
@@ -57,7 +57,7 @@ The generated `.h` files **are checked into version control**. This means:
 To modify the generated classes:
 
 - Edit the macro files in `include/xrpl/protocol/detail/`
-- Edit the Jinja2 templates in `scripts/templates/`
+- Edit the Mako templates in `scripts/templates/`
 - Edit the generation scripts in `scripts/`
 - Update Python dependencies in `scripts/requirements.txt`
 - Run CMake configure to regenerate
@@ -75,7 +75,7 @@ Base classes:
 
 Templates (update to pass required common fields to base class constructors):
 
-- `scripts/templates/Transaction.h.jinja2`
-- `scripts/templates/LedgerEntry.h.jinja2`
+- `scripts/templates/Transaction.h.mako`
+- `scripts/templates/LedgerEntry.h.mako`
 
 These files are **not auto-generated** and must be updated by hand.

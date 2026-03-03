@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::transactions {
 
 // Forward declaration
@@ -169,21 +167,10 @@ class XChainAddAccountCreateAttestationBuilder : public TransactionBuilderBase<X
 {
 public:
     XChainAddAccountCreateAttestationBuilder(SF_ACCOUNT::type::value_type account,
-                     SF_UINT32::type::value_type sequence,
-                     SF_AMOUNT::type::value_type fee,
-                     SF_VL::type::value_type signingPubKey,
-                     std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,
-                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& attestationSignerAccount,
-                     std::decay_t<typename SF_VL::type::value_type> const& publicKey,
-                     std::decay_t<typename SF_VL::type::value_type> const& signature,
-                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& otherChainSource,
-                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,
-                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& attestationRewardAccount,
-                     std::decay_t<typename SF_UINT8::type::value_type> const& wasLockingChainSend,
-                     std::decay_t<typename SF_UINT64::type::value_type> const& xChainAccountCreateCount,
-                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,
-                     std::decay_t<typename SF_AMOUNT::type::value_type> const& signatureReward)
-        : TransactionBuilderBase<XChainAddAccountCreateAttestationBuilder>(account, sequence, fee, signingPubKey, ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION)
+                     std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& attestationSignerAccount,                     std::decay_t<typename SF_VL::type::value_type> const& publicKey,                     std::decay_t<typename SF_VL::type::value_type> const& signature,                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& otherChainSource,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& attestationRewardAccount,                     std::decay_t<typename SF_UINT8::type::value_type> const& wasLockingChainSend,                     std::decay_t<typename SF_UINT64::type::value_type> const& xChainAccountCreateCount,                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& signatureReward,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<XChainAddAccountCreateAttestationBuilder>(ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION, account, sequence, fee)
     {
         setXChainBridge(xChainBridge);
         setAttestationSignerAccount(attestationSignerAccount);

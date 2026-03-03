@@ -1,5 +1,7 @@
 #pragma once
 
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STAmount.h>
@@ -7,6 +9,8 @@
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STXChainBridge.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol_autogen/STObjectValidation.h>
@@ -24,17 +28,22 @@ public:
     TransactionBuilderBase() = default;
 
     TransactionBuilderBase(
+        SF_UINT16::type::value_type transactionType,
         SF_ACCOUNT::type::value_type account,
-        SF_UINT32::type::value_type sequence,
-        SF_AMOUNT::type::value_type fee,
-        SF_VL::type::value_type signingPubKey,
-        SF_UINT16::type::value_type transactionType)
+        std::optional<SF_UINT32::type::value_type> sequence,
+        std::optional<SF_AMOUNT::type::value_type> fee)
     {
         object_[sfTransactionType] = transactionType;
         setAccount(account);
-        setSequence(sequence);
-        setFee(fee);
-        setSigningPubKey(signingPubKey);
+
+        if (sequence)
+        {
+            setSequence(*sequence);
+        }
+        if (fee)
+        {
+            setFee(*fee);
+        }
     }
 
     /**
@@ -91,18 +100,6 @@ public:
     }
 
     /**
-     * Set the signing public key.
-     * @param value Public key (typically as a hex string)
-     * @return Reference to the derived builder for method chaining.
-     */
-    Derived&
-    setSigningPubKey(Slice const& value)
-    {
-        object_[sfSigningPubKey] = value;
-        return static_cast<Derived&>(*this);
-    }
-
-    /**
      * Set transaction flags.
      * @param value Flags value
      * @return Reference to the derived builder for method chaining.
@@ -147,6 +144,34 @@ public:
     setAccountTxnID(uint256 const& value)
     {
         object_[sfAccountTxnID] = value;
+        return static_cast<Derived&>(*this);
+    }
+
+    /**
+     * Sign the transaction with the given keys.
+     *
+     * This sets the SigningPubKey field and computes the TxnSignature.
+     *
+     * @param publicKey The public key for signing
+     * @param secretKey The secret key for signing
+     * @return Reference to the derived builder for method chaining.
+     */
+    Derived&
+    sign(PublicKey const& publicKey, SecretKey const& secretKey)
+    {
+        // Set the signing public key
+        object_.setFieldVL(sfSigningPubKey, publicKey.slice());
+
+        // Build the signing data: HashPrefix::txSign + serialized object
+        // (without signing fields)
+        Serializer s;
+        s.add32(HashPrefix::txSign);
+        object_.addWithoutSigningFields(s);
+
+        // Sign and set the signature
+        auto const sig = xrpl::sign(publicKey, secretKey, s.slice());
+        object_.setFieldVL(sfTxnSignature, sig);
+
         return static_cast<Derived&>(*this);
     }
 

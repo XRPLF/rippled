@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::ledger_entries {
 
 // Forward declaration
@@ -165,16 +163,7 @@ public:
 class BridgeBuilder : public LedgerEntryBuilderBase<BridgeBuilder>
 {
 public:
-    BridgeBuilder(
-                std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,
-                std::decay_t<typename SF_AMOUNT::type::value_type> const& signatureReward,
-                std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,
-                std::decay_t<typename SF_UINT64::type::value_type> const& xChainClaimID,
-                std::decay_t<typename SF_UINT64::type::value_type> const& xChainAccountCreateCount,
-                std::decay_t<typename SF_UINT64::type::value_type> const& xChainAccountClaimCount,
-                std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,
-                std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,
-                std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    BridgeBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_AMOUNT::type::value_type> const& signatureReward,std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,std::decay_t<typename SF_UINT64::type::value_type> const& xChainClaimID,std::decay_t<typename SF_UINT64::type::value_type> const& xChainAccountCreateCount,std::decay_t<typename SF_UINT64::type::value_type> const& xChainAccountClaimCount,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<BridgeBuilder>(ltBRIDGE)
     {
         setAccount(account);

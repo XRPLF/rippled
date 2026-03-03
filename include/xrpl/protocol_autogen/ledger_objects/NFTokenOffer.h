@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::ledger_entries {
 
 // Forward declaration
@@ -164,14 +162,7 @@ public:
 class NFTokenOfferBuilder : public LedgerEntryBuilderBase<NFTokenOfferBuilder>
 {
 public:
-    NFTokenOfferBuilder(
-                std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,
-                std::decay_t<typename SF_UINT256::type::value_type> const& nFTokenID,
-                std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,
-                std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,
-                std::decay_t<typename SF_UINT64::type::value_type> const& nFTokenOfferNode,
-                std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,
-                std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    NFTokenOfferBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,std::decay_t<typename SF_UINT256::type::value_type> const& nFTokenID,std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT64::type::value_type> const& nFTokenOfferNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<NFTokenOfferBuilder>(ltNFTOKEN_OFFER)
     {
         setOwner(owner);

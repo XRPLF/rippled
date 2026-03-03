@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::ledger_entries {
 
 // Forward declaration
@@ -67,7 +65,7 @@ public:
 
     /**
      * Get sfMajorities (soeOPTIONAL)
-     * Note: This is an untyped field ().
+     * Note: This is an untyped field (unknown).
      */
     [[nodiscard]]
     std::optional<std::reference_wrapper<STArray const>>

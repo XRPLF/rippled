@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::transactions {
 
 // Forward declaration
@@ -152,13 +150,10 @@ class OracleSetBuilder : public TransactionBuilderBase<OracleSetBuilder>
 {
 public:
     OracleSetBuilder(SF_ACCOUNT::type::value_type account,
-                     SF_UINT32::type::value_type sequence,
-                     SF_AMOUNT::type::value_type fee,
-                     SF_VL::type::value_type signingPubKey,
-                     std::decay_t<typename SF_UINT32::type::value_type> const& oracleDocumentID,
-                     std::decay_t<typename SF_UINT32::type::value_type> const& lastUpdateTime,
-                     STArray const& priceDataSeries)
-        : TransactionBuilderBase<OracleSetBuilder>(account, sequence, fee, signingPubKey, ttORACLE_SET)
+                     std::decay_t<typename SF_UINT32::type::value_type> const& oracleDocumentID,                     std::decay_t<typename SF_UINT32::type::value_type> const& lastUpdateTime,                     STArray const& priceDataSeries,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<OracleSetBuilder>(ttORACLE_SET, account, sequence, fee)
     {
         setOracleDocumentID(oracleDocumentID);
         setLastUpdateTime(lastUpdateTime);

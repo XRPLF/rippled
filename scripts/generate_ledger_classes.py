@@ -13,7 +13,6 @@ Uses pcpp to preprocess the macro file and pyparsing to parse the DSL.
 import io
 import argparse
 from pathlib import Path
-from jinja2 import Environment, FileSystemLoader
 import pyparsing as pp
 
 # Import common utilities
@@ -168,10 +167,9 @@ def main():
             print(f"    - {field['name']}: {field['requirement']}{mpt_info}")
         print()
 
-    # Set up Jinja2 environment
+    # Set up template directory
     script_dir = Path(__file__).parent
     template_dir = script_dir / "templates"
-    jinja_env = Environment(loader=FileSystemLoader(str(template_dir)))
 
     # Generate C++ classes
     header_dir = Path(args.header_dir)
@@ -179,7 +177,7 @@ def main():
 
     for entry in entries:
         generate_cpp_class(
-            entry, header_dir, jinja_env, field_types, "LedgerEntry.h.jinja2"
+            entry, header_dir, template_dir, field_types, "LedgerEntry.h.mako"
         )
 
     print(f"\nGenerated {len(entries)} ledger entry classes")

@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <optional>
 
-# cspell:words equalto
-
 namespace xrpl::transactions {
 
 // Forward declaration
@@ -89,13 +87,10 @@ class AMMCreateBuilder : public TransactionBuilderBase<AMMCreateBuilder>
 {
 public:
     AMMCreateBuilder(SF_ACCOUNT::type::value_type account,
-                     SF_UINT32::type::value_type sequence,
-                     SF_AMOUNT::type::value_type fee,
-                     SF_VL::type::value_type signingPubKey,
-                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,
-                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount2,
-                     std::decay_t<typename SF_UINT16::type::value_type> const& tradingFee)
-        : TransactionBuilderBase<AMMCreateBuilder>(account, sequence, fee, signingPubKey, ttAMM_CREATE)
+                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount2,                     std::decay_t<typename SF_UINT16::type::value_type> const& tradingFee,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<AMMCreateBuilder>(ttAMM_CREATE, account, sequence, fee)
     {
         setAmount(amount);
         setAmount2(amount2);

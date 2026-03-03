@@ -85,10 +85,7 @@ function (setup_protocol_autogen)
             execute_process(COMMAND ${Python3_EXECUTABLE} -m venv "${VENV_DIR}"
                             RESULT_VARIABLE VENV_RESULT ERROR_VARIABLE VENV_ERROR)
             if (NOT VENV_RESULT EQUAL 0)
-                message(WARNING "Failed to create virtual environment: ${VENV_ERROR}")
-                message(WARNING "Code generation skipped. Build will continue with existing generated files."
-                )
-                return()
+                message(FATAL_ERROR "Failed to create virtual environment: ${VENV_ERROR}")
             endif ()
 
             message(STATUS "Installing Python dependencies...")
@@ -102,10 +99,7 @@ function (setup_protocol_autogen)
             execute_process(COMMAND ${VENV_PIP} install -r "${REQUIREMENTS_FILE}"
                             RESULT_VARIABLE PIP_INSTALL_RESULT ERROR_VARIABLE PIP_INSTALL_ERROR)
             if (NOT PIP_INSTALL_RESULT EQUAL 0)
-                message(WARNING "Failed to install Python dependencies: ${PIP_INSTALL_ERROR}")
-                message(WARNING "Code generation skipped. Build will continue with existing generated files."
-                )
-                return()
+                message(FATAL_ERROR "Failed to install Python dependencies: ${PIP_INSTALL_ERROR}")
             endif ()
 
             # Mark requirements as installed
@@ -124,8 +118,7 @@ function (setup_protocol_autogen)
                     OUTPUT_VARIABLE TX_GEN_OUTPUT
                     ERROR_VARIABLE TX_GEN_ERROR)
     if (NOT TX_GEN_RESULT EQUAL 0)
-        message(WARNING "Failed to generate transaction classes:\n${TX_GEN_ERROR}")
-        message(WARNING "Build will continue with existing generated files.")
+        message(FATAL_ERROR "Failed to generate transaction classes:\n${TX_GEN_ERROR}")
     else ()
         message(STATUS "Transaction classes generated successfully")
     endif ()
@@ -140,8 +133,7 @@ function (setup_protocol_autogen)
                     OUTPUT_VARIABLE LEDGER_GEN_OUTPUT
                     ERROR_VARIABLE LEDGER_GEN_ERROR)
     if (NOT LEDGER_GEN_RESULT EQUAL 0)
-        message(WARNING "Failed to generate ledger entry classes:\n${LEDGER_GEN_ERROR}")
-        message(WARNING "Build will continue with existing generated files.")
+        message(FATAL_ERROR "Failed to generate ledger entry classes:\n${LEDGER_GEN_ERROR}")
     else ()
         message(STATUS "Ledger entry classes generated successfully")
     endif ()
@@ -156,8 +148,8 @@ function (setup_protocol_autogen)
                           "${GENERATE_TX_SCRIPT}"
                           "${GENERATE_LEDGER_SCRIPT}"
                           "${SCRIPTS_DIR}/macro_parser_common.py"
-                          "${SCRIPTS_DIR}/templates/Transaction.h.jinja2"
-                          "${SCRIPTS_DIR}/templates/LedgerEntry.h.jinja2"
+                          "${SCRIPTS_DIR}/templates/Transaction.h.mako"
+                          "${SCRIPTS_DIR}/templates/LedgerEntry.h.mako"
                           "${REQUIREMENTS_FILE}")
 
 endfunction ()
