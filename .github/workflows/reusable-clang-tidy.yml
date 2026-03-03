@@ -22,7 +22,8 @@ jobs:
     if: ${{ inputs.check_only_changed }}
     runs-on: ubuntu-latest
     outputs:
-      any_changed: ${{ steps.changed_files.outputs.any_changed }}
+      clang_tidy_config_changed: ${{ steps.changed_clang_tidy.outputs.any_changed }}
+      any_cpp_changed: ${{ steps.changed_files.outputs.any_changed }}
       all_changed_files: ${{ steps.changed_files.outputs.all_changed_files }}
     steps:
       - name: Checkout repository
@@ -38,10 +39,17 @@ jobs:
             **/*.ipp
           separator: " "
 
+      - name: Get changed clang-tidy configuration
+        id: changed_clang_tidy
+        uses: tj-actions/changed-files@7dee1b0c1557f278e5c7dc244927139d78c0e22a # v47.0.4
+        with:
+          files: |
+            .clang-tidy
+
   run-clang-tidy:
     needs: [determine-files]
-    if: ${{ always() && !cancelled() && (!inputs.check_only_changed || needs.determine-files.outputs.any_changed == 'true') }}
+    if: ${{ always() && !cancelled() && (!inputs.check_only_changed || needs.determine-files.outputs.any_cpp_changed == 'true' || needs.determine-files.outputs.clang_tidy_config_changed == 'true') }}
     uses: ./.github/workflows/reusable-clang-tidy-files.yml
     with:
-      files: ${{ inputs.check_only_changed && needs.determine-files.outputs.all_changed_files || '' }}
+      files: ${{ (needs.determine-files.outputs.clang_tidy_config_changed == 'true' && '') || (inputs.check_only_changed && needs.determine-files.outputs.all_changed_files || '') }}
       create_issue_on_failure: ${{ inputs.create_issue_on_failure }}
