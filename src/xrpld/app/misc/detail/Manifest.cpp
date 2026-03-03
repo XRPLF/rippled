@@ -54,7 +54,7 @@ deserializeManifest(Slice s, beast::Journal journal)
         // - a domain name
         {sfDomain, soeOPTIONAL},
 
-        // - an applyTemplateephemeral signing key that can be changed as necessary
+        // - an ephemeral signing key that can be changed as necessary
         {sfSigningPubKey, soeOPTIONAL},
 
         // - a signature using the ephemeral signing key, if it is present
