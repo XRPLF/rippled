@@ -61,7 +61,15 @@ repos:
     hooks:
       - id: nix-fmt
         name: Format Nix files
-        entry: nix --extra-experimental-features 'nix-command flakes' fmt
+        entry: |
+          bash -c '
+            if command -v nix &> /dev/null || [ "$GITHUB_ACTIONS" = "true" ]; then
+              nix --extra-experimental-features "nix-command flakes" fmt "$@"
+            else
+              echo "Skipping nix-fmt: nix not installed and not in GitHub Actions"
+              exit 0
+            fi
+          ' --
         language: system
         types:
           - nix

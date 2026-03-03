@@ -18,6 +18,13 @@ VaultDelete::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
+    if (ctx.tx.isFieldPresent(sfMemoData) && !ctx.rules.enabled(fixLendingProtocolV1_1))
+        return temDISABLED;
+
+    // The sfMemoData field is an optional field used to record the deletion reason.
+    if (auto const data = ctx.tx[~sfMemoData]; data && !validDataLength(data, maxDataPayloadLength))
+        return temMALFORMED;
+
     return tesSUCCESS;
 }
 

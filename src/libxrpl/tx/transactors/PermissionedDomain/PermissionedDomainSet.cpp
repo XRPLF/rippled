@@ -1,10 +1,9 @@
+#include <xrpl/tx/transactors/PermissionedDomain/PermissionedDomainSet.h>
+//
 #include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/PermissionedDomain/PermissionedDomainSet.h>
-
-#include <optional>
 
 namespace xrpl {
 
