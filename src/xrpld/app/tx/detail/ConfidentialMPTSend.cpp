@@ -60,6 +60,9 @@ ConfidentialMPTSend::preflight(PreflightContext const& ctx)
     if (hasAuditor && !isValidCiphertext(ctx.tx[sfAuditorEncryptedAmount]))
         return temBAD_CIPHERTEXT;
 
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.j); !isTesSuccess(err))
+        return err;
+
     return tesSUCCESS;
 }
 
@@ -290,6 +293,9 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
 
     if (auto const ter = requireAuth(ctx.view, mptIssue, destination); !isTesSuccess(ter))
         return ter;
+
+    if (auto const err = credentials::valid(ctx.tx, ctx.view, ctx.tx[sfAccount], ctx.j); !isTesSuccess(err))
+        return err;
 
     return verifySendProofs(ctx, sleSenderMPToken, sleDestinationMPToken, sleIssuance);
 }

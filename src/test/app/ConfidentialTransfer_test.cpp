@@ -2565,98 +2565,220 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     {
         testcase("Send deposit preauth");
         using namespace test::jtx;
-        Env env(*this, features);
 
-        using namespace std::chrono;
+        // =====================================================================
+        // DEPOSIT PREAUTH OVERVIEW
+        // =====================================================================
+        //
+        // When an account enables lsfDepositAuth (via asfDepositAuth flag),
+        // it requires explicit authorization before accepting incoming payments.
+        //
+        // There are two authorization mechanisms:
+        //
+        // 1. DIRECT ACCOUNT AUTHORIZATION (deposit::auth)
+        //    - Bob directly authorizes Carol: deposit::auth(bob, carol)
+        //    - Simple 1-to-1 trust relationship
+        //    - Carol can send to Bob without credentials
+        //
+        // 2. CREDENTIAL-BASED AUTHORIZATION (deposit::authCredentials)
+        //    - A trusted third party (dpIssuer) issues credentials
+        //    - Bob authorizes a credential TYPE from an issuer
+        //    - Anyone holding that credential can send to Bob
+        //    - Requires sender to include credential ID in transaction
+        //
+        // =====================================================================
 
-        Account const alice("alice");
-        Account const bob("bob");
-        Account const carol("carol");
-        Account const dpIssuer("dpIssuer");
+        // =====================================================================
+        // TEST 1: Direct Account Authorization
+        // =====================================================================
+        {
+            Env env(*this, features);
 
-        env.fund(XRP(50000), dpIssuer);
-        env.close();
-        char const credType[] = "abcde";
-        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+            Account const alice("alice");  // MPT issuer
+            Account const bob("bob");      // destination (requires preauth)
+            Account const carol("carol");  // sender
 
-        mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+            mptAlice.pay(alice, bob, 100);
+            mptAlice.pay(alice, carol, 100);
 
-        mptAlice.authorize({.account = bob});
-        mptAlice.authorize({.account = carol});
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(carol);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
 
-        mptAlice.pay(alice, bob, 100);
-        mptAlice.pay(alice, carol, 50);
+            mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
+            mptAlice.convert({.account = bob, .amt = 50, .holderPubKey = mptAlice.getPubKey(bob)});
+            mptAlice.mergeInbox({.account = carol});
+            mptAlice.mergeInbox({.account = bob});
 
-        mptAlice.generateKeyPair(alice);
-        mptAlice.generateKeyPair(bob);
-        mptAlice.generateKeyPair(carol);
+            // Bob enables deposit preauthorization
+            env(fset(bob, asfDepositAuth));
+            env.close();
 
-        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+            // Carol cannot send to Bob without authorization
+            mptAlice.send({.account = carol, .dest = bob, .amt = 10, .err = tecNO_PERMISSION});
 
-        // Bob require preauthorization
-        env(fset(bob, asfDepositAuth));
-        env.close();
+            // Bob directly authorizes Carol
+            env(deposit::auth(bob, carol));
+            env.close();
 
-        mptAlice.convert({
-            .account = carol,
-            .amt = 50,
-            .holderPubKey = mptAlice.getPubKey(carol),
-        });
-        mptAlice.convert({
-            .account = bob,
-            .amt = 50,
-            .holderPubKey = mptAlice.getPubKey(bob),
-        });
+            // Now Carol can send to Bob
+            mptAlice.send({.account = carol, .dest = bob, .amt = 10});
+            mptAlice.mergeInbox({.account = bob});
 
-        // carol merge inbox
-        mptAlice.mergeInbox({
-            .account = carol,
-        });
+            // Bob revokes Carol's authorization
+            env(deposit::unauth(bob, carol));
+            env.close();
 
-        // bob merge inbox
-        mptAlice.mergeInbox({
-            .account = bob,
-        });
+            // Carol can no longer send to Bob
+            mptAlice.send({.account = carol, .dest = bob, .amt = 10, .err = tecNO_PERMISSION});
+        }
 
-        // carol sends 10 to bob, but not authorized
-        mptAlice.send({.account = carol, .dest = bob, .amt = 10, .err = tecNO_PERMISSION});
+        // =====================================================================
+        // TEST 2: Credential-Based Authorization
+        // =====================================================================
+        {
+            Env env(*this, features);
 
-        // Bob authorize alice
-        env(deposit::auth(bob, carol));
-        env.close();
+            Account const alice("alice");        // MPT issuer
+            Account const bob("bob");            // destination (requires preauth)
+            Account const carol("carol");        // sender
+            Account const dpIssuer("dpIssuer");  // credential issuer (trusted third party)
 
-        mptAlice.send({.account = carol, .dest = bob, .amt = 10});
+            env.fund(XRP(50000), dpIssuer);
+            env.close();
 
-        // Create credentials
-        env(credentials::create(bob, dpIssuer, credType));
-        env.close();
-        env(credentials::accept(bob, dpIssuer, credType));
-        env.close();
-        auto const jv = credentials::ledgerEntry(env, bob, dpIssuer, credType);
-        std::string const credIdx = jv[jss::result][jss::index].asString();
+            char const credType[] = "KYC_VERIFIED";
 
-        mptAlice.send({.account = carol, .dest = bob, .amt = 10, .credentials = {{credIdx}}});
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+            mptAlice.pay(alice, bob, 100);
+            mptAlice.pay(alice, carol, 100);
 
-        // Bob revoke authorization
-        env(deposit::unauth(bob, carol));
-        env.close();
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(carol);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
 
-        mptAlice.send({.account = carol, .dest = bob, .amt = 10, .err = tecNO_PERMISSION});
+            mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
+            mptAlice.convert({.account = bob, .amt = 50, .holderPubKey = mptAlice.getPubKey(bob)});
+            mptAlice.mergeInbox({.account = carol});
+            mptAlice.mergeInbox({.account = bob});
 
-        mptAlice.send({.account = carol, .dest = bob, .amt = 10, .credentials = {{credIdx}}, .err = tecNO_PERMISSION});
+            // Bob enables deposit preauthorization
+            env(fset(bob, asfDepositAuth));
+            env.close();
 
-        // Bob authorize credentials
-        env(deposit::authCredentials(bob, {{dpIssuer, credType}}));
-        env.close();
+            // Step 1: dpIssuer creates a credential for Carol
+            // The credential subject is Carol (the sender), NOT Bob
+            env(credentials::create(carol, dpIssuer, credType));
+            env.close();
 
-        mptAlice.send({.account = carol, .dest = bob, .amt = 10, .err = tecNO_PERMISSION});
+            // Step 2: Carol accepts the credential
+            env(credentials::accept(carol, dpIssuer, credType));
+            env.close();
 
-        mptAlice.send({
-            .account = carol,
-            .dest = bob,
-            .amt = 10,
-            .credentials = {{credIdx}},
-        });
+            // Get the credential index for use in transactions
+            auto const jv = credentials::ledgerEntry(env, carol, dpIssuer, credType);
+            std::string const credIdx = jv[jss::result][jss::index].asString();
+
+            // Carol cannot send yet - Bob hasn't authorized this credential type
+            mptAlice.send(
+                {.account = carol, .dest = bob, .amt = 10, .credentials = {{credIdx}}, .err = tecNO_PERMISSION});
+
+            // Step 3: Bob authorizes the credential type from dpIssuer
+            // This means: "I accept payments from anyone with KYC_VERIFIED from dpIssuer"
+            env(deposit::authCredentials(bob, {{dpIssuer, credType}}));
+            env.close();
+
+            // Carol still cannot send without including credential
+            mptAlice.send({.account = carol, .dest = bob, .amt = 10, .err = tecNO_PERMISSION});
+
+            // Carol CAN send when including her credential
+            mptAlice.send({.account = carol, .dest = bob, .amt = 10, .credentials = {{credIdx}}});
+            mptAlice.mergeInbox({.account = bob});
+        }
+
+        // =====================================================================
+        // TEST 3: Direct Auth Takes Precedence Over Credentials
+        // =====================================================================
+        {
+            Env env(*this, features);
+
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            Account const dpIssuer("dpIssuer");
+
+            env.fund(XRP(50000), dpIssuer);
+            env.close();
+
+            char const credType[] = "KYC_VERIFIED";
+
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+            mptAlice.pay(alice, bob, 100);
+            mptAlice.pay(alice, carol, 100);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(carol);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
+            mptAlice.convert({.account = bob, .amt = 50, .holderPubKey = mptAlice.getPubKey(bob)});
+            mptAlice.mergeInbox({.account = carol});
+            mptAlice.mergeInbox({.account = bob});
+
+            env(fset(bob, asfDepositAuth));
+            env.close();
+
+            // Create and accept credential for Carol
+            env(credentials::create(carol, dpIssuer, credType));
+            env.close();
+            env(credentials::accept(carol, dpIssuer, credType));
+            env.close();
+            auto const jv = credentials::ledgerEntry(env, carol, dpIssuer, credType);
+            std::string const credIdx = jv[jss::result][jss::index].asString();
+
+            // Bob directly authorizes Carol (no credential needed)
+            env(deposit::auth(bob, carol));
+            env.close();
+
+            // Carol can send without credentials (direct auth)
+            mptAlice.send({.account = carol, .dest = bob, .amt = 10});
+            mptAlice.mergeInbox({.account = bob});
+
+            // Carol can also send WITH credentials (still works)
+            mptAlice.send({.account = carol, .dest = bob, .amt = 10, .credentials = {{credIdx}}});
+            mptAlice.mergeInbox({.account = bob});
+
+            // Bob revokes direct authorization
+            env(deposit::unauth(bob, carol));
+            env.close();
+
+            // Carol cannot send without credentials anymore
+            mptAlice.send({.account = carol, .dest = bob, .amt = 10, .err = tecNO_PERMISSION});
+
+            // But credential-based auth not set up, so this also fails
+            mptAlice.send(
+                {.account = carol, .dest = bob, .amt = 10, .credentials = {{credIdx}}, .err = tecNO_PERMISSION});
+
+            // Bob authorizes the credential type
+            env(deposit::authCredentials(bob, {{dpIssuer, credType}}));
+            env.close();
+
+            // Now Carol can send with credentials
+            mptAlice.send({.account = carol, .dest = bob, .amt = 10, .credentials = {{credIdx}}});
+        }
     }
 
     void
