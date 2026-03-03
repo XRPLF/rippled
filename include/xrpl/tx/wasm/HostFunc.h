@@ -1,7 +1,5 @@
 #pragma once
 
-#include <xrpld/app/wasm/ParamsHelper.h>
-
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -10,6 +8,7 @@
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/tx/wasm/ParamsHelper.h>
 
 namespace xrpl {
 

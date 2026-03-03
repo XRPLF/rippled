@@ -1,6 +1,5 @@
-#include <xrpld/app/wasm/WasmiVM.h>
-
 #include <xrpl/basics/Log.h>
+#include <xrpl/tx/wasm/WasmiVM.h>
 
 #include <memory>
 

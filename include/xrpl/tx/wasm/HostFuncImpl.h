@@ -1,8 +1,7 @@
 #pragma once
 
-#include <xrpld/app/wasm/HostFunc.h>
-
 #include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/wasm/HostFunc.h>
 
 namespace xrpl {
 class WasmHostFunctionsImpl : public HostFunctions

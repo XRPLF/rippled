@@ -1,7 +1,6 @@
-#include <xrpld/app/wasm/HostFuncImpl.h>
-
 #include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/tx/wasm/HostFuncImpl.h>
 
 namespace xrpl {
 

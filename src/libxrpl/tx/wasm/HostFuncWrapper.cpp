@@ -1,6 +1,3 @@
-#include <xrpld/app/wasm/HostFunc.h>
-#include <xrpld/app/wasm/HostFuncWrapper.h>
-
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/Protocol.h>
@@ -9,6 +6,8 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/tx/wasm/HostFunc.h>
+#include <xrpl/tx/wasm/HostFuncWrapper.h>
 
 namespace xrpl {
 
