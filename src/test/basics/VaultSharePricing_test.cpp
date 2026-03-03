@@ -7,6 +7,8 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 
+#include <cassert>
+
 namespace xrpl {
 
 // Result types for vault operations
@@ -24,7 +26,7 @@ struct WithdrawResult
 
 // Proof-of-concept Vault implementing the XLS-0065 share pricing model.
 // Uses STAmount for typed asset/share values and Number for arithmetic.
-class Vault : public beast::unit_test::suite
+class Vault
 {
     Asset asset_;
     MPTIssue shareAsset_;
@@ -132,14 +134,8 @@ public:
     void
     borrow(Number const& principal, Number const& interest)
     {
-        if (!BEAST_EXPECTS(
-                principal > 0 && interest >= 0,
-                "xrpl::Vault::borrow requires positive principal and non-negative interest"))
-            return;
-        if (!BEAST_EXPECTS(
-                principal <= assetsAvailable_,
-                "xrpl::Vault::borrow principal exceeds assets available"))
-            return;
+        assert(principal > 0 && interest >= 0);
+        assert(principal <= assetsAvailable_);
 
         assetsAvailable_ -= principal;
 
@@ -153,14 +149,8 @@ public:
         Number const& interest,
         std::optional<Number const> extraInterest = std::nullopt)
     {
-        if (!BEAST_EXPECTS(
-                principal > 0 && interest >= 0 && (!extraInterest || *extraInterest >= 0),
-                "xrpl::Vault::repay requires positive principal and non-negative interest"))
-            return;
-        if (!BEAST_EXPECTS(
-                principal + interest + assetsAvailable_ <= assetsTotal_,
-                "xrpl::Vault::repay exceeds total assets"))
-            return;
+        assert(principal > 0 && interest >= 0 && (!extraInterest || *extraInterest >= 0));
+        assert(principal + interest + assetsAvailable_ <= assetsTotal_);
 
         assetsAvailable_ += principal + interest;
         interestUnrealized_ -= interest;
@@ -173,57 +163,35 @@ public:
     }
 
     void
-    addPaperLoss(Number const& principal, Number const& interest)
+    addPaperLoss(Number const& amount)
     {
-        if (!BEAST_EXPECTS(
-                principal > 0 && interest >= 0,
-                "xrpl::Vault::addPaperLoss requires positive principal and non-negative interest"))
-            return;
+        assert(amount > 0);
         // Spec invariant: lossUnrealized <= assetsTotal - assetsAvailable
-        // (paper loss cannot exceed total outstanding loan exposure: principal + interest)
-        if (!BEAST_EXPECTS(
-                lossUnrealized_ + principal + interest <= assetsTotal_ - assetsAvailable_,
-                "xrpl::Vault::addPaperLoss exceeds outstanding loan exposure"))
-            return;
+        assert(lossUnrealized_ + amount <= assetsTotal_ - assetsAvailable_);
 
-        lossUnrealized_ += principal + interest;
+        lossUnrealized_ += amount;
     }
 
     void
-    clearPaperLoss(Number const& principal, Number const& interest)
+    clearPaperLoss(Number const& amount)
     {
-        if (!BEAST_EXPECTS(
-                principal > 0 && interest >= 0,
-                "xrpl::Vault::clearPaperLoss requires positive principal and non-negative "
-                "interest"))
-            return;
-        if (!BEAST_EXPECTS(
-                principal + interest <= lossUnrealized_,
-                "xrpl::Vault::clearPaperLoss exceeds unrealized loss"))
-            return;
+        assert(amount > 0);
+        assert(amount <= lossUnrealized_);
 
-        lossUnrealized_ -= principal + interest;
+        lossUnrealized_ -= amount;
     }
 
     void
     defaultLoan(Number const& principal, Number const& interest, bool hasPaperLoss = false)
     {
-        if (!BEAST_EXPECTS(
-                principal > 0 && interest >= 0,
-                "xrpl::Vault::default requires positive principal and non-negative interest"))
-            return;
-        if (!BEAST_EXPECTS(
-                principal + interest <= assetsTotal_, "xrpl::Vault::default exceeds total assets"))
-            return;
-        if (!BEAST_EXPECTS(
-                interest <= interestUnrealized_,
-                "xrpl::Vault::default interest exceeds unrealized interest"))
-            return;
+        assert(principal > 0 && interest >= 0);
+        assert(principal + interest <= assetsTotal_);
+        assert(interest <= interestUnrealized_);
 
         assetsTotal_ -= principal + interest;
         interestUnrealized_ -= interest;
         if (hasPaperLoss)
-            clearPaperLoss(principal, interest);
+            clearPaperLoss(principal + interest);
     }
 
     STAmount
@@ -261,26 +229,110 @@ public:
     {
         return lossUnrealized_;
     }
+
+    Number
+    depositNAV() const
+    {
+        return assetsTotal_ - interestUnrealized_;
+    }
+
+    Number
+    withdrawalNAV() const
+    {
+        return assetsTotal_ - interestUnrealized_ - lossUnrealized_;
+    }
+
+    uint8_t
+    scale() const
+    {
+        return scale_;
+    }
+
+    // Expected shares for a deposit of the given amount
+    Number
+    depositShares(Number const& amount) const
+    {
+        return ((amount * sharesTotal_) / depositNAV()).truncate();
+    }
+
+    // Expected assets actually taken for a deposit that yields the given shares
+    Number
+    depositAssets(Number const& shares) const
+    {
+        return (shares * depositNAV()) / sharesTotal_;
+    }
+
+    // Expected assets out for redeeming the given number of shares
+    Number
+    redeemAssets(Number const& shares) const
+    {
+        return (shares * withdrawalNAV()) / sharesTotal_;
+    }
+
+    // Expected shares burned for a withdrawal of the given asset amount
+    Number
+    withdrawShares(Number const& amount) const
+    {
+        return ((amount * sharesTotal_) / withdrawalNAV()).truncate();
+    }
+
+    // Expected assets out for a withdrawal that burns the given shares
+    Number
+    withdrawAssets(Number const& shares) const
+    {
+        return (shares * withdrawalNAV()) / sharesTotal_;
+    }
+};
+
+struct ExpectedState
+{
+    Number assetsTotal;
+    Number assetsAvailable;
+    Number sharesTotal;
+    Number interestOutstanding = 0;
+    Number lossUnrealized = 0;
 };
 
 class VaultSharePricing_test : public beast::unit_test::suite
 {
+    Issue const usd_{Currency(0x5553440000000000), AccountID(0x4985601)};
+
+    void
+    expectState(Vault const& vault, ExpectedState const& e)
+    {
+        BEAST_EXPECT(vault.assetsTotal() == e.assetsTotal);
+        BEAST_EXPECT(vault.assetsAvailable() == e.assetsAvailable);
+        BEAST_EXPECT(vault.sharesTotal() == e.sharesTotal);
+        BEAST_EXPECT(vault.interestUnrealized() == e.interestOutstanding);
+        BEAST_EXPECT(vault.lossUnrealized() == e.lossUnrealized);
+    }
+
 public:
     void
     testInitialDepositIOU()
     {
         testcase("Initial deposit IOU (scale=6)");
 
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd};  // scale defaults to 6
+        // An empty IOU vault uses the seeding formula: shares = assets * 10^scale.
+        // Verifies the share count, the assets-taken amount, and the resulting vault state.
+        Vault vault{usd_};  // scale defaults to 6
 
-        auto const [shares, assets] = vault.deposit(STAmount{usd, 100}).value();
+        Number const depositAmt = 100;
 
-        // 100 * 10^6 = 100,000,000 shares
-        BEAST_EXPECT(Number(shares) == Number(100'000'000));
-        BEAST_EXPECT(Number(assets) == Number(100));
-        BEAST_EXPECT(Number(vault.assetsTotal()) == Number(100));
-        BEAST_EXPECT(Number(vault.sharesTotal()) == Number(100'000'000));
+        // scale=6: initial deposit gives shares = assets * 10^scale = 100 * 10^6 = 1e8
+        auto const expectedShares =
+            Number{depositAmt.mantissa(), depositAmt.exponent() + vault.scale()};
+        auto const [actualShares, actualAssets] = vault.deposit(STAmount{usd_, depositAmt}).value();
+
+        BEAST_EXPECT(actualShares == expectedShares);
+        BEAST_EXPECT(actualAssets == depositAmt);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt,
+                .sharesTotal = expectedShares,
+            });
     }
 
     void
@@ -288,14 +340,25 @@ public:
     {
         testcase("Initial deposit XRP (scale=0)");
 
+        // XRP forces scale=0, so the seeding formula simplifies to shares = drops 1:1.
+        // Verifies the share count, the assets-taken amount, and the resulting vault state.
         Vault vault{xrpIssue()};
 
-        // 10 XRP = 10,000,000 drops; scale=0 so shares = drops 1:1
-        auto const [shares, assets] = vault.deposit(STAmount{xrpIssue(), 10'000'000}).value();
+        auto const depositAmt = 10'000'000;
 
-        BEAST_EXPECT(Number(shares) == Number(10'000'000));
-        BEAST_EXPECT(Number(assets) == Number(10'000'000));
-        BEAST_EXPECT(Number(vault.assetsTotal()) == Number(10'000'000));
+        auto const [actualShares, actualAssets] =
+            vault.deposit(STAmount{xrpIssue(), depositAmt}).value();
+
+        // scale=0 so shares = drops 1:1
+        BEAST_EXPECT(Number(actualShares) == depositAmt);
+        BEAST_EXPECT(Number(actualAssets) == depositAmt);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt,
+                .sharesTotal = depositAmt,
+            });
     }
 
     void
@@ -303,15 +366,26 @@ public:
     {
         testcase("Initial deposit MPT (scale=0)");
 
+        // MPT forces scale=0, so the seeding formula simplifies to shares = token units 1:1.
+        // Verifies the share count, the assets-taken amount, and the resulting vault state.
         MPTIssue const mptAsset{makeMptID(100, AccountID(0x5678))};
         Vault vault{mptAsset};
 
-        auto const [shares, assets] = vault.deposit(STAmount{mptAsset, 500}).value();
+        auto const depositAmt = 500;
 
-        // scale=0, so 500 assets → 500 shares
-        BEAST_EXPECT(Number(shares) == Number(500));
-        BEAST_EXPECT(Number(assets) == Number(500));
-        BEAST_EXPECT(Number(vault.sharesTotal()) == Number(500));
+        auto const [actualShares, actualAssets] =
+            vault.deposit(STAmount{mptAsset, depositAmt}).value();
+
+        // scale=0, shares = assets 1:1
+        BEAST_EXPECT(Number(actualShares) == depositAmt);
+        BEAST_EXPECT(Number(actualAssets) == depositAmt);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt,
+                .sharesTotal = depositAmt,
+            });
     }
 
     void
@@ -319,19 +393,43 @@ public:
     {
         testcase("Subsequent deposit (proportional)");
 
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd};
+        // A second deposit uses shares = floor(assets * sharesTotal / depositNAV).
+        // Verifies that the share count is floored and the actual assets taken are
+        // back-calculated from the floored share count.
+        Vault vault{usd_};
 
-        // Initial: 100 assets → 100M shares
-        vault.deposit(STAmount{usd, 100}).value();
+        Number const depositAmt1 = 100;
+        auto const expectedShares1 =
+            Number{depositAmt1.mantissa(), depositAmt1.exponent() + vault.scale()};
 
-        // Second deposit: 50 assets at same price → 50M shares
-        auto const [shares, assets] = vault.deposit(STAmount{usd, 50}).value();
+        Number const depositAmt2 = 50;
 
-        BEAST_EXPECT(Number(shares) == Number(50'000'000));
-        BEAST_EXPECT(Number(vault.assetsTotal()) == Number(150));
-        BEAST_EXPECT(Number(vault.assetsAvailable()) == Number(150));
-        BEAST_EXPECT(Number(vault.sharesTotal()) == Number(150'000'000));
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, depositAmt1}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt1,
+                .assetsAvailable = depositAmt1,
+                .sharesTotal = expectedShares1,
+            });
+
+        // No loan outstanding: depositNAV = assetsTotal, shares proportional to assets
+        // shares = floor(depositAmt2 * sharesTotal / depositNAV)
+        Number const expectedShares2 = vault.depositShares(depositAmt2);
+        Number const expectedAssets2 = vault.depositAssets(expectedShares2);
+
+        auto const [actualShares, actualAssets] =
+            vault.deposit(STAmount{usd_, depositAmt2}).value();
+
+        BEAST_EXPECT(actualAssets == expectedAssets2);
+        BEAST_EXPECT(actualShares == expectedShares2);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt1 + expectedAssets2,
+                .assetsAvailable = depositAmt1 + expectedAssets2,
+                .sharesTotal = expectedShares1 + expectedShares2,
+            });
     }
 
     void
@@ -339,18 +437,39 @@ public:
     {
         testcase("Redeem basic");
 
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd};
+        // Redeem half the outstanding shares from a plain IOU vault.
+        // Verifies assets returned are proportional to the share fraction and vault
+        // state decrements correctly.
+        Vault vault{usd_};
 
-        vault.deposit(STAmount{usd, 100}).value();
+        // scale=6: 100 assets -> 100 * 10^6 = 100_000_000 shares
+        Number const depositAmt = 100;
+        auto const depositShares =
+            Number{depositAmt.mantissa(), depositAmt.exponent() + vault.scale()};
+        auto const redeemShares = depositShares / 2;
+        auto const expectedOut = depositAmt / 2;
+
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, depositAmt}).has_value());
+
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt,
+                .sharesTotal = depositShares,
+            });
 
         // Redeem half the shares
-        auto const assetsOut = vault.redeem(STAmount{vault.shareAsset(), 50'000'000}).value();
+        auto const assetsOut = vault.redeem(STAmount{vault.shareAsset(), redeemShares}).value();
 
-        BEAST_EXPECT(Number(assetsOut) == Number(50));
-        BEAST_EXPECT(Number(vault.assetsTotal()) == Number(50));
-        BEAST_EXPECT(Number(vault.assetsAvailable()) == Number(50));
-        BEAST_EXPECT(Number(vault.sharesTotal()) == Number(50'000'000));
+        BEAST_EXPECT(assetsOut == expectedOut);
+        expectState(
+            vault,
+            {
+                .assetsTotal = expectedOut,
+                .assetsAvailable = expectedOut,
+                .sharesTotal = redeemShares,
+            });
     }
 
     void
@@ -358,19 +477,40 @@ public:
     {
         testcase("Withdraw basic");
 
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd};
+        // Withdraw a fixed asset amount from a plain IOU vault.
+        // Verifies the correct number of shares are burned and vault state decrements
+        // correctly.
+        Vault vault{usd_};
 
-        vault.deposit(STAmount{usd, 100}).value();
+        Number const depositAmt = 100;
+        auto const depositShares =
+            Number{depositAmt.mantissa(), depositAmt.exponent() + vault.scale()};
+        auto const withdrawAmt = depositAmt / 2;
+        auto const withdrawShares = depositShares / 2;
+
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, depositAmt}).has_value());
+
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt,
+                .sharesTotal = depositShares,
+            });
 
         // Withdraw 50 assets
-        auto const [shares, assets] = vault.withdraw(STAmount{usd, 50}).value();
+        auto const [actualShares, actualAssets] =
+            vault.withdraw(STAmount{usd_, withdrawAmt}).value();
 
-        BEAST_EXPECT(Number(shares) == Number(50'000'000));
-        BEAST_EXPECT(Number(assets) == Number(50));
-        BEAST_EXPECT(Number(vault.assetsTotal()) == Number(50));
-        BEAST_EXPECT(Number(vault.assetsAvailable()) == Number(50));
-        BEAST_EXPECT(Number(vault.sharesTotal()) == Number(50'000'000));
+        BEAST_EXPECT(actualShares == withdrawShares);
+        BEAST_EXPECT(actualAssets == withdrawAmt);
+        expectState(
+            vault,
+            {
+                .assetsTotal = withdrawAmt,
+                .assetsAvailable = withdrawAmt,
+                .sharesTotal = withdrawShares,
+            });
     }
 
     void
@@ -378,24 +518,52 @@ public:
     {
         testcase("Asymmetric pricing - deposit with unrealized interest");
 
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd, 0};  // scale=0 for simpler math
+        // depositNAV excludes interestUnrealized, so a depositor joining while a loan
+        // is outstanding cannot capture existing yield — they receive fewer shares per
+        // asset than the initial depositors did.
+        Vault vault{usd_, 0};  // scale=0 for simpler math
+
+        auto const depositAmt = 950;
+        auto const depositAmt2 = 95;
+        auto const principal = 500;
+        auto const interest = 50;
 
         // Seed vault: 950 assets, 950 shares
-        vault.deposit(STAmount{usd, 950}).value();
-        BEAST_EXPECT(Number(vault.sharesTotal()) == Number(950));
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, depositAmt}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt,
+                .sharesTotal = depositAmt,
+            });
 
-        // Borrow 500 principal with 50 interest: assetsTotal becomes 1000, omega=50
-        // depositNAV = assetsTotal - omega = 1000 - 50 = 950
-        vault.borrow(Number(500), Number(50));
-        BEAST_EXPECT(Number(vault.assetsTotal()) == Number(1000));
+        vault.borrow(principal, interest);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt + interest,
+                .assetsAvailable = depositAmt - principal,
+                .sharesTotal = depositAmt,
+                .interestOutstanding = interest,
+            });
 
-        // Deposit 95 assets: shares = floor(95 * 950 / 950) = floor(95) = 95
-        // actualAssets = 95 * 950 / 950 = 95
-        auto const [shares, assets] = vault.deposit(STAmount{usd, 95}).value();
+        Number const expectedShares = vault.depositShares(Number(depositAmt2));
+        Number const expectedAssets = vault.depositAssets(expectedShares);
 
-        BEAST_EXPECT(Number(shares) == Number(95));
-        BEAST_EXPECT(Number(assets) == Number(95));
+        auto const [actualShares, actualAssets] =
+            vault.deposit(STAmount{usd_, depositAmt2}).value();
+
+        BEAST_EXPECT(actualShares == expectedShares);
+        BEAST_EXPECT(actualAssets == expectedAssets);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt + interest + expectedAssets,
+                .assetsAvailable = depositAmt - principal + expectedAssets,
+                .sharesTotal = depositAmt + expectedShares,
+                .interestOutstanding = interest,
+            });
     }
 
     void
@@ -403,24 +571,60 @@ public:
     {
         testcase("Asymmetric pricing - withdraw with unrealized loss");
 
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd, 0};
+        // withdrawalNAV is discounted by lossUnrealized, so redeemers receive fewer
+        // assets per share while a paper loss is active. The loss remains on the books
+        // until cleared or confirmed as a hard default.
+        Vault vault{usd_, 0};
 
-        // Seed: 1000 assets, 1000 shares.
-        // Borrow 500 principal with 50 interest: assetsTotal=1050, omega=50.
-        // Mark 100 as paper loss: iota=100.
-        vault.deposit(STAmount{usd, 1000}).value();
-        vault.borrow(Number(500), Number(50));
-        vault.addPaperLoss(Number(100), Number(0));
+        auto const depositAmt = 1000;
+        auto const principal = 500;
+        auto const interest = 50;
+        auto const paperLoss = 100;
+        auto const redeemShares = 100;
 
-        // withdrawalNAV = assetsTotal - omega - iota = 1050 - 50 - 100 = 900
-        // Redeem 100 shares: assets = 100 * 900 / 1000 = 90
-        // assetsAvailable before redeem = 500 (1000 - 500 borrowed); 90 < 500 ✓
-        auto const assetsOut = vault.redeem(STAmount{vault.shareAsset(), 100}).value();
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, depositAmt}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt,
+                .sharesTotal = depositAmt,
+            });
 
-        BEAST_EXPECT(Number(assetsOut) == Number(90));
-        // assetsAvailable decreases by assetsOut: 500 - 90 = 410
-        BEAST_EXPECT(Number(vault.assetsAvailable()) == Number(410));
+        vault.borrow(principal, interest);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt + interest,
+                .assetsAvailable = depositAmt - principal,
+                .sharesTotal = depositAmt,
+                .interestOutstanding = interest,
+            });
+
+        vault.addPaperLoss(paperLoss);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt + interest,
+                .assetsAvailable = depositAmt - principal,
+                .sharesTotal = depositAmt,
+                .interestOutstanding = interest,
+                .lossUnrealized = paperLoss,
+            });
+
+        Number const expectedAssets = vault.redeemAssets(redeemShares);
+        auto const assetsOut = vault.redeem(STAmount{vault.shareAsset(), redeemShares}).value();
+
+        BEAST_EXPECT(assetsOut == expectedAssets);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt + interest - assetsOut,
+                .assetsAvailable = depositAmt - principal - assetsOut,
+                .sharesTotal = depositAmt - redeemShares,
+                .interestOutstanding = interest,
+                .lossUnrealized = paperLoss,
+            });
     }
 
     void
@@ -428,38 +632,82 @@ public:
     {
         testcase("Spec example: deposit at full NAV, redeem at loss-adjusted NAV");
 
-        // Vault: assetsTotal=1000, omega=50 (loan outstanding), iota=100, sharesTotal=1000
-        // Achieved by: seed 950, issue loan of 50, mark 100 as loss
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd, 0};
+        // Reproduces the spec's worked example with both interestUnrealized and
+        // lossUnrealized active simultaneously. A new deposit uses depositNAV (ignores
+        // loss) while redemption uses the lower withdrawalNAV (subtracts both).
+        Vault vault{usd_, 0};
 
-        vault.deposit(STAmount{usd, 950}).value();
-        vault.borrow(Number(500), Number(50));  // assetsTotal=1000, omega=50, assetsAvailable=450
-        vault.addPaperLoss(Number(100), Number(0));
+        auto const depositAmt = 950;
+        auto const principal = 500;
+        auto const interest = 50;
+        auto const paperLoss = 100;
+        auto const depositAmt2 = 1;
+        auto const redeemShares = 1;
 
-        // depositNAV = assetsTotal - omega = 1000 - 50 = 950
-        // sharesTotal = 950
-        // Depositing 0.95 assets: shares = floor(0.95 * 950 / 950) = floor(0.95) = 0
-        // Instead deposit 1 asset: shares = floor(1 * 950 / 950) = 1
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, depositAmt}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt,
+                .sharesTotal = depositAmt,
+            });
+
+        vault.borrow(principal, interest);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt + interest,
+                .assetsAvailable = depositAmt - principal,
+                .sharesTotal = depositAmt,
+                .interestOutstanding = interest,
+            });
+
+        vault.addPaperLoss(paperLoss);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt + interest,
+                .assetsAvailable = depositAmt - principal,
+                .sharesTotal = depositAmt,
+                .interestOutstanding = interest,
+                .lossUnrealized = paperLoss,
+            });
+
+        // Deposit at depositNAV (excludes interest, ignores loss)
         {
-            auto const [shares, assets] = vault.deposit(STAmount{usd, 1}).value();
-            BEAST_EXPECT(Number(shares) == Number(1));
-            BEAST_EXPECT(Number(assets) == Number(1));
-            // assetsAvailable = 450 + 1 = 451
-            BEAST_EXPECT(Number(vault.assetsAvailable()) == Number(451));
+            auto const [actualShares, actualAssets] =
+                vault.deposit(STAmount{usd_, depositAmt2}).value();
+            BEAST_EXPECT(Number(actualShares) == depositAmt2);
+            BEAST_EXPECT(Number(actualAssets) == depositAmt2);
         }
 
-        // After deposit: assetsTotal = 1001, sharesTotal = 951
-        // withdrawalNAV = assetsTotal - omega - iota = 1001 - 50 - 100 = 851
-        // Redeem 1 share: assetsOut = 1 * 851 / 951
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt + interest + depositAmt2,
+                .assetsAvailable = depositAmt - principal + depositAmt2,
+                .sharesTotal = depositAmt + depositAmt2,
+                .interestOutstanding = interest,
+                .lossUnrealized = paperLoss,
+            });
+
+        // Redeem at withdrawalNAV (subtracts both interest and loss)
         {
-            Number const expected = Number(851) / Number(951);
-            STAmount const expectedAmt(usd, expected);
-            auto const redeemAssets = vault.redeem(STAmount{vault.shareAsset(), 1}).value();
-            BEAST_EXPECT(redeemAssets == expectedAmt);
-            // assetsAvailable = 451 - 851/951 (STAmount-truncated)
-            STAmount const expectedAvailAmt{usd, Number(451) - Number(851) / Number(951)};
-            BEAST_EXPECT(vault.assetsAvailable() == expectedAvailAmt);
+            Number const expectedAssets = vault.redeemAssets(redeemShares);
+            auto const redeemAssets =
+                vault.redeem(STAmount{vault.shareAsset(), redeemShares}).value();
+            BEAST_EXPECT(redeemAssets == expectedAssets);
+
+            STAmount const expectedTotal{
+                usd_, depositAmt + interest + depositAmt2 - expectedAssets};
+            STAmount const expectedAvail{
+                usd_, depositAmt - principal + depositAmt2 - expectedAssets};
+            BEAST_EXPECT(vault.assetsTotal() == expectedTotal);
+            BEAST_EXPECT(vault.assetsAvailable() == expectedAvail);
+            BEAST_EXPECT(Number(vault.sharesTotal()) == depositAmt + depositAmt2 - redeemShares);
+            BEAST_EXPECT(vault.interestUnrealized() == interest);
+            BEAST_EXPECT(vault.lossUnrealized() == paperLoss);
         }
     }
 
@@ -468,20 +716,40 @@ public:
     {
         testcase("Deposit rounding - shares floor");
 
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd, 0};
-        vault.deposit(STAmount{usd, 3}).value();
-        // 3 assets, 3 shares
-        // Borrow 1, then repay it with 4 extra interest: assetsTotal becomes 7, sharesTotal stays 3
-        vault.borrow(Number(1), Number(0));
-        vault.repay(Number(1), Number(0), Number(4));
-        // depositNAV = 7 (omega=0), sharesTotal = 3
-        // Deposit 3 assets: shares = floor(3 * 3 / 7) = floor(1.285...) = 1
-        auto const [shares, assets] = vault.deposit(STAmount{usd, 3}).value();
-        BEAST_EXPECT(Number(shares) == Number(1));
-        // Recalculated assets: 1 * 7 / 3
-        STAmount const expectedAssets{usd, Number(7) / Number(3)};
-        BEAST_EXPECT(assets == expectedAssets);
+        // When depositNAV > sharesTotal (inflated vault), the share-per-asset ratio is
+        // less than 1, so floor(shares) discards the fractional part. Verifies the floored
+        // share count and the back-calculated actual assets taken.
+        Vault vault{usd_, 0};
+
+        auto const seedAmt = 3;
+        auto const extraInterest = 4;
+        auto const depositAmt = 3;
+
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, seedAmt}).has_value());
+        // Borrow 1 then repay with 4 extra interest to inflate depositNAV
+        vault.borrow(1, 0);
+        vault.repay(1, 0, extraInterest);
+
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAmt + extraInterest,
+                .assetsAvailable = seedAmt + extraInterest,
+                .sharesTotal = seedAmt,
+            });
+
+        Number const expectedShares = vault.depositShares(Number(depositAmt));
+        Number const expectedAssets = vault.depositAssets(expectedShares);
+
+        auto const [actualShares, actualAssets] = vault.deposit(STAmount{usd_, depositAmt}).value();
+        BEAST_EXPECT(actualShares == expectedShares);
+        BEAST_EXPECT(actualAssets == expectedAssets);
+
+        STAmount const expectedTotal{usd_, seedAmt + extraInterest + expectedAssets};
+        STAmount const expectedAvail{usd_, seedAmt + extraInterest + expectedAssets};
+        BEAST_EXPECT(vault.assetsTotal() == expectedTotal);
+        BEAST_EXPECT(vault.assetsAvailable() == expectedAvail);
+        BEAST_EXPECT(Number(vault.sharesTotal()) == seedAmt + 1);
     }
 
     void
@@ -489,29 +757,86 @@ public:
     {
         testcase("Withdraw rounding - shares floor");
 
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd, 0};
+        // shares = floor(requested * sharesTotal / withdrawalNAV) is always floored,
+        // so assetsOut is always <= requested. Two scenarios: integer requested amount
+        // and fractional requested amount (1.1), both floor to the same share count.
 
-        vault.deposit(STAmount{usd, 10}).value();
-        // Borrow 3 (no interest) so paper loss is backed by loan principal
-        vault.borrow(Number(3), Number(0));
-        // Mark 3 as paper loss: withdrawalNAV = 10 - 0 - 3 = 7
-        vault.addPaperLoss(Number(3), Number(0));
-        // Withdraw 1 asset: shares = floor(1 * 10 / 7) = floor(1.4285...) = 1
-        // assetsOut = 1 * 7 / 10 = 0.7
-        auto const [shares, assets] = vault.withdraw(STAmount{usd, 1}).value();
-        BEAST_EXPECT(Number(shares) == Number(1));
-        BEAST_EXPECT(Number(assets) == Number(7, -1));
+        // Scenario 1: withdrawalNAV < sharesTotal due to paper loss
+        {
+            Vault vault{usd_, 0};
 
-        // rawShares = 1.1*10/7 ≈ 1.571 → floor = 1 (not 2)
-        Vault vault2{usd, 0};
-        vault2.deposit(STAmount{usd, 10}).value();
-        vault2.borrow(Number(3), Number(0));
-        vault2.addPaperLoss(Number(3), Number(0));
-        auto const [shares2, assets2] = vault2.withdraw(STAmount{usd, 11, -1}).value();  // 1.1
-        BEAST_EXPECT(Number(shares2) == Number(1));
-        // assetsOut = 1*7/10 = 0.7
-        BEAST_EXPECT(Number(assets2) == Number(7, -1));
+            auto const depositAmt = 10;
+            auto const borrowAmt = 3;
+            auto const paperLoss = 3;
+            auto const withdrawRequested = 1;
+
+            BEAST_EXPECT(vault.deposit(STAmount{usd_, depositAmt}).has_value());
+            vault.borrow(borrowAmt, 0);
+            vault.addPaperLoss(paperLoss);
+            expectState(
+                vault,
+                {
+                    .assetsTotal = depositAmt,
+                    .assetsAvailable = depositAmt - borrowAmt,
+                    .sharesTotal = depositAmt,
+                    .lossUnrealized = paperLoss,
+                });
+
+            Number const expectedShares = vault.withdrawShares(Number(withdrawRequested));
+            Number const expectedAssetsOut = vault.withdrawAssets(expectedShares);
+
+            auto const [actualShares, actualAssets] =
+                vault.withdraw(STAmount{usd_, withdrawRequested}).value();
+            BEAST_EXPECT(actualShares == expectedShares);
+            BEAST_EXPECT(actualAssets == expectedAssetsOut);
+
+            expectState(
+                vault,
+                {
+                    .assetsTotal = depositAmt - expectedAssetsOut,
+                    .assetsAvailable = depositAmt - borrowAmt - expectedAssetsOut,
+                    .sharesTotal = depositAmt - 1,
+                    .lossUnrealized = paperLoss,
+                });
+        }
+
+        // Scenario 2: fractional withdrawal (1.1) still floors to 1 share
+        {
+            Vault vault2{usd_, 0};
+
+            auto const depositAmt = 10;
+            auto const borrowAmt = 3;
+            auto const paperLoss = 3;
+            STAmount const withdrawRequested{usd_, 11, -1};  // 1.1
+
+            vault2.deposit(STAmount{usd_, depositAmt}).value();
+            vault2.borrow(borrowAmt, 0);
+            vault2.addPaperLoss(paperLoss);
+            expectState(
+                vault2,
+                {
+                    .assetsTotal = depositAmt,
+                    .assetsAvailable = depositAmt - borrowAmt,
+                    .sharesTotal = depositAmt,
+                    .lossUnrealized = paperLoss,
+                });
+
+            Number const expectedShares2 = vault2.withdrawShares(Number(withdrawRequested));
+            Number const expectedAssetsOut2 = vault2.withdrawAssets(expectedShares2);
+
+            auto const [shares2, assets2] = vault2.withdraw(withdrawRequested).value();
+            BEAST_EXPECT(shares2 == expectedShares2);
+            BEAST_EXPECT(assets2 == expectedAssetsOut2);
+
+            expectState(
+                vault2,
+                {
+                    .assetsTotal = depositAmt - expectedAssetsOut2,
+                    .assetsAvailable = depositAmt - borrowAmt - expectedAssetsOut2,
+                    .sharesTotal = depositAmt - 1,
+                    .lossUnrealized = paperLoss,
+                });
+        }
     }
 
     void
@@ -519,16 +844,57 @@ public:
     {
         testcase("Redeem all shares - vault empties");
 
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd};
+        // Redeem every outstanding share in a single call. Verifies the vault reaches
+        // the empty state (assetsTotal = assetsAvailable = sharesTotal = 0).
+        Vault vault{usd_};
 
-        vault.deposit(STAmount{usd, 100}).value();
-        auto const assetsOut = vault.redeem(STAmount{vault.shareAsset(), 100'000'000}).value();
+        auto const depositAmt = 100;
+        auto const depositShares = 100'000'000;
 
-        BEAST_EXPECT(Number(assetsOut) == Number(100));
-        BEAST_EXPECT(Number(vault.assetsTotal()) == Number(0));
-        BEAST_EXPECT(Number(vault.assetsAvailable()) == Number(0));
-        BEAST_EXPECT(Number(vault.sharesTotal()) == Number(0));
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, depositAmt}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt,
+                .sharesTotal = depositShares,
+            });
+
+        auto const assetsOut = vault.redeem(STAmount{vault.shareAsset(), depositShares}).value();
+
+        BEAST_EXPECT(Number(assetsOut) == depositAmt);
+        expectState(vault, {.assetsTotal = 0, .assetsAvailable = 0, .sharesTotal = 0});
+    }
+
+    void
+    testWithdrawAll()
+    {
+        testcase("Withdraw all assets by amount - vault empties");
+
+        // Complement to testRedeemAll: uses withdraw-by-asset-amount rather than
+        // redeem-by-share-count. With no outstanding loan both routes empty the vault.
+        Vault vault{usd_};
+
+        // scale=6: 100 assets -> 100 * 10^6 = 100_000_000 shares
+        auto const depositAmt = 100;
+        auto const depositShares = 100'000'000;
+
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, depositAmt}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt,
+                .sharesTotal = depositShares,
+            });
+
+        // Withdraw the full deposit amount
+        // shares = floor(100 * 100_000_000 / 100) = 100_000_000; assetsOut = 100
+        auto const [burnedShares, assetsOut] = vault.withdraw(STAmount{usd_, depositAmt}).value();
+
+        BEAST_EXPECT(Number(burnedShares) == depositShares);
+        BEAST_EXPECT(Number(assetsOut) == depositAmt);
+        expectState(vault, {.assetsTotal = 0, .assetsAvailable = 0, .sharesTotal = 0});
     }
 
     void
@@ -536,26 +902,53 @@ public:
     {
         testcase("Vault with lossUnrealized only (no interestUnrealized)");
 
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd, 0};
+        // depositNAV = assetsTotal - interestUnrealized, so a paper loss alone does
+        // not affect the deposit price. Verifies that a new deposit gets the full
+        // proportional share count while redemption is discounted by the paper loss.
+        Vault vault{usd_, 0};
 
-        vault.deposit(STAmount{usd, 1000}).value();
-        // Borrow 200 (no interest) so paper loss is backed by loan principal
-        vault.borrow(Number(200), Number(0));
-        vault.addPaperLoss(Number(200), Number(0));
+        auto const depositAmt = 1000;
+        auto const borrowAmt = 200;
+        auto const depositAmt2 = 100;
+        auto const redeemShares = 100;
 
-        // Deposit NAV = 1000 - 0 = 1000 (loss doesn't affect deposit)
-        auto const [depShares, depAssets] = vault.deposit(STAmount{usd, 100}).value();
-        BEAST_EXPECT(Number(depShares) == Number(100));
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, depositAmt}).has_value());
+        // Borrow with no interest, then mark as paper loss
+        vault.borrow(borrowAmt, 0);
+        vault.addPaperLoss(borrowAmt);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt - borrowAmt,
+                .sharesTotal = depositAmt,
+                .lossUnrealized = borrowAmt,
+            });
 
-        // Withdrawal NAV = 1100 - 0 - 200 = 900 (total is now 1100)
-        // Redeem 100 shares: assets = 100 * 900 / 1100 ≈ 81.818...
-        auto const redeemAssets = vault.redeem(STAmount{vault.shareAsset(), 100}).value();
-        // 100 * 900 / 1100 = 81.8181...
-        // Compare as STAmount to account for IOU normalization
-        Number const expected = (Number(100) * Number(900)) / Number(1100);
-        STAmount const expectedAmt(usd, expected);
-        BEAST_EXPECT(redeemAssets == expectedAmt);
+        // Loss doesn't affect depositNAV
+        auto const [depShares, depAssets] = vault.deposit(STAmount{usd_, depositAmt2}).value();
+        BEAST_EXPECT(Number(depShares) == depositAmt2);
+        BEAST_EXPECT(Number(depAssets) == depositAmt2);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt + depositAmt2,
+                .assetsAvailable = depositAmt - borrowAmt + depositAmt2,
+                .sharesTotal = depositAmt + depositAmt2,
+                .lossUnrealized = borrowAmt,
+            });
+
+        // Loss reduces withdrawalNAV but not depositNAV
+        Number const expectedAssets = vault.redeemAssets(redeemShares);
+        auto const redeemAssets = vault.redeem(STAmount{vault.shareAsset(), redeemShares}).value();
+        BEAST_EXPECT(redeemAssets == expectedAssets);
+
+        STAmount const expectedTotal{usd_, depositAmt + depositAmt2 - expectedAssets};
+        STAmount const expectedAvail{usd_, depositAmt - borrowAmt + depositAmt2 - expectedAssets};
+        BEAST_EXPECT(vault.assetsTotal() == expectedTotal);
+        BEAST_EXPECT(vault.assetsAvailable() == expectedAvail);
+        BEAST_EXPECT(Number(vault.sharesTotal()) == depositAmt + depositAmt2 - redeemShares);
+        BEAST_EXPECT(vault.lossUnrealized() == borrowAmt);
     }
 
     void
@@ -563,37 +956,75 @@ public:
     {
         testcase("Multiple depositors with yield (IOU)");
 
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd, 0};  // scale=0 for clean integer math
+        // User A deposits at par, yield accrues via repay with extra interest, then
+        // user B deposits at the inflated price. Verifies each depositor redeems the
+        // correct pro-rata amount of the total assets.
+        Vault vault{usd_, 0};  // scale=0 for clean integer math
 
-        // User A deposits 100 → 100 shares
-        auto const [sharesA, assetsA] = vault.deposit(STAmount{usd, 100}).value();
-        BEAST_EXPECT(Number(sharesA) == Number(100));
-        BEAST_EXPECT(Number(vault.assetsTotal()) == Number(100));
+        auto const depositA = 100;
+        auto const extraInterest = 10;
+
+        // User A deposits 100 -> 100 shares
+        auto const [sharesA, assetsA] = vault.deposit(STAmount{usd_, depositA}).value();
+        BEAST_EXPECT(Number(sharesA) == depositA);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositA,
+                .assetsAvailable = depositA,
+                .sharesTotal = depositA,
+            });
+
+        vault.borrow(1, 0);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositA,
+                .assetsAvailable = depositA - 1,
+                .sharesTotal = depositA,
+            });
 
         // Loan repaid with extra interest: assetsTotal becomes 110
-        vault.borrow(Number(1), Number(0));
-        vault.repay(Number(1), Number(0), Number(10));
-        BEAST_EXPECT(Number(vault.assetsTotal()) == Number(110));
+        vault.repay(1, 0, extraInterest);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositA + extraInterest,
+                .assetsAvailable = depositA + extraInterest,
+                .sharesTotal = depositA,
+            });
 
-        // User B deposits 100: depositNAV=110, shares=floor(100*100/110)=90
-        // actualAssets = 90*110/100 = 99
-        auto const [sharesB, assetsB] = vault.deposit(STAmount{usd, 100}).value();
-        BEAST_EXPECT(Number(sharesB) == Number(90));
-        BEAST_EXPECT(Number(assetsB) == Number(99));
-        BEAST_EXPECT(Number(vault.assetsTotal()) == Number(209));
-        BEAST_EXPECT(Number(vault.sharesTotal()) == Number(190));
+        // User B deposits 100: shares = floor(deposit * sharesTotal / depositNAV)
+        Number const expectedSharesB = vault.depositShares(Number(depositA));
+        Number const expectedAssetsB = vault.depositAssets(expectedSharesB);
+        auto const [sharesB, assetsB] = vault.deposit(STAmount{usd_, depositA}).value();
+        BEAST_EXPECT(sharesB == expectedSharesB);
+        BEAST_EXPECT(assetsB == expectedAssetsB);
+        expectState(
+            vault,
+            {
+                // assetsTotal = 110 + 99 = 209
+                .assetsTotal = depositA + extraInterest + Number(assetsB),
+                .assetsAvailable = depositA + extraInterest + Number(assetsB),
+                // sharesTotal = 100 + 90 = 190
+                .sharesTotal = depositA + Number(sharesB),
+            });
 
         // A redeems 100 shares: assetsOut = 100 * 209 / 190 = 110
-        auto const outA = vault.redeem(STAmount{vault.shareAsset(), 100}).value();
-        BEAST_EXPECT(Number(outA) == Number(110));
+        auto const outA = vault.redeem(STAmount{vault.shareAsset(), depositA}).value();
+        BEAST_EXPECT(Number(outA) == depositA + extraInterest);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositA + extraInterest + Number(assetsB) - Number(outA),
+                .assetsAvailable = depositA + extraInterest + Number(assetsB) - Number(outA),
+                .sharesTotal = Number(sharesB),
+            });
 
         // B redeems 90 shares: assetsOut = 90 * 99 / 90 = 99
-        auto const outB = vault.redeem(STAmount{vault.shareAsset(), 90}).value();
-        BEAST_EXPECT(Number(outB) == Number(99));
-
-        BEAST_EXPECT(Number(vault.assetsTotal()) == Number(0));
-        BEAST_EXPECT(Number(vault.sharesTotal()) == Number(0));
+        auto const outB = vault.redeem(STAmount{vault.shareAsset(), Number(sharesB)}).value();
+        BEAST_EXPECT(outB == assetsB);
+        expectState(vault, {.assetsTotal = 0, .assetsAvailable = 0, .sharesTotal = 0});
     }
 
     void
@@ -601,17 +1032,82 @@ public:
     {
         testcase("Precision loss - zero shares condition");
 
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd, 0};
+        // When a deposit is too small relative to the share price, floor(shares) = 0.
+        // Verifies tecPRECISION_LOSS is returned and vault state is left unchanged.
+        Vault vault{usd_, 0};
 
-        // Initial deposit: 1 asset → 1 share
-        vault.deposit(STAmount{usd, 1}).value();
-        BEAST_EXPECT(Number(vault.sharesTotal()) == Number(1));
+        auto const depositAmt = 1;
 
-        // Deposit 0.0001 assets: shares = floor(0.0001 * 1 / 1) = 0 → tecPRECISION_LOSS
-        auto const tinyResult = vault.deposit(STAmount{usd, 1, -4});
+        // Initial deposit: 1 asset -> 1 share
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, depositAmt}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt,
+                .sharesTotal = depositAmt,
+            });
+
+        // Deposit 0.0001 assets: shares = floor(0.0001 * 1 / 1) = 0 -> tecPRECISION_LOSS
+        auto const tinyResult = vault.deposit(STAmount{usd_, 1, -4});
         BEAST_EXPECT(!tinyResult);
         BEAST_EXPECT(tinyResult.error() == tecPRECISION_LOSS);
+
+        // Vault state unchanged after failed deposit
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt,
+                .sharesTotal = depositAmt,
+            });
+    }
+
+    void
+    testDepositFloorBoundary()
+    {
+        testcase("Deposit floor boundary: 0.95 rounds to 0 (fails), 1.95 rounds to 1 (succeeds)");
+
+        // With 1 asset and 1 share at scale=0, depositNAV = sharesTotal = 1.
+        // floor(0.95 * 1 / 1) = 0  -> tecPRECISION_LOSS
+        // floor(1.95 * 1 / 1) = 1  -> succeeds; actualAssets = 1 (depositor keeps 0.95)
+        Vault vault{usd_, 0};
+
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, 1}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = 1,
+                .assetsAvailable = 1,
+                .sharesTotal = 1,
+            });
+
+        // 0.95 assets: shares = floor(0.95 * 1 / 1) = 0 -> tecPRECISION_LOSS
+        auto const failResult = vault.deposit(STAmount{usd_, 95, -2});
+        BEAST_EXPECT(!failResult);
+        BEAST_EXPECT(failResult.error() == tecPRECISION_LOSS);
+
+        // Vault state unchanged after failed deposit
+        expectState(
+            vault,
+            {
+                .assetsTotal = 1,
+                .assetsAvailable = 1,
+                .sharesTotal = 1,
+            });
+
+        // 1.95 assets: shares = floor(1.95 * 1 / 1) = 1; actualAssets = 1 * 1 / 1 = 1
+        // The depositor keeps the 0.95 remainder (floor invariant)
+        auto const [actualShares, actualAssets] = vault.deposit(STAmount{usd_, 195, -2}).value();
+        BEAST_EXPECT(Number(actualShares) == 1);
+        BEAST_EXPECT(Number(actualAssets) == 1);
+        expectState(
+            vault,
+            {
+                .assetsTotal = 2,
+                .assetsAvailable = 2,
+                .sharesTotal = 2,
+            });
     }
 
     void
@@ -619,22 +1115,41 @@ public:
     {
         testcase("XRP full cycle: deposit, withdraw, redeem");
 
+        // Complete lifecycle using XRP (drops, scale=0): deposit by amount, then
+        // withdraw half by asset amount, then redeem the remainder by share count.
+        // Verifies vault state is correct at each step and empties to zero at the end.
         Vault vault{xrpIssue()};
 
+        auto const depositDrops = 10'000'000;
+        auto const halfDrops = 5'000'000;
+
         // Deposit 10 XRP = 10M drops
-        auto const [shares1, assets1] = vault.deposit(STAmount{xrpIssue(), 10'000'000}).value();
-        BEAST_EXPECT(Number(shares1) == Number(10'000'000));
+        auto const [shares1, assets1] = vault.deposit(STAmount{xrpIssue(), depositDrops}).value();
+        BEAST_EXPECT(Number(shares1) == depositDrops);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositDrops,
+                .assetsAvailable = depositDrops,
+                .sharesTotal = depositDrops,
+            });
 
         // Withdraw 5M drops
-        auto const [wShares, wAssets] = vault.withdraw(STAmount{xrpIssue(), 5'000'000}).value();
-        BEAST_EXPECT(Number(wShares) == Number(5'000'000));
-        BEAST_EXPECT(Number(wAssets) == Number(5'000'000));
+        auto const [wShares, wAssets] = vault.withdraw(STAmount{xrpIssue(), halfDrops}).value();
+        BEAST_EXPECT(Number(wShares) == halfDrops);
+        BEAST_EXPECT(Number(wAssets) == halfDrops);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositDrops - halfDrops,
+                .assetsAvailable = depositDrops - halfDrops,
+                .sharesTotal = depositDrops - halfDrops,
+            });
 
         // Redeem remaining 5M shares
-        auto const rAssets = vault.redeem(STAmount{vault.shareAsset(), 5'000'000}).value();
-        BEAST_EXPECT(Number(rAssets) == Number(5'000'000));
-        BEAST_EXPECT(Number(vault.assetsTotal()) == Number(0));
-        BEAST_EXPECT(Number(vault.assetsAvailable()) == Number(0));
+        auto const rAssets = vault.redeem(STAmount{vault.shareAsset(), halfDrops}).value();
+        BEAST_EXPECT(Number(rAssets) == halfDrops);
+        expectState(vault, {.assetsTotal = 0, .assetsAvailable = 0, .sharesTotal = 0});
     }
 
     void
@@ -642,18 +1157,42 @@ public:
     {
         testcase("MPT full cycle: deposit, withdraw, redeem");
 
+        // Complete lifecycle using MPT tokens (scale=0): deposit by amount, then
+        // withdraw part by asset amount, then redeem the remainder by share count.
+        // Verifies vault state is correct at each step and empties to zero at the end.
         MPTIssue const mptAsset{makeMptID(200, AccountID(0x5678))};
         Vault vault{mptAsset};
 
-        auto const [shares1, assets1] = vault.deposit(STAmount{mptAsset, 1000}).value();
-        BEAST_EXPECT(Number(shares1) == Number(1000));
+        auto const depositAmt = 1000;
+        auto const withdrawAmt = 400;
 
-        auto const [wShares, wAssets] = vault.withdraw(STAmount{mptAsset, 400}).value();
-        BEAST_EXPECT(Number(wShares) == Number(400));
+        auto const [shares1, assets1] = vault.deposit(STAmount{mptAsset, depositAmt}).value();
+        BEAST_EXPECT(Number(shares1) == depositAmt);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt,
+                .sharesTotal = depositAmt,
+            });
 
-        auto const rAssets = vault.redeem(STAmount{vault.shareAsset(), 600}).value();
-        BEAST_EXPECT(Number(rAssets) == Number(600));
-        BEAST_EXPECT(Number(vault.assetsTotal()) == Number(0));
+        // Withdraw 400 tokens
+        auto const [wShares, wAssets] = vault.withdraw(STAmount{mptAsset, withdrawAmt}).value();
+        BEAST_EXPECT(Number(wShares) == withdrawAmt);
+        BEAST_EXPECT(Number(wAssets) == withdrawAmt);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt - withdrawAmt,
+                .assetsAvailable = depositAmt - withdrawAmt,
+                .sharesTotal = depositAmt - withdrawAmt,
+            });
+
+        // Redeem remaining 600 shares
+        auto const remaining = depositAmt - withdrawAmt;
+        auto const rAssets = vault.redeem(STAmount{vault.shareAsset(), remaining}).value();
+        BEAST_EXPECT(Number(rAssets) == remaining);
+        expectState(vault, {.assetsTotal = 0, .assetsAvailable = 0, .sharesTotal = 0});
     }
 
     void
@@ -661,25 +1200,51 @@ public:
     {
         testcase("Tiny deposit into large vault (IOU)");
 
-        // Large vault with 1 billion assets at scale=6
-        // sharesTotal = 1e9 * 1e6 = 1e15
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd};  // scale=6
+        // Verifies share precision is maintained at an extreme asset-to-deposit ratio.
+        // Vault seeded with 1e9 assets (scale=6 → sharesTotal = 1e15); then a tiny
+        // deposit is made and the resulting shares are redeemed back without loss.
+        Vault vault{usd_};  // scale=6
 
-        vault.deposit(STAmount{usd, UINT64_C(1'000'000'000)}).value();
-        BEAST_EXPECT(Number(vault.sharesTotal()) == Number(1, 15));
+        auto const seedAmt = UINT64_C(1'000'000'000);
+        auto const seedShares = Number(1, 15);
+        auto const tinyDeposit = Number(1, -6);
 
-        // Tiny deposit: 0.000001 (1e-6) into a 1e9 vault
-        // shares = floor(1e-6 * 1e15 / 1e9) = floor(1e0) = 1
-        auto const [shares, assets] = vault.deposit(STAmount{usd, 1, -6}).value();
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, seedAmt}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = Number(seedAmt),
+                .assetsAvailable = Number(seedAmt),
+                .sharesTotal = seedShares,
+            });
 
-        BEAST_EXPECT(Number(shares) == Number(1));
-        // Recalculated assets: 1 * 1e9 / 1e15 = 1e-6
-        BEAST_EXPECT(Number(assets) == Number(1, -6));
+        // shares = floor(tinyDeposit * sharesTotal / depositNAV)
+        Number const expectedShares = vault.depositShares(tinyDeposit);
+        Number const expectedAssets = vault.depositAssets(expectedShares);
 
-        // Redeem the 1 share back
-        auto const out = vault.redeem(STAmount{vault.shareAsset(), 1}).value();
-        BEAST_EXPECT(Number(out) == Number(1, -6));
+        auto const [actualShares, actualAssets] =
+            vault.deposit(STAmount{usd_, tinyDeposit}).value();
+
+        BEAST_EXPECT(actualShares == expectedShares);
+        BEAST_EXPECT(actualAssets == expectedAssets);
+        expectState(
+            vault,
+            {
+                .assetsTotal = Number(seedAmt) + expectedAssets,
+                .assetsAvailable = Number(seedAmt) + expectedAssets,
+                .sharesTotal = seedShares + expectedShares,
+            });
+
+        // Redeem the deposited shares back
+        auto const out = vault.redeem(STAmount{vault.shareAsset(), expectedShares}).value();
+        BEAST_EXPECT(out == expectedAssets);
+        expectState(
+            vault,
+            {
+                .assetsTotal = Number(seedAmt),
+                .assetsAvailable = Number(seedAmt),
+                .sharesTotal = seedShares,
+            });
     }
 
     void
@@ -687,22 +1252,51 @@ public:
     {
         testcase("Tiny deposit into large vault (XRP)");
 
-        // 100 million XRP = 1e14 drops, scale=0 so shares = 1e14
+        // Verifies share precision is maintained at an extreme asset-to-deposit ratio
+        // with XRP (scale=0). Vault seeded with 1e14 drops; then 1 drop is deposited
+        // and the resulting shares are redeemed back without loss.
         Vault vault{xrpIssue()};
 
-        vault.deposit(STAmount{xrpIssue(), UINT64_C(100'000'000'000'000)}).value();
-        BEAST_EXPECT(Number(vault.sharesTotal()) == Number(1, 14));
+        auto const seedDrops = UINT64_C(100'000'000'000'000);
+        auto const seedNum = Number(1, 14);
 
-        // Deposit 1 drop into a 1e14-drop vault
-        // shares = floor(1 * 1e14 / 1e14) = 1
-        auto const [shares, assets] = vault.deposit(STAmount{xrpIssue(), 1}).value();
+        BEAST_EXPECT(vault.deposit(STAmount{xrpIssue(), seedDrops}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedNum,
+                .assetsAvailable = seedNum,
+                .sharesTotal = seedNum,
+            });
 
-        BEAST_EXPECT(Number(shares) == Number(1));
-        BEAST_EXPECT(Number(assets) == Number(1));
+        // shares = floor(tinyDeposit * sharesTotal / depositNAV)
+        auto const tinyDeposit = 1;
+        Number const expectedShares = vault.depositShares(Number(tinyDeposit));
+        Number const expectedAssets = vault.depositAssets(expectedShares);
 
-        // Redeem the 1 share
-        auto const out = vault.redeem(STAmount{vault.shareAsset(), 1}).value();
-        BEAST_EXPECT(Number(out) == Number(1));
+        auto const [actualShares, actualAssets] =
+            vault.deposit(STAmount{xrpIssue(), tinyDeposit}).value();
+
+        BEAST_EXPECT(actualShares == expectedShares);
+        BEAST_EXPECT(actualAssets == expectedAssets);
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedNum + expectedAssets,
+                .assetsAvailable = seedNum + expectedAssets,
+                .sharesTotal = seedNum + expectedShares,
+            });
+
+        // Redeem the deposited shares back
+        auto const out = vault.redeem(STAmount{vault.shareAsset(), expectedShares}).value();
+        BEAST_EXPECT(out == expectedAssets);
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedNum,
+                .assetsAvailable = seedNum,
+                .sharesTotal = seedNum,
+            });
     }
 
     void
@@ -710,27 +1304,45 @@ public:
     {
         testcase("Large deposit into tiny vault (IOU)");
 
-        // Tiny vault: 0.001 assets, scale=6 → shares = 0.001 * 1e6 = 1000
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd};
+        // Verifies proportional share allocation when a large deposit dwarfs the
+        // existing vault. Vault seeded with 0.001 assets (scale=6 → 1000 shares);
+        // then 1e9 assets are deposited and the original seed shares are redeemed.
+        Vault vault{usd_};
 
-        vault.deposit(STAmount{usd, 1, -3}).value();
-        BEAST_EXPECT(Number(vault.sharesTotal()) == Number(1000));
+        auto const seedAssets = Number(1, -3);
+        auto const seedShares = 1000;
+        auto const largeDeposit = Number(1, 9);
 
-        // Massive deposit: 1 billion assets
-        // shares = floor(1e9 * 1000 / 0.001) = floor(1e15) = 1e15
-        auto const [shares, assets] = vault.deposit(STAmount{usd, UINT64_C(1'000'000'000)}).value();
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, seedAssets}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAssets,
+                .assetsAvailable = seedAssets,
+                .sharesTotal = seedShares,
+            });
 
-        BEAST_EXPECT(Number(shares) == Number(1, 15));
-        BEAST_EXPECT(Number(assets) == Number(1, 9));
+        // shares = floor(largeDeposit * sharesTotal / depositNAV)
+        Number const expectedShares = vault.depositShares(largeDeposit);
+        Number const expectedAssets = vault.depositAssets(expectedShares);
 
-        // Vault now: assetsTotal = 1e9 + 0.001, sharesTotal = 1e15 + 1000
-        // Redeem original 1000 shares: assetsOut = 1000 * (1e9+0.001) / (1e15+1000)
-        // ≈ 1e12 / 1e15 = 0.001 (the original depositor gets back roughly 0.001)
-        auto const out = vault.redeem(STAmount{vault.shareAsset(), 1000}).value();
-        // Approximate bounds: should be within 10% of 0.001
-        BEAST_EXPECT(Number(out) > Number(9, -4));   // > 0.0009
-        BEAST_EXPECT(Number(out) < Number(11, -4));  // < 0.0011
+        auto const [actualShares, actualAssets] =
+            vault.deposit(STAmount{usd_, largeDeposit}).value();
+
+        BEAST_EXPECT(actualShares == expectedShares);
+        BEAST_EXPECT(actualAssets == expectedAssets);
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAssets + expectedAssets,
+                .assetsAvailable = seedAssets + expectedAssets,
+                .sharesTotal = seedShares + expectedShares,
+            });
+
+        // Redeem original seed shares
+        Number const expectedRedeem = vault.redeemAssets(Number(seedShares));
+        auto const out = vault.redeem(STAmount{vault.shareAsset(), seedShares}).value();
+        BEAST_EXPECT(out == expectedRedeem);
     }
 
     void
@@ -738,23 +1350,48 @@ public:
     {
         testcase("Large deposit into tiny vault (XRP)");
 
-        // Tiny vault: 1 drop, scale=0 → 1 share
+        // Verifies proportional share allocation with XRP at a 1:1e14 size ratio.
+        // Vault seeded with 1 drop (scale=0 → 1 share); then 1e14 drops are deposited
+        // and the original 1-drop seed share is redeemed at its exact proportional value.
         Vault vault{xrpIssue()};
 
-        vault.deposit(STAmount{xrpIssue(), 1}).value();
-        BEAST_EXPECT(Number(vault.sharesTotal()) == Number(1));
+        auto const seedAmt = 1;
+        auto const largeDeposit = Number(1, 14);
+
+        BEAST_EXPECT(vault.deposit(STAmount{xrpIssue(), seedAmt}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAmt,
+                .assetsAvailable = seedAmt,
+                .sharesTotal = seedAmt,
+            });
 
         // Massive deposit: 1e14 drops (100M XRP)
         // shares = floor(1e14 * 1 / 1) = 1e14
-        auto const [shares, assets] =
+        auto const [actualShares, actualAssets] =
             vault.deposit(STAmount{xrpIssue(), UINT64_C(100'000'000'000'000)}).value();
 
-        BEAST_EXPECT(Number(shares) == Number(1, 14));
-        BEAST_EXPECT(Number(assets) == Number(1, 14));
+        BEAST_EXPECT(actualShares == largeDeposit);
+        BEAST_EXPECT(actualAssets == largeDeposit);
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAmt + largeDeposit,
+                .assetsAvailable = seedAmt + largeDeposit,
+                .sharesTotal = seedAmt + largeDeposit,
+            });
 
         // Redeem original 1 share: assetsOut = 1 * (1e14+1) / (1e14+1) = 1
-        auto const out = vault.redeem(STAmount{vault.shareAsset(), 1}).value();
-        BEAST_EXPECT(Number(out) == Number(1));
+        auto const out = vault.redeem(STAmount{vault.shareAsset(), seedAmt}).value();
+        BEAST_EXPECT(Number(out) == seedAmt);
+        expectState(
+            vault,
+            {
+                .assetsTotal = largeDeposit,
+                .assetsAvailable = largeDeposit,
+                .sharesTotal = largeDeposit,
+            });
     }
 
     void
@@ -763,38 +1400,70 @@ public:
         testcase("High precision deposit/redeem with unrealized interest");
 
         // Tests the full loan lifecycle at large scale:
-        // issue loan → tiny depositor joins → loan repaid → depositor redeems
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd, 0};  // scale=0
+        // issue loan -> tiny depositor joins -> loan repaid -> depositor redeems
+        Vault vault{usd_, 0};  // scale=0
 
-        // Seed: 1e12 assets → 1e12 shares
-        vault.deposit(STAmount{usd, UINT64_C(1'000'000'000'000)}).value();
+        auto const seedAmt = Number(1, 12);
+        auto const principal = Number(1, 11);
+        auto const interest = Number(5, 11);
+        auto const tinyDeposit = 1;
 
-        // Borrow 1e11 principal with 5e11 interest: assetsTotal=1.5e12, omega=5e11
-        // depositNAV = 1.5e12 - 5e11 = 1e12 (unchanged from seed)
-        vault.borrow(Number(1, 11), Number(5, 11));
+        // Seed: 1e12 assets -> 1e12 shares
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, UINT64_C(1'000'000'000'000)}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAmt,
+                .assetsAvailable = seedAmt,
+                .sharesTotal = seedAmt,
+            });
 
-        // Tiny deposit: 1 asset
-        // shares = floor(1 * 1e12 / 1e12) = 1
-        auto const [shares, assets] = vault.deposit(STAmount{usd, 1}).value();
-        BEAST_EXPECT(Number(shares) == Number(1));
-        BEAST_EXPECT(Number(assets) == Number(1));
+        // Borrow 1e11 principal with 5e11 interest
+        vault.borrow(principal, interest);
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAmt + interest,
+                .assetsAvailable = seedAmt - principal,
+                .sharesTotal = seedAmt,
+                .interestOutstanding = interest,
+            });
 
-        // Loan repaid: omega → 0, assetsAvailable fully restored to assetsTotal = 1.5e12 + 1
-        vault.repay(Number(1, 11), Number(5, 11));
-        BEAST_EXPECT(Number(vault.assetsAvailable()) == Number(15, 11) + Number(1));
+        auto const [actualShares, actualAssets] =
+            vault.deposit(STAmount{usd_, tinyDeposit}).value();
+        BEAST_EXPECT(Number(actualShares) == tinyDeposit);
+        BEAST_EXPECT(Number(actualAssets) == tinyDeposit);
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAmt + interest + tinyDeposit,
+                .assetsAvailable = seedAmt - principal + tinyDeposit,
+                .sharesTotal = seedAmt + tinyDeposit,
+                .interestOutstanding = interest,
+            });
 
-        // Redeem that 1 share
-        // withdrawalNAV = (1.5e12 + 1) - 0 - 0 = 1.5e12 + 1
-        // assetsOut = 1 * (1.5e12 + 1) / (1e12 + 1)
-        auto const out = vault.redeem(STAmount{vault.shareAsset(), 1}).value();
-        Number const expectedNum =
-            (Number(1) * (Number(15, 11) + Number(1))) / (Number(1, 12) + Number(1));
-        STAmount const expectedAmt(usd, expectedNum);
+        // Loan repaid: interestUnrealized -> 0, assetsAvailable fully restored
+        vault.repay(principal, interest);
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAmt + interest + tinyDeposit,
+                .assetsAvailable = seedAmt + interest + tinyDeposit,
+                .sharesTotal = seedAmt + tinyDeposit,
+            });
+
+        Number const expectedOut = vault.redeemAssets(Number(tinyDeposit));
+        STAmount const expectedAmt(usd_, expectedOut);
+        auto const out = vault.redeem(STAmount{vault.shareAsset(), tinyDeposit}).value();
         BEAST_EXPECT(out == expectedAmt);
-        // assetsAvailable after redeem: (1.5e12+1) - assetsOut (STAmount-truncated)
-        STAmount const expectedAvailAmt{usd, (Number(15, 11) + Number(1)) - expectedNum};
-        BEAST_EXPECT(vault.assetsAvailable() == expectedAvailAmt);
+
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAmt + interest + tinyDeposit - expectedOut,
+                .assetsAvailable = seedAmt + interest + tinyDeposit - expectedOut,
+                .sharesTotal = seedAmt,
+            });
     }
 
     void
@@ -804,23 +1473,55 @@ public:
 
         // Large vault with loss: tests that a tiny share redemption
         // correctly accounts for the discounted withdrawalNAV
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd, 0};
+        Vault vault{usd_, 0};
 
-        vault.deposit(STAmount{usd, UINT64_C(1'000'000'000'000)}).value();
+        auto const seedAmt = Number(1, 12);
+        auto const borrowAmt = Number(2, 11);
+        auto const redeemShares = 1;
+
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, UINT64_C(1'000'000'000'000)}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAmt,
+                .assetsAvailable = seedAmt,
+                .sharesTotal = seedAmt,
+            });
 
         // Borrow 2e11 (no interest) so paper loss is backed by loan principal
-        vault.borrow(Number(2, 11), Number(0));
-        // 20% paper loss
-        vault.addPaperLoss(Number(2, 11), Number(0));
-        // withdrawalNAV = 1e12 - 0 - 2e11 = 8e11
+        vault.borrow(borrowAmt, 0);
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAmt,
+                .assetsAvailable = seedAmt - borrowAmt,
+                .sharesTotal = seedAmt,
+            });
 
-        // Redeem 1 share out of 1e12
-        // assetsOut = 1 * 8e11 / 1e12 = 0.8
-        auto const out = vault.redeem(STAmount{vault.shareAsset(), 1}).value();
-        Number const expectedNum = Number(8, 11) / Number(1, 12);
-        STAmount const expectedAmt(usd, expectedNum);
+        // 20% paper loss
+        vault.addPaperLoss(borrowAmt);
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAmt,
+                .assetsAvailable = seedAmt - borrowAmt,
+                .sharesTotal = seedAmt,
+                .lossUnrealized = borrowAmt,
+            });
+
+        Number const expectedOut = vault.redeemAssets(redeemShares);
+        STAmount const expectedAmt(usd_, expectedOut);
+        auto const out = vault.redeem(STAmount{vault.shareAsset(), redeemShares}).value();
         BEAST_EXPECT(out == expectedAmt);
+
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAmt - expectedOut,
+                .assetsAvailable = seedAmt - borrowAmt - expectedOut,
+                .sharesTotal = seedAmt - redeemShares,
+                .lossUnrealized = borrowAmt,
+            });
     }
 
     void
@@ -828,32 +1529,59 @@ public:
     {
         testcase("Many tiny deposits into large vault then full redeem");
 
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd, 0};  // scale=0
+        // One hundred sequential 1-asset deposits into a 1e9-asset vault. Verifies
+        // that each tiny deposit receives exactly 1 share (floor holds) and that the
+        // accumulated shares can be bulk-redeemed for the exact deposited amount.
+        Vault vault{usd_, 0};  // scale=0
+
+        auto const seedAmt = Number(1, 9);
+        auto const numDeposits = 100;
+        auto const tinyAmt = 1;
 
         // Seed with 1e9 assets
-        vault.deposit(STAmount{usd, UINT64_C(1'000'000'000)}).value();
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, UINT64_C(1'000'000'000)}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAmt,
+                .assetsAvailable = seedAmt,
+                .sharesTotal = seedAmt,
+            });
 
         Number totalTinyShares{0};
         Number totalTinyAssets{0};
 
         // 100 tiny deposits of 1 asset each
-        for (int i = 0; i < 100; ++i)
+        for (int i = 0; i < numDeposits; ++i)
         {
-            auto const [s, a] = vault.deposit(STAmount{usd, 1}).value();
+            auto const [s, a] = vault.deposit(STAmount{usd_, tinyAmt}).value();
             totalTinyShares += Number(s);
             totalTinyAssets += Number(a);
         }
 
         // Each deposit: shares = floor(1 * sharesTotal / assetsTotal)
         // First tiny: floor(1 * 1e9 / 1e9) = 1 share per deposit
-        BEAST_EXPECT(totalTinyShares == Number(100));
-        BEAST_EXPECT(totalTinyAssets == Number(100));
+        BEAST_EXPECT(totalTinyShares == numDeposits);
+        BEAST_EXPECT(totalTinyAssets == numDeposits);
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAmt + numDeposits,
+                .assetsAvailable = seedAmt + numDeposits,
+                .sharesTotal = seedAmt + numDeposits,
+            });
 
         // Redeem all 100 tiny shares
-        auto const out = vault.redeem(STAmount{vault.shareAsset(), 100}).value();
+        auto const out = vault.redeem(STAmount{vault.shareAsset(), Number(numDeposits)}).value();
         // assetsOut = 100 * (1e9 + 100) / (1e9 + 100) = 100
-        BEAST_EXPECT(Number(out) == Number(100));
+        BEAST_EXPECT(Number(out) == numDeposits);
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAmt,
+                .assetsAvailable = seedAmt,
+                .sharesTotal = seedAmt,
+            });
     }
 
     void
@@ -861,26 +1589,48 @@ public:
     {
         testcase("Extreme liquidity ratio - 1e15 to 1 (IOU)");
 
-        // Vault with maximum practical IOU assets at scale=0
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd, 0};
+        // IOU vault at maximum practical size (1e15 assets, scale=0): deposit then
+        // redeem 1 unit, verifying no rounding error at the extreme liquidity ratio.
+        Vault vault{usd_, 0};
 
-        // 1e15 assets → 1e15 shares
-        vault.deposit(STAmount{usd, UINT64_C(1'000'000'000'000'000)}).value();
-        BEAST_EXPECT(Number(vault.sharesTotal()) == Number(1, 15));
+        auto const seedAmt = Number(1, 15);
+        auto const tinyDeposit = 1;
+
+        // 1e15 assets -> 1e15 shares
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, UINT64_C(1'000'000'000'000'000)}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAmt,
+                .assetsAvailable = seedAmt,
+                .sharesTotal = seedAmt,
+            });
 
         // Deposit 1 asset: shares = floor(1 * 1e15 / 1e15) = 1
-        auto const [shares, assets] = vault.deposit(STAmount{usd, 1}).value();
-        BEAST_EXPECT(Number(shares) == Number(1));
-        BEAST_EXPECT(Number(assets) == Number(1));
+        auto const [actualShares, actualAssets] =
+            vault.deposit(STAmount{usd_, tinyDeposit}).value();
+        BEAST_EXPECT(Number(actualShares) == tinyDeposit);
+        BEAST_EXPECT(Number(actualAssets) == tinyDeposit);
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAmt + tinyDeposit,
+                .assetsAvailable = seedAmt + tinyDeposit,
+                .sharesTotal = seedAmt + tinyDeposit,
+            });
 
         // Redeem that 1 share
-        auto const out = vault.redeem(STAmount{vault.shareAsset(), 1}).value();
-        BEAST_EXPECT(Number(out) == Number(1));
+        auto const out = vault.redeem(STAmount{vault.shareAsset(), tinyDeposit}).value();
+        BEAST_EXPECT(Number(out) == tinyDeposit);
 
         // Vault should be back to exactly 1e15
-        BEAST_EXPECT(Number(vault.assetsTotal()) == Number(1, 15));
-        BEAST_EXPECT(Number(vault.sharesTotal()) == Number(1, 15));
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAmt,
+                .assetsAvailable = seedAmt,
+                .sharesTotal = seedAmt,
+            });
     }
 
     void
@@ -888,17 +1638,47 @@ public:
     {
         testcase("Extreme liquidity ratio - 1e15 to 1 (MPT)");
 
+        // MPT vault at maximum practical size (1e15 tokens, scale=0): deposit then
+        // redeem 1 token, verifying no rounding error at the extreme liquidity ratio.
         MPTIssue const mptAsset{makeMptID(300, AccountID(0x5678))};
         Vault vault{mptAsset};
 
-        vault.deposit(STAmount{mptAsset, UINT64_C(1'000'000'000'000'000)}).value();
-        BEAST_EXPECT(Number(vault.sharesTotal()) == Number(1, 15));
+        auto const seedAmt = Number(1, 15);
+        auto const tinyDeposit = 1;
 
-        auto const [shares, assets] = vault.deposit(STAmount{mptAsset, 1}).value();
-        BEAST_EXPECT(Number(shares) == Number(1));
+        BEAST_EXPECT(
+            vault.deposit(STAmount{mptAsset, UINT64_C(1'000'000'000'000'000)}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAmt,
+                .assetsAvailable = seedAmt,
+                .sharesTotal = seedAmt,
+            });
 
-        auto const out = vault.redeem(STAmount{vault.shareAsset(), 1}).value();
-        BEAST_EXPECT(Number(out) == Number(1));
+        // Deposit 1 token: shares = floor(1 * 1e15 / 1e15) = 1
+        auto const [actualShares, actualAssets] =
+            vault.deposit(STAmount{mptAsset, tinyDeposit}).value();
+        BEAST_EXPECT(Number(actualShares) == tinyDeposit);
+        BEAST_EXPECT(Number(actualAssets) == tinyDeposit);
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAmt + tinyDeposit,
+                .assetsAvailable = seedAmt + tinyDeposit,
+                .sharesTotal = seedAmt + tinyDeposit,
+            });
+
+        // Redeem that 1 share
+        auto const out = vault.redeem(STAmount{vault.shareAsset(), tinyDeposit}).value();
+        BEAST_EXPECT(Number(out) == tinyDeposit);
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAmt,
+                .assetsAvailable = seedAmt,
+                .sharesTotal = seedAmt,
+            });
     }
 
     void
@@ -908,35 +1688,57 @@ public:
 
         // A hard default permanently reduces assetsTotal and interestUnrealized.
         // No lossUnrealized is created; the loss is immediately socialized.
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd, 0};
+        Vault vault{usd_, 0};
+
+        auto const depositAmt = 1000;
+        auto const principal = 400;
+        auto const interest = 100;
+        auto const redeemShares = 500;
 
         // Seed: 1000 assets, 1000 shares
-        vault.deposit(STAmount{usd, 1000}).value();
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, depositAmt}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt,
+                .sharesTotal = depositAmt,
+            });
 
         // Issue loan: principal=400, interest=100
-        // assetsTotal = 1000 + 100 = 1100, omega = 100, assetsAvailable = 600
-        vault.borrow(Number(400), Number(100));
-        BEAST_EXPECT(Number(vault.assetsTotal()) == Number(1100));
-        BEAST_EXPECT(Number(vault.interestUnrealized()) == Number(100));
+        vault.borrow(principal, interest);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt + interest,
+                .assetsAvailable = depositAmt - principal,
+                .sharesTotal = depositAmt,
+                .interestOutstanding = interest,
+            });
 
         // Hard default the full loan (isPaperLoss=false)
-        // assetsTotal -= 400 + 100 = 500 → assetsTotal = 600
-        // interestUnrealized -= 100 → omega = 0
-        // lossUnrealized stays 0
-        vault.defaultLoan(Number(400), Number(100), false);
-        BEAST_EXPECT(Number(vault.assetsTotal()) == Number(600));
-        BEAST_EXPECT(Number(vault.interestUnrealized()) == Number(0));
-        BEAST_EXPECT(Number(vault.lossUnrealized()) == Number(0));
+        // assetsTotal -= principal + interest; interestUnrealized -= interest
+        vault.defaultLoan(principal, interest, false);
+        expectState(
+            vault,
+            {
+                // assetsTotal = 1000 + 100 - (400 + 100) = 600
+                .assetsTotal = depositAmt - principal,
+                // assetsAvailable = 600 (loan was already removed from available via borrow)
+                .assetsAvailable = depositAmt - principal,
+                .sharesTotal = depositAmt,
+            });
 
-        // After hard default: assetsAvailable unchanged at 600 (borrow removed principal)
-        BEAST_EXPECT(Number(vault.assetsAvailable()) == Number(600));
-
-        // withdrawalNAV = 600 - 0 - 0 = 600
-        // Redeem 500 shares: assetsOut = 500 * 600 / 1000 = 300 < 600 (assetsAvailable) ✓
-        auto const out = vault.redeem(STAmount{vault.shareAsset(), 500}).value();
-        BEAST_EXPECT(Number(out) == Number(300));
-        BEAST_EXPECT(Number(vault.assetsAvailable()) == Number(300));
+        Number const expectedOut = vault.redeemAssets(redeemShares);
+        auto const out = vault.redeem(STAmount{vault.shareAsset(), redeemShares}).value();
+        BEAST_EXPECT(out == expectedOut);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt - principal - expectedOut,
+                .assetsAvailable = depositAmt - principal - expectedOut,
+                .sharesTotal = depositAmt - redeemShares,
+            });
     }
 
     void
@@ -946,32 +1748,67 @@ public:
 
         // A loan is pre-announced as paper loss via addPaperLoss, then confirmed
         // as a hard default via defaultLoan(hasPaperLoss=true).
-        // defaultLoan decrements both assetsTotal and lossUnrealized simultaneously,
-        // so the withdrawalNAV (assetsTotal - omega - iota) recovers after the default.
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd, 0};
+        Vault vault{usd_, 0};
 
-        vault.deposit(STAmount{usd, 1000}).value();
-        vault.borrow(Number(400), Number(100));
-        // assetsTotal=1100, omega=100, assetsAvailable=600
+        auto const depositAmt = 1000;
+        auto const principal = 400;
+        auto const interest = 100;
+        auto const redeemShares = 500;
+
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, depositAmt}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt,
+                .sharesTotal = depositAmt,
+            });
+
+        vault.borrow(principal, interest);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt + interest,
+                .assetsAvailable = depositAmt - principal,
+                .sharesTotal = depositAmt,
+                .interestOutstanding = interest,
+            });
 
         // Pre-announce the full loan as paper loss
-        // assetsTotal - assetsAvailable = 500, so lossUnrealized can reach 500
-        vault.addPaperLoss(Number(400), Number(100));
-        BEAST_EXPECT(Number(vault.lossUnrealized()) == Number(500));
-        // withdrawalNAV = 1100 - 100 - 500 = 500
+        vault.addPaperLoss(principal + interest);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt + interest,
+                .assetsAvailable = depositAmt - principal,
+                .sharesTotal = depositAmt,
+                .interestOutstanding = interest,
+                .lossUnrealized = principal + interest,
+            });
 
         // Hard default confirmed (hasPaperLoss=true):
-        // assetsTotal -= 500 → 600; omega -= 100 → 0; lossUnrealized -= 500 → 0
-        vault.defaultLoan(Number(400), Number(100), true);
-        BEAST_EXPECT(Number(vault.assetsTotal()) == Number(600));
-        BEAST_EXPECT(Number(vault.interestUnrealized()) == Number(0));
-        BEAST_EXPECT(Number(vault.lossUnrealized()) == Number(0));
+        // assetsTotal -= (principal+interest); interestUnrealized -= interest; lossUnrealized -=
+        // (principal+interest)
+        vault.defaultLoan(principal, interest, true);
+        expectState(
+            vault,
+            {
+                // assetsTotal = 1000 + 100 - 500 = 600
+                .assetsTotal = depositAmt - principal,
+                .assetsAvailable = depositAmt - principal,
+                .sharesTotal = depositAmt,
+            });
 
-        // withdrawalNAV = 600 - 0 - 0 = 600
-        // Redeem 500 shares: assetsOut = 500 * 600 / 1000 = 300
-        auto const out = vault.redeem(STAmount{vault.shareAsset(), 500}).value();
-        BEAST_EXPECT(Number(out) == Number(300));
+        Number const expectedOut = vault.redeemAssets(redeemShares);
+        auto const out = vault.redeem(STAmount{vault.shareAsset(), redeemShares}).value();
+        BEAST_EXPECT(out == expectedOut);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt - principal - expectedOut,
+                .assetsAvailable = depositAmt - principal - expectedOut,
+                .sharesTotal = depositAmt - redeemShares,
+            });
     }
 
     void
@@ -980,43 +1817,114 @@ public:
         testcase("Clear paper loss - withdrawalNAV recovers on loan recovery");
 
         // Scenario: loan marked as paper loss, then partially recovered.
-        // clearPaperLoss reduces iota, restoring withdrawalNAV.
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd, 0};
+        // clearPaperLoss reduces lossUnrealized, restoring withdrawalNAV.
+        Vault vault{usd_, 0};
 
-        vault.deposit(STAmount{usd, 1000}).value();
-        vault.borrow(Number(200), Number(0));
-        // assetsTotal=1000, omega=0, assetsAvailable=800
+        auto const depositAmt = 1000;
+        auto const borrowAmt = 200;
+        auto const partialRecovery = 100;
+        auto const redeemShares1 = 100;
+
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, depositAmt}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt,
+                .sharesTotal = depositAmt,
+            });
+
+        vault.borrow(borrowAmt, 0);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt - borrowAmt,
+                .sharesTotal = depositAmt,
+            });
 
         // Mark the full 200 as paper loss
-        vault.addPaperLoss(Number(200), Number(0));
-        BEAST_EXPECT(Number(vault.lossUnrealized()) == Number(200));
-        // withdrawalNAV = 1000 - 0 - 200 = 800
+        vault.addPaperLoss(borrowAmt);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt - borrowAmt,
+                .sharesTotal = depositAmt,
+                .lossUnrealized = borrowAmt,
+            });
 
         // Recovery: 100 is repaid; clear that portion of paper loss
-        // (In the real system: repay restores assetsAvailable, clearPaperLoss reduces iota)
-        vault.repay(Number(100), Number(0));
-        vault.clearPaperLoss(Number(100), Number(0));
-        BEAST_EXPECT(Number(vault.lossUnrealized()) == Number(100));
-        // assetsTotal=1000, omega=0, iota=100
-        // withdrawalNAV = 1000 - 0 - 100 = 900
+        vault.repay(partialRecovery, 0);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt - borrowAmt + partialRecovery,
+                .sharesTotal = depositAmt,
+                .lossUnrealized = borrowAmt,
+            });
 
-        // Redeem 100 shares: assetsOut = 100 * 900 / 1000 = 90
-        auto const out = vault.redeem(STAmount{vault.shareAsset(), 100}).value();
-        BEAST_EXPECT(Number(out) == Number(90));
+        vault.clearPaperLoss(partialRecovery);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt - borrowAmt + partialRecovery,
+                .sharesTotal = depositAmt,
+                .lossUnrealized = borrowAmt - partialRecovery,
+            });
+
+        Number const expectedOut1 = vault.redeemAssets(redeemShares1);
+        auto const out = vault.redeem(STAmount{vault.shareAsset(), redeemShares1}).value();
+        BEAST_EXPECT(out == expectedOut1);
+
+        Number const outNum1 = Number(out);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt - outNum1,
+                .assetsAvailable = depositAmt - borrowAmt + partialRecovery - outNum1,
+                .sharesTotal = depositAmt - redeemShares1,
+                .lossUnrealized = borrowAmt - partialRecovery,
+            });
 
         // Full recovery: clear remaining 100 paper loss
-        vault.repay(Number(100), Number(0));
-        vault.clearPaperLoss(Number(100), Number(0));
-        BEAST_EXPECT(Number(vault.lossUnrealized()) == Number(0));
-        // State: assetsTotal=910, omega=0, iota=0, sharesTotal=900
-        // (assetsTotal after redeem=910; repay restored assetsAvailable but not assetsTotal)
-        // withdrawalNAV = 910
-        // Redeem 100 shares (of 900 remaining): assetsOut = 100 * 910 / 900
-        Number const expected2 = (Number(100) * Number(910)) / Number(900);
-        STAmount const expectedAmt2(usd, expected2);
-        auto const out2 = vault.redeem(STAmount{vault.shareAsset(), 100}).value();
+        auto const remainingLoan = borrowAmt - partialRecovery;
+        vault.repay(remainingLoan, 0);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt - outNum1,
+                .assetsAvailable = depositAmt - outNum1,
+                .sharesTotal = depositAmt - redeemShares1,
+                .lossUnrealized = remainingLoan,
+            });
+
+        vault.clearPaperLoss(remainingLoan);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt - outNum1,
+                .assetsAvailable = depositAmt - outNum1,
+                .sharesTotal = depositAmt - redeemShares1,
+            });
+
+        // Redeem 100 shares: assetsOut = 100 * withdrawalNAV / sharesTotal
+        auto const redeemShares2 = 100;
+        Number const expectedOut2 = vault.redeemAssets(redeemShares2);
+        STAmount const expectedAmt2(usd_, expectedOut2);
+        auto const out2 = vault.redeem(STAmount{vault.shareAsset(), redeemShares2}).value();
         BEAST_EXPECT(out2 == expectedAmt2);
+
+        Number const outNum2 = Number(out2);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt - outNum1 - outNum2,
+                .assetsAvailable = depositAmt - outNum1 - outNum2,
+                .sharesTotal = depositAmt - redeemShares1 - redeemShares2,
+            });
     }
 
     void
@@ -1026,15 +1934,34 @@ public:
 
         // A withdrawal so small that the share calculation rounds to 0
         // represents tecPRECISION_LOSS in the real implementation.
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd, 0};
+        Vault vault{usd_, 0};
 
-        // 1 asset, 1 share → withdrawalNAV = 1
-        vault.deposit(STAmount{usd, 1}).value();
+        auto const depositAmt = 1;
+        STAmount const tinyWithdraw{usd_, 1, -4};  // 0.0001
 
-        // Withdraw 0.0001 assets: shares = truncate(0.0001 * 1 / 1) = 0 → tecPRECISION_LOSS
-        BEAST_EXPECT(!vault.withdraw(STAmount{usd, 1, -4}));
-        BEAST_EXPECT(vault.withdraw(STAmount{usd, 1, -4}).error() == tecPRECISION_LOSS);
+        // 1 asset, 1 share -> withdrawalNAV = 1
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, depositAmt}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt,
+                .sharesTotal = depositAmt,
+            });
+
+        // Too small to produce any shares -> tecPRECISION_LOSS
+        auto const result = vault.withdraw(tinyWithdraw);
+        BEAST_EXPECT(!result);
+        BEAST_EXPECT(result.error() == tecPRECISION_LOSS);
+
+        // Vault state unchanged after failed withdraws
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt,
+                .sharesTotal = depositAmt,
+            });
     }
 
     void
@@ -1042,14 +1969,19 @@ public:
     {
         testcase("Redeem zero shares - guard rejects non-positive share amount");
 
-        // redeem() line 88 guards against zero (or negative) share amounts.
-        // NOTE: The PoC returns tecPRECISION_LOSS for this guard; semantically the
-        // spec may prefer a different error code (e.g. temBAD_AMOUNT), but this
-        // test documents the current PoC behaviour and would expose any regression.
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd, 0};
+        // redeem() rejects zero (or negative) share amounts with tecPRECISION_LOSS.
+        Vault vault{usd_, 0};
 
-        vault.deposit(STAmount{usd, 100}).value();
+        auto const depositAmt = 100;
+
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, depositAmt}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt,
+                .sharesTotal = depositAmt,
+            });
 
         // Redeem zero shares
         auto const result = vault.redeem(STAmount{vault.shareAsset(), 0});
@@ -1057,8 +1989,13 @@ public:
         BEAST_EXPECT(result.error() == tecPRECISION_LOSS);
 
         // Vault state must be unchanged
-        BEAST_EXPECT(Number(vault.assetsTotal()) == Number(100));
-        BEAST_EXPECT(Number(vault.sharesTotal()) == Number(100));
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt,
+                .sharesTotal = depositAmt,
+            });
     }
 
     void
@@ -1067,80 +2004,148 @@ public:
         testcase("Redeem/withdraw with outstanding loan - tecINSUFFICIENT_FUNDS");
 
         // When a loan is outstanding, assetsAvailable < assetsTotal.
-        // A redemption that would require more than assetsAvailable must be rejected
-        // with tecINSUFFICIENT_FUNDS rather than silently going negative.
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
+        // A redemption that would require more than assetsAvailable must be rejected.
 
         // --- redeem() ---
         {
-            Vault vault{usd, 0};
-            vault.deposit(STAmount{usd, 1000}).value();
-            // Borrow 800: assetsAvailable = 200, assetsTotal = 1000
-            vault.borrow(Number(800), Number(0));
-            BEAST_EXPECT(Number(vault.assetsAvailable()) == Number(200));
+            auto const depositAmt = 1000;
+            auto const borrowAmt = 800;
 
-            // withdrawalNAV = 1000, sharesTotal = 1000
-            // Redeem 500 shares: assetsOut = 500 * 1000 / 1000 = 500 > 200
+            Vault vault{usd_, 0};
+            BEAST_EXPECT(vault.deposit(STAmount{usd_, depositAmt}).has_value());
+            expectState(
+                vault,
+                {
+                    .assetsTotal = depositAmt,
+                    .assetsAvailable = depositAmt,
+                    .sharesTotal = depositAmt,
+                });
+
+            // Borrow 800: assetsAvailable = 200, assetsTotal = 1000
+            vault.borrow(borrowAmt, 0);
+            expectState(
+                vault,
+                {
+                    .assetsTotal = depositAmt,
+                    .assetsAvailable = depositAmt - borrowAmt,
+                    .sharesTotal = depositAmt,
+                });
+
+            // Redeem 500 shares: assetsOut = 500 > assetsAvailable (200)
             auto const result = vault.redeem(STAmount{vault.shareAsset(), 500});
             BEAST_EXPECT(!result);
             BEAST_EXPECT(result.error() == tecINSUFFICIENT_FUNDS);
 
             // Vault state unchanged
-            BEAST_EXPECT(Number(vault.assetsTotal()) == Number(1000));
-            BEAST_EXPECT(Number(vault.assetsAvailable()) == Number(200));
-            BEAST_EXPECT(Number(vault.sharesTotal()) == Number(1000));
+            expectState(
+                vault,
+                {
+                    .assetsTotal = depositAmt,
+                    .assetsAvailable = depositAmt - borrowAmt,
+                    .sharesTotal = depositAmt,
+                });
 
-            // Redeeming exactly assetsAvailable (200 shares → 200 assets) succeeds
-            auto const ok = vault.redeem(STAmount{vault.shareAsset(), 200});
+            // Redeeming exactly assetsAvailable (200 shares -> 200 assets) succeeds
+            auto const ok = vault.redeem(STAmount{vault.shareAsset(), depositAmt - borrowAmt});
             BEAST_EXPECT(ok.has_value());
-            BEAST_EXPECT(Number(ok.value()) == Number(200));
+            BEAST_EXPECT(Number(ok.value()) == depositAmt - borrowAmt);
+            expectState(
+                vault,
+                {
+                    .assetsTotal = borrowAmt,
+                    .assetsAvailable = 0,
+                    .sharesTotal = borrowAmt,
+                });
         }
 
         // --- withdraw() ---
         {
-            Vault vault{usd, 0};
-            vault.deposit(STAmount{usd, 1000}).value();
-            vault.borrow(Number(800), Number(0));
-            BEAST_EXPECT(Number(vault.assetsAvailable()) == Number(200));
+            auto const depositAmt = 1000;
+            auto const borrowAmt = 800;
 
-            // withdrawalNAV = 1000
-            // Withdraw 500 assets: shares = floor(500*1000/1000) = 500; assetsOut = 500 > 200
-            auto const result = vault.withdraw(STAmount{usd, 500});
+            Vault vault{usd_, 0};
+            BEAST_EXPECT(vault.deposit(STAmount{usd_, depositAmt}).has_value());
+            expectState(
+                vault,
+                {
+                    .assetsTotal = depositAmt,
+                    .assetsAvailable = depositAmt,
+                    .sharesTotal = depositAmt,
+                });
+
+            vault.borrow(borrowAmt, 0);
+            expectState(
+                vault,
+                {
+                    .assetsTotal = depositAmt,
+                    .assetsAvailable = depositAmt - borrowAmt,
+                    .sharesTotal = depositAmt,
+                });
+
+            // Withdraw 500 assets: assetsOut = 500 > assetsAvailable (200)
+            auto const result = vault.withdraw(STAmount{usd_, 500});
             BEAST_EXPECT(!result);
             BEAST_EXPECT(result.error() == tecINSUFFICIENT_FUNDS);
 
             // Vault state unchanged
-            BEAST_EXPECT(Number(vault.assetsTotal()) == Number(1000));
-            BEAST_EXPECT(Number(vault.assetsAvailable()) == Number(200));
+            expectState(
+                vault,
+                {
+                    .assetsTotal = depositAmt,
+                    .assetsAvailable = depositAmt - borrowAmt,
+                    .sharesTotal = depositAmt,
+                });
 
-            // Withdraw exactly assetsAvailable (200 assets → 200 shares) succeeds
-            auto const ok = vault.withdraw(STAmount{usd, 200});
+            // Withdraw exactly assetsAvailable succeeds
+            auto const ok = vault.withdraw(STAmount{usd_, depositAmt - borrowAmt});
             BEAST_EXPECT(ok.has_value());
+            expectState(
+                vault,
+                {
+                    .assetsTotal = borrowAmt,
+                    .assetsAvailable = 0,
+                    .sharesTotal = borrowAmt,
+                });
         }
     }
 
     void
-    testReseedAfterFullDrain()
+    testRedepositAmtAfterFullDrain()
     {
         testcase("Deposit after full vault drain (re-seeding)");
 
         // After all shares are redeemed the vault returns to the empty state.
         // The next deposit should use the initial seeding formula (shares = assets * 10^scale).
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd, 0};
+        Vault vault{usd_, 0};
+
+        auto const firstDeposit = 100;
+        auto const secondDeposit = 200;
 
         // First life: deposit 100, redeem all
-        vault.deposit(STAmount{usd, 100}).value();
-        vault.redeem(STAmount{vault.shareAsset(), 100}).value();
-        BEAST_EXPECT(Number(vault.assetsTotal()) == Number(0));
-        BEAST_EXPECT(Number(vault.sharesTotal()) == Number(0));
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, firstDeposit}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = firstDeposit,
+                .assetsAvailable = firstDeposit,
+                .sharesTotal = firstDeposit,
+            });
+
+        BEAST_EXPECT(vault.redeem(STAmount{vault.shareAsset(), firstDeposit}).has_value());
+        expectState(vault, {.assetsTotal = 0, .assetsAvailable = 0, .sharesTotal = 0});
 
         // Re-seed: should behave like initial deposit
-        auto const [shares, assets] = vault.deposit(STAmount{usd, 200}).value();
-        BEAST_EXPECT(Number(shares) == Number(200));
-        BEAST_EXPECT(Number(assets) == Number(200));
-        BEAST_EXPECT(Number(vault.assetsTotal()) == Number(200));
-        BEAST_EXPECT(Number(vault.sharesTotal()) == Number(200));
+        auto const [actualShares, actualAssets] =
+            vault.deposit(STAmount{usd_, secondDeposit}).value();
+        BEAST_EXPECT(Number(actualShares) == secondDeposit);
+        BEAST_EXPECT(Number(actualAssets) == secondDeposit);
+        expectState(
+            vault,
+            {
+                .assetsTotal = secondDeposit,
+                .assetsAvailable = secondDeposit,
+                .sharesTotal = secondDeposit,
+            });
     }
 
     void
@@ -1148,31 +2153,67 @@ public:
     {
         testcase("assetsAvailable tracked correctly through borrow/repay");
 
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd, 0};
+        // Multiple borrow/repay cycles with varying principal, interest, and extra
+        // interest. Verifies assetsAvailable increases by principal + interest on repay,
+        // and that extra interest accrues to both assetsTotal and assetsAvailable.
+        Vault vault{usd_, 0};
 
-        vault.deposit(STAmount{usd, 1000}).value();
-        BEAST_EXPECT(Number(vault.assetsAvailable()) == Number(1000));
+        auto const depositAmt = 1000;
+        auto const principal1 = 500;
+        auto const interest1 = 50;
+        auto const principal2 = 200;
+        auto const extraInterest = 30;
+
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, depositAmt}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt,
+                .sharesTotal = depositAmt,
+            });
 
         // Borrow 500 principal with 50 interest
         // assetsAvailable decreases by principal only (not by interest)
-        vault.borrow(Number(500), Number(50));
-        BEAST_EXPECT(Number(vault.assetsAvailable()) == Number(500));
-        BEAST_EXPECT(Number(vault.assetsTotal()) == Number(1050));
+        vault.borrow(principal1, interest1);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt + interest1,
+                .assetsAvailable = depositAmt - principal1,
+                .sharesTotal = depositAmt,
+                .interestOutstanding = interest1,
+            });
 
         // Repay 500 principal + 50 interest: assetsAvailable fully restored
-        vault.repay(Number(500), Number(50));
-        BEAST_EXPECT(Number(vault.assetsAvailable()) == Number(1050));
-        BEAST_EXPECT(Number(vault.assetsTotal()) == Number(1050));
+        vault.repay(principal1, interest1);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt + interest1,
+                .assetsAvailable = depositAmt + interest1,
+                .sharesTotal = depositAmt,
+            });
 
         // Borrow again then repay with extra interest
-        vault.borrow(Number(200), Number(0));
-        BEAST_EXPECT(Number(vault.assetsAvailable()) == Number(850));
+        vault.borrow(principal2, 0);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt + interest1,
+                .assetsAvailable = depositAmt + interest1 - principal2,
+                .sharesTotal = depositAmt,
+            });
 
         // repay 200 + 0 normal interest + 30 extra
-        vault.repay(Number(200), Number(0), Number(30));
-        BEAST_EXPECT(Number(vault.assetsAvailable()) == Number(1080));
-        BEAST_EXPECT(Number(vault.assetsTotal()) == Number(1080));
+        vault.repay(principal2, 0, extraInterest);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt + interest1 + extraInterest,
+                .assetsAvailable = depositAmt + interest1 + extraInterest,
+                .sharesTotal = depositAmt,
+            });
     }
 
     void
@@ -1181,48 +2222,79 @@ public:
         testcase("Loss distribution across multiple depositors");
 
         // User A deposits before loss is marked.
-        // User B deposits after (at full depositNAV, unaffected by iota).
+        // User B deposits after (at full depositNAV, unaffected by lossUnrealized).
         // On redemption both bear the loss proportionally to their share count.
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd, 0};
+        Vault vault{usd_, 0};
 
-        // User A: 1000 assets → 1000 shares
-        auto const [sharesA, assetsA] = vault.deposit(STAmount{usd, 1000}).value();
-        BEAST_EXPECT(Number(sharesA) == Number(1000));
+        auto const depositAmtA = 1000;
+        auto const borrowAmt = 200;
+        auto const depositB = 500;
+
+        // User A: 1000 assets -> 1000 shares
+        auto const [sharesA, assetsA] = vault.deposit(STAmount{usd_, depositAmtA}).value();
+        BEAST_EXPECT(Number(sharesA) == depositAmtA);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmtA,
+                .assetsAvailable = depositAmtA,
+                .sharesTotal = depositAmtA,
+            });
 
         // Issue loan: borrow 200 principal (no interest) to back the paper loss
-        // assetsTotal=1000, omega=0, assetsAvailable=800, depositNAV=1000
-        vault.borrow(Number(200), Number(0));
+        vault.borrow(borrowAmt, 0);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmtA,
+                .assetsAvailable = depositAmtA - borrowAmt,
+                .sharesTotal = depositAmtA,
+            });
 
-        // Mark 200 as paper loss: iota=200
-        // depositNAV = 1000, withdrawalNAV = 1000 - 0 - 200 = 800
-        vault.addPaperLoss(Number(200), Number(0));
+        // Mark 200 as paper loss
+        vault.addPaperLoss(borrowAmt);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmtA,
+                .assetsAvailable = depositAmtA - borrowAmt,
+                .sharesTotal = depositAmtA,
+                .lossUnrealized = borrowAmt,
+            });
 
         // User B deposits 500: depositNAV=1000, shares=floor(500*1000/1000)=500
-        // actualAssets = 500 * 1000 / 1000 = 500
-        auto const [sharesB, assetsB] = vault.deposit(STAmount{usd, 500}).value();
-        BEAST_EXPECT(Number(sharesB) == Number(500));
-        BEAST_EXPECT(Number(assetsB) == Number(500));
-        // assetsTotal=1500, sharesTotal=1500, assetsAvailable=800+500=1300
+        auto const [sharesB, assetsB] = vault.deposit(STAmount{usd_, depositB}).value();
+        BEAST_EXPECT(Number(sharesB) == depositB);
+        BEAST_EXPECT(Number(assetsB) == depositB);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmtA + depositB,
+                .assetsAvailable = depositAmtA - borrowAmt + depositB,
+                .sharesTotal = depositAmtA + depositB,
+                .lossUnrealized = borrowAmt,
+            });
 
-        // withdrawalNAV = 1500 - 0 - 200 = 1300
-        // A redeems 1000 shares: assetsOut = 1000 * 1300 / 1500 ≈ 866.67
-        // assetsAvailable=1300; 866.67 < 1300 ✓
-        Number const expectedA = (Number(1000) * Number(1300)) / Number(1500);
-        STAmount const expectedAmtA(usd, expectedA);
-        auto const outA = vault.redeem(STAmount{vault.shareAsset(), 1000}).value();
+        // A redeems 1000 shares: assetsOut = 1000 * withdrawalNAV / sharesTotal
+        Number const expectedA = vault.redeemAssets(Number(depositAmtA));
+        STAmount const expectedAmtA(usd_, expectedA);
+        auto const outA = vault.redeem(STAmount{vault.shareAsset(), depositAmtA}).value();
         BEAST_EXPECT(outA == expectedAmtA);
-        // assetsAvailable after A: 1300 - 866.67 ≈ 433.33
-        BEAST_EXPECT(Number(vault.assetsAvailable()) == Number(vault.assetsTotal()) - Number(200));
 
-        // assetsTotal after A redeems: 1500 - 1000*1300/1500 = 1500 - 2600/3 = 1900/3
-        // sharesTotal: 500
-        // withdrawalNAV = 1900/3 - 0 - 200 = 1900/3 - 600/3 = 1300/3
-        // B redeems 500 shares: assetsOut = 500 * (1300/3) / 500 = 1300/3
-        // assetsAvailable = 1300/3; exactly sufficient ✓
-        Number const expectedB = Number(1300) / Number(3);
-        STAmount const expectedAmtB(usd, expectedB);
-        auto const outB = vault.redeem(STAmount{vault.shareAsset(), 500}).value();
+        Number const outANum = Number(outA);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmtA + depositB - outANum,
+                .assetsAvailable = depositAmtA - borrowAmt + depositB - outANum,
+                .sharesTotal = depositB,
+                .lossUnrealized = borrowAmt,
+            });
+
+        // B redeems all remaining shares
+        Number const expectedB = vault.redeemAssets(Number(depositB));
+        STAmount const expectedAmtB(usd_, expectedB);
+        auto const outB = vault.redeem(STAmount{vault.shareAsset(), depositB}).value();
         BEAST_EXPECT(outB == expectedAmtB);
     }
 
@@ -1232,44 +2304,89 @@ public:
         testcase("Explicit NAV asymmetry: deposit at depositNAV, redeem at withdrawalNAV");
 
         // This test directly verifies the spec's core design intent:
-        // depositNAV = assetsTotal - omega  (does NOT subtract iota)
-        // withdrawalNAV = assetsTotal - omega - iota  (DOES subtract iota)
-        // A new depositor pays a fair price; an existing holder exiting bears losses.
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd, 0};
+        // depositNAV = assetsTotal - interestUnrealized  (does NOT subtract lossUnrealized)
+        // withdrawalNAV = assetsTotal - interestUnrealized - lossUnrealized
+        Vault vault{usd_, 0};
+
+        auto const depositAmt = 1000;
+        auto const principal = 400;
+        auto const interest = 100;
+        auto const paperLoss = 150;
+        auto const newDeposit = 100;
+        auto const redeemShares = 100;
 
         // Seed: 1000 assets, 1000 shares
-        vault.deposit(STAmount{usd, 1000}).value();
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, depositAmt}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt,
+                .sharesTotal = depositAmt,
+            });
 
-        // Create asymmetry: omega=100 (unrealized interest), iota=150 (paper loss)
-        vault.borrow(Number(400), Number(100));  // assetsTotal=1100, omega=100, assetsAvailable=600
-        vault.addPaperLoss(Number(150), Number(0));  // iota=150
+        // Create asymmetry: interestUnrealized=100, lossUnrealized=150
+        vault.borrow(principal, interest);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt + interest,
+                .assetsAvailable = depositAmt - principal,
+                .sharesTotal = depositAmt,
+                .interestOutstanding = interest,
+            });
 
-        // depositNAV   = 1100 - 100       = 1000
-        // withdrawalNAV = 1100 - 100 - 150 = 850
+        vault.addPaperLoss(paperLoss);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt + interest,
+                .assetsAvailable = depositAmt - principal,
+                .sharesTotal = depositAmt,
+                .interestOutstanding = interest,
+                .lossUnrealized = paperLoss,
+            });
 
-        // New depositor: 100 assets → shares = floor(100 * 1000 / 1000) = 100
-        auto const [newShares, newAssets] = vault.deposit(STAmount{usd, 100}).value();
-        BEAST_EXPECT(Number(newShares) == Number(100));
-        BEAST_EXPECT(Number(newAssets) == Number(100));
-        // assetsTotal=1200, sharesTotal=1100, assetsAvailable=700
-        BEAST_EXPECT(Number(vault.assetsAvailable()) == Number(700));
+        // New depositor: shares = floor(newDeposit * sharesTotal / depositNAV)
+        Number const expectedNewShares = vault.depositShares(Number(newDeposit));
+        Number const expectedNewAssets = vault.depositAssets(expectedNewShares);
 
-        // Existing holder redeems 100 shares using withdrawalNAV
-        // withdrawalNAV = 1200 - 100 - 150 = 950
-        // assetsOut = 100 * 950 / 1100 ≈ 86.36...
-        Number const expected = (Number(100) * Number(950)) / Number(1100);
-        STAmount const expectedAmt(usd, expected);
-        auto const out = vault.redeem(STAmount{vault.shareAsset(), 100}).value();
-        BEAST_EXPECT(out == expectedAmt);
-        // assetsAvailable = 700 - 100*950/1100 (STAmount-truncated)
-        STAmount const expectedAvailAmt{
-            usd, Number(700) - Number(100) * Number(950) / Number(1100)};
-        BEAST_EXPECT(vault.assetsAvailable() == expectedAvailAmt);
+        auto const [newShares, newAssets] = vault.deposit(STAmount{usd_, newDeposit}).value();
+        BEAST_EXPECT(newShares == expectedNewShares);
+        BEAST_EXPECT(newAssets == expectedNewAssets);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt + interest + expectedNewAssets,
+                .assetsAvailable = depositAmt - principal + expectedNewAssets,
+                .sharesTotal = depositAmt + expectedNewShares,
+                .interestOutstanding = interest,
+                .lossUnrealized = paperLoss,
+            });
 
-        // Confirm: new depositor paid 100 per 100 shares, redeemer got ~86.36 per 100 shares
-        // This asymmetry discourages bank runs: early exiters bear losses.
-        BEAST_EXPECT(Number(out) < Number(newAssets));
+        // Existing holder redeems shares using withdrawalNAV (lower than depositNAV)
+        Number const expectedRedeemAssets = vault.redeemAssets(Number(redeemShares));
+        STAmount const expectedRedeemAmt(usd_, expectedRedeemAssets);
+        auto const redeemOut = vault.redeem(STAmount{vault.shareAsset(), redeemShares}).value();
+        BEAST_EXPECT(redeemOut == expectedRedeemAmt);
+
+        Number const totalNum = Number(
+            STAmount{usd_, depositAmt + interest + expectedNewAssets - expectedRedeemAssets});
+        Number const availNum = Number(
+            STAmount{usd_, depositAmt - principal + expectedNewAssets - expectedRedeemAssets});
+        expectState(
+            vault,
+            {
+                .assetsTotal = totalNum,
+                .assetsAvailable = availNum,
+                .sharesTotal = depositAmt + expectedNewShares - redeemShares,
+                .interestOutstanding = interest,
+                .lossUnrealized = paperLoss,
+            });
+
+        // New depositor paid more per share than redeemer received --
+        // this asymmetry discourages bank runs: early exiters bear losses.
+        BEAST_EXPECT(redeemOut < newAssets);
     }
 
     void
@@ -1277,42 +2394,97 @@ public:
     {
         testcase("Non-default IOU scale values (scale=2 and scale=18)");
 
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
+        // Verifies the scale multiplier is applied correctly for both initial and
+        // subsequent deposits across two non-default IOU scales.
 
         // scale=2: initial deposit gives assets * 10^2 shares
         {
-            Vault vault{usd, 2};
-            auto const [shares, assets] = vault.deposit(STAmount{usd, 50}).value();
-            // 50 * 10^2 = 5000 shares
-            BEAST_EXPECT(Number(shares) == Number(5000));
-            BEAST_EXPECT(Number(assets) == Number(50));
+            Vault vault{usd_, 2};
+
+            auto const depositAmt = 50;
+            auto const expectedShares = 5000;  // 50 * 10^2
+            auto const depositAmt2 = 25;
+            auto const expectedShares2 = 2500;  // 25 * 10^2
+            auto const redeemShares = 5000;
+
+            auto const [actualShares, actualAssets] =
+                vault.deposit(STAmount{usd_, depositAmt}).value();
+            BEAST_EXPECT(Number(actualShares) == expectedShares);
+            BEAST_EXPECT(Number(actualAssets) == depositAmt);
+            expectState(
+                vault,
+                {
+                    .assetsTotal = depositAmt,
+                    .assetsAvailable = depositAmt,
+                    .sharesTotal = expectedShares,
+                });
 
             // Subsequent deposit: proportional
-            auto const [shares2, assets2] = vault.deposit(STAmount{usd, 25}).value();
-            BEAST_EXPECT(Number(shares2) == Number(2500));
-            BEAST_EXPECT(Number(assets2) == Number(25));
+            auto const [shares2, assets2] = vault.deposit(STAmount{usd_, depositAmt2}).value();
+            BEAST_EXPECT(Number(shares2) == expectedShares2);
+            BEAST_EXPECT(Number(assets2) == depositAmt2);
+            expectState(
+                vault,
+                {
+                    .assetsTotal = depositAmt + depositAmt2,
+                    .assetsAvailable = depositAmt + depositAmt2,
+                    .sharesTotal = expectedShares + expectedShares2,
+                });
 
             // Redeem 5000 shares: assetsOut = 5000 * 75 / 7500 = 50
-            auto const out = vault.redeem(STAmount{vault.shareAsset(), 5000}).value();
-            BEAST_EXPECT(Number(out) == Number(50));
+            auto const out = vault.redeem(STAmount{vault.shareAsset(), redeemShares}).value();
+            BEAST_EXPECT(Number(out) == depositAmt);
+            expectState(
+                vault,
+                {
+                    .assetsTotal = depositAmt2,
+                    .assetsAvailable = depositAmt2,
+                    .sharesTotal = expectedShares2,
+                });
         }
 
         // scale=18: maximum, initial deposit gives assets * 10^18 shares
         {
-            Vault vault{usd, 18};
-            // Deposit 1 asset → 10^18 shares (= 1e18)
-            auto const [shares, assets] = vault.deposit(STAmount{usd, 1}).value();
-            BEAST_EXPECT(Number(shares) == Number(1, 18));
-            BEAST_EXPECT(Number(assets) == Number(1));
+            Vault vault{usd_, 18};
+
+            auto const depositAmt = 1;
+            auto const expectedShares = Number(1, 18);
+
+            // Deposit 1 asset -> 10^18 shares (= 1e18)
+            auto const [actualShares, actualAssets] =
+                vault.deposit(STAmount{usd_, depositAmt}).value();
+            BEAST_EXPECT(actualShares == expectedShares);
+            BEAST_EXPECT(Number(actualAssets) == depositAmt);
+            expectState(
+                vault,
+                {
+                    .assetsTotal = depositAmt,
+                    .assetsAvailable = depositAmt,
+                    .sharesTotal = expectedShares,
+                });
 
             // Subsequent deposit of 1 asset: shares = floor(1 * 1e18 / 1) = 1e18
-            auto const [shares2, assets2] = vault.deposit(STAmount{usd, 1}).value();
-            BEAST_EXPECT(Number(shares2) == Number(1, 18));
-            BEAST_EXPECT(Number(assets2) == Number(1));
+            auto const [shares2, assets2] = vault.deposit(STAmount{usd_, depositAmt}).value();
+            BEAST_EXPECT(shares2 == expectedShares);
+            BEAST_EXPECT(Number(assets2) == depositAmt);
+            expectState(
+                vault,
+                {
+                    .assetsTotal = depositAmt * 2,
+                    .assetsAvailable = depositAmt * 2,
+                    .sharesTotal = expectedShares * 2,
+                });
 
             // Redeem 1e18 shares: assetsOut = 1e18 * 2 / 2e18 = 1
-            auto const out = vault.redeem(STAmount{vault.shareAsset(), Number(1, 18)}).value();
-            BEAST_EXPECT(Number(out) == Number(1));
+            auto const out = vault.redeem(STAmount{vault.shareAsset(), expectedShares}).value();
+            BEAST_EXPECT(Number(out) == depositAmt);
+            expectState(
+                vault,
+                {
+                    .assetsTotal = depositAmt,
+                    .assetsAvailable = depositAmt,
+                    .sharesTotal = expectedShares,
+                });
         }
     }
 
@@ -1323,52 +2495,82 @@ public:
 
         // A loan is first flagged as a paper loss via addPaperLoss, then later
         // confirmed as a hard default via defaultLoan(hasPaperLoss=true).
-        // defaultLoan(hasPaperLoss=true) atomically:
-        //   - writes the loss off assetsTotal (finalises the default)
-        //   - decrements lossUnrealized (removes the paper loss entry)
-        // This is equivalent to the two-step: clearPaperLoss + defaultLoan(false).
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd, 0};
+        Vault vault{usd_, 0};
+
+        auto const depositAmt = 1000;
+        auto const principal = 300;
+        auto const interest = 30;
+        auto const intermediateRedeem = 100;
 
         // Seed: 1000 assets, 1000 shares
-        vault.deposit(STAmount{usd, 1000}).value();
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, depositAmt}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt,
+                .sharesTotal = depositAmt,
+            });
 
         // Issue loan: principal=300, interest=30
-        // assetsTotal=1030, omega=30, assetsAvailable=700
-        vault.borrow(Number(300), Number(30));
-        BEAST_EXPECT(Number(vault.assetsTotal()) == Number(1030));
-        BEAST_EXPECT(Number(vault.assetsAvailable()) == Number(700));
+        vault.borrow(principal, interest);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt + interest,
+                .assetsAvailable = depositAmt - principal,
+                .sharesTotal = depositAmt,
+                .interestOutstanding = interest,
+            });
 
-        // Step 1: Pre-announce as paper loss (iota = 330)
-        // withdrawalNAV = 1030 - 30 - 330 = 670
-        vault.addPaperLoss(Number(300), Number(30));
-        BEAST_EXPECT(Number(vault.lossUnrealized()) == Number(330));
+        // Step 1: Pre-announce as paper loss (lossUnrealized = principal + interest = 330)
+        vault.addPaperLoss(principal + interest);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt + interest,
+                .assetsAvailable = depositAmt - principal,
+                .sharesTotal = depositAmt,
+                .interestOutstanding = interest,
+                .lossUnrealized = principal + interest,
+            });
 
         // Intermediate redeem to confirm discounted NAV is applied
-        // Redeem 100 shares: assetsOut = 100 * 670 / 1000 = 67
-        // assetsAvailable = 700 - 67 = 633
-        auto const outBefore = vault.redeem(STAmount{vault.shareAsset(), 100}).value();
-        BEAST_EXPECT(Number(outBefore) == Number(67));
-        BEAST_EXPECT(Number(vault.assetsAvailable()) == Number(633));
-        // assetsTotal=963, sharesTotal=900
+        Number const expectedBefore = vault.redeemAssets(intermediateRedeem);
+        auto const outBefore =
+            vault.redeem(STAmount{vault.shareAsset(), intermediateRedeem}).value();
+        BEAST_EXPECT(outBefore == expectedBefore);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt + interest - expectedBefore,
+                .assetsAvailable = depositAmt - principal - expectedBefore,
+                .sharesTotal = depositAmt - intermediateRedeem,
+                .interestOutstanding = interest,
+                .lossUnrealized = principal + interest,
+            });
 
-        // Step 2: Loan confirmed as hard default — defaultLoan(hasPaperLoss=true)
-        // atomically writes off assetsTotal and clears lossUnrealized.
-        // assetsAvailable unchanged (loan was already removed via borrow).
-        vault.defaultLoan(Number(300), Number(30), true);
-        // assetsTotal -= 330 → 633; omega -= 30 → 0; lossUnrealized -= 330 → 0
-        BEAST_EXPECT(Number(vault.assetsTotal()) == Number(633));
-        BEAST_EXPECT(Number(vault.assetsAvailable()) == Number(633));
-        BEAST_EXPECT(Number(vault.interestUnrealized()) == Number(0));
-        BEAST_EXPECT(Number(vault.lossUnrealized()) == Number(0));
+        // Step 2: Loan confirmed as hard default — clears interest and loss
+        // defaultLoan subtracts (principal+interest) from assetsTotal
+        Number const expectedTotalAfterDefault =
+            Number(vault.assetsTotal()) - (principal + interest);
+        vault.defaultLoan(principal, interest, true);
 
-        // withdrawalNAV = 633 - 0 - 0 = 633; sharesTotal = 900
-        // Redeem 900 shares: assetsOut = 900 * 633 / 900 = 633
-        auto const outAfter = vault.redeem(STAmount{vault.shareAsset(), 900}).value();
-        BEAST_EXPECT(Number(outAfter) == Number(633));
-        BEAST_EXPECT(Number(vault.assetsTotal()) == Number(0));
-        BEAST_EXPECT(Number(vault.assetsAvailable()) == Number(0));
-        BEAST_EXPECT(Number(vault.sharesTotal()) == Number(0));
+        expectState(
+            vault,
+            {
+                .assetsTotal = expectedTotalAfterDefault,
+                .assetsAvailable = expectedTotalAfterDefault,
+                .sharesTotal = depositAmt - intermediateRedeem,
+            });
+
+        // Redeem all remaining shares
+        auto const remainingShares = depositAmt - intermediateRedeem;
+        Number const expectedAfter = vault.redeemAssets(remainingShares);
+        auto const outAfter =
+            vault.redeem(STAmount{vault.shareAsset(), Number(remainingShares)}).value();
+        BEAST_EXPECT(outAfter == expectedAfter);
+        expectState(vault, {.assetsTotal = 0, .assetsAvailable = 0, .sharesTotal = 0});
     }
 
     void
@@ -1378,42 +2580,79 @@ public:
 
         // In a large IOU vault (scale=6), a deposit that is too small relative to the
         // vault's total assets produces floor(shares) = 0, triggering tecPRECISION_LOSS.
-        //
-        // The assert in deposit() guards this. Here we verify the formula directly:
-        //   shares = floor(deposit * sharesTotal / depositNAV)
-        //
-        // Case 1: Vault has 1e9 assets at scale=6 → sharesTotal = 1e15.
-        //         depositNAV = assetsTotal = 1e9 (no loans).
-        //         Deposit 5e-7 (0.0000005):
-        //           rawShares = 5e-7 * 1e15 / 1e9 = 5e-7 * 1e6 = 0.5 → floor = 0
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        {
-            Vault vault{usd};  // scale=6
-            vault.deposit(STAmount{usd, UINT64_C(1'000'000'000)}).value();
-            BEAST_EXPECT(Number(vault.sharesTotal()) == Number(1, 15));
 
-            // 5e-7: rawShares = 5e-7 * 1e15 / 1e9 = 0.5 → floor = 0 → tecPRECISION_LOSS
-            auto const tinyResult = vault.deposit(STAmount{usd, 5, -7});
+        auto const seedAmt = UINT64_C(1'000'000'000);
+        auto const seedNum = Number(1, 9);
+        auto const seedShares = Number(1, 15);
+
+        // Case 1: 5e-7 -> rawShares = 5e-7 * 1e15 / 1e9 = 0.5 -> floor = 0 -> tecPRECISION_LOSS
+        {
+            Vault vault{usd_};  // scale=6
+            BEAST_EXPECT(vault.deposit(STAmount{usd_, seedAmt}).has_value());
+            expectState(
+                vault,
+                {
+                    .assetsTotal = seedNum,
+                    .assetsAvailable = seedNum,
+                    .sharesTotal = seedShares,
+                });
+
+            auto const tinyResult = vault.deposit(STAmount{usd_, 5, -7});
             BEAST_EXPECT(!tinyResult);
             BEAST_EXPECT(tinyResult.error() == tecPRECISION_LOSS);
+
+            // Vault state unchanged after failed deposit
+            expectState(
+                vault,
+                {
+                    .assetsTotal = seedNum,
+                    .assetsAvailable = seedNum,
+                    .sharesTotal = seedShares,
+                });
         }
 
-        // Case 2: Same vault but deposit just above the threshold (1e-6 gives exactly 1 share).
-        //         Deposit 9e-7: rawShares = 9e-7 * 1e15 / 1e9 = 0.9 → floor = 0 (still blocked)
-        //         Deposit 1e-6: rawShares = 1e-6 * 1e15 / 1e9 = 1.0 → floor = 1 (allowed)
+        // Case 2: boundary testing
         {
-            Vault vault{usd};  // scale=6
-            vault.deposit(STAmount{usd, UINT64_C(1'000'000'000)}).value();
+            Vault vault{usd_};  // scale=6
+            BEAST_EXPECT(vault.deposit(STAmount{usd_, seedAmt}).has_value());
+            expectState(
+                vault,
+                {
+                    .assetsTotal = seedNum,
+                    .assetsAvailable = seedNum,
+                    .sharesTotal = seedShares,
+                });
 
-            // Just below threshold: 9e-7 → rawShares = 0.9 → floor = 0 → tecPRECISION_LOSS
-            STAmount const justBelow{usd, 9, -7};
+            // Just below threshold: 9e-7 -> rawShares = 0.9 -> floor = 0 -> tecPRECISION_LOSS
+            STAmount const justBelow{usd_, 9, -7};
             auto const belowResult = vault.deposit(justBelow);
             BEAST_EXPECT(!belowResult);
             BEAST_EXPECT(belowResult.error() == tecPRECISION_LOSS);
 
-            // At threshold: 1e-6 → exactly 1 share (deposit succeeds)
-            auto const [sharesAt, assetsAt] = vault.deposit(STAmount{usd, 1, -6}).value();
-            BEAST_EXPECT(Number(sharesAt) == Number(1));
+            // Vault state unchanged after failed deposit
+            expectState(
+                vault,
+                {
+                    .assetsTotal = seedNum,
+                    .assetsAvailable = seedNum,
+                    .sharesTotal = seedShares,
+                });
+
+            // At threshold: 1e-6 -> exactly 1 share (deposit succeeds)
+            STAmount const atThreshold{usd_, 1, -6};
+            Number const expectedShares = vault.depositShares(Number(atThreshold));
+            Number const expectedAssets = vault.depositAssets(expectedShares);
+
+            auto const [sharesAt, assetsAt] = vault.deposit(atThreshold).value();
+            BEAST_EXPECT(sharesAt == expectedShares);
+            BEAST_EXPECT(assetsAt == expectedAssets);
+            expectState(
+                vault,
+                {
+                    .assetsTotal = seedNum + expectedAssets,
+                    .assetsAvailable = seedNum + expectedAssets,
+                    .sharesTotal = seedShares + expectedShares,
+                });
         }
     }
 
@@ -1424,24 +2663,66 @@ public:
 
         // When floor(requested * S / withdrawalNAV) = 3 but requested * S / withdrawalNAV = 3.75,
         // assetsOut = 3 * withdrawalNAV / S = 2.4 < 3.
-        // This proves why floor is required: round would give shares=4, assetsOut=3.2 > requested.
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd, 0};
+        Vault vault{usd_, 0};
 
-        vault.deposit(STAmount{usd, 10}).value();
+        auto const depositAmt = 10;
+        auto const borrowAmt = 2;
+        auto const paperLoss = 2;
+        auto const withdrawRequested = 3;
+
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, depositAmt}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt,
+                .sharesTotal = depositAmt,
+            });
+
         // Borrow 2 (no interest) so paper loss is backed by loan principal
-        vault.borrow(Number(2), Number(0));
-        // iota=2: withdrawalNAV = 10 - 0 - 2 = 8
-        vault.addPaperLoss(Number(2), Number(0));
+        vault.borrow(borrowAmt, 0);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt - borrowAmt,
+                .sharesTotal = depositAmt,
+            });
 
-        // Withdraw 3: rawShares = 3 * 10 / 8 = 3.75 → floor = 3
-        // assetsOut = 3 * 8 / 10 = 2.4 < 3
-        auto const [shares, assets] = vault.withdraw(STAmount{usd, 3}).value();
-        BEAST_EXPECT(Number(shares) == Number(3));
-        STAmount const expectedAssets{usd, Number(24, -1)};
-        BEAST_EXPECT(assets == expectedAssets);
-        // assetsOut strictly less than requested
-        BEAST_EXPECT(Number(assets) < Number(3));
+        // lossUnrealized=2: withdrawalNAV = 10 - 0 - 2 = 8
+        vault.addPaperLoss(paperLoss);
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt - borrowAmt,
+                .sharesTotal = depositAmt,
+                .lossUnrealized = paperLoss,
+            });
+
+        // shares = floor(requested * sharesTotal / withdrawalNAV)
+        Number const expectedShares = vault.withdrawShares(Number(withdrawRequested));
+        // assetsOut = shares * withdrawalNAV / sharesTotal
+        Number const expectedAssetsOut = vault.withdrawAssets(expectedShares);
+
+        auto const [actualShares, actualAssets] =
+            vault.withdraw(STAmount{usd_, withdrawRequested}).value();
+        BEAST_EXPECT(actualShares == expectedShares);
+
+        STAmount const expectedAssetsAmt{usd_, expectedAssetsOut};
+        BEAST_EXPECT(actualAssets == expectedAssetsAmt);
+
+        // assetsOut strictly less than requested (floor discards fractional share)
+        BEAST_EXPECT(Number(actualAssets) < withdrawRequested);
+
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt - expectedAssetsOut,
+                .assetsAvailable = depositAmt - borrowAmt - expectedAssetsOut,
+                .sharesTotal = depositAmt - expectedShares,
+                .lossUnrealized = paperLoss,
+            });
     }
 
     void
@@ -1450,27 +2731,65 @@ public:
         testcase("Deposit floor: actualAssets <= requested (depositor keeps remainder)");
 
         // Floor on shares means actualAssets (back-calculated from floored shares) is
-        // always <= the depositor's requested amount. The depositor keeps the remainder.
-        // Vault: 10 assets, 7 shares (depositNAV=10).
-        // Deposit 3: rawShares = 3*7/10 = 2.1 → floor = 2
-        // actualAssets = 2 * 10 / 7 ≈ 2.857 < 3.
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd, 0};
+        // always <= the depositor's requested amount.
+        Vault vault{usd_, 0};
 
-        // Seed with 7 assets → 7 shares, then add 3 extra via extra interest
-        vault.deposit(STAmount{usd, 7}).value();
-        vault.borrow(Number(1), Number(0));
-        vault.repay(Number(1), Number(0), Number(3));
+        auto const seedAmt = 7;
+        auto const extraInterest = 3;
+        auto const depositRequested = 3;
+
+        // Seed with 7 assets -> 7 shares, then add 3 extra via extra interest
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, seedAmt}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAmt,
+                .assetsAvailable = seedAmt,
+                .sharesTotal = seedAmt,
+            });
+
+        vault.borrow(1, 0);
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAmt,
+                .assetsAvailable = seedAmt - 1,
+                .sharesTotal = seedAmt,
+            });
+
+        vault.repay(1, 0, extraInterest);
         // assetsTotal=10, sharesTotal=7, depositNAV=10
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAmt + extraInterest,
+                .assetsAvailable = seedAmt + extraInterest,
+                .sharesTotal = seedAmt,
+            });
 
-        // Deposit 3: rawShares = 3*7/10 = 2.1 → floor = 2
-        // actualAssets = 2 * 10 / 7 ≈ 2.857 < 3
-        auto const [shares, assets] = vault.deposit(STAmount{usd, 3}).value();
-        BEAST_EXPECT(Number(shares) == Number(2));
-        Number const expectedActual = (Number(2) * Number(10)) / Number(7);
-        STAmount const expectedAmt{usd, expectedActual};
-        BEAST_EXPECT(assets == expectedAmt);
-        BEAST_EXPECT(Number(assets) < Number(3));
+        // shares = floor(depositRequested * sharesTotal / depositNAV)
+        Number const expectedShares = vault.depositShares(Number(depositRequested));
+        // actualAssets = shares * depositNAV / sharesTotal
+        Number const expectedAssets = vault.depositAssets(expectedShares);
+
+        auto const [actualShares, actualAssets] =
+            vault.deposit(STAmount{usd_, depositRequested}).value();
+        BEAST_EXPECT(actualShares == expectedShares);
+
+        STAmount const expectedAmt{usd_, expectedAssets};
+        BEAST_EXPECT(actualAssets == expectedAmt);
+        // Floor means depositor keeps the remainder
+        BEAST_EXPECT(Number(actualAssets) < depositRequested);
+
+        Number const totalNum = Number(STAmount{usd_, seedAmt + extraInterest + expectedAssets});
+        Number const availNum = Number(STAmount{usd_, seedAmt + extraInterest + expectedAssets});
+        expectState(
+            vault,
+            {
+                .assetsTotal = totalNum,
+                .assetsAvailable = availNum,
+                .sharesTotal = seedAmt + expectedShares,
+            });
     }
 
     void
@@ -1481,25 +2800,54 @@ public:
         // Vault: 1 asset, 3 shares (scale=0).
         // Redeeming 1 share gives assetsOut = 1/3 = 0.333... (non-terminating).
         // STAmount truncates to 16 significant digits on construction.
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
 
         // Build vault with assetsTotal=1, sharesTotal=3:
-        // Deposit 3 assets → 3 shares, hard-default 2 assets.
-        Vault vault{usd, 0};
-        vault.deposit(STAmount{usd, 3}).value();
-        // Hard default 2 assets (no interest): assetsTotal=1, sharesTotal=3
-        vault.borrow(Number(2), Number(0));
-        vault.defaultLoan(Number(2), Number(0), false);
-        BEAST_EXPECT(Number(vault.assetsTotal()) == Number(1));
-        BEAST_EXPECT(Number(vault.sharesTotal()) == Number(3));
+        // Deposit 3 assets -> 3 shares, hard-default 2 assets.
+        Vault vault{usd_, 0};
 
-        // Redeem 1 share: assetsOut = 1 * 1 / 3 = 0.3333... (truncated by STAmount)
-        auto const out = vault.redeem(STAmount{vault.shareAsset(), 1}).value();
-        // Truncation floors: three copies of out must be <= 1 (no rounding up)
-        BEAST_EXPECT(Number(out) * 3 <= Number(1));
-        // And close: at most 1 ULP of (1/3) difference per copy → 3 copies within 3e-16 of 1
-        BEAST_EXPECT(Number(1) - Number(out) * 3 < Number(1, -15));
-        BEAST_EXPECT(Number(out) > Number(0));
+        auto const seedAmt = 3;
+        auto const defaultAmt = 2;
+        auto const redeemShares = 1;
+
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, seedAmt}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAmt,
+                .assetsAvailable = seedAmt,
+                .sharesTotal = seedAmt,
+            });
+
+        // Hard default 2 assets (no interest): assetsTotal=1, sharesTotal=3
+        vault.borrow(defaultAmt, 0);
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAmt,
+                .assetsAvailable = seedAmt - defaultAmt,
+                .sharesTotal = seedAmt,
+            });
+
+        vault.defaultLoan(defaultAmt, 0, false);
+        expectState(
+            vault,
+            {
+                .assetsTotal = seedAmt - defaultAmt,
+                .assetsAvailable = seedAmt - defaultAmt,
+                .sharesTotal = seedAmt,
+            });
+
+        // 1/3 is non-terminating -- STAmount truncates to 16 digits
+        Number const expectedOut = vault.redeemAssets(Number(redeemShares));
+        auto const out = vault.redeem(STAmount{vault.shareAsset(), redeemShares}).value();
+        BEAST_EXPECT(out == expectedOut);
+
+        // Truncation floors: sharesTotal copies of out must be <= withdrawalNAV
+        Number const remainingAssets = seedAmt - defaultAmt;
+        BEAST_EXPECT(out * seedAmt <= remainingAssets);
+        // And close: drift from truncation is within 1e-15
+        BEAST_EXPECT(remainingAssets - out * seedAmt < Number(1, -15));
+        BEAST_EXPECT(Number(out) > 0);
     }
 
     void
@@ -1508,37 +2856,57 @@ public:
         testcase("Sequential partial redeems vs single bulk redeem - STAmount drift");
 
         // Vault: 1 asset, 3 shares (scale=0), built same way as above.
-        // Bulk: redeem(3) → 1 asset exactly (3 * 1/3 = 1 in Number, exact).
-        // Sequential: redeem(1) × 3 → sum may differ due to STAmount truncation at each step.
-        // The spec property: sequential_sum <= bulk (truncation always floors the output).
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
+        // Bulk: redeem(3) -> 1 asset exactly (3 * 1/3 = 1 in Number, exact).
+        // Sequential: redeem(1) x 3 -> sum may differ due to STAmount truncation at each step.
+
+        auto const seedAmt = 3;
+        auto const defaultAmt = 2;
+        auto const remainingAssets = seedAmt - defaultAmt;
+        auto const redeemPerStep = 1;
 
         auto makeVault = [&]() {
-            Vault v{usd, 0};
-            v.deposit(STAmount{usd, 3}).value();
-            v.borrow(Number(2), Number(0));
-            v.defaultLoan(Number(2), Number(0), false);
+            Vault v{usd_, 0};
+            v.deposit(STAmount{usd_, seedAmt}).value();
+            v.borrow(defaultAmt, 0);
+            v.defaultLoan(defaultAmt, 0, false);
             return v;
         };
 
         // Bulk redeem
         {
             auto vault = makeVault();
-            auto const out = vault.redeem(STAmount{vault.shareAsset(), 3}).value();
-            BEAST_EXPECT(Number(out) == Number(1));
+            expectState(
+                vault,
+                {
+                    .assetsTotal = remainingAssets,
+                    .assetsAvailable = remainingAssets,
+                    .sharesTotal = seedAmt,
+                });
+
+            auto const out = vault.redeem(STAmount{vault.shareAsset(), seedAmt}).value();
+            BEAST_EXPECT(Number(out) == remainingAssets);
+            expectState(vault, {.assetsTotal = 0, .assetsAvailable = 0, .sharesTotal = 0});
         }
 
-        // Sequential redeem × 3
+        // Sequential redeem x 3
         {
             auto vault = makeVault();
+            expectState(
+                vault,
+                {
+                    .assetsTotal = remainingAssets,
+                    .assetsAvailable = remainingAssets,
+                    .sharesTotal = seedAmt,
+                });
+
             Number total{0};
-            for (int i = 0; i < 3; ++i)
-                total += Number(vault.redeem(STAmount{vault.shareAsset(), 1}).value());
+            for (int i = 0; i < seedAmt; ++i)
+                total += Number(vault.redeem(STAmount{vault.shareAsset(), redeemPerStep}).value());
 
             // Sequential sum should be <= 1 (truncation can only lose, never gain)
-            BEAST_EXPECT(total <= Number(1));
-            // And not too far off: at most 3 ULP of 1/3 ≈ 3e-16 drift
-            BEAST_EXPECT(Number(1) - total < Number(1, -15));
+            BEAST_EXPECT(total <= remainingAssets);
+            // And not too far off: at most 3 ULP of 1/3 = 3e-16 drift
+            BEAST_EXPECT(Number(remainingAssets) - total < Number(1, -15));
         }
     }
 
@@ -1549,17 +2917,42 @@ public:
 
         // Vault: 10 assets, 10 shares, withdrawalNAV=10 (no loss/interest).
         // Withdraw 1.5: rawShares = 1.5 * 10 / 10 = 1.5 exactly.
-        // floor(1.5) = 1  (not 2 — positive confirmation of floor behaviour)
+        // floor(1.5) = 1  (not 2 -- positive confirmation of floor behaviour)
         // assetsOut = 1 * 10 / 10 = 1.0
-        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-        Vault vault{usd, 0};
+        Vault vault{usd_, 0};
 
-        vault.deposit(STAmount{usd, 10}).value();
-        auto const [shares, assets] = vault.withdraw(STAmount{usd, 15, -1}).value();  // 1.5
-        BEAST_EXPECT(Number(shares) == Number(1));
-        BEAST_EXPECT(Number(assets) == Number(1));
-        // assetsOut (1.0) < requested (1.5): floor discards the fractional share
-        BEAST_EXPECT(Number(assets) < Number(15, -1));
+        auto const depositAmt = 10;
+        auto const withdrawRequested = Number(15, -1);  // 1.5
+
+        BEAST_EXPECT(vault.deposit(STAmount{usd_, depositAmt}).has_value());
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt,
+                .assetsAvailable = depositAmt,
+                .sharesTotal = depositAmt,
+            });
+
+        // shares = floor(requested * sharesTotal / withdrawalNAV)
+        Number const expectedShares = vault.withdrawShares(withdrawRequested);
+        // assetsOut = shares * withdrawalNAV / sharesTotal
+        Number const expectedAssetsOut = vault.withdrawAssets(expectedShares);
+
+        auto const [actualShares, actualAssets] =
+            vault.withdraw(STAmount{usd_, withdrawRequested}).value();
+        BEAST_EXPECT(actualShares == expectedShares);
+        BEAST_EXPECT(actualAssets == expectedAssetsOut);
+
+        // Floor discards the fractional share: assetsOut < requested
+        BEAST_EXPECT(actualAssets < withdrawRequested);
+
+        expectState(
+            vault,
+            {
+                .assetsTotal = depositAmt - expectedAssetsOut,
+                .assetsAvailable = depositAmt - expectedAssetsOut,
+                .sharesTotal = depositAmt - expectedShares,
+            });
     }
 
     void
@@ -1577,9 +2970,11 @@ public:
         testDepositRoundingDown();
         testWithdrawRoundingFloor();
         testRedeemAll();
+        testWithdrawAll();
         testLossOnlyVault();
         testMultipleDepositorsIOU();
         testPrecisionLoss();
+        testDepositFloorBoundary();
         testXRPFullCycle();
         testMPTFullCycle();
         testTinyDepositIntoLargeVault();
@@ -1597,7 +2992,7 @@ public:
         testWithdrawPrecisionLoss();
         testRedeemZeroShares();
         testRedeemInsufficientFunds();
-        testReseedAfterFullDrain();
+        testRedepositAmtAfterFullDrain();
         testAssetsAvailableBorrowRepay();
         testLossDistributionMultipleDepositors();
         testNAVAsymmetryExplicit();
