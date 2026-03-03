@@ -304,6 +304,14 @@ struct Wasm_test : public beast::unit_test::suite
         }
 
         {
+            // Invalid gas limit (-1) should be rejected
+            TestHostFunctions hfs(env, 0);
+            auto re = runEscrowWasm(allHFWasm, hfs, 0, ESCROW_FUNCTION_NAME, {});
+            BEAST_EXPECT(!re.has_value());
+            BEAST_EXPECT(re.error() == temBAD_AMOUNT);
+        }
+
+        {
             // max<int64_t>() gas
             TestHostFunctions hfs(env, 0);
             auto re = runEscrowWasm(
