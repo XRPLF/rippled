@@ -87,6 +87,12 @@ secure_gateway_localnet(std::unique_ptr<Config> cfg)
     (*cfg)[PORT_WS].set("secure_gateway", "127.0.0.0/8");
     return cfg;
 }
+std::unique_ptr<Config>
+single_thread_io(std::unique_ptr<Config> cfg)
+{
+    cfg->IO_WORKERS = 1;
+    return cfg;
+}
 
 auto constexpr defaultseed = "shUwVw52ofnCUX5m7kPTKzJdr4HEH";
 
