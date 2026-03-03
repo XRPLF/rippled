@@ -10,6 +10,7 @@ Checks: "-*,
   bugprone-copy-constructor-init,
   bugprone-dangling-handle,
   bugprone-dynamic-static-initializers,
+  bugprone-empty-catch,
   bugprone-fold-init-type,
   bugprone-forward-declaration-namespace,
   bugprone-inaccurate-erase,
@@ -83,7 +84,6 @@ Checks: "-*,
 # ---
 # checks that have some issues that need to be resolved:
 #
-# bugprone-empty-catch,
 # bugprone-crtp-constructor-accessibility,
 # bugprone-inc-dec-in-conditions,
 # bugprone-reserved-identifier,
