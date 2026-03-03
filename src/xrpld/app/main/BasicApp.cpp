@@ -12,8 +12,7 @@ BasicApp::BasicApp(std::size_t numberOfThreads)
     while (numberOfThreads--)
     {
         threads_.emplace_back([this, numberOfThreads]() {
-            beast::setCurrentThreadName(
-                "io svc #" + std::to_string(numberOfThreads));
+            beast::setCurrentThreadName("io svc #" + std::to_string(numberOfThreads));
             this->io_context_.run();
         });
     }

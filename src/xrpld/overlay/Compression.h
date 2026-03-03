@@ -1,5 +1,4 @@
-#ifndef XRPL_COMPRESSION_H_INCLUDED
-#define XRPL_COMPRESSION_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CompressionAlgorithms.h>
 #include <xrpl/basics/Log.h>
@@ -43,8 +42,7 @@ decompress(
         {
             // LCOV_EXCL_START
             JLOG(debugLog().warn())
-                << "decompress: invalid compression algorithm "
-                << static_cast<int>(algorithm);
+                << "decompress: invalid compression algorithm " << static_cast<int>(algorithm);
             UNREACHABLE(
                 "xrpl::compression::decompress : invalid compression "
                 "algorithm");
@@ -82,8 +80,8 @@ compress(
         else
         {
             // LCOV_EXCL_START
-            JLOG(debugLog().warn()) << "compress: invalid compression algorithm"
-                                    << static_cast<int>(algorithm);
+            JLOG(debugLog().warn())
+                << "compress: invalid compression algorithm" << static_cast<int>(algorithm);
             UNREACHABLE(
                 "xrpl::compression::compress : invalid compression "
                 "algorithm");
@@ -98,5 +96,3 @@ compress(
 }  // namespace compression
 
 }  // namespace xrpl
-
-#endif  // XRPL_COMPRESSION_H_INCLUDED

@@ -48,10 +48,8 @@ public:
         mPort = (!pUrl.port) ? (mSSL ? 443 : 80) : *pUrl.port;
         mPath = pUrl.path;
 
-        JLOG(j_.info()) << "RPCCall::fromNetwork sub: ip=" << mIp
-                        << " port=" << mPort
-                        << " ssl= " << (mSSL ? "yes" : "no") << " path='"
-                        << mPath << "'";
+        JLOG(j_.info()) << "RPCCall::fromNetwork sub: ip=" << mIp << " port=" << mPort
+                        << " ssl= " << (mSSL ? "yes" : "no") << " path='" << mPath << "'";
     }
 
     ~RPCSubImp() = default;
@@ -71,10 +69,8 @@ public:
             // Start a sending thread.
             JLOG(j_.info()) << "RPCCall::fromNetwork start";
 
-            mSending = m_jobQueue.addJob(
-                jtCLIENT_SUBSCRIBE, "RPCSub::sendThread", [this]() {
-                    sendThread();
-                });
+            mSending =
+                m_jobQueue.addJob(jtCLIENT_SUBSCRIBE, "RPCSubSendThr", [this]() { sendThread(); });
         }
     }
 
@@ -150,8 +146,7 @@ private:
                 }
                 catch (std::exception const& e)
                 {
-                    JLOG(j_.info())
-                        << "RPCCall::fromNetwork exception: " << e.what();
+                    JLOG(j_.info()) << "RPCCall::fromNetwork exception: " << e.what();
                 }
             }
         } while (bSend);
@@ -171,7 +166,7 @@ private:
 
     int mSeq;  // Next id to allocate.
 
-    bool mSending;  // Sending threead is active.
+    bool mSending;  // Sending thread is active.
 
     std::deque<std::pair<int, Json::Value>> mDeque;
 

@@ -14,8 +14,7 @@
 
 namespace xrpl {
 
-STArray::STArray(STArray&& other)
-    : STBase(other.getFName()), v_(std::move(other.v_))
+STArray::STArray(STArray&& other) : STBase(other.getFName()), v_(std::move(other.v_))
 {
 }
 
@@ -53,8 +52,7 @@ STArray::STArray(SerialIter& sit, SField const& f, int depth) : STBase(f)
 
         if ((type == STI_OBJECT) && (field == 1))
         {
-            JLOG(debugLog().error())
-                << "Encountered array with end of object marker";
+            JLOG(debugLog().error()) << "Encountered array with end of object marker";
             Throw<std::runtime_error>("Illegal terminator in array");
         }
 
@@ -62,8 +60,7 @@ STArray::STArray(SerialIter& sit, SField const& f, int depth) : STBase(f)
 
         if (fn.isInvalid())
         {
-            JLOG(debugLog().error())
-                << "Unknown field: " << type << "/" << field;
+            JLOG(debugLog().error()) << "Unknown field: " << type << "/" << field;
             Throw<std::runtime_error>("Unknown field");
         }
 

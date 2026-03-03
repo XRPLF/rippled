@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_COUNTEDOBJECT_H_INCLUDED
-#define XRPL_BASICS_COUNTEDOBJECT_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/type_name.h>
 
@@ -134,5 +133,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

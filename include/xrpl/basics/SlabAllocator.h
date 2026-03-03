@@ -1,7 +1,6 @@
 // Copyright (c) 2022, Nikolaos D. Bougalis <nikb@bougalis.net>
 
-#ifndef XRPL_BASICS_SLABALLOCATOR_H_INCLUDED
-#define XRPL_BASICS_SLABALLOCATOR_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/beast/type_name.h>
@@ -51,11 +50,7 @@ class SlabAllocator
         // The extent of the underlying memory block:
         std::size_t const size_;
 
-        SlabBlock(
-            SlabBlock* next,
-            std::uint8_t* data,
-            std::size_t size,
-            std::size_t item)
+        SlabBlock(SlabBlock* next, std::uint8_t* data, std::size_t size, std::size_t item)
             : next_(next), p_(data), size_(size)
         {
             // We don't need to grab the mutex here, since we're the only
@@ -126,9 +121,7 @@ class SlabAllocator
         void
         deallocate(std::uint8_t* ptr) noexcept
         {
-            XRPL_ASSERT(
-                own(ptr),
-                "xrpl::SlabAllocator::SlabBlock::deallocate : own input");
+            XRPL_ASSERT(own(ptr), "xrpl::SlabAllocator::SlabBlock::deallocate : own input");
 
             std::lock_guard l(m_);
 
@@ -167,8 +160,7 @@ public:
         std::size_t alloc = 0,
         std::size_t align = 0)
         : itemAlignment_(align ? align : alignof(Type))
-        , itemSize_(
-              boost::alignment::align_up(sizeof(Type) + extra, itemAlignment_))
+        , itemSize_(boost::alignment::align_up(sizeof(Type) + extra, itemAlignment_))
         , slabSize_(alloc)
     {
         XRPL_ASSERT(
@@ -222,13 +214,12 @@ public:
 
         // We want to allocate the memory at a 2 MiB boundary, to make it
         // possible to use hugepage mappings on Linux:
-        auto buf =
-            boost::alignment::aligned_alloc(megabytes(std::size_t(2)), size);
+        auto buf = boost::alignment::aligned_alloc(megabytes(std::size_t(2)), size);
 
         // clang-format off
         if (!buf) [[unlikely]]
             return nullptr;
-            // clang-format on
+        // clang-format on
 
 #if BOOST_OS_LINUX
         // When allocating large blocks, attempt to leverage Linux's
@@ -241,31 +232,24 @@ public:
 
         // We need to carve out a bit of memory for the slab header
         // and then align the rest appropriately:
-        auto slabData = reinterpret_cast<void*>(
-            reinterpret_cast<std::uint8_t*>(buf) + sizeof(SlabBlock));
+        auto slabData =
+            reinterpret_cast<void*>(reinterpret_cast<std::uint8_t*>(buf) + sizeof(SlabBlock));
         auto slabSize = size - sizeof(SlabBlock);
 
         // This operation is essentially guaranteed not to fail but
         // let's be careful anyways.
-        if (!boost::alignment::align(
-                itemAlignment_, itemSize_, slabData, slabSize))
+        if (!boost::alignment::align(itemAlignment_, itemSize_, slabData, slabSize))
         {
             boost::alignment::aligned_free(buf);
             return nullptr;
         }
 
         slab = new (buf) SlabBlock(
-            slabs_.load(),
-            reinterpret_cast<std::uint8_t*>(slabData),
-            slabSize,
-            itemSize_);
+            slabs_.load(), reinterpret_cast<std::uint8_t*>(slabData), slabSize, itemSize_);
 
         // Link the new slab
         while (!slabs_.compare_exchange_weak(
-            slab->next_,
-            slab,
-            std::memory_order_release,
-            std::memory_order_relaxed))
+            slab->next_, slab, std::memory_order_release, std::memory_order_relaxed))
         {
             ;  // Nothing to do
         }
@@ -335,24 +319,18 @@ public:
     {
         // Ensure that the specified allocators are sorted from smallest to
         // largest by size:
-        std::sort(
-            std::begin(cfg),
-            std::end(cfg),
-            [](SlabConfig const& a, SlabConfig const& b) {
-                return a.extra < b.extra;
-            });
+        std::sort(std::begin(cfg), std::end(cfg), [](SlabConfig const& a, SlabConfig const& b) {
+            return a.extra < b.extra;
+        });
 
         // We should never have two slabs of the same size
         if (std::adjacent_find(
-                std::begin(cfg),
-                std::end(cfg),
-                [](SlabConfig const& a, SlabConfig const& b) {
+                std::begin(cfg), std::end(cfg), [](SlabConfig const& a, SlabConfig const& b) {
                     return a.extra == b.extra;
                 }) != cfg.end())
         {
             throw std::runtime_error(
-                "SlabAllocatorSet<" + beast::type_name<Type>() +
-                ">: duplicate slab size");
+                "SlabAllocatorSet<" + beast::type_name<Type>() + ">: duplicate slab size");
         }
 
         for (auto const& c : cfg)
@@ -420,5 +398,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif  // XRPL_BASICS_SLABALLOCATOR_H_INCLUDED

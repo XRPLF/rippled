@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_CONSENSUS_LEDGERS_TRIE_H_INCLUDED
-#define XRPL_APP_CONSENSUS_LEDGERS_TRIE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/ToString.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -24,8 +23,7 @@ public:
     using Seq = typename Ledger::Seq;
     using ID = typename Ledger::ID;
 
-    SpanTip(Seq s, ID i, Ledger const lgr)
-        : seq{s}, id{i}, ledger{std::move(lgr)}
+    SpanTip(Seq s, ID i, Ledger const lgr) : seq{s}, id{i}, ledger{std::move(lgr)}
     {
     }
 
@@ -71,12 +69,10 @@ public:
     Span() : ledger_{typename Ledger::MakeGenesis{}}
     {
         // Require default ledger to be genesis seq
-        XRPL_ASSERT(
-            ledger_.seq() == start_, "xrpl::Span::Span : ledger is genesis");
+        XRPL_ASSERT(ledger_.seq() == start_, "xrpl::Span::Span : ledger is genesis");
     }
 
-    Span(Ledger ledger)
-        : start_{0}, end_{ledger.seq() + Seq{1}}, ledger_{std::move(ledger)}
+    Span(Ledger ledger) : start_{0}, end_{ledger.seq() + Seq{1}}, ledger_{std::move(ledger)}
     {
     }
 
@@ -137,8 +133,7 @@ public:
     }
 
 private:
-    Span(Seq start, Seq end, Ledger const& l)
-        : start_{start}, end_{end}, ledger_{l}
+    Span(Seq start, Seq end, Ledger const& l) : start_{start}, end_{end}, ledger_{l}
     {
         // Spans cannot be empty
         XRPL_ASSERT(start < end, "xrpl::Span::Span : non-empty span input");
@@ -209,9 +204,7 @@ struct Node
     erase(Node const* child)
     {
         auto it = std::find_if(
-            children.begin(),
-            children.end(),
-            [child](std::unique_ptr<Node> const& curr) {
+            children.begin(), children.end(), [child](std::unique_ptr<Node> const& curr) {
                 return curr.get() == child;
             });
         XRPL_ASSERT(it != children.end(), "xrpl::Node::erase : valid input");
@@ -222,8 +215,7 @@ struct Node
     friend std::ostream&
     operator<<(std::ostream& o, Node const& s)
     {
-        return o << s.span << "(T:" << s.tipSupport << ",B:" << s.branchSupport
-                 << ")";
+        return o << s.span << "(T:" << s.tipSupport << ",B:" << s.branchSupport << ")";
     }
 
     Json::Value
@@ -404,8 +396,7 @@ class LedgerTrie
     }
 
     void
-    dumpImpl(std::ostream& o, std::unique_ptr<Node> const& curr, int offset)
-        const
+    dumpImpl(std::ostream& o, std::unique_ptr<Node> const& curr, int offset) const
     {
         if (curr)
         {
@@ -471,9 +462,7 @@ public:
             newNode->tipSupport = loc->tipSupport;
             newNode->branchSupport = loc->branchSupport;
             newNode->children = std::move(loc->children);
-            XRPL_ASSERT(
-                loc->children.empty(),
-                "xrpl::LedgerTrie::insert : moved-from children");
+            XRPL_ASSERT(loc->children.empty(), "xrpl::LedgerTrie::insert : moved-from children");
             for (std::unique_ptr<Node>& child : newNode->children)
                 child->parent = newNode.get();
 
@@ -692,8 +681,7 @@ public:
                 }
 
                 // Advance nextSeq along the span
-                while (nextSeq < curr->span.end() &&
-                       curr->branchSupport > uncommitted)
+                while (nextSeq < curr->span.end() && curr->branchSupport > uncommitted)
                 {
                     // Jump to the next seqSupport change
                     if (uncommittedIt != seqSupport.end() &&
@@ -729,17 +717,13 @@ public:
                     curr->children.begin(),
                     curr->children.begin() + 2,
                     curr->children.end(),
-                    [](std::unique_ptr<Node> const& a,
-                       std::unique_ptr<Node> const& b) {
-                        return std::make_tuple(
-                                   a->branchSupport, a->span.startID()) >
-                            std::make_tuple(
-                                   b->branchSupport, b->span.startID());
+                    [](std::unique_ptr<Node> const& a, std::unique_ptr<Node> const& b) {
+                        return std::make_tuple(a->branchSupport, a->span.startID()) >
+                            std::make_tuple(b->branchSupport, b->span.startID());
                     });
 
                 best = curr->children[0].get();
-                margin = curr->children[0]->branchSupport -
-                    curr->children[1]->branchSupport;
+                margin = curr->children[0]->branchSupport - curr->children[1]->branchSupport;
 
                 // If best holds the tie-breaker, gets one larger margin
                 // since the second best needs additional branchSupport
@@ -805,15 +789,13 @@ public:
 
             // Node with 0 tip support must have multiple children
             // unless it is the root node
-            if (curr != root.get() && curr->tipSupport == 0 &&
-                curr->children.size() < 2)
+            if (curr != root.get() && curr->tipSupport == 0 && curr->children.size() < 2)
                 return false;
 
             // branchSupport = tipSupport + sum(child->branchSupport)
             std::size_t support = curr->tipSupport;
             if (curr->tipSupport != 0)
-                expectedSeqSupport[curr->span.end() - Seq{1}] +=
-                    curr->tipSupport;
+                expectedSeqSupport[curr->span.end() - Seq{1}] += curr->tipSupport;
 
             for (auto const& child : curr->children)
             {
@@ -831,4 +813,3 @@ public:
 };
 
 }  // namespace xrpl
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_SHAMAPSYNCFILTER_H_INCLUDED
-#define XRPL_SHAMAP_SHAMAPSYNCFILTER_H_INCLUDED
+#pragma once
 
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
@@ -31,5 +30,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

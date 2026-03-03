@@ -62,10 +62,7 @@ public:
     save_stream_state&
     operator=(save_stream_state const&) = delete;
     explicit save_stream_state(std::ostream& os)
-        : os_(os)
-        , precision_(os.precision())
-        , flags_(os.flags())
-        , fill_(os.fill())
+        : os_(os), precision_(os.precision()), flags_(os.flags()), fill_(os.fill())
     {
     }
 };
@@ -214,9 +211,9 @@ public:
         auto const rate = elapsed.count() / double(work);
         clock_type::duration const remain(
             static_cast<clock_type::duration::rep>((work_ - work) * rate));
-        log << "Remaining: " << detail::fmtdur(remain) << " (" << work << " of "
-            << work_ << " in " << detail::fmtdur(elapsed) << ", "
-            << (work - prev_) << " in " << detail::fmtdur(now - report_) << ")";
+        log << "Remaining: " << detail::fmtdur(remain) << " (" << work << " of " << work_ << " in "
+            << detail::fmtdur(elapsed) << ", " << (work - prev_) << " in "
+            << detail::fmtdur(now - report_) << ")";
         report_ = now;
         prev_ = work;
     }
@@ -335,11 +332,9 @@ public:
             options.create_if_missing = false;
             options.max_open_files = 2000;  // 5000?
             rocksdb::DB* pdb = nullptr;
-            rocksdb::Status status =
-                rocksdb::DB::OpenForReadOnly(options, from_path, &pdb);
+            rocksdb::Status status = rocksdb::DB::OpenForReadOnly(options, from_path, &pdb);
             if (!status.ok() || !pdb)
-                Throw<std::runtime_error>(
-                    "Can't open '" + from_path + "': " + status.ToString());
+                Throw<std::runtime_error>("Can't open '" + from_path + "': " + status.ToString());
             db.reset(pdb);
         }
         // Create data file with values
@@ -373,8 +368,7 @@ public:
             {
                 if (it->key().size() != 32)
                     Throw<std::runtime_error>(
-                        "Unexpected key size " +
-                        std::to_string(it->key().size()));
+                        "Unexpected key size " + std::to_string(it->key().size()));
                 void const* const key = it->key().data();
                 void const* const data = it->value().data();
                 auto const size = it->value().size();
@@ -385,11 +379,9 @@ public:
                 // Verify codec correctness
                 {
                     buffer buf2;
-                    auto const check =
-                        nodeobject_decompress(out.first, out.second, buf2);
+                    auto const check = nodeobject_decompress(out.first, out.second, buf2);
                     BEAST_EXPECT(check.second == size);
-                    BEAST_EXPECT(
-                        std::memcmp(check.first, clean.get(), size) == 0);
+                    BEAST_EXPECT(std::memcmp(check.first, clean.get(), size) == 0);
                 }
                 // Data Record
                 auto os = dw.prepare(
@@ -409,8 +401,7 @@ public:
                 Throw<nudb::system_error>(ec);
         }
         db.reset();
-        log << "Import data: "
-            << detail::fmtdur(std::chrono::steady_clock::now() - start);
+        log << "Import data: " << detail::fmtdur(std::chrono::steady_clock::now() - start);
         auto const df_size = df.size(ec);
         if (ec)
             Throw<nudb::system_error>(ec);
@@ -424,8 +415,7 @@ public:
         kh.pepper = pepper<hash_type>(kh.salt);
         kh.block_size = block_size(kp);
         kh.load_factor = std::min<std::size_t>(65536.0 * load_factor, 65535);
-        kh.buckets =
-            std::ceil(nitems / (bucket_capacity(kh.block_size) * load_factor));
+        kh.buckets = std::ceil(nitems / (bucket_capacity(kh.block_size) * load_factor));
         kh.modulus = ceil_pow2(kh.buckets);
         native_file kf;
         kf.create(file_mode::append, kp, ec);
@@ -443,8 +433,7 @@ public:
         // Build contiguous sequential sections of the
         // key file using multiple passes over the data.
         //
-        auto const buckets =
-            std::max<std::size_t>(1, buffer_size / kh.block_size);
+        auto const buckets = std::max<std::size_t>(1, buffer_size / kh.block_size);
         buf.reserve(buckets * kh.block_size);
         auto const passes = (kh.buckets + buckets - 1) / buckets;
         log << "items:   " << nitems
@@ -471,8 +460,7 @@ public:
             }
             // Insert all keys into buckets
             // Iterate Data File
-            bulk_reader<native_file> r(
-                df, dat_file_header::size, df_size, bulk_size);
+            bulk_reader<native_file> r(df, dat_file_header::size, df_size, bulk_size);
             while (!r.eof())
             {
                 auto const offset = r.offset();
@@ -497,8 +485,7 @@ public:
                     p(log, npass * df_size + r.offset());
                     if (n < b0 || n >= b1)
                         continue;
-                    bucket b(
-                        kh.block_size, buf.get() + (n - b0) * kh.block_size);
+                    bucket b(kh.block_size, buf.get() + (n - b0) * kh.block_size);
                     maybe_spill(b, dw, ec);
                     if (ec)
                         Throw<nudb::system_error>(ec);
@@ -517,8 +504,7 @@ public:
                         Throw<nudb::system_error>(ec);
                 }
             }
-            kf.write(
-                (b0 + 1) * kh.block_size, buf.get(), bn * kh.block_size, ec);
+            kf.write((b0 + 1) * kh.block_size, buf.get(), bn * kh.block_size, ec);
             if (ec)
                 Throw<nudb::system_error>(ec);
             ++npass;

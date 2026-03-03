@@ -166,8 +166,7 @@ RawStateTable::apply(RawView& to) const
 bool
 RawStateTable::exists(ReadView const& base, Keylet const& k) const
 {
-    XRPL_ASSERT(
-        k.key.isNonZero(), "xrpl::detail::RawStateTable::exists : nonzero key");
+    XRPL_ASSERT(k.key.isNonZero(), "xrpl::detail::RawStateTable::exists : nonzero key");
     auto const iter = items_.find(k.key);
     if (iter == items_.end())
         return base.exists(k);
@@ -184,10 +183,8 @@ RawStateTable::exists(ReadView const& base, Keylet const& k) const
     the lower of the two.
 */
 auto
-RawStateTable::succ(
-    ReadView const& base,
-    key_type const& key,
-    std::optional<key_type> const& last) const -> std::optional<key_type>
+RawStateTable::succ(ReadView const& base, key_type const& key, std::optional<key_type> const& last)
+    const -> std::optional<key_type>
 {
     std::optional<key_type> next = key;
     items_t::const_iterator iter;
@@ -331,10 +328,7 @@ std::unique_ptr<ReadView::sles_type::iter_base>
 RawStateTable::slesUpperBound(ReadView const& base, uint256 const& key) const
 {
     return std::make_unique<sles_iter_impl>(
-        items_.upper_bound(key),
-        items_.end(),
-        base.sles.upper_bound(key),
-        base.sles.end());
+        items_.upper_bound(key), items_.end(), base.sles.upper_bound(key), base.sles.end());
 }
 
 }  // namespace detail

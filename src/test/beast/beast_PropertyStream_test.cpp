@@ -28,10 +28,7 @@ public:
     }
 
     void
-    test_peel_leading_slash(
-        std::string s,
-        std::string const& expected,
-        bool should_be_found)
+    test_peel_leading_slash(std::string s, std::string const& expected, bool should_be_found)
     {
         try
         {
@@ -111,11 +108,7 @@ public:
     }
 
     void
-    test_find(
-        Source& root,
-        std::string path,
-        Source* expected,
-        bool expected_star)
+    test_find(Source& root, std::string path, Source* expected, bool expected_star)
     {
         try
         {

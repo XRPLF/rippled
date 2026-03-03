@@ -2,8 +2,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_UNIT_TEST_REPORTER_HPP
-#define BEAST_UNIT_TEST_REPORTER_HPP
+#pragma once
 
 #include <xrpl/beast/unit_test/amount.h>
 #include <xrpl/beast/unit_test/recorder.h>
@@ -177,8 +176,7 @@ reporter<_>::~reporter()
     }
     auto const elapsed = clock_type::now() - results_.start;
     os_ << fmtdur(elapsed) << ", " << amount{results_.suites, "suite"} << ", "
-        << amount{results_.cases, "case"} << ", "
-        << amount{results_.total, "test"} << " total, "
+        << amount{results_.cases, "case"} << ", " << amount{results_.total, "test"} << " total, "
         << amount{results_.failed, "failure"} << std::endl;
 }
 
@@ -214,8 +212,7 @@ void
 reporter<_>::on_case_begin(std::string const& name)
 {
     case_results_ = case_results(name);
-    os_ << suite_results_.name
-        << (case_results_.name.empty() ? "" : (" " + case_results_.name))
+    os_ << suite_results_.name << (case_results_.name.empty() ? "" : (" " + case_results_.name))
         << std::endl;
 }
 
@@ -239,8 +236,8 @@ reporter<_>::on_fail(std::string const& reason)
 {
     ++case_results_.failed;
     ++case_results_.total;
-    os_ << "#" << case_results_.total << " failed"
-        << (reason.empty() ? "" : ": ") << reason << std::endl;
+    os_ << "#" << case_results_.total << " failed" << (reason.empty() ? "" : ": ") << reason
+        << std::endl;
 }
 
 template <class _>
@@ -256,5 +253,3 @@ using reporter = detail::reporter<>;
 
 }  // namespace unit_test
 }  // namespace beast
-
-#endif

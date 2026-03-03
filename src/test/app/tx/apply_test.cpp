@@ -2,10 +2,9 @@
 
 #include <test/jtx/Env.h>
 
-#include <xrpld/app/tx/apply.h>
-
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/tx/apply.h>
 
 namespace xrpl {
 
@@ -15,7 +14,7 @@ public:
     void
     run() override
     {
-        testcase("Require Fully Canonicial Signature");
+        testcase("Require Fully Canonical Signature");
         testFullyCanonicalSigs();
     }
 
@@ -36,15 +35,12 @@ public:
         STTx const tx = *std::make_shared<STTx const>(std::ref(sitTrans));
 
         {
-            test::jtx::Env fully_canonical(
-                *this, test::jtx::testable_amendments());
+            test::jtx::Env fully_canonical(*this, test::jtx::testable_amendments());
 
-            Validity valid = checkValidity(
-                                 fully_canonical.app().getHashRouter(),
-                                 tx,
-                                 fully_canonical.current()->rules(),
-                                 fully_canonical.app().config())
-                                 .first;
+            Validity valid =
+                checkValidity(
+                    fully_canonical.app().getHashRouter(), tx, fully_canonical.current()->rules())
+                    .first;
             if (valid == Validity::Valid)
                 fail("Non-Fully canonical signature was permitted");
         }

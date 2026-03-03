@@ -180,8 +180,7 @@ doAccountChannels(RPC::JsonContext& context)
     if (count == limit + 1 && marker)
     {
         result[jss::limit] = limit;
-        result[jss::marker] =
-            to_string(*marker) + "," + std::to_string(nextHint);
+        result[jss::marker] = to_string(*marker) + "," + std::to_string(nextHint);
     }
 
     result[jss::account] = toBase58(accountID);

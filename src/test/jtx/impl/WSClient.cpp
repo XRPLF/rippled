@@ -74,9 +74,7 @@ class WSClientImpl : public WSClient
     }
 
     boost::asio::io_context ios_;
-    std::optional<boost::asio::executor_work_guard<
-        boost::asio::io_context::executor_type>>
-        work_;
+    std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     std::thread thread_;
     boost::asio::ip::tcp::socket stream_;
@@ -100,24 +98,23 @@ class WSClientImpl : public WSClient
     void
     cleanup()
     {
-        boost::asio::post(
-            ios_, boost::asio::bind_executor(strand_, [this] {
-                if (!peerClosed_)
-                {
-                    ws_.async_close(
-                        {},
-                        boost::asio::bind_executor(strand_, [&](error_code) {
-                            try
-                            {
-                                stream_.cancel();
-                            }
-                            catch (boost::system::system_error const&)
-                            {
-                                // ignored
-                            }
-                        }));
-                }
-            }));
+        boost::asio::post(ios_, boost::asio::bind_executor(strand_, [this] {
+                              if (!peerClosed_)
+                              {
+                                  ws_.async_close(
+                                      {}, boost::asio::bind_executor(strand_, [&](error_code) {
+                                          try
+                                          {
+                                              stream_.cancel();
+                                          }
+                                          // NOLINTNEXTLINE(bugprone-empty-catch)
+                                          catch (boost::system::system_error const&)
+                                          {
+                                              // ignored
+                                          }
+                                      }));
+                              }
+                          }));
         work_ = std::nullopt;
         thread_.join();
     }
@@ -139,22 +136,17 @@ public:
         {
             auto const ep = getEndpoint(cfg, v2);
             stream_.connect(ep);
-            ws_.set_option(boost::beast::websocket::stream_base::decorator(
-                [&](boost::beast::websocket::request_type& req) {
-                    for (auto const& h : headers)
-                        req.set(h.first, h.second);
-                }));
-            ws_.handshake(
-                ep.address().to_string() + ":" + std::to_string(ep.port()),
-                "/");
+            ws_.set_option(
+                boost::beast::websocket::stream_base::decorator(
+                    [&](boost::beast::websocket::request_type& req) {
+                        for (auto const& h : headers)
+                            req.set(h.first, h.second);
+                    }));
+            ws_.handshake(ep.address().to_string() + ":" + std::to_string(ep.port()), "/");
             ws_.async_read(
                 rb_,
                 boost::asio::bind_executor(
-                    strand_,
-                    std::bind(
-                        &WSClientImpl::on_read_msg,
-                        this,
-                        std::placeholders::_1)));
+                    strand_, std::bind(&WSClientImpl::on_read_msg, this, std::placeholders::_1)));
         }
         catch (std::exception&)
         {
@@ -191,9 +183,8 @@ public:
             ws_.write_some(true, buffer(s));
         }
 
-        auto jv = findMsg(5s, [&](Json::Value const& jval) {
-            return jval[jss::type] == jss::response;
-        });
+        auto jv =
+            findMsg(5s, [&](Json::Value const& jval) { return jval[jss::type] == jss::response; });
         if (jv)
         {
             // Normalize JSON output
@@ -229,9 +220,8 @@ public:
     }
 
     std::optional<Json::Value>
-    findMsg(
-        std::chrono::milliseconds const& timeout,
-        std::function<bool(Json::Value const&)> pred) override
+    findMsg(std::chrono::milliseconds const& timeout, std::function<bool(Json::Value const&)> pred)
+        override
     {
         std::shared_ptr<msg> m;
         {
@@ -285,9 +275,7 @@ private:
         ws_.async_read(
             rb_,
             boost::asio::bind_executor(
-                strand_,
-                std::bind(
-                    &WSClientImpl::on_read_msg, this, std::placeholders::_1)));
+                strand_, std::bind(&WSClientImpl::on_read_msg, this, std::placeholders::_1)));
     }
 
     // Called when the read op terminates

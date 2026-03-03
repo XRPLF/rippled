@@ -1,5 +1,4 @@
-#ifndef XRPL_PEERFINDER_STORE_H_INCLUDED
-#define XRPL_PEERFINDER_STORE_H_INCLUDED
+#pragma once
 
 namespace xrpl {
 namespace PeerFinder {
@@ -31,5 +30,3 @@ public:
 
 }  // namespace PeerFinder
 }  // namespace xrpl
-
-#endif

@@ -136,9 +136,7 @@ InnerObjectFormats::InnerObjectFormats()
             {sfCredentialType, soeREQUIRED},
         });
 
-    add(sfPermission.jsonName.c_str(),
-        sfPermission.getCode(),
-        {{sfPermissionValue, soeREQUIRED}});
+    add(sfPermission.jsonName.c_str(), sfPermission.getCode(), {{sfPermissionValue, soeREQUIRED}});
 
     add(sfBatchSigner.jsonName.c_str(),
         sfBatchSigner.getCode(),

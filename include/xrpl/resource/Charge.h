@@ -1,5 +1,4 @@
-#ifndef XRPL_RESOURCE_CHARGE_H_INCLUDED
-#define XRPL_RESOURCE_CHARGE_H_INCLUDED
+#pragma once
 
 #include <string>
 
@@ -50,5 +49,3 @@ operator<<(std::ostream& os, Charge const& v);
 
 }  // namespace Resource
 }  // namespace xrpl
-
-#endif

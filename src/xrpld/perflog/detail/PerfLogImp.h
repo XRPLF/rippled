@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_PERFLOGIMP_H
-#define XRPL_BASICS_PERFLOGIMP_H
+#pragma once
 
 #include <xrpld/rpc/detail/Handler.h>
 
@@ -120,10 +119,7 @@ class PerfLogImp : public PerfLog
     void
     report();
     void
-    rpcEnd(
-        std::string const& method,
-        std::uint64_t const requestId,
-        bool finish);
+    rpcEnd(std::string const& method, std::uint64_t const requestId, bool finish);
 
 public:
     PerfLogImp(
@@ -152,11 +148,8 @@ public:
     void
     jobQueue(JobType const type) override;
     void
-    jobStart(
-        JobType const type,
-        microseconds dur,
-        steady_time_point startTime,
-        int instance) override;
+    jobStart(JobType const type, microseconds dur, steady_time_point startTime, int instance)
+        override;
     void
     jobFinish(JobType const type, microseconds dur, int instance) override;
 
@@ -186,5 +179,3 @@ public:
 
 }  // namespace perf
 }  // namespace xrpl
-
-#endif  // XRPL_BASICS_PERFLOGIMP_H

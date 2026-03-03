@@ -29,7 +29,7 @@ namespace xrpl {
 // 3) Object of "assets" indicating accounts that owe the gateway.
 //    (Gateways typically do not hold positive balances. This is unusual.)
 
-// gateway_balances [<ledger>] <account> [<howallet> [<hotwallet [...
+// gateway_balances [<ledger>] <account> [<hotwallet> [<hotwallet [...
 
 Json::Value
 doGatewayBalances(RPC::JsonContext& context)
@@ -127,99 +127,93 @@ doGatewayBalances(RPC::JsonContext& context)
 
     // Traverse the cold wallet's trust lines
     {
-        forEachItem(
-            *ledger, accountID, [&](std::shared_ptr<SLE const> const& sle) {
-                if (sle->getType() == ltESCROW)
+        forEachItem(*ledger, accountID, [&](std::shared_ptr<SLE const> const& sle) {
+            if (sle->getType() == ltESCROW)
+            {
+                auto const& escrow = sle->getFieldAmount(sfAmount);
+                auto& bal = locked[escrow.getCurrency()];
+                if (bal == beast::zero)
+                {
+                    // This is needed to set the currency code correctly
+                    bal = escrow;
+                }
+                else
                 {
                     auto const& escrow = sle->getFieldAmount(sfAmount);
                     if (escrow.holds<MPTIssue>())
                         return;
 
-                    auto& bal = locked[escrow.getCurrency()];
-                    if (bal == beast::zero)
+                    try
                     {
-                        // This is needed to set the currency code correctly
-                        bal = escrow;
+                        bal += escrow;
                     }
-                    else
+                    catch (std::runtime_error const&)
                     {
-                        try
-                        {
-                            bal += escrow;
-                        }
-                        catch (std::runtime_error const&)
-                        {
-                            // Presumably the exception was caused by overflow.
-                            // On overflow return the largest valid STAmount.
-                            // Very large sums of STAmount are approximations
-                            // anyway.
-                            bal = STAmount(
-                                bal.issue(),
-                                STAmount::cMaxValue,
-                                STAmount::cMaxOffset);
-                        }
+                        // Presumably the exception was caused by overflow.
+                        // On overflow return the largest valid STAmount.
+                        // Very large sums of STAmount are approximations
+                        // anyway.
+                        bal = STAmount(bal.issue(), STAmount::cMaxValue, STAmount::cMaxOffset);
                     }
                 }
+            }
 
-                auto rs = PathFindTrustLine::makeItem(accountID, sle);
+            auto rs = PathFindTrustLine::makeItem(accountID, sle);
 
-                if (!rs)
-                    return;
+            if (!rs)
+                return;
 
-                int balSign = rs->getBalance().signum();
-                if (balSign == 0)
-                    return;
+            int balSign = rs->getBalance().signum();
+            if (balSign == 0)
+                return;
 
-                auto const& peer = rs->getAccountIDPeer();
+            auto const& peer = rs->getAccountIDPeer();
 
-                // Here, a negative balance means the cold wallet owes (normal)
-                // A positive balance means the cold wallet has an asset
-                // (unusual)
+            // Here, a negative balance means the cold wallet owes (normal)
+            // A positive balance means the cold wallet has an asset
+            // (unusual)
 
-                if (hotWallets.count(peer) > 0)
+            if (hotWallets.count(peer) > 0)
+            {
+                // This is a specified hot wallet
+                hotBalances[peer].push_back(-rs->getBalance());
+            }
+            else if (balSign > 0)
+            {
+                // This is a gateway asset
+                assets[peer].push_back(rs->getBalance());
+            }
+            else if (rs->getFreeze())
+            {
+                // An obligation the gateway has frozen
+                frozenBalances[peer].push_back(-rs->getBalance());
+            }
+            else
+            {
+                // normal negative balance, obligation to customer
+                auto& bal = sums[rs->getBalance().getCurrency()];
+                if (bal == beast::zero)
                 {
-                    // This is a specified hot wallet
-                    hotBalances[peer].push_back(-rs->getBalance());
-                }
-                else if (balSign > 0)
-                {
-                    // This is a gateway asset
-                    assets[peer].push_back(rs->getBalance());
-                }
-                else if (rs->getFreeze())
-                {
-                    // An obligation the gateway has frozen
-                    frozenBalances[peer].push_back(-rs->getBalance());
+                    // This is needed to set the currency code correctly
+                    bal = -rs->getBalance();
                 }
                 else
                 {
-                    // normal negative balance, obligation to customer
-                    auto& bal = sums[rs->getBalance().getCurrency()];
-                    if (bal == beast::zero)
+                    try
                     {
-                        // This is needed to set the currency code correctly
-                        bal = -rs->getBalance();
+                        bal -= rs->getBalance();
                     }
-                    else
+                    catch (std::runtime_error const&)
                     {
-                        try
-                        {
-                            bal -= rs->getBalance();
-                        }
-                        catch (std::runtime_error const&)
-                        {
-                            // Presumably the exception was caused by overflow.
-                            // On overflow return the largest valid STAmount.
-                            // Very large sums of STAmount are approximations
-                            // anyway.
-                            bal = STAmount(
-                                bal.issue(),
-                                STAmount::cMaxValue,
-                                STAmount::cMaxOffset);
-                        }
+                        // Presumably the exception was caused by overflow.
+                        // On overflow return the largest valid STAmount.
+                        // Very large sums of STAmount are approximations
+                        // anyway.
+                        bal = STAmount(bal.issue(), STAmount::cMaxValue, STAmount::cMaxOffset);
                     }
                 }
-            });
+            }
+        });
     }
 
     if (!sums.empty())
@@ -232,29 +226,27 @@ doGatewayBalances(RPC::JsonContext& context)
         result[jss::obligations] = std::move(j);
     }
 
-    auto populateResult =
-        [&result](
-            std::map<AccountID, std::vector<STAmount>> const& array,
-            Json::StaticString const& name) {
-            if (!array.empty())
+    auto populateResult = [&result](
+                              std::map<AccountID, std::vector<STAmount>> const& array,
+                              Json::StaticString const& name) {
+        if (!array.empty())
+        {
+            Json::Value j;
+            for (auto const& [accId, accBalances] : array)
             {
-                Json::Value j;
-                for (auto const& [accId, accBalances] : array)
+                Json::Value balanceArray;
+                for (auto const& balance : accBalances)
                 {
-                    Json::Value balanceArray;
-                    for (auto const& balance : accBalances)
-                    {
-                        Json::Value entry;
-                        entry[jss::currency] =
-                            to_string(balance.issue().currency);
-                        entry[jss::value] = balance.getText();
-                        balanceArray.append(std::move(entry));
-                    }
-                    j[to_string(accId)] = std::move(balanceArray);
+                    Json::Value entry;
+                    entry[jss::currency] = to_string(balance.issue().currency);
+                    entry[jss::value] = balance.getText();
+                    balanceArray.append(std::move(entry));
                 }
-                result[name] = std::move(j);
+                j[to_string(accId)] = std::move(balanceArray);
             }
-        };
+            result[name] = std::move(j);
+        }
+    };
 
     populateResult(hotBalances, jss::balances);
     populateResult(frozenBalances, jss::frozen_balances);

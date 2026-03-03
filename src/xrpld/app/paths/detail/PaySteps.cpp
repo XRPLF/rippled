@@ -1,10 +1,9 @@
-#include <xrpld/app/paths/detail/Steps.h>
-
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/paths/detail/Steps.h>
 
 #include <algorithm>
 
@@ -21,12 +20,10 @@ checkNear(IOUAmount const& expected, IOUAmount const& actual)
     if (actual.exponent() < -20)
         return true;
 
-    auto const a = (expected.exponent() < actual.exponent())
-        ? expected.mantissa() / 10
-        : expected.mantissa();
-    auto const b = (actual.exponent() < expected.exponent())
-        ? actual.mantissa() / 10
-        : actual.mantissa();
+    auto const a =
+        (expected.exponent() < actual.exponent()) ? expected.mantissa() / 10 : expected.mantissa();
+    auto const b =
+        (actual.exponent() < expected.exponent()) ? actual.mantissa() / 10 : actual.mantissa();
     if (a == b)
         return true;
 
@@ -58,8 +55,7 @@ toStep(
 {
     auto& j = ctx.j;
 
-    if (ctx.isFirst && e1->isAccount() &&
-        (e1->getNodeType() & STPathElement::typeCurrency) &&
+    if (ctx.isFirst && e1->isAccount() && (e1->getNodeType() & STPathElement::typeCurrency) &&
         isXRP(e1->getCurrency()))
     {
         return make_XRPEndpointStep(ctx, e1->getAccountID());
@@ -70,16 +66,14 @@ toStep(
 
     if (e1->isAccount() && e2->isAccount())
     {
-        return make_DirectStepI(
-            ctx, e1->getAccountID(), e2->getAccountID(), curIssue.currency);
+        return make_DirectStepI(ctx, e1->getAccountID(), e2->getAccountID(), curIssue.currency);
     }
 
     if (e1->isOffer() && e2->isAccount())
     {
         // LCOV_EXCL_START
         // should already be taken care of
-        JLOG(j.error())
-            << "Found offer/account payment step. Aborting payment strand.";
+        JLOG(j.error()) << "Found offer/account payment step. Aborting payment strand.";
         UNREACHABLE("xrpl::toStep : offer/account payment payment strand");
         return {temBAD_PATH, std::unique_ptr<Step>{}};
         // LCOV_EXCL_STOP
@@ -89,12 +83,10 @@ toStep(
         (e2->getNodeType() & STPathElement::typeCurrency) ||
             (e2->getNodeType() & STPathElement::typeIssuer),
         "xrpl::toStep : currency or issuer");
-    auto const outCurrency = e2->getNodeType() & STPathElement::typeCurrency
-        ? e2->getCurrency()
-        : curIssue.currency;
-    auto const outIssuer = e2->getNodeType() & STPathElement::typeIssuer
-        ? e2->getIssuerID()
-        : curIssue.account;
+    auto const outCurrency =
+        e2->getNodeType() & STPathElement::typeCurrency ? e2->getCurrency() : curIssue.currency;
+    auto const outIssuer =
+        e2->getNodeType() & STPathElement::typeIssuer ? e2->getIssuerID() : curIssue.account;
 
     if (isXRP(curIssue.currency) && isXRP(outCurrency))
     {
@@ -132,9 +124,8 @@ toStrand(
         (sendMaxIssue && !isConsistent(*sendMaxIssue)))
         return {temBAD_PATH, Strand{}};
 
-    if ((sendMaxIssue && sendMaxIssue->account == noAccount()) ||
-        (src == noAccount()) || (dst == noAccount()) ||
-        (deliver.account == noAccount()))
+    if ((sendMaxIssue && sendMaxIssue->account == noAccount()) || (src == noAccount()) ||
+        (dst == noAccount()) || (deliver.account == noAccount()))
         return {temBAD_PATH, Strand{}};
 
     for (auto const& pe : path)
@@ -157,8 +148,7 @@ toStrand(
         if (hasAccount && isXRP(pe.getAccountID()))
             return {temBAD_PATH, Strand{}};
 
-        if (hasCurrency && hasIssuer &&
-            isXRP(pe.getCurrency()) != isXRP(pe.getIssuerID()))
+        if (hasCurrency && hasIssuer && isXRP(pe.getCurrency()) != isXRP(pe.getIssuerID()))
             return {temBAD_PATH, Strand{}};
 
         if (hasIssuer && (pe.getIssuerID() == noAccount()))
@@ -169,8 +159,7 @@ toStrand(
     }
 
     Issue curIssue = [&] {
-        auto const& currency =
-            sendMaxIssue ? sendMaxIssue->currency : deliver.currency;
+        auto const& currency = sendMaxIssue ? sendMaxIssue->currency : deliver.currency;
         if (isXRP(currency))
             return xrpIssue();
         return Issue{currency, src};
@@ -185,15 +174,13 @@ toStrand(
     // sendmax and deliver.
     normPath.reserve(4 + path.size());
     {
-        normPath.emplace_back(
-            STPathElement::typeAll, src, curIssue.currency, curIssue.account);
+        normPath.emplace_back(STPathElement::typeAll, src, curIssue.currency, curIssue.account);
 
         if (sendMaxIssue && sendMaxIssue->account != src &&
             (path.empty() || !path[0].isAccount() ||
              path[0].getAccountID() != sendMaxIssue->account))
         {
-            normPath.emplace_back(
-                sendMaxIssue->account, std::nullopt, std::nullopt);
+            normPath.emplace_back(sendMaxIssue->account, std::nullopt, std::nullopt);
         }
 
         for (auto const& i : path)
@@ -205,23 +192,19 @@ toStrand(
             STPathElement const& lastCurrency =
                 *std::find_if(normPath.rbegin(), normPath.rend(), hasCurrency);
             if ((lastCurrency.getCurrency() != deliver.currency) ||
-                (offerCrossing &&
-                 lastCurrency.getIssuerID() != deliver.account))
+                (offerCrossing && lastCurrency.getIssuerID() != deliver.account))
             {
-                normPath.emplace_back(
-                    std::nullopt, deliver.currency, deliver.account);
+                normPath.emplace_back(std::nullopt, deliver.currency, deliver.account);
             }
         }
 
-        if (!((normPath.back().isAccount() &&
-               normPath.back().getAccountID() == deliver.account) ||
+        if (!((normPath.back().isAccount() && normPath.back().getAccountID() == deliver.account) ||
               (dst == deliver.account)))
         {
             normPath.emplace_back(deliver.account, std::nullopt, std::nullopt);
         }
 
-        if (!normPath.back().isAccount() ||
-            normPath.back().getAccountID() != dst)
+        if (!normPath.back().isAccount() || normPath.back().getAccountID() != dst)
         {
             normPath.emplace_back(dst, std::nullopt, std::nullopt);
         }
@@ -294,24 +277,17 @@ toStrand(
 
         if (cur->isAccount() && next->isAccount())
         {
-            if (!isXRP(curIssue.currency) &&
-                curIssue.account != cur->getAccountID() &&
+            if (!isXRP(curIssue.currency) && curIssue.account != cur->getAccountID() &&
                 curIssue.account != next->getAccountID())
             {
                 JLOG(j.trace()) << "Inserting implied account";
                 auto msr = make_DirectStepI(
-                    ctx(),
-                    cur->getAccountID(),
-                    curIssue.account,
-                    curIssue.currency);
+                    ctx(), cur->getAccountID(), curIssue.account, curIssue.currency);
                 if (msr.first != tesSUCCESS)
                     return {msr.first, Strand{}};
                 result.push_back(std::move(msr.second));
                 impliedPE.emplace(
-                    STPathElement::typeAccount,
-                    curIssue.account,
-                    xrpCurrency(),
-                    xrpAccount());
+                    STPathElement::typeAccount, curIssue.account, xrpCurrency(), xrpAccount());
                 cur = &*impliedPE;
             }
         }
@@ -321,25 +297,18 @@ toStrand(
             {
                 JLOG(j.trace()) << "Inserting implied account before offer";
                 auto msr = make_DirectStepI(
-                    ctx(),
-                    cur->getAccountID(),
-                    curIssue.account,
-                    curIssue.currency);
+                    ctx(), cur->getAccountID(), curIssue.account, curIssue.currency);
                 if (msr.first != tesSUCCESS)
                     return {msr.first, Strand{}};
                 result.push_back(std::move(msr.second));
                 impliedPE.emplace(
-                    STPathElement::typeAccount,
-                    curIssue.account,
-                    xrpCurrency(),
-                    xrpAccount());
+                    STPathElement::typeAccount, curIssue.account, xrpCurrency(), xrpAccount());
                 cur = &*impliedPE;
             }
         }
         else if (cur->isOffer() && next->isAccount())
         {
-            if (curIssue.account != next->getAccountID() &&
-                !isXRP(next->getAccountID()))
+            if (curIssue.account != next->getAccountID() && !isXRP(next->getAccountID()))
             {
                 if (isXRP(curIssue))
                 {
@@ -348,8 +317,7 @@ toStrand(
                     else
                     {
                         // Last step. insert xrp endpoint step
-                        auto msr =
-                            make_XRPEndpointStep(ctx(), next->getAccountID());
+                        auto msr = make_XRPEndpointStep(ctx(), next->getAccountID());
                         if (msr.first != tesSUCCESS)
                             return {msr.first, Strand{}};
                         result.push_back(std::move(msr.second));
@@ -359,10 +327,7 @@ toStrand(
                 {
                     JLOG(j.trace()) << "Inserting implied account after offer";
                     auto msr = make_DirectStepI(
-                        ctx(),
-                        curIssue.account,
-                        next->getAccountID(),
-                        curIssue.currency);
+                        ctx(), curIssue.account, next->getAccountID(), curIssue.currency);
                     if (msr.first != tesSUCCESS)
                         return {msr.first, Strand{}};
                     result.push_back(std::move(msr.second));
@@ -371,8 +336,7 @@ toStrand(
             continue;
         }
 
-        if (!next->isOffer() && next->hasCurrency() &&
-            next->getCurrency() != curIssue.currency)
+        if (!next->isOffer() && next->hasCurrency() && next->getCurrency() != curIssue.currency)
         {
             // Should never happen
             // LCOV_EXCL_START
@@ -381,8 +345,7 @@ toStrand(
             // LCOV_EXCL_STOP
         }
 
-        auto s = toStep(
-            ctx(/*isLast*/ i == normPath.size() - 2), cur, next, curIssue);
+        auto s = toStep(ctx(/*isLast*/ i == normPath.size() - 2), cur, next, curIssue);
         if (s.first == tesSUCCESS)
             result.emplace_back(std::move(s.second));
         else
@@ -398,15 +361,13 @@ toStrand(
                 return *r;
             if (auto const r = s.bookStepBook())
                 return std::make_pair(r->in.account, r->out.account);
-            Throw<FlowException>(
-                tefEXCEPTION, "Step should be either a direct or book step");
+            Throw<FlowException>(tefEXCEPTION, "Step should be either a direct or book step");
             return std::make_pair(xrpAccount(), xrpAccount());
         };
 
         auto curAcc = src;
         auto curIss = [&] {
-            auto& currency =
-                sendMaxIssue ? sendMaxIssue->currency : deliver.currency;
+            auto& currency = sendMaxIssue ? sendMaxIssue->currency : deliver.currency;
             if (isXRP(currency))
                 return xrpIssue();
             return Issue{currency, src};
@@ -472,8 +433,7 @@ toStrands(
     result.reserve(1 + paths.size());
     // Insert the strand into result if it is not already part of the vector
     auto insert = [&](Strand s) {
-        bool const hasStrand =
-            std::find(result.begin(), result.end(), s) != result.end();
+        bool const hasStrand = std::find(result.begin(), result.end(), s) != result.end();
 
         if (!hasStrand)
             result.emplace_back(std::move(s));
@@ -508,8 +468,7 @@ toStrands(
         else if (strand.empty())
         {
             JLOG(j.trace()) << "toStrand failed";
-            Throw<FlowException>(
-                tefEXCEPTION, "toStrand returned tes & empty strand");
+            Throw<FlowException>(tefEXCEPTION, "toStrand returned tes & empty strand");
         }
         else
         {
@@ -553,8 +512,7 @@ toStrands(
         else if (strand.empty())
         {
             JLOG(j.trace()) << "toStrand failed";
-            Throw<FlowException>(
-                tefEXCEPTION, "toStrand returned tes & empty strand");
+            Throw<FlowException>(tefEXCEPTION, "toStrand returned tes & empty strand");
         }
         else
         {

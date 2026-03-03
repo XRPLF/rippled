@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_ROLE_H_INCLUDED
-#define XRPL_SERVER_ROLE_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/json/json_value.h>
@@ -71,5 +70,3 @@ std::string_view
 forwardedFor(http_request_type const& request);
 
 }  // namespace xrpl
-
-#endif

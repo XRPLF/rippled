@@ -2,8 +2,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_UNIT_TEST_RUNNER_H_INCLUDED
-#define BEAST_UNIT_TEST_RUNNER_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/unit_test/suite_info.h>
 
@@ -276,5 +275,3 @@ runner::log(std::string const& s)
 
 }  // namespace unit_test
 }  // namespace beast
-
-#endif

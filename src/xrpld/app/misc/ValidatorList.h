@@ -1,7 +1,5 @@
-#ifndef XRPL_APP_MISC_VALIDATORLIST_H_INCLUDED
-#define XRPL_APP_MISC_VALIDATORLIST_H_INCLUDED
+#pragma once
 
-#include <xrpld/app/misc/Manifest.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/overlay/Message.h>
 
@@ -10,6 +8,7 @@
 #include <xrpl/crypto/csprng.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/server/Manifest.h>
 
 #include <boost/thread/shared_mutex.hpp>
 
@@ -237,7 +236,7 @@ class ValidatorList
     // config file under the title of SECTION_VALIDATORS or [validators].
     // This list is not associated with the masterKey of any publisher.
 
-    // Appropos PublisherListCollection fields, localPublisherList does not
+    // Apropos PublisherListCollection fields, localPublisherList does not
     // have any "remaining" manifests. It is assumed to be perennially
     // "available". The "validUntil" field is set to the highest possible
     // value of the field, hence this list is always valid.
@@ -273,11 +272,7 @@ public:
     {
         explicit PublisherListStats() = default;
         explicit PublisherListStats(ListDisposition d);
-        PublisherListStats(
-            ListDisposition d,
-            PublicKey key,
-            PublisherStatus stat,
-            std::size_t seq);
+        PublisherListStats(ListDisposition d, PublicKey key, PublisherStatus stat, std::size_t seq);
 
         ListDisposition
         bestDisposition() const;
@@ -365,7 +360,7 @@ public:
         std::string const& rawManifest,
         std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
         std::vector<MessageWithHash>& messages,
-        std::size_t maxSize = maximiumMessageSize);
+        std::size_t maxSize = maximumMessageSize);
 
     /** Apply multiple published lists of public keys, then broadcast it to all
         peers that have not seen it or sent it.
@@ -617,9 +612,7 @@ public:
         if available, as a Json object.
     */
     std::optional<Json::Value>
-    getAvailable(
-        std::string_view pubKey,
-        std::optional<std::uint32_t> forceVersion = {});
+    getAvailable(std::string_view pubKey, std::optional<std::uint32_t> forceVersion = {});
 
     /** Return the number of configured validator list sites. */
     std::size_t
@@ -692,8 +685,7 @@ public:
      * @return a filtered copy of the validations
      */
     std::vector<std::shared_ptr<STValidation>>
-    negativeUNLFilter(
-        std::vector<std::shared_ptr<STValidation>>&& validations) const;
+    negativeUNLFilter(std::vector<std::shared_ptr<STValidation>>&& validations) const;
 
 private:
     /** Return the number of configured validator list sites. */
@@ -873,10 +865,7 @@ private:
         Calling public member function is expected to lock mutex
     */
     bool
-    removePublisherList(
-        lock_guard const&,
-        PublicKey const& publisherKey,
-        PublisherStatus reason);
+    removePublisherList(lock_guard const&, PublicKey const& publisherKey, PublisherStatus reason);
 
     /** Return quorum for trusted validator set
 
@@ -889,10 +878,7 @@ private:
         recently received validations
     */
     std::size_t
-    calculateQuorum(
-        std::size_t unlSize,
-        std::size_t effectiveUnlSize,
-        std::size_t seenSize);
+    calculateQuorum(std::size_t unlSize, std::size_t effectiveUnlSize, std::size_t seenSize);
 };
 
 // hashing helpers
@@ -944,10 +930,7 @@ void
 hash_append(Hasher& h, TMValidatorListCollection const& msg)
 {
     using beast::hash_append;
-    hash_append(
-        h, msg.manifest(), xrpl::ValidatorList::parseBlobs(msg), msg.version());
+    hash_append(h, msg.manifest(), xrpl::ValidatorList::parseBlobs(msg), msg.version());
 }
 
 }  // namespace protocol
-
-#endif

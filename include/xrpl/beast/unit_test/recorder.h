@@ -2,8 +2,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_UNIT_TEST_RECORDER_HPP
-#define BEAST_UNIT_TEST_RECORDER_HPP
+#pragma once
 
 #include <xrpl/beast/unit_test/results.h>
 #include <xrpl/beast/unit_test/runner.h>
@@ -76,5 +75,3 @@ private:
 
 }  // namespace unit_test
 }  // namespace beast
-
-#endif

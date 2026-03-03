@@ -26,8 +26,8 @@ class LedgerTiming_test : public beast::unit_test::suite
                 std::uint32_t round = 0;
                 do
                 {
-                    nextCloseResolution = getNextLedgerTimeResolution(
-                        closeResolution, previousAgree, ++round);
+                    nextCloseResolution =
+                        getNextLedgerTimeResolution(closeResolution, previousAgree, ++round);
                     if (nextCloseResolution < closeResolution)
                         ++res.decrease;
                     else if (nextCloseResolution > closeResolution)

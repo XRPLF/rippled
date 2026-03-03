@@ -1,5 +1,4 @@
-#ifndef XRPL_CORE_JOBTYPES_H_INCLUDED
-#define XRPL_CORE_JOBTYPES_H_INCLUDED
+#pragma once
 
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobTypeInfo.h>
@@ -42,13 +41,10 @@ private:
                     .emplace(
                         std::piecewise_construct,
                         std::forward_as_tuple(jt),
-                        std::forward_as_tuple(
-                            jt, name, limit, avgLatency, peakLatency))
+                        std::forward_as_tuple(jt, name, limit, avgLatency, peakLatency))
                     .second;
 
-            XRPL_ASSERT(
-                inserted == true,
-                "xrpl::JobTypes::JobTypes::add : input is inserted");
+            XRPL_ASSERT(inserted == true, "xrpl::JobTypes::JobTypes::add : input is inserted");
         };
 
         // clang-format off
@@ -171,5 +167,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

@@ -1,10 +1,10 @@
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/rpc/detail/LegacyPathFind.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
+#include <xrpl/server/LoadFeeTrack.h>
 
 namespace xrpl {
 namespace RPC {
@@ -19,8 +19,7 @@ LegacyPathFind::LegacyPathFind(bool isAdmin, Application& app) : m_isOk(false)
     }
 
     auto const& jobCount = app.getJobQueue().getJobCountGE(jtCLIENT);
-    if (jobCount > Tuning::maxPathfindJobCount ||
-        app.getFeeTrack().isLoadedLocal())
+    if (jobCount > Tuning::maxPathfindJobCount || app.getFeeTrack().isLoadedLocal())
         return;
 
     while (true)
@@ -30,10 +29,7 @@ LegacyPathFind::LegacyPathFind(bool isAdmin, Application& app) : m_isOk(false)
             return;
 
         if (inProgress.compare_exchange_strong(
-                prevVal,
-                prevVal + 1,
-                std::memory_order_release,
-                std::memory_order_relaxed))
+                prevVal, prevVal + 1, std::memory_order_release, std::memory_order_relaxed))
         {
             m_isOk = true;
             return;

@@ -34,17 +34,16 @@ TimeoutCounter::setTimer(ScopedLockType& sl)
     if (isDone())
         return;
     timer_.expires_after(timerInterval_);
-    timer_.async_wait(
-        [wptr = pmDowncast()](boost::system::error_code const& ec) {
-            if (ec == boost::asio::error::operation_aborted)
-                return;
+    timer_.async_wait([wptr = pmDowncast()](boost::system::error_code const& ec) {
+        if (ec == boost::asio::error::operation_aborted)
+            return;
 
-            if (auto ptr = wptr.lock())
-            {
-                ScopedLockType sl(ptr->mtx_);
-                ptr->queueJob(sl);
-            }
-        });
+        if (auto ptr = wptr.lock())
+        {
+            ScopedLockType sl(ptr->mtx_);
+            ptr->queueJob(sl);
+        }
+    });
 }
 
 void
@@ -63,9 +62,7 @@ TimeoutCounter::queueJob(ScopedLockType& sl)
     }
 
     app_.getJobQueue().addJob(
-        queueJobParameter_.jobType,
-        queueJobParameter_.jobName,
-        [wptr = pmDowncast()]() {
+        queueJobParameter_.jobType, queueJobParameter_.jobName, [wptr = pmDowncast()]() {
             if (auto sptr = wptr.lock(); sptr)
                 sptr->invokeOnTimer();
         });

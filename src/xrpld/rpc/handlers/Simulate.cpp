@@ -1,20 +1,21 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/OpenLedger.h>
-#include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxQ.h>
-#include <xrpld/app/tx/apply.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 
+#include <xrpl/core/HashRouter.h>
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/tx/apply.h>
 
 namespace xrpl {
 
@@ -34,12 +35,11 @@ getAutofillSequence(Json::Value const& tx_json, RPC::JsonContext& context)
     auto const srcAddressID = parseBase58<AccountID>(accountStr.asString());
     if (!srcAddressID.has_value())
     {
-        return Unexpected(RPC::make_error(
-            rpcSRC_ACT_MALFORMED, RPC::invalid_field_message("tx.Account")));
+        return Unexpected(
+            RPC::make_error(rpcSRC_ACT_MALFORMED, RPC::invalid_field_message("tx.Account")));
     }
     std::shared_ptr<SLE const> const sle =
-        context.app.openLedger().current()->read(
-            keylet::account(*srcAddressID));
+        context.app.openLedger().current()->read(keylet::account(*srcAddressID));
     if (!hasTicketSeq && !sle)
     {
         JLOG(context.app.journal("Simulate").debug())
@@ -66,14 +66,12 @@ autofillSignature(Json::Value& sigObject)
         if (!sigObject[jss::Signers].isArray())
             return RPC::invalid_field_error("tx.Signers");
         // check multisigned signers
-        for (unsigned index = 0; index < sigObject[jss::Signers].size();
-             index++)
+        for (unsigned index = 0; index < sigObject[jss::Signers].size(); index++)
         {
             auto& signer = sigObject[jss::Signers][index];
             if (!signer.isObject() || !signer.isMember(jss::Signer) ||
                 !signer[jss::Signer].isObject())
-                return RPC::invalid_field_error(
-                    "tx.Signers[" + std::to_string(index) + "]");
+                return RPC::invalid_field_error("tx.Signers[" + std::to_string(index) + "]");
 
             if (!signer[jss::Signer].isMember(jss::SigningPubKey))
             {
@@ -140,7 +138,7 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
 
     if (!tx_json.isMember(jss::NetworkID))
     {
-        auto const networkId = context.app.config().NETWORK_ID;
+        auto const networkId = context.app.getNetworkIDService().getNetworkID();
         if (networkId > 1024)
             tx_json[jss::NetworkID] = to_string(networkId);
     }
@@ -157,8 +155,7 @@ getTxJsonFromParams(Json::Value const& params)
     {
         if (params.isMember(jss::tx_json))
         {
-            return RPC::make_param_error(
-                "Can only include one of `tx_blob` and `tx_json`.");
+            return RPC::make_param_error("Can only include one of `tx_blob` and `tx_json`.");
         }
 
         auto const tx_blob = params[jss::tx_blob];
@@ -174,8 +171,7 @@ getTxJsonFromParams(Json::Value const& params)
         try
         {
             SerialIter sitTrans(makeSlice(*unHexed));
-            tx_json = STObject(std::ref(sitTrans), sfGeneric)
-                          .getJson(JsonOptions::none);
+            tx_json = STObject(std::ref(sitTrans), sfGeneric).getJson(JsonOptions::none);
         }
         catch (std::runtime_error const&)
         {
@@ -192,8 +188,7 @@ getTxJsonFromParams(Json::Value const& params)
     }
     else
     {
-        return RPC::make_param_error(
-            "Neither `tx_blob` nor `tx_json` included.");
+        return RPC::make_param_error("Neither `tx_blob` nor `tx_json` included.");
     }
 
     // basic sanity checks for transaction shape
@@ -217,11 +212,7 @@ simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
     // Process the transaction
     OpenView view = *context.app.openLedger().current();
     auto const result = context.app.getTxQ().apply(
-        context.app,
-        view,
-        transaction->getSTransaction(),
-        tapDRY_RUN,
-        context.j);
+        context.app, view, transaction->getSTransaction(), tapDRY_RUN, context.j);
 
     jvResult[jss::applied] = result.applied;
     jvResult[jss::ledger_index] = view.seq();
@@ -250,39 +241,31 @@ simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
 
     if (token == "tesSUCCESS")
     {
-        jvResult[jss::engine_result_message] =
-            "The simulated transaction would have been applied.";
+        jvResult[jss::engine_result_message] = "The simulated transaction would have been applied.";
     }
 
     if (result.metadata)
     {
         if (isBinaryOutput)
         {
-            auto const metaBlob =
-                result.metadata->getAsObject().getSerializer().getData();
+            auto const metaBlob = result.metadata->getAsObject().getSerializer().getData();
             jvResult[jss::meta_blob] = strHex(makeSlice(metaBlob));
         }
         else
         {
             jvResult[jss::meta] = result.metadata->getJson(JsonOptions::none);
             RPC::insertDeliveredAmount(
-                jvResult[jss::meta],
-                view,
-                transaction->getSTransaction(),
-                *result.metadata);
+                jvResult[jss::meta], view, transaction->getSTransaction(), *result.metadata);
             RPC::insertNFTSyntheticInJson(
                 jvResult, transaction->getSTransaction(), *result.metadata);
             RPC::insertMPTokenIssuanceID(
-                jvResult[jss::meta],
-                transaction->getSTransaction(),
-                *result.metadata);
+                jvResult[jss::meta], transaction->getSTransaction(), *result.metadata);
         }
     }
 
     if (isBinaryOutput)
     {
-        auto const txBlob =
-            transaction->getSTransaction()->getSerializer().getData();
+        auto const txBlob = transaction->getSTransaction()->getSerializer().getData();
         jvResult[jss::tx_blob] = strHex(makeSlice(txBlob));
     }
     else
@@ -305,14 +288,12 @@ doSimulate(RPC::JsonContext& context)
     Json::Value tx_json;  // the tx as a JSON
 
     // check validity of `binary` param
-    if (context.params.isMember(jss::binary) &&
-        !context.params[jss::binary].isBool())
+    if (context.params.isMember(jss::binary) && !context.params[jss::binary].isBool())
     {
         return RPC::invalid_field_error(jss::binary);
     }
 
-    for (auto const field :
-         {jss::secret, jss::seed, jss::seed_hex, jss::passphrase})
+    for (auto const field : {jss::secret, jss::seed, jss::seed_hex, jss::passphrase})
     {
         if (context.params.isMember(field))
         {

@@ -53,14 +53,12 @@ ServerDefinitions::translate(std::string const& inp)
         return out;
     };
 
-    auto contains = [&](char const* s) -> bool {
-        return inp.find(s) != std::string::npos;
-    };
+    auto contains = [&](char const* s) -> bool { return inp.find(s) != std::string::npos; };
 
     if (contains("UINT"))
     {
-        if (contains("512") || contains("384") || contains("256") ||
-            contains("192") || contains("160") || contains("128"))
+        if (contains("512") || contains("384") || contains("256") || contains("192") ||
+            contains("160") || contains("128"))
             return replace("UINT", "Hash");
         else
             return replace("UINT", "UInt");
@@ -117,8 +115,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
     std::map<int32_t, std::string> typeMap{{-1, "Done"}};
     for (auto const& [rawName, typeValue] : sTypeMap)
     {
-        std::string typeName =
-            translate(std::string(rawName).substr(4) /* remove STI_ */);
+        std::string typeName = translate(std::string(rawName).substr(4) /* remove STI_ */);
         defs_[jss::TYPES][typeName] = typeValue;
         typeMap[typeValue] = typeName;
     }
@@ -283,8 +280,7 @@ doServerDefinitions(RPC::JsonContext& context)
     uint256 hash;
     if (params.isMember(jss::hash))
     {
-        if (!params[jss::hash].isString() ||
-            !hash.parseHex(params[jss::hash].asString()))
+        if (!params[jss::hash].isString() || !hash.parseHex(params[jss::hash].asString()))
             return RPC::invalid_field_error(jss::hash);
     }
 

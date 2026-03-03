@@ -1,8 +1,7 @@
 #include <test/jtx.h>
 
-#include <xrpld/app/tx/apply.h>
-
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/tx/apply.h>
 
 #include <string>
 #include <vector>
@@ -49,8 +48,7 @@ struct PseudoTx_test : public beast::unit_test::suite
     {
         std::vector<STTx> res;
 
-        res.emplace_back(STTx(
-            ttACCOUNT_SET, [&](auto& obj) { obj[sfAccount] = AccountID(1); }));
+        res.emplace_back(STTx(ttACCOUNT_SET, [&](auto& obj) { obj[sfAccount] = AccountID(1); }));
 
         res.emplace_back(STTx(ttPAYMENT, [&](auto& obj) {
             obj.setAccountID(sfAccount, AccountID(2));
@@ -66,20 +64,17 @@ struct PseudoTx_test : public beast::unit_test::suite
         using namespace jtx;
         Env env(*this, features);
 
-        for (auto const& stx :
-             getPseudoTxs(env.closed()->rules(), env.closed()->seq() + 1))
+        for (auto const& stx : getPseudoTxs(env.closed()->rules(), env.closed()->seq() + 1))
         {
             std::string reason;
             BEAST_EXPECT(isPseudoTx(stx));
             BEAST_EXPECT(!passesLocalChecks(stx, reason));
             BEAST_EXPECT(reason == "Cannot submit pseudo transactions.");
-            env.app().openLedger().modify(
-                [&](OpenView& view, beast::Journal j) {
-                    auto const result =
-                        xrpl::apply(env.app(), view, stx, tapNONE, j);
-                    BEAST_EXPECT(!result.applied && result.ter == temINVALID);
-                    return result.applied;
-                });
+            env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+                auto const result = xrpl::apply(env.app(), view, stx, tapNONE, j);
+                BEAST_EXPECT(!result.applied && result.ter == temINVALID);
+                return result.applied;
+            });
         }
     }
 

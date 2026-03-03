@@ -1,5 +1,4 @@
-#ifndef BEAST_CONTAINER_AGED_UNORDERED_MAP_H_INCLUDED
-#define BEAST_CONTAINER_AGED_UNORDERED_MAP_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/container/detail/aged_unordered_container.h>
 
@@ -16,16 +15,6 @@ template <
     class Hash = std::hash<Key>,
     class KeyEqual = std::equal_to<Key>,
     class Allocator = std::allocator<std::pair<Key const, T>>>
-using aged_unordered_map = detail::aged_unordered_container<
-    false,
-    true,
-    Key,
-    T,
-    Clock,
-    Hash,
-    KeyEqual,
-    Allocator>;
-
+using aged_unordered_map =
+    detail::aged_unordered_container<false, true, Key, T, Clock, Hash, KeyEqual, Allocator>;
 }
-
-#endif

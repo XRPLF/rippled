@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_PATHS_IMPL_STEP_CHECKS_H_INCLUDED
-#define XRPL_APP_PATHS_IMPL_STEP_CHECKS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -52,10 +51,7 @@ checkFreeze(
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
             if (isLPTokenFrozen(
-                    view,
-                    src,
-                    (*sleAmm)[sfAsset].get<Issue>(),
-                    (*sleAmm)[sfAsset2].get<Issue>()))
+                    view, src, (*sleAmm)[sfAsset].get<Issue>(), (*sleAmm)[sfAsset2].get<Issue>()))
             {
                 return terNO_LINE;
             }
@@ -85,8 +81,8 @@ checkNoRipple(
     if ((*sleIn)[sfFlags] & ((cur > prev) ? lsfHighNoRipple : lsfLowNoRipple) &&
         (*sleOut)[sfFlags] & ((cur > next) ? lsfHighNoRipple : lsfLowNoRipple))
     {
-        JLOG(j.info()) << "Path violates noRipple constraint between " << prev
-                       << ", " << cur << " and " << next;
+        JLOG(j.info()) << "Path violates noRipple constraint between " << prev << ", " << cur
+                       << " and " << next;
 
         return terNO_RIPPLE;
     }
@@ -94,5 +90,3 @@ checkNoRipple(
 }
 
 }  // namespace xrpl
-
-#endif

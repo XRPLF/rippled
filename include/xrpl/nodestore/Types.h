@@ -1,5 +1,4 @@
-#ifndef XRPL_NODESTORE_TYPES_H_INCLUDED
-#define XRPL_NODESTORE_TYPES_H_INCLUDED
+#pragma once
 
 #include <xrpl/nodestore/NodeObject.h>
 
@@ -38,5 +37,3 @@ using Batch = std::vector<std::shared_ptr<NodeObject>>;
 }  // namespace NodeStore
 
 }  // namespace xrpl
-
-#endif

@@ -91,8 +91,7 @@ STTx::STTx(SerialIter& sit) : STObject(sfTransaction)
     tid_ = getHash(HashPrefix::transactionID);
 }
 
-STTx::STTx(TxType type, std::function<void(STObject&)> assembler)
-    : STObject(sfTransaction)
+STTx::STTx(TxType type, std::function<void(STObject&)> assembler) : STObject(sfTransaction)
 {
     auto format = getTxFormat(type);
 
@@ -148,9 +147,7 @@ STTx::getMentionedAccounts() const
     {
         if (auto sacc = dynamic_cast<STAccount const*>(&it))
         {
-            XRPL_ASSERT(
-                !sacc->isDefault(),
-                "xrpl::STTx::getMentionedAccounts : account is set");
+            XRPL_ASSERT(!sacc->isDefault(), "xrpl::STTx::getMentionedAccounts : account is set");
             if (!sacc->isDefault())
                 list.insert(sacc->value());
         }
@@ -249,10 +246,10 @@ STTx::checkSign(Rules const& rules, STObject const& sigObject) const
         return signingPubKey.empty() ? checkMultiSign(rules, sigObject)
                                      : checkSingleSign(sigObject);
     }
-    catch (std::exception const&)
+    catch (...)
     {
+        return Unexpected("Internal signature check failure.");
     }
-    return Unexpected("Internal signature check failure.");
 }
 
 Expected<void, std::string>
@@ -275,9 +272,7 @@ STTx::checkBatchSign(Rules const& rules) const
 {
     try
     {
-        XRPL_ASSERT(
-            getTxnType() == ttBATCH,
-            "STTx::checkBatchSign : not a batch transaction");
+        XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchSign : not a batch transaction");
         if (getTxnType() != ttBATCH)
         {
             JLOG(debugLog().fatal()) << "not a batch transaction";
@@ -287,9 +282,8 @@ STTx::checkBatchSign(Rules const& rules) const
         for (auto const& signer : signers)
         {
             Blob const& signingPubKey = signer.getFieldVL(sfSigningPubKey);
-            auto const result = signingPubKey.empty()
-                ? checkBatchMultiSign(signer, rules)
-                : checkBatchSingleSign(signer);
+            auto const result = signingPubKey.empty() ? checkBatchMultiSign(signer, rules)
+                                                      : checkBatchSingleSign(signer);
 
             if (!result)
                 return result;
@@ -298,8 +292,7 @@ STTx::checkBatchSign(Rules const& rules) const
     }
     catch (std::exception const& e)
     {
-        JLOG(debugLog().error())
-            << "Batch signature check failed: " << e.what();
+        JLOG(debugLog().error()) << "Batch signature check failed: " << e.what();
     }
     return Unexpected("Internal batch signature check failure.");
 }
@@ -354,8 +347,7 @@ STTx::getMetaSQLInsertReplaceHeader()
 }
 
 std::string
-STTx::getMetaSQL(std::uint32_t inLedger, std::string const& escapedMetaData)
-    const
+STTx::getMetaSQL(std::uint32_t inLedger, std::string const& escapedMetaData) const
 {
     Serializer s;
     add(s);
@@ -370,17 +362,16 @@ STTx::getMetaSQL(
     char status,
     std::string const& escapedMetaData) const
 {
-    static boost::format bfTrans(
-        "('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
+    static boost::format bfTrans("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
     std::string rTxn = sqlBlobLiteral(rawTxn.peekData());
 
     auto format = TxFormats::getInstance().findByType(tx_type_);
     XRPL_ASSERT(format, "xrpl::STTx::getMetaSQL : non-null type format");
 
     return str(
-        boost::format(bfTrans) % to_string(getTransactionID()) %
-        format->getName() % toBase58(getAccountID(sfAccount)) %
-        getFieldU32(sfSequence) % inLedger % status % rTxn % escapedMetaData);
+        boost::format(bfTrans) % to_string(getTransactionID()) % format->getName() %
+        toBase58(getAccountID(sfAccount)) % getFieldU32(sfSequence) % inLedger % status % rTxn %
+        escapedMetaData);
 }
 
 static Expected<void, std::string>
@@ -399,8 +390,7 @@ singleSignHelper(STObject const& sigObject, Slice const& data)
         if (publicKeyType(makeSlice(spk)))
         {
             Blob const signature = sigObject.getFieldVL(sfTxnSignature);
-            validSig =
-                verify(PublicKey(makeSlice(spk)), data, makeSlice(signature));
+            validSig = verify(PublicKey(makeSlice(spk)), data, makeSlice(signature));
         }
     }
     catch (std::exception const&)
@@ -449,8 +439,7 @@ multiSignHelper(
     STArray const& signers{sigObject.getFieldArray(sfSigners)};
 
     // There are well known bounds that the number of signers must be within.
-    if (signers.size() < STTx::minMultiSigners ||
-        signers.size() > STTx::maxMultiSigners)
+    if (signers.size() < STTx::minMultiSigners || signers.size() > STTx::maxMultiSigners)
         return Unexpected("Invalid Signers array size.");
 
     // Signers must be in sorted order by AccountID.
@@ -487,9 +476,7 @@ multiSignHelper(
             {
                 Blob const signature = signer.getFieldVL(sfTxnSignature);
                 validSig = verify(
-                    PublicKey(makeSlice(spk)),
-                    makeMsg(accountID).slice(),
-                    makeSlice(signature));
+                    PublicKey(makeSlice(spk)), makeMsg(accountID).slice(), makeSlice(signature));
             }
         }
         catch (std::exception const& e)
@@ -500,8 +487,8 @@ multiSignHelper(
         }
         if (!validSig)
             return Unexpected(
-                std::string("Invalid signature on account ") +
-                toBase58(accountID) + errorWhat.value_or("") + ".");
+                std::string("Invalid signature on account ") + toBase58(accountID) +
+                errorWhat.value_or("") + ".");
     }
     // All signatures verified.
     return {};
@@ -531,9 +518,8 @@ STTx::checkMultiSign(Rules const& rules, STObject const& sigObject) const
 {
     // Used inside the loop in multiSignHelper to enforce that
     // the account owner may not multisign for themselves.
-    auto const txnAccountID = &sigObject != this
-        ? std::nullopt
-        : std::optional<AccountID>(getAccountID(sfAccount));
+    auto const txnAccountID =
+        &sigObject != this ? std::nullopt : std::optional<AccountID>(getAccountID(sfAccount));
 
     // We can ease the computational load inside the loop a bit by
     // pre-constructing part of the data that we hash.  Fill a Serializer
@@ -568,9 +554,7 @@ STTx::checkMultiSign(Rules const& rules, STObject const& sigObject) const
 std::vector<uint256> const&
 STTx::getBatchTransactionIDs() const
 {
-    XRPL_ASSERT(
-        getTxnType() == ttBATCH,
-        "STTx::getBatchTransactionIDs : not a batch transaction");
+    XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::getBatchTransactionIDs : not a batch transaction");
     XRPL_ASSERT(
         getFieldArray(sfRawTransactions).size() != 0,
         "STTx::getBatchTransactionIDs : empty raw transactions");
@@ -626,8 +610,7 @@ isMemoOkay(STObject const& st, std::string& reason)
         {
             auto const& name = memoElement.getFName();
 
-            if (name != sfMemoType && name != sfMemoData &&
-                name != sfMemoFormat)
+            if (name != sfMemoType && name != sfMemoData && name != sfMemoFormat)
             {
                 reason =
                     "A memo may contain only MemoType, MemoData or "
@@ -703,8 +686,7 @@ invalidMPTAmountInTx(STObject const& tx)
     auto const txType = tx[~sfTransactionType];
     if (!txType)
         return false;
-    if (auto const* item =
-            TxFormats::getInstance().findByType(safe_cast<TxType>(*txType)))
+    if (auto const* item = TxFormats::getInstance().findByType(safe_cast<TxType>(*txType)))
     {
         for (auto const& e : item->getSOTemplate())
         {
@@ -748,8 +730,7 @@ isRawTransactionOkay(STObject const& st, std::string& reason)
     {
         try
         {
-            TxType const tt =
-                safe_cast<TxType>(raw.getFieldU16(sfTransactionType));
+            TxType const tt = safe_cast<TxType>(raw.getFieldU16(sfTransactionType));
             if (tt == ttBATCH)
             {
                 reason = "Raw Transactions may not contain batch transactions.";

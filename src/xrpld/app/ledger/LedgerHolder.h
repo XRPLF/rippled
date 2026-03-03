@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_LEDGERHOLDER_H_INCLUDED
-#define XRPL_APP_LEDGER_LEDGERHOLDER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/contract.h>
@@ -54,5 +53,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

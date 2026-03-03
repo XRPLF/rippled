@@ -2,12 +2,12 @@
 #include <xrpld/app/ledger/InboundTransactions.h>
 #include <xrpld/app/ledger/detail/TransactionAcquire.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/server/NetworkOPs.h>
 
 #include <memory>
 #include <mutex>
@@ -56,8 +56,8 @@ public:
         , m_peerSetBuilder(std::move(peerSetBuilder))
         , j_(app_.journal("InboundTransactions"))
     {
-        m_zeroSet.mSet = std::make_shared<SHAMap>(
-            SHAMapType::TRANSACTION, uint256(), app_.getNodeFamily());
+        m_zeroSet.mSet =
+            std::make_shared<SHAMap>(SHAMapType::TRANSACTION, uint256(), app_.getNodeFamily());
         m_zeroSet.mSet->setUnbacked();
     }
 
@@ -99,8 +99,7 @@ public:
             if (!acquire || stopping_)
                 return std::shared_ptr<SHAMap>();
 
-            ta = std::make_shared<TransactionAcquire>(
-                app_, hash, m_peerSetBuilder->build());
+            ta = std::make_shared<TransactionAcquire>(app_, hash, m_peerSetBuilder->build());
 
             auto& obj = m_map[hash];
             obj.mAcquire = ta;
@@ -160,10 +159,7 @@ public:
     }
 
     void
-    giveSet(
-        uint256 const& hash,
-        std::shared_ptr<SHAMap> const& set,
-        bool fromAcquire) override
+    giveSet(uint256 const& hash, std::shared_ptr<SHAMap> const& set, bool fromAcquire) override
     {
         bool isNew = true;
 
@@ -201,8 +197,7 @@ public:
 
             auto it = m_map.begin();
 
-            std::uint32_t const minSeq =
-                (seq < setKeepRounds) ? 0 : (seq - setKeepRounds);
+            std::uint32_t const minSeq = (seq < setKeepRounds) ? 0 : (seq - setKeepRounds);
             std::uint32_t maxSeq = seq + setKeepRounds;
 
             while (it != m_map.end())

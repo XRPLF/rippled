@@ -1,5 +1,4 @@
-#ifndef XRPL_ALGORITHM_H_INCLUDED
-#define XRPL_ALGORITHM_H_INCLUDED
+#pragma once
 
 #include <utility>
 
@@ -96,5 +95,3 @@ remove_if_intersect_or_match(
 }
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_XRPL_RPC_HANDLERS_VERSION_H
-#define XRPL_XRPL_RPC_HANDLERS_VERSION_H
+#pragma once
 
 #include <xrpl/protocol/ApiVersion.h>
 
@@ -20,9 +19,8 @@ public:
         return Status::OK;
     }
 
-    template <class Object>
     void
-    writeResult(Object& obj)
+    writeResult(Json::Value& obj)
     {
         setVersion(obj, apiVersion_, betaEnabled_);
     }
@@ -44,5 +42,3 @@ private:
 
 }  // namespace RPC
 }  // namespace xrpl
-
-#endif

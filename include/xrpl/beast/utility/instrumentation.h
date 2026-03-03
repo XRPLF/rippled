@@ -1,5 +1,4 @@
-#ifndef BEAST_UTILITY_INSTRUMENTATION_H_INCLUDED
-#define BEAST_UTILITY_INSTRUMENTATION_H_INCLUDED
+#pragma once
 
 #include <cassert>
 
@@ -52,5 +51,3 @@
 // instrumentation macros - its name describes the condition which was _not_
 // meant to happen, while name in other macros describes the condition that is
 // meant to happen (e.g. as in "assert that this happens").
-
-#endif

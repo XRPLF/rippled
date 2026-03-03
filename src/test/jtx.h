@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_H_INCLUDED
-#define XRPL_TEST_JTX_H_INCLUDED
+#pragma once
 
 // Convenience header that includes everything
 
@@ -60,5 +59,3 @@
 #include <test/jtx/utility.h>
 
 #include <xrpl/json/to_string.h>
-
-#endif

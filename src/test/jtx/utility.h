@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_UTILITY_H_INCLUDED
-#define XRPL_TEST_JTX_UTILITY_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 
@@ -53,13 +52,8 @@ fill_seq(Json::Value& jv, ReadView const& view);
 
 /** Given a rippled unit test rpc command, return the corresponding JSON. */
 Json::Value
-cmdToJSONRPC(
-    std::vector<std::string> const& args,
-    beast::Journal j,
-    unsigned int apiVersion);
+cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned int apiVersion);
 
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

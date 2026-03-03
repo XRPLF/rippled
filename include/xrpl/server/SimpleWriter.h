@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_SIMPLEWRITER_H_INCLUDED
-#define XRPL_SERVER_SIMPLEWRITER_H_INCLUDED
+#pragma once
 
 #include <xrpl/server/Writer.h>
 
@@ -19,8 +18,7 @@ class SimpleWriter : public Writer
 
 public:
     template <bool isRequest, class Body, class Fields>
-    explicit SimpleWriter(
-        boost::beast::http::message<isRequest, Body, Fields> const& msg)
+    explicit SimpleWriter(boost::beast::http::message<isRequest, Body, Fields> const& msg)
     {
         boost::beast::ostream(sb_) << msg;
     }
@@ -56,5 +54,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

@@ -36,13 +36,13 @@ public:
     }
 
     Status
-    fetch(void const*, std::shared_ptr<NodeObject>*) override
+    fetch(uint256 const&, std::shared_ptr<NodeObject>*) override
     {
         return notFound;
     }
 
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
-    fetchBatch(std::vector<uint256 const*> const& hashes) override
+    fetchBatch(std::vector<uint256> const& hashes) override
     {
         return {};
     }
@@ -108,12 +108,7 @@ public:
     }
 
     std::unique_ptr<Backend>
-    createInstance(
-        size_t,
-        Section const&,
-        std::size_t,
-        Scheduler&,
-        beast::Journal) override
+    createInstance(size_t, Section const&, std::size_t, Scheduler&, beast::Journal) override
     {
         return std::make_unique<NullBackend>();
     }

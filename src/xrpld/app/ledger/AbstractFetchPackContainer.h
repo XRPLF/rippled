@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_ABSTRACTFETCHPACKCONTAINER_H_INCLUDED
-#define XRPL_APP_LEDGER_ABSTRACTFETCHPACKCONTAINER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/base_uint.h>
@@ -16,7 +15,7 @@ class AbstractFetchPackContainer
 public:
     virtual ~AbstractFetchPackContainer() = default;
 
-    /** Retrieves partial ledger data of the coresponding hash from peers.`
+    /** Retrieves partial ledger data of the corresponding hash from peers.`
 
         @param nodeHash The 256-bit hash of the data to fetch.
         @return `std::nullopt` if the hash isn't cached,
@@ -27,5 +26,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

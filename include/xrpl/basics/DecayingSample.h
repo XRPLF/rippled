@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_DECAYINGSAMPLE_H_INCLUDED
-#define XRPL_BASICS_DECAYINGSAMPLE_H_INCLUDED
+#pragma once
 
 #include <chrono>
 #include <cmath>
@@ -57,8 +56,7 @@ private:
         if (m_value != value_type())
         {
             std::size_t elapsed =
-                std::chrono::duration_cast<std::chrono::seconds>(now - m_when)
-                    .count();
+                std::chrono::duration_cast<std::chrono::seconds>(now - m_when).count();
 
             // A span larger than four times the window decays the
             // value to an insignificant amount so just reset it.
@@ -132,5 +130,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

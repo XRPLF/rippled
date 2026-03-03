@@ -33,9 +33,8 @@ public:
             if (id == 0)
             {
                 for (auto const link : net.links(this))
-                    net.send(this, link.target, [&, to = link.target] {
-                        to->receive(net, this, 1);
-                    });
+                    net.send(
+                        this, link.target, [&, to = link.target] { to->receive(net, this, 1); });
             }
             else
             {

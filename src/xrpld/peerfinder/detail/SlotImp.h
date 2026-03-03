@@ -1,5 +1,4 @@
-#ifndef XRPL_PEERFINDER_SLOTIMP_H_INCLUDED
-#define XRPL_PEERFINDER_SLOTIMP_H_INCLUDED
+#pragma once
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/Slot.h>
@@ -25,10 +24,7 @@ public:
         clock_type& clock);
 
     // outbound
-    SlotImp(
-        beast::IP::Endpoint const& remote_endpoint,
-        bool fixed,
-        clock_type& clock);
+    SlotImp(beast::IP::Endpoint const& remote_endpoint, bool fixed, clock_type& clock);
 
     bool
     inbound() const override
@@ -196,5 +192,3 @@ public:
 
 }  // namespace PeerFinder
 }  // namespace xrpl
-
-#endif

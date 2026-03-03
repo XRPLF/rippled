@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_RATE_H_INCLUDED
-#define XRPL_PROTOCOL_RATE_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/STAmount.h>
@@ -54,11 +53,7 @@ STAmount
 multiplyRound(STAmount const& amount, Rate const& rate, bool roundUp);
 
 STAmount
-multiplyRound(
-    STAmount const& amount,
-    Rate const& rate,
-    Asset const& asset,
-    bool roundUp);
+multiplyRound(STAmount const& amount, Rate const& rate, Asset const& asset, bool roundUp);
 
 STAmount
 divide(STAmount const& amount, Rate const& rate);
@@ -67,11 +62,7 @@ STAmount
 divideRound(STAmount const& amount, Rate const& rate, bool roundUp);
 
 STAmount
-divideRound(
-    STAmount const& amount,
-    Rate const& rate,
-    Asset const& asset,
-    bool roundUp);
+divideRound(STAmount const& amount, Rate const& rate, Asset const& asset, bool roundUp);
 
 namespace nft {
 /** Given a transfer fee (in basis points) convert it to a transfer rate. */
@@ -84,5 +75,3 @@ transferFeeAsRate(std::uint16_t fee);
 extern Rate const parityRate;
 
 }  // namespace xrpl
-
-#endif

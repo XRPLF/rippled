@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_WSSESSION_H_INCLUDED
-#define XRPL_SERVER_WSSESSION_H_INCLUDED
+#pragma once
 
 #include <xrpl/server/Handoff.h>
 #include <xrpl/server/Port.h>
@@ -78,8 +77,7 @@ public:
             done = true;
         }
         auto const pb = boost::beast::buffers_prefix(n_, sb_.data());
-        std::vector<boost::asio::const_buffer> vb(
-            std::distance(pb.begin(), pb.end()));
+        std::vector<boost::asio::const_buffer> vb(std::distance(pb.begin(), pb.end()));
         std::copy(pb.begin(), pb.end(), std::back_inserter(vb));
         return {done, vb};
     }
@@ -126,5 +124,3 @@ struct WSSession
 };
 
 }  // namespace xrpl
-
-#endif

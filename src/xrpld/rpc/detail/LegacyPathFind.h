@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_LEGACYPATHFIND_H_INCLUDED
-#define XRPL_RPC_LEGACYPATHFIND_H_INCLUDED
+#pragma once
 
 #include <atomic>
 
@@ -29,5 +28,3 @@ private:
 
 }  // namespace RPC
 }  // namespace xrpl
-
-#endif

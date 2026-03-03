@@ -1,13 +1,12 @@
-#ifndef XRPL_RPC_HANDLER_H_INCLUDED
-#define XRPL_RPC_HANDLER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/server/NetworkOPs.h>
 
 namespace Json {
 class Object;
@@ -44,9 +43,7 @@ getHandler(unsigned int version, bool betaEnabled, std::string const&);
 /** Return a Json::objectValue with a single entry. */
 template <class Value>
 Json::Value
-makeObjectValue(
-    Value const& value,
-    Json::StaticString const& field = jss::message)
+makeObjectValue(Value const& value, Json::StaticString const& field = jss::message)
 {
     Json::Value result(Json::objectValue);
     result[field] = value;
@@ -61,14 +58,12 @@ template <class T>
 error_code_i
 conditionMet(Condition condition_required, T& context)
 {
-    if (context.app.getOPs().isAmendmentBlocked() &&
-        (condition_required != NO_CONDITION))
+    if (context.app.getOPs().isAmendmentBlocked() && (condition_required != NO_CONDITION))
     {
         return rpcAMENDMENT_BLOCKED;
     }
 
-    if (context.app.getOPs().isUNLBlocked() &&
-        (condition_required != NO_CONDITION))
+    if (context.app.getOPs().isUNLBlocked() && (condition_required != NO_CONDITION))
     {
         return rpcEXPIRED_VALIDATOR_LIST;
     }
@@ -84,11 +79,9 @@ conditionMet(Condition condition_required, T& context)
         return rpcNOT_SYNCED;
     }
 
-    if (!context.app.config().standalone() &&
-        condition_required != NO_CONDITION)
+    if (!context.app.config().standalone() && condition_required != NO_CONDITION)
     {
-        if (context.ledgerMaster.getValidatedLedgerAge() >
-            Tuning::maxValidatedLedgerAge)
+        if (context.ledgerMaster.getValidatedLedgerAge() > Tuning::maxValidatedLedgerAge)
         {
             if (context.apiVersion == 1)
                 return rpcNO_CURRENT;
@@ -100,17 +93,15 @@ conditionMet(Condition condition_required, T& context)
 
         if (cID + 10 < vID)
         {
-            JLOG(context.j.debug())
-                << "Current ledger ID(" << cID
-                << ") is less than validated ledger ID(" << vID << ")";
+            JLOG(context.j.debug()) << "Current ledger ID(" << cID
+                                    << ") is less than validated ledger ID(" << vID << ")";
             if (context.apiVersion == 1)
                 return rpcNO_CURRENT;
             return rpcNOT_SYNCED;
         }
     }
 
-    if ((condition_required != NO_CONDITION) &&
-        !context.ledgerMaster.getClosedLedger())
+    if ((condition_required != NO_CONDITION) && !context.ledgerMaster.getClosedLedger())
     {
         if (context.apiVersion == 1)
             return rpcNO_CLOSED;
@@ -122,5 +113,3 @@ conditionMet(Condition condition_required, T& context)
 
 }  // namespace RPC
 }  // namespace xrpl
-
-#endif

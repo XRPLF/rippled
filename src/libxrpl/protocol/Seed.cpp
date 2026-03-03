@@ -80,8 +80,7 @@ parseGenericSeed(std::string const& str, bool rfc1751)
     if (str.empty())
         return std::nullopt;
 
-    if (parseBase58<AccountID>(str) ||
-        parseBase58<PublicKey>(TokenType::NodePublic, str) ||
+    if (parseBase58<AccountID>(str) || parseBase58<PublicKey>(TokenType::NodePublic, str) ||
         parseBase58<PublicKey>(TokenType::AccountPublic, str) ||
         parseBase58<SecretKey>(TokenType::NodePrivate, str) ||
         parseBase58<SecretKey>(TokenType::AccountSecret, str))

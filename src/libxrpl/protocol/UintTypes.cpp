@@ -40,8 +40,7 @@ to_string(Currency const& currency)
     if (currency == noCurrency())
         return "1";
 
-    static constexpr Currency sIsoBits(
-        "FFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFFFFFF");
+    static constexpr Currency sIsoBits("FFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFFFFFF");
 
     if ((currency & sIsoBits).isZero())
     {
@@ -78,8 +77,7 @@ to_currency(Currency& currency, std::string const& code)
 
         currency = beast::zero;
 
-        std::copy(
-            code.begin(), code.end(), currency.begin() + detail::isoCodeOffset);
+        std::copy(code.begin(), code.end(), currency.begin() + detail::isoCodeOffset);
 
         return true;
     }

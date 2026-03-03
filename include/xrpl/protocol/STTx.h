@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STTX_H_INCLUDED
-#define XRPL_PROTOCOL_STTX_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Expected.h>
 #include <xrpl/protocol/Feature.h>
@@ -100,8 +99,7 @@ public:
     sign(
         PublicKey const& publicKey,
         SecretKey const& secretKey,
-        std::optional<std::reference_wrapper<SField const>> signatureTarget =
-            {});
+        std::optional<std::reference_wrapper<SField const>> signatureTarget = {});
 
     /** Check the signature.
         @param rules The current ledger rules.
@@ -118,8 +116,7 @@ public:
     getMetaSQLInsertReplaceHeader();
 
     std::string
-    getMetaSQL(std::uint32_t inLedger, std::string const& escapedMetaData)
-        const;
+    getMetaSQL(std::uint32_t inLedger, std::string const& escapedMetaData) const;
 
     std::string
     getMetaSQL(
@@ -202,5 +199,3 @@ STTx::getTransactionID() const
 }
 
 }  // namespace xrpl
-
-#endif

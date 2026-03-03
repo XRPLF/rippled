@@ -42,8 +42,7 @@ injectSLE(Json::Value& jv, SLE const& sle)
             // VFALCO TODO Give a name and move this constant
             //             to a more visible location. Also
             //             shouldn't this be https?
-            jv[jss::urlgravatar] =
-                str(boost::format("http://www.gravatar.com/avatar/%s") % md5);
+            jv[jss::urlgravatar] = str(boost::format("http://www.gravatar.com/avatar/%s") % md5);
         }
     }
     else
@@ -102,41 +101,34 @@ doAccountInfo(RPC::JsonContext& context)
     }
     auto const accountID{std::move(id.value())};
 
-    static constexpr std::
-        array<std::pair<std::string_view, LedgerSpecificFlags>, 9>
-            lsFlags{
-                {{"defaultRipple", lsfDefaultRipple},
-                 {"depositAuth", lsfDepositAuth},
-                 {"disableMasterKey", lsfDisableMaster},
-                 {"disallowIncomingXRP", lsfDisallowXRP},
-                 {"globalFreeze", lsfGlobalFreeze},
-                 {"noFreeze", lsfNoFreeze},
-                 {"passwordSpent", lsfPasswordSpent},
-                 {"requireAuthorization", lsfRequireAuth},
-                 {"requireDestinationTag", lsfRequireDestTag}}};
+    static constexpr std::array<std::pair<std::string_view, LedgerSpecificFlags>, 9> lsFlags{
+        {{"defaultRipple", lsfDefaultRipple},
+         {"depositAuth", lsfDepositAuth},
+         {"disableMasterKey", lsfDisableMaster},
+         {"disallowIncomingXRP", lsfDisallowXRP},
+         {"globalFreeze", lsfGlobalFreeze},
+         {"noFreeze", lsfNoFreeze},
+         {"passwordSpent", lsfPasswordSpent},
+         {"requireAuthorization", lsfRequireAuth},
+         {"requireDestinationTag", lsfRequireDestTag}}};
 
-    static constexpr std::
-        array<std::pair<std::string_view, LedgerSpecificFlags>, 4>
-            disallowIncomingFlags{
-                {{"disallowIncomingNFTokenOffer",
-                  lsfDisallowIncomingNFTokenOffer},
-                 {"disallowIncomingCheck", lsfDisallowIncomingCheck},
-                 {"disallowIncomingPayChan", lsfDisallowIncomingPayChan},
-                 {"disallowIncomingTrustline", lsfDisallowIncomingTrustline}}};
+    static constexpr std::array<std::pair<std::string_view, LedgerSpecificFlags>, 4>
+        disallowIncomingFlags{
+            {{"disallowIncomingNFTokenOffer", lsfDisallowIncomingNFTokenOffer},
+             {"disallowIncomingCheck", lsfDisallowIncomingCheck},
+             {"disallowIncomingPayChan", lsfDisallowIncomingPayChan},
+             {"disallowIncomingTrustline", lsfDisallowIncomingTrustline}}};
 
-    static constexpr std::pair<std::string_view, LedgerSpecificFlags>
-        allowTrustLineClawbackFlag{
-            "allowTrustLineClawback", lsfAllowTrustLineClawback};
+    static constexpr std::pair<std::string_view, LedgerSpecificFlags> allowTrustLineClawbackFlag{
+        "allowTrustLineClawback", lsfAllowTrustLineClawback};
 
-    static constexpr std::pair<std::string_view, LedgerSpecificFlags>
-        allowTrustLineLockingFlag{
-            "allowTrustLineLocking", lsfAllowTrustLineLocking};
+    static constexpr std::pair<std::string_view, LedgerSpecificFlags> allowTrustLineLockingFlag{
+        "allowTrustLineLocking", lsfAllowTrustLineLocking};
 
     auto const sleAccepted = ledger->read(keylet::account(accountID));
     if (sleAccepted)
     {
-        auto const queue =
-            params.isMember(jss::queue) && params[jss::queue].asBool();
+        auto const queue = params.isMember(jss::queue) && params[jss::queue].asBool();
 
         if (queue && !ledger->open())
         {
@@ -177,10 +169,7 @@ doAccountInfo(RPC::JsonContext& context)
                 {
                     // Remove the ID suffix from the field name.
                     name = name.substr(0, name.size() - 2);
-                    XRPL_ASSERT_PARTS(
-                        !name.empty(),
-                        "xrpl::doAccountInfo",
-                        "name is not empty");
+                    XRPL_ASSERT_PARTS(!name.empty(), "xrpl::doAccountInfo", "name is not empty");
                 }
                 // ValidPseudoAccounts invariant guarantees that only one field
                 // can be set
@@ -201,8 +190,7 @@ doAccountInfo(RPC::JsonContext& context)
         }
 
         // Return SignerList(s) if that is requested.
-        if (params.isMember(jss::signer_lists) &&
-            params[jss::signer_lists].asBool())
+        if (params.isMember(jss::signer_lists) && params[jss::signer_lists].asBool())
         {
             // We put the SignerList in an array because of an anticipated
             // future when we support multiple signer lists on one account.
@@ -216,12 +204,11 @@ doAccountInfo(RPC::JsonContext& context)
 
             // Documentation states this is returned as part of the account_info
             // response, but previously the code put it under account_data. We
-            // can move this to the documentated location from apiVersion 2
+            // can move this to the documented location from apiVersion 2
             // onwards.
             if (context.apiVersion == 1)
             {
-                result[jss::account_data][jss::signer_lists] =
-                    std::move(jvSignerList);
+                result[jss::account_data][jss::signer_lists] = std::move(jvSignerList);
             }
             else
             {
@@ -236,8 +223,7 @@ doAccountInfo(RPC::JsonContext& context)
             auto const txs = context.app.getTxQ().getAccountTxs(accountID);
             if (!txs.empty())
             {
-                jvQueueData[jss::txn_count] =
-                    static_cast<Json::UInt>(txs.size());
+                jvQueueData[jss::txn_count] = static_cast<Json::UInt>(txs.size());
 
                 auto& jvQueueTx = jvQueueData[jss::transactions];
                 jvQueueTx = Json::arrayValue;
@@ -261,8 +247,7 @@ doAccountInfo(RPC::JsonContext& context)
                     if (tx.seqProxy.isSeq())
                     {
                         XRPL_ASSERT(
-                            prevSeqProxy < tx.seqProxy,
-                            "rpple::doAccountInfo : first sorted proxy");
+                            prevSeqProxy < tx.seqProxy, "doAccountInfo : first sorted proxy");
                         prevSeqProxy = tx.seqProxy;
                         jvTx[jss::seq] = tx.seqProxy.value();
                         ++seqCount;
@@ -273,8 +258,7 @@ doAccountInfo(RPC::JsonContext& context)
                     else
                     {
                         XRPL_ASSERT(
-                            prevSeqProxy < tx.seqProxy,
-                            "rpple::doAccountInfo : second sorted proxy");
+                            prevSeqProxy < tx.seqProxy, "doAccountInfo : second sorted proxy");
                         prevSeqProxy = tx.seqProxy;
                         jvTx[jss::ticket] = tx.seqProxy.value();
                         ++ticketCount;
@@ -288,8 +272,7 @@ doAccountInfo(RPC::JsonContext& context)
                         jvTx[jss::LastLedgerSequence] = *tx.lastValid;
 
                     jvTx[jss::fee] = to_string(tx.consequences.fee());
-                    auto const spend = tx.consequences.potentialSpend() +
-                        tx.consequences.fee();
+                    auto const spend = tx.consequences.potentialSpend() + tx.consequences.fee();
                     jvTx[jss::max_spend_drops] = to_string(spend);
                     totalSpend += spend;
                     bool const authChanged = tx.consequences.isBlocker();

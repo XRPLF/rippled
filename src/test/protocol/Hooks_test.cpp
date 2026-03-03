@@ -134,8 +134,7 @@ class Hooks_test : public beast::unit_test::suite
                 }
 
                 case STI_ACCOUNT: {
-                    AccountID id = *parseBase58<AccountID>(
-                        "rwfSjJNK2YQuN64bSWn7T2eY9FJAyAPYJT");
+                    AccountID id = *parseBase58<AccountID>("rwfSjJNK2YQuN64bSWn7T2eY9FJAyAPYJT");
                     dummy.setAccountID(f, id);
                     BEAST_EXPECT(dummy.getAccountID(f) == id);
                     BEAST_EXPECT(dummy.isFieldPresent(f));

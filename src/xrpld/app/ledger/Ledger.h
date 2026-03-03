@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_LEDGER_H_INCLUDED
-#define XRPL_APP_LEDGER_LEDGER_H_INCLUDED
+#pragma once
 
 #include <xrpld/core/Config.h>
 #include <xrpld/core/TimeKeeper.h>
@@ -160,8 +159,7 @@ public:
     exists(uint256 const& key) const;
 
     std::optional<uint256>
-    succ(uint256 const& key, std::optional<uint256> const& last = std::nullopt)
-        const override;
+    succ(uint256 const& key, std::optional<uint256> const& last = std::nullopt) const override;
 
     std::shared_ptr<SLE const>
     read(Keylet const& k) const override;
@@ -404,11 +402,6 @@ private:
 /** A ledger wrapped in a CachedView. */
 using CachedLedger = CachedView<Ledger>;
 
-std::uint32_t constexpr FLAG_LEDGER_INTERVAL = 256;
-/** Returns true if the given ledgerIndex is a flag ledgerIndex */
-bool
-isFlagLedger(LedgerIndex seq);
-
 //------------------------------------------------------------------------------
 //
 // API
@@ -460,5 +453,3 @@ uint256
 calculateLedgerHash(LedgerHeader const& info);
 
 }  // namespace xrpl
-
-#endif

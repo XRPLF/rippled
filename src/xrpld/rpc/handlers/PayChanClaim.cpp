@@ -24,8 +24,7 @@ doChannelAuthorize(RPC::JsonContext& context)
 {
     if (context.role != Role::ADMIN && !context.app.config().canSign())
     {
-        return RPC::make_error(
-            rpcNOT_SUPPORTED, "Signing is not supported by this server.");
+        return RPC::make_error(rpcNOT_SUPPORTED, "Signing is not supported by this server.");
     }
 
     auto const& params(context.params);
@@ -56,9 +55,8 @@ doChannelAuthorize(RPC::JsonContext& context)
     if (!channelId.parseHex(params[jss::channel_id].asString()))
         return rpcError(rpcCHANNEL_MALFORMED);
 
-    std::optional<std::uint64_t> const optDrops = params[jss::amount].isString()
-        ? to_uint64(params[jss::amount].asString())
-        : std::nullopt;
+    std::optional<std::uint64_t> const optDrops =
+        params[jss::amount].isString() ? to_uint64(params[jss::amount].asString()) : std::nullopt;
 
     if (!optDrops)
         return rpcError(rpcCHANNEL_AMT_MALFORMED);
@@ -77,8 +75,7 @@ doChannelAuthorize(RPC::JsonContext& context)
     {
         // LCOV_EXCL_START
         result = RPC::make_error(
-            rpcINTERNAL,
-            "Exception occurred during signing: " + std::string(ex.what()));
+            rpcINTERNAL, "Exception occurred during signing: " + std::string(ex.what()));
         // LCOV_EXCL_STOP
     }
     return result;
@@ -94,8 +91,7 @@ Json::Value
 doChannelVerify(RPC::JsonContext& context)
 {
     auto const& params(context.params);
-    for (auto const& p :
-         {jss::public_key, jss::channel_id, jss::amount, jss::signature})
+    for (auto const& p : {jss::public_key, jss::channel_id, jss::amount, jss::signature})
         if (!params.isMember(p))
             return RPC::missing_field_error(p);
 
@@ -120,9 +116,8 @@ doChannelVerify(RPC::JsonContext& context)
     if (!channelId.parseHex(params[jss::channel_id].asString()))
         return rpcError(rpcCHANNEL_MALFORMED);
 
-    std::optional<std::uint64_t> const optDrops = params[jss::amount].isString()
-        ? to_uint64(params[jss::amount].asString())
-        : std::nullopt;
+    std::optional<std::uint64_t> const optDrops =
+        params[jss::amount].isString() ? to_uint64(params[jss::amount].asString()) : std::nullopt;
 
     if (!optDrops)
         return rpcError(rpcCHANNEL_AMT_MALFORMED);

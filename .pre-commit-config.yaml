@@ -20,11 +20,17 @@ repos:
         args: [--assume-in-merge]
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: 7d85583be209cb547946c82fbe51f4bc5dd1d017 # frozen: v18.1.8
+    rev: 75ca4ad908dc4a99f57921f29b7e6c1521e10b26 # frozen: v21.1.8
     hooks:
       - id: clang-format
         args: [--style=file]
         "types_or": [c++, c, proto]
+
+  - repo: https://github.com/cheshirekow/cmake-format-precommit
+    rev: e2c2116d86a80e72e7146a06e68b7c228afc6319 # frozen: v0.6.13
+    hooks:
+      - id: cmake-format
+        additional_dependencies: [PyYAML]
 
   - repo: https://github.com/rbubley/mirrors-prettier
     rev: 5ba47274f9b181bce26a5150a725577f3c336011 # frozen: v3.6.2
@@ -32,9 +38,42 @@ repos:
       - id: prettier
 
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 25.11.0
+    rev: 831207fd435b47aeffdf6af853097e64322b4d44 # frozen: v25.12.0
     hooks:
       - id: black
+
+  - repo: https://github.com/streetsidesoftware/cspell-cli
+    rev: 1cfa010f078c354f3ffb8413616280cc28f5ba21 # frozen: v9.4.0
+    hooks:
+      - id: cspell # Spell check changed files
+        exclude: .config/cspell.config.yaml
+      - id: cspell # Spell check the commit message
+        name: check commit message spelling
+        args:
+          - --no-must-find-files
+          - --no-progress
+          - --no-summary
+          - --files
+          - .git/COMMIT_EDITMSG
+        stages: [commit-msg]
+
+  - repo: local
+    hooks:
+      - id: nix-fmt
+        name: Format Nix files
+        entry: |
+          bash -c '
+            if command -v nix &> /dev/null || [ "$GITHUB_ACTIONS" = "true" ]; then
+              nix --extra-experimental-features "nix-command flakes" fmt "$@"
+            else
+              echo "Skipping nix-fmt: nix not installed and not in GitHub Actions"
+              exit 0
+            fi
+          ' --
+        language: system
+        types:
+          - nix
+        pass_filenames: true
 
 exclude: |
   (?x)^(

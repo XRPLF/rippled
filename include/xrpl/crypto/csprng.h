@@ -1,5 +1,4 @@
-#ifndef XRPL_CRYPTO_RANDOM_H_INCLUDED
-#define XRPL_CRYPTO_RANDOM_H_INCLUDED
+#pragma once
 
 #include <mutex>
 
@@ -71,5 +70,3 @@ csprng_engine&
 crypto_prng();
 
 }  // namespace xrpl
-
-#endif

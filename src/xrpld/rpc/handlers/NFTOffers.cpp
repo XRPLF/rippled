@@ -42,10 +42,7 @@ appendNftOfferJson(
 //   marker: opaque                 // optional, resume previous query
 // }
 static Json::Value
-enumerateNFTOffers(
-    RPC::JsonContext& context,
-    uint256 const& nftId,
-    Keylet const& directory)
+enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const& directory)
 {
     unsigned int limit;
     if (auto err = readLimitField(limit, RPC::Tuning::nftOffers, context))

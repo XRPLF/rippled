@@ -1,5 +1,4 @@
-#ifndef XRPL_CORE_PERFLOG_H
-#define XRPL_CORE_PERFLOG_H
+#pragma once
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/core/JobTypes.h>
@@ -40,7 +39,7 @@ public:
     using microseconds = std::chrono::microseconds;
 
     /**
-     * Configuration from [perf] section of rippled.cfg.
+     * Configuration from [perf] section of xrpld.cfg.
      */
     struct Setup
     {
@@ -105,11 +104,7 @@ public:
      * @param instance JobQueue worker thread instance
      */
     virtual void
-    jobStart(
-        JobType const type,
-        microseconds dur,
-        steady_time_point startTime,
-        int instance) = 0;
+    jobStart(JobType const type, microseconds dur, steady_time_point startTime, int instance) = 0;
 
     /**
      * Log job finishing
@@ -175,12 +170,10 @@ measureDurationAndLog(
     auto result = func();
 
     auto end_time = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-        end_time - start_time);
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
     if (duration > maxDelay)
     {
-        JLOG(journal.warn())
-            << actionDescription << " took " << duration.count() << " ms";
+        JLOG(journal.warn()) << actionDescription << " took " << duration.count() << " ms";
     }
 
     return result;
@@ -188,5 +181,3 @@ measureDurationAndLog(
 
 }  // namespace perf
 }  // namespace xrpl
-
-#endif  // XRPL_CORE_PERFLOG_H

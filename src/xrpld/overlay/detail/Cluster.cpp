@@ -93,8 +93,7 @@ Cluster::load(Section const& nodes)
             return false;
         }
 
-        auto const id =
-            parseBase58<PublicKey>(TokenType::NodePublic, match[1].str());
+        auto const id = parseBase58<PublicKey>(TokenType::NodePublic, match[1].str());
 
         if (!id)
         {

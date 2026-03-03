@@ -1,5 +1,4 @@
-#ifndef XRPL_RESOURCE_GOSSIP_H_INCLUDED
-#define XRPL_RESOURCE_GOSSIP_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/net/IPEndpoint.h>
 
@@ -27,5 +26,3 @@ struct Gossip
 
 }  // namespace Resource
 }  // namespace xrpl
-
-#endif

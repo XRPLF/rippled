@@ -47,8 +47,7 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
     {
         int iType = sit.get8();
 
-        if (iType == STPathElement::typeNone ||
-            iType == STPathElement::typeBoundary)
+        if (iType == STPathElement::typeNone || iType == STPathElement::typeBoundary)
         {
             if (path.empty())
             {
@@ -64,8 +63,7 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
         }
         else if (iType & ~STPathElement::typeAll)
         {
-            JLOG(debugLog().error())
-                << "Bad path element " << iType << " in pathset";
+            JLOG(debugLog().error()) << "Bad path element " << iType << " in pathset";
             Throw<std::runtime_error>("bad path element");
         }
         else
@@ -139,15 +137,11 @@ STPathSet::isDefault() const
 }
 
 bool
-STPath::hasSeen(
-    AccountID const& account,
-    Currency const& currency,
-    AccountID const& issuer) const
+STPath::hasSeen(AccountID const& account, Currency const& currency, AccountID const& issuer) const
 {
     for (auto& p : mPath)
     {
-        if (p.getAccountID() == account && p.getCurrency() == currency &&
-            p.getIssuerID() == issuer)
+        if (p.getAccountID() == account && p.getCurrency() == currency && p.getIssuerID() == issuer)
             return true;
     }
 
@@ -200,11 +194,8 @@ STPathSet::getSType() const
 void
 STPathSet::add(Serializer& s) const
 {
-    XRPL_ASSERT(
-        getFName().isBinary(), "xrpl::STPathSet::add : field is binary");
-    XRPL_ASSERT(
-        getFName().fieldType == STI_PATHSET,
-        "xrpl::STPathSet::add : valid field type");
+    XRPL_ASSERT(getFName().isBinary(), "xrpl::STPathSet::add : field is binary");
+    XRPL_ASSERT(getFName().fieldType == STI_PATHSET, "xrpl::STPathSet::add : valid field type");
     bool first = true;
 
     for (auto const& spPath : value)

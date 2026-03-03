@@ -19,28 +19,18 @@ getHTTPHeaderTimestamp()
     char buffer[96];
     time_t now;
     time(&now);
-    struct tm now_gmt
-    {
-    };
+    struct tm now_gmt{};
 #ifndef _MSC_VER
     gmtime_r(&now, &now_gmt);
 #else
     gmtime_s(&now_gmt, &now);
 #endif
-    strftime(
-        buffer,
-        sizeof(buffer),
-        "Date: %a, %d %b %Y %H:%M:%S +0000\r\n",
-        &now_gmt);
+    strftime(buffer, sizeof(buffer), "Date: %a, %d %b %Y %H:%M:%S +0000\r\n", &now_gmt);
     return std::string(buffer);
 }
 
 void
-HTTPReply(
-    int nStatus,
-    std::string const& content,
-    Json::Output const& output,
-    beast::Journal j)
+HTTPReply(int nStatus, std::string const& content, Json::Output const& output, beast::Journal j)
 {
     JLOG(j.trace()) << "HTTP Reply " << nStatus << " " << content;
 

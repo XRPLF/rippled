@@ -44,9 +44,7 @@ AttestationBase::AttestationBase(
 }
 
 bool
-AttestationBase::equalHelper(
-    AttestationBase const& lhs,
-    AttestationBase const& rhs)
+AttestationBase::equalHelper(AttestationBase const& lhs, AttestationBase const& rhs)
 {
     return std::tie(
                lhs.attestationSignerAccount,
@@ -67,16 +65,10 @@ AttestationBase::equalHelper(
 }
 
 bool
-AttestationBase::sameEventHelper(
-    AttestationBase const& lhs,
-    AttestationBase const& rhs)
+AttestationBase::sameEventHelper(AttestationBase const& lhs, AttestationBase const& rhs)
 {
-    return std::tie(
-               lhs.sendingAccount,
-               lhs.sendingAmount,
-               lhs.wasLockingChainSend) ==
-        std::tie(
-               rhs.sendingAccount, rhs.sendingAmount, rhs.wasLockingChainSend);
+    return std::tie(lhs.sendingAccount, lhs.sendingAmount, lhs.wasLockingChainSend) ==
+        std::tie(rhs.sendingAccount, rhs.sendingAmount, rhs.wasLockingChainSend);
 }
 
 bool
@@ -98,9 +90,7 @@ AttestationBase::AttestationBase(STObject const& o)
 }
 
 AttestationBase::AttestationBase(Json::Value const& v)
-    : attestationSignerAccount{Json::getOrThrow<AccountID>(
-          v,
-          sfAttestationSignerAccount)}
+    : attestationSignerAccount{Json::getOrThrow<AccountID>(v, sfAttestationSignerAccount)}
     , publicKey{Json::getOrThrow<PublicKey>(v, sfPublicKey)}
     , signature{Json::getOrThrow<Buffer>(v, sfSignature)}
     , sendingAccount{Json::getOrThrow<AccountID>(v, sfAccount)}
@@ -177,8 +167,7 @@ AttestationClaim::AttestationClaim(STObject const& o)
 }
 
 AttestationClaim::AttestationClaim(Json::Value const& v)
-    : AttestationBase{v}
-    , claimID{Json::getOrThrow<std::uint64_t>(v, sfXChainClaimID)}
+    : AttestationBase{v}, claimID{Json::getOrThrow<std::uint64_t>(v, sfXChainClaimID)}
 {
     if (v.isMember(sfDestination.getJsonName()))
         dst = Json::getOrThrow<AccountID>(v, sfDestination);
@@ -187,8 +176,7 @@ AttestationClaim::AttestationClaim(Json::Value const& v)
 STObject
 AttestationClaim::toSTObject() const
 {
-    STObject o =
-        STObject::makeInnerObject(sfXChainClaimAttestationCollectionElement);
+    STObject o = STObject::makeInnerObject(sfXChainClaimAttestationCollectionElement);
     addHelper(o);
     o[sfXChainClaimID] = claimID;
     if (dst)
@@ -227,13 +215,7 @@ std::vector<std::uint8_t>
 AttestationClaim::message(STXChainBridge const& bridge) const
 {
     return AttestationClaim::message(
-        bridge,
-        sendingAccount,
-        sendingAmount,
-        rewardAccount,
-        wasLockingChainSend,
-        claimID,
-        dst);
+        bridge, sendingAccount, sendingAmount, rewardAccount, wasLockingChainSend, claimID, dst);
 }
 
 bool
@@ -266,9 +248,7 @@ AttestationCreateAccount::AttestationCreateAccount(STObject const& o)
 
 AttestationCreateAccount::AttestationCreateAccount(Json::Value const& v)
     : AttestationBase{v}
-    , createCount{Json::getOrThrow<std::uint64_t>(
-          v,
-          sfXChainAccountCreateCount)}
+    , createCount{Json::getOrThrow<std::uint64_t>(v, sfXChainAccountCreateCount)}
     , toCreate{Json::getOrThrow<AccountID>(v, sfDestination)}
     , rewardAmount{Json::getOrThrow<STAmount>(v, sfSignatureReward)}
 {
@@ -330,8 +310,7 @@ AttestationCreateAccount::AttestationCreateAccount(
 STObject
 AttestationCreateAccount::toSTObject() const
 {
-    STObject o = STObject::makeInnerObject(
-        sfXChainCreateAccountAttestationCollectionElement);
+    STObject o = STObject::makeInnerObject(sfXChainCreateAccountAttestationCollectionElement);
     addHelper(o);
 
     o[sfXChainAccountCreateCount] = createCount;
@@ -398,9 +377,7 @@ AttestationCreateAccount::sameEvent(AttestationCreateAccount const& rhs) const
 }
 
 bool
-operator==(
-    AttestationCreateAccount const& lhs,
-    AttestationCreateAccount const& rhs)
+operator==(AttestationCreateAccount const& lhs, AttestationCreateAccount const& rhs)
 {
     return AttestationCreateAccount::equalHelper(lhs, rhs) &&
         std::tie(lhs.createCount, lhs.toCreate, lhs.rewardAmount) ==
@@ -410,8 +387,7 @@ operator==(
 }  // namespace Attestations
 
 SField const& XChainClaimAttestation::ArrayFieldName{sfXChainClaimAttestations};
-SField const& XChainCreateAccountAttestation::ArrayFieldName{
-    sfXChainCreateAccountAttestations};
+SField const& XChainCreateAccountAttestation::ArrayFieldName{sfXChainCreateAccountAttestations};
 
 XChainClaimAttestation::XChainClaimAttestation(
     AccountID const& keyAccount_,
@@ -484,12 +460,10 @@ STObject
 XChainClaimAttestation::toSTObject() const
 {
     STObject o = STObject::makeInnerObject(sfXChainClaimProofSig);
-    o[sfAttestationSignerAccount] =
-        STAccount{sfAttestationSignerAccount, keyAccount};
+    o[sfAttestationSignerAccount] = STAccount{sfAttestationSignerAccount, keyAccount};
     o[sfPublicKey] = publicKey;
     o[sfAmount] = STAmount{sfAmount, amount};
-    o[sfAttestationRewardAccount] =
-        STAccount{sfAttestationRewardAccount, rewardAccount};
+    o[sfAttestationRewardAccount] = STAccount{sfAttestationRewardAccount, rewardAccount};
     o[sfWasLockingChainSend] = wasLockingChainSend;
     if (dst)
         o[sfDestination] = STAccount{sfDestination, *dst};
@@ -517,18 +491,14 @@ operator==(XChainClaimAttestation const& lhs, XChainClaimAttestation const& rhs)
 
 XChainClaimAttestation::MatchFields::MatchFields(
     XChainClaimAttestation::TSignedAttestation const& att)
-    : amount{att.sendingAmount}
-    , wasLockingChainSend{att.wasLockingChainSend}
-    , dst{att.dst}
+    : amount{att.sendingAmount}, wasLockingChainSend{att.wasLockingChainSend}, dst{att.dst}
 {
 }
 
 AttestationMatch
-XChainClaimAttestation::match(
-    XChainClaimAttestation::MatchFields const& rhs) const
+XChainClaimAttestation::match(XChainClaimAttestation::MatchFields const& rhs) const
 {
-    if (std::tie(amount, wasLockingChainSend) !=
-        std::tie(rhs.amount, rhs.wasLockingChainSend))
+    if (std::tie(amount, wasLockingChainSend) != std::tie(rhs.amount, rhs.wasLockingChainSend))
         return AttestationMatch::nonDstMismatch;
     if (dst != rhs.dst)
         return AttestationMatch::matchExceptDst;
@@ -555,8 +525,7 @@ XChainCreateAccountAttestation::XChainCreateAccountAttestation(
 {
 }
 
-XChainCreateAccountAttestation::XChainCreateAccountAttestation(
-    STObject const& o)
+XChainCreateAccountAttestation::XChainCreateAccountAttestation(STObject const& o)
     : XChainCreateAccountAttestation{
           o[sfAttestationSignerAccount],
           PublicKey{o[sfPublicKey]},
@@ -566,8 +535,7 @@ XChainCreateAccountAttestation::XChainCreateAccountAttestation(
           o[sfWasLockingChainSend] != 0,
           o[sfDestination]} {};
 
-XChainCreateAccountAttestation ::XChainCreateAccountAttestation(
-    Json::Value const& v)
+XChainCreateAccountAttestation ::XChainCreateAccountAttestation(Json::Value const& v)
     : XChainCreateAccountAttestation{
           Json::getOrThrow<AccountID>(v, sfAttestationSignerAccount),
           Json::getOrThrow<PublicKey>(v, sfPublicKey),
@@ -597,13 +565,11 @@ XChainCreateAccountAttestation::toSTObject() const
 {
     STObject o = STObject::makeInnerObject(sfXChainCreateAccountProofSig);
 
-    o[sfAttestationSignerAccount] =
-        STAccount{sfAttestationSignerAccount, keyAccount};
+    o[sfAttestationSignerAccount] = STAccount{sfAttestationSignerAccount, keyAccount};
     o[sfPublicKey] = publicKey;
     o[sfAmount] = STAmount{sfAmount, amount};
     o[sfSignatureReward] = STAmount{sfSignatureReward, rewardAmount};
-    o[sfAttestationRewardAccount] =
-        STAccount{sfAttestationRewardAccount, rewardAccount};
+    o[sfAttestationRewardAccount] = STAccount{sfAttestationRewardAccount, rewardAccount};
     o[sfWasLockingChainSend] = wasLockingChainSend;
     o[sfDestination] = STAccount{sfDestination, dst};
 
@@ -620,8 +586,7 @@ XChainCreateAccountAttestation::MatchFields::MatchFields(
 }
 
 AttestationMatch
-XChainCreateAccountAttestation::match(
-    XChainCreateAccountAttestation::MatchFields const& rhs) const
+XChainCreateAccountAttestation::match(XChainCreateAccountAttestation::MatchFields const& rhs) const
 {
     if (std::tie(amount, rewardAmount, wasLockingChainSend) !=
         std::tie(rhs.amount, rhs.rewardAmount, rhs.wasLockingChainSend))
@@ -632,9 +597,7 @@ XChainCreateAccountAttestation::match(
 }
 
 bool
-operator==(
-    XChainCreateAccountAttestation const& lhs,
-    XChainCreateAccountAttestation const& rhs)
+operator==(XChainCreateAccountAttestation const& lhs, XChainCreateAccountAttestation const& rhs)
 {
     return std::tie(
                lhs.keyAccount,
@@ -692,8 +655,7 @@ XChainAttestationsBase<TAttestation>::end()
 }
 
 template <class TAttestation>
-XChainAttestationsBase<TAttestation>::XChainAttestationsBase(
-    Json::Value const& v)
+XChainAttestationsBase<TAttestation>::XChainAttestationsBase(Json::Value const& v)
 {
     if (!v.isObject())
     {
@@ -706,8 +668,7 @@ XChainAttestationsBase<TAttestation>::XChainAttestationsBase(
         auto const jAtts = v[jss::attestations];
 
         if (jAtts.size() > maxAttestations)
-            Throw<std::runtime_error>(
-                "XChainAttestationsBase exceeded max number of attestations");
+            Throw<std::runtime_error>("XChainAttestationsBase exceeded max number of attestations");
 
         std::vector<TAttestation> r;
         r.reserve(jAtts.size());
@@ -721,8 +682,7 @@ template <class TAttestation>
 XChainAttestationsBase<TAttestation>::XChainAttestationsBase(STArray const& arr)
 {
     if (arr.size() > maxAttestations)
-        Throw<std::runtime_error>(
-            "XChainAttestationsBase exceeded max number of attestations");
+        Throw<std::runtime_error>("XChainAttestationsBase exceeded max number of attestations");
 
     attestations_.reserve(arr.size());
     for (auto const& o : arr)

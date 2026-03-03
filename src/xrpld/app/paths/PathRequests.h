@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_PATHS_PATHREQUESTS_H_INCLUDED
-#define XRPL_APP_PATHS_PATHREQUESTS_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/paths/PathRequest.h>
@@ -36,9 +35,7 @@ public:
     requestsPending() const;
 
     std::shared_ptr<RippleLineCache>
-    getLineCache(
-        std::shared_ptr<ReadView const> const& ledger,
-        bool authoritative);
+    getLineCache(std::shared_ptr<ReadView const> const& ledger, bool authoritative);
 
     // Create a new-style path request that pushes
     // updates to a subscriber
@@ -101,5 +98,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

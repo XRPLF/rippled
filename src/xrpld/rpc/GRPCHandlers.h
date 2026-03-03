@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_GRPCHANDLER_H_INCLUDED
-#define XRPL_RPC_GRPCHANDLER_H_INCLUDED
+#pragma once
 
 #include <xrpld/rpc/Context.h>
 
@@ -14,24 +13,19 @@ namespace xrpl {
  * nested inside RPC::GRPCContext<T>, where T is the request type
  * The return value is the response type, as well as a status
  * If the status is not Status::OK (meaning an error occurred), then only
- * the status will be sent to the client, and the response will be ommitted
+ * the status will be sent to the client, and the response will be omitted
  */
 
 std::pair<org::xrpl::rpc::v1::GetLedgerResponse, grpc::Status>
 doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context);
 
 std::pair<org::xrpl::rpc::v1::GetLedgerEntryResponse, grpc::Status>
-doLedgerEntryGrpc(
-    RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>& context);
+doLedgerEntryGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>& context);
 
 std::pair<org::xrpl::rpc::v1::GetLedgerDataResponse, grpc::Status>
-doLedgerDataGrpc(
-    RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& context);
+doLedgerDataGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& context);
 
 std::pair<org::xrpl::rpc::v1::GetLedgerDiffResponse, grpc::Status>
-doLedgerDiffGrpc(
-    RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDiffRequest>& context);
+doLedgerDiffGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDiffRequest>& context);
 
 }  // namespace xrpl
-
-#endif

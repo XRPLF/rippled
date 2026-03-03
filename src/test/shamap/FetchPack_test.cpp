@@ -36,8 +36,7 @@ public:
 
     struct TestFilter : SHAMapSyncFilter
     {
-        TestFilter(Map& map, beast::Journal journal)
-            : mMap(map), mJournal(journal)
+        TestFilter(Map& map, beast::Journal journal) : mMap(map), mJournal(journal)
         {
         }
 
@@ -81,8 +80,7 @@ public:
     {
         while (n--)
         {
-            auto const result(t.addItem(
-                SHAMapNodeType::tnACCOUNT_STATE, make_random_item(r)));
+            auto const result(t.addItem(SHAMapNodeType::tnACCOUNT_STATE, make_random_item(r)));
             assert(result);
             (void)result;
         }

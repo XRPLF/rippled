@@ -2,8 +2,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_UNIT_TEST_SUITE_HPP
-#define BEAST_UNIT_TEST_SUITE_HPP
+#pragma once
 
 #include <xrpl/beast/unit_test/runner.h>
 
@@ -101,8 +100,7 @@ private:
         log_buf<CharT, Traits, Allocator> buf_;
 
     public:
-        explicit log_os(suite& self)
-            : std::basic_ostream<CharT, Traits>(&buf_), buf_(self)
+        explicit log_os(suite& self) : std::basic_ostream<CharT, Traits>(&buf_), buf_(self)
         {
         }
     };
@@ -241,11 +239,7 @@ public:
 
     template <class Condition, class String>
     bool
-    expect(
-        Condition const& shouldBeTrue,
-        String const& reason,
-        char const* file,
-        int line);
+    expect(Condition const& shouldBeTrue, String const& reason, char const* file, int line);
     /** @} */
 
     //
@@ -349,8 +343,7 @@ public:
     }
 
     template <class T>
-    scoped_testcase(suite& self, std::stringstream& ss, T const& t)
-        : suite_(self), ss_(ss)
+    scoped_testcase(suite& self, std::stringstream& ss, T const& t) : suite_(self), ss_(ss)
     {
         ss_.clear();
         ss_.str({});
@@ -423,11 +416,7 @@ suite::expect(Condition const& shouldBeTrue, String const& reason)
 
 template <class Condition, class String>
 bool
-suite::expect(
-    Condition const& shouldBeTrue,
-    String const& reason,
-    char const* file,
-    int line)
+suite::expect(Condition const& shouldBeTrue, String const& reason, char const* file, int line)
 {
     if (shouldBeTrue)
     {
@@ -587,11 +576,9 @@ suite::run(runner& r)
 
 // detail:
 // This inserts the suite with the given manual flag
-#define BEAST_DEFINE_TESTSUITE_INSERT(                          \
-    Class, Module, Library, manual, priority)                   \
-    static beast::unit_test::detail::insert_suite<Class##_test> \
-        Library##Module##Class##_test_instance(                 \
-            #Class, #Module, #Library, manual, priority)
+#define BEAST_DEFINE_TESTSUITE_INSERT(Class, Module, Library, manual, priority) \
+    static beast::unit_test::detail::insert_suite<Class##_test>                 \
+        Library##Module##Class##_test_instance(#Class, #Module, #Library, manual, priority)
 
 //------------------------------------------------------------------------------
 
@@ -659,5 +646,3 @@ suite::run(runner& r)
 #endif
 
 //------------------------------------------------------------------------------
-
-#endif

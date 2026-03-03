@@ -22,13 +22,7 @@ sign_claim_attestation(
     std::optional<AccountID> const& dst)
 {
     auto const toSign = Attestations::AttestationClaim::message(
-        bridge,
-        sendingAccount,
-        sendingAmount,
-        rewardAccount,
-        wasLockingChainSend,
-        claimID,
-        dst);
+        bridge, sendingAccount, sendingAmount, rewardAccount, wasLockingChainSend, claimID, dst);
     return sign(pk, sk, makeSlice(toSign));
 }
 

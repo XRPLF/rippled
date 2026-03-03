@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_TUNING_H_INCLUDED
-#define XRPL_OVERLAY_TUNING_H_INCLUDED
+#pragma once
 
 #include <chrono>
 
@@ -48,5 +47,3 @@ std::size_t constexpr readBufferBytes = 16384;
 }  // namespace Tuning
 
 }  // namespace xrpl
-
-#endif

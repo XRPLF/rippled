@@ -1,5 +1,4 @@
-#ifndef XRPL_NET_HTTPCLIENT_H_INCLUDED
-#define XRPL_NET_HTTPCLIENT_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -64,8 +63,7 @@ public:
         boost::asio::io_context& io_context,
         std::string strSite,
         unsigned short const port,
-        std::function<
-            void(boost::asio::streambuf& sb, std::string const& strHost)> build,
+        std::function<void(boost::asio::streambuf& sb, std::string const& strHost)> build,
         std::size_t responseMax,  // if no Content-Length header
         std::chrono::seconds timeout,
         std::function<bool(
@@ -76,5 +74,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_PEERFINDER_SOURCESTRINGS_H_INCLUDED
-#define XRPL_PEERFINDER_SOURCESTRINGS_H_INCLUDED
+#pragma once
 
 #include <xrpld/peerfinder/detail/Source.h>
 
@@ -22,5 +21,3 @@ public:
 
 }  // namespace PeerFinder
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_CONTRACT_H_INCLUDED
-#define XRPL_BASICS_CONTRACT_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/type_name.h>
 
@@ -41,10 +40,7 @@ Throw(Args&&... args)
         "Exception must derive from std::exception.");
 
     E e(std::forward<Args>(args)...);
-    LogThrow(
-        std::string(
-            "Throwing exception of type " + beast::type_name<E>() + ": ") +
-        e.what());
+    LogThrow(std::string("Throwing exception of type " + beast::type_name<E>() + ": ") + e.what());
     throw e;
 }
 
@@ -53,5 +49,3 @@ Throw(Args&&... args)
 LogicError(std::string const& how) noexcept;
 
 }  // namespace xrpl
-
-#endif

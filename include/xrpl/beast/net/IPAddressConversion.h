@@ -1,5 +1,4 @@
-#ifndef BEAST_NET_IPADDRESSCONVERSION_H_INCLUDED
-#define BEAST_NET_IPADDRESSCONVERSION_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/net/IPEndpoint.h>
 
@@ -61,5 +60,3 @@ struct IPAddressConversion
 };
 
 }  // namespace beast
-
-#endif

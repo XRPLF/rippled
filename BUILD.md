@@ -1,5 +1,5 @@
-| :warning: **WARNING** :warning:
-|---|
+| :warning: **WARNING** :warning:                                                                                                                                                                                                |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | These instructions assume you have a C++ development environment ready with Git, Python, Conan, CMake, and a C++ compiler. For help setting one up on Linux, macOS, or Windows, [see this guide](./docs/build/environment.md). |
 
 > These instructions also assume a basic familiarity with Conan and CMake.
@@ -148,7 +148,8 @@ function extract_version {
 }
 
 # Define which recipes to export.
-recipes=(ed25519 grpc secp256k1 snappy soci)
+recipes=('ed25519' 'grpc' 'nudb' 'openssl' 'secp256k1' 'snappy' 'soci')
+folders=('all'     'all'  'all'  '3.x.x'   'all'       'all'    'all')
 
 # Selectively check out the recipes from our CCI fork.
 cd external
@@ -157,20 +158,24 @@ cd conan-center-index
 git init
 git remote add origin git@github.com:XRPLF/conan-center-index.git
 git sparse-checkout init
-for recipe in ${recipes[@]}; do
-  echo "Checking out ${recipe}..."
-  git sparse-checkout add recipes/${recipe}/all
+for ((index = 1; index <= ${#recipes[@]}; index++)); do
+  recipe=${recipes[index]}
+  folder=${folders[index]}
+  echo "Checking out recipe '${recipe}' from folder '${folder}'..."
+  git sparse-checkout add recipes/${recipe}/${folder}
 done
 git fetch origin master
 git checkout master
 cd ../..
 
 # Export the recipes into the local cache.
-for recipe in ${recipes[@]}; do
+for ((index = 1; index <= ${#recipes[@]}; index++)); do
+  recipe=${recipes[index]}
+  folder=${folders[index]}
   version=$(extract_version ${recipe})
-  echo "Exporting ${recipe}/${version}..."
+  echo "Exporting '${recipe}/${version}' from '${recipe}/${folder}'..."
   conan export --version $(extract_version ${recipe}) \
-    external/conan-center-index/recipes/${recipe}/all
+    external/conan-center-index/recipes/${recipe}/${folder}
 done
 ```
 
@@ -363,6 +368,36 @@ The workaround for this error is to add two lines to your profile:
 tools.build:cxxflags=['-DBOOST_ASIO_DISABLE_CONCEPTS']
 ```
 
+### Set Up Ccache
+
+To speed up repeated compilations, we recommend that you install
+[ccache](https://ccache.dev), a tool that wraps your compiler so that it can
+cache build objects locally.
+
+#### Linux
+
+You can install it using the package manager, e.g. `sudo apt install ccache`
+(Ubuntu) or `sudo dnf install ccache` (RHEL).
+
+#### macOS
+
+You can install it using Homebrew, i.e. `brew install ccache`.
+
+#### Windows
+
+You can install it using Chocolatey, i.e. `choco install ccache`. If you already
+have Ccache installed, then `choco upgrade ccache` will update it to the latest
+version. However, if you see an error such as:
+
+```
+terminate called after throwing an instance of 'std::bad_alloc'
+      what():  std::bad_alloc
+C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppCommon.targets(617,5): error MSB6006: "cl.exe" exited with code 3.
+```
+
+then please install a specific version of Ccache that we know works, via: `choco
+install ccache --version 4.11.3 --allow-downgrade`.
+
 ### Build and Test
 
 1. Create a build directory and move into it.
@@ -518,23 +553,37 @@ stored inside the build directory, as either of:
 - file named `coverage.`_extension_, with a suitable extension for the report format, or
 - directory named `coverage`, with the `index.html` and other files inside, for the `html-details` or `html-nested` report formats.
 
+## Sanitizers
+
+To build dependencies and xrpld with sanitizer instrumentation, set the
+`SANITIZERS` environment variable (only once before running conan and cmake) and use the `sanitizers` profile in conan:
+
+```bash
+export SANITIZERS=address,undefinedbehavior
+
+conan install .. --output-folder . --profile:all sanitizers --build missing --settings build_type=Debug
+
+cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Debug -Dxrpld=ON -Dtests=ON ..
+```
+
+See [Sanitizers docs](./docs/build/sanitizers.md) for more details.
+
 ## Options
 
-| Option     | Default Value | Description                                                        |
-| ---------- | ------------- | ------------------------------------------------------------------ |
-| `assert`   | OFF           | Enable assertions.                                                 |
-| `coverage` | OFF           | Prepare the coverage report.                                       |
-| `san`      | N/A           | Enable a sanitizer with Clang. Choices are `thread` and `address`. |
-| `tests`    | OFF           | Build tests.                                                       |
-| `unity`    | OFF           | Configure a unity build.                                           |
-| `xrpld`    | OFF           | Build the xrpld application, and not just the libxrpl library.     |
-| `werr`     | OFF           | Treat compilation warnings as errors                               |
-| `wextra`   | OFF           | Enable additional compilation warnings                             |
+| Option     | Default Value | Description                                                    |
+| ---------- | ------------- | -------------------------------------------------------------- |
+| `assert`   | OFF           | Enable assertions.                                             |
+| `coverage` | OFF           | Prepare the coverage report.                                   |
+| `tests`    | OFF           | Build tests.                                                   |
+| `unity`    | OFF           | Configure a unity build.                                       |
+| `xrpld`    | OFF           | Build the xrpld application, and not just the libxrpl library. |
+| `werr`     | OFF           | Treat compilation warnings as errors                           |
+| `wextra`   | OFF           | Enable additional compilation warnings                         |
 
-[Unity builds][5] may be faster for the first build
-(at the cost of much more memory) since they concatenate sources into fewer
-translation units. Non-unity builds may be faster for incremental builds,
-and can be helpful for detecting `#include` omissions.
+[Unity builds][5] may be faster for the first build (at the cost of much more
+memory) since they concatenate sources into fewer translation units. Non-unity
+builds may be faster for incremental builds, and can be helpful for detecting
+`#include` omissions.
 
 ## Troubleshooting
 

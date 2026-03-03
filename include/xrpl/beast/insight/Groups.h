@@ -1,5 +1,4 @@
-#ifndef BEAST_INSIGHT_GROUPS_H_INCLUDED
-#define BEAST_INSIGHT_GROUPS_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/insight/Group.h>
@@ -35,5 +34,3 @@ make_Groups(Collector::ptr const& collector);
 
 }  // namespace insight
 }  // namespace beast
-
-#endif

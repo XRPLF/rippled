@@ -30,8 +30,7 @@ paths::operator()(Env& env, JTx& jt) const
     }
 
     Pathfinder pf(
-        std::make_shared<RippleLineCache>(
-            env.current(), env.app().journal("RippleLineCache")),
+        std::make_shared<RippleLineCache>(env.current(), env.app().journal("RippleLineCache")),
         from,
         to,
         in_.currency,

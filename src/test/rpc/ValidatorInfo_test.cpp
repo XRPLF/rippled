@@ -25,8 +25,7 @@ public:
         {
             Env env(*this);
             auto const info = env.rpc("validator_info");
-            BEAST_EXPECT(
-                info[jss::result][jss::error_message] == "not a validator");
+            BEAST_EXPECT(info[jss::result][jss::error_message] == "not a validator");
         }
     }
 
@@ -69,10 +68,8 @@ public:
             "VUSmEydzBpMjFlcTNNWXl3TFZKWm5GT3I3QzBrdzJBaVR6U0NqSXpkaXRROD0ifQ=="
             "\n"};
 
-        std::string const master_key =
-            "nHBt9fsb4849WmZiCds4r5TXyBeQjqnH5kzPtqgMAQMgi39YZRPa";
-        std::string const ephemeral_key =
-            "n9KsDYGKhABVc4wK5u3MnVhgPinyJimyKGpr9VJYuBaY8EnJXR2x";
+        std::string const master_key = "nHBt9fsb4849WmZiCds4r5TXyBeQjqnH5kzPtqgMAQMgi39YZRPa";
+        std::string const ephemeral_key = "n9KsDYGKhABVc4wK5u3MnVhgPinyJimyKGpr9VJYuBaY8EnJXR2x";
         std::string const manifest =
             "JAAAAAFxIe1FtwmimvGtH2iCcMJqC9gVFKilGfw1/"
             "vCxHXXLplc2GnMhAkE1agqXxBwDwDbID6OMSYuM0FDAlpAgNk8SKFn7MO2fdkcwRQI"
@@ -90,8 +87,7 @@ public:
             BEAST_EXPECT(info[jss::result][jss::seq] == 1);
             BEAST_EXPECT(info[jss::result][jss::master_key] == master_key);
             BEAST_EXPECT(info[jss::result][jss::manifest] == manifest);
-            BEAST_EXPECT(
-                info[jss::result][jss::ephemeral_key] == ephemeral_key);
+            BEAST_EXPECT(info[jss::result][jss::ephemeral_key] == ephemeral_key);
         }
     }
 

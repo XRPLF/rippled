@@ -58,10 +58,9 @@ chopUInt(int& value, int limit, std::string& input)
     if (input.empty())
         return false;
 
-    auto left_iter = std::find_if_not(
-        input.begin(), input.end(), [](std::string::value_type c) {
-            return std::isdigit(c, std::locale::classic());
-        });
+    auto left_iter = std::find_if_not(input.begin(), input.end(), [](std::string::value_type c) {
+        return std::isdigit(c, std::locale::classic());
+    });
 
     std::string item(input.begin(), left_iter);
 
@@ -90,10 +89,7 @@ chopUInt(int& value, int limit, std::string& input)
 }
 
 bool
-extract_identifier(
-    std::string& value,
-    bool allowLeadingZeroes,
-    std::string& input)
+extract_identifier(std::string& value, bool allowLeadingZeroes, std::string& input)
 {
     // Must not be empty
     if (input.empty())
@@ -103,8 +99,8 @@ extract_identifier(
     if (!allowLeadingZeroes && input[0] == '0')
         return false;
 
-    auto last = input.find_first_not_of(
-        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-");
+    auto last =
+        input.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-");
 
     // Must not be empty
     if (last == 0)
@@ -138,8 +134,7 @@ extract_identifiers(
 
 //------------------------------------------------------------------------------
 
-SemanticVersion::SemanticVersion()
-    : majorVersion(0), minorVersion(0), patchVersion(0)
+SemanticVersion::SemanticVersion() : majorVersion(0), minorVersion(0), patchVersion(0)
 {
 }
 
@@ -153,18 +148,13 @@ bool
 SemanticVersion::parse(std::string const& input)
 {
     // May not have leading or trailing whitespace
-    auto left_iter = std::find_if_not(
-        input.begin(), input.end(), [](std::string::value_type c) {
-            return std::isspace(c, std::locale::classic());
-        });
+    auto left_iter = std::find_if_not(input.begin(), input.end(), [](std::string::value_type c) {
+        return std::isspace(c, std::locale::classic());
+    });
 
-    auto right_iter = std::find_if_not(
-                          input.rbegin(),
-                          input.rend(),
-                          [](std::string::value_type c) {
-                              return std::isspace(c, std::locale::classic());
-                          })
-                          .base();
+    auto right_iter = std::find_if_not(input.rbegin(), input.rend(), [](std::string::value_type c) {
+                          return std::isspace(c, std::locale::classic());
+                      }).base();
 
     // Must not be empty!
     if (left_iter >= right_iter)
@@ -222,8 +212,8 @@ SemanticVersion::print() const
 {
     std::string s;
 
-    s = std::to_string(majorVersion) + "." + std::to_string(minorVersion) +
-        "." + std::to_string(patchVersion);
+    s = std::to_string(majorVersion) + "." + std::to_string(minorVersion) + "." +
+        std::to_string(patchVersion);
 
     if (!preReleaseIdentifiers.empty())
     {
@@ -267,9 +257,8 @@ compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
             return -1;
 
         // Compare pre-release identifiers
-        for (int i = 0; i <
-             std::max(lhs.preReleaseIdentifiers.size(),
-                      rhs.preReleaseIdentifiers.size());
+        for (int i = 0;
+             i < std::max(lhs.preReleaseIdentifiers.size(), rhs.preReleaseIdentifiers.size());
              ++i)
         {
             // A larger list of identifiers has a higher precedence
@@ -289,8 +278,7 @@ compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
 
             if (isNumeric(left))
             {
-                XRPL_ASSERT(
-                    isNumeric(right), "beast::compare : both inputs numeric");
+                XRPL_ASSERT(isNumeric(right), "beast::compare : both inputs numeric");
 
                 int const iLeft(lexicalCastThrow<int>(left));
                 int const iRight(lexicalCastThrow<int>(right));
@@ -302,9 +290,7 @@ compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
             }
             else
             {
-                XRPL_ASSERT(
-                    !isNumeric(right),
-                    "beast::compare : both inputs non-numeric");
+                XRPL_ASSERT(!isNumeric(right), "beast::compare : both inputs non-numeric");
 
                 int result = left.compare(right);
 

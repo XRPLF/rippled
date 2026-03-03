@@ -4,11 +4,10 @@
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
 
-#include <xrpld/core/DatabaseCon.h>
-
 #include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/rdb/DatabaseCon.h>
 
 namespace xrpl {
 
@@ -44,12 +43,9 @@ public:
 
             if (BEAST_EXPECT(s.globalPragma->size() == 3))
             {
-                BEAST_EXPECT(
-                    s.globalPragma->at(0) == "PRAGMA journal_mode=wal;");
-                BEAST_EXPECT(
-                    s.globalPragma->at(1) == "PRAGMA synchronous=normal;");
-                BEAST_EXPECT(
-                    s.globalPragma->at(2) == "PRAGMA temp_store=file;");
+                BEAST_EXPECT(s.globalPragma->at(0) == "PRAGMA journal_mode=wal;");
+                BEAST_EXPECT(s.globalPragma->at(1) == "PRAGMA synchronous=normal;");
+                BEAST_EXPECT(s.globalPragma->at(2) == "PRAGMA temp_store=file;");
             }
         }
         {
@@ -68,8 +64,7 @@ public:
                 return Env(
                     *this,
                     std::move(p),
-                    std::make_unique<CheckMessageLogs>(
-                        integrityWarning, &found),
+                    std::make_unique<CheckMessageLogs>(integrityWarning, &found),
                     beast::severities::kWarning);
             }();
 
@@ -77,12 +72,9 @@ public:
             auto const s = setup_DatabaseCon(env.app().config());
             if (BEAST_EXPECT(s.globalPragma->size() == 3))
             {
-                BEAST_EXPECT(
-                    s.globalPragma->at(0) == "PRAGMA journal_mode=wal;");
-                BEAST_EXPECT(
-                    s.globalPragma->at(1) == "PRAGMA synchronous=normal;");
-                BEAST_EXPECT(
-                    s.globalPragma->at(2) == "PRAGMA temp_store=file;");
+                BEAST_EXPECT(s.globalPragma->at(0) == "PRAGMA journal_mode=wal;");
+                BEAST_EXPECT(s.globalPragma->at(1) == "PRAGMA synchronous=normal;");
+                BEAST_EXPECT(s.globalPragma->at(2) == "PRAGMA temp_store=file;");
             }
         }
         {
@@ -101,8 +93,7 @@ public:
                 return Env(
                     *this,
                     std::move(p),
-                    std::make_unique<CheckMessageLogs>(
-                        integrityWarning, &found),
+                    std::make_unique<CheckMessageLogs>(integrityWarning, &found),
                     beast::severities::kWarning);
             }();
 
@@ -110,12 +101,9 @@ public:
             auto const s = setup_DatabaseCon(env.app().config());
             if (BEAST_EXPECT(s.globalPragma->size() == 3))
             {
-                BEAST_EXPECT(
-                    s.globalPragma->at(0) == "PRAGMA journal_mode=memory;");
-                BEAST_EXPECT(
-                    s.globalPragma->at(1) == "PRAGMA synchronous=off;");
-                BEAST_EXPECT(
-                    s.globalPragma->at(2) == "PRAGMA temp_store=memory;");
+                BEAST_EXPECT(s.globalPragma->at(0) == "PRAGMA journal_mode=memory;");
+                BEAST_EXPECT(s.globalPragma->at(1) == "PRAGMA synchronous=off;");
+                BEAST_EXPECT(s.globalPragma->at(2) == "PRAGMA temp_store=memory;");
             }
         }
         {
@@ -135,8 +123,7 @@ public:
                 return Env(
                     *this,
                     std::move(p),
-                    std::make_unique<CheckMessageLogs>(
-                        integrityWarning, &found),
+                    std::make_unique<CheckMessageLogs>(integrityWarning, &found),
                     beast::severities::kWarning);
             }();
 
@@ -146,12 +133,9 @@ public:
             auto const s = setup_DatabaseCon(env.app().config());
             if (BEAST_EXPECT(s.globalPragma->size() == 3))
             {
-                BEAST_EXPECT(
-                    s.globalPragma->at(0) == "PRAGMA journal_mode=off;");
-                BEAST_EXPECT(
-                    s.globalPragma->at(1) == "PRAGMA synchronous=extra;");
-                BEAST_EXPECT(
-                    s.globalPragma->at(2) == "PRAGMA temp_store=default;");
+                BEAST_EXPECT(s.globalPragma->at(0) == "PRAGMA journal_mode=off;");
+                BEAST_EXPECT(s.globalPragma->at(1) == "PRAGMA synchronous=extra;");
+                BEAST_EXPECT(s.globalPragma->at(2) == "PRAGMA temp_store=default;");
             }
         }
         {
@@ -172,8 +156,7 @@ public:
                 return Env(
                     *this,
                     std::move(p),
-                    std::make_unique<CheckMessageLogs>(
-                        integrityWarning, &found),
+                    std::make_unique<CheckMessageLogs>(integrityWarning, &found),
                     beast::severities::kWarning);
             }();
 
@@ -183,12 +166,9 @@ public:
             auto const s = setup_DatabaseCon(env.app().config());
             if (BEAST_EXPECT(s.globalPragma->size() == 3))
             {
-                BEAST_EXPECT(
-                    s.globalPragma->at(0) == "PRAGMA journal_mode=off;");
-                BEAST_EXPECT(
-                    s.globalPragma->at(1) == "PRAGMA synchronous=extra;");
-                BEAST_EXPECT(
-                    s.globalPragma->at(2) == "PRAGMA temp_store=default;");
+                BEAST_EXPECT(s.globalPragma->at(0) == "PRAGMA journal_mode=off;");
+                BEAST_EXPECT(s.globalPragma->at(1) == "PRAGMA synchronous=extra;");
+                BEAST_EXPECT(s.globalPragma->at(2) == "PRAGMA temp_store=default;");
             }
         }
         {
@@ -429,12 +409,9 @@ public:
             if (BEAST_EXPECT(s.txPragma.size() == 4))
             {
                 BEAST_EXPECT(s.txPragma.at(0) == "PRAGMA page_size=4096;");
-                BEAST_EXPECT(
-                    s.txPragma.at(1) == "PRAGMA journal_size_limit=1582080;");
-                BEAST_EXPECT(
-                    s.txPragma.at(2) == "PRAGMA max_page_count=4294967294;");
-                BEAST_EXPECT(
-                    s.txPragma.at(3) == "PRAGMA mmap_size=17179869184;");
+                BEAST_EXPECT(s.txPragma.at(1) == "PRAGMA journal_size_limit=1582080;");
+                BEAST_EXPECT(s.txPragma.at(2) == "PRAGMA max_page_count=4294967294;");
+                BEAST_EXPECT(s.txPragma.at(3) == "PRAGMA mmap_size=17179869184;");
             }
         }
         {
@@ -452,18 +429,14 @@ public:
             if (BEAST_EXPECT(s.txPragma.size() == 4))
             {
                 BEAST_EXPECT(s.txPragma.at(0) == "PRAGMA page_size=512;");
-                BEAST_EXPECT(
-                    s.txPragma.at(1) == "PRAGMA journal_size_limit=2582080;");
-                BEAST_EXPECT(
-                    s.txPragma.at(2) == "PRAGMA max_page_count=4294967294;");
-                BEAST_EXPECT(
-                    s.txPragma.at(3) == "PRAGMA mmap_size=17179869184;");
+                BEAST_EXPECT(s.txPragma.at(1) == "PRAGMA journal_size_limit=2582080;");
+                BEAST_EXPECT(s.txPragma.at(2) == "PRAGMA max_page_count=4294967294;");
+                BEAST_EXPECT(s.txPragma.at(3) == "PRAGMA mmap_size=17179869184;");
             }
         }
         {
             // Error: Invalid values
-            auto const expected =
-                "Invalid page_size. Must be between 512 and 65536.";
+            auto const expected = "Invalid page_size. Must be between 512 and 65536.";
             bool found = false;
             auto p = test::jtx::envconfig();
             {
@@ -486,8 +459,7 @@ public:
         }
         {
             // Error: Invalid values
-            auto const expected =
-                "Invalid page_size. Must be between 512 and 65536.";
+            auto const expected = "Invalid page_size. Must be between 512 and 65536.";
             bool found = false;
             auto p = test::jtx::envconfig();
             {
@@ -553,8 +525,8 @@ public:
 
         // Write to source db
         {
-            std::unique_ptr<Database> src = Manager::instance().make_Database(
-                megabytes(4), scheduler, 2, srcParams, journal_);
+            std::unique_ptr<Database> src =
+                Manager::instance().make_Database(megabytes(4), scheduler, 2, srcParams, journal_);
             storeBatch(*src, batch);
         }
 
@@ -562,8 +534,8 @@ public:
 
         {
             // Re-open the db
-            std::unique_ptr<Database> src = Manager::instance().make_Database(
-                megabytes(4), scheduler, 2, srcParams, journal_);
+            std::unique_ptr<Database> src =
+                Manager::instance().make_Database(megabytes(4), scheduler, 2, srcParams, journal_);
 
             // Set up the destination database
             beast::temp_dir dest_db;
@@ -571,12 +543,10 @@ public:
             destParams.set("type", destBackendType);
             destParams.set("path", dest_db.path());
 
-            std::unique_ptr<Database> dest = Manager::instance().make_Database(
-                megabytes(4), scheduler, 2, destParams, journal_);
+            std::unique_ptr<Database> dest =
+                Manager::instance().make_Database(megabytes(4), scheduler, 2, destParams, journal_);
 
-            testcase(
-                "import into '" + destBackendType + "' from '" +
-                srcBackendType + "'");
+            testcase("import into '" + destBackendType + "' from '" + srcBackendType + "'");
 
             // Do the import
             dest->importDatabase(*src);
@@ -618,8 +588,8 @@ public:
 
         {
             // Open the database
-            std::unique_ptr<Database> db = Manager::instance().make_Database(
-                megabytes(4), scheduler, 2, nodeParams, journal_);
+            std::unique_ptr<Database> db =
+                Manager::instance().make_Database(megabytes(4), scheduler, 2, nodeParams, journal_);
 
             // Write the batch
             storeBatch(*db, batch);
@@ -643,8 +613,8 @@ public:
         if (testPersistence)
         {
             // Re-open the database without the ephemeral DB
-            std::unique_ptr<Database> db = Manager::instance().make_Database(
-                megabytes(4), scheduler, 2, nodeParams, journal_);
+            std::unique_ptr<Database> db =
+                Manager::instance().make_Database(megabytes(4), scheduler, 2, nodeParams, journal_);
 
             // Read it back in
             Batch copy;
@@ -660,33 +630,28 @@ public:
         {
             // Verify default earliest ledger sequence
             {
-                std::unique_ptr<Database> db =
-                    Manager::instance().make_Database(
-                        megabytes(4), scheduler, 2, nodeParams, journal_);
-                BEAST_EXPECT(
-                    db->earliestLedgerSeq() == XRP_LEDGER_EARLIEST_SEQ);
+                std::unique_ptr<Database> db = Manager::instance().make_Database(
+                    megabytes(4), scheduler, 2, nodeParams, journal_);
+                BEAST_EXPECT(db->earliestLedgerSeq() == XRP_LEDGER_EARLIEST_SEQ);
             }
 
             // Set an invalid earliest ledger sequence
             try
             {
                 nodeParams.set("earliest_seq", "0");
-                std::unique_ptr<Database> db =
-                    Manager::instance().make_Database(
-                        megabytes(4), scheduler, 2, nodeParams, journal_);
+                std::unique_ptr<Database> db = Manager::instance().make_Database(
+                    megabytes(4), scheduler, 2, nodeParams, journal_);
             }
             catch (std::runtime_error const& e)
             {
-                BEAST_EXPECT(
-                    std::strcmp(e.what(), "Invalid earliest_seq") == 0);
+                BEAST_EXPECT(std::strcmp(e.what(), "Invalid earliest_seq") == 0);
             }
 
             {
                 // Set a valid earliest ledger sequence
                 nodeParams.set("earliest_seq", "1");
-                std::unique_ptr<Database> db =
-                    Manager::instance().make_Database(
-                        megabytes(4), scheduler, 2, nodeParams, journal_);
+                std::unique_ptr<Database> db = Manager::instance().make_Database(
+                    megabytes(4), scheduler, 2, nodeParams, journal_);
 
                 // Verify database uses the earliest ledger sequence setting
                 BEAST_EXPECT(db->earliestLedgerSeq() == 1);
@@ -696,17 +661,13 @@ public:
             try
             {
                 // Set to default earliest ledger sequence
-                nodeParams.set(
-                    "earliest_seq", std::to_string(XRP_LEDGER_EARLIEST_SEQ));
-                std::unique_ptr<Database> db2 =
-                    Manager::instance().make_Database(
-                        megabytes(4), scheduler, 2, nodeParams, journal_);
+                nodeParams.set("earliest_seq", std::to_string(XRP_LEDGER_EARLIEST_SEQ));
+                std::unique_ptr<Database> db2 = Manager::instance().make_Database(
+                    megabytes(4), scheduler, 2, nodeParams, journal_);
             }
             catch (std::runtime_error const& e)
             {
-                BEAST_EXPECT(
-                    std::strcmp(e.what(), "earliest_seq set more than once") ==
-                    0);
+                BEAST_EXPECT(std::strcmp(e.what(), "earliest_seq set more than once") == 0);
             }
         }
     }

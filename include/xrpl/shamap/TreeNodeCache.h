@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_TREENODECACHE_H_INCLUDED
-#define XRPL_SHAMAP_TREENODECACHE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/TaggedCache.h>
@@ -14,5 +13,3 @@ using TreeNodeCache = TaggedCache<
     intr_ptr::SharedWeakUnionPtr<SHAMapTreeNode>,
     intr_ptr::SharedPtr<SHAMapTreeNode>>;
 }  // namespace xrpl
-
-#endif

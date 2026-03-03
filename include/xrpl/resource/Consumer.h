@@ -1,5 +1,4 @@
-#ifndef XRPL_RESOURCE_CONSUMER_H_INCLUDED
-#define XRPL_RESOURCE_CONSUMER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -82,5 +81,3 @@ operator<<(std::ostream& os, Consumer const& v);
 
 }  // namespace Resource
 }  // namespace xrpl
-
-#endif

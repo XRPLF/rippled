@@ -81,10 +81,7 @@ public:
         Scheduler& scheduler,
         beast::Journal journal,
         RocksDBEnv* env)
-        : m_deletePath(false)
-        , m_journal(journal)
-        , m_keyBytes(keyBytes)
-        , m_batch(*this, scheduler)
+        : m_deletePath(false), m_journal(journal), m_keyBytes(keyBytes), m_batch(*this, scheduler)
     {
         if (!get_if_exists(keyValues, "path", m_name))
             Throw<std::runtime_error>("Missing path in RocksDBFactory backend");
@@ -92,8 +89,7 @@ public:
         rocksdb::BlockBasedTableOptions table_options;
         m_options.env = env;
 
-        bool hard_set =
-            keyValues.exists("hard_set") && get<bool>(keyValues, "hard_set");
+        bool hard_set = keyValues.exists("hard_set") && get<bool>(keyValues, "hard_set");
 
         if (keyValues.exists("cache_mb"))
         {
@@ -107,10 +103,9 @@ public:
 
         if (auto const v = get<int>(keyValues, "filter_bits"))
         {
-            bool const filter_blocks = !keyValues.exists("filter_full") ||
-                (get<int>(keyValues, "filter_full") == 0);
-            table_options.filter_policy.reset(
-                rocksdb::NewBloomFilterPolicy(v, filter_blocks));
+            bool const filter_blocks =
+                !keyValues.exists("filter_full") || (get<int>(keyValues, "filter_full") == 0);
+            table_options.filter_policy.reset(rocksdb::NewBloomFilterPolicy(v, filter_blocks));
         }
 
         if (get_if_exists(keyValues, "open_files", m_options.max_open_files))
@@ -129,13 +124,11 @@ public:
                 file_size_mb = 256;
 
             m_options.target_file_size_base = megabytes(file_size_mb);
-            m_options.max_bytes_for_level_base =
-                5 * m_options.target_file_size_base;
+            m_options.max_bytes_for_level_base = 5 * m_options.target_file_size_base;
             m_options.write_buffer_size = 2 * m_options.target_file_size_base;
         }
 
-        get_if_exists(
-            keyValues, "file_size_mult", m_options.target_file_size_multiplier);
+        get_if_exists(keyValues, "file_size_mult", m_options.target_file_size_multiplier);
 
         if (keyValues.exists("bg_threads"))
         {
@@ -146,8 +139,7 @@ public:
         if (keyValues.exists("high_threads"))
         {
             auto const highThreads = get<int>(keyValues, "high_threads");
-            m_options.env->SetBackgroundThreads(
-                highThreads, rocksdb::Env::HIGH);
+            m_options.env->SetBackgroundThreads(highThreads, rocksdb::Env::HIGH);
 
             // If we have high-priority threads, presumably we want to
             // use them for background flushes
@@ -172,26 +164,21 @@ public:
         {
             rocksdb::ConfigOptions config_options;
             auto const s = rocksdb::GetBlockBasedTableOptionsFromString(
-                config_options,
-                table_options,
-                get(keyValues, "bbt_options"),
-                &table_options);
+                config_options, table_options, get(keyValues, "bbt_options"), &table_options);
             if (!s.ok())
                 Throw<std::runtime_error>(
-                    std::string("Unable to set RocksDB bbt_options: ") +
-                    s.ToString());
+                    std::string("Unable to set RocksDB bbt_options: ") + s.ToString());
         }
 
         m_options.table_factory.reset(NewBlockBasedTableFactory(table_options));
 
         if (keyValues.exists("options"))
         {
-            auto const s = rocksdb::GetOptionsFromString(
-                m_options, get(keyValues, "options"), &m_options);
+            auto const s =
+                rocksdb::GetOptionsFromString(m_options, get(keyValues, "options"), &m_options);
             if (!s.ok())
                 Throw<std::runtime_error>(
-                    std::string("Unable to set RocksDB options: ") +
-                    s.ToString());
+                    std::string("Unable to set RocksDB options: ") + s.ToString());
         }
 
         std::string s1, s2;
@@ -224,8 +211,7 @@ public:
         rocksdb::Status status = rocksdb::DB::Open(m_options, m_name, &db);
         if (!status.ok() || !db)
             Throw<std::runtime_error>(
-                std::string("Unable to open/create RocksDB: ") +
-                status.ToString());
+                std::string("Unable to open/create RocksDB: ") + status.ToString());
         m_db.reset(db);
     }
 
@@ -258,16 +244,15 @@ public:
     //--------------------------------------------------------------------------
 
     Status
-    fetch(void const* key, std::shared_ptr<NodeObject>* pObject) override
+    fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pObject) override
     {
-        XRPL_ASSERT(
-            m_db, "xrpl::NodeStore::RocksDBBackend::fetch : non-null database");
+        XRPL_ASSERT(m_db, "xrpl::NodeStore::RocksDBBackend::fetch : non-null database");
         pObject->reset();
 
         Status status(ok);
 
         rocksdb::ReadOptions const options;
-        rocksdb::Slice const slice(static_cast<char const*>(key), m_keyBytes);
+        rocksdb::Slice const slice(std::bit_cast<char const*>(hash.data()), m_keyBytes);
 
         std::string string;
 
@@ -275,7 +260,7 @@ public:
 
         if (getStatus.ok())
         {
-            DecodedBlob decoded(key, string.data(), string.size());
+            DecodedBlob decoded(hash.data(), string.data(), string.size());
 
             if (decoded.wasOk())
             {
@@ -300,8 +285,7 @@ public:
             }
             else
             {
-                status =
-                    Status(customCode + unsafe_cast<int>(getStatus.code()));
+                status = Status(customCode + unsafe_cast<int>(getStatus.code()));
 
                 JLOG(m_journal.error()) << getStatus.ToString();
             }
@@ -311,14 +295,14 @@ public:
     }
 
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
-    fetchBatch(std::vector<uint256 const*> const& hashes) override
+    fetchBatch(std::vector<uint256> const& hashes) override
     {
         std::vector<std::shared_ptr<NodeObject>> results;
         results.reserve(hashes.size());
         for (auto const& h : hashes)
         {
             std::shared_ptr<NodeObject> nObj;
-            Status status = fetch(h->begin(), &nObj);
+            Status status = fetch(h, &nObj);
             if (status != ok)
                 results.push_back({});
             else
@@ -348,12 +332,8 @@ public:
             EncodedBlob encoded(e);
 
             wb.Put(
-                rocksdb::Slice(
-                    reinterpret_cast<char const*>(encoded.getKey()),
-                    m_keyBytes),
-                rocksdb::Slice(
-                    reinterpret_cast<char const*>(encoded.getData()),
-                    encoded.getSize()));
+                rocksdb::Slice(std::bit_cast<char const*>(encoded.getKey()), m_keyBytes),
+                rocksdb::Slice(std::bit_cast<char const*>(encoded.getData()), encoded.getSize()));
         }
 
         rocksdb::WriteOptions const options;
@@ -372,9 +352,7 @@ public:
     void
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
-        XRPL_ASSERT(
-            m_db,
-            "xrpl::NodeStore::RocksDBBackend::for_each : non-null database");
+        XRPL_ASSERT(m_db, "xrpl::NodeStore::RocksDBBackend::for_each : non-null database");
         rocksdb::ReadOptions const options;
 
         std::unique_ptr<rocksdb::Iterator> it(m_db->NewIterator(options));
@@ -383,8 +361,7 @@ public:
         {
             if (it->key().size() == m_keyBytes)
             {
-                DecodedBlob decoded(
-                    it->key().data(), it->value().data(), it->value().size());
+                DecodedBlob decoded(it->key().data(), it->value().data(), it->value().size());
 
                 if (decoded.wasOk())
                 {
@@ -393,16 +370,14 @@ public:
                 else
                 {
                     // Uh oh, corrupted data!
-                    JLOG(m_journal.fatal())
-                        << "Corrupt NodeObject #" << it->key().ToString(true);
+                    JLOG(m_journal.fatal()) << "Corrupt NodeObject #" << it->key().ToString(true);
                 }
             }
             else
             {
                 // VFALCO NOTE What does it mean to find an
                 //             incorrectly sized key? Corruption?
-                JLOG(m_journal.fatal())
-                    << "Bad key size = " << it->key().size();
+                JLOG(m_journal.fatal()) << "Bad key size = " << it->key().size();
             }
         }
     }
@@ -464,8 +439,7 @@ public:
         Scheduler& scheduler,
         beast::Journal journal) override
     {
-        return std::make_unique<RocksDBBackend>(
-            keyBytes, keyValues, scheduler, journal, &m_env);
+        return std::make_unique<RocksDBBackend>(keyBytes, keyValues, scheduler, journal, &m_env);
     }
 };
 

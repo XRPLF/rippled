@@ -9,9 +9,7 @@
 
 namespace xrpl {
 
-QualityFunction::QualityFunction(
-    Quality const& quality,
-    QualityFunction::CLOBLikeTag)
+QualityFunction::QualityFunction(Quality const& quality, QualityFunction::CLOBLikeTag)
     : m_(0), b_(0), quality_(quality)
 {
     if (quality.rate() <= beast::zero)

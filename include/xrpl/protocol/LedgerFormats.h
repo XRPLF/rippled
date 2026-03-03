@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_LEDGERFORMATS_H_INCLUDED
-#define XRPL_PROTOCOL_LEDGERFORMATS_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/KnownFormats.h>
 
@@ -211,5 +210,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

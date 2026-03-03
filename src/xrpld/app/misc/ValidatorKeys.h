@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_VALIDATOR_KEYS_H_INCLUDED
-#define XRPL_APP_MISC_VALIDATOR_KEYS_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -26,13 +25,8 @@ public:
         SecretKey secretKey;
 
         Keys() = delete;
-        Keys(
-            PublicKey const& masterPublic_,
-            PublicKey const& public_,
-            SecretKey const& secret_)
-            : masterPublicKey(masterPublic_)
-            , publicKey(public_)
-            , secretKey(secret_)
+        Keys(PublicKey const& masterPublic_, PublicKey const& public_, SecretKey const& secret_)
+            : masterPublicKey(masterPublic_), publicKey(public_), secretKey(secret_)
         {
         }
     };
@@ -60,5 +54,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

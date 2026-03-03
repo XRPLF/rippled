@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_SIM_H_INCLUDED
-#define XRPL_TEST_CSF_SIM_H_INCLUDED
+#pragma once
 
 #include <test/csf/BasicNetwork.h>
 #include <test/csf/CollectorRef.h>
@@ -35,16 +34,13 @@ public:
         if (level < threshold())
             return;
 
-        std::cout << clock_.now().time_since_epoch().count() << " " << text
-                  << std::endl;
+        std::cout << clock_.now().time_since_epoch().count() << " " << text << std::endl;
     }
 
     void
-    writeAlways(beast::severities::Severity level, std::string const& text)
-        override
+    writeAlways(beast::severities::Severity level, std::string const& text) override
     {
-        std::cout << clock_.now().time_since_epoch().count() << " " << text
-                  << std::endl;
+        std::cout << clock_.now().time_since_epoch().count() << " " << text << std::endl;
     }
 };
 
@@ -158,5 +154,3 @@ public:
 }  // namespace csf
 }  // namespace test
 }  // namespace xrpl
-
-#endif

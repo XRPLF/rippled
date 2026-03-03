@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_AMMTEST_H_INCLUDED
-#define XRPL_TEST_JTX_AMMTEST_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
@@ -21,7 +20,11 @@ struct TestAMMArg
     std::optional<std::pair<STAmount, STAmount>> pool = std::nullopt;
     std::uint16_t tfee = 0;
     std::optional<jtx::ter> ter = std::nullopt;
-    std::vector<FeatureBitset> features = {testable_amendments()};
+    std::vector<FeatureBitset> features = {
+        // For now, just disable SAV entirely, which locks in the small Number
+        // mantissas
+        jtx::testable_amendments() - featureSingleAssetVault - featureLendingProtocol};
+
     bool noLog = false;
 };
 
@@ -66,6 +69,14 @@ protected:
 public:
     AMMTestBase();
 
+    static FeatureBitset
+    testable_amendments()
+    {
+        // For now, just disable SAV entirely, which locks in the small Number
+        // mantissas
+        return jtx::testable_amendments() - featureSingleAssetVault - featureLendingProtocol;
+    }
+
 protected:
     /** testAMM() funds 30,000XRP and 30,000IOU
      * for each non-XRP asset to Alice and Carol
@@ -79,9 +90,7 @@ protected:
         std::vector<FeatureBitset> const& features = {testable_amendments()});
 
     void
-    testAMM(
-        std::function<void(jtx::AMM&, jtx::Env&)>&& cb,
-        TestAMMArg const& arg);
+    testAMM(std::function<void(jtx::AMM&, jtx::Env&)>&& cb, TestAMMArg const& arg);
 };
 
 class AMMTest : public jtx::AMMTestBase
@@ -149,5 +158,3 @@ protected:
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif  // XRPL_TEST_JTX_AMMTEST_H_INCLUDED

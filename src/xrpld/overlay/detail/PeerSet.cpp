@@ -37,8 +37,7 @@ private:
     std::set<Peer::id_t> peers_;
 };
 
-PeerSetImpl::PeerSetImpl(Application& app)
-    : app_(app), journal_(app.journal("PeerSet"))
+PeerSetImpl::PeerSetImpl(Application& app) : app_(app), journal_(app.journal("PeerSet"))
 {
 }
 
@@ -60,12 +59,9 @@ PeerSetImpl::addPeers(
         pairs.emplace_back(score, std::move(peer));
     });
 
-    std::sort(
-        pairs.begin(),
-        pairs.end(),
-        [](ScoredPeer const& lhs, ScoredPeer const& rhs) {
-            return lhs.first > rhs.first;
-        });
+    std::sort(pairs.begin(), pairs.end(), [](ScoredPeer const& lhs, ScoredPeer const& rhs) {
+        return lhs.first > rhs.first;
+    });
 
     std::size_t accepted = 0;
     for (auto const& pair : pairs)

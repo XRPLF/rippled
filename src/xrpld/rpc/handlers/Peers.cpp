@@ -1,5 +1,4 @@
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/Overlay.h>
@@ -7,6 +6,7 @@
 
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/LoadFeeTrack.h>
 
 namespace xrpl {
 
@@ -40,25 +40,22 @@ doPeers(RPC::JsonContext& context)
     Json::Value& cluster = (jvResult[jss::cluster] = Json::objectValue);
     std::uint32_t ref = context.app.getFeeTrack().getLoadBase();
 
-    context.app.cluster().for_each(
-        [&cluster, now, ref, &self](ClusterNode const& node) {
-            if (node.identity() == self)
-                return;
+    context.app.cluster().for_each([&cluster, now, ref, &self](ClusterNode const& node) {
+        if (node.identity() == self)
+            return;
 
-            Json::Value& json =
-                cluster[toBase58(TokenType::NodePublic, node.identity())];
+        Json::Value& json = cluster[toBase58(TokenType::NodePublic, node.identity())];
 
-            if (!node.name().empty())
-                json[jss::tag] = node.name();
+        if (!node.name().empty())
+            json[jss::tag] = node.name();
 
-            if ((node.getLoadFee() != ref) && (node.getLoadFee() != 0))
-                json[jss::fee] = static_cast<double>(node.getLoadFee()) / ref;
+        if ((node.getLoadFee() != ref) && (node.getLoadFee() != 0))
+            json[jss::fee] = static_cast<double>(node.getLoadFee()) / ref;
 
-            if (node.getReportTime() != NetClock::time_point{})
-                json[jss::age] = (node.getReportTime() >= now)
-                    ? 0
-                    : (now - node.getReportTime()).count();
-        });
+        if (node.getReportTime() != NetClock::time_point{})
+            json[jss::age] =
+                (node.getReportTime() >= now) ? 0 : (now - node.getReportTime()).count();
+    });
 
     return jvResult;
 }

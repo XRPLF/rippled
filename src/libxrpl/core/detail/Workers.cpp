@@ -100,9 +100,7 @@ Workers::stop()
     m_cv.wait(lk, [this] { return m_allPaused; });
     lk.unlock();
 
-    XRPL_ASSERT(
-        numberOfCurrentlyRunningTasks() == 0,
-        "xrpl::Workers::stop : zero running tasks");
+    XRPL_ASSERT(numberOfCurrentlyRunningTasks() == 0, "xrpl::Workers::stop : zero running tasks");
 }
 
 void
@@ -138,10 +136,7 @@ Workers::deleteWorkers(beast::LockFreeStack<Worker>& stack)
 
 //------------------------------------------------------------------------------
 
-Workers::Worker::Worker(
-    Workers& workers,
-    std::string const& threadName,
-    int const instance)
+Workers::Worker::Worker(Workers& workers, std::string const& threadName, int const instance)
     : m_workers{workers}
     , threadName_{threadName}
     , instance_{instance}

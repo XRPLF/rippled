@@ -1,7 +1,8 @@
 # This workflow runs all workflows to check, build and test the project on
 # various Linux flavors, as well as on MacOS and Windows, on every push to a
 # user branch. However, it will not run if the pull request is a draft unless it
-# has the 'DraftRunCI' label.
+# has the 'DraftRunCI' label. For commits to PRs that target a release branch,
+# it also uploads the libxrpl recipe to the Conan remote.
 name: PR
 
 on:
@@ -32,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Determine changed files
         # This step checks whether any files have changed that should
         # cause the next jobs to run. We do it this way rather than
@@ -45,7 +46,7 @@ jobs:
         # that Github considers any skipped jobs to have passed, and in
         # turn the required checks as well.
         id: changes
-        uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c # v46.0.5
+        uses: tj-actions/changed-files@7dee1b0c1557f278e5c7dc244927139d78c0e22a # v47.0.4
         with:
           files: |
             # These paths are unique to `on-pr.yml`.
@@ -53,19 +54,23 @@ jobs:
             .github/scripts/rename/**
             .github/workflows/reusable-check-levelization.yml
             .github/workflows/reusable-check-rename.yml
-            .github/workflows/reusable-notify-clio.yml
             .github/workflows/on-pr.yml
 
             # Keep the paths below in sync with those in `on-trigger.yml`.
             .github/actions/build-deps/**
             .github/actions/build-test/**
+            .github/actions/generate-version/**
             .github/actions/setup-conan/**
             .github/scripts/strategy-matrix/**
             .github/workflows/reusable-build.yml
             .github/workflows/reusable-build-test-config.yml
             .github/workflows/reusable-build-test.yml
+            .github/workflows/reusable-clang-tidy.yml
+            .github/workflows/reusable-clang-tidy-files.yml
             .github/workflows/reusable-strategy-matrix.yml
             .github/workflows/reusable-test.yml
+            .github/workflows/reusable-upload-recipe.yml
+            .clang-tidy
             .codecov.yml
             cmake/**
             conan/**
@@ -105,6 +110,17 @@ jobs:
     if: ${{ needs.should-run.outputs.go == 'true' }}
     uses: ./.github/workflows/reusable-check-rename.yml
 
+  clang-tidy:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-clang-tidy.yml
+    permissions:
+      issues: write
+      contents: read
+    with:
+      check_only_changed: true
+      create_issue_on_failure: false
+
   build-test:
     needs: should-run
     if: ${{ needs.should-run.outputs.go == 'true' }}
@@ -114,26 +130,50 @@ jobs:
       matrix:
         os: [linux, macos, windows]
     with:
+      # Enable ccache only for events targeting the XRPLF repository, since
+      # other accounts will not have access to our remote cache storage.
+      ccache_enabled: ${{ github.repository_owner == 'XRPLF' }}
       os: ${{ matrix.os }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  notify-clio:
+  upload-recipe:
     needs:
       - should-run
       - build-test
-    if: ${{ needs.should-run.outputs.go == 'true' && (startsWith(github.base_ref, 'release') || github.base_ref == 'master') }}
-    uses: ./.github/workflows/reusable-notify-clio.yml
+    # Only run when committing to a PR that targets a release branch in the
+    # XRPLF repository.
+    if: ${{ github.repository_owner == 'XRPLF' && needs.should-run.outputs.go == 'true' && startsWith(github.ref, 'refs/heads/release') }}
+    uses: ./.github/workflows/reusable-upload-recipe.yml
     secrets:
-      clio_notify_token: ${{ secrets.CLIO_NOTIFY_TOKEN }}
-      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
-      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
+      remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
+      remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
+
+  notify-clio:
+    needs: upload-recipe
+    runs-on: ubuntu-latest
+    steps:
+      # Notify the Clio repository about the newly proposed release version, so
+      # it can be checked for compatibility before the release is actually made.
+      - name: Notify Clio
+        env:
+          GH_TOKEN: ${{ secrets.CLIO_NOTIFY_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
+          /repos/xrplf/clio/dispatches -f "event_type=check_libxrpl" \
+          -F "client_payload[ref]=${{ needs.upload-recipe.outputs.recipe_ref }}" \
+          -F "client_payload[pr_url]=${PR_URL}"
 
   passed:
     if: failure() || cancelled()
     needs:
-      - build-test
       - check-levelization
+      - check-rename
+      - clang-tidy
+      - build-test
+      - upload-recipe
+      - notify-clio
     runs-on: ubuntu-latest
     steps:
       - name: Fail

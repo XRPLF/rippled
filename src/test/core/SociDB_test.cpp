@@ -1,9 +1,8 @@
 #include <test/jtx/TestSuite.h>
 
-#include <xrpld/core/SociDB.h>
-
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/rdb/SociDB.h>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
@@ -13,9 +12,7 @@ class SociDB_test final : public TestSuite
 {
 private:
     static void
-    setupSQLiteConfig(
-        BasicConfig& config,
-        boost::filesystem::path const& dbPath)
+    setupSQLiteConfig(BasicConfig& config, boost::filesystem::path const& dbPath)
     {
         config.overwrite("sqdb", "backend", "sqlite");
         auto value = dbPath.string();
@@ -45,8 +42,7 @@ private:
         if (!is_directory(dbPath))
         {
             // someone created a file where we want to put out directory
-            Throw<std::runtime_error>(
-                "Cannot create directory: " + dbPath.string());
+            Throw<std::runtime_error>("Cannot create directory: " + dbPath.string());
         }
     }
     static boost::filesystem::path
@@ -62,7 +58,7 @@ public:
         {
             setupDatabaseDir(getDatabasePath());
         }
-        catch (std::exception const&)
+        catch (std::exception const&)  // NOLINT(bugprone-empty-catch)
         {
         }
     }
@@ -72,7 +68,7 @@ public:
         {
             cleanupDatabaseDir(getDatabasePath());
         }
-        catch (std::exception const&)
+        catch (std::exception const&)  // NOLINT(bugprone-empty-catch)
         {
         }
     }
@@ -92,8 +88,7 @@ public:
         for (auto const& i : d)
         {
             DBConfig sc(c, i.first);
-            BEAST_EXPECT(
-                boost::ends_with(sc.connectionString(), i.first + i.second));
+            BEAST_EXPECT(boost::ends_with(sc.connectionString(), i.first + i.second));
         }
     }
     void
@@ -103,27 +98,23 @@ public:
         BasicConfig c;
         setupSQLiteConfig(c, getDatabasePath());
         DBConfig sc(c, "SociTestDB");
-        std::vector<std::string> const stringData(
-            {"String1", "String2", "String3"});
+        std::vector<std::string> const stringData({"String1", "String2", "String3"});
         std::vector<int> const intData({1, 2, 3});
         auto checkValues = [this, &stringData, &intData](soci::session& s) {
             // Check values in db
             std::vector<std::string> stringResult(20 * stringData.size());
             std::vector<int> intResult(20 * intData.size());
-            s << "SELECT StringData, IntData FROM SociTestTable;",
-                soci::into(stringResult), soci::into(intResult);
+            s << "SELECT StringData, IntData FROM SociTestTable;", soci::into(stringResult),
+                soci::into(intResult);
             BEAST_EXPECT(
-                stringResult.size() == stringData.size() &&
-                intResult.size() == intData.size());
+                stringResult.size() == stringData.size() && intResult.size() == intData.size());
             for (int i = 0; i < stringResult.size(); ++i)
             {
                 auto si = std::distance(
                     stringData.begin(),
-                    std::find(
-                        stringData.begin(), stringData.end(), stringResult[i]));
+                    std::find(stringData.begin(), stringData.end(), stringResult[i]));
                 auto ii = std::distance(
-                    intData.begin(),
-                    std::find(intData.begin(), intData.end(), intResult[i]));
+                    intData.begin(), std::find(intData.begin(), intData.end(), intResult[i]));
                 BEAST_EXPECT(si == ii && si < stringResult.size());
             }
         };
@@ -167,8 +158,7 @@ public:
         std::vector<std::uint64_t> const ubid(
             {(std::uint64_t)std::numeric_limits<std::int64_t>::max(), 20, 30});
         std::vector<std::int64_t> const bid({-10, -20, -30});
-        std::vector<std::uint32_t> const uid(
-            {std::numeric_limits<std::uint32_t>::max(), 2, 3});
+        std::vector<std::uint32_t> const uid({std::numeric_limits<std::uint32_t>::max(), 2, 3});
         std::vector<std::int32_t> const id({-1, -2, -3});
 
         {
@@ -194,11 +184,9 @@ public:
                 std::uint32_t uig = 0;
                 std::int64_t big = 0;
                 std::uint64_t ubig = 0;
-                s << "SELECT I, UI, BI, UBI from STT;", soci::into(ig),
-                    soci::into(uig), soci::into(big), soci::into(ubig);
-                BEAST_EXPECT(
-                    ig == id[0] && uig == uid[0] && big == bid[0] &&
-                    ubig == ubid[0]);
+                s << "SELECT I, UI, BI, UBI from STT;", soci::into(ig), soci::into(uig),
+                    soci::into(big), soci::into(ubig);
+                BEAST_EXPECT(ig == id[0] && uig == uid[0] && big == bid[0] && ubig == ubid[0]);
             }
             catch (std::exception&)
             {
@@ -214,11 +202,9 @@ public:
                 uint32_t uig = 0;
                 boost::optional<std::int64_t> big;
                 boost::optional<std::uint64_t> ubig;
-                s << "SELECT I, UI, BI, UBI from STT;", soci::into(ig),
-                    soci::into(uig), soci::into(big), soci::into(ubig);
-                BEAST_EXPECT(
-                    *ig == id[0] && uig == uid[0] && *big == bid[0] &&
-                    *ubig == ubid[0]);
+                s << "SELECT I, UI, BI, UBI from STT;", soci::into(ig), soci::into(uig),
+                    soci::into(big), soci::into(ubig);
+                BEAST_EXPECT(*ig == id[0] && uig == uid[0] && *big == bid[0] && *ubig == ubid[0]);
             }
             catch (std::exception&)
             {

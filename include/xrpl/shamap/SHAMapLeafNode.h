@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_SHAMAPLEAFNODE_H_INCLUDED
-#define XRPL_SHAMAP_SHAMAPLEAFNODE_H_INCLUDED
+#pragma once
 
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
@@ -13,9 +12,7 @@ class SHAMapLeafNode : public SHAMapTreeNode
 protected:
     boost::intrusive_ptr<SHAMapItem const> item_;
 
-    SHAMapLeafNode(
-        boost::intrusive_ptr<SHAMapItem const> item,
-        std::uint32_t cowid);
+    SHAMapLeafNode(boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t cowid);
 
     SHAMapLeafNode(
         boost::intrusive_ptr<SHAMapItem const> item,
@@ -60,5 +57,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

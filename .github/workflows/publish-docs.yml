@@ -4,6 +4,18 @@ name: Build and publish documentation
 
 on:
   push:
+    branches:
+      - "develop"
+      - "release*"
+    paths:
+      - ".github/workflows/publish-docs.yml"
+      - "*.md"
+      - "**/*.md"
+      - "docs/**"
+      - "include/**"
+      - "src/libxrpl/**"
+      - "src/xrpld/**"
+  pull_request:
     paths:
       - ".github/workflows/publish-docs.yml"
       - "*.md"
@@ -22,8 +34,10 @@ defaults:
     shell: bash
 
 env:
-  BUILD_DIR: .build
-  NPROC_SUBTRACT: 2
+  BUILD_DIR: build
+  # ubuntu-latest has only 2 CPUs for private repositories
+  # https://docs.github.com/en/actions/reference/runners/github-hosted-runners#standard-github-hosted-runners-for--private-repositories
+  NPROC_SUBTRACT: ${{ github.event.repository.private && '1' || '2' }}
 
 jobs:
   publish:
@@ -33,10 +47,10 @@ jobs:
       contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Get number of processors
-        uses: XRPLF/actions/.github/actions/get-nproc@046b1620f6bfd6cd0985dc82c3df02786801fe0a
+        uses: XRPLF/actions/get-nproc@cf0433aa74563aead044a1e395610c96d65a37cf
         id: nproc
         with:
           subtract: ${{ env.NPROC_SUBTRACT }}
@@ -65,7 +79,7 @@ jobs:
           cmake --build . --target docs --parallel ${BUILD_NPROC}
 
       - name: Publish documentation
-        if: ${{ github.ref_type == 'branch' && github.ref_name == github.event.repository.default_branch }}
+        if: ${{ github.event_name == 'push' }}
         uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # v4.0.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

@@ -12,97 +12,94 @@ bumpLastPage(
     Env& env,
     std::uint64_t newLastPage,
     Keylet directory,
-    std::function<bool(ApplyView&, uint256, std::uint64_t)> adjust)
-    -> Expected<void, Error>
+    std::function<bool(ApplyView&, uint256, std::uint64_t)> adjust) -> Expected<void, Error>
 {
     Expected<void, Error> res{};
-    env.app().openLedger().modify(
-        [&](OpenView& view, beast::Journal j) -> bool {
-            Sandbox sb(&view, tapNONE);
+    env.app().openLedger().modify([&](OpenView& view, beast::Journal j) -> bool {
+        Sandbox sb(&view, tapNONE);
 
-            // Find the root page
-            auto sleRoot = sb.peek(directory);
-            if (!sleRoot)
-            {
-                res = Unexpected<Error>(DirectoryRootNotFound);
-                return false;
-            }
+        // Find the root page
+        auto sleRoot = sb.peek(directory);
+        if (!sleRoot)
+        {
+            res = Unexpected<Error>(DirectoryRootNotFound);
+            return false;
+        }
 
-            // Find last page
-            auto const lastIndex = sleRoot->getFieldU64(sfIndexPrevious);
-            if (lastIndex == 0)
-            {
-                res = Unexpected<Error>(DirectoryTooSmall);
-                return false;
-            }
+        // Find last page
+        auto const lastIndex = sleRoot->getFieldU64(sfIndexPrevious);
+        if (lastIndex == 0)
+        {
+            res = Unexpected<Error>(DirectoryTooSmall);
+            return false;
+        }
 
-            if (sb.exists(keylet::page(directory, newLastPage)))
-            {
-                res = Unexpected<Error>(DirectoryPageDuplicate);
-                return false;
-            }
+        if (sb.exists(keylet::page(directory, newLastPage)))
+        {
+            res = Unexpected<Error>(DirectoryPageDuplicate);
+            return false;
+        }
 
-            if (lastIndex >= newLastPage)
-            {
-                res = Unexpected<Error>(InvalidLastPage);
-                return false;
-            }
+        if (lastIndex >= newLastPage)
+        {
+            res = Unexpected<Error>(InvalidLastPage);
+            return false;
+        }
 
-            auto slePage = sb.peek(keylet::page(directory, lastIndex));
-            if (!slePage)
+        auto slePage = sb.peek(keylet::page(directory, lastIndex));
+        if (!slePage)
+        {
+            res = Unexpected<Error>(DirectoryPageNotFound);
+            return false;
+        }
+
+        // Copy its data and delete the page
+        auto indexes = slePage->getFieldV256(sfIndexes);
+        auto prevIndex = slePage->at(~sfIndexPrevious);
+        auto owner = slePage->at(~sfOwner);
+        sb.erase(slePage);
+
+        // Create new page to replace slePage
+        auto sleNew = std::make_shared<SLE>(keylet::page(directory, newLastPage));
+        sleNew->setFieldH256(sfRootIndex, directory.key);
+        sleNew->setFieldV256(sfIndexes, indexes);
+        if (owner)
+            sleNew->setAccountID(sfOwner, *owner);
+        if (prevIndex)
+            sleNew->setFieldU64(sfIndexPrevious, *prevIndex);
+        sb.insert(sleNew);
+
+        // Adjust root previous and previous node's next
+        sleRoot->setFieldU64(sfIndexPrevious, newLastPage);
+        if (prevIndex.value_or(0) == 0)
+            sleRoot->setFieldU64(sfIndexNext, newLastPage);
+        else
+        {
+            auto slePrev = sb.peek(keylet::page(directory, *prevIndex));
+            if (!slePrev)
             {
                 res = Unexpected<Error>(DirectoryPageNotFound);
                 return false;
             }
+            slePrev->setFieldU64(sfIndexNext, newLastPage);
+            sb.update(slePrev);
+        }
+        sb.update(sleRoot);
 
-            // Copy its data and delete the page
-            auto indexes = slePage->getFieldV256(sfIndexes);
-            auto prevIndex = slePage->at(~sfIndexPrevious);
-            auto owner = slePage->at(~sfOwner);
-            sb.erase(slePage);
-
-            // Create new page to replace slePage
-            auto sleNew =
-                std::make_shared<SLE>(keylet::page(directory, newLastPage));
-            sleNew->setFieldH256(sfRootIndex, directory.key);
-            sleNew->setFieldV256(sfIndexes, indexes);
-            if (owner)
-                sleNew->setAccountID(sfOwner, *owner);
-            if (prevIndex)
-                sleNew->setFieldU64(sfIndexPrevious, *prevIndex);
-            sb.insert(sleNew);
-
-            // Adjust root previous and previous node's next
-            sleRoot->setFieldU64(sfIndexPrevious, newLastPage);
-            if (prevIndex.value_or(0) == 0)
-                sleRoot->setFieldU64(sfIndexNext, newLastPage);
-            else
+        // Fixup page numbers in the objects referred by indexes
+        if (adjust)
+            for (auto const key : indexes)
             {
-                auto slePrev = sb.peek(keylet::page(directory, *prevIndex));
-                if (!slePrev)
+                if (!adjust(sb, key, newLastPage))
                 {
-                    res = Unexpected<Error>(DirectoryPageNotFound);
+                    res = Unexpected<Error>(AdjustmentError);
                     return false;
                 }
-                slePrev->setFieldU64(sfIndexNext, newLastPage);
-                sb.update(slePrev);
             }
-            sb.update(sleRoot);
 
-            // Fixup page numbers in the objects referred by indexes
-            if (adjust)
-                for (auto const key : indexes)
-                {
-                    if (!adjust(sb, key, newLastPage))
-                    {
-                        res = Unexpected<Error>(AdjustmentError);
-                        return false;
-                    }
-                }
-
-            sb.apply(view);
-            return true;
-        });
+        sb.apply(view);
+        return true;
+    });
 
     return res;
 }

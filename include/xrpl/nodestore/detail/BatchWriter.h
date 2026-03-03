@@ -1,5 +1,4 @@
-#ifndef XRPL_NODESTORE_BATCHWRITER_H_INCLUDED
-#define XRPL_NODESTORE_BATCHWRITER_H_INCLUDED
+#pragma once
 
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/Task.h>
@@ -79,5 +78,3 @@ private:
 
 }  // namespace NodeStore
 }  // namespace xrpl
-
-#endif

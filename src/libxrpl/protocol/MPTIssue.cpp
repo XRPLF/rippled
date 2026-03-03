@@ -23,8 +23,8 @@ MPTIssue::getIssuer() const
     // MPTID is concatenation of sequence + account
     static_assert(sizeof(MPTID) == (sizeof(std::uint32_t) + sizeof(AccountID)));
     // copy from id skipping the sequence
-    AccountID const* account = reinterpret_cast<AccountID const*>(
-        mptID_.data() + sizeof(std::uint32_t));
+    AccountID const* account =
+        reinterpret_cast<AccountID const*>(mptID_.data() + sizeof(std::uint32_t));
 
     return *account;
 }
@@ -67,16 +67,14 @@ mptIssueFromJson(Json::Value const& v)
 
     if (v.isMember(jss::currency) || v.isMember(jss::issuer))
     {
-        Throw<std::runtime_error>(
-            "mptIssueFromJson, MPTIssue should not have currency or issuer");
+        Throw<std::runtime_error>("mptIssueFromJson, MPTIssue should not have currency or issuer");
     }
 
     Json::Value const& idStr = v[jss::mpt_issuance_id];
 
     if (!idStr.isString())
     {
-        Throw<Json::error>(
-            "mptIssueFromJson MPTID must be a string Json value");
+        Throw<Json::error>("mptIssueFromJson MPTID must be a string Json value");
     }
 
     MPTID id;

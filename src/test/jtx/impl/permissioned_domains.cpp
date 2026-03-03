@@ -8,10 +8,7 @@ namespace pdomain {
 // helpers
 // Make json for PermissionedDomainSet transaction
 Json::Value
-setTx(
-    AccountID const& account,
-    Credentials const& credentials,
-    std::optional<uint256> domain)
+setTx(AccountID const& account, Credentials const& credentials, std::optional<uint256> domain)
 {
     Json::Value jv;
     jv[sfTransactionType] = jss::PermissionedDomainSet;
@@ -83,8 +80,7 @@ objectExists(uint256 const& objID, Env& env)
     Json::Value params;
     params[jss::index] = to_string(objID);
 
-    auto const result =
-        env.rpc("json", "ledger_entry", to_string(params))["result"];
+    auto const result = env.rpc("json", "ledger_entry", to_string(params))["result"];
 
     if ((result["status"] == "error") && (result["error"] == "entryNotFound"))
         return false;
@@ -114,9 +110,7 @@ credentialsFromJson(
         auto const& issuer = obj[jss::Issuer];
         auto const& credentialType = obj["CredentialType"];
         auto blob = strUnHex(credentialType.asString()).value();
-        ret.push_back(
-            {human2Acc.at(issuer.asString()),
-             std::string(blob.begin(), blob.end())});
+        ret.push_back({human2Acc.at(issuer.asString()), std::string(blob.begin(), blob.end())});
     }
     return ret;
 }
@@ -147,8 +141,7 @@ getNewDomain(std::shared_ptr<STObject const> const& meta)
         {
             continue;
         }
-        std::ignore =
-            ret.parseHex(node["CreatedNode"]["LedgerIndex"].asString());
+        std::ignore = ret.parseHex(node["CreatedNode"]["LedgerIndex"].asString());
         break;
     }
 

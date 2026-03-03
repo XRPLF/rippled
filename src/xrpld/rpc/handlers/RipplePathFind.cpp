@@ -21,10 +21,8 @@ doRipplePathFind(RPC::JsonContext& context)
     std::shared_ptr<ReadView const> lpLedger;
     Json::Value jvResult;
 
-    if (!context.app.config().standalone() &&
-        !context.params.isMember(jss::ledger) &&
-        !context.params.isMember(jss::ledger_index) &&
-        !context.params.isMember(jss::ledger_hash))
+    if (!context.app.config().standalone() && !context.params.isMember(jss::ledger) &&
+        !context.params.isMember(jss::ledger_index) && !context.params.isMember(jss::ledger_hash))
     {
         // No ledger specified, use pathfinding defaults
         // and dispatch to pathfinding engine

@@ -7,11 +7,10 @@ std::uint32_t
 owned_count_of(ReadView const& view, AccountID const& id, LedgerEntryType type)
 {
     std::uint32_t count = 0;
-    forEachItem(
-        view, id, [&count, type](std::shared_ptr<SLE const> const& sle) {
-            if (sle->getType() == type)
-                ++count;
-        });
+    forEachItem(view, id, [&count, type](std::shared_ptr<SLE const> const& sle) {
+        if (sle->getType() == type)
+            ++count;
+    });
     return count;
 }
 

@@ -1,5 +1,4 @@
-#ifndef XRPL_NET_RPCCALL_H_INCLUDED
-#define XRPL_NET_RPCCALL_H_INCLUDED
+#pragma once
 
 #include <xrpld/core/Config.h>
 
@@ -25,10 +24,7 @@ namespace xrpl {
 namespace RPCCall {
 
 int
-fromCommandLine(
-    Config const& config,
-    std::vector<std::string> const& vCmd,
-    Logs& logs);
+fromCommandLine(Config const& config, std::vector<std::string> const& vCmd, Logs& logs);
 
 void
 fromNetwork(
@@ -67,5 +63,3 @@ rpcClient(
     std::unordered_map<std::string, std::string> const& headers = {});
 
 }  // namespace xrpl
-
-#endif

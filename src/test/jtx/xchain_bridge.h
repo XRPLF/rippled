@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_XCHAINBRIDGE_H_INCLUDED
-#define XRPL_TEST_JTX_XCHAINBRIDGE_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
@@ -228,15 +227,10 @@ struct XChainBridgeObjects
         std::optional<STAmount> const& minAccountCreate = std::nullopt)
     {
         return bridge_create(
-            acc,
-            bridge == Json::nullValue ? jvb : bridge,
-            _reward,
-            minAccountCreate);
+            acc, bridge == Json::nullValue ? jvb : bridge, _reward, minAccountCreate);
     }
 };
 
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

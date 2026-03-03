@@ -1,25 +1,18 @@
-#ifndef XRPL_CORE_COROINL_H_INCLUDED
-#define XRPL_CORE_COROINL_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/ByteUtilities.h>
 
 namespace xrpl {
 
 template <class F>
-JobQueue::Coro::Coro(
-    Coro_create_t,
-    JobQueue& jq,
-    JobType type,
-    std::string const& name,
-    F&& f)
+JobQueue::Coro::Coro(Coro_create_t, JobQueue& jq, JobType type, std::string const& name, F&& f)
     : jq_(jq)
     , type_(type)
     , name_(name)
     , running_(false)
     , coro_(
           [this, fn = std::forward<F>(f)](
-              boost::coroutines::asymmetric_coroutine<void>::push_type&
-                  do_yield) {
+              boost::coroutines::asymmetric_coroutine<void>::push_type& do_yield) {
               yield_ = &do_yield;
               yield();
               fn(shared_from_this());
@@ -57,8 +50,7 @@ JobQueue::Coro::post()
     }
 
     // sp keeps 'this' alive
-    if (jq_.addJob(
-            type_, name_, [this, sp = shared_from_this()]() { resume(); }))
+    if (jq_.addJob(type_, name_, [this, sp = shared_from_this()]() { resume(); }))
     {
         return true;
     }
@@ -84,8 +76,7 @@ JobQueue::Coro::resume()
     auto saved = detail::getLocalValues().release();
     detail::getLocalValues().reset(&lvs_);
     std::lock_guard lock(mutex_);
-    XRPL_ASSERT(
-        static_cast<bool>(coro_), "xrpl::JobQueue::Coro::resume : is runnable");
+    XRPL_ASSERT(static_cast<bool>(coro_), "xrpl::JobQueue::Coro::resume : is runnable");
     coro_();
     detail::getLocalValues().release();
     detail::getLocalValues().reset(saved);
@@ -129,5 +120,3 @@ JobQueue::Coro::join()
 }
 
 }  // namespace xrpl
-
-#endif

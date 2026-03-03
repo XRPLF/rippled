@@ -28,8 +28,7 @@
 
 namespace xrpl {
 
-STLedgerEntry::STLedgerEntry(Keylet const& k)
-    : STObject(sfLedgerEntry), key_(k.key), type_(k.type)
+STLedgerEntry::STLedgerEntry(Keylet const& k) : STObject(sfLedgerEntry), key_(k.key), type_(k.type)
 {
     auto const format = LedgerFormats::getInstance().findByType(type_);
 
@@ -108,8 +107,7 @@ STLedgerEntry::getSType() const
 std::string
 STLedgerEntry::getText() const
 {
-    return str(
-        boost::format("{ %s, %s }") % to_string(key_) % STObject::getText());
+    return str(boost::format("{ %s, %s }") % to_string(key_) % STObject::getText());
 }
 
 Json::Value
@@ -120,8 +118,8 @@ STLedgerEntry::getJson(JsonOptions options) const
     ret[jss::index] = to_string(key_);
 
     if (getType() == ltMPTOKEN_ISSUANCE)
-        ret[jss::mpt_issuance_id] = to_string(
-            makeMptID(getFieldU32(sfSequence), getAccountID(sfIssuer)));
+        ret[jss::mpt_issuance_id] =
+            to_string(makeMptID(getFieldU32(sfSequence), getAccountID(sfIssuer)));
 
     return ret;
 }
@@ -134,10 +132,7 @@ STLedgerEntry::isThreadedType(Rules const& rules) const
     // Exclude PrevTxnID/PrevTxnLgrSeq if the fixPreviousTxnID amendment is not
     // enabled and the ledger object type is in the above set
     bool const excludePrevTxnID = !rules.enabled(fixPreviousTxnID) &&
-        std::count(
-            newPreviousTxnIDTypes.cbegin(),
-            newPreviousTxnIDTypes.cend(),
-            type_);
+        std::count(newPreviousTxnIDTypes.cbegin(), newPreviousTxnIDTypes.cend(), type_);
     return !excludePrevTxnID && getFieldIndex(sfPreviousTxnID) != -1;
 }
 

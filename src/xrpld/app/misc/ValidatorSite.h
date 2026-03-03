@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_VALIDATORSITE_H_INCLUDED
-#define XRPL_APP_MISC_VALIDATORSITE_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/ValidatorList.h>
@@ -178,16 +177,12 @@ public:
 private:
     /// Load configured site URIs.
     bool
-    load(
-        std::vector<std::string> const& siteURIs,
-        std::lock_guard<std::mutex> const&);
+    load(std::vector<std::string> const& siteURIs, std::lock_guard<std::mutex> const&);
 
     /// Queue next site to be fetched
     /// lock over site_mutex_ and state_mutex_ required
     void
-    setTimer(
-        std::lock_guard<std::mutex> const&,
-        std::lock_guard<std::mutex> const&);
+    setTimer(std::lock_guard<std::mutex> const&, std::lock_guard<std::mutex> const&);
 
     /// request took too long
     void
@@ -207,10 +202,7 @@ private:
 
     /// Store latest list fetched from anywhere
     void
-    onTextFetch(
-        boost::system::error_code const& ec,
-        std::string const& res,
-        std::size_t siteIdx);
+    onTextFetch(boost::system::error_code const& ec, std::string const& res, std::size_t siteIdx);
 
     /// Initiate request to given resource.
     /// lock over sites_mutex_ required
@@ -243,5 +235,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

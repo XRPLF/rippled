@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_FEE_H_INCLUDED
-#define XRPL_TEST_JTX_FEE_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 #include <test/jtx/tags.h>
@@ -40,8 +39,7 @@ public:
             Throw<std::runtime_error>("fee: not XRP");
     }
 
-    explicit fee(std::uint64_t amount, bool negative = false)
-        : fee{STAmount{amount, negative}}
+    explicit fee(std::uint64_t amount, bool negative = false) : fee{STAmount{amount, negative}}
     {
     }
 
@@ -52,5 +50,3 @@ public:
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

@@ -55,35 +55,29 @@ doTransactionEntry(RPC::JsonContext& context)
         {
             if (context.apiVersion > 1)
             {
-                jvResult[jss::tx_json] =
-                    sttx->getJson(JsonOptions::disable_API_prior_V2);
+                jvResult[jss::tx_json] = sttx->getJson(JsonOptions::disable_API_prior_V2);
                 jvResult[jss::hash] = to_string(sttx->getTransactionID());
 
                 if (!lpLedger->open())
-                    jvResult[jss::ledger_hash] = to_string(
-                        context.ledgerMaster.getHashBySeq(lpLedger->seq()));
+                    jvResult[jss::ledger_hash] =
+                        to_string(context.ledgerMaster.getHashBySeq(lpLedger->seq()));
 
-                bool const validated =
-                    context.ledgerMaster.isValidated(*lpLedger);
+                bool const validated = context.ledgerMaster.isValidated(*lpLedger);
 
                 jvResult[jss::validated] = validated;
                 if (validated)
                 {
                     jvResult[jss::ledger_index] = lpLedger->seq();
-                    if (auto closeTime = context.ledgerMaster.getCloseTimeBySeq(
-                            lpLedger->seq()))
-                        jvResult[jss::close_time_iso] =
-                            to_string_iso(*closeTime);
+                    if (auto closeTime = context.ledgerMaster.getCloseTimeBySeq(lpLedger->seq()))
+                        jvResult[jss::close_time_iso] = to_string_iso(*closeTime);
                 }
             }
             else
                 jvResult[jss::tx_json] = sttx->getJson(JsonOptions::none);
 
-            RPC::insertDeliverMax(
-                jvResult[jss::tx_json], sttx->getTxnType(), context.apiVersion);
+            RPC::insertDeliverMax(jvResult[jss::tx_json], sttx->getTxnType(), context.apiVersion);
 
-            auto const json_meta =
-                (context.apiVersion > 1 ? jss::meta : jss::metadata);
+            auto const json_meta = (context.apiVersion > 1 ? jss::meta : jss::metadata);
             if (stobj)
                 jvResult[json_meta] = stobj->getJson(JsonOptions::none);
             // 'accounts'

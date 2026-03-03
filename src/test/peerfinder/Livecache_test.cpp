@@ -142,57 +142,36 @@ public:
         testcase("Shuffle");
         Livecache<> c(clock_, journal_);
         for (auto i = 0; i < 100; ++i)
-            add(beast::IP::randomEP(true),
-                c,
-                xrpl::rand_int(Tuning::maxHops + 1));
+            add(beast::IP::randomEP(true), c, xrpl::rand_int(Tuning::maxHops + 1));
 
         using at_hop = std::vector<xrpl::PeerFinder::Endpoint>;
         using all_hops = std::array<at_hop, 1 + Tuning::maxHops + 1>;
 
         auto cmp_EP = [](Endpoint const& a, Endpoint const& b) {
-            return (
-                b.hops < a.hops || (b.hops == a.hops && b.address < a.address));
+            return (b.hops < a.hops || (b.hops == a.hops && b.address < a.address));
         };
         all_hops before;
         all_hops before_sorted;
-        for (auto i = std::make_pair(0, c.hops.begin());
-             i.second != c.hops.end();
+        for (auto i = std::make_pair(0, c.hops.begin()); i.second != c.hops.end();
              ++i.first, ++i.second)
         {
+            std::copy((*i.second).begin(), (*i.second).end(), std::back_inserter(before[i.first]));
             std::copy(
-                (*i.second).begin(),
-                (*i.second).end(),
-                std::back_inserter(before[i.first]));
-            std::copy(
-                (*i.second).begin(),
-                (*i.second).end(),
-                std::back_inserter(before_sorted[i.first]));
-            std::sort(
-                before_sorted[i.first].begin(),
-                before_sorted[i.first].end(),
-                cmp_EP);
+                (*i.second).begin(), (*i.second).end(), std::back_inserter(before_sorted[i.first]));
+            std::sort(before_sorted[i.first].begin(), before_sorted[i.first].end(), cmp_EP);
         }
 
         c.hops.shuffle();
 
         all_hops after;
         all_hops after_sorted;
-        for (auto i = std::make_pair(0, c.hops.begin());
-             i.second != c.hops.end();
+        for (auto i = std::make_pair(0, c.hops.begin()); i.second != c.hops.end();
              ++i.first, ++i.second)
         {
+            std::copy((*i.second).begin(), (*i.second).end(), std::back_inserter(after[i.first]));
             std::copy(
-                (*i.second).begin(),
-                (*i.second).end(),
-                std::back_inserter(after[i.first]));
-            std::copy(
-                (*i.second).begin(),
-                (*i.second).end(),
-                std::back_inserter(after_sorted[i.first]));
-            std::sort(
-                after_sorted[i.first].begin(),
-                after_sorted[i.first].end(),
-                cmp_EP);
+                (*i.second).begin(), (*i.second).end(), std::back_inserter(after_sorted[i.first]));
+            std::sort(after_sorted[i.first].begin(), after_sorted[i.first].end(), cmp_EP);
         }
 
         // each hop bucket should contain the same items

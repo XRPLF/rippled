@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_ENVCONFIG_H_INCLUDED
-#define XRPL_TEST_JTX_ENVCONFIG_H_INCLUDED
+#pragma once
 
 #include <xrpld/core/Config.h>
 
@@ -74,6 +73,8 @@ std::unique_ptr<Config> admin_localnet(std::unique_ptr<Config>);
 
 std::unique_ptr<Config> secure_gateway_localnet(std::unique_ptr<Config>);
 
+std::unique_ptr<Config> single_thread_io(std::unique_ptr<Config>);
+
 /// @brief adjust configuration with params needed to be a validator
 ///
 /// this is intended for use with envconfig, as in
@@ -104,9 +105,7 @@ std::unique_ptr<Config> addGrpcConfig(std::unique_ptr<Config>);
 ///
 /// @param cfg config instance to be modified
 std::unique_ptr<Config>
-addGrpcConfigWithSecureGateway(
-    std::unique_ptr<Config>,
-    std::string const& secureGateway);
+addGrpcConfigWithSecureGateway(std::unique_ptr<Config>, std::string const& secureGateway);
 
 std::unique_ptr<Config>
 makeConfig(
@@ -116,5 +115,3 @@ makeConfig(
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

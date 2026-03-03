@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_LEDGERMASTER_H_INCLUDED
-#define XRPL_APP_LEDGER_LEDGERMASTER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/AbstractFetchPackContainer.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
@@ -89,10 +88,7 @@ public:
     storeLedger(std::shared_ptr<Ledger const> ledger);
 
     void
-    setFullLedger(
-        std::shared_ptr<Ledger const> const& ledger,
-        bool isSynchronous,
-        bool isCurrent);
+    setFullLedger(std::shared_ptr<Ledger const> const& ledger, bool isSynchronous, bool isCurrent);
 
     /** Check the sequence number and parent close time of a
         ledger against our clock and last validated ledger to
@@ -338,8 +334,7 @@ private:
     int mPathFindThread{0};  // Pathfinder jobs dispatched
     bool mPathFindNewRequest{false};
 
-    std::atomic_flag mGotFetchPackThread =
-        ATOMIC_FLAG_INIT;  // GotFetchPack jobs dispatched
+    std::atomic_flag mGotFetchPackThread = ATOMIC_FLAG_INIT;  // GotFetchPack jobs dispatched
 
     std::atomic<std::uint32_t> mPubLedgerClose{0};
     std::atomic<LedgerIndex> mPubLedgerSeq{0};
@@ -373,14 +368,10 @@ private:
     struct Stats
     {
         template <class Handler>
-        Stats(
-            Handler const& handler,
-            beast::insight::Collector::ptr const& collector)
+        Stats(Handler const& handler, beast::insight::Collector::ptr const& collector)
             : hook(collector->make_hook(handler))
-            , validatedLedgerAge(
-                  collector->make_gauge("LedgerMaster", "Validated_Ledger_Age"))
-            , publishedLedgerAge(
-                  collector->make_gauge("LedgerMaster", "Published_Ledger_Age"))
+            , validatedLedgerAge(collector->make_gauge("LedgerMaster", "Validated_Ledger_Age"))
+            , publishedLedgerAge(collector->make_gauge("LedgerMaster", "Published_Ledger_Age"))
         {
         }
 
@@ -402,5 +393,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

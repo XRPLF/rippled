@@ -19,10 +19,7 @@ class Backend_test : public TestBase
 {
 public:
     void
-    testBackend(
-        std::string const& type,
-        std::uint64_t const seedValue,
-        int numObjsToTest = 2000)
+    testBackend(std::string const& type, std::uint64_t const seedValue, int numObjsToTest = 2000)
     {
         DummyScheduler scheduler;
 
@@ -43,8 +40,8 @@ public:
 
         {
             // Open the backend
-            std::unique_ptr<Backend> backend = Manager::instance().make_Backend(
-                params, megabytes(4), scheduler, journal);
+            std::unique_ptr<Backend> backend =
+                Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
             backend->open();
 
             // Write the batch
@@ -68,8 +65,8 @@ public:
 
         {
             // Re-open the backend
-            std::unique_ptr<Backend> backend = Manager::instance().make_Backend(
-                params, megabytes(4), scheduler, journal);
+            std::unique_ptr<Backend> backend =
+                Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
             backend->open();
 
             // Read it back in

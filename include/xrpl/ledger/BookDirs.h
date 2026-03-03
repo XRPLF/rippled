@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_BOOK_DIRS_H_INCLUDED
-#define XRPL_LEDGER_BOOK_DIRS_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
@@ -68,10 +67,7 @@ public:
 private:
     friend class BookDirs;
 
-    const_iterator(
-        ReadView const& view,
-        uint256 const& root,
-        uint256 const& dir_key)
+    const_iterator(ReadView const& view, uint256 const& root, uint256 const& dir_key)
         : view_(&view), root_(root), key_(dir_key), cur_key_(dir_key)
     {
     }
@@ -90,5 +86,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

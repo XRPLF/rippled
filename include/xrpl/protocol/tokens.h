@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_TOKENS_H_INCLUDED
-#define XRPL_PROTOCOL_TOKENS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/contract.h>
@@ -63,11 +62,7 @@ decodeBase58Token(std::string const& s, TokenType type);
 namespace detail {
 // Expose detail functions for unit tests only
 std::string
-encodeBase58(
-    void const* message,
-    std::size_t size,
-    void* temp,
-    std::size_t temp_size);
+encodeBase58(void const* message, std::size_t size, void* temp, std::size_t temp_size);
 
 std::string
 decodeBase58(std::string const& s);
@@ -85,10 +80,7 @@ encodeBase58Token(
     std::span<std::uint8_t> out);
 
 [[nodiscard]] B58Result<std::span<std::uint8_t>>
-decodeBase58Token(
-    TokenType type,
-    std::string_view s,
-    std::span<std::uint8_t> outBuf);
+decodeBase58Token(TokenType type, std::string_view s, std::span<std::uint8_t> outBuf);
 
 // This interface matches the old interface, but requires additional allocation
 [[nodiscard]] std::string
@@ -101,9 +93,7 @@ decodeBase58Token(std::string const& s, TokenType type);
 namespace detail {
 // Expose detail functions for unit tests only
 B58Result<std::span<std::uint8_t>>
-b256_to_b58_be(
-    std::span<std::uint8_t const> input,
-    std::span<std::uint8_t> out);
+b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out);
 
 B58Result<std::span<std::uint8_t>>
 b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out);
@@ -112,5 +102,3 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out);
 }  // namespace b58_fast
 #endif  // _MSC_VER
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_CLUSTER_H_INCLUDED
-#define XRPL_OVERLAY_CLUSTER_H_INCLUDED
+#pragma once
 
 #include <xrpld/overlay/ClusterNode.h>
 
@@ -95,5 +94,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

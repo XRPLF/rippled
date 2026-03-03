@@ -1,5 +1,4 @@
-#ifndef XRPL_CORE_TIMEKEEPER_H_INCLUDED
-#define XRPL_CORE_TIMEKEEPER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/clock/abstract_clock.h>
@@ -18,8 +17,8 @@ private:
     static constexpr time_point
     adjust(std::chrono::system_clock::time_point when)
     {
-        return time_point(std::chrono::duration_cast<duration>(
-            when.time_since_epoch() - epoch_offset));
+        return time_point(
+            std::chrono::duration_cast<duration>(when.time_since_epoch() - epoch_offset));
     }
 
 public:
@@ -98,5 +97,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

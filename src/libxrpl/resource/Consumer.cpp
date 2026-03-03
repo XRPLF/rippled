@@ -13,8 +13,7 @@
 namespace xrpl {
 namespace Resource {
 
-Consumer::Consumer(Logic& logic, Entry& entry)
-    : m_logic(&logic), m_entry(&entry)
+Consumer::Consumer(Logic& logic, Entry& entry) : m_logic(&logic), m_entry(&entry)
 {
 }
 
@@ -22,8 +21,7 @@ Consumer::Consumer() : m_logic(nullptr), m_entry(nullptr)
 {
 }
 
-Consumer::Consumer(Consumer const& other)
-    : m_logic(other.m_logic), m_entry(nullptr)
+Consumer::Consumer(Consumer const& other) : m_logic(other.m_logic), m_entry(nullptr)
 {
     if (m_logic && other.m_entry)
     {
@@ -104,8 +102,7 @@ Consumer::warn()
 bool
 Consumer::disconnect(beast::Journal const& j)
 {
-    XRPL_ASSERT(
-        m_entry, "xrpl::Resource::Consumer::disconnect : non-null entry");
+    XRPL_ASSERT(m_entry, "xrpl::Resource::Consumer::disconnect : non-null entry");
     bool const d = m_logic->disconnect(*m_entry);
     if (d)
     {

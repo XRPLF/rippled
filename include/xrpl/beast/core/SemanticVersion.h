@@ -1,5 +1,4 @@
-#ifndef BEAST_MODULE_CORE_DIAGNOSTIC_SEMANTICVERSION_H_INCLUDED
-#define BEAST_MODULE_CORE_DIAGNOSTIC_SEMANTICVERSION_H_INCLUDED
+#pragma once
 
 #include <string>
 #include <vector>
@@ -95,5 +94,3 @@ operator<(SemanticVersion const& lhs, SemanticVersion const& rhs)
 }
 
 }  // namespace beast
-
-#endif

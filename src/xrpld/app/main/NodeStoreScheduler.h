@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MAIN_NODESTORESCHEDULER_H_INCLUDED
-#define XRPL_APP_MAIN_NODESTORESCHEDULER_H_INCLUDED
+#pragma once
 
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/nodestore/Scheduler.h>
@@ -24,5 +23,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

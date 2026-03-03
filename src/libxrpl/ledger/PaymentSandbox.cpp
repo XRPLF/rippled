@@ -8,10 +8,7 @@ namespace xrpl {
 namespace detail {
 
 auto
-DeferredCredits::makeKey(
-    AccountID const& a1,
-    AccountID const& a2,
-    Currency const& c) -> Key
+DeferredCredits::makeKey(AccountID const& a1, AccountID const& a2, Currency const& c) -> Key
 {
     if (a1 < a2)
         return std::make_tuple(a1, a2, c);
@@ -27,11 +24,8 @@ DeferredCredits::credit(
     STAmount const& preCreditSenderBalance)
 {
     XRPL_ASSERT(
-        sender != receiver,
-        "xrpl::detail::DeferredCredits::credit : sender is not receiver");
-    XRPL_ASSERT(
-        !amount.negative(),
-        "xrpl::detail::DeferredCredits::credit : positive amount");
+        sender != receiver, "xrpl::detail::DeferredCredits::credit : sender is not receiver");
+    XRPL_ASSERT(!amount.negative(), "xrpl::detail::DeferredCredits::credit : positive amount");
 
     auto const k = makeKey(sender, receiver, amount.getCurrency());
     auto i = credits_.find(k);
@@ -66,10 +60,7 @@ DeferredCredits::credit(
 }
 
 void
-DeferredCredits::ownerCount(
-    AccountID const& id,
-    std::uint32_t cur,
-    std::uint32_t next)
+DeferredCredits::ownerCount(AccountID const& id, std::uint32_t cur, std::uint32_t next)
 {
     auto const v = std::max(cur, next);
     auto r = ownerCounts_.emplace(std::make_pair(id, v));
@@ -107,14 +98,12 @@ DeferredCredits::adjustments(
 
     if (main < other)
     {
-        result.emplace(
-            v.highAcctCredits, v.lowAcctCredits, v.lowAcctOrigBalance);
+        result.emplace(v.highAcctCredits, v.lowAcctCredits, v.lowAcctOrigBalance);
         return result;
     }
     else
     {
-        result.emplace(
-            v.lowAcctCredits, v.highAcctCredits, -v.lowAcctOrigBalance);
+        result.emplace(v.lowAcctCredits, v.highAcctCredits, -v.lowAcctOrigBalance);
         return result;
     }
 }
@@ -200,8 +189,7 @@ PaymentSandbox::balanceHook(
 }
 
 std::uint32_t
-PaymentSandbox::ownerCountHook(AccountID const& account, std::uint32_t count)
-    const
+PaymentSandbox::ownerCountHook(AccountID const& account, std::uint32_t count) const
 {
     std::uint32_t result = count;
     for (auto curSB = this; curSB; curSB = curSB->ps_)

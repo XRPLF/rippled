@@ -17,14 +17,11 @@ Database::Database(
     beast::Journal journal)
     : j_(journal)
     , scheduler_(scheduler)
-    , earliestLedgerSeq_(
-          get<std::uint32_t>(config, "earliest_seq", XRP_LEDGER_EARLIEST_SEQ))
+    , earliestLedgerSeq_(get<std::uint32_t>(config, "earliest_seq", XRP_LEDGER_EARLIEST_SEQ))
     , requestBundle_(get<int>(config, "rq_bundle", 4))
     , readThreads_(std::max(1, readThreads))
 {
-    XRPL_ASSERT(
-        readThreads,
-        "xrpl::NodeStore::Database::Database : nonzero threads input");
+    XRPL_ASSERT(readThreads, "xrpl::NodeStore::Database::Database : nonzero threads input");
 
     if (earliestLedgerSeq_ < 1)
         Throw<std::runtime_error>("Invalid earliest_seq");
@@ -38,8 +35,7 @@ Database::Database(
             [this](int i) {
                 runningThreads_++;
 
-                beast::setCurrentThreadName(
-                    "db prefetch #" + std::to_string(i));
+                beast::setCurrentThreadName("db prefetch #" + std::to_string(i));
 
                 decltype(read_) read;
 
@@ -63,9 +59,7 @@ Database::Database(
 
                         // extract multiple object at a time to minimize the
                         // overhead of acquiring the mutex.
-                        for (int cnt = 0;
-                             !read_.empty() && cnt != requestBundle_;
-                             ++cnt)
+                        for (int cnt = 0; !read_.empty() && cnt != requestBundle_; ++cnt)
                             read.insert(read_.extract(read_.begin()));
                     }
 
@@ -80,8 +74,7 @@ Database::Database(
                         auto const& data = it->second;
                         auto const seqn = data[0].first;
 
-                        auto obj =
-                            fetchNodeObject(hash, seqn, FetchType::async);
+                        auto obj = fetchNodeObject(hash, seqn, FetchType::async);
 
                         // This could be further optimized: if there are
                         // multiple requests for sequence numbers mapping to
@@ -93,8 +86,7 @@ Database::Database(
                             req.second(
                                 (seqn == req.first) || isSameDB(req.first, seqn)
                                     ? obj
-                                    : fetchNodeObject(
-                                          hash, req.first, FetchType::async));
+                                    : fetchNodeObject(hash, req.first, FetchType::async));
                         }
                     }
 
@@ -154,11 +146,10 @@ Database::stop()
         std::this_thread::yield();
     }
 
-    JLOG(j_.debug()) << "Stop request completed in "
-                     << duration_cast<std::chrono::milliseconds>(
-                            steady_clock::now() - start)
-                            .count()
-                     << " millseconds";
+    JLOG(j_.debug())
+        << "Stop request completed in "
+        << duration_cast<std::chrono::milliseconds>(steady_clock::now() - start).count()
+        << " milliseconds";
 }
 
 void
@@ -188,8 +179,7 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
         }
         catch (std::exception const& e)
         {
-            JLOG(j_.error()) << "Exception caught in function " << fname
-                             << ". Error: " << e.what();
+            JLOG(j_.error()) << "Exception caught in function " << fname << ". Error: " << e.what();
             return;
         }
 
@@ -201,9 +191,7 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
     };
 
     srcDB.for_each([&](std::shared_ptr<NodeObject> nodeObject) {
-        XRPL_ASSERT(
-            nodeObject,
-            "xrpl::NodeStore::Database::importInternal : non-null node");
+        XRPL_ASSERT(nodeObject, "xrpl::NodeStore::Database::importInternal : non-null node");
         if (!nodeObject)  // This should never happen
             return;
 
@@ -247,9 +235,7 @@ Database::fetchNodeObject(
 void
 Database::getCountsJson(Json::Value& obj)
 {
-    XRPL_ASSERT(
-        obj.isObject(),
-        "xrpl::NodeStore::Database::getCountsJson : valid input type");
+    XRPL_ASSERT(obj.isObject(), "xrpl::NodeStore::Database::getCountsJson : valid input type");
 
     {
         std::unique_lock<std::mutex> lock(readLock_);

@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_FAMILY_H_INCLUDED
-#define XRPL_SHAMAP_FAMILY_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/nodestore/Database.h>
@@ -66,5 +65,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

@@ -137,8 +137,7 @@ walletPropose(Json::Value const& params)
     {
         auto const passphrase = params[jss::passphrase].asString();
 
-        if (passphrase != seed1751 && passphrase != seedBase58 &&
-            passphrase != seedHex)
+        if (passphrase != seed1751 && passphrase != seedBase58 && passphrase != seedHex)
         {
             // 80 bits of entropy isn't bad, but it's better to
             // err on the side of caution and be conservative.

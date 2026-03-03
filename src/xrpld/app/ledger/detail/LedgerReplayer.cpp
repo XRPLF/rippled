@@ -32,8 +32,7 @@ LedgerReplayer::replay(
             totalNumLedgers <= LedgerReplayParameters::MAX_TASK_SIZE,
         "xrpl::LedgerReplayer::replay : valid inputs");
 
-    LedgerReplayTask::TaskParameter parameter(
-        r, finishLedgerHash, totalNumLedgers);
+    LedgerReplayTask::TaskParameter parameter(r, finishLedgerHash, totalNumLedgers);
 
     std::shared_ptr<LedgerReplayTask> task;
     std::shared_ptr<SkipListAcquire> skipList;
@@ -44,8 +43,7 @@ LedgerReplayer::replay(
             return;
         if (tasks_.size() >= LedgerReplayParameters::MAX_TASKS)
         {
-            JLOG(j_.info()) << "Too many replay tasks, dropping new task "
-                            << parameter.finishHash_;
+            JLOG(j_.info()) << "Too many replay tasks, dropping new task " << parameter.finishHash_;
             return;
         }
 
@@ -53,14 +51,12 @@ LedgerReplayer::replay(
         {
             if (parameter.canMergeInto(t->getTaskParameter()))
             {
-                JLOG(j_.info()) << "Task " << parameter.finishHash_ << " with "
-                                << totalNumLedgers
+                JLOG(j_.info()) << "Task " << parameter.finishHash_ << " with " << totalNumLedgers
                                 << " ledgers merged into an existing task.";
                 return;
             }
         }
-        JLOG(j_.info()) << "Replay " << totalNumLedgers
-                        << " ledgers. Finish ledger hash "
+        JLOG(j_.info()) << "Replay " << totalNumLedgers << " ledgers. Finish ledger hash "
                         << parameter.finishHash_;
 
         auto i = skipLists_.find(parameter.finishHash_);
@@ -70,10 +66,7 @@ LedgerReplayer::replay(
         if (!skipList)  // cannot find, or found but cannot lock
         {
             skipList = std::make_shared<SkipListAcquire>(
-                app_,
-                inboundLedgers_,
-                parameter.finishHash_,
-                peerSetBuilder_->build());
+                app_, inboundLedgers_, parameter.finishHash_, peerSetBuilder_->build());
             skipLists_[parameter.finishHash_] = skipList;
             newSkipList = true;
         }
@@ -103,10 +96,8 @@ LedgerReplayer::createDeltas(std::shared_ptr<LedgerReplayTask> task)
     JLOG(j_.trace()) << "Creating " << parameter.totalLedgers_ - 1 << " deltas";
     if (parameter.totalLedgers_ > 1)
     {
-        auto skipListItem = std::find(
-            parameter.skipList_.begin(),
-            parameter.skipList_.end(),
-            parameter.startHash_);
+        auto skipListItem =
+            std::find(parameter.skipList_.begin(), parameter.skipList_.end(), parameter.startHash_);
         if (skipListItem == parameter.skipList_.end() ||
             ++skipListItem == parameter.skipList_.end())
         {
@@ -116,8 +107,7 @@ LedgerReplayer::createDeltas(std::shared_ptr<LedgerReplayTask> task)
         }
 
         for (std::uint32_t seq = parameter.startSeq_ + 1;
-             seq <= parameter.finishSeq_ &&
-             skipListItem != parameter.skipList_.end();
+             seq <= parameter.finishSeq_ && skipListItem != parameter.skipList_.end();
              ++seq, ++skipListItem)
         {
             std::shared_ptr<LedgerDeltaAcquire> delta;
@@ -133,11 +123,7 @@ LedgerReplayer::createDeltas(std::shared_ptr<LedgerReplayTask> task)
                 if (!delta)  // cannot find, or found but cannot lock
                 {
                     delta = std::make_shared<LedgerDeltaAcquire>(
-                        app_,
-                        inboundLedgers_,
-                        *skipListItem,
-                        seq,
-                        peerSetBuilder_->build());
+                        app_, inboundLedgers_, *skipListItem, seq, peerSetBuilder_->build());
                     deltas_[*skipListItem] = delta;
                     newDelta = true;
                 }
@@ -202,9 +188,8 @@ LedgerReplayer::sweep()
     auto const start = std::chrono::steady_clock::now();
     {
         std::lock_guard<std::mutex> lock(mtx_);
-        JLOG(j_.debug()) << "Sweeping, LedgerReplayer has " << tasks_.size()
-                         << " tasks, " << skipLists_.size()
-                         << " skipLists, and " << deltas_.size() << " deltas.";
+        JLOG(j_.debug()) << "Sweeping, LedgerReplayer has " << tasks_.size() << " tasks, "
+                         << skipLists_.size() << " skipLists, and " << deltas_.size() << " deltas.";
 
         tasks_.erase(
             std::remove_if(
@@ -213,8 +198,7 @@ LedgerReplayer::sweep()
                 [this](auto const& t) -> bool {
                     if (t->finished())
                     {
-                        JLOG(j_.debug()) << "Sweep task "
-                                         << t->getTaskParameter().finishHash_;
+                        JLOG(j_.debug()) << "Sweep task " << t->getTaskParameter().finishHash_;
                         return true;
                     }
                     return false;
@@ -248,8 +232,7 @@ LedgerReplayer::stop()
     JLOG(j_.info()) << "Stopping...";
     {
         std::lock_guard<std::mutex> lock(mtx_);
-        std::for_each(
-            tasks_.begin(), tasks_.end(), [](auto& i) { i->cancel(); });
+        std::for_each(tasks_.begin(), tasks_.end(), [](auto& i) { i->cancel(); });
         tasks_.clear();
         auto lockAndCancel = [](auto& i) {
             if (auto sptr = i.second.lock(); sptr)

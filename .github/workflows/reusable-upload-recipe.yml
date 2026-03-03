@@ -1,0 +1,97 @@
+# This workflow exports the built libxrpl package to the Conan remote.
+name: Upload Conan recipe
+
+# This workflow can only be triggered by other workflows.
+on:
+  workflow_call:
+    inputs:
+      remote_name:
+        description: "The name of the Conan remote to use."
+        required: false
+        type: string
+        default: xrplf
+      remote_url:
+        description: "The URL of the Conan endpoint to use."
+        required: false
+        type: string
+        default: https://conan.ripplex.io
+
+    secrets:
+      remote_username:
+        description: "The username for logging into the Conan remote."
+        required: true
+      remote_password:
+        description: "The password for logging into the Conan remote."
+        required: true
+
+    outputs:
+      recipe_ref:
+        description: "The Conan recipe reference ('name/version') that was uploaded."
+        value: ${{ jobs.upload.outputs.ref }}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-upload-recipe
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    container: ghcr.io/xrplf/ci/ubuntu-noble:gcc-13-sha-5dd7158
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Generate build version number
+        id: version
+        uses: ./.github/actions/generate-version
+
+      - name: Set up Conan
+        uses: ./.github/actions/setup-conan
+        with:
+          remote_name: ${{ inputs.remote_name }}
+          remote_url: ${{ inputs.remote_url }}
+
+      - name: Log into Conan remote
+        env:
+          REMOTE_NAME: ${{ inputs.remote_name }}
+          REMOTE_USERNAME: ${{ secrets.remote_username }}
+          REMOTE_PASSWORD: ${{ secrets.remote_password }}
+        run: conan remote login "${REMOTE_NAME}" "${REMOTE_USERNAME}" --password "${REMOTE_PASSWORD}"
+
+      - name: Upload Conan recipe (version)
+        env:
+          REMOTE_NAME: ${{ inputs.remote_name }}
+        run: |
+          conan export . --version=${{ steps.version.outputs.version }}
+          conan upload --confirm --check --remote="${REMOTE_NAME}" xrpl/${{ steps.version.outputs.version }}
+
+      - name: Upload Conan recipe (develop)
+        if: ${{ github.ref == 'refs/heads/develop' }}
+        env:
+          REMOTE_NAME: ${{ inputs.remote_name }}
+        run: |
+          conan export . --version=develop
+          conan upload --confirm --check --remote="${REMOTE_NAME}" xrpl/develop
+
+      - name: Upload Conan recipe (rc)
+        if: ${{ startsWith(github.ref, 'refs/heads/release') }}
+        env:
+          REMOTE_NAME: ${{ inputs.remote_name }}
+        run: |
+          conan export . --version=rc
+          conan upload --confirm --check --remote="${REMOTE_NAME}" xrpl/rc
+
+      - name: Upload Conan recipe (release)
+        if: ${{ github.event_name == 'tag' }}
+        env:
+          REMOTE_NAME: ${{ inputs.remote_name }}
+        run: |
+          conan export . --version=release
+          conan upload --confirm --check --remote="${REMOTE_NAME}" xrpl/release
+
+    outputs:
+      ref: xrpl/${{ steps.version.outputs.version }}

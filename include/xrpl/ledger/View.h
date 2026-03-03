@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_VIEW_H_INCLUDED
-#define XRPL_LEDGER_VIEW_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -61,6 +60,9 @@ enum FreezeHandling { fhIGNORE_FREEZE, fhZERO_IF_FROZEN };
 /** Controls the treatment of unauthorized MPT balances */
 enum AuthHandling { ahIGNORE_AUTH, ahZERO_IF_UNAUTHORIZED };
 
+/** Controls whether to include the account's full spendable balance */
+enum SpendableHandling { shSIMPLE_BALANCE, shFULL_BALANCE };
+
 [[nodiscard]] bool
 isGlobalFrozen(ReadView const& view, AccountID const& issuer);
 
@@ -86,31 +88,19 @@ isIndividualFrozen(
     AccountID const& issuer);
 
 [[nodiscard]] inline bool
-isIndividualFrozen(
-    ReadView const& view,
-    AccountID const& account,
-    Issue const& issue)
+isIndividualFrozen(ReadView const& view, AccountID const& account, Issue const& issue)
 {
     return isIndividualFrozen(view, account, issue.currency, issue.account);
 }
 
 [[nodiscard]] bool
-isIndividualFrozen(
-    ReadView const& view,
-    AccountID const& account,
-    MPTIssue const& mptIssue);
+isIndividualFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue);
 
 [[nodiscard]] inline bool
-isIndividualFrozen(
-    ReadView const& view,
-    AccountID const& account,
-    Asset const& asset)
+isIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
 {
     return std::visit(
-        [&](auto const& issue) {
-            return isIndividualFrozen(view, account, issue);
-        },
-        asset.value());
+        [&](auto const& issue) { return isIndividualFrozen(view, account, issue); }, asset.value());
 }
 
 [[nodiscard]] bool
@@ -121,21 +111,13 @@ isFrozen(
     AccountID const& issuer);
 
 [[nodiscard]] inline bool
-isFrozen(
-    ReadView const& view,
-    AccountID const& account,
-    Issue const& issue,
-    int = 0 /*ignored*/)
+isFrozen(ReadView const& view, AccountID const& account, Issue const& issue, int = 0 /*ignored*/)
 {
     return isFrozen(view, account, issue.currency, issue.account);
 }
 
 [[nodiscard]] bool
-isFrozen(
-    ReadView const& view,
-    AccountID const& account,
-    MPTIssue const& mptIssue,
-    int depth = 0);
+isFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue, int depth = 0);
 
 /**
  *   isFrozen check is recursive for MPT shares in a vault, descending to
@@ -143,17 +125,10 @@ isFrozen(
  *   purely defensive, as we currently do not allow such vaults to be created.
  */
 [[nodiscard]] inline bool
-isFrozen(
-    ReadView const& view,
-    AccountID const& account,
-    Asset const& asset,
-    int depth = 0)
+isFrozen(ReadView const& view, AccountID const& account, Asset const& asset, int depth = 0)
 {
     return std::visit(
-        [&](auto const& issue) {
-            return isFrozen(view, account, issue, depth);
-        },
-        asset.value());
+        [&](auto const& issue) { return isFrozen(view, account, issue, depth); }, asset.value());
 }
 
 [[nodiscard]] inline TER
@@ -163,10 +138,7 @@ checkFrozen(ReadView const& view, AccountID const& account, Issue const& issue)
 }
 
 [[nodiscard]] inline TER
-checkFrozen(
-    ReadView const& view,
-    AccountID const& account,
-    MPTIssue const& mptIssue)
+checkFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue)
 {
     return isFrozen(view, account, mptIssue) ? (TER)tecLOCKED : (TER)tesSUCCESS;
 }
@@ -175,8 +147,7 @@ checkFrozen(
 checkFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
 {
     return std::visit(
-        [&](auto const& issue) { return checkFrozen(view, account, issue); },
-        asset.value());
+        [&](auto const& issue) { return checkFrozen(view, account, issue); }, asset.value());
 }
 
 [[nodiscard]] bool
@@ -252,50 +223,30 @@ isDeepFrozen(
  *   purely defensive, as we currently do not allow such vaults to be created.
  */
 [[nodiscard]] inline bool
-isDeepFrozen(
-    ReadView const& view,
-    AccountID const& account,
-    Asset const& asset,
-    int depth = 0)
+isDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset, int depth = 0)
 {
     return std::visit(
-        [&](auto const& issue) {
-            return isDeepFrozen(view, account, issue, depth);
-        },
+        [&](auto const& issue) { return isDeepFrozen(view, account, issue, depth); },
         asset.value());
 }
 
 [[nodiscard]] inline TER
-checkDeepFrozen(
-    ReadView const& view,
-    AccountID const& account,
-    Issue const& issue)
+checkDeepFrozen(ReadView const& view, AccountID const& account, Issue const& issue)
 {
-    return isDeepFrozen(view, account, issue) ? (TER)tecFROZEN
-                                              : (TER)tesSUCCESS;
+    return isDeepFrozen(view, account, issue) ? (TER)tecFROZEN : (TER)tesSUCCESS;
 }
 
 [[nodiscard]] inline TER
-checkDeepFrozen(
-    ReadView const& view,
-    AccountID const& account,
-    MPTIssue const& mptIssue)
+checkDeepFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue)
 {
-    return isDeepFrozen(view, account, mptIssue) ? (TER)tecLOCKED
-                                                 : (TER)tesSUCCESS;
+    return isDeepFrozen(view, account, mptIssue) ? (TER)tecLOCKED : (TER)tesSUCCESS;
 }
 
 [[nodiscard]] inline TER
-checkDeepFrozen(
-    ReadView const& view,
-    AccountID const& account,
-    Asset const& asset)
+checkDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
 {
     return std::visit(
-        [&](auto const& issue) {
-            return checkDeepFrozen(view, account, issue);
-        },
-        asset.value());
+        [&](auto const& issue) { return checkDeepFrozen(view, account, issue); }, asset.value());
 }
 
 [[nodiscard]] bool
@@ -305,86 +256,57 @@ isLPTokenFrozen(
     Issue const& asset,
     Issue const& asset2);
 
-// Returns the amount an account can spend without going into debt.
+// Returns the amount an account can spend.
 //
-// <-- saAmount: amount of currency held by account. May be negative.
-[[nodiscard]] STAmount
-accountHolds(
-    ReadView const& view,
-    AccountID const& account,
-    Currency const& currency,
-    AccountID const& issuer,
-    FreezeHandling zeroIfFrozen,
-    beast::Journal j);
-
-[[nodiscard]] STAmount
-accountHolds(
-    ReadView const& view,
-    AccountID const& account,
-    Issue const& issue,
-    FreezeHandling zeroIfFrozen,
-    beast::Journal j);
-
-[[nodiscard]] STAmount
-accountHolds(
-    ReadView const& view,
-    AccountID const& account,
-    MPTIssue const& mptIssue,
-    FreezeHandling zeroIfFrozen,
-    AuthHandling zeroIfUnauthorized,
-    beast::Journal j);
-
-[[nodiscard]] STAmount
-accountHolds(
-    ReadView const& view,
-    AccountID const& account,
-    Asset const& asset,
-    FreezeHandling zeroIfFrozen,
-    AuthHandling zeroIfUnauthorized,
-    beast::Journal j);
-
-// Returns the amount an account can spend total.
+// If shSIMPLE_BALANCE is specified, this is the amount the account can spend
+// without going into debt.
 //
-// These functions use accountHolds, but unlike accountHolds:
-// * The account can go into debt.
-// * If the account is the asset issuer the only limit is defined by the asset /
+// If shFULL_BALANCE is specified, this is the amount the account can spend
+// total. Specifically:
+// * The account can go into debt if using a trust line, and the other side has
+// a non-zero limit.
+// * If the account is the asset issuer the limit is defined by the asset /
 //   issuance.
 //
 // <-- saAmount: amount of currency held by account. May be negative.
 [[nodiscard]] STAmount
-accountSpendable(
+accountHolds(
     ReadView const& view,
     AccountID const& account,
     Currency const& currency,
     AccountID const& issuer,
     FreezeHandling zeroIfFrozen,
-    beast::Journal j);
+    beast::Journal j,
+    SpendableHandling includeFullBalance = shSIMPLE_BALANCE);
 
 [[nodiscard]] STAmount
-accountSpendable(
+accountHolds(
     ReadView const& view,
     AccountID const& account,
     Issue const& issue,
     FreezeHandling zeroIfFrozen,
-    beast::Journal j);
+    beast::Journal j,
+    SpendableHandling includeFullBalance = shSIMPLE_BALANCE);
 
 [[nodiscard]] STAmount
-accountSpendable(
+accountHolds(
     ReadView const& view,
     AccountID const& account,
     MPTIssue const& mptIssue,
     FreezeHandling zeroIfFrozen,
     AuthHandling zeroIfUnauthorized,
-    beast::Journal j);
+    beast::Journal j,
+    SpendableHandling includeFullBalance = shSIMPLE_BALANCE);
 
 [[nodiscard]] STAmount
-accountSpendable(
+accountHolds(
     ReadView const& view,
     AccountID const& account,
     Asset const& asset,
     FreezeHandling zeroIfFrozen,
     AuthHandling zeroIfUnauthorized,
-    beast::Journal j);
+    beast::Journal j,
+    SpendableHandling includeFullBalance = shSIMPLE_BALANCE);
 
 // Returns the amount an account can spend of the currency type saDefault, or
 // returns saDefault if this account is the issuer of the currency in
@@ -406,11 +328,7 @@ accountFunds(
 //
 // @param ownerCountAdj positive to add to count, negative to reduce count.
 [[nodiscard]] XRPAmount
-xrpLiquid(
-    ReadView const& view,
-    AccountID const& id,
-    std::int32_t ownerCountAdj,
-    beast::Journal j);
+xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj, beast::Journal j);
 
 /** Iterate all items in the given directory. */
 void
@@ -650,12 +568,9 @@ pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey);
  * field. The amendment check is **not** performed in createPseudoAccount.
  */
 [[nodiscard]] Expected<std::shared_ptr<SLE>, TER>
-createPseudoAccount(
-    ApplyView& view,
-    uint256 const& pseudoOwnerKey,
-    SField const& ownerField);
+createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const& ownerField);
 
-// Returns true iff sleAcct is a pseudo-account or specific
+// Returns true if and only if sleAcct is a pseudo-account or specific
 // pseudo-accounts in pseudoFieldFilter.
 //
 // Returns false if sleAcct is
@@ -684,8 +599,7 @@ isPseudoAccount(
     AccountID const& accountId,
     std::set<SField const*> const& pseudoFieldFilter = {})
 {
-    return isPseudoAccount(
-        view.read(keylet::account(accountId)), pseudoFieldFilter);
+    return isPseudoAccount(view.read(keylet::account(accountId)), pseudoFieldFilter);
 }
 
 [[nodiscard]] TER
@@ -710,13 +624,16 @@ checkDestinationAndTag(SLE::const_ref toSle, bool hasDestinationTag);
  *    - If withdrawing to self, succeed.
  *    - If not, checks if the receiver requires deposit authorization, and if
  *      the sender has it.
+ *    - Checks that the receiver will not exceed the limit (IOU trustline limit
+ *      or MPT MaximumAmount).
  */
 [[nodiscard]] TER
 canWithdraw(
-    AccountID const& from,
     ReadView const& view,
+    AccountID const& from,
     AccountID const& to,
     SLE::const_ref toSle,
+    STAmount const& amount,
     bool hasDestinationTag);
 
 /** Checks that can withdraw funds from an object to itself or a destination.
@@ -730,12 +647,15 @@ canWithdraw(
  *    - If withdrawing to self, succeed.
  *    - If not, checks if the receiver requires deposit authorization, and if
  *      the sender has it.
+ *    - Checks that the receiver will not exceed the limit (IOU trustline limit
+ *      or MPT MaximumAmount).
  */
 [[nodiscard]] TER
 canWithdraw(
-    AccountID const& from,
     ReadView const& view,
+    AccountID const& from,
     AccountID const& to,
+    STAmount const& amount,
     bool hasDestinationTag);
 
 /** Checks that can withdraw funds from an object to itself or a destination.
@@ -749,6 +669,8 @@ canWithdraw(
  *    - If withdrawing to self, succeed.
  *    - If not, checks if the receiver requires deposit authorization, and if
  *      the sender has it.
+ *    - Checks that the receiver will not exceed the limit (IOU trustline limit
+ *      or MPT MaximumAmount).
  */
 [[nodiscard]] TER
 canWithdraw(ReadView const& view, STTx const& tx);
@@ -792,8 +714,7 @@ addEmptyHolding(
 {
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-            return addEmptyHolding(
-                view, accountID, priorBalance, issue, journal);
+            return addEmptyHolding(view, accountID, priorBalance, issue, journal);
         },
         asset.value());
 }
@@ -1095,11 +1016,7 @@ canTransfer(
     AccountID const& to);
 
 [[nodiscard]] TER
-canTransfer(
-    ReadView const& view,
-    Issue const& issue,
-    AccountID const& from,
-    AccountID const& to);
+canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, AccountID const& to);
 
 [[nodiscard]] TER inline canTransfer(
     ReadView const& view,
@@ -1118,10 +1035,8 @@ canTransfer(
  * (if should not be skipped) and if the entry should be skipped. The status
  * is always tesSUCCESS if the entry should be skipped.
  */
-using EntryDeleter = std::function<std::pair<TER, SkipEntry>(
-    LedgerEntryType,
-    uint256 const&,
-    std::shared_ptr<SLE>&)>;
+using EntryDeleter = std::function<
+    std::pair<TER, SkipEntry>(LedgerEntryType, uint256 const&, std::shared_ptr<SLE>&)>;
 /** Cleanup owner directory entries on account delete.
  * Used for a regular and AMM accounts deletion. The caller
  * has to provide the deleter function, which handles details of
@@ -1198,5 +1113,3 @@ bool
 after(NetClock::time_point now, std::uint32_t mark);
 
 }  // namespace xrpl
-
-#endif

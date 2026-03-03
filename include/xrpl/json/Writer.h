@@ -1,5 +1,4 @@
-#ifndef XRPL_JSON_WRITER_H_INCLUDED
-#define XRPL_JSON_WRITER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/ToString.h>
 #include <xrpl/basics/contract.h>
@@ -238,5 +237,3 @@ check(bool condition, std::string const& message)
 }
 
 }  // namespace Json
-
-#endif

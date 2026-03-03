@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_RESOLVERASIO_H_INCLUDED
-#define XRPL_BASICS_RESOLVERASIO_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Resolver.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -18,5 +17,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

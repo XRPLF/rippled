@@ -1,5 +1,4 @@
-#ifndef BEAST_UTILITY_TEMP_DIR_H_INCLUDED
-#define BEAST_UTILITY_TEMP_DIR_H_INCLUDED
+#pragma once
 
 #include <boost/filesystem.hpp>
 
@@ -62,5 +61,3 @@ public:
 };
 
 }  // namespace beast
-
-#endif

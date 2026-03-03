@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_INNER_OBJECT_FORMATS_H_INCLUDED
-#define XRPL_PROTOCOL_INNER_OBJECT_FORMATS_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/KnownFormats.h>
 
@@ -24,5 +23,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

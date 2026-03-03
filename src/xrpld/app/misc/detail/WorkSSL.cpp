@@ -24,8 +24,7 @@ WorkSSL::WorkSSL(
 {
     auto ec = context_.preConnectVerify(stream_, host_);
     if (ec)
-        Throw<std::runtime_error>(
-            boost::str(boost::format("preConnectVerify: %s") % ec.message()));
+        Throw<std::runtime_error>(boost::str(boost::format("preConnectVerify: %s") % ec.message()));
 }
 
 void
@@ -38,11 +37,7 @@ WorkSSL::onConnect(error_code const& ec)
     stream_.async_handshake(
         boost::asio::ssl::stream_base::client,
         boost::asio::bind_executor(
-            strand_,
-            std::bind(
-                &WorkSSL::onHandshake,
-                shared_from_this(),
-                std::placeholders::_1)));
+            strand_, std::bind(&WorkSSL::onHandshake, shared_from_this(), std::placeholders::_1)));
 }
 
 void

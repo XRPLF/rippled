@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_HANDLERS_HANDLERS_H_INCLUDED
-#define XRPL_RPC_HANDLERS_HANDLERS_H_INCLUDED
+#pragma once
 
 #include <xrpld/rpc/handlers/LedgerHandler.h>
 
@@ -150,5 +149,3 @@ doValidatorInfo(RPC::JsonContext&);
 Json::Value
 doVaultInfo(RPC::JsonContext&);
 }  // namespace xrpl
-
-#endif

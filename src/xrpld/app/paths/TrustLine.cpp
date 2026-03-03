@@ -6,9 +6,7 @@
 
 namespace xrpl {
 
-TrustLineBase::TrustLineBase(
-    std::shared_ptr<SLE const> const& sle,
-    AccountID const& viewAccount)
+TrustLineBase::TrustLineBase(std::shared_ptr<SLE const> const& sle, AccountID const& viewAccount)
     : key_(sle->key())
     , mLowLimit(sle->getFieldAmount(sfLowLimit))
     , mHighLimit(sle->getFieldAmount(sfHighLimit))
@@ -30,9 +28,7 @@ TrustLineBase::getJson(int)
 }
 
 std::optional<PathFindTrustLine>
-PathFindTrustLine::makeItem(
-    AccountID const& accountID,
-    std::shared_ptr<SLE const> const& sle)
+PathFindTrustLine::makeItem(AccountID const& accountID, std::shared_ptr<SLE const> const& sle)
 {
     if (!sle || sle->getType() != ltRIPPLE_STATE)
         return {};
@@ -51,11 +47,9 @@ getTrustLineItems(
     forEachItem(
         view,
         accountID,
-        [&items, &accountID, &direction](
-            std::shared_ptr<SLE const> const& sleCur) {
+        [&items, &accountID, &direction](std::shared_ptr<SLE const> const& sleCur) {
             auto ret = T::makeItem(accountID, sleCur);
-            if (ret &&
-                (direction == LineDirection::outgoing || !ret->getNoRipple()))
+            if (ret && (direction == LineDirection::outgoing || !ret->getNoRipple()))
                 items.push_back(std::move(*ret));
         });
     // This list may be around for a while, so free up any unneeded
@@ -72,13 +66,10 @@ PathFindTrustLine::getItems(
     ReadView const& view,
     LineDirection direction)
 {
-    return detail::getTrustLineItems<PathFindTrustLine>(
-        accountID, view, direction);
+    return detail::getTrustLineItems<PathFindTrustLine>(accountID, view, direction);
 }
 
-RPCTrustLine::RPCTrustLine(
-    std::shared_ptr<SLE const> const& sle,
-    AccountID const& viewAccount)
+RPCTrustLine::RPCTrustLine(std::shared_ptr<SLE const> const& sle, AccountID const& viewAccount)
     : TrustLineBase(sle, viewAccount)
     , lowQualityIn_(sle->getFieldU32(sfLowQualityIn))
     , lowQualityOut_(sle->getFieldU32(sfLowQualityOut))
@@ -88,9 +79,7 @@ RPCTrustLine::RPCTrustLine(
 }
 
 std::optional<RPCTrustLine>
-RPCTrustLine::makeItem(
-    AccountID const& accountID,
-    std::shared_ptr<SLE const> const& sle)
+RPCTrustLine::makeItem(AccountID const& accountID, std::shared_ptr<SLE const> const& sle)
 {
     if (!sle || sle->getType() != ltRIPPLE_STATE)
         return {};

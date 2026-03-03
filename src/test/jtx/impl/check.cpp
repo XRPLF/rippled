@@ -23,10 +23,7 @@ cash(jtx::Account const& dest, uint256 const& checkId, STAmount const& amount)
 
 // Cash a check requiring that at least a minimum amount be delivered.
 Json::Value
-cash(
-    jtx::Account const& dest,
-    uint256 const& checkId,
-    DeliverMin const& atLeast)
+cash(jtx::Account const& dest, uint256 const& checkId, DeliverMin const& atLeast)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = dest.human();

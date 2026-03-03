@@ -42,8 +42,7 @@ public:
         , m_seqProxy(txn->getSeqProxy())
     {
         if (txn->isFieldPresent(sfLastLedgerSequence))
-            m_expire =
-                std::min(m_expire, txn->getFieldU32(sfLastLedgerSequence) + 1);
+            m_expire = std::min(m_expire, txn->getFieldU32(sfLastLedgerSequence) + 1);
     }
 
     uint256 const&
@@ -93,8 +92,7 @@ public:
 
     // Add a new transaction to the set of local transactions
     void
-    push_back(LedgerIndex index, std::shared_ptr<STTx const> const& txn)
-        override
+    push_back(LedgerIndex index, std::shared_ptr<STTx const> const& txn) override
     {
         std::lock_guard lock(m_lock);
 
@@ -137,8 +135,7 @@ public:
             if (!sleAcct)
                 return false;
 
-            SeqProxy const acctSeq =
-                SeqProxy::sequence(sleAcct->getFieldU32(sfSequence));
+            SeqProxy const acctSeq = SeqProxy::sequence(sleAcct->getFieldU32(sfSequence));
             SeqProxy const seqProx = txn.getSeqProxy();
 
             if (seqProx.isSeq())

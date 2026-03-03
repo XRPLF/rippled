@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_SHAMAP_H_INCLUDED
-#define XRPL_SHAMAP_SHAMAP_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/UnorderedContainers.h>
@@ -95,15 +94,13 @@ private:
 public:
     /** Number of children each non-leaf node has (the 'radix tree' part of the
      * map) */
-    static inline constexpr unsigned int branchFactor =
-        SHAMapInnerNode::branchFactor;
+    static inline constexpr unsigned int branchFactor = SHAMapInnerNode::branchFactor;
 
     /** The depth of the hash map: data is only present in the leaves */
     static inline constexpr unsigned int leafDepth = 64;
 
-    using DeltaItem = std::pair<
-        boost::intrusive_ptr<SHAMapItem const>,
-        boost::intrusive_ptr<SHAMapItem const>>;
+    using DeltaItem =
+        std::pair<boost::intrusive_ptr<SHAMapItem const>, boost::intrusive_ptr<SHAMapItem const>>;
     using Delta = std::map<uint256, DeltaItem>;
 
     SHAMap() = delete;
@@ -183,14 +180,10 @@ public:
 
     // save a copy if you have a temporary anyway
     bool
-    updateGiveItem(
-        SHAMapNodeType type,
-        boost::intrusive_ptr<SHAMapItem const> item);
+    updateGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> item);
 
     bool
-    addGiveItem(
-        SHAMapNodeType type,
-        boost::intrusive_ptr<SHAMapItem const> item);
+    addGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> item);
 
     // Save a copy if you need to extend the life
     // of the SHAMapItem beyond this SHAMap
@@ -233,18 +226,14 @@ public:
          If function returns false, visitDifferences exits.
     */
     void
-    visitDifferences(
-        SHAMap const* have,
-        std::function<bool(SHAMapTreeNode const&)> const&) const;
+    visitDifferences(SHAMap const* have, std::function<bool(SHAMapTreeNode const&)> const&) const;
 
     /**  Visit every leaf node in this SHAMap
 
          @param function called with every non inner node visited.
     */
     void
-    visitLeaves(
-        std::function<
-            void(boost::intrusive_ptr<SHAMapItem const> const&)> const&) const;
+    visitLeaves(std::function<void(boost::intrusive_ptr<SHAMapItem const> const&)> const&) const;
 
     // comparison/sync functions
 
@@ -285,25 +274,16 @@ public:
      * @return true if verified successfully
      */
     static bool
-    verifyProofPath(
-        uint256 const& rootHash,
-        uint256 const& key,
-        std::vector<Blob> const& path);
+    verifyProofPath(uint256 const& rootHash, uint256 const& key, std::vector<Blob> const& path);
 
     /** Serializes the root in a format appropriate for sending over the wire */
     void
     serializeRoot(Serializer& s) const;
 
     SHAMapAddNode
-    addRootNode(
-        SHAMapHash const& hash,
-        Slice const& rootNode,
-        SHAMapSyncFilter* filter);
+    addRootNode(SHAMapHash const& hash, Slice const& rootNode, SHAMapSyncFilter* filter);
     SHAMapAddNode
-    addKnownNode(
-        SHAMapNodeID const& nodeID,
-        Slice const& rawNode,
-        SHAMapSyncFilter* filter);
+    addKnownNode(SHAMapNodeID const& nodeID, Slice const& rawNode, SHAMapSyncFilter* filter);
 
     // status functions
     void
@@ -333,9 +313,7 @@ public:
     void
     walkMap(std::vector<SHAMapMissingNode>& missingNodes, int maxMissing) const;
     bool
-    walkMapParallel(
-        std::vector<SHAMapMissingNode>& missingNodes,
-        int maxMissing) const;
+    walkMapParallel(std::vector<SHAMapMissingNode>& missingNodes, int maxMissing) const;
     bool
     deepCompare(SHAMap& other) const;  // Intended for debug/test only
 
@@ -348,19 +326,17 @@ public:
     invariants() const;
 
 private:
-    using SharedPtrNodeStack = std::stack<
-        std::pair<intr_ptr::SharedPtr<SHAMapTreeNode>, SHAMapNodeID>>;
-    using DeltaRef = std::pair<
-        boost::intrusive_ptr<SHAMapItem const>,
-        boost::intrusive_ptr<SHAMapItem const>>;
+    using SharedPtrNodeStack =
+        std::stack<std::pair<intr_ptr::SharedPtr<SHAMapTreeNode>, SHAMapNodeID>>;
+    using DeltaRef =
+        std::pair<boost::intrusive_ptr<SHAMapItem const>, boost::intrusive_ptr<SHAMapItem const>>;
 
     // tree node cache operations
     intr_ptr::SharedPtr<SHAMapTreeNode>
     cacheLookup(SHAMapHash const& hash) const;
 
     void
-    canonicalize(SHAMapHash const& hash, intr_ptr::SharedPtr<SHAMapTreeNode>&)
-        const;
+    canonicalize(SHAMapHash const& hash, intr_ptr::SharedPtr<SHAMapTreeNode>&) const;
 
     // database operations
     intr_ptr::SharedPtr<SHAMapTreeNode>
@@ -385,8 +361,7 @@ private:
         if the return is nullptr, and if not, if the node->peekItem()->key() ==
        id */
     SHAMapLeafNode*
-    walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack = nullptr)
-        const;
+    walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack = nullptr) const;
     /** Return nullptr if key not found */
     SHAMapLeafNode*
     findKey(uint256 const& id) const;
@@ -407,10 +382,8 @@ private:
 
     // returns the first item at or below this node
     SHAMapLeafNode*
-    firstBelow(
-        intr_ptr::SharedPtr<SHAMapTreeNode>,
-        SharedPtrNodeStack& stack,
-        int branch = 0) const;
+    firstBelow(intr_ptr::SharedPtr<SHAMapTreeNode>, SharedPtrNodeStack& stack, int branch = 0)
+        const;
 
     // returns the last item at or below this node
     SHAMapLeafNode*
@@ -425,10 +398,8 @@ private:
         intr_ptr::SharedPtr<SHAMapTreeNode> node,
         SharedPtrNodeStack& stack,
         int branch,
-        std::tuple<
-            int,
-            std::function<bool(int)>,
-            std::function<void(int&)>> const& loopParams) const;
+        std::tuple<int, std::function<bool(int)>, std::function<void(int&)>> const& loopParams)
+        const;
 
     // Simple descent
     // Get a child of the specified node
@@ -443,8 +414,8 @@ private:
 
     // Descend with filter
     // If pending, callback is called as if it called fetchNodeNT
-    using descendCallback = std::function<
-        void(intr_ptr::SharedPtr<SHAMapTreeNode>, SHAMapHash const&)>;
+    using descendCallback =
+        std::function<void(intr_ptr::SharedPtr<SHAMapTreeNode>, SHAMapHash const&)>;
     SHAMapTreeNode*
     descendAsync(
         SHAMapInnerNode* parent,
@@ -538,16 +509,8 @@ private:
         // reads
         std::map<SHAMapInnerNode*, SHAMapNodeID> resumes_;
 
-        MissingNodes(
-            int max,
-            SHAMapSyncFilter* filter,
-            int maxDefer,
-            std::uint32_t generation)
-            : max_(max)
-            , filter_(filter)
-            , maxDefer_(maxDefer)
-            , generation_(generation)
-            , deferred_(0)
+        MissingNodes(int max, SHAMapSyncFilter* filter, int maxDefer, std::uint32_t generation)
+            : max_(max), filter_(filter), maxDefer_(maxDefer), generation_(generation), deferred_(0)
         {
             missingNodes_.reserve(max);
             finishedReads_.reserve(maxDefer);
@@ -562,9 +525,7 @@ private:
 
     // fetch from DB helper function
     intr_ptr::SharedPtr<SHAMapTreeNode>
-    finishFetch(
-        SHAMapHash const& hash,
-        std::shared_ptr<NodeObject> const& object) const;
+    finishFetch(SHAMapHash const& hash, std::shared_ptr<NodeObject> const& object) const;
 };
 
 inline void
@@ -582,9 +543,7 @@ SHAMap::setLedgerSeq(std::uint32_t lseq)
 inline void
 SHAMap::setImmutable()
 {
-    XRPL_ASSERT(
-        state_ != SHAMapState::Invalid,
-        "xrpl::SHAMap::setImmutable : state is valid");
+    XRPL_ASSERT(state_ != SHAMapState::Invalid, "xrpl::SHAMap::setImmutable : state is valid");
     state_ = SHAMapState::Immutable;
 }
 
@@ -665,15 +624,13 @@ private:
 
 inline SHAMap::const_iterator::const_iterator(SHAMap const* map) : map_(map)
 {
-    XRPL_ASSERT(
-        map_, "xrpl::SHAMap::const_iterator::const_iterator : non-null input");
+    XRPL_ASSERT(map_, "xrpl::SHAMap::const_iterator::const_iterator : non-null input");
 
     if (auto temp = map_->peekFirstItem(stack_))
         item_ = temp->peekItem().get();
 }
 
-inline SHAMap::const_iterator::const_iterator(SHAMap const* map, std::nullptr_t)
-    : map_(map)
+inline SHAMap::const_iterator::const_iterator(SHAMap const* map, std::nullptr_t) : map_(map)
 {
 }
 
@@ -744,5 +701,3 @@ SHAMap::end() const
 }
 
 }  // namespace xrpl
-
-#endif

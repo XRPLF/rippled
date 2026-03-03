@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_PERMISSION_H_INCLUDED
-#define XRPL_PROTOCOL_PERMISSION_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/TER.h>
@@ -29,7 +28,7 @@ enum GranularPermissionType : std::uint32_t {
 #pragma pop_macro("PERMISSION")
 };
 
-enum Delegation { delegatable, notDelegatable };
+enum Delegation { delegable, notDelegable };
 
 class Permission
 {
@@ -38,10 +37,9 @@ private:
 
     std::unordered_map<std::uint16_t, uint256> txFeatureMap_;
 
-    std::unordered_map<std::uint16_t, Delegation> delegatableTx_;
+    std::unordered_map<std::uint16_t, Delegation> delegableTx_;
 
-    std::unordered_map<std::string, GranularPermissionType>
-        granularPermissionMap_;
+    std::unordered_map<std::string, GranularPermissionType> granularPermissionMap_;
 
     std::unordered_map<GranularPermissionType, std::string> granularNameMap_;
 
@@ -71,8 +69,7 @@ public:
     getTxFeature(TxType txType) const;
 
     bool
-    isDelegatable(std::uint32_t const& permissionValue, Rules const& rules)
-        const;
+    isDelegable(std::uint32_t const& permissionValue, Rules const& rules) const;
 
     // for tx level permission, permission value is equal to tx type plus one
     uint32_t
@@ -84,5 +81,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

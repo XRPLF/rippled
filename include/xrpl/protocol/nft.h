@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_NFT_H_INCLUDED
-#define XRPL_PROTOCOL_NFT_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/tagged_integer.h>
@@ -105,5 +104,3 @@ getIssuer(uint256 const& id)
 
 }  // namespace nft
 }  // namespace xrpl
-
-#endif

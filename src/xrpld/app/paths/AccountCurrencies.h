@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_PATHS_ACCOUNTCURRENCIES_H_INCLUDED
-#define XRPL_APP_PATHS_ACCOUNTCURRENCIES_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/paths/RippleLineCache.h>
 
@@ -20,5 +19,3 @@ accountSourceCurrencies(
     bool includeXRP);
 
 }  // namespace xrpl
-
-#endif

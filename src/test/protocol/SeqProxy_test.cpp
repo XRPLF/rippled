@@ -21,24 +21,24 @@ struct SeqProxy_test : public beast::unit_test::suite
     static constexpr bool
     expectLt(SeqProxy lhs, SeqProxy rhs)
     {
-        return (lhs < rhs) && (lhs <= rhs) && (!(lhs == rhs)) && (lhs != rhs) &&
-            (!(lhs >= rhs)) && (!(lhs > rhs));
+        return (lhs < rhs) && (lhs <= rhs) && (!(lhs == rhs)) && (lhs != rhs) && (!(lhs >= rhs)) &&
+            (!(lhs > rhs));
     }
 
     // Exercise all SeqProxy comparison operators expecting lhs == rhs.
     static constexpr bool
     expectEq(SeqProxy lhs, SeqProxy rhs)
     {
-        return (!(lhs < rhs)) && (lhs <= rhs) && (lhs == rhs) &&
-            (!(lhs != rhs)) && (lhs >= rhs) && (!(lhs > rhs));
+        return (!(lhs < rhs)) && (lhs <= rhs) && (lhs == rhs) && (!(lhs != rhs)) && (lhs >= rhs) &&
+            (!(lhs > rhs));
     }
 
     // Exercise all SeqProxy comparison operators expecting lhs > rhs.
     static constexpr bool
     expectGt(SeqProxy lhs, SeqProxy rhs)
     {
-        return (!(lhs < rhs)) && (!(lhs <= rhs)) && (!(lhs == rhs)) &&
-            (lhs != rhs) && (lhs >= rhs) && (lhs > rhs);
+        return (!(lhs < rhs)) && (!(lhs <= rhs)) && (!(lhs == rhs)) && (lhs != rhs) &&
+            (lhs >= rhs) && (lhs > rhs);
     }
 
     // Verify streaming.
@@ -62,8 +62,7 @@ struct SeqProxy_test : public beast::unit_test::suite
         // While SeqProxy supports values of zero, they are not
         // expected in the wild.  Nevertheless they are tested here.
         // But so are values of 1, which are expected to occur in the wild.
-        static constexpr std::uint32_t uintMax{
-            std::numeric_limits<std::uint32_t>::max()};
+        static constexpr std::uint32_t uintMax{std::numeric_limits<std::uint32_t>::max()};
         static constexpr SeqProxy::Type seq{SeqProxy::seq};
         static constexpr SeqProxy::Type ticket{SeqProxy::ticket};
 

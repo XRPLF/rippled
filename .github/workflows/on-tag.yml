@@ -1,0 +1,25 @@
+# This workflow uploads the libxrpl recipe to the Conan remote when a versioned
+# tag is pushed.
+name: Tag
+
+on:
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  upload-recipe:
+    # Only run when a tag is pushed to the XRPLF repository.
+    if: ${{ github.repository_owner == 'XRPLF' }}
+    uses: ./.github/workflows/reusable-upload-recipe.yml
+    secrets:
+      remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
+      remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}

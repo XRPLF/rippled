@@ -120,8 +120,7 @@ public:
 
         {
             parsedURL pUrl;
-            BEAST_EXPECT(
-                parseUrl(pUrl, "scheme://user:pass@domain:123/abc:321"));
+            BEAST_EXPECT(parseUrl(pUrl, "scheme://user:pass@domain:123/abc:321"));
             BEAST_EXPECT(pUrl.scheme == "scheme");
             BEAST_EXPECT(pUrl.username == "user");
             BEAST_EXPECT(pUrl.password == "pass");
@@ -220,8 +219,7 @@ public:
 
         {
             parsedURL pUrl;
-            BEAST_EXPECT(
-                parseUrl(pUrl, "scheme://user:pass@domain/path/with/an@sign"));
+            BEAST_EXPECT(parseUrl(pUrl, "scheme://user:pass@domain/path/with/an@sign"));
             BEAST_EXPECT(pUrl.scheme == "scheme");
             BEAST_EXPECT(pUrl.username == "user");
             BEAST_EXPECT(pUrl.password == "pass");
@@ -270,8 +268,7 @@ public:
             BEAST_EXPECT(!parseUrl(pUrl, "nonsense"));
             BEAST_EXPECT(!parseUrl(pUrl, "://"));
             BEAST_EXPECT(!parseUrl(pUrl, ":///"));
-            BEAST_EXPECT(
-                !parseUrl(pUrl, "scheme://user:pass@domain:65536/abc:321"));
+            BEAST_EXPECT(!parseUrl(pUrl, "scheme://user:pass@domain:65536/abc:321"));
             BEAST_EXPECT(!parseUrl(pUrl, "UPPER://domain:23498765/"));
             BEAST_EXPECT(!parseUrl(pUrl, "UPPER://domain:0/"));
             BEAST_EXPECT(!parseUrl(pUrl, "UPPER://domain:+7/"));

@@ -2,10 +2,8 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/InfoSub.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/Handler.h>
@@ -18,6 +16,8 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/server/InfoSub.h>
+#include <xrpl/server/NetworkOPs.h>
 
 #include <atomic>
 #include <chrono>
@@ -121,14 +121,11 @@ fillHandler(JsonContext& context, Handler const*& result)
         }
     }
 
-    if (!context.params.isMember(jss::command) &&
-        !context.params.isMember(jss::method))
+    if (!context.params.isMember(jss::command) && !context.params.isMember(jss::method))
         return rpcCOMMAND_MISSING;
-    if (context.params.isMember(jss::command) &&
-        context.params.isMember(jss::method))
+    if (context.params.isMember(jss::command) && context.params.isMember(jss::method))
     {
-        if (context.params[jss::command].asString() !=
-            context.params[jss::method].asString())
+        if (context.params[jss::command].asString() != context.params[jss::method].asString())
             return rpcUNKNOWN_COMMAND;
     }
 
@@ -138,8 +135,7 @@ fillHandler(JsonContext& context, Handler const*& result)
 
     JLOG(context.j.trace()) << "COMMAND:" << strCommand;
     JLOG(context.j.trace()) << "REQUEST:" << context.params;
-    auto handler = getHandler(
-        context.apiVersion, context.app.config().BETA_RPC_API, strCommand);
+    auto handler = getHandler(context.apiVersion, context.app.config().BETA_RPC_API, strCommand);
 
     if (!handler)
         return rpcUNKNOWN_COMMAND;
@@ -159,11 +155,7 @@ fillHandler(JsonContext& context, Handler const*& result)
 
 template <class Object, class Method>
 Status
-callMethod(
-    JsonContext& context,
-    Method method,
-    std::string const& name,
-    Object& result)
+callMethod(JsonContext& context, Method method, std::string const& name, Object& result)
 {
     static std::atomic<std::uint64_t> requestId{0};
     auto& perfLog = context.app.getPerfLog();
@@ -171,16 +163,14 @@ callMethod(
     try
     {
         perfLog.rpcStart(name, curId);
-        auto v =
-            context.app.getJobQueue().makeLoadEvent(jtGENERIC, "cmd:" + name);
+        auto v = context.app.getJobQueue().makeLoadEvent(jtGENERIC, "cmd:" + name);
 
         auto start = std::chrono::system_clock::now();
         auto ret = method(context, result);
         auto end = std::chrono::system_clock::now();
 
-        JLOG(context.j.debug())
-            << "RPC call " << name << " completed in "
-            << ((end - start).count() / 1000000000.0) << "seconds";
+        JLOG(context.j.debug()) << "RPC call " << name << " completed in "
+                                << ((end - start).count() / 1000000000.0) << "seconds";
         perfLog.rpcFinish(name, curId);
         return ret;
     }
@@ -211,19 +201,16 @@ doCommand(RPC::JsonContext& context, Json::Value& result)
 
     if (auto method = handler->valueMethod_)
     {
-        if (!context.headers.user.empty() ||
-            !context.headers.forwardedFor.empty())
+        if (!context.headers.user.empty() || !context.headers.forwardedFor.empty())
         {
             JLOG(context.j.debug())
-                << "start command: " << handler->name_
-                << ", user: " << context.headers.user
+                << "start command: " << handler->name_ << ", user: " << context.headers.user
                 << ", forwarded for: " << context.headers.forwardedFor;
 
             auto ret = callMethod(context, method, handler->name_, result);
 
             JLOG(context.j.debug())
-                << "finish command: " << handler->name_
-                << ", user: " << context.headers.user
+                << "finish command: " << handler->name_ << ", user: " << context.headers.user
                 << ", forwarded for: " << context.headers.forwardedFor;
 
             return ret;

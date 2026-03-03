@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_SHAMAP_HASH_H_INCLUDED
-#define XRPL_BASICS_SHAMAP_HASH_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/partitioned_unordered_map.h>
@@ -98,5 +97,3 @@ extract(SHAMapHash const& key)
 }
 
 }  // namespace xrpl
-
-#endif  // XRPL_BASICS_SHAMAP_HASH_H_INCLUDED

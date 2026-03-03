@@ -1,5 +1,4 @@
-#ifndef PROTOCOL_GET_OR_THROW_H_
-#define PROTOCOL_GET_OR_THROW_H_
+#pragma once
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -154,5 +153,3 @@ getOptional(Json::Value const& v, xrpl::SField const& field)
 }
 
 }  // namespace Json
-
-#endif  // PROTOCOL_GET_OR_THROW_H_

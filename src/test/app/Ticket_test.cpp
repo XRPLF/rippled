@@ -19,19 +19,15 @@ class Ticket_test : public beast::unit_test::suite
 
         Json::Value const& tx{env.tx()->getJson(JsonOptions::none)};
         {
-            std::string const txType =
-                tx[sfTransactionType.jsonName].asString();
+            std::string const txType = tx[sfTransactionType.jsonName].asString();
 
             if (!BEAST_EXPECTS(
-                    txType == jss::TicketCreate,
-                    "Unexpected TransactionType: "s + txType))
+                    txType == jss::TicketCreate, "Unexpected TransactionType: "s + txType))
                 return;
         }
 
         std::uint32_t const count = {tx[sfTicketCount.jsonName].asUInt()};
-        if (!BEAST_EXPECTS(
-                count >= 1,
-                "Unexpected ticket count: "s + std::to_string(count)))
+        if (!BEAST_EXPECTS(count >= 1, "Unexpected ticket count: "s + std::to_string(count)))
             return;
 
         std::uint32_t const txSeq = {tx[sfSequence.jsonName].asUInt()};
@@ -40,8 +36,7 @@ class Ticket_test : public beast::unit_test::suite
         Json::Value const& metadata = env.meta()->getJson(JsonOptions::none);
         if (!BEAST_EXPECTS(
                 metadata.isMember(sfTransactionResult.jsonName) &&
-                    metadata[sfTransactionResult.jsonName].asString() ==
-                        "tesSUCCESS",
+                    metadata[sfTransactionResult.jsonName].asString() == "tesSUCCESS",
                 "Not metadata for successful TicketCreate."))
             return;
 
@@ -57,20 +52,16 @@ class Ticket_test : public beast::unit_test::suite
             if (node.isMember(sfModifiedNode.jsonName))
             {
                 Json::Value const& modified = node[sfModifiedNode.jsonName];
-                std::string const entryType =
-                    modified[sfLedgerEntryType.jsonName].asString();
+                std::string const entryType = modified[sfLedgerEntryType.jsonName].asString();
                 if (entryType == jss::AccountRoot)
                 {
-                    auto const& previousFields =
-                        modified[sfPreviousFields.jsonName];
+                    auto const& previousFields = modified[sfPreviousFields.jsonName];
                     auto const& finalFields = modified[sfFinalFields.jsonName];
                     {
                         // Verify the account root Sequence did the right thing.
-                        std::uint32_t const prevSeq =
-                            previousFields[sfSequence.jsonName].asUInt();
+                        std::uint32_t const prevSeq = previousFields[sfSequence.jsonName].asUInt();
 
-                        acctRootFinalSeq =
-                            finalFields[sfSequence.jsonName].asUInt();
+                        acctRootFinalSeq = finalFields[sfSequence.jsonName].asUInt();
 
                         if (txSeq == 0)
                         {
@@ -81,13 +72,11 @@ class Ticket_test : public beast::unit_test::suite
                         {
                             // Transaction used a (plain) Sequence.
                             BEAST_EXPECT(prevSeq == txSeq);
-                            BEAST_EXPECT(
-                                acctRootFinalSeq == prevSeq + count + 1);
+                            BEAST_EXPECT(acctRootFinalSeq == prevSeq + count + 1);
                         }
                     }
 
-                    std::uint32_t const consumedTickets = {
-                        txSeq == 0u ? 1u : 0u};
+                    std::uint32_t const consumedTickets = {txSeq == 0u ? 1u : 0u};
 
                     // If...
                     //  1. The TicketCount is 1 and
@@ -96,16 +85,14 @@ class Ticket_test : public beast::unit_test::suite
                     //     previous TicketCount is not reported.
                     // But, since the count did not change, we know it equals
                     // the final Ticket count.
-                    bool const unreportedPrevTicketCount = {
-                        count == 1 && txSeq == 0};
+                    bool const unreportedPrevTicketCount = {count == 1 && txSeq == 0};
 
                     // Verify the OwnerCount did the right thing
                     if (unreportedPrevTicketCount)
                     {
                         // The number of Tickets should not have changed, so
                         // the previous OwnerCount should not be reported.
-                        BEAST_EXPECT(
-                            !previousFields.isMember(sfOwnerCount.jsonName));
+                        BEAST_EXPECT(!previousFields.isMember(sfOwnerCount.jsonName));
                     }
                     else
                     {
@@ -116,8 +103,7 @@ class Ticket_test : public beast::unit_test::suite
                         std::uint32_t const finalCount = {
                             finalFields[sfOwnerCount.jsonName].asUInt()};
 
-                        BEAST_EXPECT(
-                            prevCount + count - consumedTickets == finalCount);
+                        BEAST_EXPECT(prevCount + count - consumedTickets == finalCount);
                     }
 
                     // Verify TicketCount metadata.
@@ -127,8 +113,7 @@ class Ticket_test : public beast::unit_test::suite
                     {
                         // The number of Tickets should not have changed, so
                         // the previous TicketCount should not be reported.
-                        BEAST_EXPECT(
-                            !previousFields.isMember(sfTicketCount.jsonName));
+                        BEAST_EXPECT(!previousFields.isMember(sfTicketCount.jsonName));
                     }
                     else
                     {
@@ -136,13 +121,11 @@ class Ticket_test : public beast::unit_test::suite
                         // should have been greater than zero.
                         std::uint32_t const startCount = {
                             previousFields.isMember(sfTicketCount.jsonName)
-                                ? previousFields[sfTicketCount.jsonName]
-                                      .asUInt()
+                                ? previousFields[sfTicketCount.jsonName].asUInt()
                                 : 0u};
 
                         BEAST_EXPECT(
-                            (startCount == 0u) ^
-                            previousFields.isMember(sfTicketCount.jsonName));
+                            (startCount == 0u) ^ previousFields.isMember(sfTicketCount.jsonName));
 
                         BEAST_EXPECT(
                             startCount + count - consumedTickets ==
@@ -155,25 +138,19 @@ class Ticket_test : public beast::unit_test::suite
                 }
                 else
                 {
-                    fail(
-                        "Unexpected modified node: "s + entryType,
-                        __FILE__,
-                        __LINE__);
+                    fail("Unexpected modified node: "s + entryType, __FILE__, __LINE__);
                 }
             }
             else if (node.isMember(sfCreatedNode.jsonName))
             {
                 Json::Value const& created = node[sfCreatedNode.jsonName];
-                std::string const entryType =
-                    created[sfLedgerEntryType.jsonName].asString();
+                std::string const entryType = created[sfLedgerEntryType.jsonName].asString();
                 if (entryType == jss::Ticket)
                 {
                     auto const& newFields = created[sfNewFields.jsonName];
 
-                    BEAST_EXPECT(
-                        newFields[sfAccount.jsonName].asString() == account);
-                    ticketSeqs.push_back(
-                        newFields[sfTicketSequence.jsonName].asUInt());
+                    BEAST_EXPECT(newFields[sfAccount.jsonName].asString() == account);
+                    ticketSeqs.push_back(newFields[sfTicketSequence.jsonName].asUInt());
                 }
                 else if (entryType == jss::DirectoryNode)
                 {
@@ -181,17 +158,13 @@ class Ticket_test : public beast::unit_test::suite
                 }
                 else
                 {
-                    fail(
-                        "Unexpected created node: "s + entryType,
-                        __FILE__,
-                        __LINE__);
+                    fail("Unexpected created node: "s + entryType, __FILE__, __LINE__);
                 }
             }
             else if (node.isMember(sfDeletedNode.jsonName))
             {
                 Json::Value const& deleted = node[sfDeletedNode.jsonName];
-                std::string const entryType =
-                    deleted[sfLedgerEntryType.jsonName].asString();
+                std::string const entryType = deleted[sfLedgerEntryType.jsonName].asString();
 
                 if (entryType == jss::Ticket)
                 {
@@ -200,8 +173,7 @@ class Ticket_test : public beast::unit_test::suite
 
                     // Verify the account of the deleted ticket.
                     auto const& finalFields = deleted[sfFinalFields.jsonName];
-                    BEAST_EXPECT(
-                        finalFields[sfAccount.jsonName].asString() == account);
+                    BEAST_EXPECT(finalFields[sfAccount.jsonName].asString() == account);
 
                     // Verify the deleted ticket has the right TicketSequence.
                     BEAST_EXPECT(
@@ -211,10 +183,7 @@ class Ticket_test : public beast::unit_test::suite
             }
             else
             {
-                fail(
-                    "Unexpected node type in TicketCreate metadata.",
-                    __FILE__,
-                    __LINE__);
+                fail("Unexpected node type in TicketCreate metadata.", __FILE__, __LINE__);
             }
         }
         BEAST_EXPECT(directoryChanged);
@@ -222,9 +191,7 @@ class Ticket_test : public beast::unit_test::suite
         // Verify that all the expected Tickets were created.
         BEAST_EXPECT(ticketSeqs.size() == count);
         std::sort(ticketSeqs.begin(), ticketSeqs.end());
-        BEAST_EXPECT(
-            std::adjacent_find(ticketSeqs.begin(), ticketSeqs.end()) ==
-            ticketSeqs.end());
+        BEAST_EXPECT(std::adjacent_find(ticketSeqs.begin(), ticketSeqs.end()) == ticketSeqs.end());
         BEAST_EXPECT(*ticketSeqs.rbegin() == acctRootFinalSeq - 1);
     }
 
@@ -276,8 +243,7 @@ class Ticket_test : public beast::unit_test::suite
             return;
 
         {
-            std::string const transactionResult{
-                metadata[sfTransactionResult.jsonName].asString()};
+            std::string const transactionResult{metadata[sfTransactionResult.jsonName].asString()};
             if (!BEAST_EXPECTS(
                     transactionResult == "tesSUCCESS" ||
                         transactionResult.compare(0, 3, "tec") == 0,
@@ -296,16 +262,13 @@ class Ticket_test : public beast::unit_test::suite
             if (node.isMember(sfModifiedNode.jsonName))
             {
                 Json::Value const& modified{node[sfModifiedNode.jsonName]};
-                std::string const entryType =
-                    modified[sfLedgerEntryType.jsonName].asString();
+                std::string const entryType = modified[sfLedgerEntryType.jsonName].asString();
                 if (entryType == "AccountRoot" &&
-                    modified[sfFinalFields.jsonName][sfAccount.jsonName]
-                            .asString() == account)
+                    modified[sfFinalFields.jsonName][sfAccount.jsonName].asString() == account)
                 {
                     acctRootFound = true;
 
-                    auto const& previousFields =
-                        modified[sfPreviousFields.jsonName];
+                    auto const& previousFields = modified[sfPreviousFields.jsonName];
                     auto const& finalFields = modified[sfFinalFields.jsonName];
 
                     acctRootSeq = finalFields[sfSequence.jsonName].asUInt();
@@ -323,33 +286,28 @@ class Ticket_test : public beast::unit_test::suite
 
                     BEAST_EXPECT(prevTicketCount > 0);
                     if (prevTicketCount == 1)
-                        BEAST_EXPECT(
-                            !finalFields.isMember(sfTicketCount.jsonName));
+                        BEAST_EXPECT(!finalFields.isMember(sfTicketCount.jsonName));
                     else
                         BEAST_EXPECT(
                             finalFields.isMember(sfTicketCount.jsonName) &&
-                            finalFields[sfTicketCount.jsonName].asUInt() ==
-                                prevTicketCount - 1);
+                            finalFields[sfTicketCount.jsonName].asUInt() == prevTicketCount - 1);
                 }
             }
             else if (node.isMember(sfDeletedNode.jsonName))
             {
                 Json::Value const& deleted{node[sfDeletedNode.jsonName]};
-                std::string const entryType{
-                    deleted[sfLedgerEntryType.jsonName].asString()};
+                std::string const entryType{deleted[sfLedgerEntryType.jsonName].asString()};
 
                 if (entryType == jss::Ticket)
                 {
                     // Verify the account of the deleted ticket.
                     BEAST_EXPECT(
-                        deleted[sfFinalFields.jsonName][sfAccount.jsonName]
-                            .asString() == account);
+                        deleted[sfFinalFields.jsonName][sfAccount.jsonName].asString() == account);
 
                     // Verify the deleted ticket has the right TicketSequence.
                     BEAST_EXPECT(
-                        deleted[sfFinalFields.jsonName]
-                               [sfTicketSequence.jsonName]
-                                   .asUInt() == ticketSeq);
+                        deleted[sfFinalFields.jsonName][sfTicketSequence.jsonName].asUInt() ==
+                        ticketSeq);
 
                     ++ticketsRemoved;
                 }
@@ -419,9 +377,7 @@ class Ticket_test : public beast::unit_test::suite
             Account alice{"alice"};
             env.memoize(alice);
 
-            env(ticket::create(alice, 1),
-                json(jss::Sequence, 1),
-                ter(terNO_ACCOUNT));
+            env(ticket::create(alice, 1), json(jss::Sequence, 1), ter(terNO_ACCOUNT));
         }
         {
             // Exceed the threshold where tickets can no longer be
@@ -445,9 +401,7 @@ class Ticket_test : public beast::unit_test::suite
             env.require(owners(alice, 250), tickets(alice, 250));
 
             // Adding one more ticket will exceed the threshold.
-            env(ticket::create(alice, 2),
-                ticket::use(ticketSeq + 1),
-                ter(tecDIR_FULL));
+            env(ticket::create(alice, 2), ticket::use(ticketSeq + 1), ter(tecDIR_FULL));
             env.close();
             env.require(owners(alice, 249), tickets(alice, 249));
 
@@ -479,9 +433,7 @@ class Ticket_test : public beast::unit_test::suite
 
             // Adding 250 tickets (while consuming one) will exceed the
             // threshold.
-            env(ticket::create(alice, 250),
-                ticket::use(ticketSeq_AB + 0),
-                ter(tecDIR_FULL));
+            env(ticket::create(alice, 250), ticket::use(ticketSeq_AB + 0), ter(tecDIR_FULL));
             env.close();
             env.require(owners(alice, 1), tickets(alice, 1));
 
@@ -517,10 +469,7 @@ class Ticket_test : public beast::unit_test::suite
         env.require(owners(alice, 0), tickets(alice, 0));
 
         // Give alice enough to exactly meet the reserve for one Ticket.
-        env(
-            pay(env.master,
-                alice,
-                env.current()->fees().accountReserve(1) - env.balance(alice)));
+        env(pay(env.master, alice, env.current()->fees().accountReserve(1) - env.balance(alice)));
         env.close();
 
         env(ticket::create(alice, 1));
@@ -533,8 +482,7 @@ class Ticket_test : public beast::unit_test::suite
         env(
             pay(env.master,
                 alice,
-                env.current()->fees().accountReserve(250) - drops(1) -
-                    env.balance(alice)));
+                env.current()->fees().accountReserve(250) - drops(1) - env.balance(alice)));
         env.close();
 
         // alice doesn't quite have the reserve for a total of 250
@@ -545,10 +493,7 @@ class Ticket_test : public beast::unit_test::suite
 
         // Give alice enough so she can make the reserve for all 250
         // Tickets.
-        env(pay(
-            env.master,
-            alice,
-            env.current()->fees().accountReserve(250) - env.balance(alice)));
+        env(pay(env.master, alice, env.current()->fees().accountReserve(250) - env.balance(alice)));
         env.close();
 
         std::uint32_t const ticketSeq{env.seq(alice) + 1};
@@ -733,8 +678,7 @@ class Ticket_test : public beast::unit_test::suite
                                  TxType txType) {
             error_code_i txErrCode{rpcSUCCESS};
 
-            using TxPair = std::
-                pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
+            using TxPair = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
             std::variant<TxPair, TxSearched> maybeTx =
                 Transaction::load(txID, env.app(), txErrCode);
 
@@ -810,11 +754,9 @@ class Ticket_test : public beast::unit_test::suite
             Json::Value jr = env.rpc("json", "sign", to_string(tx));
 
             // Verify that "sign" inserted a "Sequence": 0 field.
-            if (BEAST_EXPECT(jr[jss::result][jss::tx_json].isMember(
-                    sfSequence.jsonName)))
+            if (BEAST_EXPECT(jr[jss::result][jss::tx_json].isMember(sfSequence.jsonName)))
             {
-                BEAST_EXPECT(
-                    jr[jss::result][jss::tx_json][sfSequence.jsonName] == 0);
+                BEAST_EXPECT(jr[jss::result][jss::tx_json][sfSequence.jsonName] == 0);
             }
 
             // "sign" should not have consumed any of alice's tickets.
@@ -845,11 +787,9 @@ class Ticket_test : public beast::unit_test::suite
             Json::Value jr = env.rpc("json", "submit", to_string(tx));
 
             // Verify that "submit" inserted a "Sequence": 0 field.
-            if (BEAST_EXPECT(jr[jss::result][jss::tx_json].isMember(
-                    sfSequence.jsonName)))
+            if (BEAST_EXPECT(jr[jss::result][jss::tx_json].isMember(sfSequence.jsonName)))
             {
-                BEAST_EXPECT(
-                    jr[jss::result][jss::tx_json][sfSequence.jsonName] == 0);
+                BEAST_EXPECT(jr[jss::result][jss::tx_json][sfSequence.jsonName] == 0);
             }
 
             // "submit" should have consumed the last of alice's tickets.
@@ -882,10 +822,7 @@ class Ticket_test : public beast::unit_test::suite
 
         // Create a transaction that includes both a ticket and a non-zero
         // sequence number.  The transaction fails with temSEQ_AND_TICKET.
-        env(noop(alice),
-            ticket::use(ticketSeq),
-            seq(env.seq(alice)),
-            ter(temSEQ_AND_TICKET));
+        env(noop(alice), ticket::use(ticketSeq), seq(env.seq(alice)), ter(temSEQ_AND_TICKET));
         env.close();
 
         // Verify that the transaction failed by looking at alice's

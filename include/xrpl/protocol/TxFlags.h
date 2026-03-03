@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_TXFLAGS_H_INCLUDED
-#define XRPL_PROTOCOL_TXFLAGS_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/LedgerFormats.h>
 
@@ -277,7 +276,7 @@ constexpr std::uint32_t const tfLoanOverpayment = 0x00010000;
 // interest and fees, or it will fail. False: Not a full payment.
 constexpr std::uint32_t const tfLoanFullPayment = 0x00020000;
 // tfLoanLatePayment: True, indicates that the payment is late,
-// and includes late iterest and fees. If the loan is not late,
+// and includes late interest and fees. If the loan is not late,
 // it will fail. False: not a late payment. If the current payment
 // is overdue, the transaction will fail.
 constexpr std::uint32_t const tfLoanLatePayment = 0x00040000;
@@ -295,5 +294,3 @@ constexpr std::uint32_t const tfLoanManageMask = ~(tfUniversal | tfLoanDefault |
 // clang-format on
 
 }  // namespace xrpl
-
-#endif

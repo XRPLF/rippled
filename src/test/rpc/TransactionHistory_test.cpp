@@ -21,8 +21,7 @@ class TransactionHistory_test : public beast::unit_test::suite
 
         {
             // no params
-            auto const result =
-                env.client().invoke("tx_history", {})[jss::result];
+            auto const result = env.client().invoke("tx_history", {})[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(result[jss::status] == "error");
         }
@@ -31,8 +30,7 @@ class TransactionHistory_test : public beast::unit_test::suite
             // test at 1 greater than the allowed non-admin limit
             Json::Value params{Json::objectValue};
             params[jss::start] = 10001;  // limited to <= 10000 for non admin
-            auto const result =
-                env.client().invoke("tx_history", params)[jss::result];
+            auto const result = env.client().invoke("tx_history", params)[jss::result];
             BEAST_EXPECT(result[jss::error] == "noPermission");
             BEAST_EXPECT(result[jss::status] == "error");
         }
@@ -47,8 +45,7 @@ class TransactionHistory_test : public beast::unit_test::suite
 
         Json::Value params{Json::objectValue};
         params[jss::api_version] = 2;
-        auto const result =
-            env.client().invoke("tx_history", params)[jss::result];
+        auto const result = env.client().invoke("tx_history", params)[jss::result];
         BEAST_EXPECT(result[jss::error] == "unknownCmd");
         BEAST_EXPECT(result[jss::status] == "error");
     }
@@ -83,10 +80,8 @@ class TransactionHistory_test : public beast::unit_test::suite
             // is available in tx_history.
             Json::Value params{Json::objectValue};
             params[jss::start] = 0;
-            auto result =
-                env.client().invoke("tx_history", params)[jss::result];
-            if (!BEAST_EXPECT(
-                    result[jss::txs].isArray() && result[jss::txs].size() > 0))
+            auto result = env.client().invoke("tx_history", params)[jss::result];
+            if (!BEAST_EXPECT(result[jss::txs].isArray() && result[jss::txs].size() > 0))
                 return;
 
             // search for a tx in history matching the last offer
@@ -112,10 +107,8 @@ class TransactionHistory_test : public beast::unit_test::suite
         {
             Json::Value params{Json::objectValue};
             params[jss::start] = start;
-            auto result =
-                env.client().invoke("tx_history", params)[jss::result];
-            if (!BEAST_EXPECT(
-                    result[jss::txs].isArray() && result[jss::txs].size() > 0))
+            auto result = env.client().invoke("tx_history", params)[jss::result];
+            if (!BEAST_EXPECT(result[jss::txs].isArray() && result[jss::txs].size() > 0))
                 break;
             total += result[jss::txs].size();
             start += 20;
@@ -134,8 +127,7 @@ class TransactionHistory_test : public beast::unit_test::suite
         {
             Json::Value params{Json::objectValue};
             params[jss::start] = 10000;  // limited to <= 10000 for non admin
-            auto const result =
-                env.client().invoke("tx_history", params)[jss::result];
+            auto const result = env.client().invoke("tx_history", params)[jss::result];
             BEAST_EXPECT(result[jss::status] == "success");
             BEAST_EXPECT(result[jss::index] == 10000);
         }

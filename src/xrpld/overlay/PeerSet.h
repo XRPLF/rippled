@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_PEERS_PEERSET_H_INCLUDED
-#define XRPL_APP_PEERS_PEERSET_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/Peer.h>
@@ -74,5 +73,3 @@ std::unique_ptr<PeerSet>
 make_DummyPeerSet(Application& app);
 
 }  // namespace xrpl
-
-#endif

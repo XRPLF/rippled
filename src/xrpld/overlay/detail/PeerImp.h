@@ -1,9 +1,7 @@
-#ifndef XRPL_OVERLAY_PEERIMP_H_INCLUDED
-#define XRPL_OVERLAY_PEERIMP_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/ledger/detail/LedgerReplayMsgHandler.h>
-#include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/overlay/Squelch.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
@@ -12,6 +10,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/WrappedSink.h>
+#include <xrpl/core/HashRouter.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STValidation.h>
@@ -93,9 +92,7 @@ class SHAMap;
  * timer management, and shutdown procedures to ensure no resource leaks
  * or hanging connections in high-throughput networking scenarios.
  */
-class PeerImp : public Peer,
-                public std::enable_shared_from_this<PeerImp>,
-                public OverlayImpl::Child
+class PeerImp : public Peer, public std::enable_shared_from_this<PeerImp>, public OverlayImpl::Child
 {
 public:
     /** Whether the peer's view of the ledger converges or diverges from ours */
@@ -109,8 +106,7 @@ private:
     using stream_type = boost::beast::ssl_stream<middle_type>;
     using address_type = boost::asio::ip::address;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
-    using waitable_timer =
-        boost::asio::basic_waitable_timer<std::chrono::steady_clock>;
+    using waitable_timer = boost::asio::basic_waitable_timer<std::chrono::steady_clock>;
     using Compressed = compression::Compressed;
 
     Application& app_;
@@ -200,9 +196,7 @@ private:
         void
         update(Resource::Charge f, std::string const& add)
         {
-            XRPL_ASSERT(
-                f >= fee,
-                "xrpl::PeerImp::ChargeWithContext::update : fee increases");
+            XRPL_ASSERT(f >= fee, "xrpl::PeerImp::ChargeWithContext::update : fee increases");
             fee = f;
             if (!context.empty())
             {
@@ -323,7 +317,7 @@ public:
     virtual ~PeerImp();
 
     beast::Journal const&
-    pjournal() const
+    pJournal() const
     {
         return p_journal_;
     }
@@ -444,8 +438,7 @@ public:
     }
 
     void
-    setPublisherListSequence(PublicKey const& pubKey, std::size_t const seq)
-        override
+    setPublisherListSequence(PublicKey const& pubKey, std::size_t const seq) override
     {
         std::lock_guard<std::mutex> sl(recentLock_);
 
@@ -669,8 +662,7 @@ private:
        @param m protocol message with transactions' hashes
      */
     void
-    handleHaveTransactions(
-        std::shared_ptr<protocol::TMHaveTransactions> const& m);
+    handleHaveTransactions(std::shared_ptr<protocol::TMHaveTransactions> const& m);
 
     std::string const&
     fingerprint() const override
@@ -703,9 +695,7 @@ public:
         bool isCompressed);
 
     void
-    onMessageEnd(
-        std::uint16_t type,
-        std::shared_ptr<::google::protobuf::Message> const& m);
+    onMessageEnd(std::uint16_t type, std::shared_ptr<::google::protobuf::Message> const& m);
 
     void
     onMessage(std::shared_ptr<protocol::TMManifests> const& m);
@@ -755,9 +745,7 @@ private:
     // lockedRecentLock is passed as a reminder to callers that recentLock_
     // must be locked.
     void
-    addLedger(
-        uint256 const& hash,
-        std::lock_guard<std::mutex> const& lockedRecentLock);
+    addLedger(uint256 const& hash, std::lock_guard<std::mutex> const& lockedRecentLock);
 
     void
     doFetchPack(std::shared_ptr<protocol::TMGetObjectByHash> const& packet);
@@ -796,9 +784,7 @@ private:
         std::shared_ptr<protocol::TMValidation> const& packet);
 
     void
-    sendLedgerBase(
-        std::shared_ptr<Ledger const> const& ledger,
-        protocol::TMLedgerData& ledgerData);
+    sendLedgerBase(std::shared_ptr<Ledger const> const& ledger, protocol::TMLedgerData& ledgerData);
 
     std::shared_ptr<Ledger const>
     getLedger(std::shared_ptr<protocol::TMGetLedger> const& m);
@@ -827,8 +813,7 @@ PeerImp::PeerImp(
     : Child(overlay)
     , app_(app)
     , id_(id)
-    , fingerprint_(
-          getFingerprint(slot->remote_endpoint(), publicKey, to_string(id_)))
+    , fingerprint_(getFingerprint(slot->remote_endpoint(), publicKey, to_string(id_)))
     , prefix_(makePrefix(fingerprint_))
     , sink_(app_.journal("Peer"), prefix_)
     , p_sink_(app_.journal("Protocol"), prefix_)
@@ -855,34 +840,25 @@ PeerImp::PeerImp(
     , response_(std::move(response))
     , headers_(response_)
     , compressionEnabled_(
-          peerFeatureEnabled(
-              headers_,
-              FEATURE_COMPR,
-              "lz4",
-              app_.config().COMPRESSION)
+          peerFeatureEnabled(headers_, FEATURE_COMPR, "lz4", app_.config().COMPRESSION)
               ? Compressed::On
               : Compressed::Off)
-    , txReduceRelayEnabled_(peerFeatureEnabled(
-          headers_,
-          FEATURE_TXRR,
-          app_.config().TX_REDUCE_RELAY_ENABLE))
-    , ledgerReplayEnabled_(peerFeatureEnabled(
-          headers_,
-          FEATURE_LEDGER_REPLAY,
-          app_.config().LEDGER_REPLAY))
+    , txReduceRelayEnabled_(
+          peerFeatureEnabled(headers_, FEATURE_TXRR, app_.config().TX_REDUCE_RELAY_ENABLE))
+    , ledgerReplayEnabled_(
+          peerFeatureEnabled(headers_, FEATURE_LEDGER_REPLAY, app_.config().LEDGER_REPLAY))
     , ledgerReplayMsgHandler_(app, app.getLedgerReplayer())
 {
-    read_buffer_.commit(boost::asio::buffer_copy(
-        read_buffer_.prepare(boost::asio::buffer_size(buffers)), buffers));
-    JLOG(journal_.info())
-        << "compression enabled " << (compressionEnabled_ == Compressed::On)
-        << " vp reduce-relay base squelch enabled "
-        << peerFeatureEnabled(
-               headers_,
-               FEATURE_VPRR,
-               app_.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
-        << " tx reduce-relay enabled " << txReduceRelayEnabled_ << " on "
-        << remote_address_ << " " << id_;
+    read_buffer_.commit(
+        boost::asio::buffer_copy(read_buffer_.prepare(boost::asio::buffer_size(buffers)), buffers));
+    JLOG(journal_.info()) << "compression enabled " << (compressionEnabled_ == Compressed::On)
+                          << " vp reduce-relay base squelch enabled "
+                          << peerFeatureEnabled(
+                                 headers_,
+                                 FEATURE_VPRR,
+                                 app_.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
+                          << " tx reduce-relay enabled " << txReduceRelayEnabled_ << " on "
+                          << remote_address_ << " " << id_;
 }
 
 template <class FwdIt, class>
@@ -904,5 +880,3 @@ PeerImp::sendEndpoints(FwdIt first, FwdIt last)
 }
 
 }  // namespace xrpl
-
-#endif

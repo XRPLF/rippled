@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STCURRENCY_H_INCLUDED
-#define XRPL_PROTOCOL_STCURRENCY_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/SField.h>
@@ -115,5 +114,3 @@ operator<(STCurrency const& lhs, Currency const& rhs)
 }
 
 }  // namespace xrpl
-
-#endif

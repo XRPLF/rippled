@@ -1,5 +1,4 @@
-#ifndef XRPL_CORE_WORKERS_H_INCLUDED
-#define XRPL_CORE_WORKERS_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/core/LockFreeStack.h>
 #include <xrpl/core/detail/semaphore.h>
@@ -95,8 +94,7 @@ public:
         Callback& callback,
         perf::PerfLog* perfLog,
         std::string const& threadNames = "Worker",
-        int numberOfThreads =
-            static_cast<int>(std::thread::hardware_concurrency()));
+        int numberOfThreads = static_cast<int>(std::thread::hardware_concurrency()));
 
     ~Workers();
 
@@ -166,10 +164,7 @@ private:
                    public beast::LockFreeStack<Worker, PausedTag>::Node
     {
     public:
-        Worker(
-            Workers& workers,
-            std::string const& threadName,
-            int const instance);
+        Worker(Workers& workers, std::string const& threadName, int const instance);
 
         ~Worker();
 
@@ -203,17 +198,13 @@ private:
     std::condition_variable m_cv;  // signaled when all threads paused
     std::mutex m_mut;
     bool m_allPaused;
-    semaphore m_semaphore;           // each pending task is 1 resource
-    int m_numberOfThreads;           // how many we want active now
-    std::atomic<int> m_activeCount;  // to know when all are paused
-    std::atomic<int> m_pauseCount;   // how many threads need to pause now
-    std::atomic<int>
-        m_runningTaskCount;  // how many calls to processTask() active
-    beast::LockFreeStack<Worker> m_everyone;  // holds all created workers
-    beast::LockFreeStack<Worker, PausedTag>
-        m_paused;  // holds just paused workers
+    semaphore m_semaphore;                             // each pending task is 1 resource
+    int m_numberOfThreads;                             // how many we want active now
+    std::atomic<int> m_activeCount;                    // to know when all are paused
+    std::atomic<int> m_pauseCount;                     // how many threads need to pause now
+    std::atomic<int> m_runningTaskCount;               // how many calls to processTask() active
+    beast::LockFreeStack<Worker> m_everyone;           // holds all created workers
+    beast::LockFreeStack<Worker, PausedTag> m_paused;  // holds just paused workers
 };
 
 }  // namespace xrpl
-
-#endif

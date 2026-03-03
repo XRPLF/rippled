@@ -18,9 +18,7 @@ struct Expected_test : beast::unit_test::suite
     {
         // Test non-error const construction.
         {
-            auto const expected = []() -> Expected<std::string, TER> {
-                return "Valid value";
-            }();
+            auto const expected = []() -> Expected<std::string, TER> { return "Valid value"; }();
             BEAST_EXPECT(expected);
             BEAST_EXPECT(expected.has_value());
             BEAST_EXPECT(expected.value() == "Valid value");
@@ -42,9 +40,7 @@ struct Expected_test : beast::unit_test::suite
         }
         // Test non-error non-const construction.
         {
-            auto expected = []() -> Expected<std::string, TER> {
-                return "Valid value";
-            }();
+            auto expected = []() -> Expected<std::string, TER> { return "Valid value"; }();
             BEAST_EXPECT(expected);
             BEAST_EXPECT(expected.has_value());
             BEAST_EXPECT(expected.value() == "Valid value");
@@ -68,9 +64,7 @@ struct Expected_test : beast::unit_test::suite
         }
         // Test non-error overlapping type construction.
         {
-            auto expected = []() -> Expected<std::uint32_t, std::uint16_t> {
-                return 1;
-            }();
+            auto expected = []() -> Expected<std::uint32_t, std::uint16_t> { return 1; }();
             BEAST_EXPECT(expected);
             BEAST_EXPECT(expected.has_value());
             BEAST_EXPECT(expected.value() == 1);
@@ -114,9 +108,7 @@ struct Expected_test : beast::unit_test::suite
         // Test error construction from lvalue.
         {
             auto const err(telLOCAL_ERROR);
-            auto expected = [&err]() -> Expected<std::string, TER> {
-                return Unexpected(err);
-            }();
+            auto expected = [&err]() -> Expected<std::string, TER> { return Unexpected(err); }();
             BEAST_EXPECT(!expected);
             BEAST_EXPECT(!expected.has_value());
             BEAST_EXPECT(expected.error() == telLOCAL_ERROR);
@@ -141,8 +133,7 @@ struct Expected_test : beast::unit_test::suite
             }();
             BEAST_EXPECT(!expected);
             BEAST_EXPECT(!expected.has_value());
-            BEAST_EXPECT(
-                expected.error() == std::string("Not what is expected!"));
+            BEAST_EXPECT(expected.error() == std::string("Not what is expected!"));
         }
         // Test error construction of string from const char*.
         {
@@ -157,9 +148,7 @@ struct Expected_test : beast::unit_test::suite
         }
         // Test non-error const construction of Expected<void, T>.
         {
-            auto const expected = []() -> Expected<void, std::string> {
-                return {};
-            }();
+            auto const expected = []() -> Expected<void, std::string> { return {}; }();
             BEAST_EXPECT(expected);
             bool throwOccurred = false;
             try
@@ -176,9 +165,7 @@ struct Expected_test : beast::unit_test::suite
         }
         // Test non-error non-const construction of Expected<void, T>.
         {
-            auto expected = []() -> Expected<void, std::string> {
-                return {};
-            }();
+            auto expected = []() -> Expected<void, std::string> { return {}; }();
             BEAST_EXPECT(expected);
             bool throwOccurred = false;
             try

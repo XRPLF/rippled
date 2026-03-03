@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_MESSAGE_H_INCLUDED
-#define XRPL_OVERLAY_MESSAGE_H_INCLUDED
+#pragma once
 
 #include <xrpld/overlay/Compression.h>
 
@@ -12,7 +11,7 @@
 
 namespace xrpl {
 
-constexpr std::size_t maximiumMessageSize = megabytes(64);
+constexpr std::size_t maximumMessageSize = megabytes(64);
 
 // VFALCO NOTE If we forward declare Message and write out shared_ptr
 //             instead of using the in-class type alias, we can remove the
@@ -118,5 +117,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

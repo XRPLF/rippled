@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_LOWESTLAYER_H_INCLUDED
-#define XRPL_SERVER_LOWESTLAYER_H_INCLUDED
+#pragma once
 
 #if BOOST_VERSION >= 107000
 #include <boost/beast/core/stream_traits.hpp>
@@ -9,7 +8,7 @@
 
 namespace xrpl {
 
-// Before boost 1.70, get_lowest_layer required an explicit templat parameter
+// Before boost 1.70, get_lowest_layer required an explicit template parameter
 template <class T>
 decltype(auto)
 get_lowest_layer(T& t) noexcept
@@ -22,5 +21,3 @@ get_lowest_layer(T& t) noexcept
 }
 
 }  // namespace xrpl
-
-#endif

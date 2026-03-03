@@ -160,8 +160,7 @@ public:
     void
     run() override
     {
-        auto const result =
-            bfind(100, 9000, [&](std::size_t n) { return oversize(n); });
+        auto const result = bfind(100, 9000, [&](std::size_t n) { return oversize(n); });
         log << "Min oversize offers = " << result << '\n';
     }
 };

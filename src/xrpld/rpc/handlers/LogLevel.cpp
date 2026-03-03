@@ -21,8 +21,7 @@ doLogLevel(RPC::JsonContext& context)
         Json::Value ret(Json::objectValue);
         Json::Value lev(Json::objectValue);
 
-        lev[jss::base] =
-            Logs::toString(Logs::fromSeverity(context.app.logs().threshold()));
+        lev[jss::base] = Logs::toString(Logs::fromSeverity(context.app.logs().threshold()));
         std::vector<std::pair<std::string, std::string>> logTable(
             context.app.logs().partition_severities());
         for (auto const& [k, v] : logTable)
@@ -32,8 +31,7 @@ doLogLevel(RPC::JsonContext& context)
         return ret;
     }
 
-    LogSeverity const sv(
-        Logs::fromString(context.params[jss::severity].asString()));
+    LogSeverity const sv(Logs::fromString(context.params[jss::severity].asString()));
 
     if (sv == lsINVALID)
         return rpcError(rpcINVALID_PARAMS);

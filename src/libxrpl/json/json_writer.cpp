@@ -79,11 +79,10 @@ valueToString(double value)
     // of precision requested below.
     char buffer[32];
     // Print into the buffer. We need not request the alternative representation
-    // that always has a decimal point because JSON doesn't distingish the
+    // that always has a decimal point because JSON doesn't distinguish the
     // concepts of reals and integers.
-#if defined(_MSC_VER) && \
-    defined(__STDC_SECURE_LIB__)  // Use secure version with visual studio 2005
-                                  // to avoid warning.
+#if defined(_MSC_VER) && defined(__STDC_SECURE_LIB__)  // Use secure version with visual studio 2005
+                                                       // to avoid warning.
     sprintf_s(buffer, sizeof(buffer), "%.16g", value);
 #else
     snprintf(buffer, sizeof(buffer), "%.16g", value);
@@ -101,14 +100,13 @@ std::string
 valueToQuotedString(char const* value)
 {
     // Not sure how to handle unicode...
-    if (strpbrk(value, "\"\\\b\f\n\r\t") == nullptr &&
-        !containsControlCharacter(value))
+    if (strpbrk(value, "\"\\\b\f\n\r\t") == nullptr && !containsControlCharacter(value))
         return std::string("\"") + value + "\"";
 
     // We have to walk value and escape any special characters.
     // Appending to std::string is not efficient, but this should be rare.
     // (Note: forward slashes are *not* rare, but I am not escaping them.)
-    unsigned maxsize = strlen(value) * 2 + 3;  // allescaped+quotes+NULL
+    unsigned maxsize = strlen(value) * 2 + 3;  // all-escaped+quotes+NULL
     std::string result;
     result.reserve(maxsize);  // to avoid lots of mallocs
     result += "\"";
@@ -156,8 +154,7 @@ valueToQuotedString(char const* value)
                 if (isControlCharacter(*c))
                 {
                     std::ostringstream oss;
-                    oss << "\\u" << std::hex << std::uppercase
-                        << std::setfill('0') << std::setw(4)
+                    oss << "\\u" << std::hex << std::uppercase << std::setfill('0') << std::setw(4)
                         << static_cast<int>(*c);
                     result += oss.str();
                 }
@@ -234,9 +231,7 @@ FastWriter::writeValue(Value const& value)
             Value::Members members(value.getMemberNames());
             document_ += "{";
 
-            for (Value::Members::iterator it = members.begin();
-                 it != members.end();
-                 ++it)
+            for (Value::Members::iterator it = members.begin(); it != members.end(); ++it)
             {
                 std::string const& name = *it;
 
@@ -347,7 +342,7 @@ StyledWriter::writeArrayValue(Value const& value)
         pushValue("[]");
     else
     {
-        bool isArrayMultiLine = isMultineArray(value);
+        bool isArrayMultiLine = isMultilineArray(value);
 
         if (isArrayMultiLine)
         {
@@ -398,7 +393,7 @@ StyledWriter::writeArrayValue(Value const& value)
 }
 
 bool
-StyledWriter::isMultineArray(Value const& value)
+StyledWriter::isMultilineArray(Value const& value)
 {
     int size = value.size();
     bool isMultiLine = size * 3 >= rightMargin_;
@@ -408,8 +403,7 @@ StyledWriter::isMultineArray(Value const& value)
     {
         Value const& childValue = value[index];
         isMultiLine = isMultiLine ||
-            ((childValue.isArray() || childValue.isObject()) &&
-             childValue.size() > 0);
+            ((childValue.isArray() || childValue.isObject()) && childValue.size() > 0);
     }
 
     if (!isMultiLine)  // check if line length > max line length
@@ -573,7 +567,7 @@ StyledStreamWriter::writeArrayValue(Value const& value)
         pushValue("[]");
     else
     {
-        bool isArrayMultiLine = isMultineArray(value);
+        bool isArrayMultiLine = isMultilineArray(value);
 
         if (isArrayMultiLine)
         {
@@ -624,7 +618,7 @@ StyledStreamWriter::writeArrayValue(Value const& value)
 }
 
 bool
-StyledStreamWriter::isMultineArray(Value const& value)
+StyledStreamWriter::isMultilineArray(Value const& value)
 {
     int size = value.size();
     bool isMultiLine = size * 3 >= rightMargin_;
@@ -634,8 +628,7 @@ StyledStreamWriter::isMultineArray(Value const& value)
     {
         Value const& childValue = value[index];
         isMultiLine = isMultiLine ||
-            ((childValue.isArray() || childValue.isObject()) &&
-             childValue.size() > 0);
+            ((childValue.isArray() || childValue.isObject()) && childValue.size() > 0);
     }
 
     if (!isMultiLine)  // check if line length > max line length

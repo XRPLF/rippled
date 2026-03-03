@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_SHAMAPADDNODE_H_INCLUDED
-#define XRPL_SHAMAP_SHAMAPADDNODE_H_INCLUDED
+#pragma once
 
 #include <string>
 
@@ -162,5 +161,3 @@ SHAMapAddNode::get() const
 }
 
 }  // namespace xrpl
-
-#endif

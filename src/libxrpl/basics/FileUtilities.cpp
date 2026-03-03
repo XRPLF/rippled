@@ -46,8 +46,7 @@ getFileContents(
     }
 
     std::string const result{
-        std::istreambuf_iterator<char>{fileStream},
-        std::istreambuf_iterator<char>{}};
+        std::istreambuf_iterator<char>{fileStream}, std::istreambuf_iterator<char>{}};
 
     if (fileStream.bad())
     {
@@ -67,8 +66,7 @@ writeFileContents(
     using namespace boost::filesystem;
     using namespace boost::system::errc;
 
-    std::ofstream fileStream(
-        destPath.string(), std::ios::out | std::ios::trunc);
+    std::ofstream fileStream(destPath.string(), std::ios::out | std::ios::trunc);
 
     if (!fileStream)
     {

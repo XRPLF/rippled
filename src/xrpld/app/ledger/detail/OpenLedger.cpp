@@ -1,13 +1,13 @@
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/misc/TxQ.h>
-#include <xrpld/app/tx/apply.h>
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Overlay.h>
 
+#include <xrpl/core/HashRouter.h>
 #include <xrpl/ledger/CachedView.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/tx/apply.h>
 
 #include <boost/range/adaptor/transformed.hpp>
 
@@ -82,11 +82,8 @@ OpenLedger::accept(
             *ledger,
             boost::adaptors::transform(
                 current_->txs,
-                [](std::pair<
-                    std::shared_ptr<STTx const>,
-                    std::shared_ptr<STObject const>> const& p) {
-                    return p.first;
-                }),
+                [](std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>> const&
+                       p) { return p.first; }),
             retries,
             flags,
             j_);
@@ -127,8 +124,7 @@ OpenLedger::accept(
             tx->add(s);
             msg.set_rawtransaction(s.data(), s.size());
             msg.set_status(protocol::tsNEW);
-            msg.set_receivetimestamp(
-                app.timeKeeper().now().time_since_epoch().count());
+            msg.set_receivetimestamp(app.timeKeeper().now().time_since_epoch().count());
             app.overlay().relay(txId, msg, *toSkip);
         }
     }
@@ -141,14 +137,10 @@ OpenLedger::accept(
 //------------------------------------------------------------------------------
 
 std::shared_ptr<OpenView>
-OpenLedger::create(
-    Rules const& rules,
-    std::shared_ptr<Ledger const> const& ledger)
+OpenLedger::create(Rules const& rules, std::shared_ptr<Ledger const> const& ledger)
 {
     return std::make_shared<OpenView>(
-        open_ledger,
-        rules,
-        std::make_shared<CachedLedger const>(ledger, cache_));
+        open_ledger, rules, std::make_shared<CachedLedger const>(ledger, cache_));
 }
 
 auto
@@ -166,8 +158,7 @@ OpenLedger::apply_one(
     auto const result = xrpl::apply(app, view, *tx, flags, j);
     if (result.applied || result.ter == terQUEUED)
         return Result::success;
-    if (isTefFailure(result.ter) || isTemMalformed(result.ter) ||
-        isTelLocal(result.ter))
+    if (isTefFailure(result.ter) || isTemMalformed(result.ter) || isTelLocal(result.ter))
         return Result::failure;
     return Result::retry;
 }

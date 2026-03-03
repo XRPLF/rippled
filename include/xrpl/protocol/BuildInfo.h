@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_BUILDINFO_H_INCLUDED
-#define XRPL_PROTOCOL_BUILDINFO_H_INCLUDED
+#pragma once
 
 #include <cstdint>
 #include <string>
@@ -80,5 +79,3 @@ isNewerVersion(std::uint64_t version);
 }  // namespace BuildInfo
 
 }  // namespace xrpl
-
-#endif

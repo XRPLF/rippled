@@ -2,13 +2,13 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/app/misc/Transaction.h>
-#include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Role.h>
 
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/resource/Fees.h>
 
 namespace xrpl {
@@ -41,8 +41,7 @@ doTxHistory(RPC::JsonContext& context)
     for (auto const& t : trans)
     {
         Json::Value tx_json = t->getJson(JsonOptions::none);
-        RPC::insertDeliverMax(
-            tx_json, t->getSTransaction()->getTxnType(), context.apiVersion);
+        RPC::insertDeliverMax(tx_json, t->getSTransaction()->getTxnType(), context.apiVersion);
         txs.append(tx_json);
     }
 

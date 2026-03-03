@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_MPTISSUE_H_INCLUDED
-#define XRPL_PROTOCOL_MPTISSUE_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -46,6 +45,12 @@ public:
     {
         return false;
     }
+
+    bool
+    integral() const
+    {
+        return true;
+    }
 };
 
 constexpr bool
@@ -78,5 +83,3 @@ MPTIssue
 mptIssueFromJson(Json::Value const& jv);
 
 }  // namespace xrpl
-
-#endif  // XRPL_PROTOCOL_MPTISSUE_H_INCLUDED

@@ -34,8 +34,7 @@ doCanDelete(RPC::JsonContext& context)
             std::string canDeleteStr = canDelete.asString();
             boost::to_lower(canDeleteStr);
 
-            if (canDeleteStr.find_first_not_of("0123456789") ==
-                std::string::npos)
+            if (canDeleteStr.find_first_not_of("0123456789") == std::string::npos)
             {
                 canDeleteSeq = beast::lexicalCast<std::uint32_t>(canDeleteStr);
             }
@@ -68,8 +67,7 @@ doCanDelete(RPC::JsonContext& context)
             }
         }
 
-        ret[jss::can_delete] =
-            context.app.getSHAMapStore().setCanDelete(canDeleteSeq);
+        ret[jss::can_delete] = context.app.getSHAMapStore().setCanDelete(canDeleteSeq);
     }
     else
     {

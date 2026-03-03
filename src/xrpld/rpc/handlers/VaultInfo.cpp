@@ -65,8 +65,7 @@ doVaultInfo(RPC::JsonContext& context)
     if (!lpLedger)
         return jvResult;
 
-    auto const uNodeIndex =
-        parseVault(context.params, jvResult).value_or(beast::zero);
+    auto const uNodeIndex = parseVault(context.params, jvResult).value_or(beast::zero);
     if (uNodeIndex == beast::zero)
     {
         jvResult[jss::error] = "malformedRequest";

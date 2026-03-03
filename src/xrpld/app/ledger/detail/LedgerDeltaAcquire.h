@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_LEDGERDELTAACQUIRE_H_INCLUDED
-#define XRPL_APP_LEDGER_LEDGERDELTAACQUIRE_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/Ledger.h>
@@ -22,10 +21,9 @@ class LedgerReplayClient;
  * from the network. Before asking peers, always check if the local
  * node has the ledger.
  */
-class LedgerDeltaAcquire final
-    : public TimeoutCounter,
-      public std::enable_shared_from_this<LedgerDeltaAcquire>,
-      public CountedObject<LedgerDeltaAcquire>
+class LedgerDeltaAcquire final : public TimeoutCounter,
+                                 public std::enable_shared_from_this<LedgerDeltaAcquire>,
+                                 public CountedObject<LedgerDeltaAcquire>
 {
 public:
     /**
@@ -33,8 +31,7 @@ public:
      * @param successful  if the ledger delta data was acquired successfully
      * @param hash  hash of the ledger to build
      */
-    using OnDeltaDataCB =
-        std::function<void(bool successful, uint256 const& hash)>;
+    using OnDeltaDataCB = std::function<void(bool successful, uint256 const& hash)>;
 
     /**
      * Constructor
@@ -116,9 +113,7 @@ private:
      *       is added.
      */
     void
-    onLedgerBuilt(
-        ScopedLockType& sl,
-        std::optional<InboundLedger::Reason> reason = {});
+    onLedgerBuilt(ScopedLockType& sl, std::optional<InboundLedger::Reason> reason = {});
 
     /**
      * Call the OnDeltaDataCB callbacks
@@ -143,5 +138,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

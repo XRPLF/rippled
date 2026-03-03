@@ -124,8 +124,7 @@ public:
         BEAST_EXPECT(STIssue(sfAsset, asset1) == asset1);
         BEAST_EXPECT(STIssue(sfAsset, asset1).getText() == "XRP");
         BEAST_EXPECT(
-            STIssue(sfAsset, asset2).getText() ==
-            "USD/rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn");
+            STIssue(sfAsset, asset2).getText() == "USD/rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn");
         BEAST_EXPECT(
             STIssue(sfAsset, asset3).getText() ==
             "000000000000000000000000000000000000000000000002");

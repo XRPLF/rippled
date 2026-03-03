@@ -1,14 +1,14 @@
-#include <xrpld/app/paths/Credit.h>
-#include <xrpld/app/paths/detail/AmountSpec.h>
 #include <xrpld/app/paths/detail/StepChecks.h>
-#include <xrpld/app/paths/detail/Steps.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/Credit.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/paths/detail/AmountSpec.h>
+#include <xrpl/tx/paths/detail/Steps.h>
 
 #include <boost/container/flat_set.hpp>
 
@@ -17,8 +17,7 @@
 namespace xrpl {
 
 template <class TDerived>
-class XRPEndpointStep
-    : public StepImp<XRPAmount, XRPAmount, XRPEndpointStep<TDerived>>
+class XRPEndpointStep : public StepImp<XRPAmount, XRPAmount, XRPEndpointStep<TDerived>>
 {
 private:
     AccountID acc_;
@@ -77,8 +76,7 @@ public:
     }
 
     std::pair<std::optional<Quality>, DebtDirection>
-    qualityUpperBound(ReadView const& v, DebtDirection prevStepDir)
-        const override;
+    qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const override;
 
     std::pair<XRPAmount, XRPAmount>
     revImp(
@@ -95,8 +93,7 @@ public:
         XRPAmount const& in);
 
     std::pair<bool, EitherAmount>
-    validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmount const& in)
-        override;
+    validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmount const& in) override;
 
     // Check for errors and violations of frozen constraints.
     TER
@@ -169,8 +166,7 @@ public:
 };
 
 // Offer crossing XRPEndpointStep class (not a payment).
-class XRPEndpointOfferCrossingStep
-    : public XRPEndpointStep<XRPEndpointOfferCrossingStep>
+class XRPEndpointOfferCrossingStep : public XRPEndpointStep<XRPEndpointOfferCrossingStep>
 {
 private:
     // For historical reasons, offer crossing is allowed to dig further
@@ -215,22 +211,16 @@ private:
 
 template <class TDerived>
 inline bool
-operator==(
-    XRPEndpointStep<TDerived> const& lhs,
-    XRPEndpointStep<TDerived> const& rhs)
+operator==(XRPEndpointStep<TDerived> const& lhs, XRPEndpointStep<TDerived> const& rhs)
 {
     return lhs.acc_ == rhs.acc_ && lhs.isLast_ == rhs.isLast_;
 }
 
 template <class TDerived>
 std::pair<std::optional<Quality>, DebtDirection>
-XRPEndpointStep<TDerived>::qualityUpperBound(
-    ReadView const& v,
-    DebtDirection prevStepDir) const
+XRPEndpointStep<TDerived>::qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const
 {
-    return {
-        Quality{STAmount::uRateOne},
-        this->debtDirection(v, StrandDirection::forward)};
+    return {Quality{STAmount::uRateOne}, this->debtDirection(v, StrandDirection::forward)};
 }
 
 template <class TDerived>
@@ -280,10 +270,7 @@ XRPEndpointStep<TDerived>::fwdImp(
 
 template <class TDerived>
 std::pair<bool, EitherAmount>
-XRPEndpointStep<TDerived>::validFwd(
-    PaymentSandbox& sb,
-    ApplyView& afView,
-    EitherAmount const& in)
+XRPEndpointStep<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmount const& in)
 {
     if (!cache_)
     {
@@ -346,8 +333,8 @@ XRPEndpointStep<TDerived>::check(StrandContext const& ctx) const
     auto const issuesIndex = isLast_ ? 0 : 1;
     if (!ctx.seenDirectIssues[issuesIndex].insert(xrpIssue()).second)
     {
-        JLOG(j_.debug()) << "XRPEndpointStep: loop detected: Index: "
-                         << ctx.strandSize << ' ' << *this;
+        JLOG(j_.debug()) << "XRPEndpointStep: loop detected: Index: " << ctx.strandSize << ' '
+                         << *this;
         return temBAD_PATH_LOOP;
     }
 
@@ -361,8 +348,7 @@ namespace test {
 bool
 xrpEndpointStepEqual(Step const& step, AccountID const& acc)
 {
-    if (auto xs =
-            dynamic_cast<XRPEndpointStep<XRPEndpointPaymentStep> const*>(&step))
+    if (auto xs = dynamic_cast<XRPEndpointStep<XRPEndpointPaymentStep> const*>(&step))
     {
         return xs->acc() == acc;
     }
@@ -379,8 +365,7 @@ make_XRPEndpointStep(StrandContext const& ctx, AccountID const& acc)
     std::unique_ptr<Step> r;
     if (ctx.offerCrossing)
     {
-        auto offerCrossingStep =
-            std::make_unique<XRPEndpointOfferCrossingStep>(ctx, acc);
+        auto offerCrossingStep = std::make_unique<XRPEndpointOfferCrossingStep>(ctx, acc);
         ter = offerCrossingStep->check(ctx);
         r = std::move(offerCrossingStep);
     }

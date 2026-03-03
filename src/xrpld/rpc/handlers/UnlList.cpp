@@ -16,8 +16,7 @@ doUnlList(RPC::JsonContext& context)
         [&unl = obj[jss::unl]](PublicKey const& publicKey, bool trusted) {
             Json::Value node(Json::objectValue);
 
-            node[jss::pubkey_validator] =
-                toBase58(TokenType::NodePublic, publicKey);
+            node[jss::pubkey_validator] = toBase58(TokenType::NodePublic, publicKey);
             node[jss::trusted] = trusted;
 
             unl.append(std::move(node));

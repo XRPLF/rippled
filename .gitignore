@@ -1,4 +1,5 @@
 # .gitignore
+# cspell: disable
 
 # Macintosh Desktop Services Store files.
 .DS_Store
@@ -35,10 +36,14 @@ gmon.out
 
 # Customized configs.
 /rippled.cfg
+/xrpld.cfg
 /validators.txt
 
 # Locally patched Conan recipes
 external/conan-center-index/
+
+# Local conan directory
+.conan
 
 # XCode IDE.
 *.pbxuser
@@ -62,7 +67,16 @@ DerivedData
 /.vs/
 /.vscode/
 
+# zed IDE.
+/.zed/
+
 # AI tools.
 /.augment
 /.claude
 /CLAUDE.md
+
+# Direnv's directory
+/.direnv
+
+# clangd cache
+/.cache

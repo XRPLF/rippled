@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STBASE_H_INCLUDED
-#define XRPL_PROTOCOL_STBASE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/SField.h>
@@ -220,5 +219,3 @@ STBase::emplace(std::size_t n, void* buf, T&& val)
 }
 
 }  // namespace xrpl
-
-#endif

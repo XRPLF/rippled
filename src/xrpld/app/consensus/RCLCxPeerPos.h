@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_CONSENSUS_RCLCXPEERPOS_H_INCLUDED
-#define XRPL_APP_CONSENSUS_RCLCXPEERPOS_H_INCLUDED
+#pragma once
 
 #include <xrpld/consensus/ConsensusProposal.h>
 
@@ -129,5 +128,3 @@ proposalUniqueId(
     Slice const& signature);
 
 }  // namespace xrpl
-
-#endif

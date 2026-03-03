@@ -172,51 +172,48 @@ include(CMakeParseArguments)
 option(CODE_COVERAGE_VERBOSE "Verbose information" FALSE)
 
 # Check prereqs
-find_program( GCOVR_PATH gcovr PATHS ${CMAKE_SOURCE_DIR}/scripts/test)
+find_program(GCOVR_PATH gcovr PATHS ${CMAKE_SOURCE_DIR}/scripts/test)
 
-if(DEFINED CODE_COVERAGE_GCOV_TOOL)
-  set(GCOV_TOOL "${CODE_COVERAGE_GCOV_TOOL}")
-elseif(DEFINED ENV{CODE_COVERAGE_GCOV_TOOL})
-  set(GCOV_TOOL "$ENV{CODE_COVERAGE_GCOV_TOOL}")
-elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang")
-  if(APPLE)
-    execute_process( COMMAND xcrun -f llvm-cov
-      OUTPUT_VARIABLE LLVMCOV_PATH
-      OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-  else()
-    find_program( LLVMCOV_PATH llvm-cov )
-  endif()
-  if(LLVMCOV_PATH)
-    set(GCOV_TOOL "${LLVMCOV_PATH} gcov")
-  endif()
-elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
-  find_program( GCOV_PATH gcov )
-  set(GCOV_TOOL "${GCOV_PATH}")
-endif()
+if (DEFINED CODE_COVERAGE_GCOV_TOOL)
+    set(GCOV_TOOL "${CODE_COVERAGE_GCOV_TOOL}")
+elseif (DEFINED ENV{CODE_COVERAGE_GCOV_TOOL})
+    set(GCOV_TOOL "$ENV{CODE_COVERAGE_GCOV_TOOL}")
+elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang")
+    if (APPLE)
+        execute_process(COMMAND xcrun -f llvm-cov OUTPUT_VARIABLE LLVMCOV_PATH
+                        OUTPUT_STRIP_TRAILING_WHITESPACE)
+    else ()
+        find_program(LLVMCOV_PATH llvm-cov)
+    endif ()
+    if (LLVMCOV_PATH)
+        set(GCOV_TOOL "${LLVMCOV_PATH} gcov")
+    endif ()
+elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
+    find_program(GCOV_PATH gcov)
+    set(GCOV_TOOL "${GCOV_PATH}")
+endif ()
 
 # Check supported compiler (Clang, GNU and Flang)
 get_property(LANGUAGES GLOBAL PROPERTY ENABLED_LANGUAGES)
-foreach(LANG ${LANGUAGES})
-  if("${CMAKE_${LANG}_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang")
-    if("${CMAKE_${LANG}_COMPILER_VERSION}" VERSION_LESS 3)
-      message(FATAL_ERROR "Clang version must be 3.0.0 or greater! Aborting...")
-    endif()
-  elseif(NOT "${CMAKE_${LANG}_COMPILER_ID}" MATCHES "GNU"
-         AND NOT "${CMAKE_${LANG}_COMPILER_ID}" MATCHES "(LLVM)?[Ff]lang")
-    message(FATAL_ERROR "Compiler is not GNU or Flang! Aborting...")
-  endif()
-endforeach()
+foreach (LANG ${LANGUAGES})
+    if ("${CMAKE_${LANG}_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang")
+        if ("${CMAKE_${LANG}_COMPILER_VERSION}" VERSION_LESS 3)
+            message(FATAL_ERROR "Clang version must be 3.0.0 or greater! Aborting...")
+        endif ()
+    elseif (NOT "${CMAKE_${LANG}_COMPILER_ID}" MATCHES "GNU" AND NOT "${CMAKE_${LANG}_COMPILER_ID}"
+                                                                 MATCHES "(LLVM)?[Ff]lang")
+        message(FATAL_ERROR "Compiler is not GNU or Flang! Aborting...")
+    endif ()
+endforeach ()
 
-set(COVERAGE_COMPILER_FLAGS "-g --coverage"
-    CACHE INTERNAL "")
+set(COVERAGE_COMPILER_FLAGS "-g --coverage" CACHE INTERNAL "")
 
 set(COVERAGE_CXX_COMPILER_FLAGS "")
 set(COVERAGE_C_COMPILER_FLAGS "")
 set(COVERAGE_CXX_LINKER_FLAGS "")
 set(COVERAGE_C_LINKER_FLAGS "")
 
-if(CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)")
+if (CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)")
     include(CheckCXXCompilerFlag)
     include(CheckCCompilerFlag)
     include(CheckLinkerFlag)
@@ -227,51 +224,51 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)")
     set(COVERAGE_C_LINKER_FLAGS ${COVERAGE_COMPILER_FLAGS})
 
     check_cxx_compiler_flag(-fprofile-abs-path HAVE_cxx_fprofile_abs_path)
-    if(HAVE_cxx_fprofile_abs_path)
+    if (HAVE_cxx_fprofile_abs_path)
         set(COVERAGE_CXX_COMPILER_FLAGS "${COVERAGE_CXX_COMPILER_FLAGS} -fprofile-abs-path")
-    endif()
+    endif ()
 
     check_c_compiler_flag(-fprofile-abs-path HAVE_c_fprofile_abs_path)
-    if(HAVE_c_fprofile_abs_path)
+    if (HAVE_c_fprofile_abs_path)
         set(COVERAGE_C_COMPILER_FLAGS "${COVERAGE_C_COMPILER_FLAGS} -fprofile-abs-path")
-    endif()
+    endif ()
 
     check_linker_flag(CXX -fprofile-abs-path HAVE_cxx_linker_fprofile_abs_path)
-    if(HAVE_cxx_linker_fprofile_abs_path)
+    if (HAVE_cxx_linker_fprofile_abs_path)
         set(COVERAGE_CXX_LINKER_FLAGS "${COVERAGE_CXX_LINKER_FLAGS} -fprofile-abs-path")
-    endif()
+    endif ()
 
     check_linker_flag(C -fprofile-abs-path HAVE_c_linker_fprofile_abs_path)
-    if(HAVE_c_linker_fprofile_abs_path)
+    if (HAVE_c_linker_fprofile_abs_path)
         set(COVERAGE_C_LINKER_FLAGS "${COVERAGE_C_LINKER_FLAGS} -fprofile-abs-path")
-    endif()
+    endif ()
 
     check_cxx_compiler_flag(-fprofile-update=atomic HAVE_cxx_fprofile_update)
-    if(HAVE_cxx_fprofile_update)
+    if (HAVE_cxx_fprofile_update)
         set(COVERAGE_CXX_COMPILER_FLAGS "${COVERAGE_CXX_COMPILER_FLAGS}  -fprofile-update=atomic")
-    endif()
+    endif ()
 
     check_c_compiler_flag(-fprofile-update=atomic HAVE_c_fprofile_update)
-    if(HAVE_c_fprofile_update)
+    if (HAVE_c_fprofile_update)
         set(COVERAGE_C_COMPILER_FLAGS "${COVERAGE_C_COMPILER_FLAGS} -fprofile-update=atomic")
-    endif()
+    endif ()
 
     check_linker_flag(CXX -fprofile-update=atomic HAVE_cxx_linker_fprofile_update)
-    if(HAVE_cxx_linker_fprofile_update)
+    if (HAVE_cxx_linker_fprofile_update)
         set(COVERAGE_CXX_LINKER_FLAGS "${COVERAGE_CXX_LINKER_FLAGS} -fprofile-update=atomic")
-    endif()
+    endif ()
 
     check_linker_flag(C -fprofile-update=atomic HAVE_c_linker_fprofile_update)
-    if(HAVE_c_linker_fprofile_update)
+    if (HAVE_c_linker_fprofile_update)
         set(COVERAGE_C_LINKER_FLAGS "${COVERAGE_C_LINKER_FLAGS} -fprofile-update=atomic")
-    endif()
+    endif ()
 
-endif()
+endif ()
 
 get_property(GENERATOR_IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
-if(NOT (CMAKE_BUILD_TYPE STREQUAL "Debug" OR GENERATOR_IS_MULTI_CONFIG))
+if (NOT (CMAKE_BUILD_TYPE STREQUAL "Debug" OR GENERATOR_IS_MULTI_CONFIG))
     message(WARNING "Code coverage results with an optimised (non-Debug) build may be misleading")
-endif() # NOT (CMAKE_BUILD_TYPE STREQUAL "Debug" OR GENERATOR_IS_MULTI_CONFIG)
+endif () # NOT (CMAKE_BUILD_TYPE STREQUAL "Debug" OR GENERATOR_IS_MULTI_CONFIG)
 
 # Defines a target for running and collection code coverage information
 # Builds dependencies, runs the given executable and outputs reports.
@@ -295,193 +292,186 @@ endif() # NOT (CMAKE_BUILD_TYPE STREQUAL "Debug" OR GENERATOR_IS_MULTI_CONFIG)
 # )
 # The user can set the variable GCOVR_ADDITIONAL_ARGS to supply additional flags to the
 # GCVOR command.
-function(setup_target_for_coverage_gcovr)
+function (setup_target_for_coverage_gcovr)
     set(options NONE)
     set(oneValueArgs BASE_DIRECTORY NAME FORMAT)
     set(multiValueArgs EXCLUDE EXECUTABLE EXECUTABLE_ARGS DEPENDENCIES)
     cmake_parse_arguments(Coverage "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-    if(NOT GCOV_TOOL)
+    if (NOT GCOV_TOOL)
         message(FATAL_ERROR "Could not find gcov or llvm-cov tool! Aborting...")
-    endif()
+    endif ()
 
-    if(NOT GCOVR_PATH)
+    if (NOT GCOVR_PATH)
         message(FATAL_ERROR "Could not find gcovr tool! Aborting...")
-    endif()
+    endif ()
 
     # Set base directory (as absolute path), or default to PROJECT_SOURCE_DIR
-    if(DEFINED Coverage_BASE_DIRECTORY)
+    if (DEFINED Coverage_BASE_DIRECTORY)
         get_filename_component(BASEDIR ${Coverage_BASE_DIRECTORY} ABSOLUTE)
-    else()
+    else ()
         set(BASEDIR ${PROJECT_SOURCE_DIR})
-    endif()
+    endif ()
 
-    if(NOT DEFINED Coverage_FORMAT)
+    if (NOT DEFINED Coverage_FORMAT)
         set(Coverage_FORMAT xml)
-    endif()
+    endif ()
 
-    if(NOT DEFINED Coverage_EXECUTABLE AND DEFINED Coverage_EXECUTABLE_ARGS)
+    if (NOT DEFINED Coverage_EXECUTABLE AND DEFINED Coverage_EXECUTABLE_ARGS)
         message(FATAL_ERROR "EXECUTABLE_ARGS must not be set if EXECUTABLE is not set")
-    endif()
+    endif ()
 
-    if("--output" IN_LIST GCOVR_ADDITIONAL_ARGS)
-        message(FATAL_ERROR "Unsupported --output option detected in GCOVR_ADDITIONAL_ARGS! Aborting...")
-    else()
-        if((Coverage_FORMAT STREQUAL "html-details")
-            OR (Coverage_FORMAT STREQUAL "html-nested"))
+    if ("--output" IN_LIST GCOVR_ADDITIONAL_ARGS)
+        message(FATAL_ERROR "Unsupported --output option detected in GCOVR_ADDITIONAL_ARGS! Aborting..."
+        )
+    else ()
+        if ((Coverage_FORMAT STREQUAL "html-details") OR (Coverage_FORMAT STREQUAL "html-nested"))
             set(GCOVR_OUTPUT_FILE ${PROJECT_BINARY_DIR}/${Coverage_NAME}/index.html)
             set(GCOVR_CREATE_FOLDER ${PROJECT_BINARY_DIR}/${Coverage_NAME})
-        elseif(Coverage_FORMAT STREQUAL "html-single")
+        elseif (Coverage_FORMAT STREQUAL "html-single")
             set(GCOVR_OUTPUT_FILE ${Coverage_NAME}.html)
-        elseif((Coverage_FORMAT STREQUAL "json-summary")
-            OR (Coverage_FORMAT STREQUAL "json-details")
-            OR (Coverage_FORMAT STREQUAL "coveralls"))
+        elseif ((Coverage_FORMAT STREQUAL "json-summary") OR (Coverage_FORMAT STREQUAL
+                                                              "json-details")
+                OR (Coverage_FORMAT STREQUAL "coveralls"))
             set(GCOVR_OUTPUT_FILE ${Coverage_NAME}.json)
-        elseif(Coverage_FORMAT STREQUAL "txt")
+        elseif (Coverage_FORMAT STREQUAL "txt")
             set(GCOVR_OUTPUT_FILE ${Coverage_NAME}.txt)
-        elseif(Coverage_FORMAT STREQUAL "csv")
+        elseif (Coverage_FORMAT STREQUAL "csv")
             set(GCOVR_OUTPUT_FILE ${Coverage_NAME}.csv)
-        elseif(Coverage_FORMAT STREQUAL "lcov")
+        elseif (Coverage_FORMAT STREQUAL "lcov")
             set(GCOVR_OUTPUT_FILE ${Coverage_NAME}.lcov)
-        else()
+        else ()
             set(GCOVR_OUTPUT_FILE ${Coverage_NAME}.xml)
-        endif()
-    endif()
+        endif ()
+    endif ()
 
-    if((Coverage_FORMAT STREQUAL "cobertura")
-        OR (Coverage_FORMAT STREQUAL "xml"))
-        list(APPEND GCOVR_ADDITIONAL_ARGS --cobertura "${GCOVR_OUTPUT_FILE}" )
-        list(APPEND GCOVR_ADDITIONAL_ARGS --cobertura-pretty )
+    if ((Coverage_FORMAT STREQUAL "cobertura") OR (Coverage_FORMAT STREQUAL "xml"))
+        list(APPEND GCOVR_ADDITIONAL_ARGS --cobertura "${GCOVR_OUTPUT_FILE}")
+        list(APPEND GCOVR_ADDITIONAL_ARGS --cobertura-pretty)
         set(Coverage_FORMAT cobertura) # overwrite xml
-    elseif(Coverage_FORMAT STREQUAL "sonarqube")
-        list(APPEND GCOVR_ADDITIONAL_ARGS --sonarqube "${GCOVR_OUTPUT_FILE}" )
-    elseif(Coverage_FORMAT STREQUAL "jacoco")
-        list(APPEND GCOVR_ADDITIONAL_ARGS --jacoco "${GCOVR_OUTPUT_FILE}" )
-        list(APPEND GCOVR_ADDITIONAL_ARGS --jacoco-pretty )
-    elseif(Coverage_FORMAT STREQUAL "clover")
-        list(APPEND GCOVR_ADDITIONAL_ARGS --clover "${GCOVR_OUTPUT_FILE}" )
-        list(APPEND GCOVR_ADDITIONAL_ARGS --clover-pretty )
-    elseif(Coverage_FORMAT STREQUAL "lcov")
-        list(APPEND GCOVR_ADDITIONAL_ARGS --lcov "${GCOVR_OUTPUT_FILE}" )
-    elseif(Coverage_FORMAT STREQUAL "json-summary")
-        list(APPEND GCOVR_ADDITIONAL_ARGS --json-summary "${GCOVR_OUTPUT_FILE}" )
+    elseif (Coverage_FORMAT STREQUAL "sonarqube")
+        list(APPEND GCOVR_ADDITIONAL_ARGS --sonarqube "${GCOVR_OUTPUT_FILE}")
+    elseif (Coverage_FORMAT STREQUAL "jacoco")
+        list(APPEND GCOVR_ADDITIONAL_ARGS --jacoco "${GCOVR_OUTPUT_FILE}")
+        list(APPEND GCOVR_ADDITIONAL_ARGS --jacoco-pretty)
+    elseif (Coverage_FORMAT STREQUAL "clover")
+        list(APPEND GCOVR_ADDITIONAL_ARGS --clover "${GCOVR_OUTPUT_FILE}")
+        list(APPEND GCOVR_ADDITIONAL_ARGS --clover-pretty)
+    elseif (Coverage_FORMAT STREQUAL "lcov")
+        list(APPEND GCOVR_ADDITIONAL_ARGS --lcov "${GCOVR_OUTPUT_FILE}")
+    elseif (Coverage_FORMAT STREQUAL "json-summary")
+        list(APPEND GCOVR_ADDITIONAL_ARGS --json-summary "${GCOVR_OUTPUT_FILE}")
         list(APPEND GCOVR_ADDITIONAL_ARGS --json-summary-pretty)
-    elseif(Coverage_FORMAT STREQUAL "json-details")
-        list(APPEND GCOVR_ADDITIONAL_ARGS --json "${GCOVR_OUTPUT_FILE}" )
+    elseif (Coverage_FORMAT STREQUAL "json-details")
+        list(APPEND GCOVR_ADDITIONAL_ARGS --json "${GCOVR_OUTPUT_FILE}")
         list(APPEND GCOVR_ADDITIONAL_ARGS --json-pretty)
-    elseif(Coverage_FORMAT STREQUAL "coveralls")
-        list(APPEND GCOVR_ADDITIONAL_ARGS --coveralls "${GCOVR_OUTPUT_FILE}" )
+    elseif (Coverage_FORMAT STREQUAL "coveralls")
+        list(APPEND GCOVR_ADDITIONAL_ARGS --coveralls "${GCOVR_OUTPUT_FILE}")
         list(APPEND GCOVR_ADDITIONAL_ARGS --coveralls-pretty)
-    elseif(Coverage_FORMAT STREQUAL "csv")
-        list(APPEND GCOVR_ADDITIONAL_ARGS --csv "${GCOVR_OUTPUT_FILE}" )
-    elseif(Coverage_FORMAT STREQUAL "txt")
-        list(APPEND GCOVR_ADDITIONAL_ARGS --txt "${GCOVR_OUTPUT_FILE}" )
-    elseif(Coverage_FORMAT STREQUAL "html-single")
-        list(APPEND GCOVR_ADDITIONAL_ARGS --html "${GCOVR_OUTPUT_FILE}" )
+    elseif (Coverage_FORMAT STREQUAL "csv")
+        list(APPEND GCOVR_ADDITIONAL_ARGS --csv "${GCOVR_OUTPUT_FILE}")
+    elseif (Coverage_FORMAT STREQUAL "txt")
+        list(APPEND GCOVR_ADDITIONAL_ARGS --txt "${GCOVR_OUTPUT_FILE}")
+    elseif (Coverage_FORMAT STREQUAL "html-single")
+        list(APPEND GCOVR_ADDITIONAL_ARGS --html "${GCOVR_OUTPUT_FILE}")
         list(APPEND GCOVR_ADDITIONAL_ARGS --html-self-contained)
-    elseif(Coverage_FORMAT STREQUAL "html-nested")
-        list(APPEND GCOVR_ADDITIONAL_ARGS --html-nested "${GCOVR_OUTPUT_FILE}" )
-    elseif(Coverage_FORMAT STREQUAL "html-details")
-        list(APPEND GCOVR_ADDITIONAL_ARGS --html-details "${GCOVR_OUTPUT_FILE}" )
-    else()
+    elseif (Coverage_FORMAT STREQUAL "html-nested")
+        list(APPEND GCOVR_ADDITIONAL_ARGS --html-nested "${GCOVR_OUTPUT_FILE}")
+    elseif (Coverage_FORMAT STREQUAL "html-details")
+        list(APPEND GCOVR_ADDITIONAL_ARGS --html-details "${GCOVR_OUTPUT_FILE}")
+    else ()
         message(FATAL_ERROR "Unsupported output style ${Coverage_FORMAT}! Aborting...")
-    endif()
+    endif ()
 
     # Collect excludes (CMake 3.4+: Also compute absolute paths)
     set(GCOVR_EXCLUDES "")
-    foreach(EXCLUDE ${Coverage_EXCLUDE} ${COVERAGE_EXCLUDES} ${COVERAGE_GCOVR_EXCLUDES})
-        if(CMAKE_VERSION VERSION_GREATER 3.4)
+    foreach (EXCLUDE ${Coverage_EXCLUDE} ${COVERAGE_EXCLUDES} ${COVERAGE_GCOVR_EXCLUDES})
+        if (CMAKE_VERSION VERSION_GREATER 3.4)
             get_filename_component(EXCLUDE ${EXCLUDE} ABSOLUTE BASE_DIR ${BASEDIR})
-        endif()
+        endif ()
         list(APPEND GCOVR_EXCLUDES "${EXCLUDE}")
-    endforeach()
+    endforeach ()
     list(REMOVE_DUPLICATES GCOVR_EXCLUDES)
 
     # Combine excludes to several -e arguments
     set(GCOVR_EXCLUDE_ARGS "")
-    foreach(EXCLUDE ${GCOVR_EXCLUDES})
+    foreach (EXCLUDE ${GCOVR_EXCLUDES})
         list(APPEND GCOVR_EXCLUDE_ARGS "-e")
         list(APPEND GCOVR_EXCLUDE_ARGS "${EXCLUDE}")
-    endforeach()
+    endforeach ()
 
     # Set up commands which will be run to generate coverage data
     # If EXECUTABLE is not set, the user is expected to run the tests manually
     # before running the coverage target NAME
-    if(DEFINED Coverage_EXECUTABLE)
-        set(GCOVR_EXEC_TESTS_CMD
-            ${Coverage_EXECUTABLE} ${Coverage_EXECUTABLE_ARGS}
-        )
-    endif()
+    if (DEFINED Coverage_EXECUTABLE)
+        set(GCOVR_EXEC_TESTS_CMD ${Coverage_EXECUTABLE} ${Coverage_EXECUTABLE_ARGS})
+    endif ()
 
     # Create folder
-    if(DEFINED GCOVR_CREATE_FOLDER)
-        set(GCOVR_FOLDER_CMD
-            ${CMAKE_COMMAND} -E make_directory ${GCOVR_CREATE_FOLDER})
-    endif()
+    if (DEFINED GCOVR_CREATE_FOLDER)
+        set(GCOVR_FOLDER_CMD ${CMAKE_COMMAND} -E make_directory ${GCOVR_CREATE_FOLDER})
+    endif ()
 
     # Running gcovr
     set(GCOVR_CMD
         ${GCOVR_PATH}
-        --gcov-executable ${GCOV_TOOL}
+        --gcov-executable
+        ${GCOV_TOOL}
         --gcov-ignore-parse-errors=negative_hits.warn_once_per_file
-        -r ${BASEDIR}
+        -r
+        ${BASEDIR}
         ${GCOVR_ADDITIONAL_ARGS}
         ${GCOVR_EXCLUDE_ARGS}
-        --object-directory=${PROJECT_BINARY_DIR}
-    )
+        --object-directory=${PROJECT_BINARY_DIR})
 
-    if(CODE_COVERAGE_VERBOSE)
+    if (CODE_COVERAGE_VERBOSE)
         message(STATUS "Executed command report")
 
-        if(NOT "${GCOVR_EXEC_TESTS_CMD}" STREQUAL "")
+        if (NOT "${GCOVR_EXEC_TESTS_CMD}" STREQUAL "")
             message(STATUS "Command to run tests: ")
             string(REPLACE ";" " " GCOVR_EXEC_TESTS_CMD_SPACED "${GCOVR_EXEC_TESTS_CMD}")
             message(STATUS "${GCOVR_EXEC_TESTS_CMD_SPACED}")
-        endif()
+        endif ()
 
-        if(NOT "${GCOVR_FOLDER_CMD}" STREQUAL "")
+        if (NOT "${GCOVR_FOLDER_CMD}" STREQUAL "")
             message(STATUS "Command to create a folder: ")
             string(REPLACE ";" " " GCOVR_FOLDER_CMD_SPACED "${GCOVR_FOLDER_CMD}")
             message(STATUS "${GCOVR_FOLDER_CMD_SPACED}")
-        endif()
+        endif ()
 
         message(STATUS "Command to generate gcovr coverage data: ")
         string(REPLACE ";" " " GCOVR_CMD_SPACED "${GCOVR_CMD}")
         message(STATUS "${GCOVR_CMD_SPACED}")
-    endif()
+    endif ()
 
     add_custom_target(${Coverage_NAME}
-        COMMAND ${GCOVR_EXEC_TESTS_CMD}
-        COMMAND ${GCOVR_FOLDER_CMD}
-        COMMAND ${GCOVR_CMD}
-
-        BYPRODUCTS ${GCOVR_OUTPUT_FILE}
-        WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
-        DEPENDS ${Coverage_DEPENDENCIES}
-        VERBATIM # Protect arguments to commands
-        COMMENT "Running gcovr to produce code coverage report."
-    )
+                      COMMAND ${GCOVR_EXEC_TESTS_CMD}
+                      COMMAND ${GCOVR_FOLDER_CMD}
+                      COMMAND ${GCOVR_CMD}
+                      BYPRODUCTS ${GCOVR_OUTPUT_FILE}
+                      WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+                      DEPENDS ${Coverage_DEPENDENCIES}
+                      VERBATIM # Protect arguments to commands
+                      COMMENT "Running gcovr to produce code coverage report.")
 
     # Show info where to find the report
-    add_custom_command(TARGET ${Coverage_NAME} POST_BUILD
-        COMMAND echo
+    add_custom_command(
+        TARGET ${Coverage_NAME} POST_BUILD COMMAND echo
         COMMENT "Code coverage report saved in ${GCOVR_OUTPUT_FILE} formatted as ${Coverage_FORMAT}"
     )
-endfunction() # setup_target_for_coverage_gcovr
+endfunction () # setup_target_for_coverage_gcovr
 
-function(add_code_coverage_to_target name scope)
+function (add_code_coverage_to_target name scope)
     separate_arguments(COVERAGE_CXX_COMPILER_FLAGS NATIVE_COMMAND "${COVERAGE_CXX_COMPILER_FLAGS}")
     separate_arguments(COVERAGE_C_COMPILER_FLAGS NATIVE_COMMAND "${COVERAGE_C_COMPILER_FLAGS}")
     separate_arguments(COVERAGE_CXX_LINKER_FLAGS NATIVE_COMMAND "${COVERAGE_CXX_LINKER_FLAGS}")
     separate_arguments(COVERAGE_C_LINKER_FLAGS NATIVE_COMMAND "${COVERAGE_C_LINKER_FLAGS}")
 
     # Add compiler options to the target
-    target_compile_options(${name} ${scope}
-            $<$<COMPILE_LANGUAGE:CXX>:${COVERAGE_CXX_COMPILER_FLAGS}>
-            $<$<COMPILE_LANGUAGE:C>:${COVERAGE_C_COMPILER_FLAGS}>)
+    target_compile_options(
+        ${name} ${scope} $<$<COMPILE_LANGUAGE:CXX>:${COVERAGE_CXX_COMPILER_FLAGS}>
+        $<$<COMPILE_LANGUAGE:C>:${COVERAGE_C_COMPILER_FLAGS}>)
 
-    target_link_libraries (${name} ${scope}
-            $<$<LINK_LANGUAGE:CXX>:${COVERAGE_CXX_LINKER_FLAGS} gcov>
-            $<$<LINK_LANGUAGE:C>:${COVERAGE_C_LINKER_FLAGS} gcov>
-    )
-endfunction() # add_code_coverage_to_target
+    target_link_libraries(${name} ${scope} $<$<LINK_LANGUAGE:CXX>:${COVERAGE_CXX_LINKER_FLAGS}>
+                          $<$<LINK_LANGUAGE:C>:${COVERAGE_C_LINKER_FLAGS}>)
+endfunction () # add_code_coverage_to_target

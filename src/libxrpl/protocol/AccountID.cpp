@@ -63,12 +63,9 @@ public:
                 return cache_[index].encoding;
         }
 
-        auto ret =
-            encodeBase58Token(TokenType::AccountID, id.data(), id.size());
+        auto ret = encodeBase58Token(TokenType::AccountID, id.data(), id.size());
 
-        XRPL_ASSERT(
-            ret.size() <= 38,
-            "xrpl::detail::AccountIdCache : maximum result size");
+        XRPL_ASSERT(ret.size() <= 38, "xrpl::detail::AccountIdCache : maximum result size");
 
         {
             std::lock_guard lock(sl);

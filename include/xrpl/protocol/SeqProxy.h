@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_SEQ_PROXY_H_INCLUDED
-#define XRPL_PROTOCOL_SEQ_PROXY_H_INCLUDED
+#pragma once
 
 #include <cstdint>
 #include <ostream>
@@ -147,5 +146,3 @@ public:
     }
 };
 }  // namespace xrpl
-
-#endif

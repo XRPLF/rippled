@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_PROP_H_INCLUDED
-#define XRPL_TEST_JTX_PROP_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
@@ -16,8 +15,7 @@ struct prop
     std::unique_ptr<basic_prop> p_;
 
     template <class... Args>
-    prop(Args&&... args)
-        : p_(std::make_unique<prop_type<Prop>>(std::forward<Args>(args)...))
+    prop(Args&&... args) : p_(std::make_unique<prop_type<Prop>>(std::forward<Args>(args)...))
     {
     }
 
@@ -31,5 +29,3 @@ struct prop
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

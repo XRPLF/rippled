@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_CONSENSUSTRANSSETSF_H_INCLUDED
-#define XRPL_APP_LEDGER_CONSENSUSTRANSSETSF_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
 
@@ -39,5 +38,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

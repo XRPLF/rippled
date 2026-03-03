@@ -92,8 +92,7 @@ public:
         for (int i = 1; i <= 4; ++i)
         {
             makeRequest(lastEndpoint_, true);
-            BEAST_EXPECT(
-                resolved_.size() == 1 && resolved_.begin()->second == i);
+            BEAST_EXPECT(resolved_.size() == 1 && resolved_.begin()->second == i);
         }
         if (!isMultipleEndpoints())
             return;

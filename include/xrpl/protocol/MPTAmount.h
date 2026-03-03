@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_MPTAMOUNT_H_INCLUDED
-#define XRPL_PROTOCOL_MPTAMOUNT_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
@@ -94,7 +93,8 @@ MPTAmount::operator=(beast::Zero)
 }
 
 /** Returns true if the amount is not zero */
-constexpr MPTAmount::operator bool() const noexcept
+constexpr MPTAmount::
+operator bool() const noexcept
 {
     return value_ != 0;
 }
@@ -123,11 +123,7 @@ to_string(MPTAmount const& amount)
 }
 
 inline MPTAmount
-mulRatio(
-    MPTAmount const& amt,
-    std::uint32_t num,
-    std::uint32_t den,
-    bool roundUp)
+mulRatio(MPTAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundUp)
 {
     using namespace boost::multiprecision;
 
@@ -151,5 +147,3 @@ mulRatio(
 }
 
 }  // namespace xrpl
-
-#endif  // XRPL_BASICS_MPTAMOUNT_H_INCLUDED

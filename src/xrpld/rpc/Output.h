@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_OUTPUT_H_INCLUDED
-#define XRPL_RPC_OUTPUT_H_INCLUDED
+#pragma once
 
 #include <boost/utility/string_ref.hpp>
 
@@ -16,5 +15,3 @@ stringOutput(std::string& s)
 
 }  // namespace RPC
 }  // namespace xrpl
-
-#endif

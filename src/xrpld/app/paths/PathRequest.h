@@ -1,14 +1,13 @@
-#ifndef XRPL_APP_PATHS_PATHREQUEST_H_INCLUDED
-#define XRPL_APP_PATHS_PATHREQUEST_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/paths/Pathfinder.h>
 #include <xrpld/app/paths/RippleLineCache.h>
-#include <xrpld/rpc/InfoSub.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/server/InfoSub.h>
 
 #include <map>
 #include <mutex>
@@ -103,7 +102,7 @@ private:
         std::function<bool(void)> const&);
 
     /** Finds and sets a PathSet in the JSON argument.
-        Returns false if the source currencies are inavlid.
+        Returns false if the source currencies are invalid.
     */
     bool
     findPaths(
@@ -159,5 +158,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

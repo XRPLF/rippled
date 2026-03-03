@@ -47,8 +47,7 @@ doConnect(RPC::JsonContext& context)
         context.app.overlay().connect(ip.at_port(iPort));
 
     return RPC::makeObjectValue(
-        "attempting connection to IP:" + ip_str +
-        " port: " + std::to_string(iPort));
+        "attempting connection to IP:" + ip_str + " port: " + std::to_string(iPort));
 }
 
 }  // namespace xrpl

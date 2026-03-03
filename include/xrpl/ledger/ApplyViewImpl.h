@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_APPLYVIEWIMPL_H_INCLUDED
-#define XRPL_LEDGER_APPLYVIEWIMPL_H_INCLUDED
+#pragma once
 
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/detail/ApplyViewBase.h>
@@ -76,5 +75,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

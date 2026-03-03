@@ -57,15 +57,11 @@ class RCLValidations_test : public beast::unit_test::suite
         jtx::Env env(*this);
         Config config;
         auto prev = std::make_shared<Ledger const>(
-            create_genesis,
-            config,
-            std::vector<uint256>{},
-            env.app().getNodeFamily());
+            create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
         history.push_back(prev);
         for (auto i = 0; i < (2 * maxAncestors + 1); ++i)
         {
-            auto next = std::make_shared<Ledger>(
-                *prev, env.app().timeKeeper().closeTime());
+            auto next = std::make_shared<Ledger>(*prev, env.app().timeKeeper().closeTime());
             next->updateSkipList();
             history.push_back(next);
             prev = next;
@@ -82,8 +78,7 @@ class RCLValidations_test : public beast::unit_test::suite
         bool forceHash = true;
         while (altHistory.size() < history.size())
         {
-            auto next = std::make_shared<Ledger>(
-                *prev, env.app().timeKeeper().closeTime());
+            auto next = std::make_shared<Ledger>(*prev, env.app().timeKeeper().closeTime());
             // Force a different hash on the first iteration
             next->updateSkipList();
             BEAST_EXPECT(next->read(keylet::fees()));
@@ -220,15 +215,11 @@ class RCLValidations_test : public beast::unit_test::suite
         auto& j = env.journal;
         Config config;
         auto prev = std::make_shared<Ledger const>(
-            create_genesis,
-            config,
-            std::vector<uint256>{},
-            env.app().getNodeFamily());
+            create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
         history.push_back(prev);
         for (auto i = 0; i < (maxAncestors + 10); ++i)
         {
-            auto next = std::make_shared<Ledger>(
-                *prev, env.app().timeKeeper().closeTime());
+            auto next = std::make_shared<Ledger>(*prev, env.app().timeKeeper().closeTime());
             next->updateSkipList();
             history.push_back(next);
             prev = next;
@@ -254,7 +245,7 @@ class RCLValidations_test : public beast::unit_test::suite
         BEAST_EXPECT(trie.branchSupport(ledg_258) == 4);
 
         // Move three of the s258 ledgers to s259, which splits the trie
-        // due to the 256 ancestory limit
+        // due to the 256 ancestry limit
         BEAST_EXPECT(trie.remove(ledg_258, 3));
         trie.insert(ledg_259, 3);
         trie.getPreferred(1);
@@ -275,12 +266,11 @@ class RCLValidations_test : public beast::unit_test::suite
         // then verify the remove call works
         // past bug: remove had assumed the first child of a node in the trie
         //      which matches is the *only* child in the trie which matches.
-        //      This is **NOT** true with the limited 256 ledger ancestory
+        //      This is **NOT** true with the limited 256 ledger ancestry
         //      quirk of RCLValidation and prevents deleting the old support
         //      for ledger 257
 
-        BEAST_EXPECT(
-            trie.remove(RCLValidatedLedger{history[257], env.journal}, 1));
+        BEAST_EXPECT(trie.remove(RCLValidatedLedger{history[257], env.journal}, 1));
         trie.insert(RCLValidatedLedger{history[258], env.journal}, 1);
         trie.getPreferred(1);
         // trie.dump(std::cout);

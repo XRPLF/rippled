@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_KEYCACHE_H
-#define XRPL_BASICS_KEYCACHE_H
+#pragma once
 
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/base_uint.h>
@@ -9,5 +8,3 @@ namespace xrpl {
 using KeyCache = TaggedCache<uint256, int, true>;
 
 }  // namespace xrpl
-
-#endif  // XRPL_BASICS_KEYCACHE_H

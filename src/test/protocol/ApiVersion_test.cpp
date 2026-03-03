@@ -19,13 +19,9 @@ struct ApiVersion_test : beast::unit_test::suite
         {
             testcase("API versions invariants");
 
-            static_assert(
-                RPC::apiMinimumSupportedVersion <=
-                RPC::apiMaximumSupportedVersion);
-            static_assert(
-                RPC::apiMinimumSupportedVersion <= RPC::apiMaximumValidVersion);
-            static_assert(
-                RPC::apiMaximumSupportedVersion <= RPC::apiMaximumValidVersion);
+            static_assert(RPC::apiMinimumSupportedVersion <= RPC::apiMaximumSupportedVersion);
+            static_assert(RPC::apiMinimumSupportedVersion <= RPC::apiMaximumValidVersion);
+            static_assert(RPC::apiMaximumSupportedVersion <= RPC::apiMaximumValidVersion);
             static_assert(RPC::apiBetaVersion <= RPC::apiMaximumValidVersion);
 
             BEAST_EXPECT(true);

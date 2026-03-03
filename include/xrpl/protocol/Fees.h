@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_FEES_H_INCLUDED
-#define XRPL_PROTOCOL_FEES_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/XRPAmount.h>
 
@@ -34,5 +33,3 @@ struct Fees
 };
 
 }  // namespace xrpl
-
-#endif

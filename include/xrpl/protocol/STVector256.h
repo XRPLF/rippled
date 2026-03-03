@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STVECTOR256_H_INCLUDED
-#define XRPL_PROTOCOL_STVECTOR256_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/STBase.h>
@@ -107,14 +106,11 @@ inline STVector256::STVector256(SField const& n) : STBase(n)
 {
 }
 
-inline STVector256::STVector256(std::vector<uint256> const& vector)
-    : mValue(vector)
+inline STVector256::STVector256(std::vector<uint256> const& vector) : mValue(vector)
 {
 }
 
-inline STVector256::STVector256(
-    SField const& n,
-    std::vector<uint256> const& vector)
+inline STVector256::STVector256(SField const& n, std::vector<uint256> const& vector)
     : STBase(n), mValue(vector)
 {
 }
@@ -140,7 +136,8 @@ STVector256::setValue(STVector256 const& v)
 }
 
 /** Retrieve a copy of the vector we contain */
-inline STVector256::operator std::vector<uint256>() const
+inline STVector256::
+operator std::vector<uint256>() const
 {
     return mValue;
 }
@@ -182,9 +179,7 @@ STVector256::value() const
 }
 
 inline std::vector<uint256>::iterator
-STVector256::insert(
-    std::vector<uint256>::const_iterator pos,
-    uint256 const& value)
+STVector256::insert(std::vector<uint256>::const_iterator pos, uint256 const& value)
 {
     return mValue.insert(pos, value);
 }
@@ -238,5 +233,3 @@ STVector256::clear() noexcept
 }
 
 }  // namespace xrpl
-
-#endif

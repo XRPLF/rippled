@@ -103,11 +103,9 @@ SField::SField(private_access_tag_t, int fc, char const* fn)
     , jsonName(fieldName.c_str())
 {
     XRPL_ASSERT(
-        !knownCodeToField.contains(fieldCode),
-        "xrpl::SField::SField(fc,fn) : fieldCode is unique");
+        !knownCodeToField.contains(fieldCode), "xrpl::SField::SField(fc,fn) : fieldCode is unique");
     XRPL_ASSERT(
-        !knownNameToField.contains(fieldName),
-        "xrpl::SField::SField(fc,fn) : fieldName is unique");
+        !knownNameToField.contains(fieldName), "xrpl::SField::SField(fc,fn) : fieldName is unique");
     knownCodeToField[fieldCode] = this;
     knownNameToField[fieldName] = this;
 }

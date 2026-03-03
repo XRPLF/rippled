@@ -1,5 +1,4 @@
-#ifndef XRPL_PEERFINDER_BOOTCACHE_H_INCLUDED
-#define XRPL_PEERFINDER_BOOTCACHE_H_INCLUDED
+#pragma once
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Store.h>
@@ -75,15 +74,13 @@ private:
 
     struct Transform
     {
-        using first_argument_type =
-            map_type::right_map::const_iterator::value_type const&;
+        using first_argument_type = map_type::right_map::const_iterator::value_type const&;
         using result_type = beast::IP::Endpoint const&;
 
         explicit Transform() = default;
 
         beast::IP::Endpoint const&
-        operator()(
-            map_type::right_map::const_iterator::value_type const& v) const
+        operator()(map_type::right_map::const_iterator::value_type const& v) const
         {
             return v.get_left();
         }
@@ -105,8 +102,7 @@ private:
 public:
     static constexpr int staticValence = 32;
 
-    using iterator = boost::
-        transform_iterator<Transform, map_type::right_map::const_iterator>;
+    using iterator = boost::transform_iterator<Transform, map_type::right_map::const_iterator>;
 
     using const_iterator = iterator;
 
@@ -177,5 +173,3 @@ private:
 
 }  // namespace PeerFinder
 }  // namespace xrpl
-
-#endif

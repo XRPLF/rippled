@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_TOKEN_ERRORS_H_INCLUDED
-#define XRPL_PROTOCOL_TOKEN_ERRORS_H_INCLUDED
+#pragma once
 
 #include <system_error>
 
@@ -80,4 +79,3 @@ make_error_code(xrpl::TokenCodecErrc e)
     return {static_cast<int>(e), TokenCodecErrcCategory()};
 }
 }  // namespace xrpl
-#endif  // TOKEN_ERRORS_H_

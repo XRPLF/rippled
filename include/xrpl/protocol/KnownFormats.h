@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_KNOWNFORMATS_H_INCLUDED
-#define XRPL_PROTOCOL_KNOWNFORMATS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/type_name.h>
@@ -37,8 +36,7 @@ public:
         {
             // Verify that KeyType is appropriate.
             static_assert(
-                std::is_enum<KeyType>::value ||
-                    std::is_integral<KeyType>::value,
+                std::is_enum<KeyType>::value || std::is_integral<KeyType>::value,
                 "KnownFormats KeyType must be integral or enum.");
         }
 
@@ -158,8 +156,8 @@ protected:
         if (auto const item = findByType(type))
         {
             LogicError(
-                std::string("Duplicate key for item '") + name +
-                "': already maps to " + item->getName());
+                std::string("Duplicate key for item '") + name + "': already maps to " +
+                item->getName());
         }
 
         formats_.emplace_front(name, type, uniqueFields, commonFields);
@@ -184,5 +182,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

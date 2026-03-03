@@ -34,8 +34,7 @@ Serializer::add32(HashPrefix p)
 {
     // This should never trigger; the size & type of a hash prefix are
     // integral parts of the protocol and unlikely to ever change.
-    static_assert(
-        std::is_same_v<std::uint32_t, std::underlying_type_t<decltype(p)>>);
+    static_assert(std::is_same_v<std::uint32_t, std::underlying_type_t<decltype(p)>>);
 
     return add32(safe_cast<std::uint32_t>(p));
 }
@@ -179,8 +178,7 @@ Serializer::addVL(Blob const& vector)
     int ret = addEncoded(vector.size());
     addRaw(vector);
     XRPL_ASSERT(
-        mData.size() ==
-            (ret + vector.size() + encodeLengthLength(vector.size())),
+        mData.size() == (ret + vector.size() + encodeLengthLength(vector.size())),
         "xrpl::Serializer::addVL : size matches expected");
     return ret;
 }
@@ -369,8 +367,8 @@ SerialIter::get32()
     p_ += 4;
     used_ += 4;
     remain_ -= 4;
-    return (std::uint64_t(t[0]) << 24) + (std::uint64_t(t[1]) << 16) +
-        (std::uint64_t(t[2]) << 8) + std::uint64_t(t[3]);
+    return (std::uint64_t(t[0]) << 24) + (std::uint64_t(t[1]) << 16) + (std::uint64_t(t[2]) << 8) +
+        std::uint64_t(t[3]);
 }
 
 std::uint64_t
@@ -382,9 +380,8 @@ SerialIter::get64()
     p_ += 8;
     used_ += 8;
     remain_ -= 8;
-    return (std::uint64_t(t[0]) << 56) + (std::uint64_t(t[1]) << 48) +
-        (std::uint64_t(t[2]) << 40) + (std::uint64_t(t[3]) << 32) +
-        (std::uint64_t(t[4]) << 24) + (std::uint64_t(t[5]) << 16) +
+    return (std::uint64_t(t[0]) << 56) + (std::uint64_t(t[1]) << 48) + (std::uint64_t(t[2]) << 40) +
+        (std::uint64_t(t[3]) << 32) + (std::uint64_t(t[4]) << 24) + (std::uint64_t(t[5]) << 16) +
         (std::uint64_t(t[6]) << 8) + std::uint64_t(t[7]);
 }
 
@@ -424,8 +421,7 @@ SerialIter::getFieldID(int& type, int& name)
         // uncommon type
         type = get8();
         if (type < 16)
-            Throw<std::runtime_error>(
-                "gFID: uncommon type out of range " + std::to_string(type));
+            Throw<std::runtime_error>("gFID: uncommon type out of range " + std::to_string(type));
     }
 
     if (name == 0)
@@ -433,8 +429,7 @@ SerialIter::getFieldID(int& type, int& name)
         // uncommon name
         name = get8();
         if (name < 16)
-            Throw<std::runtime_error>(
-                "gFID: uncommon name out of range " + std::to_string(name));
+            Throw<std::runtime_error>("gFID: uncommon name out of range " + std::to_string(name));
     }
 }
 
@@ -443,8 +438,7 @@ template <class T>
 T
 SerialIter::getRawHelper(int size)
 {
-    static_assert(
-        std::is_same<T, Blob>::value || std::is_same<T, Buffer>::value, "");
+    static_assert(std::is_same<T, Blob>::value || std::is_same<T, Buffer>::value, "");
     if (remain_ < size)
         Throw<std::runtime_error>("invalid SerialIter getRaw");
     T result(size);
@@ -485,8 +479,7 @@ SerialIter::getVLDataLength()
     }
     else
     {
-        XRPL_ASSERT(
-            lenLen == 3, "xrpl::SerialIter::getVLDataLength : lenLen is 3");
+        XRPL_ASSERT(lenLen == 3, "xrpl::SerialIter::getVLDataLength : lenLen is 3");
         int b2 = get8();
         int b3 = get8();
         datLen = Serializer::decodeVLLength(b1, b2, b3);

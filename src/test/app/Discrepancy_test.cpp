@@ -81,8 +81,7 @@ class Discrepancy_test : public beast::unit_test::suite
 
         Json::Value jrq2;
         jrq2[jss::binary] = false;
-        jrq2[jss::transaction] =
-            env.tx()->getJson(JsonOptions::none)[jss::hash];
+        jrq2[jss::transaction] = env.tx()->getJson(JsonOptions::none)[jss::hash];
         jrq2[jss::id] = 3;
         auto jrr = env.rpc("json", "tx", to_string(jrq2))[jss::result];
         uint64_t fee{jrr[jss::Fee].asUInt()};
@@ -102,8 +101,7 @@ class Discrepancy_test : public beast::unit_test::suite
 
             if (node && node[sfLedgerEntryType.fieldName] == jss::AccountRoot)
             {
-                Json::Value prevFields =
-                    node.isMember(sfPreviousFields.fieldName)
+                Json::Value prevFields = node.isMember(sfPreviousFields.fieldName)
                     ? node[sfPreviousFields.fieldName]
                     : node[sfNewFields.fieldName];
                 Json::Value finalFields = node.isMember(sfFinalFields.fieldName)

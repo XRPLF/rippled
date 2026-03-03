@@ -7,8 +7,7 @@ namespace xrpl {
 namespace test {
 namespace jtx {
 
-std::unordered_map<std::pair<std::string, KeyType>, Account, beast::uhash<>>
-    Account::cache_;
+std::unordered_map<std::pair<std::string, KeyType>, Account, beast::uhash<>> Account::cache_;
 
 Account const Account::master(
     "master",
@@ -60,10 +59,7 @@ Account::Account(std::string name, KeyType type)
 }
 
 Account::Account(AcctStringType stringType, std::string base58SeedStr)
-    : Account(fromCache(
-          Account::base58Seed,
-          std::move(base58SeedStr),
-          KeyType::secp256k1))
+    : Account(fromCache(Account::base58Seed, std::move(base58SeedStr), KeyType::secp256k1))
 {
 }
 
