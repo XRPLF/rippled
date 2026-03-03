@@ -252,7 +252,7 @@ ConnectAttempt::cancelTimer()
         timer_.cancel();
         stepTimer_.cancel();
     }
-    catch (boost::system::system_error const&)
+    catch (boost::system::system_error const&)  // NOLINT(bugprone-empty-catch)
     {
         // ignored
     }
