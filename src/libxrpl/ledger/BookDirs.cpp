@@ -74,20 +74,27 @@ BookDirs::const_iterator::operator++()
     XRPL_ASSERT(index_ != zero, "xrpl::BookDirs::const_iterator::operator++ : nonzero index");
     if (!cdirNext(*view_, cur_key_, sle_, entry_, index_))
     {
-        if (index_ != 0 ||
-            (cur_key_ = view_->succ(++cur_key_, next_quality_).value_or(zero)) == zero)
+        if (index_ != 0)
         {
             cur_key_ = key_;
             entry_ = 0;
             index_ = zero;
         }
-        else if (!cdirFirst(*view_, cur_key_, sle_, entry_, index_))
+        else
         {
-            // LCOV_EXCL_START
-            UNREACHABLE(
-                "xrpl::BookDirs::const_iterator::operator++ : directory is "
-                "empty");
-            // LCOV_EXCL_STOP
+            cur_key_ = view_->succ(++cur_key_, next_quality_).value_or(zero);
+            if (cur_key_ == zero)
+            {
+                cur_key_ = key_;
+                entry_ = 0;
+                index_ = zero;
+            }
+            else if (!cdirFirst(*view_, cur_key_, sle_, entry_, index_))
+            {
+                // LCOV_EXCL_START
+                UNREACHABLE("xrpl::BookDirs::const_iterator::operator++ : directory is empty");
+                // LCOV_EXCL_STOP
+            }
         }
     }
 
