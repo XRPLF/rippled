@@ -695,9 +695,13 @@ public:
         // Redeem at withdrawalNAV (subtracts both interest and loss)
         {
             Number const expectedAssets = vault.redeemAssets(redeemShares);
+            // Compare as STAmount: redeem() returns STAmount which truncates
+            // to 16 significant digits, so comparing directly to the
+            // full-precision Number would fail for non-terminating fractions.
+            STAmount const expectedAmt{usd_, expectedAssets};
             auto const redeemAssets =
                 vault.redeem(STAmount{vault.shareAsset(), redeemShares}).value();
-            BEAST_EXPECT(redeemAssets == expectedAssets);
+            BEAST_EXPECT(redeemAssets == expectedAmt);
 
             STAmount const expectedTotal{
                 usd_, depositAmt + interest + depositAmt2 - expectedAssets};
@@ -740,10 +744,15 @@ public:
 
         Number const expectedShares = vault.depositShares(Number(depositAmt));
         Number const expectedAssets = vault.depositAssets(expectedShares);
+        // Compare as STAmount: deposit() returns STAmount which truncates
+        // to 16 significant digits, so comparing directly to the
+        // full-precision Number would fail for non-terminating fractions.
+        STAmount const expectedSharesAmt{vault.shareAsset(), expectedShares};
+        STAmount const expectedAssetsAmt{usd_, expectedAssets};
 
         auto const [actualShares, actualAssets] = vault.deposit(STAmount{usd_, depositAmt}).value();
-        BEAST_EXPECT(actualShares == expectedShares);
-        BEAST_EXPECT(actualAssets == expectedAssets);
+        BEAST_EXPECT(actualShares == expectedSharesAmt);
+        BEAST_EXPECT(actualAssets == expectedAssetsAmt);
 
         STAmount const expectedTotal{usd_, seedAmt + extraInterest + expectedAssets};
         STAmount const expectedAvail{usd_, seedAmt + extraInterest + expectedAssets};
@@ -940,8 +949,12 @@ public:
 
         // Loss reduces withdrawalNAV but not depositNAV
         Number const expectedAssets = vault.redeemAssets(redeemShares);
+        // Compare as STAmount: redeem() returns STAmount which truncates
+        // to 16 significant digits, so comparing directly to the
+        // full-precision Number would fail for non-terminating fractions.
+        STAmount const expectedAmt{usd_, expectedAssets};
         auto const redeemAssets = vault.redeem(STAmount{vault.shareAsset(), redeemShares}).value();
-        BEAST_EXPECT(redeemAssets == expectedAssets);
+        BEAST_EXPECT(redeemAssets == expectedAmt);
 
         STAmount const expectedTotal{usd_, depositAmt + depositAmt2 - expectedAssets};
         STAmount const expectedAvail{usd_, depositAmt - borrowAmt + depositAmt2 - expectedAssets};
@@ -2839,8 +2852,12 @@ public:
 
         // 1/3 is non-terminating -- STAmount truncates to 16 digits
         Number const expectedOut = vault.redeemAssets(Number(redeemShares));
+        // Compare as STAmount: redeem() returns STAmount which truncates
+        // to 16 significant digits, so comparing directly to the
+        // full-precision Number would fail for non-terminating fractions.
+        STAmount const expectedAmt{usd_, expectedOut};
         auto const out = vault.redeem(STAmount{vault.shareAsset(), redeemShares}).value();
-        BEAST_EXPECT(out == expectedOut);
+        BEAST_EXPECT(out == expectedAmt);
 
         // Truncation floors: sharesTotal copies of out must be <= withdrawalNAV
         Number const remainingAssets = seedAmt - defaultAmt;
