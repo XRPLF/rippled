@@ -71,7 +71,7 @@ public:
         {
             setupDatabaseDir(getDatabasePath());
         }
-        catch (std::exception const&)
+        catch (std::exception const&)  // NOLINT(bugprone-empty-catch)
         {
         }
     }
@@ -81,7 +81,7 @@ public:
         {
             cleanupDatabaseDir(getDatabasePath());
         }
-        catch (std::exception const&)
+        catch (std::exception const&)  // NOLINT(bugprone-empty-catch)
         {
         }
     }

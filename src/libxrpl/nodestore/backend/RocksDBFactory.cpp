@@ -244,7 +244,7 @@ public:
     //--------------------------------------------------------------------------
 
     Status
-    fetch(void const* key, std::shared_ptr<NodeObject>* pObject) override
+    fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pObject) override
     {
         XRPL_ASSERT(m_db, "xrpl::NodeStore::RocksDBBackend::fetch : non-null database");
         pObject->reset();
@@ -252,7 +252,7 @@ public:
         Status status(ok);
 
         rocksdb::ReadOptions const options;
-        rocksdb::Slice const slice(static_cast<char const*>(key), m_keyBytes);
+        rocksdb::Slice const slice(std::bit_cast<char const*>(hash.data()), m_keyBytes);
 
         std::string string;
 
@@ -260,7 +260,7 @@ public:
 
         if (getStatus.ok())
         {
-            DecodedBlob decoded(key, string.data(), string.size());
+            DecodedBlob decoded(hash.data(), string.data(), string.size());
 
             if (decoded.wasOk())
             {
@@ -295,14 +295,14 @@ public:
     }
 
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
-    fetchBatch(std::vector<uint256 const*> const& hashes) override
+    fetchBatch(std::vector<uint256> const& hashes) override
     {
         std::vector<std::shared_ptr<NodeObject>> results;
         results.reserve(hashes.size());
         for (auto const& h : hashes)
         {
             std::shared_ptr<NodeObject> nObj;
-            Status status = fetch(h->begin(), &nObj);
+            Status status = fetch(h, &nObj);
             if (status != ok)
                 results.push_back({});
             else
@@ -332,9 +332,8 @@ public:
             EncodedBlob encoded(e);
 
             wb.Put(
-                rocksdb::Slice(reinterpret_cast<char const*>(encoded.getKey()), m_keyBytes),
-                rocksdb::Slice(
-                    reinterpret_cast<char const*>(encoded.getData()), encoded.getSize()));
+                rocksdb::Slice(std::bit_cast<char const*>(encoded.getKey()), m_keyBytes),
+                rocksdb::Slice(std::bit_cast<char const*>(encoded.getData()), encoded.getSize()));
         }
 
         rocksdb::WriteOptions const options;
