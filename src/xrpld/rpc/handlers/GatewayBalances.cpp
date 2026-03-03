@@ -139,6 +139,7 @@ doGatewayBalances(RPC::JsonContext& context)
                 }
                 else
                 {
+                    // Gateway Balance should not include MPTs
                     auto const& escrow = sle->getFieldAmount(sfAmount);
                     if (escrow.holds<MPTIssue>())
                         return;
