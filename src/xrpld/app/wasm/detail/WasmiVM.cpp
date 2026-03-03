@@ -733,6 +733,9 @@ WasmiEngine::run(
 {
     j_ = j;
 
+    if (gas <= 0)
+        return Unexpected<TER>(temBAD_AMOUNT);
+
     try
     {
         checkImports(imports, &hfs);
