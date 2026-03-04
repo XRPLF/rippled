@@ -15,7 +15,6 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/apply.h>
 
-#include <initializer_list>
 #include <string>
 
 namespace xrpl {
@@ -182,8 +181,12 @@ class VaultInvariants_test : public BaseInvariants_test
         return true;
     }
 
+    /** Returns the keylet of the vault created by the most recent createVault()
+     *  call. Must only be called from a Precheck lambda after createVault() has
+     *  run as the Preclose.
+     */
     std::optional<Keylet>
-    vaultKeylet(ApplyContext&, test::jtx::Account const&)
+    vaultKeylet()
     {
         return vaultKey_;
     }
@@ -620,7 +623,7 @@ class VaultInvariants_test : public BaseInvariants_test
              "assets available must not be greater than assets outstanding",
              "assets outstanding must be positive"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -641,7 +644,7 @@ class VaultInvariants_test : public BaseInvariants_test
         doInvariantCheck(
             {"vault updated by a wrong transaction type"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -678,7 +681,7 @@ class VaultInvariants_test : public BaseInvariants_test
         doInvariantCheck(
             {"vault updated by a wrong transaction type"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -697,7 +700,7 @@ class VaultInvariants_test : public BaseInvariants_test
         doInvariantCheck(
             {"updated vault must have shares"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -722,7 +725,7 @@ class VaultInvariants_test : public BaseInvariants_test
         doInvariantCheck(
             {"violation of vault immutable data"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -742,7 +745,7 @@ class VaultInvariants_test : public BaseInvariants_test
         doInvariantCheck(
             {"violation of vault immutable data"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -762,7 +765,7 @@ class VaultInvariants_test : public BaseInvariants_test
         doInvariantCheck(
             {"violation of vault immutable data"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -783,7 +786,7 @@ class VaultInvariants_test : public BaseInvariants_test
             {"vault transaction must not change loss unrealized",
              "set must not change assets outstanding"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -803,7 +806,7 @@ class VaultInvariants_test : public BaseInvariants_test
         doInvariantCheck(
             {"vault operation succeeded without modifying a vault"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -825,11 +828,11 @@ class VaultInvariants_test : public BaseInvariants_test
             createVault(AssetType::XRP),
             TxAccount::A2);
 
-        testcase(prefix + "must not invalidated assets maximum");
+        testcase(prefix + "must not invalidate assets maximum");
         doInvariantCheck(
             {"set assets outstanding must not exceed assets maximum"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -848,7 +851,7 @@ class VaultInvariants_test : public BaseInvariants_test
         doInvariantCheck(
             {"assets maximum must be positive"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -869,7 +872,7 @@ class VaultInvariants_test : public BaseInvariants_test
              "updated zero sized vault must have no assets outstanding",
              "updated zero sized vault must have no assets available"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -901,7 +904,7 @@ class VaultInvariants_test : public BaseInvariants_test
         doInvariantCheck(
             {"vault deletion succeeded without deleting a vault"},
             [&](Account const& A1, Account const&, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -920,7 +923,7 @@ class VaultInvariants_test : public BaseInvariants_test
         doInvariantCheck(
             {"vault deleted by a wrong transaction type"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -977,7 +980,7 @@ class VaultInvariants_test : public BaseInvariants_test
         doInvariantCheck(
             {"deleted vault must also delete shares"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 auto const vaultSle = ac.view().peek(*keylet);
                 if (!BEAST_EXPECT(vaultSle))
                     return false;
@@ -995,7 +998,7 @@ class VaultInvariants_test : public BaseInvariants_test
              "deleted vault must have no assets outstanding",
              "deleted vault must have no assets available"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 auto const vaultSle = ac.view().peek(*keylet);
                 if (!BEAST_EXPECT(vaultSle))
                     return false;
@@ -1051,7 +1054,7 @@ class VaultInvariants_test : public BaseInvariants_test
         doInvariantCheck(
             {"deposit must change vault balance"},
             [&](Account const& A1, Account const&, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
                 return adjustVaultAndDepositor(
@@ -1068,7 +1071,7 @@ class VaultInvariants_test : public BaseInvariants_test
         doInvariantCheck(
             {"deposit must change depositor balance"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -1088,7 +1091,7 @@ class VaultInvariants_test : public BaseInvariants_test
         doInvariantCheck(
             {"deposit and assets outstanding must add up"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -1116,7 +1119,7 @@ class VaultInvariants_test : public BaseInvariants_test
         doInvariantCheck(
             {"deposit assets outstanding must not exceed assets maximum"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -1136,7 +1139,7 @@ class VaultInvariants_test : public BaseInvariants_test
         doInvariantCheck(
             {"deposit must change depositor shares"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -1155,7 +1158,7 @@ class VaultInvariants_test : public BaseInvariants_test
         doInvariantCheck(
             {"deposit must change vault shares"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -1174,7 +1177,7 @@ class VaultInvariants_test : public BaseInvariants_test
         doInvariantCheck(
             {"deposit must increase vault balance", "deposit must change depositor balance"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -1193,7 +1196,7 @@ class VaultInvariants_test : public BaseInvariants_test
              "between assets outstanding and available",
              "vault transaction must not change loss unrealized"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -1216,7 +1219,7 @@ class VaultInvariants_test : public BaseInvariants_test
              "deposit must not change vault balance by more than deposited "
              "amount"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -1243,7 +1246,7 @@ class VaultInvariants_test : public BaseInvariants_test
                 "deposit and assets available must add up",
             },
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -1274,7 +1277,7 @@ class VaultInvariants_test : public BaseInvariants_test
             {"deposit and assets outstanding must add up",
              "deposit and assets available must add up"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -1294,7 +1297,7 @@ class VaultInvariants_test : public BaseInvariants_test
         doInvariantCheck(
             {"updated shares must not exceed maximum"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -1322,7 +1325,7 @@ class VaultInvariants_test : public BaseInvariants_test
         doInvariantCheck(
             {"updated shares must not exceed maximum"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -1370,7 +1373,7 @@ class VaultInvariants_test : public BaseInvariants_test
             {"vault operation succeeded without updating shares",
              "assets available must not be greater than assets outstanding"},
             [&](Account const& A1, Account const&, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -1391,7 +1394,7 @@ class VaultInvariants_test : public BaseInvariants_test
         doInvariantCheck(
             {"withdrawal must change vault balance"},
             [&](Account const& A1, Account const&, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -1409,7 +1412,7 @@ class VaultInvariants_test : public BaseInvariants_test
         doInvariantCheck(
             {"withdrawal must change one destination balance"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -1433,7 +1436,7 @@ class VaultInvariants_test : public BaseInvariants_test
              "withdrawal and assets outstanding must add up",
              "withdrawal and assets available must add up"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -1459,11 +1462,11 @@ class VaultInvariants_test : public BaseInvariants_test
             createVault(assetType),
             TxAccount::A2);
 
-        testcase(prefix + "withdrawal must change one destination balance");
+        testcase(prefix + "withdrawal to destination must change one destination balance");
         doInvariantCheck(
             {"withdrawal must change one destination balance"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -1496,7 +1499,7 @@ class VaultInvariants_test : public BaseInvariants_test
         doInvariantCheck(
             {"withdrawal must change depositor shares"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
                 return adjustVaultAndDepositor(
@@ -1514,7 +1517,7 @@ class VaultInvariants_test : public BaseInvariants_test
         doInvariantCheck(
             {"withdrawal must change vault shares"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
 
@@ -1535,7 +1538,7 @@ class VaultInvariants_test : public BaseInvariants_test
              "withdrawal must change depositor and vault shares by equal "
              "amount"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
                 return adjustVaultAndDepositor(
@@ -1555,7 +1558,7 @@ class VaultInvariants_test : public BaseInvariants_test
             {"withdrawal and assets outstanding must add up",
              "withdrawal and assets available must add up"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
                 return adjustVaultAndDepositor(
@@ -1574,7 +1577,7 @@ class VaultInvariants_test : public BaseInvariants_test
         doInvariantCheck(
             {"withdrawal and assets outstanding must add up"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
+                auto const keylet = vaultKeylet();
                 if (!BEAST_EXPECT(keylet))
                     return false;
                 return adjustVaultAndDepositor(
@@ -1611,7 +1614,7 @@ class VaultInvariants_test : public BaseInvariants_test
             doInvariantCheck(
                 {"clawback may only be performed by the asset issuer"},
                 [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                    auto const keylet = vaultKeylet(ac, A1);
+                    auto const keylet = vaultKeylet();
                     if (!BEAST_EXPECT(keylet))
                         return false;
 
@@ -1640,7 +1643,7 @@ class VaultInvariants_test : public BaseInvariants_test
             doInvariantCheck(
                 {"clawback must change vault balance"},
                 [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                    auto const keylet = vaultKeylet(ac, A1);
+                    auto const keylet = vaultKeylet();
                     if (!BEAST_EXPECT(keylet))
                         return false;
 
@@ -1672,7 +1675,7 @@ class VaultInvariants_test : public BaseInvariants_test
             doInvariantCheck(
                 {"clawback may only be performed by the asset issuer"},
                 [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                    auto const keylet = vaultKeylet(ac, A1);
+                    auto const keylet = vaultKeylet();
                     if (!BEAST_EXPECT(keylet))
                         return false;
 
@@ -1695,7 +1698,7 @@ class VaultInvariants_test : public BaseInvariants_test
                  "clawback must decrease holder shares",
                  "clawback must change vault shares"},
                 [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                    auto const keylet = vaultKeylet(ac, A1);
+                    auto const keylet = vaultKeylet();
                     if (!BEAST_EXPECT(keylet))
                         return false;
 
@@ -1713,7 +1716,7 @@ class VaultInvariants_test : public BaseInvariants_test
             doInvariantCheck(
                 {"clawback must change holder shares"},
                 [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                    auto const keylet = vaultKeylet(ac, A1);
+                    auto const keylet = vaultKeylet();
                     if (!BEAST_EXPECT(keylet))
                         return false;
 
@@ -1737,7 +1740,7 @@ class VaultInvariants_test : public BaseInvariants_test
                  "clawback and assets outstanding must add up",
                  "clawback and assets available must add up"},
                 [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                    auto const keylet = vaultKeylet(ac, A1);
+                    auto const keylet = vaultKeylet();
                     if (!BEAST_EXPECT(keylet))
                         return false;
 
