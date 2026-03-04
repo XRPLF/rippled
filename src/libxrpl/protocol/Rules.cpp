@@ -139,19 +139,19 @@ Rules::enabled(uint256 const& feature) const
 {
     XRPL_ASSERT(impl_, "xrpl::Rules::enabled : initialized");
 
+    if (impl_->enabled(feature))
+        return true;
+
     // Some features can be considered enabled based on other enabled features.
     static auto const& transitiveFeatureMap = getTransitiveFeatureMap();
-    if (transitiveFeatureMap.contains(feature))
-    {
-        auto const& transitiveFeatures = transitiveFeatureMap.at(feature);
-        if (std::any_of(
-                transitiveFeatures.begin(), transitiveFeatures.end(), [this](auto const& f) {
-                    return impl_->enabled(f);
-                }))
-            return true;
-    }
+    // If this feature is not one of them, then we're done.
+    if (!transitiveFeatureMap.contains(feature))
+        return false;
 
-    return impl_->enabled(feature);
+    auto const& transitiveFeatures = transitiveFeatureMap.at(feature);
+    return std::any_of(transitiveFeatures.begin(), transitiveFeatures.end(), [this](auto const& f) {
+        return impl_->enabled(f);
+    });
 }
 
 bool
