@@ -1,4 +1,4 @@
-#include <test/app/BaseInvariants_test.cpp>
+#include <test/app/BaseInvariants_test.h>
 //
 #include <test/jtx.h>
 #include <test/jtx/Env.h>

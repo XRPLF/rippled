@@ -1,3 +1,5 @@
+#pragma once
+
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
 
