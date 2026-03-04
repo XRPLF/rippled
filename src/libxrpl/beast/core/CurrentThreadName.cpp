@@ -86,7 +86,7 @@ setCurrentThreadNameImpl(std::string_view name)
         sizeof(boundedName),
         "%.*s",
         static_cast<int>(maxThreadNameLength),
-        name.data());
+        name.data());  // NOLINT(bugprone-suspicious-stringview-data-usage)
 
     pthread_setname_np(pthread_self(), boundedName);
 
