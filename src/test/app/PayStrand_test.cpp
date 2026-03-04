@@ -262,7 +262,7 @@ public:
             if (has(SB::sameAccIss))
                 return acc;
             if (has(SB::existingIss) && existingIss)
-                return *existingIss;
+                return existingIss;
             return issF().id();
         }();
         auto const cur = [&]() -> std::optional<Currency> {
@@ -271,7 +271,7 @@ public:
             if (has(SB::xrp))
                 return xrpCurrency();
             if (has(SB::existingCur) && existingCur)
-                return *existingCur;
+                return existingCur;
             return currencyF();
         }();
         if (!has(SB::boundary))
