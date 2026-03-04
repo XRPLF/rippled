@@ -35,7 +35,7 @@ TEST(scope, scope_exit)
             scope_exit x{[&i]() { i = 5; }};
             throw 1;
         }
-        catch (...)
+        catch (...)  // NOLINT(bugprone-empty-catch)
         {
         }
     }
@@ -47,7 +47,7 @@ TEST(scope, scope_exit)
             x.release();
             throw 1;
         }
-        catch (...)
+        catch (...)  // NOLINT(bugprone-empty-catch)
         {
         }
     }
@@ -85,7 +85,7 @@ TEST(scope, scope_fail)
             scope_fail x{[&i]() { i = 5; }};
             throw 1;
         }
-        catch (...)
+        catch (...)  // NOLINT(bugprone-empty-catch)
         {
         }
     }
@@ -97,7 +97,7 @@ TEST(scope, scope_fail)
             x.release();
             throw 1;
         }
-        catch (...)
+        catch (...)  // NOLINT(bugprone-empty-catch)
         {
         }
     }
@@ -135,7 +135,7 @@ TEST(scope, scope_success)
             scope_success x{[&i]() { i = 5; }};
             throw 1;
         }
-        catch (...)
+        catch (...)  // NOLINT(bugprone-empty-catch)
         {
         }
     }
@@ -147,7 +147,7 @@ TEST(scope, scope_success)
             x.release();
             throw 1;
         }
-        catch (...)
+        catch (...)  // NOLINT(bugprone-empty-catch)
         {
         }
     }

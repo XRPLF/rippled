@@ -42,8 +42,9 @@ AMMVote::preclaim(PreclaimContext const& ctx)
     }
     else if (ammSle->getFieldAmount(sfLPTokenBalance) == beast::zero)
         return tecAMM_EMPTY;
-    else if (auto const lpTokensNew = ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
-             lpTokensNew == beast::zero)
+    else if (
+        auto const lpTokensNew = ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
+        lpTokensNew == beast::zero)
     {
         JLOG(ctx.j.debug()) << "AMM Vote: account is not LP.";
         return tecAMM_INVALID_TOKENS;
