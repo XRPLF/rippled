@@ -60,7 +60,7 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
     if (!sleMPT)
     {
         // LCOV_EXCL_START
-        JLOG(ctx.j.error()) << "VaultDeposit: missing issuance of vault shares.";
+        JLOG(ctx.j.error()) << "VaultDelete: missing issuance of vault shares.";
         return tecOBJECT_NOT_FOUND;
         // LCOV_EXCL_STOP
     }
@@ -68,7 +68,7 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
     if (sleMPT->at(sfIssuer) != vault->getAccountID(sfAccount))
     {
         // LCOV_EXCL_START
-        JLOG(ctx.j.error()) << "VaultDeposit: invalid owner of vault shares.";
+        JLOG(ctx.j.error()) << "VaultDelete: invalid owner of vault shares.";
         return tecNO_PERMISSION;
         // LCOV_EXCL_STOP
     }

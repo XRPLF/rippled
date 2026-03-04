@@ -5768,11 +5768,28 @@ class Vault_test : public beast::unit_test::suite
                 }),
                 ter(tesSUCCESS),
                 THISLINE);
+            env(vault.deposit({
+                    .depositor = other,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                }),
+                ter(tesSUCCESS),
+                THISLINE);
 
             blockVault(tesSUCCESS, keylet);
 
+            // Owner is blocked from depositing to the vault
             env(vault.deposit({
                     .depositor = owner,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                }),
+                ter(tecNO_PERMISSION),
+                THISLINE);
+
+            // Other accounts are also blocked from depositing to the vault
+            env(vault.deposit({
+                    .depositor = other,
                     .id = keylet.key,
                     .amount = XRP(10'000),
                 }),
@@ -5782,6 +5799,14 @@ class Vault_test : public beast::unit_test::suite
             // Block vault withdrawal works as normal
             env(vault.withdraw({
                     .depositor = owner,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                }),
+                ter(tesSUCCESS),
+                THISLINE);
+
+            env(vault.withdraw({
+                    .depositor = other,
                     .id = keylet.key,
                     .amount = XRP(10'000),
                 }),
@@ -5798,9 +5823,25 @@ class Vault_test : public beast::unit_test::suite
                 ter(tesSUCCESS),
                 THISLINE);
 
+            env(vault.deposit({
+                    .depositor = other,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                }),
+                ter(tesSUCCESS),
+                THISLINE);
+
             // Withdraw to keep the vault empty
             env(vault.withdraw({
                     .depositor = owner,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                }),
+                ter(tesSUCCESS),
+                THISLINE);
+
+            env(vault.withdraw({
+                    .depositor = other,
                     .id = keylet.key,
                     .amount = XRP(10'000),
                 }),

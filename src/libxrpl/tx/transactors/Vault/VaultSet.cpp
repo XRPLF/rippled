@@ -23,7 +23,6 @@ VaultSet::checkExtraFeatures(PreflightContext const& ctx)
 std::uint32_t
 VaultSet::getFlagsMask(PreflightContext const& ctx)
 {
-    // VaultSet mask is built assuming fixLendingProtocolV1_1 is enabled
     if (ctx.rules.enabled(fixLendingProtocolV1_1))
         return tfVaultSetMask;
 
@@ -137,7 +136,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
 
     if (ctx.view.rules().enabled(fixLendingProtocolV1_1))
     {
-        // The Vault does not configured to support deposit blocking
+        // The Vault is not configured to support deposit blocking
         if (!vault->isFlag(lsfVaultOwnerCanBlockDeposit) &&
             (ctx.tx.isFlag(tfVaultDepositBlock) || ctx.tx.isFlag(tfVaultDepositUnblock)))
         {
