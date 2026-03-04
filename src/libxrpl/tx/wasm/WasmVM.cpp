@@ -2,14 +2,13 @@
 // #define DEBUG_OUTPUT 1
 #endif
 
-#include <xrpld/app/wasm/HostFunc.h>
-#include <xrpld/app/wasm/HostFuncWrapper.h>
-#include <xrpld/app/wasm/WasmiVM.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/tx/wasm/HostFunc.h>
+#include <xrpl/tx/wasm/HostFuncWrapper.h>
+#include <xrpl/tx/wasm/WasmiVM.h>
 
 #include <memory>
 

@@ -4,7 +4,7 @@
 
 #include <test/app/TestHostFunctions.h>
 
-#include <xrpld/app/wasm/HostFuncWrapper.h>
+#include <xrpl/tx/wasm/HostFuncWrapper.h>
 
 #include <source_location>
 

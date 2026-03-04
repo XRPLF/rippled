@@ -1,6 +1,6 @@
 #pragma once
 
-#include <xrpld/app/wasm/WasmVM.h>
+#include <xrpl/tx/wasm/WasmVM.h>
 
 #include <wasm.h>
 #include <wasmi.h>

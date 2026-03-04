@@ -1,13 +1,12 @@
 #include <test/app/wasm_fixtures/fixtures.h>
 #include <test/jtx.h>
 
-#include <xrpld/app/wasm/HostFunc.h>
-#include <xrpld/app/wasm/WasmVM.h>
-
 #include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/ledger/detail/ApplyViewBase.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/tx/transactors/NFT/NFTokenUtils.h>
+#include <xrpl/tx/wasm/HostFunc.h>
+#include <xrpl/tx/wasm/WasmVM.h>
 
 namespace xrpl {
 
