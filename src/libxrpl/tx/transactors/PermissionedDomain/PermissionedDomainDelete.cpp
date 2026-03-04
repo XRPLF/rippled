@@ -18,7 +18,7 @@ TER
 PermissionedDomainDelete::preclaim(PreclaimContext const& ctx)
 {
     auto const domain = ctx.tx.getFieldH256(sfDomainID);
-    auto const sleDomain = ctx.view.read({ltPERMISSIONED_DOMAIN, domain});
+    auto const sleDomain = ctx.view.read(keylet::permissionedDomain(domain));
 
     if (!sleDomain)
         return tecNO_ENTRY;
@@ -40,7 +40,7 @@ PermissionedDomainDelete::doApply()
         ctx_.tx.isFieldPresent(sfDomainID),
         "xrpl::PermissionedDomainDelete::doApply : required field present");
 
-    auto const slePd = view().peek({ltPERMISSIONED_DOMAIN, ctx_.tx.at(sfDomainID)});
+    auto const slePd = view().peek(keylet::permissionedDomain(ctx_.tx.at(sfDomainID)));
     auto const page = (*slePd)[sfOwnerNode];
 
     if (!view().dirRemove(keylet::ownerDir(account_), page, slePd->key(), true))
