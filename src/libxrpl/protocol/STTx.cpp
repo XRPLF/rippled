@@ -211,6 +211,15 @@ STTx::getSeqValue() const
     return getSeqProxy().value();
 }
 
+AccountID
+STTx::getFeePayer() const
+{
+    // note: the delegate's ability to sign the transaction is checked in `checkPermission`
+    if (isFieldPresent(sfDelegate))
+        return getAccountID(sfDelegate);
+    return getAccountID(sfAccount);
+}
+
 void
 STTx::sign(
     PublicKey const& publicKey,

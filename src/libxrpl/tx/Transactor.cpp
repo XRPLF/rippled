@@ -352,8 +352,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
     if (feePaid == beast::zero)
         return tesSUCCESS;
 
-    auto const id = ctx.tx.isFieldPresent(sfDelegate) ? ctx.tx.getAccountID(sfDelegate)
-                                                      : ctx.tx.getAccountID(sfAccount);
+    auto const id = ctx.tx.getFeePayer();
     auto const sle = ctx.view.read(keylet::account(id));
     if (!sle)
         return terNO_ACCOUNT;
@@ -382,18 +381,8 @@ Transactor::payFee()
 {
     auto const feePaid = ctx_.tx[sfFee].xrp();
 
-    if (ctx_.tx.isFieldPresent(sfDelegate))
-    {
-        // Delegated transactions are paid by the delegated account.
-        auto const delegate = ctx_.tx.getAccountID(sfDelegate);
-        auto const delegatedSle = view().peek(keylet::account(delegate));
-        if (!delegatedSle)
-            return tefINTERNAL;  // LCOV_EXCL_LINE
-
-        delegatedSle->setFieldAmount(sfBalance, delegatedSle->getFieldAmount(sfBalance) - feePaid);
-        view().update(delegatedSle);
-    }
-    else
+    auto const feePayer = ctx_.tx.getFeePayer();
+    if (feePayer == account_)
     {
         auto const sle = view().peek(keylet::account(account_));
         if (!sle)
@@ -406,9 +395,17 @@ Transactor::payFee()
         sle->setFieldAmount(sfBalance, mSourceBalance);
 
         // VFALCO Should we call view().rawDestroyXRP() here as well?
+        return tesSUCCESS;
     }
 
-    return tesSUCCESS;
+    // Delegated transactions are paid by the delegated account.
+    auto const delegate = ctx_.tx.getAccountID(sfDelegate);
+    auto const delegatedSle = view().peek(keylet::account(delegate));
+    if (!delegatedSle)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
+    delegatedSle->setFieldAmount(sfBalance, delegatedSle->getFieldAmount(sfBalance) - feePaid);
+    view().update(delegatedSle);
 }
 
 NotTEC
@@ -694,8 +691,7 @@ Transactor::checkSign(
 NotTEC
 Transactor::checkSign(PreclaimContext const& ctx)
 {
-    auto const idAccount = ctx.tx.isFieldPresent(sfDelegate) ? ctx.tx.getAccountID(sfDelegate)
-                                                             : ctx.tx.getAccountID(sfAccount);
+    auto const idAccount = ctx.tx.getFeePayer();
     return checkSign(ctx.view, ctx.flags, ctx.parentBatchId, idAccount, ctx.tx, ctx.j);
 }
 
@@ -1023,9 +1019,7 @@ Transactor::reset(XRPAmount fee)
     if (!txnAcct)
         return {tefINTERNAL, beast::zero};
 
-    auto const payerSle = ctx_.tx.isFieldPresent(sfDelegate)
-        ? view().peek(keylet::account(ctx_.tx.getAccountID(sfDelegate)))
-        : txnAcct;
+    auto const payerSle = view().peek(keylet::account(ctx_.tx.getFeePayer()));
     if (!payerSle)
         return {tefINTERNAL, beast::zero};  // LCOV_EXCL_LINE
 
