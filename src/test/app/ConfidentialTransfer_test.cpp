@@ -2782,6 +2782,267 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     void
+    testSendCredentialValidation(FeatureBitset features)
+    {
+        testcase("Send credential validation");
+        using namespace test::jtx;
+
+        // =====================================================================
+        // CREDENTIAL VALIDATION TESTS
+        // =====================================================================
+        //
+        // Tests for credentials::checkFields (preflight) and
+        // credentials::valid (preclaim) validation.
+        //
+        // Preflight checks (temMALFORMED):
+        //   - Empty credentials array
+        //   - Array size exceeds maxCredentialsArraySize (8)
+        //   - Duplicate credential IDs in array
+        //
+        // Preclaim checks (tecBAD_CREDENTIALS):
+        //   - Credential doesn't exist
+        //   - Credential doesn't belong to source account
+        //   - Credential not accepted (lsfAccepted flag not set)
+        //
+        // =====================================================================
+
+        // =====================================================================
+        // TEST 1: Preflight - Empty Credentials Array
+        // =====================================================================
+        {
+            Env env(*this, features);
+
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+            mptAlice.pay(alice, bob, 100);
+            mptAlice.pay(alice, carol, 100);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(carol);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
+            mptAlice.mergeInbox({.account = carol});
+
+            // Empty credentials array should fail in preflight
+            mptAlice.send({.account = carol, .dest = bob, .amt = 10, .credentials = {{}}, .err = temMALFORMED});
+        }
+
+        // =====================================================================
+        // TEST 2: Preflight - Credentials Array Too Large
+        // =====================================================================
+        {
+            Env env(*this, features);
+
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+            mptAlice.pay(alice, bob, 100);
+            mptAlice.pay(alice, carol, 100);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(carol);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
+            mptAlice.mergeInbox({.account = carol});
+
+            // Create 9 dummy credential IDs (max is 8)
+            std::vector<std::string> tooManyCredentials;
+            for (int i = 0; i < 9; ++i)
+                tooManyCredentials.push_back(to_string(uint256(i)));
+
+            mptAlice.send(
+                {.account = carol, .dest = bob, .amt = 10, .credentials = tooManyCredentials, .err = temMALFORMED});
+        }
+
+        // =====================================================================
+        // TEST 3: Preflight - Duplicate Credentials
+        // =====================================================================
+        {
+            Env env(*this, features);
+
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            Account const dpIssuer("dpIssuer");
+
+            env.fund(XRP(50000), dpIssuer);
+            env.close();
+
+            char const credType[] = "KYC";
+
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+            mptAlice.pay(alice, bob, 100);
+            mptAlice.pay(alice, carol, 100);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(carol);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
+            mptAlice.mergeInbox({.account = carol});
+
+            // Create credential
+            env(credentials::create(carol, dpIssuer, credType));
+            env.close();
+            env(credentials::accept(carol, dpIssuer, credType));
+            env.close();
+
+            auto const jv = credentials::ledgerEntry(env, carol, dpIssuer, credType);
+            std::string const credIdx = jv[jss::result][jss::index].asString();
+
+            // Duplicate credential IDs should fail in preflight
+            mptAlice.send(
+                {.account = carol, .dest = bob, .amt = 10, .credentials = {{credIdx, credIdx}}, .err = temMALFORMED});
+        }
+
+        // =====================================================================
+        // TEST 4: Preclaim - Credential Doesn't Exist
+        // =====================================================================
+        {
+            Env env(*this, features);
+
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+            mptAlice.pay(alice, bob, 100);
+            mptAlice.pay(alice, carol, 100);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(carol);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
+            mptAlice.convert({.account = bob, .amt = 50, .holderPubKey = mptAlice.getPubKey(bob)});
+            mptAlice.mergeInbox({.account = carol});
+            mptAlice.mergeInbox({.account = bob});
+
+            // Use a non-existent credential ID
+            std::string const fakeCredIdx = to_string(uint256(999));
+
+            mptAlice.send(
+                {.account = carol, .dest = bob, .amt = 10, .credentials = {{fakeCredIdx}}, .err = tecBAD_CREDENTIALS});
+        }
+
+        // =====================================================================
+        // TEST 5: Preclaim - Credential Doesn't Belong to Source Account
+        // =====================================================================
+        {
+            Env env(*this, features);
+
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            Account const dpIssuer("dpIssuer");
+
+            env.fund(XRP(50000), dpIssuer);
+            env.close();
+
+            char const credType[] = "KYC";
+
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+            mptAlice.pay(alice, bob, 100);
+            mptAlice.pay(alice, carol, 100);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(carol);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
+            mptAlice.convert({.account = bob, .amt = 50, .holderPubKey = mptAlice.getPubKey(bob)});
+            mptAlice.mergeInbox({.account = carol});
+            mptAlice.mergeInbox({.account = bob});
+
+            // Create credential for BOB (not carol)
+            env(credentials::create(bob, dpIssuer, credType));
+            env.close();
+            env(credentials::accept(bob, dpIssuer, credType));
+            env.close();
+
+            auto const jv = credentials::ledgerEntry(env, bob, dpIssuer, credType);
+            std::string const credIdx = jv[jss::result][jss::index].asString();
+
+            // Carol tries to use Bob's credential - should fail
+            mptAlice.send(
+                {.account = carol, .dest = bob, .amt = 10, .credentials = {{credIdx}}, .err = tecBAD_CREDENTIALS});
+        }
+
+        // =====================================================================
+        // TEST 6: Preclaim - Credential Not Accepted
+        // =====================================================================
+        {
+            Env env(*this, features);
+
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            Account const dpIssuer("dpIssuer");
+
+            env.fund(XRP(50000), dpIssuer);
+            env.close();
+
+            char const credType[] = "KYC";
+
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+            mptAlice.pay(alice, bob, 100);
+            mptAlice.pay(alice, carol, 100);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(carol);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
+            mptAlice.convert({.account = bob, .amt = 50, .holderPubKey = mptAlice.getPubKey(bob)});
+            mptAlice.mergeInbox({.account = carol});
+            mptAlice.mergeInbox({.account = bob});
+
+            // Create credential but DON'T accept it
+            env(credentials::create(carol, dpIssuer, credType));
+            env.close();
+            // NOTE: No credentials::accept call here
+
+            auto const jv = credentials::ledgerEntry(env, carol, dpIssuer, credType);
+            std::string const credIdx = jv[jss::result][jss::index].asString();
+
+            // Using unaccepted credential should fail
+            mptAlice.send(
+                {.account = carol, .dest = bob, .amt = 10, .credentials = {{credIdx}}, .err = tecBAD_CREDENTIALS});
+        }
+    }
+
+    void
     testClawback(FeatureBitset features)
     {
         testcase("test ConfidentialMPTClawback");
@@ -3911,6 +4172,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testSendPreclaim(features);
         testSendRangeProof(features);
         testSendDepositPreauth(features);
+        testSendCredentialValidation(features);
         testSendWithAuditor(features);
 
         // ConfidentialMPTClawback
