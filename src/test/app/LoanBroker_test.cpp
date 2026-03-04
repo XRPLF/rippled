@@ -1797,33 +1797,10 @@ class LoanBroker_test : public beast::unit_test::suite
         BEAST_EXPECT(env.enabled(fixLendingProtocolV1_1));
     }
 
-    void
-    testLoanBrokerSetVaultID()
-    {
-        using namespace test::jtx;
-        Env env{*this};
-
-        Account const issuer{"issuer"}, lender{"lender"}, borrower{"borrower"};
-        env.fund(XRP(20'000), issuer, lender, borrower);
-
-        Vault vault{env};
-        auto [tx, vaultKeylet] = vault.create({.owner = lender, .asset = xrpIssue()});
-        env(tx);
-        env.close();
-
-        Json::Value jv;
-        jv[sfTransactionType] = jss::LoanBrokerSet;
-        jv[sfAccount] = to_string(lender);
-
-        env(jv, ter(temINVALID), THISLINE);
-    }
-
 public:
     void
     run() override
     {
-        testLoanBrokerSetVaultID();
-        return;
         testFixAmendmentEnabled();
         testLoanBrokerSetDebtMaximum();
         testLoanBrokerCoverDepositNullVault();
