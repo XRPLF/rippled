@@ -406,6 +406,8 @@ Transactor::payFee()
 
     delegatedSle->setFieldAmount(sfBalance, delegatedSle->getFieldAmount(sfBalance) - feePaid);
     view().update(delegatedSle);
+
+    return tesSUCCESS;
 }
 
 NotTEC
