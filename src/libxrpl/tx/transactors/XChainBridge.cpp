@@ -868,7 +868,13 @@ applyClaimAttestations(
         XChainClaimAttestations curAtts{sleClaimID->getFieldArray(sfXChainClaimAttestations)};
 
         auto const newAttResult = onNewAttestations(
-            curAtts, view, &atts[0], &atts[0] + atts.size(), quorum, signersList, j);
+            curAtts,
+            view,
+            &atts[0],
+            &atts[0] + atts.size(),  // NOLINT(bugprone-pointer-arithmetic-on-polymorphic-object)
+            quorum,
+            signersList,
+            j);
 
         // update the claim id
         sleClaimID->setFieldArray(sfXChainClaimAttestations, curAtts.toSTArray());
@@ -1026,7 +1032,13 @@ applyCreateAccountAttestations(
         }();
 
         auto const newAttResult = onNewAttestations(
-            curAtts, view, &atts[0], &atts[0] + atts.size(), quorum, signersList, j);
+            curAtts,
+            view,
+            &atts[0],
+            &atts[0] + atts.size(),  // NOLINT(bugprone-pointer-arithmetic-on-polymorphic-object)
+            quorum,
+            signersList,
+            j);
 
         if (!createCID)
         {
