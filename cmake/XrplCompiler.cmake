@@ -17,7 +17,8 @@ link_libraries(Xrpl::common)
 if (NOT DEFINED CMAKE_POSITION_INDEPENDENT_CODE)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif ()
-set_target_properties(common PROPERTIES INTERFACE_POSITION_INDEPENDENT_CODE ${CMAKE_POSITION_INDEPENDENT_CODE})
+set_target_properties(common PROPERTIES INTERFACE_POSITION_INDEPENDENT_CODE
+                                        ${CMAKE_POSITION_INDEPENDENT_CODE})
 set(CMAKE_CXX_EXTENSIONS OFF)
 target_compile_definitions(
     common
@@ -37,7 +38,8 @@ if (MSVC)
     # remove existing exception flag since we set it to -EHa
     string(REGEX REPLACE "[-/]EH[a-z]+" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
-    foreach (var_ CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE)
+    foreach (var_ CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE CMAKE_CXX_FLAGS_DEBUG
+                  CMAKE_CXX_FLAGS_RELEASE)
 
         # also remove dynamic runtime
         string(REGEX REPLACE "[-/]MD[d]*" " " ${var_} "${${var_}}")
@@ -143,20 +145,23 @@ if (voidstar)
     elseif (NOT is_linux)
         message(FATAL_ERROR "Antithesis instrumentation requires Linux, aborting...")
     elseif (NOT (is_clang AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 16.0))
-        message(FATAL_ERROR "Antithesis instrumentation requires Clang version 16 or later, aborting...")
+        message(FATAL_ERROR "Antithesis instrumentation requires Clang version 16 or later, aborting..."
+        )
     endif ()
 endif ()
 
 if (use_mold)
     # use mold linker if available
-    execute_process(COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=mold -Wl,--version ERROR_QUIET OUTPUT_VARIABLE LD_VERSION)
+    execute_process(COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=mold -Wl,--version ERROR_QUIET
+                    OUTPUT_VARIABLE LD_VERSION)
     if ("${LD_VERSION}" MATCHES "mold")
         target_link_libraries(common INTERFACE -fuse-ld=mold)
     endif ()
     unset(LD_VERSION)
 elseif (use_gold AND is_gcc)
     # use gold linker if available
-    execute_process(COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=gold -Wl,--version ERROR_QUIET OUTPUT_VARIABLE LD_VERSION)
+    execute_process(COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=gold -Wl,--version ERROR_QUIET
+                    OUTPUT_VARIABLE LD_VERSION)
     #[=========================================================[
        NOTE: THE gold linker inserts -rpath as DT_RUNPATH by
        default instead of DT_RPATH, so you might have slightly
@@ -186,7 +191,8 @@ elseif (use_gold AND is_gcc)
     unset(LD_VERSION)
 elseif (use_lld)
     # use lld linker if available
-    execute_process(COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=lld -Wl,--version ERROR_QUIET OUTPUT_VARIABLE LD_VERSION)
+    execute_process(COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=lld -Wl,--version ERROR_QUIET
+                    OUTPUT_VARIABLE LD_VERSION)
     if ("${LD_VERSION}" MATCHES "LLD")
         target_link_libraries(common INTERFACE -fuse-ld=lld)
     endif ()

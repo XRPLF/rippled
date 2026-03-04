@@ -119,7 +119,8 @@ doAccountOffers(RPC::JsonContext& context)
             startAfter,
             startHint,
             limit + 1,
-            [&offers, &count, &marker, &limit, &nextHint, &accountID](std::shared_ptr<SLE const> const& sle) {
+            [&offers, &count, &marker, &limit, &nextHint, &accountID](
+                std::shared_ptr<SLE const> const& sle) {
                 if (!sle)
                 {
                     // LCOV_EXCL_START

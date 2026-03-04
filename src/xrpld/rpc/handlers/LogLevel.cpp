@@ -22,7 +22,8 @@ doLogLevel(RPC::JsonContext& context)
         Json::Value lev(Json::objectValue);
 
         lev[jss::base] = Logs::toString(Logs::fromSeverity(context.app.logs().threshold()));
-        std::vector<std::pair<std::string, std::string>> logTable(context.app.logs().partition_severities());
+        std::vector<std::pair<std::string, std::string>> logTable(
+            context.app.logs().partition_severities());
         for (auto const& [k, v] : logTable)
             lev[k] = v;
 

@@ -88,7 +88,8 @@ AMMTestBase::testAMM(
     std::optional<jtx::ter> const& ter,
     std::vector<FeatureBitset> const& vfeatures)
 {
-    testAMM(std::move(cb), TestAMMArg{.pool = pool, .tfee = tfee, .ter = ter, .features = vfeatures});
+    testAMM(
+        std::move(cb), TestAMMArg{.pool = pool, .tfee = tfee, .ter = ter, .features = vfeatures});
 }
 
 void
@@ -135,7 +136,8 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)>&& cb, TestAMMArg 
         else if (asset2.native())
             fund(env, gw, {alice, carol}, toFund2, {toFund1}, Fund::All);
 
-        AMM ammAlice(env, alice, asset1, asset2, CreateArg{.log = false, .tfee = arg.tfee, .err = arg.ter});
+        AMM ammAlice(
+            env, alice, asset1, asset2, CreateArg{.log = false, .tfee = arg.tfee, .err = arg.ter});
         if (BEAST_EXPECT(ammAlice.expectBalances(asset1, asset2, ammAlice.tokens())))
             cb(ammAlice, env);
     }

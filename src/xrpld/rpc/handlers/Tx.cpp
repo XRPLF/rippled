@@ -1,20 +1,22 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/misc/DeliverMax.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/Transaction.h>
-#include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/rpc/CTID.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/MPTokenIssuanceID.h>
+#include <xrpld/rpc/Status.h>
 
 #include <xrpl/basics/ToString.h>
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/rdb/RelationalDatabase.h>
+#include <xrpl/server/NetworkOPs.h>
 
 #include <regex>
 
@@ -80,7 +82,8 @@ doTxHelp(RPC::Context& context, TxArgs args)
 
     if (args.ctid)
     {
-        args.hash = context.app.getLedgerMaster().txnIdFromIndex(args.ctid->first, args.ctid->second);
+        args.hash =
+            context.app.getLedgerMaster().txnIdFromIndex(args.ctid->first, args.ctid->second);
 
         if (args.hash)
             range = ClosedInterval<uint32_t>(args.ctid->first, args.ctid->second);
@@ -137,7 +140,8 @@ doTxHelp(RPC::Context& context, TxArgs args)
         {
             result.meta = meta;
         }
-        result.validated = isValidated(context.ledgerMaster, ledger->header().seq, ledger->header().hash);
+        result.validated =
+            isValidated(context.ledgerMaster, ledger->header().seq, ledger->header().hash);
         if (result.validated)
             result.closeTime = context.ledgerMaster.getCloseTimeBySeq(txn->getLedger());
 
@@ -146,7 +150,7 @@ doTxHelp(RPC::Context& context, TxArgs args)
         {
             uint32_t lgrSeq = ledger->header().seq;
             uint32_t txnIdx = meta->getAsObject().getFieldU32(sfTransactionIndex);
-            uint32_t netID = context.app.config().NETWORK_ID;
+            uint32_t netID = context.app.getNetworkIDService().getNetworkID();
 
             if (txnIdx <= 0xFFFFU && netID < 0xFFFFU && lgrSeq < 0x0FFF'FFFFUL)
                 result.ctid = RPC::encodeCTID(lgrSeq, (uint32_t)txnIdx, (uint32_t)netID);
@@ -157,7 +161,10 @@ doTxHelp(RPC::Context& context, TxArgs args)
 }
 
 Json::Value
-populateJsonResponse(std::pair<TxResult, RPC::Status> const& res, TxArgs const& args, RPC::JsonContext const& context)
+populateJsonResponse(
+    std::pair<TxResult, RPC::Status> const& res,
+    TxArgs const& args,
+    RPC::JsonContext const& context)
 {
     Json::Value response;
     RPC::Status const& error = res.second;
@@ -182,13 +189,15 @@ populateJsonResponse(std::pair<TxResult, RPC::Status> const& res, TxArgs const& 
         auto const& sttx = result.txn->getSTransaction();
         if (context.apiVersion > 1)
         {
-            constexpr auto optionsJson = JsonOptions::include_date | JsonOptions::disable_API_prior_V2;
+            constexpr auto optionsJson =
+                JsonOptions::include_date | JsonOptions::disable_API_prior_V2;
             if (args.binary)
                 response[jss::tx_blob] = result.txn->getJson(optionsJson, true);
             else
             {
                 response[jss::tx_json] = result.txn->getJson(optionsJson);
-                RPC::insertDeliverMax(response[jss::tx_json], sttx->getTxnType(), context.apiVersion);
+                RPC::insertDeliverMax(
+                    response[jss::tx_json], sttx->getTxnType(), context.apiVersion);
             }
 
             // Note, result.ledgerHash is only set in a closed or validated
@@ -266,7 +275,7 @@ doTxJson(RPC::JsonContext& context)
             return rpcError(rpcINVALID_PARAMS);
 
         auto const [lgr_seq, txn_idx, net_id] = *ctid;
-        if (net_id != context.app.config().NETWORK_ID)
+        if (net_id != context.app.getNetworkIDService().getNetworkID())
         {
             std::stringstream out;
             out << "Wrong network. You should submit this request to a node "
@@ -285,8 +294,8 @@ doTxJson(RPC::JsonContext& context)
     {
         try
         {
-            args.ledgerRange =
-                std::make_pair(context.params[jss::min_ledger].asUInt(), context.params[jss::max_ledger].asUInt());
+            args.ledgerRange = std::make_pair(
+                context.params[jss::min_ledger].asUInt(), context.params[jss::max_ledger].asUInt());
         }
         catch (...)
         {

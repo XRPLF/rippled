@@ -24,7 +24,8 @@ PathRequests::getLineCache(std::shared_ptr<ReadView const> const& ledger, bool a
 
     std::uint32_t const lineSeq = lineCache ? lineCache->getLedger()->seq() : 0;
     std::uint32_t const lgrSeq = ledger->seq();
-    JLOG(mJournal.debug()) << "getLineCache has cache for " << lineSeq << ", considering " << lgrSeq;
+    JLOG(mJournal.debug()) << "getLineCache has cache for " << lineSeq << ", considering "
+                           << lgrSeq;
 
     if ((lineSeq == 0) ||                               // no ledger
         (authoritative && (lgrSeq > lineSeq)) ||        // newer authoritative ledger
@@ -35,7 +36,8 @@ PathRequests::getLineCache(std::shared_ptr<ReadView const> const& ledger, bool a
         // Assign to the local before the member, because the member is a
         // weak_ptr, and will immediately discard it if there are no other
         // references.
-        lineCache_ = lineCache = std::make_shared<RippleLineCache>(ledger, app_.journal("RippleLineCache"));
+        lineCache_ = lineCache =
+            std::make_shared<RippleLineCache>(ledger, app_.journal("RippleLineCache"));
     }
     return lineCache;
 }
@@ -58,7 +60,8 @@ PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
     bool newRequests = app_.getLedgerMaster().isNewPathRequest();
     bool mustBreak = false;
 
-    JLOG(mJournal.trace()) << "updateAll seq=" << cache->getLedger()->seq() << ", " << requests.size() << " requests";
+    JLOG(mJournal.trace()) << "updateAll seq=" << cache->getLedger()->seq() << ", "
+                           << requests.size() << " requests";
 
     int processed = 0, removed = 0;
 
@@ -130,14 +133,15 @@ PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 
                 // Remove any dangling weak pointers or weak
                 // pointers that refer to this path request.
-                auto ret = std::remove_if(requests_.begin(), requests_.end(), [&removed, &request](auto const& wl) {
-                    auto r = wl.lock();
+                auto ret = std::remove_if(
+                    requests_.begin(), requests_.end(), [&removed, &request](auto const& wl) {
+                        auto r = wl.lock();
 
-                    if (r && r != request)
-                        return false;
-                    ++removed;
-                    return true;
-                });
+                        if (r && r != request)
+                            return false;
+                        ++removed;
+                        return true;
+                    });
 
                 requests_.erase(ret, requests_.end());
             }
@@ -180,7 +184,8 @@ PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
         }
     } while (!app_.getJobQueue().isStopping());
 
-    JLOG(mJournal.debug()) << "updateAll complete: " << processed << " processed and " << removed << " removed";
+    JLOG(mJournal.debug()) << "updateAll complete: " << processed << " processed and " << removed
+                           << " removed";
 }
 
 bool
@@ -238,7 +243,8 @@ PathRequests::makeLegacyPathRequest(
 {
     // This assignment must take place before the
     // completion function is called
-    req = std::make_shared<PathRequest>(app_, completion, consumer, ++mLastIdentifier, *this, mJournal);
+    req = std::make_shared<PathRequest>(
+        app_, completion, consumer, ++mLastIdentifier, *this, mJournal);
 
     auto [valid, jvRes] = req->doCreate(getLineCache(inLedger, false), request);
 
@@ -268,7 +274,8 @@ PathRequests::doLegacyPathRequest(
 {
     auto cache = std::make_shared<RippleLineCache>(inLedger, app_.journal("RippleLineCache"));
 
-    auto req = std::make_shared<PathRequest>(app_, [] {}, consumer, ++mLastIdentifier, *this, mJournal);
+    auto req =
+        std::make_shared<PathRequest>(app_, [] {}, consumer, ++mLastIdentifier, *this, mJournal);
 
     auto [valid, jvRes] = req->doCreate(cache, request);
     if (valid)

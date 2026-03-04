@@ -180,7 +180,8 @@ elseif (DEFINED ENV{CODE_COVERAGE_GCOV_TOOL})
     set(GCOV_TOOL "$ENV{CODE_COVERAGE_GCOV_TOOL}")
 elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang")
     if (APPLE)
-        execute_process(COMMAND xcrun -f llvm-cov OUTPUT_VARIABLE LLVMCOV_PATH OUTPUT_STRIP_TRAILING_WHITESPACE)
+        execute_process(COMMAND xcrun -f llvm-cov OUTPUT_VARIABLE LLVMCOV_PATH
+                        OUTPUT_STRIP_TRAILING_WHITESPACE)
     else ()
         find_program(LLVMCOV_PATH llvm-cov)
     endif ()
@@ -199,8 +200,8 @@ foreach (LANG ${LANGUAGES})
         if ("${CMAKE_${LANG}_COMPILER_VERSION}" VERSION_LESS 3)
             message(FATAL_ERROR "Clang version must be 3.0.0 or greater! Aborting...")
         endif ()
-    elseif (NOT "${CMAKE_${LANG}_COMPILER_ID}" MATCHES "GNU" AND NOT "${CMAKE_${LANG}_COMPILER_ID}" MATCHES
-                                                                 "(LLVM)?[Ff]lang")
+    elseif (NOT "${CMAKE_${LANG}_COMPILER_ID}" MATCHES "GNU" AND NOT "${CMAKE_${LANG}_COMPILER_ID}"
+                                                                 MATCHES "(LLVM)?[Ff]lang")
         message(FATAL_ERROR "Compiler is not GNU or Flang! Aborting...")
     endif ()
 endforeach ()
@@ -321,14 +322,16 @@ function (setup_target_for_coverage_gcovr)
     endif ()
 
     if ("--output" IN_LIST GCOVR_ADDITIONAL_ARGS)
-        message(FATAL_ERROR "Unsupported --output option detected in GCOVR_ADDITIONAL_ARGS! Aborting...")
+        message(FATAL_ERROR "Unsupported --output option detected in GCOVR_ADDITIONAL_ARGS! Aborting..."
+        )
     else ()
         if ((Coverage_FORMAT STREQUAL "html-details") OR (Coverage_FORMAT STREQUAL "html-nested"))
             set(GCOVR_OUTPUT_FILE ${PROJECT_BINARY_DIR}/${Coverage_NAME}/index.html)
             set(GCOVR_CREATE_FOLDER ${PROJECT_BINARY_DIR}/${Coverage_NAME})
         elseif (Coverage_FORMAT STREQUAL "html-single")
             set(GCOVR_OUTPUT_FILE ${Coverage_NAME}.html)
-        elseif ((Coverage_FORMAT STREQUAL "json-summary") OR (Coverage_FORMAT STREQUAL "json-details")
+        elseif ((Coverage_FORMAT STREQUAL "json-summary") OR (Coverage_FORMAT STREQUAL
+                                                              "json-details")
                 OR (Coverage_FORMAT STREQUAL "coveralls"))
             set(GCOVR_OUTPUT_FILE ${Coverage_NAME}.json)
         elseif (Coverage_FORMAT STREQUAL "txt")
@@ -452,8 +455,10 @@ function (setup_target_for_coverage_gcovr)
                       COMMENT "Running gcovr to produce code coverage report.")
 
     # Show info where to find the report
-    add_custom_command(TARGET ${Coverage_NAME} POST_BUILD COMMAND echo
-                       COMMENT "Code coverage report saved in ${GCOVR_OUTPUT_FILE} formatted as ${Coverage_FORMAT}")
+    add_custom_command(
+        TARGET ${Coverage_NAME} POST_BUILD COMMAND echo
+        COMMENT "Code coverage report saved in ${GCOVR_OUTPUT_FILE} formatted as ${Coverage_FORMAT}"
+    )
 endfunction () # setup_target_for_coverage_gcovr
 
 function (add_code_coverage_to_target name scope)
@@ -463,14 +468,10 @@ function (add_code_coverage_to_target name scope)
     separate_arguments(COVERAGE_C_LINKER_FLAGS NATIVE_COMMAND "${COVERAGE_C_LINKER_FLAGS}")
 
     # Add compiler options to the target
-    target_compile_options(${name} ${scope} $<$<COMPILE_LANGUAGE:CXX>:${COVERAGE_CXX_COMPILER_FLAGS}>
-                           $<$<COMPILE_LANGUAGE:C>:${COVERAGE_C_COMPILER_FLAGS}>)
+    target_compile_options(
+        ${name} ${scope} $<$<COMPILE_LANGUAGE:CXX>:${COVERAGE_CXX_COMPILER_FLAGS}>
+        $<$<COMPILE_LANGUAGE:C>:${COVERAGE_C_COMPILER_FLAGS}>)
 
-    target_link_libraries(
-        ${name}
-        ${scope}
-        $<$<LINK_LANGUAGE:CXX>:${COVERAGE_CXX_LINKER_FLAGS}
-        gcov>
-        $<$<LINK_LANGUAGE:C>:${COVERAGE_C_LINKER_FLAGS}
-        gcov>)
+    target_link_libraries(${name} ${scope} $<$<LINK_LANGUAGE:CXX>:${COVERAGE_CXX_LINKER_FLAGS}>
+                          $<$<LINK_LANGUAGE:C>:${COVERAGE_C_LINKER_FLAGS}>)
 endfunction () # add_code_coverage_to_target

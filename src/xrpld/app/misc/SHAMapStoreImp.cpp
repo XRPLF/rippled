@@ -1,13 +1,13 @@
 #include <xrpld/app/ledger/TransactionMaster.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/SHAMapStoreImp.h>
-#include <xrpld/app/rdb/State.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
+#include <xrpl/server/NetworkOPs.h>
+#include <xrpl/server/State.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -60,7 +60,10 @@ SHAMapStoreImp::SavedStateDB::setLastRotated(LedgerIndex seq)
 
 //------------------------------------------------------------------------------
 
-SHAMapStoreImp::SHAMapStoreImp(Application& app, NodeStore::Scheduler& scheduler, beast::Journal journal)
+SHAMapStoreImp::SHAMapStoreImp(
+    Application& app,
+    NodeStore::Scheduler& scheduler,
+    beast::Journal journal)
     : app_(app)
     , scheduler_(scheduler)
     , journal_(journal)
@@ -72,7 +75,8 @@ SHAMapStoreImp::SHAMapStoreImp(Application& app, NodeStore::Scheduler& scheduler
     Section& section{config.section(ConfigSection::nodeDatabase())};
     if (section.empty())
     {
-        Throw<std::runtime_error>("Missing [" + ConfigSection::nodeDatabase() + "] entry in configuration file");
+        Throw<std::runtime_error>(
+            "Missing [" + ConfigSection::nodeDatabase() + "] entry in configuration file");
     }
 
     // RocksDB only. Use sensible defaults if no values specified.
@@ -107,10 +111,12 @@ SHAMapStoreImp::SHAMapStoreImp(Application& app, NodeStore::Scheduler& scheduler
 
         get_if_exists(section, "advisory_delete", advisoryDelete_);
 
-        auto const minInterval = config.standalone() ? minimumDeletionIntervalSA_ : minimumDeletionInterval_;
+        auto const minInterval =
+            config.standalone() ? minimumDeletionIntervalSA_ : minimumDeletionInterval_;
         if (deleteInterval_ < minInterval)
         {
-            Throw<std::runtime_error>("online_delete must be at least " + std::to_string(minInterval));
+            Throw<std::runtime_error>(
+                "online_delete must be at least " + std::to_string(minInterval));
         }
 
         if (config.LEDGER_HISTORY > deleteInterval_)
@@ -201,7 +207,8 @@ bool
 SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
 {
     // Copy a single record from node to dbRotating_
-    dbRotating_->fetchNodeObject(node.getHash().as_uint256(), 0, NodeStore::FetchType::synchronous, true);
+    dbRotating_->fetchNodeObject(
+        node.getHash().as_uint256(), 0, NodeStore::FetchType::synchronous, true);
     if (!(++nodeCount % checkHealthInterval_))
     {
         if (healthWait() == stopping)
@@ -251,14 +258,15 @@ SHAMapStoreImp::run()
             state_db_.setLastRotated(lastRotated);
         }
 
-        bool const readyToRotate =
-            validatedSeq >= lastRotated + deleteInterval_ && canDelete_ >= lastRotated - 1 && healthWait() == keepGoing;
+        bool const readyToRotate = validatedSeq >= lastRotated + deleteInterval_ &&
+            canDelete_ >= lastRotated - 1 && healthWait() == keepGoing;
 
         // will delete up to (not including) lastRotated
         if (readyToRotate)
         {
-            JLOG(journal_.warn()) << "rotating  validatedSeq " << validatedSeq << " lastRotated " << lastRotated
-                                  << " deleteInterval " << deleteInterval_ << " canDelete_ " << canDelete_ << " state "
+            JLOG(journal_.warn()) << "rotating  validatedSeq " << validatedSeq << " lastRotated "
+                                  << lastRotated << " deleteInterval " << deleteInterval_
+                                  << " canDelete_ " << canDelete_ << " state "
                                   << app_.getOPs().strOperatingMode(false) << " age "
                                   << ledgerMaster_->getValidatedLedgerAge().count() << 's';
 
@@ -272,18 +280,24 @@ SHAMapStoreImp::run()
             try
             {
                 validatedLedger->stateMap().snapShot(false)->visitNodes(
-                    std::bind(&SHAMapStoreImp::copyNode, this, std::ref(nodeCount), std::placeholders::_1));
+                    std::bind(
+                        &SHAMapStoreImp::copyNode,
+                        this,
+                        std::ref(nodeCount),
+                        std::placeholders::_1));
             }
             catch (SHAMapMissingNode const& e)
             {
-                JLOG(journal_.error()) << "Missing node while copying ledger before rotate: " << e.what();
+                JLOG(journal_.error())
+                    << "Missing node while copying ledger before rotate: " << e.what();
                 continue;
             }
 
             if (healthWait() == stopping)
                 return;
             // Only log if we completed without a "health" abort
-            JLOG(journal_.debug()) << "copied ledger " << validatedSeq << " nodecount " << nodeCount;
+            JLOG(journal_.debug())
+                << "copied ledger " << validatedSeq << " nodecount " << nodeCount;
 
             JLOG(journal_.debug()) << "freshening caches";
             freshenCaches();
@@ -303,7 +317,8 @@ SHAMapStoreImp::run()
             lastRotated = validatedSeq;
 
             dbRotating_->rotate(
-                std::move(newBackend), [&](std::string const& writableName, std::string const& archiveName) {
+                std::move(newBackend),
+                [&](std::string const& writableName, std::string const& archiveName) {
                     SavedState savedState;
                     savedState.writableDb = writableName;
                     savedState.archiveDb = archiveName;
@@ -365,7 +380,9 @@ SHAMapStoreImp::dbPaths()
     bool archiveDbExists = false;
 
     std::vector<boost::filesystem::path> pathsToDelete;
-    for (boost::filesystem::directory_iterator it(dbPath); it != boost::filesystem::directory_iterator(); ++it)
+    for (boost::filesystem::directory_iterator it(dbPath);
+         it != boost::filesystem::directory_iterator();
+         ++it)
     {
         if (!state.writableDb.compare(it->path().string()))
             writableDbExists = true;
@@ -375,19 +392,23 @@ SHAMapStoreImp::dbPaths()
             pathsToDelete.push_back(it->path());
     }
 
-    if ((!writableDbExists && state.writableDb.size()) || (!archiveDbExists && state.archiveDb.size()) ||
-        (writableDbExists != archiveDbExists) || state.writableDb.empty() != state.archiveDb.empty())
+    if ((!writableDbExists && state.writableDb.size()) ||
+        (!archiveDbExists && state.archiveDb.size()) || (writableDbExists != archiveDbExists) ||
+        state.writableDb.empty() != state.archiveDb.empty())
     {
         boost::filesystem::path stateDbPathName = app_.config().legacy("database_path");
         stateDbPathName /= dbName_;
         stateDbPathName += "*";
 
         journal_.error() << "state db error:\n"
-                         << "  writableDbExists " << writableDbExists << " archiveDbExists " << archiveDbExists << '\n'
-                         << "  writableDb '" << state.writableDb << "' archiveDb '" << state.archiveDb << "\n\n"
+                         << "  writableDbExists " << writableDbExists << " archiveDbExists "
+                         << archiveDbExists << '\n'
+                         << "  writableDb '" << state.writableDb << "' archiveDb '"
+                         << state.archiveDb << "\n\n"
                          << "The existing data is in a corrupted state.\n"
-                         << "To resume operation, remove the files matching " << stateDbPathName.string()
-                         << " and contents of the directory " << get(section, "path") << '\n'
+                         << "To resume operation, remove the files matching "
+                         << stateDbPathName.string() << " and contents of the directory "
+                         << get(section, "path") << '\n'
                          << "Optionally, you can move those files to another\n"
                          << "location if you wish to analyze or back up the data.\n"
                          << "However, there is no guarantee that the data in its\n"
@@ -457,15 +478,16 @@ SHAMapStoreImp::clearSql(
         return;
     }
 
-    JLOG(journal_.debug()) << "start deleting in: " << TableName << " from " << min << " to " << lastRotated;
+    JLOG(journal_.debug()) << "start deleting in: " << TableName << " from " << min << " to "
+                           << lastRotated;
     while (min < lastRotated)
     {
         min = std::min(lastRotated, min + deleteBatch_);
-        JLOG(journal_.trace()) << "Begin: Delete up to " << deleteBatch_ << " rows with LedgerSeq < " << min
-                               << " from: " << TableName;
+        JLOG(journal_.trace()) << "Begin: Delete up to " << deleteBatch_
+                               << " rows with LedgerSeq < " << min << " from: " << TableName;
         deleteBeforeSeq(min);
-        JLOG(journal_.trace()) << "End: Delete up to " << deleteBatch_ << " rows with LedgerSeq < " << min
-                               << " from: " << TableName;
+        JLOG(journal_.trace()) << "End: Delete up to " << deleteBatch_ << " rows with LedgerSeq < "
+                               << min << " from: " << TableName;
         if (healthWait() == stopping)
             return;
         if (min < lastRotated)
@@ -507,16 +529,13 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
     if (healthWait() == stopping)
         return;
 
-    SQLiteDatabase* const db = dynamic_cast<SQLiteDatabase*>(&app_.getRelationalDatabase());
-
-    if (!db)
-        Throw<std::runtime_error>("Failed to get relational database");
+    auto& db = app_.getRelationalDatabase();
 
     clearSql(
         lastRotated,
         "Ledgers",
-        [db]() -> std::optional<LedgerIndex> { return db->getMinLedgerSeq(); },
-        [db](LedgerIndex min) -> void { db->deleteBeforeLedgerSeq(min); });
+        [&db]() -> std::optional<LedgerIndex> { return db.getMinLedgerSeq(); },
+        [&db](LedgerIndex min) -> void { db.deleteBeforeLedgerSeq(min); });
     if (healthWait() == stopping)
         return;
 
@@ -526,16 +545,16 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
     clearSql(
         lastRotated,
         "Transactions",
-        [&db]() -> std::optional<LedgerIndex> { return db->getTransactionsMinLedgerSeq(); },
-        [&db](LedgerIndex min) -> void { db->deleteTransactionsBeforeLedgerSeq(min); });
+        [&db]() -> std::optional<LedgerIndex> { return db.getTransactionsMinLedgerSeq(); },
+        [&db](LedgerIndex min) -> void { db.deleteTransactionsBeforeLedgerSeq(min); });
     if (healthWait() == stopping)
         return;
 
     clearSql(
         lastRotated,
         "AccountTransactions",
-        [&db]() -> std::optional<LedgerIndex> { return db->getAccountTransactionsMinLedgerSeq(); },
-        [&db](LedgerIndex min) -> void { db->deleteAccountTransactionsBeforeLedgerSeq(min); });
+        [&db]() -> std::optional<LedgerIndex> { return db.getAccountTransactionsMinLedgerSeq(); },
+        [&db](LedgerIndex min) -> void { db.deleteAccountTransactionsBeforeLedgerSeq(min); });
     if (healthWait() == stopping)
         return;
 }
@@ -550,8 +569,9 @@ SHAMapStoreImp::healthWait()
     {
         lock.unlock();
         JLOG(journal_.warn()) << "Waiting " << recoveryWaitTime_.count()
-                              << "s for node to stabilize. state: " << app_.getOPs().strOperatingMode(mode, false)
-                              << ". age " << age.count() << 's';
+                              << "s for node to stabilize. state: "
+                              << app_.getOPs().strOperatingMode(mode, false) << ". age "
+                              << age.count() << 's';
         std::this_thread::sleep_for(recoveryWaitTime_);
         age = ledgerMaster_->getValidatedLedgerAge();
         mode = netOPs_->getOperatingMode();

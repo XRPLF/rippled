@@ -37,7 +37,12 @@ public:
             if (mantissa < STAmount::cMinValue)
                 return {amount.issue(), mantissa, amount.exponent(), amount.negative()};
 
-            return {amount.issue(), mantissa, amount.exponent(), amount.negative(), STAmount::unchecked{}};
+            return {
+                amount.issue(),
+                mantissa,
+                amount.exponent(),
+                amount.negative(),
+                STAmount::unchecked{}};
         }
 
         if (valueDigits == 999999999)
@@ -47,7 +52,12 @@ public:
             if (mantissa > STAmount::cMaxValue)
                 return {amount.issue(), mantissa, amount.exponent(), amount.negative()};
 
-            return {amount.issue(), mantissa, amount.exponent(), amount.negative(), STAmount::unchecked{}};
+            return {
+                amount.issue(),
+                mantissa,
+                amount.exponent(),
+                amount.negative(),
+                STAmount::unchecked{}};
         }
 
         return amount;
@@ -73,8 +83,8 @@ public:
 
         if (res != cmp)
         {
-            log << "(" << num.getText() << "/" << den.getText() << ") X " << mul.getText() << " = " << res.getText()
-                << " not " << cmp.getText();
+            log << "(" << num.getText() << "/" << den.getText() << ") X " << mul.getText() << " = "
+                << res.getText() << " not " << cmp.getText();
             fail("Rounding");
             return;
         }
@@ -93,8 +103,8 @@ public:
 
         if (prod1 != prod2)
         {
-            log << "nn(" << aa.getFullText() << " * " << bb.getFullText() << ") = " << prod1.getFullText() << " not "
-                << prod2.getFullText();
+            log << "nn(" << aa.getFullText() << " * " << bb.getFullText()
+                << ") = " << prod1.getFullText() << " not " << prod2.getFullText();
             fail("Multiplication result is not exact");
         }
     }
@@ -338,11 +348,17 @@ public:
         unexpected(STAmount(noIssue(), 31, -1).getText() != "3.1", "STAmount fail");
         unexpected(STAmount(noIssue(), 31, -2).getText() != "0.31", "STAmount fail");
         unexpected(
-            multiply(STAmount(noIssue(), 20), STAmount(3), noIssue()).getText() != "60", "STAmount multiply fail 1");
+            multiply(STAmount(noIssue(), 20), STAmount(3), noIssue()).getText() != "60",
+            "STAmount multiply fail 1");
         unexpected(
-            multiply(STAmount(noIssue(), 20), STAmount(3), xrpIssue()).getText() != "60", "STAmount multiply fail 2");
-        unexpected(multiply(STAmount(20), STAmount(3), noIssue()).getText() != "60", "STAmount multiply fail 3");
-        unexpected(multiply(STAmount(20), STAmount(3), xrpIssue()).getText() != "60", "STAmount multiply fail 4");
+            multiply(STAmount(noIssue(), 20), STAmount(3), xrpIssue()).getText() != "60",
+            "STAmount multiply fail 2");
+        unexpected(
+            multiply(STAmount(20), STAmount(3), noIssue()).getText() != "60",
+            "STAmount multiply fail 3");
+        unexpected(
+            multiply(STAmount(20), STAmount(3), xrpIssue()).getText() != "60",
+            "STAmount multiply fail 4");
 
         if (divide(STAmount(noIssue(), 60), STAmount(3), noIssue()).getText() != "20")
         {
@@ -354,7 +370,9 @@ public:
             pass();
         }
 
-        unexpected(divide(STAmount(noIssue(), 60), STAmount(3), xrpIssue()).getText() != "20", "STAmount divide fail");
+        unexpected(
+            divide(STAmount(noIssue(), 60), STAmount(3), xrpIssue()).getText() != "20",
+            "STAmount divide fail");
 
         unexpected(
             divide(STAmount(noIssue(), 60), STAmount(noIssue(), 3), noIssue()).getText() != "20",
@@ -366,9 +384,13 @@ public:
 
         STAmount a1(noIssue(), 60), a2(noIssue(), 10, -1);
 
-        unexpected(divide(a2, a1, noIssue()) != amountFromQuality(getRate(a1, a2)), "STAmount setRate(getRate) fail");
+        unexpected(
+            divide(a2, a1, noIssue()) != amountFromQuality(getRate(a1, a2)),
+            "STAmount setRate(getRate) fail");
 
-        unexpected(divide(a1, a2, noIssue()) != amountFromQuality(getRate(a2, a1)), "STAmount setRate(getRate) fail");
+        unexpected(
+            divide(a1, a2, noIssue()) != amountFromQuality(getRate(a2, a1)),
+            "STAmount setRate(getRate) fail");
     }
 
     //--------------------------------------------------------------------------
@@ -383,11 +405,13 @@ public:
         // and getNeeded
 
         unexpected(
-            getRate(STAmount(1), STAmount(10)) != (((100ull - 14) << (64 - 8)) | 1000000000000000ull),
+            getRate(STAmount(1), STAmount(10)) !=
+                (((100ull - 14) << (64 - 8)) | 1000000000000000ull),
             "STAmount getRate fail 1");
 
         unexpected(
-            getRate(STAmount(10), STAmount(1)) != (((100ull - 16) << (64 - 8)) | 1000000000000000ull),
+            getRate(STAmount(10), STAmount(1)) !=
+                (((100ull - 16) << (64 - 8)) | 1000000000000000ull),
             "STAmount getRate fail 2");
 
         unexpected(
@@ -401,19 +425,23 @@ public:
             "STAmount getRate fail 4");
 
         unexpected(
-            getRate(STAmount(noIssue(), 1), STAmount(10)) != (((100ull - 14) << (64 - 8)) | 1000000000000000ull),
+            getRate(STAmount(noIssue(), 1), STAmount(10)) !=
+                (((100ull - 14) << (64 - 8)) | 1000000000000000ull),
             "STAmount getRate fail 5");
 
         unexpected(
-            getRate(STAmount(noIssue(), 10), STAmount(1)) != (((100ull - 16) << (64 - 8)) | 1000000000000000ull),
+            getRate(STAmount(noIssue(), 10), STAmount(1)) !=
+                (((100ull - 16) << (64 - 8)) | 1000000000000000ull),
             "STAmount getRate fail 6");
 
         unexpected(
-            getRate(STAmount(1), STAmount(noIssue(), 10)) != (((100ull - 14) << (64 - 8)) | 1000000000000000ull),
+            getRate(STAmount(1), STAmount(noIssue(), 10)) !=
+                (((100ull - 14) << (64 - 8)) | 1000000000000000ull),
             "STAmount getRate fail 7");
 
         unexpected(
-            getRate(STAmount(10), STAmount(noIssue(), 1)) != (((100ull - 16) << (64 - 8)) | 1000000000000000ull),
+            getRate(STAmount(10), STAmount(noIssue(), 1)) !=
+                (((100ull - 16) << (64 - 8)) | 1000000000000000ull),
             "STAmount getRate fail 8");
 
         roundTest(1, 3, 3);
@@ -437,13 +465,15 @@ public:
         testcase("underflow");
 
         STAmount bigNative(STAmount::cMaxNative / 2);
-        STAmount bigValue(noIssue(), (STAmount::cMinValue + STAmount::cMaxValue) / 2, STAmount::cMaxOffset - 1);
-        STAmount smallValue(noIssue(), (STAmount::cMinValue + STAmount::cMaxValue) / 2, STAmount::cMinOffset + 1);
+        STAmount bigValue(
+            noIssue(), (STAmount::cMinValue + STAmount::cMaxValue) / 2, STAmount::cMaxOffset - 1);
+        STAmount smallValue(
+            noIssue(), (STAmount::cMinValue + STAmount::cMaxValue) / 2, STAmount::cMinOffset + 1);
         STAmount zeroSt(noIssue(), 0);
 
-        STAmount smallXsmall = multiply(smallValue, smallValue, noIssue());
+        STAmount smallXSmall = multiply(smallValue, smallValue, noIssue());
 
-        BEAST_EXPECT(smallXsmall == beast::zero);
+        BEAST_EXPECT(smallXSmall == beast::zero);
 
         STAmount bigDsmall = divide(smallValue, bigValue, noIssue());
 

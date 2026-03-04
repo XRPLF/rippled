@@ -13,7 +13,11 @@ namespace NodeStore {
 class DatabaseRotating : public Database
 {
 public:
-    DatabaseRotating(Scheduler& scheduler, int readThreads, Section const& config, beast::Journal journal)
+    DatabaseRotating(
+        Scheduler& scheduler,
+        int readThreads,
+        Section const& config,
+        beast::Journal journal)
         : Database(scheduler, readThreads, config, journal)
     {
     }
@@ -28,7 +32,8 @@ public:
     virtual void
     rotate(
         std::unique_ptr<NodeStore::Backend>&& newBackend,
-        std::function<void(std::string const& writableName, std::string const& archiveName)> const& f) = 0;
+        std::function<void(std::string const& writableName, std::string const& archiveName)> const&
+            f) = 0;
 };
 
 }  // namespace NodeStore

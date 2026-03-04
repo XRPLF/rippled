@@ -86,9 +86,9 @@ message TMPublicKey {
 // you must first combine coins from one address to another.
 
 enum TransactionStatus {
-  tsNEW = 1;       // origin node did/could not validate
-  tsCURRENT = 2;   // scheduled to go in this ledger
-  tsCOMMITED = 3;  // in a closed ledger
+  tsNEW = 1;        // origin node did/could not validate
+  tsCURRENT = 2;    // scheduled to go in this ledger
+  tsCOMMITTED = 3;  // in a closed ledger
   tsREJECT_CONFLICT = 4;
   tsREJECT_INVALID = 5;
   tsREJECT_FUNDS = 6;

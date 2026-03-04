@@ -243,7 +243,10 @@ private:
     std::condition_variable readCondVar_;
 
     // reads to do
-    std::map<uint256, std::vector<std::pair<std::uint32_t, std::function<void(std::shared_ptr<NodeObject> const&)>>>>
+    std::map<
+        uint256,
+        std::vector<
+            std::pair<std::uint32_t, std::function<void(std::shared_ptr<NodeObject> const&)>>>>
         read_;
 
     std::atomic<bool> readStopping_ = false;
@@ -251,7 +254,11 @@ private:
     std::atomic<int> runningThreads_ = 0;
 
     virtual std::shared_ptr<NodeObject>
-    fetchNodeObject(uint256 const& hash, std::uint32_t ledgerSeq, FetchReport& fetchReport, bool duplicate) = 0;
+    fetchNodeObject(
+        uint256 const& hash,
+        std::uint32_t ledgerSeq,
+        FetchReport& fetchReport,
+        bool duplicate) = 0;
 
     /** Visit every object in the database
         This is usually called during import.

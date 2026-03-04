@@ -1,19 +1,22 @@
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/misc/TxQ.h>
-#include <xrpld/app/tx/apply.h>
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Overlay.h>
 
+#include <xrpl/core/HashRouter.h>
 #include <xrpl/ledger/CachedView.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/tx/apply.h>
 
 #include <boost/range/adaptor/transformed.hpp>
 
 namespace xrpl {
 
-OpenLedger::OpenLedger(std::shared_ptr<Ledger const> const& ledger, CachedSLEs& cache, beast::Journal journal)
+OpenLedger::OpenLedger(
+    std::shared_ptr<Ledger const> const& ledger,
+    CachedSLEs& cache,
+    beast::Journal journal)
     : j_(journal), cache_(cache), current_(create(ledger->rules(), ledger))
 {
 }
@@ -79,9 +82,8 @@ OpenLedger::accept(
             *ledger,
             boost::adaptors::transform(
                 current_->txs,
-                [](std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>> const& p) {
-                    return p.first;
-                }),
+                [](std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>> const&
+                       p) { return p.first; }),
             retries,
             flags,
             j_);
@@ -137,7 +139,8 @@ OpenLedger::accept(
 std::shared_ptr<OpenView>
 OpenLedger::create(Rules const& rules, std::shared_ptr<Ledger const> const& ledger)
 {
-    return std::make_shared<OpenView>(open_ledger, rules, std::make_shared<CachedLedger const>(ledger, cache_));
+    return std::make_shared<OpenView>(
+        open_ledger, rules, std::make_shared<CachedLedger const>(ledger, cache_));
 }
 
 auto
