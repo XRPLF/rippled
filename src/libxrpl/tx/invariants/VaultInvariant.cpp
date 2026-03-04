@@ -379,7 +379,7 @@ ValidVault::finalize(
         return std::nullopt;
     }();
 
-    bool const isDonate = !view.rules().enabled(fixLendingProtocolV1_1) || tx.isFlag(tfVaultDonate);
+    bool const isDonate = view.rules().enabled(fixLendingProtocolV1_1) && tx.isFlag(tfVaultDonate);
     bool const shouldUpdateShares =
         // Vault Asset donation is the only operation that can succeed without updating shares
         ((tx.getTxnType() == ttVAULT_DEPOSIT && !isDonate) ||  //

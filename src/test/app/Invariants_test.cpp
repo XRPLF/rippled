@@ -3367,6 +3367,21 @@ class Invariants_test : public beast::unit_test::suite
             TxAccount::A2);
 
         doInvariantCheck(
+            Env{*this, testable_amendments() - fixLendingProtocolV1_1},
+            {"deposit must change depositor shares"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                return adjust(ac.view(), keylet, args(A2.id(), 10, [&](Adjustments& sample) {
+                                  sample.accountShares.reset();
+                              }));
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DEPOSIT, [](STObject& tx) { tx[sfAmount] = XRPAmount(10); }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
+        doInvariantCheck(
             {"deposit must change depositor shares"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(A1.id(), ac.view().seq());

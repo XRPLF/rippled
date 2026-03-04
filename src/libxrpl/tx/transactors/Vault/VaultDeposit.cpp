@@ -166,6 +166,9 @@ VaultDeposit::doApply()
         // LCOV_EXCL_STOP
     }
 
+    auto const isDonate =
+        ctx_.view().rules().enabled(fixLendingProtocolV1_1) && ctx_.tx.isFlag(tfVaultDonate);
+
     auto const& vaultAccount = vault->at(sfAccount);
     // Note, vault owner is always authorized
     if (vault->isFlag(lsfVaultPrivate) && account_ != vault->at(sfOwner))
@@ -206,7 +209,7 @@ VaultDeposit::doApply()
         }
     }
     STAmount sharesCreated = {vault->at(sfShareMPTID)}, assetsDeposited;
-    if (view().rules().enabled(fixLendingProtocolV1_1) && ctx_.tx.isFlag(tfVaultDonate))
+    if (isDonate)
     {
         XRPL_ASSERT(
             account_ == vault->at(sfOwner), "xrpl::VaultDeposit::doApply : account is owner");
@@ -286,10 +289,10 @@ VaultDeposit::doApply()
         // LCOV_EXCL_STOP
     }
 
-    if (view().rules().enabled(fixLendingProtocolV1_1) && ctx_.tx.isFlag(tfVaultDonate))
+    if (isDonate)
     {
         XRPL_ASSERT(
-            sharesCreated == beast::zero, "xrpl::VaultDeposit::doApply: donation issued shares");
+            sharesCreated == beast::zero, "xrpl::VaultDeposit::doApply : donation issued shares");
     }
     else
     {
