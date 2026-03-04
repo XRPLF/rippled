@@ -1479,7 +1479,7 @@ rpcClient(
                 setup = setup_ServerHandler(
                     config, beast::logstream{logs.journal("HTTPClient").warn()});
             }
-            catch (std::exception const&)
+            catch (std::exception const&)  // NOLINT(bugprone-empty-catch)
             {
                 // ignore any exceptions, so the command
                 // line client works without a config file
