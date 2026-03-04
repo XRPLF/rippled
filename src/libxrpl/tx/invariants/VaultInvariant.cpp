@@ -9,6 +9,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
