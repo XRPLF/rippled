@@ -3827,7 +3827,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             uint32_t const seqA = env.seq(bob);
             uint32_t const oldVersion = currentVersion - 1;
             uint256 const badContextHash = getConvertBackContextHash(bob, mptAlice.issuanceID(), seqA, oldVersion);
-            ;
 
             Buffer const proof = mptAlice.getConvertBackProof(
                 bob,
@@ -3860,7 +3859,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             uint32_t const oldSeq = seqB - 1;
             uint256 const badContextHash =
                 getConvertBackContextHash(bob, mptAlice.issuanceID(), oldSeq, currentVersion);
-            ;
 
             Buffer const proof = mptAlice.getConvertBackProof(
                 bob,
@@ -3890,7 +3888,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             // Fetch updated sequence once more
             uint32_t const seqC = env.seq(bob);
             uint256 const goodContextHash = getConvertBackContextHash(bob, mptAlice.issuanceID(), seqC, currentVersion);
-            ;
 
             Buffer const proof = mptAlice.getConvertBackProof(
                 bob,
