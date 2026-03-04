@@ -725,18 +725,21 @@ Expected<WasmResult<int32_t>, TER>
 WasmiEngine::run(
     Bytes const& wasmCode,
     HostFunctions& hfs,
+    int64_t gas,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
     ImportVec const& imports,
-    int64_t gas,
     beast::Journal j)
 {
     j_ = j;
 
+    if (gas <= 0)
+        return Unexpected<TER>(temBAD_AMOUNT);
+
     try
     {
         checkImports(imports, &hfs);
-        return runHlp(wasmCode, hfs, funcName, params, imports, gas);
+        return runHlp(wasmCode, hfs, gas, funcName, params, imports);
     }
     catch (std::exception const& e)
     {
@@ -755,10 +758,10 @@ Expected<WasmResult<int32_t>, TER>
 WasmiEngine::runHlp(
     Bytes const& wasmCode,
     HostFunctions& hfs,
+    int64_t gas,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
-    ImportVec const& imports,
-    int64_t gas)
+    ImportVec const& imports)
 {
     // currently only 1 module support, possible parallel UT run
     std::lock_guard<decltype(m_)> lg(m_);

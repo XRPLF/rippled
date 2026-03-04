@@ -251,12 +251,11 @@ std::uint8_t constexpr vaultMaximumIOUScale = 18;
  * another vault; counted from 0 */
 std::uint8_t constexpr maxAssetCheckDepth = 5;
 
-/** The maximum length of a Data field in Escrow object that can be updated by
- * Wasm code */
-std::size_t constexpr maxWasmDataLength = 4 * 1024;
+/** Maximum length of a Data field in Escrow object that can be updated by WASM code. */
+std::size_t constexpr maxWasmDataLength = 4 * 1024;  // 4KB
 
-/** The maximum length of a parameters passed from Wasm code*/
-std::size_t constexpr maxWasmParamLength = 1024;
+/** Maximum length of parameters passed from WASM code to host functions. */
+std::size_t constexpr maxWasmParamLength = 1024;  // 1KB
 
 /** A ledger index. */
 using LedgerIndex = std::uint32_t;

@@ -208,10 +208,10 @@ public:
     Expected<WasmResult<int32_t>, TER>
     run(Bytes const& wasmCode,
         HostFunctions& hfs,
+        int64_t gas,
         std::string_view funcName,
         std::vector<WasmParam> const& params,
         ImportVec const& imports,
-        int64_t gas,
         beast::Journal j);
 
     NotTEC
@@ -244,10 +244,10 @@ private:
     runHlp(
         Bytes const& wasmCode,
         HostFunctions& hfs,
+        int64_t gas,
         std::string_view funcName,
         std::vector<WasmParam> const& params,
-        ImportVec const& imports,
-        int64_t gas);
+        ImportVec const& imports);
 
     NotTEC
     checkHlp(
