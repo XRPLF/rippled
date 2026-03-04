@@ -505,7 +505,7 @@ public:
 
             std::optional<bool> res;
             if (info[jss::result][jss::status] == "success" &&
-                info[jss::result][jss::account_flags].isMember(fName.data()))
+                info[jss::result][jss::account_flags].isMember(std::string(fName)))
                 res.emplace(info[jss::result][jss::account_flags][fName.data()].asBool());
 
             return res;
