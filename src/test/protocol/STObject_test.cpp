@@ -351,7 +351,7 @@ public:
                 Buffer b(1);
                 BEAST_EXPECT(!b.empty());
                 st[sf4] = std::move(b);
-                BEAST_EXPECT(b.empty());
+                BEAST_EXPECT(b.empty());  // NOLINT(bugprone-use-after-move)
                 BEAST_EXPECT(Slice(st[sf4]).size() == 1);
                 st[~sf4] = std::nullopt;
                 BEAST_EXPECT(!~st[~sf4]);
@@ -370,7 +370,7 @@ public:
                 BEAST_EXPECT(!!~st[~sf5]);
                 Buffer b(1);
                 st[sf5] = std::move(b);
-                BEAST_EXPECT(b.empty());
+                BEAST_EXPECT(b.empty());  // NOLINT(bugprone-use-after-move)
                 BEAST_EXPECT(Slice(st[sf5]).size() == 1);
                 st[~sf4] = std::nullopt;
                 BEAST_EXPECT(!~st[~sf4]);

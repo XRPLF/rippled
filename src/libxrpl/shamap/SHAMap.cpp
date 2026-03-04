@@ -683,7 +683,8 @@ SHAMap::delItem(uint256 const& id)
             if (bc == 0)
             {
                 // no children below this branch
-                prevNode.reset();
+                // TODO: can this be removed? std::move above already sets nullptr internally
+                prevNode.reset();  // NOLINT(bugprone-use-after-move)
             }
             else if (bc == 1)
             {
