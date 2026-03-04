@@ -21,8 +21,8 @@ protected:
     // Ensure that all the features needed for Lending Protocol are included,
     // even if they are set to unsupported.
     FeatureBitset const all{
-        (jtx::testable_amendments() | featureMPTokensV1 | featureLendingProtocol) -
-        featureSingleAssetVault};
+        jtx::testable_amendments() | featureMPTokensV1 | featureSingleAssetVault |
+        featureLendingProtocol};
 
     std::string const iouCurrency{"IOU"};
 
@@ -69,10 +69,8 @@ protected:
         };
         failAll(all - featureMPTokensV1);
         failAll(all - featureSingleAssetVault - featureLendingProtocol);
-        failAll((all | featureSingleAssetVault) - featureLendingProtocol);
-        // Don't test SAV disabled by itself, because it is transitively enabled
-        // by lending protocol. It is explicitly disabled by `all` above, which
-        // is used for the remaining tests.
+        failAll(all - featureSingleAssetVault);
+        failAll(all - featureLendingProtocol);
     }
 
     struct BrokerParameters
@@ -2646,7 +2644,7 @@ protected:
                 env(manage(lender, loanKeylet.key, tfLoanDefault), ter(tecNO_PERMISSION));
             });
 
-#if LOAN_TODO
+#if LOANTODO
         // TODO
 
         /*
@@ -5318,7 +5316,7 @@ protected:
         }
     }
 
-#if LOAN_TODO
+#if LOANTODO
     void
     testLoanPayLateFullPaymentBypassesPenalties()
     {
@@ -6973,7 +6971,7 @@ public:
     void
     run() override
     {
-#if LOAN_TODO
+#if LOANTODO
         testLoanPayLateFullPaymentBypassesPenalties();
         testLoanCoverMinimumRoundingExploit();
 #endif

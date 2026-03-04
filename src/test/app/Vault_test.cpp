@@ -620,9 +620,10 @@ class Vault_test : public beast::unit_test::suite
             };
         };
 
+        testCase(testDisabled(), {.features = testable_amendments() - featureSingleAssetVault});
+
         testCase(
-            testDisabled(),
-            {.features = testable_amendments() - featureSingleAssetVault - featureLendingProtocol});
+            testDisabled(tecNO_ENTRY), {.features = testable_amendments() - featureMPTokensV1});
 
         testCase(
             [&](Env& env,

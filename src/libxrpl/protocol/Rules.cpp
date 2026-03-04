@@ -128,9 +128,14 @@ std::map<uint256, std::vector<uint256>> const&
 getTransitiveFeatureMap()
 {
     static std::map<uint256, std::vector<uint256>> const featureToOverride{
-        // If LendingProtocol is enabled, then SingleAssetVault can also be
-        // considered enabled
-        {featureSingleAssetVault, {featureLendingProtocol}}};
+        // In this example, if LendingProtocol is enabled, then
+        // SingleAssetVault can also be considered enabled. This example
+        // is commented because both amendments have been released as
+        // supported, and this would change their behaviors. Only new
+        // amendments my be included in the value set.
+        //
+        // {featureSingleAssetVault, {featureLendingProtocol}},
+    };
     return featureToOverride;
 }
 

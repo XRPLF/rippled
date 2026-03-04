@@ -70,7 +70,7 @@ private:
             {},
             0,
             {},
-            {testable_amendments() - featureSingleAssetVault - featureLendingProtocol});
+            {testable_amendments() - featureSingleAssetVault});
 
         // IOU to IOU
         testAMM(
@@ -4411,18 +4411,11 @@ private:
             },
             [&](Env& env) {
                 BEAST_EXPECT(
-                    !env.current()->rules().enabled(featureSingleAssetVault) &&
-                    !env.current()->rules().enabled(featureLendingProtocol));
-                auto const lp2Balance =
-                    getAccountLines(env, LP2, TST)["lines"][0u]["balance"].asString();
-                BEAST_EXPECTS(
-                    lp2TSTBalance == lp2Balance,
-                    "Got: " + lp2Balance + ", Expected: " + lp2TSTBalance);
+                    lp2TSTBalance ==
+                    getAccountLines(env, LP2, TST)["lines"][0u]["balance"].asString());
                 auto const offer = getAccountOffers(env, LP2)["offers"][0u];
                 BEAST_EXPECT(lp2TakerGets == offer["taker_gets"].asString());
-                auto const takerPays = offer["taker_pays"]["value"].asString();
-                BEAST_EXPECTS(
-                    lp2TakerPays == takerPays, "Got: " + takerPays + ", Expected: " + lp2TakerPays);
+                BEAST_EXPECT(lp2TakerPays == offer["taker_pays"]["value"].asString());
             });
     }
 
@@ -6599,9 +6592,7 @@ private:
                 features[featureSingleAssetVault] ? ter{terADDRESS_COLLISION} : ter{tecDUPLICATE});
         };
 
-        testCase(
-            "tecDUPLICATE",
-            testable_amendments() - featureSingleAssetVault - featureLendingProtocol);
+        testCase("tecDUPLICATE", testable_amendments() - featureSingleAssetVault);
         testCase("terADDRESS_COLLISION", testable_amendments() | featureSingleAssetVault);
     }
 
@@ -6925,7 +6916,6 @@ private:
     run() override
     {
         FeatureBitset const all{testable_amendments()};
-        FeatureBitset const featuresNoSAV = all - featureSingleAssetVault - featureLendingProtocol;
         testInvalidInstance();
         testInstanceCreate();
         testInvalidDeposit(all);
@@ -6975,8 +6965,8 @@ private:
         testLPTokenBalance(all - fixAMMv1_3);
         testLPTokenBalance(all - fixAMMv1_1 - fixAMMv1_3);
         testAMMClawback(all);
-        testAMMClawback(featuresNoSAV);
-        testAMMClawback(featuresNoSAV - featureAMMClawback);
+        testAMMClawback(all - featureSingleAssetVault);
+        testAMMClawback(all - featureAMMClawback - featureSingleAssetVault);
         testAMMClawback(all - featureAMMClawback);
         testAMMClawback(all - fixAMMv1_1 - fixAMMv1_3 - featureAMMClawback);
         testAMMDepositWithFrozenAssets(all);
