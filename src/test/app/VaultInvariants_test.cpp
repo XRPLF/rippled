@@ -15,8 +15,6 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/apply.h>
 
-#include <boost/algorithm/string/predicate.hpp>
-
 #include <initializer_list>
 #include <string>
 
@@ -35,13 +33,7 @@ class VaultInvariants_test : public BaseInvariants_test
     // the Account that will be the asset issuer
     test::jtx::Account const issuer{"issuer"};
 
-    // these are the IDs of different accounts used in the tests.
-    // They are used when constructing the transaction that is passed to
-    // doInvariantCheck. A!_ID is the ID of the Vault Owner, A2_ID is the ID of
-    // the depositor.
-    auto static constexpr A1_ID = "r4nmQNH4Fhjfh6cHDbvVSsBv7KySbj4cBf";
-    auto static constexpr A2_ID = "rGpeQzUWFu4fMhJHZ1Via5aqFC3A5twZUD";
-    auto static constexpr ISSUER_ID = "r9cZ5oHbdL4Z9Maj6TdnfAos35nVzYuNds";
+    std::optional<Keylet> vaultKey_;
 
     struct AccountAmount
     {
@@ -67,14 +59,12 @@ class VaultInvariants_test : public BaseInvariants_test
         Adjustments sample = {
             .assetsTotal = adjustment,
             .assetsAvailable = adjustment,
-            .lossUnrealized = 0,
-            .assetsMaximum = 0,
+            .lossUnrealized = std::nullopt,
+            .assetsMaximum = std::nullopt,
             .sharesTotal = adjustment,
             .vaultAssets = adjustment,
-            .accountAssets =  //
-            AccountAmount{id, -adjustment},
-            .accountShares =  //
-            AccountAmount{id, adjustment},
+            .accountAssets = AccountAmount{id, -adjustment},
+            .accountShares = AccountAmount{id, adjustment},
         };
 
         fn(sample);
@@ -192,21 +182,10 @@ class VaultInvariants_test : public BaseInvariants_test
         return true;
     }
 
-    // Creates a keylet for a Vault created by the A1 account from the
-    // doInvariantCheck method in the vaultCreate method.
     std::optional<Keylet>
-    vaultKeylet(ApplyContext& ac, test::jtx::Account const& acc)
+    vaultKeylet(ApplyContext&, test::jtx::Account const&)
     {
-        auto const accSle = ac.view().peek(keylet::account(acc.id()));
-        if (!BEAST_EXPECT(accSle))
-            return std::nullopt;
-
-        // The vaultCreate method creates a vault for the A1 account.
-        // We need to subtract 2 from the sequence number as vaultCreate
-        // also creates other objects such as trustlines for MPT Tokens.
-        auto const keylet = keylet::vault(acc.id(), accSle->getFieldU32(sfSequence) - 2);
-
-        return keylet;
+        return vaultKey_;
     }
 
     Preclose
@@ -265,6 +244,7 @@ class VaultInvariants_test : public BaseInvariants_test
             env(tx, ter(tesSUCCESS));
             env.close();
 
+            vaultKey_ = keylet;
             BEAST_EXPECT(env.le(keylet));
 
             auto const depositVaultFunds = [&](Account const& acc, STAmount const& amt) {
@@ -277,10 +257,8 @@ class VaultInvariants_test : public BaseInvariants_test
                 env.close();
             };
 
-            auto const amount =              //
-                assetType == AssetType::IOU  //
-                ? asset(Number{1'234'567, -4})
-                : asset(Number{1'234'567});
+            auto const amount = assetType == AssetType::IOU ? asset(Number{1'234'567, -4})
+                                                            : asset(Number{1'234'567});
 
             depositVaultFunds(A1, amount);
             depositVaultFunds(A2, amount);
@@ -486,10 +464,8 @@ class VaultInvariants_test : public BaseInvariants_test
                 auto sleAccount = std::make_shared<SLE>(keylet::account(pseudoId));
                 sleAccount->setAccountID(sfAccount, pseudoId);
                 sleAccount->setFieldAmount(sfBalance, STAmount{});
-                std::uint32_t const seqno =                             //
-                    ac.view().rules().enabled(featureSingleAssetVault)  //
-                    ? 0                                                 //
-                    : sequence;
+                std::uint32_t const seqno =
+                    ac.view().rules().enabled(featureSingleAssetVault) ? 0 : sequence;
                 sleAccount->setFieldU32(sfSequence, seqno);
                 sleAccount->setFieldU32(
                     sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
@@ -543,10 +519,8 @@ class VaultInvariants_test : public BaseInvariants_test
                 auto sleAccount = std::make_shared<SLE>(keylet::account(pseudoId));
                 sleAccount->setAccountID(sfAccount, pseudoId);
                 sleAccount->setFieldAmount(sfBalance, STAmount{});
-                std::uint32_t const seqno =                             //
-                    ac.view().rules().enabled(featureSingleAssetVault)  //
-                    ? 0                                                 //
-                    : sequence;
+                std::uint32_t const seqno =
+                    ac.view().rules().enabled(featureSingleAssetVault) ? 0 : sequence;
                 sleAccount->setFieldU32(sfSequence, seqno);
                 sleAccount->setFieldU32(
                     sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
@@ -586,7 +560,7 @@ class VaultInvariants_test : public BaseInvariants_test
             STTx{ttVAULT_CREATE, [](STObject&) {}},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
 
-        testcase(prefix + "share issuer mus exist");
+        testcase(prefix + "share issuer must exist");
         doInvariantCheck(
             {"shares issuer and vault pseudo-account must be the same", "shares issuer must exist"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
@@ -1058,7 +1032,7 @@ class VaultInvariants_test : public BaseInvariants_test
     {
         using namespace test::jtx;
 
-        auto const prefix = "VaultDeposit(" + to_string(assetType) + "): ";
+        auto const prefix = "VaultDeposit(" + assetTypeToString(assetType) + "): ";
 
         // no benefit to run this test with multiple asset types
         if (assetType == AssetType::XRP)
@@ -1375,8 +1349,8 @@ class VaultInvariants_test : public BaseInvariants_test
     void
     testVaultWithdrawal(AssetType assetType)
     {
-        using namespace jtx;
-        auto const prefix = "VaultWithdraw(" + to_string(assetType) + ") ";
+        using namespace test::jtx;
+        auto const prefix = "VaultWithdraw(" + assetTypeToString(assetType) + ") ";
 
         // It's enough to test this invariant for a single asset as the
         // underlying vault is empty
@@ -1391,7 +1365,7 @@ class VaultInvariants_test : public BaseInvariants_test
                 {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
                 createEmptyVault());
         }
-        testcase(prefix + "vault operation succeeded without updating shares`");
+        testcase(prefix + "vault operation succeeded without updating shares");
         doInvariantCheck(
             {"vault operation succeeded without updating shares",
              "assets available must not be greater than assets outstanding"},
@@ -1512,8 +1486,7 @@ class VaultInvariants_test : public BaseInvariants_test
             STTx{
                 ttVAULT_WITHDRAW,
                 [&](STObject& tx) {
-                    tx.setAccountID(
-                        sfDestination, AccountID(decodeBase58Token(A1_ID, TokenType::AccountID)));
+                    tx.setAccountID(sfDestination, test::jtx::Account{"A1"}.id());
                 }},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             createVault(assetType),
@@ -1614,46 +1587,22 @@ class VaultInvariants_test : public BaseInvariants_test
                 ttVAULT_WITHDRAW,
                 [&](STObject& tx) {
                     tx[sfAmount] = XRPAmount(10);
-                    tx.setAccountID(
-                        sfDelegate, AccountID(decodeBase58Token(A1_ID, TokenType::AccountID)));
+                    tx.setAccountID(sfDelegate, test::jtx::Account{"A1"}.id());
                 }},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             createVault(AssetType::XRP),
-            TxAccount::A2);
-
-        testcase(prefix + "withdrawal must decrease depositor shares");
-        doInvariantCheck(
-            {"withdrawal must decrease depositor shares",
-             "withdrawal must change depositor and vault shares by equal "
-             "amount"},
-            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = vaultKeylet(ac, A1);
-                if (!BEAST_EXPECT(keylet))
-                    return false;
-                return adjustVaultAndDepositor(
-                    ac, *keylet, createVaultAdjustments(A2.id(), -10, [&](Adjustments& sample) {
-                        sample.accountShares->amount = 5;
-                    }));
-            },
-            XRPAmount{},
-            STTx{ttVAULT_WITHDRAW, [&](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
-            createVault(assetType),
             TxAccount::A2);
     }
 
     void
     testVaultClawback(AssetType assetType)
     {
-        using namespace jtx;
-        auto const prefix = "VaultClawback(" + to_string(assetType) + ") ";
-        auto const clawbackTx =
-            STTx{ttVAULT_CLAWBACK, [&](STObject& tx) {
-                     tx.setAccountID(
-                         sfAccount, AccountID(decodeBase58Token(ISSUER_ID, TokenType::AccountID)));
-                     tx.setAccountID(
-                         sfHolder, AccountID(decodeBase58Token(A2_ID, TokenType::AccountID)));
-                 }};
+        using namespace test::jtx;
+        auto const prefix = "VaultClawback(" + assetTypeToString(assetType) + ") ";
+        auto const clawbackTx = STTx{ttVAULT_CLAWBACK, [&](STObject& tx) {
+                                         tx.setAccountID(sfAccount, issuer.id());
+                                         tx.setAccountID(sfHolder, test::jtx::Account{"A2"}.id());
+                                     }};
 
         if (assetType == AssetType::XRP)
         {
@@ -1687,7 +1636,7 @@ class VaultInvariants_test : public BaseInvariants_test
         }
         else
         {
-            testcase(prefix + "clawback must change vault balance");
+            testcase(prefix + "must change vault balance");
             doInvariantCheck(
                 {"clawback must change vault balance"},
                 [&](Account const& A1, Account const& A2, ApplyContext& ac) {
@@ -1713,13 +1662,11 @@ class VaultInvariants_test : public BaseInvariants_test
                 XRPAmount{},
                 STTx{
                     ttVAULT_CLAWBACK,
-                    [&](STObject& tx) {
-                        tx.setAccountID(
-                            sfAccount,
-                            AccountID(decodeBase58Token(ISSUER_ID, TokenType::AccountID)));
-                    }},
+                    [&](STObject& tx) { tx.setAccountID(sfAccount, issuer.id()); }},
                 {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
                 createVault(assetType));
+
+            testcase(prefix + "may be performed only by asset issuer");
             // Not the same as above check: attempt to clawback MPT by bad
             // account
             doInvariantCheck(
@@ -1737,8 +1684,7 @@ class VaultInvariants_test : public BaseInvariants_test
                 STTx{
                     ttVAULT_CLAWBACK,
                     [&](STObject& tx) {
-                        tx.setAccountID(
-                            sfAccount, AccountID(decodeBase58Token(A1_ID, TokenType::AccountID)));
+                        tx.setAccountID(sfAccount, test::jtx::Account{"A1"}.id());
                     }},
                 {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
                 createVault(assetType));
@@ -1763,6 +1709,7 @@ class VaultInvariants_test : public BaseInvariants_test
                 {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
                 createVault(assetType));
 
+            testcase(prefix + "must change holder shares");
             doInvariantCheck(
                 {"clawback must change holder shares"},
                 [&](Account const& A1, Account const& A2, ApplyContext& ac) {

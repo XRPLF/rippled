@@ -6,6 +6,8 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/tx/ApplyContext.h>
 
+#include <array>
+
 namespace xrpl {
 namespace test {
 
@@ -19,14 +21,14 @@ protected:
      */
     enum class AssetType { XRP, MPT, IOU };
 
-    std::vector<AssetType> assetTypes = {
+    static constexpr std::array<AssetType, 3> assetTypes = {
         AssetType::XRP,
         AssetType::MPT,
         AssetType::IOU,
     };
 
     inline std::string
-    to_string(AssetType type)
+    assetTypeToString(AssetType type)
     {
         switch (type)
         {
