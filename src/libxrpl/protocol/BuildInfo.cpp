@@ -1,6 +1,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/core/SemanticVersion.h>
+#include <xrpl/git/Git.h>
 #include <xrpl/protocol/BuildInfo.h>
 
 #include <boost/preprocessor/stringize.hpp>
@@ -14,44 +15,60 @@ namespace xrpl {
 
 namespace BuildInfo {
 
+namespace {
+
 //--------------------------------------------------------------------------
 //  The build version number. You must edit this for each release
 //  and follow the format described at http://semver.org/
 //------------------------------------------------------------------------------
 // clang-format off
 char const* const versionString = "3.2.0-b0"
-// clang-format on
-
-#if defined(DEBUG) || defined(SANITIZERS)
-    "+"
-#ifdef GIT_COMMIT_HASH
-    GIT_COMMIT_HASH
-    "."
-#endif
-#ifdef DEBUG
-    "DEBUG"
-#ifdef SANITIZERS
-    "."
-#endif
-#endif
-
-#ifdef SANITIZERS
-    BOOST_PP_STRINGIZE(SANITIZERS)  // cspell: disable-line
-#endif
-#endif
-
-    //--------------------------------------------------------------------------
+    // clang-format on
     ;
 
 //
 // Don't touch anything below this line
 //
 
+std::string
+buildVersionString()
+{
+    std::string version = versionString;
+
+#if defined(DEBUG) || defined(SANITIZERS)
+    std::string metadata;
+
+    std::string const& commitHash = xrpl::git::getCommitHash();
+    if (!commitHash.empty())
+        metadata += commitHash + ".";
+
+#ifdef DEBUG
+    metadata += "DEBUG";
+#endif
+
+#if defined(DEBUG) && defined(SANITIZERS)
+    metadata += ".";
+#endif
+
+#ifdef SANITIZERS
+    metadata += BOOST_PP_STRINGIZE(SANITIZERS);  // cspell: disable-line
+#endif
+
+    if (!metadata.empty())
+        version += "+" + metadata;
+#endif
+
+    return version;
+}
+
+}  // namespace
+
 std::string const&
 getVersionString()
 {
     static std::string const value = [] {
-        std::string const s = versionString;
+        std::string const s = buildVersionString();
+
         beast::SemanticVersion v;
         if (!v.parse(s) || v.print() != s)
             LogicError(s + ": Bad server version string");
@@ -71,13 +88,13 @@ static constexpr std::uint64_t implementationVersionIdentifier = 0x183B'0000'000
 static constexpr std::uint64_t implementationVersionIdentifierMask = 0xFFFF'0000'0000'0000LLU;
 
 std::uint64_t
-encodeSoftwareVersion(char const* const versionStr)
+encodeSoftwareVersion(std::string_view versionStr)
 {
     std::uint64_t c = implementationVersionIdentifier;
 
     beast::SemanticVersion v;
 
-    if (v.parse(std::string(versionStr)))
+    if (v.parse(versionStr))
     {
         if (v.majorVersion >= 0 && v.majorVersion <= 255)
             c |= static_cast<std::uint64_t>(v.majorVersion) << 40;
@@ -137,7 +154,7 @@ encodeSoftwareVersion(char const* const versionStr)
 std::uint64_t
 getEncodedVersion()
 {
-    static std::uint64_t const cookie = {encodeSoftwareVersion(versionString)};
+    static std::uint64_t const cookie = {encodeSoftwareVersion(getVersionString())};
     return cookie;
 }
 
