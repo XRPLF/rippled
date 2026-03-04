@@ -1637,7 +1637,7 @@ LedgerMaster::getLedgerBySeq(std::uint32_t index)
                 if (hash)
                     return mLedgerHistory.getLedgerByHash(*hash);
             }
-            catch (std::exception const&)
+            catch (std::exception const&)  // NOLINT(bugprone-empty-catch)
             {
                 // Missing nodes are already handled
             }
