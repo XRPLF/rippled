@@ -868,6 +868,7 @@ TRANSACTION(ttVAULT_DELETE, 67, VaultDelete,
     mustDeleteAcct | destroyMPTIssuance | mustModifyVault,
     ({
     {sfVaultID, soeREQUIRED},
+    {sfMemoData, soeOPTIONAL},
 }))
 
 /** This transaction trades assets for shares with a vault. */
