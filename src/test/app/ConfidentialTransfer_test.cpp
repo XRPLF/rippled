@@ -3767,6 +3767,243 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         }
     }
 
+    /* This test simulates an attack where the holder ciphertext is modified
+     * via homomorphic addition (adding Encrypted_amt(1)) while leaving the issuer
+     * ciphertext unchanged. It confirms that the validator detects the
+     * mismatch between the re-computed ciphertexts and the submitted ones,
+     * resulting in tecBAD_PROOF.   */
+    void
+    testHomomorphicCiphertextModification(FeatureBitset features)
+    {
+        testcase("Homomorphic ciphertext modification");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+        mptAlice.create(
+            {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+
+        mptAlice.authorize({.account = bob});
+        mptAlice.pay(alice, bob, 100);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+        mptAlice.generateKeyPair(bob);
+
+        // Bob converts 50 to confidential balance
+        mptAlice.convert({
+            .account = bob,
+            .amt = 50,
+            .holderPubKey = mptAlice.getPubKey(bob),
+        });
+        mptAlice.mergeInbox({.account = bob});
+
+        // Prepare valid parameters for a ConvertBack of 10
+        uint64_t const amt = 10;
+        Buffer const bf = generateBlindingFactor();
+
+        auto const holderCipherText = mptAlice.encryptAmount(bob, amt, bf);
+        auto const issuerCipherText = mptAlice.encryptAmount(alice, amt, bf);
+
+        // Generate a "Delta" ciphertext (Encrypting 1)
+        // We use Bob's key because we are tampering with Bob's (Holder's) field
+        Buffer const deltaBf = generateBlindingFactor();
+        auto const deltaCipherText = mptAlice.encryptAmount(bob, 1, deltaBf);
+
+        // Homomorphically add Delta to HolderCipherText: Tampered = Enc(10) + Enc(1) = Enc(11)
+        Buffer tamperedHolderCipherText(ecGamalEncryptedTotalLength);
+        BEAST_EXPECT(homomorphicAdd(holderCipherText, deltaCipherText, tamperedHolderCipherText) == tesSUCCESS);
+
+        // Generate a valid proof for the ORIGINAL amount (10)
+        auto const spendingBal = mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+        auto const spendingBalEnc = mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+        Buffer const pcBf = generateBlindingFactor();
+        auto const pedersenCommitment = mptAlice.getPedersenCommitment(*spendingBal, pcBf);
+
+        auto const currentVersion = mptAlice.getMPTokenVersion(bob);
+        // Uses the new signature: Account, IssuanceID, Sequence, Version
+        uint256 const contextHash = getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), currentVersion);
+
+        Buffer const proof = mptAlice.getConvertBackProof(
+            bob,
+            amt,
+            contextHash,
+            {
+                .pedersenCommitment = pedersenCommitment,
+                .amt = *spendingBal,
+                .encryptedAmt = *spendingBalEnc,
+                .blindingFactor = pcBf,
+            });
+
+        // Submit transaction with Divergent Ciphertexts
+        // Holder Ciphertext encrypts 11. Issuer Ciphertext encrypts 10.
+        // The consistency check (re-encryption of `amt` with `bf`) will match Issuer but FAIL for Holder.
+        mptAlice.convertBack(
+            {.account = bob,
+             .amt = amt,
+             .proof = proof,
+             .holderEncryptedAmt = tamperedHolderCipherText,  // Tampered (11)
+             .issuerEncryptedAmt = issuerCipherText,          // Original (10)
+             .blindingFactor = bf,
+             .pedersenCommitment = pedersenCommitment,
+             .err = tecBAD_PROOF});
+    }
+
+    /* This test verifies that rippled correctly rejects attempts to
+     * overflow the maximum allowable token amount via homomorphic manipulation.
+     * It simulates an attack where an individual takes a valid ciphertext encrypting
+     * the maximum amount (maxMPTokenAmount) and homomorphically adds an encryption of
+     * 1 to it, producing a ciphertext for MAX+1. The test confirms that the Bulletproof
+     * range proof or inner-product constraints detect this overflow and invalidate the
+     * transaction, preserving the supply invariant. */
+    void
+    testSendHomomorphicOverflow(FeatureBitset features)
+    {
+        testcase("Send: homomorphic overflow attack via Enc(MAX) + Enc(1)");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+        mptAlice.create({.ownerCount = 1, .flags = tfMPTCanLock | tfMPTCanPrivacy | tfMPTCanTransfer});
+        mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = carol});
+
+        mptAlice.pay(alice, bob, 100);
+        mptAlice.pay(alice, carol, 50);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+        mptAlice.generateKeyPair(carol);
+
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+        mptAlice.convert({.account = bob, .amt = 100, .holderPubKey = mptAlice.getPubKey(bob)});
+        mptAlice.mergeInbox({.account = bob});
+
+        mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
+        mptAlice.mergeInbox({.account = carol});
+
+        // Bob sends 10 to carol.  The send amount (10) and Bob's remaining balance
+        // (90) are both within [0, maxMPTokenAmount].  Range proof passes.
+        mptAlice.send({.account = bob, .dest = carol, .amt = 10});
+
+        // Bob's spending balance is 90 after the baseline send.
+        auto const bobSpendingBefore = mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+        BEAST_EXPECT(bobSpendingBefore == 90);
+
+        // Construct Enc(maxMPTokenAmount) with Bob's public key.
+        Buffer const bf1 = generateBlindingFactor();
+        Buffer const encMax = mptAlice.encryptAmount(bob, maxMPTokenAmount, bf1);
+
+        // Construct Enc(1) with a separate blinding factor.
+        Buffer const bf2 = generateBlindingFactor();
+        Buffer const encOne = mptAlice.encryptAmount(bob, 1, bf2);
+
+        // Homomorphically add to produce CB_S_holder' = Enc(MAX) + Enc(1)
+        Buffer overflowedCt(ecGamalEncryptedTotalLength);
+        BEAST_EXPECT(homomorphicAdd(encMax, encOne, overflowedCt) == tesSUCCESS);
+
+        // Submit the send transaction with the tampered ciphertext.
+        // Setting amt = maxMPTokenAmount + 1 drives proof generation for the
+        // overflowed value.  The bulletproof range check [0, maxMPTokenAmount]
+        // rejects MAX+1; the validator must return tecBAD_PROOF.
+        mptAlice.send({
+            .account = bob,
+            .dest = carol,
+            .amt = maxMPTokenAmount + 1,
+            .senderEncryptedAmt = overflowedCt,
+            .err = tecBAD_PROOF,
+        });
+
+        auto const bobSpendingAfter = mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+        BEAST_EXPECT(bobSpendingBefore == bobSpendingAfter);
+    }
+
+    /* This test ensures that the system prevents underflow attacks where a user
+     * attempts to create a negative balance through homomorphic subtraction. It
+     * simulates a scenario where an attacker takes a ciphertext encrypting zero
+     * and subtracts an encryption of 1, resulting in a value of -1.
+     * The test asserts that the range proof verification fails because the resulting
+     * value falls outside the valid non-negative range [0, maxMPTokenAmount],
+     * causing the validator to reject the transaction with tecBAD_PROOF. */
+    void
+    testConvertBackHomomorphicUnderflow(FeatureBitset features)
+    {
+        testcase("ConvertBack: homomorphic underflow attack via Enc(0) - Enc(1)");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+        mptAlice.create(
+            {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+
+        mptAlice.authorize({.account = bob});
+        mptAlice.pay(alice, bob, 10);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+        mptAlice.convert({.account = bob, .amt = 10, .holderPubKey = mptAlice.getPubKey(bob)});
+        mptAlice.mergeInbox({.account = bob});
+
+        // Converting back 1 from 10 leaves remaining balance = 9 (non-negative).
+        // Range proof [0, maxMPTokenAmount] passes.
+        mptAlice.convertBack({.account = bob, .amt = 1});
+
+        // Bob's spending balance is now 9; public balance is 1.
+        auto const bobSpendingBefore = mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+        BEAST_EXPECT(bobSpendingBefore == 9);
+        auto const bobPublicBefore = mptAlice.getBalance(bob);
+        BEAST_EXPECT(bobPublicBefore == 1);
+
+        // Construct Enc(0) — the zero encrypted balance using Bob's key.
+        Buffer const bf1 = generateBlindingFactor();
+        Buffer const encZero = mptAlice.encryptAmount(bob, 0, bf1);
+
+        // Construct Enc(1) with a separate blinding factor.
+        Buffer const bf2 = generateBlindingFactor();
+        Buffer const encOne = mptAlice.encryptAmount(bob, 1, bf2);
+
+        // Homomorphically subtract to produce CB_S_holder' = Enc(0) − Enc(1)
+        // = Enc(−1), which lies below [0, maxMPTokenAmount].
+        Buffer underflowedCt(ecGamalEncryptedTotalLength);
+        BEAST_EXPECT(homomorphicSubtract(encZero, encOne, underflowedCt) == tesSUCCESS);
+
+        // Submit ConvertBack(1) with the underflowed ciphertext.
+        // A pre-formed zero proof bypasses the proof generator, which would throw
+        // when asked to produce a bulletproof for an out-of-range (negative) value.
+        // The validator independently rejects the transaction because:
+        //   (a) Equality check fails: holderEncryptedAmt = Enc(−1) ≠ Enc(1).
+        //   (b) Range proof would fail: −1 is outside [0, maxMPTokenAmount].
+        Buffer const dummyProof = makeZeroBuffer(ecPedersenProofLength + ecSingleBulletproofLength);
+        mptAlice.convertBack({
+            .account = bob,
+            .amt = 1,
+            .proof = dummyProof,
+            .holderEncryptedAmt = underflowedCt,
+            .err = tecBAD_PROOF,
+        });
+
+        // Supply invariant: both public and confidential balances must be unchanged
+        // after the rejected attack.
+        BEAST_EXPECT(mptAlice.getBalance(bob) == bobPublicBefore);
+        auto const bobSpendingAfter = mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+        BEAST_EXPECT(bobSpendingBefore == bobSpendingAfter);
+    }
+
     void
     testWithFeats(FeatureBitset features)
     {
@@ -3788,6 +4025,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testSendPreflight(features);
         testSendPreclaim(features);
         testSendRangeProof(features);
+        testSendHomomorphicOverflow(features);
         testSendDepositPreauth(features);
         testSendWithAuditor(features);
 
@@ -3807,6 +4045,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testConvertBackWithAuditor(features);
         testConvertBackPedersenProof(features);
         testConvertBackBulletproof(features);
+        testHomomorphicCiphertextModification(features);
+        testConvertBackHomomorphicUnderflow(features);
 
         testMutatePrivacy(features);
     }
