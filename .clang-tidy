@@ -83,7 +83,7 @@ Checks: "-*,
   performance-trivially-destructible
   "
 # ---
-# checks that have some issues that need to be resolved:
+# more checks that have some issues that need to be resolved:
 #
 # bugprone-crtp-constructor-accessibility,
 # bugprone-inc-dec-in-conditions,
