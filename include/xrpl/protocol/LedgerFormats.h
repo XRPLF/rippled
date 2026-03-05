@@ -19,7 +19,7 @@ namespace xrpl {
    fork.**
 
     @note Values outside this range may be used internally by the code for various purposes, but
-   attempting to use such values to identify on-ledger objects will results in an invariant failure.
+   attempting to use such values to identify on-ledger objects will result in an invariant failure.
 
     @note When retiring types, the specific values should not be removed but should be marked as
    [[deprecated]]. This is to avoid accidental reuse of identifiers.
