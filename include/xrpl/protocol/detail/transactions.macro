@@ -42,7 +42,7 @@ TRANSACTION(ttPAYMENT, 0, Payment,
 
 /** This transaction type creates an escrow object. */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/escrow/Escrow.h>
+#   include <xrpl/tx/transactors/escrow/EscrowCreate.h>
 #endif
 TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate,
     Delegation::delegable,
@@ -58,6 +58,9 @@ TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate,
 }))
 
 /** This transaction type completes an existing escrow. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/escrow/EscrowFinish.h>
+#endif
 TRANSACTION(ttESCROW_FINISH, 2, EscrowFinish,
     Delegation::delegable,
     uint256{},
@@ -94,7 +97,7 @@ TRANSACTION(ttACCOUNT_SET, 3, AccountSet,
 
 /** This transaction type cancels an existing escrow. */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/escrow/Escrow.h>
+#   include <xrpl/tx/transactors/escrow/EscrowCancel.h>
 #endif
 TRANSACTION(ttESCROW_CANCEL, 4, EscrowCancel,
     Delegation::delegable,
