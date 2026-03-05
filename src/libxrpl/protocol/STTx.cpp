@@ -214,9 +214,13 @@ STTx::getSeqValue() const
 AccountID
 STTx::getFeePayer() const
 {
-    // note: the delegate's ability to sign the transaction is checked in `checkPermission`
+    // If sfDelegate is present, the delegate account is the payer
+    // note: the delegate's ability to sign the transaction is checked in
+    // `Transactor::checkPermission`
     if (isFieldPresent(sfDelegate))
         return getAccountID(sfDelegate);
+
+    // Default payer
     return getAccountID(sfAccount);
 }
 
