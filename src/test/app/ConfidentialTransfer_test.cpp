@@ -4150,6 +4150,309 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         }
     }
 
+    // This test verifies that proofs are non-replayable by simulating replays
+    // with an outdated ledger version or an old sequence number.
+    // It confirms that the validator detects the resulting ContextID mismatch
+    // and rejects the transaction with tecBAD_PROOF.
+    void
+    testProofContextBinding(FeatureBitset features)
+    {
+        testcase("Proof context binding (Sequence and Version)");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+        mptAlice.create(
+            {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+
+        mptAlice.authorize({.account = bob});
+        mptAlice.pay(alice, bob, 100);
+
+        mptAlice.generateKeyPair(alice);
+
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+        mptAlice.generateKeyPair(bob);
+
+        mptAlice.convert({
+            .account = bob,
+            .amt = 40,
+            .holderPubKey = mptAlice.getPubKey(bob),
+        });
+
+        mptAlice.mergeInbox({
+            .account = bob,
+        });
+
+        uint64_t const amt = 10;
+        Buffer const blindingFactor = generateBlindingFactor();
+        Buffer const pcBlindingFactor = generateBlindingFactor();
+
+        auto const spendingBalance = mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+        BEAST_EXPECT(spendingBalance.has_value() && *spendingBalance == 40);  // because bob encrypted 40
+        auto const encryptedSpendingBalance = mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+        BEAST_EXPECT(encryptedSpendingBalance.has_value() && !encryptedSpendingBalance->empty());
+
+        Buffer const pedersenCommitment = mptAlice.getPedersenCommitment(*spendingBalance, pcBlindingFactor);
+        Buffer const issuerCiphertext = mptAlice.encryptAmount(alice, amt, blindingFactor);
+        Buffer const bobCiphertext = mptAlice.encryptAmount(bob, amt, blindingFactor);
+
+        auto const currentVersion = mptAlice.getMPTokenVersion(bob);
+
+        // Invalid Version Binding
+        // Simulates replaying a full transaction after the ledger's version
+        // has updated. We simulate this by attempting to use a proof built
+        // using an older version but with the current valid sequence.
+        {
+            uint32_t const seqA = env.seq(bob);
+            uint32_t const oldVersion = currentVersion - 1;
+            uint256 const badContextHash = getConvertBackContextHash(bob, mptAlice.issuanceID(), seqA, oldVersion);
+
+            Buffer const proof = mptAlice.getConvertBackProof(
+                bob,
+                amt,
+                badContextHash,
+                {
+                    .pedersenCommitment = pedersenCommitment,
+                    .amt = *spendingBalance,
+                    .encryptedAmt = *encryptedSpendingBalance,
+                    .blindingFactor = pcBlindingFactor,
+                });
+
+            mptAlice.convertBack(
+                {.account = bob,
+                 .amt = amt,
+                 .proof = proof,
+                 .holderEncryptedAmt = bobCiphertext,
+                 .issuerEncryptedAmt = issuerCiphertext,
+                 .blindingFactor = blindingFactor,
+                 .pedersenCommitment = pedersenCommitment,
+                 .err = tecBAD_PROOF});
+        }
+
+        // Invalid Sequence Binding
+        // Simulates submitting a new transaction (with a new, valid signature
+        // and sequence) but reusing a ZKP from a previous sequence number.
+        {
+            // Fetch updated sequence, as the tecBAD_PROOF above consumed one
+            uint32_t const seqB = env.seq(bob);
+            uint32_t const oldSeq = seqB - 1;
+            uint256 const badContextHash =
+                getConvertBackContextHash(bob, mptAlice.issuanceID(), oldSeq, currentVersion);
+
+            Buffer const proof = mptAlice.getConvertBackProof(
+                bob,
+                amt,
+                badContextHash,
+                {
+                    .pedersenCommitment = pedersenCommitment,
+                    .amt = *spendingBalance,
+                    .encryptedAmt = *encryptedSpendingBalance,
+                    .blindingFactor = pcBlindingFactor,
+                });
+
+            mptAlice.convertBack(
+                {.account = bob,
+                 .amt = amt,
+                 .proof = proof,
+                 .holderEncryptedAmt = bobCiphertext,
+                 .issuerEncryptedAmt = issuerCiphertext,
+                 .blindingFactor = blindingFactor,
+                 .pedersenCommitment = pedersenCommitment,
+                 .err = tecBAD_PROOF});
+        }
+
+        // Verify Correct Proof Passes
+        // Ensure the test setup was correct and functions when no replay is attempted.
+        {
+            // Fetch updated sequence once more
+            uint32_t const seqC = env.seq(bob);
+            uint256 const goodContextHash = getConvertBackContextHash(bob, mptAlice.issuanceID(), seqC, currentVersion);
+
+            Buffer const proof = mptAlice.getConvertBackProof(
+                bob,
+                amt,
+                goodContextHash,
+                {
+                    .pedersenCommitment = pedersenCommitment,
+                    .amt = *spendingBalance,
+                    .encryptedAmt = *encryptedSpendingBalance,
+                    .blindingFactor = pcBlindingFactor,
+                });
+
+            mptAlice.convertBack({
+                .account = bob,
+                .amt = amt,
+                .proof = proof,
+                .holderEncryptedAmt = bobCiphertext,
+                .issuerEncryptedAmt = issuerCiphertext,
+                .blindingFactor = blindingFactor,
+                .pedersenCommitment = pedersenCommitment,
+            });
+        }
+    }
+
+    // This test simulates a valid proof π extracted from a transaction
+    // for amount m1 is reused in a new transaction for a different
+    // amount m2 with different ciphertexts. It confirms the context hash
+    // recomputation fails due to the ciphertext binding mismatch, resulting
+    // in tecBAD_PROOF.
+    void
+    testProofCiphertextBinding(FeatureBitset features)
+    {
+        testcase("Proof ciphertext binding");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+        mptAlice.create(
+            {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+
+        mptAlice.authorize({.account = bob});
+        mptAlice.pay(alice, bob, 100);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+        mptAlice.generateKeyPair(bob);
+        mptAlice.convert({
+            .account = bob,
+            .amt = 50,
+            .holderPubKey = mptAlice.getPubKey(bob),
+        });
+
+        mptAlice.mergeInbox({
+            .account = bob,
+        });
+
+        auto const spendingBalance = mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+        auto const encryptedSpendingBalance = mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+        auto const version = mptAlice.getMPTokenVersion(bob);
+        Buffer const pcBlindingFactor = generateBlindingFactor();
+        Buffer const pedersenCommitment = mptAlice.getPedersenCommitment(*spendingBalance, pcBlindingFactor);
+
+        // Generate a valid proof pi for Amount m1 = 10
+        uint64_t const amtA = 10;
+        uint32_t const currentSeq = env.seq(bob);
+        uint256 const contextHashA = getConvertBackContextHash(bob, mptAlice.issuanceID(), currentSeq, version);
+
+        Buffer const proofA = mptAlice.getConvertBackProof(
+            bob,
+            amtA,
+            contextHashA,
+            {
+                .pedersenCommitment = pedersenCommitment,
+                .amt = *spendingBalance,
+                .encryptedAmt = *encryptedSpendingBalance,
+                .blindingFactor = pcBlindingFactor,
+            });
+
+        // Construct Transaction B with Amount m2 = 20 and attach Proof pi
+        uint64_t const amtB = 20;
+        Buffer const blindingFactorB = generateBlindingFactor();
+        Buffer const bobCiphertextB = mptAlice.encryptAmount(bob, amtB, blindingFactorB);
+        Buffer const issuerCiphertextB = mptAlice.encryptAmount(alice, amtB, blindingFactorB);
+
+        // We attempt to verify the proof pi (for amt 10) against the new ciphertexts (for amt 20).
+        mptAlice.convertBack(
+            {.account = bob,
+             .amt = amtB,
+             .proof = proofA,  // Extracted/Reused proof from Transaction A
+             .holderEncryptedAmt = bobCiphertextB,
+             .issuerEncryptedAmt = issuerCiphertextB,
+             .blindingFactor = blindingFactorB,
+             .pedersenCommitment = pedersenCommitment,
+             .err = tecBAD_PROOF});  // Expected failure
+    }
+
+    // This test simulates a valid proof π and ciphertext are
+    // tied to version v, but are reused after an inbox merge has incremented
+    // the CBS version to v+1. It confirms the validator rejects the transaction
+    // before acceptance due to the ContextID mismatch.
+    void
+    testProofVersionMismatch(FeatureBitset features)
+    {
+        testcase("Proof version mismatch");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+        mptAlice.create(
+            {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+
+        mptAlice.authorize({.account = bob});
+        mptAlice.pay(alice, bob, 1000);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+        mptAlice.generateKeyPair(bob);
+
+        // Initial state: Version v
+        // Convert and merge to establish a spending balance and initial version
+        mptAlice.convert({
+            .account = bob,
+            .amt = 100,
+            .holderPubKey = mptAlice.getPubKey(bob),
+        });
+        mptAlice.mergeInbox({.account = bob});
+
+        auto const versionV = mptAlice.getMPTokenVersion(bob);
+        auto const spendingBalanceV = mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+        auto const encryptedSpendingBalanceV = mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+
+        // Parameters for the intended ConvertBack transaction
+        uint64_t const amt = 10;
+        Buffer const blindingFactor = generateBlindingFactor();
+        Buffer const pcBlindingFactor = generateBlindingFactor();
+        Buffer const pedersenCommitment = mptAlice.getPedersenCommitment(*spendingBalanceV, pcBlindingFactor);
+        Buffer const issuerCiphertext = mptAlice.encryptAmount(alice, amt, blindingFactor);
+        Buffer const bobCiphertext = mptAlice.encryptAmount(bob, amt, blindingFactor);
+
+        // State Change: Increment version to v+1
+        // Converting more funds and merging increments the sfConfidentialBalanceVersion
+        mptAlice.convert({.account = bob, .amt = 50});
+        mptAlice.mergeInbox({.account = bob});
+
+        BEAST_EXPECT(mptAlice.getMPTokenVersion(bob) > versionV);
+
+        // Attack: Attempt to reuse proof tied to Version v at ledger Version v+1
+        uint32_t const currentSeq = env.seq(bob);
+        // Proof is explicitly generated using the outdated Version v
+        uint256 const oldContextHash = getConvertBackContextHash(bob, mptAlice.issuanceID(), currentSeq, versionV);
+
+        Buffer const oldProof = mptAlice.getConvertBackProof(
+            bob,
+            amt,
+            oldContextHash,
+            {
+                .pedersenCommitment = pedersenCommitment,
+                .amt = *spendingBalanceV,
+                .encryptedAmt = *encryptedSpendingBalanceV,
+                .blindingFactor = pcBlindingFactor,
+            });
+
+        // Submit and verify failure
+        mptAlice.convertBack(
+            {.account = bob,
+             .amt = amt,
+             .proof = oldProof,
+             .holderEncryptedAmt = bobCiphertext,
+             .issuerEncryptedAmt = issuerCiphertext,
+             .blindingFactor = blindingFactor,
+             .pedersenCommitment = pedersenCommitment,
+             .err = tecBAD_PROOF});  // Fails because TransactionContextID differs
+    }
+
     void
     testWithFeats(FeatureBitset features)
     {
@@ -4193,6 +4496,9 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testConvertBackBulletproof(features);
 
         testMutatePrivacy(features);
+        testProofContextBinding(features);
+        testProofCiphertextBinding(features);
+        testProofVersionMismatch(features);
     }
 
 public:
