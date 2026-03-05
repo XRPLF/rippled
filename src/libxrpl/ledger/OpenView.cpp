@@ -72,8 +72,8 @@ OpenView::OpenView(
     ReadView const* base,
     Rules const& rules,
     std::shared_ptr<void const> hold)
-    : monotonic_resource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(
-          initialBufferSize)}
+    : monotonic_resource_{
+          std::make_unique<boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
     , txs_{monotonic_resource_.get()}
     , rules_(rules)
     , header_(base->header())
@@ -88,8 +88,8 @@ OpenView::OpenView(
 }
 
 OpenView::OpenView(ReadView const* base, std::shared_ptr<void const> hold)
-    : monotonic_resource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(
-          initialBufferSize)}
+    : monotonic_resource_{
+          std::make_unique<boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
     , txs_{monotonic_resource_.get()}
     , rules_(base->rules())
     , header_(base->header())
