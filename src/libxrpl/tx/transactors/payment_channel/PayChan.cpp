@@ -10,7 +10,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/digest.h>
-#include <xrpl/tx/transactors/PayChan.h>
+#include <xrpl/tx/transactors/payment_channel/PayChan.h>
 
 namespace xrpl {
 

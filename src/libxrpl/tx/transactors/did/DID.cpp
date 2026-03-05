@@ -4,7 +4,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/DID.h>
+#include <xrpl/tx/transactors/did/DID.h>
 
 namespace xrpl {
 

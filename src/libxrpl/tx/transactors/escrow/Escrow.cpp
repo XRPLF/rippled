@@ -11,8 +11,8 @@
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/transactors/Escrow.h>
-#include <xrpl/tx/transactors/MPT/MPTokenAuthorize.h>
+#include <xrpl/tx/transactors/escrow/Escrow.h>
+#include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
 
 namespace xrpl {
 

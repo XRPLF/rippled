@@ -5,7 +5,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/Credentials.h>
+#include <xrpl/tx/transactors/credentials/Credentials.h>
 
 #include <chrono>
 
