@@ -1126,8 +1126,8 @@ toClaim(STTx const& tx)
     }
     catch (...)
     {
+        return std::nullopt;
     }
-    return std::nullopt;
 }
 
 template <class TAttestation>
