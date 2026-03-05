@@ -219,7 +219,7 @@ coherent rather than a set of _thou shalt not_ commandments.
 
 ## Formatting
 
-All code must conform to `clang-format` version 18,
+All code must conform to `clang-format` version 21,
 according to the settings in [`.clang-format`](./.clang-format),
 unless the result would be unreasonably difficult to read or maintain.
 To demarcate lines that should be left as-is, surround them with comments like
@@ -250,6 +250,29 @@ You can install a pre-commit hook to automatically run `clang-format` before eve
 pip3 install pre-commit
 pre-commit install
 ```
+
+## Clang-tidy
+
+All code must pass `clang-tidy` checks according to the settings in [`.clang-tidy`](./.clang-tidy).
+
+There is a Continuous Integration job that runs clang-tidy on pull requests. The CI will check:
+
+- All changed C++ files (`.cpp`, `.h`, `.ipp`) when only code files are modified
+- **All files in the repository** when the `.clang-tidy` configuration file is changed
+
+This ensures that configuration changes don't introduce new warnings across the codebase.
+
+### Running clang-tidy locally
+
+Before running clang-tidy, you must build the project to generate required files (particularly protobuf headers). Refer to [`BUILD.md`](./BUILD.md) for build instructions.
+
+Then run clang-tidy on your local changes:
+
+```
+run-clang-tidy -p build src tests
+```
+
+This will check all source files in the `src` and `tests` directories using the compile commands from your `build` directory.
 
 ## Contracts and instrumentation
 

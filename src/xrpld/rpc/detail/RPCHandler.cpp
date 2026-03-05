@@ -2,10 +2,8 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/InfoSub.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/Handler.h>
@@ -18,6 +16,8 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/server/InfoSub.h>
+#include <xrpl/server/NetworkOPs.h>
 
 #include <atomic>
 #include <chrono>
@@ -129,8 +129,9 @@ fillHandler(JsonContext& context, Handler const*& result)
             return rpcUNKNOWN_COMMAND;
     }
 
-    std::string strCommand = context.params.isMember(jss::command) ? context.params[jss::command].asString()
-                                                                   : context.params[jss::method].asString();
+    std::string strCommand = context.params.isMember(jss::command)
+        ? context.params[jss::command].asString()
+        : context.params[jss::method].asString();
 
     JLOG(context.j.trace()) << "COMMAND:" << strCommand;
     JLOG(context.j.trace()) << "REQUEST:" << context.params;
@@ -168,8 +169,8 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
         auto ret = method(context, result);
         auto end = std::chrono::system_clock::now();
 
-        JLOG(context.j.debug()) << "RPC call " << name << " completed in " << ((end - start).count() / 1000000000.0)
-                                << "seconds";
+        JLOG(context.j.debug()) << "RPC call " << name << " completed in "
+                                << ((end - start).count() / 1000000000.0) << "seconds";
         perfLog.rpcFinish(name, curId);
         return ret;
     }
@@ -202,13 +203,15 @@ doCommand(RPC::JsonContext& context, Json::Value& result)
     {
         if (!context.headers.user.empty() || !context.headers.forwardedFor.empty())
         {
-            JLOG(context.j.debug()) << "start command: " << handler->name_ << ", user: " << context.headers.user
-                                    << ", forwarded for: " << context.headers.forwardedFor;
+            JLOG(context.j.debug())
+                << "start command: " << handler->name_ << ", user: " << context.headers.user
+                << ", forwarded for: " << context.headers.forwardedFor;
 
             auto ret = callMethod(context, method, handler->name_, result);
 
-            JLOG(context.j.debug()) << "finish command: " << handler->name_ << ", user: " << context.headers.user
-                                    << ", forwarded for: " << context.headers.forwardedFor;
+            JLOG(context.j.debug())
+                << "finish command: " << handler->name_ << ", user: " << context.headers.user
+                << ", forwarded for: " << context.headers.forwardedFor;
 
             return ret;
         }

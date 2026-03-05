@@ -36,8 +36,11 @@ depthMask(unsigned int depth)
 // canonicalize the hash to a node ID for this depth
 SHAMapNodeID::SHAMapNodeID(unsigned int depth, uint256 const& hash) : id_(hash), depth_(depth)
 {
-    XRPL_ASSERT(depth <= SHAMap::leafDepth, "xrpl::SHAMapNodeID::SHAMapNodeID : maximum depth input");
-    XRPL_ASSERT(id_ == (id_ & depthMask(depth)), "xrpl::SHAMapNodeID::SHAMapNodeID : hash and depth inputs do match");
+    XRPL_ASSERT(
+        depth <= SHAMap::leafDepth, "xrpl::SHAMapNodeID::SHAMapNodeID : maximum depth input");
+    XRPL_ASSERT(
+        id_ == (id_ & depthMask(depth)),
+        "xrpl::SHAMapNodeID::SHAMapNodeID : hash and depth inputs do match");
 }
 
 std::string
@@ -52,7 +55,8 @@ SHAMapNodeID::getRawString() const
 SHAMapNodeID
 SHAMapNodeID::getChildNodeID(unsigned int m) const
 {
-    XRPL_ASSERT(m < SHAMap::branchFactor, "xrpl::SHAMapNodeID::getChildNodeID : valid branch input");
+    XRPL_ASSERT(
+        m < SHAMap::branchFactor, "xrpl::SHAMapNodeID::getChildNodeID : valid branch input");
 
     // A SHAMap has exactly 65 levels, so nodes must not exceed that
     // depth; if they do, this breaks the invariant of never allowing
@@ -62,7 +66,8 @@ SHAMapNodeID::getChildNodeID(unsigned int m) const
     // We throw (but never assert) if the node is at level 64, since
     // entries at that depth are leaf nodes and have no children and even
     // constructing a child node from them would break the above invariant.
-    XRPL_ASSERT(depth_ <= SHAMap::leafDepth, "xrpl::SHAMapNodeID::getChildNodeID : maximum leaf depth");
+    XRPL_ASSERT(
+        depth_ <= SHAMap::leafDepth, "xrpl::SHAMapNodeID::getChildNodeID : maximum leaf depth");
 
     if (depth_ >= SHAMap::leafDepth)
         Throw<std::logic_error>("Request for child node ID of " + to_string(*this));

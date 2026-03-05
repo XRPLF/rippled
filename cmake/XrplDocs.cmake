@@ -65,8 +65,8 @@ add_custom_command(
     OUTPUT "${doxygen_index_file}"
     COMMAND "${CMAKE_COMMAND}" -E env "DOXYGEN_OUTPUT_DIRECTORY=${doxygen_output_directory}"
             "DOXYGEN_INCLUDE_PATH=${doxygen_include_path}" "DOXYGEN_TAGFILES=${doxygen_tagfiles}"
-            "DOXYGEN_PLANTUML_JAR_PATH=${doxygen_plantuml_jar_path}" "DOXYGEN_DOT_PATH=${doxygen_dot_path}"
-            "${DOXYGEN_EXECUTABLE}" "${doxyfile}"
+            "DOXYGEN_PLANTUML_JAR_PATH=${doxygen_plantuml_jar_path}"
+            "DOXYGEN_DOT_PATH=${doxygen_dot_path}" "${DOXYGEN_EXECUTABLE}" "${doxyfile}"
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     DEPENDS "${dependencies}" "${tagfile}")
 add_custom_target(docs DEPENDS "${doxygen_index_file}" SOURCES "${dependencies}")

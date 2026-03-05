@@ -55,7 +55,8 @@ VotableValue<value_type>::getVotes() const
     for (auto const& [key, val] : voteMap_)
     {
         // Take most voted value between current and target, inclusive
-        if ((key <= std::max(target_, current_)) && (key >= std::min(target_, current_)) && (val > weight))
+        if ((key <= std::max(target_, current_)) && (key >= std::min(target_, current_)) &&
+            (val > weight))
         {
             ourVote = key;
             weight = val;
@@ -90,7 +91,8 @@ public:
 
 //--------------------------------------------------------------------------
 
-FeeVoteImpl::FeeVoteImpl(FeeSetup const& setup, beast::Journal journal) : target_(setup), journal_(journal)
+FeeVoteImpl::FeeVoteImpl(FeeSetup const& setup, beast::Journal journal)
+    : target_(setup), journal_(journal)
 {
 }
 
@@ -112,7 +114,11 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
     {
         vote(lastFees.base, target_.reference_fee, "base fee", sfBaseFeeDrops);
         vote(lastFees.reserve, target_.account_reserve, "base reserve", sfReserveBaseDrops);
-        vote(lastFees.increment, target_.owner_reserve, "reserve increment", sfReserveIncrementDrops);
+        vote(
+            lastFees.increment,
+            target_.owner_reserve,
+            "reserve increment",
+            sfReserveIncrementDrops);
     }
     else
     {
@@ -134,8 +140,14 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
         };
 
         voteAndConvert(lastFees.base, target_.reference_fee, to64, "base fee", sfBaseFee);
-        voteAndConvert(lastFees.reserve, target_.account_reserve, to32, "base reserve", sfReserveBase);
-        voteAndConvert(lastFees.increment, target_.owner_reserve, to32, "reserve increment", sfReserveIncrement);
+        voteAndConvert(
+            lastFees.reserve, target_.account_reserve, to32, "base reserve", sfReserveBase);
+        voteAndConvert(
+            lastFees.increment,
+            target_.owner_reserve,
+            to32,
+            "reserve increment",
+            sfReserveIncrement);
     }
     if (rules.enabled(featureSmartEscrow))
     {
@@ -144,7 +156,11 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
             target_.extension_compute_limit,
             "extension compute limit",
             sfExtensionComputeLimit);
-        vote(lastFees.extensionSizeLimit, target_.extension_size_limit, "extension size limit", sfExtensionSizeLimit);
+        vote(
+            lastFees.extensionSizeLimit,
+            target_.extension_size_limit,
+            "extension size limit",
+            sfExtensionSizeLimit);
         vote(lastFees.gasPrice, target_.gas_price, "gas price", sfGasPrice);
     }
 }
@@ -157,7 +173,8 @@ FeeVoteImpl::doVoting(
 {
     // LCL must be flag ledger
     XRPL_ASSERT(
-        lastClosedLedger && isFlagLedger(lastClosedLedger->seq()), "xrpl::FeeVoteImpl::doVoting : has a flag ledger");
+        lastClosedLedger && isFlagLedger(lastClosedLedger->seq()),
+        "xrpl::FeeVoteImpl::doVoting : has a flag ledger");
 
     detail::VotableValue baseFeeVote(lastClosedLedger->fees().base, target_.reference_fee);
 
@@ -168,7 +185,8 @@ FeeVoteImpl::doVoting(
     detail::VotableValue extensionComputeVote(
         lastClosedLedger->fees().extensionComputeLimit, target_.extension_compute_limit);
 
-    detail::VotableValue extensionSizeVote(lastClosedLedger->fees().extensionSizeLimit, target_.extension_size_limit);
+    detail::VotableValue extensionSizeVote(
+        lastClosedLedger->fees().extensionSizeLimit, target_.extension_size_limit);
 
     detail::VotableValue gasPriceVote(lastClosedLedger->fees().gasPrice, target_.gas_price);
 
@@ -273,11 +291,11 @@ FeeVoteImpl::doVoting(
     auto const seq = lastClosedLedger->header().seq + 1;
 
     // add transactions to our position
-    if (baseFee.second || baseReserve.second || incReserve.second || extensionCompute.second || extensionSize.second ||
-        gasPrice.second)
+    if (baseFee.second || baseReserve.second || incReserve.second || extensionCompute.second ||
+        extensionSize.second || gasPrice.second)
     {
-        JLOG(journal_.warn()) << "We are voting for a fee change: " << baseFee.first << "/" << baseReserve.first << "/"
-                              << incReserve.first;
+        JLOG(journal_.warn()) << "We are voting for a fee change: " << baseFee.first << "/"
+                              << baseReserve.first << "/" << incReserve.first;
 
         STTx feeTx(ttFEE, [=, &rules](auto& obj) {
             obj[sfAccount] = AccountID();
@@ -293,8 +311,10 @@ FeeVoteImpl::doVoting(
                 // Without the featureXRPFees amendment, these fields are
                 // required.
                 obj[sfBaseFee] = baseFee.first.dropsAs<std::uint64_t>(baseFeeVote.current());
-                obj[sfReserveBase] = baseReserve.first.dropsAs<std::uint32_t>(baseReserveVote.current());
-                obj[sfReserveIncrement] = incReserve.first.dropsAs<std::uint32_t>(incReserveVote.current());
+                obj[sfReserveBase] =
+                    baseReserve.first.dropsAs<std::uint32_t>(baseReserveVote.current());
+                obj[sfReserveIncrement] =
+                    incReserve.first.dropsAs<std::uint32_t>(incReserveVote.current());
                 obj[sfReferenceFeeUnits] = Config::FEE_UNITS_DEPRECATED;
             }
             if (rules.enabled(featureSmartEscrow))
@@ -312,7 +332,8 @@ FeeVoteImpl::doVoting(
         Serializer s;
         feeTx.add(s);
 
-        if (!initialPosition->addGiveItem(SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(txID, s.slice())))
+        if (!initialPosition->addGiveItem(
+                SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(txID, s.slice())))
         {
             JLOG(journal_.warn()) << "Ledger already had fee change";
         }

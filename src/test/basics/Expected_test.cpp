@@ -85,7 +85,9 @@ struct Expected_test : beast::unit_test::suite
         }
         // Test error construction from rvalue.
         {
-            auto const expected = []() -> Expected<std::string, TER> { return Unexpected(telLOCAL_ERROR); }();
+            auto const expected = []() -> Expected<std::string, TER> {
+                return Unexpected(telLOCAL_ERROR);
+            }();
             BEAST_EXPECT(!expected);
             BEAST_EXPECT(!expected.has_value());
             BEAST_EXPECT(expected.error() == telLOCAL_ERROR);
@@ -126,14 +128,18 @@ struct Expected_test : beast::unit_test::suite
         }
         // Test error construction from const char*.
         {
-            auto const expected = []() -> Expected<int, char const*> { return Unexpected("Not what is expected!"); }();
+            auto const expected = []() -> Expected<int, char const*> {
+                return Unexpected("Not what is expected!");
+            }();
             BEAST_EXPECT(!expected);
             BEAST_EXPECT(!expected.has_value());
             BEAST_EXPECT(expected.error() == std::string("Not what is expected!"));
         }
         // Test error construction of string from const char*.
         {
-            auto expected = []() -> Expected<int, std::string> { return Unexpected("Not what is expected!"); }();
+            auto expected = []() -> Expected<int, std::string> {
+                return Unexpected("Not what is expected!");
+            }();
             BEAST_EXPECT(!expected);
             BEAST_EXPECT(!expected.has_value());
             BEAST_EXPECT(expected.error() == "Not what is expected!");
@@ -176,13 +182,17 @@ struct Expected_test : beast::unit_test::suite
         }
         // Test error const construction of Expected<void, T>.
         {
-            auto const expected = []() -> Expected<void, std::string> { return Unexpected("Not what is expected!"); }();
+            auto const expected = []() -> Expected<void, std::string> {
+                return Unexpected("Not what is expected!");
+            }();
             BEAST_EXPECT(!expected);
             BEAST_EXPECT(expected.error() == "Not what is expected!");
         }
         // Test error non-const construction of Expected<void, T>.
         {
-            auto expected = []() -> Expected<void, std::string> { return Unexpected("Not what is expected!"); }();
+            auto expected = []() -> Expected<void, std::string> {
+                return Unexpected("Not what is expected!");
+            }();
             BEAST_EXPECT(!expected);
             BEAST_EXPECT(expected.error() == "Not what is expected!");
             std::string const s(std::move(expected.error()));

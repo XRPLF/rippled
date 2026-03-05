@@ -3,13 +3,13 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/GRPCHandlers.h>
-#include <xrpld/rpc/InfoSub.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
 #include <xrpl/resource/Charge.h>
+#include <xrpl/server/InfoSub.h>
 
 #include <grpcpp/grpcpp.h>
 
@@ -89,8 +89,11 @@ private:
     static unsigned constexpr apiVersion = 1;
 
     template <class Request, class Response>
-    using Forward = std::function<
-        grpc::Status(org::xrpl::rpc::v1::XRPLedgerAPIService::Stub*, grpc::ClientContext*, Request, Response*)>;
+    using Forward = std::function<grpc::Status(
+        org::xrpl::rpc::v1::XRPLedgerAPIService::Stub*,
+        grpc::ClientContext*,
+        Request,
+        Response*)>;
 
 public:
     explicit GRPCServerImpl(Application& app);
@@ -123,7 +126,8 @@ public:
 private:
     // Class encompassing the state and logic needed to serve a request.
     template <class Request, class Response>
-    class CallData : public Processor, public std::enable_shared_from_this<CallData<Request, Response>>
+    class CallData : public Processor,
+                     public std::enable_shared_from_this<CallData<Request, Response>>
     {
     private:
         // The means of communication with the gRPC runtime for an asynchronous

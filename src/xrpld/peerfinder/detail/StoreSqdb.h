@@ -1,8 +1,9 @@
 #pragma once
 
 #include <xrpld/app/rdb/PeerFinder.h>
-#include <xrpld/core/SociDB.h>
 #include <xrpld/peerfinder/detail/Store.h>
+
+#include <xrpl/rdb/SociDB.h>
 
 namespace xrpl {
 namespace PeerFinder {
@@ -20,7 +21,8 @@ public:
         currentSchemaVersion = 4
     };
 
-    explicit StoreSqdb(beast::Journal journal = beast::Journal{beast::Journal::getNullSink()}) : m_journal(journal)
+    explicit StoreSqdb(beast::Journal journal = beast::Journal{beast::Journal::getNullSink()})
+        : m_journal(journal)
     {
     }
 

@@ -141,7 +141,11 @@ public:
         ter const& ter,
         bool log = false,
         bool close = true);
-    AMM(Env& env, Account const& account, STAmount const& asset1, STAmount const& asset2, CreateArg const& arg);
+    AMM(Env& env,
+        Account const& account,
+        STAmount const& asset1,
+        STAmount const& asset2,
+        CreateArg const& arg);
 
     /** Send amm_info RPC command
      */
@@ -167,7 +171,10 @@ public:
     /** Get AMM balances for the token pair.
      */
     std::tuple<STAmount, STAmount, STAmount>
-    balances(Issue const& issue1, Issue const& issue2, std::optional<AccountID> const& account = std::nullopt) const;
+    balances(
+        Issue const& issue1,
+        Issue const& issue2,
+        std::optional<AccountID> const& account = std::nullopt) const;
 
     std::tuple<STAmount, STAmount, STAmount>
     balances(std::optional<AccountID> const& account = std::nullopt) const
@@ -184,7 +191,10 @@ public:
      * @param expectedPrice expected slot price
      */
     [[nodiscard]] bool
-    expectAuctionSlot(std::uint32_t fee, std::optional<std::uint8_t> timeSlot, IOUAmount expectedPrice) const;
+    expectAuctionSlot(
+        std::uint32_t fee,
+        std::optional<std::uint8_t> timeSlot,
+        IOUAmount expectedPrice) const;
 
     [[nodiscard]] bool
     expectAuctionSlot(std::vector<AccountID> const& authAccount) const;
@@ -252,7 +262,11 @@ public:
         std::optional<ter> const& ter = std::nullopt)
     {
         return withdraw(
-            account, std::nullopt, asset1OutDetails, asset1OutDetails ? tfOneAssetWithdrawAll : tfWithdrawAll, ter);
+            account,
+            std::nullopt,
+            asset1OutDetails,
+            asset1OutDetails ? tfOneAssetWithdrawAll : tfWithdrawAll,
+            ter);
     }
 
     IOUAmount
@@ -383,11 +397,17 @@ private:
     }
 
     [[nodiscard]] bool
-    expectAmmInfo(STAmount const& asset1, STAmount const& asset2, IOUAmount const& balance, Json::Value const& jv)
-        const;
+    expectAmmInfo(
+        STAmount const& asset1,
+        STAmount const& asset2,
+        IOUAmount const& balance,
+        Json::Value const& jv) const;
 
     void
-    submit(Json::Value const& jv, std::optional<jtx::seq> const& seq, std::optional<ter> const& ter);
+    submit(
+        Json::Value const& jv,
+        std::optional<jtx::seq> const& seq,
+        std::optional<ter> const& ter);
 
     [[nodiscard]] bool
     expectAuctionSlot(auto&& cb) const;

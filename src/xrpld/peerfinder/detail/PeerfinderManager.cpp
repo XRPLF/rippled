@@ -81,7 +81,8 @@ public:
     }
 
     void
-    addFixedPeer(std::string const& name, std::vector<beast::IP::Endpoint> const& addresses) override
+    addFixedPeer(std::string const& name, std::vector<beast::IP::Endpoint> const& addresses)
+        override
     {
         m_logic.addFixedPeer(name, addresses);
     }
@@ -101,7 +102,9 @@ public:
     //--------------------------------------------------------------------------
 
     std::pair<std::shared_ptr<Slot>, Result>
-    new_inbound_slot(beast::IP::Endpoint const& local_endpoint, beast::IP::Endpoint const& remote_endpoint) override
+    new_inbound_slot(
+        beast::IP::Endpoint const& local_endpoint,
+        beast::IP::Endpoint const& remote_endpoint) override
     {
         return m_logic.new_inbound_slot(local_endpoint, remote_endpoint);
     }
@@ -144,7 +147,8 @@ public:
     //--------------------------------------------------------------------------
 
     bool
-    onConnected(std::shared_ptr<Slot> const& slot, beast::IP::Endpoint const& local_endpoint) override
+    onConnected(std::shared_ptr<Slot> const& slot, beast::IP::Endpoint const& local_endpoint)
+        override
     {
         SlotImp::ptr impl(std::dynamic_pointer_cast<SlotImp>(slot));
         return m_logic.onConnected(impl, local_endpoint);

@@ -1,4 +1,3 @@
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
@@ -7,6 +6,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/NetworkOPs.h>
 
 namespace xrpl {
 
@@ -66,7 +66,9 @@ doUnsubscribe(RPC::JsonContext& context)
             {
                 context.netOps.unsubTransactions(ispSub->getSeq());
             }
-            else if (streamName == "transactions_proposed" || streamName == "rt_transactions")  // DEPRECATED
+            else if (
+                streamName == "transactions_proposed" ||
+                streamName == "rt_transactions")  // DEPRECATED
             {
                 context.netOps.unsubRTTransactions(ispSub->getSeq());
             }
@@ -89,8 +91,9 @@ doUnsubscribe(RPC::JsonContext& context)
         }
     }
 
-    auto accountsProposed =
-        context.params.isMember(jss::accounts_proposed) ? jss::accounts_proposed : jss::rt_accounts;  // DEPRECATED
+    auto accountsProposed = context.params.isMember(jss::accounts_proposed)
+        ? jss::accounts_proposed
+        : jss::rt_accounts;  // DEPRECATED
     if (context.params.isMember(accountsProposed))
     {
         if (!context.params[accountsProposed].isArray())

@@ -1,10 +1,7 @@
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/LoadFeeTrack.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/paths/AccountCurrencies.h>
 #include <xrpld/app/paths/PathRequest.h>
 #include <xrpld/app/paths/PathRequests.h>
-#include <xrpld/app/paths/RippleCalc.h>
 #include <xrpld/app/paths/detail/PathfinderUtils.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/rpc/detail/Tuning.h>
@@ -14,6 +11,9 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/server/NetworkOPs.h>
+#include <xrpl/tx/paths/RippleCalc.h>
 
 #include <optional>
 #include <tuple>
@@ -86,7 +86,8 @@ PathRequest::~PathRequest()
         full += "ms";
     }
     stream << iIdentifier << " complete:" << fast << full
-           << " total:" << duration_cast<milliseconds>(steady_clock::now() - created_).count() << "ms";
+           << " total:" << duration_cast<milliseconds>(steady_clock::now() - created_).count()
+           << "ms";
 }
 
 bool
@@ -285,7 +286,8 @@ PathRequest::parseJson(Json::Value const& jvParams)
     convert_all_ = saDstAmount == STAmount(saDstAmount.issue(), 1u, 0, true);
 
     if ((saDstAmount.getCurrency().isZero() && saDstAmount.getIssuer().isNonZero()) ||
-        (saDstAmount.getCurrency() == badCurrency()) || (!convert_all_ && saDstAmount <= beast::zero))
+        (saDstAmount.getCurrency() == badCurrency()) ||
+        (!convert_all_ && saDstAmount <= beast::zero))
     {
         jvStatus = rpcError(rpcDST_AMT_MALFORMED);
         return PFR_PJ_INVALID;
@@ -449,7 +451,15 @@ PathRequest::getPathFinder(
     if (i != currency_map.end())
         return i->second;
     auto pathfinder = std::make_unique<Pathfinder>(
-        cache, *raSrcAccount, *raDstAccount, currency, std::nullopt, dst_amount, saSendMax, domain, app_);
+        cache,
+        *raSrcAccount,
+        *raDstAccount,
+        currency,
+        std::nullopt,
+        dst_amount,
+        saSendMax,
+        domain,
+        app_);
     if (pathfinder->findPaths(level, continueCallback))
         pathfinder->computePathRanks(max_paths_, continueCallback);
     else
@@ -490,9 +500,11 @@ PathRequest::findPaths(
     {
         if (continueCallback && !continueCallback())
             break;
-        JLOG(m_journal.debug()) << iIdentifier << " Trying to find paths: " << STAmount(issue, 1).getFullText();
+        JLOG(m_journal.debug()) << iIdentifier
+                                << " Trying to find paths: " << STAmount(issue, 1).getFullText();
 
-        auto& pathfinder = getPathFinder(cache, currency_map, issue.currency, dst_amount, level, continueCallback);
+        auto& pathfinder =
+            getPathFinder(cache, currency_map, issue.currency, dst_amount, level, continueCallback);
         if (!pathfinder)
         {
             JLOG(m_journal.debug()) << iIdentifier << " No paths found";
@@ -500,8 +512,8 @@ PathRequest::findPaths(
         }
 
         STPath fullLiquidityPath;
-        auto ps =
-            pathfinder->getBestPaths(max_paths_, fullLiquidityPath, mContext[issue], issue.account, continueCallback);
+        auto ps = pathfinder->getBestPaths(
+            max_paths_, fullLiquidityPath, mContext[issue], issue.account, continueCallback);
         mContext[issue] = ps;
 
         auto const& sourceAccount = [&] {
@@ -514,7 +526,8 @@ PathRequest::findPaths(
             return *raSrcAccount;
         }();
 
-        STAmount saMaxAmount = saSendMax.value_or(STAmount(Issue{issue.currency, sourceAccount}, 1u, 0, true));
+        STAmount saMaxAmount =
+            saSendMax.value_or(STAmount(Issue{issue.currency, sourceAccount}, 1u, 0, true));
 
         JLOG(m_journal.debug()) << iIdentifier << " Paths found, calling rippleCalc";
 
@@ -554,11 +567,13 @@ PathRequest::findPaths(
 
             if (rc.result() != tesSUCCESS)
             {
-                JLOG(m_journal.warn()) << iIdentifier << " Failed with covering path " << transHuman(rc.result());
+                JLOG(m_journal.warn())
+                    << iIdentifier << " Failed with covering path " << transHuman(rc.result());
             }
             else
             {
-                JLOG(m_journal.debug()) << iIdentifier << " Extra path element gives " << transHuman(rc.result());
+                JLOG(m_journal.debug())
+                    << iIdentifier << " Extra path element gives " << transHuman(rc.result());
             }
         }
 
@@ -582,7 +597,8 @@ PathRequest::findPaths(
         }
         else
         {
-            JLOG(m_journal.debug()) << iIdentifier << " rippleCalc returns " << transHuman(rc.result());
+            JLOG(m_journal.debug())
+                << iIdentifier << " rippleCalc returns " << transHuman(rc.result());
         }
     }
 
@@ -650,7 +666,8 @@ PathRequest::doUpdate(
     else if (bLastSuccess)
     {
         // decrement, if possible
-        if (iLevel > app_.config().PATH_SEARCH || (loaded && (iLevel > app_.config().PATH_SEARCH_FAST)))
+        if (iLevel > app_.config().PATH_SEARCH ||
+            (loaded && (iLevel > app_.config().PATH_SEARCH_FAST)))
             --iLevel;
     }
     else

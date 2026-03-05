@@ -1,6 +1,6 @@
 #pragma once
 
-#include <xrpld/app/rdb/RelationalDatabase.h>
+#include <xrpl/rdb/RelationalDatabase.h>
 
 #include <cstdint>
 

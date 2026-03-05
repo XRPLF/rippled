@@ -2,7 +2,6 @@
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/rpc/Context.h>
 
@@ -11,11 +10,16 @@
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/NetworkOPs.h>
 
 namespace xrpl {
 
 static void
-textTime(std::string& text, UptimeClock::time_point& seconds, char const* unitName, std::chrono::seconds unitVal)
+textTime(
+    std::string& text,
+    UptimeClock::time_point& seconds,
+    char const* unitName,
+    std::chrono::seconds unitVal)
 {
     auto i = seconds.time_since_epoch() / unitVal;
 
@@ -49,22 +53,19 @@ getCountsJson(Application& app, int minObjectCount)
 
     if (app.config().useTxTables())
     {
-        auto const db = dynamic_cast<SQLiteDatabase*>(&app.getRelationalDatabase());
+        auto& db = app.getRelationalDatabase();
 
-        if (!db)
-            Throw<std::runtime_error>("Failed to get relational database");
-
-        auto dbKB = db->getKBUsedAll();
+        auto dbKB = db.getKBUsedAll();
 
         if (dbKB > 0)
             ret[jss::dbKBTotal] = dbKB;
 
-        dbKB = db->getKBUsedLedger();
+        dbKB = db.getKBUsedLedger();
 
         if (dbKB > 0)
             ret[jss::dbKBLedger] = dbKB;
 
-        dbKB = db->getKBUsedTransaction();
+        dbKB = db.getKBUsedTransaction();
 
         if (dbKB > 0)
             ret[jss::dbKBTransaction] = dbKB;

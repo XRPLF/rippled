@@ -97,7 +97,10 @@ class LPTokenTransfer_test : public jtx::AMMTest
         {
             // with fixFrozenLPTokenTransfer, alice fails to consume carol's
             // offer since carol's USD is frozen
-            env(pay(alice, bob, STAmount{lpIssue, 10}), txflags(tfPartialPayment), sendmax(XRP(10)), ter(tecPATH_DRY));
+            env(pay(alice, bob, STAmount{lpIssue, 10}),
+                txflags(tfPartialPayment),
+                sendmax(XRP(10)),
+                ter(tecPATH_DRY));
             env.close();
             BEAST_EXPECT(expectOffers(env, carol, 1));
 
@@ -106,7 +109,9 @@ class LPTokenTransfer_test : public jtx::AMMTest
             env.close();
 
             // alice successfully consumes carol's offer
-            env(pay(alice, bob, STAmount{lpIssue, 10}), txflags(tfPartialPayment), sendmax(XRP(10)));
+            env(pay(alice, bob, STAmount{lpIssue, 10}),
+                txflags(tfPartialPayment),
+                sendmax(XRP(10)));
             env.close();
             BEAST_EXPECT(expectOffers(env, carol, 0));
         }
@@ -114,7 +119,9 @@ class LPTokenTransfer_test : public jtx::AMMTest
         {
             // without fixFrozenLPTokenTransfer, alice can consume carol's offer
             // even when carol's USD is frozen
-            env(pay(alice, bob, STAmount{lpIssue, 10}), txflags(tfPartialPayment), sendmax(XRP(10)));
+            env(pay(alice, bob, STAmount{lpIssue, 10}),
+                txflags(tfPartialPayment),
+                sendmax(XRP(10)));
             env.close();
             BEAST_EXPECT(expectOffers(env, carol, 0));
         }
@@ -136,7 +143,9 @@ class LPTokenTransfer_test : public jtx::AMMTest
             env.close();
 
             // alice successfully consumes carol's offer
-            env(pay(alice, bob, XRP(10)), txflags(tfPartialPayment), sendmax(STAmount{lpIssue, 10}));
+            env(pay(alice, bob, XRP(10)),
+                txflags(tfPartialPayment),
+                sendmax(STAmount{lpIssue, 10}));
             env.close();
             BEAST_EXPECT(expectOffers(env, carol, 0));
         }
@@ -169,7 +178,9 @@ class LPTokenTransfer_test : public jtx::AMMTest
             // sell lptoken when one of the assets is frozen
 
             // carol can't create an offer to sell lptoken
-            env(offer(carol, XRP(10), STAmount{lpIssue, 10}), txflags(tfPassive), ter(tecUNFUNDED_OFFER));
+            env(offer(carol, XRP(10), STAmount{lpIssue, 10}),
+                txflags(tfPassive),
+                ter(tecUNFUNDED_OFFER));
             env.close();
             BEAST_EXPECT(expectOffers(env, carol, 0));
 
@@ -361,7 +372,9 @@ class LPTokenTransfer_test : public jtx::AMMTest
 
             // bob fails to create a buy offer with lptoken for carol's nft
             // since bob's USD is frozen
-            env(token::createOffer(bob, nftID, STAmount{lpIssue, 10}), token::owner(carol), ter(tecUNFUNDED_OFFER));
+            env(token::createOffer(bob, nftID, STAmount{lpIssue, 10}),
+                token::owner(carol),
+                ter(tecUNFUNDED_OFFER));
             env.close();
 
             // gateway unfreezes bob's USD

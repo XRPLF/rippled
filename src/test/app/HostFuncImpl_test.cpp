@@ -1,8 +1,7 @@
 #include <test/jtx.h>
 
-#include <xrpld/app/wasm/HostFuncImpl.h>
-
 #include <xrpl/protocol/digest.h>
+#include <xrpl/tx/wasm/HostFuncImpl.h>
 
 namespace xrpl {
 namespace test {
@@ -76,7 +75,10 @@ createApplyContext(
 }
 
 static ApplyContext
-createApplyContext(test::jtx::Env& env, OpenView& ov, STTx const& tx = STTx(ttESCROW_FINISH, [](STObject&) {}))
+createApplyContext(
+    test::jtx::Env& env,
+    OpenView& ov,
+    STTx const& tx = STTx(ttESCROW_FINISH, [](STObject&) {}))
 {
     return createApplyContext(env, ov, env.journal, tx);
 }
@@ -115,7 +117,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmHostFunctionsImpl hfs(ac, dummyEscrow);
             auto const result = hfs.getParentLedgerTime();
             if (BEAST_EXPECT(result.has_value()))
-                BEAST_EXPECT(result.value() == env.current()->parentCloseTime().time_since_epoch().count());
+                BEAST_EXPECT(
+                    result.value() == env.current()->parentCloseTime().time_since_epoch().count());
         }
     }
 
@@ -216,9 +219,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-            BEAST_EXPECT(hfs.cacheLedgerObj(accountKeylet.key, -1).error() == HostFunctionError::SLOT_OUT_RANGE);
-            BEAST_EXPECT(hfs.cacheLedgerObj(accountKeylet.key, 257).error() == HostFunctionError::SLOT_OUT_RANGE);
-            BEAST_EXPECT(hfs.cacheLedgerObj(dummyEscrow.key, 0).error() == HostFunctionError::LEDGER_OBJ_NOT_FOUND);
+            BEAST_EXPECT(
+                hfs.cacheLedgerObj(accountKeylet.key, -1).error() ==
+                HostFunctionError::SLOT_OUT_RANGE);
+            BEAST_EXPECT(
+                hfs.cacheLedgerObj(accountKeylet.key, 257).error() ==
+                HostFunctionError::SLOT_OUT_RANGE);
+            BEAST_EXPECT(
+                hfs.cacheLedgerObj(dummyEscrow.key, 0).error() ==
+                HostFunctionError::LEDGER_OBJ_NOT_FOUND);
             BEAST_EXPECT(hfs.cacheLedgerObj(accountKeylet.key, 0).value() == 1);
 
             for (int i = 1; i <= 256; ++i)
@@ -226,7 +235,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 auto const result = hfs.cacheLedgerObj(accountKeylet.key, i);
                 BEAST_EXPECT(result.has_value() && result.value() == i);
             }
-            BEAST_EXPECT(hfs.cacheLedgerObj(accountKeylet.key, 0).error() == HostFunctionError::SLOTS_FULL);
+            BEAST_EXPECT(
+                hfs.cacheLedgerObj(accountKeylet.key, 0).error() == HostFunctionError::SLOTS_FULL);
         }
 
         {
@@ -237,7 +247,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 auto const result = hfs.cacheLedgerObj(accountKeylet.key, 0);
                 BEAST_EXPECT(result.has_value() && result.value() == i);
             }
-            BEAST_EXPECT(hfs.cacheLedgerObj(accountKeylet.key, 0).error() == HostFunctionError::SLOTS_FULL);
+            BEAST_EXPECT(
+                hfs.cacheLedgerObj(accountKeylet.key, 0).error() == HostFunctionError::SLOTS_FULL);
         }
     }
 
@@ -247,7 +258,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         testcase("getTxField");
         using namespace test::jtx;
 
-        std::string const credIdHex = "0011223344556677889900112233445566778899001122334455667788990011";
+        std::string const credIdHex =
+            "0011223344556677889900112233445566778899001122334455667788990011";
         uint256 credId;
         BEAST_EXPECT(credId.parseHex(credIdHex));
 
@@ -404,7 +416,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         // Should return nullopt for a field not present
         auto const notPresent = hfs.getCurrentLedgerObjField(sfOwner);
-        BEAST_EXPECT(!notPresent.has_value() && notPresent.error() == HostFunctionError::FIELD_NOT_FOUND);
+        BEAST_EXPECT(
+            !notPresent.has_value() && notPresent.error() == HostFunctionError::FIELD_NOT_FOUND);
 
         {
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master) + 5);
@@ -454,7 +467,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         // Should return error for slot out of range
         auto const outOfRange = hfs.getLedgerObjField(0, sfAccount);
-        BEAST_EXPECT(!outOfRange.has_value() && outOfRange.error() == HostFunctionError::SLOT_OUT_RANGE);
+        BEAST_EXPECT(
+            !outOfRange.has_value() && outOfRange.error() == HostFunctionError::SLOT_OUT_RANGE);
 
         auto const tooHigh = hfs.getLedgerObjField(257, sfAccount);
         BEAST_EXPECT(!tooHigh.has_value() && tooHigh.error() == HostFunctionError::SLOT_OUT_RANGE);
@@ -465,7 +479,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         // Should return error for field not present
         auto const notPresent = hfs.getLedgerObjField(1, sfOwner);
-        BEAST_EXPECT(!notPresent.has_value() && notPresent.error() == HostFunctionError::FIELD_NOT_FOUND);
+        BEAST_EXPECT(
+            !notPresent.has_value() && notPresent.error() == HostFunctionError::FIELD_NOT_FOUND);
     }
 
     void
@@ -477,7 +492,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         Env env{*this};
         OpenView ov{*env.current()};
 
-        std::string const credIdHex = "0011223344556677889900112233445566778899001122334455667788990011";
+        std::string const credIdHex =
+            "0011223344556677889900112233445566778899001122334455667788990011";
         uint256 credId;
         BEAST_EXPECT(credId.parseHex(credIdHex));
 
@@ -504,7 +520,9 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // Locator is a sequence of int32_t codes:
             // [sfMemos.fieldCode, 0, sfMemoData.fieldCode]
             std::vector<int32_t> locatorVec = {sfMemos.fieldCode, 0, sfMemoData.fieldCode};
-            Slice locator(reinterpret_cast<uint8_t const*>(locatorVec.data()), locatorVec.size() * sizeof(int32_t));
+            Slice locator(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
 
             auto const result = hfs.getTxNestedField(locator);
             if (BEAST_EXPECTS(result.has_value(), std::to_string(static_cast<int>(result.error()))))
@@ -517,7 +535,9 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             // Locator for sfCredentialIDs[0]
             std::vector<int32_t> locatorVec = {sfCredentialIDs.fieldCode, 0};
-            Slice locator(reinterpret_cast<uint8_t const*>(locatorVec.data()), locatorVec.size() * sizeof(int32_t));
+            Slice locator(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
 
             auto const result = hfs.getTxNestedField(locator);
             if (BEAST_EXPECTS(result.has_value(), std::to_string(static_cast<int>(result.error()))))
@@ -530,10 +550,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             // can use the nested locator for base fields too
             std::vector<int32_t> locatorVec = {sfAccount.fieldCode};
-            Slice locator(reinterpret_cast<uint8_t const*>(locatorVec.data()), locatorVec.size() * sizeof(int32_t));
+            Slice locator(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
 
             auto const account = hfs.getTxNestedField(locator);
-            if (BEAST_EXPECTS(account.has_value(), std::to_string(static_cast<int>(account.error()))))
+            if (BEAST_EXPECTS(
+                    account.has_value(), std::to_string(static_cast<int>(account.error()))))
             {
                 BEAST_EXPECT(std::ranges::equal(*account, env.master.id()));
             }
@@ -546,17 +569,23 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             Slice locator(reinterpret_cast<uint8_t const*>(locatorVec.data() + 1), sizeof(int32_t));
 
             auto const account = hfs.getTxNestedField(locator);
-            if (BEAST_EXPECTS(account.has_value(), std::to_string(static_cast<int>(account.error()))))
+            if (BEAST_EXPECTS(
+                    account.has_value(), std::to_string(static_cast<int>(account.error()))))
             {
                 BEAST_EXPECT(std::ranges::equal(*account, env.master.id()));
             }
         }
 
-        auto expectError = [&](std::vector<int32_t> const& locatorVec, HostFunctionError expectedError) {
-            Slice locator(reinterpret_cast<uint8_t const*>(locatorVec.data()), locatorVec.size() * sizeof(int32_t));
+        auto expectError = [&](std::vector<int32_t> const& locatorVec,
+                               HostFunctionError expectedError) {
+            Slice locator(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
             auto const result = hfs.getTxNestedField(locator);
             if (BEAST_EXPECT(!result.has_value()))
-                BEAST_EXPECTS(result.error() == expectedError, std::to_string(static_cast<int>(result.error())));
+                BEAST_EXPECTS(
+                    result.error() == expectedError,
+                    std::to_string(static_cast<int>(result.error())));
         };
         // Locator for non-existent base field
         expectError(
@@ -577,6 +606,18 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             {sfCredentialIDs.fieldCode, 1},  // index 1 does not exist
             HostFunctionError::INDEX_OUT_OF_BOUNDS);
 
+        // Locator for negative index (STArray)
+        expectError(
+            {sfMemos.fieldCode,
+             -1,  // negative index
+             sfMemoData.fieldCode},
+            HostFunctionError::INDEX_OUT_OF_BOUNDS);
+
+        // Locator for negative index (STVector256)
+        expectError(
+            {sfCredentialIDs.fieldCode, -1},  // negative index
+            HostFunctionError::INDEX_OUT_OF_BOUNDS);
+
         // Locator for non-existent nested field
         expectError(
             {sfMemos.fieldCode, 0, sfURI.fieldCode},  // sfURI does not exist in the memo
@@ -595,6 +636,31 @@ struct HostFuncImpl_test : public beast::unit_test::suite
              0,
              field_code(20000, 20000)},
             HostFunctionError::INVALID_FIELD);
+
+        // Locator for negative base sfield code (-1 = sfInvalid, exists in map but not in tx)
+        expectError(
+            {-1,  // sfInvalid's field code
+             0,
+             sfAccount.fieldCode},
+            HostFunctionError::FIELD_NOT_FOUND);
+
+        // Locator for zero base sfield code (0 = sfGeneric, exists in map but not in tx)
+        expectError(
+            {0,  // sfGeneric's field code
+             0,
+             sfAccount.fieldCode},
+            HostFunctionError::FIELD_NOT_FOUND);
+
+        // Locator for very negative base sfield code (not in knownCodeToField map)
+        expectError(
+            {std::numeric_limits<int32_t>::min(), 0, sfAccount.fieldCode},
+            HostFunctionError::INVALID_FIELD);
+
+        // Locator for negative nested sfield code in STObject context
+        // (sfMemos[0] is an STObject, then -1 is looked up as SField)
+        expectError(
+            {sfMemos.fieldCode, 0, -1},  // -1 = sfInvalid, exists in map but not in memo object
+            HostFunctionError::FIELD_NOT_FOUND);
 
         // Locator for STArray
         expectError({sfMemos.fieldCode}, HostFunctionError::NOT_LEAF_FIELD);
@@ -618,7 +684,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             Slice malformedLocator(reinterpret_cast<uint8_t const*>(locatorVec.data()), 3);
             auto const malformedResult = hfs.getTxNestedField(malformedLocator);
             BEAST_EXPECT(
-                !malformedResult.has_value() && malformedResult.error() == HostFunctionError::LOCATOR_MALFORMED);
+                !malformedResult.has_value() &&
+                malformedResult.error() == HostFunctionError::LOCATOR_MALFORMED);
         }
     }
 
@@ -646,18 +713,25 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         // Locator for base field
         std::vector<int32_t> baseLocator = {sfSignerQuorum.fieldCode};
         Slice baseLocatorSlice(
-            reinterpret_cast<uint8_t const*>(baseLocator.data()), baseLocator.size() * sizeof(int32_t));
+            reinterpret_cast<uint8_t const*>(baseLocator.data()),
+            baseLocator.size() * sizeof(int32_t));
         auto const signerQuorum = hfs.getCurrentLedgerObjNestedField(baseLocatorSlice);
-        if (BEAST_EXPECTS(signerQuorum.has_value(), std::to_string(static_cast<int>(signerQuorum.error()))))
+        if (BEAST_EXPECTS(
+                signerQuorum.has_value(), std::to_string(static_cast<int>(signerQuorum.error()))))
         {
             BEAST_EXPECT(*signerQuorum == toBytes(static_cast<uint32_t>(2)));
         }
 
-        auto expectError = [&](std::vector<int32_t> const& locatorVec, HostFunctionError expectedError) {
-            Slice locator(reinterpret_cast<uint8_t const*>(locatorVec.data()), locatorVec.size() * sizeof(int32_t));
+        auto expectError = [&](std::vector<int32_t> const& locatorVec,
+                               HostFunctionError expectedError) {
+            Slice locator(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
             auto const result = hfs.getCurrentLedgerObjNestedField(locator);
             if (BEAST_EXPECT(!result.has_value()))
-                BEAST_EXPECTS(result.error() == expectedError, std::to_string(static_cast<int>(result.error())));
+                BEAST_EXPECTS(
+                    result.error() == expectedError,
+                    std::to_string(static_cast<int>(result.error())));
         };
         // Locator for non-existent base field
         expectError(
@@ -675,19 +749,25 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         // Locator for empty locator
         Slice emptyLocator(nullptr, 0);
         auto const emptyResult = hfs.getCurrentLedgerObjNestedField(emptyLocator);
-        BEAST_EXPECT(!emptyResult.has_value() && emptyResult.error() == HostFunctionError::LOCATOR_MALFORMED);
+        BEAST_EXPECT(
+            !emptyResult.has_value() &&
+            emptyResult.error() == HostFunctionError::LOCATOR_MALFORMED);
 
         // Locator for malformed locator (not multiple of 4)
         std::vector<int32_t> malformedLocatorVec = {sfMemos.fieldCode};
         Slice malformedLocator(reinterpret_cast<uint8_t const*>(malformedLocatorVec.data()), 3);
         auto const malformedResult = hfs.getCurrentLedgerObjNestedField(malformedLocator);
-        BEAST_EXPECT(!malformedResult.has_value() && malformedResult.error() == HostFunctionError::LOCATOR_MALFORMED);
+        BEAST_EXPECT(
+            !malformedResult.has_value() &&
+            malformedResult.error() == HostFunctionError::LOCATOR_MALFORMED);
 
         {
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master) + 5);
             WasmHostFunctionsImpl dummyHfs(ac, dummyEscrow);
             std::vector<int32_t> const locatorVec = {sfAccount.fieldCode};
-            Slice locator(reinterpret_cast<uint8_t const*>(locatorVec.data()), locatorVec.size() * sizeof(int32_t));
+            Slice locator(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
             auto const result = dummyHfs.getCurrentLedgerObjNestedField(locator);
             if (BEAST_EXPECT(!result.has_value()))
                 BEAST_EXPECTS(
@@ -722,8 +802,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         // Locator for sfSignerEntries[0].sfAccount
         {
-            std::vector<int32_t> const locatorVec = {sfSignerEntries.fieldCode, 0, sfAccount.fieldCode};
-            Slice locator(reinterpret_cast<uint8_t const*>(locatorVec.data()), locatorVec.size() * sizeof(int32_t));
+            std::vector<int32_t> const locatorVec = {
+                sfSignerEntries.fieldCode, 0, sfAccount.fieldCode};
+            Slice locator(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
 
             auto const result = hfs.getLedgerObjNestedField(1, locator);
             if (BEAST_EXPECTS(result.has_value(), std::to_string(static_cast<int>(result.error()))))
@@ -734,11 +817,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         // Locator for sfSignerEntries[1].sfAccount
         {
-            std::vector<int32_t> const locatorVec = {sfSignerEntries.fieldCode, 1, sfAccount.fieldCode};
-            Slice const locator =
-                Slice(reinterpret_cast<uint8_t const*>(locatorVec.data()), locatorVec.size() * sizeof(int32_t));
+            std::vector<int32_t> const locatorVec = {
+                sfSignerEntries.fieldCode, 1, sfAccount.fieldCode};
+            Slice const locator = Slice(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
             auto const result2 = hfs.getLedgerObjNestedField(1, locator);
-            if (BEAST_EXPECTS(result2.has_value(), std::to_string(static_cast<int>(result2.error()))))
+            if (BEAST_EXPECTS(
+                    result2.has_value(), std::to_string(static_cast<int>(result2.error()))))
             {
                 BEAST_EXPECT(std::ranges::equal(*result2, becky.id()));
             }
@@ -746,11 +832,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         // Locator for sfSignerEntries[0].sfSignerWeight
         {
-            std::vector<int32_t> const locatorVec = {sfSignerEntries.fieldCode, 0, sfSignerWeight.fieldCode};
-            Slice const locator =
-                Slice(reinterpret_cast<uint8_t const*>(locatorVec.data()), locatorVec.size() * sizeof(int32_t));
+            std::vector<int32_t> const locatorVec = {
+                sfSignerEntries.fieldCode, 0, sfSignerWeight.fieldCode};
+            Slice const locator = Slice(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
             auto const weightResult = hfs.getLedgerObjNestedField(1, locator);
-            if (BEAST_EXPECTS(weightResult.has_value(), std::to_string(static_cast<int>(weightResult.error()))))
+            if (BEAST_EXPECTS(
+                    weightResult.has_value(),
+                    std::to_string(static_cast<int>(weightResult.error()))))
             {
                 // Should be 1
                 auto const expected = toBytes(static_cast<std::uint16_t>(1));
@@ -761,10 +851,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         // Locator for base field sfSignerQuorum
         {
             std::vector<int32_t> const locatorVec = {sfSignerQuorum.fieldCode};
-            Slice const locator =
-                Slice(reinterpret_cast<uint8_t const*>(locatorVec.data()), locatorVec.size() * sizeof(int32_t));
+            Slice const locator = Slice(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
             auto const quorumResult = hfs.getLedgerObjNestedField(1, locator);
-            if (BEAST_EXPECTS(quorumResult.has_value(), std::to_string(static_cast<int>(quorumResult.error()))))
+            if (BEAST_EXPECTS(
+                    quorumResult.has_value(),
+                    std::to_string(static_cast<int>(quorumResult.error()))))
             {
                 auto const expected = toBytes(static_cast<std::uint32_t>(2));
                 BEAST_EXPECT(*quorumResult == expected);
@@ -772,12 +865,17 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         // Helper for error checks
-        auto expectError = [&](std::vector<int32_t> const& locatorVec, HostFunctionError expectedError, int slot = 1) {
+        auto expectError = [&](std::vector<int32_t> const& locatorVec,
+                               HostFunctionError expectedError,
+                               int slot = 1) {
             Slice const locator(
-                reinterpret_cast<uint8_t const*>(locatorVec.data()), locatorVec.size() * sizeof(int32_t));
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
             auto const result = hfs.getLedgerObjNestedField(slot, locator);
             if (BEAST_EXPECT(!result.has_value()))
-                BEAST_EXPECTS(result.error() == expectedError, std::to_string(static_cast<int>(result.error())));
+                BEAST_EXPECTS(
+                    result.error() == expectedError,
+                    std::to_string(static_cast<int>(result.error())));
         };
 
         // Error: base field not found
@@ -804,10 +902,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             HostFunctionError::FIELD_NOT_FOUND);
 
         // Error: invalid field code
-        expectError({field_code(99999, 99999), 0, sfAccount.fieldCode}, HostFunctionError::INVALID_FIELD);
+        expectError(
+            {field_code(99999, 99999), 0, sfAccount.fieldCode}, HostFunctionError::INVALID_FIELD);
 
         // Error: invalid nested field code
-        expectError({sfSignerEntries.fieldCode, 0, field_code(99999, 99999)}, HostFunctionError::INVALID_FIELD);
+        expectError(
+            {sfSignerEntries.fieldCode, 0, field_code(99999, 99999)},
+            HostFunctionError::INVALID_FIELD);
 
         // Error: slot out of range
         expectError({sfSignerQuorum.fieldCode}, HostFunctionError::SLOT_OUT_RANGE, 0);
@@ -820,7 +921,9 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         expectError({sfSignerEntries.fieldCode}, HostFunctionError::NOT_LEAF_FIELD);
 
         // Error: nesting into non-array/object field
-        expectError({sfSignerQuorum.fieldCode, 0, sfAccount.fieldCode}, HostFunctionError::LOCATOR_MALFORMED);
+        expectError(
+            {sfSignerQuorum.fieldCode, 0, sfAccount.fieldCode},
+            HostFunctionError::LOCATOR_MALFORMED);
 
         // Error: empty locator
         expectError({}, HostFunctionError::LOCATOR_MALFORMED);
@@ -829,7 +932,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         std::vector<int32_t> const locatorVec = {sfSignerEntries.fieldCode};
         Slice const locator = Slice(reinterpret_cast<uint8_t const*>(locatorVec.data()), 3);
         auto const malformed = hfs.getLedgerObjNestedField(1, locator);
-        BEAST_EXPECT(!malformed.has_value() && malformed.error() == HostFunctionError::LOCATOR_MALFORMED);
+        BEAST_EXPECT(
+            !malformed.has_value() && malformed.error() == HostFunctionError::LOCATOR_MALFORMED);
     }
 
     void
@@ -838,7 +942,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         testcase("getTxArrayLen");
         using namespace test::jtx;
 
-        std::string const credIdHex = "0011223344556677889900112233445566778899001122334455667788990011";
+        std::string const credIdHex =
+            "0011223344556677889900112233445566778899001122334455667788990011";
         uint256 credId;
         BEAST_EXPECT(credId.parseHex(credIdHex));
 
@@ -1010,18 +1115,25 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         // Helper for error checks
-        auto expectError = [&](std::vector<int32_t> const& locatorVec, HostFunctionError expectedError, int slot = 1) {
+        auto expectError = [&](std::vector<int32_t> const& locatorVec,
+                               HostFunctionError expectedError,
+                               int slot = 1) {
             Slice const locator(
-                reinterpret_cast<uint8_t const*>(locatorVec.data()), locatorVec.size() * sizeof(int32_t));
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
             auto const result = hfs.getTxNestedArrayLen(locator);
             if (BEAST_EXPECT(!result.has_value()))
-                BEAST_EXPECTS(result.error() == expectedError, std::to_string(static_cast<int>(result.error())));
+                BEAST_EXPECTS(
+                    result.error() == expectedError,
+                    std::to_string(static_cast<int>(result.error())));
         };
 
         // Locator for sfMemos
         {
             std::vector<int32_t> locatorVec = {sfMemos.fieldCode};
-            Slice locator(reinterpret_cast<uint8_t const*>(locatorVec.data()), locatorVec.size() * sizeof(int32_t));
+            Slice locator(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
             auto const arrLen = hfs.getTxNestedArrayLen(locator);
             BEAST_EXPECT(arrLen.has_value() && arrLen.value() == 1);
         }
@@ -1053,18 +1165,25 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         WasmHostFunctionsImpl hfs(ac, signerKeylet);
 
         // Helper for error checks
-        auto expectError = [&](std::vector<int32_t> const& locatorVec, HostFunctionError expectedError, int slot = 1) {
+        auto expectError = [&](std::vector<int32_t> const& locatorVec,
+                               HostFunctionError expectedError,
+                               int slot = 1) {
             Slice const locator(
-                reinterpret_cast<uint8_t const*>(locatorVec.data()), locatorVec.size() * sizeof(int32_t));
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
             auto const result = hfs.getCurrentLedgerObjNestedArrayLen(locator);
             if (BEAST_EXPECT(!result.has_value()))
-                BEAST_EXPECTS(result.error() == expectedError, std::to_string(static_cast<int>(result.error())));
+                BEAST_EXPECTS(
+                    result.error() == expectedError,
+                    std::to_string(static_cast<int>(result.error())));
         };
 
         // Locator for sfSignerEntries
         {
             std::vector<int32_t> locatorVec = {sfSignerEntries.fieldCode};
-            Slice locator(reinterpret_cast<uint8_t const*>(locatorVec.data()), locatorVec.size() * sizeof(int32_t));
+            Slice locator(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
             auto const arrLen = hfs.getCurrentLedgerObjNestedArrayLen(locator);
             BEAST_EXPECT(arrLen.has_value() && arrLen.value() == 2);
         }
@@ -1080,7 +1199,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmHostFunctionsImpl dummyHfs(ac, dummyEscrow);
             std::vector<int32_t> locatorVec = {sfAccount.fieldCode};
             Slice const locator(
-                reinterpret_cast<uint8_t const*>(locatorVec.data()), locatorVec.size() * sizeof(int32_t));
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
             auto const result = dummyHfs.getCurrentLedgerObjNestedArrayLen(locator);
             if (BEAST_EXPECT(!result.has_value()))
                 BEAST_EXPECTS(
@@ -1113,18 +1233,25 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         // Locator for sfSignerEntries
         std::vector<int32_t> locatorVec = {sfSignerEntries.fieldCode};
-        Slice locator(reinterpret_cast<uint8_t const*>(locatorVec.data()), locatorVec.size() * sizeof(int32_t));
+        Slice locator(
+            reinterpret_cast<uint8_t const*>(locatorVec.data()),
+            locatorVec.size() * sizeof(int32_t));
         auto const arrLen = hfs.getLedgerObjNestedArrayLen(1, locator);
         if (BEAST_EXPECT(arrLen.has_value()))
             BEAST_EXPECT(arrLen.value() == 2);
 
         // Helper for error checks
-        auto expectError = [&](std::vector<int32_t> const& locatorVec, HostFunctionError expectedError, int slot = 1) {
+        auto expectError = [&](std::vector<int32_t> const& locatorVec,
+                               HostFunctionError expectedError,
+                               int slot = 1) {
             Slice const locator(
-                reinterpret_cast<uint8_t const*>(locatorVec.data()), locatorVec.size() * sizeof(int32_t));
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
             auto const result = hfs.getLedgerObjNestedArrayLen(slot, locator);
             if (BEAST_EXPECT(!result.has_value()))
-                BEAST_EXPECTS(result.error() == expectedError, std::to_string(static_cast<int>(result.error())));
+                BEAST_EXPECTS(
+                    result.error() == expectedError,
+                    std::to_string(static_cast<int>(result.error())));
         };
 
         // Error: non-array field
@@ -1146,10 +1273,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         // Error: locator malformed (not multiple of 4)
         Slice malformedLocator(reinterpret_cast<uint8_t const*>(locator.data()), 3);
         auto const malformed = hfs.getLedgerObjNestedArrayLen(1, malformedLocator);
-        BEAST_EXPECT(!malformed.has_value() && malformed.error() == HostFunctionError::LOCATOR_MALFORMED);
+        BEAST_EXPECT(
+            !malformed.has_value() && malformed.error() == HostFunctionError::LOCATOR_MALFORMED);
 
         // Error: locator for non-STArray field
-        expectError({sfSignerQuorum.fieldCode, 0, sfAccount.fieldCode}, HostFunctionError::LOCATOR_MALFORMED);
+        expectError(
+            {sfSignerQuorum.fieldCode, 0, sfAccount.fieldCode},
+            HostFunctionError::LOCATOR_MALFORMED);
     }
 
     void
@@ -1159,7 +1289,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env{*this};
-        env(escrow::create(env.master, env.master, XRP(100)), escrow::finish_time(env.now() + std::chrono::seconds(1)));
+        env(escrow::create(env.master, env.master, XRP(100)),
+            escrow::finish_time(env.now() + std::chrono::seconds(1)));
         env.close();
 
         OpenView ov{*env.current()};
@@ -1203,7 +1334,9 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         // Should succeed for valid signature
         {
             auto const result = hfs.checkSignature(
-                Slice(message.data(), message.size()), Slice(sig.data(), sig.size()), Slice(pk.data(), pk.size()));
+                Slice(message.data(), message.size()),
+                Slice(sig.data(), sig.size()),
+                Slice(pk.data(), pk.size()));
             BEAST_EXPECT(result.has_value());
             BEAST_EXPECT(result.value() == 1);
         }
@@ -1233,7 +1366,9 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         // Should fail for empty public key
         {
             auto const result = hfs.checkSignature(
-                Slice(message.data(), message.size()), Slice(sig.data(), sig.size()), Slice(nullptr, 0));
+                Slice(message.data(), message.size()),
+                Slice(sig.data(), sig.size()),
+                Slice(nullptr, 0));
             BEAST_EXPECT(!result.has_value());
             BEAST_EXPECT(result.error() == HostFunctionError::INVALID_PARAMS);
         }
@@ -1241,15 +1376,17 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         // Should fail for empty signature
         {
             auto const result = hfs.checkSignature(
-                Slice(message.data(), message.size()), Slice(nullptr, 0), Slice(pk.data(), pk.size()));
+                Slice(message.data(), message.size()),
+                Slice(nullptr, 0),
+                Slice(pk.data(), pk.size()));
             BEAST_EXPECT(result.has_value());
             BEAST_EXPECT(result.value() == 0);
         }
 
         // Should fail for empty message
         {
-            auto const result =
-                hfs.checkSignature(Slice(nullptr, 0), Slice(sig.data(), sig.size()), Slice(pk.data(), pk.size()));
+            auto const result = hfs.checkSignature(
+                Slice(nullptr, 0), Slice(sig.data(), sig.size()), Slice(pk.data(), pk.size()));
             BEAST_EXPECT(result.has_value());
             BEAST_EXPECT(result.value() == 0);
         }
@@ -1303,13 +1440,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             BEAST_EXPECT(compareKeylet(actual.value(), expected)); \
         }                                                          \
     }
-#define COMPARE_KEYLET_FAIL(hfsFunc, expected, ...)                                                  \
-    {                                                                                                \
-        auto actual = hfs.hfsFunc(__VA_ARGS__);                                                      \
-        if (BEAST_EXPECT(!actual.has_value()))                                                       \
-        {                                                                                            \
-            BEAST_EXPECTS(actual.error() == expected, std::to_string(HfErrorToInt(actual.error()))); \
-        }                                                                                            \
+#define COMPARE_KEYLET_FAIL(hfsFunc, expected, ...)                                        \
+    {                                                                                      \
+        auto actual = hfs.hfsFunc(__VA_ARGS__);                                            \
+        if (BEAST_EXPECT(!actual.has_value()))                                             \
+        {                                                                                  \
+            BEAST_EXPECTS(                                                                 \
+                actual.error() == expected, std::to_string(HfErrorToInt(actual.error()))); \
+        }                                                                                  \
     }
 
         COMPARE_KEYLET(accountKeylet, keylet::account, env.master.id());
@@ -1317,7 +1455,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         COMPARE_KEYLET(ammKeylet, keylet::amm, xrpIssue(), env.master["USD"].issue());
         COMPARE_KEYLET_FAIL(ammKeylet, HostFunctionError::INVALID_PARAMS, xrpIssue(), xrpIssue());
-        COMPARE_KEYLET_FAIL(ammKeylet, HostFunctionError::INVALID_PARAMS, makeMptID(1, env.master.id()), xrpIssue());
+        COMPARE_KEYLET_FAIL(
+            ammKeylet,
+            HostFunctionError::INVALID_PARAMS,
+            makeMptID(1, env.master.id()),
+            xrpIssue());
 
         COMPARE_KEYLET(checkKeylet, keylet::check, env.master.id(), 1);
         COMPARE_KEYLET_FAIL(checkKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), 1);
@@ -1358,25 +1500,47 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         COMPARE_KEYLET_FAIL(didKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount());
 
         COMPARE_KEYLET(delegateKeylet, keylet::delegate, env.master.id(), alice.id());
-        COMPARE_KEYLET_FAIL(delegateKeylet, HostFunctionError::INVALID_PARAMS, env.master.id(), env.master.id());
-        COMPARE_KEYLET_FAIL(delegateKeylet, HostFunctionError::INVALID_ACCOUNT, env.master.id(), xrpAccount());
-        COMPARE_KEYLET_FAIL(delegateKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), env.master.id());
+        COMPARE_KEYLET_FAIL(
+            delegateKeylet, HostFunctionError::INVALID_PARAMS, env.master.id(), env.master.id());
+        COMPARE_KEYLET_FAIL(
+            delegateKeylet, HostFunctionError::INVALID_ACCOUNT, env.master.id(), xrpAccount());
+        COMPARE_KEYLET_FAIL(
+            delegateKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), env.master.id());
 
         COMPARE_KEYLET(depositPreauthKeylet, keylet::depositPreauth, env.master.id(), alice.id());
-        COMPARE_KEYLET_FAIL(depositPreauthKeylet, HostFunctionError::INVALID_PARAMS, env.master.id(), env.master.id());
-        COMPARE_KEYLET_FAIL(depositPreauthKeylet, HostFunctionError::INVALID_ACCOUNT, env.master.id(), xrpAccount());
-        COMPARE_KEYLET_FAIL(depositPreauthKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), env.master.id());
+        COMPARE_KEYLET_FAIL(
+            depositPreauthKeylet,
+            HostFunctionError::INVALID_PARAMS,
+            env.master.id(),
+            env.master.id());
+        COMPARE_KEYLET_FAIL(
+            depositPreauthKeylet,
+            HostFunctionError::INVALID_ACCOUNT,
+            env.master.id(),
+            xrpAccount());
+        COMPARE_KEYLET_FAIL(
+            depositPreauthKeylet,
+            HostFunctionError::INVALID_ACCOUNT,
+            xrpAccount(),
+            env.master.id());
 
         COMPARE_KEYLET(escrowKeylet, keylet::escrow, env.master.id(), 1);
         COMPARE_KEYLET_FAIL(escrowKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), 1);
 
         Currency usd = to_currency("USD");
         COMPARE_KEYLET(lineKeylet, keylet::line, env.master.id(), alice.id(), usd);
-        COMPARE_KEYLET_FAIL(lineKeylet, HostFunctionError::INVALID_PARAMS, env.master.id(), env.master.id(), usd);
-        COMPARE_KEYLET_FAIL(lineKeylet, HostFunctionError::INVALID_ACCOUNT, env.master.id(), xrpAccount(), usd);
-        COMPARE_KEYLET_FAIL(lineKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), env.master.id(), usd);
         COMPARE_KEYLET_FAIL(
-            lineKeylet, HostFunctionError::INVALID_PARAMS, env.master.id(), alice.id(), to_currency(""));
+            lineKeylet, HostFunctionError::INVALID_PARAMS, env.master.id(), env.master.id(), usd);
+        COMPARE_KEYLET_FAIL(
+            lineKeylet, HostFunctionError::INVALID_ACCOUNT, env.master.id(), xrpAccount(), usd);
+        COMPARE_KEYLET_FAIL(
+            lineKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), env.master.id(), usd);
+        COMPARE_KEYLET_FAIL(
+            lineKeylet,
+            HostFunctionError::INVALID_PARAMS,
+            env.master.id(),
+            alice.id(),
+            to_currency(""));
 
         {
             auto actual = hfs.mptIssuanceKeylet(env.master.id(), 1);
@@ -1395,7 +1559,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         auto const sampleMPTID = makeMptID(1, env.master.id());
         COMPARE_KEYLET(mptokenKeylet, keylet::mptoken, sampleMPTID, alice.id());
         COMPARE_KEYLET_FAIL(mptokenKeylet, HostFunctionError::INVALID_PARAMS, MPTID{}, alice.id());
-        COMPARE_KEYLET_FAIL(mptokenKeylet, HostFunctionError::INVALID_ACCOUNT, sampleMPTID, xrpAccount());
+        COMPARE_KEYLET_FAIL(
+            mptokenKeylet, HostFunctionError::INVALID_ACCOUNT, sampleMPTID, xrpAccount());
 
         COMPARE_KEYLET(nftOfferKeylet, keylet::nftoffer, env.master.id(), 1);
         COMPARE_KEYLET_FAIL(nftOfferKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), 1);
@@ -1407,12 +1572,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         COMPARE_KEYLET_FAIL(oracleKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), 1);
 
         COMPARE_KEYLET(paychanKeylet, keylet::payChan, env.master.id(), alice.id(), 1);
-        COMPARE_KEYLET_FAIL(paychanKeylet, HostFunctionError::INVALID_PARAMS, env.master.id(), env.master.id(), 1);
-        COMPARE_KEYLET_FAIL(paychanKeylet, HostFunctionError::INVALID_ACCOUNT, env.master.id(), xrpAccount(), 1);
-        COMPARE_KEYLET_FAIL(paychanKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), env.master.id(), 1);
+        COMPARE_KEYLET_FAIL(
+            paychanKeylet, HostFunctionError::INVALID_PARAMS, env.master.id(), env.master.id(), 1);
+        COMPARE_KEYLET_FAIL(
+            paychanKeylet, HostFunctionError::INVALID_ACCOUNT, env.master.id(), xrpAccount(), 1);
+        COMPARE_KEYLET_FAIL(
+            paychanKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), env.master.id(), 1);
 
         COMPARE_KEYLET(permissionedDomainKeylet, keylet::permissionedDomain, env.master.id(), 1);
-        COMPARE_KEYLET_FAIL(permissionedDomainKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), 1);
+        COMPARE_KEYLET_FAIL(
+            permissionedDomainKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), 1);
 
         COMPARE_KEYLET(signersKeylet, keylet::signers, env.master.id());
         COMPARE_KEYLET_FAIL(signersKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount());
@@ -1956,12 +2125,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const result = hfs.floatFromInt(std::numeric_limits<int64_t>::min(), -1);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
             auto const result = hfs.floatFromInt(std::numeric_limits<int64_t>::min(), 4);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
@@ -1994,12 +2165,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const result = hfs.floatFromUint(std::numeric_limits<uint64_t>::min(), -1);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
             auto const result = hfs.floatFromUint(std::numeric_limits<uint64_t>::min(), 4);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
@@ -2028,17 +2201,20 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const result = hfs.floatSet(1, 0, -1);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
             auto const result = hfs.floatSet(1, 0, 4);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
             auto const result = hfs.floatSet(1, wasmMaxExponent + normalExp + 1, 0);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
         }
 
         {
@@ -2075,6 +2251,12 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             auto const result = hfs.floatSet(10, -1, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == float1);
         }
+
+        {
+            auto const result = hfs.floatSet(1, Number::maxExponent + normalExp + 1, 0);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        }
     }
 
     void
@@ -2091,12 +2273,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const result = hfs.floatCompare(Slice(), Slice());
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
             auto const result = hfs.floatCompare(makeSlice(floatInvalidZero), Slice());
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
@@ -2143,22 +2327,26 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const result = hfs.floatAdd(Slice(), Slice(), -1);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
             auto const result = hfs.floatAdd(Slice(), Slice(), 0);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
             auto const result = hfs.floatAdd(makeSlice(float1), makeSlice(invalid), 0);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
             auto const result = hfs.floatAdd(makeSlice(floatMaxIOU), makeSlice(floatMaxExp), 0);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
         }
 
         {
@@ -2186,26 +2374,32 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const result = hfs.floatSubtract(Slice(), Slice(), -1);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
             auto const result = hfs.floatSubtract(Slice(), Slice(), 0);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
             auto const result = hfs.floatSubtract(makeSlice(float1), makeSlice(invalid), 0);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
-            auto const result = hfs.floatSubtract(makeSlice(floatMaxIOU), makeSlice(floatMinusMaxExp), 0);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+            auto const result =
+                hfs.floatSubtract(makeSlice(floatMaxIOU), makeSlice(floatMinusMaxExp), 0);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
         }
 
         {
-            auto const result = hfs.floatSubtract(makeSlice(floatIntMin), makeSlice(floatIntZero), 0);
+            auto const result =
+                hfs.floatSubtract(makeSlice(floatIntMin), makeSlice(floatIntZero), 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntMin);
         }
 
@@ -2229,22 +2423,26 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const result = hfs.floatMultiply(Slice(), Slice(), -1);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
             auto const result = hfs.floatMultiply(Slice(), Slice(), 0);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
             auto const result = hfs.floatMultiply(makeSlice(float1), makeSlice(invalid), 0);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
             auto const result = hfs.floatMultiply(makeSlice(floatMaxIOU), makeSlice(float1More), 0);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
         }
 
         {
@@ -2253,7 +2451,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            auto const result = hfs.floatMultiply(makeSlice(floatIntZero), makeSlice(floatMaxIOU), 0);
+            auto const result =
+                hfs.floatMultiply(makeSlice(floatIntZero), makeSlice(floatMaxIOU), 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
         }
 
@@ -2277,22 +2476,26 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const result = hfs.floatDivide(Slice(), Slice(), -1);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
             auto const result = hfs.floatDivide(Slice(), Slice(), 0);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
             auto const result = hfs.floatDivide(makeSlice(float1), makeSlice(invalid), 0);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
             auto const result = hfs.floatDivide(makeSlice(float1), makeSlice(floatIntZero), 0);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
         }
 
         {
@@ -2300,7 +2503,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             if (BEAST_EXPECT(y))
             {
                 auto const result = hfs.floatDivide(makeSlice(floatMaxIOU), makeSlice(*y), 0);
-                BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+                BEAST_EXPECT(!result) &&
+                    BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
             }
         }
 
@@ -2329,17 +2533,20 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const result = hfs.floatRoot(Slice(), 2, -1);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
             auto const result = hfs.floatRoot(makeSlice(invalid), 3, 0);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
             auto const result = hfs.floatRoot(makeSlice(float1), -2, 0);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
@@ -2395,32 +2602,38 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const result = hfs.floatPower(Slice(), 2, -1);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
             auto const result = hfs.floatPower(makeSlice(invalid), 3, 0);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
             auto const result = hfs.floatPower(makeSlice(float1), -2, 0);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
             auto const result = hfs.floatPower(makeSlice(floatMaxIOU), 2, 0);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
         }
 
         {
             auto const result = hfs.floatPower(makeSlice(floatMaxIOU), 81, 0);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
             auto const result = hfs.floatPower(makeSlice(floatMaxIOU), 2, 0);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
         }
 
         {
@@ -2467,12 +2680,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const result = hfs.floatLog(Slice(), -1);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
             auto const result = hfs.floatLog(makeSlice(invalid), 0);
-            BEAST_EXPECT(!result) && BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         // perf test logs

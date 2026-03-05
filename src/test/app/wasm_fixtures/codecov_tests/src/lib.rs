@@ -1777,6 +1777,19 @@ pub extern "C" fn finish() -> i32 {
             "mptoken_keylet_mptid_wrong_length",
         )
     });
+    check_result(
+        unsafe {
+            host::trace(
+                message.as_ptr(),
+                message.len(),
+                locator.as_ptr(),
+                locator.len(),
+                2,
+            )
+        },
+        error_codes::INVALID_PARAMS,
+        "trace_invalid_as_hex",
+    );
 
     // ensure that the Slice index desync issue is fixed
     let empty: &[u8] = b"";

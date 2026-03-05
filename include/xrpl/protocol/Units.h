@@ -35,8 +35,8 @@ class TenthBipsTag;
 // namespace.
 
 template <class T>
-concept Valid =
-    std::is_class_v<T> && std::is_object_v<typename T::unit_type> && std::is_object_v<typename T::value_type>;
+concept Valid = std::is_class_v<T> && std::is_object_v<typename T::unit_type> &&
+    std::is_object_v<typename T::value_type>;
 
 /** `Usable` is checked to ensure that only values with
     known valid type tags can be used (sometimes transparently) in
@@ -47,12 +47,15 @@ concept Valid =
 */
 template <class T>
 concept Usable = Valid<T> &&
-    (std::is_same_v<typename T::unit_type, feelevelTag> || std::is_same_v<typename T::unit_type, unitlessTag> ||
-     std::is_same_v<typename T::unit_type, dropTag> || std::is_same_v<typename T::unit_type, BipsTag> ||
+    (std::is_same_v<typename T::unit_type, feelevelTag> ||
+     std::is_same_v<typename T::unit_type, unitlessTag> ||
+     std::is_same_v<typename T::unit_type, dropTag> ||
+     std::is_same_v<typename T::unit_type, BipsTag> ||
      std::is_same_v<typename T::unit_type, TenthBipsTag>);
 
 template <class Other, class VU>
-concept Compatible = Valid<VU> && std::is_arithmetic_v<Other> && std::is_arithmetic_v<typename VU::value_type> &&
+concept Compatible =
+    Valid<VU> && std::is_arithmetic_v<Other> && std::is_arithmetic_v<typename VU::value_type> &&
     std::is_convertible_v<Other, typename VU::value_type>;
 
 template <class T>
@@ -62,8 +65,8 @@ template <class VU>
 concept IntegralValue = Integral<typename VU::value_type>;
 
 template <class VU1, class VU2>
-concept CastableValue =
-    IntegralValue<VU1> && IntegralValue<VU2> && std::is_same_v<typename VU1::unit_type, typename VU2::unit_type>;
+concept CastableValue = IntegralValue<VU1> && IntegralValue<VU2> &&
+    std::is_same_v<typename VU1::unit_type, typename VU2::unit_type>;
 
 template <class UnitTag, class T>
 class ValueUnit : private boost::totally_ordered<ValueUnit<UnitTag, T>>,
@@ -292,7 +295,8 @@ public:
     {
         if constexpr (std::is_integral_v<value_type>)
         {
-            using jsontype = std::conditional_t<std::is_signed_v<value_type>, Json::Int, Json::UInt>;
+            using jsontype =
+                std::conditional_t<std::is_signed_v<value_type>, Json::Int, Json::UInt>;
 
             constexpr auto min = std::numeric_limits<jsontype>::min();
             constexpr auto max = std::numeric_limits<jsontype>::max();
@@ -343,7 +347,8 @@ to_string(ValueUnit<UnitTag, T> const& amount)
 }
 
 template <class Source>
-concept muldivSource = Valid<Source> && std::is_convertible_v<typename Source::value_type, std::uint64_t>;
+concept muldivSource =
+    Valid<Source> && std::is_convertible_v<typename Source::value_type, std::uint64_t>;
 
 template <class Dest>
 concept muldivDest = muldivSource<Dest> &&  // Dest is also a source
@@ -359,8 +364,8 @@ concept muldivable = muldivSources<Source1, Source2> && muldivDest<Dest>;
 // Source and Dest can be the same by default
 
 template <class Dest, class Source1, class Source2>
-concept muldivCommutable =
-    muldivable<Dest, Source1, Source2> && !std::is_same_v<typename Source1::unit_type, typename Dest::unit_type>;
+concept muldivCommutable = muldivable<Dest, Source1, Source2> &&
+    !std::is_same_v<typename Source1::unit_type, typename Dest::unit_type>;
 
 template <class T>
 ValueUnit<unitlessTag, T>
@@ -400,7 +405,10 @@ mulDivU(Source1 value, Dest mul, Source2 div)
     using namespace boost::multiprecision;
 
     uint128_t product;
-    product = multiply(product, static_cast<std::uint64_t>(value.value()), static_cast<std::uint64_t>(mul.value()));
+    product = multiply(
+        product,
+        static_cast<std::uint64_t>(value.value()),
+        static_cast<std::uint64_t>(mul.value()));
 
     auto quotient = product / div.value();
 
