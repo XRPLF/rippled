@@ -207,7 +207,17 @@ public:
         // after checkSeq/Fee/Sign.
         return tesSUCCESS;
     }
+    /**
+       Do NOT define an checkPermission function in a derived class.
+       Instead, use
 
+       static NotTEC
+       checkDelegatePermission(
+           ReadView const& view,
+           STTx const& tx,
+           std::shared_ptr<SLE const> const& sle,
+           std::unordered_set<GranularPermissionType> const& granularPermissions);
+    */
     template <typename T>
     static NotTEC
     checkPermission(ReadView const& view, STTx const& tx);
