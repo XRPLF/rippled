@@ -36,26 +36,6 @@ endif ()
 # Enable ccache to speed up builds.
 include(Ccache)
 
-# make GIT_COMMIT_HASH define available to all sources
-find_package(Git)
-if (Git_FOUND)
-    execute_process(COMMAND ${GIT_EXECUTABLE} --git-dir=${CMAKE_CURRENT_SOURCE_DIR}/.git rev-parse
-                            HEAD OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE gch)
-    if (gch)
-        set(GIT_COMMIT_HASH "${gch}")
-        message(STATUS gch: ${GIT_COMMIT_HASH})
-        add_definitions(-DGIT_COMMIT_HASH="${GIT_COMMIT_HASH}")
-    endif ()
-
-    execute_process(COMMAND ${GIT_EXECUTABLE} --git-dir=${CMAKE_CURRENT_SOURCE_DIR}/.git rev-parse
-                            --abbrev-ref HEAD OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE gb)
-    if (gb)
-        set(GIT_BRANCH "${gb}")
-        message(STATUS gb: ${GIT_BRANCH})
-        add_definitions(-DGIT_BRANCH="${GIT_BRANCH}")
-    endif ()
-endif () # git
-
 if (thread_safety_analysis)
     add_compile_options(-Wthread-safety -D_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS
                         -DXRPL_ENABLE_THREAD_SAFETY_ANNOTATIONS)
