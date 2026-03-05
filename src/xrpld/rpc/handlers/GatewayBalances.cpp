@@ -131,6 +131,10 @@ doGatewayBalances(RPC::JsonContext& context)
             if (sle->getType() == ltESCROW)
             {
                 auto const& escrow = sle->getFieldAmount(sfAmount);
+                // Gateway Balance should not include MPTs
+                if (escrow.holds<MPTIssue>())
+                    return;
+
                 auto& bal = locked[escrow.getCurrency()];
                 if (bal == beast::zero)
                 {

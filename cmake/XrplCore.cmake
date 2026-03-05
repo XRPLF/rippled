@@ -58,6 +58,12 @@ include(target_link_modules)
 add_module(xrpl beast)
 target_link_libraries(xrpl.libxrpl.beast PUBLIC xrpl.imports.main)
 
+include(GitInfo)
+add_module(xrpl git)
+target_compile_definitions(xrpl.libxrpl.git PRIVATE GIT_COMMIT_HASH="${GIT_COMMIT_HASH}"
+                                                    GIT_BUILD_BRANCH="${GIT_BUILD_BRANCH}")
+target_link_libraries(xrpl.libxrpl.git PUBLIC xrpl.imports.main)
+
 # Level 02
 add_module(xrpl basics)
 target_link_libraries(xrpl.libxrpl.basics PUBLIC xrpl.libxrpl.beast)
@@ -71,7 +77,8 @@ target_link_libraries(xrpl.libxrpl.crypto PUBLIC xrpl.libxrpl.basics)
 
 # Level 04
 add_module(xrpl protocol)
-target_link_libraries(xrpl.libxrpl.protocol PUBLIC xrpl.libxrpl.crypto xrpl.libxrpl.json)
+target_link_libraries(xrpl.libxrpl.protocol PUBLIC xrpl.libxrpl.crypto xrpl.libxrpl.git
+                                                   xrpl.libxrpl.json)
 
 # Level 05
 add_module(xrpl core)
@@ -135,6 +142,7 @@ target_link_modules(
     conditions
     core
     crypto
+    git
     json
     ledger
     net

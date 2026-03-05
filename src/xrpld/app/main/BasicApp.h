@@ -23,4 +23,10 @@ public:
     {
         return io_context_;
     }
+
+    size_t
+    get_number_of_threads() const
+    {
+        return threads_.size();
+    }
 };

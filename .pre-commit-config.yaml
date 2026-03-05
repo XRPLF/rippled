@@ -20,7 +20,7 @@ repos:
         args: [--assume-in-merge]
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: 75ca4ad908dc4a99f57921f29b7e6c1521e10b26 # frozen: v21.1.8
+    rev: cd481d7b0bfb5c7b3090c21846317f9a8262e891 # frozen: v22.1.0
     hooks:
       - id: clang-format
         args: [--style=file]
@@ -33,17 +33,17 @@ repos:
         additional_dependencies: [PyYAML]
 
   - repo: https://github.com/rbubley/mirrors-prettier
-    rev: 5ba47274f9b181bce26a5150a725577f3c336011 # frozen: v3.6.2
+    rev: c2bc67fe8f8f549cc489e00ba8b45aa18ee713b1 # frozen: v3.8.1
     hooks:
       - id: prettier
 
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 831207fd435b47aeffdf6af853097e64322b4d44 # frozen: v25.12.0
+    rev: ea488cebbfd88a5f50b8bd95d5c829d0bb76feb8 # frozen: 26.1.0
     hooks:
       - id: black
 
   - repo: https://github.com/streetsidesoftware/cspell-cli
-    rev: 1cfa010f078c354f3ffb8413616280cc28f5ba21 # frozen: v9.4.0
+    rev: a42085ade523f591dca134379a595e7859986445 # frozen: v9.7.0
     hooks:
       - id: cspell # Spell check changed files
         exclude: .config/cspell.config.yaml
