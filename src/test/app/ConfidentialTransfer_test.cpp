@@ -4049,6 +4049,9 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testConvertBackHomomorphicUnderflow(features);
 
         testMutatePrivacy(features);
+        testProofContextBinding(features);
+        testProofCiphertextBinding(features);
+        testProofVersionMismatch(features);
     }
 
 public:
