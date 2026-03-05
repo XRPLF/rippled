@@ -5,6 +5,7 @@ Common utilities for parsing XRP Ledger macro files.
 This module provides shared functionality for parsing transactions.macro
 and ledger_entries.macro files using pcpp and pyparsing.
 """
+
 # cspell:words sfields
 
 import re
