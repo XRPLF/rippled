@@ -143,25 +143,25 @@ TEST_F(MutexLockConstTest, operator_star)
 {
     Mutex<int> const m(42);
     auto lock = m.lock();
+    static_assert(std::is_const_v<std::remove_reference_t<decltype(*lock)>>);
     EXPECT_EQ(*lock, 42);
-    // *lock = 50; // Should not compile (const)
 }
 
 TEST_F(MutexLockConstTest, get_method)
 {
     Mutex<int> const m(42);
     auto lock = m.lock();
+    static_assert(std::is_const_v<std::remove_reference_t<decltype(lock.get())>>);
     EXPECT_EQ(lock.get(), 42);
-    // lock.get() = 50; // Should not compile (const)
 }
 
 TEST_F(MutexLockConstTest, operator_arrow)
 {
     Mutex<std::string> const m(std::string("test"));
     auto lock = m.lock();
+    static_assert(std::is_const_v<std::remove_reference_t<decltype(*lock)>>);
     EXPECT_EQ(lock->size(), 4);
     EXPECT_EQ(lock->at(0), 't');
-    // lock->append(" string"); // Should not compile (const)
 }
 
 struct MutexConstCorrectnessTest : ::testing::Test
@@ -186,9 +186,9 @@ TEST_F(MutexConstCorrectnessTest, const_reference_provides_const_access)
     Mutex<std::vector<int>> m({1, 2, 3, 4, 5, 6});
     Mutex<std::vector<int>> const& const_ref = m;
     auto lock = const_ref.lock();
+    static_assert(std::is_const_v<std::remove_reference_t<decltype(*lock)>>);
     EXPECT_EQ(lock->size(), 6);
     EXPECT_EQ(lock->at(5), 6);
-    // lock->push_back(7); // Should not compile (const)
 }
 
 struct MutexDifferentLockTypesTest : ::testing::Test
@@ -213,7 +213,6 @@ TEST_F(MutexDifferentLockTypesTest, unique_lock)
     EXPECT_EQ(*lock, 0);
     *lock = 2;
 
-    // Convert to unique_lock to test unlock/lock
     std::unique_lock<std::mutex>& ul = lock;
     ul.unlock();
     ul.lock();
@@ -283,7 +282,7 @@ TEST_F(MutexComplexTypeTest, const_access_to_fields)
 {
     auto const m = Mutex<Data>::make(42, "hello");
     auto lock = m.lock();
+    static_assert(std::is_const_v<std::remove_reference_t<decltype(*lock)>>);
     EXPECT_EQ(lock->x, 42);
     EXPECT_EQ(lock->y, "hello");
-    // lock->x = 100; // Should not compile (const)
 }
