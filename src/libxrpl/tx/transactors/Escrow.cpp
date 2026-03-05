@@ -1032,7 +1032,7 @@ EscrowFinish::doApply()
                         ctx_.view(),
                         lockedRate,
                         sled,
-                        mPriorBalance,
+                        preFeeBalance,
                         amount,
                         issuer,
                         account,
@@ -1226,7 +1226,7 @@ EscrowCancel::doApply()
                         ctx_.view(),
                         parityRate,
                         slep,
-                        mPriorBalance,
+                        preFeeBalance,
                         amount,
                         issuer,
                         account,  // sender and receiver are the same

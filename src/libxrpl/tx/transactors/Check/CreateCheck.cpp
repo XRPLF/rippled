@@ -140,7 +140,7 @@ CreateCheck::doApply()
     {
         STAmount const reserve{view().fees().accountReserve(sle->getFieldU32(sfOwnerCount) + 1)};
 
-        if (mPriorBalance < reserve)
+        if (preFeeBalance < reserve)
             return tecINSUFFICIENT_RESERVE;
     }
 

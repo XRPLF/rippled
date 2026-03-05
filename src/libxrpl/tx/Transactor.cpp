@@ -590,7 +590,7 @@ Transactor::apply()
 
     if (sle)
     {
-        mPriorBalance = STAmount{(*sle)[sfBalance]}.xrp();
+        preFeeBalance = STAmount{(*sle)[sfBalance]}.xrp();
 
         TER result = consumeSeqProxy(sle);
         if (result != tesSUCCESS)

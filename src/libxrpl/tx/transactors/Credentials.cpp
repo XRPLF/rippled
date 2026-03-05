@@ -119,7 +119,7 @@ CredentialCreate::doApply()
     {
         STAmount const reserve{
             view().fees().accountReserve(sleIssuer->getFieldU32(sfOwnerCount) + 1)};
-        if (mPriorBalance < reserve)
+        if (preFeeBalance < reserve)
             return tecINSUFFICIENT_RESERVE;
     }
 
@@ -313,7 +313,7 @@ CredentialAccept::doApply()
     {
         STAmount const reserve{
             view().fees().accountReserve(sleSubject->getFieldU32(sfOwnerCount) + 1)};
-        if (mPriorBalance < reserve)
+        if (preFeeBalance < reserve)
             return tecINSUFFICIENT_RESERVE;
     }
 

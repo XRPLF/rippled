@@ -1852,7 +1852,7 @@ XChainCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        account_, mPriorBalance, (*sleAccount)[sfBalance]};
+        account_, preFeeBalance, (*sleAccount)[sfBalance]};
 
     auto const thTer = transferHelper(
         psb,
@@ -2121,7 +2121,7 @@ XChainCreateAccountCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        account_, mPriorBalance, (*sle)[sfBalance]};
+        account_, preFeeBalance, (*sle)[sfBalance]};
     STAmount const toTransfer = amount + reward;
     auto const thTer = transferHelper(
         psb,
