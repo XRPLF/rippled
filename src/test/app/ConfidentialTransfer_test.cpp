@@ -2832,7 +2832,12 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.mergeInbox({.account = carol});
 
             // Empty credentials array should fail in preflight
-            mptAlice.send({.account = carol, .dest = bob, .amt = 10, .credentials = {{}}, .err = temMALFORMED});
+            mptAlice.send(
+                {.account = carol,
+                 .dest = bob,
+                 .amt = 10,
+                 .credentials = std::vector<std::string>{},
+                 .err = temMALFORMED});
         }
 
         // =====================================================================
