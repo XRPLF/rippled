@@ -60,22 +60,3 @@ install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/xrpl"
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
         COMPONENT development
 )
-
-install(EXPORT xrpl_targets
-        NAMESPACE xrpl::
-        DESTINATION "${xrpl_cmakedir}"
-        COMPONENT development
-)
-
-write_basic_package_version_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/XrplConfigVersion.cmake"
-  VERSION "${xrpld_version}"
-  COMPATIBILITY SameMajorVersion
-)
-
-install(FILES
-          "${CMAKE_CURRENT_SOURCE_DIR}/cmake/XrplConfig.cmake"
-          "${CMAKE_CURRENT_BINARY_DIR}/XrplConfigVersion.cmake"
-        DESTINATION "${xrpl_cmakedir}"
-        COMPONENT development
-)
