@@ -617,7 +617,7 @@ TRANSACTION(ttXCHAIN_CREATE_BRIDGE, 48, XChainCreateBridge,
 
 /** This transaction type creates or updates a DID */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/did/DID.h>
+#   include <xrpl/tx/transactors/did/DIDSet.h>
 #endif
 TRANSACTION(ttDID_SET, 49, DIDSet,
     Delegation::delegable,
@@ -630,6 +630,9 @@ TRANSACTION(ttDID_SET, 49, DIDSet,
 }))
 
 /** This transaction type deletes a DID */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/did/DIDDelete.h>
+#endif
 TRANSACTION(ttDID_DELETE, 50, DIDDelete,
     Delegation::delegable,
     featureDID,
