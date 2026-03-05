@@ -15,7 +15,6 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
-#include <xrpl/tx/InvariantCheck.h>
 #include <xrpl/tx/apply.h>
 #include <xrpl/tx/invariants/InvariantCheck.h>
 
