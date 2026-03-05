@@ -1064,14 +1064,16 @@ class Vault_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
-        auto testCase = [this](std::function<void(
-                                   Env & env,
-                                   Account const& issuer,
-                                   Account const& owner,
-                                   Account const& depositor,
-                                   Asset const& asset,
-                                   Vault& vault)> test) {
+        auto testCase = [this](
+                            std::function<void(
+                                Env & env,
+                                Account const& issuer,
+                                Account const& owner,
+                                Account const& depositor,
+                                Asset const& asset,
+                                Vault& vault)> test) {
             Env env{*this, testable_amendments() | featureSingleAssetVault};
+
             Account issuer{"issuer"};
             Account owner{"owner"};
             Account depositor{"depositor"};
@@ -1353,13 +1355,14 @@ class Vault_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
-        auto testCase = [this](std::function<void(
-                                   Env & env,
-                                   Account const& issuer,
-                                   Account const& owner,
-                                   Account const& depositor,
-                                   Asset const& asset,
-                                   Vault& vault)> test) {
+        auto testCase = [this](
+                            std::function<void(
+                                Env & env,
+                                Account const& issuer,
+                                Account const& owner,
+                                Account const& depositor,
+                                Asset const& asset,
+                                Vault& vault)> test) {
             Env env{*this, testable_amendments() | featureSingleAssetVault};
             Account issuer{"issuer"};
             Account owner{"owner"};
@@ -5338,20 +5341,77 @@ class Vault_test : public beast::unit_test::suite
             env.close();
 
             // 2. Mantissa larger than uint64 max
+            env.set_parse_failure_expected(true);
             try
             {
                 tx[sfAssetsMaximum] = "18446744073709551617e5";  // uint64 max + 1
                 env(tx, THISLINE);
-                BEAST_EXPECT(false);
+                BEAST_EXPECTS(false, "Expected parse_error for mantissa larger than uint64 max");
             }
             catch (parse_error const& e)
             {
                 using namespace std::string_literals;
                 BEAST_EXPECT(
-                    e.what() ==
-                    "invalidParamsField 'tx_json.AssetsMaximum' has invalid "
-                    "data."s);
+                    e.what() == "invalidParamsField 'tx_json.AssetsMaximum' has invalid data."s);
             }
+            env.set_parse_failure_expected(false);
+        }
+    }
+
+    void
+    testVaultDeleteData()
+    {
+        using namespace test::jtx;
+
+        Env env{*this};
+
+        Account const owner{"owner"};
+        env.fund(XRP(1'000'000), owner);
+        env.close();
+
+        Vault vault{env};
+
+        auto const keylet = keylet::vault(owner.id(), 1);
+        auto delTx = vault.del({.owner = owner, .id = keylet.key});
+
+        // Test VaultDelete with fixLendingProtocolV1_1 disabled
+        // Transaction fails if the data field is provided
+        {
+            testcase("VaultDelete data fixLendingProtocolV1_1 disabled");
+            env.disableFeature(fixLendingProtocolV1_1);
+            delTx[sfMemoData] = strHex(std::string(maxDataPayloadLength, 'A'));
+            env(delTx, ter(temDISABLED), THISLINE);
+            env.close();
+            env.enableFeature(fixLendingProtocolV1_1);
+        }
+
+        // Transaction fails if the data field is too large
+        {
+            testcase("VaultDelete data fixLendingProtocolV1_1 enabled data too large");
+            delTx[sfMemoData] = strHex(std::string(maxDataPayloadLength + 1, 'A'));
+            env(delTx, ter(temMALFORMED), THISLINE);
+            env.close();
+        }
+
+        // Transaction fails if the data field is set, but is empty
+        {
+            testcase("VaultDelete data fixLendingProtocolV1_1 enabled data empty");
+            delTx[sfMemoData] = strHex(std::string(0, 'A'));
+            env(delTx, ter(temMALFORMED), THISLINE);
+            env.close();
+        }
+
+        {
+            testcase("VaultDelete data fixLendingProtocolV1_1 enabled data valid");
+            PrettyAsset const xrpAsset = xrpIssue();
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpAsset});
+            env(tx, ter(tesSUCCESS), THISLINE);
+            env.close();
+            // Recreate the transaction as the vault keylet changed
+            auto delTx = vault.del({.owner = owner, .id = keylet.key});
+            delTx[sfMemoData] = strHex(std::string(maxDataPayloadLength, 'A'));
+            env(delTx, ter(tesSUCCESS), THISLINE);
+            env.close();
         }
     }
 
@@ -5376,6 +5436,7 @@ public:
         testVaultClawbackBurnShares();
         testVaultClawbackAssets();
         testAssetsMaximum();
+        testVaultDeleteData();
     }
 };
 
