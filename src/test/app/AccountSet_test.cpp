@@ -575,6 +575,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(AccountSet, rpc, xrpl, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(AccountSet, app, xrpl, 1);
 
 }  // namespace xrpl

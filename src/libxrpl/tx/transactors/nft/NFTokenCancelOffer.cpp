@@ -8,12 +8,6 @@
 
 namespace xrpl {
 
-std::uint32_t
-NFTokenCancelOffer::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfNFTokenCancelOfferMask;
-}
-
 NotTEC
 NFTokenCancelOffer::preflight(PreflightContext const& ctx)
 {
