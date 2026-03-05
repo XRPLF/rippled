@@ -215,8 +215,9 @@ AccountID
 STTx::getFeePayer() const
 {
     // If sfDelegate is present, the delegate account is the payer
-    // note: the delegate's ability to sign the transaction is checked in
-    // `Transactor::checkPermission`
+    // note: if a delegate is specified, its authorization to act on behalf of the account is
+    // enforced in `Transactor::checkPermission`
+    // cryptographic signature validity is checked separately (e.g., in `Transactor::checkSign`)
     if (isFieldPresent(sfDelegate))
         return getAccountID(sfDelegate);
 
