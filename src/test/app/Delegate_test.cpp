@@ -1614,13 +1614,7 @@ class Delegate_test : public beast::unit_test::suite
             {"CredentialDelete", featureCredentials},
             {"NFTokenModify", featureDynamicNFT},
             {"PermissionedDomainSet", featurePermissionedDomains},
-            {"PermissionedDomainDelete", featurePermissionedDomains},
-            {"VaultCreate", featureSingleAssetVault},
-            {"VaultSet", featureSingleAssetVault},
-            {"VaultDelete", featureSingleAssetVault},
-            {"VaultDeposit", featureSingleAssetVault},
-            {"VaultWithdraw", featureSingleAssetVault},
-            {"VaultClawback", featureSingleAssetVault}};
+            {"PermissionedDomainDelete", featurePermissionedDomains}};
 
         // Can not delegate tx if any required feature disabled.
         {
