@@ -19,7 +19,7 @@ std::uint32_t
 AMMDeposit::getFlagsMask(PreflightContext const& ctx)
 
 {
-    return tfDepositMask;
+    return tfAMMDepositMask;
 }
 
 NotTEC

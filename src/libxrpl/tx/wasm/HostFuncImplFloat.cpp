@@ -1,7 +1,6 @@
-#include <xrpld/app/wasm/HostFuncImpl.h>
-
 #include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/tx/wasm/HostFuncImpl.h>
 
 #ifdef _DEBUG
 // #define DEBUG_OUTPUT 1
@@ -221,6 +220,7 @@ floatFromIntImpl(int64_t x, int32_t mode)
     // LCOV_EXCL_START
     catch (...)
     {
+        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     }
     return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     // LCOV_EXCL_STOP
@@ -242,6 +242,7 @@ floatFromUintImpl(uint64_t x, int32_t mode)
     // LCOV_EXCL_START
     catch (...)
     {
+        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     }
     return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     // LCOV_EXCL_STOP
@@ -262,6 +263,7 @@ floatSetImpl(int64_t mantissa, int32_t exponent, int32_t mode)
     }
     catch (...)
     {
+        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     }
     return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
 }
@@ -284,6 +286,7 @@ floatCompareImpl(Slice const& x, Slice const& y)
     // LCOV_EXCL_START
     catch (...)
     {
+        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     }
     return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     // LCOV_EXCL_STOP
@@ -311,6 +314,7 @@ floatAddImpl(Slice const& x, Slice const& y, int32_t mode)
     // LCOV_EXCL_START
     catch (...)
     {
+        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     }
     return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     // LCOV_EXCL_STOP
@@ -337,6 +341,7 @@ floatSubtractImpl(Slice const& x, Slice const& y, int32_t mode)
     // LCOV_EXCL_START
     catch (...)
     {
+        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     }
     return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     // LCOV_EXCL_STOP
@@ -363,6 +368,7 @@ floatMultiplyImpl(Slice const& x, Slice const& y, int32_t mode)
     // LCOV_EXCL_START
     catch (...)
     {
+        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     }
     return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     // LCOV_EXCL_STOP
@@ -388,6 +394,7 @@ floatDivideImpl(Slice const& x, Slice const& y, int32_t mode)
     }
     catch (...)
     {
+        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     }
     return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
 }
@@ -415,6 +422,7 @@ floatRootImpl(Slice const& x, int32_t n, int32_t mode)
     // LCOV_EXCL_START
     catch (...)
     {
+        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     }
     return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     // LCOV_EXCL_STOP
@@ -445,6 +453,7 @@ floatPowerImpl(Slice const& x, int32_t n, int32_t mode)
     // LCOV_EXCL_START
     catch (...)
     {
+        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     }
     return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     // LCOV_EXCL_STOP
@@ -470,6 +479,7 @@ floatLogImpl(Slice const& x, int32_t mode)
     // LCOV_EXCL_START
     catch (...)
     {
+        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     }
     return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     // LCOV_EXCL_STOP

@@ -1,7 +1,6 @@
-#include <xrpld/app/wasm/HostFuncImpl.h>
-
 #include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/tx/wasm/HostFuncImpl.h>
 
 namespace xrpl {
 
@@ -162,7 +161,7 @@ locateField(STObject const& obj, Slice const& locator)
         if (STI_ARRAY == field->getSType())
         {
             auto const* arr = static_cast<STArray const*>(field);
-            if (sfieldCode >= arr->size())
+            if (sfieldCode < 0 || std::cmp_greater_equal(sfieldCode, arr->size()))
                 return Unexpected(HostFunctionError::INDEX_OUT_OF_BOUNDS);
             field = &(arr->operator[](sfieldCode));
         }
@@ -180,7 +179,7 @@ locateField(STObject const& obj, Slice const& locator)
         else if (STI_VECTOR256 == field->getSType())
         {
             auto const* v = static_cast<STVector256 const*>(field);
-            if (sfieldCode >= v->size())
+            if (sfieldCode < 0 || std::cmp_greater_equal(sfieldCode, v->size()))
                 return Unexpected(HostFunctionError::INDEX_OUT_OF_BOUNDS);
             return FieldValue(&(v->operator[](sfieldCode)));
         }

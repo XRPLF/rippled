@@ -1,6 +1,6 @@
 #pragma once
 
-#include <xrpld/app/wasm/HostFunc.h>
+#include <xrpl/tx/wasm/HostFunc.h>
 
 #include <string_view>
 
@@ -44,10 +44,10 @@ public:
     Expected<WasmResult<int32_t>, TER>
     run(Bytes const& wasmCode,
         HostFunctions& hfs,
+        int64_t gasLimit,
         std::string_view funcName = {},
         std::vector<WasmParam> const& params = {},
         ImportVec const& imports = {},
-        int64_t gasLimit = -1,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
     NotTEC
@@ -76,9 +76,9 @@ Expected<EscrowResult, TER>
 runEscrowWasm(
     Bytes const& wasmCode,
     HostFunctions& hfs,
+    int64_t gasLimit,
     std::string_view funcName = ESCROW_FUNCTION_NAME,
-    std::vector<WasmParam> const& params = {},
-    int64_t gasLimit = -1);
+    std::vector<WasmParam> const& params = {});
 
 NotTEC
 preflightEscrowWasm(

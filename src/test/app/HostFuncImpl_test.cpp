@@ -1,8 +1,7 @@
 #include <test/jtx.h>
 
-#include <xrpld/app/wasm/HostFuncImpl.h>
-
 #include <xrpl/protocol/digest.h>
+#include <xrpl/tx/wasm/HostFuncImpl.h>
 
 namespace xrpl {
 namespace test {
@@ -607,6 +606,18 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             {sfCredentialIDs.fieldCode, 1},  // index 1 does not exist
             HostFunctionError::INDEX_OUT_OF_BOUNDS);
 
+        // Locator for negative index (STArray)
+        expectError(
+            {sfMemos.fieldCode,
+             -1,  // negative index
+             sfMemoData.fieldCode},
+            HostFunctionError::INDEX_OUT_OF_BOUNDS);
+
+        // Locator for negative index (STVector256)
+        expectError(
+            {sfCredentialIDs.fieldCode, -1},  // negative index
+            HostFunctionError::INDEX_OUT_OF_BOUNDS);
+
         // Locator for non-existent nested field
         expectError(
             {sfMemos.fieldCode, 0, sfURI.fieldCode},  // sfURI does not exist in the memo
@@ -625,6 +636,31 @@ struct HostFuncImpl_test : public beast::unit_test::suite
              0,
              field_code(20000, 20000)},
             HostFunctionError::INVALID_FIELD);
+
+        // Locator for negative base sfield code (-1 = sfInvalid, exists in map but not in tx)
+        expectError(
+            {-1,  // sfInvalid's field code
+             0,
+             sfAccount.fieldCode},
+            HostFunctionError::FIELD_NOT_FOUND);
+
+        // Locator for zero base sfield code (0 = sfGeneric, exists in map but not in tx)
+        expectError(
+            {0,  // sfGeneric's field code
+             0,
+             sfAccount.fieldCode},
+            HostFunctionError::FIELD_NOT_FOUND);
+
+        // Locator for very negative base sfield code (not in knownCodeToField map)
+        expectError(
+            {std::numeric_limits<int32_t>::min(), 0, sfAccount.fieldCode},
+            HostFunctionError::INVALID_FIELD);
+
+        // Locator for negative nested sfield code in STObject context
+        // (sfMemos[0] is an STObject, then -1 is looked up as SField)
+        expectError(
+            {sfMemos.fieldCode, 0, -1},  // -1 = sfInvalid, exists in map but not in memo object
+            HostFunctionError::FIELD_NOT_FOUND);
 
         // Locator for STArray
         expectError({sfMemos.fieldCode}, HostFunctionError::NOT_LEAF_FIELD);
@@ -2214,6 +2250,12 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             auto const result = hfs.floatSet(10, -1, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == float1);
+        }
+
+        {
+            auto const result = hfs.floatSet(1, Number::maxExponent + normalExp + 1, 0);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
         }
     }
 

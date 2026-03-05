@@ -180,8 +180,9 @@ ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Issue const
         if (auto const sle = view.read(keylet::account(ammAccountID)))
             return (*sle)[sfBalance];
     }
-    else if (auto const sle = view.read(keylet::line(ammAccountID, issue.account, issue.currency));
-             sle && !isFrozen(view, ammAccountID, issue.currency, issue.account))
+    else if (
+        auto const sle = view.read(keylet::line(ammAccountID, issue.account, issue.currency));
+        sle && !isFrozen(view, ammAccountID, issue.currency, issue.account))
     {
         auto amount = (*sle)[sfBalance];
         if (ammAccountID > issue.account)

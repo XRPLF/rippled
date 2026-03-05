@@ -1448,7 +1448,7 @@ XChainCreateBridge::doApply()
 std::uint32_t
 BridgeModify::getFlagsMask(PreflightContext const& ctx)
 {
-    return tfBridgeModifyMask;
+    return tfXChainModifyBridgeMask;
 }
 
 NotTEC
