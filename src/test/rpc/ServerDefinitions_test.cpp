@@ -279,7 +279,7 @@ public:
             {
                 BEAST_EXPECT(result[jss::result].isMember(jss::LEDGER_ENTRY_FORMATS));
 
-                // Note: For the purposes of software maintainance, this test does not exhaustively
+                // Note: For the purposes of software maintenance, this test does not exhaustively
                 // validate all the LEDGER_ENTRY_FORMATS
 
                 // check "common" first
