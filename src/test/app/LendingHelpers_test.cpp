@@ -3,7 +3,6 @@
 #include <test/jtx.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
-#include <test/jtx/mpt.h>
 
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/protocol/SField.h>
