@@ -17,7 +17,7 @@ AMMWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 std::uint32_t
 AMMWithdraw::getFlagsMask(PreflightContext const& ctx)
 {
-    return tfWithdrawMask;
+    return tfAMMWithdrawMask;
 }
 
 NotTEC

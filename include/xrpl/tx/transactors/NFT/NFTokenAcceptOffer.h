@@ -26,9 +26,6 @@ public:
     {
     }
 
-    static std::uint32_t
-    getFlagsMask(PreflightContext const& ctx);
-
     static NotTEC
     preflight(PreflightContext const& ctx);
 
