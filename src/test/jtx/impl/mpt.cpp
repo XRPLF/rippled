@@ -909,12 +909,12 @@ MPTTester::getConvertBackProof(
 
     auto const sleMptoken = env_.le(keylet::mptoken(*id_, holder.id()));
     if (!sleMptoken || !sleMptoken->isFieldPresent(sfConfidentialBalanceSpending))
-        return Buffer(expectedProofLength);
+        return makeZeroBuffer(expectedProofLength);
 
     auto const holderPubKey = getPubKey(holder);
 
     if (!holderPubKey)
-        return Buffer(expectedProofLength);
+        return makeZeroBuffer(expectedProofLength);
 
     Buffer const pedersenProof = getBalanceLinkageProof(holder, contextHash, *holderPubKey, pcParams);
 
@@ -1057,13 +1057,13 @@ MPTTester::convert(MPTConvert const& arg)
         // if fillSchnorrProof is explicitly set, follow its value;
         // otherwise, default to generating the proof only if holder pub key is
         // present.
-        auto const contextHash = getConvertContextHash(arg.account->id(), env_.seq(*arg.account), *id_, *arg.amt);
+        auto const contextHash = getConvertContextHash(arg.account->id(), *id_, env_.seq(*arg.account));
 
         auto const proof = getSchnorrProof(*arg.account, contextHash);
         if (proof)
             jv[sfZKProof.jsonName] = strHex(*proof);
         else
-            jv[sfZKProof.jsonName] = strHex(Buffer(ecSchnorrProofLength));
+            jv[sfZKProof.jsonName] = strHex(makeZeroBuffer(ecSchnorrProofLength));
     }
 
     auto const holderAmt = getBalance(*arg.account);
@@ -1257,7 +1257,7 @@ MPTTester::send(MPTConfidentialSend const& arg)
     {
         auto const version = getMPTokenVersion(*arg.account);
         auto const ctxHash =
-            getSendContextHash(arg.account->id(), env_.seq(*arg.account), *id_, arg.dest->id(), version);
+            getSendContextHash(arg.account->id(), *id_, env_.seq(*arg.account), arg.dest->id(), version);
 
         auto const nRecipients = getConfidentialRecipientCount(auditorAmt.has_value());
         std::vector<ConfidentialRecipient> recipients;
@@ -1321,7 +1321,7 @@ MPTTester::send(MPTConfidentialSend const& arg)
             size_t const sizeEquality = secp256k1_mpt_prove_same_plaintext_multi_size(nRecipients);
             size_t const dummySize = sizeEquality + 2 * ecPedersenProofLength + ecDoubleBulletproofLength;
 
-            jv[sfZKProof.jsonName] = strHex(Buffer(dummySize));
+            jv[sfZKProof.jsonName] = strHex(makeZeroBuffer(dummySize));
         }
     }
 
@@ -1427,7 +1427,7 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
     else
     {
         std::uint32_t const seq = env_.seq(account);
-        uint256 const contextHash = getClawbackContextHash(account.id(), seq, *id_, *arg.amt, arg.holder->id());
+        uint256 const contextHash = getClawbackContextHash(account.id(), *id_, seq, arg.holder->id());
 
         auto const privKey = getPrivKey(account);
         if (!privKey || privKey->size() != ecPrivKeyLength)
@@ -1438,7 +1438,7 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
         if (proof)
             jv[sfZKProof] = strHex(*proof);
         else
-            jv[sfZKProof] = strHex(Buffer(ecEqualityProofLength));
+            jv[sfZKProof] = strHex(makeZeroBuffer(ecEqualityProofLength));
     }
 
     auto const holderPubAmt = getBalance(*arg.holder);
@@ -1524,7 +1524,7 @@ MPTTester::encryptAmount(Account const& account, uint64_t const amt, Buffer cons
 
     // Return a dummy buffer on failure to allow testing of
     // failures that occur prior to encryption.
-    return Buffer(ecGamalEncryptedTotalLength);
+    return makeZeroBuffer(ecGamalEncryptedTotalLength);
 }
 
 std::optional<uint64_t>
@@ -1707,15 +1707,14 @@ MPTTester::convertBack(MPTConvertBack const& arg)
 
         // if the caller generated ciphertexts themselves, they should also
         // generate the proof themselves from the blinding factor
-        uint256 const contextHash =
-            getConvertBackContextHash(arg.account->id(), env_.seq(*arg.account), *id_, *arg.amt, version);
+        uint256 const contextHash = getConvertBackContextHash(arg.account->id(), *id_, env_.seq(*arg.account), version);
         auto const prevEncryptedSpendingBalance = getEncryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
 
         Buffer proof;
         // generate a dummy proof if no encrypted amount field, so that other
         // preflight/preclaim are checked
         if (!prevEncryptedSpendingBalance)
-            proof = Buffer(ecPedersenProofLength + ecSingleBulletproofLength);
+            proof = makeZeroBuffer(ecPedersenProofLength + ecSingleBulletproofLength);
         else
         {
             proof = getConvertBackProof(
@@ -1794,7 +1793,7 @@ MPTTester::getAmountLinkageProof(
     if (params.blindingFactor.size() != ecBlindingFactorLength ||
         params.pedersenCommitment.size() != ecPedersenCommitmentLength || pubKey.size() != ecPubKeyLength ||
         params.encryptedAmt.size() != ecGamalEncryptedTotalLength || blindingFactor.size() != ecBlindingFactorLength)
-        return Buffer(ecPedersenProofLength);
+        return makeZeroBuffer(ecPedersenProofLength);
 
     secp256k1_pubkey c1, c2;
     auto const ctx = secp256k1Context();
@@ -1842,7 +1841,7 @@ MPTTester::getBalanceLinkageProof(
     if (params.blindingFactor.size() != ecBlindingFactorLength ||
         params.pedersenCommitment.size() != ecPedersenCommitmentLength || pubKey.size() != ecPubKeyLength ||
         params.encryptedAmt.size() != ecGamalEncryptedTotalLength)
-        return Buffer(ecPedersenProofLength);
+        return makeZeroBuffer(ecPedersenProofLength);
 
     secp256k1_pubkey c1, c2;
     auto const ctx = secp256k1Context();
@@ -1850,7 +1849,7 @@ MPTTester::getBalanceLinkageProof(
         !secp256k1_ec_pubkey_parse(
             ctx, &c2, params.encryptedAmt.data() + ecGamalEncryptedLength, ecGamalEncryptedLength))
     {
-        return Buffer(ecPedersenProofLength);
+        return makeZeroBuffer(ecPedersenProofLength);
     }
 
     secp256k1_pubkey pk;

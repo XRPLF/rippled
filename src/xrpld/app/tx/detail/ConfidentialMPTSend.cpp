@@ -132,8 +132,8 @@ verifySendProofs(
     // Prepare the context hash
     auto const contextHash = getSendContextHash(
         ctx.tx[sfAccount],
-        ctx.tx[sfSequence],
         ctx.tx[sfMPTokenIssuanceID],
+        ctx.tx.getSeqProxy().value(),
         ctx.tx[sfDestination],
         (*sleSenderMPToken)[~sfConfidentialBalanceVersion].value_or(0));
 

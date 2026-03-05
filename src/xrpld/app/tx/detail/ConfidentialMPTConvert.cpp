@@ -120,7 +120,7 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     {
         holderPubKey = ctx.tx[sfHolderElGamalPublicKey];
 
-        auto const contextHash = getConvertContextHash(account, ctx.tx[sfSequence], issuanceID, amount);
+        auto const contextHash = getConvertContextHash(account, issuanceID, ctx.tx.getSeqProxy().value());
 
         // when register new pk, verify through schnorr proof
         if (!isTesSuccess(verifySchnorrProof(holderPubKey, ctx.tx[sfZKProof], contextHash)))

@@ -12,26 +12,28 @@ addCommonZKPFields(
     Serializer& s,
     std::uint16_t txType,
     AccountID const& account,
-    std::uint32_t sequence,
-    uint192 const& issuanceID)
+    uint192 const& issuanceID,
+    std::uint32_t sequence)
 {
+    // TxCommonHash = hash(TxType || Account || IssuanceID || SequenceOrTicket)
     s.add16(txType);
     s.addBitString(account);
-    s.add32(sequence);
     s.addBitString(issuanceID);
+    s.add32(sequence);
 }
 
 uint256
 getSendContextHash(
     AccountID const& account,
-    std::uint32_t sequence,
     uint192 const& issuanceID,
+    std::uint32_t sequence,
     AccountID const& destination,
     std::uint32_t version)
 {
     Serializer s;
-    addCommonZKPFields(s, ttCONFIDENTIAL_MPT_SEND, account, sequence, issuanceID);
+    addCommonZKPFields(s, ttCONFIDENTIAL_MPT_SEND, account, issuanceID, sequence);
 
+    // TxSpecific = identity || freshness
     s.addBitString(destination);
     s.addInteger(version);
 
@@ -41,27 +43,29 @@ getSendContextHash(
 uint256
 getClawbackContextHash(
     AccountID const& account,
-    std::uint32_t sequence,
     uint192 const& issuanceID,
-    std::uint64_t amount,
+    std::uint32_t sequence,
     AccountID const& holder)
 {
     Serializer s;
-    addCommonZKPFields(s, ttCONFIDENTIAL_MPT_CLAWBACK, account, sequence, issuanceID);
+    addCommonZKPFields(s, ttCONFIDENTIAL_MPT_CLAWBACK, account, issuanceID, sequence);
 
-    s.add64(amount);
+    // TxSpecific = identity || freshness
     s.addBitString(holder);
+    s.addInteger(0);
 
     return s.getSHA512Half();
 }
 
 uint256
-getConvertContextHash(AccountID const& account, std::uint32_t sequence, uint192 const& issuanceID, std::uint64_t amount)
+getConvertContextHash(AccountID const& account, uint192 const& issuanceID, std::uint32_t sequence)
 {
     Serializer s;
-    addCommonZKPFields(s, ttCONFIDENTIAL_MPT_CONVERT, account, sequence, issuanceID);
+    addCommonZKPFields(s, ttCONFIDENTIAL_MPT_CONVERT, account, issuanceID, sequence);
 
-    s.add64(amount);
+    // TxSpecific = identity || freshness
+    s.addBitString(account);
+    s.addInteger(0);
 
     return s.getSHA512Half();
 }
@@ -69,15 +73,15 @@ getConvertContextHash(AccountID const& account, std::uint32_t sequence, uint192 
 uint256
 getConvertBackContextHash(
     AccountID const& account,
-    std::uint32_t sequence,
     uint192 const& issuanceID,
-    std::uint64_t amount,
+    std::uint32_t sequence,
     std::uint32_t version)
 {
     Serializer s;
-    addCommonZKPFields(s, ttCONFIDENTIAL_MPT_CONVERT_BACK, account, sequence, issuanceID);
+    addCommonZKPFields(s, ttCONFIDENTIAL_MPT_CONVERT_BACK, account, issuanceID, sequence);
 
-    s.add64(amount);
+    // TxSpecific = identity || freshness
+    s.addBitString(account);
     s.addInteger(version);
 
     return s.getSHA512Half();

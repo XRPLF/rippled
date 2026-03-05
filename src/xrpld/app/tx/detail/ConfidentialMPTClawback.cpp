@@ -83,7 +83,7 @@ ConfidentialMPTClawback::preclaim(PreclaimContext const& ctx)
     if (amount > (*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0))
         return tecINSUFFICIENT_FUNDS;
 
-    auto const contextHash = getClawbackContextHash(account, ctx.tx[sfSequence], mptIssuanceID, amount, holder);
+    auto const contextHash = getClawbackContextHash(account, mptIssuanceID, ctx.tx.getSeqProxy().value(), holder);
 
     // Verify the revealed confidential amount by the issuer matches the exact
     // confidential balance of the holder.

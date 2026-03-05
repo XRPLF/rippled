@@ -3310,4 +3310,204 @@ ValidVault::finalize(STTx const& tx, TER const ret, XRPAmount const fee, ReadVie
     return true;
 }
 
+void
+ValidConfidentialMPToken::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    // Helper to get MPToken Issuance ID safely
+    auto const getMptID = [](std::shared_ptr<SLE const> const& sle) -> uint192 {
+        if (!sle)
+            return beast::zero;
+        if (sle->getType() == ltMPTOKEN)
+            return sle->getFieldH192(sfMPTokenIssuanceID);
+        if (sle->getType() == ltMPTOKEN_ISSUANCE)
+            return makeMptID(sle->getFieldU32(sfSequence), sle->getAccountID(sfIssuer));
+        return beast::zero;
+    };
+
+    if (before && before->getType() == ltMPTOKEN)
+    {
+        uint192 const id = getMptID(before);
+        changes_[id].mptAmountDelta -= before->getFieldU64(sfMPTAmount);
+
+        // Cannot delete MPToken with non-zero confidential state or non-zero public amount
+        if (isDelete)
+        {
+            bool const hasPublicBalance = before->getFieldU64(sfMPTAmount) > 0;
+            bool const hasEncryptedFields = before->isFieldPresent(sfConfidentialBalanceSpending) ||
+                before->isFieldPresent(sfConfidentialBalanceInbox) || before->isFieldPresent(sfIssuerEncryptedBalance);
+
+            if (hasPublicBalance || hasEncryptedFields)
+                changes_[id].deletedWithEncrypted = true;
+        }
+    }
+
+    if (after && after->getType() == ltMPTOKEN)
+    {
+        uint192 const id = getMptID(after);
+        changes_[id].mptAmountDelta += after->getFieldU64(sfMPTAmount);
+
+        // Encrypted field existence consistency
+        bool const hasIssuerBalance = after->isFieldPresent(sfIssuerEncryptedBalance);
+        bool const hasHolderInbox = after->isFieldPresent(sfConfidentialBalanceInbox);
+        bool const hasHolderSpending = after->isFieldPresent(sfConfidentialBalanceSpending);
+
+        bool const hasAnyHolder = hasHolderInbox || hasHolderSpending;
+
+        if (hasAnyHolder != hasIssuerBalance)
+        {
+            changes_[id].badConsistency = true;
+        }
+
+        // Privacy flag consistency
+        bool const hasEncrypted = hasAnyHolder || hasIssuerBalance;
+        if (hasEncrypted)
+            changes_[id].requiresPrivacyFlag = true;
+    }
+
+    if (before && before->getType() == ltMPTOKEN_ISSUANCE)
+    {
+        uint192 const id = getMptID(before);
+        if (before->isFieldPresent(sfConfidentialOutstandingAmount))
+            changes_[id].coaDelta -= before->getFieldU64(sfConfidentialOutstandingAmount);
+        changes_[id].outstandingDelta -= before->getFieldU64(sfOutstandingAmount);
+    }
+
+    if (after && after->getType() == ltMPTOKEN_ISSUANCE)
+    {
+        uint192 const id = getMptID(after);
+        auto& change = changes_[id];
+
+        bool const hasCOA = after->isFieldPresent(sfConfidentialOutstandingAmount);
+        std::uint64_t const coa = (*after)[~sfConfidentialOutstandingAmount].value_or(0);
+        std::uint64_t const oa = after->getFieldU64(sfOutstandingAmount);
+
+        if (hasCOA)
+            change.coaDelta += coa;
+
+        change.outstandingDelta += oa;
+        change.issuance = after;
+
+        // COA <= OutstandingAmount
+        if (coa > oa)
+            change.badCOA = true;
+    }
+
+    if (before && after && before->getType() == ltMPTOKEN && after->getType() == ltMPTOKEN)
+    {
+        uint192 const id = getMptID(after);
+
+        // sfConfidentialBalanceVersion must change when spending changes
+        auto const spendingBefore = (*before)[~sfConfidentialBalanceSpending];
+        auto const spendingAfter = (*after)[~sfConfidentialBalanceSpending];
+        auto const versionBefore = (*before)[~sfConfidentialBalanceVersion];
+        auto const versionAfter = (*after)[~sfConfidentialBalanceVersion];
+
+        if (spendingBefore.has_value() && spendingBefore != spendingAfter)
+        {
+            if (versionBefore == versionAfter)
+            {
+                changes_[id].badVersion = true;
+            }
+        }
+    }
+}
+
+bool
+ValidConfidentialMPToken::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    if (result != tesSUCCESS)
+        return true;
+
+    for (auto const& [id, checks] : changes_)
+    {
+        // Find the MPTokenIssuance
+        auto const issuance = [&]() -> std::shared_ptr<SLE const> {
+            if (checks.issuance)
+                return checks.issuance;
+            return view.read(keylet::mptIssuance(id));
+        }();
+
+        // Skip all invariance checks if issuance doesn't exist because that means the MPT has been deleted
+        if (!issuance)
+            continue;
+
+        // Cannot delete MPToken with non-zero confidential state
+        if (checks.deletedWithEncrypted)
+        {
+            if ((*issuance)[~sfConfidentialOutstandingAmount].value_or(0) > 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPToken deleted with encrypted fields while COA > 0";
+                return false;
+            }
+        }
+
+        // Encrypted field existence consistency
+        if (checks.badConsistency)
+        {
+            JLOG(j.fatal()) << "Invariant failed: MPToken encrypted field "
+                               "existence inconsistency";
+            return false;
+        }
+
+        // COA <= OutstandingAmount
+        if (checks.badCOA)
+        {
+            JLOG(j.fatal()) << "Invariant failed: Confidential outstanding amount "
+                               "exceeds total outstanding amount";
+            return false;
+        }
+
+        // Privacy flag consistency
+        if (checks.requiresPrivacyFlag)
+        {
+            if (!issuance->isFlag(lsfMPTCanPrivacy))
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPToken has encrypted "
+                                   "fields but Issuance does not have "
+                                   "lsfMPTCanPrivacy set";
+                return false;
+            }
+        }
+
+        // We only enforce this when Confidential Outstanding Amount changes (Convert, ConvertBack,
+        // ConfidentialClawback). This avoids falsely failing on Escrow or AMM operations that lock public tokens
+        // outside of ltMPTOKEN.
+        // Convert / ConvertBack:
+        // - COA and MPTAmount must have opposite deltas, which cancel each other out to zero.
+        // - OA remains unchanged.
+        // - Therefore, the net delta on both sides of the equation is zero.
+        //
+        // Clawback:
+        // - MPTAmount remains unchanged.
+        // - COA and OA must have identical deltas (mirrored on each side).
+        // - The equation remains balanced as both sides have equal offsets.
+        if (checks.coaDelta != 0)
+        {
+            if (checks.mptAmountDelta + checks.coaDelta != checks.outstandingDelta)
+            {
+                JLOG(j.fatal()) << "Invariant failed: Token conservation "
+                                   "violation for MPT "
+                                << to_string(id);
+                return false;
+            }
+        }
+
+        if (checks.badVersion)
+        {
+            JLOG(j.fatal()) << "Invariant failed: MPToken sfConfidentialBalanceVersion not updated when "
+                               "sfConfidentialBalanceSpending changed";
+            return false;
+        }
+    }
+
+    return true;
+}
 }  // namespace xrpl
