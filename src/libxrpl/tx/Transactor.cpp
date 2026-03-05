@@ -389,7 +389,8 @@ Transactor::payFee()
     // Deduct the fee, so it's not available during the transaction.
     // Will only write the account back if the transaction succeeds.
     sle->setFieldAmount(sfBalance, sle->getFieldAmount(sfBalance) - feePaid);
-    view().update(sle);
+    if (feePayer != account_)
+        view().update(sle);  // done in `apply()` for the account
 
     // VFALCO Should we call view().rawDestroyXRP() here as well?
     return tesSUCCESS;
