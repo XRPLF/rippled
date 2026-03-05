@@ -745,7 +745,7 @@ TRANSACTION(ttMPTOKEN_AUTHORIZE, 57, MPTokenAuthorize,
 
 /** This transaction type create an Credential instance */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/credentials/Credentials.h>
+#   include <xrpl/tx/transactors/credentials/CredentialCreate.h>
 #endif
 TRANSACTION(ttCREDENTIAL_CREATE, 58, CredentialCreate,
     Delegation::delegable,
@@ -759,6 +759,9 @@ TRANSACTION(ttCREDENTIAL_CREATE, 58, CredentialCreate,
 }))
 
 /** This transaction type accept an Credential object */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/credentials/CredentialAccept.h>
+#endif
 TRANSACTION(ttCREDENTIAL_ACCEPT, 59, CredentialAccept,
     Delegation::delegable,
     featureCredentials,
@@ -769,6 +772,9 @@ TRANSACTION(ttCREDENTIAL_ACCEPT, 59, CredentialAccept,
 }))
 
 /** This transaction type delete an Credential object */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/credentials/CredentialDelete.h>
+#endif
 TRANSACTION(ttCREDENTIAL_DELETE, 60, CredentialDelete,
     Delegation::delegable,
     featureCredentials,
