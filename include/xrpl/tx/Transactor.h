@@ -2,10 +2,12 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/WrappedSink.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/transactors/Delegate/DelegateUtils.h>
 
 namespace xrpl {
 
@@ -206,8 +208,16 @@ public:
         return tesSUCCESS;
     }
 
+    template <typename T>
     static NotTEC
     checkPermission(ReadView const& view, STTx const& tx);
+
+    static NotTEC
+    checkDelegatePermission(
+        ReadView const& view,
+        STTx const& tx,
+        std::shared_ptr<SLE const> const& sle,
+        std::unordered_set<GranularPermissionType> const& granularPermissions);
     /////////////////////////////////////////////////////
 
     // Interface used by DeleteAccount
@@ -393,6 +403,29 @@ Transactor::invokePreflight(PreflightContext const& ctx)
         return ret;
 
     return T::preflightSigValidated(ctx);
+}
+
+template <typename T>
+NotTEC
+Transactor::checkPermission(ReadView const& view, STTx const& tx)
+{
+    auto const delegate = tx[~sfDelegate];
+    if (!delegate)
+        return tesSUCCESS;
+
+    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
+    auto const sle = view.read(delegateKey);
+
+    if (!sle)
+        return terNO_DELEGATE_PERMISSION;
+
+    if (checkTxPermission(sle, tx) == tesSUCCESS)
+        return tesSUCCESS;
+
+    std::unordered_set<GranularPermissionType> granularPermissions;
+    loadGranularPermission(sle, tx.getTxnType(), granularPermissions);
+
+    return T::checkDelegatePermission(view, tx, sle, granularPermissions);
 }
 
 template <class T>

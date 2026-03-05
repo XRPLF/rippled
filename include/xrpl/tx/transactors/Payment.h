@@ -32,7 +32,11 @@ public:
     preflight(PreflightContext const& ctx);
 
     static NotTEC
-    checkPermission(ReadView const& view, STTx const& tx);
+    checkDelegatePermission(
+        ReadView const& view,
+        STTx const& tx,
+        std::shared_ptr<SLE const> const& sle,
+        std::unordered_set<GranularPermissionType> const& granularPermissions);
 
     static TER
     preclaim(PreclaimContext const& ctx);

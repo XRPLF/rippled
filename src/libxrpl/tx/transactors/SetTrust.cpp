@@ -106,21 +106,12 @@ SetTrust::preflight(PreflightContext const& ctx)
 }
 
 NotTEC
-SetTrust::checkPermission(ReadView const& view, STTx const& tx)
+SetTrust::checkDelegatePermission(
+    ReadView const& view,
+    STTx const& tx,
+    std::shared_ptr<SLE const> const& sle,
+    std::unordered_set<GranularPermissionType> const& granularPermissions)
 {
-    auto const delegate = tx[~sfDelegate];
-    if (!delegate)
-        return tesSUCCESS;
-
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
-    if (!sle)
-        return terNO_DELEGATE_PERMISSION;
-
-    if (checkTxPermission(sle, tx) == tesSUCCESS)
-        return tesSUCCESS;
-
     std::uint32_t const txFlags = tx.getFlags();
 
     // Currently we only support TrustlineAuthorize, TrustlineFreeze and
@@ -140,9 +131,6 @@ SetTrust::checkPermission(ReadView const& view, STTx const& tx)
     // not allowed to create trustline
     if (!sleRippleState)
         return terNO_DELEGATE_PERMISSION;
-
-    std::unordered_set<GranularPermissionType> granularPermissions;
-    loadGranularPermission(sle, ttTRUST_SET, granularPermissions);
 
     if (txFlags & tfSetfAuth && !granularPermissions.contains(TrustlineAuthorize))
         return terNO_DELEGATE_PERMISSION;

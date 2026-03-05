@@ -252,19 +252,13 @@ Transactor::preflightSigValidated(PreflightContext const& ctx)
 }
 
 NotTEC
-Transactor::checkPermission(ReadView const& view, STTx const& tx)
+Transactor::checkDelegatePermission(
+    ReadView const& view,
+    STTx const& tx,
+    std::shared_ptr<SLE const> const& sle,
+    std::unordered_set<GranularPermissionType> const& granularPermissions)
 {
-    auto const delegate = tx[~sfDelegate];
-    if (!delegate)
-        return tesSUCCESS;
-
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
-    if (!sle)
-        return terNO_DELEGATE_PERMISSION;
-
-    return checkTxPermission(sle, tx);
+    return terNO_DELEGATE_PERMISSION;
 }
 
 XRPAmount

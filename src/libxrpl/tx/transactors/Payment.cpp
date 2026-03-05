@@ -219,24 +219,12 @@ Payment::preflight(PreflightContext const& ctx)
 }
 
 NotTEC
-Payment::checkPermission(ReadView const& view, STTx const& tx)
+Payment::checkDelegatePermission(
+    ReadView const& view,
+    STTx const& tx,
+    std::shared_ptr<SLE const> const& sle,
+    std::unordered_set<GranularPermissionType> const& granularPermissions)
 {
-    auto const delegate = tx[~sfDelegate];
-    if (!delegate)
-        return tesSUCCESS;
-
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
-    if (!sle)
-        return terNO_DELEGATE_PERMISSION;
-
-    if (checkTxPermission(sle, tx) == tesSUCCESS)
-        return tesSUCCESS;
-
-    std::unordered_set<GranularPermissionType> granularPermissions;
-    loadGranularPermission(sle, ttPAYMENT, granularPermissions);
-
     auto const& dstAmount = tx.getFieldAmount(sfAmount);
     auto const& amountAsset = dstAmount.asset();
 
