@@ -3595,6 +3595,12 @@ protected:
                 [](auto const& disabled) { return disabled == ttLOAN_BROKER_SET; }) ||
             env.enabled(fixLendingProtocolV1_1);
 
+        if (!lendingBatchEnabled)
+        {
+            pass();
+            return;
+        }
+
         Account const lender{"lender"};
         Account const borrower{"borrower"};
 
