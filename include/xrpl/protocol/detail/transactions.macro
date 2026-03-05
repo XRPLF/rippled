@@ -183,7 +183,7 @@ TRANSACTION(ttSIGNER_LIST_SET, 12, SignerListSet,
 
 /** This transaction type creates a new unidirectional XRP payment channel. */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/payment_channel/PayChan.h>
+#   include <xrpl/tx/transactors/payment_channel/PayChanCreate.h>
 #endif
 TRANSACTION(ttPAYCHAN_CREATE, 13, PaymentChannelCreate,
     Delegation::delegable,
@@ -199,6 +199,9 @@ TRANSACTION(ttPAYCHAN_CREATE, 13, PaymentChannelCreate,
 }))
 
 /** This transaction type funds an existing unidirectional XRP payment channel. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/payment_channel/PayChanFund.h>
+#endif
 TRANSACTION(ttPAYCHAN_FUND, 14, PaymentChannelFund,
     Delegation::delegable,
     uint256{},
@@ -210,6 +213,9 @@ TRANSACTION(ttPAYCHAN_FUND, 14, PaymentChannelFund,
 }))
 
 /** This transaction type submits a claim against an existing unidirectional payment channel. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/payment_channel/PayChanClaim.h>
+#endif
 TRANSACTION(ttPAYCHAN_CLAIM, 15, PaymentChannelClaim,
     Delegation::delegable,
     uint256{},
