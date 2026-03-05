@@ -391,21 +391,19 @@ Transactor::payFee()
         // Deduct the fee, so it's not available during the transaction.
         // Will only write the account back if the transaction succeeds.
 
-        mSourceBalance -= feePaid;
-        sle->setFieldAmount(sfBalance, mSourceBalance);
+        sle->setFieldAmount(sfBalance, sle->getFieldAmount(sfBalance) - feePaid);
 
         // VFALCO Should we call view().rawDestroyXRP() here as well?
         return tesSUCCESS;
     }
 
     // Delegated transactions are paid by the delegated account.
-    auto const delegate = ctx_.tx.getAccountID(sfDelegate);
-    auto const delegatedSle = view().peek(keylet::account(delegate));
-    if (!delegatedSle)
+    auto const sle = view().peek(keylet::account(feePayer));
+    if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    delegatedSle->setFieldAmount(sfBalance, delegatedSle->getFieldAmount(sfBalance) - feePaid);
-    view().update(delegatedSle);
+    sle->setFieldAmount(sfBalance, sle->getFieldAmount(sfBalance) - feePaid);
+    view().update(sle);
 
     return tesSUCCESS;
 }
@@ -606,7 +604,6 @@ Transactor::apply()
     if (sle)
     {
         mPriorBalance = STAmount{(*sle)[sfBalance]}.xrp();
-        mSourceBalance = mPriorBalance;
 
         TER result = consumeSeqProxy(sle);
         if (result != tesSUCCESS)

@@ -1840,7 +1840,8 @@ XChainCommit::doApply()
     auto const amount = ctx_.tx[sfAmount];
     auto const bridgeSpec = ctx_.tx[sfXChainBridge];
 
-    if (!psb.read(keylet::account(account)))
+    auto const sleAccount = psb.read(keylet::account(account));
+    if (!sleAccount)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sleBridge = readBridge(psb, bridgeSpec);
@@ -1851,7 +1852,7 @@ XChainCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        account_, mPriorBalance, mSourceBalance};
+        account_, mPriorBalance, (*sleAccount)[sfBalance]};
 
     auto const thTer = transferHelper(
         psb,
@@ -2120,7 +2121,7 @@ XChainCreateAccountCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        account_, mPriorBalance, mSourceBalance};
+        account_, mPriorBalance, (*sle)[sfBalance]};
     STAmount const toTransfer = amount + reward;
     auto const thTer = transferHelper(
         psb,
