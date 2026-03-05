@@ -90,6 +90,9 @@ getConvertBackContextHash(
 bool
 makeEcPair(Slice const& buffer, secp256k1_pubkey& out1, secp256k1_pubkey& out2)
 {
+    if (buffer.length() < 2 * ecGamalEncryptedLength)
+        return false;  // LCOV_EXCL_LINE
+
     auto parsePubKey = [](Slice const& slice, secp256k1_pubkey& out) {
         return secp256k1_ec_pubkey_parse(
             secp256k1Context(), &out, reinterpret_cast<unsigned char const*>(slice.data()), slice.length());
@@ -275,10 +278,8 @@ verifyElGamalEncryption(
     Slice const& pubKeySlice,
     Slice const& ciphertext)
 {
-    if (blindingFactor.size() != ecBlindingFactorLength)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    if (pubKeySlice.size() != ecPubKeyLength)
+    if (ciphertext.size() != ecGamalEncryptedTotalLength || blindingFactor.size() != ecBlindingFactorLength ||
+        pubKeySlice.size() != ecPubKeyLength)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     secp256k1_pubkey pubKey;
@@ -387,11 +388,12 @@ verifyClawbackEqualityProof(
     Slice const& ciphertext,
     uint256 const& contextHash)
 {
-    secp256k1_pubkey c1, c2;
-    if (!makeEcPair(ciphertext, c1, c2))
+    if (ciphertext.size() != ecGamalEncryptedTotalLength || pubKeySlice.size() != ecPubKeyLength ||
+        proof.size() != ecEqualityProofLength)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (pubKeySlice.size() != ecPubKeyLength)
+    secp256k1_pubkey c1, c2;
+    if (!makeEcPair(ciphertext, c1, c2))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     secp256k1_pubkey pubKey;
