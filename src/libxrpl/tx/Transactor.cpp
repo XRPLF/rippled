@@ -677,7 +677,8 @@ Transactor::checkSign(
 NotTEC
 Transactor::checkSign(PreclaimContext const& ctx)
 {
-    auto const idAccount = ctx.tx.getFeePayer();
+    auto const idAccount = ctx.tx.isFieldPresent(sfDelegate) ? ctx.tx.getAccountID(sfDelegate)
+                                                             : ctx.tx.getAccountID(sfAccount);
     return checkSign(ctx.view, ctx.flags, ctx.parentBatchId, idAccount, ctx.tx, ctx.j);
 }
 
