@@ -227,7 +227,7 @@ public:
         static typename Base::Key const&
         extract(Value const& value)
         {
-            return value;
+            return value;  // NOLINT(bugprone-return-const-ref-from-parameter)
         }
 
         static Values
