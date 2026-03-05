@@ -5,12 +5,6 @@
 
 namespace xrpl {
 
-std::uint32_t
-MPTokenIssuanceDestroy::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfMPTokenIssuanceDestroyMask;
-}
-
 NotTEC
 MPTokenIssuanceDestroy::preflight(PreflightContext const& ctx)
 {

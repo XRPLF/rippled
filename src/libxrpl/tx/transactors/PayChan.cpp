@@ -378,7 +378,7 @@ PayChanClaim::checkExtraFeatures(PreflightContext const& ctx)
 std::uint32_t
 PayChanClaim::getFlagsMask(PreflightContext const&)
 {
-    return tfPayChanClaimMask;
+    return tfPaymentChannelClaimMask;
 }
 
 NotTEC

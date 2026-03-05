@@ -54,12 +54,6 @@ preflightHelper<MPTIssue>(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-std::uint32_t
-Clawback::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfClawbackMask;
-}
-
 NotTEC
 Clawback::preflight(PreflightContext const& ctx)
 {

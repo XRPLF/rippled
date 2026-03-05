@@ -4355,6 +4355,7 @@ public:
     run() override
     {
         using namespace test::jtx;
+
         auto const sa = testable_amendments();
         testWithFeats(sa - fixBatchInnerSigs);
         testWithFeats(sa);
