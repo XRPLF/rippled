@@ -382,29 +382,16 @@ Transactor::payFee()
     auto const feePaid = ctx_.tx[sfFee].xrp();
 
     auto const feePayer = ctx_.tx.getFeePayer();
-    if (feePayer == account_)
-    {
-        auto const sle = view().peek(keylet::account(account_));
-        if (!sle)
-            return tefINTERNAL;  // LCOV_EXCL_LINE
-
-        // Deduct the fee, so it's not available during the transaction.
-        // Will only write the account back if the transaction succeeds.
-
-        sle->setFieldAmount(sfBalance, sle->getFieldAmount(sfBalance) - feePaid);
-
-        // VFALCO Should we call view().rawDestroyXRP() here as well?
-        return tesSUCCESS;
-    }
-
-    // Delegated transactions are paid by the delegated account.
     auto const sle = view().peek(keylet::account(feePayer));
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
+    // Deduct the fee, so it's not available during the transaction.
+    // Will only write the account back if the transaction succeeds.
     sle->setFieldAmount(sfBalance, sle->getFieldAmount(sfBalance) - feePaid);
     view().update(sle);
 
+    // VFALCO Should we call view().rawDestroyXRP() here as well?
     return tesSUCCESS;
 }
 
