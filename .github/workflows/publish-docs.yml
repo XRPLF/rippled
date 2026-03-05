@@ -40,15 +40,9 @@ env:
   NPROC_SUBTRACT: ${{ github.event.repository.private && '1' || '2' }}
 
 jobs:
-  publish:
+  build:
     runs-on: ubuntu-latest
     container: ghcr.io/xrplf/ci/tools-rippled-documentation:sha-a8c7be1
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -93,7 +87,17 @@ jobs:
         with:
           path: ${{ env.BUILD_DIR }}/docs/html
 
-      - name: Deploy documentation to GitHub Pages
+  deploy:
+    if: ${{ github.event_name == 'push' }}
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
         id: deploy
-        if: ${{ github.event_name == 'push' }}
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
