@@ -23,6 +23,7 @@ install(TARGETS common
                 xrpl.libxrpl.conditions
                 xrpl.libxrpl.core
                 xrpl.libxrpl.crypto
+                xrpl.libxrpl.git
                 xrpl.libxrpl.json
                 xrpl.libxrpl.rdb
                 xrpl.libxrpl.ledger
