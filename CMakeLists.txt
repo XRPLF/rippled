@@ -87,6 +87,7 @@ find_package(secp256k1 REQUIRED)
 find_package(SOCI REQUIRED)
 find_package(SQLite3 REQUIRED)
 find_package(xxHash REQUIRED)
+find_package(tomlplusplus REQUIRED)
 
 target_link_libraries(
     xrpl_libs
@@ -96,7 +97,8 @@ target_link_libraries(
               OpenSSL::SSL
               secp256k1::secp256k1
               soci::soci
-              SQLite::SQLite3)
+              SQLite::SQLite3
+              tomlplusplus::tomlplusplus)
 
 option(rocksdb "Enable RocksDB" ON)
 if (rocksdb)

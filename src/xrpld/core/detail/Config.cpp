@@ -4,6 +4,7 @@
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/TomlConfig.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/json/json_reader.h>
@@ -15,6 +16,8 @@
 #include <boost/format.hpp>
 #include <boost/predef.h>
 #include <boost/regex.hpp>
+
+#include <toml++/toml.hpp>
 
 #include <algorithm>
 #include <cstdlib>
@@ -441,7 +444,11 @@ Config::load()
         return;
     }
 
-    loadFromString(fileContents);
+    // Detect format based on file extension
+    if (isTomlFile(CONFIG_FILE))
+        loadFromTomlString(fileContents);
+    else
+        loadFromString(fileContents);
     checkZeroPorts(*this);
 }
 
@@ -449,7 +456,26 @@ void
 Config::loadFromString(std::string const& fileContents)
 {
     IniFileSections secConfig = parseIniFile(fileContents, true);
+    loadFromIniFileSections(secConfig);
+}
 
+void
+Config::loadFromTomlString(std::string const& fileContents)
+{
+    auto const tomlTable = parseTomlString(fileContents, j_);
+    if (!tomlTable)
+    {
+        Throw<std::runtime_error>(
+            "Failed to parse TOML configuration. "
+            "Check the log for detailed error information.");
+    }
+    IniFileSections secConfig = tomlToIniFileSections(*tomlTable, j_);
+    loadFromIniFileSections(secConfig);
+}
+
+void
+Config::loadFromIniFileSections(IniFileSections& secConfig)
+{
     build(secConfig);
 
     if (auto s = getIniFileSection(secConfig, SECTION_IPS))
@@ -894,29 +920,44 @@ Config::loadFromString(std::string const& fileContents)
                     std::to_string(ec.value()) + ": " + ec.message());
             }
 
-            auto iniFile = parseIniFile(data, true);
+            // Parse as TOML or INI depending on file extension
+            IniFileSections valFile;
+            if (isTomlFile(validatorsFile))
+            {
+                auto const tomlTable = parseTomlString(data, j_);
+                if (!tomlTable)
+                {
+                    Throw<std::runtime_error>(
+                        "Failed to parse TOML validators file: " + validatorsFile.string());
+                }
+                valFile = tomlToIniFileSections(*tomlTable, j_);
+            }
+            else
+            {
+                valFile = parseIniFile(data, true);
+            }
 
-            auto entries = getIniFileSection(iniFile, SECTION_VALIDATORS);
+            auto entries = getIniFileSection(valFile, SECTION_VALIDATORS);
 
             if (entries)
                 section(SECTION_VALIDATORS).append(*entries);
 
-            auto valKeyEntries = getIniFileSection(iniFile, SECTION_VALIDATOR_KEYS);
+            auto valKeyEntries = getIniFileSection(valFile, SECTION_VALIDATOR_KEYS);
 
             if (valKeyEntries)
                 section(SECTION_VALIDATOR_KEYS).append(*valKeyEntries);
 
-            auto valSiteEntries = getIniFileSection(iniFile, SECTION_VALIDATOR_LIST_SITES);
+            auto valSiteEntries = getIniFileSection(valFile, SECTION_VALIDATOR_LIST_SITES);
 
             if (valSiteEntries)
                 section(SECTION_VALIDATOR_LIST_SITES).append(*valSiteEntries);
 
-            auto valListKeys = getIniFileSection(iniFile, SECTION_VALIDATOR_LIST_KEYS);
+            auto valListKeys = getIniFileSection(valFile, SECTION_VALIDATOR_LIST_KEYS);
 
             if (valListKeys)
                 section(SECTION_VALIDATOR_LIST_KEYS).append(*valListKeys);
 
-            auto valListThreshold = getIniFileSection(iniFile, SECTION_VALIDATOR_LIST_THRESHOLD);
+            auto valListThreshold = getIniFileSection(valFile, SECTION_VALIDATOR_LIST_THRESHOLD);
 
             if (valListThreshold)
                 section(SECTION_VALIDATOR_LIST_THRESHOLD).append(*valListThreshold);

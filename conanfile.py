@@ -35,6 +35,7 @@ class Xrpl(ConanFile):
         "openssl/3.5.5",
         "secp256k1/0.7.1",
         "soci/4.0.3",
+        "tomlplusplus/3.4.0",
         "zlib/1.3.1",
     ]
 
@@ -216,6 +217,7 @@ class Xrpl(ConanFile):
             "secp256k1::secp256k1",
             "sqlite3::sqlite",
             "xxhash::xxhash",
+            "tomlplusplus::tomlplusplus",
             "zlib::zlib",
         ]
         if self.options.rocksdb:

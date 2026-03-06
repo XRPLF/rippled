@@ -88,6 +88,10 @@ private:
 
     void
     load();
+
+    void
+    loadFromIniFileSections(IniFileSections& secConfig);
+
     beast::Journal const j_;
 
     bool QUIET = false;   // Minimize logging verbosity.
@@ -291,12 +295,22 @@ public:
     setupControl(bool bQuiet, bool bSilent, bool bStandalone);
 
     /**
-     *  Load the config from the contents of the string.
+     *  Load the config from the contents of an INI-format string.
      *
-     *  @param fileContents String representing the config contents.
+     *  @param fileContents String representing the config contents in INI
+     * format.
      */
     void
     loadFromString(std::string const& fileContents);
+
+    /**
+     *  Load the config from the contents of a TOML-format string.
+     *
+     *  @param fileContents String representing the config contents in TOML
+     * format.
+     */
+    void
+    loadFromTomlString(std::string const& fileContents);
 
     bool
     quiet() const
