@@ -298,16 +298,11 @@ protected:
                         env.balance(vaultPseudo, broker.asset).number());
                     if (ownerCount == 0)
                     {
-                        // Allow some slop for rounding IOUs
-
-                        // TODO: This needs to be an exact match once all the
-                        // other rounding issues are worked out.
+                        // The Vault must be perfectly balanced if there
+                        // are no loans outstanding
                         auto const total = vaultSle->at(sfAssetsTotal);
                         auto const available = vaultSle->at(sfAssetsAvailable);
-                        env.test.BEAST_EXPECT(
-                            total == available ||
-                            (!broker.asset.integral() && available != 0 &&
-                             ((total - available) / available < Number(1, -6))));
+                        env.test.BEAST_EXPECT(total == available);
                         env.test.BEAST_EXPECT(vaultSle->at(sfLossUnrealized) == 0);
                     }
                 }
