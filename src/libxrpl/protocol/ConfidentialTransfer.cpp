@@ -328,15 +328,6 @@ verifyRevealedAmount(
     return tesSUCCESS;
 }
 
-std::size_t
-getMultiCiphertextEqualityProofSize(std::size_t nRecipients)
-{
-    // Points (33 bytes): T_m (1) + T_rG (nRecipients) + T_rP (nRecipients) = 1
-    // + 2nRecipients Scalars (32 bytes): s_m (1) + s_r (nRecipients) = 1 +
-    // nRecipients
-    return ((1 + (2 * nRecipients)) * 33) + ((1 + nRecipients) * 32);
-}
-
 TER
 verifyMultiCiphertextEqualityProof(
     Slice const& proof,
@@ -347,31 +338,55 @@ verifyMultiCiphertextEqualityProof(
     if (recipients.size() != nRecipients)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (proof.size() != getMultiCiphertextEqualityProofSize(nRecipients))
+    if (proof.size() != secp256k1_mpt_proof_equality_shared_r_size(nRecipients))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    std::vector<secp256k1_pubkey> r(nRecipients);
-    std::vector<secp256k1_pubkey> s(nRecipients);
-    std::vector<secp256k1_pubkey> pk(nRecipients);
+    auto const ctx = secp256k1Context();
+
+    secp256k1_pubkey c1;
+    std::vector<secp256k1_pubkey> c2_vec(nRecipients);
+    std::vector<secp256k1_pubkey> pk_vec(nRecipients);
 
     for (size_t i = 0; i < nRecipients; ++i)
     {
         auto const& recipient = recipients[i];
-        if (recipient.encryptedAmount.size() != ecGamalEncryptedTotalLength)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        if (!makeEcPair(recipient.encryptedAmount, r[i], s[i]))
+        if (recipient.encryptedAmount.size() != ecGamalEncryptedTotalLength)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         if (recipient.publicKey.size() != ecPubKeyLength)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        if (secp256k1_ec_pubkey_parse(secp256k1Context(), &pk[i], recipient.publicKey.data(), ecPubKeyLength) != 1)
+        // Parse Shared C1 from the first recipient only
+        if (i == 0)
+        {
+            if (!secp256k1_ec_pubkey_parse(ctx, &c1, recipient.encryptedAmount.data(), ecGamalEncryptedLength))
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
+        else
+        {
+            // All C1 bytes must be the same
+            if (std::memcmp(
+                    recipient.encryptedAmount.data(), recipients[0].encryptedAmount.data(), ecGamalEncryptedLength) !=
+                0)
+            {
+                return tecBAD_PROOF;
+            }
+        }
+
+        if (secp256k1_ec_pubkey_parse(
+                ctx, &c2_vec[i], recipient.encryptedAmount.data() + ecGamalEncryptedLength, ecGamalEncryptedLength) !=
+            1)
+        {
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
+
+        if (secp256k1_ec_pubkey_parse(ctx, &pk_vec[i], recipient.publicKey.data(), ecPubKeyLength) != 1)
             return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
-    int const result = secp256k1_mpt_verify_same_plaintext_multi(
-        secp256k1Context(), proof.data(), proof.size(), nRecipients, r.data(), s.data(), pk.data(), contextHash.data());
+    int const result = secp256k1_mpt_verify_equality_shared_r(
+        ctx, proof.data(), nRecipients, &c1, c2_vec.data(), pk_vec.data(), contextHash.data());
 
     if (result != 1)
         return tecBAD_PROOF;
