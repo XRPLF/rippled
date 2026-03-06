@@ -34,6 +34,10 @@ public:
         std::optional<SF_UINT32::type::value_type> sequence,
         std::optional<SF_AMOUNT::type::value_type> fee)
     {
+        auto txType = static_cast<TxType>(transactionType);
+        auto const& soTemplate = TxFormats::getInstance().findByType(txType)->getSOTemplate();
+        object_.set(soTemplate);
+
         object_[sfTransactionType] = transactionType;
         setAccount(account);
 
@@ -53,7 +57,7 @@ public:
      */
     [[nodiscard]]
     bool
-    validate(std::string& reason)
+    validate(std::string& reason) const
     {
         if (!object_.isFieldPresent(sfTransactionType))
         {

@@ -1,8 +1,10 @@
+// This file is auto-generated. Do not edit.
 #pragma once
 
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -144,12 +146,11 @@ public:
     /**
      * Build and return the completed UNLModify wrapper.
      * @return The constructed transaction wrapper.
-     * @throws std::runtime_error if the JSON cannot be parsed into a valid transaction.
      */
-    UNLModify
+    protocol_autogen::Owning<STTx, UNLModify>
     build()
     {
-        return UNLModify(STTx(std::move(object_)));
+        return protocol_autogen::Owning<STTx, UNLModify>{STTx{std::move(object_)}};
     }
 };
 

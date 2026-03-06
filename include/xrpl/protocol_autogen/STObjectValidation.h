@@ -6,7 +6,7 @@
 namespace xrpl::protocol_autogen {
 
 [[nodiscard]]
-bool
+inline bool
 validateSTObject(STObject const& obj, SOTemplate const& format)
 {
     for (auto const& field : format)

@@ -21,6 +21,7 @@ from macro_parser_common import (
     parse_sfields_macro,
     parse_field_list,
     generate_cpp_class,
+    generate_from_template,
 )
 
 
@@ -130,6 +131,11 @@ def main():
         default="include/xrpl/protocol_autogen/ledger_objects",
     )
     parser.add_argument(
+        "--test-dir",
+        help="Output directory for test files (optional)",
+        default=None,
+    )
+    parser.add_argument(
         "--sfields-macro",
         help="Path to sfields.macro (default: auto-detect from macro_path)",
     )
@@ -181,6 +187,19 @@ def main():
         )
 
     print(f"\nGenerated {len(entries)} ledger entry classes")
+
+    # Generate unit tests if --test-dir is provided
+    if args.test_dir:
+        test_dir = Path(args.test_dir)
+        test_dir.mkdir(parents=True, exist_ok=True)
+
+        for entry in entries:
+            # Fields are already enriched from generate_cpp_class above
+            generate_from_template(
+                entry, test_dir, template_dir, "LedgerEntryTests.cpp.mako", "Tests.cpp"
+            )
+
+        print(f"\nGenerated {len(entries)} ledger entry test files")
 
 
 if __name__ == "__main__":

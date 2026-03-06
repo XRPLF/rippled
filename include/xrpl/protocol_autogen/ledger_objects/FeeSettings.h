@@ -1,8 +1,10 @@
+// This file is auto-generated. Do not edit.
 #pragma once
 
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/LedgerEntryBase.h>
 #include <xrpl/protocol_autogen/LedgerEntryBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -343,12 +345,11 @@ public:
     /**
      * Build and return the completed FeeSettings wrapper.
      * @return The constructed ledger entry wrapper.
-     * @throws std::runtime_error if the JSON cannot be parsed into a valid ledger entry.
      */
-    FeeSettings
+    protocol_autogen::Owning<SLE, FeeSettings>
     build(uint256 const& index)
     {
-        return FeeSettings{SLE(object_, index)};
+        return protocol_autogen::Owning<SLE, FeeSettings>{SLE{object_, index}};
     }
 };
 

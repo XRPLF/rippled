@@ -15,6 +15,7 @@ function (setup_protocol_autogen)
     # Directory paths
     set(MACRO_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include/xrpl/protocol/detail")
     set(AUTOGEN_HEADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include/xrpl/protocol_autogen")
+    set(AUTOGEN_TEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/tests/libxrpl/protocol_autogen")
     set(SCRIPTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/scripts")
 
     # Input macro files
@@ -30,6 +31,8 @@ function (setup_protocol_autogen)
     # Create output directories
     file(MAKE_DIRECTORY "${AUTOGEN_HEADER_DIR}/transactions")
     file(MAKE_DIRECTORY "${AUTOGEN_HEADER_DIR}/ledger_objects")
+    file(MAKE_DIRECTORY "${AUTOGEN_TEST_DIR}/ledger_objects")
+    file(MAKE_DIRECTORY "${AUTOGEN_TEST_DIR}/transactions")
 
     # Find Python3 - check if already found by Conan or find it ourselves
     if (NOT Python3_EXECUTABLE)
@@ -123,11 +126,11 @@ function (setup_protocol_autogen)
         message(STATUS "Transaction classes generated successfully")
     endif ()
 
-    # Generate ledger entry classes at configure time
+    # Generate ledger entry classes and tests at configure time
     message(STATUS "Generating ledger entry classes from ledger_entries.macro...")
     execute_process(COMMAND ${VENV_PYTHON} "${GENERATE_LEDGER_SCRIPT}" "${LEDGER_ENTRIES_MACRO}"
-                            --header-dir "${AUTOGEN_HEADER_DIR}/ledger_objects" --sfields-macro
-                            "${SFIELDS_MACRO}"
+                            --header-dir "${AUTOGEN_HEADER_DIR}/ledger_objects" --test-dir
+                            "${AUTOGEN_TEST_DIR}/ledger_objects" --sfields-macro "${SFIELDS_MACRO}"
                     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
                     RESULT_VARIABLE LEDGER_GEN_RESULT
                     OUTPUT_VARIABLE LEDGER_GEN_OUTPUT
@@ -150,6 +153,7 @@ function (setup_protocol_autogen)
                           "${SCRIPTS_DIR}/macro_parser_common.py"
                           "${SCRIPTS_DIR}/templates/Transaction.h.mako"
                           "${SCRIPTS_DIR}/templates/LedgerEntry.h.mako"
+                          "${SCRIPTS_DIR}/templates/LedgerEntryTests.cpp.mako"
                           "${REQUIREMENTS_FILE}")
 
 endfunction ()

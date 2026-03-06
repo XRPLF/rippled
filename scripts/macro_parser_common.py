@@ -195,21 +195,15 @@ def parse_field_list(fields_str):
         raise ValueError(f"Failed to parse field list: {e}")
 
 
-def generate_cpp_class(
-    entry_info, header_dir, template_dir, field_types, template_name
-):
-    """Generate C++ header file from a Mako template.
+def enrich_fields_with_type_data(entry_info, field_types):
+    """Enrich field information with type data from sfields.macro.
 
     Args:
         entry_info: Dict containing entry information (name, fields, etc.)
-        header_dir: Output directory for generated header files
-        template_dir: Directory containing Mako templates
         field_types: Dict mapping field names to type information
-        template_name: Name of the Mako template file to use
-    """
-    from mako.template import Template
 
-    # Enrich field information with type data
+    Modifies entry_info["fields"] in place.
+    """
     for field in entry_info["fields"]:
         field_name = field["name"]
         if field_name in field_types:
@@ -224,15 +218,54 @@ def generate_cpp_class(
             field["stiSuffix"] = None
             field["typeData"] = None
 
+
+def generate_from_template(
+    entry_info, output_dir, template_dir, template_name, output_suffix
+):
+    """Generate a file from a Mako template.
+
+    Args:
+        entry_info: Dict containing entry information (name, fields, etc.)
+                    Fields should already be enriched with type data.
+        output_dir: Output directory for generated files
+        template_dir: Directory containing Mako templates
+        template_name: Name of the Mako template file to use
+        output_suffix: Suffix for the output file (e.g., ".h" or "Tests.cpp")
+
+    Returns:
+        Path to the generated file
+    """
+    from mako.template import Template
+
     template_path = Path(template_dir) / template_name
     template = Template(filename=str(template_path))
 
     # Render the template - pass entry_info directly so templates can access any field
-    header_content = template.render(**entry_info)
+    content = template.render(**entry_info)
 
-    # Write header file
-    header_path = Path(header_dir) / f"{entry_info['name']}.h"
-    with open(header_path, "w") as f:
-        f.write(header_content)
+    # Write output file
+    output_path = Path(output_dir) / f"{entry_info['name']}{output_suffix}"
+    with open(output_path, "w") as f:
+        f.write(content)
 
-    print(f"Generated {header_path}")
+    print(f"Generated {output_path}")
+    return output_path
+
+
+def generate_cpp_class(
+    entry_info, header_dir, template_dir, field_types, template_name
+):
+    """Generate C++ header file from a Mako template.
+
+    Args:
+        entry_info: Dict containing entry information (name, fields, etc.)
+        header_dir: Output directory for generated header files
+        template_dir: Directory containing Mako templates
+        field_types: Dict mapping field names to type information
+        template_name: Name of the Mako template file to use
+    """
+    # Enrich field information with type data
+    enrich_fields_with_type_data(entry_info, field_types)
+
+    # Generate the header file
+    generate_from_template(entry_info, header_dir, template_dir, template_name, ".h")

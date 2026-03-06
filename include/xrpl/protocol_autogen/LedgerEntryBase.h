@@ -37,7 +37,7 @@ public:
      */
     [[nodiscard]]
     bool
-    validate()
+    validate() const
     {
         if (!sle_.isFieldPresent(sfLedgerEntryType))
         {
