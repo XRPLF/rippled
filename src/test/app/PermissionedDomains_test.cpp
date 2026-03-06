@@ -2,7 +2,7 @@
 
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/tx/transactors/PermissionedDomain/PermissionedDomainSet.h>
+#include <xrpl/tx/transactors/permissioned_domain/PermissionedDomainSet.h>
 
 #include <exception>
 #include <map>
