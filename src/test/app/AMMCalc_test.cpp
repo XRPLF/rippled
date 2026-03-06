@@ -1,7 +1,7 @@
 #include <test/jtx.h>
 
 #include <xrpl/protocol/Quality.h>
-#include <xrpl/tx/transactors/AMM/AMMHelpers.h>
+#include <xrpl/tx/transactors/dex/AMMHelpers.h>
 
 #include <boost/regex.hpp>
 
