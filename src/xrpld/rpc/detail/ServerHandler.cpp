@@ -983,8 +983,8 @@ ServerHandler::statusResponse(http_request_type const& request) const
         msg.result(boost::beast::http::status::ok);
         msg.body() = "<!DOCTYPE html><html><head><title>" + systemName() +
             " Test page for rippled</title></head><body><h1>" + systemName() +
-            " Test</h1><p>This page shows rippled http(s) "
-            "connectivity is working.</p></body></html>";
+            " Test</h1><p>This page shows " + systemName() +
+            " http(s) connectivity is working.</p></body></html>";
     }
     else
     {
