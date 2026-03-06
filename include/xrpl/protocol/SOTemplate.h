@@ -6,6 +6,7 @@
 #include <functional>
 #include <initializer_list>
 #include <stdexcept>
+#include <vector>
 
 namespace xrpl {
 
@@ -97,8 +98,12 @@ public:
     operator=(SOTemplate&& other) = default;
 
     /** Create a template populated with all fields.
-        After creating the template fields cannot be
-        added, modified, or removed.
+        After creating the template fields cannot be added, modified, or removed.
+    */
+    SOTemplate(std::vector<SOElement> uniqueFields, std::vector<SOElement> commonFields = {});
+
+    /** Create a template populated with all fields.
+        Note: Defers to the vector constructor above.
     */
     SOTemplate(
         std::initializer_list<SOElement> uniqueFields,
