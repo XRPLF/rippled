@@ -25,10 +25,16 @@ function(add_module parent name)
         ${target}
         PUBLIC "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
     )
-    isolate_headers(${target} "${CMAKE_CURRENT_SOURCE_DIR}/include"
-                    "${CMAKE_CURRENT_SOURCE_DIR}/include/${parent}/${name}" PUBLIC
+    isolate_headers(
+        ${target}
+        "${CMAKE_CURRENT_SOURCE_DIR}/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/${parent}/${name}"
+        PUBLIC
     )
-    isolate_headers(${target} "${CMAKE_CURRENT_SOURCE_DIR}/src"
-                    "${CMAKE_CURRENT_SOURCE_DIR}/src/lib${parent}/${name}" PRIVATE
+    isolate_headers(
+        ${target}
+        "${CMAKE_CURRENT_SOURCE_DIR}/src"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/lib${parent}/${name}"
+        PRIVATE
     )
 endfunction()
