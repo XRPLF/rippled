@@ -1,6 +1,6 @@
 #include <test/jtx.h>
 
-#include <xrpl/tx/transactors/NFT/NFTokenUtils.h>
+#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 namespace xrpl {
 
