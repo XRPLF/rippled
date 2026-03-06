@@ -175,6 +175,8 @@ test.unit_test > xrpl.basics
 tests.libxrpl > xrpl.basics
 tests.libxrpl > xrpl.json
 tests.libxrpl > xrpl.net
+tests.libxrpl > xrpl.protocol
+tests.libxrpl > xrpl.protocol_autogen
 xrpl.conditions > xrpl.basics
 xrpl.conditions > xrpl.protocol
 xrpl.core > xrpl.basics
