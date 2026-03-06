@@ -64,10 +64,11 @@
 
 namespace xrpl {
 
-// We do not want feature names to exceed this size.
+// Feature names must not exceed this length (in characters, excluding the null terminator).
 static constexpr std::size_t maxFeatureNameSize = 63;
-// We not want feature names of this length (and + 1), to enable the use of
-// 32-long byte string for selection of feature as uint256, in WASM
+// Reserve this exact feature-name length (in characters/bytes, excluding the null terminator)
+// so that a 32-byte uint256 (for example, in WASM or other interop contexts) can be used
+// as a compact, fixed-size feature selector without conflicting with human-readable names.
 static constexpr std::size_t reservedFeatureNameSize = 32;
 
 enum class VoteBehavior : int { Obsolete = -1, DefaultNo = 0, DefaultYes };
