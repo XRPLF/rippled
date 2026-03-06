@@ -107,7 +107,8 @@ Serializer::addFieldID(int type, int name)
 {
     int ret = mData.size();
     XRPL_ASSERT(
-        (type > 0) && (type < 256) && (name > 0) && (name < 256), "xrpl::Serializer::addFieldID : inputs inside range");
+        (type > 0) && (type < 256) && (name > 0) && (name < 256),
+        "xrpl::Serializer::addFieldID : inputs inside range");
 
     if (type < 16)
     {
@@ -366,7 +367,8 @@ SerialIter::get32()
     p_ += 4;
     used_ += 4;
     remain_ -= 4;
-    return (std::uint64_t(t[0]) << 24) + (std::uint64_t(t[1]) << 16) + (std::uint64_t(t[2]) << 8) + std::uint64_t(t[3]);
+    return (std::uint64_t(t[0]) << 24) + (std::uint64_t(t[1]) << 16) + (std::uint64_t(t[2]) << 8) +
+        std::uint64_t(t[3]);
 }
 
 std::uint64_t

@@ -64,7 +64,8 @@ public:
         beast::Journal journal{env.app().journal("ValidatorKeys_test")};
 
         // Keys/ID when using [validation_seed]
-        SecretKey const seedSecretKey = generateSecretKey(KeyType::secp256k1, *parseBase58<Seed>(seed));
+        SecretKey const seedSecretKey =
+            generateSecretKey(KeyType::secp256k1, *parseBase58<Seed>(seed));
         PublicKey const seedPublicKey = derivePublicKey(KeyType::secp256k1, seedSecretKey);
         NodeID const seedNodeID = calcNodeID(seedPublicKey);
 

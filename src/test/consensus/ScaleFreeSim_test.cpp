@@ -29,10 +29,16 @@ class ScaleFreeSim_test : public beast::unit_test::suite
         PeerGroup network = sim.createGroup(N);
 
         // generate trust ranks
-        std::vector<double> const ranks = sample(network.size(), PowerLawDistribution{1, 3}, sim.rng);
+        std::vector<double> const ranks =
+            sample(network.size(), PowerLawDistribution{1, 3}, sim.rng);
 
         // generate scale-free trust graph
-        randomRankedTrust(network, ranks, numUNLs, std::uniform_int_distribution<>{minUNLSize, maxUNLSize}, sim.rng);
+        randomRankedTrust(
+            network,
+            ranks,
+            numUNLs,
+            std::uniform_int_distribution<>{minUNLSize, maxUNLSize},
+            sim.rng);
 
         // nodes with a trust line in either direction are network-connected
         network.connectFromTrust(round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
@@ -74,7 +80,8 @@ class ScaleFreeSim_test : public beast::unit_test::suite
         // TODO: Clean up this formatting mess!!
 
         log << "Peers: " << network.size() << std::endl;
-        log << "Simulated Duration: " << duration_cast<milliseconds>(simDuration).count() << " ms" << std::endl;
+        log << "Simulated Duration: " << duration_cast<milliseconds>(simDuration).count() << " ms"
+            << std::endl;
         log << "Branches: " << sim.branches() << std::endl;
         log << "Synchronized: " << (sim.synchronized() ? "Y" : "N") << std::endl;
         log << std::endl;

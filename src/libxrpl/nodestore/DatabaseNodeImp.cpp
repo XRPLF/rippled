@@ -22,18 +22,23 @@ DatabaseNodeImp::asyncFetch(
 }
 
 std::shared_ptr<NodeObject>
-DatabaseNodeImp::fetchNodeObject(uint256 const& hash, std::uint32_t, FetchReport& fetchReport, bool duplicate)
+DatabaseNodeImp::fetchNodeObject(
+    uint256 const& hash,
+    std::uint32_t,
+    FetchReport& fetchReport,
+    bool duplicate)
 {
     std::shared_ptr<NodeObject> nodeObject = nullptr;
     Status status;
 
     try
     {
-        status = backend_->fetch(hash.data(), &nodeObject);
+        status = backend_->fetch(hash, &nodeObject);
     }
     catch (std::exception const& e)
     {
-        JLOG(j_.fatal()) << "fetchNodeObject " << hash << ": Exception fetching from backend: " << e.what();
+        JLOG(j_.fatal()) << "fetchNodeObject " << hash
+                         << ": Exception fetching from backend: " << e.what();
         Rethrow();
     }
 
@@ -46,7 +51,8 @@ DatabaseNodeImp::fetchNodeObject(uint256 const& hash, std::uint32_t, FetchReport
             JLOG(j_.fatal()) << "fetchNodeObject " << hash << ": nodestore data is corrupted";
             break;
         default:
-            JLOG(j_.warn()) << "fetchNodeObject " << hash << ": backend returns unknown result " << status;
+            JLOG(j_.warn()) << "fetchNodeObject " << hash << ": backend returns unknown result "
+                            << status;
             break;
     }
 
@@ -62,18 +68,10 @@ DatabaseNodeImp::fetchBatch(std::vector<uint256> const& hashes)
     using namespace std::chrono;
     auto const before = steady_clock::now();
 
-    std::vector<uint256 const*> batch{};
-    batch.reserve(hashes.size());
-    for (size_t i = 0; i < hashes.size(); ++i)
-    {
-        auto const& hash = hashes[i];
-        batch.push_back(&hash);
-    }
-
     // Get the node objects that match the hashes from the backend. To protect
     // against the backends returning fewer or more results than expected, the
     // container is resized to the number of hashes.
-    auto results = backend_->fetchBatch(batch).first;
+    auto results = backend_->fetchBatch(hashes).first;
     XRPL_ASSERT(
         results.size() == hashes.size() || results.empty(),
         "number of output objects either matches number of input hashes or is empty");
@@ -87,7 +85,8 @@ DatabaseNodeImp::fetchBatch(std::vector<uint256> const& hashes)
         }
     }
 
-    auto fetchDurationUs = std::chrono::duration_cast<std::chrono::microseconds>(steady_clock::now() - before).count();
+    auto fetchDurationUs =
+        std::chrono::duration_cast<std::chrono::microseconds>(steady_clock::now() - before).count();
     updateFetchMetrics(hashes.size(), 0, fetchDurationUs);
     return results;
 }

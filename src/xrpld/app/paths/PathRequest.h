@@ -3,11 +3,11 @@
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/paths/Pathfinder.h>
 #include <xrpld/app/paths/RippleLineCache.h>
-#include <xrpld/rpc/InfoSub.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/server/InfoSub.h>
 
 #include <map>
 #include <mutex>
@@ -105,7 +105,11 @@ private:
         Returns false if the source currencies are invalid.
     */
     bool
-    findPaths(std::shared_ptr<RippleLineCache> const&, int const, Json::Value&, std::function<bool(void)> const&);
+    findPaths(
+        std::shared_ptr<RippleLineCache> const&,
+        int const,
+        Json::Value&,
+        std::function<bool(void)> const&);
 
     int
     parseJson(Json::Value const&);

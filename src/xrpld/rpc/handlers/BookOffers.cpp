@@ -1,5 +1,4 @@
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/rpc/BookChanges.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
@@ -12,6 +11,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/server/NetworkOPs.h>
 
 namespace xrpl {
 
@@ -62,7 +62,8 @@ doBookOffers(RPC::JsonContext& context)
     if (!to_currency(pay_currency, taker_pays[jss::currency].asString()))
     {
         JLOG(context.j.info()) << "Bad taker_pays currency.";
-        return RPC::make_error(rpcSRC_CUR_MALFORMED, "Invalid field 'taker_pays.currency', bad currency.");
+        return RPC::make_error(
+            rpcSRC_CUR_MALFORMED, "Invalid field 'taker_pays.currency', bad currency.");
     }
 
     Currency get_currency;
@@ -70,7 +71,8 @@ doBookOffers(RPC::JsonContext& context)
     if (!to_currency(get_currency, taker_gets[jss::currency].asString()))
     {
         JLOG(context.j.info()) << "Bad taker_gets currency.";
-        return RPC::make_error(rpcDST_AMT_MALFORMED, "Invalid field 'taker_gets.currency', bad currency.");
+        return RPC::make_error(
+            rpcDST_AMT_MALFORMED, "Invalid field 'taker_gets.currency', bad currency.");
     }
 
     AccountID pay_issuer;
@@ -81,10 +83,12 @@ doBookOffers(RPC::JsonContext& context)
             return RPC::expected_field_error("taker_pays.issuer", "string");
 
         if (!to_issuer(pay_issuer, taker_pays[jss::issuer].asString()))
-            return RPC::make_error(rpcSRC_ISR_MALFORMED, "Invalid field 'taker_pays.issuer', bad issuer.");
+            return RPC::make_error(
+                rpcSRC_ISR_MALFORMED, "Invalid field 'taker_pays.issuer', bad issuer.");
 
         if (pay_issuer == noAccount())
-            return RPC::make_error(rpcSRC_ISR_MALFORMED, "Invalid field 'taker_pays.issuer', bad issuer account one.");
+            return RPC::make_error(
+                rpcSRC_ISR_MALFORMED, "Invalid field 'taker_pays.issuer', bad issuer account one.");
     }
     else
     {
@@ -98,7 +102,8 @@ doBookOffers(RPC::JsonContext& context)
             "XRP currency specification.");
 
     if (!isXRP(pay_currency) && isXRP(pay_issuer))
-        return RPC::make_error(rpcSRC_ISR_MALFORMED, "Invalid field 'taker_pays.issuer', expected non-XRP issuer.");
+        return RPC::make_error(
+            rpcSRC_ISR_MALFORMED, "Invalid field 'taker_pays.issuer', expected non-XRP issuer.");
 
     AccountID get_issuer;
 
@@ -108,10 +113,12 @@ doBookOffers(RPC::JsonContext& context)
             return RPC::expected_field_error("taker_gets.issuer", "string");
 
         if (!to_issuer(get_issuer, taker_gets[jss::issuer].asString()))
-            return RPC::make_error(rpcDST_ISR_MALFORMED, "Invalid field 'taker_gets.issuer', bad issuer.");
+            return RPC::make_error(
+                rpcDST_ISR_MALFORMED, "Invalid field 'taker_gets.issuer', bad issuer.");
 
         if (get_issuer == noAccount())
-            return RPC::make_error(rpcDST_ISR_MALFORMED, "Invalid field 'taker_gets.issuer', bad issuer account one.");
+            return RPC::make_error(
+                rpcDST_ISR_MALFORMED, "Invalid field 'taker_gets.issuer', bad issuer account one.");
     }
     else
     {
@@ -125,7 +132,8 @@ doBookOffers(RPC::JsonContext& context)
             "XRP currency specification.");
 
     if (!isXRP(get_currency) && isXRP(get_issuer))
-        return RPC::make_error(rpcDST_ISR_MALFORMED, "Invalid field 'taker_gets.issuer', expected non-XRP issuer.");
+        return RPC::make_error(
+            rpcDST_ISR_MALFORMED, "Invalid field 'taker_gets.issuer', expected non-XRP issuer.");
 
     std::optional<AccountID> takerID;
     if (context.params.isMember(jss::taker))
@@ -142,7 +150,8 @@ doBookOffers(RPC::JsonContext& context)
     if (context.params.isMember(jss::domain))
     {
         uint256 num;
-        if (!context.params[jss::domain].isString() || !num.parseHex(context.params[jss::domain].asString()))
+        if (!context.params[jss::domain].isString() ||
+            !num.parseHex(context.params[jss::domain].asString()))
         {
             return RPC::make_error(rpcDOMAIN_MALFORMED, "Unable to parse domain.");
         }
@@ -165,7 +174,8 @@ doBookOffers(RPC::JsonContext& context)
     bool const bProof(context.params.isMember(jss::proof));
 
     Json::Value const jvMarker(
-        context.params.isMember(jss::marker) ? context.params[jss::marker] : Json::Value(Json::nullValue));
+        context.params.isMember(jss::marker) ? context.params[jss::marker]
+                                             : Json::Value(Json::nullValue));
 
     context.netOps.getBookPage(
         lpLedger,
