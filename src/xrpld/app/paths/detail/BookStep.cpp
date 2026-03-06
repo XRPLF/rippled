@@ -13,7 +13,7 @@
 #include <xrpl/tx/paths/OfferStream.h>
 #include <xrpl/tx/paths/detail/FlatSets.h>
 #include <xrpl/tx/paths/detail/Steps.h>
-#include <xrpl/tx/transactors/AMM/AMMUtils.h>
+#include <xrpl/tx/transactors/dex/AMMUtils.h>
 
 #include <boost/container/flat_set.hpp>
 

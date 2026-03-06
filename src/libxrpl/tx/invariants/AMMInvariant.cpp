@@ -3,8 +3,8 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/TxFormats.h>
-#include <xrpl/tx/transactors/AMM/AMMHelpers.h>
-#include <xrpl/tx/transactors/AMM/AMMUtils.h>
+#include <xrpl/tx/transactors/dex/AMMHelpers.h>
+#include <xrpl/tx/transactors/dex/AMMUtils.h>
 
 namespace xrpl {
 

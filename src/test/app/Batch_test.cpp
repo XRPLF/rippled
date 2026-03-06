@@ -13,7 +13,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/tx/apply.h>
-#include <xrpl/tx/transactors/Batch.h>
+#include <xrpl/tx/transactors/system/Batch.h>
 
 namespace xrpl {
 namespace test {

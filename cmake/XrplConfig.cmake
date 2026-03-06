@@ -3,50 +3,58 @@ include(CMakeFindDependencyMacro)
 #[=========================================================[
   Boost
 #]=========================================================]
-if (static OR APPLE OR MSVC)
+if(static OR APPLE OR MSVC)
     set(Boost_USE_STATIC_LIBS ON)
-endif ()
+endif()
 set(Boost_USE_MULTITHREADED ON)
-if (static OR MSVC)
+if(static OR MSVC)
     set(Boost_USE_STATIC_RUNTIME ON)
-else ()
+else()
     set(Boost_USE_STATIC_RUNTIME OFF)
-endif ()
-find_dependency(Boost
-                COMPONENTS
-                chrono
-                container
-                context
-                coroutine
-                date_time
-                filesystem
-                program_options
-                regex
-                system
-                thread)
+endif()
+find_dependency(
+    Boost
+    COMPONENTS
+    chrono
+    container
+    context
+    coroutine
+    date_time
+    filesystem
+    program_options
+    regex
+    system
+    thread
+)
 #[=========================================================[
   OpenSSL
 #]=========================================================]
-if (NOT DEFINED OPENSSL_ROOT_DIR)
-    if (DEFINED ENV{OPENSSL_ROOT})
+if(NOT DEFINED OPENSSL_ROOT_DIR)
+    if(DEFINED ENV{OPENSSL_ROOT})
         set(OPENSSL_ROOT_DIR $ENV{OPENSSL_ROOT})
-    elseif (APPLE)
+    elseif(APPLE)
         find_program(homebrew brew)
-        if (homebrew)
-            execute_process(COMMAND ${homebrew} --prefix openssl OUTPUT_VARIABLE OPENSSL_ROOT_DIR
-                            OUTPUT_STRIP_TRAILING_WHITESPACE)
-        endif ()
-    endif ()
+        if(homebrew)
+            execute_process(
+                COMMAND ${homebrew} --prefix openssl
+                OUTPUT_VARIABLE OPENSSL_ROOT_DIR
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+            )
+        endif()
+    endif()
     file(TO_CMAKE_PATH "${OPENSSL_ROOT_DIR}" OPENSSL_ROOT_DIR)
-endif ()
+endif()
 
-if (static OR APPLE OR MSVC)
+if(static OR APPLE OR MSVC)
     set(OPENSSL_USE_STATIC_LIBS ON)
-endif ()
+endif()
 set(OPENSSL_MSVC_STATIC_RT ON)
 find_dependency(OpenSSL REQUIRED)
 find_dependency(ZLIB)
 find_dependency(date)
-if (TARGET ZLIB::ZLIB)
-    set_target_properties(OpenSSL::Crypto PROPERTIES INTERFACE_LINK_LIBRARIES ZLIB::ZLIB)
-endif ()
+if(TARGET ZLIB::ZLIB)
+    set_target_properties(
+        OpenSSL::Crypto
+        PROPERTIES INTERFACE_LINK_LIBRARIES ZLIB::ZLIB
+    )
+endif()

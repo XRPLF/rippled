@@ -6,7 +6,7 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/nftPageMask.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
-#include <xrpl/tx/transactors/NFT/NFTokenUtils.h>
+#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 namespace xrpl {
 
