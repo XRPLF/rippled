@@ -39,19 +39,15 @@ list(
 )
 
 setup_target_for_coverage_gcovr(
-    NAME
-    coverage
-    FORMAT
-    ${coverage_format}
+    NAME coverage
+    FORMAT ${coverage_format}
     EXCLUDE
-    "src/test"
-    "src/tests"
-    "include/xrpl/beast/test"
-    "include/xrpl/beast/unit_test"
-    "${CMAKE_BINARY_DIR}/pb-xrpl.libpb"
-    DEPENDENCIES
-    xrpld
-    xrpl.tests
+        "src/test"
+        "src/tests"
+        "include/xrpl/beast/test"
+        "include/xrpl/beast/unit_test"
+        "${CMAKE_BINARY_DIR}/pb-xrpl.libpb"
+    DEPENDENCIES xrpld xrpl.tests
 )
 
 add_code_coverage_to_target(opts INTERFACE)
