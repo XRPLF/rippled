@@ -372,6 +372,16 @@ verifyMultiCiphertextEqualityProof(
             if (!secp256k1_ec_pubkey_parse(ctx, &c1, recipient.encryptedAmount.data(), ecGamalEncryptedLength))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
         }
+        else
+        {
+            // All C1 bytes must be the same
+            if (std::memcmp(
+                    recipient.encryptedAmount.data(), recipients[0].encryptedAmount.data(), ecGamalEncryptedLength) !=
+                0)
+            {
+                return tecINTERNAL;
+            }
+        }
 
         if (secp256k1_ec_pubkey_parse(
                 ctx, &c2_vec[i], recipient.encryptedAmount.data() + ecGamalEncryptedLength, ecGamalEncryptedLength) !=
