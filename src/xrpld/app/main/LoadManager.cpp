@@ -1,9 +1,9 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/LoadManager.h>
-#include <xrpld/app/misc/LoadFeeTrack.h>
 
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
 
 #include <memory>
@@ -115,7 +115,8 @@ LoadManager::run()
             {
                 if (timeSpentStalled < stallFatalLogMessageTimeLimit)
                 {
-                    JLOG(journal_.warn()) << "Server stalled for " << timeSpentStalled.count() << " seconds.";
+                    JLOG(journal_.warn())
+                        << "Server stalled for " << timeSpentStalled.count() << " seconds.";
 
                     if (app_.getJobQueue().isOverloaded())
                     {
@@ -124,7 +125,8 @@ LoadManager::run()
                 }
                 else
                 {
-                    JLOG(journal_.fatal()) << "Server stalled for " << timeSpentStalled.count() << " seconds.";
+                    JLOG(journal_.fatal())
+                        << "Server stalled for " << timeSpentStalled.count() << " seconds.";
                     JLOG(journal_.fatal()) << "JobQueue: " << app_.getJobQueue().getJson(0);
                 }
             }
@@ -145,7 +147,8 @@ LoadManager::run()
     bool change = false;
     if (app_.getJobQueue().isOverloaded())
     {
-        JLOG(journal_.info()) << "Raising local fee (JQ overload): " << app_.getJobQueue().getJson(0);
+        JLOG(journal_.info()) << "Raising local fee (JQ overload): "
+                              << app_.getJobQueue().getJson(0);
         change = app_.getFeeTrack().raiseLocalFee();
     }
     else

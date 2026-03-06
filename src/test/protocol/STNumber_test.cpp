@@ -40,11 +40,16 @@ struct STNumber_test : public beast::unit_test::suite
         }
 
         std::initializer_list<std::int64_t> const mantissas = {
-            std::numeric_limits<std::int64_t>::min(), -1, 0, 1, std::numeric_limits<std::int64_t>::max()};
+            std::numeric_limits<std::int64_t>::min(),
+            -1,
+            0,
+            1,
+            std::numeric_limits<std::int64_t>::max()};
         for (std::int64_t mantissa : mantissas)
             testCombo(Number{mantissa});
 
-        std::initializer_list<std::int32_t> const exponents = {Number::minExponent, -1, 0, 1, Number::maxExponent - 1};
+        std::initializer_list<std::int32_t> const exponents = {
+            Number::minExponent, -1, 0, 1, Number::maxExponent - 1};
         for (std::int32_t exponent : exponents)
             testCombo(Number{123, exponent});
 
@@ -98,31 +103,42 @@ struct STNumber_test : public beast::unit_test::suite
                 if (Number::getMantissaScale() == MantissaRange::small)
                 {
                     BEAST_EXPECT(
-                        numberFromJson(sfNumber, maxInt) == STNumber(sfNumber, Number{9'223'372'036'854'775, 3}));
+                        numberFromJson(sfNumber, maxInt) ==
+                        STNumber(sfNumber, Number{9'223'372'036'854'775, 3}));
                     BEAST_EXPECT(
-                        numberFromJson(sfNumber, minInt) == STNumber(sfNumber, Number{-9'223'372'036'854'775, 3}));
+                        numberFromJson(sfNumber, minInt) ==
+                        STNumber(sfNumber, Number{-9'223'372'036'854'775, 3}));
                 }
                 else
                 {
                     BEAST_EXPECT(
-                        numberFromJson(sfNumber, maxInt) == STNumber(sfNumber, Number{9'223'372'036'854'775'807, 0}));
+                        numberFromJson(sfNumber, maxInt) ==
+                        STNumber(sfNumber, Number{9'223'372'036'854'775'807, 0}));
                     BEAST_EXPECT(
                         numberFromJson(sfNumber, minInt) ==
-                        STNumber(sfNumber, Number{true, 9'223'372'036'854'775'808ULL, 0, Number::normalized{}}));
+                        STNumber(
+                            sfNumber,
+                            Number{true, 9'223'372'036'854'775'808ULL, 0, Number::normalized{}}));
                 }
             }
 
             constexpr auto imin = std::numeric_limits<int>::min();
             BEAST_EXPECT(numberFromJson(sfNumber, imin) == STNumber(sfNumber, Number(imin, 0)));
-            BEAST_EXPECT(numberFromJson(sfNumber, std::to_string(imin)) == STNumber(sfNumber, Number(imin, 0)));
+            BEAST_EXPECT(
+                numberFromJson(sfNumber, std::to_string(imin)) ==
+                STNumber(sfNumber, Number(imin, 0)));
 
             constexpr auto imax = std::numeric_limits<int>::max();
             BEAST_EXPECT(numberFromJson(sfNumber, imax) == STNumber(sfNumber, Number(imax, 0)));
-            BEAST_EXPECT(numberFromJson(sfNumber, std::to_string(imax)) == STNumber(sfNumber, Number(imax, 0)));
+            BEAST_EXPECT(
+                numberFromJson(sfNumber, std::to_string(imax)) ==
+                STNumber(sfNumber, Number(imax, 0)));
 
             constexpr auto umax = std::numeric_limits<unsigned int>::max();
             BEAST_EXPECT(numberFromJson(sfNumber, umax) == STNumber(sfNumber, Number(umax, 0)));
-            BEAST_EXPECT(numberFromJson(sfNumber, std::to_string(umax)) == STNumber(sfNumber, Number(umax, 0)));
+            BEAST_EXPECT(
+                numberFromJson(sfNumber, std::to_string(umax)) ==
+                STNumber(sfNumber, Number(umax, 0)));
 
             // Obvious non-numbers tested here
             try

@@ -52,7 +52,8 @@ SlotImp::state(State state_)
 
     // You can't transition into the initial states
     XRPL_ASSERT(
-        state_ != accept && state_ != connect, "xrpl::PeerFinder::SlotImp::state : input state is not an initial");
+        state_ != accept && state_ != connect,
+        "xrpl::PeerFinder::SlotImp::state : input state is not an initial");
 
     // Can only become connected from outbound connect state
     XRPL_ASSERT(
@@ -73,7 +74,9 @@ void
 SlotImp::activate(clock_type::time_point const& now)
 {
     // Can only become active from the accept or connected state
-    XRPL_ASSERT(m_state == accept || m_state == connected, "xrpl::PeerFinder::SlotImp::activate : valid state");
+    XRPL_ASSERT(
+        m_state == accept || m_state == connected,
+        "xrpl::PeerFinder::SlotImp::activate : valid state");
 
     m_state = active;
     whenAcceptEndpoints = now;

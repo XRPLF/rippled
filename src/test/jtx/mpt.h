@@ -24,7 +24,10 @@ private:
     std::optional<Account> holder_;
 
 public:
-    mptflags(MPTTester& tester, std::uint32_t flags, std::optional<Account> const& holder = std::nullopt)
+    mptflags(
+        MPTTester& tester,
+        std::uint32_t flags,
+        std::optional<Account> const& holder = std::nullopt)
         : tester_(tester), flags_(flags), holder_(holder)
     {
     }
@@ -210,7 +213,8 @@ public:
     checkMPTokenOutstandingAmount(std::int64_t expectedAmount) const;
 
     [[nodiscard]] bool
-    checkFlags(uint32_t const expectedFlags, std::optional<Account> const& holder = std::nullopt) const;
+    checkFlags(uint32_t const expectedFlags, std::optional<Account> const& holder = std::nullopt)
+        const;
 
     [[nodiscard]] bool
     checkMetadata(std::string const& metadata) const;
@@ -240,7 +244,11 @@ public:
         std::optional<std::vector<std::string>> credentials = std::nullopt);
 
     void
-    claw(Account const& issuer, Account const& holder, std::int64_t amount, std::optional<TER> err = std::nullopt);
+    claw(
+        Account const& issuer,
+        Account const& holder,
+        std::int64_t amount,
+        std::optional<TER> err = std::nullopt);
 
     PrettyAmount
     mpt(std::int64_t amount) const;
@@ -267,8 +275,9 @@ public:
 private:
     using SLEP = SLE::const_pointer;
     bool
-    forObject(std::function<bool(SLEP const& sle)> const& cb, std::optional<Account> const& holder = std::nullopt)
-        const;
+    forObject(
+        std::function<bool(SLEP const& sle)> const& cb,
+        std::optional<Account> const& holder = std::nullopt) const;
 
     template <typename A>
     TER

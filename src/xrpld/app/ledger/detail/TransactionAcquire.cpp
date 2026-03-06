@@ -20,8 +20,16 @@ enum {
     MAX_TIMEOUTS = 20,
 };
 
-TransactionAcquire::TransactionAcquire(Application& app, uint256 const& hash, std::unique_ptr<PeerSet> peerSet)
-    : TimeoutCounter(app, hash, TX_ACQUIRE_TIMEOUT, {jtTXN_DATA, "TxAcq", {}}, app.journal("TransactionAcquire"))
+TransactionAcquire::TransactionAcquire(
+    Application& app,
+    uint256 const& hash,
+    std::unique_ptr<PeerSet> peerSet)
+    : TimeoutCounter(
+          app,
+          hash,
+          TX_ACQUIRE_TIMEOUT,
+          {jtTXN_DATA, "TxAcq", {}},
+          app.journal("TransactionAcquire"))
     , mHaveRoot(false)
     , mPeerSet(std::move(peerSet))
 {
@@ -51,8 +59,9 @@ TransactionAcquire::done()
         // not be called.  That's fine.  According to David the giveSet() call
         // just updates the consensus and related structures when we acquire
         // a transaction set. No need to update them if we're shutting down.
-        app_.getJobQueue().addJob(
-            jtTXN_DATA, "ComplAcquire", [pap, hash, map]() { pap->getInboundTransactions().giveSet(hash, map, true); });
+        app_.getJobQueue().addJob(jtTXN_DATA, "ComplAcquire", [pap, hash, map]() {
+            pap->getInboundTransactions().giveSet(hash, map, true);
+        });
     }
 }
 
@@ -94,7 +103,8 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
 
     if (!mHaveRoot)
     {
-        JLOG(journal_.trace()) << "TransactionAcquire::trigger " << (peer ? "havePeer" : "noPeer") << " no root";
+        JLOG(journal_.trace()) << "TransactionAcquire::trigger " << (peer ? "havePeer" : "noPeer")
+                               << " no root";
         protocol::TMGetLedger tmGL;
         tmGL.set_ledgerhash(hash_.begin(), hash_.size());
         tmGL.set_itype(protocol::liTS_CANDIDATE);
@@ -194,7 +204,8 @@ TransactionAcquire::takeNodes(
     }
     catch (std::exception const& ex)
     {
-        JLOG(journal_.error()) << "Peer " << peer->id() << " sent us junky transaction node data: " << ex.what();
+        JLOG(journal_.error()) << "Peer " << peer->id()
+                               << " sent us junky transaction node data: " << ex.what();
         return SHAMapAddNode::invalid();
     }
 }
@@ -203,7 +214,9 @@ void
 TransactionAcquire::addPeers(std::size_t limit)
 {
     mPeerSet->addPeers(
-        limit, [this](auto peer) { return peer->hasTxSet(hash_); }, [this](auto peer) { trigger(peer); });
+        limit,
+        [this](auto peer) { return peer->hasTxSet(hash_); },
+        [this](auto peer) { trigger(peer); });
 }
 
 void

@@ -11,7 +11,11 @@ AMMOffer<TIn, TOut>::AMMOffer(
     TAmounts<TIn, TOut> const& amounts,
     TAmounts<TIn, TOut> const& balances,
     Quality const& quality)
-    : ammLiquidity_(ammLiquidity), amounts_(amounts), balances_(balances), quality_(quality), consumed_(false)
+    : ammLiquidity_(ammLiquidity)
+    , amounts_(amounts)
+    , balances_(balances)
+    , quality_(quality)
+    , consumed_(false)
 {
 }
 
@@ -54,7 +58,10 @@ AMMOffer<TIn, TOut>::consume(ApplyView& view, TAmounts<TIn, TOut> const& consume
 
 template <typename TIn, typename TOut>
 TAmounts<TIn, TOut>
-AMMOffer<TIn, TOut>::limitOut(TAmounts<TIn, TOut> const& offerAmount, TOut const& limit, bool roundUp) const
+AMMOffer<TIn, TOut>::limitOut(
+    TAmounts<TIn, TOut> const& offerAmount,
+    TOut const& limit,
+    bool roundUp) const
 {
     // Change the offer size proportionally to the original offer quality
     // to keep the strands quality order unchanged. The taker pays slightly
@@ -76,12 +83,14 @@ AMMOffer<TIn, TOut>::limitOut(TAmounts<TIn, TOut> const& offerAmount, TOut const
 
 template <typename TIn, typename TOut>
 TAmounts<TIn, TOut>
-AMMOffer<TIn, TOut>::limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& limit, bool roundUp) const
+AMMOffer<TIn, TOut>::limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& limit, bool roundUp)
+    const
 {
     // See the comments above in limitOut().
     if (ammLiquidity_.multiPath())
     {
-        if (auto const& rules = getCurrentTransactionRules(); rules && rules->enabled(fixReducedOffersV2))
+        if (auto const& rules = getCurrentTransactionRules();
+            rules && rules->enabled(fixReducedOffersV2))
             return quality().ceil_in_strict(offerAmount, limit, roundUp);
 
         return quality().ceil_in(offerAmount, limit);
@@ -104,24 +113,27 @@ AMMOffer<TIn, TOut>::checkInvariant(TAmounts<TIn, TOut> const& consumed, beast::
 {
     if (consumed.in > amounts_.in || consumed.out > amounts_.out)
     {
-        JLOG(j.error()) << "AMMOffer::checkInvariant failed: consumed " << to_string(consumed.in) << " "
-                        << to_string(consumed.out) << " amounts " << to_string(amounts_.in) << " "
-                        << to_string(amounts_.out);
+        JLOG(j.error()) << "AMMOffer::checkInvariant failed: consumed " << to_string(consumed.in)
+                        << " " << to_string(consumed.out) << " amounts " << to_string(amounts_.in)
+                        << " " << to_string(amounts_.out);
 
         return false;
     }
 
     Number const product = balances_.in * balances_.out;
-    auto const newBalances = TAmounts<TIn, TOut>{balances_.in + consumed.in, balances_.out - consumed.out};
+    auto const newBalances =
+        TAmounts<TIn, TOut>{balances_.in + consumed.in, balances_.out - consumed.out};
     Number const newProduct = newBalances.in * newBalances.out;
 
     if (newProduct >= product || withinRelativeDistance(product, newProduct, Number{1, -7}))
         return true;
 
-    JLOG(j.error()) << "AMMOffer::checkInvariant failed: balances " << to_string(balances_.in) << " "
-                    << to_string(balances_.out) << " new balances " << to_string(newBalances.in) << " "
-                    << to_string(newBalances.out) << " product/newProduct " << product << " " << newProduct << " diff "
-                    << (product != Number{0} ? to_string((product - newProduct) / product) : "undefined");
+    JLOG(j.error()) << "AMMOffer::checkInvariant failed: balances " << to_string(balances_.in)
+                    << " " << to_string(balances_.out) << " new balances "
+                    << to_string(newBalances.in) << " " << to_string(newBalances.out)
+                    << " product/newProduct " << product << " " << newProduct << " diff "
+                    << (product != Number{0} ? to_string((product - newProduct) / product)
+                                             : "undefined");
     return false;
 }
 

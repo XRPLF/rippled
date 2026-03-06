@@ -113,7 +113,10 @@ private:
      * @param sl  lock. this function must be called with the lock
      */
     void
-    onSkipListAcquired(std::vector<uint256> const& skipList, std::uint32_t ledgerSeq, ScopedLockType& sl);
+    onSkipListAcquired(
+        std::vector<uint256> const& skipList,
+        std::uint32_t ledgerSeq,
+        ScopedLockType& sl);
 
     /**
      * Call the OnSkipListDataCB callbacks

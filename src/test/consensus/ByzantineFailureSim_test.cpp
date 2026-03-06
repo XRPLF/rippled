@@ -48,7 +48,8 @@ class ByzantineFailureSim_test : public beast::unit_test::suite
         for (TrustGraph<Peer*>::ForkInfo const& fi : sim.trustGraph.forkablePairs(0.8))
         {
             std::cout << "Can fork " << PeerGroup{fi.unlA} << " "
-                      << " " << PeerGroup{fi.unlB} << " overlap " << fi.overlap << " required " << fi.required << "\n";
+                      << " " << PeerGroup{fi.unlB} << " overlap " << fi.overlap << " required "
+                      << fi.required << "\n";
         };
 
         // set prior state

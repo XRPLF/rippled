@@ -190,7 +190,8 @@ public:
         */
         Stream(Sink& sink, Severity level) : m_sink(sink), m_level(level)
         {
-            XRPL_ASSERT(m_level < severities::kDisabled, "beast::Journal::Stream::Stream : maximum level");
+            XRPL_ASSERT(
+                m_level < severities::kDisabled, "beast::Journal::Stream::Stream : maximum level");
         }
 
         /** Construct or copy another Stream. */
@@ -421,7 +422,8 @@ class basic_logstream : public std::basic_ostream<CharT, Traits>
     detail::logstream_buf<CharT, Traits> buf_;
 
 public:
-    explicit basic_logstream(beast::Journal::Stream const& strm) : std::basic_ostream<CharT, Traits>(&buf_), buf_(strm)
+    explicit basic_logstream(beast::Journal::Stream const& strm)
+        : std::basic_ostream<CharT, Traits>(&buf_), buf_(strm)
     {
     }
 };

@@ -42,6 +42,9 @@ gmon.out
 # Locally patched Conan recipes
 external/conan-center-index/
 
+# Local conan directory
+.conan
+
 # XCode IDE.
 *.pbxuser
 !default.pbxuser
@@ -74,6 +77,9 @@ DerivedData
 
 # Python
 __pycache__
+
+# Direnv's directory
+/.direnv
 
 # clangd cache
 /.cache

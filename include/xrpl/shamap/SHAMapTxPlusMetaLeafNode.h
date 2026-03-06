@@ -9,7 +9,8 @@
 namespace xrpl {
 
 /** A leaf node for a transaction and its associated metadata. */
-class SHAMapTxPlusMetaLeafNode final : public SHAMapLeafNode, public CountedObject<SHAMapTxPlusMetaLeafNode>
+class SHAMapTxPlusMetaLeafNode final : public SHAMapLeafNode,
+                                       public CountedObject<SHAMapTxPlusMetaLeafNode>
 {
 public:
     SHAMapTxPlusMetaLeafNode(boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t cowid)
@@ -18,7 +19,10 @@ public:
         updateHash();
     }
 
-    SHAMapTxPlusMetaLeafNode(boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t cowid, SHAMapHash const& hash)
+    SHAMapTxPlusMetaLeafNode(
+        boost::intrusive_ptr<SHAMapItem const> item,
+        std::uint32_t cowid,
+        SHAMapHash const& hash)
         : SHAMapLeafNode(std::move(item), cowid, hash)
     {
     }

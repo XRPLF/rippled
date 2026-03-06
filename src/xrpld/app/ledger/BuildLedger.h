@@ -50,6 +50,10 @@ buildLedger(
     @return The newly built ledger
  */
 std::shared_ptr<Ledger>
-buildLedger(LedgerReplay const& replayData, ApplyFlags applyFlags, Application& app, beast::Journal j);
+buildLedger(
+    LedgerReplay const& replayData,
+    ApplyFlags applyFlags,
+    Application& app,
+    beast::Journal j);
 
 }  // namespace xrpl

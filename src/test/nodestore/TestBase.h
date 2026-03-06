@@ -26,7 +26,8 @@ namespace NodeStore {
 struct LessThan
 {
     bool
-    operator()(std::shared_ptr<NodeObject> const& lhs, std::shared_ptr<NodeObject> const& rhs) const noexcept
+    operator()(std::shared_ptr<NodeObject> const& lhs, std::shared_ptr<NodeObject> const& rhs)
+        const noexcept
     {
         return lhs->getHash() < rhs->getHash();
     }
@@ -137,7 +138,7 @@ public:
         {
             std::shared_ptr<NodeObject> object;
 
-            Status const status = backend.fetch(batch[i]->getHash().cbegin(), &object);
+            Status const status = backend.fetch(batch[i]->getHash(), &object);
 
             BEAST_EXPECT(status == ok);
 
@@ -157,7 +158,7 @@ public:
         {
             std::shared_ptr<NodeObject> object;
 
-            Status const status = backend.fetch(batch[i]->getHash().cbegin(), &object);
+            Status const status = backend.fetch(batch[i]->getHash(), &object);
 
             BEAST_EXPECT(status == notFound);
         }

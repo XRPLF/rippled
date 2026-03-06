@@ -2,10 +2,9 @@
 
 #include <test/jtx/Env.h>
 
-#include <xrpld/app/tx/apply.h>
-
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/tx/apply.h>
 
 namespace xrpl {
 
@@ -39,7 +38,9 @@ public:
             test::jtx::Env fully_canonical(*this, test::jtx::testable_amendments());
 
             Validity valid =
-                checkValidity(fully_canonical.app().getHashRouter(), tx, fully_canonical.current()->rules()).first;
+                checkValidity(
+                    fully_canonical.app().getHashRouter(), tx, fully_canonical.current()->rules())
+                    .first;
             if (valid == Validity::Valid)
                 fail("Non-Fully canonical signature was permitted");
         }
