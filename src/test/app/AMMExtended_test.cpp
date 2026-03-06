@@ -12,8 +12,8 @@
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/StrandFlow.h>
-#include <xrpl/tx/transactors/AMM/AMMContext.h>
-#include <xrpl/tx/transactors/AMM/AMMUtils.h>
+#include <xrpl/tx/transactors/dex/AMMContext.h>
+#include <xrpl/tx/transactors/dex/AMMUtils.h>
 
 #include <utility>
 #include <vector>

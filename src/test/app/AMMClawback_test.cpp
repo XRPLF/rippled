@@ -3,7 +3,7 @@
 #include <test/jtx/CaptureLogs.h>
 
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/tx/transactors/AMM/AMMUtils.h>
+#include <xrpl/tx/transactors/dex/AMMUtils.h>
 
 namespace xrpl {
 namespace test {
