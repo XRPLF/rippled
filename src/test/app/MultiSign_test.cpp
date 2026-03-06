@@ -1228,8 +1228,18 @@ public:
         env.close();
 
         // Since becky's master key is disabled she can no longer
-        // multisign for alice.
-        env(noop(alice), msig(becky), fee(2 * baseFee), ter(tefMASTER_DISABLED));
+        // multisign for alice - UNLESS the fixInvalidMultisign amendment
+        // is enabled AND she has no regular key (grandfathered case).
+        if (features[fixInvalidMultisign])
+        {
+            // With fixInvalidMultisign, becky has no regular key, so her
+            // master key is allowed for multi-signing (grandfathered).
+            env(noop(alice), msig(becky), fee(2 * baseFee));
+        }
+        else
+        {
+            env(noop(alice), msig(becky), fee(2 * baseFee), ter(tefMASTER_DISABLED));
+        }
         env.close();
 
         // Becky cannot 2-level multisign for alice.  2-level multisigning
@@ -1251,10 +1261,143 @@ public:
         env(noop(alice), msig(Reg{becky, beck}), fee(2 * baseFee));
         env.close();
 
+        // Now that becky has a regular key, master disabled IS enforced
+        // (even with fixInvalidMultisign), since she has an alternative.
+        env(noop(alice), msig(becky), fee(2 * baseFee), ter(tefMASTER_DISABLED));
+        env.close();
+
         // The presence of becky's regular key does not influence whether she
         // can 2-level multisign; it still won't work.
         env(noop(alice), msig(Reg{becky, demon}), fee(2 * baseFee), ter(tefBAD_SIGNATURE));
         env.close();
+    }
+
+    void
+    testNestedMultiSign(FeatureBitset features)
+    {
+        testcase("Nested MultiSign");
+
+        // Test the fixInvalidMultisign amendment behavior:
+        // 1. Before the amendment, we can create a signer list with an account
+        //    that has master disabled and no regular key (nested multi-signer).
+        // 2. After the amendment, creating such a signer list should fail.
+        // 3. Pre-existing (grandfathered) signer lists should still work after
+        //    the amendment, allowing master key signatures from such accounts.
+
+        using namespace jtx;
+
+        // Test 1: Without fixInvalidMultisign, creating a signer list with
+        // a nested multi-signer should succeed.
+        {
+            Env env{*this, features - fixInvalidMultisign};
+            Account const alice{"alice", KeyType::ed25519};
+            Account const becky{"becky", KeyType::secp256k1};
+            env.fund(XRP(1000), alice, becky);
+            env.close();
+
+            // becky sets up a signer list (so she can disable master key).
+            env(signers(becky, 1, {{bogie, 1}}));
+            env.close();
+
+            // becky disables her master key. Now she can only sign via
+            // multi-sign (nested multi-signer scenario).
+            env(fset(becky, asfDisableMaster));
+            env.close();
+
+            // Without the amendment, alice can add becky as a signer even
+            // though becky can only sign via her own signer list.
+            env(signers(alice, 1, {{becky, 1}}));
+            env.close();
+
+            // becky cannot sign for alice because her master key is disabled.
+            auto const baseFee = env.current()->fees().base;
+            env(noop(alice), msig(becky), fee(2 * baseFee), ter(tefMASTER_DISABLED));
+            env.close();
+        }
+
+        // Test 2: With fixInvalidMultisign, creating a signer list with a
+        // nested multi-signer should fail.
+        {
+            Env env{*this, features};
+            Account const alice{"alice", KeyType::ed25519};
+            Account const becky{"becky", KeyType::secp256k1};
+            env.fund(XRP(1000), alice, becky);
+            env.close();
+
+            // becky sets up a signer list.
+            env(signers(becky, 1, {{bogie, 1}}));
+            env.close();
+
+            // becky disables her master key.
+            env(fset(becky, asfDisableMaster));
+            env.close();
+
+            // With the amendment, alice cannot add becky as a signer because
+            // becky has master disabled and no regular key.
+            env(signers(alice, 1, {{becky, 1}}), ter(tefBAD_ADD_AUTH));
+            env.close();
+
+            // But alice can add becky if becky has a regular key.
+            Account const beck{"beck", KeyType::ed25519};
+            env(regkey(becky, beck), msig(bogie), fee(2 * env.current()->fees().base));
+            env.close();
+
+            // Now alice can add becky because becky has an alternative
+            // signing method (regular key).
+            env(signers(alice, 1, {{becky, 1}}));
+            env.close();
+        }
+
+        // Test 3: Grandfathered signer lists should still work.
+        // After the amendment is enabled, pre-existing signer lists with
+        // nested multi-signers should allow master key signatures.
+        {
+            Env env{*this, features - fixInvalidMultisign};
+            Account const alice{"alice", KeyType::ed25519};
+            Account const becky{"becky", KeyType::secp256k1};
+            env.fund(XRP(1000), alice, becky);
+            env.close();
+
+            // alice adds becky as a signer before becky disables master.
+            env(signers(alice, 1, {{becky, 1}}));
+            env.close();
+
+            // becky sets up a signer list.
+            env(signers(becky, 1, {{bogie, 1}}));
+            env.close();
+
+            // becky disables her master key.
+            env(fset(becky, asfDisableMaster));
+            env.close();
+
+            // Before the amendment, becky cannot sign for alice.
+            auto const baseFee = env.current()->fees().base;
+            env(noop(alice), msig(becky), fee(2 * baseFee), ter(tefMASTER_DISABLED));
+            env.close();
+
+            // Now enable the fixInvalidMultisign amendment.
+            env.enableFeature(fixInvalidMultisign);
+            env.close();
+
+            // After the amendment, becky CAN sign for alice using her master
+            // key, because she has no other signing option (grandfathered).
+            env(noop(alice), msig(becky), fee(2 * baseFee));
+            env.close();
+
+            // But if becky adds a regular key, she must use that instead
+            // (master key disabled should be enforced again).
+            Account const beck{"beck", KeyType::ed25519};
+            env(regkey(becky, beck), msig(bogie), fee(2 * baseFee));
+            env.close();
+
+            // Now becky has a regular key, so master disabled IS enforced.
+            env(noop(alice), msig(becky), fee(2 * baseFee), ter(tefMASTER_DISABLED));
+            env.close();
+
+            // But becky can sign with her regular key.
+            env(noop(alice), msig(Reg{becky, beck}), fee(2 * baseFee));
+            env.close();
+        }
     }
 
     void
@@ -1506,6 +1649,7 @@ public:
         testBadSignatureText(features);
         testNoMultiSigners(features);
         testMultisigningMultisigner(features);
+        testNestedMultiSign(features);
         testSignForHash(features);
         testSignersWithTickets(features);
         testSignersWithTags(features);

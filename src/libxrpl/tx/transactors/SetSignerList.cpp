@@ -88,6 +88,45 @@ SetSignerList::preflight(PreflightContext const& ctx)
 }
 
 TER
+SetSignerList::preclaim(PreclaimContext const& ctx)
+{
+    // Only check for nested multi-sign when creating/replacing a signer list
+    // and when the amendment is enabled.
+    if (!ctx.view.rules().enabled(fixInvalidMultisign))
+        return tesSUCCESS;
+
+    auto const quorum = ctx.tx[sfSignerQuorum];
+    if (quorum == 0)
+        return tesSUCCESS;  // Destroying the list, no validation needed
+
+    auto const signers = SignerEntries::deserialize(ctx.tx, ctx.j, "transaction");
+    if (!signers)
+        return signers.error();
+
+    // Check each signer to ensure they can produce a valid signature.
+    // A signer that has master key disabled and no regular key can only
+    // sign via their own signer list - this creates a "nested multi-sign"
+    // scenario which is not supported.
+    for (auto const& signer : *signers)
+    {
+        auto const sleSignerAcct = ctx.view.read(keylet::account(signer.account));
+        if (sleSignerAcct)
+        {
+            bool const masterDisabled = sleSignerAcct->isFlag(lsfDisableMaster);
+            bool const hasRegularKey = sleSignerAcct->isFieldPresent(sfRegularKey);
+
+            if (masterDisabled && !hasRegularKey)
+            {
+                JLOG(ctx.j.trace()) << "Signer account can only sign via multi-sign (nested).";
+                return tefBAD_ADD_AUTH;
+            }
+        }
+    }
+
+    return tesSUCCESS;
+}
+
+TER
 SetSignerList::doApply()
 {
     // Perform the operation preCompute() decided on.
