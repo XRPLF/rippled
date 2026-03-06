@@ -71,6 +71,17 @@ static constexpr std::size_t maxFeatureNameSize = 63;
 // as a compact, fixed-size feature selector without conflicting with human-readable names.
 static constexpr std::size_t reservedFeatureNameSize = 32;
 
+// Exposed for testing, used only by enforceValidFeatureNameSize in Feature.cpp
+template <std::size_t N>
+constexpr auto
+validFeatureNameSize(char const (*)[N]) -> bool
+{
+    // The -1 is to account for the null terminator in the string literal.
+    return N - 1 != reservedFeatureNameSize &&   //
+        N - 1 != reservedFeatureNameSize + 1 &&  //
+        N - 1 <= maxFeatureNameSize;
+}
+
 enum class VoteBehavior : int { Obsolete = -1, DefaultNo = 0, DefaultYes };
 enum class AmendmentSupport : int { Retired = -1, Supported = 0, Unsupported };
 

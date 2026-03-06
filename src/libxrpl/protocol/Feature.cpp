@@ -397,20 +397,18 @@ featureToName(uint256 const& f)
 
 template <std::size_t N>
 constexpr auto
-enforceMaxFeatureNameSize(char const (&n)[N]) -> char const*
+enforceValidFeatureNameSize(char const (&n)[N]) -> char const*
 {
-    static_assert(N != reservedFeatureNameSize);
-    static_assert(N != reservedFeatureNameSize + 1);
-    static_assert(N <= maxFeatureNameSize);
+    static_assert(validFeatureNameSize<N>(nullptr), "Invalid feature name size");
     return n;
 }
 
 #define XRPL_FEATURE(name, supported, vote) \
     uint256 const feature##name =           \
-        registerFeature(enforceMaxFeatureNameSize(#name), supported, vote);
+        registerFeature(enforceValidFeatureNameSize(#name), supported, vote);
 #define XRPL_FIX(name, supported, vote) \
     uint256 const fix##name =           \
-        registerFeature(enforceMaxFeatureNameSize("fix" #name), supported, vote);
+        registerFeature(enforceValidFeatureNameSize("fix" #name), supported, vote);
 
 // clang-format off
 #define XRPL_RETIRE_FEATURE(name)                                       \

@@ -189,6 +189,24 @@ class Feature_test : public beast::unit_test::suite
         jrr = env.rpc("feature", "fMM")[jss::result];
         BEAST_EXPECT(jrr[jss::error] == "badFeature");
         BEAST_EXPECT(jrr[jss::error_message] == "Feature unknown or invalid.");
+
+        // Test feature name size checks
+        char const ok63Name[] = "123456789012345678901234567890123456789012345678901234567890123";
+        static_assert(validFeatureNameSize(&ok63Name));
+
+        char const bad64Name[] = "1234567890123456789012345678901234567890123456789012345678901234";
+        static_assert(!validFeatureNameSize(&bad64Name));
+
+        char const ok31Name[] = "1234567890123456789012345678901";
+        static_assert(validFeatureNameSize(&ok31Name));
+
+        char const bad32Name[] = "12345678901234567890123456789012";
+        static_assert(!validFeatureNameSize(&bad32Name));
+        char const bad33Name[] = "123456789012345678901234567890123";
+        static_assert(!validFeatureNameSize(&bad33Name));
+
+        char const ok34Name[] = "1234567890123456789012345678901234";
+        static_assert(validFeatureNameSize(&ok34Name));
     }
 
     void
