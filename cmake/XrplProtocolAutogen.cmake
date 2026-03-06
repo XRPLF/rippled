@@ -111,11 +111,11 @@ function (setup_protocol_autogen)
         endif ()
     endif ()
 
-    # Generate transaction classes at configure time
+    # Generate transaction classes and tests at configure time
     message(STATUS "Generating transaction classes from transactions.macro...")
     execute_process(COMMAND ${VENV_PYTHON} "${GENERATE_TX_SCRIPT}" "${TRANSACTIONS_MACRO}"
-                            --header-dir "${AUTOGEN_HEADER_DIR}/transactions" --sfields-macro
-                            "${SFIELDS_MACRO}"
+                            --header-dir "${AUTOGEN_HEADER_DIR}/transactions" --test-dir
+                            "${AUTOGEN_TEST_DIR}/transactions" --sfields-macro "${SFIELDS_MACRO}"
                     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
                     RESULT_VARIABLE TX_GEN_RESULT
                     OUTPUT_VARIABLE TX_GEN_OUTPUT
@@ -152,6 +152,7 @@ function (setup_protocol_autogen)
                           "${GENERATE_LEDGER_SCRIPT}"
                           "${SCRIPTS_DIR}/macro_parser_common.py"
                           "${SCRIPTS_DIR}/templates/Transaction.h.mako"
+                          "${SCRIPTS_DIR}/templates/TransactionTests.cpp.mako"
                           "${SCRIPTS_DIR}/templates/LedgerEntry.h.mako"
                           "${SCRIPTS_DIR}/templates/LedgerEntryTests.cpp.mako"
                           "${REQUIREMENTS_FILE}")

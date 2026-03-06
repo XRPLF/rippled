@@ -19,6 +19,7 @@ from macro_parser_common import (
     parse_sfields_macro,
     parse_field_list,
     generate_cpp_class,
+    generate_from_template,
 )
 
 
@@ -139,6 +140,11 @@ def main():
         default="include/xrpl/protocol_autogen/transactions",
     )
     parser.add_argument(
+        "--test-dir",
+        help="Output directory for test files (optional)",
+        default=None,
+    )
+    parser.add_argument(
         "--sfields-macro",
         help="Path to sfields.macro (default: auto-detect from macro_path)",
     )
@@ -194,9 +200,26 @@ def main():
         print(f"  Generated: {tx_info['name']}.h")
 
     print(
-        f"\n Successfully generated {len(transactions)} transaction classes ({len(generated_files)} header files)"
+        f"\nGenerated {len(transactions)} transaction classes ({len(generated_files)} header files)"
     )
     print(f"  Headers: {header_dir.absolute()}")
+
+    # Generate unit tests if --test-dir is provided
+    if args.test_dir:
+        test_dir = Path(args.test_dir)
+        test_dir.mkdir(parents=True, exist_ok=True)
+
+        for tx_info in transactions:
+            # Fields are already enriched from generate_cpp_class above
+            generate_from_template(
+                tx_info,
+                test_dir,
+                template_dir,
+                "TransactionTests.cpp.mako",
+                "Tests.cpp",
+            )
+
+        print(f"\nGenerated {len(transactions)} transaction test files")
 
 
 if __name__ == "__main__":

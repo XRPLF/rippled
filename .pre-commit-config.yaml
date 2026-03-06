@@ -82,5 +82,6 @@ repos:
 exclude: |
   (?x)^(
       external/.*|
-      .github/scripts/levelization/results/.*\.txt
+      .github/scripts/levelization/results/.*\.txt|
+      src/tests/libxrpl/protocol_autogen/(transactions|ledger_objects)/.*
   )$

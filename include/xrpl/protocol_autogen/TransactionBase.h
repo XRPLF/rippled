@@ -46,6 +46,12 @@ public:
             reason = "Transaction failed schema validation";
             return false;
         }
+
+        // Pseudo transactions are not submitted to the network
+        if (isPseudoTx(tx_))
+        {
+            return true;
+        }
         return passesLocalChecks(tx_, reason);
     }
 

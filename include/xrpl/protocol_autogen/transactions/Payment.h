@@ -351,11 +351,14 @@ public:
 
     /**
      * Build and return the completed Payment wrapper.
+     * @param publicKey The public key for signing
+     * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
     protocol_autogen::Owning<STTx, Payment>
-    build()
+    build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
+        sign(publicKey, secretKey);
         return protocol_autogen::Owning<STTx, Payment>{STTx{std::move(object_)}};
     }
 };

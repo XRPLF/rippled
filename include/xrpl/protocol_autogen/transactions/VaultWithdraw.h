@@ -189,11 +189,14 @@ public:
 
     /**
      * Build and return the completed VaultWithdraw wrapper.
+     * @param publicKey The public key for signing
+     * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
     protocol_autogen::Owning<STTx, VaultWithdraw>
-    build()
+    build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
+        sign(publicKey, secretKey);
         return protocol_autogen::Owning<STTx, VaultWithdraw>{STTx{std::move(object_)}};
     }
 };

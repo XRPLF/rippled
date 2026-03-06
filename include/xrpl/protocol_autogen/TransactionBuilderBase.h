@@ -71,6 +71,12 @@ public:
             reason = "Transaction failed schema validation";
             return false;
         }
+
+        // Pseudo transactions are not submitted to the network
+        if (isPseudoTx(object_))
+        {
+            return true;
+        }
         return passesLocalChecks(object_, reason);
     }
 
@@ -158,6 +164,7 @@ public:
         return static_cast<Derived&>(*this);
     }
 
+protected:
     /**
      * Sign the transaction with the given keys.
      *
@@ -186,7 +193,6 @@ public:
         return static_cast<Derived&>(*this);
     }
 
-protected:
     STObject object_{sfTransaction};
 };
 

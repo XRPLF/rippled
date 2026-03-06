@@ -261,11 +261,14 @@ public:
 
     /**
      * Build and return the completed MPTokenIssuanceSet wrapper.
+     * @param publicKey The public key for signing
+     * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
     protocol_autogen::Owning<STTx, MPTokenIssuanceSet>
-    build()
+    build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
+        sign(publicKey, secretKey);
         return protocol_autogen::Owning<STTx, MPTokenIssuanceSet>{STTx{std::move(object_)}};
     }
 };

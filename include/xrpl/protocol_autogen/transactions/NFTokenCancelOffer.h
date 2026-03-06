@@ -101,11 +101,14 @@ public:
 
     /**
      * Build and return the completed NFTokenCancelOffer wrapper.
+     * @param publicKey The public key for signing
+     * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
     protocol_autogen::Owning<STTx, NFTokenCancelOffer>
-    build()
+    build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
+        sign(publicKey, secretKey);
         return protocol_autogen::Owning<STTx, NFTokenCancelOffer>{STTx{std::move(object_)}};
     }
 };

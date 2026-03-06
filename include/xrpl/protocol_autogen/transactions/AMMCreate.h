@@ -145,11 +145,14 @@ public:
 
     /**
      * Build and return the completed AMMCreate wrapper.
+     * @param publicKey The public key for signing
+     * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
     protocol_autogen::Owning<STTx, AMMCreate>
-    build()
+    build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
+        sign(publicKey, secretKey);
         return protocol_autogen::Owning<STTx, AMMCreate>{STTx{std::move(object_)}};
     }
 };

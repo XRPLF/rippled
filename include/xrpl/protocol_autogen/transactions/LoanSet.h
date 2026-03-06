@@ -601,11 +601,14 @@ public:
 
     /**
      * Build and return the completed LoanSet wrapper.
+     * @param publicKey The public key for signing
+     * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
     protocol_autogen::Owning<STTx, LoanSet>
-    build()
+    build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
+        sign(publicKey, secretKey);
         return protocol_autogen::Owning<STTx, LoanSet>{STTx{std::move(object_)}};
     }
 };
