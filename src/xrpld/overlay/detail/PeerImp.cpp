@@ -3248,6 +3248,11 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
              ++i)
         {
             auto const shaMapNodeId{deserializeSHAMapNodeID(m->nodeids(i))};
+            if (!shaMapNodeId.has_value())
+            {
+                JLOG(p_journal_.error()) << "processLedgerRequest: Invalid SHAMap node ID";
+                return;
+            }
 
             data.clear();
             data.reserve(Tuning::softMaxReplyNodes);

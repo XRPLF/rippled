@@ -76,7 +76,7 @@ getSHAMapNodeID(
         return std::nullopt;
 
     auto const nodeID = deserializeSHAMapNodeID(ledger_node.nodeid());
-    if (!nodeID)
+    if (!nodeID.has_value())
         return std::nullopt;
 
     if (treeNode->isLeaf())
