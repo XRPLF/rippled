@@ -38,10 +38,15 @@ public:
      */
     [[nodiscard]]
     bool
-    validate() const
+    validate(std::string& reason) const
     {
-        return protocol_autogen::validateSTObject(
-            tx_, TxFormats::getInstance().findByType(tx_.getTxnType())->getSOTemplate());
+        if (!protocol_autogen::validateSTObject(
+                tx_, TxFormats::getInstance().findByType(tx_.getTxnType())->getSOTemplate()))
+        {
+            reason = "Transaction failed schema validation";
+            return false;
+        }
+        return passesLocalChecks(tx_, reason);
     }
 
     /**

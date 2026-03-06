@@ -8,6 +8,7 @@
 #include <xrpl/protocol/STBlob.h>
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
@@ -52,15 +53,21 @@ public:
      */
     [[nodiscard]]
     bool
-    validate()
+    validate(std::string& reason)
     {
         if (!object_.isFieldPresent(sfTransactionType))
         {
             return false;
         }
+
         auto transactionType = static_cast<TxType>(object_.getFieldU16(sfTransactionType));
-        return protocol_autogen::validateSTObject(
-            object_, TxFormats::getInstance().findByType(transactionType)->getSOTemplate());
+        if (!protocol_autogen::validateSTObject(
+                object_, TxFormats::getInstance().findByType(transactionType)->getSOTemplate()))
+        {
+            reason = "Transaction failed schema validation";
+            return false;
+        }
+        return passesLocalChecks(object_, reason);
     }
 
     /**

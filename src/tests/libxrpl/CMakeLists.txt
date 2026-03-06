@@ -29,6 +29,10 @@ xrpl_add_test(json)
 target_link_libraries(xrpl.test.json PRIVATE xrpl.imports.test)
 add_dependencies(xrpl.tests xrpl.test.json)
 
+xrpl_add_test(protocol_autogen)
+target_link_libraries(xrpl.test.protocol_autogen PRIVATE xrpl.imports.test)
+add_dependencies(xrpl.tests xrpl.test.protocol_autogen)
+
 # Network unit tests are currently not supported on Windows
 if (NOT WIN32)
     xrpl_add_test(net)

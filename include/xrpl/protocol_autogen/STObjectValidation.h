@@ -11,18 +11,29 @@ validateSTObject(STObject const& obj, SOTemplate const& format)
 {
     for (auto const& field : format)
     {
-        if (obj.isFieldPresent(field.sField()) && field.style() == soeREQUIRED)
+        if (!obj.isFieldPresent(field.sField()) && field.style() == soeREQUIRED)
         {
             return false;
         }
 
-        if (!field.supportMPT() && obj.isFieldPresent(field.sField()) &&
-            field.sField().fieldType == STI_ISSUE)
+        if (field.supportMPT() == soeMPTNotSupported && obj.isFieldPresent(field.sField()))
         {
-            auto const& amount = obj.getFieldAmount(field.sField());
+            if (field.sField().fieldType == STI_AMOUNT)
+            {
+                auto const& amount = obj.getFieldAmount(field.sField());
 
-            if (amount.asset().holds<MPTIssue>())
-                return false;
+                if (amount.asset().holds<MPTIssue>())
+                    return false;
+            }
+            else if (field.sField().fieldType == STI_ISSUE)
+            {
+                auto issue = dynamic_cast<STIssue const*>(obj.peekAtPField(field.sField()));
+                if (!issue)
+                    return false;
+
+                if (issue->holds<MPTIssue>())
+                    return false;
+            }
         }
     }
 
