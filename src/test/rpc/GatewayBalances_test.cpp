@@ -77,7 +77,6 @@ public:
             if (wsc->version() == 2)
             {
                 expect(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                expect(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
                 expect(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
 

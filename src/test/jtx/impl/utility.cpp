@@ -82,8 +82,6 @@ cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned in
     }
     if (paramsObj.isMember(jss::jsonrpc))
         jv[jss::jsonrpc] = paramsObj[jss::jsonrpc];
-    if (paramsObj.isMember(jss::ripplerpc))
-        jv[jss::ripplerpc] = paramsObj[jss::ripplerpc];
     if (paramsObj.isMember(jss::id))
         jv[jss::id] = paramsObj[jss::id];
     return jv;

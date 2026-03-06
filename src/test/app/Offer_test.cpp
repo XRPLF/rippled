@@ -2105,7 +2105,6 @@ public:
         if (wsc->version() == 2)
         {
             BEAST_EXPECT(jrr.isMember(jss::jsonrpc) && jrr[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(jrr.isMember(jss::ripplerpc) && jrr[jss::ripplerpc] == "2.0");
             BEAST_EXPECT(jrr.isMember(jss::id) && jrr[jss::id] == 5);
         }
 

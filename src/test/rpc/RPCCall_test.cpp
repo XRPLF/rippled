@@ -3006,7 +3006,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
      __LINE__,
      {
          "json2",
-         R"({"jsonrpc":"2.0","ripplerpc":"2.0","id":"A1","method":"call_1"})",
+         R"({"jsonrpc":"2.0","id":"A1","method":"call_1"})",
      },
      RPCCallTestData::no_exception,
      R"({
@@ -3019,10 +3019,8 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "id" : "A1",
          "jsonrpc" : "2.0",
          "method" : "call_1",
-         "ripplerpc" : "2.0"
       }
     ],
-    "ripplerpc" : "2.0"
     })"},
     {"json2: object with nested params.",
      __LINE__,
@@ -3030,7 +3028,6 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "json2",
          R"({
         "jsonrpc" : "2.0",
-        "ripplerpc" : "2.0",
         "id" : "A1",
         "method" : "call_1",
         "params" : [{"inner_arg" : "yup"}]
@@ -3050,16 +3047,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "id" : "A1",
          "jsonrpc" : "2.0",
          "method" : "call_1",
-         "ripplerpc" : "2.0"
       }
     ],
-    "ripplerpc" : "2.0"
     })"},
     {"json2: minimal array.",
      __LINE__,
      {
          "json2",
-         R"([{"jsonrpc":"2.0","ripplerpc":"2.0","id":"A1","method":"call_1"}])",
+         R"([{"jsonrpc":"2.0","id":"A1","method":"call_1"}])",
      },
      RPCCallTestData::no_exception,
      R"({
@@ -3071,8 +3066,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
             "id" : "A1",
             "jsonrpc" : "2.0",
             "method" : "call_1",
-            "ripplerpc" : "2.0"
-         }
+            }
       ]
     ]
     })"},
@@ -3082,7 +3076,6 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "json2",
          R"([
         {"jsonrpc":"2.0",
-        "ripplerpc":"2.0",
         "id":"A1",
         "method":"call_1",
         "params" : [{"inner_arg" : "yup"}]}
@@ -3101,8 +3094,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
             "id" : "A1",
             "jsonrpc" : "2.0",
             "method" : "call_1",
-            "ripplerpc" : "2.0"
-         }
+            }
       ]
     ]})"},
     {"json2: too few arguments.",
@@ -3123,7 +3115,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     })"},
     {"json2: too many arguments.",
      __LINE__,
-     {"json2", R"({"jsonrpc":"2.0","ripplerpc":"2.0","id":"A1","method":"call_this"})", "extra"},
+     {"json2", R"({"jsonrpc":"2.0","id":"A1","method":"call_this"})", "extra"},
      RPCCallTestData::no_exception,
      R"({
     "method" : "json2",
@@ -3139,7 +3131,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
      __LINE__,
      {
          "json2",
-         R"({"jsonrpc":"2.0","ripplerpc":"2.0","id":"A1","method":"call_1",})",
+         R"({"jsonrpc":"2.0","id":"A1","method":"call_1",})",
      },
      RPCCallTestData::no_exception,
      R"({
@@ -3153,16 +3145,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid parameters.",
          "id" : "A1",
          "jsonrpc" : "2.0",
-         "ripplerpc" : "2.0"
       }
     ],
-    "ripplerpc" : "2.0"
     })"},
     {"json2: omit jsonrpc.",
      __LINE__,
      {
          "json2",
-         R"({"ripplerpc":"2.0","id":"A1","method":"call_1"})",
+         R"({"id":"A1","method":"call_1"})",
      },
      RPCCallTestData::no_exception,
      R"({
@@ -3174,16 +3164,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_code" : 31,
          "error_message" : "Invalid parameters.",
          "id" : "A1",
-         "ripplerpc" : "2.0"
       }
     ],
-    "ripplerpc" : "2.0"
     })"},
     {"json2: wrong jsonrpc version.",
      __LINE__,
      {
          "json2",
-         R"({"jsonrpc":"2.1","ripplerpc":"2.0","id":"A1","method":"call_1"})",
+         R"({"jsonrpc":"2.1","id":"A1","method":"call_1"})",
      },
      RPCCallTestData::no_exception,
      R"({
@@ -3197,60 +3185,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid parameters.",
          "id" : "A1",
          "jsonrpc" : "2.1",
-         "ripplerpc" : "2.0"
       }
     ],
-    "ripplerpc" : "2.0"
-    })"},
-    {"json2: omit ripplerpc.",
-     __LINE__,
-     {
-         "json2",
-         R"({"jsonrpc":"2.0","id":"A1","method":"call_1"})",
-     },
-     RPCCallTestData::no_exception,
-     R"({
-    "id" : "A1",
-    "jsonrpc" : "2.0",
-    "method" : "json2",
-    "params" : [
-      {
-         "error" : "invalidParams",
-         "error_code" : 31,
-         "error_message" : "Invalid parameters.",
-         "id" : "A1",
-         "jsonrpc" : "2.0"
-      }
-    ]
-    })"},
-    {"json2: wrong ripplerpc version.",
-     __LINE__,
-     {
-         "json2",
-         R"({"jsonrpc":"2.0","ripplerpc":"2.00","id":"A1","method":"call_1"})",
-     },
-     RPCCallTestData::no_exception,
-     R"({
-    "id" : "A1",
-    "jsonrpc" : "2.0",
-    "method" : "json2",
-    "params" : [
-      {
-         "error" : "invalidParams",
-         "error_code" : 31,
-         "error_message" : "Invalid parameters.",
-         "id" : "A1",
-         "jsonrpc" : "2.0",
-         "ripplerpc" : "2.00"
-      }
-    ],
-    "ripplerpc" : "2.00"
     })"},
     {"json2: omit id.",
      __LINE__,
      {
          "json2",
-         R"({"jsonrpc":"2.0","ripplerpc":"2.0","method":"call_1"})",
+         R"({"jsonrpc":"2.0","method":"call_1"})",
      },
      RPCCallTestData::no_exception,
      R"({
@@ -3262,16 +3204,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_code" : 31,
          "error_message" : "Invalid parameters.",
          "jsonrpc" : "2.0",
-         "ripplerpc" : "2.0"
       }
     ],
-   "ripplerpc" : "2.0"
     })"},
     {"json2: omit method.",
      __LINE__,
      {
          "json2",
-         R"({"jsonrpc":"2.0","ripplerpc":"2.0","id":"A1"})",
+         R"({"jsonrpc":"2.0","id":"A1"})",
      },
      RPCCallTestData::no_exception,
      R"({
@@ -3285,10 +3225,8 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid parameters.",
          "id" : "A1",
          "jsonrpc" : "2.0",
-         "ripplerpc" : "2.0"
       }
     ],
-   "ripplerpc" : "2.0"
     })"},
     {"json2: empty outer array.",
      __LINE__,
@@ -3311,7 +3249,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
      __LINE__,
      {
          "json2",
-         R"([{"jsonrpc":"2.0","ripplerpc":"2.0","id":"A1","method":"call_1",[]}])",
+         R"([{"jsonrpc":"2.0","id":"A1","method":"call_1",[]}])",
      },
      RPCCallTestData::no_exception,
      R"({
@@ -3330,7 +3268,6 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "json2",
          R"([
             {"jsonrpc" : "2.1",
-            "ripplerpc" : "2.0",
             "id" : "A1",
             "method" : "call_1"
             }
@@ -3353,7 +3290,6 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "json2",
          R"({
         "jsonrpc" : "2.0",
-        "ripplerpc" : "2.0",
         "id" : "A1",
         "method" : "call_1",
         "params" : true
@@ -3371,10 +3307,8 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid parameters.",
          "id" : "A1",
          "jsonrpc" : "2.0",
-         "ripplerpc" : "2.0"
       }
    ],
-   "ripplerpc" : "2.0"
     })"},
 
     // ledger

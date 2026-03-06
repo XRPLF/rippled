@@ -120,13 +120,11 @@ class Version_test : public beast::unit_test::suite
 
         auto const without_api_verion = std::string("{ ") +
             "\"jsonrpc\": \"2.0\", "
-            "\"ripplerpc\": \"2.0\", "
             "\"id\": 5, "
             "\"method\": \"version\", "
             "\"params\": {}}";
         auto const with_api_verion = std::string("{ ") +
             "\"jsonrpc\": \"2.0\", "
-            "\"ripplerpc\": \"2.0\", "
             "\"id\": 6, "
             "\"method\": \"version\", "
             "\"params\": { "
@@ -153,14 +151,12 @@ class Version_test : public beast::unit_test::suite
         BEAST_EXPECT(env.app().config().BETA_RPC_API);
         auto const without_api_verion = std::string("{ ") +
             "\"jsonrpc\": \"2.0\", "
-            "\"ripplerpc\": \"2.0\", "
             "\"id\": 5, "
             "\"method\": \"version\", "
             "\"params\": {}}";
         auto const with_wrong_api_verion =
             std::string("{ ") +
             "\"jsonrpc\": \"2.0\", "
-            "\"ripplerpc\": \"2.0\", "
             "\"id\": 6, "
             "\"method\": \"version\", "
             "\"params\": { "

@@ -409,8 +409,6 @@ ServerHandler::processSession(
                 jr[jss::id] = jv[jss::id];
             if (jv.isMember(jss::jsonrpc))
                 jr[jss::jsonrpc] = jv[jss::jsonrpc];
-            if (jv.isMember(jss::ripplerpc))
-                jr[jss::ripplerpc] = jv[jss::ripplerpc];
             if (jv.isMember(jss::api_version))
                 jr[jss::api_version] = jv[jss::api_version];
 
@@ -505,8 +503,6 @@ ServerHandler::processSession(
         jr[jss::id] = jv[jss::id];
     if (jv.isMember(jss::jsonrpc))
         jr[jss::jsonrpc] = jv[jss::jsonrpc];
-    if (jv.isMember(jss::ripplerpc))
-        jr[jss::ripplerpc] = jv[jss::ripplerpc];
     if (jv.isMember(jss::api_version))
         jr[jss::api_version] = jv[jss::api_version];
 
@@ -773,26 +769,6 @@ ServerHandler::processRequest(
             params = jsonRPC;
         }
 
-        std::string ripplerpc = "1.0";
-        if (params.isMember(jss::ripplerpc))
-        {
-            if (!params[jss::ripplerpc].isString())
-            {
-                usage.charge(Resource::feeMalformedRPC);
-                if (!batch)
-                {
-                    HTTPReply(400, "ripplerpc is not a string", output, rpcJ);
-                    return;
-                }
-
-                Json::Value r = jsonRPC;
-                r[jss::error] = make_json_error(method_not_found, "ripplerpc is not a string");
-                reply.append(r);
-                continue;
-            }
-            ripplerpc = params[jss::ripplerpc].asString();
-        }
-
         /**
          * Clear header-assigned values if not positively identified from a
          * secure_gateway.
@@ -851,61 +827,24 @@ ServerHandler::processRequest(
             result[jss::warning] = jss::load;
 
         Json::Value r(Json::objectValue);
-        if (ripplerpc >= "2.0")
+        if (result.isMember(jss::error))
         {
-            if (result.isMember(jss::error))
-            {
-                result[jss::status] = jss::error;
-                result["code"] = result[jss::error_code];
-                result["message"] = result[jss::error_message];
-                result.removeMember(jss::error_message);
-                JLOG(m_journal.debug())
-                    << "rpcError: " << result[jss::error] << ": " << result[jss::error_message];
-                r[jss::error] = std::move(result);
-            }
-            else
-            {
-                result[jss::status] = jss::success;
-                r[jss::result] = std::move(result);
-            }
+            result[jss::status] = jss::error;
+            result["code"] = result[jss::error_code];
+            result["message"] = result[jss::error_message];
+            result.removeMember(jss::error_message);
+            JLOG(m_journal.debug())
+                << "rpcError: " << result[jss::error] << ": " << result[jss::error_message];
+            r[jss::error] = std::move(result);
         }
         else
         {
-            // Always report "status".  On an error report the request as
-            // received.
-            if (result.isMember(jss::error))
-            {
-                auto rq = params;
-
-                if (rq.isObject())
-                {  // But mask potentially sensitive information.
-                    if (rq.isMember(jss::passphrase.c_str()))
-                        rq[jss::passphrase.c_str()] = "<masked>";
-                    if (rq.isMember(jss::secret.c_str()))
-                        rq[jss::secret.c_str()] = "<masked>";
-                    if (rq.isMember(jss::seed.c_str()))
-                        rq[jss::seed.c_str()] = "<masked>";
-                    if (rq.isMember(jss::seed_hex.c_str()))
-                        rq[jss::seed_hex.c_str()] = "<masked>";
-                }
-
-                result[jss::status] = jss::error;
-                result[jss::request] = rq;
-
-                JLOG(m_journal.debug())
-                    << "rpcError: " << result[jss::error] << ": " << result[jss::error_message];
-            }
-            else
-            {
-                result[jss::status] = jss::success;
-            }
+            result[jss::status] = jss::success;
             r[jss::result] = std::move(result);
         }
 
         if (params.isMember(jss::jsonrpc))
             r[jss::jsonrpc] = params[jss::jsonrpc];
-        if (params.isMember(jss::ripplerpc))
-            r[jss::ripplerpc] = params[jss::ripplerpc];
         if (params.isMember(jss::id))
             r[jss::id] = params[jss::id];
         if (batch)
@@ -926,18 +865,11 @@ ServerHandler::processRequest(
 
     // If we're returning an error_code, use that to determine the HTTP status.
     int const httpStatus = [&reply]() {
-        // This feature is enabled with ripplerpc version 3.0 and above.
-        // Before ripplerpc version 3.0 always return 200.
-        if (reply.isMember(jss::ripplerpc) && reply[jss::ripplerpc].isString() &&
-            reply[jss::ripplerpc].asString() >= "3.0")
+        if (reply.isMember(jss::error) && reply[jss::error].isMember(jss::error_code) &&
+            reply[jss::error][jss::error_code].isInt())
         {
-            // If there's an error_code, use that to determine the HTTP Status.
-            if (reply.isMember(jss::error) && reply[jss::error].isMember(jss::error_code) &&
-                reply[jss::error][jss::error_code].isInt())
-            {
-                int const errCode = reply[jss::error][jss::error_code].asInt();
-                return RPC::error_code_http_status(static_cast<error_code_i>(errCode));
-            }
+            int const errCode = reply[jss::error][jss::error_code].asInt();
+            return RPC::error_code_http_status(static_cast<error_code_i>(errCode));
         }
         // Return OK.
         return 200;

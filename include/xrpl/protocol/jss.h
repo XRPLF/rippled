@@ -531,7 +531,6 @@ JSS(response);                // websocket
 JSS(result);                  // RPC
 JSS(ripple_lines);            // out: NetworkOPs
 JSS(ripple_state);            // in: LedgerEntr
-JSS(ripplerpc);               // ripple RPC version
 JSS(role);                    // out: Ping.cpp
 JSS(rpc);
 JSS(rt_accounts);             // in: Subscribe, Unsubscribe

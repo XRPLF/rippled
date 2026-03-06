@@ -174,7 +174,6 @@ public:
             {
                 jp[jss::method] = cmd;
                 jp[jss::jsonrpc] = "2.0";
-                jp[jss::ripplerpc] = "2.0";
                 jp[jss::id] = 5;
             }
             else

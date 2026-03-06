@@ -537,9 +537,8 @@ private:
         }
         if (jv.isObject())
         {
-            if (jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0" &&
-                jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0" &&
-                jv.isMember(jss::id) && jv.isMember(jss::method))
+            if (jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0" && jv.isMember(jss::id) &&
+                jv.isMember(jss::method))
             {
                 if (jv.isMember(jss::params) &&
                     !(jv[jss::params].isNull() || jv[jss::params].isArray() ||
@@ -569,7 +568,6 @@ private:
                         jv1[i.key().asString()] = *i;
                 }
                 jv1[jss::jsonrpc] = jv[jss::jsonrpc];
-                jv1[jss::ripplerpc] = jv[jss::ripplerpc];
                 jv1[jss::id] = jv[jss::id];
                 jv1[jss::method] = jv[jss::method];
                 return jv1;
@@ -585,7 +583,6 @@ private:
                         jv1[j][i.key().asString()] = *i;
                 }
                 jv1[j][jss::jsonrpc] = jv[j][jss::jsonrpc];
-                jv1[j][jss::ripplerpc] = jv[j][jss::ripplerpc];
                 jv1[j][jss::id] = jv[j][jss::id];
                 jv1[j][jss::method] = jv[j][jss::method];
             }
@@ -594,8 +591,6 @@ private:
         auto jv_error = rpcError(rpcINVALID_PARAMS);
         if (jv.isMember(jss::jsonrpc))
             jv_error[jss::jsonrpc] = jv[jss::jsonrpc];
-        if (jv.isMember(jss::ripplerpc))
-            jv_error[jss::ripplerpc] = jv[jss::ripplerpc];
         if (jv.isMember(jss::id))
             jv_error[jss::id] = jv[jss::id];
         return jv_error;

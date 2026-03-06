@@ -66,7 +66,6 @@ public:
             if (wsc->version() == 2)
             {
                 BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             if (!BEAST_EXPECT(jv[jss::status] == "success"))
@@ -104,7 +103,6 @@ public:
         if (wsc->version() == 2)
         {
             BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
             BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
         }
     }
@@ -143,7 +141,6 @@ public:
             if (wsc->version() == 2)
             {
                 BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             if (!BEAST_EXPECT(jv[jss::status] == "success"))
@@ -187,7 +184,6 @@ public:
         if (wsc->version() == 2)
         {
             BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
             BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
         }
     }
@@ -220,7 +216,6 @@ public:
             if (wsc->version() == 2)
             {
                 BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             if (!BEAST_EXPECT(jv[jss::status] == "success"))
@@ -266,7 +261,6 @@ public:
         if (wsc->version() == 2)
         {
             BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
             BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
         }
     }
@@ -306,7 +300,6 @@ public:
             if (wsc->version() == 2)
             {
                 BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             if (!BEAST_EXPECT(jv[jss::status] == "success"))
@@ -364,7 +357,6 @@ public:
         if (wsc->version() == 2)
         {
             BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
             BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
         }
     }
@@ -406,7 +398,6 @@ public:
             if (wsc->version() == 2)
             {
                 BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             if (!BEAST_EXPECT(jv[jss::status] == "success"))
@@ -465,7 +456,6 @@ public:
         if (wsc->version() == 2)
         {
             BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
             BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
         }
     }
@@ -520,7 +510,6 @@ public:
             if (wsc->version() == 2)
             {
                 BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             if (!BEAST_EXPECT(jv[jss::status] == "success"))
@@ -591,7 +580,6 @@ public:
         if (wsc->version() == 2)
         {
             BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
             BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
         }
     }
@@ -635,7 +623,6 @@ public:
             if (wsc->version() == 2)
             {
                 BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             if (!BEAST_EXPECT(jv[jss::status] == "success"))
@@ -709,7 +696,6 @@ public:
         if (wsc->version() == 2)
         {
             BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
             BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
         }
     }
@@ -767,7 +753,6 @@ public:
             if (wsc->version() == 2)
             {
                 BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             if (!BEAST_EXPECT(jv[jss::status] == "success"))
@@ -865,7 +850,6 @@ public:
         if (wsc->version() == 2)
         {
             BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
             BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
         }
     }
@@ -899,7 +883,6 @@ public:
             if (wsc->version() == 2)
             {
                 BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             if (!BEAST_EXPECT(jv[jss::status] == "success"))
@@ -930,7 +913,6 @@ public:
         if (wsc->version() == 2)
         {
             BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
             BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
         }
         auto jrr = jv[jss::result];
@@ -974,7 +956,6 @@ public:
         if (wsc->version() == 2)
         {
             BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
             BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
         }
         jrr = jv[jss::result];
@@ -998,7 +979,6 @@ public:
         if (wsc->version() == 2)
         {
             BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
             BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
         }
         BEAST_EXPECT(jv[jss::status] == "success");
