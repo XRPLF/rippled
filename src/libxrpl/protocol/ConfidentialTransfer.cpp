@@ -328,15 +328,6 @@ verifyRevealedAmount(
     return tesSUCCESS;
 }
 
-std::size_t
-getMultiCiphertextEqualityProofSize(std::size_t nRecipients)
-{
-    // Points (33 bytes): T_m (1) + T_rG (nRecipients) + T_rP (nRecipients) = 1
-    // + 2nRecipients Scalars (32 bytes): s_m (1) + s_r (nRecipients) = 1 +
-    // nRecipients
-    return ((1 + (2 * nRecipients)) * 33) + ((1 + nRecipients) * 32);
-}
-
 TER
 verifyMultiCiphertextEqualityProof(
     Slice const& proof,
@@ -379,7 +370,7 @@ verifyMultiCiphertextEqualityProof(
                     recipient.encryptedAmount.data(), recipients[0].encryptedAmount.data(), ecGamalEncryptedLength) !=
                 0)
             {
-                return tecINTERNAL;
+                return tecBAD_PROOF;
             }
         }
 
