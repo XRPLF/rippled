@@ -11,7 +11,12 @@ function(xrpl_add_test name)
     )
     add_executable(${target} ${ARGN} ${sources})
 
-    isolate_headers(${target} "${CMAKE_SOURCE_DIR}" "${CMAKE_SOURCE_DIR}/tests/${name}" PRIVATE)
+    isolate_headers(
+        ${target}
+        "${CMAKE_SOURCE_DIR}"
+        "${CMAKE_SOURCE_DIR}/tests/${name}"
+        PRIVATE
+    )
 
     add_test(NAME ${target} COMMAND ${target})
 endfunction()
