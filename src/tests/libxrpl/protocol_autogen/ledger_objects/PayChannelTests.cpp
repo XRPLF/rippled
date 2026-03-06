@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include <protocol_autogen/CanonicalValues.h>
+#include <protocol_autogen/TestHelpers.h>
 
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol_autogen/ledger_objects/PayChannel.h>
