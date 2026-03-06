@@ -41,7 +41,7 @@ ConfidentialMPTSend::preflight(PreflightContext const& ctx)
 
     // Check the length of the ZKProof
     auto const recipientCount = getConfidentialRecipientCount(hasAuditor);
-    auto const sizeEquality = getMultiCiphertextEqualityProofSize(recipientCount);
+    auto const sizeEquality = secp256k1_mpt_proof_equality_shared_r_size(recipientCount);
     auto const sizePedersenLinkage = 2 * ecPedersenProofLength;
 
     if (ctx.tx[sfZKProof].length() != sizeEquality + sizePedersenLinkage + ecDoubleBulletproofLength)
@@ -81,7 +81,7 @@ verifySendProofs(
     size_t currentOffset = 0;
 
     // Extract equality proof
-    auto const sizeEquality = getMultiCiphertextEqualityProofSize(recipientCount);
+    auto const sizeEquality = secp256k1_mpt_proof_equality_shared_r_size(recipientCount);
     if (remainingLength < sizeEquality)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
