@@ -1,16 +1,16 @@
 cmake_minimum_required(VERSION 3.16)
 
-if (POLICY CMP0074)
+if(POLICY CMP0074)
     cmake_policy(SET CMP0074 NEW)
-endif ()
-if (POLICY CMP0077)
+endif()
+if(POLICY CMP0077)
     cmake_policy(SET CMP0077 NEW)
-endif ()
+endif()
 
 # Fix "unrecognized escape" issues when passing CMAKE_MODULE_PATH on Windows.
-if (DEFINED CMAKE_MODULE_PATH)
+if(DEFINED CMAKE_MODULE_PATH)
     file(TO_CMAKE_PATH "${CMAKE_MODULE_PATH}" CMAKE_MODULE_PATH)
-endif ()
+endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 project(xrpl)
@@ -21,57 +21,64 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(CompilationEnv)
 
-if (is_gcc)
+if(is_gcc)
     # GCC-specific fixes
     add_compile_options(-Wno-unknown-pragmas -Wno-subobject-linkage)
     # -Wno-subobject-linkage can be removed when we upgrade GCC version to at least 13.3
-elseif (is_clang)
+elseif(is_clang)
     # Clang-specific fixes
     add_compile_options(-Wno-unknown-warning-option) # Ignore unknown warning options
-elseif (is_msvc)
+elseif(is_msvc)
     # MSVC-specific fixes
     add_compile_options(/wd4068) # Ignore unknown pragmas
-endif ()
+endif()
 
 # Enable ccache to speed up builds.
 include(Ccache)
 
-if (thread_safety_analysis)
-    add_compile_options(-Wthread-safety -D_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS
-                        -DXRPL_ENABLE_THREAD_SAFETY_ANNOTATIONS)
+if(thread_safety_analysis)
+    add_compile_options(
+        -Wthread-safety
+        -D_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS
+        -DXRPL_ENABLE_THREAD_SAFETY_ANNOTATIONS
+    )
     add_compile_options("-stdlib=libc++")
     add_link_options("-stdlib=libc++")
-endif ()
+endif()
 
 include(CheckCXXCompilerFlag)
 include(FetchContent)
 include(ExternalProject)
 include(CMakeFuncs) # must come *after* ExternalProject b/c it overrides one function in EP
-if (target)
-    message(FATAL_ERROR "The target option has been removed - use native cmake options to control build"
+if(target)
+    message(
+        FATAL_ERROR
+        "The target option has been removed - use native cmake options to control build"
     )
-endif ()
+endif()
 
 include(XrplSanity)
 include(XrplVersion)
 include(XrplSettings)
 # this check has to remain in the top-level cmake because of the early return statement
-if (packages_only)
-    if (NOT TARGET rpm)
-        message(FATAL_ERROR "packages_only requested, but targets were not created - is docker installed?"
+if(packages_only)
+    if(NOT TARGET rpm)
+        message(
+            FATAL_ERROR
+            "packages_only requested, but targets were not created - is docker installed?"
         )
-    endif ()
+    endif()
     return()
-endif ()
+endif()
 include(XrplCompiler)
 include(XrplSanitizers)
 include(XrplInterface)
 
 option(only_docs "Include only the docs target?" FALSE)
 include(XrplDocs)
-if (only_docs)
+if(only_docs)
     return()
-endif ()
+endif()
 
 include(deps/Boost)
 
@@ -90,42 +97,46 @@ find_package(xxHash REQUIRED)
 
 target_link_libraries(
     xrpl_libs
-    INTERFACE ed25519::ed25519
-              lz4::lz4
-              OpenSSL::Crypto
-              OpenSSL::SSL
-              secp256k1::secp256k1
-              soci::soci
-              SQLite::SQLite3)
+    INTERFACE
+        ed25519::ed25519
+        lz4::lz4
+        OpenSSL::Crypto
+        OpenSSL::SSL
+        secp256k1::secp256k1
+        soci::soci
+        SQLite::SQLite3
+)
 
 option(rocksdb "Enable RocksDB" ON)
-if (rocksdb)
+if(rocksdb)
     find_package(RocksDB REQUIRED)
-    set_target_properties(RocksDB::rocksdb PROPERTIES INTERFACE_COMPILE_DEFINITIONS
-                                                      XRPL_ROCKSDB_AVAILABLE=1)
+    set_target_properties(
+        RocksDB::rocksdb
+        PROPERTIES INTERFACE_COMPILE_DEFINITIONS XRPL_ROCKSDB_AVAILABLE=1
+    )
     target_link_libraries(xrpl_libs INTERFACE RocksDB::rocksdb)
-endif ()
+endif()
 
 # Work around changes to Conan recipe for now.
-if (TARGET nudb::core)
+if(TARGET nudb::core)
     set(nudb nudb::core)
-elseif (TARGET NuDB::nudb)
+elseif(TARGET NuDB::nudb)
     set(nudb NuDB::nudb)
-else ()
+else()
     message(FATAL_ERROR "unknown nudb target")
-endif ()
+endif()
 target_link_libraries(xrpl_libs INTERFACE ${nudb})
 
-if (coverage)
+if(coverage)
     include(XrplCov)
-endif ()
+endif()
 
 set(PROJECT_EXPORT_SET XrplExports)
 include(XrplCore)
 include(XrplInstall)
 include(XrplValidatorKeys)
 
-if (tests)
+if(tests)
     include(CTest)
     add_subdirectory(src/tests/libxrpl)
-endif ()
+endif()

@@ -3,7 +3,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/ApplyContext.h>
-#include <xrpl/tx/transactors/NFT/NFTokenUtils.h>
+#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 namespace xrpl {
 
