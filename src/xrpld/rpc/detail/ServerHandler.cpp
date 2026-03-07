@@ -832,9 +832,9 @@ ServerHandler::processRequest(
             result[jss::status] = jss::error;
             result["code"] = result[jss::error_code];
             result["message"] = result[jss::error_message];
-            result.removeMember(jss::error_message);
             JLOG(m_journal.debug())
-                << "rpcError: " << result[jss::error] << ": " << result[jss::error_message];
+                << "rpcError: " << result[jss::error] << ": " << result["message"];
+            result.removeMember(jss::error_message);
             r[jss::error] = std::move(result);
         }
         else
