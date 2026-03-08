@@ -41,8 +41,10 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(TAmounts<TIn, TOut> const& balances
 {
     TAmounts<TIn, TOut> cur{};
 
-    cur.in =
-        toAmount<TIn>(getIssue(balances.in), InitialFibSeqPct * initialBalances_.in, Number::rounding_mode::upward);
+    cur.in = toAmount<TIn>(
+        getIssue(balances.in),
+        InitialFibSeqPct * initialBalances_.in,
+        Number::rounding_mode::upward);
     cur.out = swapAssetIn(initialBalances_, cur.in, tradingFee_);
 
     if (ammContext_.curIters() == 0)
@@ -55,10 +57,14 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(TAmounts<TIn, TOut> const& balances
         196418, 317811, 514229, 832040, 1346269};
     // clang-format on
 
-    XRPL_ASSERT(!ammContext_.maxItersReached(), "xrpl::AMMLiquidity::generateFibSeqOffer : maximum iterations");
+    XRPL_ASSERT(
+        !ammContext_.maxItersReached(),
+        "xrpl::AMMLiquidity::generateFibSeqOffer : maximum iterations");
 
     cur.out = toAmount<TOut>(
-        getIssue(balances.out), cur.out * fib[ammContext_.curIters() - 1], Number::rounding_mode::downward);
+        getIssue(balances.out),
+        cur.out * fib[ammContext_.curIters() - 1],
+        Number::rounding_mode::downward);
     // swapAssetOut() returns negative in this case
     if (cur.out >= balances.out)
         Throw<std::overflow_error>("AMMLiquidity: generateFibSeqOffer exceeds the balance");
@@ -107,13 +113,15 @@ AMMLiquidity<TIn, TOut>::maxOffer(TAmounts<TIn, TOut> const& balances, Rules con
         auto const out = maxOut<TOut>(balances.out, issueOut());
         if (out <= TOut{0} || out >= balances.out)
             return std::nullopt;
-        return AMMOffer<TIn, TOut>(*this, {swapAssetOut(balances, out, tradingFee_), out}, balances, Quality{balances});
+        return AMMOffer<TIn, TOut>(
+            *this, {swapAssetOut(balances, out, tradingFee_), out}, balances, Quality{balances});
     }
 }
 
 template <typename TIn, typename TOut>
 std::optional<AMMOffer<TIn, TOut>>
-AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> const& clobQuality) const
+AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> const& clobQuality)
+    const
 {
     // Can't generate more offers if multi-path.
     if (ammContext_.maxItersReached())
@@ -129,8 +137,8 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
     }
 
     JLOG(j_.trace()) << "AMMLiquidity::getOffer balances " << to_string(initialBalances_.in) << " "
-                     << to_string(initialBalances_.out) << " new balances " << to_string(balances.in) << " "
-                     << to_string(balances.out);
+                     << to_string(initialBalances_.out) << " new balances "
+                     << to_string(balances.in) << " " << to_string(balances.out);
 
     // Can't generate AMM with a better quality than CLOB's
     // quality if AMM's Spot Price quality is less than CLOB quality or is
@@ -140,8 +148,9 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
     // to the requested clobQuality but not exactly and potentially SPQ may keep
     // on approaching clobQuality for many iterations. Checking for the quality
     // threshold prevents this scenario.
-    if (auto const spotPriceQ = Quality{balances};
-        clobQuality && (spotPriceQ <= clobQuality || withinRelativeDistance(spotPriceQ, *clobQuality, Number(1, -7))))
+    if (auto const spotPriceQ = Quality{balances}; clobQuality &&
+        (spotPriceQ <= clobQuality ||
+         withinRelativeDistance(spotPriceQ, *clobQuality, Number(1, -7))))
     {
         JLOG(j_.trace()) << "AMMLiquidity::getOffer, higher clob quality";
         return std::nullopt;
@@ -166,7 +175,9 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
                 // nullopt if the pool is small.
                 return maxOffer(balances, view.rules());
             }
-            else if (auto const amounts = changeSpotPriceQuality(balances, *clobQuality, tradingFee_, view.rules(), j_))
+            else if (
+                auto const amounts =
+                    changeSpotPriceQuality(balances, *clobQuality, tradingFee_, view.rules(), j_))
             {
                 return AMMOffer<TIn, TOut>(*this, *amounts, balances, Quality{*amounts});
             }
@@ -196,13 +207,15 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
     {
         if (offer->amount().in > beast::zero && offer->amount().out > beast::zero)
         {
-            JLOG(j_.trace()) << "AMMLiquidity::getOffer, created " << to_string(offer->amount().in) << "/" << issueIn_
-                             << " " << to_string(offer->amount().out) << "/" << issueOut_;
+            JLOG(j_.trace()) << "AMMLiquidity::getOffer, created " << to_string(offer->amount().in)
+                             << "/" << issueIn_ << " " << to_string(offer->amount().out) << "/"
+                             << issueOut_;
             return offer;
         }
 
-        JLOG(j_.debug()) << "AMMLiquidity::getOffer, no valid offer " << ammContext_.multiPath() << " "
-                         << ammContext_.curIters() << " " << (clobQuality ? clobQuality->rate() : STAmount{}) << " "
+        JLOG(j_.debug()) << "AMMLiquidity::getOffer, no valid offer " << ammContext_.multiPath()
+                         << " " << ammContext_.curIters() << " "
+                         << (clobQuality ? clobQuality->rate() : STAmount{}) << " "
                          << to_string(balances.in) << " " << to_string(balances.out);
     }
 

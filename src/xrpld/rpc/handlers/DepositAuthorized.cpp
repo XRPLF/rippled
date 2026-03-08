@@ -27,7 +27,8 @@ doDepositAuthorized(RPC::JsonContext& context)
     if (!params.isMember(jss::source_account))
         return RPC::missing_field_error(jss::source_account);
     if (!params[jss::source_account].isString())
-        return RPC::make_error(rpcINVALID_PARAMS, RPC::expected_field_message(jss::source_account, "a string"));
+        return RPC::make_error(
+            rpcINVALID_PARAMS, RPC::expected_field_message(jss::source_account, "a string"));
 
     auto srcID = parseBase58<AccountID>(params[jss::source_account].asString());
     if (!srcID)
@@ -38,7 +39,8 @@ doDepositAuthorized(RPC::JsonContext& context)
     if (!params.isMember(jss::destination_account))
         return RPC::missing_field_error(jss::destination_account);
     if (!params[jss::destination_account].isString())
-        return RPC::make_error(rpcINVALID_PARAMS, RPC::expected_field_message(jss::destination_account, "a string"));
+        return RPC::make_error(
+            rpcINVALID_PARAMS, RPC::expected_field_message(jss::destination_account, "a string"));
 
     auto dstID = parseBase58<AccountID>(params[jss::destination_account].asString());
     if (!dstID)
@@ -79,11 +81,13 @@ doDepositAuthorized(RPC::JsonContext& context)
         {
             return RPC::make_error(
                 rpcINVALID_PARAMS,
-                RPC::expected_field_message(jss::credentials, "is non-empty array of CredentialID(hash256)"));
+                RPC::expected_field_message(
+                    jss::credentials, "is non-empty array of CredentialID(hash256)"));
         }
         else if (creds.size() > maxCredentialsArraySize)
         {
-            return RPC::make_error(rpcINVALID_PARAMS, RPC::expected_field_message(jss::credentials, "array too long"));
+            return RPC::make_error(
+                rpcINVALID_PARAMS, RPC::expected_field_message(jss::credentials, "array too long"));
         }
 
         lifeExtender.reserve(creds.size());
@@ -93,7 +97,8 @@ doDepositAuthorized(RPC::JsonContext& context)
             {
                 return RPC::make_error(
                     rpcINVALID_PARAMS,
-                    RPC::expected_field_message(jss::credentials, "an array of CredentialID(hash256)"));
+                    RPC::expected_field_message(
+                        jss::credentials, "an array of CredentialID(hash256)"));
             }
 
             uint256 credH;
@@ -102,7 +107,8 @@ doDepositAuthorized(RPC::JsonContext& context)
             {
                 return RPC::make_error(
                     rpcINVALID_PARAMS,
-                    RPC::expected_field_message(jss::credentials, "an array of CredentialID(hash256)"));
+                    RPC::expected_field_message(
+                        jss::credentials, "an array of CredentialID(hash256)"));
             }
 
             std::shared_ptr<SLE const> sleCred = ledger->read(keylet::credential(credH));
@@ -126,7 +132,8 @@ doDepositAuthorized(RPC::JsonContext& context)
 
             if ((*sleCred)[sfSubject] != srcAcct)
             {
-                RPC::inject_error(rpcBAD_CREDENTIALS, "credentials doesn't belong to the root account", result);
+                RPC::inject_error(
+                    rpcBAD_CREDENTIALS, "credentials doesn't belong to the root account", result);
                 return result;
             }
 

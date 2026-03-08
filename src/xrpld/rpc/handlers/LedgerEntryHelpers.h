@@ -104,7 +104,10 @@ parse(Json::Value const& param)
 }
 
 Expected<AccountID, Json::Value>
-requiredAccountID(Json::Value const& params, Json::StaticString const fieldName, std::string const& err)
+requiredAccountID(
+    Json::Value const& params,
+    Json::StaticString const fieldName,
+    std::string const& err)
 {
     return required<AccountID>(params, fieldName, err, "AccountID");
 }
@@ -158,7 +161,10 @@ parse(Json::Value const& param)
 }
 
 Expected<std::uint32_t, Json::Value>
-requiredUInt32(Json::Value const& params, Json::StaticString const fieldName, std::string const& err)
+requiredUInt32(
+    Json::Value const& params,
+    Json::StaticString const fieldName,
+    std::string const& err)
 {
     return required<std::uint32_t>(params, fieldName, err, "number");
 }
@@ -177,7 +183,10 @@ parse(Json::Value const& param)
 }
 
 Expected<uint256, Json::Value>
-requiredUInt256(Json::Value const& params, Json::StaticString const fieldName, std::string const& err)
+requiredUInt256(
+    Json::Value const& params,
+    Json::StaticString const fieldName,
+    std::string const& err)
 {
     return required<uint256>(params, fieldName, err, "Hash256");
 }
@@ -196,7 +205,10 @@ parse(Json::Value const& param)
 }
 
 Expected<uint192, Json::Value>
-requiredUInt192(Json::Value const& params, Json::StaticString const fieldName, std::string const& err)
+requiredUInt192(
+    Json::Value const& params,
+    Json::StaticString const fieldName,
+    std::string const& err)
 {
     return required<uint192>(params, fieldName, err, "Hash192");
 }
@@ -225,19 +237,25 @@ Expected<STXChainBridge, Json::Value>
 parseBridgeFields(Json::Value const& params)
 {
     if (auto const value = hasRequired(
-            params, {jss::LockingChainDoor, jss::LockingChainIssue, jss::IssuingChainDoor, jss::IssuingChainIssue});
+            params,
+            {jss::LockingChainDoor,
+             jss::LockingChainIssue,
+             jss::IssuingChainDoor,
+             jss::IssuingChainIssue});
         !value)
     {
         return Unexpected(value.error());
     }
 
-    auto const lockingChainDoor = requiredAccountID(params, jss::LockingChainDoor, "malformedLockingChainDoor");
+    auto const lockingChainDoor =
+        requiredAccountID(params, jss::LockingChainDoor, "malformedLockingChainDoor");
     if (!lockingChainDoor)
     {
         return Unexpected(lockingChainDoor.error());
     }
 
-    auto const issuingChainDoor = requiredAccountID(params, jss::IssuingChainDoor, "malformedIssuingChainDoor");
+    auto const issuingChainDoor =
+        requiredAccountID(params, jss::IssuingChainDoor, "malformedIssuingChainDoor");
     if (!issuingChainDoor)
     {
         return Unexpected(issuingChainDoor.error());
@@ -263,7 +281,8 @@ parseBridgeFields(Json::Value const& params)
         return invalidFieldError("malformedIssue", jss::IssuingChainIssue, "Issue");
     }
 
-    return STXChainBridge(*lockingChainDoor, lockingChainIssue, *issuingChainDoor, issuingChainIssue);
+    return STXChainBridge(
+        *lockingChainDoor, lockingChainIssue, *issuingChainDoor, issuingChainIssue);
 }
 
 }  // namespace LedgerEntryHelpers

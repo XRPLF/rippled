@@ -31,6 +31,7 @@
 #include <xrpl/protocol/STTx.h>
 
 #include <functional>
+#include <future>
 #include <source_location>
 #include <string>
 #include <tuple>
@@ -59,7 +60,8 @@ struct WithSourceLocation
 
     // Non-explicit constructor allows implicit conversion.
     // The default argument for loc is evaluated at the call site.
-    WithSourceLocation(T v, std::source_location l = std::source_location::current()) : value(std::move(v)), loc(l)
+    WithSourceLocation(T v, std::source_location l = std::source_location::current())
+        : value(std::move(v)), loc(l)
     {
     }
 };
@@ -99,7 +101,8 @@ class SuiteLogs : public Logs
     beast::unit_test::suite& suite_;
 
 public:
-    explicit SuiteLogs(beast::unit_test::suite& suite) : Logs(beast::severities::kError), suite_(suite)
+    explicit SuiteLogs(beast::unit_test::suite& suite)
+        : Logs(beast::severities::kError), suite_(suite)
     {
     }
 
@@ -190,7 +193,9 @@ public:
     {
         memoize(Account::master);
         Pathfinder::initPathTable();
-        foreachFeature(features, [&appFeats = app().config().features](uint256 const& f) { appFeats.insert(f); });
+        foreachFeature(features, [&appFeats = app().config().features](uint256 const& f) {
+            appFeats.insert(f);
+        });
     }
 
     /**
@@ -206,7 +211,9 @@ public:
      * @param args collection of features
      *
      */
-    Env(beast::unit_test::suite& suite_, FeatureBitset features, std::unique_ptr<Logs> logs = nullptr)
+    Env(beast::unit_test::suite& suite_,
+        FeatureBitset features,
+        std::unique_ptr<Logs> logs = nullptr)
         : Env(suite_, envconfig(), features, std::move(logs))
     {
     }
@@ -240,7 +247,8 @@ public:
      *
      * @param suite_ the current unit_test::suite
      */
-    Env(beast::unit_test::suite& suite_, beast::severities::Severity thresh = beast::severities::kError)
+    Env(beast::unit_test::suite& suite_,
+        beast::severities::Severity thresh = beast::severities::kError)
         : Env(suite_, envconfig(), nullptr, thresh)
     {
     }
@@ -301,7 +309,9 @@ public:
 
     template <class... Args>
     Json::Value
-    rpc(std::unordered_map<std::string, std::string> const& headers, std::string const& cmd, Args&&... args);
+    rpc(std::unordered_map<std::string, std::string> const& headers,
+        std::string const& cmd,
+        Args&&... args);
 
     template <class... Args>
     Json::Value
@@ -351,7 +361,9 @@ public:
         @return true if no error, false if error
     */
     bool
-    close(NetClock::time_point closeTime, std::optional<std::chrono::milliseconds> consensusDelay = std::nullopt);
+    close(
+        NetClock::time_point closeTime,
+        std::optional<std::chrono::milliseconds> consensusDelay = std::nullopt);
 
     /** Close and advance the ledger.
 
@@ -380,6 +392,48 @@ public:
     {
         // VFALCO Is this the correct time?
         return close(std::chrono::seconds(5));
+    }
+
+    /** Close and advance the ledger, then synchronize with the server's
+        io_context to ensure all async operations initiated by the close have
+        been started.
+
+        This function performs the same ledger close as close(), but additionally
+        ensures that all tasks posted to the server's io_context (such as
+        WebSocket subscription message sends) have been initiated before returning.
+
+        What it guarantees:
+        - All async operations posted before syncClose() have been STARTED
+        - For WebSocket sends: async_write_some() has been called
+        - The actual I/O completion may still be pending (async)
+
+        What it does NOT guarantee:
+        - Async operations have COMPLETED
+        - WebSocket messages have been received by clients
+        - However, for localhost connections, the remaining latency is typically
+          microseconds, making tests reliable
+
+        Use this instead of close() when:
+        - Test code immediately checks for subscription messages
+        - Race conditions between test and worker threads must be avoided
+        - Deterministic test behavior is required
+
+        @param timeout Maximum time to wait for the barrier task to execute
+        @return true if close succeeded and barrier executed within timeout,
+                false otherwise
+    */
+    [[nodiscard]] bool
+    syncClose(std::chrono::steady_clock::duration timeout = std::chrono::seconds{1})
+    {
+        XRPL_ASSERT(
+            app().getNumberOfThreads() == 1,
+            "syncClose() is only useful on an application with a single thread");
+        auto const result = close();
+        auto serverBarrier = std::make_shared<std::promise<void>>();
+        auto future = serverBarrier->get_future();
+        boost::asio::post(app().getIOContext(), [serverBarrier]() { serverBarrier->set_value(); });
+        auto const status = future.wait_for(timeout);
+        return result && status == std::future_status::ready;
     }
 
     /** Turn on JSON tracing.
@@ -802,14 +856,24 @@ template <class... Args>
 Json::Value
 Env::rpc(unsigned apiVersion, std::string const& cmd, Args&&... args)
 {
-    return rpc(apiVersion, std::unordered_map<std::string, std::string>(), cmd, std::forward<Args>(args)...);
+    return rpc(
+        apiVersion,
+        std::unordered_map<std::string, std::string>(),
+        cmd,
+        std::forward<Args>(args)...);
 }
 
 template <class... Args>
 Json::Value
-Env::rpc(std::unordered_map<std::string, std::string> const& headers, std::string const& cmd, Args&&... args)
+Env::rpc(
+    std::unordered_map<std::string, std::string> const& headers,
+    std::string const& cmd,
+    Args&&... args)
 {
-    return do_rpc(RPC::apiCommandLineVersion, std::vector<std::string>{cmd, std::forward<Args>(args)...}, headers);
+    return do_rpc(
+        RPC::apiCommandLineVersion,
+        std::vector<std::string>{cmd, std::forward<Args>(args)...},
+        headers);
 }
 
 template <class... Args>

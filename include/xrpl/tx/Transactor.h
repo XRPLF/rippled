@@ -27,7 +27,12 @@ public:
         Rules const& rules_,
         ApplyFlags flags_,
         beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
-        : registry(registry_), tx(tx_), rules(rules_), flags(flags_), parentBatchId(parentBatchId_), j(j_)
+        : registry(registry_)
+        , tx(tx_)
+        , rules(rules_)
+        , flags(flags_)
+        , parentBatchId(parentBatchId_)
+        , j(j_)
     {
         XRPL_ASSERT((flags_ & tapBATCH) == tapBATCH, "Batch apply flag should be set");
     }
@@ -207,7 +212,11 @@ public:
 
     // Interface used by DeleteAccount
     static TER
-    ticketDelete(ApplyView& view, AccountID const& account, uint256 const& ticketIndex, beast::Journal j);
+    ticketDelete(
+        ApplyView& view,
+        AccountID const& account,
+        uint256 const& ticketIndex,
+        beast::Journal j);
 
 protected:
     TER
@@ -280,7 +289,9 @@ protected:
     /// Minimum will usually be zero.
     template <class T, class Unit>
     static bool
-    validNumericMinimum(std::optional<T> value, unit::ValueUnit<Unit, T> min = unit::ValueUnit<Unit, T>{});
+    validNumericMinimum(
+        std::optional<T> value,
+        unit::ValueUnit<Unit, T> min = unit::ValueUnit<Unit, T>{});
 
 private:
     std::pair<TER, XRPAmount>
@@ -395,7 +406,10 @@ Transactor::validNumericRange(std::optional<T> value, T max, T min)
 
 template <class T, class Unit>
 bool
-Transactor::validNumericRange(std::optional<T> value, unit::ValueUnit<Unit, T> max, unit::ValueUnit<Unit, T> min)
+Transactor::validNumericRange(
+    std::optional<T> value,
+    unit::ValueUnit<Unit, T> max,
+    unit::ValueUnit<Unit, T> min)
 {
     return validNumericRange(value, max.value(), min.value());
 }

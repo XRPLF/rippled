@@ -330,8 +330,8 @@ public:
         auto const& key = std::get<0>(keyTuple);
         iterator it(&map_);
         it.ait_ = it.map_->begin() + partitioner(key);
-        auto [eit, inserted] =
-            it.ait_->emplace(std::piecewise_construct, std::forward<T>(keyTuple), std::forward<U>(valueTuple));
+        auto [eit, inserted] = it.ait_->emplace(
+            std::piecewise_construct, std::forward<T>(keyTuple), std::forward<U>(valueTuple));
         it.mit_ = eit;
         return {it, inserted};
     }

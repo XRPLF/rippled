@@ -1,8 +1,9 @@
+#include <xrpl/tx/ApplyContext.h>
+//
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/to_string.h>
-#include <xrpl/tx/ApplyContext.h>
-#include <xrpl/tx/InvariantCheck.h>
+#include <xrpl/tx/invariants/InvariantCheck.h>
 
 namespace xrpl {
 
@@ -50,8 +51,11 @@ ApplyContext::size()
 
 void
 ApplyContext::visit(
-    std::function<
-        void(uint256 const&, bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&)> const& func)
+    std::function<void(
+        uint256 const&,
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&)> const& func)
 {
     view_->visit(base_, func);
 }
@@ -64,13 +68,17 @@ ApplyContext::failInvariantCheck(TER const result)
     // very wrong. We switch to tefINVARIANT_FAILED, which does NOT get included
     // in a ledger.
 
-    return (result == tecINVARIANT_FAILED || result == tefINVARIANT_FAILED) ? TER{tefINVARIANT_FAILED}
-                                                                            : TER{tecINVARIANT_FAILED};
+    return (result == tecINVARIANT_FAILED || result == tefINVARIANT_FAILED)
+        ? TER{tefINVARIANT_FAILED}
+        : TER{tecINVARIANT_FAILED};
 }
 
 template <std::size_t... Is>
 TER
-ApplyContext::checkInvariantsHelper(TER const result, XRPAmount const fee, std::index_sequence<Is...>)
+ApplyContext::checkInvariantsHelper(
+    TER const result,
+    XRPAmount const fee,
+    std::index_sequence<Is...>)
 {
     try
     {
@@ -105,7 +113,8 @@ ApplyContext::checkInvariantsHelper(TER const result, XRPAmount const fee, std::
     catch (std::exception const& ex)
     {
         JLOG(journal.fatal()) << "Transaction caused an exception in an invariant"
-                              << ", ex: " << ex.what() << ", tx: " << to_string(tx.getJson(JsonOptions::none));
+                              << ", ex: " << ex.what()
+                              << ", tx: " << to_string(tx.getJson(JsonOptions::none));
 
         return failInvariantCheck(result);
     }
@@ -117,9 +126,11 @@ TER
 ApplyContext::checkInvariants(TER const result, XRPAmount const fee)
 {
     XRPL_ASSERT(
-        isTesSuccess(result) || isTecClaim(result), "xrpl::ApplyContext::checkInvariants : is tesSUCCESS or tecCLAIM");
+        isTesSuccess(result) || isTecClaim(result),
+        "xrpl::ApplyContext::checkInvariants : is tesSUCCESS or tecCLAIM");
 
-    return checkInvariantsHelper(result, fee, std::make_index_sequence<std::tuple_size<InvariantChecks>::value>{});
+    return checkInvariantsHelper(
+        result, fee, std::make_index_sequence<std::tuple_size<InvariantChecks>::value>{});
 }
 
 }  // namespace xrpl

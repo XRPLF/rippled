@@ -42,7 +42,12 @@ private:
     }
 
     static std::string
-    makeManifestString(PublicKey const& pk, SecretKey const& sk, PublicKey const& spk, SecretKey const& ssk, int seq)
+    makeManifestString(
+        PublicKey const& pk,
+        SecretKey const& sk,
+        PublicKey const& spk,
+        SecretKey const& ssk,
+        int seq)
     {
         STObject st(sfGeneric);
         st[sfSequence] = seq;
@@ -86,7 +91,8 @@ private:
         return {
             masterPublic,
             signingKeys.first,
-            base64_encode(makeManifestString(masterPublic, secret, signingKeys.first, signingKeys.second, 1))};
+            base64_encode(makeManifestString(
+                masterPublic, secret, signingKeys.first, signingKeys.second, 1))};
     }
 
     std::string
@@ -96,16 +102,16 @@ private:
         std::size_t validUntil,
         std::optional<std::size_t> validFrom = {})
     {
-        std::string data =
-            "{\"sequence\":" + std::to_string(sequence) + ",\"expiration\":" + std::to_string(validUntil);
+        std::string data = "{\"sequence\":" + std::to_string(sequence) +
+            ",\"expiration\":" + std::to_string(validUntil);
         if (validFrom)
             data += ",\"effective\":" + std::to_string(*validFrom);
         data += ",\"validators\":[";
 
         for (auto const& val : validators)
         {
-            data += "{\"validation_public_key\":\"" + strHex(val.masterPublic) + "\",\"manifest\":\"" + val.manifest +
-                "\"},";
+            data += "{\"validation_public_key\":\"" + strHex(val.masterPublic) +
+                "\",\"manifest\":\"" + val.manifest + "\"},";
         }
 
         data.pop_back();
@@ -154,13 +160,22 @@ private:
         auto& app = env.app();
         {
             auto trustedKeys = std::make_unique<ValidatorList>(
-                manifests, manifests, env.timeKeeper(), app.config().legacy("database_path"), env.journal);
+                manifests,
+                manifests,
+                env.timeKeeper(),
+                app.config().legacy("database_path"),
+                env.journal);
             BEAST_EXPECT(trustedKeys->quorum() == 1);
         }
         {
             std::size_t minQuorum = 0;
             auto trustedKeys = std::make_unique<ValidatorList>(
-                manifests, manifests, env.timeKeeper(), app.config().legacy("database_path"), env.journal, minQuorum);
+                manifests,
+                manifests,
+                env.timeKeeper(),
+                app.config().legacy("database_path"),
+                env.journal,
+                minQuorum);
             BEAST_EXPECT(trustedKeys->quorum() == minQuorum);
         }
     }
@@ -181,8 +196,8 @@ private:
         auto const localMasterSecret = randomSecretKey();
         auto const localMasterPublic = derivePublicKey(KeyType::ed25519, localMasterSecret);
 
-        std::string const cfgManifest(
-            makeManifestString(localMasterPublic, localMasterSecret, localSigningPublicOuter, localSigningSecret, 1));
+        std::string const cfgManifest(makeManifestString(
+            localMasterPublic, localMasterSecret, localSigningPublicOuter, localSigningSecret, 1));
 
         auto format = [](PublicKey const& publicKey, char const* comment = nullptr) {
             auto ret = toBase58(TokenType::NodePublic, publicKey);
@@ -213,17 +228,23 @@ private:
         {
             ManifestCache manifests;
             auto trustedKeys = std::make_unique<ValidatorList>(
-                manifests, manifests, env.timeKeeper(), app.config().legacy("database_path"), env.journal);
+                manifests,
+                manifests,
+                env.timeKeeper(),
+                app.config().legacy("database_path"),
+                env.journal);
 
             // Correct (empty) configuration
             BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, emptyCfgPublishers));
 
             // load local validator key with or without manifest
-            BEAST_EXPECT(trustedKeys->load(localSigningPublicOuter, emptyCfgKeys, emptyCfgPublishers));
+            BEAST_EXPECT(
+                trustedKeys->load(localSigningPublicOuter, emptyCfgKeys, emptyCfgPublishers));
             BEAST_EXPECT(trustedKeys->listed(localSigningPublicOuter));
 
             manifests.applyManifest(*deserializeManifest(cfgManifest));
-            BEAST_EXPECT(trustedKeys->load(localSigningPublicOuter, emptyCfgKeys, emptyCfgPublishers));
+            BEAST_EXPECT(
+                trustedKeys->load(localSigningPublicOuter, emptyCfgKeys, emptyCfgPublishers));
 
             BEAST_EXPECT(trustedKeys->listed(localMasterPublic));
             BEAST_EXPECT(trustedKeys->listed(localSigningPublicOuter));
@@ -232,7 +253,11 @@ private:
             // load should add validator keys from config
             ManifestCache manifests;
             auto trustedKeys = std::make_unique<ValidatorList>(
-                manifests, manifests, env.timeKeeper(), app.config().legacy("database_path"), env.journal);
+                manifests,
+                manifests,
+                env.timeKeeper(),
+                app.config().legacy("database_path"),
+                env.journal);
 
             BEAST_EXPECT(trustedKeys->load({}, cfgKeys, emptyCfgPublishers));
 
@@ -243,7 +268,8 @@ private:
             auto const masterNode1 = randomMasterKey();
             auto const masterNode2 = randomMasterKey();
 
-            std::vector<std::string> cfgMasterKeys({format(masterNode1), format(masterNode2, " Comment")});
+            std::vector<std::string> cfgMasterKeys(
+                {format(masterNode1), format(masterNode2, " Comment")});
             BEAST_EXPECT(trustedKeys->load({}, cfgMasterKeys, emptyCfgPublishers));
             BEAST_EXPECT(trustedKeys->listed(masterNode1));
             BEAST_EXPECT(trustedKeys->listed(masterNode2));
@@ -254,16 +280,22 @@ private:
 
             // load terminates when encountering an invalid entry
             auto const goodKey = randomNode();
-            BEAST_EXPECT(!trustedKeys->load({}, {format(randomNode(), "!"), format(goodKey)}, emptyCfgPublishers));
+            BEAST_EXPECT(!trustedKeys->load(
+                {}, {format(randomNode(), "!"), format(goodKey)}, emptyCfgPublishers));
             BEAST_EXPECT(!trustedKeys->listed(goodKey));
         }
         {
             // local validator key on config list
             ManifestCache manifests;
             auto trustedKeys = std::make_unique<ValidatorList>(
-                manifests, manifests, env.timeKeeper(), app.config().legacy("database_path"), env.journal);
+                manifests,
+                manifests,
+                env.timeKeeper(),
+                app.config().legacy("database_path"),
+                env.journal);
 
-            auto const localSigningPublic = parseBase58<PublicKey>(TokenType::NodePublic, cfgKeys.front());
+            auto const localSigningPublic =
+                parseBase58<PublicKey>(TokenType::NodePublic, cfgKeys.front());
 
             BEAST_EXPECT(trustedKeys->load(*localSigningPublic, cfgKeys, emptyCfgPublishers));
 
@@ -276,7 +308,11 @@ private:
             // local validator key not on config list
             ManifestCache manifests;
             auto trustedKeys = std::make_unique<ValidatorList>(
-                manifests, manifests, env.timeKeeper(), app.config().legacy("database_path"), env.journal);
+                manifests,
+                manifests,
+                env.timeKeeper(),
+                app.config().legacy("database_path"),
+                env.journal);
 
             auto const localSigningPublic = randomNode();
             BEAST_EXPECT(trustedKeys->load(localSigningPublic, cfgKeys, emptyCfgPublishers));
@@ -290,7 +326,11 @@ private:
             // local validator key (with manifest) not on config list
             ManifestCache manifests;
             auto trustedKeys = std::make_unique<ValidatorList>(
-                manifests, manifests, env.timeKeeper(), app.config().legacy("database_path"), env.journal);
+                manifests,
+                manifests,
+                env.timeKeeper(),
+                app.config().legacy("database_path"),
+                env.journal);
 
             manifests.applyManifest(*deserializeManifest(cfgManifest));
 
@@ -305,7 +345,11 @@ private:
         {
             ManifestCache manifests;
             auto trustedKeys = std::make_unique<ValidatorList>(
-                manifests, manifests, env.timeKeeper(), app.config().legacy("database_path"), env.journal);
+                manifests,
+                manifests,
+                env.timeKeeper(),
+                app.config().legacy("database_path"),
+                env.journal);
 
             // load should reject invalid validator list signing keys
             std::vector<std::string> badPublishers({"NotASigningKey"});
@@ -335,9 +379,14 @@ private:
         {
             ManifestCache manifests;
             auto trustedKeys = std::make_unique<ValidatorList>(
-                manifests, manifests, env.timeKeeper(), app.config().legacy("database_path"), env.journal);
+                manifests,
+                manifests,
+                env.timeKeeper(),
+                app.config().legacy("database_path"),
+                env.journal);
 
-            std::vector<PublicKey> keys({randomMasterKey(), randomMasterKey(), randomMasterKey(), randomMasterKey()});
+            std::vector<PublicKey> keys(
+                {randomMasterKey(), randomMasterKey(), randomMasterKey(), randomMasterKey()});
             std::vector<std::string> cfgPublishers;
             for (auto const& key : keys)
                 cfgPublishers.push_back(strHex(key));
@@ -354,7 +403,11 @@ private:
             ManifestCache valManifests;
             ManifestCache pubManifests;
             auto trustedKeys = std::make_unique<ValidatorList>(
-                valManifests, pubManifests, env.timeKeeper(), app.config().legacy("database_path"), env.journal);
+                valManifests,
+                pubManifests,
+                env.timeKeeper(),
+                app.config().legacy("database_path"),
+                env.journal);
 
             auto const pubRevokedSecret = randomSecretKey();
             auto const pubRevokedPublic = derivePublicKey(KeyType::ed25519, pubRevokedSecret);
@@ -372,7 +425,8 @@ private:
             auto legitKey1 = randomMasterKey();
             auto legitKey2 = randomMasterKey();
 
-            std::vector<std::string> cfgPublishers = {strHex(pubRevokedPublic), strHex(legitKey1), strHex(legitKey2)};
+            std::vector<std::string> cfgPublishers = {
+                strHex(pubRevokedPublic), strHex(legitKey1), strHex(legitKey2)};
             BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublishers));
 
             BEAST_EXPECT(!trustedKeys->trustedPublisher(pubRevokedPublic));
@@ -387,7 +441,11 @@ private:
             ManifestCache valManifests;
             ManifestCache pubManifests;
             auto trustedKeys = std::make_unique<ValidatorList>(
-                valManifests, pubManifests, env.timeKeeper(), app.config().legacy("database_path"), env.journal);
+                valManifests,
+                pubManifests,
+                env.timeKeeper(),
+                app.config().legacy("database_path"),
+                env.journal);
 
             auto const pubRevokedSecret = randomSecretKey();
             auto const pubRevokedPublic = derivePublicKey(KeyType::ed25519, pubRevokedSecret);
@@ -422,51 +480,56 @@ private:
 
         std::string const siteUri = "testApplyList.test";
 
-        auto checkAvailable = [this](
-                                  auto const& trustedKeys,
-                                  auto const& hexPublic,
-                                  auto const& manifest,
-                                  auto const version,
-                                  std::vector<std::pair<std::string, std::string>> const& expected) {
-            auto const available = trustedKeys->getAvailable(hexPublic);
+        auto checkAvailable =
+            [this](
+                auto const& trustedKeys,
+                auto const& hexPublic,
+                auto const& manifest,
+                auto const version,
+                std::vector<std::pair<std::string, std::string>> const& expected) {
+                auto const available = trustedKeys->getAvailable(hexPublic);
 
-            BEAST_EXPECT(!version || available);
-            if (available)
-            {
-                auto const& a = *available;
-                BEAST_EXPECT(a[jss::public_key] == hexPublic);
-                BEAST_EXPECT(a[jss::manifest] == manifest);
-                // Because multiple lists were processed, the version was
-                // overridden
-                BEAST_EXPECT(a[jss::version] == version);
-                if (version == 1)
+                BEAST_EXPECT(!version || available);
+                if (available)
                 {
-                    BEAST_EXPECT(expected.size() == 1);
-                    BEAST_EXPECT(a[jss::blob] == expected[0].first);
-                    BEAST_EXPECT(a[jss::signature] == expected[0].second);
-                    BEAST_EXPECT(!a.isMember(jss::blobs_v2));
-                }
-                else if (BEAST_EXPECT(a.isMember(jss::blobs_v2)))
-                {
-                    BEAST_EXPECT(!a.isMember(jss::blob));
-                    BEAST_EXPECT(!a.isMember(jss::signature));
-                    auto const& blobs_v2 = a[jss::blobs_v2];
-                    BEAST_EXPECT(blobs_v2.isArray() && blobs_v2.size() == expected.size());
-
-                    for (unsigned int i = 0; i < expected.size(); ++i)
+                    auto const& a = *available;
+                    BEAST_EXPECT(a[jss::public_key] == hexPublic);
+                    BEAST_EXPECT(a[jss::manifest] == manifest);
+                    // Because multiple lists were processed, the version was
+                    // overridden
+                    BEAST_EXPECT(a[jss::version] == version);
+                    if (version == 1)
                     {
-                        BEAST_EXPECT(blobs_v2[i][jss::blob] == expected[i].first);
-                        BEAST_EXPECT(blobs_v2[i][jss::signature] == expected[i].second);
+                        BEAST_EXPECT(expected.size() == 1);
+                        BEAST_EXPECT(a[jss::blob] == expected[0].first);
+                        BEAST_EXPECT(a[jss::signature] == expected[0].second);
+                        BEAST_EXPECT(!a.isMember(jss::blobs_v2));
+                    }
+                    else if (BEAST_EXPECT(a.isMember(jss::blobs_v2)))
+                    {
+                        BEAST_EXPECT(!a.isMember(jss::blob));
+                        BEAST_EXPECT(!a.isMember(jss::signature));
+                        auto const& blobs_v2 = a[jss::blobs_v2];
+                        BEAST_EXPECT(blobs_v2.isArray() && blobs_v2.size() == expected.size());
+
+                        for (unsigned int i = 0; i < expected.size(); ++i)
+                        {
+                            BEAST_EXPECT(blobs_v2[i][jss::blob] == expected[i].first);
+                            BEAST_EXPECT(blobs_v2[i][jss::signature] == expected[i].second);
+                        }
                     }
                 }
-            }
-        };
+            };
 
         ManifestCache manifests;
         jtx::Env env(*this);
         auto& app = env.app();
         auto trustedKeys = std::make_unique<ValidatorList>(
-            manifests, manifests, env.app().timeKeeper(), app.config().legacy("database_path"), env.journal);
+            manifests,
+            manifests,
+            env.app().timeKeeper(),
+            app.config().legacy("database_path"),
+            env.journal);
 
         auto expectTrusted = [this, &trustedKeys](std::vector<Validator> const& list) {
             for (auto const& val : list)
@@ -488,8 +551,8 @@ private:
         auto const publisherPublic = derivePublicKey(KeyType::ed25519, publisherSecret);
         auto const hexPublic = strHex(publisherPublic.begin(), publisherPublic.end());
         auto const pubSigningKeys1 = randomKeyPair(KeyType::secp256k1);
-        auto const manifest1 = base64_encode(
-            makeManifestString(publisherPublic, publisherSecret, pubSigningKeys1.first, pubSigningKeys1.second, 1));
+        auto const manifest1 = base64_encode(makeManifestString(
+            publisherPublic, publisherSecret, pubSigningKeys1.first, pubSigningKeys1.second, 1));
 
         std::vector<std::string> cfgKeys1({strHex(publisherPublic)});
         std::vector<std::string> emptyCfgKeys;
@@ -515,7 +578,8 @@ private:
         env.timeKeeper().set(env.timeKeeper().now() + 1s);
         auto const version = 1;
         auto const sequence1 = 1;
-        auto const expiredblob = makeList(lists.at(1), sequence1, env.timeKeeper().now().time_since_epoch().count());
+        auto const expiredblob =
+            makeList(lists.at(1), sequence1, env.timeKeeper().now().time_since_epoch().count());
         auto const expiredSig = signList(expiredblob, pubSigningKeys1);
 
         NetClock::time_point const validUntil = env.timeKeeper().now() + 3600s;
@@ -524,7 +588,8 @@ private:
         auto const sig2 = signList(blob2, pubSigningKeys1);
 
         checkResult(
-            trustedKeys->applyLists(manifest1, version, {{expiredblob, expiredSig, {}}, {blob2, sig2, {}}}, siteUri),
+            trustedKeys->applyLists(
+                manifest1, version, {{expiredblob, expiredSig, {}}, {blob2, sig2, {}}}, siteUri),
             publisherPublic,
             ListDisposition::expired,
             ListDisposition::accepted);
@@ -539,18 +604,25 @@ private:
         auto const effective7 = validUntil - 60s;
         auto const expiration7 = effective7 + 3600s;
         auto const blob7 = makeList(
-            lists.at(7), sequence7, expiration7.time_since_epoch().count(), effective7.time_since_epoch().count());
+            lists.at(7),
+            sequence7,
+            expiration7.time_since_epoch().count(),
+            effective7.time_since_epoch().count());
         auto const sig7 = signList(blob7, pubSigningKeys1);
 
         auto const sequence8 = 8;
         auto const effective8 = expiration7 - 60s;
         auto const expiration8 = effective8 + 3600s;
         auto const blob8 = makeList(
-            lists.at(8), sequence8, expiration8.time_since_epoch().count(), effective8.time_since_epoch().count());
+            lists.at(8),
+            sequence8,
+            expiration8.time_since_epoch().count(),
+            effective8.time_since_epoch().count());
         auto const sig8 = signList(blob8, pubSigningKeys1);
 
         checkResult(
-            trustedKeys->applyLists(manifest1, version2, {{blob7, sig7, {}}, {blob8, sig8, {}}}, siteUri),
+            trustedKeys->applyLists(
+                manifest1, version2, {{blob7, sig7, {}}, {blob8, sig8, {}}}, siteUri),
             publisherPublic,
             ListDisposition::pending,
             ListDisposition::pending);
@@ -563,7 +635,10 @@ private:
         auto const effective6 = effective7 - 60s;
         auto const expiration6 = effective6 + 3600s;
         auto const blob6 = makeList(
-            lists.at(6), sequence6, expiration6.time_since_epoch().count(), effective6.time_since_epoch().count());
+            lists.at(6),
+            sequence6,
+            expiration6.time_since_epoch().count(),
+            effective6.time_since_epoch().count());
         auto const sig6 = signList(blob6, pubSigningKeys1);
 
         // Process future list that is overridden by a later list
@@ -571,11 +646,15 @@ private:
         auto const effective6a = effective6 + 60s;
         auto const expiration6a = effective6a + 3600s;
         auto const blob6a = makeList(
-            lists.at(5), sequence6a, expiration6a.time_since_epoch().count(), effective6a.time_since_epoch().count());
+            lists.at(5),
+            sequence6a,
+            expiration6a.time_since_epoch().count(),
+            effective6a.time_since_epoch().count());
         auto const sig6a = signList(blob6a, pubSigningKeys1);
 
         checkResult(
-            trustedKeys->applyLists(manifest1, version, {{blob6a, sig6a, {}}, {blob6, sig6, {}}}, siteUri),
+            trustedKeys->applyLists(
+                manifest1, version, {{blob6a, sig6a, {}}, {blob6, sig6, {}}}, siteUri),
             publisherPublic,
             ListDisposition::pending,
             ListDisposition::pending);
@@ -586,7 +665,8 @@ private:
         // Do not apply re-process lists known future sequence numbers
 
         checkResult(
-            trustedKeys->applyLists(manifest1, version, {{blob7, sig7, {}}, {blob6, sig6, {}}}, siteUri),
+            trustedKeys->applyLists(
+                manifest1, version, {{blob7, sig7, {}}, {blob6, sig6, {}}}, siteUri),
             publisherPublic,
             ListDisposition::known_sequence,
             ListDisposition::known_sequence);
@@ -604,14 +684,17 @@ private:
 
         checkResult(
             trustedKeys->applyLists(
-                base64_encode("not a manifest"), version, {{blob7, sig7, {}}, {blob6, sig6, {}}}, siteUri),
+                base64_encode("not a manifest"),
+                version,
+                {{blob7, sig7, {}}, {blob6, sig6, {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::invalid,
             ListDisposition::invalid);
 
         // do not use list from untrusted publisher
-        auto const untrustedManifest = base64_encode(
-            makeManifestString(randomMasterKey(), publisherSecret, pubSigningKeys1.first, pubSigningKeys1.second, 1));
+        auto const untrustedManifest = base64_encode(makeManifestString(
+            randomMasterKey(), publisherSecret, pubSigningKeys1.first, pubSigningKeys1.second, 1));
 
         checkResult(
             trustedKeys->applyLists(untrustedManifest, version, {{blob2, sig2, {}}}, siteUri),
@@ -645,11 +728,16 @@ private:
         // Note that blob6a is not present, because it was dropped during
         // processing
         checkAvailable(
-            trustedKeys, hexPublic, manifest1, 2, {{blob3, sig3}, {blob6, sig6}, {blob7, sig7}, {blob8, sig8}});
+            trustedKeys,
+            hexPublic,
+            manifest1,
+            2,
+            {{blob3, sig3}, {blob6, sig6}, {blob7, sig7}, {blob8, sig8}});
 
         // do not re-apply lists with past or current sequence numbers
         checkResult(
-            trustedKeys->applyLists(manifest1, version, {{blob2, sig2, {}}, {blob3, sig3, {}}}, siteUri),
+            trustedKeys->applyLists(
+                manifest1, version, {{blob2, sig2, {}}, {blob3, sig3, {}}}, siteUri),
             publisherPublic,
             ListDisposition::stale,
             ListDisposition::same_sequence);
@@ -657,8 +745,8 @@ private:
         // apply list with new publisher key updated by manifest. Also send some
         // old lists along with the old manifest
         auto const pubSigningKeys2 = randomKeyPair(KeyType::secp256k1);
-        auto manifest2 = base64_encode(
-            makeManifestString(publisherPublic, publisherSecret, pubSigningKeys2.first, pubSigningKeys2.second, 2));
+        auto manifest2 = base64_encode(makeManifestString(
+            publisherPublic, publisherSecret, pubSigningKeys2.first, pubSigningKeys2.second, 2));
 
         auto const sequence4 = 4;
         auto const blob4 = makeList(lists.at(4), sequence4, validUntil.time_since_epoch().count());
@@ -666,7 +754,10 @@ private:
 
         checkResult(
             trustedKeys->applyLists(
-                manifest2, version, {{blob2, sig2, manifest1}, {blob3, sig3, manifest1}, {blob4, sig4, {}}}, siteUri),
+                manifest2,
+                version,
+                {{blob2, sig2, manifest1}, {blob3, sig3, manifest1}, {blob4, sig4, {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::stale,
             ListDisposition::accepted);
@@ -676,7 +767,11 @@ private:
         expectTrusted(lists.at(4));
 
         checkAvailable(
-            trustedKeys, hexPublic, manifest2, 2, {{blob4, sig4}, {blob6, sig6}, {blob7, sig7}, {blob8, sig8}});
+            trustedKeys,
+            hexPublic,
+            manifest2,
+            2,
+            {{blob4, sig4}, {blob6, sig6}, {blob7, sig7}, {blob8, sig8}});
 
         auto const sequence5 = 5;
         auto const blob5 = makeList(lists.at(5), sequence5, validUntil.time_since_epoch().count());
@@ -694,7 +789,8 @@ private:
 
         // Reprocess the pending list, but the signature is no longer valid
         checkResult(
-            trustedKeys->applyLists(manifest1, version, {{blob7, sig7, {}}, {blob8, sig8, {}}}, siteUri),
+            trustedKeys->applyLists(
+                manifest1, version, {{blob7, sig7, {}}, {blob8, sig8, {}}}, siteUri),
             publisherPublic,
             ListDisposition::invalid,
             ListDisposition::invalid);
@@ -707,12 +803,17 @@ private:
         // updateTrusted. Note that the timekeeper is NOT moved, so the close
         // time will be ahead of the test's wall clock
         trustedKeys->updateTrusted(
-            {}, effective6 + 1s, env.app().getOPs(), env.app().overlay(), env.app().getHashRouter());
+            {},
+            effective6 + 1s,
+            env.app().getOPs(),
+            env.app().overlay(),
+            env.app().getHashRouter());
 
         expectUntrusted(lists.at(3));
         expectTrusted(lists.at(6));
 
-        checkAvailable(trustedKeys, hexPublic, manifest2, 2, {{blob6, sig6}, {blob7, sig7}, {blob8, sig8}});
+        checkAvailable(
+            trustedKeys, hexPublic, manifest2, 2, {{blob6, sig6}, {blob7, sig7}, {blob8, sig8}});
 
         // Automatically rotate the LAST pending list using updateTrusted,
         // bypassing blob7. Note that the timekeeper IS moved, so the provided
@@ -720,7 +821,11 @@ private:
         // clock is used.
         env.timeKeeper().set(effective8);
         trustedKeys->updateTrusted(
-            {}, effective8 + 1s, env.app().getOPs(), env.app().overlay(), env.app().getHashRouter());
+            {},
+            effective8 + 1s,
+            env.app().getOPs(),
+            env.app().overlay(),
+            env.app().getHashRouter());
 
         expectUntrusted(lists.at(6));
         expectUntrusted(lists.at(7));
@@ -735,7 +840,8 @@ private:
         auto const sig8_2 = signList(blob8, pubSigningKeys2);
 
         checkResult(
-            trustedKeys->applyLists(manifest2, version, {{blob8, sig8, manifest1}, {blob8, sig8_2, {}}}, siteUri),
+            trustedKeys->applyLists(
+                manifest2, version, {{blob8, sig8, manifest1}, {blob8, sig8_2, {}}}, siteUri),
             publisherPublic,
             ListDisposition::invalid,
             ListDisposition::same_sequence);
@@ -781,14 +887,18 @@ private:
         jtx::Env env(*this);
         auto& app = env.app();
         auto trustedKeys = std::make_unique<ValidatorList>(
-            manifests, manifests, env.app().timeKeeper(), app.config().legacy("database_path"), env.journal);
+            manifests,
+            manifests,
+            env.app().timeKeeper(),
+            app.config().legacy("database_path"),
+            env.journal);
 
         auto const publisherSecret = randomSecretKey();
         auto const publisherPublic = derivePublicKey(KeyType::ed25519, publisherSecret);
         auto const hexPublic = strHex(publisherPublic.begin(), publisherPublic.end());
         auto const pubSigningKeys1 = randomKeyPair(KeyType::secp256k1);
-        auto const manifest = base64_encode(
-            makeManifestString(publisherPublic, publisherSecret, pubSigningKeys1.first, pubSigningKeys1.second, 1));
+        auto const manifest = base64_encode(makeManifestString(
+            publisherPublic, publisherSecret, pubSigningKeys1.first, pubSigningKeys1.second, 1));
 
         std::vector<std::string> cfgKeys1({strHex(publisherPublic)});
         std::vector<std::string> emptyCfgKeys;
@@ -904,7 +1014,11 @@ private:
         jtx::Env env(*this);
         auto& app = env.app();
         auto trustedKeysOuter = std::make_unique<ValidatorList>(
-            manifestsOuter, manifestsOuter, env.timeKeeper(), app.config().legacy("database_path"), env.journal);
+            manifestsOuter,
+            manifestsOuter,
+            env.timeKeeper(),
+            app.config().legacy("database_path"),
+            env.journal);
 
         std::vector<std::string> cfgPublishersOuter;
         hash_set<NodeID> activeValidatorsOuter;
@@ -992,10 +1106,11 @@ private:
             BEAST_EXPECT(!trustedKeysOuter->trusted(signingPublic1));
 
             // Should trust the ephemeral signing key from the applied manifest
-            auto m1 = deserializeManifest(
-                makeManifestString(masterPublic, masterPrivate, signingPublic1, signingKeys1.second, 1));
+            auto m1 = deserializeManifest(makeManifestString(
+                masterPublic, masterPrivate, signingPublic1, signingKeys1.second, 1));
 
-            BEAST_EXPECT(manifestsOuter.applyManifest(std::move(*m1)) == ManifestDisposition::accepted);
+            BEAST_EXPECT(
+                manifestsOuter.applyManifest(std::move(*m1)) == ManifestDisposition::accepted);
             BEAST_EXPECT(trustedKeysOuter->listed(masterPublic));
             BEAST_EXPECT(trustedKeysOuter->trusted(masterPublic));
             BEAST_EXPECT(trustedKeysOuter->listed(signingPublic1));
@@ -1005,9 +1120,10 @@ private:
             // from the newest applied manifest
             auto const signingKeys2 = randomKeyPair(KeyType::secp256k1);
             auto const signingPublic2 = signingKeys2.first;
-            auto m2 = deserializeManifest(
-                makeManifestString(masterPublic, masterPrivate, signingPublic2, signingKeys2.second, 2));
-            BEAST_EXPECT(manifestsOuter.applyManifest(std::move(*m2)) == ManifestDisposition::accepted);
+            auto m2 = deserializeManifest(makeManifestString(
+                masterPublic, masterPrivate, signingPublic2, signingKeys2.second, 2));
+            BEAST_EXPECT(
+                manifestsOuter.applyManifest(std::move(*m2)) == ManifestDisposition::accepted);
             BEAST_EXPECT(trustedKeysOuter->listed(masterPublic));
             BEAST_EXPECT(trustedKeysOuter->trusted(masterPublic));
             BEAST_EXPECT(trustedKeysOuter->listed(signingPublic2));
@@ -1022,7 +1138,8 @@ private:
             auto mMax = deserializeManifest(makeRevocationString(masterPublic, masterPrivate));
 
             BEAST_EXPECT(mMax->revoked());
-            BEAST_EXPECT(manifestsOuter.applyManifest(std::move(*mMax)) == ManifestDisposition::accepted);
+            BEAST_EXPECT(
+                manifestsOuter.applyManifest(std::move(*mMax)) == ManifestDisposition::accepted);
             BEAST_EXPECT(manifestsOuter.getSigningKey(masterPublic) == masterPublic);
             BEAST_EXPECT(manifestsOuter.revoked(masterPublic));
 
@@ -1052,7 +1169,11 @@ private:
             // Make quorum unattainable if lists from any publishers are
             // unavailable
             auto trustedKeys = std::make_unique<ValidatorList>(
-                manifestsOuter, manifestsOuter, env.timeKeeper(), app.config().legacy("database_path"), env.journal);
+                manifestsOuter,
+                manifestsOuter,
+                env.timeKeeper(),
+                app.config().legacy("database_path"),
+                env.journal);
             auto const publisherSecret = randomSecretKey();
             auto const publisherPublic = derivePublicKey(KeyType::ed25519, publisherSecret);
 
@@ -1075,7 +1196,11 @@ private:
             // Trust explicitly listed validators also when list threshold is
             // higher than 1
             auto trustedKeys = std::make_unique<ValidatorList>(
-                manifestsOuter, manifestsOuter, env.timeKeeper(), app.config().legacy("database_path"), env.journal);
+                manifestsOuter,
+                manifestsOuter,
+                env.timeKeeper(),
+                app.config().legacy("database_path"),
+                env.journal);
             auto const masterPrivate = randomSecretKey();
             auto const masterPublic = derivePublicKey(KeyType::ed25519, masterPrivate);
             std::vector<std::string> cfgKeys({toBase58(TokenType::NodePublic, masterPublic)});
@@ -1084,7 +1209,8 @@ private:
             auto const publisher1Public = derivePublicKey(KeyType::ed25519, publisher1Secret);
             auto const publisher2Secret = randomSecretKey();
             auto const publisher2Public = derivePublicKey(KeyType::ed25519, publisher2Secret);
-            std::vector<std::string> cfgPublishers({strHex(publisher1Public), strHex(publisher2Public)});
+            std::vector<std::string> cfgPublishers(
+                {strHex(publisher1Public), strHex(publisher2Public)});
 
             BEAST_EXPECT(trustedKeys->load({}, cfgKeys, cfgPublishers, std::size_t(2)));
 
@@ -1104,7 +1230,12 @@ private:
             std::size_t const minQuorum = 1;
             ManifestCache manifests;
             auto trustedKeys = std::make_unique<ValidatorList>(
-                manifests, manifests, env.timeKeeper(), app.config().legacy("database_path"), env.journal, minQuorum);
+                manifests,
+                manifests,
+                env.timeKeeper(),
+                app.config().legacy("database_path"),
+                env.journal,
+                minQuorum);
 
             std::size_t n = 10;
             std::vector<std::string> cfgKeys;
@@ -1161,14 +1292,19 @@ private:
             auto const publisherKeys = randomKeyPair(KeyType::secp256k1);
             auto const pubSigningKeys = randomKeyPair(KeyType::secp256k1);
             auto const manifest = base64_encode(makeManifestString(
-                publisherKeys.first, publisherKeys.second, pubSigningKeys.first, pubSigningKeys.second, 1));
+                publisherKeys.first,
+                publisherKeys.second,
+                pubSigningKeys.first,
+                pubSigningKeys.second,
+                1));
 
             std::vector<std::string> cfgKeys({strHex(publisherKeys.first)});
 
             BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgKeys));
 
             std::vector<Validator> list({randomValidator(), randomValidator()});
-            hash_set<NodeID> activeValidators(asNodeIDs({list[0].masterPublic, list[1].masterPublic}));
+            hash_set<NodeID> activeValidators(
+                asNodeIDs({list[0].masterPublic, list[1].masterPublic}));
 
             // do not apply expired list
             auto const version = 1;
@@ -1180,7 +1316,8 @@ private:
 
             BEAST_EXPECT(
                 ListDisposition::accepted ==
-                trustedKeys->applyLists(manifest, version, {{blob, sig, {}}}, siteUri).bestDisposition());
+                trustedKeys->applyLists(manifest, version, {{blob, sig, {}}}, siteUri)
+                    .bestDisposition());
 
             TrustChanges changes = trustedKeys->updateTrusted(
                 activeValidators,
@@ -1220,7 +1357,8 @@ private:
 
             BEAST_EXPECT(
                 ListDisposition::accepted ==
-                trustedKeys->applyLists(manifest, version, {{blob2, sig2, {}}}, siteUri).bestDisposition());
+                trustedKeys->applyLists(manifest, version, {{blob2, sig2, {}}}, siteUri)
+                    .bestDisposition());
 
             changes = trustedKeys->updateTrusted(
                 activeValidators,
@@ -1229,7 +1367,8 @@ private:
                 env.app().overlay(),
                 env.app().getHashRouter());
             BEAST_EXPECT(changes.removed.empty());
-            BEAST_EXPECT(changes.added == asNodeIDs({list2[0].masterPublic, list2[1].masterPublic}));
+            BEAST_EXPECT(
+                changes.added == asNodeIDs({list2[0].masterPublic, list2[1].masterPublic}));
             for (Validator const& val : list2)
             {
                 BEAST_EXPECT(trustedKeys->trusted(val.masterPublic));
@@ -1242,7 +1381,11 @@ private:
         {
             // Test 1-9 configured validators
             auto trustedKeys = std::make_unique<ValidatorList>(
-                manifestsOuter, manifestsOuter, env.timeKeeper(), app.config().legacy("database_path"), env.journal);
+                manifestsOuter,
+                manifestsOuter,
+                env.timeKeeper(),
+                app.config().legacy("database_path"),
+                env.journal);
 
             std::vector<std::string> cfgPublishers;
             hash_set<NodeID> activeValidators;
@@ -1274,7 +1417,11 @@ private:
         {
             // Test 2-9 configured validators as validator
             auto trustedKeys = std::make_unique<ValidatorList>(
-                manifestsOuter, manifestsOuter, env.timeKeeper(), app.config().legacy("database_path"), env.journal);
+                manifestsOuter,
+                manifestsOuter,
+                env.timeKeeper(),
+                app.config().legacy("database_path"),
+                env.journal);
 
             auto const localKey = randomNode();
             std::vector<std::string> cfgPublishers;
@@ -1313,7 +1460,11 @@ private:
             // Trusted set should include all validators from multiple lists
             ManifestCache manifests;
             auto trustedKeys = std::make_unique<ValidatorList>(
-                manifests, manifests, env.timeKeeper(), app.config().legacy("database_path"), env.journal);
+                manifests,
+                manifests,
+                env.timeKeeper(),
+                app.config().legacy("database_path"),
+                env.journal);
 
             hash_set<NodeID> activeValidators;
             std::vector<Validator> valKeys;
@@ -1329,7 +1480,9 @@ private:
             // locals[1]: from 1 to maxKeys - 2
             // locals[2]: from 2 to maxKeys
             constexpr static int publishers = 3;
-            std::array<std::pair<decltype(valKeys)::const_iterator, decltype(valKeys)::const_iterator>, publishers>
+            std::array<
+                std::pair<decltype(valKeys)::const_iterator, decltype(valKeys)::const_iterator>,
+                publishers>
                 locals = {
                     std::make_pair(valKeys.cbegin(), valKeys.cend() - 4),
                     std::make_pair(valKeys.cbegin() + 1, valKeys.cend() - 2),
@@ -1341,7 +1494,11 @@ private:
                 auto const publisherPublic = derivePublicKey(KeyType::ed25519, publisherSecret);
                 auto const pubSigningKeys = randomKeyPair(KeyType::secp256k1);
                 auto const manifest = base64_encode(makeManifestString(
-                    publisherPublic, publisherSecret, pubSigningKeys.first, pubSigningKeys.second, 1));
+                    publisherPublic,
+                    publisherSecret,
+                    pubSigningKeys.first,
+                    pubSigningKeys.second,
+                    1));
 
                 std::vector<std::string> cfgPublishers({strHex(publisherPublic)});
                 std::vector<std::string> emptyCfgKeys;
@@ -1354,12 +1511,14 @@ private:
                 using namespace std::chrono_literals;
                 NetClock::time_point const validUntil = env.timeKeeper().now() + 3600s;
                 std::vector<Validator> localKeys{locals[i].first, locals[i].second};
-                auto const blob = makeList(localKeys, sequence, validUntil.time_since_epoch().count());
+                auto const blob =
+                    makeList(localKeys, sequence, validUntil.time_since_epoch().count());
                 auto const sig = signList(blob, pubSigningKeys);
 
                 BEAST_EXPECT(
                     ListDisposition::accepted ==
-                    trustedKeys->applyLists(manifest, version, {{blob, sig, {}}}, siteUri).bestDisposition());
+                    trustedKeys->applyLists(manifest, version, {{blob, sig, {}}}, siteUri)
+                        .bestDisposition());
             };
 
             // Apply multiple published lists
@@ -1389,7 +1548,11 @@ private:
             // Trusted set should include validators from intersection of lists
             ManifestCache manifests;
             auto trustedKeys = std::make_unique<ValidatorList>(
-                manifests, manifests, env.timeKeeper(), app.config().legacy("database_path"), env.journal);
+                manifests,
+                manifests,
+                env.timeKeeper(),
+                app.config().legacy("database_path"),
+                env.journal);
 
             hash_set<NodeID> activeValidators;
             std::vector<Validator> valKeys;
@@ -1407,43 +1570,55 @@ private:
             // intersection of at least 2: same as locals[1]
             // intersection when 1 is dropped: from 2 to maxKeys - 4
             constexpr static int publishers = 3;
-            std::array<std::pair<decltype(valKeys)::const_iterator, decltype(valKeys)::const_iterator>, publishers>
+            std::array<
+                std::pair<decltype(valKeys)::const_iterator, decltype(valKeys)::const_iterator>,
+                publishers>
                 locals = {
                     std::make_pair(valKeys.cbegin(), valKeys.cend() - 4),
                     std::make_pair(valKeys.cbegin() + 1, valKeys.cend() - 2),
                     std::make_pair(valKeys.cbegin() + 2, valKeys.cend()),
                 };
 
-            auto addPublishedList = [&, this](
-                                        int i, NetClock::time_point& validUntil1, NetClock::time_point& validUntil2) {
-                auto const publisherSecret = randomSecretKey();
-                auto const publisherPublic = derivePublicKey(KeyType::ed25519, publisherSecret);
-                auto const pubSigningKeys = randomKeyPair(KeyType::secp256k1);
-                auto const manifest = base64_encode(makeManifestString(
-                    publisherPublic, publisherSecret, pubSigningKeys.first, pubSigningKeys.second, 1));
+            auto addPublishedList =
+                [&, this](
+                    int i, NetClock::time_point& validUntil1, NetClock::time_point& validUntil2) {
+                    auto const publisherSecret = randomSecretKey();
+                    auto const publisherPublic = derivePublicKey(KeyType::ed25519, publisherSecret);
+                    auto const pubSigningKeys = randomKeyPair(KeyType::secp256k1);
+                    auto const manifest = base64_encode(makeManifestString(
+                        publisherPublic,
+                        publisherSecret,
+                        pubSigningKeys.first,
+                        pubSigningKeys.second,
+                        1));
 
-                std::vector<std::string> cfgPublishers({strHex(publisherPublic)});
-                std::vector<std::string> emptyCfgKeys;
+                    std::vector<std::string> cfgPublishers({strHex(publisherPublic)});
+                    std::vector<std::string> emptyCfgKeys;
 
-                BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublishers));
+                    BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublishers));
 
-                auto const version = 1;
-                auto const sequence = 1;
-                using namespace std::chrono_literals;
-                // Want to drop 1 sooner
-                NetClock::time_point const validUntil = env.timeKeeper().now() + (i == 2 ? 120s : i == 1 ? 60s : 3600s);
-                if (i == 1)
-                    validUntil1 = validUntil;
-                else if (i == 2)
-                    validUntil2 = validUntil;
-                std::vector<Validator> localKeys{locals[i].first, locals[i].second};
-                auto const blob = makeList(localKeys, sequence, validUntil.time_since_epoch().count());
-                auto const sig = signList(blob, pubSigningKeys);
+                    auto const version = 1;
+                    auto const sequence = 1;
+                    using namespace std::chrono_literals;
+                    // Want to drop 1 sooner
+                    NetClock::time_point const validUntil = env.timeKeeper().now() +
+                        (i == 2       ? 120s
+                             : i == 1 ? 60s
+                                      : 3600s);
+                    if (i == 1)
+                        validUntil1 = validUntil;
+                    else if (i == 2)
+                        validUntil2 = validUntil;
+                    std::vector<Validator> localKeys{locals[i].first, locals[i].second};
+                    auto const blob =
+                        makeList(localKeys, sequence, validUntil.time_since_epoch().count());
+                    auto const sig = signList(blob, pubSigningKeys);
 
-                BEAST_EXPECT(
-                    ListDisposition::accepted ==
-                    trustedKeys->applyLists(manifest, version, {{blob, sig, {}}}, siteUri).bestDisposition());
-            };
+                    BEAST_EXPECT(
+                        ListDisposition::accepted ==
+                        trustedKeys->applyLists(manifest, version, {{blob, sig, {}}}, siteUri)
+                            .bestDisposition());
+                };
 
             // Apply multiple published lists
             // validUntil1 is expiration time for locals[1]
@@ -1550,13 +1725,19 @@ private:
         jtx::Env env(*this);
         auto& app = env.app();
 
-        auto toStr = [](PublicKey const& publicKey) { return toBase58(TokenType::NodePublic, publicKey); };
+        auto toStr = [](PublicKey const& publicKey) {
+            return toBase58(TokenType::NodePublic, publicKey);
+        };
 
         // Config listed keys
         {
             ManifestCache manifests;
             auto trustedKeys = std::make_unique<ValidatorList>(
-                manifests, manifests, env.timeKeeper(), app.config().legacy("database_path"), env.journal);
+                manifests,
+                manifests,
+                env.timeKeeper(),
+                app.config().legacy("database_path"),
+                env.journal);
 
             // Empty list has no expiration
             BEAST_EXPECT(trustedKeys->expires() == std::nullopt);
@@ -1564,7 +1745,9 @@ private:
             // Config listed keys have maximum expiry
             PublicKey localCfgListed = randomNode();
             trustedKeys->load({}, {toStr(localCfgListed)}, {});
-            BEAST_EXPECT(trustedKeys->expires() && trustedKeys->expires().value() == NetClock::time_point::max());
+            BEAST_EXPECT(
+                trustedKeys->expires() &&
+                trustedKeys->expires().value() == NetClock::time_point::max());
             BEAST_EXPECT(trustedKeys->listed(localCfgListed));
         }
 
@@ -1572,7 +1755,11 @@ private:
         {
             ManifestCache manifests;
             auto trustedKeys = std::make_unique<ValidatorList>(
-                manifests, manifests, env.app().timeKeeper(), app.config().legacy("database_path"), env.journal);
+                manifests,
+                manifests,
+                env.app().timeKeeper(),
+                app.config().legacy("database_path"),
+                env.journal);
 
             std::vector<Validator> validators = {randomValidator()};
             hash_set<NodeID> activeValidators;
@@ -1594,7 +1781,11 @@ private:
                 auto const publisherPublic = derivePublicKey(KeyType::ed25519, publisherSecret);
                 auto const pubSigningKeys = randomKeyPair(KeyType::secp256k1);
                 auto const manifest = base64_encode(makeManifestString(
-                    publisherPublic, publisherSecret, pubSigningKeys.first, pubSigningKeys.second, 1));
+                    publisherPublic,
+                    publisherSecret,
+                    pubSigningKeys.first,
+                    pubSigningKeys.second,
+                    1));
 
                 std::vector<std::string> cfgPublishers({strHex(publisherPublic)});
                 std::vector<std::string> emptyCfgKeys;
@@ -1604,7 +1795,8 @@ private:
                 auto const version = 2;
                 auto const sequence1 = 1;
                 NetClock::time_point const expiration1 = env.timeKeeper().now() + 1800s;
-                auto const blob1 = makeList(validators, sequence1, expiration1.time_since_epoch().count());
+                auto const blob1 =
+                    makeList(validators, sequence1, expiration1.time_since_epoch().count());
                 auto const sig1 = signList(blob1, pubSigningKeys);
 
                 NetClock::time_point const effective2 = expiration1 - 300s;
@@ -1651,7 +1843,9 @@ private:
                 ListDisposition::pending,
                 ListDisposition::accepted);
             // We now have loaded both lists, so expiration is known
-            BEAST_EXPECT(trustedKeys->expires() && trustedKeys->expires().value() == prep1.expirations.back());
+            BEAST_EXPECT(
+                trustedKeys->expires() &&
+                trustedKeys->expires().value() == prep1.expirations.back());
 
             // Advance past the first list's LAST validFrom date. It remains
             // the earliest validUntil, while rotating in the second list
@@ -1663,7 +1857,9 @@ private:
                     env.app().getOPs(),
                     env.app().overlay(),
                     env.app().getHashRouter());
-                BEAST_EXPECT(trustedKeys->expires() && trustedKeys->expires().value() == prep1.expirations.back());
+                BEAST_EXPECT(
+                    trustedKeys->expires() &&
+                    trustedKeys->expires().value() == prep1.expirations.back());
                 BEAST_EXPECT(!changes.added.empty());
                 BEAST_EXPECT(changes.removed.empty());
             }
@@ -1678,7 +1874,9 @@ private:
                     env.app().getOPs(),
                     env.app().overlay(),
                     env.app().getHashRouter());
-                BEAST_EXPECT(trustedKeys->expires() && trustedKeys->expires().value() == prep1.expirations.back());
+                BEAST_EXPECT(
+                    trustedKeys->expires() &&
+                    trustedKeys->expires().value() == prep1.expirations.back());
                 BEAST_EXPECT(changes.added.empty());
                 BEAST_EXPECT(changes.removed.empty());
             }
@@ -1693,7 +1891,8 @@ private:
         ManifestCache manifests;
 
         auto createValidatorList =
-            [&](std::uint32_t vlSize, std::optional<std::size_t> minimumQuorum = {}) -> std::shared_ptr<ValidatorList> {
+            [&](std::uint32_t vlSize,
+                std::optional<std::size_t> minimumQuorum = {}) -> std::shared_ptr<ValidatorList> {
             auto trustedKeys = std::make_shared<ValidatorList>(
                 manifests,
                 manifests,
@@ -1720,7 +1919,8 @@ private:
                     env.app().getOPs(),
                     env.app().overlay(),
                     env.app().getHashRouter());
-                if (minimumQuorum == trustedKeys->quorum() || trustedKeys->quorum() == std::ceil(cfgKeys.size() * 0.8f))
+                if (minimumQuorum == trustedKeys->quorum() ||
+                    trustedKeys->quorum() == std::ceil(cfgKeys.size() * 0.8f))
                     return trustedKeys;
             }
             return nullptr;
@@ -1771,7 +1971,8 @@ private:
                             env.app().getHashRouter());
                         BEAST_EXPECT(
                             validators->quorum() ==
-                            static_cast<std::size_t>(std::ceil(std::max((us - nUnlSize) * 0.8f, us * 0.6f))));
+                            static_cast<std::size_t>(
+                                std::ceil(std::max((us - nUnlSize) * 0.8f, us * 0.6f))));
                     }
                 }
             }
@@ -1956,7 +2157,9 @@ private:
             auto start = buffer.begin();
             auto end = buffer.end();
             std::vector<std::uint8_t> slice(start, end);
-            buffers.commit(boost::asio::buffer_copy(buffers.prepare(slice.size()), boost::asio::buffer(slice)));
+            buffers.commit(
+                boost::asio::buffer_copy(
+                    buffers.prepare(slice.size()), boost::asio::buffer(slice)));
 
             boost::system::error_code ec;
             auto header = detail::parseMessageHeader(ec, buffers.data(), buffers.size());
@@ -1965,9 +2168,11 @@ private:
         };
         auto extractProtocolMessage1 = [this, &extractHeader](Message& message) {
             auto [header, buffers] = extractHeader(message);
-            if (BEAST_EXPECT(header) && BEAST_EXPECT(header->message_type == protocol::mtVALIDATOR_LIST))
+            if (BEAST_EXPECT(header) &&
+                BEAST_EXPECT(header->message_type == protocol::mtVALIDATOR_LIST))
             {
-                auto const msg = detail::parseMessageContent<protocol::TMValidatorList>(*header, buffers.data());
+                auto const msg =
+                    detail::parseMessageContent<protocol::TMValidatorList>(*header, buffers.data());
                 BEAST_EXPECT(msg);
                 return msg;
             }
@@ -1975,91 +2180,102 @@ private:
         };
         auto extractProtocolMessage2 = [this, &extractHeader](Message& message) {
             auto [header, buffers] = extractHeader(message);
-            if (BEAST_EXPECT(header) && BEAST_EXPECT(header->message_type == protocol::mtVALIDATOR_LIST_COLLECTION))
+            if (BEAST_EXPECT(header) &&
+                BEAST_EXPECT(header->message_type == protocol::mtVALIDATOR_LIST_COLLECTION))
             {
-                auto const msg =
-                    detail::parseMessageContent<protocol::TMValidatorListCollection>(*header, buffers.data());
+                auto const msg = detail::parseMessageContent<protocol::TMValidatorListCollection>(
+                    *header, buffers.data());
                 BEAST_EXPECT(msg);
                 return msg;
             }
             return std::shared_ptr<protocol::TMValidatorListCollection>();
         };
-        auto verifyMessage = [this, manifestCutoff, &extractProtocolMessage1, &extractProtocolMessage2](
-                                 auto const version,
-                                 auto const& manifest,
-                                 auto const& blobInfos,
-                                 auto const& messages,
-                                 std::vector<std::pair<std::size_t, std::vector<std::uint32_t>>> expectedInfo) {
-            BEAST_EXPECT(messages.size() == expectedInfo.size());
-            auto msgIter = expectedInfo.begin();
-            for (auto const& messageWithHash : messages)
-            {
-                if (!BEAST_EXPECT(msgIter != expectedInfo.end()))
-                    break;
-                if (!BEAST_EXPECT(messageWithHash.message))
-                    continue;
-                auto const& expectedSeqs = msgIter->second;
-                auto seqIter = expectedSeqs.begin();
-                auto const size = messageWithHash.message->getBuffer(compression::Compressed::Off).size();
-                // This size is arbitrary, but shouldn't change
-                BEAST_EXPECT(size == msgIter->first);
-                if (expectedSeqs.size() == 1)
+        auto verifyMessage =
+            [this, manifestCutoff, &extractProtocolMessage1, &extractProtocolMessage2](
+                auto const version,
+                auto const& manifest,
+                auto const& blobInfos,
+                auto const& messages,
+                std::vector<std::pair<std::size_t, std::vector<std::uint32_t>>> expectedInfo) {
+                BEAST_EXPECT(messages.size() == expectedInfo.size());
+                auto msgIter = expectedInfo.begin();
+                for (auto const& messageWithHash : messages)
                 {
-                    auto const msg = extractProtocolMessage1(*messageWithHash.message);
-                    auto const expectedVersion = 1;
-                    if (BEAST_EXPECT(msg))
+                    if (!BEAST_EXPECT(msgIter != expectedInfo.end()))
+                        break;
+                    if (!BEAST_EXPECT(messageWithHash.message))
+                        continue;
+                    auto const& expectedSeqs = msgIter->second;
+                    auto seqIter = expectedSeqs.begin();
+                    auto const size =
+                        messageWithHash.message->getBuffer(compression::Compressed::Off).size();
+                    // This size is arbitrary, but shouldn't change
+                    BEAST_EXPECT(size == msgIter->first);
+                    if (expectedSeqs.size() == 1)
                     {
-                        BEAST_EXPECT(msg->version() == expectedVersion);
-                        if (!BEAST_EXPECT(seqIter != expectedSeqs.end()))
-                            continue;
-                        auto const& expectedBlob = blobInfos.at(*seqIter);
-                        BEAST_EXPECT((*seqIter < manifestCutoff) == !!expectedBlob.manifest);
-                        auto const expectedManifest =
-                            *seqIter < manifestCutoff && expectedBlob.manifest ? *expectedBlob.manifest : manifest;
-                        BEAST_EXPECT(msg->manifest() == expectedManifest);
-                        BEAST_EXPECT(msg->blob() == expectedBlob.blob);
-                        BEAST_EXPECT(msg->signature() == expectedBlob.signature);
-                        ++seqIter;
-                        BEAST_EXPECT(seqIter == expectedSeqs.end());
-
-                        BEAST_EXPECT(
-                            messageWithHash.hash ==
-                            sha512Half(expectedManifest, expectedBlob.blob, expectedBlob.signature, expectedVersion));
-                    }
-                }
-                else
-                {
-                    std::vector<ValidatorBlobInfo> hashingBlobs;
-                    hashingBlobs.reserve(msgIter->second.size());
-
-                    auto const msg = extractProtocolMessage2(*messageWithHash.message);
-                    if (BEAST_EXPECT(msg))
-                    {
-                        BEAST_EXPECT(msg->version() == version);
-                        BEAST_EXPECT(msg->manifest() == manifest);
-                        for (auto const& blobInfo : msg->blobs())
+                        auto const msg = extractProtocolMessage1(*messageWithHash.message);
+                        auto const expectedVersion = 1;
+                        if (BEAST_EXPECT(msg))
                         {
+                            BEAST_EXPECT(msg->version() == expectedVersion);
                             if (!BEAST_EXPECT(seqIter != expectedSeqs.end()))
-                                break;
+                                continue;
                             auto const& expectedBlob = blobInfos.at(*seqIter);
-                            hashingBlobs.push_back(expectedBlob);
-                            BEAST_EXPECT(blobInfo.has_manifest() == !!expectedBlob.manifest);
-                            BEAST_EXPECT(blobInfo.has_manifest() == (*seqIter < manifestCutoff));
-
-                            if (*seqIter < manifestCutoff)
-                                BEAST_EXPECT(blobInfo.manifest() == *expectedBlob.manifest);
-                            BEAST_EXPECT(blobInfo.blob() == expectedBlob.blob);
-                            BEAST_EXPECT(blobInfo.signature() == expectedBlob.signature);
+                            BEAST_EXPECT((*seqIter < manifestCutoff) == !!expectedBlob.manifest);
+                            auto const expectedManifest =
+                                *seqIter < manifestCutoff && expectedBlob.manifest
+                                ? *expectedBlob.manifest
+                                : manifest;
+                            BEAST_EXPECT(msg->manifest() == expectedManifest);
+                            BEAST_EXPECT(msg->blob() == expectedBlob.blob);
+                            BEAST_EXPECT(msg->signature() == expectedBlob.signature);
                             ++seqIter;
+                            BEAST_EXPECT(seqIter == expectedSeqs.end());
+
+                            BEAST_EXPECT(
+                                messageWithHash.hash ==
+                                sha512Half(
+                                    expectedManifest,
+                                    expectedBlob.blob,
+                                    expectedBlob.signature,
+                                    expectedVersion));
                         }
-                        BEAST_EXPECT(seqIter == expectedSeqs.end());
                     }
-                    BEAST_EXPECT(messageWithHash.hash == sha512Half(manifest, hashingBlobs, version));
+                    else
+                    {
+                        std::vector<ValidatorBlobInfo> hashingBlobs;
+                        hashingBlobs.reserve(msgIter->second.size());
+
+                        auto const msg = extractProtocolMessage2(*messageWithHash.message);
+                        if (BEAST_EXPECT(msg))
+                        {
+                            BEAST_EXPECT(msg->version() == version);
+                            BEAST_EXPECT(msg->manifest() == manifest);
+                            for (auto const& blobInfo : msg->blobs())
+                            {
+                                if (!BEAST_EXPECT(seqIter != expectedSeqs.end()))
+                                    break;
+                                auto const& expectedBlob = blobInfos.at(*seqIter);
+                                hashingBlobs.push_back(expectedBlob);
+                                BEAST_EXPECT(blobInfo.has_manifest() == !!expectedBlob.manifest);
+                                BEAST_EXPECT(
+                                    blobInfo.has_manifest() == (*seqIter < manifestCutoff));
+
+                                if (*seqIter < manifestCutoff)
+                                    BEAST_EXPECT(blobInfo.manifest() == *expectedBlob.manifest);
+                                BEAST_EXPECT(blobInfo.blob() == expectedBlob.blob);
+                                BEAST_EXPECT(blobInfo.signature() == expectedBlob.signature);
+                                ++seqIter;
+                            }
+                            BEAST_EXPECT(seqIter == expectedSeqs.end());
+                        }
+                        BEAST_EXPECT(
+                            messageWithHash.hash == sha512Half(manifest, hashingBlobs, version));
+                    }
+                    ++msgIter;
                 }
-                ++msgIter;
-            }
-            BEAST_EXPECT(msgIter == expectedInfo.end());
-        };
+                BEAST_EXPECT(msgIter == expectedInfo.end());
+            };
         auto verifyBuildMessages = [this](
                                        std::pair<std::size_t, std::size_t> const& result,
                                        std::size_t expectedSequence,
@@ -2102,7 +2318,10 @@ private:
 
         // This peer has a VL ahead of our "current"
         verifyBuildMessages(
-            ValidatorList::buildValidatorListMessages(1, 8, maxSequence, version, manifest, blobInfos, messages), 0, 0);
+            ValidatorList::buildValidatorListMessages(
+                1, 8, maxSequence, version, manifest, blobInfos, messages),
+            0,
+            0);
         BEAST_EXPECT(messages.size() == 0);
 
         // Don't repeat the work if messages is populated, even though the
@@ -2111,18 +2330,25 @@ private:
         // real code.
         messages.emplace_back();
         verifyBuildMessages(
-            ValidatorList::buildValidatorListMessages(1, 3, maxSequence, version, manifest, blobInfos, messages), 5, 0);
+            ValidatorList::buildValidatorListMessages(
+                1, 3, maxSequence, version, manifest, blobInfos, messages),
+            5,
+            0);
         BEAST_EXPECT(messages.size() == 1 && !messages.front().message);
 
         // Generate a version 1 message
         messages.clear();
         verifyBuildMessages(
-            ValidatorList::buildValidatorListMessages(1, 3, maxSequence, version, manifest, blobInfos, messages), 5, 1);
+            ValidatorList::buildValidatorListMessages(
+                1, 3, maxSequence, version, manifest, blobInfos, messages),
+            5,
+            1);
         if (BEAST_EXPECT(messages.size() == 1) && BEAST_EXPECT(messages.front().message))
         {
             auto const& messageWithHash = messages.front();
             auto const msg = extractProtocolMessage1(*messageWithHash.message);
-            auto const size = messageWithHash.message->getBuffer(compression::Compressed::Off).size();
+            auto const size =
+                messageWithHash.message->getBuffer(compression::Compressed::Off).size();
             // This size is arbitrary, but shouldn't change
             BEAST_EXPECT(size == 108);
             auto const& expected = blobInfos.at(5);
@@ -2133,7 +2359,9 @@ private:
                 BEAST_EXPECT(msg->blob() == expected.blob);
                 BEAST_EXPECT(msg->signature() == expected.signature);
             }
-            BEAST_EXPECT(messageWithHash.hash == sha512Half(*expected.manifest, expected.blob, expected.signature, 1));
+            BEAST_EXPECT(
+                messageWithHash.hash ==
+                sha512Half(*expected.manifest, expected.blob, expected.signature, 1));
         }
 
         // Version 2
@@ -2154,7 +2382,8 @@ private:
         // real code.
         messages.emplace_back();
         verifyBuildMessages(
-            ValidatorList::buildValidatorListMessages(2, 3, maxSequence, version, manifest, blobInfos, messages),
+            ValidatorList::buildValidatorListMessages(
+                2, 3, maxSequence, version, manifest, blobInfos, messages),
             maxSequence,
             0);
         BEAST_EXPECT(messages.size() == 1 && !messages.front().message);
@@ -2162,7 +2391,8 @@ private:
         // Generate a version 2 message. Don't send the current
         messages.clear();
         verifyBuildMessages(
-            ValidatorList::buildValidatorListMessages(2, 5, maxSequence, version, manifest, blobInfos, messages),
+            ValidatorList::buildValidatorListMessages(
+                2, 5, maxSequence, version, manifest, blobInfos, messages),
             maxSequence,
             4);
         verifyMessage(version, manifest, blobInfos, messages, {{372, {6, 7, 10, 12}}});
@@ -2172,7 +2402,8 @@ private:
         // Set a limit that should give two messages
         messages.clear();
         verifyBuildMessages(
-            ValidatorList::buildValidatorListMessages(2, 5, maxSequence, version, manifest, blobInfos, messages, 300),
+            ValidatorList::buildValidatorListMessages(
+                2, 5, maxSequence, version, manifest, blobInfos, messages, 300),
             maxSequence,
             4);
         verifyMessage(version, manifest, blobInfos, messages, {{212, {6, 7}}, {192, {10, 12}}});
@@ -2181,27 +2412,41 @@ private:
         // will split and the other won't
         messages.clear();
         verifyBuildMessages(
-            ValidatorList::buildValidatorListMessages(2, 5, maxSequence, version, manifest, blobInfos, messages, 200),
+            ValidatorList::buildValidatorListMessages(
+                2, 5, maxSequence, version, manifest, blobInfos, messages, 200),
             maxSequence,
             4);
-        verifyMessage(version, manifest, blobInfos, messages, {{108, {6}}, {108, {7}}, {192, {10, 12}}});
+        verifyMessage(
+            version, manifest, blobInfos, messages, {{108, {6}}, {108, {7}}, {192, {10, 12}}});
 
         // Set a limit so that all the VLs are sent individually
         messages.clear();
         verifyBuildMessages(
-            ValidatorList::buildValidatorListMessages(2, 5, maxSequence, version, manifest, blobInfos, messages, 150),
+            ValidatorList::buildValidatorListMessages(
+                2, 5, maxSequence, version, manifest, blobInfos, messages, 150),
             maxSequence,
             4);
-        verifyMessage(version, manifest, blobInfos, messages, {{108, {6}}, {108, {7}}, {110, {10}}, {110, {12}}});
+        verifyMessage(
+            version,
+            manifest,
+            blobInfos,
+            messages,
+            {{108, {6}}, {108, {7}}, {110, {10}}, {110, {12}}});
 
         // Set a limit smaller than some of the messages. Because single
         // messages send regardless, they will all still be sent
         messages.clear();
         verifyBuildMessages(
-            ValidatorList::buildValidatorListMessages(2, 5, maxSequence, version, manifest, blobInfos, messages, 108),
+            ValidatorList::buildValidatorListMessages(
+                2, 5, maxSequence, version, manifest, blobInfos, messages, 108),
             maxSequence,
             4);
-        verifyMessage(version, manifest, blobInfos, messages, {{108, {6}}, {108, {7}}, {110, {10}}, {110, {12}}});
+        verifyMessage(
+            version,
+            manifest,
+            blobInfos,
+            messages,
+            {{108, {6}}, {108, {7}}, {110, {10}}, {110, {12}}});
     }
 
     void
@@ -2243,7 +2488,11 @@ private:
                                      std::vector<Publisher>& publishers  // out
                                      ) -> std::unique_ptr<ValidatorList> {
             auto result = std::make_unique<ValidatorList>(
-                valManifests, pubManifests, env.timeKeeper(), app.config().legacy("database_path"), env.journal);
+                valManifests,
+                pubManifests,
+                env.timeKeeper(),
+                app.config().legacy("database_path"),
+                env.journal);
 
             std::vector<std::string> cfgPublishers;
             for (std::size_t i = 0; i < countTotal; ++i)
@@ -2260,7 +2509,8 @@ private:
                     pubSigningKeys.first,
                     pubSigningKeys.second,
                     i < countRevoked ? revoked : 1));
-                publishers.push_back(Publisher{i < countRevoked, publisherPublic, pubSigningKeys, manifest});
+                publishers.push_back(
+                    Publisher{i < countRevoked, publisherPublic, pubSigningKeys, manifest});
             }
 
             std::vector<std::string> const emptyCfgKeys;
@@ -2268,7 +2518,8 @@ private:
             if (self)
             {
                 valManifests.applyManifest(*deserializeManifest(base64_decode(self->manifest)));
-                BEAST_EXPECT(result->load(self->signingPublic, emptyCfgKeys, cfgPublishers, threshold));
+                BEAST_EXPECT(
+                    result->load(self->signingPublic, emptyCfgKeys, cfgPublishers, threshold));
             }
             else
             {
@@ -2279,12 +2530,15 @@ private:
             {
                 using namespace std::chrono_literals;
                 publishers[i].expiry = env.timeKeeper().now() + (i == countTotal - 1 ? 60s : 3600s);
-                auto const blob = makeList(valKeys, 1, publishers[i].expiry.time_since_epoch().count());
+                auto const blob =
+                    makeList(valKeys, 1, publishers[i].expiry.time_since_epoch().count());
                 auto const sig = signList(blob, publishers[i].signingKeys);
 
                 BEAST_EXPECT(
-                    result->applyLists(publishers[i].manifest, 1, {{blob, sig, {}}}, siteUri).bestDisposition() ==
-                    (publishers[i].revoked ? ListDisposition::untrusted : ListDisposition::accepted));
+                    result->applyLists(publishers[i].manifest, 1, {{blob, sig, {}}}, siteUri)
+                        .bestDisposition() ==
+                    (publishers[i].revoked ? ListDisposition::untrusted
+                                           : ListDisposition::accepted));
             }
 
             return result;

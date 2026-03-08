@@ -25,7 +25,8 @@ public:
     std::string const m_name;
     Collector::ptr m_collector;
 
-    GroupImp(std::string const& name_, Collector::ptr const& collector) : m_name(name_), m_collector(collector)
+    GroupImp(std::string const& name_, Collector::ptr const& collector)
+        : m_name(name_), m_collector(collector)
     {
     }
 

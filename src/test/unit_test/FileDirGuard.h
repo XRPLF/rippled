@@ -32,7 +32,8 @@ protected:
         if (is_directory(toRm) && is_empty(toRm))
             remove(toRm);
         else
-            test_.log << "Expected " << toRm.string() << " to be an empty existing directory." << std::endl;
+            test_.log << "Expected " << toRm.string() << " to be an empty existing directory."
+                      << std::endl;
     }
 
 public:
@@ -128,7 +129,8 @@ public:
             else
             {
                 if (created_)
-                    test_.log << "Expected " << file_.string() << " to be an existing file." << std::endl;
+                    test_.log << "Expected " << file_.string() << " to be an existing file."
+                              << std::endl;
             }
         }
         catch (std::exception& e)

@@ -35,7 +35,11 @@ Cluster::size() const
 }
 
 bool
-Cluster::update(PublicKey const& identity, std::string name, std::uint32_t loadFee, NetClock::time_point reportTime)
+Cluster::update(
+    PublicKey const& identity,
+    std::string name,
+    std::uint32_t loadFee,
+    NetClock::time_point reportTime)
 {
     std::lock_guard lock(mutex_);
 

@@ -36,7 +36,11 @@ public:
         @param proposal The consensus proposal
     */
 
-    RCLCxPeerPos(PublicKey const& publicKey, Slice const& signature, uint256 const& suppress, Proposal&& proposal);
+    RCLCxPeerPos(
+        PublicKey const& publicKey,
+        Slice const& signature,
+        uint256 const& suppress,
+        Proposal&& proposal);
 
     //! Verify the signing hash of the proposal
     bool

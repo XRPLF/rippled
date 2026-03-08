@@ -227,13 +227,15 @@ AttestationClaim::validAmounts() const
 bool
 AttestationClaim::sameEvent(AttestationClaim const& rhs) const
 {
-    return AttestationClaim::sameEventHelper(*this, rhs) && tie(claimID, dst) == tie(rhs.claimID, rhs.dst);
+    return AttestationClaim::sameEventHelper(*this, rhs) &&
+        tie(claimID, dst) == tie(rhs.claimID, rhs.dst);
 }
 
 bool
 operator==(AttestationClaim const& lhs, AttestationClaim const& rhs)
 {
-    return AttestationClaim::equalHelper(lhs, rhs) && tie(lhs.claimID, lhs.dst) == tie(rhs.claimID, rhs.dst);
+    return AttestationClaim::equalHelper(lhs, rhs) &&
+        tie(lhs.claimID, lhs.dst) == tie(rhs.claimID, rhs.dst);
 }
 
 AttestationCreateAccount::AttestationCreateAccount(STObject const& o)
@@ -350,7 +352,14 @@ std::vector<std::uint8_t>
 AttestationCreateAccount::message(STXChainBridge const& bridge) const
 {
     return AttestationCreateAccount::message(
-        bridge, sendingAccount, sendingAmount, rewardAmount, rewardAccount, wasLockingChainSend, createCount, toCreate);
+        bridge,
+        sendingAccount,
+        sendingAmount,
+        rewardAmount,
+        rewardAccount,
+        wasLockingChainSend,
+        createCount,
+        toCreate);
 }
 
 bool
@@ -363,7 +372,8 @@ bool
 AttestationCreateAccount::sameEvent(AttestationCreateAccount const& rhs) const
 {
     return AttestationCreateAccount::sameEventHelper(*this, rhs) &&
-        std::tie(createCount, toCreate, rewardAmount) == std::tie(rhs.createCount, rhs.toCreate, rhs.rewardAmount);
+        std::tie(createCount, toCreate, rewardAmount) ==
+        std::tie(rhs.createCount, rhs.toCreate, rhs.rewardAmount);
 }
 
 bool
@@ -434,7 +444,8 @@ XChainClaimAttestation::XChainClaimAttestation(Json::Value const& v)
         dst = Json::getOrThrow<AccountID>(v, sfDestination);
 };
 
-XChainClaimAttestation::XChainClaimAttestation(XChainClaimAttestation::TSignedAttestation const& claimAtt)
+XChainClaimAttestation::XChainClaimAttestation(
+    XChainClaimAttestation::TSignedAttestation const& claimAtt)
     : XChainClaimAttestation{
           claimAtt.attestationSignerAccount,
           claimAtt.publicKey,
@@ -462,11 +473,24 @@ XChainClaimAttestation::toSTObject() const
 bool
 operator==(XChainClaimAttestation const& lhs, XChainClaimAttestation const& rhs)
 {
-    return std::tie(lhs.keyAccount, lhs.publicKey, lhs.amount, lhs.rewardAccount, lhs.wasLockingChainSend, lhs.dst) ==
-        std::tie(rhs.keyAccount, rhs.publicKey, rhs.amount, rhs.rewardAccount, rhs.wasLockingChainSend, rhs.dst);
+    return std::tie(
+               lhs.keyAccount,
+               lhs.publicKey,
+               lhs.amount,
+               lhs.rewardAccount,
+               lhs.wasLockingChainSend,
+               lhs.dst) ==
+        std::tie(
+               rhs.keyAccount,
+               rhs.publicKey,
+               rhs.amount,
+               rhs.rewardAccount,
+               rhs.wasLockingChainSend,
+               rhs.dst);
 }
 
-XChainClaimAttestation::MatchFields::MatchFields(XChainClaimAttestation::TSignedAttestation const& att)
+XChainClaimAttestation::MatchFields::MatchFields(
+    XChainClaimAttestation::TSignedAttestation const& att)
     : amount{att.sendingAmount}, wasLockingChainSend{att.wasLockingChainSend}, dst{att.dst}
 {
 }
@@ -552,7 +576,8 @@ XChainCreateAccountAttestation::toSTObject() const
     return o;
 }
 
-XChainCreateAccountAttestation::MatchFields::MatchFields(XChainCreateAccountAttestation::TSignedAttestation const& att)
+XChainCreateAccountAttestation::MatchFields::MatchFields(
+    XChainCreateAccountAttestation::TSignedAttestation const& att)
     : amount{att.sendingAmount}
     , rewardAmount(att.rewardAmount)
     , wasLockingChainSend{att.wasLockingChainSend}
@@ -595,7 +620,8 @@ operator==(XChainCreateAccountAttestation const& lhs, XChainCreateAccountAttesta
 //------------------------------------------------------------------------------
 //
 template <class TAttestation>
-XChainAttestationsBase<TAttestation>::XChainAttestationsBase(XChainAttestationsBase<TAttestation>::AttCollection&& atts)
+XChainAttestationsBase<TAttestation>::XChainAttestationsBase(
+    XChainAttestationsBase<TAttestation>::AttCollection&& atts)
     : attestations_{std::move(atts)}
 {
 }

@@ -81,14 +81,18 @@ public:
     template <class T>
     PrettyAmount(
         T v,
-        std::enable_if_t<sizeof(T) >= sizeof(int) && std::is_integral_v<T> && std::is_signed_v<T>>* = nullptr)
+        std::enable_if_t<
+            sizeof(T) >= sizeof(int) && std::is_integral_v<T> && std::is_signed_v<T>>* = nullptr)
         : amount_((v > 0) ? v : -v, v < 0)
     {
     }
 
     /** drops */
     template <class T>
-    PrettyAmount(T v, std::enable_if_t<sizeof(T) >= sizeof(int) && std::is_unsigned_v<T>>* = nullptr) : amount_(v)
+    PrettyAmount(
+        T v,
+        std::enable_if_t<sizeof(T) >= sizeof(int) && std::is_unsigned_v<T>>* = nullptr)
+        : amount_(v)
     {
     }
 
@@ -230,7 +234,8 @@ struct BookSpec
     AccountID account;
     xrpl::Currency currency;
 
-    BookSpec(AccountID const& account_, xrpl::Currency const& currency_) : account(account_), currency(currency_)
+    BookSpec(AccountID const& account_, xrpl::Currency const& currency_)
+        : account(account_), currency(currency_)
     {
     }
 };
@@ -378,7 +383,8 @@ public:
     Account account;
     xrpl::Currency currency;
 
-    IOU(Account const& account_, xrpl::Currency const& currency_) : account(account_), currency(currency_)
+    IOU(Account const& account_, xrpl::Currency const& currency_)
+        : account(account_), currency(currency_)
     {
     }
 
@@ -412,7 +418,9 @@ public:
         return asset();
     }
 
-    template <class T, class = std::enable_if_t<sizeof(T) >= sizeof(int) && std::is_arithmetic<T>::value>>
+    template <
+        class T,
+        class = std::enable_if_t<sizeof(T) >= sizeof(int) && std::is_arithmetic<T>::value>>
     PrettyAmount
     operator()(T v) const
     {

@@ -548,8 +548,9 @@ struct StrandContext
         bool ownerPaysTransferFee_,
         OfferCrossing offerCrossing_,
         bool isDefaultPath_,
-        std::array<boost::container::flat_set<Issue>, 2>& seenDirectIssues_,  ///< For detecting currency loops
-        boost::container::flat_set<Issue>& seenBookOuts_,                     ///< For detecting book loops
+        std::array<boost::container::flat_set<Issue>, 2>&
+            seenDirectIssues_,                             ///< For detecting currency loops
+        boost::container::flat_set<Issue>& seenBookOuts_,  ///< For detecting book loops
         AMMContext& ammContext_,
         std::optional<uint256> const& domainID,
         beast::Journal j_);  ///< Journal for logging
@@ -559,7 +560,11 @@ struct StrandContext
 namespace test {
 // Needed for testing
 bool
-directStepEqual(Step const& step, AccountID const& src, AccountID const& dst, Currency const& currency);
+directStepEqual(
+    Step const& step,
+    AccountID const& src,
+    AccountID const& dst,
+    Currency const& currency);
 
 bool
 xrpEndpointStepEqual(Step const& step, AccountID const& acc);
@@ -569,7 +574,11 @@ bookStepEqual(Step const& step, xrpl::Book const& book);
 }  // namespace test
 
 std::pair<TER, std::unique_ptr<Step>>
-make_DirectStepI(StrandContext const& ctx, AccountID const& src, AccountID const& dst, Currency const& c);
+make_DirectStepI(
+    StrandContext const& ctx,
+    AccountID const& src,
+    AccountID const& dst,
+    Currency const& c);
 
 std::pair<TER, std::unique_ptr<Step>>
 make_BookStepII(StrandContext const& ctx, Issue const& in, Issue const& out);

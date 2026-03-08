@@ -11,7 +11,10 @@ SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<SHAMapItem const> item, std:
         "SHAMapItem const>, std::uint32_t) : minimum input size");
 }
 
-SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t cowid, SHAMapHash const& hash)
+SHAMapLeafNode::SHAMapLeafNode(
+    boost::intrusive_ptr<SHAMapItem const> item,
+    std::uint32_t cowid,
+    SHAMapHash const& hash)
     : SHAMapTreeNode(cowid, hash), item_(std::move(item))
 {
     XRPL_ASSERT(

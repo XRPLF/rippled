@@ -35,13 +35,16 @@ getAutofillSequence(Json::Value const& tx_json, RPC::JsonContext& context)
     auto const srcAddressID = parseBase58<AccountID>(accountStr.asString());
     if (!srcAddressID.has_value())
     {
-        return Unexpected(RPC::make_error(rpcSRC_ACT_MALFORMED, RPC::invalid_field_message("tx.Account")));
+        return Unexpected(
+            RPC::make_error(rpcSRC_ACT_MALFORMED, RPC::invalid_field_message("tx.Account")));
     }
-    std::shared_ptr<SLE const> const sle = context.app.openLedger().current()->read(keylet::account(*srcAddressID));
+    std::shared_ptr<SLE const> const sle =
+        context.app.openLedger().current()->read(keylet::account(*srcAddressID));
     if (!hasTicketSeq && !sle)
     {
-        JLOG(context.app.journal("Simulate").debug()) << "Failed to find source account "
-                                                      << "in current ledger: " << toBase58(*srcAddressID);
+        JLOG(context.app.journal("Simulate").debug())
+            << "Failed to find source account "
+            << "in current ledger: " << toBase58(*srcAddressID);
 
         return Unexpected(rpcError(rpcSRC_ACT_NOT_FOUND));
     }
@@ -66,7 +69,8 @@ autofillSignature(Json::Value& sigObject)
         for (unsigned index = 0; index < sigObject[jss::Signers].size(); index++)
         {
             auto& signer = sigObject[jss::Signers][index];
-            if (!signer.isObject() || !signer.isMember(jss::Signer) || !signer[jss::Signer].isObject())
+            if (!signer.isObject() || !signer.isMember(jss::Signer) ||
+                !signer[jss::Signer].isObject())
                 return RPC::invalid_field_error("tx.Signers[" + std::to_string(index) + "]");
 
             if (!signer[jss::Signer].isMember(jss::SigningPubKey))
@@ -110,7 +114,12 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
         // Must happen after all the other autofills happen
         // Error handling/messaging works better that way
         auto feeOrError = RPC::getCurrentNetworkFee(
-            context.role, context.app.config(), context.app.getFeeTrack(), context.app.getTxQ(), context.app, tx_json);
+            context.role,
+            context.app.config(),
+            context.app.getFeeTrack(),
+            context.app.getTxQ(),
+            context.app,
+            tx_json);
         if (feeOrError.isMember(jss::error))
             return feeOrError;
         tx_json[jss::Fee] = feeOrError;
@@ -202,8 +211,8 @@ simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
     Json::Value jvResult;
     // Process the transaction
     OpenView view = *context.app.openLedger().current();
-    auto const result =
-        context.app.getTxQ().apply(context.app, view, transaction->getSTransaction(), tapDRY_RUN, context.j);
+    auto const result = context.app.getTxQ().apply(
+        context.app, view, transaction->getSTransaction(), tapDRY_RUN, context.j);
 
     jvResult[jss::applied] = result.applied;
     jvResult[jss::ledger_index] = view.seq();
@@ -245,9 +254,12 @@ simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
         else
         {
             jvResult[jss::meta] = result.metadata->getJson(JsonOptions::none);
-            RPC::insertDeliveredAmount(jvResult[jss::meta], view, transaction->getSTransaction(), *result.metadata);
-            RPC::insertNFTSyntheticInJson(jvResult, transaction->getSTransaction(), *result.metadata);
-            RPC::insertMPTokenIssuanceID(jvResult[jss::meta], transaction->getSTransaction(), *result.metadata);
+            RPC::insertDeliveredAmount(
+                jvResult[jss::meta], view, transaction->getSTransaction(), *result.metadata);
+            RPC::insertNFTSyntheticInJson(
+                jvResult, transaction->getSTransaction(), *result.metadata);
+            RPC::insertMPTokenIssuanceID(
+                jvResult[jss::meta], transaction->getSTransaction(), *result.metadata);
         }
     }
 
