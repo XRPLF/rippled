@@ -4,7 +4,8 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/tx/transactors/escrow/EscrowCancel.h>
-#include <xrpl/tx/transactors/escrow/EscrowHelpers.h>
+
+#include <libxrpl/tx/transactors/escrow/EscrowHelpers.h>
 
 namespace xrpl {
 

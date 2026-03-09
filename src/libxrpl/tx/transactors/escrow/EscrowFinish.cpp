@@ -11,7 +11,8 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/transactors/escrow/EscrowFinish.h>
-#include <xrpl/tx/transactors/escrow/EscrowHelpers.h>
+
+#include <libxrpl/tx/transactors/escrow/EscrowHelpers.h>
 
 namespace xrpl {
 

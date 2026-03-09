@@ -2,7 +2,8 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/tx/transactors/payment_channel/PayChanFund.h>
-#include <xrpl/tx/transactors/payment_channel/PayChanHelpers.h>
+
+#include <libxrpl/tx/transactors/payment_channel/PayChanHelpers.h>
 
 namespace xrpl {
 

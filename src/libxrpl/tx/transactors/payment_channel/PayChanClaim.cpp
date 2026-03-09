@@ -8,7 +8,8 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/payment_channel/PayChanClaim.h>
-#include <xrpl/tx/transactors/payment_channel/PayChanHelpers.h>
+
+#include <libxrpl/tx/transactors/payment_channel/PayChanHelpers.h>
 
 namespace xrpl {
 
