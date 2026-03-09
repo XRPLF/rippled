@@ -29,7 +29,7 @@ getEndpoint(std::string const& peer)
         if (endpoint)
             return beast::IP::to_asio_endpoint(endpoint.value());
     }
-    catch (std::exception const&)
+    catch (std::exception const&)  // NOLINT(bugprone-empty-catch)
     {
     }
     return {};
