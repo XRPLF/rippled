@@ -107,6 +107,7 @@ class WSClientImpl : public WSClient
                                           {
                                               stream_.cancel();
                                           }
+                                          // NOLINTNEXTLINE(bugprone-empty-catch)
                                           catch (boost::system::system_error const&)
                                           {
                                               // ignored

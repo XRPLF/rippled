@@ -10,10 +10,10 @@
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/tx/transactors/AMM/AMMBid.h>
-#include <xrpl/tx/transactors/AMM/AMMContext.h>
-#include <xrpl/tx/transactors/AMM/AMMHelpers.h>
-#include <xrpl/tx/transactors/AMM/AMMUtils.h>
+#include <xrpl/tx/transactors/dex/AMMBid.h>
+#include <xrpl/tx/transactors/dex/AMMContext.h>
+#include <xrpl/tx/transactors/dex/AMMHelpers.h>
+#include <xrpl/tx/transactors/dex/AMMUtils.h>
 
 #include <boost/regex.hpp>
 

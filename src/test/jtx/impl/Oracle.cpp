@@ -339,8 +339,8 @@ validDocumentID(AnyValue const& v)
     }
     catch (...)
     {
+        return false;
     }
-    return false;
 }
 
 }  // namespace oracle

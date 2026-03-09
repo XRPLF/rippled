@@ -249,7 +249,7 @@ public:
         {
             m_timer.cancel();
         }
-        catch (boost::system::system_error const&)
+        catch (boost::system::system_error const&)  // NOLINT(bugprone-empty-catch)
         {
             // ignored
         }

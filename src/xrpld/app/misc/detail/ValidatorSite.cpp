@@ -177,7 +177,7 @@ ValidatorSite::stop()
     {
         timer_.cancel();
     }
-    catch (boost::system::system_error const&)
+    catch (boost::system::system_error const&)  // NOLINT(bugprone-empty-catch)
     {
     }
     stopping_ = false;
@@ -222,7 +222,7 @@ ValidatorSite::makeRequest(
         {
             timer_.cancel_one();
         }
-        catch (boost::system::system_error const&)
+        catch (boost::system::system_error const&)  // NOLINT(bugprone-empty-catch)
         {
         }
     };
