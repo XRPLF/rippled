@@ -392,9 +392,8 @@ ConfidentialMPTSend::doApply()
         (*sleDestinationMPToken)[sfAuditorEncryptedBalance] = newAuditorEnc;
     }
 
-    // increment version
+    // increment sender version only; receiver version is not modified by incoming sends
     incrementConfidentialVersion(*sleSenderMPToken);
-    incrementConfidentialVersion(*sleDestinationMPToken);
 
     view().update(sleSenderMPToken);
     view().update(sleDestinationMPToken);
