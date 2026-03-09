@@ -87,10 +87,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         return strHex(buf);
     }
 
-    // Helper struct to encapsulate common setup for confidential send ZKP
-    // tests. Reduces redundancy across testForgedEqualityProof,
-    // testFiatShamirBinding, testProofComponentReuse, and
-    // testNegativeValueMalleability.
+    // Helper struct to encapsulate common setup for ZKP integration tests.
     struct ZkpTestSetup
     {
         // Constants
@@ -4286,41 +4283,9 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     {
         testcase("test Forged Range Proof");
 
-        // =================================================================
-        // FORGED RANGE PROOF TEST
-        // =================================================================
-        //
-        // This test verifies that the bulletproof (range proof) verification
-        // correctly rejects proofs for values exceeding the allowed range.
-        //
-        // BACKGROUND:
-        // Bulletproofs are used to prove that committed values are within a
-        // valid range [0, 2^64) without revealing the actual values. In a
-        // confidential send, the bulletproof proves both the send amount and
-        // the remaining balance are non-negative.
-        //
-        // ATTACK SCENARIO:
-        // An attacker attempts to bypass the supply cap by forging a
-        // bulletproof that claims the remaining balance is uint64_max
-        // (0xFFFFFFFFFFFFFFFF), effectively trying to create tokens out of
-        // thin air.
-        //
-        // STEPS:
-        // 1. Generate valid ciphertexts and proof for sendAmount=10
-        // 2. Generate a forged bulletproof claiming remaining balance = uint64_max
-        // 3. Replace the bulletproof portion in the valid proof
-        // 4. Submit the transaction
-        //
-        // WHY THE ATTACK FAILS:
-        // - The forged bulletproof was generated for different values than
-        //   the Pedersen commitments in the transaction
-        // - The bulletproof verification checks that the proof matches the
-        //   commitments: Commit(sendAmount) and Commit(remainingBalance)
-        // - Since the commitments commit to the real values, not uint64_max,
-        //   the verification fails
-        // - Supply invariant remains preserved
-        //
-        // =================================================================
+        // Verify that replacing a valid bulletproof with one claiming
+        // remaining_balance = uint64_max fails because the forged proof
+        // doesn't match the actual Pedersen commitments.
 
         using namespace test::jtx;
         Env env{*this, features};
@@ -4442,50 +4407,9 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     {
         testcase("test Negative Value Malleability");
 
-        // =================================================================
-        // NEGATIVE VALUE FROM CIPHERTEXT MALLEABILITY
-        // =================================================================
-        //
-        // BACKGROUND:
-        // Bulletproofs prove that Pedersen-committed values lie in [0, 2^64-1].
-        // In confidential sends, the verifier derives the remaining balance
-        // commitment as:
-        //   PC_remaining = PC_balance - sendAmount * G
-        //
-        // A Pedersen commitment is an elliptic curve point:
-        //   PC(v, r) = v * G + r * H
-        //
-        // ATTACK SCENARIO:
-        // Bob has a confidential balance of 10 tokens and sends all 10. The
-        // honest remaining balance is 0. The attacker replaces the legitimate
-        // bulletproof with one that instead claims the remaining balance is
-        // static_cast<uint64_t>(-10) = 0xFFFFFFFFFFFFFFF6.
-        //
-        // This value is -10 reinterpreted as a 64-bit unsigned integer via
-        // two's complement wraparound. It is the value an attacker would claim
-        // as their "remaining balance" when attempting to send 20 tokens while
-        // holding only 10: the subtraction underflows in 64-bit arithmetic and
-        // wraps to a large positive number. Since both sendAmount (10) and the
-        // wrapped negative (0xFFFFFFFFFFFFFFF6) individually lie in [0, 2^64-1],
-        // a bulletproof for those two values CAN be generated — making this a
-        // plausible attempt to mint tokens from nothing and break the supply
-        // invariant.
-        //
-        // WHY THE ATTACK FAILS:
-        // The verifier independently derives:
-        //   PC_remaining = PC_balance - 10*G = PC(10) - 10*G = PC(0)
-        //
-        // The forged bulletproof was constructed for PC(0xFFFFFFFFFFFFFFF6),
-        // which is a completely different curve point than PC(0). Bulletproof
-        // soundness (under the discrete log assumption) guarantees that no valid
-        // proof exists for the wrong commitment: the verifier rejects the
-        // transaction with tecBAD_PROOF.
-        //
-        // RESULT:
-        // The supply invariant is preserved. Negative balances cannot be
-        // disguised as large uint64 values via 64-bit integer wraparound, and
-        // the range proof is sound against this ciphertext malleability vector.
-        // =================================================================
+        // Verify that claiming a wrapped negative balance (e.g., -10 as uint64)
+        // fails because the verifier derives the commitment independently and
+        // the forged bulletproof won't match.
 
         using namespace test::jtx;
         Env env{*this, features};
@@ -4576,27 +4500,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     {
         testcase("test Fiat-Shamir Binding");
 
-        // =================================================================
-        // FIAT-SHAMIR BINDING TEST
-        // =================================================================
-        //
-        // BACKGROUND:
-        // The Fiat-Shamir transformation converts interactive proofs into
-        // non-interactive ones by replacing the verifier's random challenge
-        // with a hash of the proof transcript. In our confidential transfer
-        // proofs, the challenge is computed as:
-        //
-        //   challenge = Hash(ciphertexts || commitments || context_id || ...)
-        //
-        // Both the prover and verifier compute this challenge independently.
-        // Security relies on the challenge being bound to ALL public inputs.
-        //
-        // SECURITY PROPERTY:
-        // Any modification to transcript-bound inputs after proof generation
-        // causes the verifier to compute a different challenge than the prover
-        // used, making the proof invalid.
-        //
-        // =================================================================
+        // Verify that modifying any transcript-bound input (ciphertexts,
+        // commitments, context) after proof generation invalidates the proof.
 
         using namespace test::jtx;
         Env env{*this, features};
@@ -4729,23 +4634,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     {
         testcase("test Proof Component Reuse");
 
-        // =================================================================
-        // PROOF COMPONENT REUSE TEST
-        // =================================================================
-        //
-        // BACKGROUND:
-        // A valid proof binds cryptographic components (equality proof,
-        // linkage proofs, bulletproofs) to specific public inputs via the
-        // Fiat-Shamir challenge. Attackers may attempt to extract proof
-        // components from a valid transaction and reuse them in a new
-        // context to bypass proof generation.
-        //
-        // SECURITY PROPERTY:
-        // Proof components are cryptographically bound to the full statement
-        // (ciphertexts, commitments, context ID, recipients). Reusing
-        // components in a different context causes verification to fail.
-        //
-        // =================================================================
+        // Verify that extracting proof components from one transaction and
+        // reusing them in a different context fails verification.
 
         using namespace test::jtx;
         Env env{*this, features};
@@ -4876,6 +4766,211 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     void
+    testSpecialWitnessValues(FeatureBitset features)
+    {
+        testcase("test Special Witness Values");
+
+        // This test verifies that the ZKP verification correctly rejects
+        // proofs containing degenerate or edge-case values that an attacker
+        // might use to forge proofs.
+
+        using namespace test::jtx;
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+        mptAlice.create({.ownerCount = 1, .flags = tfMPTCanLock | tfMPTCanPrivacy | tfMPTCanTransfer});
+        mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = carol});
+
+        mptAlice.pay(alice, bob, 1000);
+        mptAlice.pay(alice, carol, 1000);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+        mptAlice.generateKeyPair(carol);
+
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+        mptAlice.convert({.account = bob, .amt = 100, .holderPubKey = mptAlice.getPubKey(bob)});
+        mptAlice.mergeInbox({.account = bob});
+
+        mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
+        mptAlice.mergeInbox({.account = carol});
+
+        // Setup common test parameters
+        ZkpTestSetup setup(mptAlice, bob, carol, alice, 10);
+
+        // Variant A: Zero-valued response scalars
+        // -----------------------------------------------------------------
+        // Attack: Construct a proof where response scalars are set to zero.
+        // This attempts to trivially satisfy verification equations.
+        //
+        // Why it fails: The Fiat-Shamir challenge is derived from the
+        // transcript including commitments. Zero responses cannot satisfy
+        // c * x + r = 0 for non-zero challenge c and secret x.
+        {
+            auto const proof = setup.generateProof(mptAlice, env, bob, carol);
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
+
+            // Create a forged proof with scalar responses set to zero
+            Buffer forgedProof = *proof;
+
+            // Equality proof structure: (1 + 2*n) points followed by (1 + n) scalars
+            size_t const pointsSize = (1 + 2 * setup.nRecipients) * compressedECPointLength;
+            size_t const scalarsSize = (1 + setup.nRecipients) * ecBlindingFactorLength;
+            std::memset(forgedProof.data() + pointsSize, 0, scalarsSize);
+
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = setup.sendAmount,
+                 .proof = strHex(forgedProof),
+                 .senderEncryptedAmt = setup.senderAmt,
+                 .destEncryptedAmt = setup.destAmt,
+                 .issuerEncryptedAmt = setup.issuerAmt,
+                 .amountCommitment = setup.amountCommitment,
+                 .balanceCommitment = setup.balanceCommitment,
+                 .err = tecBAD_PROOF});
+        }
+
+        // Variant B: Identity element (point at infinity) in ciphertext
+        // -----------------------------------------------------------------
+        // Attack: Replace a ciphertext component with the identity element.
+        // The identity element has no valid compressed representation on
+        // secp256k1 (it cannot be encoded as 02/03 + x-coordinate).
+        //
+        // Why it fails: secp256k1_ec_pubkey_parse rejects invalid encodings.
+        // The all-zeros encoding is not a valid compressed point.
+        {
+            auto const proof = setup.generateProof(mptAlice, env, bob, carol);
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
+
+            // Create invalid ciphertext with identity-like encoding
+            // All zeros is not valid on secp256k1 curve
+            Buffer invalidCiphertext(ecGamalEncryptedTotalLength);
+            std::memset(invalidCiphertext.data(), 0, ecGamalEncryptedTotalLength);
+
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = setup.sendAmount,
+                 .proof = strHex(*proof),
+                 .senderEncryptedAmt = invalidCiphertext,
+                 .destEncryptedAmt = setup.destAmt,
+                 .issuerEncryptedAmt = setup.issuerAmt,
+                 .amountCommitment = setup.amountCommitment,
+                 .balanceCommitment = setup.balanceCommitment,
+                 .err = tecINTERNAL});
+        }
+
+        // Variant B2: Identity element in commitment
+        // -----------------------------------------------------------------
+        {
+            auto const proof = setup.generateProof(mptAlice, env, bob, carol);
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
+
+            // Create invalid commitment with identity-like encoding
+            Buffer invalidCommitment(ecPedersenCommitmentLength);
+            std::memset(invalidCommitment.data(), 0, ecPedersenCommitmentLength);
+
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = setup.sendAmount,
+                 .proof = strHex(*proof),
+                 .senderEncryptedAmt = setup.senderAmt,
+                 .destEncryptedAmt = setup.destAmt,
+                 .issuerEncryptedAmt = setup.issuerAmt,
+                 .amountCommitment = invalidCommitment,
+                 .balanceCommitment = setup.balanceCommitment,
+                 .err = tecINTERNAL});
+        }
+
+        // Variant C: Boundary scalar (curve order)
+        // -----------------------------------------------------------------
+        // Attack: Use scalar values equal to the curve order n.
+        // On secp256k1, scalars are reduced mod n, so n ≡ 0 (mod n).
+        //
+        // Why it fails: Setting scalar = curve_order effectively sets it to 0,
+        // which fails the verification equations as in Variant A.
+        {
+            auto const proof = setup.generateProof(mptAlice, env, bob, carol);
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
+
+            Buffer forgedProof = *proof;
+
+            // secp256k1 curve order n (big-endian)
+            static constexpr unsigned char curveOrder[32] = {
+                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,  //
+                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE,  //
+                0xBA, 0xAE, 0xDC, 0xE6, 0xAF, 0x48, 0xA0, 0x3B,  //
+                0xBF, 0xD2, 0x5E, 0x8C, 0xD0, 0x36, 0x41, 0x41   //
+            };
+
+            // Equality proof structure: (1 + 2*n) points followed by (1 + n) scalars
+            size_t const pointsSize = (1 + 2 * setup.nRecipients) * compressedECPointLength;
+            std::memcpy(forgedProof.data() + pointsSize, curveOrder, 32);
+
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = setup.sendAmount,
+                 .proof = strHex(forgedProof),
+                 .senderEncryptedAmt = setup.senderAmt,
+                 .destEncryptedAmt = setup.destAmt,
+                 .issuerEncryptedAmt = setup.issuerAmt,
+                 .amountCommitment = setup.amountCommitment,
+                 .balanceCommitment = setup.balanceCommitment,
+                 .err = tecBAD_PROOF});
+        }
+
+        // Variant C2: Overflow scalar (curve order + 1)
+        // -----------------------------------------------------------------
+        // Attack: Use scalar values greater than the curve order.
+        //
+        // Why it fails: Values > n are either rejected or reduced mod n,
+        // resulting in small values that don't satisfy verification.
+        {
+            auto const proof = setup.generateProof(mptAlice, env, bob, carol);
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
+
+            Buffer forgedProof = *proof;
+
+            // curve_order + 1 (big-endian)
+            static constexpr unsigned char overflowScalar[32] = {
+                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,  //
+                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE,  //
+                0xBA, 0xAE, 0xDC, 0xE6, 0xAF, 0x48, 0xA0, 0x3B,  //
+                0xBF, 0xD2, 0x5E, 0x8C, 0xD0, 0x36, 0x41, 0x42   //
+            };
+
+            // Equality proof structure: (1 + 2*n) points followed by (1 + n) scalars
+            size_t const pointsSize = (1 + 2 * setup.nRecipients) * compressedECPointLength;
+            std::memcpy(forgedProof.data() + pointsSize, overflowScalar, 32);
+
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = setup.sendAmount,
+                 .proof = strHex(forgedProof),
+                 .senderEncryptedAmt = setup.senderAmt,
+                 .destEncryptedAmt = setup.destAmt,
+                 .issuerEncryptedAmt = setup.issuerAmt,
+                 .amountCommitment = setup.amountCommitment,
+                 .balanceCommitment = setup.balanceCommitment,
+                 .err = tecBAD_PROOF});
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         // ConfidentialMPTConvert
@@ -4924,6 +5019,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testNegativeValueMalleability(features);
         testFiatShamirBinding(features);
         testProofComponentReuse(features);
+        testSpecialWitnessValues(features);
 
         // Replay tests
         testProofContextBinding(features);
