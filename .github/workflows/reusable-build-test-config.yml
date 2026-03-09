@@ -230,7 +230,15 @@ jobs:
           BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
         run: |
           set -o pipefail
-          ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee unittest.log
+          # Debug builds with code coverage are significantly slower due to
+          # instrumentation overhead; run tests serially to avoid flakiness
+          # caused by resource contention between parallel test jobs.
+          if [ "${{ env.COVERAGE_ENABLED }}" = "true" ] && [ "${{ inputs.build_type }}" = "Debug" ]; then
+            TEST_JOBS=$(( BUILD_NPROC / 2 > 1 ? BUILD_NPROC / 2 : 1 ))
+          else
+            TEST_JOBS="${BUILD_NPROC}"
+          fi
+          ./xrpld --unittest --unittest-jobs "${TEST_JOBS}" 2>&1 | tee unittest.log
 
       - name: Show test failure summary
         if: ${{ failure() && !inputs.build_only }}
