@@ -1,7 +1,7 @@
 #include <test/jtx.h>
 
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/tx/transactors/Lending/LoanBrokerCoverDeposit.h>
+#include <xrpl/tx/transactors/lending/LoanBrokerCoverDeposit.h>
 
 namespace xrpl {
 namespace test {

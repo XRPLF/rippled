@@ -9,7 +9,7 @@ bool
 Keylet::check(STLedgerEntry const& sle) const
 {
     XRPL_ASSERT(
-        sle.getType() != ltANY || sle.getType() != ltCHILD,
+        sle.getType() != ltANY && sle.getType() != ltCHILD,
         "xrpl::Keylet::check : valid input type");
 
     if (type == ltANY)

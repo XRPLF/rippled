@@ -5,8 +5,8 @@
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/tx/transactors/AMM/AMMHelpers.h>
-#include <xrpl/tx/transactors/AMM/AMMUtils.h>
+#include <xrpl/tx/transactors/dex/AMMHelpers.h>
+#include <xrpl/tx/transactors/dex/AMMUtils.h>
 
 namespace xrpl {
 namespace test {
