@@ -1,12 +1,12 @@
 #pragma once
 
 #include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/server/NetworkOPs.h>
 
 namespace Json {
 class Object;
@@ -68,9 +68,11 @@ conditionMet(Condition condition_required, T& context)
         return rpcEXPIRED_VALIDATOR_LIST;
     }
 
-    if ((condition_required != NO_CONDITION) && (context.netOps.getOperatingMode() < OperatingMode::SYNCING))
+    if ((condition_required != NO_CONDITION) &&
+        (context.netOps.getOperatingMode() < OperatingMode::SYNCING))
     {
-        JLOG(context.j.info()) << "Insufficient network mode for RPC: " << context.netOps.strOperatingMode();
+        JLOG(context.j.info()) << "Insufficient network mode for RPC: "
+                               << context.netOps.strOperatingMode();
 
         if (context.apiVersion == 1)
             return rpcNO_NETWORK;
@@ -91,8 +93,8 @@ conditionMet(Condition condition_required, T& context)
 
         if (cID + 10 < vID)
         {
-            JLOG(context.j.debug()) << "Current ledger ID(" << cID << ") is less than validated ledger ID(" << vID
-                                    << ")";
+            JLOG(context.j.debug()) << "Current ledger ID(" << cID
+                                    << ") is less than validated ledger ID(" << vID << ")";
             if (context.apiVersion == 1)
                 return rpcNO_CURRENT;
             return rpcNOT_SYNCED;

@@ -203,9 +203,10 @@ struct Node
     void
     erase(Node const* child)
     {
-        auto it = std::find_if(children.begin(), children.end(), [child](std::unique_ptr<Node> const& curr) {
-            return curr.get() == child;
-        });
+        auto it = std::find_if(
+            children.begin(), children.end(), [child](std::unique_ptr<Node> const& curr) {
+                return curr.get() == child;
+            });
         XRPL_ASSERT(it != children.end(), "xrpl::Node::erase : valid input");
         std::swap(*it, children.back());
         children.pop_back();
@@ -519,7 +520,9 @@ public:
         loc->tipSupport -= count;
 
         auto const it = seqSupport.find(ledger.seq());
-        XRPL_ASSERT(it != seqSupport.end() && it->second >= count, "xrpl::LedgerTrie::remove : valid input ledger");
+        XRPL_ASSERT(
+            it != seqSupport.end() && it->second >= count,
+            "xrpl::LedgerTrie::remove : valid input ledger");
         it->second -= count;
         if (it->second == 0)
             seqSupport.erase(it->first);
@@ -670,7 +673,8 @@ public:
                 // Add any initial uncommitted support prior for ledgers
                 // earlier than nextSeq or earlier than largestIssued
                 Seq nextSeq = curr->span.start() + Seq{1};
-                while (uncommittedIt != seqSupport.end() && uncommittedIt->first < std::max(nextSeq, largestIssued))
+                while (uncommittedIt != seqSupport.end() &&
+                       uncommittedIt->first < std::max(nextSeq, largestIssued))
                 {
                     uncommitted += uncommittedIt->second;
                     uncommittedIt++;
@@ -680,7 +684,8 @@ public:
                 while (nextSeq < curr->span.end() && curr->branchSupport > uncommitted)
                 {
                     // Jump to the next seqSupport change
-                    if (uncommittedIt != seqSupport.end() && uncommittedIt->first < curr->span.end())
+                    if (uncommittedIt != seqSupport.end() &&
+                        uncommittedIt->first < curr->span.end())
                     {
                         nextSeq = uncommittedIt->first + Seq{1};
                         uncommitted += uncommittedIt->second;

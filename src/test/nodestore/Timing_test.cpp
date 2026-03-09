@@ -100,7 +100,8 @@ public:
         rngcpy(data + 1, key.size() - 1, gen_);
         Blob value(d_size_(gen_));
         rngcpy(&value[0], value.size(), gen_);
-        return NodeObject::createObject(safe_cast<NodeObjectType>(d_type_(gen_)), std::move(value), key);
+        return NodeObject::createObject(
+            safe_cast<NodeObjectType>(d_type_(gen_)), std::move(value), key);
     }
 
     // returns a batch of NodeObjects starting at n
@@ -313,7 +314,7 @@ public:
                     std::shared_ptr<NodeObject> obj;
                     std::shared_ptr<NodeObject> result;
                     obj = seq1_.obj(dist_(gen_));
-                    backend_.fetch(obj->getHash().data(), &result);
+                    backend_.fetch(obj->getHash(), &result);
                     suite_.expect(result && isSame(result, obj));
                 }
                 catch (std::exception const& e)
@@ -324,7 +325,12 @@ public:
         };
         try
         {
-            parallel_for_id<Body>(params.items, params.threads, std::ref(*this), std::ref(params), std::ref(*backend));
+            parallel_for_id<Body>(
+                params.items,
+                params.threads,
+                std::ref(*this),
+                std::ref(params),
+                std::ref(*backend));
         }
         catch (std::exception const&)
         {
@@ -371,9 +377,9 @@ public:
             {
                 try
                 {
-                    auto const key = seq2_.key(i);
+                    auto const hash = seq2_.key(i);
                     std::shared_ptr<NodeObject> result;
-                    backend_.fetch(key.data(), &result);
+                    backend_.fetch(hash, &result);
                     suite_.expect(!result);
                 }
                 catch (std::exception const& e)
@@ -385,7 +391,12 @@ public:
 
         try
         {
-            parallel_for_id<Body>(params.items, params.threads, std::ref(*this), std::ref(params), std::ref(*backend));
+            parallel_for_id<Body>(
+                params.items,
+                params.threads,
+                std::ref(*this),
+                std::ref(params),
+                std::ref(*backend));
         }
         catch (std::exception const&)
         {
@@ -438,9 +449,9 @@ public:
                 {
                     if (rand_(gen_) < missingNodePercent)
                     {
-                        auto const key = seq2_.key(dist_(gen_));
+                        auto const hash = seq2_.key(dist_(gen_));
                         std::shared_ptr<NodeObject> result;
-                        backend_.fetch(key.data(), &result);
+                        backend_.fetch(hash, &result);
                         suite_.expect(!result);
                     }
                     else
@@ -448,7 +459,7 @@ public:
                         std::shared_ptr<NodeObject> obj;
                         std::shared_ptr<NodeObject> result;
                         obj = seq1_.obj(dist_(gen_));
-                        backend_.fetch(obj->getHash().data(), &result);
+                        backend_.fetch(obj->getHash(), &result);
                         suite_.expect(result && isSame(result, obj));
                     }
                 }
@@ -461,7 +472,12 @@ public:
 
         try
         {
-            parallel_for_id<Body>(params.items, params.threads, std::ref(*this), std::ref(params), std::ref(*backend));
+            parallel_for_id<Body>(
+                params.items,
+                params.threads,
+                std::ref(*this),
+                std::ref(params),
+                std::ref(*backend));
         }
         catch (std::exception const&)
         {
@@ -524,8 +540,7 @@ public:
                         std::shared_ptr<NodeObject> result;
                         auto const j = older_(gen_);
                         obj = seq1_.obj(j);
-                        std::shared_ptr<NodeObject> result1;
-                        backend_.fetch(obj->getHash().data(), &result);
+                        backend_.fetch(obj->getHash(), &result);
                         suite_.expect(result != nullptr);
                         suite_.expect(isSame(result, obj));
                     }
@@ -543,7 +558,7 @@ public:
                                 std::shared_ptr<NodeObject> result;
                                 auto const j = recent_(gen_);
                                 obj = seq1_.obj(j);
-                                backend_.fetch(obj->getHash().data(), &result);
+                                backend_.fetch(obj->getHash(), &result);
                                 suite_.expect(!result || isSame(result, obj));
                                 break;
                             }
@@ -566,7 +581,12 @@ public:
 
         try
         {
-            parallel_for_id<Body>(params.items, params.threads, std::ref(*this), std::ref(params), std::ref(*backend));
+            parallel_for_id<Body>(
+                params.items,
+                params.threads,
+                std::ref(*this),
+                std::ref(params),
+                std::ref(*backend));
         }
         catch (std::exception const&)
         {
@@ -592,14 +612,18 @@ public:
     }
 
     void
-    do_tests(std::size_t threads, test_list const& tests, std::vector<std::string> const& config_strings)
+    do_tests(
+        std::size_t threads,
+        test_list const& tests,
+        std::vector<std::string> const& config_strings)
     {
         using std::setw;
         int w = 8;
         for (auto const& test : tests)
             if (w < test.first.size())
                 w = test.first.size();
-        log << threads << " Thread" << (threads > 1 ? "s" : "") << ", " << default_items << " Objects" << std::endl;
+        log << threads << " Thread" << (threads > 1 ? "s" : "") << ", " << default_items
+            << " Objects" << std::endl;
         {
             std::stringstream ss;
             ss << std::left << setw(10) << "Backend" << std::right;
@@ -624,7 +648,8 @@ public:
                 std::stringstream ss;
                 ss << std::left << setw(10) << get(config, "type", std::string()) << std::right;
                 for (auto const& test : tests)
-                    ss << " " << setw(w) << to_string(do_test(test.second, config, params, journal));
+                    ss << " " << setw(w)
+                       << to_string(do_test(test.second, config, params, journal));
                 ss << "   " << to_string(config);
                 log << ss.str() << std::endl;
             }

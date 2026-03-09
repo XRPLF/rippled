@@ -68,14 +68,16 @@ NegativeUNLVote::doVoting(
         if (!candidates.toDisableCandidates.empty())
         {
             auto n = choose(prevLedger->header().hash, candidates.toDisableCandidates);
-            XRPL_ASSERT(nidToKeyMap.contains(n), "xrpl::NegativeUNLVote::doVoting : found node to disable");
+            XRPL_ASSERT(
+                nidToKeyMap.contains(n), "xrpl::NegativeUNLVote::doVoting : found node to disable");
             addTx(seq, nidToKeyMap.at(n), ToDisable, initialSet);
         }
 
         if (!candidates.toReEnableCandidates.empty())
         {
             auto n = choose(prevLedger->header().hash, candidates.toReEnableCandidates);
-            XRPL_ASSERT(nidToKeyMap.contains(n), "xrpl::NegativeUNLVote::doVoting : found node to enable");
+            XRPL_ASSERT(
+                nidToKeyMap.contains(n), "xrpl::NegativeUNLVote::doVoting : found node to enable");
             addTx(seq, nidToKeyMap.at(n), ToReEnable, initialSet);
         }
     }
@@ -97,7 +99,8 @@ NegativeUNLVote::addTx(
     Serializer s;
     negUnlTx.add(s);
     if (!initialSet->addGiveItem(
-            SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(negUnlTx.getTransactionID(), s.slice())))
+            SHAMapNodeType::tnTRANSACTION_NM,
+            make_shamapitem(negUnlTx.getTransactionID(), s.slice())))
     {
         JLOG(j_.warn()) << "N-UNL: ledger seq=" << seq << ", add ttUNL_MODIFY tx failed";
     }
@@ -105,7 +108,8 @@ NegativeUNLVote::addTx(
     {
         JLOG(j_.debug()) << "N-UNL: ledger seq=" << seq
                          << ", add a ttUNL_MODIFY Tx with txID: " << negUnlTx.getTransactionID()
-                         << ", the validator to " << (modify == ToDisable ? "disable: " : "re-enable: ") << vp;
+                         << ", the validator to "
+                         << (modify == ToDisable ? "disable: " : "re-enable: ") << vp;
     }
 }
 
@@ -152,8 +156,8 @@ NegativeUNLVote::buildScoreTable(
     auto const numAncestors = ledgerAncestors.size();
     if (numAncestors < FLAG_LEDGER_INTERVAL)
     {
-        JLOG(j_.debug()) << "N-UNL: ledger " << seq << " not enough history. Can trace back only " << numAncestors
-                         << " ledgers.";
+        JLOG(j_.debug()) << "N-UNL: ledger " << seq << " not enough history. Can trace back only "
+                         << numAncestors << " ledgers.";
         return {};
     }
 
@@ -168,7 +172,8 @@ NegativeUNLVote::buildScoreTable(
     // the score table.
     for (int i = 0; i < FLAG_LEDGER_INTERVAL; ++i)
     {
-        for (auto const& v : validations.getTrustedForLedger(ledgerAncestors[numAncestors - 1 - i], seq - 2 - i))
+        for (auto const& v :
+             validations.getTrustedForLedger(ledgerAncestors[numAncestors - 1 - i], seq - 2 - i))
         {
             if (scoreTable.count(v->getNodeID()))
                 ++scoreTable[v->getNodeID()];
@@ -184,12 +189,15 @@ NegativeUNLVote::buildScoreTable(
     }();
     if (myValidationCount < negativeUNLMinLocalValsToVote)
     {
-        JLOG(j_.debug()) << "N-UNL: ledger " << seq << ". Local node only issued " << myValidationCount
-                         << " validations in last " << FLAG_LEDGER_INTERVAL << " ledgers."
+        JLOG(j_.debug()) << "N-UNL: ledger " << seq << ". Local node only issued "
+                         << myValidationCount << " validations in last " << FLAG_LEDGER_INTERVAL
+                         << " ledgers."
                          << " The reliability measurement could be wrong.";
         return {};
     }
-    else if (myValidationCount > negativeUNLMinLocalValsToVote && myValidationCount <= FLAG_LEDGER_INTERVAL)
+    else if (
+        myValidationCount > negativeUNLMinLocalValsToVote &&
+        myValidationCount <= FLAG_LEDGER_INTERVAL)
     {
         return scoreTable;
     }
@@ -198,7 +206,8 @@ NegativeUNLVote::buildScoreTable(
         // cannot happen because validations.getTrustedForLedger does not
         // return multiple validations of the same ledger from a validator.
         JLOG(j_.error()) << "N-UNL: ledger " << seq << ". Local node issued " << myValidationCount
-                         << " validations in last " << FLAG_LEDGER_INTERVAL << " ledgers. Too many!";
+                         << " validations in last " << FLAG_LEDGER_INTERVAL
+                         << " ledgers. Too many!";
         return {};
     }
 }
@@ -211,7 +220,8 @@ NegativeUNLVote::findAllCandidates(
 {
     // Compute if need to find more validators to disable
     auto const canAdd = [&]() -> bool {
-        auto const maxNegativeListed = static_cast<std::size_t>(std::ceil(unl.size() * negativeUNLMaxListed));
+        auto const maxNegativeListed =
+            static_cast<std::size_t>(std::ceil(unl.size() * negativeUNLMaxListed));
         std::size_t negativeListed = 0;
         for (auto const& n : unl)
         {
@@ -220,8 +230,9 @@ NegativeUNLVote::findAllCandidates(
         }
         bool const result = negativeListed < maxNegativeListed;
         JLOG(j_.trace()) << "N-UNL: nodeId " << myId_ << " lowWaterMark " << negativeUNLLowWaterMark
-                         << " highWaterMark " << negativeUNLHighWaterMark << " canAdd " << result << " negativeListed "
-                         << negativeListed << " maxNegativeListed " << maxNegativeListed;
+                         << " highWaterMark " << negativeUNLHighWaterMark << " canAdd " << result
+                         << " negativeListed " << negativeListed << " maxNegativeListed "
+                         << maxNegativeListed;
         return result;
     }();
 
@@ -235,7 +246,8 @@ NegativeUNLVote::findAllCandidates(
         //  (2) has less than negativeUNLLowWaterMark validations,
         //  (3) is not in negUnl, and
         //  (4) is not a new validator.
-        if (canAdd && score < negativeUNLLowWaterMark && !negUnl.count(nodeId) && !newValidators_.count(nodeId))
+        if (canAdd && score < negativeUNLLowWaterMark && !negUnl.count(nodeId) &&
+            !newValidators_.count(nodeId))
         {
             JLOG(j_.trace()) << "N-UNL: toDisable candidate " << nodeId;
             candidates.toDisableCandidates.push_back(nodeId);

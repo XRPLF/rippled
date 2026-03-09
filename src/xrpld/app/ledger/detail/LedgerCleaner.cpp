@@ -1,10 +1,10 @@
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerCleaner.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/misc/LoadFeeTrack.h>
 
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/LoadFeeTrack.h>
 
 namespace xrpl {
 
@@ -242,14 +242,20 @@ private:
         @return `true` if the ledger was cleaned.
     */
     bool
-    doLedger(LedgerIndex const& ledgerIndex, LedgerHash const& ledgerHash, bool doNodes, bool doTxns)
+    doLedger(
+        LedgerIndex const& ledgerIndex,
+        LedgerHash const& ledgerHash,
+        bool doNodes,
+        bool doTxns)
     {
-        auto nodeLedger = app_.getInboundLedgers().acquire(ledgerHash, ledgerIndex, InboundLedger::Reason::GENERIC);
+        auto nodeLedger = app_.getInboundLedgers().acquire(
+            ledgerHash, ledgerIndex, InboundLedger::Reason::GENERIC);
         if (!nodeLedger)
         {
             JLOG(j_.debug()) << "Ledger " << ledgerIndex << " not available";
             app_.getLedgerMaster().clearLedger(ledgerIndex);
-            app_.getInboundLedgers().acquire(ledgerHash, ledgerIndex, InboundLedger::Reason::GENERIC);
+            app_.getInboundLedgers().acquire(
+                ledgerHash, ledgerIndex, InboundLedger::Reason::GENERIC);
             return false;
         }
 
@@ -272,7 +278,8 @@ private:
         {
             JLOG(j_.debug()) << "Ledger " << ledgerIndex << " is missing nodes";
             app_.getLedgerMaster().clearLedger(ledgerIndex);
-            app_.getInboundLedgers().acquire(ledgerHash, ledgerIndex, InboundLedger::Reason::GENERIC);
+            app_.getInboundLedgers().acquire(
+                ledgerHash, ledgerIndex, InboundLedger::Reason::GENERIC);
             return false;
         }
 
@@ -323,8 +330,8 @@ private:
                 {
                     // We found the hash and sequence of a better reference
                     // ledger.
-                    referenceLedger =
-                        app_.getInboundLedgers().acquire(refHash, refIndex, InboundLedger::Reason::GENERIC);
+                    referenceLedger = app_.getInboundLedgers().acquire(
+                        refHash, refIndex, InboundLedger::Reason::GENERIC);
                     if (referenceLedger)
                         ledgerHash = getLedgerHash(referenceLedger, ledgerIndex);
                 }

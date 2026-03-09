@@ -18,9 +18,12 @@ template <class Dest, class Src>
 inline constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_integral_v<Src>, Dest>
 safe_cast(Src s) noexcept
 {
-    static_assert(std::is_signed_v<Dest> || std::is_unsigned_v<Src>, "Cannot cast signed to unsigned");
+    static_assert(
+        std::is_signed_v<Dest> || std::is_unsigned_v<Src>, "Cannot cast signed to unsigned");
     constexpr unsigned not_same = std::is_signed_v<Dest> != std::is_signed_v<Src>;
-    static_assert(sizeof(Dest) >= sizeof(Src) + not_same, "Destination is too small to hold all values of source");
+    static_assert(
+        sizeof(Dest) >= sizeof(Src) + not_same,
+        "Destination is too small to hold all values of source");
     return static_cast<Dest>(s);
 }
 

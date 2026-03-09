@@ -166,7 +166,8 @@ public:
     std::optional<Dest>
     dropsAs() const
     {
-        if ((drops_ > std::numeric_limits<Dest>::max()) || (!std::numeric_limits<Dest>::is_signed && drops_ < 0) ||
+        if ((drops_ > std::numeric_limits<Dest>::max()) ||
+            (!std::numeric_limits<Dest>::is_signed && drops_ < 0) ||
             (std::numeric_limits<Dest>::is_signed && drops_ < std::numeric_limits<Dest>::lowest()))
         {
             return std::nullopt;

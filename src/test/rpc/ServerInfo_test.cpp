@@ -1,10 +1,10 @@
 #include <test/jtx.h>
 
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/NetworkOPs.h>
 
 #include <boost/format.hpp>
 
@@ -81,7 +81,8 @@ admin = 127.0.0.1
                 auto const& git = info[jss::git];
                 BEAST_EXPECT(git.isMember(jss::hash) || git.isMember(jss::branch));
                 BEAST_EXPECT(
-                    !git.isMember(jss::hash) || (git[jss::hash].isString() && git[jss::hash].asString().size() == 40));
+                    !git.isMember(jss::hash) ||
+                    (git[jss::hash].isString() && git[jss::hash].asString().size() == 40));
                 BEAST_EXPECT(
                     !git.isMember(jss::branch) ||
                     (git[jss::branch].isString() && git[jss::branch].asString().size() != 0));
@@ -115,7 +116,9 @@ admin = 127.0.0.1
             BEAST_EXPECT(!result[jss::result].isMember(jss::error));
             BEAST_EXPECT(result[jss::result][jss::status] == "success");
             BEAST_EXPECT(result[jss::result].isMember(jss::info));
-            BEAST_EXPECT(result[jss::result][jss::info][jss::pubkey_validator] == validator_data::public_key);
+            BEAST_EXPECT(
+                result[jss::result][jss::info][jss::pubkey_validator] ==
+                validator_data::public_key);
 
             auto const& ports = result[jss::result][jss::info][jss::ports];
             BEAST_EXPECT(ports.isArray() && ports.size() == 3);

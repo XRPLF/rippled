@@ -189,7 +189,10 @@ private:
             {
                 acceptor_.async_accept(
                     socket_,
-                    bind_executor(strand_, std::bind(&Acceptor::on_accept, shared_from_this(), std::placeholders::_1)));
+                    bind_executor(
+                        strand_,
+                        std::bind(
+                            &Acceptor::on_accept, shared_from_this(), std::placeholders::_1)));
             }
 
             void
@@ -213,7 +216,10 @@ private:
                 p->run();
                 acceptor_.async_accept(
                     socket_,
-                    bind_executor(strand_, std::bind(&Acceptor::on_accept, shared_from_this(), std::placeholders::_1)));
+                    bind_executor(
+                        strand_,
+                        std::bind(
+                            &Acceptor::on_accept, shared_from_this(), std::placeholders::_1)));
             }
         };
 
@@ -255,11 +261,14 @@ private:
             {
                 timer_.expires_after(std::chrono::seconds(3));
                 timer_.async_wait(bind_executor(
-                    strand_, std::bind(&Connection::on_timer, shared_from_this(), std::placeholders::_1)));
+                    strand_,
+                    std::bind(&Connection::on_timer, shared_from_this(), std::placeholders::_1)));
                 stream_.async_handshake(
                     stream_type::server,
                     bind_executor(
-                        strand_, std::bind(&Connection::on_handshake, shared_from_this(), std::placeholders::_1)));
+                        strand_,
+                        std::bind(
+                            &Connection::on_handshake, shared_from_this(), std::placeholders::_1)));
             }
 
             void
@@ -298,7 +307,10 @@ private:
                     bind_executor(
                         strand_,
                         std::bind(
-                            &Connection::on_read, shared_from_this(), std::placeholders::_1, std::placeholders::_2)));
+                            &Connection::on_read,
+                            shared_from_this(),
+                            std::placeholders::_1,
+                            std::placeholders::_2)));
 #else
                 close();
 #endif
@@ -311,7 +323,9 @@ private:
                 {
                     server_.test_.log << "[server] read: EOF" << std::endl;
                     return stream_.async_shutdown(bind_executor(
-                        strand_, std::bind(&Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
+                        strand_,
+                        std::bind(
+                            &Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
                 }
                 if (ec)
                     return fail("read", ec);
@@ -325,7 +339,10 @@ private:
                     bind_executor(
                         strand_,
                         std::bind(
-                            &Connection::on_write, shared_from_this(), std::placeholders::_1, std::placeholders::_2)));
+                            &Connection::on_write,
+                            shared_from_this(),
+                            std::placeholders::_1,
+                            std::placeholders::_2)));
             }
 
             void
@@ -335,7 +352,9 @@ private:
                 if (ec)
                     return fail("write", ec);
                 stream_.async_shutdown(bind_executor(
-                    strand_, std::bind(&Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
+                    strand_,
+                    std::bind(
+                        &Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
             }
 
             void
@@ -416,11 +435,14 @@ private:
             {
                 timer_.expires_after(std::chrono::seconds(3));
                 timer_.async_wait(bind_executor(
-                    strand_, std::bind(&Connection::on_timer, shared_from_this(), std::placeholders::_1)));
+                    strand_,
+                    std::bind(&Connection::on_timer, shared_from_this(), std::placeholders::_1)));
                 socket_.async_connect(
                     ep,
                     bind_executor(
-                        strand_, std::bind(&Connection::on_connect, shared_from_this(), std::placeholders::_1)));
+                        strand_,
+                        std::bind(
+                            &Connection::on_connect, shared_from_this(), std::placeholders::_1)));
             }
 
             void
@@ -454,7 +476,9 @@ private:
                 stream_.async_handshake(
                     stream_type::client,
                     bind_executor(
-                        strand_, std::bind(&Connection::on_handshake, shared_from_this(), std::placeholders::_1)));
+                        strand_,
+                        std::bind(
+                            &Connection::on_handshake, shared_from_this(), std::placeholders::_1)));
             }
 
             void
@@ -471,10 +495,15 @@ private:
                     bind_executor(
                         strand_,
                         std::bind(
-                            &Connection::on_write, shared_from_this(), std::placeholders::_1, std::placeholders::_2)));
+                            &Connection::on_write,
+                            shared_from_this(),
+                            std::placeholders::_1,
+                            std::placeholders::_2)));
 #else
                 stream_.async_shutdown(bind_executor(
-                    strand_, std::bind(&Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
+                    strand_,
+                    std::bind(
+                        &Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
 #endif
             }
 
@@ -492,10 +521,15 @@ private:
                     bind_executor(
                         strand_,
                         std::bind(
-                            &Connection::on_read, shared_from_this(), std::placeholders::_1, std::placeholders::_2)));
+                            &Connection::on_read,
+                            shared_from_this(),
+                            std::placeholders::_1,
+                            std::placeholders::_2)));
 #else
                 stream_.async_shutdown(bind_executor(
-                    strand_, std::bind(&Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
+                    strand_,
+                    std::bind(
+                        &Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
 #endif
             }
 
@@ -506,7 +540,9 @@ private:
                     return fail("read", ec);
                 buf_.commit(bytes_transferred);
                 stream_.async_shutdown(bind_executor(
-                    strand_, std::bind(&Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
+                    strand_,
+                    std::bind(
+                        &Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
             }
 
             void

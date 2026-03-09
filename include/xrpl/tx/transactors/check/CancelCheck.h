@@ -1,0 +1,28 @@
+#pragma once
+
+#include <xrpl/tx/Transactor.h>
+
+namespace xrpl {
+
+class CancelCheck : public Transactor
+{
+public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+
+    explicit CancelCheck(ApplyContext& ctx) : Transactor(ctx)
+    {
+    }
+
+    static NotTEC
+    preflight(PreflightContext const& ctx);
+
+    static TER
+    preclaim(PreclaimContext const& ctx);
+
+    TER
+    doApply() override;
+};
+
+using CheckCancel = CancelCheck;
+
+}  // namespace xrpl

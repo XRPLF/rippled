@@ -1,6 +1,5 @@
 #include <xrpld/app/ledger/ConsensusTransSetSF.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/Transaction.h>
 
 #include <xrpl/basics/Log.h>
@@ -8,6 +7,7 @@
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/server/NetworkOPs.h>
 
 namespace xrpl {
 
@@ -50,7 +50,8 @@ ConsensusTransSetSF::gotNode(
         }
         catch (std::exception const& ex)
         {
-            JLOG(j_.warn()) << "Fetched invalid transaction in proposed set. Exception: " << ex.what();
+            JLOG(j_.warn()) << "Fetched invalid transaction in proposed set. Exception: "
+                            << ex.what();
         }
     }
 }

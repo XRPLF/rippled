@@ -125,7 +125,8 @@ operator==(PublicKey const& lhs, PublicKey const& rhs)
 inline bool
 operator<(PublicKey const& lhs, PublicKey const& rhs)
 {
-    return std::lexicographical_compare(lhs.data(), lhs.data() + lhs.size(), rhs.data(), rhs.data() + rhs.size());
+    return std::lexicographical_compare(
+        lhs.data(), lhs.data() + lhs.size(), rhs.data(), rhs.data() + rhs.size());
 }
 
 template <class Hasher>

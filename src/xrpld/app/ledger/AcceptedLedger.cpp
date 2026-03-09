@@ -4,13 +4,14 @@
 
 namespace xrpl {
 
-AcceptedLedger::AcceptedLedger(std::shared_ptr<ReadView const> const& ledger, Application& app) : mLedger(ledger)
+AcceptedLedger::AcceptedLedger(std::shared_ptr<ReadView const> const& ledger) : mLedger(ledger)
 {
     transactions_.reserve(256);
 
     auto insertAll = [&](auto const& txns) {
         for (auto const& item : txns)
-            transactions_.emplace_back(std::make_unique<AcceptedLedgerTx>(ledger, item.first, item.second));
+            transactions_.emplace_back(
+                std::make_unique<AcceptedLedgerTx>(ledger, item.first, item.second));
     };
 
     transactions_.reserve(256);

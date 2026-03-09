@@ -95,7 +95,8 @@ walletPropose(Json::Value const& params)
 
     if (!seed)
     {
-        if (params.isMember(jss::passphrase) || params.isMember(jss::seed) || params.isMember(jss::seed_hex))
+        if (params.isMember(jss::passphrase) || params.isMember(jss::seed) ||
+            params.isMember(jss::seed_hex))
         {
             Json::Value err;
 

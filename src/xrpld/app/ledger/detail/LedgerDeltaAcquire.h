@@ -65,7 +65,9 @@ public:
      * @note info and Txns must have been verified against the ledger hash
      */
     void
-    processData(LedgerHeader const& info, std::map<std::uint32_t, std::shared_ptr<STTx const>>&& orderedTxns);
+    processData(
+        LedgerHeader const& info,
+        std::map<std::uint32_t, std::shared_ptr<STTx const>>&& orderedTxns);
 
     /**
      * Try to build the ledger if not already

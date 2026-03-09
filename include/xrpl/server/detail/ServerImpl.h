@@ -116,7 +116,10 @@ private:
 };
 
 template <class Handler>
-ServerImpl<Handler>::ServerImpl(Handler& handler, boost::asio::io_context& io_context, beast::Journal journal)
+ServerImpl<Handler>::ServerImpl(
+    Handler& handler,
+    boost::asio::io_context& io_context,
+    beast::Journal journal)
     : handler_(handler)
     , j_(journal)
     , io_context_(io_context)

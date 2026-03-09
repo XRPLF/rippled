@@ -185,7 +185,10 @@ public:
     void
     checkAccept(uint256 const& hash, std::uint32_t seq);
     void
-    consensusBuilt(std::shared_ptr<Ledger const> const& ledger, uint256 const& consensusHash, Json::Value consensus);
+    consensusBuilt(
+        std::shared_ptr<Ledger const> const& ledger,
+        uint256 const& consensusHash,
+        Json::Value consensus);
 
     void
     setBuildingLedger(LedgerIndex index);
