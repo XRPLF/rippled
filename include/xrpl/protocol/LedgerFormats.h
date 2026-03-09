@@ -185,7 +185,7 @@ enum LedgerEntryType : std::uint16_t {
         LSF_FLAG(lsmfMPTCanMutateCanClawback, 0x00000040)                                                                          \
         LSF_FLAG(lsmfMPTCanMutateMetadata, 0x00010000)                                                                             \
         LSF_FLAG(lsmfMPTCanMutateTransferFee, 0x00020000)                                                                          \
-        LSF_FLAG(lsmfMPTCannotMutatePrivacy, 0x00040000))                                                                          \                                                                                                   \      
+        LSF_FLAG(lsmfMPTCannotMutatePrivacy, 0x00040000))                                                                          \
                                                                                                                                    \
     LEDGER_OBJECT(MPToken,                                                                                                         \
         LSF_FLAG2(lsfMPTLocked, 0x00000001)                                                                                        \

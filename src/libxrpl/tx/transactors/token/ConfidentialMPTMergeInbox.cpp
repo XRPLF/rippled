@@ -4,7 +4,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/MPT/ConfidentialMPTMergeInbox.h>
+#include <xrpl/tx/transactors/token/ConfidentialMPTMergeInbox.h>
 
 namespace xrpl {
 

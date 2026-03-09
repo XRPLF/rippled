@@ -6,7 +6,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/MPT/ConfidentialMPTSend.h>
+#include <xrpl/tx/transactors/token/ConfidentialMPTSend.h>
 
 namespace xrpl {
 

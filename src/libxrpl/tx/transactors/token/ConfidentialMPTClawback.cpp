@@ -5,7 +5,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/MPT/ConfidentialMPTClawback.h>
+#include <xrpl/tx/transactors/token/ConfidentialMPTClawback.h>
 
 namespace xrpl {
 
