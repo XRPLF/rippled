@@ -1,5 +1,3 @@
-#include <xrpld/app/tx/detail/ConfidentialMPTConvertBack.h>
-
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
@@ -7,6 +5,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/tx/transactors/MPT/ConfidentialMPTConvertBack.h>
 
 #include <cstddef>
 
@@ -57,7 +56,10 @@ ConfidentialMPTConvertBack::preflight(PreflightContext const& ctx)
  * All proofs are verified before returning any error to prevent timing attacks.
  */
 static TER
-verifyProofs(STTx const& tx, std::shared_ptr<SLE const> const& issuance, std::shared_ptr<SLE const> const& mptoken)
+verifyProofs(
+    STTx const& tx,
+    std::shared_ptr<SLE const> const& issuance,
+    std::shared_ptr<SLE const> const& mptoken)
 {
     if (!mptoken->isFieldPresent(sfHolderElGamalPublicKey))
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -69,14 +71,18 @@ verifyProofs(STTx const& tx, std::shared_ptr<SLE const> const& issuance, std::sh
     auto const holderPubKey = (*mptoken)[sfHolderElGamalPublicKey];
 
     auto const contextHash = getConvertBackContextHash(
-        account, mptIssuanceID, tx.getSeqProxy().value(), (*mptoken)[~sfConfidentialBalanceVersion].value_or(0));
+        account,
+        mptIssuanceID,
+        tx.getSeqProxy().value(),
+        (*mptoken)[~sfConfidentialBalanceVersion].value_or(0));
 
     // Prepare Auditor Info
     std::optional<ConfidentialRecipient> auditor;
     bool const hasAuditor = issuance->isFieldPresent(sfAuditorElGamalPublicKey);
     if (hasAuditor)
     {
-        auditor.emplace(ConfidentialRecipient{(*issuance)[sfAuditorElGamalPublicKey], tx[sfAuditorEncryptedAmount]});
+        auditor.emplace(ConfidentialRecipient{
+            (*issuance)[sfAuditorElGamalPublicKey], tx[sfAuditorEncryptedAmount]});
     }
 
     // Run all verifications before returning any error to prevent timing attacks
@@ -135,7 +141,8 @@ verifyProofs(STTx const& tx, std::shared_ptr<SLE const> const& issuance, std::sh
     {
         // Compute PC_rem = PC_balance - mG (the commitment to the remaining balance)
         Buffer pcRem;
-        if (auto const ter = computeConvertBackRemainder(tx[sfBalanceCommitment], amount, pcRem); !isTesSuccess(ter))
+        if (auto const ter = computeConvertBackRemainder(tx[sfBalanceCommitment], amount, pcRem);
+            !isTesSuccess(ter))
         {
             valid = false;
         }
@@ -143,7 +150,8 @@ verifyProofs(STTx const& tx, std::shared_ptr<SLE const> const& issuance, std::sh
         // The bulletproof verifies that the remaining balance is non-negative
         std::vector<Slice> commitments{Slice(pcRem.data(), pcRem.size())};
 
-        if (auto const ter = verifyAggregatedBulletproof(bulletproof, commitments, contextHash); !isTesSuccess(ter))
+        if (auto const ter = verifyAggregatedBulletproof(bulletproof, commitments, contextHash);
+            !isTesSuccess(ter))
         {
             valid = false;
         }
@@ -249,7 +257,9 @@ ConfidentialMPTConvertBack::doApply()
     {
         Buffer res(ecGamalEncryptedTotalLength);
         if (TER const ter = homomorphicSubtract(
-                (*sleMptoken)[sfConfidentialBalanceSpending], ctx_.tx[sfHolderEncryptedAmount], res);
+                (*sleMptoken)[sfConfidentialBalanceSpending],
+                ctx_.tx[sfHolderEncryptedAmount],
+                res);
             !isTesSuccess(ter))
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -259,8 +269,8 @@ ConfidentialMPTConvertBack::doApply()
     // homomorphically subtract issuer's encrypted balance
     {
         Buffer res(ecGamalEncryptedTotalLength);
-        if (TER const ter =
-                homomorphicSubtract((*sleMptoken)[sfIssuerEncryptedBalance], ctx_.tx[sfIssuerEncryptedAmount], res);
+        if (TER const ter = homomorphicSubtract(
+                (*sleMptoken)[sfIssuerEncryptedBalance], ctx_.tx[sfIssuerEncryptedAmount], res);
             !isTesSuccess(ter))
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -270,8 +280,8 @@ ConfidentialMPTConvertBack::doApply()
     if (auditorEc)
     {
         Buffer res(ecGamalEncryptedTotalLength);
-        if (TER const ter =
-                homomorphicSubtract((*sleMptoken)[sfAuditorEncryptedBalance], ctx_.tx[sfAuditorEncryptedAmount], res);
+        if (TER const ter = homomorphicSubtract(
+                (*sleMptoken)[sfAuditorEncryptedBalance], ctx_.tx[sfAuditorEncryptedAmount], res);
             !isTesSuccess(ter))
             return tecINTERNAL;  // LCOV_EXCL_LINE
 

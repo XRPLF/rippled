@@ -1,5 +1,3 @@
-#include <xrpld/app/tx/detail/ConfidentialMPTClawback.h>
-
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
@@ -7,6 +5,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/tx/transactors/MPT/ConfidentialMPTClawback.h>
 
 namespace xrpl {
 
@@ -83,7 +82,8 @@ ConfidentialMPTClawback::preclaim(PreclaimContext const& ctx)
     if (amount > (*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0))
         return tecINSUFFICIENT_FUNDS;
 
-    auto const contextHash = getClawbackContextHash(account, mptIssuanceID, ctx.tx.getSeqProxy().value(), holder);
+    auto const contextHash =
+        getClawbackContextHash(account, mptIssuanceID, ctx.tx.getSeqProxy().value(), holder);
 
     // Verify the revealed confidential amount by the issuer matches the exact
     // confidential balance of the holder.
@@ -136,7 +136,8 @@ ConfidentialMPTClawback::doApply()
 
         Slice const auditorPubKey = (*sleIssuance)[sfAuditorElGamalPublicKey];
 
-        auto const encZeroForAuditor = encryptCanonicalZeroAmount(auditorPubKey, holder, mptIssuanceID);
+        auto const encZeroForAuditor =
+            encryptCanonicalZeroAmount(auditorPubKey, holder, mptIssuanceID);
 
         if (!encZeroForAuditor)
             return tecINTERNAL;  // LCOV_EXCL_LINE

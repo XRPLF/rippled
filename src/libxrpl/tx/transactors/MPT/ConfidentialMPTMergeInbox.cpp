@@ -1,11 +1,10 @@
-#include <xrpld/app/tx/detail/ConfidentialMPTMergeInbox.h>
-
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/tx/transactors/MPT/ConfidentialMPTMergeInbox.h>
 
 namespace xrpl {
 
@@ -37,7 +36,8 @@ ConfidentialMPTMergeInbox::preclaim(PreclaimContext const& ctx)
     if (sleIssuance->getAccountID(sfIssuer) == ctx.tx[sfAccount])
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sleMptoken = ctx.view.read(keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], ctx.tx[sfAccount]));
+    auto const sleMptoken =
+        ctx.view.read(keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], ctx.tx[sfAccount]));
     if (!sleMptoken)
         return tecOBJECT_NOT_FOUND;
 
@@ -70,7 +70,9 @@ ConfidentialMPTMergeInbox::doApply()
     // transfers sit in inbox and cannot be spent or converted back.
     Buffer sum(ecGamalEncryptedTotalLength);
     if (TER const ter = homomorphicAdd(
-            (*sleMptoken)[sfConfidentialBalanceSpending], (*sleMptoken)[sfConfidentialBalanceInbox], sum);
+            (*sleMptoken)[sfConfidentialBalanceSpending],
+            (*sleMptoken)[sfConfidentialBalanceInbox],
+            sum);
         !isTesSuccess(ter))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -78,8 +80,8 @@ ConfidentialMPTMergeInbox::doApply()
 
     // Reset inbox to encrypted zero. Must use canonical zero encryption
     // (deterministic ciphertext) so the ledger state is reproducible.
-    auto const zeroEncryption =
-        encryptCanonicalZeroAmount((*sleMptoken)[sfHolderElGamalPublicKey], account_, mptIssuanceID);
+    auto const zeroEncryption = encryptCanonicalZeroAmount(
+        (*sleMptoken)[sfHolderElGamalPublicKey], account_, mptIssuanceID);
 
     if (!zeroEncryption)
         return tecINTERNAL;  // LCOV_EXCL_LINE

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <xrpld/app/tx/detail/Transactor.h>
+#include <xrpl/tx/Transactor.h>
 
 namespace xrpl {
 
@@ -42,3 +42,4 @@ public:
 };
 
 }  // namespace xrpl
+

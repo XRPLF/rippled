@@ -1,5 +1,3 @@
-#include <xrpld/app/tx/detail/ConfidentialMPTConvert.h>
-
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
@@ -7,6 +5,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/tx/transactors/MPT/ConfidentialMPTConvert.h>
 
 namespace xrpl {
 
@@ -92,7 +91,8 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
         return tecOBJECT_NOT_FOUND;
 
     auto const mptIssue = MPTIssue{issuanceID};
-    STAmount const mptAmount = STAmount(MPTAmount{static_cast<MPTAmount::value_type>(amount)}, mptIssue);
+    STAmount const mptAmount =
+        STAmount(MPTAmount{static_cast<MPTAmount::value_type>(amount)}, mptIssue);
     if (accountHolds(
             ctx.view,
             account,
@@ -120,7 +120,8 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     {
         holderPubKey = ctx.tx[sfHolderElGamalPublicKey];
 
-        auto const contextHash = getConvertContextHash(account, issuanceID, ctx.tx.getSeqProxy().value());
+        auto const contextHash =
+            getConvertContextHash(account, issuanceID, ctx.tx.getSeqProxy().value());
 
         // when register new pk, verify through schnorr proof
         if (!isTesSuccess(verifySchnorrProof(holderPubKey, ctx.tx[sfZKProof], contextHash)))
@@ -136,8 +137,8 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     std::optional<ConfidentialRecipient> auditor;
     if (hasAuditor)
     {
-        auditor.emplace(
-            ConfidentialRecipient{(*sleIssuance)[sfAuditorElGamalPublicKey], ctx.tx[sfAuditorEncryptedAmount]});
+        auditor.emplace(ConfidentialRecipient{
+            (*sleIssuance)[sfAuditorElGamalPublicKey], ctx.tx[sfAuditorEncryptedAmount]});
     }
 
     return verifyRevealedAmount(
@@ -188,7 +189,8 @@ ConfidentialMPTConvert::doApply()
         // Case 1: Add to existing inbox balance (holder will merge later)
         {
             Buffer sum(ecGamalEncryptedTotalLength);
-            if (TER const ter = homomorphicAdd(holderEc, (*sleMptoken)[sfConfidentialBalanceInbox], sum);
+            if (TER const ter =
+                    homomorphicAdd(holderEc, (*sleMptoken)[sfConfidentialBalanceInbox], sum);
                 !isTesSuccess(ter))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -198,7 +200,8 @@ ConfidentialMPTConvert::doApply()
         // homomorphically add issuer's encrypted balance
         {
             Buffer sum(ecGamalEncryptedTotalLength);
-            if (TER const ter = homomorphicAdd(issuerEc, (*sleMptoken)[sfIssuerEncryptedBalance], sum);
+            if (TER const ter =
+                    homomorphicAdd(issuerEc, (*sleMptoken)[sfIssuerEncryptedBalance], sum);
                 !isTesSuccess(ter))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -209,7 +212,8 @@ ConfidentialMPTConvert::doApply()
         if (auditorEc)
         {
             Buffer sum(ecGamalEncryptedTotalLength);
-            if (TER const ter = homomorphicAdd(*auditorEc, (*sleMptoken)[sfAuditorEncryptedBalance], sum);
+            if (TER const ter =
+                    homomorphicAdd(*auditorEc, (*sleMptoken)[sfAuditorEncryptedBalance], sum);
                 !isTesSuccess(ter))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -231,8 +235,8 @@ ConfidentialMPTConvert::doApply()
 
         // Spending balance starts at zero. Must use canonical zero encryption
         // (deterministic ciphertext) so the ledger state is reproducible.
-        auto const zeroBalance =
-            encryptCanonicalZeroAmount((*sleMptoken)[sfHolderElGamalPublicKey], account_, mptIssuanceID);
+        auto const zeroBalance = encryptCanonicalZeroAmount(
+            (*sleMptoken)[sfHolderElGamalPublicKey], account_, mptIssuanceID);
 
         if (!zeroBalance)
             return tecINTERNAL;  // LCOV_EXCL_LINE
