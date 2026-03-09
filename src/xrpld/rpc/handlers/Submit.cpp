@@ -13,7 +13,8 @@ namespace xrpl {
 static NetworkOPs::FailHard
 getFailHard(RPC::JsonContext const& context)
 {
-    return NetworkOPs::doFailHard(context.params.isMember("fail_hard") && context.params["fail_hard"].asBool());
+    return NetworkOPs::doFailHard(
+        context.params.isMember("fail_hard") && context.params["fail_hard"].asBool());
 }
 
 // {
@@ -75,9 +76,10 @@ doSubmit(RPC::JsonContext& context)
 
     {
         if (!context.app.checkSigs())
-            forceValidity(context.app.getHashRouter(), stTx->getTransactionID(), Validity::SigGoodOnly);
-        auto [validity, reason] =
-            checkValidity(context.app.getHashRouter(), *stTx, context.ledgerMaster.getCurrentLedger()->rules());
+            forceValidity(
+                context.app.getHashRouter(), stTx->getTransactionID(), Validity::SigGoodOnly);
+        auto [validity, reason] = checkValidity(
+            context.app.getHashRouter(), *stTx, context.ledgerMaster.getCurrentLedger()->rules());
         if (validity != Validity::Valid)
         {
             jvResult[jss::error] = "invalidTransaction";
@@ -137,7 +139,8 @@ doSubmit(RPC::JsonContext& context)
 
             if (auto currentLedgerState = transaction->getCurrentLedgerState())
             {
-                jvResult[jss::account_sequence_next] = safe_cast<Json::Value::UInt>(currentLedgerState->accountSeqNext);
+                jvResult[jss::account_sequence_next] =
+                    safe_cast<Json::Value::UInt>(currentLedgerState->accountSeqNext);
                 jvResult[jss::account_sequence_available] =
                     safe_cast<Json::Value::UInt>(currentLedgerState->accountSeqAvail);
                 jvResult[jss::open_ledger_cost] = to_string(currentLedgerState->minFeeRequired);

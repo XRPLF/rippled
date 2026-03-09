@@ -54,7 +54,8 @@ SkipListAcquire::trigger(std::size_t limit, ScopedLockType& sl)
         peerSet_->addPeers(
             limit,
             [this](auto peer) {
-                return peer->supportsFeature(ProtocolFeature::LedgerReplay) && peer->hasLedger(hash_, 0);
+                return peer->supportsFeature(ProtocolFeature::LedgerReplay) &&
+                    peer->hasLedger(hash_, 0);
             },
             [this](auto peer) {
                 if (peer->supportsFeature(ProtocolFeature::LedgerReplay))
@@ -68,7 +69,8 @@ SkipListAcquire::trigger(std::size_t limit, ScopedLockType& sl)
                 }
                 else
                 {
-                    JLOG(journal_.trace()) << "Add a no feature peer " << peer->id() << " for " << hash_;
+                    JLOG(journal_.trace())
+                        << "Add a no feature peer " << peer->id() << " for " << hash_;
                     if (++noFeaturePeerCount_ >= LedgerReplayParameters::MAX_NO_FEATURE_PEER_COUNT)
                     {
                         JLOG(journal_.debug()) << "Fall back for " << hash_;
@@ -106,7 +108,9 @@ SkipListAcquire::pmDowncast()
 }
 
 void
-SkipListAcquire::processData(std::uint32_t ledgerSeq, boost::intrusive_ptr<SHAMapItem const> const& item)
+SkipListAcquire::processData(
+    std::uint32_t ledgerSeq,
+    boost::intrusive_ptr<SHAMapItem const> const& item)
 {
     XRPL_ASSERT(ledgerSeq != 0 && item, "xrpl::SkipListAcquire::processData : valid inputs");
     ScopedLockType sl(mtx_);
@@ -154,7 +158,8 @@ SkipListAcquire::getData() const
 void
 SkipListAcquire::retrieveSkipList(std::shared_ptr<Ledger const> const& ledger, ScopedLockType& sl)
 {
-    if (auto const hashIndex = ledger->read(keylet::skip()); hashIndex && hashIndex->isFieldPresent(sfHashes))
+    if (auto const hashIndex = ledger->read(keylet::skip());
+        hashIndex && hashIndex->isFieldPresent(sfHashes))
     {
         auto const& slist = hashIndex->getFieldV256(sfHashes).value();
         if (!slist.empty())
@@ -170,7 +175,10 @@ SkipListAcquire::retrieveSkipList(std::shared_ptr<Ledger const> const& ledger, S
 }
 
 void
-SkipListAcquire::onSkipListAcquired(std::vector<uint256> const& skipList, std::uint32_t ledgerSeq, ScopedLockType& sl)
+SkipListAcquire::onSkipListAcquired(
+    std::vector<uint256> const& skipList,
+    std::uint32_t ledgerSeq,
+    ScopedLockType& sl)
 {
     complete_ = true;
     data_ = std::make_shared<SkipListData>(ledgerSeq, skipList);

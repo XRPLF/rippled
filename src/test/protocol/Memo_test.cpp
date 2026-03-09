@@ -35,14 +35,16 @@ public:
         {
             // Make sure that too big a memo is flagged as invalid.
             JTx memoSize = makeJtxWithMemo();
-            memoSize.jv[sfMemos.jsonName][0u][sfMemo.jsonName][sfMemoData.jsonName] = std::string(2020, '0');
+            memoSize.jv[sfMemos.jsonName][0u][sfMemo.jsonName][sfMemoData.jsonName] =
+                std::string(2020, '0');
             env(memoSize,
                 rpc("invalidTransaction",
                     "fails local checks: The memo exceeds the maximum allowed "
                     "size."));
 
             // This memo is just barely small enough.
-            memoSize.jv[sfMemos.jsonName][0u][sfMemo.jsonName][sfMemoData.jsonName] = std::string(2018, '1');
+            memoSize.jv[sfMemos.jsonName][0u][sfMemo.jsonName][sfMemoData.jsonName] =
+                std::string(2018, '1');
             env(memoSize);
         }
         {

@@ -21,8 +21,8 @@ Status
 LedgerHandler::check()
 {
     auto const& params = context_.params;
-    bool needsLedger =
-        params.isMember(jss::ledger) || params.isMember(jss::ledger_hash) || params.isMember(jss::ledger_index);
+    bool needsLedger = params.isMember(jss::ledger) || params.isMember(jss::ledger_hash) ||
+        params.isMember(jss::ledger_index);
     if (!needsLedger)
         return Status::OK;
 
@@ -173,7 +173,8 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
 
     if (request.get_objects())
     {
-        std::shared_ptr<ReadView const> parent = context.app.getLedgerMaster().getLedgerBySeq(ledger->seq() - 1);
+        std::shared_ptr<ReadView const> parent =
+            context.app.getLedgerMaster().getLedgerBySeq(ledger->seq() - 1);
 
         std::shared_ptr<Ledger const> base = std::dynamic_pointer_cast<Ledger const>(parent);
         if (!base)
@@ -196,7 +197,8 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
         if (!res)
         {
             grpc::Status errorStatus{
-                grpc::StatusCode::RESOURCE_EXHAUSTED, "too many differences between specified ledgers"};
+                grpc::StatusCode::RESOURCE_EXHAUSTED,
+                "too many differences between specified ledgers"};
             return {response, errorStatus};
         }
 
@@ -241,27 +243,32 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
                             {
                                 auto firstBook = desired->stateMap().upper_bound(bookBase.key);
                                 if (firstBook != desired->stateMap().end() &&
-                                    firstBook->key() < getQualityNext(bookBase.key) && firstBook->key() == k)
+                                    firstBook->key() < getQualityNext(bookBase.key) &&
+                                    firstBook->key() == k)
                                 {
                                     auto succ = response.add_book_successors();
                                     succ->set_book_base(bookBase.key.data(), bookBase.key.size());
-                                    succ->set_first_book(firstBook->key().data(), firstBook->key().size());
+                                    succ->set_first_book(
+                                        firstBook->key().data(), firstBook->key().size());
                                 }
                             }
                             if (inBase && !inDesired)
                             {
                                 auto oldFirstBook = base->stateMap().upper_bound(bookBase.key);
                                 if (oldFirstBook != base->stateMap().end() &&
-                                    oldFirstBook->key() < getQualityNext(bookBase.key) && oldFirstBook->key() == k)
+                                    oldFirstBook->key() < getQualityNext(bookBase.key) &&
+                                    oldFirstBook->key() == k)
                                 {
                                     auto succ = response.add_book_successors();
                                     succ->set_book_base(bookBase.key.data(), bookBase.key.size());
-                                    auto newFirstBook = desired->stateMap().upper_bound(bookBase.key);
+                                    auto newFirstBook =
+                                        desired->stateMap().upper_bound(bookBase.key);
 
                                     if (newFirstBook != desired->stateMap().end() &&
                                         newFirstBook->key() < getQualityNext(bookBase.key))
                                     {
-                                        succ->set_first_book(newFirstBook->key().data(), newFirstBook->key().size());
+                                        succ->set_first_book(
+                                            newFirstBook->key().data(), newFirstBook->key().size());
                                     }
                                 }
                             }
@@ -278,11 +285,14 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
     response.set_validated(context.ledgerMaster.isValidated(*ledger));
 
     auto end = std::chrono::system_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() * 1.0;
+    auto duration =
+        std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() * 1.0;
     JLOG(context.j.warn()) << __func__ << " - Extract time = " << duration
                            << " - num objects = " << response.ledger_objects().objects_size()
-                           << " - num txns = " << response.transactions_list().transactions_size() << " - ms per obj "
-                           << duration / response.ledger_objects().objects_size() << " - ms per txn "
+                           << " - num txns = " << response.transactions_list().transactions_size()
+                           << " - ms per obj "
+                           << duration / response.ledger_objects().objects_size()
+                           << " - ms per txn "
                            << duration / response.transactions_list().transactions_size();
 
     return {response, status};

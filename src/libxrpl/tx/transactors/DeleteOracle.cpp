@@ -18,7 +18,8 @@ DeleteOracle::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.exists(keylet::account(ctx.tx.getAccountID(sfAccount))))
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
-    if (auto const sle = ctx.view.read(keylet::oracle(ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID]));
+    if (auto const sle = ctx.view.read(
+            keylet::oracle(ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID]));
         !sle)
     {
         JLOG(ctx.j.debug()) << "Oracle Delete: Oracle does not exist.";
@@ -36,7 +37,11 @@ DeleteOracle::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-DeleteOracle::deleteOracle(ApplyView& view, std::shared_ptr<SLE> const& sle, AccountID const& account, beast::Journal j)
+DeleteOracle::deleteOracle(
+    ApplyView& view,
+    std::shared_ptr<SLE> const& sle,
+    AccountID const& account,
+    beast::Journal j)
 {
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE

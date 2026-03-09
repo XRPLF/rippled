@@ -154,8 +154,9 @@ public:
         if (consumed.in > m_amounts.in || consumed.out > m_amounts.out)
         {
             // LCOV_EXCL_START
-            JLOG(j.error()) << "AMMOffer::checkInvariant failed: consumed " << to_string(consumed.in) << " "
-                            << to_string(consumed.out) << " amounts " << to_string(m_amounts.in) << " "
+            JLOG(j.error()) << "AMMOffer::checkInvariant failed: consumed "
+                            << to_string(consumed.in) << " " << to_string(consumed.out)
+                            << " amounts " << to_string(m_amounts.in) << " "
                             << to_string(m_amounts.out);
 
             return false;
@@ -204,7 +205,8 @@ TOffer<TIn, TOut>::setFieldAmounts()
 
 template <class TIn, class TOut>
 TAmounts<TIn, TOut>
-TOffer<TIn, TOut>::limitOut(TAmounts<TIn, TOut> const& offerAmount, TOut const& limit, bool roundUp) const
+TOffer<TIn, TOut>::limitOut(TAmounts<TIn, TOut> const& offerAmount, TOut const& limit, bool roundUp)
+    const
 {
     // It turns out that the ceil_out implementation has some slop in
     // it, which ceil_out_strict removes.
@@ -213,9 +215,11 @@ TOffer<TIn, TOut>::limitOut(TAmounts<TIn, TOut> const& offerAmount, TOut const& 
 
 template <class TIn, class TOut>
 TAmounts<TIn, TOut>
-TOffer<TIn, TOut>::limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& limit, bool roundUp) const
+TOffer<TIn, TOut>::limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& limit, bool roundUp)
+    const
 {
-    if (auto const& rules = getCurrentTransactionRules(); rules && rules->enabled(fixReducedOffersV2))
+    if (auto const& rules = getCurrentTransactionRules();
+        rules && rules->enabled(fixReducedOffersV2))
         // It turns out that the ceil_in implementation has some slop in
         // it.  ceil_in_strict removes that slop.  But removing that slop
         // affects transaction outcomes, so the change must be made using

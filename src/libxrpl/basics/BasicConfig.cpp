@@ -132,7 +132,8 @@ BasicConfig::section(std::string const& name) const
 void
 BasicConfig::overwrite(std::string const& section, std::string const& key, std::string const& value)
 {
-    auto const result = map_.emplace(std::piecewise_construct, std::make_tuple(section), std::make_tuple(section));
+    auto const result =
+        map_.emplace(std::piecewise_construct, std::make_tuple(section), std::make_tuple(section));
     result.first->second.set(key, value);
 }
 
@@ -161,8 +162,8 @@ BasicConfig::build(IniFileSections const& ifs)
 {
     for (auto const& entry : ifs)
     {
-        auto const result =
-            map_.emplace(std::piecewise_construct, std::make_tuple(entry.first), std::make_tuple(entry.first));
+        auto const result = map_.emplace(
+            std::piecewise_construct, std::make_tuple(entry.first), std::make_tuple(entry.first));
         result.first->second.append(entry.second);
     }
 }

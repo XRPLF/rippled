@@ -40,7 +40,8 @@ public:
     /// The type of yield context passed to functions.
     using yield_context = boost::asio::yield_context;
 
-    explicit enable_yield_to(std::size_t concurrency = 1) : work_(boost::asio::make_work_guard(ios_))
+    explicit enable_yield_to(std::size_t concurrency = 1)
+        : work_(boost::asio::make_work_guard(ios_))
     {
         threads_.reserve(concurrency);
         while (concurrency--)

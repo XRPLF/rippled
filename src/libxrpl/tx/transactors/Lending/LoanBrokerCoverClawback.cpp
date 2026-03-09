@@ -129,7 +129,10 @@ determineAsset(
 }
 
 Expected<STAmount, TER>
-determineClawAmount(SLE const& sleBroker, Asset const& vaultAsset, std::optional<STAmount> const& amount)
+determineClawAmount(
+    SLE const& sleBroker,
+    Asset const& vaultAsset,
+    std::optional<STAmount> const& amount)
 {
     auto const maxClawAmount = [&]() {
         // Always round the minimum required up
@@ -172,7 +175,10 @@ preclaimHelper<Issue>(PreclaimContext const& ctx, SLE const& sleIssuer, STAmount
 
 template <>
 TER
-preclaimHelper<MPTIssue>(PreclaimContext const& ctx, SLE const& sleIssuer, STAmount const& clawAmount)
+preclaimHelper<MPTIssue>(
+    PreclaimContext const& ctx,
+    SLE const& sleIssuer,
+    STAmount const& clawAmount)
 {
     auto const issuanceKey = keylet::mptIssuance(clawAmount.get<MPTIssue>().getMptID());
     auto const sleIssuance = ctx.view.read(issuanceKey);
@@ -260,7 +266,9 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
     // Explicitly check the balance of the trust line / MPT to make sure the
     // balance is actually there. It should always match `sfCoverAvailable`, so
     // if there isn't, this is an internal error.
-    if (accountHolds(ctx.view, brokerPseudoAccountID, vaultAsset, fhIGNORE_FREEZE, ahIGNORE_AUTH, ctx.j) < clawAmount)
+    if (accountHolds(
+            ctx.view, brokerPseudoAccountID, vaultAsset, fhIGNORE_FREEZE, ahIGNORE_AUTH, ctx.j) <
+        clawAmount)
         return tecINTERNAL;  // tecINSUFFICIENT_FUNDS; LCOV_EXCL_LINE
 
     // Check if the vault asset issuer has the correct flags
@@ -274,7 +282,8 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
     }
 
     return std::visit(
-        [&]<typename T>(T const&) { return preclaimHelper<T>(ctx, *sleIssuer, clawAmount); }, vaultAsset.value());
+        [&]<typename T>(T const&) { return preclaimHelper<T>(ctx, *sleIssuer, clawAmount); },
+        vaultAsset.value());
 }
 
 TER

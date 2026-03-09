@@ -35,7 +35,8 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     //       `holderID` is NOT used
     if (!holderID)
     {
-        std::shared_ptr<SLE const> sleMpt = ctx.view.read(keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], accountID));
+        std::shared_ptr<SLE const> sleMpt =
+            ctx.view.read(keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], accountID));
 
         // There is an edge case where all holders have zero balance, issuance
         // is legally destroyed, then outstanding MPT(s) are deleted afterwards.
@@ -51,7 +52,8 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 
             if ((*sleMpt)[sfMPTAmount] != 0)
             {
-                auto const sleMptIssuance = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+                auto const sleMptIssuance =
+                    ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
                 if (!sleMptIssuance)
                     return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -60,7 +62,8 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 
             if ((*sleMpt)[~sfLockedAmount].value_or(0) != 0)
             {
-                auto const sleMptIssuance = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+                auto const sleMptIssuance =
+                    ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
                 if (!sleMptIssuance)
                     return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -152,7 +155,8 @@ MPTokenAuthorize::createMPToken(
 {
     auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
 
-    auto const ownerNode = view.dirInsert(keylet::ownerDir(account), mptokenKey, describeOwnerDir(account));
+    auto const ownerNode =
+        view.dirInsert(keylet::ownerDir(account), mptokenKey, describeOwnerDir(account));
 
     if (!ownerNode)
         return tecDIR_FULL;  // LCOV_EXCL_LINE
@@ -173,7 +177,13 @@ MPTokenAuthorize::doApply()
 {
     auto const& tx = ctx_.tx;
     return authorizeMPToken(
-        ctx_.view(), mPriorBalance, tx[sfMPTokenIssuanceID], account_, ctx_.journal, tx.getFlags(), tx[~sfHolder]);
+        ctx_.view(),
+        mPriorBalance,
+        tx[sfMPTokenIssuanceID],
+        account_,
+        ctx_.journal,
+        tx.getFlags(),
+        tx[~sfHolder]);
 }
 
 }  // namespace xrpl

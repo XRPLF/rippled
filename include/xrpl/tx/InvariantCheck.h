@@ -38,7 +38,10 @@ public:
      * @param after ledger entry after modification by the transaction
      */
     void
-    visitEntry(bool isDelete, std::shared_ptr<SLE const> const& before, std::shared_ptr<SLE const> const& after);
+    visitEntry(
+        bool isDelete,
+        std::shared_ptr<SLE const> const& before,
+        std::shared_ptr<SLE const> const& after);
 
     /**
      * @brief called after all ledger entries have been visited to determine
@@ -53,7 +56,12 @@ public:
      * @return true if check passes, false if it fails
      */
     bool
-    finalize(STTx const& tx, TER const tec, XRPAmount const fee, ReadView const& view, beast::Journal const& j);
+    finalize(
+        STTx const& tx,
+        TER const tec,
+        XRPAmount const fee,
+        ReadView const& view,
+        beast::Journal const& j);
 };
 #endif
 
@@ -533,7 +541,8 @@ private:
     bool
     finalizeDEX(bool enforce, beast::Journal const&) const;
     bool
-    generalInvariant(STTx const&, ReadView const&, ZeroAllowed zeroAllowed, beast::Journal const&) const;
+    generalInvariant(STTx const&, ReadView const&, ZeroAllowed zeroAllowed, beast::Journal const&)
+        const;
 };
 
 /**

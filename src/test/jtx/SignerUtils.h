@@ -40,7 +40,9 @@ struct Reg
 inline void
 sortSigners(std::vector<Reg>& signers)
 {
-    std::sort(signers.begin(), signers.end(), [](Reg const& lhs, Reg const& rhs) { return lhs.acct < rhs.acct; });
+    std::sort(signers.begin(), signers.end(), [](Reg const& lhs, Reg const& rhs) {
+        return lhs.acct < rhs.acct;
+    });
 }
 
 }  // namespace jtx

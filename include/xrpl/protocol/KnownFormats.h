@@ -98,7 +98,8 @@ public:
         if (auto const result = findByName(name))
             return result->getType();
         Throw<std::runtime_error>(
-            name_ + ": Unknown format name '" + name.substr(0, std::min(name.size(), std::size_t(32))) + "'");
+            name_ + ": Unknown format name '" +
+            name.substr(0, std::min(name.size(), std::size_t(32))) + "'");
     }
 
     /** Retrieve a format based on its type.
@@ -154,7 +155,9 @@ protected:
     {
         if (auto const item = findByType(type))
         {
-            LogicError(std::string("Duplicate key for item '") + name + "': already maps to " + item->getName());
+            LogicError(
+                std::string("Duplicate key for item '") + name + "': already maps to " +
+                item->getName());
         }
 
         formats_.emplace_front(name, type, uniqueFields, commonFields);

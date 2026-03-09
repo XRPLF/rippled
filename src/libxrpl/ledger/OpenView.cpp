@@ -10,7 +10,8 @@ private:
     txs_map::const_iterator iter_;
 
 public:
-    explicit txs_iter_impl(bool metadata, txs_map::const_iterator iter) : metadata_(metadata), iter_(iter)
+    explicit txs_iter_impl(bool metadata, txs_map::const_iterator iter)
+        : metadata_(metadata), iter_(iter)
     {
     }
 
@@ -56,7 +57,8 @@ public:
 OpenView::OpenView(OpenView const& rhs)
     : ReadView(rhs)
     , TxsRawView(rhs)
-    , monotonic_resource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
+    , monotonic_resource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(
+          initialBufferSize)}
     , txs_{rhs.txs_, monotonic_resource_.get()}
     , rules_{rhs.rules_}
     , header_{rhs.header_}
@@ -65,8 +67,13 @@ OpenView::OpenView(OpenView const& rhs)
     , hold_{rhs.hold_}
     , open_{rhs.open_} {};
 
-OpenView::OpenView(open_ledger_t, ReadView const* base, Rules const& rules, std::shared_ptr<void const> hold)
-    : monotonic_resource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
+OpenView::OpenView(
+    open_ledger_t,
+    ReadView const* base,
+    Rules const& rules,
+    std::shared_ptr<void const> hold)
+    : monotonic_resource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(
+          initialBufferSize)}
     , txs_{monotonic_resource_.get()}
     , rules_(rules)
     , header_(base->header())
@@ -81,7 +88,8 @@ OpenView::OpenView(open_ledger_t, ReadView const* base, Rules const& rules, std:
 }
 
 OpenView::OpenView(ReadView const* base, std::shared_ptr<void const> hold)
-    : monotonic_resource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
+    : monotonic_resource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(
+          initialBufferSize)}
     , txs_{monotonic_resource_.get()}
     , rules_(base->rules())
     , header_(base->header())
@@ -132,7 +140,8 @@ OpenView::exists(Keylet const& k) const
 }
 
 auto
-OpenView::succ(key_type const& key, std::optional<key_type> const& last) const -> std::optional<key_type>
+OpenView::succ(key_type const& key, std::optional<key_type> const& last) const
+    -> std::optional<key_type>
 {
     return items_.succ(*base_, key, last);
 }
@@ -231,8 +240,8 @@ OpenView::rawTxInsert(
     std::shared_ptr<Serializer const> const& txn,
     std::shared_ptr<Serializer const> const& metaData)
 {
-    auto const result =
-        txs_.emplace(std::piecewise_construct, std::forward_as_tuple(key), std::forward_as_tuple(txn, metaData));
+    auto const result = txs_.emplace(
+        std::piecewise_construct, std::forward_as_tuple(key), std::forward_as_tuple(txn, metaData));
     if (!result.second)
         LogicError("rawTxInsert: duplicate TX id: " + to_string(key));
 }

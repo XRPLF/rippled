@@ -33,15 +33,18 @@ public:
     {
     }
 
-    Status(TER ter, Strings d = {}) : type_(Type::TER), code_(TERtoInt(ter)), messages_(std::move(d))
+    Status(TER ter, Strings d = {})
+        : type_(Type::TER), code_(TERtoInt(ter)), messages_(std::move(d))
     {
     }
 
-    Status(error_code_i e, Strings d = {}) : type_(Type::error_code_i), code_(e), messages_(std::move(d))
+    Status(error_code_i e, Strings d = {})
+        : type_(Type::error_code_i), code_(e), messages_(std::move(d))
     {
     }
 
-    Status(error_code_i e, std::string const& s) : type_(Type::error_code_i), code_(e), messages_({s})
+    Status(error_code_i e, std::string const& s)
+        : type_(Type::error_code_i), code_(e), messages_({s})
     {
     }
 

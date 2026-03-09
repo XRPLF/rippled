@@ -25,7 +25,8 @@ getSociSqliteInit(std::string const& name, std::string const& dir, std::string c
 {
     if (name.empty())
     {
-        Throw<std::runtime_error>("Sqlite databases must specify a dir and a name. Name: " + name + " Dir: " + dir);
+        Throw<std::runtime_error>(
+            "Sqlite databases must specify a dir and a name. Name: " + name + " Dir: " + dir);
     }
     boost::filesystem::path file(dir);
     if (is_directory(file))
@@ -53,7 +54,8 @@ DBConfig::DBConfig(std::string const& dbPath) : connectionString_(dbPath)
 {
 }
 
-DBConfig::DBConfig(BasicConfig const& config, std::string const& dbName) : DBConfig(detail::getSociInit(config, dbName))
+DBConfig::DBConfig(BasicConfig const& config, std::string const& dbName)
+    : DBConfig(detail::getSociInit(config, dbName))
 {
 }
 
@@ -169,7 +171,11 @@ namespace {
 class WALCheckpointer : public Checkpointer
 {
 public:
-    WALCheckpointer(std::uintptr_t id, std::weak_ptr<soci::session> session, JobQueue& q, Logs& logs)
+    WALCheckpointer(
+        std::uintptr_t id,
+        std::weak_ptr<soci::session> session,
+        JobQueue& q,
+        Logs& logs)
         : id_(id), session_(std::move(session)), jobQueue_(q), j_(logs.journal("WALCheckpointer"))
     {
         if (auto [conn, keepAlive] = getConnection(); conn)
@@ -285,7 +291,11 @@ protected:
 }  // namespace
 
 std::shared_ptr<Checkpointer>
-makeCheckpointer(std::uintptr_t id, std::weak_ptr<soci::session> session, JobQueue& queue, Logs& logs)
+makeCheckpointer(
+    std::uintptr_t id,
+    std::weak_ptr<soci::session> session,
+    JobQueue& queue,
+    Logs& logs)
 {
     return std::make_shared<WALCheckpointer>(id, std::move(session), queue, logs);
 }

@@ -94,7 +94,11 @@ DatabaseRotatingImp::store(NodeObjectType type, Blob&& data, uint256 const& hash
 }
 
 std::shared_ptr<NodeObject>
-DatabaseRotatingImp::fetchNodeObject(uint256 const& hash, std::uint32_t, FetchReport& fetchReport, bool duplicate)
+DatabaseRotatingImp::fetchNodeObject(
+    uint256 const& hash,
+    std::uint32_t,
+    FetchReport& fetchReport,
+    bool duplicate)
 {
     auto fetch = [&](std::shared_ptr<Backend> const& backend) {
         Status status;
