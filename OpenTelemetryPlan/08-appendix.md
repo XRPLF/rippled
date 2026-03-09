@@ -116,17 +116,26 @@ flowchart TB
 
 ## 8.5 Document Index
 
-| Document                                                         | Description                                |
-| ---------------------------------------------------------------- | ------------------------------------------ |
-| [OpenTelemetryPlan.md](./OpenTelemetryPlan.md)                   | Master overview and executive summary      |
-| [01-architecture-analysis.md](./01-architecture-analysis.md)     | rippled architecture and trace points      |
-| [02-design-decisions.md](./02-design-decisions.md)               | SDK selection, exporters, span conventions |
-| [03-implementation-strategy.md](./03-implementation-strategy.md) | Directory structure, performance analysis  |
-| [04-code-samples.md](./04-code-samples.md)                       | C++ code examples for all components       |
-| [05-configuration-reference.md](./05-configuration-reference.md) | rippled config, CMake, Collector configs   |
-| [06-implementation-phases.md](./06-implementation-phases.md)     | Timeline, tasks, risks, success metrics    |
-| [07-observability-backends.md](./07-observability-backends.md)   | Backend selection and architecture         |
-| [08-appendix.md](./08-appendix.md)                               | Glossary, references, version history      |
+### Plan Documents
+
+| Document                                                         | Description                                  |
+| ---------------------------------------------------------------- | -------------------------------------------- |
+| [OpenTelemetryPlan.md](./OpenTelemetryPlan.md)                   | Master overview and executive summary        |
+| [00-tracing-fundamentals.md](./00-tracing-fundamentals.md)       | Distributed tracing concepts and OTel primer |
+| [01-architecture-analysis.md](./01-architecture-analysis.md)     | rippled architecture and trace points        |
+| [02-design-decisions.md](./02-design-decisions.md)               | SDK selection, exporters, span conventions   |
+| [03-implementation-strategy.md](./03-implementation-strategy.md) | Directory structure, performance analysis    |
+| [04-code-samples.md](./04-code-samples.md)                       | C++ code examples for all components         |
+| [05-configuration-reference.md](./05-configuration-reference.md) | rippled config, CMake, Collector configs     |
+| [06-implementation-phases.md](./06-implementation-phases.md)     | Timeline, tasks, risks, success metrics      |
+| [07-observability-backends.md](./07-observability-backends.md)   | Backend selection and architecture           |
+| [08-appendix.md](./08-appendix.md)                               | Glossary, references, version history        |
+
+### Task Lists
+
+| Document                             | Description                            |
+| ------------------------------------ | -------------------------------------- |
+| [POC_taskList.md](./POC_taskList.md) | Proof-of-concept telemetry integration |
 
 ---
 
