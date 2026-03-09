@@ -27,6 +27,11 @@ public:
     SecretKey&
     operator=(SecretKey const&) = default;
 
+    bool
+    operator==(SecretKey const&) = delete;
+    bool
+    operator!=(SecretKey const&) = delete;
+
     ~SecretKey();
 
     SecretKey(std::array<std::uint8_t, 32> const& data);
@@ -76,18 +81,6 @@ public:
         return buf_ + sizeof(buf_);
     }
 };
-
-inline bool
-operator==(SecretKey const& lhs, SecretKey const& rhs)
-{
-    return lhs.size() == rhs.size() && std::memcmp(lhs.data(), rhs.data(), rhs.size()) == 0;
-}
-
-inline bool
-operator!=(SecretKey const& lhs, SecretKey const& rhs)
-{
-    return !(lhs == rhs);
-}
 
 //------------------------------------------------------------------------------
 

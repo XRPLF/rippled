@@ -1,4 +1,5 @@
 #include <test/jtx.h>
+#include <test/unit_test/utils.h>
 
 #include <xrpld/app/misc/ValidatorList.h>
 
@@ -456,7 +457,7 @@ public:
 
             auto const token = loadValidatorToken(tokenBlob);
             BEAST_EXPECT(token);
-            BEAST_EXPECT(token->validationSecret == *valSecret);
+            BEAST_EXPECT(test::equal(token->validationSecret, *valSecret));
             BEAST_EXPECT(token->manifest == manifest);
         }
         {
