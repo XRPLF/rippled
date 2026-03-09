@@ -488,7 +488,7 @@ AccountRootsDeletedClean::finalize(
                 return false;
         }
         // Simple types
-        for (auto const& [keyletfunc, _, unused] : directAccountKeylets)
+        for (auto const& [keyletfunc, _1, _2] : directAccountKeylets)
         {
             // TODO: use '_' for both unused variables above once we are in C++26
             if (objectExists(std::invoke(keyletfunc, accountID)) && enforce)
