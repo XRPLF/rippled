@@ -762,9 +762,9 @@ MPTTester::getConfidentialSendProof(
 
     auto const ctx = secp256k1Context();
 
-    std::vector<secp256k1_pubkey> r(nRecipients);
-    std::vector<secp256k1_pubkey> s(nRecipients);
-    std::vector<secp256k1_pubkey> pk(nRecipients);
+    secp256k1_pubkey c1;
+    std::vector<secp256k1_pubkey> c2_vec(nRecipients);
+    std::vector<secp256k1_pubkey> pk_vec(nRecipients);
 
     std::vector<unsigned char> sr;
     sr.reserve(nRecipients * ecBlindingFactorLength);
@@ -780,36 +780,31 @@ MPTTester::getConfidentialSendProof(
         if (recipient.publicKey.size() != ecPubKeyLength)
             return std::nullopt;
 
-        if (!secp256k1_ec_pubkey_parse(ctx, &r[i], ctData, ecGamalEncryptedLength))
+        if (i == 0)
         {
-            return std::nullopt;
+            if (!secp256k1_ec_pubkey_parse(ctx, &c1, ctData, ecGamalEncryptedLength))
+                return std::nullopt;
         }
 
-        if (!secp256k1_ec_pubkey_parse(ctx, &s[i], ctData + ecGamalEncryptedLength, ecGamalEncryptedLength))
-        {
-            return std::nullopt;
-        }
-
-        if (!secp256k1_ec_pubkey_parse(ctx, &pk[i], recipient.publicKey.data(), ecPubKeyLength))
+        if (!secp256k1_ec_pubkey_parse(ctx, &c2_vec[i], ctData + ecGamalEncryptedLength, ecGamalEncryptedLength))
             return std::nullopt;
 
-        sr.insert(sr.end(), blindingFactor.data(), blindingFactor.data() + ecBlindingFactorLength);
+        if (!secp256k1_ec_pubkey_parse(ctx, &pk_vec[i], recipient.publicKey.data(), ecPubKeyLength))
+            return std::nullopt;
     }
 
-    size_t sizeEquality = secp256k1_mpt_prove_same_plaintext_multi_size(nRecipients);
+    size_t const sizeEquality = secp256k1_mpt_proof_equality_shared_r_size(nRecipients);
     Buffer equalityProof(sizeEquality);
 
-    // Get the multi-ciphertext equality proof
-    if (secp256k1_mpt_prove_same_plaintext_multi(
+    if (secp256k1_mpt_prove_equality_shared_r(
             ctx,
             equalityProof.data(),
-            &sizeEquality,
             amount,
+            blindingFactor.data(),  // The shared 'r' witness
             nRecipients,
-            r.data(),
-            s.data(),
-            pk.data(),
-            sr.data(),
+            &c1,
+            c2_vec.data(),
+            pk_vec.data(),
             contextHash.data()) != 1)
     {
         return std::nullopt;

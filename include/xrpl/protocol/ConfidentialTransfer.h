@@ -330,18 +330,6 @@ getConfidentialRecipientCount(bool hasAuditor)
 }
 
 /**
- * @brief Calculates the size of a multi-ciphertext equality proof.
- *
- * The proof size varies based on the number of recipients because each
- * additional recipient requires additional proof components.
- *
- * @param nRecipients The number of recipients in the transfer.
- * @return The size in bytes of the equality proof.
- */
-std::size_t
-getMultiCiphertextEqualityProofSize(std::size_t nRecipients);
-
-/**
  * @brief Verifies a multi-ciphertext equality proof.
  *
  * Proves that all ciphertexts in the recipients vector encrypt the same
