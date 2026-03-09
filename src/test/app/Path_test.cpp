@@ -8,6 +8,7 @@
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/core/CoroTask.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/protocol/ApiVersion.h>
@@ -131,7 +132,6 @@ public:
              c,
              Role::USER,
              {},
-             {},
              RPC::apiVersionIfUnspecified},
             {},
             {}};
@@ -155,11 +155,11 @@ public:
 
         Json::Value result;
         gate g;
-        app.getJobQueue().postCoro(jtCLIENT, "RPC-Client", [&](auto const& coro) {
+        app.getJobQueue().postCoroTask(jtCLIENT, "RPC-Client", [&](auto) -> CoroTask<void> {
             context.params = std::move(params);
-            context.coro = coro;
             RPC::doCommand(context, result);
             g.signal();
+            co_return;
         });
 
         using namespace std::chrono_literals;
@@ -242,28 +242,27 @@ public:
              c,
              Role::USER,
              {},
-             {},
              RPC::apiVersionIfUnspecified},
             {},
             {}};
         Json::Value result;
         gate g;
         // Test RPC::Tuning::max_src_cur source currencies.
-        app.getJobQueue().postCoro(jtCLIENT, "RPC-Client", [&](auto const& coro) {
+        app.getJobQueue().postCoroTask(jtCLIENT, "RPC-Client", [&](auto) -> CoroTask<void> {
             context.params = rpf(Account("alice"), Account("bob"), RPC::Tuning::max_src_cur);
-            context.coro = coro;
             RPC::doCommand(context, result);
             g.signal();
+            co_return;
         });
         BEAST_EXPECT(g.wait_for(5s));
         BEAST_EXPECT(!result.isMember(jss::error));
 
         // Test more than RPC::Tuning::max_src_cur source currencies.
-        app.getJobQueue().postCoro(jtCLIENT, "RPC-Client", [&](auto const& coro) {
+        app.getJobQueue().postCoroTask(jtCLIENT, "RPC-Client", [&](auto) -> CoroTask<void> {
             context.params = rpf(Account("alice"), Account("bob"), RPC::Tuning::max_src_cur + 1);
-            context.coro = coro;
             RPC::doCommand(context, result);
             g.signal();
+            co_return;
         });
         BEAST_EXPECT(g.wait_for(5s));
         BEAST_EXPECT(result.isMember(jss::error));
@@ -271,22 +270,22 @@ public:
         // Test RPC::Tuning::max_auto_src_cur source currencies.
         for (auto i = 0; i < (RPC::Tuning::max_auto_src_cur - 1); ++i)
             env.trust(Account("alice")[std::to_string(i + 100)](100), "bob");
-        app.getJobQueue().postCoro(jtCLIENT, "RPC-Client", [&](auto const& coro) {
+        app.getJobQueue().postCoroTask(jtCLIENT, "RPC-Client", [&](auto) -> CoroTask<void> {
             context.params = rpf(Account("alice"), Account("bob"), 0);
-            context.coro = coro;
             RPC::doCommand(context, result);
             g.signal();
+            co_return;
         });
         BEAST_EXPECT(g.wait_for(5s));
         BEAST_EXPECT(!result.isMember(jss::error));
 
         // Test more than RPC::Tuning::max_auto_src_cur source currencies.
         env.trust(Account("alice")["AUD"](100), "bob");
-        app.getJobQueue().postCoro(jtCLIENT, "RPC-Client", [&](auto const& coro) {
+        app.getJobQueue().postCoroTask(jtCLIENT, "RPC-Client", [&](auto) -> CoroTask<void> {
             context.params = rpf(Account("alice"), Account("bob"), 0);
-            context.coro = coro;
             RPC::doCommand(context, result);
             g.signal();
+            co_return;
         });
         BEAST_EXPECT(g.wait_for(5s));
         BEAST_EXPECT(result.isMember(jss::error));

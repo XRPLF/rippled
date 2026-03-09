@@ -206,9 +206,12 @@ private:
         clone() override;
 
     private:
-        // process the request. Called inside the coroutine passed to JobQueue
+        /**
+         * Process the gRPC request. Called inside the CoroTask lambda
+         * posted to the JobQueue by process().
+         */
         void
-        process(std::shared_ptr<JobQueue::Coro> coro);
+        processRequest();
 
         // return load type of this RPC
         Resource::Charge

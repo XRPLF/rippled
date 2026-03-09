@@ -6,6 +6,7 @@
 
 #include <xrpld/rpc/RPCHandler.h>
 
+#include <xrpl/core/CoroTask.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/resource/Fees.h>
@@ -198,7 +199,6 @@ AMMTest::find_paths_request(
          c,
          Role::USER,
          {},
-         {},
          RPC::apiVersionIfUnspecified},
         {},
         {}};
@@ -220,11 +220,11 @@ AMMTest::find_paths_request(
 
     Json::Value result;
     gate g;
-    app.getJobQueue().postCoro(jtCLIENT, "RPC-Client", [&](auto const& coro) {
+    app.getJobQueue().postCoroTask(jtCLIENT, "RPC-Client", [&](auto) -> CoroTask<void> {
         context.params = std::move(params);
-        context.coro = coro;
         RPC::doCommand(context, result);
         g.signal();
+        co_return;
     });
 
     using namespace std::chrono_literals;

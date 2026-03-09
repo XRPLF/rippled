@@ -3,6 +3,7 @@
 
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
+#include <xrpl/core/CoroTask.h>
 #include <xrpl/resource/Fees.h>
 
 namespace xrpl {
@@ -99,13 +100,14 @@ GRPCServerImpl::CallData<Request, Response>::process()
     // ensures that finished is always true when this CallData object
     // is returned as a tag in handleRpcs(), after sending the response
     finished_ = true;
-    auto coro = app_.getJobQueue().postCoro(
-        JobType::jtRPC, "gRPC-Client", [thisShared](std::shared_ptr<JobQueue::Coro> coro) {
-            thisShared->process(coro);
+    auto runner = app_.getJobQueue().postCoroTask(
+        JobType::jtRPC, "gRPC-Client", [thisShared](auto) -> CoroTask<void> {
+            thisShared->processRequest();
+            co_return;
         });
 
-    // If coro is null, then the JobQueue has already been shutdown
-    if (!coro)
+    // If runner is null, then the JobQueue has already been shutdown
+    if (!runner)
     {
         grpc::Status status{grpc::StatusCode::INTERNAL, "Job Queue is already stopped"};
         responder_.FinishWithError(status, this);
@@ -114,7 +116,7 @@ GRPCServerImpl::CallData<Request, Response>::process()
 
 template <class Request, class Response>
 void
-GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::Coro> coro)
+GRPCServerImpl::CallData<Request, Response>::processRequest()
 {
     try
     {
@@ -156,7 +158,6 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
                  app_.getLedgerMaster(),
                  usage,
                  role,
-                 coro,
                  InfoSub::pointer(),
                  apiVersion},
                 request_};

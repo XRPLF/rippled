@@ -14,6 +14,7 @@
 #include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/beast/rfc2616.h>
+#include <xrpl/core/CoroTask.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/to_string.h>
@@ -284,9 +285,17 @@ ServerHandler::onRequest(Session& session)
     }
 
     std::shared_ptr<Session> detachedSession = session.detach();
-    auto const postResult = m_jobQueue.postCoro(
-        jtCLIENT_RPC, "RPC-Client", [this, detachedSession](std::shared_ptr<JobQueue::Coro> coro) {
-            processSession(detachedSession, coro);
+    auto const postResult = m_jobQueue.postCoroTask(
+        jtCLIENT_RPC, "RPC-Client", [this, detachedSession](auto) -> CoroTask<void> {
+            try
+            {
+                processSession(detachedSession);
+            }
+            catch (std::exception const& e)
+            {
+                JLOG(m_journal.error()) << "RPC-Client coroutine exception: " << e.what();
+            }
+            co_return;
         });
     if (postResult == nullptr)
     {
@@ -322,17 +331,26 @@ ServerHandler::onWSMessage(
 
     JLOG(m_journal.trace()) << "Websocket received '" << jv << "'";
 
-    auto const postResult = m_jobQueue.postCoro(
+    auto const postResult = m_jobQueue.postCoroTask(
         jtCLIENT_WEBSOCKET,
         "WS-Client",
-        [this, session, jv = std::move(jv)](std::shared_ptr<JobQueue::Coro> const& coro) {
-            auto const jr = this->processSession(session, coro, jv);
-            auto const s = to_string(jr);
-            auto const n = s.length();
-            boost::beast::multi_buffer sb(n);
-            sb.commit(boost::asio::buffer_copy(sb.prepare(n), boost::asio::buffer(s.c_str(), n)));
-            session->send(std::make_shared<StreambufWSMsg<decltype(sb)>>(std::move(sb)));
-            session->complete();
+        [this, session, jv = std::move(jv)](auto) -> CoroTask<void> {
+            try
+            {
+                auto const jr = this->processSession(session, jv);
+                auto const s = to_string(jr);
+                auto const n = s.length();
+                boost::beast::multi_buffer sb(n);
+                sb.commit(
+                    boost::asio::buffer_copy(sb.prepare(n), boost::asio::buffer(s.c_str(), n)));
+                session->send(std::make_shared<StreambufWSMsg<decltype(sb)>>(std::move(sb)));
+                session->complete();
+            }
+            catch (std::exception const& e)
+            {
+                JLOG(m_journal.error()) << "WS-Client coroutine exception: " << e.what();
+            }
+            co_return;
         });
     if (postResult == nullptr)
     {
@@ -377,10 +395,7 @@ logDuration(Json::Value const& request, T const& duration, beast::Journal& journ
 }
 
 Json::Value
-ServerHandler::processSession(
-    std::shared_ptr<WSSession> const& session,
-    std::shared_ptr<JobQueue::Coro> const& coro,
-    Json::Value const& jv)
+ServerHandler::processSession(std::shared_ptr<WSSession> const& session, Json::Value const& jv)
 {
     auto is = std::static_pointer_cast<WSInfoSub>(session->appDefined);
     if (is->getConsumer().disconnect(m_journal))
@@ -447,7 +462,6 @@ ServerHandler::processSession(
                  app_.getLedgerMaster(),
                  is->getConsumer(),
                  role,
-                 coro,
                  is,
                  apiVersion},
                 jv,
@@ -518,18 +532,14 @@ ServerHandler::processSession(
     return jr;
 }
 
-// Run as a coroutine.
 void
-ServerHandler::processSession(
-    std::shared_ptr<Session> const& session,
-    std::shared_ptr<JobQueue::Coro> coro)
+ServerHandler::processSession(std::shared_ptr<Session> const& session)
 {
     processRequest(
         session->port(),
         buffers_to_string(session->request().body().data()),
         session->remoteAddress().at_port(0),
         makeOutput(*session),
-        coro,
         forwardedFor(session->request()),
         [&] {
             auto const iter = session->request().find("X-User");
@@ -569,8 +579,7 @@ ServerHandler::processRequest(
     Port const& port,
     std::string const& request,
     beast::IP::Endpoint const& remoteIPAddress,
-    Output const& output,
-    std::shared_ptr<JobQueue::Coro> coro,
+    Output&& output,
     std::string_view forwardedFor,
     std::string_view user)
 {
@@ -830,7 +839,6 @@ ServerHandler::processRequest(
              app_.getLedgerMaster(),
              usage,
              role,
-             coro,
              InfoSub::pointer(),
              apiVersion},
             params,

@@ -1438,7 +1438,6 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
              c,
              Role::ADMIN,
              {},
-             {},
              RPC::apiMaximumSupportedVersion},
             jvCommand};
 
