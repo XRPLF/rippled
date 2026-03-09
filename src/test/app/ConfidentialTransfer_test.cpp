@@ -2781,7 +2781,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             for (int i = 0; i < 9; ++i)
                 tooManyCredentials.push_back(to_string(uint256(i)));
 
-            mpt.send({.account = carol, .dest = bob, .amt = 10, .credentials = tooManyCredentials, .err = temMALFORMED});
+            mpt.send(
+                {.account = carol, .dest = bob, .amt = 10, .credentials = tooManyCredentials, .err = temMALFORMED});
         }
 
         // TEST 3: Preflight - Duplicate Credentials
@@ -2800,7 +2801,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             auto const jv = credentials::ledgerEntry(env, carol, dpIssuer, credType);
             std::string const credIdx = jv[jss::result][jss::index].asString();
 
-            mpt.send({.account = carol, .dest = bob, .amt = 10, .credentials = {{credIdx, credIdx}}, .err = temMALFORMED});
+            mpt.send(
+                {.account = carol, .dest = bob, .amt = 10, .credentials = {{credIdx, credIdx}}, .err = temMALFORMED});
         }
 
         // TEST 4: Preclaim - Credential Doesn't Exist
@@ -2810,7 +2812,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             setupBasic(env, mpt);
 
             std::string const fakeCredIdx = to_string(uint256(999));
-            mpt.send({.account = carol, .dest = bob, .amt = 10, .credentials = {{fakeCredIdx}}, .err = tecBAD_CREDENTIALS});
+            mpt.send(
+                {.account = carol, .dest = bob, .amt = 10, .credentials = {{fakeCredIdx}}, .err = tecBAD_CREDENTIALS});
         }
 
         // TEST 5: Preclaim - Credential Doesn't Belong to Source Account
