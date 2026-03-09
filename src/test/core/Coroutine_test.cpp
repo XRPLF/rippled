@@ -40,6 +40,11 @@ public:
         }
     };
 
+    // NOTE: All coroutine lambdas passed to postCoroTask use explicit
+    // pointer-by-value captures instead of [&] to work around a GCC 14
+    // bug where reference captures in coroutine lambdas are corrupted
+    // in the coroutine frame.
+
     void
     correct_order()
     {
@@ -54,13 +59,15 @@ public:
         }));
 
         gate g1, g2;
-        std::shared_ptr<JobQueue::Coro> c;
-        env.app().getJobQueue().postCoro(jtCLIENT, "CoroTest", [&](auto const& cr) {
-            c = cr;
-            g1.signal();
-            c->yield();
-            g2.signal();
-        });
+        std::shared_ptr<JobQueue::CoroTaskRunner> c;
+        env.app().getJobQueue().postCoroTask(
+            jtCLIENT, "CoroTest", [cp = &c, g1p = &g1, g2p = &g2](auto runner) -> CoroTask<void> {
+                *cp = runner;
+                g1p->signal();
+                co_await runner->suspend();
+                g2p->signal();
+                co_return;
+            });
         BEAST_EXPECT(g1.wait_for(5s));
         c->join();
         c->post();
@@ -81,11 +88,17 @@ public:
         }));
 
         gate g;
-        env.app().getJobQueue().postCoro(jtCLIENT, "CoroTest", [&](auto const& c) {
-            c->post();
-            c->yield();
-            g.signal();
-        });
+        env.app().getJobQueue().postCoroTask(
+            jtCLIENT, "CoroTest", [gp = &g](auto runner) -> CoroTask<void> {
+                // Schedule a resume before suspending.  The posted job
+                // cannot actually call resume() until the current resume()
+                // releases CoroTaskRunner::mutex_, which only happens after
+                // the coroutine suspends at co_await.
+                runner->post();
+                co_await runner->suspend();
+                gp->signal();
+                co_return;
+            });
         BEAST_EXPECT(g.wait_for(5s));
     }
 
@@ -101,7 +114,7 @@ public:
         auto& jq = env.app().getJobQueue();
 
         static int const N = 4;
-        std::array<std::shared_ptr<JobQueue::Coro>, N> a;
+        std::array<std::shared_ptr<JobQueue::CoroTaskRunner>, N> a;
 
         LocalValue<int> lv(-1);
         BEAST_EXPECT(*lv == -1);
@@ -118,19 +131,23 @@ public:
 
         for (int i = 0; i < N; ++i)
         {
-            jq.postCoro(jtCLIENT, "CoroTest", [&, id = i](auto const& c) {
-                a[id] = c;
-                g.signal();
-                c->yield();
+            jq.postCoroTask(
+                jtCLIENT,
+                "CoroTest",
+                [this, ap = &a, gp = &g, lvp = &lv, id = i](auto runner) -> CoroTask<void> {
+                    (*ap)[id] = runner;
+                    gp->signal();
+                    co_await runner->suspend();
 
-                this->BEAST_EXPECT(*lv == -1);
-                *lv = id;
-                this->BEAST_EXPECT(*lv == id);
-                g.signal();
-                c->yield();
+                    this->BEAST_EXPECT(**lvp == -1);
+                    **lvp = id;
+                    this->BEAST_EXPECT(**lvp == id);
+                    gp->signal();
+                    co_await runner->suspend();
 
-                this->BEAST_EXPECT(*lv == id);
-            });
+                    this->BEAST_EXPECT(**lvp == id);
+                    co_return;
+                });
             BEAST_EXPECT(g.wait_for(5s));
             a[i]->join();
         }
