@@ -90,7 +90,7 @@ getConvertBackContextHash(
 bool
 makeEcPair(Slice const& buffer, secp256k1_pubkey& out1, secp256k1_pubkey& out2)
 {
-    if (buffer.length() < 2 * ecGamalEncryptedLength)
+    if (buffer.length() != 2 * ecGamalEncryptedLength)
         return false;  // LCOV_EXCL_LINE
 
     auto parsePubKey = [](Slice const& slice, secp256k1_pubkey& out) {
@@ -524,9 +524,14 @@ verifyAggregatedBulletproof(
     std::vector<Slice> const& compressedCommitments,
     uint256 const& contextHash)
 {
-    // 1. Validate Aggregation Factor (m), m to be a power of 2
+    // 1. Validate input lengths
+    // This function could support any power-of-2 m, but current usage only requires m=1 or m=2
     std::size_t const m = compressedCommitments.size();
-    if (m == 0 || (m & (m - 1)) != 0)
+    if (m == 0 || m > 2)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    std::size_t const expectedProofLen = (m == 1) ? ecSingleBulletproofLength : ecDoubleBulletproofLength;
+    if (proof.size() != expectedProofLen)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // 2. Prepare Pedersen Commitments, parse from compressed format
