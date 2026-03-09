@@ -2583,13 +2583,10 @@ class LedgerEntry_test : public beast::unit_test::suite
         env(check::create(env.master, alice, XRP(100)));
         env.close();
 
-        std::string const ledgerHash{to_string(env.closed()->header().hash)};
-        {
-            // Request a check.
-            Json::Value const jrr = env.rpc("ledger_entry", to_string(checkId.key))[jss::result];
-            BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == jss::Check);
-            BEAST_EXPECT(jrr[jss::node][sfSendMax.jsonName] == "100000000");
-        }
+        // Request a check.
+        Json::Value const jrr = env.rpc("ledger_entry", to_string(checkId.key))[jss::result];
+        BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == jss::Check);
+        BEAST_EXPECT(jrr[jss::node][sfSendMax.jsonName] == "100000000");
     }
 
 public:
@@ -2753,7 +2750,6 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
         scEnv(xchain_create_claim_id(scBob, jvb, reward, mcBob));
         scEnv.close();
 
-        std::string bridge_index;
         {
             // request the xchain_claim_id via RPC
             Json::Value jvParams;

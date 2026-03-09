@@ -6,7 +6,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Issue.h>
-#include <xrpl/tx/transactors/AMM/AMMUtils.h>
+#include <xrpl/tx/transactors/dex/AMMUtils.h>
 
 #include <grpcpp/support/status.h>
 
