@@ -95,7 +95,10 @@ makeEcPair(Slice const& buffer, secp256k1_pubkey& out1, secp256k1_pubkey& out2)
 
     auto parsePubKey = [](Slice const& slice, secp256k1_pubkey& out) {
         return secp256k1_ec_pubkey_parse(
-            secp256k1Context(), &out, reinterpret_cast<unsigned char const*>(slice.data()), slice.length());
+            secp256k1Context(),
+            &out,
+            reinterpret_cast<unsigned char const*>(slice.data()),
+            slice.length());
     };
 
     Slice s1{buffer.data(), ecGamalEncryptedLength};
@@ -112,7 +115,8 @@ serializeEcPair(secp256k1_pubkey const& in1, secp256k1_pubkey const& in2, Buffer
 {
     auto serializePubKey = [](secp256k1_pubkey const& pub, unsigned char* out) {
         size_t outLen = ecGamalEncryptedLength;  // 33 bytes
-        int const ret = secp256k1_ec_pubkey_serialize(secp256k1Context(), out, &outLen, &pub, SECP256K1_EC_COMPRESSED);
+        int const ret = secp256k1_ec_pubkey_serialize(
+            secp256k1Context(), out, &outLen, &pub, SECP256K1_EC_COMPRESSED);
         return ret == 1 && outLen == ecGamalEncryptedLength;
     };
 
@@ -188,7 +192,8 @@ homomorphicSubtract(Slice const& a, Slice const& b, Buffer& out)
     secp256k1_pubkey diffC1;
     secp256k1_pubkey diffC2;
 
-    if (secp256k1_elgamal_subtract(secp256k1Context(), &diffC1, &diffC2, &aC1, &aC2, &bC1, &bC2) != 1)
+    if (secp256k1_elgamal_subtract(secp256k1Context(), &diffC1, &diffC2, &aC1, &aC2, &bC1, &bC2) !=
+        1)
         return tecINTERNAL;
 
     if (!serializeEcPair(diffC1, diffC2, out))
@@ -219,10 +224,12 @@ encryptAmount(uint64_t const amt, Slice const& pubKeySlice, Slice const& blindin
         return std::nullopt;
 
     secp256k1_pubkey c1, c2, pubKey;
-    if (secp256k1_ec_pubkey_parse(secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength) != 1)
+    if (secp256k1_ec_pubkey_parse(
+            secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength) != 1)
         return std::nullopt;
 
-    if (!secp256k1_elgamal_encrypt(secp256k1Context(), &c1, &c2, &pubKey, amt, blindingFactor.data()))
+    if (!secp256k1_elgamal_encrypt(
+            secp256k1Context(), &c1, &c2, &pubKey, amt, blindingFactor.data()))
         return std::nullopt;
 
     Buffer buf(ecGamalEncryptedTotalLength);
@@ -239,10 +246,12 @@ encryptCanonicalZeroAmount(Slice const& pubKeySlice, AccountID const& account, M
         return std::nullopt;  // LCOV_EXCL_LINE
 
     secp256k1_pubkey c1, c2, pubKey;
-    if (secp256k1_ec_pubkey_parse(secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength) != 1)
+    if (secp256k1_ec_pubkey_parse(
+            secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength) != 1)
         return std::nullopt;  // LCOV_EXCL_LINE
 
-    if (!generate_canonical_encrypted_zero(secp256k1Context(), &c1, &c2, &pubKey, account.data(), mptId.data()))
+    if (!generate_canonical_encrypted_zero(
+            secp256k1Context(), &c1, &c2, &pubKey, account.data(), mptId.data()))
         return std::nullopt;  // LCOV_EXCL_LINE
 
     Buffer buf(ecGamalEncryptedTotalLength);
@@ -262,10 +271,12 @@ verifySchnorrProof(Slice const& pubKeySlice, Slice const& proofSlice, uint256 co
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     secp256k1_pubkey pubKey;
-    if (secp256k1_ec_pubkey_parse(secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength) != 1)
+    if (secp256k1_ec_pubkey_parse(
+            secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength) != 1)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (secp256k1_mpt_pok_sk_verify(secp256k1Context(), proofSlice.data(), &pubKey, contextHash.data()) != 1)
+    if (secp256k1_mpt_pok_sk_verify(
+            secp256k1Context(), proofSlice.data(), &pubKey, contextHash.data()) != 1)
         return tecBAD_PROOF;
 
     return tesSUCCESS;
@@ -278,19 +289,21 @@ verifyElGamalEncryption(
     Slice const& pubKeySlice,
     Slice const& ciphertext)
 {
-    if (ciphertext.size() != ecGamalEncryptedTotalLength || blindingFactor.size() != ecBlindingFactorLength ||
-        pubKeySlice.size() != ecPubKeyLength)
+    if (ciphertext.size() != ecGamalEncryptedTotalLength ||
+        blindingFactor.size() != ecBlindingFactorLength || pubKeySlice.size() != ecPubKeyLength)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     secp256k1_pubkey pubKey;
-    if (secp256k1_ec_pubkey_parse(secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength) != 1)
+    if (secp256k1_ec_pubkey_parse(
+            secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength) != 1)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     secp256k1_pubkey c1, c2;
     if (!makeEcPair(ciphertext, c1, c2))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (secp256k1_elgamal_verify_encryption(secp256k1Context(), &c1, &c2, &pubKey, amount, blindingFactor.data()) != 1)
+    if (secp256k1_elgamal_verify_encryption(
+            secp256k1Context(), &c1, &c2, &pubKey, amount, blindingFactor.data()) != 1)
         return tecBAD_PROOF;
 
     return tesSUCCESS;
@@ -304,13 +317,15 @@ verifyRevealedAmount(
     ConfidentialRecipient const& issuer,
     std::optional<ConfidentialRecipient> const& auditor)
 {
-    if (auto const res = verifyElGamalEncryption(amount, blindingFactor, holder.publicKey, holder.encryptedAmount);
+    if (auto const res = verifyElGamalEncryption(
+            amount, blindingFactor, holder.publicKey, holder.encryptedAmount);
         !isTesSuccess(res))
     {
         return res;
     }
 
-    if (auto const res = verifyElGamalEncryption(amount, blindingFactor, issuer.publicKey, issuer.encryptedAmount);
+    if (auto const res = verifyElGamalEncryption(
+            amount, blindingFactor, issuer.publicKey, issuer.encryptedAmount);
         !isTesSuccess(res))
     {
         return res;
@@ -318,8 +333,8 @@ verifyRevealedAmount(
 
     if (auditor)
     {
-        if (auto const res =
-                verifyElGamalEncryption(amount, blindingFactor, auditor->publicKey, auditor->encryptedAmount);
+        if (auto const res = verifyElGamalEncryption(
+                amount, blindingFactor, auditor->publicKey, auditor->encryptedAmount);
             !isTesSuccess(res))
         {
             return res;
@@ -361,28 +376,33 @@ verifyMultiCiphertextEqualityProof(
         // Parse Shared C1 from the first recipient only
         if (i == 0)
         {
-            if (!secp256k1_ec_pubkey_parse(ctx, &c1, recipient.encryptedAmount.data(), ecGamalEncryptedLength))
+            if (!secp256k1_ec_pubkey_parse(
+                    ctx, &c1, recipient.encryptedAmount.data(), ecGamalEncryptedLength))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
         }
         else
         {
             // All C1 bytes must be the same
             if (std::memcmp(
-                    recipient.encryptedAmount.data(), recipients[0].encryptedAmount.data(), ecGamalEncryptedLength) !=
-                0)
+                    recipient.encryptedAmount.data(),
+                    recipients[0].encryptedAmount.data(),
+                    ecGamalEncryptedLength) != 0)
             {
                 return tecBAD_PROOF;
             }
         }
 
         if (secp256k1_ec_pubkey_parse(
-                ctx, &c2_vec[i], recipient.encryptedAmount.data() + ecGamalEncryptedLength, ecGamalEncryptedLength) !=
-            1)
+                ctx,
+                &c2_vec[i],
+                recipient.encryptedAmount.data() + ecGamalEncryptedLength,
+                ecGamalEncryptedLength) != 1)
         {
             return tecINTERNAL;  // LCOV_EXCL_LINE
         }
 
-        if (secp256k1_ec_pubkey_parse(ctx, &pk_vec[i], recipient.publicKey.data(), ecPubKeyLength) != 1)
+        if (secp256k1_ec_pubkey_parse(
+                ctx, &pk_vec[i], recipient.publicKey.data(), ecPubKeyLength) != 1)
             return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
@@ -412,7 +432,8 @@ verifyClawbackEqualityProof(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     secp256k1_pubkey pubKey;
-    if (secp256k1_ec_pubkey_parse(secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength) != 1)
+    if (secp256k1_ec_pubkey_parse(
+            secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength) != 1)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // Note: c2, c1 order - the proof is generated with c2 first (the encrypted
@@ -433,7 +454,8 @@ checkEncryptedAmountFormat(STObject const& object)
     // Current usage of this function is only for ConfidentialMPTConvert and
     // ConfidentialMPTConvertBack transactions, which already enforce that these fields
     // are present.
-    if (!object.isFieldPresent(sfHolderEncryptedAmount) || !object.isFieldPresent(sfIssuerEncryptedAmount))
+    if (!object.isFieldPresent(sfHolderEncryptedAmount) ||
+        !object.isFieldPresent(sfIssuerEncryptedAmount))
         return temMALFORMED;  // LCOV_EXCL_LINE
 
     if (object[sfHolderEncryptedAmount].length() != ecGamalEncryptedTotalLength ||
@@ -444,7 +466,8 @@ checkEncryptedAmountFormat(STObject const& object)
     if (hasAuditor && object[sfAuditorEncryptedAmount].length() != ecGamalEncryptedTotalLength)
         return temBAD_CIPHERTEXT;
 
-    if (!isValidCiphertext(object[sfHolderEncryptedAmount]) || !isValidCiphertext(object[sfIssuerEncryptedAmount]))
+    if (!isValidCiphertext(object[sfHolderEncryptedAmount]) ||
+        !isValidCiphertext(object[sfIssuerEncryptedAmount]))
         return temBAD_CIPHERTEXT;
 
     if (hasAuditor && !isValidCiphertext(object[sfAuditorEncryptedAmount]))
@@ -475,11 +498,13 @@ verifyAmountPcmLinkage(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     secp256k1_pubkey pubKey;
-    if (secp256k1_ec_pubkey_parse(secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength) != 1)
+    if (secp256k1_ec_pubkey_parse(
+            secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength) != 1)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     secp256k1_pubkey pcm;
-    if (secp256k1_ec_pubkey_parse(secp256k1Context(), &pcm, pcmSlice.data(), ecPedersenCommitmentLength) != 1)
+    if (secp256k1_ec_pubkey_parse(
+            secp256k1Context(), &pcm, pcmSlice.data(), ecPedersenCommitmentLength) != 1)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     if (secp256k1_elgamal_pedersen_link_verify(
@@ -515,11 +540,13 @@ verifyBalancePcmLinkage(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     secp256k1_pubkey pubKey;
-    if (secp256k1_ec_pubkey_parse(secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength) != 1)
+    if (secp256k1_ec_pubkey_parse(
+            secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength) != 1)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     secp256k1_pubkey pcm;
-    if (secp256k1_ec_pubkey_parse(secp256k1Context(), &pcm, pcmSlice.data(), ecPedersenCommitmentLength) != 1)
+    if (secp256k1_ec_pubkey_parse(
+            secp256k1Context(), &pcm, pcmSlice.data(), ecPedersenCommitmentLength) != 1)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // Note: c2, c1 order - the linkage proof expects the message-containing
@@ -545,7 +572,8 @@ verifyAggregatedBulletproof(
     if (m != 1 && m != 2)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    std::size_t const expectedProofLen = (m == 1) ? ecSingleBulletproofLength : ecDoubleBulletproofLength;
+    std::size_t const expectedProofLen =
+        (m == 1) ? ecSingleBulletproofLength : ecDoubleBulletproofLength;
     if (proof.size() != expectedProofLen)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -559,7 +587,10 @@ verifyAggregatedBulletproof(
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         if (secp256k1_ec_pubkey_parse(
-                ctx, &commitments[i], compressedCommitments[i].data(), ecPedersenCommitmentLength) != 1)
+                ctx,
+                &commitments[i],
+                compressedCommitments[i].data(),
+                ecPedersenCommitmentLength) != 1)
             return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
@@ -608,17 +639,20 @@ verifyAggregatedBulletproof(
 TER
 computeSendRemainder(Slice const& balanceCommitment, Slice const& amountCommitment, Buffer& out)
 {
-    if (balanceCommitment.size() != ecPedersenCommitmentLength || amountCommitment.size() != ecPedersenCommitmentLength)
+    if (balanceCommitment.size() != ecPedersenCommitmentLength ||
+        amountCommitment.size() != ecPedersenCommitmentLength)
         return tecINTERNAL;
 
     auto const ctx = secp256k1Context();
 
     secp256k1_pubkey pcBalance;
-    if (secp256k1_ec_pubkey_parse(ctx, &pcBalance, balanceCommitment.data(), ecPedersenCommitmentLength) != 1)
+    if (secp256k1_ec_pubkey_parse(
+            ctx, &pcBalance, balanceCommitment.data(), ecPedersenCommitmentLength) != 1)
         return tecINTERNAL;
 
     secp256k1_pubkey pcAmount;
-    if (secp256k1_ec_pubkey_parse(ctx, &pcAmount, amountCommitment.data(), ecPedersenCommitmentLength) != 1)
+    if (secp256k1_ec_pubkey_parse(
+            ctx, &pcAmount, amountCommitment.data(), ecPedersenCommitmentLength) != 1)
         return tecINTERNAL;
 
     // Negate PC_amount point to get -PC_amount
@@ -634,7 +668,8 @@ computeSendRemainder(Slice const& balanceCommitment, Slice const& amountCommitme
     // Serialize result to compressed format
     out.alloc(ecPedersenCommitmentLength);
     size_t outLen = ecPedersenCommitmentLength;
-    if (secp256k1_ec_pubkey_serialize(ctx, out.data(), &outLen, &pcRem, SECP256K1_EC_COMPRESSED) != 1)
+    if (secp256k1_ec_pubkey_serialize(ctx, out.data(), &outLen, &pcRem, SECP256K1_EC_COMPRESSED) !=
+        1)
         return tecINTERNAL;
 
     return tesSUCCESS;
@@ -650,7 +685,8 @@ computeConvertBackRemainder(Slice const& commitment, std::uint64_t amount, Buffe
 
     // Parse commitment from compressed format
     secp256k1_pubkey pcBalance;
-    if (secp256k1_ec_pubkey_parse(ctx, &pcBalance, commitment.data(), ecPedersenCommitmentLength) != 1)
+    if (secp256k1_ec_pubkey_parse(ctx, &pcBalance, commitment.data(), ecPedersenCommitmentLength) !=
+        1)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // Convert amount to 32-byte big-endian scalar
@@ -676,7 +712,8 @@ computeConvertBackRemainder(Slice const& commitment, std::uint64_t amount, Buffe
     // Serialize result to compressed format
     out.alloc(ecPedersenCommitmentLength);
     size_t outLen = ecPedersenCommitmentLength;
-    if (secp256k1_ec_pubkey_serialize(ctx, out.data(), &outLen, &pcRem, SECP256K1_EC_COMPRESSED) != 1 ||
+    if (secp256k1_ec_pubkey_serialize(ctx, out.data(), &outLen, &pcRem, SECP256K1_EC_COMPRESSED) !=
+            1 ||
         outLen != ecPedersenCommitmentLength)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
