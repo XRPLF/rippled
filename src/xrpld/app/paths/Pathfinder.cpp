@@ -1236,7 +1236,10 @@ Pathfinder::initPathTable()
          {6, "saaxd"},
          {7, "sbxd"},
          {8, "sabxd"},
-         {9, "sabaxd"}});
+         {9, "sabaxd"},
+         {5, "sbbxd"},  // source -> book -> book -> book(XRP) -> dest
+         {6, "sbabxd"}, // source -> book -> gateway -> book -> book(XRP) -> dest
+         {6, "sabbxd"}});  // source -> gateway -> book -> book -> book(XRP) -> dest 
 
     // non-XRP to non-XRP (same currency)
     fillPaths(
