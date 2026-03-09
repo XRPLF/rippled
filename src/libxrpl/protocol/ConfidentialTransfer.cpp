@@ -527,7 +527,7 @@ verifyAggregatedBulletproof(
     // 1. Validate input lengths
     // This function could support any power-of-2 m, but current usage only requires m=1 or m=2
     std::size_t const m = compressedCommitments.size();
-    if (m == 0 || m > 2)
+    if (m != 1 && m != 2)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     std::size_t const expectedProofLen = (m == 1) ? ecSingleBulletproofLength : ecDoubleBulletproofLength;
