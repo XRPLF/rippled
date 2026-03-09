@@ -1512,6 +1512,23 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
+    testTracesInvalid()
+    {
+        using namespace test::jtx;
+        Env env(*this);
+        TestHostFunctions hfs(env, 0);
+
+        testcase("Wasm traces invalid");
+        auto const wasm = hexToBytes(tracesInvalidHex);
+
+        // this test is for codecov
+        {
+            auto const re = runEscrowWasm(wasm, hfs, 100'000, "finish");
+            checkResult(re, 1, 2990);
+        }
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -1546,6 +1563,8 @@ struct Wasm_test : public beast::unit_test::suite
         testParameterType();
 
         testOpcodes();
+
+        testTracesInvalid();
     }
 };
 

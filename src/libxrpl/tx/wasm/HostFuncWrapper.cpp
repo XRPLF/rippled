@@ -10,6 +10,8 @@
 #include <xrpl/tx/wasm/HostFuncWrapper.h>
 #include <xrpl/tx/wasm/WasmVM.h>
 
+#include <utility>
+
 namespace xrpl {
 
 using SFieldCRef = std::reference_wrapper<SField const>;
@@ -486,10 +488,9 @@ isAmendmentEnabled_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t*
 
     if (slice->size() == uint256::bytes)
     {
-        if (auto ret = hf->isAmendmentEnabled(uint256::fromVoid(slice->data())); *ret == 1)
-        {
+        if (auto const ret = hf->isAmendmentEnabled(uint256::fromVoid(slice->data()));
+            ret && *ret == 1)
             return returnResult(runtime, params, results, ret, index);
-        }
     }
 
     if (slice->size() > 64)
@@ -1435,7 +1436,12 @@ trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     auto* runtime = reinterpret_cast<WasmRuntimeWrapper*>(hf->getRT());
     int index = 0;
 
-    if (params->data[1].of.i32 + params->data[3].of.i32 > maxWasmParamLength)
+    int64_t const x = (int64_t)params->data[1].of.i32 + params->data[3].of.i32;
+    if (x < 0)
+    {
+        return hfResult(results, HostFunctionError::INVALID_PARAMS);
+    }
+    else if (std::cmp_greater(x, maxWasmParamLength))
     {
         return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
     }
@@ -1473,7 +1479,13 @@ traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     auto* hf = getHF(env);
     auto* runtime = reinterpret_cast<WasmRuntimeWrapper*>(hf->getRT());
     int index = 0;
-    if (params->data[1].of.i32 > maxWasmParamLength)
+
+    int32_t const x = params->data[1].of.i32;
+    if (x < 0)
+    {
+        return hfResult(results, HostFunctionError::INVALID_PARAMS);
+    }
+    else if (std::cmp_greater(x, maxWasmParamLength))
     {
         return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
     }
@@ -1501,17 +1513,28 @@ traceAccount_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* resul
     auto* hf = getHF(env);
     auto* runtime = reinterpret_cast<WasmRuntimeWrapper*>(hf->getRT());
 
-    if (params->data[1].of.i32 > maxWasmParamLength)
+    int32_t const x = params->data[1].of.i32;
+    if (x < 0)
+    {
+        return hfResult(results, HostFunctionError::INVALID_PARAMS);
+    }
+    else if (std::cmp_greater(x, maxWasmParamLength))
+    {
         return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
 
     int i = 0;
     auto const msg = getDataString(runtime, params, i);
     if (!msg)
+    {
         return hfResult(results, msg.error());
+    }
 
     auto const account = getDataAccountID(runtime, params, i);
     if (!account)
+    {
         return hfResult(results, account.error());
+    }
 
     return returnResult(runtime, params, results, hf->traceAccount(*msg, *account), i);
 }
@@ -1524,17 +1547,28 @@ traceFloat_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results
     auto* hf = getHF(env);
     auto* runtime = reinterpret_cast<WasmRuntimeWrapper*>(hf->getRT());
 
-    if (params->data[1].of.i32 > maxWasmParamLength)
+    int32_t const x = params->data[1].of.i32;
+    if (x < 0)
+    {
+        return hfResult(results, HostFunctionError::INVALID_PARAMS);
+    }
+    else if (std::cmp_greater(x, maxWasmParamLength))
+    {
         return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
 
     int i = 0;
     auto const msg = getDataString(runtime, params, i);
     if (!msg)
+    {
         return hfResult(results, msg.error());
+    }
 
     auto const number = getDataSlice(runtime, params, i);
     if (!number)
+    {
         return hfResult(results, number.error());
+    }
 
     return returnResult(runtime, params, results, hf->traceFloat(*msg, *number), i);
 }
@@ -1547,17 +1581,28 @@ traceAmount_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* result
     auto* hf = getHF(env);
     auto* runtime = reinterpret_cast<WasmRuntimeWrapper*>(hf->getRT());
 
-    if (params->data[1].of.i32 > maxWasmParamLength)
+    int32_t const x = params->data[1].of.i32;
+    if (x < 0)
+    {
+        return hfResult(results, HostFunctionError::INVALID_PARAMS);
+    }
+    else if (std::cmp_greater(x, maxWasmParamLength))
+    {
         return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
 
     int i = 0;
     auto const msg = getDataString(runtime, params, i);
     if (!msg)
+    {
         return hfResult(results, msg.error());
+    }
 
     auto const amountSliceOpt = getDataSlice(runtime, params, i);
     if (!amountSliceOpt)
+    {
         return hfResult(results, amountSliceOpt.error());
+    }
 
     auto const amountSlice = amountSliceOpt.value();
     auto serialIter = SerialIter(amountSlice);
@@ -1572,7 +1617,9 @@ traceAmount_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* result
         amount = std::nullopt;
     }
     if (!amount)
+    {
         return hfResult(results, HostFunctionError::INVALID_PARAMS);
+    }
 
     return returnResult(runtime, params, results, hf->traceAmount(*msg, *amount), i);
 }

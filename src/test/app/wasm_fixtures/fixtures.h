@@ -81,3 +81,6 @@ extern std::string const functions5kHex;
 extern std::string const opcReservedHex;
 
 extern std::string const impExpHex;
+
+extern std::string const tracesInvalidHex;
+

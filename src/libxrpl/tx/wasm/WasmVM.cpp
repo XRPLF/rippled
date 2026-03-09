@@ -120,9 +120,6 @@ runEscrowWasm(
     auto const ret =
         vm.run(wasmCode, hfs, gasLimit, funcName, params, createWasmImport(hfs), hfs.getJournal());
 
-    // std::cout << "runEscrowWasm, mod size: " << wasmCode.size()
-    //           << ", gasLimit: " << gasLimit << ", funcName: " << funcName;
-
     if (!ret)
     {
 #ifdef DEBUG_OUTPUT

@@ -81,7 +81,7 @@ public:
     checkSelf() const override
     {
         return !currentLedgerObj_ && !data_ &&
-            std::ranges::find_if(cache_, [](auto& p) { return !!p; }) == cache_.end();
+            std::ranges::none_of(cache_, [](auto const& p) { return !!p; });
     }
 
     std::optional<Bytes> const&

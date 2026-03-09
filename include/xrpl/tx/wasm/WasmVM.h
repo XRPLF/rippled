@@ -6,19 +6,19 @@
 
 namespace xrpl {
 
-static std::string_view const W_ENV = "env";
-static std::string_view const W_HOST_LIB = "host_lib";
-static std::string_view const W_MEM = "memory";
-static std::string_view const W_STORE = "store";
-static std::string_view const W_LOAD = "load";
-static std::string_view const W_SIZE = "size";
-static std::string_view const W_ALLOC = "allocate";
-static std::string_view const W_DEALLOC = "deallocate";
-static std::string_view const W_PROC_EXIT = "proc_exit";
+std::string_view inline constexpr W_ENV = "env";
+std::string_view inline constexpr W_HOST_LIB = "host_lib";
+std::string_view inline constexpr W_MEM = "memory";
+std::string_view inline constexpr W_STORE = "store";
+std::string_view inline constexpr W_LOAD = "load";
+std::string_view inline constexpr W_SIZE = "size";
+std::string_view inline constexpr W_ALLOC = "allocate";
+std::string_view inline constexpr W_DEALLOC = "deallocate";
+std::string_view inline constexpr W_PROC_EXIT = "proc_exit";
 
-static std::string_view const ESCROW_FUNCTION_NAME = "finish";
+std::string_view inline constexpr ESCROW_FUNCTION_NAME = "finish";
 
-uint32_t const MAX_PAGES = 128;  // 8MB = 64KB*128
+uint32_t inline constexpr MAX_PAGES = 128;  // 8MB = 64KB*128
 
 class WasmiEngine;
 
@@ -36,8 +36,6 @@ class WasmEngine
     operator=(WasmEngine&&) = delete;
 
 public:
-    ~WasmEngine() = default;
-
     static WasmEngine&
     instance();
 

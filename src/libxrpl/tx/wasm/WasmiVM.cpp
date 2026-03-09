@@ -895,7 +895,7 @@ WasmiEngine::checkHlp(
 
     // Create and instantiate the module.
     if (wasmCode.empty())
-        throw std::runtime_error("empty nodule");
+        throw std::runtime_error("empty module");
 
     int const m = addModule(wasmCode, false, imports, -1);
     if ((m < 0) || !moduleWrap_)
