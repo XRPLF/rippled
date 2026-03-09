@@ -1233,13 +1233,13 @@ Pathfinder::initPathTable()
         pt_nonXRP_to_XRP,
         {{1, "sxd"},   // gateway buys XRP
          {2, "saxd"},  // source -> gateway -> book(XRP) -> dest
-         {6, "saaxd"},
+         {5, "sbbxd"},  // source -> book -> book -> book(XRP) -> dest
+         {6, "saaxd"}, // source -> gateway -> book -> book -> book(XRP) -> dest 
+         {6, "sbabxd"}, // source -> book -> gateway -> book -> book(XRP) -> dest
+         {6, "sabbxd"},
          {7, "sbxd"},
          {8, "sabxd"},
-         {9, "sabaxd"},
-         {5, "sbbxd"},  // source -> book -> book -> book(XRP) -> dest
-         {6, "sbabxd"}, // source -> book -> gateway -> book -> book(XRP) -> dest
-         {6, "sabbxd"}});  // source -> gateway -> book -> book -> book(XRP) -> dest 
+         {9, "sabaxd"}});
 
     // non-XRP to non-XRP (same currency)
     fillPaths(
