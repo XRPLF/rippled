@@ -58,6 +58,7 @@ Checks: "-*,
   bugprone-undefined-memory-manipulation,
   bugprone-undelegated-constructor,
   bugprone-unhandled-exception-at-new,
+  bugprone-unhandled-self-assignment,
   bugprone-unique-ptr-array-mismatch,
   bugprone-unsafe-functions,
   bugprone-virtual-near-miss,
@@ -85,7 +86,7 @@ Checks: "-*,
   performance-trivially-destructible
   "
 # ---
-# more checks that have some issues that need to be resolved:
+# checks that have some issues that need to be resolved:
 #
 # bugprone-crtp-constructor-accessibility,
 # bugprone-inc-dec-in-conditions,
@@ -100,7 +101,6 @@ Checks: "-*,
 # bugprone-too-small-loop-variable,
 # bugprone-unused-return-value,
 # bugprone-use-after-move,
-# bugprone-unhandled-self-assignment,
 # bugprone-unused-raii,
 #
 # cppcoreguidelines-misleading-capture-default-by-value,
