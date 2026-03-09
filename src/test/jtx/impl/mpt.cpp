@@ -1197,6 +1197,10 @@ MPTTester::send(MPTConfidentialSend const& arg)
             arr.append(hash);
     }
 
+    // Version counters before send
+    auto const prevSenderVersion = getMPTokenVersion(*arg.account);
+    auto const prevDestVersion = getMPTokenVersion(*arg.dest);
+
     // Sender's previous confidential state
     auto const prevSenderInbox = getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
     auto const prevSenderSpending = getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
@@ -1372,6 +1376,10 @@ MPTTester::send(MPTConfidentialSend const& arg)
         env_.require(requireAny([&]() -> bool { return *postSenderInbox + *postSenderSpending == *postSenderIssuer; }));
         env_.require(requireAny([&]() -> bool { return *postDestInbox + *postDestSpending == *postDestIssuer; }));
 
+        // Version: sender increments by 1; receiver version is unchanged by incoming sends
+        env_.require(requireAny([&]() -> bool { return getMPTokenVersion(*arg.account) == prevSenderVersion + 1; }));
+        env_.require(requireAny([&]() -> bool { return getMPTokenVersion(*arg.dest) == prevDestVersion; }));
+
         if (arg.auditorEncryptedAmt || auditor_)
         {
             auto const postSenderAuditor = getDecryptedBalance(*arg.account, AUDITOR_ENCRYPTED_BALANCE);
@@ -1439,11 +1447,13 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
     auto const holderPubAmt = getBalance(*arg.holder);
     auto const prevCOA = getIssuanceConfidentialBalance();
     auto const prevOA = getIssuanceOutstandingBalance();
+    auto const prevVersion = getMPTokenVersion(*arg.holder);
 
     if (submit(arg, jv) == tesSUCCESS)
     {
         auto const postCOA = getIssuanceConfidentialBalance();
         auto const postOA = getIssuanceOutstandingBalance();
+        auto const postVersion = getMPTokenVersion(*arg.holder);
 
         // Verify holder's public balance is unchanged
         env_.require(mptbalance(*this, *arg.holder, holderPubAmt));
@@ -1461,6 +1471,9 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
             requireAny([&]() -> bool { return getDecryptedBalance(*arg.holder, ISSUER_ENCRYPTED_BALANCE) == 0; }));
         env_.require(
             requireAny([&]() -> bool { return getDecryptedBalance(*arg.holder, AUDITOR_ENCRYPTED_BALANCE) == 0; }));
+
+        // Verify version is incremented
+        env_.require(requireAny([&]() -> bool { return postVersion == prevVersion + 1; }));
     }
 }
 

@@ -90,6 +90,9 @@ getConvertBackContextHash(
 bool
 makeEcPair(Slice const& buffer, secp256k1_pubkey& out1, secp256k1_pubkey& out2)
 {
+    if (buffer.length() != 2 * ecGamalEncryptedLength)
+        return false;  // LCOV_EXCL_LINE
+
     auto parsePubKey = [](Slice const& slice, secp256k1_pubkey& out) {
         return secp256k1_ec_pubkey_parse(
             secp256k1Context(), &out, reinterpret_cast<unsigned char const*>(slice.data()), slice.length());
@@ -275,10 +278,8 @@ verifyElGamalEncryption(
     Slice const& pubKeySlice,
     Slice const& ciphertext)
 {
-    if (blindingFactor.size() != ecBlindingFactorLength)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    if (pubKeySlice.size() != ecPubKeyLength)
+    if (ciphertext.size() != ecGamalEncryptedTotalLength || blindingFactor.size() != ecBlindingFactorLength ||
+        pubKeySlice.size() != ecPubKeyLength)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     secp256k1_pubkey pubKey;
@@ -402,11 +403,12 @@ verifyClawbackEqualityProof(
     Slice const& ciphertext,
     uint256 const& contextHash)
 {
-    secp256k1_pubkey c1, c2;
-    if (!makeEcPair(ciphertext, c1, c2))
+    if (ciphertext.size() != ecGamalEncryptedTotalLength || pubKeySlice.size() != ecPubKeyLength ||
+        proof.size() != ecEqualityProofLength)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (pubKeySlice.size() != ecPubKeyLength)
+    secp256k1_pubkey c1, c2;
+    if (!makeEcPair(ciphertext, c1, c2))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     secp256k1_pubkey pubKey;
@@ -537,9 +539,14 @@ verifyAggregatedBulletproof(
     std::vector<Slice> const& compressedCommitments,
     uint256 const& contextHash)
 {
-    // 1. Validate Aggregation Factor (m), m to be a power of 2
+    // 1. Validate input lengths
+    // This function could support any power-of-2 m, but current usage only requires m=1 or m=2
     std::size_t const m = compressedCommitments.size();
-    if (m == 0 || (m & (m - 1)) != 0)
+    if (m != 1 && m != 2)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    std::size_t const expectedProofLen = (m == 1) ? ecSingleBulletproofLength : ecDoubleBulletproofLength;
+    if (proof.size() != expectedProofLen)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // 2. Prepare Pedersen Commitments, parse from compressed format
