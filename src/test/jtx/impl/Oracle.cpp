@@ -216,7 +216,6 @@ Oracle::set(UpdateArg const& arg)
             return s;
         assert(s.size() <= 20);
         // anything else must be 160-bit hex string
-        std::string h = strHex(s);
         return strHex(s).append(40 - s.size() * 2, '0');
     };
     for (auto const& data : arg.series)
