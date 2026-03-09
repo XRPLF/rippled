@@ -2,6 +2,8 @@
 
 #include <xrpl/protocol/KnownFormats.h>
 
+#include <vector>
+
 namespace xrpl {
 
 /** Transaction type identifiers.
@@ -73,6 +75,9 @@ private:
 public:
     static TxFormats const&
     getInstance();
+
+    static std::vector<SOElement> const&
+    getCommonFields();
 };
 
 }  // namespace xrpl
