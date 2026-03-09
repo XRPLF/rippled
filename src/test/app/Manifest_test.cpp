@@ -248,7 +248,6 @@ public:
                 // save should store all trusted master keys to db
                 std::vector<std::string> s1;
                 std::vector<std::string> keys;
-                std::string cfgManifest;
                 for (auto const& man : inManifests)
                     s1.push_back(toBase58(TokenType::NodePublic, man->masterKey));
                 unl->load({}, s1, keys);
