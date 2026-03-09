@@ -161,10 +161,10 @@ struct Buffer_test : beast::unit_test::suite
                 Buffer z{b3};
 
                 x = std::move(y);
-                BEAST_EXPECT(sane(x));     // NOLINT(bugprone-use-after-move)
-                BEAST_EXPECT(!x.empty());  // NOLINT(bugprone-use-after-move)
-                BEAST_EXPECT(sane(y));
-                BEAST_EXPECT(y.empty());
+                BEAST_EXPECT(sane(x));
+                BEAST_EXPECT(!x.empty());
+                BEAST_EXPECT(sane(y));    // NOLINT(bugprone-use-after-move)
+                BEAST_EXPECT(y.empty());  // NOLINT(bugprone-use-after-move)
 
                 x = std::move(z);
                 BEAST_EXPECT(sane(x));
