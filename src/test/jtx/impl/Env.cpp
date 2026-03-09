@@ -10,12 +10,12 @@
 #include <test/jtx/utility.h>
 
 #include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/rpc/RPCCall.h>
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/scope.h>
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/net/HTTPClient.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -25,6 +25,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/NetworkOPs.h>
 
 #include <memory>
 #include <source_location>
@@ -526,7 +527,7 @@ Env::autofill(JTx& jt)
 
     if (jt.fill_netid)
     {
-        uint32_t networkID = app().config().NETWORK_ID;
+        uint32_t networkID = app().getNetworkIDService().getNetworkID();
         if (!jv.isMember(jss::NetworkID) && networkID > 1024)
             jv[jss::NetworkID] = std::to_string(networkID);
     }

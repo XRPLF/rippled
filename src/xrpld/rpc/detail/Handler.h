@@ -1,12 +1,12 @@
 #pragma once
 
 #include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/server/NetworkOPs.h>
 
 namespace Json {
 class Object;

@@ -596,13 +596,14 @@ public:
         May be called concurrently
     */
     void
-    for_each_available(std::function<void(
-                           std::string const& manifest,
-                           std::uint32_t version,
-                           std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
-                           PublicKey const& pubKey,
-                           std::size_t maxSequence,
-                           uint256 const& hash)> func) const;
+    for_each_available(
+        std::function<void(
+            std::string const& manifest,
+            std::uint32_t version,
+            std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
+            PublicKey const& pubKey,
+            std::size_t maxSequence,
+            uint256 const& hash)> func) const;
 
     /** Returns the current valid list for the given publisher key,
         if available, as a Json object.

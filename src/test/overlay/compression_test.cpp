@@ -108,8 +108,9 @@ public:
 
         BEAST_EXPECT(proto1->ParseFromArray(decompressed.data(), decompressedSize));
         auto uncompressed = m.getBuffer(Compressed::Off);
-        BEAST_EXPECT(std::equal(
-            uncompressed.begin() + xrpl::compression::headerBytes, uncompressed.end(), decompressed.begin()));
+        BEAST_EXPECT(
+            std::equal(
+                uncompressed.begin() + xrpl::compression::headerBytes, uncompressed.end(), decompressed.begin()));
     }
 
     std::shared_ptr<protocol::TMManifests>

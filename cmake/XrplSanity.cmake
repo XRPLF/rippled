@@ -19,7 +19,8 @@ if (NOT is_multiconfig)
 endif ()
 
 if (is_clang) # both Clang and AppleClang
-    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16.0)
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS
+                                                        16.0)
         message(FATAL_ERROR "This project requires clang 16 or later")
     endif ()
 elseif (is_gcc)
@@ -32,7 +33,8 @@ endif ()
 if ("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
     message(FATAL_ERROR "Builds (in-source) are not allowed in "
                         "${CMAKE_CURRENT_SOURCE_DIR}. Please remove CMakeCache.txt and the CMakeFiles "
-                        "directory from ${CMAKE_CURRENT_SOURCE_DIR} and try building in a separate directory.")
+                        "directory from ${CMAKE_CURRENT_SOURCE_DIR} and try building in a separate directory."
+    )
 endif ()
 
 if (MSVC AND CMAKE_GENERATOR_PLATFORM STREQUAL "Win32")

@@ -3,13 +3,13 @@
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/ledger/PendingSaves.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/consensus/LedgerTiming.h>
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/HashRouter.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/nodestore/Database.h>
@@ -878,18 +878,12 @@ Ledger::updateSkipList()
 bool
 Ledger::isFlagLedger() const
 {
-    return header_.seq % FLAG_LEDGER_INTERVAL == 0;
+    return ::xrpl::isFlagLedger(header_.seq);
 }
 bool
 Ledger::isVotingLedger() const
 {
-    return (header_.seq + 1) % FLAG_LEDGER_INTERVAL == 0;
-}
-
-bool
-isFlagLedger(LedgerIndex seq)
-{
-    return seq % FLAG_LEDGER_INTERVAL == 0;
+    return ::xrpl::isVotingLedger(header_.seq + 1);
 }
 
 static bool
