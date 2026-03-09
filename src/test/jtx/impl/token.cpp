@@ -3,7 +3,7 @@
 
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/tx/transactors/NFT/NFTokenMint.h>
+#include <xrpl/tx/transactors/nft/NFTokenMint.h>
 
 namespace xrpl {
 namespace test {
