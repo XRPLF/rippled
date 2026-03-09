@@ -1234,7 +1234,7 @@ Pathfinder::initPathTable()
         {{1, "sxd"},   // gateway buys XRP
          {2, "saxd"},  // source -> gateway -> book(XRP) -> dest
          {5, "sbbxd"},  // source -> book -> book -> book(XRP) -> dest
-         {6, "saaxd"}, // source -> gateway -> book -> book -> book(XRP) -> dest 
+         {6, "saaxd"},
          {6, "sbabxd"}, // source -> book -> gateway -> book -> book(XRP) -> dest
          {6, "sabbxd"},
          {7, "sbxd"},
