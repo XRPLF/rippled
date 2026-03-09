@@ -60,6 +60,7 @@ Checks: "-*,
   bugprone-unhandled-exception-at-new,
   bugprone-unique-ptr-array-mismatch,
   bugprone-unsafe-functions,
+  bugprone-unused-raii,
   bugprone-virtual-near-miss,
   cppcoreguidelines-no-suspend-with-lock,
   cppcoreguidelines-virtual-class-destructor,
@@ -85,7 +86,7 @@ Checks: "-*,
   performance-trivially-destructible
   "
 # ---
-# more checks that have some issues that need to be resolved:
+# checks that have some issues that need to be resolved:
 #
 # bugprone-crtp-constructor-accessibility,
 # bugprone-inc-dec-in-conditions,
