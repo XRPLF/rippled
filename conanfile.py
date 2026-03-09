@@ -60,7 +60,7 @@ class Xrpl(ConanFile):
         "xrpld": False,
         "boost/*:without_context": False,
         "boost/*:without_coroutine": True,
-        "boost/*:without_coroutine2": False,
+        "boost/*:without_coroutine2": True,
         "date/*:header_only": True,
         "ed25519/*:shared": False,
         "grpc/*:shared": False,
