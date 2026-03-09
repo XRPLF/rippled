@@ -1202,6 +1202,10 @@ MPTTester::send(MPTConfidentialSend const& arg)
             arr.append(hash);
     }
 
+    // Version counters before send
+    auto const prevSenderVersion = getMPTokenVersion(*arg.account);
+    auto const prevDestVersion = getMPTokenVersion(*arg.dest);
+
     // Sender's previous confidential state
     auto const prevSenderInbox = getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
     auto const prevSenderSpending = getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
@@ -1376,6 +1380,10 @@ MPTTester::send(MPTConfidentialSend const& arg)
         // Cross checks
         env_.require(requireAny([&]() -> bool { return *postSenderInbox + *postSenderSpending == *postSenderIssuer; }));
         env_.require(requireAny([&]() -> bool { return *postDestInbox + *postDestSpending == *postDestIssuer; }));
+
+        // Version: sender increments by 1; receiver version is unchanged by incoming sends
+        env_.require(requireAny([&]() -> bool { return getMPTokenVersion(*arg.account) == prevSenderVersion + 1; }));
+        env_.require(requireAny([&]() -> bool { return getMPTokenVersion(*arg.dest) == prevDestVersion; }));
 
         if (arg.auditorEncryptedAmt || auditor_)
         {
