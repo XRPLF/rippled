@@ -192,6 +192,7 @@ words:
   - ostr
   - pargs
   - partitioner
+  - pratik
   - paychan
   - paychans
   - permdex
@@ -215,6 +216,7 @@ words:
   - queuable
   - Raphson
   - replayer
+  - repost
   - reposts
   - rerere
   - retriable
@@ -247,9 +249,9 @@ words:
   - soci
   - socidb
   - sslws
+  - stackful
   - statsd
   - STATSDCOLLECTOR
-  - stackful
   - stissue
   - stnum
   - stobj
