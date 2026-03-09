@@ -16,8 +16,11 @@ namespace xrpl {
 /** A secret key. */
 class SecretKey
 {
+public:
+    static constexpr std::size_t size_ = 32;
+
 private:
-    std::uint8_t buf_[32];
+    std::uint8_t buf_[size_];
 
 public:
     using const_iterator = std::uint8_t const*;
@@ -34,7 +37,7 @@ public:
 
     ~SecretKey();
 
-    SecretKey(std::array<std::uint8_t, 32> const& data);
+    SecretKey(std::array<std::uint8_t, size_> const& data);
     SecretKey(Slice const& slice);
 
     std::uint8_t const*
