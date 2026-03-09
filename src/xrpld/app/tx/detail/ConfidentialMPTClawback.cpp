@@ -125,7 +125,7 @@ ConfidentialMPTClawback::doApply()
     (*sleHolderMPToken)[sfConfidentialBalanceInbox] = *encZeroForHolder;
     (*sleHolderMPToken)[sfConfidentialBalanceSpending] = *encZeroForHolder;
     (*sleHolderMPToken)[sfIssuerEncryptedBalance] = *encZeroForIssuer;
-    (*sleHolderMPToken)[sfConfidentialBalanceVersion] = 0;
+    incrementConfidentialVersion(*sleHolderMPToken);
 
     if (sleHolderMPToken->isFieldPresent(sfAuditorEncryptedBalance))
     {
