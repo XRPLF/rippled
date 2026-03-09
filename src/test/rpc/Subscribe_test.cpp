@@ -26,7 +26,7 @@ public:
     {
         using namespace std::chrono_literals;
         using namespace jtx;
-        Env env(*this);
+        Env env{*this, single_thread_io(envconfig())};
         auto wsc = makeWSClient(env.app().config());
         Json::Value stream;
 
@@ -92,7 +92,7 @@ public:
     {
         using namespace std::chrono_literals;
         using namespace jtx;
-        Env env(*this);
+        Env env{*this, single_thread_io(envconfig())};
         auto wsc = makeWSClient(env.app().config());
         Json::Value stream;
 
@@ -114,7 +114,7 @@ public:
 
         {
             // Accept a ledger
-            env.close();
+            BEAST_EXPECT(env.syncClose());
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
@@ -125,7 +125,7 @@ public:
 
         {
             // Accept another ledger
-            env.close();
+            BEAST_EXPECT(env.syncClose());
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
@@ -150,7 +150,7 @@ public:
     {
         using namespace std::chrono_literals;
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, single_thread_io(envconfig()));
         auto baseFee = env.current()->fees().base.drops();
         auto wsc = makeWSClient(env.app().config());
         Json::Value stream;
@@ -171,7 +171,7 @@ public:
 
         {
             env.fund(XRP(10000), "alice");
-            env.close();
+            BEAST_EXPECT(env.syncClose());
 
             // Check stream update for payment transaction
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
@@ -195,7 +195,7 @@ public:
             }));
 
             env.fund(XRP(10000), "bob");
-            env.close();
+            BEAST_EXPECT(env.syncClose());
 
             // Check stream update for payment transaction
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
@@ -249,12 +249,12 @@ public:
         {
             // Transaction that does not affect stream
             env.fund(XRP(10000), "carol");
-            env.close();
+            BEAST_EXPECT(env.syncClose());
             BEAST_EXPECT(!wsc->getMsg(10ms));
 
             // Transactions concerning alice
             env.trust(Account("bob")["USD"](100), "alice");
-            env.close();
+            BEAST_EXPECT(env.syncClose());
 
             // Check stream updates
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
@@ -288,6 +288,7 @@ public:
         using namespace jtx;
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
             cfg->FEES.reference_fee = 10;
+            cfg = single_thread_io(std::move(cfg));
             return cfg;
         }));
         auto wsc = makeWSClient(env.app().config());
@@ -310,7 +311,7 @@ public:
 
         {
             env.fund(XRP(10000), "alice");
-            env.close();
+            BEAST_EXPECT(env.syncClose());
 
             // Check stream update for payment transaction
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
@@ -360,7 +361,7 @@ public:
     testManifests()
     {
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, single_thread_io(envconfig()));
         auto wsc = makeWSClient(env.app().config());
         Json::Value stream;
 
@@ -394,7 +395,7 @@ public:
     {
         using namespace jtx;
 
-        Env env{*this, envconfig(validator, ""), features};
+        Env env{*this, single_thread_io(envconfig(validator, "")), features};
         auto& cfg = env.app().config();
         if (!BEAST_EXPECT(cfg.section(SECTION_VALIDATION_SEED).empty()))
             return;
@@ -483,7 +484,7 @@ public:
             // at least one flag ledger.
             while (env.closed()->header().seq < 300)
             {
-                env.close();
+                BEAST_EXPECT(env.syncClose());
                 using namespace std::chrono_literals;
                 BEAST_EXPECT(wsc->findMsg(5s, validValidationFields));
             }
@@ -505,7 +506,7 @@ public:
     {
         using namespace jtx;
         testcase("Subscribe by url");
-        Env env{*this};
+        Env env{*this, single_thread_io(envconfig())};
 
         Json::Value jv;
         jv[jss::url] = "http://localhost/events";
@@ -536,7 +537,7 @@ public:
         auto const method = subscribe ? "subscribe" : "unsubscribe";
         testcase << "Error cases for " << method;
 
-        Env env{*this};
+        Env env{*this, single_thread_io(envconfig())};
         auto wsc = makeWSClient(env.app().config());
 
         {
@@ -572,7 +573,7 @@ public:
         }
 
         {
-            Env env_nonadmin{*this, no_admin(envconfig())};
+            Env env_nonadmin{*this, single_thread_io(no_admin(envconfig()))};
             Json::Value jv;
             jv[jss::url] = "no-url";
             auto jr = env_nonadmin.rpc("json", method, to_string(jv))[jss::result];
@@ -834,12 +835,13 @@ public:
          * send payments between the two accounts a and b,
          * and close ledgersToClose ledgers
          */
-        auto sendPayments = [](Env& env,
-                               Account const& a,
-                               Account const& b,
-                               int newTxns,
-                               std::uint32_t ledgersToClose,
-                               int numXRP = 10) {
+        auto sendPayments = [this](
+                                Env& env,
+                                Account const& a,
+                                Account const& b,
+                                int newTxns,
+                                std::uint32_t ledgersToClose,
+                                int numXRP = 10) {
             env.memoize(a);
             env.memoize(b);
             for (int i = 0; i < newTxns; ++i)
@@ -852,7 +854,7 @@ public:
                     jtx::sig(jtx::autofill));
             }
             for (int i = 0; i < ledgersToClose; ++i)
-                env.close();
+                BEAST_EXPECT(env.syncClose());
             return newTxns;
         };
 
@@ -945,7 +947,7 @@ public:
              *
              * also test subscribe to the account before it is created
              */
-            Env env(*this);
+            Env env(*this, single_thread_io(envconfig()));
             auto wscTxHistory = makeWSClient(env.app().config());
             Json::Value request;
             request[jss::account_history_tx_stream] = Json::objectValue;
@@ -988,7 +990,7 @@ public:
              * subscribe genesis account tx history without txns
              * subscribe to bob's account after it is created
              */
-            Env env(*this);
+            Env env(*this, single_thread_io(envconfig()));
             auto wscTxHistory = makeWSClient(env.app().config());
             Json::Value request;
             request[jss::account_history_tx_stream] = Json::objectValue;
@@ -998,6 +1000,7 @@ public:
             if (!BEAST_EXPECT(goodSubRPC(jv)))
                 return;
             IdxHashVec genesisFullHistoryVec;
+            BEAST_EXPECT(env.syncClose());
             if (!BEAST_EXPECT(!getTxHash(*wscTxHistory, genesisFullHistoryVec, 1).first))
                 return;
 
@@ -1016,6 +1019,7 @@ public:
             if (!BEAST_EXPECT(goodSubRPC(jv)))
                 return;
             IdxHashVec bobFullHistoryVec;
+            BEAST_EXPECT(env.syncClose());
             r = getTxHash(*wscTxHistory, bobFullHistoryVec, 1);
             if (!BEAST_EXPECT(r.first && r.second))
                 return;
@@ -1050,6 +1054,7 @@ public:
                 "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             jv = wscTxHistory->invoke("subscribe", request);
             genesisFullHistoryVec.clear();
+            BEAST_EXPECT(env.syncClose());
             BEAST_EXPECT(getTxHash(*wscTxHistory, genesisFullHistoryVec, 31).second);
             jv = wscTxHistory->invoke("unsubscribe", request);
 
@@ -1062,13 +1067,13 @@ public:
              * subscribe account and subscribe account tx history
              * and compare txns streamed
              */
-            Env env(*this);
+            Env env(*this, single_thread_io(envconfig()));
             auto wscAccount = makeWSClient(env.app().config());
             auto wscTxHistory = makeWSClient(env.app().config());
 
             std::array<Account, 2> accounts = {alice, bob};
             env.fund(XRP(222222), accounts);
-            env.close();
+            BEAST_EXPECT(env.syncClose());
 
             // subscribe account
             Json::Value stream = Json::objectValue;
@@ -1131,18 +1136,18 @@ public:
              * alice issues USD to carol
              * mix USD and XRP payments
              */
-            Env env(*this);
+            Env env(*this, single_thread_io(envconfig()));
             auto const USD_a = alice["USD"];
 
             std::array<Account, 2> accounts = {alice, carol};
             env.fund(XRP(333333), accounts);
             env.trust(USD_a(20000), carol);
-            env.close();
+            BEAST_EXPECT(env.syncClose());
 
             auto mixedPayments = [&]() -> int {
                 sendPayments(env, alice, carol, 1, 0);
                 env(pay(alice, carol, USD_a(100)));
-                env.close();
+                BEAST_EXPECT(env.syncClose());
                 return 2;
             };
 
@@ -1152,6 +1157,7 @@ public:
             request[jss::account_history_tx_stream][jss::account] = carol.human();
             auto ws = makeWSClient(env.app().config());
             auto jv = ws->invoke("subscribe", request);
+            BEAST_EXPECT(env.syncClose());
             {
                 // take out existing txns from the stream
                 IdxHashVec tempVec;
@@ -1169,10 +1175,10 @@ public:
             /*
              * long transaction history
              */
-            Env env(*this);
+            Env env(*this, single_thread_io(envconfig()));
             std::array<Account, 2> accounts = {alice, carol};
             env.fund(XRP(444444), accounts);
-            env.close();
+            BEAST_EXPECT(env.syncClose());
 
             // many payments, and close lots of ledgers
             auto oneRound = [&](int numPayments) {
@@ -1185,6 +1191,7 @@ public:
             request[jss::account_history_tx_stream][jss::account] = carol.human();
             auto wscLong = makeWSClient(env.app().config());
             auto jv = wscLong->invoke("subscribe", request);
+            BEAST_EXPECT(env.syncClose());
             {
                 // take out existing txns from the stream
                 IdxHashVec tempVec;
@@ -1222,7 +1229,7 @@ public:
             jtx::testable_amendments() | featurePermissionedDomains | featureCredentials |
             featurePermissionedDEX};
 
-        Env env(*this, all);
+        Env env(*this, single_thread_io(envconfig()), all);
         PermissionedDEX permDex(env);
         auto const alice = permDex.alice;
         auto const bob = permDex.bob;
@@ -1241,10 +1248,10 @@ public:
         if (!BEAST_EXPECT(jv[jss::status] == "success"))
             return;
         env(offer(alice, XRP(10), USD(10)), domain(domainID), txflags(tfHybrid));
-        env.close();
+        BEAST_EXPECT(env.syncClose());
 
         env(pay(bob, carol, USD(5)), path(~USD), sendmax(XRP(5)), domain(domainID));
-        env.close();
+        BEAST_EXPECT(env.syncClose());
 
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
             if (jv[jss::changes].size() != 1)
@@ -1284,9 +1291,9 @@ public:
         Account const bob{"bob"};
         Account const broker{"broker"};
 
-        Env env{*this, features};
+        Env env{*this, single_thread_io(envconfig()), features};
         env.fund(XRP(10000), alice, bob, broker);
-        env.close();
+        BEAST_EXPECT(env.syncClose());
 
         auto wsc = test::makeWSClient(env.app().config());
         Json::Value stream;
@@ -1350,12 +1357,12 @@ public:
             // Verify the NFTokenIDs are correct in the NFTokenMint tx meta
             uint256 const nftId1{token::getNextID(env, alice, 0u, tfTransferable)};
             env(token::mint(alice, 0u), txflags(tfTransferable));
-            env.close();
+            BEAST_EXPECT(env.syncClose());
             verifyNFTokenID(nftId1);
 
             uint256 const nftId2{token::getNextID(env, alice, 0u, tfTransferable)};
             env(token::mint(alice, 0u), txflags(tfTransferable));
-            env.close();
+            BEAST_EXPECT(env.syncClose());
             verifyNFTokenID(nftId2);
 
             // Alice creates one sell offer for each NFT
@@ -1363,32 +1370,32 @@ public:
             // meta
             uint256 const aliceOfferIndex1 = keylet::nftoffer(alice, env.seq(alice)).key;
             env(token::createOffer(alice, nftId1, drops(1)), txflags(tfSellNFToken));
-            env.close();
+            BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceOfferIndex1);
 
             uint256 const aliceOfferIndex2 = keylet::nftoffer(alice, env.seq(alice)).key;
             env(token::createOffer(alice, nftId2, drops(1)), txflags(tfSellNFToken));
-            env.close();
+            BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceOfferIndex2);
 
             // Alice cancels two offers she created
             // Verify the NFTokenIDs are correct in the NFTokenCancelOffer tx
             // meta
             env(token::cancelOffer(alice, {aliceOfferIndex1, aliceOfferIndex2}));
-            env.close();
+            BEAST_EXPECT(env.syncClose());
             verifyNFTokenIDsInCancelOffer({nftId1, nftId2});
 
             // Bobs creates a buy offer for nftId1
             // Verify the offer id is correct in the NFTokenCreateOffer tx meta
             auto const bobBuyOfferIndex = keylet::nftoffer(bob, env.seq(bob)).key;
             env(token::createOffer(bob, nftId1, drops(1)), token::owner(alice));
-            env.close();
+            BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(bobBuyOfferIndex);
 
             // Alice accepts bob's buy offer
             // Verify the NFTokenID is correct in the NFTokenAcceptOffer tx meta
             env(token::acceptBuyOffer(alice, bobBuyOfferIndex));
-            env.close();
+            BEAST_EXPECT(env.syncClose());
             verifyNFTokenID(nftId1);
         }
 
@@ -1397,7 +1404,7 @@ public:
             // Alice mints a NFT
             uint256 const nftId{token::getNextID(env, alice, 0u, tfTransferable)};
             env(token::mint(alice, 0u), txflags(tfTransferable));
-            env.close();
+            BEAST_EXPECT(env.syncClose());
             verifyNFTokenID(nftId);
 
             // Alice creates sell offer and set broker as destination
@@ -1405,18 +1412,18 @@ public:
             env(token::createOffer(alice, nftId, drops(1)),
                 token::destination(broker),
                 txflags(tfSellNFToken));
-            env.close();
+            BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(offerAliceToBroker);
 
             // Bob creates buy offer
             uint256 const offerBobToBroker = keylet::nftoffer(bob, env.seq(bob)).key;
             env(token::createOffer(bob, nftId, drops(1)), token::owner(alice));
-            env.close();
+            BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(offerBobToBroker);
 
             // Check NFTokenID meta for NFTokenAcceptOffer in brokered mode
             env(token::brokerOffers(broker, offerBobToBroker, offerAliceToBroker));
-            env.close();
+            BEAST_EXPECT(env.syncClose());
             verifyNFTokenID(nftId);
         }
 
@@ -1426,24 +1433,24 @@ public:
             // Alice mints a NFT
             uint256 const nftId{token::getNextID(env, alice, 0u, tfTransferable)};
             env(token::mint(alice, 0u), txflags(tfTransferable));
-            env.close();
+            BEAST_EXPECT(env.syncClose());
             verifyNFTokenID(nftId);
 
             // Alice creates 2 sell offers for the same NFT
             uint256 const aliceOfferIndex1 = keylet::nftoffer(alice, env.seq(alice)).key;
             env(token::createOffer(alice, nftId, drops(1)), txflags(tfSellNFToken));
-            env.close();
+            BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceOfferIndex1);
 
             uint256 const aliceOfferIndex2 = keylet::nftoffer(alice, env.seq(alice)).key;
             env(token::createOffer(alice, nftId, drops(1)), txflags(tfSellNFToken));
-            env.close();
+            BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceOfferIndex2);
 
             // Make sure the metadata only has 1 nft id, since both offers are
             // for the same nft
             env(token::cancelOffer(alice, {aliceOfferIndex1, aliceOfferIndex2}));
-            env.close();
+            BEAST_EXPECT(env.syncClose());
             verifyNFTokenIDsInCancelOffer({nftId});
         }
 
@@ -1451,7 +1458,7 @@ public:
         {
             uint256 const aliceMintWithOfferIndex1 = keylet::nftoffer(alice, env.seq(alice)).key;
             env(token::mint(alice), token::amount(XRP(0)));
-            env.close();
+            BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceMintWithOfferIndex1);
         }
     }
