@@ -49,6 +49,7 @@ Checks: "-*,
   bugprone-suspicious-include,
   bugprone-suspicious-memory-comparison,
   bugprone-suspicious-memset-usage,
+  bugprone-suspicious-missing-comma,
   bugprone-suspicious-realloc-usage,
   bugprone-suspicious-semicolon,
   bugprone-suspicious-string-compare,
@@ -60,6 +61,7 @@ Checks: "-*,
   bugprone-unhandled-exception-at-new,
   bugprone-unique-ptr-array-mismatch,
   bugprone-unsafe-functions,
+  bugprone-unused-local-non-trivial-variable,
   bugprone-virtual-near-miss,
   cppcoreguidelines-no-suspend-with-lock,
   cppcoreguidelines-virtual-class-destructor,
@@ -85,16 +87,14 @@ Checks: "-*,
   performance-trivially-destructible
   "
 # ---
-# more checks that have some issues that need to be resolved:
+# checks that have some issues that need to be resolved:
 #
 # bugprone-crtp-constructor-accessibility,
 # bugprone-inc-dec-in-conditions,
 # bugprone-reserved-identifier,
 # bugprone-move-forwarding-reference,
-# bugprone-unused-local-non-trivial-variable,
 # bugprone-switch-missing-default-case,
 # bugprone-suspicious-stringview-data-usage,
-# bugprone-suspicious-missing-comma,
 # bugprone-pointer-arithmetic-on-polymorphic-object,
 # bugprone-optional-value-conversion,
 # bugprone-too-small-loop-variable,
