@@ -62,7 +62,8 @@ namespace beast::detail {
 inline void
 setCurrentThreadNameImpl(std::string_view name)
 {
-    pthread_setname_np(name.data());
+    // The string is assumed to be null terminated
+    pthread_setname_np(name.data());  // NOLINT(bugprone-suspicious-stringview-data-usage)
 }
 
 }  // namespace beast::detail
@@ -85,7 +86,7 @@ setCurrentThreadNameImpl(std::string_view name)
         sizeof(boundedName),
         "%.*s",
         static_cast<int>(maxThreadNameLength),
-        name.data());
+        name.data());  // NOLINT(bugprone-suspicious-stringview-data-usage)
 
     pthread_setname_np(pthread_self(), boundedName);
 
