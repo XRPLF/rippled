@@ -825,7 +825,7 @@ OverlayImpl::processValidatorList(http_request_type const& req, Handoff& handoff
     // return the most recent validator list for that key.
     constexpr std::string_view prefix("/vl/");
 
-    if (!req.target().starts_with(prefix.data()) || !setup_.vlEnabled)
+    if (!req.target().starts_with(prefix) || !setup_.vlEnabled)
         return false;
 
     std::uint32_t version = 1;
