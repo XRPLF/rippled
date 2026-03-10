@@ -338,74 +338,63 @@ ConfidentialMPTSend::doApply()
     // Subtract from sender's spending balance
     {
         Slice const curSpending = (*sleSenderMPToken)[sfConfidentialBalanceSpending];
-        Buffer newSpending(ecGamalEncryptedTotalLength);
-
-        if (TER const ter = homomorphicSubtract(curSpending, senderEc, newSpending);
-            !isTesSuccess(ter))
+        auto newSpending = homomorphicSubtract(curSpending, senderEc);
+        if (!newSpending)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        (*sleSenderMPToken)[sfConfidentialBalanceSpending] = newSpending;
+        (*sleSenderMPToken)[sfConfidentialBalanceSpending] = std::move(*newSpending);
     }
 
     // Subtract from issuer's balance
     {
         Slice const curIssuerEnc = (*sleSenderMPToken)[sfIssuerEncryptedBalance];
-        Buffer newIssuerEnc(ecGamalEncryptedTotalLength);
-
-        if (TER const ter = homomorphicSubtract(curIssuerEnc, issuerEc, newIssuerEnc);
-            !isTesSuccess(ter))
+        auto newIssuerEnc = homomorphicSubtract(curIssuerEnc, issuerEc);
+        if (!newIssuerEnc)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        (*sleSenderMPToken)[sfIssuerEncryptedBalance] = newIssuerEnc;
+        (*sleSenderMPToken)[sfIssuerEncryptedBalance] = std::move(*newIssuerEnc);
     }
 
     // Subtract from auditor's balance if present
     if (auditorEc)
     {
         Slice const curAuditorEnc = (*sleSenderMPToken)[sfAuditorEncryptedBalance];
-        Buffer newAuditorEnc(ecGamalEncryptedTotalLength);
-
-        if (TER const ter = homomorphicSubtract(curAuditorEnc, *auditorEc, newAuditorEnc);
-            !isTesSuccess(ter))
+        auto newAuditorEnc = homomorphicSubtract(curAuditorEnc, *auditorEc);
+        if (!newAuditorEnc)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        (*sleSenderMPToken)[sfAuditorEncryptedBalance] = newAuditorEnc;
+        (*sleSenderMPToken)[sfAuditorEncryptedBalance] = std::move(*newAuditorEnc);
     }
 
     // Add to destination's inbox balance
     {
         Slice const curInbox = (*sleDestinationMPToken)[sfConfidentialBalanceInbox];
-        Buffer newInbox(ecGamalEncryptedTotalLength);
-
-        if (TER const ter = homomorphicAdd(curInbox, destEc, newInbox); !isTesSuccess(ter))
+        auto newInbox = homomorphicAdd(curInbox, destEc);
+        if (!newInbox)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        (*sleDestinationMPToken)[sfConfidentialBalanceInbox] = newInbox;
+        (*sleDestinationMPToken)[sfConfidentialBalanceInbox] = std::move(*newInbox);
     }
 
     // Add to issuer's balance
     {
         Slice const curIssuerEnc = (*sleDestinationMPToken)[sfIssuerEncryptedBalance];
-        Buffer newIssuerEnc(ecGamalEncryptedTotalLength);
-
-        if (TER const ter = homomorphicAdd(curIssuerEnc, issuerEc, newIssuerEnc);
-            !isTesSuccess(ter))
+        auto newIssuerEnc = homomorphicAdd(curIssuerEnc, issuerEc);
+        if (!newIssuerEnc)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        (*sleDestinationMPToken)[sfIssuerEncryptedBalance] = newIssuerEnc;
+        (*sleDestinationMPToken)[sfIssuerEncryptedBalance] = std::move(*newIssuerEnc);
     }
 
     // Add to auditor's balance if present
     if (auditorEc)
     {
         Slice const curAuditorEnc = (*sleDestinationMPToken)[sfAuditorEncryptedBalance];
-        Buffer newAuditorEnc(ecGamalEncryptedTotalLength);
-
-        if (TER const ter = homomorphicAdd(curAuditorEnc, *auditorEc, newAuditorEnc);
-            !isTesSuccess(ter))
+        auto newAuditorEnc = homomorphicAdd(curAuditorEnc, *auditorEc);
+        if (!newAuditorEnc)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        (*sleDestinationMPToken)[sfAuditorEncryptedBalance] = newAuditorEnc;
+        (*sleDestinationMPToken)[sfAuditorEncryptedBalance] = std::move(*newAuditorEnc);
     }
 
     // increment sender version only; receiver version is not modified by incoming sends
