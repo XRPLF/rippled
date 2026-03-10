@@ -242,7 +242,7 @@ jobs:
           fi
           for i in $(seq 1 "${TEST_RUNS}"); do
             echo "=== Test run ${i} of ${TEST_RUNS} ==="
-            if ! ./xrpld --unittest --unittest-jobs "${TEST_JOBS}" 2>&1 | tee unittest.log; then
+            if ! ./xrpld --unittest --unittest-jobs "${TEST_JOBS}" 2>&1 > unittest.log; then
               echo "=== Test run ${i} failed. unittest.log: ==="
               cat unittest.log
               exit 1
