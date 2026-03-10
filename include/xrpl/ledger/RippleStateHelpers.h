@@ -3,6 +3,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/TokenHelpers.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/STAmount.h>
@@ -179,17 +180,6 @@ redeemIOU(
 // Authorization and transfer checks (IOU-specific)
 //
 //------------------------------------------------------------------------------
-
-/* Check if MPToken (for MPT) or trust line (for IOU) exists:
- * - StrongAuth - before checking if authorization is required
- * - WeakAuth
- *    for MPT - after checking lsfMPTRequireAuth flag
- *    for IOU - do not check if trust line exists
- * - Legacy
- *    for MPT - before checking lsfMPTRequireAuth flag i.e. same as StrongAuth
- *    for IOU - do not check if trust line exists i.e. same as WeakAuth
- */
-enum class AuthType { StrongAuth, WeakAuth, Legacy };
 
 /** Check if the account lacks required authorization.
  *

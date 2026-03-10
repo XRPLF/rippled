@@ -2,10 +2,9 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/MPTokenHelpers.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/RippleStateHelpers.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
@@ -32,6 +31,17 @@ enum SpendableHandling { shSIMPLE_BALANCE, shFULL_BALANCE };
 
 enum class WaiveTransferFee : bool { No = false, Yes };
 
+/* Check if MPToken (for MPT) or trust line (for IOU) exists:
+ * - StrongAuth - before checking if authorization is required
+ * - WeakAuth
+ *    for MPT - after checking lsfMPTRequireAuth flag
+ *    for IOU - do not check if trust line exists
+ * - Legacy
+ *    for MPT - before checking lsfMPTRequireAuth flag i.e. same as StrongAuth
+ *    for IOU - do not check if trust line exists i.e. same as WeakAuth
+ */
+enum class AuthType { StrongAuth, WeakAuth, Legacy };
+
 //------------------------------------------------------------------------------
 //
 // Freeze checking (Asset-based dispatchers)
@@ -41,112 +51,59 @@ enum class WaiveTransferFee : bool { No = false, Yes };
 [[nodiscard]] bool
 isGlobalFrozen(ReadView const& view, Asset const& asset);
 
-[[nodiscard]] inline bool
-isIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
-{
-    return std::visit(
-        [&](auto const& issue) { return isIndividualFrozen(view, account, issue); }, asset.value());
-}
+[[nodiscard]] bool
+isIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& asset);
 
 /**
  *   isFrozen check is recursive for MPT shares in a vault, descending to
  *   assets in the vault, up to maxAssetCheckDepth recursion depth. This is
  *   purely defensive, as we currently do not allow such vaults to be created.
  */
-[[nodiscard]] inline bool
-isFrozen(ReadView const& view, AccountID const& account, Asset const& asset, int depth = 0)
-{
-    return std::visit(
-        [&](auto const& issue) { return isFrozen(view, account, issue, depth); }, asset.value());
-}
+[[nodiscard]] bool
+isFrozen(ReadView const& view, AccountID const& account, Asset const& asset, int depth = 0);
 
-[[nodiscard]] inline TER
-checkFrozen(ReadView const& view, AccountID const& account, Issue const& issue)
-{
-    return isFrozen(view, account, issue) ? (TER)tecFROZEN : (TER)tesSUCCESS;
-}
+[[nodiscard]] TER
+checkFrozen(ReadView const& view, AccountID const& account, Issue const& issue);
 
-[[nodiscard]] inline TER
-checkFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue)
-{
-    return isFrozen(view, account, mptIssue) ? (TER)tecLOCKED : (TER)tesSUCCESS;
-}
+[[nodiscard]] TER
+checkFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue);
 
-[[nodiscard]] inline TER
-checkFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
-{
-    return std::visit(
-        [&](auto const& issue) { return checkFrozen(view, account, issue); }, asset.value());
-}
+[[nodiscard]] TER
+checkFrozen(ReadView const& view, AccountID const& account, Asset const& asset);
 
-[[nodiscard]] inline bool
+[[nodiscard]] bool
 isAnyFrozen(
     ReadView const& view,
     std::initializer_list<AccountID> const& accounts,
-    Issue const& issue)
-{
-    for (auto const& account : accounts)
-    {
-        if (isFrozen(view, account, issue.currency, issue.account))
-            return true;
-    }
-    return false;
-}
+    Issue const& issue);
 
-[[nodiscard]] inline bool
+[[nodiscard]] bool
 isAnyFrozen(
     ReadView const& view,
     std::initializer_list<AccountID> const& accounts,
     Asset const& asset,
-    int depth = 0)
-{
-    return std::visit(
-        [&]<ValidIssueType TIss>(TIss const& issue) {
-            if constexpr (std::is_same_v<TIss, Issue>)
-                return isAnyFrozen(view, accounts, issue);
-            else
-                return isAnyFrozen(view, accounts, issue, depth);
-        },
-        asset.value());
-}
+    int depth = 0);
 
-[[nodiscard]] inline bool
+[[nodiscard]] bool
 isDeepFrozen(
     ReadView const& view,
     AccountID const& account,
     MPTIssue const& mptIssue,
-    int depth = 0)
-{
-    // Unlike IOUs, frozen / locked MPTs are not allowed to send or receive
-    // funds, so checking "deep frozen" is the same as checking "frozen".
-    return isFrozen(view, account, mptIssue, depth);
-}
+    int depth = 0);
 
 /**
  *   isFrozen check is recursive for MPT shares in a vault, descending to
  *   assets in the vault, up to maxAssetCheckDepth recursion depth. This is
  *   purely defensive, as we currently do not allow such vaults to be created.
  */
-[[nodiscard]] inline bool
-isDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset, int depth = 0)
-{
-    return std::visit(
-        [&](auto const& issue) { return isDeepFrozen(view, account, issue, depth); },
-        asset.value());
-}
+[[nodiscard]] bool
+isDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset, int depth = 0);
 
-[[nodiscard]] inline TER
-checkDeepFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue)
-{
-    return isDeepFrozen(view, account, mptIssue) ? (TER)tecLOCKED : (TER)tesSUCCESS;
-}
+[[nodiscard]] TER
+checkDeepFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue);
 
-[[nodiscard]] inline TER
-checkDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
-{
-    return std::visit(
-        [&](auto const& issue) { return checkDeepFrozen(view, account, issue); }, asset.value());
-}
+[[nodiscard]] TER
+checkDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset);
 
 //------------------------------------------------------------------------------
 //
@@ -235,34 +192,20 @@ transferRate(ReadView const& view, STAmount const& amount);
 [[nodiscard]] TER
 canAddHolding(ReadView const& view, Asset const& asset);
 
-[[nodiscard]] inline TER
+[[nodiscard]] TER
 addEmptyHolding(
     ApplyView& view,
     AccountID const& accountID,
     XRPAmount priorBalance,
     Asset const& asset,
-    beast::Journal journal)
-{
-    return std::visit(
-        [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-            return addEmptyHolding(view, accountID, priorBalance, issue, journal);
-        },
-        asset.value());
-}
+    beast::Journal journal);
 
-[[nodiscard]] inline TER
+[[nodiscard]] TER
 removeEmptyHolding(
     ApplyView& view,
     AccountID const& accountID,
     Asset const& asset,
-    beast::Journal journal)
-{
-    return std::visit(
-        [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-            return removeEmptyHolding(view, accountID, issue, journal);
-        },
-        asset.value());
-}
+    beast::Journal journal);
 
 //------------------------------------------------------------------------------
 //
@@ -270,31 +213,15 @@ removeEmptyHolding(
 //
 //------------------------------------------------------------------------------
 
-[[nodiscard]] TER inline requireAuth(
+[[nodiscard]] TER
+requireAuth(
     ReadView const& view,
     Asset const& asset,
     AccountID const& account,
-    AuthType authType = AuthType::Legacy)
-{
-    return std::visit(
-        [&]<ValidIssueType TIss>(TIss const& issue_) {
-            return requireAuth(view, issue_, account, authType);
-        },
-        asset.value());
-}
+    AuthType authType = AuthType::Legacy);
 
-[[nodiscard]] TER inline canTransfer(
-    ReadView const& view,
-    Asset const& asset,
-    AccountID const& from,
-    AccountID const& to)
-{
-    return std::visit(
-        [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-            return canTransfer(view, issue, from, to);
-        },
-        asset.value());
-}
+[[nodiscard]] TER
+canTransfer(ReadView const& view, Asset const& asset, AccountID const& from, AccountID const& to);
 
 //------------------------------------------------------------------------------
 //

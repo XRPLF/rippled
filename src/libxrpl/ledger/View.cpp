@@ -3,7 +3,6 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/CredentialHelpers.h>
-#include <xrpl/ledger/Credit.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
