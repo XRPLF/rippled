@@ -1,4 +1,18 @@
 // Auto-generated unit tests for ledger entry ${name}
+<%
+    required_fields = [f for f in fields if f["requirement"] == "soeREQUIRED"]
+    optional_fields = [f for f in fields if f["requirement"] != "soeREQUIRED"]
+
+    def canonical_expr(field):
+        return f"canonical_{field['stiSuffix']}()"
+
+    # Pick a wrong ledger entry to test type mismatch
+    # Use Ticket as it has minimal required fields (just Account)
+    if name != "Ticket":
+        wrong_le_include = "Ticket"
+    else:
+        wrong_le_include = "Check"
+%>
 
 #include <gtest/gtest.h>
 
@@ -6,18 +20,11 @@
 
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol_autogen/ledger_objects/${name}.h>
+#include <xrpl/protocol_autogen/ledger_objects/${wrong_le_include}.h>
 
 #include <string>
 
 namespace xrpl::ledger_entries {
-
-<%
-    required_fields = [f for f in fields if f["requirement"] == "soeREQUIRED"]
-    optional_fields = [f for f in fields if f["requirement"] != "soeREQUIRED"]
-
-    def canonical_expr(field):
-        return f"canonical_{field['stiSuffix']}()"
-%>
 
 // 1 & 4) Set fields via builder setters, build, then read them back via
 // wrapper getters. After build(), validate() should succeed for both the
@@ -135,4 +142,90 @@ TEST(${name}Tests, BuilderFromSleRoundTrip)
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder->getKey(), index);
 }
+
+// 3) Verify wrapper throws when constructed from wrong ledger entry type.
+TEST(${name}Tests, WrapperThrowsOnWrongEntryType)
+{
+    uint256 const index{3u};
+
+    // Build a valid ledger entry of a different type
+    // Ticket requires: Account, OwnerNode, TicketSequence, PreviousTxnID, PreviousTxnLgrSeq
+    // Check requires: Account, Destination, SendMax, Sequence, OwnerNode, DestinationNode, PreviousTxnID, PreviousTxnLgrSeq
+% if wrong_le_include == "Ticket":
+    ${wrong_le_include}Builder wrongBuilder{
+        canonical_ACCOUNT(),
+        canonical_UINT64(),
+        canonical_UINT32(),
+        canonical_UINT256(),
+        canonical_UINT32()};
+% else:
+    ${wrong_le_include}Builder wrongBuilder{
+        canonical_ACCOUNT(),
+        canonical_ACCOUNT(),
+        canonical_AMOUNT(),
+        canonical_UINT32(),
+        canonical_UINT64(),
+        canonical_UINT64(),
+        canonical_UINT256(),
+        canonical_UINT32()};
+% endif
+    auto wrongEntry = wrongBuilder.build(index);
+
+    EXPECT_THROW(${name}{wrongEntry.object()}, std::runtime_error);
+}
+
+// 4) Verify builder throws when constructed from wrong ledger entry type.
+TEST(${name}Tests, BuilderThrowsOnWrongEntryType)
+{
+    uint256 const index{4u};
+
+    // Build a valid ledger entry of a different type
+% if wrong_le_include == "Ticket":
+    ${wrong_le_include}Builder wrongBuilder{
+        canonical_ACCOUNT(),
+        canonical_UINT64(),
+        canonical_UINT32(),
+        canonical_UINT256(),
+        canonical_UINT32()};
+% else:
+    ${wrong_le_include}Builder wrongBuilder{
+        canonical_ACCOUNT(),
+        canonical_ACCOUNT(),
+        canonical_AMOUNT(),
+        canonical_UINT32(),
+        canonical_UINT64(),
+        canonical_UINT64(),
+        canonical_UINT256(),
+        canonical_UINT32()};
+% endif
+    auto wrongEntry = wrongBuilder.build(index);
+
+    EXPECT_THROW(${name}Builder{wrongEntry.object()}, std::runtime_error);
+}
+
+% if optional_fields:
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(${name}Tests, OptionalFieldsReturnNullopt)
+{
+    uint256 const index{3u};
+
+% for field in required_fields:
+    auto const ${field["paramName"]}Value = ${canonical_expr(field)};
+% endfor
+
+    ${name}Builder builder{
+% for i, field in enumerate(required_fields):
+        ${field["paramName"]}Value${"," if i < len(required_fields) - 1 else ""}
+% endfor
+    };
+
+    auto const entry = builder.build(index);
+
+    // Verify optional fields are not present
+% for field in optional_fields:
+    EXPECT_FALSE(entry->has${field["name"][2:]}());
+    EXPECT_FALSE(entry->get${field["name"][2:]}().has_value());
+% endfor
+}
+% endif
 }

@@ -1,17 +1,17 @@
 // Auto-generated unit tests for ledger entry NegativeUNL
 
+
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
 
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol_autogen/ledger_objects/NegativeUNL.h>
+#include <xrpl/protocol_autogen/ledger_objects/Ticket.h>
 
 #include <string>
 
 namespace xrpl::ledger_entries {
-
-
 
 // 1 & 4) Set fields via builder setters, build, then read them back via
 // wrapper getters. After build(), validate() should succeed for both the
@@ -187,5 +187,65 @@ TEST(NegativeUNLTests, BuilderFromSleRoundTrip)
 
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder->getKey(), index);
+}
+
+// 3) Verify wrapper throws when constructed from wrong ledger entry type.
+TEST(NegativeUNLTests, WrapperThrowsOnWrongEntryType)
+{
+    uint256 const index{3u};
+
+    // Build a valid ledger entry of a different type
+    // Ticket requires: Account, OwnerNode, TicketSequence, PreviousTxnID, PreviousTxnLgrSeq
+    // Check requires: Account, Destination, SendMax, Sequence, OwnerNode, DestinationNode, PreviousTxnID, PreviousTxnLgrSeq
+    TicketBuilder wrongBuilder{
+        canonical_ACCOUNT(),
+        canonical_UINT64(),
+        canonical_UINT32(),
+        canonical_UINT256(),
+        canonical_UINT32()};
+    auto wrongEntry = wrongBuilder.build(index);
+
+    EXPECT_THROW(NegativeUNL{wrongEntry.object()}, std::runtime_error);
+}
+
+// 4) Verify builder throws when constructed from wrong ledger entry type.
+TEST(NegativeUNLTests, BuilderThrowsOnWrongEntryType)
+{
+    uint256 const index{4u};
+
+    // Build a valid ledger entry of a different type
+    TicketBuilder wrongBuilder{
+        canonical_ACCOUNT(),
+        canonical_UINT64(),
+        canonical_UINT32(),
+        canonical_UINT256(),
+        canonical_UINT32()};
+    auto wrongEntry = wrongBuilder.build(index);
+
+    EXPECT_THROW(NegativeUNLBuilder{wrongEntry.object()}, std::runtime_error);
+}
+
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(NegativeUNLTests, OptionalFieldsReturnNullopt)
+{
+    uint256 const index{3u};
+
+
+    NegativeUNLBuilder builder{
+    };
+
+    auto const entry = builder.build(index);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(entry->hasDisabledValidators());
+    EXPECT_FALSE(entry->getDisabledValidators().has_value());
+    EXPECT_FALSE(entry->hasValidatorToDisable());
+    EXPECT_FALSE(entry->getValidatorToDisable().has_value());
+    EXPECT_FALSE(entry->hasValidatorToReEnable());
+    EXPECT_FALSE(entry->getValidatorToReEnable().has_value());
+    EXPECT_FALSE(entry->hasPreviousTxnID());
+    EXPECT_FALSE(entry->getPreviousTxnID().has_value());
+    EXPECT_FALSE(entry->hasPreviousTxnLgrSeq());
+    EXPECT_FALSE(entry->getPreviousTxnLgrSeq().has_value());
 }
 }

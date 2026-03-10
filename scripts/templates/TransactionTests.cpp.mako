@@ -1,4 +1,17 @@
 // Auto-generated unit tests for transaction ${name}
+<%
+    required_fields = [f for f in fields if f["requirement"] == "soeREQUIRED"]
+    optional_fields = [f for f in fields if f["requirement"] != "soeREQUIRED"]
+
+    def canonical_expr(field):
+        return f"canonical_{field['stiSuffix']}()"
+
+    # Pick a wrong transaction to test type mismatch
+    if name != "AccountSet":
+        wrong_tx_include = "AccountSet"
+    else:
+        wrong_tx_include = "OfferCancel"
+%>
 
 #include <gtest/gtest.h>
 
@@ -8,18 +21,11 @@
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol_autogen/transactions/${name}.h>
+#include <xrpl/protocol_autogen/transactions/${wrong_tx_include}.h>
 
 #include <string>
 
 namespace xrpl::transactions {
-
-<%
-    required_fields = [f for f in fields if f["requirement"] == "soeREQUIRED"]
-    optional_fields = [f for f in fields if f["requirement"] != "soeREQUIRED"]
-
-    def canonical_expr(field):
-        return f"canonical_{field['stiSuffix']}()"
-%>
 
 // 1 & 4) Set fields via builder setters, build, then read them back via
 // wrapper getters. After build(), validate() should succeed.
@@ -53,11 +59,9 @@ TEST(Transactions${name}Tests, BuilderSettersRoundTrip)
     builder.set${field["name"][2:]}(${field["paramName"]}Value);
 % endfor
 
-    std::string reason;
-    EXPECT_TRUE(builder.validate(reason)) << reason;
-
     auto tx = builder.build(publicKey, secretKey);
 
+    std::string reason;
     EXPECT_TRUE(tx->validate(reason)) << reason;
 
     // Verify signing was applied
@@ -128,10 +132,9 @@ TEST(Transactions${name}Tests, BuilderFromStTxRoundTrip)
     // Create builder from existing STTx
     ${name}Builder builderFromTx{initialTx.object()};
 
-    std::string reason;
-    EXPECT_TRUE(builderFromTx.validate(reason)) << reason;
-
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
+
+    std::string reason;
     EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
 
     // Verify common fields
@@ -159,5 +162,80 @@ TEST(Transactions${name}Tests, BuilderFromStTxRoundTrip)
 
 % endfor
 }
+
+// 3) Verify wrapper throws when constructed from wrong transaction type.
+TEST(Transactions${name}Tests, WrapperThrowsOnWrongTxType)
+{
+    // Build a valid transaction of a different type
+    auto const [pk, sk] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+    auto const account = calcAccountID(pk);
+
+% if wrong_tx_include == "AccountSet":
+    ${wrong_tx_include}Builder wrongBuilder{account, 1, canonical_AMOUNT()};
+% else:
+    ${wrong_tx_include}Builder wrongBuilder{account, canonical_UINT32(), 1, canonical_AMOUNT()};
+% endif
+    auto wrongTx = wrongBuilder.build(pk, sk);
+
+    EXPECT_THROW(${name}{wrongTx.object()}, std::runtime_error);
+}
+
+// 4) Verify builder throws when constructed from wrong transaction type.
+TEST(Transactions${name}Tests, BuilderThrowsOnWrongTxType)
+{
+    // Build a valid transaction of a different type
+    auto const [pk, sk] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+    auto const account = calcAccountID(pk);
+
+% if wrong_tx_include == "AccountSet":
+    ${wrong_tx_include}Builder wrongBuilder{account, 1, canonical_AMOUNT()};
+% else:
+    ${wrong_tx_include}Builder wrongBuilder{account, canonical_UINT32(), 1, canonical_AMOUNT()};
+% endif
+    auto wrongTx = wrongBuilder.build(pk, sk);
+
+    EXPECT_THROW(${name}Builder{wrongTx.object()}, std::runtime_error);
+}
+
+% if optional_fields:
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(Transactions${name}Tests, OptionalFieldsReturnNullopt)
+{
+    // Generate a deterministic keypair for signing
+    auto const [publicKey, secretKey] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("test${name}Nullopt"));
+
+    // Common transaction fields
+    auto const accountValue = calcAccountID(publicKey);
+    std::uint32_t const sequenceValue = 3;
+    auto const feeValue = canonical_AMOUNT();
+
+    // Transaction-specific required field values
+% for field in required_fields:
+    auto const ${field["paramName"]}Value = ${canonical_expr(field)};
+% endfor
+
+    ${name}Builder builder{
+        accountValue,
+% for field in required_fields:
+        ${field["paramName"]}Value,
+% endfor
+        sequenceValue,
+        feeValue
+    };
+
+    // Do NOT set optional fields
+
+    auto tx = builder.build(publicKey, secretKey);
+
+    // Verify optional fields are not present
+% for field in optional_fields:
+    EXPECT_FALSE(tx->has${field["name"][2:]}());
+    EXPECT_FALSE(tx->get${field["name"][2:]}().has_value());
+% endfor
+}
+% endif
 
 }

@@ -1,5 +1,6 @@
 // Auto-generated unit tests for transaction XChainCreateBridge
 
+
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -8,12 +9,11 @@
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol_autogen/transactions/XChainCreateBridge.h>
+#include <xrpl/protocol_autogen/transactions/AccountSet.h>
 
 #include <string>
 
 namespace xrpl::transactions {
-
-
 
 // 1 & 4) Set fields via builder setters, build, then read them back via
 // wrapper getters. After build(), validate() should succeed.
@@ -44,11 +44,9 @@ TEST(TransactionsXChainCreateBridgeTests, BuilderSettersRoundTrip)
     // Set optional fields
     builder.setMinAccountCreateAmount(minAccountCreateAmountValue);
 
-    std::string reason;
-    EXPECT_TRUE(builder.validate(reason)) << reason;
-
     auto tx = builder.build(publicKey, secretKey);
 
+    std::string reason;
     EXPECT_TRUE(tx->validate(reason)) << reason;
 
     // Verify signing was applied
@@ -118,10 +116,9 @@ TEST(TransactionsXChainCreateBridgeTests, BuilderFromStTxRoundTrip)
     // Create builder from existing STTx
     XChainCreateBridgeBuilder builderFromTx{initialTx.object()};
 
-    std::string reason;
-    EXPECT_TRUE(builderFromTx.validate(reason)) << reason;
-
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
+
+    std::string reason;
     EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
 
     // Verify common fields
@@ -150,6 +147,67 @@ TEST(TransactionsXChainCreateBridgeTests, BuilderFromStTxRoundTrip)
         expectEqualField(expected, *actualOpt, "sfMinAccountCreateAmount");
     }
 
+}
+
+// 3) Verify wrapper throws when constructed from wrong transaction type.
+TEST(TransactionsXChainCreateBridgeTests, WrapperThrowsOnWrongTxType)
+{
+    // Build a valid transaction of a different type
+    auto const [pk, sk] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+    auto const account = calcAccountID(pk);
+
+    AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
+    auto wrongTx = wrongBuilder.build(pk, sk);
+
+    EXPECT_THROW(XChainCreateBridge{wrongTx.object()}, std::runtime_error);
+}
+
+// 4) Verify builder throws when constructed from wrong transaction type.
+TEST(TransactionsXChainCreateBridgeTests, BuilderThrowsOnWrongTxType)
+{
+    // Build a valid transaction of a different type
+    auto const [pk, sk] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+    auto const account = calcAccountID(pk);
+
+    AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
+    auto wrongTx = wrongBuilder.build(pk, sk);
+
+    EXPECT_THROW(XChainCreateBridgeBuilder{wrongTx.object()}, std::runtime_error);
+}
+
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(TransactionsXChainCreateBridgeTests, OptionalFieldsReturnNullopt)
+{
+    // Generate a deterministic keypair for signing
+    auto const [publicKey, secretKey] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testXChainCreateBridgeNullopt"));
+
+    // Common transaction fields
+    auto const accountValue = calcAccountID(publicKey);
+    std::uint32_t const sequenceValue = 3;
+    auto const feeValue = canonical_AMOUNT();
+
+    // Transaction-specific required field values
+    auto const xChainBridgeValue = canonical_XCHAIN_BRIDGE();
+    auto const signatureRewardValue = canonical_AMOUNT();
+
+    XChainCreateBridgeBuilder builder{
+        accountValue,
+        xChainBridgeValue,
+        signatureRewardValue,
+        sequenceValue,
+        feeValue
+    };
+
+    // Do NOT set optional fields
+
+    auto tx = builder.build(publicKey, secretKey);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(tx->hasMinAccountCreateAmount());
+    EXPECT_FALSE(tx->getMinAccountCreateAmount().has_value());
 }
 
 }

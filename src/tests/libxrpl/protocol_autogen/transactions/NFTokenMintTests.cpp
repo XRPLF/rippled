@@ -1,5 +1,6 @@
 // Auto-generated unit tests for transaction NFTokenMint
 
+
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -8,12 +9,11 @@
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol_autogen/transactions/NFTokenMint.h>
+#include <xrpl/protocol_autogen/transactions/AccountSet.h>
 
 #include <string>
 
 namespace xrpl::transactions {
-
-
 
 // 1 & 4) Set fields via builder setters, build, then read them back via
 // wrapper getters. After build(), validate() should succeed.
@@ -52,11 +52,9 @@ TEST(TransactionsNFTokenMintTests, BuilderSettersRoundTrip)
     builder.setDestination(destinationValue);
     builder.setExpiration(expirationValue);
 
-    std::string reason;
-    EXPECT_TRUE(builder.validate(reason)) << reason;
-
     auto tx = builder.build(publicKey, secretKey);
 
+    std::string reason;
     EXPECT_TRUE(tx->validate(reason)) << reason;
 
     // Verify signing was applied
@@ -168,10 +166,9 @@ TEST(TransactionsNFTokenMintTests, BuilderFromStTxRoundTrip)
     // Create builder from existing STTx
     NFTokenMintBuilder builderFromTx{initialTx.object()};
 
-    std::string reason;
-    EXPECT_TRUE(builderFromTx.validate(reason)) << reason;
-
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
+
+    std::string reason;
     EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
 
     // Verify common fields
@@ -229,6 +226,75 @@ TEST(TransactionsNFTokenMintTests, BuilderFromStTxRoundTrip)
         expectEqualField(expected, *actualOpt, "sfExpiration");
     }
 
+}
+
+// 3) Verify wrapper throws when constructed from wrong transaction type.
+TEST(TransactionsNFTokenMintTests, WrapperThrowsOnWrongTxType)
+{
+    // Build a valid transaction of a different type
+    auto const [pk, sk] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+    auto const account = calcAccountID(pk);
+
+    AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
+    auto wrongTx = wrongBuilder.build(pk, sk);
+
+    EXPECT_THROW(NFTokenMint{wrongTx.object()}, std::runtime_error);
+}
+
+// 4) Verify builder throws when constructed from wrong transaction type.
+TEST(TransactionsNFTokenMintTests, BuilderThrowsOnWrongTxType)
+{
+    // Build a valid transaction of a different type
+    auto const [pk, sk] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+    auto const account = calcAccountID(pk);
+
+    AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
+    auto wrongTx = wrongBuilder.build(pk, sk);
+
+    EXPECT_THROW(NFTokenMintBuilder{wrongTx.object()}, std::runtime_error);
+}
+
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(TransactionsNFTokenMintTests, OptionalFieldsReturnNullopt)
+{
+    // Generate a deterministic keypair for signing
+    auto const [publicKey, secretKey] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testNFTokenMintNullopt"));
+
+    // Common transaction fields
+    auto const accountValue = calcAccountID(publicKey);
+    std::uint32_t const sequenceValue = 3;
+    auto const feeValue = canonical_AMOUNT();
+
+    // Transaction-specific required field values
+    auto const nFTokenTaxonValue = canonical_UINT32();
+
+    NFTokenMintBuilder builder{
+        accountValue,
+        nFTokenTaxonValue,
+        sequenceValue,
+        feeValue
+    };
+
+    // Do NOT set optional fields
+
+    auto tx = builder.build(publicKey, secretKey);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(tx->hasTransferFee());
+    EXPECT_FALSE(tx->getTransferFee().has_value());
+    EXPECT_FALSE(tx->hasIssuer());
+    EXPECT_FALSE(tx->getIssuer().has_value());
+    EXPECT_FALSE(tx->hasURI());
+    EXPECT_FALSE(tx->getURI().has_value());
+    EXPECT_FALSE(tx->hasAmount());
+    EXPECT_FALSE(tx->getAmount().has_value());
+    EXPECT_FALSE(tx->hasDestination());
+    EXPECT_FALSE(tx->getDestination().has_value());
+    EXPECT_FALSE(tx->hasExpiration());
+    EXPECT_FALSE(tx->getExpiration().has_value());
 }
 
 }

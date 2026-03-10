@@ -1,5 +1,6 @@
 // Auto-generated unit tests for transaction LedgerStateFix
 
+
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -8,12 +9,11 @@
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol_autogen/transactions/LedgerStateFix.h>
+#include <xrpl/protocol_autogen/transactions/AccountSet.h>
 
 #include <string>
 
 namespace xrpl::transactions {
-
-
 
 // 1 & 4) Set fields via builder setters, build, then read them back via
 // wrapper getters. After build(), validate() should succeed.
@@ -42,11 +42,9 @@ TEST(TransactionsLedgerStateFixTests, BuilderSettersRoundTrip)
     // Set optional fields
     builder.setOwner(ownerValue);
 
-    std::string reason;
-    EXPECT_TRUE(builder.validate(reason)) << reason;
-
     auto tx = builder.build(publicKey, secretKey);
 
+    std::string reason;
     EXPECT_TRUE(tx->validate(reason)) << reason;
 
     // Verify signing was applied
@@ -108,10 +106,9 @@ TEST(TransactionsLedgerStateFixTests, BuilderFromStTxRoundTrip)
     // Create builder from existing STTx
     LedgerStateFixBuilder builderFromTx{initialTx.object()};
 
-    std::string reason;
-    EXPECT_TRUE(builderFromTx.validate(reason)) << reason;
-
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
+
+    std::string reason;
     EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
 
     // Verify common fields
@@ -134,6 +131,65 @@ TEST(TransactionsLedgerStateFixTests, BuilderFromStTxRoundTrip)
         expectEqualField(expected, *actualOpt, "sfOwner");
     }
 
+}
+
+// 3) Verify wrapper throws when constructed from wrong transaction type.
+TEST(TransactionsLedgerStateFixTests, WrapperThrowsOnWrongTxType)
+{
+    // Build a valid transaction of a different type
+    auto const [pk, sk] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+    auto const account = calcAccountID(pk);
+
+    AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
+    auto wrongTx = wrongBuilder.build(pk, sk);
+
+    EXPECT_THROW(LedgerStateFix{wrongTx.object()}, std::runtime_error);
+}
+
+// 4) Verify builder throws when constructed from wrong transaction type.
+TEST(TransactionsLedgerStateFixTests, BuilderThrowsOnWrongTxType)
+{
+    // Build a valid transaction of a different type
+    auto const [pk, sk] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+    auto const account = calcAccountID(pk);
+
+    AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
+    auto wrongTx = wrongBuilder.build(pk, sk);
+
+    EXPECT_THROW(LedgerStateFixBuilder{wrongTx.object()}, std::runtime_error);
+}
+
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(TransactionsLedgerStateFixTests, OptionalFieldsReturnNullopt)
+{
+    // Generate a deterministic keypair for signing
+    auto const [publicKey, secretKey] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testLedgerStateFixNullopt"));
+
+    // Common transaction fields
+    auto const accountValue = calcAccountID(publicKey);
+    std::uint32_t const sequenceValue = 3;
+    auto const feeValue = canonical_AMOUNT();
+
+    // Transaction-specific required field values
+    auto const ledgerFixTypeValue = canonical_UINT16();
+
+    LedgerStateFixBuilder builder{
+        accountValue,
+        ledgerFixTypeValue,
+        sequenceValue,
+        feeValue
+    };
+
+    // Do NOT set optional fields
+
+    auto tx = builder.build(publicKey, secretKey);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(tx->hasOwner());
+    EXPECT_FALSE(tx->getOwner().has_value());
 }
 
 }

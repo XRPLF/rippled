@@ -1,5 +1,6 @@
 // Auto-generated unit tests for transaction LoanSet
 
+
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -8,12 +9,11 @@
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol_autogen/transactions/LoanSet.h>
+#include <xrpl/protocol_autogen/transactions/AccountSet.h>
 
 #include <string>
 
 namespace xrpl::transactions {
-
-
 
 // 1 & 4) Set fields via builder setters, build, then read them back via
 // wrapper getters. After build(), validate() should succeed.
@@ -72,11 +72,9 @@ TEST(TransactionsLoanSetTests, BuilderSettersRoundTrip)
     builder.setPaymentInterval(paymentIntervalValue);
     builder.setGracePeriod(gracePeriodValue);
 
-    std::string reason;
-    EXPECT_TRUE(builder.validate(reason)) << reason;
-
     auto tx = builder.build(publicKey, secretKey);
 
+    std::string reason;
     EXPECT_TRUE(tx->validate(reason)) << reason;
 
     // Verify signing was applied
@@ -286,10 +284,9 @@ TEST(TransactionsLoanSetTests, BuilderFromStTxRoundTrip)
     // Create builder from existing STTx
     LoanSetBuilder builderFromTx{initialTx.object()};
 
-    std::string reason;
-    EXPECT_TRUE(builderFromTx.validate(reason)) << reason;
-
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
+
+    std::string reason;
     EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
 
     // Verify common fields
@@ -416,6 +413,95 @@ TEST(TransactionsLoanSetTests, BuilderFromStTxRoundTrip)
         expectEqualField(expected, *actualOpt, "sfGracePeriod");
     }
 
+}
+
+// 3) Verify wrapper throws when constructed from wrong transaction type.
+TEST(TransactionsLoanSetTests, WrapperThrowsOnWrongTxType)
+{
+    // Build a valid transaction of a different type
+    auto const [pk, sk] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+    auto const account = calcAccountID(pk);
+
+    AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
+    auto wrongTx = wrongBuilder.build(pk, sk);
+
+    EXPECT_THROW(LoanSet{wrongTx.object()}, std::runtime_error);
+}
+
+// 4) Verify builder throws when constructed from wrong transaction type.
+TEST(TransactionsLoanSetTests, BuilderThrowsOnWrongTxType)
+{
+    // Build a valid transaction of a different type
+    auto const [pk, sk] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+    auto const account = calcAccountID(pk);
+
+    AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
+    auto wrongTx = wrongBuilder.build(pk, sk);
+
+    EXPECT_THROW(LoanSetBuilder{wrongTx.object()}, std::runtime_error);
+}
+
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(TransactionsLoanSetTests, OptionalFieldsReturnNullopt)
+{
+    // Generate a deterministic keypair for signing
+    auto const [publicKey, secretKey] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testLoanSetNullopt"));
+
+    // Common transaction fields
+    auto const accountValue = calcAccountID(publicKey);
+    std::uint32_t const sequenceValue = 3;
+    auto const feeValue = canonical_AMOUNT();
+
+    // Transaction-specific required field values
+    auto const loanBrokerIDValue = canonical_UINT256();
+    auto const principalRequestedValue = canonical_NUMBER();
+
+    LoanSetBuilder builder{
+        accountValue,
+        loanBrokerIDValue,
+        principalRequestedValue,
+        sequenceValue,
+        feeValue
+    };
+
+    // Do NOT set optional fields
+
+    auto tx = builder.build(publicKey, secretKey);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(tx->hasData());
+    EXPECT_FALSE(tx->getData().has_value());
+    EXPECT_FALSE(tx->hasCounterparty());
+    EXPECT_FALSE(tx->getCounterparty().has_value());
+    EXPECT_FALSE(tx->hasCounterpartySignature());
+    EXPECT_FALSE(tx->getCounterpartySignature().has_value());
+    EXPECT_FALSE(tx->hasLoanOriginationFee());
+    EXPECT_FALSE(tx->getLoanOriginationFee().has_value());
+    EXPECT_FALSE(tx->hasLoanServiceFee());
+    EXPECT_FALSE(tx->getLoanServiceFee().has_value());
+    EXPECT_FALSE(tx->hasLatePaymentFee());
+    EXPECT_FALSE(tx->getLatePaymentFee().has_value());
+    EXPECT_FALSE(tx->hasClosePaymentFee());
+    EXPECT_FALSE(tx->getClosePaymentFee().has_value());
+    EXPECT_FALSE(tx->hasOverpaymentFee());
+    EXPECT_FALSE(tx->getOverpaymentFee().has_value());
+    EXPECT_FALSE(tx->hasInterestRate());
+    EXPECT_FALSE(tx->getInterestRate().has_value());
+    EXPECT_FALSE(tx->hasLateInterestRate());
+    EXPECT_FALSE(tx->getLateInterestRate().has_value());
+    EXPECT_FALSE(tx->hasCloseInterestRate());
+    EXPECT_FALSE(tx->getCloseInterestRate().has_value());
+    EXPECT_FALSE(tx->hasOverpaymentInterestRate());
+    EXPECT_FALSE(tx->getOverpaymentInterestRate().has_value());
+    EXPECT_FALSE(tx->hasPaymentTotal());
+    EXPECT_FALSE(tx->getPaymentTotal().has_value());
+    EXPECT_FALSE(tx->hasPaymentInterval());
+    EXPECT_FALSE(tx->getPaymentInterval().has_value());
+    EXPECT_FALSE(tx->hasGracePeriod());
+    EXPECT_FALSE(tx->getGracePeriod().has_value());
 }
 
 }

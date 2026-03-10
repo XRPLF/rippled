@@ -1,5 +1,6 @@
 // Auto-generated unit tests for transaction LoanBrokerSet
 
+
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -8,12 +9,11 @@
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol_autogen/transactions/LoanBrokerSet.h>
+#include <xrpl/protocol_autogen/transactions/AccountSet.h>
 
 #include <string>
 
 namespace xrpl::transactions {
-
-
 
 // 1 & 4) Set fields via builder setters, build, then read them back via
 // wrapper getters. After build(), validate() should succeed.
@@ -52,11 +52,9 @@ TEST(TransactionsLoanBrokerSetTests, BuilderSettersRoundTrip)
     builder.setCoverRateMinimum(coverRateMinimumValue);
     builder.setCoverRateLiquidation(coverRateLiquidationValue);
 
-    std::string reason;
-    EXPECT_TRUE(builder.validate(reason)) << reason;
-
     auto tx = builder.build(publicKey, secretKey);
 
+    std::string reason;
     EXPECT_TRUE(tx->validate(reason)) << reason;
 
     // Verify signing was applied
@@ -168,10 +166,9 @@ TEST(TransactionsLoanBrokerSetTests, BuilderFromStTxRoundTrip)
     // Create builder from existing STTx
     LoanBrokerSetBuilder builderFromTx{initialTx.object()};
 
-    std::string reason;
-    EXPECT_TRUE(builderFromTx.validate(reason)) << reason;
-
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
+
+    std::string reason;
     EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
 
     // Verify common fields
@@ -229,6 +226,75 @@ TEST(TransactionsLoanBrokerSetTests, BuilderFromStTxRoundTrip)
         expectEqualField(expected, *actualOpt, "sfCoverRateLiquidation");
     }
 
+}
+
+// 3) Verify wrapper throws when constructed from wrong transaction type.
+TEST(TransactionsLoanBrokerSetTests, WrapperThrowsOnWrongTxType)
+{
+    // Build a valid transaction of a different type
+    auto const [pk, sk] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+    auto const account = calcAccountID(pk);
+
+    AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
+    auto wrongTx = wrongBuilder.build(pk, sk);
+
+    EXPECT_THROW(LoanBrokerSet{wrongTx.object()}, std::runtime_error);
+}
+
+// 4) Verify builder throws when constructed from wrong transaction type.
+TEST(TransactionsLoanBrokerSetTests, BuilderThrowsOnWrongTxType)
+{
+    // Build a valid transaction of a different type
+    auto const [pk, sk] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+    auto const account = calcAccountID(pk);
+
+    AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
+    auto wrongTx = wrongBuilder.build(pk, sk);
+
+    EXPECT_THROW(LoanBrokerSetBuilder{wrongTx.object()}, std::runtime_error);
+}
+
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(TransactionsLoanBrokerSetTests, OptionalFieldsReturnNullopt)
+{
+    // Generate a deterministic keypair for signing
+    auto const [publicKey, secretKey] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testLoanBrokerSetNullopt"));
+
+    // Common transaction fields
+    auto const accountValue = calcAccountID(publicKey);
+    std::uint32_t const sequenceValue = 3;
+    auto const feeValue = canonical_AMOUNT();
+
+    // Transaction-specific required field values
+    auto const vaultIDValue = canonical_UINT256();
+
+    LoanBrokerSetBuilder builder{
+        accountValue,
+        vaultIDValue,
+        sequenceValue,
+        feeValue
+    };
+
+    // Do NOT set optional fields
+
+    auto tx = builder.build(publicKey, secretKey);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(tx->hasLoanBrokerID());
+    EXPECT_FALSE(tx->getLoanBrokerID().has_value());
+    EXPECT_FALSE(tx->hasData());
+    EXPECT_FALSE(tx->getData().has_value());
+    EXPECT_FALSE(tx->hasManagementFeeRate());
+    EXPECT_FALSE(tx->getManagementFeeRate().has_value());
+    EXPECT_FALSE(tx->hasDebtMaximum());
+    EXPECT_FALSE(tx->getDebtMaximum().has_value());
+    EXPECT_FALSE(tx->hasCoverRateMinimum());
+    EXPECT_FALSE(tx->getCoverRateMinimum().has_value());
+    EXPECT_FALSE(tx->hasCoverRateLiquidation());
+    EXPECT_FALSE(tx->getCoverRateLiquidation().has_value());
 }
 
 }

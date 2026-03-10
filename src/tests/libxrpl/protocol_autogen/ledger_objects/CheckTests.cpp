@@ -1,17 +1,17 @@
 // Auto-generated unit tests for ledger entry Check
 
+
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
 
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol_autogen/ledger_objects/Check.h>
+#include <xrpl/protocol_autogen/ledger_objects/Ticket.h>
 
 #include <string>
 
 namespace xrpl::ledger_entries {
-
-
 
 // 1 & 4) Set fields via builder setters, build, then read them back via
 // wrapper getters. After build(), validate() should succeed for both the
@@ -322,5 +322,79 @@ TEST(CheckTests, BuilderFromSleRoundTrip)
 
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder->getKey(), index);
+}
+
+// 3) Verify wrapper throws when constructed from wrong ledger entry type.
+TEST(CheckTests, WrapperThrowsOnWrongEntryType)
+{
+    uint256 const index{3u};
+
+    // Build a valid ledger entry of a different type
+    // Ticket requires: Account, OwnerNode, TicketSequence, PreviousTxnID, PreviousTxnLgrSeq
+    // Check requires: Account, Destination, SendMax, Sequence, OwnerNode, DestinationNode, PreviousTxnID, PreviousTxnLgrSeq
+    TicketBuilder wrongBuilder{
+        canonical_ACCOUNT(),
+        canonical_UINT64(),
+        canonical_UINT32(),
+        canonical_UINT256(),
+        canonical_UINT32()};
+    auto wrongEntry = wrongBuilder.build(index);
+
+    EXPECT_THROW(Check{wrongEntry.object()}, std::runtime_error);
+}
+
+// 4) Verify builder throws when constructed from wrong ledger entry type.
+TEST(CheckTests, BuilderThrowsOnWrongEntryType)
+{
+    uint256 const index{4u};
+
+    // Build a valid ledger entry of a different type
+    TicketBuilder wrongBuilder{
+        canonical_ACCOUNT(),
+        canonical_UINT64(),
+        canonical_UINT32(),
+        canonical_UINT256(),
+        canonical_UINT32()};
+    auto wrongEntry = wrongBuilder.build(index);
+
+    EXPECT_THROW(CheckBuilder{wrongEntry.object()}, std::runtime_error);
+}
+
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(CheckTests, OptionalFieldsReturnNullopt)
+{
+    uint256 const index{3u};
+
+    auto const accountValue = canonical_ACCOUNT();
+    auto const destinationValue = canonical_ACCOUNT();
+    auto const sendMaxValue = canonical_AMOUNT();
+    auto const sequenceValue = canonical_UINT32();
+    auto const ownerNodeValue = canonical_UINT64();
+    auto const destinationNodeValue = canonical_UINT64();
+    auto const previousTxnIDValue = canonical_UINT256();
+    auto const previousTxnLgrSeqValue = canonical_UINT32();
+
+    CheckBuilder builder{
+        accountValue,
+        destinationValue,
+        sendMaxValue,
+        sequenceValue,
+        ownerNodeValue,
+        destinationNodeValue,
+        previousTxnIDValue,
+        previousTxnLgrSeqValue
+    };
+
+    auto const entry = builder.build(index);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(entry->hasExpiration());
+    EXPECT_FALSE(entry->getExpiration().has_value());
+    EXPECT_FALSE(entry->hasInvoiceID());
+    EXPECT_FALSE(entry->getInvoiceID().has_value());
+    EXPECT_FALSE(entry->hasSourceTag());
+    EXPECT_FALSE(entry->getSourceTag().has_value());
+    EXPECT_FALSE(entry->hasDestinationTag());
+    EXPECT_FALSE(entry->getDestinationTag().has_value());
 }
 }

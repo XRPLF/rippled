@@ -1,17 +1,17 @@
 // Auto-generated unit tests for ledger entry FeeSettings
 
+
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
 
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol_autogen/ledger_objects/FeeSettings.h>
+#include <xrpl/protocol_autogen/ledger_objects/Ticket.h>
 
 #include <string>
 
 namespace xrpl::ledger_entries {
-
-
 
 // 1 & 4) Set fields via builder setters, build, then read them back via
 // wrapper getters. After build(), validate() should succeed for both the
@@ -287,5 +287,73 @@ TEST(FeeSettingsTests, BuilderFromSleRoundTrip)
 
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder->getKey(), index);
+}
+
+// 3) Verify wrapper throws when constructed from wrong ledger entry type.
+TEST(FeeSettingsTests, WrapperThrowsOnWrongEntryType)
+{
+    uint256 const index{3u};
+
+    // Build a valid ledger entry of a different type
+    // Ticket requires: Account, OwnerNode, TicketSequence, PreviousTxnID, PreviousTxnLgrSeq
+    // Check requires: Account, Destination, SendMax, Sequence, OwnerNode, DestinationNode, PreviousTxnID, PreviousTxnLgrSeq
+    TicketBuilder wrongBuilder{
+        canonical_ACCOUNT(),
+        canonical_UINT64(),
+        canonical_UINT32(),
+        canonical_UINT256(),
+        canonical_UINT32()};
+    auto wrongEntry = wrongBuilder.build(index);
+
+    EXPECT_THROW(FeeSettings{wrongEntry.object()}, std::runtime_error);
+}
+
+// 4) Verify builder throws when constructed from wrong ledger entry type.
+TEST(FeeSettingsTests, BuilderThrowsOnWrongEntryType)
+{
+    uint256 const index{4u};
+
+    // Build a valid ledger entry of a different type
+    TicketBuilder wrongBuilder{
+        canonical_ACCOUNT(),
+        canonical_UINT64(),
+        canonical_UINT32(),
+        canonical_UINT256(),
+        canonical_UINT32()};
+    auto wrongEntry = wrongBuilder.build(index);
+
+    EXPECT_THROW(FeeSettingsBuilder{wrongEntry.object()}, std::runtime_error);
+}
+
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(FeeSettingsTests, OptionalFieldsReturnNullopt)
+{
+    uint256 const index{3u};
+
+
+    FeeSettingsBuilder builder{
+    };
+
+    auto const entry = builder.build(index);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(entry->hasBaseFee());
+    EXPECT_FALSE(entry->getBaseFee().has_value());
+    EXPECT_FALSE(entry->hasReferenceFeeUnits());
+    EXPECT_FALSE(entry->getReferenceFeeUnits().has_value());
+    EXPECT_FALSE(entry->hasReserveBase());
+    EXPECT_FALSE(entry->getReserveBase().has_value());
+    EXPECT_FALSE(entry->hasReserveIncrement());
+    EXPECT_FALSE(entry->getReserveIncrement().has_value());
+    EXPECT_FALSE(entry->hasBaseFeeDrops());
+    EXPECT_FALSE(entry->getBaseFeeDrops().has_value());
+    EXPECT_FALSE(entry->hasReserveBaseDrops());
+    EXPECT_FALSE(entry->getReserveBaseDrops().has_value());
+    EXPECT_FALSE(entry->hasReserveIncrementDrops());
+    EXPECT_FALSE(entry->getReserveIncrementDrops().has_value());
+    EXPECT_FALSE(entry->hasPreviousTxnID());
+    EXPECT_FALSE(entry->getPreviousTxnID().has_value());
+    EXPECT_FALSE(entry->hasPreviousTxnLgrSeq());
+    EXPECT_FALSE(entry->getPreviousTxnLgrSeq().has_value());
 }
 }

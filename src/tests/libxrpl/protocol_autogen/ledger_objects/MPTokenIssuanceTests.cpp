@@ -1,17 +1,17 @@
 // Auto-generated unit tests for ledger entry MPTokenIssuance
 
+
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
 
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol_autogen/ledger_objects/MPTokenIssuance.h>
+#include <xrpl/protocol_autogen/ledger_objects/Ticket.h>
 
 #include <string>
 
 namespace xrpl::ledger_entries {
-
-
 
 // 1 & 4) Set fields via builder setters, build, then read them back via
 // wrapper getters. After build(), validate() should succeed for both the
@@ -357,5 +357,81 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
 
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder->getKey(), index);
+}
+
+// 3) Verify wrapper throws when constructed from wrong ledger entry type.
+TEST(MPTokenIssuanceTests, WrapperThrowsOnWrongEntryType)
+{
+    uint256 const index{3u};
+
+    // Build a valid ledger entry of a different type
+    // Ticket requires: Account, OwnerNode, TicketSequence, PreviousTxnID, PreviousTxnLgrSeq
+    // Check requires: Account, Destination, SendMax, Sequence, OwnerNode, DestinationNode, PreviousTxnID, PreviousTxnLgrSeq
+    TicketBuilder wrongBuilder{
+        canonical_ACCOUNT(),
+        canonical_UINT64(),
+        canonical_UINT32(),
+        canonical_UINT256(),
+        canonical_UINT32()};
+    auto wrongEntry = wrongBuilder.build(index);
+
+    EXPECT_THROW(MPTokenIssuance{wrongEntry.object()}, std::runtime_error);
+}
+
+// 4) Verify builder throws when constructed from wrong ledger entry type.
+TEST(MPTokenIssuanceTests, BuilderThrowsOnWrongEntryType)
+{
+    uint256 const index{4u};
+
+    // Build a valid ledger entry of a different type
+    TicketBuilder wrongBuilder{
+        canonical_ACCOUNT(),
+        canonical_UINT64(),
+        canonical_UINT32(),
+        canonical_UINT256(),
+        canonical_UINT32()};
+    auto wrongEntry = wrongBuilder.build(index);
+
+    EXPECT_THROW(MPTokenIssuanceBuilder{wrongEntry.object()}, std::runtime_error);
+}
+
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(MPTokenIssuanceTests, OptionalFieldsReturnNullopt)
+{
+    uint256 const index{3u};
+
+    auto const issuerValue = canonical_ACCOUNT();
+    auto const sequenceValue = canonical_UINT32();
+    auto const ownerNodeValue = canonical_UINT64();
+    auto const outstandingAmountValue = canonical_UINT64();
+    auto const previousTxnIDValue = canonical_UINT256();
+    auto const previousTxnLgrSeqValue = canonical_UINT32();
+
+    MPTokenIssuanceBuilder builder{
+        issuerValue,
+        sequenceValue,
+        ownerNodeValue,
+        outstandingAmountValue,
+        previousTxnIDValue,
+        previousTxnLgrSeqValue
+    };
+
+    auto const entry = builder.build(index);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(entry->hasTransferFee());
+    EXPECT_FALSE(entry->getTransferFee().has_value());
+    EXPECT_FALSE(entry->hasAssetScale());
+    EXPECT_FALSE(entry->getAssetScale().has_value());
+    EXPECT_FALSE(entry->hasMaximumAmount());
+    EXPECT_FALSE(entry->getMaximumAmount().has_value());
+    EXPECT_FALSE(entry->hasLockedAmount());
+    EXPECT_FALSE(entry->getLockedAmount().has_value());
+    EXPECT_FALSE(entry->hasMPTokenMetadata());
+    EXPECT_FALSE(entry->getMPTokenMetadata().has_value());
+    EXPECT_FALSE(entry->hasDomainID());
+    EXPECT_FALSE(entry->getDomainID().has_value());
+    EXPECT_FALSE(entry->hasMutableFlags());
+    EXPECT_FALSE(entry->getMutableFlags().has_value());
 }
 }

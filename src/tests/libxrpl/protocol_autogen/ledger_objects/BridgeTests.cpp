@@ -1,17 +1,17 @@
 // Auto-generated unit tests for ledger entry Bridge
 
+
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
 
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol_autogen/ledger_objects/Bridge.h>
+#include <xrpl/protocol_autogen/ledger_objects/Ticket.h>
 
 #include <string>
 
 namespace xrpl::ledger_entries {
-
-
 
 // 1 & 4) Set fields via builder setters, build, then read them back via
 // wrapper getters. After build(), validate() should succeed for both the
@@ -267,5 +267,75 @@ TEST(BridgeTests, BuilderFromSleRoundTrip)
 
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder->getKey(), index);
+}
+
+// 3) Verify wrapper throws when constructed from wrong ledger entry type.
+TEST(BridgeTests, WrapperThrowsOnWrongEntryType)
+{
+    uint256 const index{3u};
+
+    // Build a valid ledger entry of a different type
+    // Ticket requires: Account, OwnerNode, TicketSequence, PreviousTxnID, PreviousTxnLgrSeq
+    // Check requires: Account, Destination, SendMax, Sequence, OwnerNode, DestinationNode, PreviousTxnID, PreviousTxnLgrSeq
+    TicketBuilder wrongBuilder{
+        canonical_ACCOUNT(),
+        canonical_UINT64(),
+        canonical_UINT32(),
+        canonical_UINT256(),
+        canonical_UINT32()};
+    auto wrongEntry = wrongBuilder.build(index);
+
+    EXPECT_THROW(Bridge{wrongEntry.object()}, std::runtime_error);
+}
+
+// 4) Verify builder throws when constructed from wrong ledger entry type.
+TEST(BridgeTests, BuilderThrowsOnWrongEntryType)
+{
+    uint256 const index{4u};
+
+    // Build a valid ledger entry of a different type
+    TicketBuilder wrongBuilder{
+        canonical_ACCOUNT(),
+        canonical_UINT64(),
+        canonical_UINT32(),
+        canonical_UINT256(),
+        canonical_UINT32()};
+    auto wrongEntry = wrongBuilder.build(index);
+
+    EXPECT_THROW(BridgeBuilder{wrongEntry.object()}, std::runtime_error);
+}
+
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(BridgeTests, OptionalFieldsReturnNullopt)
+{
+    uint256 const index{3u};
+
+    auto const accountValue = canonical_ACCOUNT();
+    auto const signatureRewardValue = canonical_AMOUNT();
+    auto const xChainBridgeValue = canonical_XCHAIN_BRIDGE();
+    auto const xChainClaimIDValue = canonical_UINT64();
+    auto const xChainAccountCreateCountValue = canonical_UINT64();
+    auto const xChainAccountClaimCountValue = canonical_UINT64();
+    auto const ownerNodeValue = canonical_UINT64();
+    auto const previousTxnIDValue = canonical_UINT256();
+    auto const previousTxnLgrSeqValue = canonical_UINT32();
+
+    BridgeBuilder builder{
+        accountValue,
+        signatureRewardValue,
+        xChainBridgeValue,
+        xChainClaimIDValue,
+        xChainAccountCreateCountValue,
+        xChainAccountClaimCountValue,
+        ownerNodeValue,
+        previousTxnIDValue,
+        previousTxnLgrSeqValue
+    };
+
+    auto const entry = builder.build(index);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(entry->hasMinAccountCreateAmount());
+    EXPECT_FALSE(entry->getMinAccountCreateAmount().has_value());
 }
 }

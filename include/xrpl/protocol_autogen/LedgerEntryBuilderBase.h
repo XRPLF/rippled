@@ -26,10 +26,12 @@ public:
         SF_UINT16::type::value_type ledgerEntryType,
         SF_UINT32::type::value_type flags = 0)
     {
-        auto entryType = static_cast<LedgerEntryType>(ledgerEntryType);
-        auto const& soTemplate =
-            LedgerFormats::getInstance().findByType(entryType)->getSOTemplate();
-        object_.set(soTemplate);
+        // Don't call object_.set(soTemplate) - keep object_ as a free object.
+        // This avoids creating STBase placeholders for soeDEFAULT fields,
+        // which would cause applyTemplate() to throw "may not be explicitly
+        // set to default" when building the SLE.
+        // The SLE constructor will call applyTemplate() which properly
+        // handles missing fields.
         object_[sfLedgerEntryType] = ledgerEntryType;
         object_[sfFlags] = flags;
     }

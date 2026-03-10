@@ -1,17 +1,17 @@
 // Auto-generated unit tests for ledger entry RippleState
 
+
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
 
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol_autogen/ledger_objects/RippleState.h>
+#include <xrpl/protocol_autogen/ledger_objects/Ticket.h>
 
 #include <string>
 
 namespace xrpl::ledger_entries {
-
-
 
 // 1 & 4) Set fields via builder setters, build, then read them back via
 // wrapper getters. After build(), validate() should succeed for both the
@@ -312,5 +312,77 @@ TEST(RippleStateTests, BuilderFromSleRoundTrip)
 
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder->getKey(), index);
+}
+
+// 3) Verify wrapper throws when constructed from wrong ledger entry type.
+TEST(RippleStateTests, WrapperThrowsOnWrongEntryType)
+{
+    uint256 const index{3u};
+
+    // Build a valid ledger entry of a different type
+    // Ticket requires: Account, OwnerNode, TicketSequence, PreviousTxnID, PreviousTxnLgrSeq
+    // Check requires: Account, Destination, SendMax, Sequence, OwnerNode, DestinationNode, PreviousTxnID, PreviousTxnLgrSeq
+    TicketBuilder wrongBuilder{
+        canonical_ACCOUNT(),
+        canonical_UINT64(),
+        canonical_UINT32(),
+        canonical_UINT256(),
+        canonical_UINT32()};
+    auto wrongEntry = wrongBuilder.build(index);
+
+    EXPECT_THROW(RippleState{wrongEntry.object()}, std::runtime_error);
+}
+
+// 4) Verify builder throws when constructed from wrong ledger entry type.
+TEST(RippleStateTests, BuilderThrowsOnWrongEntryType)
+{
+    uint256 const index{4u};
+
+    // Build a valid ledger entry of a different type
+    TicketBuilder wrongBuilder{
+        canonical_ACCOUNT(),
+        canonical_UINT64(),
+        canonical_UINT32(),
+        canonical_UINT256(),
+        canonical_UINT32()};
+    auto wrongEntry = wrongBuilder.build(index);
+
+    EXPECT_THROW(RippleStateBuilder{wrongEntry.object()}, std::runtime_error);
+}
+
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(RippleStateTests, OptionalFieldsReturnNullopt)
+{
+    uint256 const index{3u};
+
+    auto const balanceValue = canonical_AMOUNT();
+    auto const lowLimitValue = canonical_AMOUNT();
+    auto const highLimitValue = canonical_AMOUNT();
+    auto const previousTxnIDValue = canonical_UINT256();
+    auto const previousTxnLgrSeqValue = canonical_UINT32();
+
+    RippleStateBuilder builder{
+        balanceValue,
+        lowLimitValue,
+        highLimitValue,
+        previousTxnIDValue,
+        previousTxnLgrSeqValue
+    };
+
+    auto const entry = builder.build(index);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(entry->hasLowNode());
+    EXPECT_FALSE(entry->getLowNode().has_value());
+    EXPECT_FALSE(entry->hasLowQualityIn());
+    EXPECT_FALSE(entry->getLowQualityIn().has_value());
+    EXPECT_FALSE(entry->hasLowQualityOut());
+    EXPECT_FALSE(entry->getLowQualityOut().has_value());
+    EXPECT_FALSE(entry->hasHighNode());
+    EXPECT_FALSE(entry->getHighNode().has_value());
+    EXPECT_FALSE(entry->hasHighQualityIn());
+    EXPECT_FALSE(entry->getHighQualityIn().has_value());
+    EXPECT_FALSE(entry->hasHighQualityOut());
+    EXPECT_FALSE(entry->getHighQualityOut().has_value());
 }
 }

@@ -14,7 +14,6 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/STObjectValidation.h>
 
 namespace xrpl::transactions {
 
@@ -34,10 +33,12 @@ public:
         std::optional<SF_UINT32::type::value_type> sequence,
         std::optional<SF_AMOUNT::type::value_type> fee)
     {
-        auto txType = static_cast<TxType>(transactionType);
-        auto const& soTemplate = TxFormats::getInstance().findByType(txType)->getSOTemplate();
-        object_.set(soTemplate);
-
+        // Don't call object_.set(soTemplate) - keep object_ as a free object.
+        // This avoids creating STBase placeholders for soeDEFAULT fields,
+        // which would cause applyTemplate() to throw "may not be explicitly
+        // set to default" when building the STTx.
+        // The STTx constructor will call applyTemplate() which properly
+        // handles missing fields.
         object_[sfTransactionType] = transactionType;
         setAccount(account);
 
@@ -49,35 +50,6 @@ public:
         {
             setFee(*fee);
         }
-    }
-
-    /**
-     * @brief Validate the transaction
-     * @return true if validation passes, false otherwise
-     */
-    [[nodiscard]]
-    bool
-    validate(std::string& reason) const
-    {
-        if (!object_.isFieldPresent(sfTransactionType))
-        {
-            return false;
-        }
-
-        auto transactionType = static_cast<TxType>(object_.getFieldU16(sfTransactionType));
-        if (!protocol_autogen::validateSTObject(
-                object_, TxFormats::getInstance().findByType(transactionType)->getSOTemplate()))
-        {
-            reason = "Transaction failed schema validation";
-            return false;
-        }
-
-        // Pseudo transactions are not submitted to the network
-        if (isPseudoTx(object_))
-        {
-            return true;
-        }
-        return passesLocalChecks(object_, reason);
     }
 
     /**

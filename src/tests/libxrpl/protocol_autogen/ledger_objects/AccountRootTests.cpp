@@ -1,17 +1,17 @@
 // Auto-generated unit tests for ledger entry AccountRoot
 
+
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
 
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol_autogen/ledger_objects/AccountRoot.h>
+#include <xrpl/protocol_autogen/ledger_objects/Ticket.h>
 
 #include <string>
 
 namespace xrpl::ledger_entries {
-
-
 
 // 1 & 4) Set fields via builder setters, build, then read them back via
 // wrapper getters. After build(), validate() should succeed for both the
@@ -607,5 +607,101 @@ TEST(AccountRootTests, BuilderFromSleRoundTrip)
 
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder->getKey(), index);
+}
+
+// 3) Verify wrapper throws when constructed from wrong ledger entry type.
+TEST(AccountRootTests, WrapperThrowsOnWrongEntryType)
+{
+    uint256 const index{3u};
+
+    // Build a valid ledger entry of a different type
+    // Ticket requires: Account, OwnerNode, TicketSequence, PreviousTxnID, PreviousTxnLgrSeq
+    // Check requires: Account, Destination, SendMax, Sequence, OwnerNode, DestinationNode, PreviousTxnID, PreviousTxnLgrSeq
+    TicketBuilder wrongBuilder{
+        canonical_ACCOUNT(),
+        canonical_UINT64(),
+        canonical_UINT32(),
+        canonical_UINT256(),
+        canonical_UINT32()};
+    auto wrongEntry = wrongBuilder.build(index);
+
+    EXPECT_THROW(AccountRoot{wrongEntry.object()}, std::runtime_error);
+}
+
+// 4) Verify builder throws when constructed from wrong ledger entry type.
+TEST(AccountRootTests, BuilderThrowsOnWrongEntryType)
+{
+    uint256 const index{4u};
+
+    // Build a valid ledger entry of a different type
+    TicketBuilder wrongBuilder{
+        canonical_ACCOUNT(),
+        canonical_UINT64(),
+        canonical_UINT32(),
+        canonical_UINT256(),
+        canonical_UINT32()};
+    auto wrongEntry = wrongBuilder.build(index);
+
+    EXPECT_THROW(AccountRootBuilder{wrongEntry.object()}, std::runtime_error);
+}
+
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(AccountRootTests, OptionalFieldsReturnNullopt)
+{
+    uint256 const index{3u};
+
+    auto const accountValue = canonical_ACCOUNT();
+    auto const sequenceValue = canonical_UINT32();
+    auto const balanceValue = canonical_AMOUNT();
+    auto const ownerCountValue = canonical_UINT32();
+    auto const previousTxnIDValue = canonical_UINT256();
+    auto const previousTxnLgrSeqValue = canonical_UINT32();
+
+    AccountRootBuilder builder{
+        accountValue,
+        sequenceValue,
+        balanceValue,
+        ownerCountValue,
+        previousTxnIDValue,
+        previousTxnLgrSeqValue
+    };
+
+    auto const entry = builder.build(index);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(entry->hasAccountTxnID());
+    EXPECT_FALSE(entry->getAccountTxnID().has_value());
+    EXPECT_FALSE(entry->hasRegularKey());
+    EXPECT_FALSE(entry->getRegularKey().has_value());
+    EXPECT_FALSE(entry->hasEmailHash());
+    EXPECT_FALSE(entry->getEmailHash().has_value());
+    EXPECT_FALSE(entry->hasWalletLocator());
+    EXPECT_FALSE(entry->getWalletLocator().has_value());
+    EXPECT_FALSE(entry->hasWalletSize());
+    EXPECT_FALSE(entry->getWalletSize().has_value());
+    EXPECT_FALSE(entry->hasMessageKey());
+    EXPECT_FALSE(entry->getMessageKey().has_value());
+    EXPECT_FALSE(entry->hasTransferRate());
+    EXPECT_FALSE(entry->getTransferRate().has_value());
+    EXPECT_FALSE(entry->hasDomain());
+    EXPECT_FALSE(entry->getDomain().has_value());
+    EXPECT_FALSE(entry->hasTickSize());
+    EXPECT_FALSE(entry->getTickSize().has_value());
+    EXPECT_FALSE(entry->hasTicketCount());
+    EXPECT_FALSE(entry->getTicketCount().has_value());
+    EXPECT_FALSE(entry->hasNFTokenMinter());
+    EXPECT_FALSE(entry->getNFTokenMinter().has_value());
+    EXPECT_FALSE(entry->hasMintedNFTokens());
+    EXPECT_FALSE(entry->getMintedNFTokens().has_value());
+    EXPECT_FALSE(entry->hasBurnedNFTokens());
+    EXPECT_FALSE(entry->getBurnedNFTokens().has_value());
+    EXPECT_FALSE(entry->hasFirstNFTokenSequence());
+    EXPECT_FALSE(entry->getFirstNFTokenSequence().has_value());
+    EXPECT_FALSE(entry->hasAMMID());
+    EXPECT_FALSE(entry->getAMMID().has_value());
+    EXPECT_FALSE(entry->hasVaultID());
+    EXPECT_FALSE(entry->getVaultID().has_value());
+    EXPECT_FALSE(entry->hasLoanBrokerID());
+    EXPECT_FALSE(entry->getLoanBrokerID().has_value());
 }
 }

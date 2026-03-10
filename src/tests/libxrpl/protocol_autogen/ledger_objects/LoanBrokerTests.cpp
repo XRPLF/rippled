@@ -1,17 +1,17 @@
 // Auto-generated unit tests for ledger entry LoanBroker
 
+
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
 
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol_autogen/ledger_objects/LoanBroker.h>
+#include <xrpl/protocol_autogen/ledger_objects/Ticket.h>
 
 #include <string>
 
 namespace xrpl::ledger_entries {
-
-
 
 // 1 & 4) Set fields via builder setters, build, then read them back via
 // wrapper getters. After build(), validate() should succeed for both the
@@ -442,5 +442,89 @@ TEST(LoanBrokerTests, BuilderFromSleRoundTrip)
 
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder->getKey(), index);
+}
+
+// 3) Verify wrapper throws when constructed from wrong ledger entry type.
+TEST(LoanBrokerTests, WrapperThrowsOnWrongEntryType)
+{
+    uint256 const index{3u};
+
+    // Build a valid ledger entry of a different type
+    // Ticket requires: Account, OwnerNode, TicketSequence, PreviousTxnID, PreviousTxnLgrSeq
+    // Check requires: Account, Destination, SendMax, Sequence, OwnerNode, DestinationNode, PreviousTxnID, PreviousTxnLgrSeq
+    TicketBuilder wrongBuilder{
+        canonical_ACCOUNT(),
+        canonical_UINT64(),
+        canonical_UINT32(),
+        canonical_UINT256(),
+        canonical_UINT32()};
+    auto wrongEntry = wrongBuilder.build(index);
+
+    EXPECT_THROW(LoanBroker{wrongEntry.object()}, std::runtime_error);
+}
+
+// 4) Verify builder throws when constructed from wrong ledger entry type.
+TEST(LoanBrokerTests, BuilderThrowsOnWrongEntryType)
+{
+    uint256 const index{4u};
+
+    // Build a valid ledger entry of a different type
+    TicketBuilder wrongBuilder{
+        canonical_ACCOUNT(),
+        canonical_UINT64(),
+        canonical_UINT32(),
+        canonical_UINT256(),
+        canonical_UINT32()};
+    auto wrongEntry = wrongBuilder.build(index);
+
+    EXPECT_THROW(LoanBrokerBuilder{wrongEntry.object()}, std::runtime_error);
+}
+
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(LoanBrokerTests, OptionalFieldsReturnNullopt)
+{
+    uint256 const index{3u};
+
+    auto const previousTxnIDValue = canonical_UINT256();
+    auto const previousTxnLgrSeqValue = canonical_UINT32();
+    auto const sequenceValue = canonical_UINT32();
+    auto const ownerNodeValue = canonical_UINT64();
+    auto const vaultNodeValue = canonical_UINT64();
+    auto const vaultIDValue = canonical_UINT256();
+    auto const accountValue = canonical_ACCOUNT();
+    auto const ownerValue = canonical_ACCOUNT();
+    auto const loanSequenceValue = canonical_UINT32();
+
+    LoanBrokerBuilder builder{
+        previousTxnIDValue,
+        previousTxnLgrSeqValue,
+        sequenceValue,
+        ownerNodeValue,
+        vaultNodeValue,
+        vaultIDValue,
+        accountValue,
+        ownerValue,
+        loanSequenceValue
+    };
+
+    auto const entry = builder.build(index);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(entry->hasData());
+    EXPECT_FALSE(entry->getData().has_value());
+    EXPECT_FALSE(entry->hasManagementFeeRate());
+    EXPECT_FALSE(entry->getManagementFeeRate().has_value());
+    EXPECT_FALSE(entry->hasOwnerCount());
+    EXPECT_FALSE(entry->getOwnerCount().has_value());
+    EXPECT_FALSE(entry->hasDebtTotal());
+    EXPECT_FALSE(entry->getDebtTotal().has_value());
+    EXPECT_FALSE(entry->hasDebtMaximum());
+    EXPECT_FALSE(entry->getDebtMaximum().has_value());
+    EXPECT_FALSE(entry->hasCoverAvailable());
+    EXPECT_FALSE(entry->getCoverAvailable().has_value());
+    EXPECT_FALSE(entry->hasCoverRateMinimum());
+    EXPECT_FALSE(entry->getCoverRateMinimum().has_value());
+    EXPECT_FALSE(entry->hasCoverRateLiquidation());
+    EXPECT_FALSE(entry->getCoverRateLiquidation().has_value());
 }
 }

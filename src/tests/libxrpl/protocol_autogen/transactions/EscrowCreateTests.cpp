@@ -1,5 +1,6 @@
 // Auto-generated unit tests for transaction EscrowCreate
 
+
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -8,12 +9,11 @@
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol_autogen/transactions/EscrowCreate.h>
+#include <xrpl/protocol_autogen/transactions/AccountSet.h>
 
 #include <string>
 
 namespace xrpl::transactions {
-
-
 
 // 1 & 4) Set fields via builder setters, build, then read them back via
 // wrapper getters. After build(), validate() should succeed.
@@ -50,11 +50,9 @@ TEST(TransactionsEscrowCreateTests, BuilderSettersRoundTrip)
     builder.setFinishAfter(finishAfterValue);
     builder.setDestinationTag(destinationTagValue);
 
-    std::string reason;
-    EXPECT_TRUE(builder.validate(reason)) << reason;
-
     auto tx = builder.build(publicKey, secretKey);
 
+    std::string reason;
     EXPECT_TRUE(tx->validate(reason)) << reason;
 
     // Verify signing was applied
@@ -154,10 +152,9 @@ TEST(TransactionsEscrowCreateTests, BuilderFromStTxRoundTrip)
     // Create builder from existing STTx
     EscrowCreateBuilder builderFromTx{initialTx.object()};
 
-    std::string reason;
-    EXPECT_TRUE(builderFromTx.validate(reason)) << reason;
-
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
+
+    std::string reason;
     EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
 
     // Verify common fields
@@ -207,6 +204,73 @@ TEST(TransactionsEscrowCreateTests, BuilderFromStTxRoundTrip)
         expectEqualField(expected, *actualOpt, "sfDestinationTag");
     }
 
+}
+
+// 3) Verify wrapper throws when constructed from wrong transaction type.
+TEST(TransactionsEscrowCreateTests, WrapperThrowsOnWrongTxType)
+{
+    // Build a valid transaction of a different type
+    auto const [pk, sk] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+    auto const account = calcAccountID(pk);
+
+    AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
+    auto wrongTx = wrongBuilder.build(pk, sk);
+
+    EXPECT_THROW(EscrowCreate{wrongTx.object()}, std::runtime_error);
+}
+
+// 4) Verify builder throws when constructed from wrong transaction type.
+TEST(TransactionsEscrowCreateTests, BuilderThrowsOnWrongTxType)
+{
+    // Build a valid transaction of a different type
+    auto const [pk, sk] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+    auto const account = calcAccountID(pk);
+
+    AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
+    auto wrongTx = wrongBuilder.build(pk, sk);
+
+    EXPECT_THROW(EscrowCreateBuilder{wrongTx.object()}, std::runtime_error);
+}
+
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(TransactionsEscrowCreateTests, OptionalFieldsReturnNullopt)
+{
+    // Generate a deterministic keypair for signing
+    auto const [publicKey, secretKey] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testEscrowCreateNullopt"));
+
+    // Common transaction fields
+    auto const accountValue = calcAccountID(publicKey);
+    std::uint32_t const sequenceValue = 3;
+    auto const feeValue = canonical_AMOUNT();
+
+    // Transaction-specific required field values
+    auto const destinationValue = canonical_ACCOUNT();
+    auto const amountValue = canonical_AMOUNT();
+
+    EscrowCreateBuilder builder{
+        accountValue,
+        destinationValue,
+        amountValue,
+        sequenceValue,
+        feeValue
+    };
+
+    // Do NOT set optional fields
+
+    auto tx = builder.build(publicKey, secretKey);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(tx->hasCondition());
+    EXPECT_FALSE(tx->getCondition().has_value());
+    EXPECT_FALSE(tx->hasCancelAfter());
+    EXPECT_FALSE(tx->getCancelAfter().has_value());
+    EXPECT_FALSE(tx->hasFinishAfter());
+    EXPECT_FALSE(tx->getFinishAfter().has_value());
+    EXPECT_FALSE(tx->hasDestinationTag());
+    EXPECT_FALSE(tx->getDestinationTag().has_value());
 }
 
 }
