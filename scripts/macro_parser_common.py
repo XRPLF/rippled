@@ -243,10 +243,10 @@ def generate_from_template(
     # Render the template - pass entry_info directly so templates can access any field
     content = template.render(**entry_info)
 
-    # Write output file
+    # Write output file in binary mode to avoid any line ending conversion
     output_path = Path(output_dir) / f"{entry_info['name']}{output_suffix}"
-    with open(output_path, "w") as f:
-        f.write(content)
+    with open(output_path, "wb") as f:
+        f.write(content.encode("utf-8"))
 
     print(f"Generated {output_path}")
     return output_path
