@@ -14,7 +14,10 @@ target_link_libraries(xrpl.helpers.test PRIVATE xrpl.libxrpl)
 
 # Common library dependencies for the rest of the tests.
 add_library(xrpl.imports.test INTERFACE)
-target_link_libraries(xrpl.imports.test INTERFACE gtest::gtest xrpl.libxrpl xrpl.helpers.test)
+target_link_libraries(
+    xrpl.imports.test
+    INTERFACE gtest::gtest xrpl.libxrpl xrpl.helpers.test
+)
 
 # One test for each module.
 xrpl_add_test(basics)
@@ -30,8 +33,8 @@ target_link_libraries(xrpl.test.json PRIVATE xrpl.imports.test)
 add_dependencies(xrpl.tests xrpl.test.json)
 
 # Network unit tests are currently not supported on Windows
-if (NOT WIN32)
+if(NOT WIN32)
     xrpl_add_test(net)
     target_link_libraries(xrpl.test.net PRIVATE xrpl.imports.test)
     add_dependencies(xrpl.tests xrpl.test.net)
-endif ()
+endif()
