@@ -31,6 +31,7 @@
 #include <xrpld/shamap/NodeFamily.h>
 
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/MallocTrim.h>
 #include <xrpl/basics/ResolverAsio.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/asio/io_latency_probe.h>
@@ -1053,6 +1054,8 @@ public:
                                     << "; size after: " << cachedSLEs_.size();
         }
 
+        mallocTrim("doSweep", m_journal);
+
         // Set timer to do another sweep later.
         setSweepTimer();
     }
@@ -1067,6 +1070,12 @@ public:
     trapTxID() const override
     {
         return trapTxID_;
+    }
+
+    size_t
+    getNumberOfThreads() const override
+    {
+        return get_number_of_threads();
     }
 
 private:
