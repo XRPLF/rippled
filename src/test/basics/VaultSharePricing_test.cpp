@@ -417,6 +417,9 @@ public:
         // shares = floor(depositAmt2 * sharesTotal / depositNAV)
         Number const expectedShares2 = vault.depositShares(depositAmt2);
         Number const expectedAssets2 = vault.depositAssets(expectedShares2);
+        // floor(50 * 1e8 / 100) = 5e7;  5e7 * 100 / 1e8 = 50
+        BEAST_EXPECT(expectedShares2 == Number(5, 7));
+        BEAST_EXPECT(expectedAssets2 == 50);
 
         auto const [actualShares, actualAssets] =
             vault.deposit(STAmount{usd_, depositAmt2}).value();
@@ -550,6 +553,9 @@ public:
 
         Number const expectedShares = vault.depositShares(Number(depositAmt2));
         Number const expectedAssets = vault.depositAssets(expectedShares);
+        // depositNAV = 950 + 50 - 50 = 950; shares = floor(95 * 950 / 950) = 95; assets = 95
+        BEAST_EXPECT(expectedShares == 95);
+        BEAST_EXPECT(expectedAssets == 95);
 
         auto const [actualShares, actualAssets] =
             vault.deposit(STAmount{usd_, depositAmt2}).value();
@@ -613,6 +619,8 @@ public:
             });
 
         Number const expectedAssets = vault.redeemAssets(redeemShares);
+        // withdrawalNAV = 1000 + 50 - 50 - 100 = 900; assetsOut = 100 * 900 / 1000 = 90
+        BEAST_EXPECT(expectedAssets == 90);
         auto const assetsOut = vault.redeem(STAmount{vault.shareAsset(), redeemShares}).value();
 
         BEAST_EXPECT(assetsOut == expectedAssets);
@@ -695,6 +703,8 @@ public:
         // Redeem at withdrawalNAV (subtracts both interest and loss)
         {
             Number const expectedAssets = vault.redeemAssets(redeemShares);
+            // withdrawalNAV = 1001 - 50 - 100 = 851; sharesTotal = 951; assetsOut = 851/951
+            BEAST_EXPECT(expectedAssets == Number{851} / Number{951});
             // Compare as STAmount: redeem() returns STAmount which truncates
             // to 16 significant digits, so comparing directly to the
             // full-precision Number would fail for non-terminating fractions.
@@ -744,6 +754,9 @@ public:
 
         Number const expectedShares = vault.depositShares(Number(depositAmt));
         Number const expectedAssets = vault.depositAssets(expectedShares);
+        // floor(3 * 3 / 7) = 1;  back-calc assets = 1 * 7 / 3 = 7/3
+        BEAST_EXPECT(expectedShares == 1);
+        BEAST_EXPECT(expectedAssets == Number{7} / Number{3});
         // Compare as STAmount: deposit() returns STAmount which truncates
         // to 16 significant digits, so comparing directly to the
         // full-precision Number would fail for non-terminating fractions.
@@ -793,6 +806,9 @@ public:
 
             Number const expectedShares = vault.withdrawShares(Number(withdrawRequested));
             Number const expectedAssetsOut = vault.withdrawAssets(expectedShares);
+            // withdrawalNAV = 10 - 3 = 7; shares = floor(1 * 10 / 7) = 1; assetsOut = 7/10 = 0.7
+            BEAST_EXPECT(expectedShares == 1);
+            BEAST_EXPECT(expectedAssetsOut == Number(7, -1));
 
             auto const [actualShares, actualAssets] =
                 vault.withdraw(STAmount{usd_, withdrawRequested}).value();
@@ -832,6 +848,10 @@ public:
 
             Number const expectedShares2 = vault2.withdrawShares(Number(withdrawRequested));
             Number const expectedAssetsOut2 = vault2.withdrawAssets(expectedShares2);
+            // 1.1 floors same as 1.0: shares = floor(1.1 * 10 / 7) = floor(11/7) = 1; assetsOut =
+            // 0.7
+            BEAST_EXPECT(expectedShares2 == 1);
+            BEAST_EXPECT(expectedAssetsOut2 == Number(7, -1));
 
             auto const [shares2, assets2] = vault2.withdraw(withdrawRequested).value();
             BEAST_EXPECT(shares2 == expectedShares2);
@@ -949,6 +969,8 @@ public:
 
         // Loss reduces withdrawalNAV but not depositNAV
         Number const expectedAssets = vault.redeemAssets(redeemShares);
+        // withdrawalNAV = 1100 - 200 = 900; sharesTotal = 1100; assetsOut = 100 * 900/1100 = 900/11
+        BEAST_EXPECT(expectedAssets == Number{900} / Number{11});
         // Compare as STAmount: redeem() returns STAmount which truncates
         // to 16 significant digits, so comparing directly to the
         // full-precision Number would fail for non-terminating fractions.
@@ -1010,6 +1032,9 @@ public:
         // User B deposits 100: shares = floor(deposit * sharesTotal / depositNAV)
         Number const expectedSharesB = vault.depositShares(Number(depositA));
         Number const expectedAssetsB = vault.depositAssets(expectedSharesB);
+        // depositNAV = 110; shares = floor(100 * 100 / 110) = 90; assets = 90 * 110 / 100 = 99
+        BEAST_EXPECT(expectedSharesB == 90);
+        BEAST_EXPECT(expectedAssetsB == 99);
         auto const [sharesB, assetsB] = vault.deposit(STAmount{usd_, depositA}).value();
         BEAST_EXPECT(sharesB == expectedSharesB);
         BEAST_EXPECT(assetsB == expectedAssetsB);
@@ -1234,6 +1259,9 @@ public:
         // shares = floor(tinyDeposit * sharesTotal / depositNAV)
         Number const expectedShares = vault.depositShares(tinyDeposit);
         Number const expectedAssets = vault.depositAssets(expectedShares);
+        // floor(1e-6 * 1e15 / 1e9) = 1;  back-calc assets = 1 * 1e9 / 1e15 = 1e-6
+        BEAST_EXPECT(expectedShares == 1);
+        BEAST_EXPECT(expectedAssets == Number(1, -6));
 
         auto const [actualShares, actualAssets] =
             vault.deposit(STAmount{usd_, tinyDeposit}).value();
@@ -1286,6 +1314,9 @@ public:
         auto const tinyDeposit = 1;
         Number const expectedShares = vault.depositShares(Number(tinyDeposit));
         Number const expectedAssets = vault.depositAssets(expectedShares);
+        // floor(1 * 1e14 / 1e14) = 1;  back-calc assets = 1 * 1e14 / 1e14 = 1
+        BEAST_EXPECT(expectedShares == 1);
+        BEAST_EXPECT(expectedAssets == 1);
 
         auto const [actualShares, actualAssets] =
             vault.deposit(STAmount{xrpIssue(), tinyDeposit}).value();
@@ -1338,6 +1369,9 @@ public:
         // shares = floor(largeDeposit * sharesTotal / depositNAV)
         Number const expectedShares = vault.depositShares(largeDeposit);
         Number const expectedAssets = vault.depositAssets(expectedShares);
+        // floor(1e9 * 1000 / 1e-3) = 1e15;  back-calc assets = 1e15 * 1e-3 / 1000 = 1e9
+        BEAST_EXPECT(expectedShares == Number(1, 15));
+        BEAST_EXPECT(expectedAssets == Number(1, 9));
 
         auto const [actualShares, actualAssets] =
             vault.deposit(STAmount{usd_, largeDeposit}).value();
@@ -1354,6 +1388,8 @@ public:
 
         // Redeem original seed shares
         Number const expectedRedeem = vault.redeemAssets(Number(seedShares));
+        // 1000 * (1e-3 + 1e9) / (1000 + 1e15) = 1000000000001 / 1000000000001000 = 1/1000
+        BEAST_EXPECT(expectedRedeem == Number{1} / Number{1000});
         auto const out = vault.redeem(STAmount{vault.shareAsset(), seedShares}).value();
         BEAST_EXPECT(out == expectedRedeem);
     }
@@ -1523,6 +1559,8 @@ public:
             });
 
         Number const expectedOut = vault.redeemAssets(redeemShares);
+        // withdrawalNAV = 1e12 - 2e11 = 8e11; assetsOut = 1 * 8e11 / 1e12 = 0.8
+        BEAST_EXPECT(expectedOut == Number(8, -1));
         STAmount const expectedAmt(usd_, expectedOut);
         auto const out = vault.redeem(STAmount{vault.shareAsset(), redeemShares}).value();
         BEAST_EXPECT(out == expectedAmt);
@@ -1743,6 +1781,8 @@ public:
             });
 
         Number const expectedOut = vault.redeemAssets(redeemShares);
+        // assetsTotal=600, sharesTotal=1000; assetsOut = 500 * 600 / 1000 = 300
+        BEAST_EXPECT(expectedOut == 300);
         auto const out = vault.redeem(STAmount{vault.shareAsset(), redeemShares}).value();
         BEAST_EXPECT(out == expectedOut);
         expectState(
@@ -1813,6 +1853,8 @@ public:
             });
 
         Number const expectedOut = vault.redeemAssets(redeemShares);
+        // assetsTotal=600, sharesTotal=1000; assetsOut = 500 * 600 / 1000 = 300
+        BEAST_EXPECT(expectedOut == 300);
         auto const out = vault.redeem(STAmount{vault.shareAsset(), redeemShares}).value();
         BEAST_EXPECT(out == expectedOut);
         expectState(
@@ -1889,6 +1931,8 @@ public:
             });
 
         Number const expectedOut1 = vault.redeemAssets(redeemShares1);
+        // lossUnrealized=100; withdrawalNAV = 1000 - 100 = 900; assetsOut = 100 * 900 / 1000 = 90
+        BEAST_EXPECT(expectedOut1 == 90);
         auto const out = vault.redeem(STAmount{vault.shareAsset(), redeemShares1}).value();
         BEAST_EXPECT(out == expectedOut1);
 
@@ -1926,6 +1970,8 @@ public:
         // Redeem 100 shares: assetsOut = 100 * withdrawalNAV / sharesTotal
         auto const redeemShares2 = 100;
         Number const expectedOut2 = vault.redeemAssets(redeemShares2);
+        // assetsTotal=910, sharesTotal=900, no loss; assetsOut = 100 * 910 / 900 = 910/9
+        BEAST_EXPECT(expectedOut2 == Number{910} / Number{9});
         STAmount const expectedAmt2(usd_, expectedOut2);
         auto const out2 = vault.redeem(STAmount{vault.shareAsset(), redeemShares2}).value();
         BEAST_EXPECT(out2 == expectedAmt2);
@@ -2290,6 +2336,8 @@ public:
 
         // A redeems 1000 shares: assetsOut = 1000 * withdrawalNAV / sharesTotal
         Number const expectedA = vault.redeemAssets(Number(depositAmtA));
+        // withdrawalNAV = 1500 - 200 = 1300; assetsOut = 1000 * 1300 / 1500 = 2600/3
+        BEAST_EXPECT(expectedA == Number{2600} / Number{3});
         STAmount const expectedAmtA(usd_, expectedA);
         auto const outA = vault.redeem(STAmount{vault.shareAsset(), depositAmtA}).value();
         BEAST_EXPECT(outA == expectedAmtA);
@@ -2306,6 +2354,10 @@ public:
 
         // B redeems all remaining shares
         Number const expectedB = vault.redeemAssets(Number(depositB));
+        // Ideal: assetsTotal=1900/3, withdrawalNAV=1300/3; assetsOut = (500 * 1300/3) / 500 =
+        // 1300/3. In practice the multiply/divide through Number rounds the 17-digit intermediate
+        // mantissa, producing a result ~3 ulps below 1300/3 — cannot compare to a simple fraction
+        // here.
         STAmount const expectedAmtB(usd_, expectedB);
         auto const outB = vault.redeem(STAmount{vault.shareAsset(), depositB}).value();
         BEAST_EXPECT(outB == expectedAmtB);
@@ -2363,6 +2415,9 @@ public:
         // New depositor: shares = floor(newDeposit * sharesTotal / depositNAV)
         Number const expectedNewShares = vault.depositShares(Number(newDeposit));
         Number const expectedNewAssets = vault.depositAssets(expectedNewShares);
+        // depositNAV = 1100 - 100 = 1000; shares = floor(100 * 1000 / 1000) = 100; assets = 100
+        BEAST_EXPECT(expectedNewShares == 100);
+        BEAST_EXPECT(expectedNewAssets == 100);
 
         auto const [newShares, newAssets] = vault.deposit(STAmount{usd_, newDeposit}).value();
         BEAST_EXPECT(newShares == expectedNewShares);
@@ -2379,6 +2434,9 @@ public:
 
         // Existing holder redeems shares using withdrawalNAV (lower than depositNAV)
         Number const expectedRedeemAssets = vault.redeemAssets(Number(redeemShares));
+        // withdrawalNAV = 1200 - 100 - 150 = 950; sharesTotal = 1100; assetsOut = 100*950/1100 =
+        // 950/11
+        BEAST_EXPECT(expectedRedeemAssets == Number{950} / Number{11});
         STAmount const expectedRedeemAmt(usd_, expectedRedeemAssets);
         auto const redeemOut = vault.redeem(STAmount{vault.shareAsset(), redeemShares}).value();
         BEAST_EXPECT(redeemOut == expectedRedeemAmt);
@@ -2550,6 +2608,8 @@ public:
 
         // Intermediate redeem to confirm discounted NAV is applied
         Number const expectedBefore = vault.redeemAssets(intermediateRedeem);
+        // withdrawalNAV = 1030 - 30 - 330 = 670; assetsOut = 100 * 670 / 1000 = 67
+        BEAST_EXPECT(expectedBefore == 67);
         auto const outBefore =
             vault.redeem(STAmount{vault.shareAsset(), intermediateRedeem}).value();
         BEAST_EXPECT(outBefore == expectedBefore);
@@ -2580,6 +2640,8 @@ public:
         // Redeem all remaining shares
         auto const remainingShares = depositAmt - intermediateRedeem;
         Number const expectedAfter = vault.redeemAssets(remainingShares);
+        // After default: assetsTotal=633, sharesTotal=900; assetsOut = 900 * 633 / 900 = 633
+        BEAST_EXPECT(expectedAfter == 633);
         auto const outAfter =
             vault.redeem(STAmount{vault.shareAsset(), Number(remainingShares)}).value();
         BEAST_EXPECT(outAfter == expectedAfter);
@@ -2655,6 +2717,9 @@ public:
             STAmount const atThreshold{usd_, 1, -6};
             Number const expectedShares = vault.depositShares(Number(atThreshold));
             Number const expectedAssets = vault.depositAssets(expectedShares);
+            // floor(1e-6 * 1e15 / 1e9) = 1;  back-calc assets = 1 * 1e9 / 1e15 = 1e-6
+            BEAST_EXPECT(expectedShares == 1);
+            BEAST_EXPECT(expectedAssets == Number(1, -6));
 
             auto const [sharesAt, assetsAt] = vault.deposit(atThreshold).value();
             BEAST_EXPECT(sharesAt == expectedShares);
@@ -2717,6 +2782,9 @@ public:
         Number const expectedShares = vault.withdrawShares(Number(withdrawRequested));
         // assetsOut = shares * withdrawalNAV / sharesTotal
         Number const expectedAssetsOut = vault.withdrawAssets(expectedShares);
+        // withdrawalNAV = 10 - 2 = 8; shares = floor(3 * 10 / 8) = 3; assetsOut = 3 * 8 / 10 = 2.4
+        BEAST_EXPECT(expectedShares == 3);
+        BEAST_EXPECT(expectedAssetsOut == Number(24, -1));
 
         auto const [actualShares, actualAssets] =
             vault.withdraw(STAmount{usd_, withdrawRequested}).value();
@@ -2784,6 +2852,9 @@ public:
         Number const expectedShares = vault.depositShares(Number(depositRequested));
         // actualAssets = shares * depositNAV / sharesTotal
         Number const expectedAssets = vault.depositAssets(expectedShares);
+        // depositNAV = 10; shares = floor(3 * 7 / 10) = 2;  assets = 2 * 10 / 7 = 20/7
+        BEAST_EXPECT(expectedShares == 2);
+        BEAST_EXPECT(expectedAssets == Number{20} / Number{7});
 
         auto const [actualShares, actualAssets] =
             vault.deposit(STAmount{usd_, depositRequested}).value();
@@ -2852,6 +2923,8 @@ public:
 
         // 1/3 is non-terminating -- STAmount truncates to 16 digits
         Number const expectedOut = vault.redeemAssets(Number(redeemShares));
+        // assetsTotal=1, sharesTotal=3; assetsOut = 1 * 1 / 3 = 1/3
+        BEAST_EXPECT(expectedOut == Number{1} / Number{3});
         // Compare as STAmount: redeem() returns STAmount which truncates
         // to 16 significant digits, so comparing directly to the
         // full-precision Number would fail for non-terminating fractions.
@@ -2954,6 +3027,9 @@ public:
         Number const expectedShares = vault.withdrawShares(withdrawRequested);
         // assetsOut = shares * withdrawalNAV / sharesTotal
         Number const expectedAssetsOut = vault.withdrawAssets(expectedShares);
+        // shares = floor(1.5 * 10 / 10) = 1 (not 2 — confirms floor, not round);  assetsOut = 1
+        BEAST_EXPECT(expectedShares == 1);
+        BEAST_EXPECT(expectedAssetsOut == 1);
 
         auto const [actualShares, actualAssets] =
             vault.withdraw(STAmount{usd_, withdrawRequested}).value();
