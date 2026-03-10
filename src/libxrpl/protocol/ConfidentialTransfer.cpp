@@ -167,13 +167,8 @@ homomorphicAdd(Slice const& a, Slice const& b)
 
     EcPair sum;
     if (secp256k1_elgamal_add(
-            secp256k1Context(),
-            &sum.c1,
-            &sum.c2,
-            &pairA->c1,
-            &pairA->c2,
-            &pairB->c1,
-            &pairB->c2) != 1)
+            secp256k1Context(), &sum.c1, &sum.c2, &pairA->c1, &pairA->c2, &pairB->c1, &pairB->c2) !=
+        1)
         return std::nullopt;
 
     return serializeEcPair(sum);
@@ -300,12 +295,7 @@ verifyElGamalEncryption(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     if (secp256k1_elgamal_verify_encryption(
-            secp256k1Context(),
-            &pair->c1,
-            &pair->c2,
-            &pubKey,
-            amount,
-            blindingFactor.data()) != 1)
+            secp256k1Context(), &pair->c1, &pair->c2, &pubKey, amount, blindingFactor.data()) != 1)
         return tecBAD_PROOF;
 
     return tesSUCCESS;

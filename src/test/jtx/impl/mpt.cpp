@@ -1639,11 +1639,7 @@ MPTTester::decryptAmount(Account const& account, Buffer const& amt) const
 
     uint64_t decryptedAmt;
     if (!secp256k1_elgamal_decrypt(
-            secp256k1Context(),
-            &decryptedAmt,
-            &pair->c1,
-            &pair->c2,
-            privKey->data()))
+            secp256k1Context(), &decryptedAmt, &pair->c1, &pair->c2, privKey->data()))
     {
         return std::nullopt;
     }

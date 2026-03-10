@@ -136,8 +136,7 @@ ConfidentialMPTClawback::doApply()
 
         Slice const auditorPubKey = (*sleIssuance)[sfAuditorElGamalPublicKey];
 
-        auto encZeroForAuditor =
-            encryptCanonicalZeroAmount(auditorPubKey, holder, mptIssuanceID);
+        auto encZeroForAuditor = encryptCanonicalZeroAmount(auditorPubKey, holder, mptIssuanceID);
 
         if (!encZeroForAuditor)
             return tecINTERNAL;  // LCOV_EXCL_LINE

@@ -266,8 +266,8 @@ ConfidentialMPTConvertBack::doApply()
 
     // homomorphically subtract issuer's encrypted balance
     {
-        auto res =
-            homomorphicSubtract((*sleMptoken)[sfIssuerEncryptedBalance], ctx_.tx[sfIssuerEncryptedAmount]);
+        auto res = homomorphicSubtract(
+            (*sleMptoken)[sfIssuerEncryptedBalance], ctx_.tx[sfIssuerEncryptedAmount]);
         if (!res)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
