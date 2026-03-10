@@ -70,7 +70,8 @@ private:
     std::optional<std::string> sslCertPath_;
     std::optional<std::string> sslKeyPath_;
     std::optional<std::string> sslCertChainPath_;  // Intermediate CA certs for server cert chain
-    std::optional<std::string> sslClientCAPath_;   // CA cert for client certificate verification (mTLS)
+    std::optional<std::string>
+        sslClientCAPath_;  // CA cert for client certificate verification (mTLS)
 
     beast::Journal journal_;
 
@@ -95,8 +96,11 @@ private:
     static unsigned constexpr apiVersion = 1;
 
     template <class Request, class Response>
-    using Forward = std::function<
-        grpc::Status(org::xrpl::rpc::v1::XRPLedgerAPIService::Stub*, grpc::ClientContext*, Request, Response*)>;
+    using Forward = std::function<grpc::Status(
+        org::xrpl::rpc::v1::XRPLedgerAPIService::Stub*,
+        grpc::ClientContext*,
+        Request,
+        Response*)>;
 
 public:
     explicit GRPCServerImpl(Application& app);
@@ -133,7 +137,8 @@ private:
 
     // Class encompassing the state and logic needed to serve a request.
     template <class Request, class Response>
-    class CallData : public Processor, public std::enable_shared_from_this<CallData<Request, Response>>
+    class CallData : public Processor,
+                     public std::enable_shared_from_this<CallData<Request, Response>>
     {
     private:
         // The means of communication with the gRPC runtime for an asynchronous

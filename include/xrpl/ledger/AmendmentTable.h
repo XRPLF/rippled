@@ -23,7 +23,8 @@ public:
     struct FeatureInfo
     {
         FeatureInfo() = delete;
-        FeatureInfo(std::string const& n, uint256 const& f, VoteBehavior v) : name(n), feature(f), vote(v)
+        FeatureInfo(std::string const& n, uint256 const& f, VoteBehavior v)
+            : name(n), feature(f), vote(v)
         {
         }
 
@@ -154,11 +155,13 @@ public:
             Serializer s;
             amendTx.add(s);
 
-            JLOG(j.debug()) << "Amendments: Adding pseudo-transaction: " << amendTx.getTransactionID() << ": "
-                            << strHex(s.slice()) << ": " << amendTx;
+            JLOG(j.debug()) << "Amendments: Adding pseudo-transaction: "
+                            << amendTx.getTransactionID() << ": " << strHex(s.slice()) << ": "
+                            << amendTx;
 
             initialPosition->addGiveItem(
-                SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(amendTx.getTransactionID(), s.slice()));
+                SHAMapNodeType::tnTRANSACTION_NM,
+                make_shamapitem(amendTx.getTransactionID(), s.slice()));
         }
     }
 };

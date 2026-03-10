@@ -19,7 +19,10 @@ LedgerReplayTask::TaskParameter::TaskParameter(
 }
 
 bool
-LedgerReplayTask::TaskParameter::update(uint256 const& hash, std::uint32_t seq, std::vector<uint256> const& sList)
+LedgerReplayTask::TaskParameter::update(
+    uint256 const& hash,
+    std::uint32_t seq,
+    std::vector<uint256> const& sList)
 {
     if (finishHash_ != hash || sList.size() + 1 < totalLedgers_ || full_)
         return false;
@@ -28,7 +31,9 @@ LedgerReplayTask::TaskParameter::update(uint256 const& hash, std::uint32_t seq, 
     skipList_ = sList;
     skipList_.emplace_back(finishHash_);
     startHash_ = skipList_[skipList_.size() - totalLedgers_];
-    XRPL_ASSERT(startHash_.isNonZero(), "xrpl::LedgerReplayTask::TaskParameter::update : nonzero start hash");
+    XRPL_ASSERT(
+        startHash_.isNonZero(),
+        "xrpl::LedgerReplayTask::TaskParameter::update : nonzero start hash");
     startSeq_ = finishSeq_ - totalLedgers_ + 1;
     full_ = true;
     return true;
@@ -127,12 +132,13 @@ LedgerReplayTask::trigger(ScopedLockType& sl)
         parent_ = app_.getLedgerMaster().getLedgerByHash(parameter_.startHash_);
         if (!parent_)
         {
-            parent_ =
-                inboundLedgers_.acquire(parameter_.startHash_, parameter_.startSeq_, InboundLedger::Reason::GENERIC);
+            parent_ = inboundLedgers_.acquire(
+                parameter_.startHash_, parameter_.startSeq_, InboundLedger::Reason::GENERIC);
         }
         if (parent_)
         {
-            JLOG(journal_.trace()) << "Got start ledger " << parameter_.startHash_ << " for task " << hash_;
+            JLOG(journal_.trace())
+                << "Got start ledger " << parameter_.startHash_ << " for task " << hash_;
         }
     }
 
@@ -152,9 +158,10 @@ void
 LedgerReplayTask::tryAdvance(ScopedLockType& sl)
 {
     JLOG(journal_.trace()) << "tryAdvance task " << hash_
-                           << (parameter_.full_ ? ", full parameter" : ", waiting to fill parameter")
-                           << ", deltaIndex=" << deltaToBuild_ << ", totalDeltas=" << deltas_.size() << ", parent "
-                           << (parent_ ? parent_->header().hash : uint256());
+                           << (parameter_.full_ ? ", full parameter"
+                                                : ", waiting to fill parameter")
+                           << ", deltaIndex=" << deltaToBuild_ << ", totalDeltas=" << deltas_.size()
+                           << ", parent " << (parent_ ? parent_->header().hash : uint256());
 
     bool shouldTry = parent_ && parameter_.full_ && parameter_.totalLedgers_ - 1 == deltas_.size();
     if (!shouldTry)
@@ -166,11 +173,13 @@ LedgerReplayTask::tryAdvance(ScopedLockType& sl)
         {
             auto& delta = deltas_[deltaToBuild_];
             XRPL_ASSERT(
-                parent_->seq() + 1 == delta->ledgerSeq_, "xrpl::LedgerReplayTask::tryAdvance : consecutive sequence");
+                parent_->seq() + 1 == delta->ledgerSeq_,
+                "xrpl::LedgerReplayTask::tryAdvance : consecutive sequence");
             if (auto l = delta->tryBuild(parent_); l)
             {
-                JLOG(journal_.debug()) << "Task " << hash_ << " got ledger " << l->header().hash
-                                       << " deltaIndex=" << deltaToBuild_ << " totalDeltas=" << deltas_.size();
+                JLOG(journal_.debug())
+                    << "Task " << hash_ << " got ledger " << l->header().hash
+                    << " deltaIndex=" << deltaToBuild_ << " totalDeltas=" << deltas_.size();
                 parent_ = l;
             }
             else
@@ -187,7 +196,10 @@ LedgerReplayTask::tryAdvance(ScopedLockType& sl)
 }
 
 void
-LedgerReplayTask::updateSkipList(uint256 const& hash, std::uint32_t seq, std::vector<uint256> const& sList)
+LedgerReplayTask::updateSkipList(
+    uint256 const& hash,
+    std::uint32_t seq,
+    std::vector<uint256> const& sList)
 {
     {
         ScopedLockType sl(mtx_);

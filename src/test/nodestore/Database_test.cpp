@@ -508,7 +508,10 @@ public:
     //--------------------------------------------------------------------------
 
     void
-    testImport(std::string const& destBackendType, std::string const& srcBackendType, std::int64_t seedValue)
+    testImport(
+        std::string const& destBackendType,
+        std::string const& srcBackendType,
+        std::int64_t seedValue)
     {
         DummyScheduler scheduler;
 
@@ -627,8 +630,8 @@ public:
         {
             // Verify default earliest ledger sequence
             {
-                std::unique_ptr<Database> db =
-                    Manager::instance().make_Database(megabytes(4), scheduler, 2, nodeParams, journal_);
+                std::unique_ptr<Database> db = Manager::instance().make_Database(
+                    megabytes(4), scheduler, 2, nodeParams, journal_);
                 BEAST_EXPECT(db->earliestLedgerSeq() == XRP_LEDGER_EARLIEST_SEQ);
             }
 
@@ -636,8 +639,8 @@ public:
             try
             {
                 nodeParams.set("earliest_seq", "0");
-                std::unique_ptr<Database> db =
-                    Manager::instance().make_Database(megabytes(4), scheduler, 2, nodeParams, journal_);
+                std::unique_ptr<Database> db = Manager::instance().make_Database(
+                    megabytes(4), scheduler, 2, nodeParams, journal_);
             }
             catch (std::runtime_error const& e)
             {
@@ -647,8 +650,8 @@ public:
             {
                 // Set a valid earliest ledger sequence
                 nodeParams.set("earliest_seq", "1");
-                std::unique_ptr<Database> db =
-                    Manager::instance().make_Database(megabytes(4), scheduler, 2, nodeParams, journal_);
+                std::unique_ptr<Database> db = Manager::instance().make_Database(
+                    megabytes(4), scheduler, 2, nodeParams, journal_);
 
                 // Verify database uses the earliest ledger sequence setting
                 BEAST_EXPECT(db->earliestLedgerSeq() == 1);
@@ -659,8 +662,8 @@ public:
             {
                 // Set to default earliest ledger sequence
                 nodeParams.set("earliest_seq", std::to_string(XRP_LEDGER_EARLIEST_SEQ));
-                std::unique_ptr<Database> db2 =
-                    Manager::instance().make_Database(megabytes(4), scheduler, 2, nodeParams, journal_);
+                std::unique_ptr<Database> db2 = Manager::instance().make_Database(
+                    megabytes(4), scheduler, 2, nodeParams, journal_);
             }
             catch (std::runtime_error const& e)
             {

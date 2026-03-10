@@ -128,7 +128,8 @@ public:
     auto
     outVertices() const
     {
-        return boost::adaptors::transform(graph_, [](typename Graph::value_type const& v) { return v.first; });
+        return boost::adaptors::transform(
+            graph_, [](typename Graph::value_type const& v) { return v.first; });
     }
 
     /** Range over target vertices

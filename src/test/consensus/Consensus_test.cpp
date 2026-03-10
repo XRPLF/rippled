@@ -61,61 +61,79 @@ public:
         // Disputes still in doubt
         //
         // Not enough time has elapsed
-        BEAST_EXPECT(ConsensusState::No == checkConsensus(10, 2, 2, 0, 3s, 2s, false, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::No == checkConsensus(10, 2, 2, 0, 3s, 2s, false, p, true, journal_));
 
         // If not enough peers have proposed, ensure
         // more time for proposals
-        BEAST_EXPECT(ConsensusState::No == checkConsensus(10, 2, 2, 0, 3s, 4s, false, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::No == checkConsensus(10, 2, 2, 0, 3s, 4s, false, p, true, journal_));
 
         // Enough time has elapsed and we all agree
-        BEAST_EXPECT(ConsensusState::Yes == checkConsensus(10, 2, 2, 0, 3s, 10s, false, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::Yes == checkConsensus(10, 2, 2, 0, 3s, 10s, false, p, true, journal_));
 
         // Enough time has elapsed and we don't yet agree
-        BEAST_EXPECT(ConsensusState::No == checkConsensus(10, 2, 1, 0, 3s, 10s, false, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::No == checkConsensus(10, 2, 1, 0, 3s, 10s, false, p, true, journal_));
 
         // Our peers have moved on
         // Enough time has elapsed and we all agree
-        BEAST_EXPECT(ConsensusState::MovedOn == checkConsensus(10, 2, 1, 8, 3s, 10s, false, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::MovedOn ==
+            checkConsensus(10, 2, 1, 8, 3s, 10s, false, p, true, journal_));
 
         // If no peers, don't agree until time has passed.
-        BEAST_EXPECT(ConsensusState::No == checkConsensus(0, 0, 0, 0, 3s, 10s, false, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::No == checkConsensus(0, 0, 0, 0, 3s, 10s, false, p, true, journal_));
 
         // Agree if no peers and enough time has passed.
-        BEAST_EXPECT(ConsensusState::Yes == checkConsensus(0, 0, 0, 0, 3s, 16s, false, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::Yes == checkConsensus(0, 0, 0, 0, 3s, 16s, false, p, true, journal_));
 
         // Expire if too much time has passed without agreement
-        BEAST_EXPECT(ConsensusState::Expired == checkConsensus(10, 8, 1, 0, 1s, 19s, false, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::Expired ==
+            checkConsensus(10, 8, 1, 0, 1s, 19s, false, p, true, journal_));
 
         ///////////////
         // Stalled
         //
         // Not enough time has elapsed
-        BEAST_EXPECT(ConsensusState::No == checkConsensus(10, 2, 2, 0, 3s, 2s, true, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::No == checkConsensus(10, 2, 2, 0, 3s, 2s, true, p, true, journal_));
 
         // If not enough peers have proposed, ensure
         // more time for proposals
-        BEAST_EXPECT(ConsensusState::No == checkConsensus(10, 2, 2, 0, 3s, 4s, true, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::No == checkConsensus(10, 2, 2, 0, 3s, 4s, true, p, true, journal_));
 
         // Enough time has elapsed and we all agree
-        BEAST_EXPECT(ConsensusState::Yes == checkConsensus(10, 2, 2, 0, 3s, 10s, true, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::Yes == checkConsensus(10, 2, 2, 0, 3s, 10s, true, p, true, journal_));
 
         // Enough time has elapsed and we don't yet agree, but there's nothing
         // left to dispute
-        BEAST_EXPECT(ConsensusState::Yes == checkConsensus(10, 2, 1, 0, 3s, 10s, true, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::Yes == checkConsensus(10, 2, 1, 0, 3s, 10s, true, p, true, journal_));
 
         // Our peers have moved on
         // Enough time has elapsed and we all agree, nothing left to dispute
-        BEAST_EXPECT(ConsensusState::Yes == checkConsensus(10, 2, 1, 8, 3s, 10s, true, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::Yes == checkConsensus(10, 2, 1, 8, 3s, 10s, true, p, true, journal_));
 
         // If no peers, don't agree until time has passed.
-        BEAST_EXPECT(ConsensusState::No == checkConsensus(0, 0, 0, 0, 3s, 10s, true, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::No == checkConsensus(0, 0, 0, 0, 3s, 10s, true, p, true, journal_));
 
         // Agree if no peers and enough time has passed.
-        BEAST_EXPECT(ConsensusState::Yes == checkConsensus(0, 0, 0, 0, 3s, 16s, true, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::Yes == checkConsensus(0, 0, 0, 0, 3s, 16s, true, p, true, journal_));
 
         // We are done if there's nothing left to dispute, no matter how much
         // time has passed
-        BEAST_EXPECT(ConsensusState::Yes == checkConsensus(10, 8, 1, 0, 1s, 19s, true, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::Yes == checkConsensus(10, 8, 1, 0, 1s, 19s, true, p, true, journal_));
     }
 
     void
@@ -1005,8 +1023,8 @@ public:
         // Simulate clients submitting 1 tx every 5 seconds to a random
         // validator
         Rate const rate{1, 5s};
-        auto peerSelector =
-            makeSelector(network.begin(), network.end(), std::vector<double>(network.size(), 1.), sim.rng);
+        auto peerSelector = makeSelector(
+            network.begin(), network.end(), std::vector<double>(network.size(), 1.), sim.rng);
         auto txSubmitter = makeSubmitter(
             ConstantDistribution{rate.inv()},
             sim.scheduler.now(),
@@ -1238,19 +1256,36 @@ public:
                 BEAST_EXPECT(clog->str() == "");
             }
 
-            auto expectStalled =
-                [this, &clog](int txid, bool ourVote, int ourTime, int peerTime, int support, std::uint32_t line) {
-                    using namespace std::string_literals;
+            auto expectStalled = [this, &clog](
+                                     int txid,
+                                     bool ourVote,
+                                     int ourTime,
+                                     int peerTime,
+                                     int support,
+                                     std::uint32_t line) {
+                using namespace std::string_literals;
 
-                    auto const s = clog->str();
-                    expect(s.find("stalled"), s, __FILE__, line);
-                    expect(s.starts_with("Transaction "s + std::to_string(txid)), s, __FILE__, line);
-                    expect(s.find("voting "s + (ourVote ? "YES" : "NO")) != s.npos, s, __FILE__, line);
-                    expect(s.find("for "s + std::to_string(ourTime) + " rounds."s) != s.npos, s, __FILE__, line);
-                    expect(s.find("votes in "s + std::to_string(peerTime) + " rounds.") != s.npos, s, __FILE__, line);
-                    expect(s.ends_with("has "s + std::to_string(support) + "% support. "s), s, __FILE__, line);
-                    clog = std::make_unique<std::stringstream>();
-                };
+                auto const s = clog->str();
+                expect(s.find("stalled"), s, __FILE__, line);
+                expect(s.starts_with("Transaction "s + std::to_string(txid)), s, __FILE__, line);
+                expect(s.find("voting "s + (ourVote ? "YES" : "NO")) != s.npos, s, __FILE__, line);
+                expect(
+                    s.find("for "s + std::to_string(ourTime) + " rounds."s) != s.npos,
+                    s,
+                    __FILE__,
+                    line);
+                expect(
+                    s.find("votes in "s + std::to_string(peerTime) + " rounds.") != s.npos,
+                    s,
+                    __FILE__,
+                    line);
+                expect(
+                    s.ends_with("has "s + std::to_string(support) + "% support. "s),
+                    s,
+                    __FILE__,
+                    line);
+                clog = std::make_unique<std::stringstream>();
+            };
 
             for (int i = 0; i < 1; ++i)
             {

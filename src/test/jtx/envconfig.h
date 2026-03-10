@@ -73,6 +73,8 @@ std::unique_ptr<Config> admin_localnet(std::unique_ptr<Config>);
 
 std::unique_ptr<Config> secure_gateway_localnet(std::unique_ptr<Config>);
 
+std::unique_ptr<Config> single_thread_io(std::unique_ptr<Config>);
+
 /// @brief adjust configuration with params needed to be a validator
 ///
 /// this is intended for use with envconfig, as in
@@ -114,7 +116,10 @@ addGrpcConfigWithSecureGateway(std::unique_ptr<Config>, std::string const& secur
 /// @param certPath path to SSL certificate file
 /// @param keyPath path to SSL private key file
 std::unique_ptr<Config>
-addGrpcConfigWithTLS(std::unique_ptr<Config>, std::string const& certPath, std::string const& keyPath);
+addGrpcConfigWithTLS(
+    std::unique_ptr<Config>,
+    std::string const& certPath,
+    std::string const& keyPath);
 
 /// @brief add a grpc address, port and TLS certificate/key/client CA paths to config
 ///
@@ -149,7 +154,9 @@ addGrpcConfigWithTLSAndCertChain(
     std::string const& certChainPath);
 
 std::unique_ptr<Config>
-makeConfig(std::map<std::string, std::string> extraTxQ = {}, std::map<std::string, std::string> extraVoting = {});
+makeConfig(
+    std::map<std::string, std::string> extraTxQ = {},
+    std::map<std::string, std::string> extraVoting = {});
 
 }  // namespace jtx
 }  // namespace test

@@ -12,7 +12,10 @@
 
 namespace xrpl {
 
-Transaction::Transaction(std::shared_ptr<STTx const> const& stx, std::string& reason, Application& app) noexcept
+Transaction::Transaction(
+    std::shared_ptr<STTx const> const& stx,
+    std::string& reason,
+    Application& app) noexcept
     : mTransaction(stx), mApp(app), j_(app.journal("Ledger"))
 {
     try
@@ -99,7 +102,11 @@ Transaction::load(uint256 const& id, Application& app, error_code_i& ec)
 }
 
 std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
-Transaction::load(uint256 const& id, Application& app, ClosedInterval<uint32_t> const& range, error_code_i& ec)
+Transaction::load(
+    uint256 const& id,
+    Application& app,
+    ClosedInterval<uint32_t> const& range,
+    error_code_i& ec)
 {
     using op = std::optional<ClosedInterval<uint32_t>>;
 

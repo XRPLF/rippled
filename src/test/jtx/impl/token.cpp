@@ -3,7 +3,7 @@
 
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/tx/transactors/NFT/NFTokenMint.h>
+#include <xrpl/tx/transactors/nft/NFTokenMint.h>
 
 namespace xrpl {
 namespace test {
@@ -69,7 +69,8 @@ getID(
     // We must add issuer's FirstNFTokenSequence to offset the starting NFT
     // sequence number.
     nftSeq += env.le(issuer)->at(~sfFirstNFTokenSequence).value_or(env.seq(issuer));
-    return xrpl::NFTokenMint::createNFTokenID(flags, xferFee, issuer, nft::toTaxon(nfTokenTaxon), nftSeq);
+    return xrpl::NFTokenMint::createNFTokenID(
+        flags, xferFee, issuer, nft::toTaxon(nfTokenTaxon), nftSeq);
 }
 
 Json::Value
@@ -166,7 +167,10 @@ acceptSellOffer(jtx::Account const& account, uint256 const& offerIndex)
 }
 
 Json::Value
-brokerOffers(jtx::Account const& account, uint256 const& buyOfferIndex, uint256 const& sellOfferIndex)
+brokerOffers(
+    jtx::Account const& account,
+    uint256 const& buyOfferIndex,
+    uint256 const& sellOfferIndex)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();

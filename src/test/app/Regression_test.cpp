@@ -278,10 +278,13 @@ struct Regression_test : public beast::unit_test::suite
                 auto const afterCounts = mapCounts(CountedObjects::getInstance().getCounts(0));
 
                 using namespace std::string_literals;
-                BEAST_EXPECT(beforeCounts.at("CachedView::hit"s) == afterCounts.at("CachedView::hit"s));
                 BEAST_EXPECT(
-                    beforeCounts.at("CachedView::hitExpired"s) + 1 == afterCounts.at("CachedView::hitExpired"s));
-                BEAST_EXPECT(beforeCounts.at("CachedView::miss"s) == afterCounts.at("CachedView::miss"s));
+                    beforeCounts.at("CachedView::hit"s) == afterCounts.at("CachedView::hit"s));
+                BEAST_EXPECT(
+                    beforeCounts.at("CachedView::hitExpired"s) + 1 ==
+                    afterCounts.at("CachedView::hitExpired"s));
+                BEAST_EXPECT(
+                    beforeCounts.at("CachedView::miss"s) == afterCounts.at("CachedView::miss"s));
             }
         }
     }

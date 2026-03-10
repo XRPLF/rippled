@@ -63,7 +63,9 @@ public:
 
         unexpected(object1.getSerializer() != object2.getSerializer(), "STObject error 1");
 
-        unexpected(object1.isFieldPresent(sfTestH256) || !object1.isFieldPresent(sfTestVL), "STObject error");
+        unexpected(
+            object1.isFieldPresent(sfTestH256) || !object1.isFieldPresent(sfTestVL),
+            "STObject error");
 
         object1.makeFieldPresent(sfTestH256);
 
@@ -325,7 +327,8 @@ public:
         {
             STObject st(sfGeneric);
             auto const v = ~st[~sf1Outer];
-            static_assert(std::is_same<std::decay_t<decltype(v)>, std::optional<std::uint32_t>>::value, "");
+            static_assert(
+                std::is_same<std::decay_t<decltype(v)>, std::optional<std::uint32_t>>::value, "");
         }
 
         // UDT scalar fields
@@ -399,7 +402,8 @@ public:
             BEAST_EXPECT(cst[~sf]->size() == 2);
             BEAST_EXPECT(cst[sf][0] == 1);
             BEAST_EXPECT(cst[sf][1] == 2);
-            static_assert(std::is_same<decltype(cst[sfIndexes]), std::vector<uint256> const&>::value, "");
+            static_assert(
+                std::is_same<decltype(cst[sfIndexes]), std::vector<uint256> const&>::value, "");
         }
 
         // Default by reference field
