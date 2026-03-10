@@ -713,15 +713,17 @@ public:
                 vault.redeem(STAmount{vault.shareAsset(), redeemShares}).value();
             BEAST_EXPECT(redeemAssets == expectedAmt);
 
-            STAmount const expectedTotal{
-                usd_, depositAmt + interest + depositAmt2 - expectedAssets};
-            STAmount const expectedAvail{
-                usd_, depositAmt - principal + depositAmt2 - expectedAssets};
-            BEAST_EXPECT(vault.assetsTotal() == expectedTotal);
-            BEAST_EXPECT(vault.assetsAvailable() == expectedAvail);
-            BEAST_EXPECT(Number(vault.sharesTotal()) == depositAmt + depositAmt2 - redeemShares);
-            BEAST_EXPECT(vault.interestUnrealized() == interest);
-            BEAST_EXPECT(vault.lossUnrealized() == paperLoss);
+            expectState(
+                vault,
+                {
+                    .assetsTotal =
+                        STAmount(usd_, depositAmt + interest + depositAmt2 - expectedAssets),
+                    .assetsAvailable =
+                        STAmount(usd_, depositAmt - principal + depositAmt2 - expectedAssets),
+                    .sharesTotal = depositAmt + depositAmt2 - redeemShares,
+                    .interestOutstanding = interest,
+                    .lossUnrealized = paperLoss,
+                });
         }
     }
 
