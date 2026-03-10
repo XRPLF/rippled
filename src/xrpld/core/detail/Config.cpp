@@ -386,7 +386,6 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
     if (RUN_STANDALONE)
         LEDGER_HISTORY = 0;
 
-    std::string ledgerTxDbType;
     Section ledgerTxTablesSection = section("ledger_tx_tables");
     get_if_exists(ledgerTxTablesSection, "use_tx_tables", USE_TX_TABLES);
 
