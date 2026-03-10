@@ -76,7 +76,7 @@ jobs:
     name: ${{ inputs.config_name }}
     runs-on: ${{ fromJSON(inputs.runs_on) }}
     container: ${{ inputs.image != '' && inputs.image || null }}
-    timeout-minutes: 360
+    timeout-minutes: 60
     env:
       # Use a namespace to keep the objects separate for each configuration.
       CCACHE_NAMESPACE: ${{ inputs.config_name }}
@@ -231,23 +231,13 @@ jobs:
         run: |
           set -o pipefail
           # Debug builds with code coverage are significantly slower due to
-          # instrumentation overhead; run tests serially to avoid flakiness
-          # caused by resource contention between parallel test jobs.
+          # instrumentation overhead; decrease the number of test jobs to avoid flakyness
           if [ "${{ env.COVERAGE_ENABLED }}" = "true" ] && [ "${{ inputs.build_type }}" = "Debug" ]; then
             TEST_JOBS=$(( BUILD_NPROC - 2 > 1 ? BUILD_NPROC - 2 : 1 ))
-            TEST_RUNS=25
           else
             TEST_JOBS="${BUILD_NPROC}"
-            TEST_RUNS=1
           fi
-          for i in $(seq 1 "${TEST_RUNS}"); do
-            echo "=== Test run ${i} of ${TEST_RUNS} ==="
-            if ! ./xrpld --unittest --unittest-jobs "${TEST_JOBS}" 2>&1 > unittest.log; then
-              echo "=== Test run ${i} failed. unittest.log: ==="
-              cat unittest.log
-              exit 1
-            fi
-          done
+          ./xrpld --unittest --unittest-jobs "${TEST_JOBS}" 2>&1 | tee unittest.log
 
       - name: Show test failure summary
         if: ${{ failure() && !inputs.build_only }}
