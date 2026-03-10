@@ -137,8 +137,9 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     std::optional<ConfidentialRecipient> auditor;
     if (hasAuditor)
     {
-        auditor.emplace(ConfidentialRecipient{
-            (*sleIssuance)[sfAuditorElGamalPublicKey], ctx.tx[sfAuditorEncryptedAmount]});
+        auditor.emplace(
+            ConfidentialRecipient{
+                (*sleIssuance)[sfAuditorElGamalPublicKey], ctx.tx[sfAuditorEncryptedAmount]});
     }
 
     return verifyRevealedAmount(
