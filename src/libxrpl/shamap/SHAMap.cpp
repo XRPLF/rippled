@@ -673,7 +673,7 @@ SHAMap::delItem(uint256 const& id)
         stack.pop();
 
         node = unshareNode(std::move(node), nodeID);
-        node->setChild(selectBranch(nodeID, id), std::move(prevNode));
+        node->setChild(selectBranch(nodeID, id), prevNode ? std::move(prevNode) : nullptr);
 
         if (!nodeID.isRoot())
         {
@@ -683,7 +683,7 @@ SHAMap::delItem(uint256 const& id)
             if (bc == 0)
             {
                 XRPL_ASSERT(
-                    not prevNode,
+                    not prevNode,  // NOLINT(bugprone-use-after-move)
                     "xrpl::SHAMap::delItem : There should be no children below this branch");
             }
             else if (bc == 1)
