@@ -682,9 +682,9 @@ SHAMap::delItem(uint256 const& id)
             int const bc = node->getBranchCount();
             if (bc == 0)
             {
-                // no children below this branch
-                // TODO: can this be removed? std::move above already sets nullptr internally
-                prevNode.reset();  // NOLINT(bugprone-use-after-move)
+                XRPL_ASSERT(
+                    not prevNode,
+                    "xrpl::SHAMap::delItem : There should be no children below this branch");
             }
             else if (bc == 1)
             {
