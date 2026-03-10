@@ -284,7 +284,7 @@ verifySchnorrProof(Slice const& pubKeySlice, Slice const& proofSlice, uint256 co
 
 TER
 verifyElGamalEncryption(
-    std::uint64_t const amount,
+    uint64_t const amount,
     Slice const& blindingFactor,
     Slice const& pubKeySlice,
     Slice const& ciphertext)
@@ -311,7 +311,7 @@ verifyElGamalEncryption(
 
 TER
 verifyRevealedAmount(
-    std::uint64_t const amount,
+    uint64_t const amount,
     Slice const& blindingFactor,
     ConfidentialRecipient const& holder,
     ConfidentialRecipient const& issuer,
@@ -676,7 +676,7 @@ computeSendRemainder(Slice const& balanceCommitment, Slice const& amountCommitme
 }
 
 TER
-computeConvertBackRemainder(Slice const& commitment, std::uint64_t amount, Buffer& out)
+computeConvertBackRemainder(Slice const& commitment, uint64_t amount, Buffer& out)
 {
     if (commitment.size() != ecPedersenCommitmentLength || amount == 0)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -691,7 +691,7 @@ computeConvertBackRemainder(Slice const& commitment, std::uint64_t amount, Buffe
 
     // Convert amount to 32-byte big-endian scalar
     unsigned char mScalar[32] = {0};
-    std::uint64_t amountBigEndian = boost::endian::native_to_big(amount);
+    uint64_t amountBigEndian = boost::endian::native_to_big(amount);
     std::memcpy(&mScalar[24], &amountBigEndian, sizeof(amountBigEndian));
 
     // Compute mG = amount * G

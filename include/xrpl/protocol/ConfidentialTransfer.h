@@ -275,7 +275,7 @@ verifySchnorrProof(Slice const& pubKeySlice, Slice const& proofSlice, uint256 co
  */
 TER
 verifyElGamalEncryption(
-    std::uint64_t const amount,
+    uint64_t const amount,
     Slice const& blindingFactor,
     Slice const& pubKeySlice,
     Slice const& ciphertext);
@@ -309,7 +309,7 @@ checkEncryptedAmountFormat(STObject const& object);
  */
 TER
 verifyRevealedAmount(
-    std::uint64_t const amount,
+    uint64_t const amount,
     Slice const& blindingFactor,
     ConfidentialRecipient const& holder,
     ConfidentialRecipient const& issuer,
@@ -479,5 +479,5 @@ computeSendRemainder(Slice const& balanceCommitment, Slice const& amountCommitme
  * @return tesSUCCESS on success, tecINTERNAL on failure or if amount is 0.
  */
 TER
-computeConvertBackRemainder(Slice const& commitment, std::uint64_t amount, Buffer& out);
+computeConvertBackRemainder(Slice const& commitment, uint64_t amount, Buffer& out);
 }  // namespace xrpl
