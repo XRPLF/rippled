@@ -81,8 +81,9 @@ verifyProofs(
     bool const hasAuditor = issuance->isFieldPresent(sfAuditorElGamalPublicKey);
     if (hasAuditor)
     {
-        auditor.emplace(ConfidentialRecipient{
-            (*issuance)[sfAuditorElGamalPublicKey], tx[sfAuditorEncryptedAmount]});
+        auditor.emplace(
+            ConfidentialRecipient{
+                (*issuance)[sfAuditorElGamalPublicKey], tx[sfAuditorEncryptedAmount]});
     }
 
     // Run all verifications before returning any error to prevent timing attacks
