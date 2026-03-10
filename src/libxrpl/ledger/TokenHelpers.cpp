@@ -988,7 +988,6 @@ accountSendMultiIOU(
     if (auto stream = j.trace())
     {
         std::string sender_bal("-");
-        std::string receiver_bal("-");
 
         if (sender)
             sender_bal = sender->getFieldAmount(sfBalance).getFullText();
