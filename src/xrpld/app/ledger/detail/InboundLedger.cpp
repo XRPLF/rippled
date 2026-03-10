@@ -1056,8 +1056,6 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& p
 
     if ((packet.type() == protocol::liTX_NODE) || (packet.type() == protocol::liAS_NODE))
     {
-        std::string type = packet.type() == protocol::liTX_NODE ? "liTX_NODE: " : "liAS_NODE: ";
-
         if (packet.nodes().empty())
         {
             JLOG(journal_.info()) << peer->id() << ": response with no nodes";

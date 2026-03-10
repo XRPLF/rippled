@@ -502,11 +502,12 @@ public:
             Json::Value params;
             params[jss::account] = account.human();
             auto const info = env.rpc("json", "account_info", to_string(params));
+            auto const name = std::string(fName);
 
             std::optional<bool> res;
             if (info[jss::result][jss::status] == "success" &&
-                info[jss::result][jss::account_flags].isMember(fName.data()))
-                res.emplace(info[jss::result][jss::account_flags][fName.data()].asBool());
+                info[jss::result][jss::account_flags].isMember(name))
+                res.emplace(info[jss::result][jss::account_flags][name].asBool());
 
             return res;
         };

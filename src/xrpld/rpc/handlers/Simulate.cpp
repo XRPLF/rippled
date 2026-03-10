@@ -126,7 +126,7 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
     }
 
     if (auto error = autofillSignature(tx_json))
-        return *error;
+        return error;
 
     if (!tx_json.isMember(jss::Sequence))
     {
