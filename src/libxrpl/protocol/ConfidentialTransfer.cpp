@@ -129,7 +129,7 @@ serializeEcPair(EcPair const& pair)
     if (!res1 || !res2)
         return std::nullopt;
 
-    // No std::move needed - compiler applies implicit move for local variables
+    // Implicit move; explicit std::move triggers warnings.
     return buffer;
 }
 
