@@ -78,8 +78,6 @@ RCLConsensus::Adaptor::Adaptor(
 
     if (validatorKeys_.nodeID != beast::zero && validatorKeys_.keys)
     {
-        std::stringstream ss;
-
         JLOG(j_.info()) << "Validator identity: "
                         << toBase58(TokenType::NodePublic, validatorKeys_.keys->masterPublicKey);
 
