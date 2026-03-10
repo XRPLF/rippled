@@ -14,7 +14,7 @@ OpenAI coined **"Harness Engineering"** to describe the discipline of building i
 The rippled OpenTelemetry initiative — now spanning 12 chained PRs from Phase 1a through Phase 11 planning — is **uniquely positioned** to become the observability backbone of a harness engineering strategy. The OTel work already delivers 3 of the 5 harness engineering principles. This report maps the gap and proposes a concrete adoption path.
 
 ```mermaid
-flowchart LR
+flowchart TB
     subgraph today["What We Have Today"]
         direction TB
         OTel["OTel Instrumentation<br/>16 spans, 300+ metrics<br/>8 Grafana dashboards"]
@@ -25,11 +25,11 @@ flowchart LR
 
     subgraph gap["The Gap"]
         direction TB
-        ARCH["ARCHITECTURE.md<br/>(codebase map)"]
+        ARCH["ARCHITECTURE.md<br/>(codebase map, sample ready)"]
         LINT["Semantic Linting<br/>(agent-friendly errors)"]
         BOUND["Three-Tier Boundaries<br/>(Always/Ask/Never)"]
         VERIFY["Deterministic Verification<br/>(OTel-powered)"]
-        WORKFLOW["WORKFLOW.md<br/>(agent orchestration)"]
+        WORKFLOW["WORKFLOW.md<br/>(agent orchestration, sample ready)"]
     end
 
     subgraph future["Agent-First rippled"]
@@ -81,13 +81,13 @@ What actually worked was building **infrastructure** that makes agents effective
 
 ### 1.2 The Five Principles
 
-| #   | Principle                      | Definition                                                           | rippled Status                                           |
-| --- | ------------------------------ | -------------------------------------------------------------------- | -------------------------------------------------------- |
-| 1   | **Deterministic Verification** | Verify agent output with automated checks — don't trust, verify      | Partial (CI exists, OTel validation planned in Phase 10) |
-| 2   | **Semantic Linting**           | Linter messages teach agents how to fix violations in one shot       | Missing                                                  |
-| 3   | **Three-Tier Boundaries**      | Every harness defines Always / Ask / Never action categories         | Partial (CLAUDE.md has some rules)                       |
-| 4   | **Fail-Fast Feedback**         | Fast checks first (lint, typecheck), slow checks later (integration) | Partial (CI runs, but not agent-optimized)               |
-| 5   | **Architecture as Map**        | ARCHITECTURE.md tells agents _where_ things are, not _why_           | Missing (plan docs explain _why_, not _where_)           |
+| #   | Principle                      | Definition                                                                    | rippled Status                                           |
+| --- | ------------------------------ | ----------------------------------------------------------------------------- | -------------------------------------------------------- |
+| 1   | **Deterministic Verification** | Verify agent output with automated checks — don't trust, verify               | Partial (CI exists, OTel validation planned in Phase 10) |
+| 2   | **Semantic Linting**           | Linter messages teach agents how to fix violations in one shot                | Missing                                                  |
+| 3   | **Three-Tier Boundaries**      | Every harness defines Always / Ask / Never action categories                  | Partial (CLAUDE.md has some rules)                       |
+| 4   | **Fail-Fast Feedback**         | Fast checks first (lint, typecheck), slow checks later (integration)          | Partial (CI runs, but not agent-optimized)               |
+| 5   | **Architecture as Map**        | [ARCHITECTURE.md](ARCHITECTURE.md) tells agents _where_ things are, not _why_ | Missing (plan docs explain _why_, not _where_)           |
 
 ### 1.3 Symphony: The Orchestration Layer
 
@@ -282,11 +282,11 @@ quadrantChart
     Full Symphony Deployment: [0.88, 0.58]
 ```
 
-### 3.2 Principle #5: Architecture as Map (ARCHITECTURE.md)
+### 3.2 Principle #5: Architecture as Map ([ARCHITECTURE.md](ARCHITECTURE.md))
 
 **Current state**: The OTel plan docs (01-architecture-analysis.md) describe rippled's architecture in detail, but they're _plan docs_ — they explain _why_ to instrument, not _where things are_ for an agent navigating the codebase.
 
-**What's needed**: A top-level `ARCHITECTURE.md` that serves as the agent's map.
+**What's needed**: A top-level [`ARCHITECTURE.md`](ARCHITECTURE.md) that serves as the agent's map.
 
 **Sample created**: See [ARCHITECTURE.md](ARCHITECTURE.md) — a working example covering all sections below.
 
@@ -407,17 +407,17 @@ flowchart LR
 
 Key: **fail at Tier 1 → agent gets feedback in seconds**, not after a 30-minute build.
 
-### 3.6 WORKFLOW.md: Agent Orchestration Policy
+### 3.6 [WORKFLOW.md](WORKFLOW.md): Agent Orchestration Policy
 
-If rippled adopted Symphony (or a similar orchestrator), the `WORKFLOW.md` would define the agent's runtime behavior.
+If rippled adopted Symphony (or a similar orchestrator), the [`WORKFLOW.md`](WORKFLOW.md) would define the agent's runtime behavior.
 
 **Sample created**: See [WORKFLOW.md](WORKFLOW.md) — a complete, Symphony-spec-compatible workflow definition including:
 
 - **Front matter**: Tracker config, polling interval, workspace hooks, agent concurrency, Codex settings
 - **Hooks**: `after_create` (clone + build setup), `before_run` (tiered lint -> build -> test), `after_run` (proof-of-work collection)
-- **Prompt body**: Navigation table (ARCHITECTURE.md, CLAUDE.md, CodingStyle.md), three-tier action boundaries (Always/Ask/Never), fail-fast verification steps, telemetry-aware file patterns, Liquid template variables for issue context, proof-of-work checklist
+- **Prompt body**: Navigation table ([ARCHITECTURE.md](ARCHITECTURE.md), CLAUDE.md, CodingStyle.md), three-tier action boundaries (Always/Ask/Never), fail-fast verification steps, telemetry-aware file patterns, Liquid template variables for issue context, proof-of-work checklist
 
-The WORKFLOW.md is version-controlled in the repo so agent policy evolves with the code.
+The [WORKFLOW.md](WORKFLOW.md) is version-controlled in the repo so agent policy evolves with the code.
 
 ---
 
@@ -472,27 +472,27 @@ flowchart TB
 
 ### 4.2 Effort Estimates
 
-| Phase | Task                              | Effort     | Dependencies           |
-| ----- | --------------------------------- | ---------- | ---------------------- |
-| **A** | ARCHITECTURE.md                   | 2d         | None                   |
-| **A** | CLAUDE.md boundaries update       | 0.5d       | None                   |
-| **A** | Pre-commit hooks                  | 1d         | None                   |
-| **A** | OTel baseline verification script | 2d         | OTel Phases 1-6 merged |
-| **B** | Semantic linting config           | 2d         | Phase A complete       |
-| **B** | Tiered CI pipeline                | 3d         | Phase A complete       |
-| **B** | Metric regression CI check        | 2d         | OTel Phase 7 merged    |
-| **B** | Phase 10 synthetic workload       | 10d        | OTel Phase 9 merged    |
-| **C** | WORKFLOW.md                       | 1d         | Phases A+B complete    |
-| **C** | Orchestrator setup                | 3d         | WORKFLOW.md defined    |
-| **C** | Jira integration                  | 2d         | Orchestrator running   |
-| **C** | First autonomous runs             | 2d         | Everything above       |
-|       | **Total**                         | **~30.5d** |                        |
+| Phase | Task                               | Effort     | Dependencies                       |
+| ----- | ---------------------------------- | ---------- | ---------------------------------- |
+| **A** | [ARCHITECTURE.md](ARCHITECTURE.md) | 2d         | None                               |
+| **A** | CLAUDE.md boundaries update        | 0.5d       | None                               |
+| **A** | Pre-commit hooks                   | 1d         | None                               |
+| **A** | OTel baseline verification script  | 2d         | OTel Phases 1-6 merged             |
+| **B** | Semantic linting config            | 2d         | Phase A complete                   |
+| **B** | Tiered CI pipeline                 | 3d         | Phase A complete                   |
+| **B** | Metric regression CI check         | 2d         | OTel Phase 7 merged                |
+| **B** | Phase 10 synthetic workload        | 10d        | OTel Phase 9 merged                |
+| **C** | [WORKFLOW.md](WORKFLOW.md)         | 1d         | Phases A+B complete                |
+| **C** | Orchestrator setup                 | 3d         | [WORKFLOW.md](WORKFLOW.md) defined |
+| **C** | Jira integration                   | 2d         | Orchestrator running               |
+| **C** | First autonomous runs              | 2d         | Everything above                   |
+|       | **Total**                          | **~30.5d** |                                    |
 
 ### 4.3 What to Do Immediately
 
 These four items require no OTel dependencies and can start today:
 
-1. **Create `ARCHITECTURE.md`** — 300-line codebase map covering the 5 layers (RPC, NetworkOPs, Consensus, Ledger, NodeStore), module directory map, entry points, and telemetry coverage map linking to `09-data-collection-reference.md`
+1. **Create [`ARCHITECTURE.md`](ARCHITECTURE.md)** — 300-line codebase map covering the 5 layers (RPC, NetworkOPs, Consensus, Ledger, NodeStore), module directory map, entry points, and telemetry coverage map linking to `09-data-collection-reference.md`
 
 2. **Add Three-Tier Boundaries to `CLAUDE.md`** — Explicit Always/Ask/Never categories (see Section 3.3 above)
 
@@ -506,14 +506,14 @@ These four items require no OTel dependencies and can start today:
 
 ### 5.1 Why rippled Is Especially Well-Suited
 
-| Advantage                      | Explanation                                                                               |
-| ------------------------------ | ----------------------------------------------------------------------------------------- |
-| **Deterministic consensus**    | Consensus rounds produce predictable telemetry — ideal for regression detection           |
-| **Isolated test networks**     | 5-node validator harness gives agents a safe, isolated sandbox                            |
-| **Rich telemetry baseline**    | 16 spans + 300+ metrics + 8 dashboards = comprehensive "expected state"                   |
-| **Protocol Buffer boundaries** | Wire format changes are explicit and lintable — agents can't silently break compatibility |
-| **Existing CLAUDE.md**         | Already have an agent instruction file — just needs boundary tiers                        |
-| **Modular plan docs**          | 10 architecture docs serve as deep reference material for ARCHITECTURE.md links           |
+| Advantage                      | Explanation                                                                                        |
+| ------------------------------ | -------------------------------------------------------------------------------------------------- |
+| **Deterministic consensus**    | Consensus rounds produce predictable telemetry — ideal for regression detection                    |
+| **Isolated test networks**     | 5-node validator harness gives agents a safe, isolated sandbox                                     |
+| **Rich telemetry baseline**    | 16 spans + 300+ metrics + 8 dashboards = comprehensive "expected state"                            |
+| **Protocol Buffer boundaries** | Wire format changes are explicit and lintable — agents can't silently break compatibility          |
+| **Existing CLAUDE.md**         | Already have an agent instruction file — just needs boundary tiers                                 |
+| **Modular plan docs**          | 10 architecture docs serve as deep reference material for [ARCHITECTURE.md](ARCHITECTURE.md) links |
 
 ### 5.2 Risks and Mitigations
 
@@ -1167,16 +1167,16 @@ The broader ecosystem emerging around harness engineering:
 
 ## Appendix C: Glossary
 
-| Term                      | Definition                                                                                       |
-| ------------------------- | ------------------------------------------------------------------------------------------------ |
-| **Harness Engineering**   | Building infrastructure around AI coding agents to enable reliable autonomous development        |
-| **Proof of Work**         | Evidence that an agent's changes are correct: CI pass, metric stability, trace validity          |
-| **Three-Tier Boundaries** | Categorizing agent actions into Always (autonomous), Ask (confirm), Never (forbidden)            |
-| **WORKFLOW.md**           | Version-controlled file defining agent orchestration policy, prompt template, and runtime config |
-| **Implementation Run**    | A complete autonomous cycle: read issue -> implement -> verify -> PR                             |
-| **Semantic Linting**      | Linter errors that include enough context for an agent to fix the violation in one attempt       |
-| **Architecture Map**      | A concise document (`ARCHITECTURE.md`) telling agents where things are in the codebase           |
-| **MCP**                   | Model Context Protocol — standard for connecting AI agents to external tools and data sources    |
-| **MCP Server**            | A service exposing tools/resources via MCP that agents can invoke (e.g., GitHub MCP, Jira MCP)   |
-| **Bug Bounty**            | Program rewarding external researchers for responsibly disclosing security vulnerabilities       |
-| **Hand**                  | OpenFang's autonomous capability package — bundles tools, prompts, guardrails, and schedules     |
+| Term                           | Definition                                                                                       |
+| ------------------------------ | ------------------------------------------------------------------------------------------------ |
+| **Harness Engineering**        | Building infrastructure around AI coding agents to enable reliable autonomous development        |
+| **Proof of Work**              | Evidence that an agent's changes are correct: CI pass, metric stability, trace validity          |
+| **Three-Tier Boundaries**      | Categorizing agent actions into Always (autonomous), Ask (confirm), Never (forbidden)            |
+| **[WORKFLOW.md](WORKFLOW.md)** | Version-controlled file defining agent orchestration policy, prompt template, and runtime config |
+| **Implementation Run**         | A complete autonomous cycle: read issue -> implement -> verify -> PR                             |
+| **Semantic Linting**           | Linter errors that include enough context for an agent to fix the violation in one attempt       |
+| **Architecture Map**           | A concise document (`ARCHITECTURE.md`) telling agents where things are in the codebase           |
+| **MCP**                        | Model Context Protocol — standard for connecting AI agents to external tools and data sources    |
+| **MCP Server**                 | A service exposing tools/resources via MCP that agents can invoke (e.g., GitHub MCP, Jira MCP)   |
+| **Bug Bounty**                 | Program rewarding external researchers for responsibly disclosing security vulnerabilities       |
+| **Hand**                       | OpenFang's autonomous capability package — bundles tools, prompts, guardrails, and schedules     |
