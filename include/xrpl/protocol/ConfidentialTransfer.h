@@ -25,8 +25,8 @@ namespace xrpl {
  */
 struct ConfidentialRecipient
 {
-    Slice const publicKey;        ///< The recipient's ElGamal public key (64 bytes).
-    Slice const encryptedAmount;  ///< The encrypted amount ciphertext (128 bytes).
+    Slice publicKey;        ///< The recipient's ElGamal public key (64 bytes).
+    Slice encryptedAmount;  ///< The encrypted amount ciphertext (128 bytes).
 };
 
 /**
