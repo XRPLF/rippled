@@ -3280,7 +3280,6 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(2)), aliceSeq + 2));
 
             auto const noopTxn = env.jt(noop(alice), seq(aliceSeq + 1));
-            auto const noopTxnID = to_string(noopTxn.stx->getTransactionID());
             env(noopTxn, ter(tesSUCCESS));
             env.close();
 
@@ -3373,7 +3372,6 @@ class Batch_test : public beast::unit_test::suite
 
             // AccountSet Txn
             auto const noopTxn = env.jt(noop(alice), ticket::use(aliceTicketSeq + 1));
-            auto const noopTxnID = to_string(noopTxn.stx->getTransactionID());
             env(noopTxn, ter(tesSUCCESS));
 
             // Batch Txn
