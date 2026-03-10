@@ -289,7 +289,7 @@ struct ExpectedState
     Number assetsTotal;
     Number assetsAvailable;
     Number sharesTotal;
-    Number interestOutstanding = 0;
+    Number unrealizedInterest = 0;
     Number lossUnrealized = 0;
 };
 
@@ -303,7 +303,7 @@ class VaultSharePricing_test : public beast::unit_test::suite
         BEAST_EXPECT(vault.assetsTotal() == e.assetsTotal);
         BEAST_EXPECT(vault.assetsAvailable() == e.assetsAvailable);
         BEAST_EXPECT(vault.sharesTotal() == e.sharesTotal);
-        BEAST_EXPECT(vault.interestUnrealized() == e.interestOutstanding);
+        BEAST_EXPECT(vault.interestUnrealized() == e.unrealizedInterest);
         BEAST_EXPECT(vault.lossUnrealized() == e.lossUnrealized);
     }
 
@@ -548,12 +548,13 @@ public:
                 .assetsTotal = depositAmt + interest,
                 .assetsAvailable = depositAmt - principal,
                 .sharesTotal = depositAmt,
-                .interestOutstanding = interest,
+                .unrealizedInterest = interest,
             });
 
         Number const expectedShares = vault.depositShares(Number(depositAmt2));
         Number const expectedAssets = vault.depositAssets(expectedShares);
-        // depositNAV = 950 + 50 - 50 = 950; shares = floor(95 * 950 / 950) = 95; assets = 95
+        // depositNAV = 1000 (assetsTotal) - 50 (unrealizedInterest) = 950; shares = floor(95 * 950
+        // / 950) = 95; assets = 95
         BEAST_EXPECT(expectedShares == 95);
         BEAST_EXPECT(expectedAssets == 95);
 
@@ -568,7 +569,7 @@ public:
                 .assetsTotal = depositAmt + interest + expectedAssets,
                 .assetsAvailable = depositAmt - principal + expectedAssets,
                 .sharesTotal = depositAmt + expectedShares,
-                .interestOutstanding = interest,
+                .unrealizedInterest = interest,
             });
     }
 
@@ -604,7 +605,7 @@ public:
                 .assetsTotal = depositAmt + interest,
                 .assetsAvailable = depositAmt - principal,
                 .sharesTotal = depositAmt,
-                .interestOutstanding = interest,
+                .unrealizedInterest = interest,
             });
 
         vault.addPaperLoss(paperLoss);
@@ -614,12 +615,13 @@ public:
                 .assetsTotal = depositAmt + interest,
                 .assetsAvailable = depositAmt - principal,
                 .sharesTotal = depositAmt,
-                .interestOutstanding = interest,
+                .unrealizedInterest = interest,
                 .lossUnrealized = paperLoss,
             });
 
         Number const expectedAssets = vault.redeemAssets(redeemShares);
-        // withdrawalNAV = 1000 + 50 - 50 - 100 = 900; assetsOut = 100 * 900 / 1000 = 90
+        // withdrawalNAV = 1050 (assetsTotal) - 50 (unrealizedInterest) - 100 (unrealizedLoss) =
+        // 900; assetsOut = 100 * 900 / 1000 = 90
         BEAST_EXPECT(expectedAssets == 90);
         auto const assetsOut = vault.redeem(STAmount{vault.shareAsset(), redeemShares}).value();
 
@@ -630,7 +632,7 @@ public:
                 .assetsTotal = depositAmt + interest - assetsOut,
                 .assetsAvailable = depositAmt - principal - assetsOut,
                 .sharesTotal = depositAmt - redeemShares,
-                .interestOutstanding = interest,
+                .unrealizedInterest = interest,
                 .lossUnrealized = paperLoss,
             });
     }
@@ -668,7 +670,7 @@ public:
                 .assetsTotal = depositAmt + interest,
                 .assetsAvailable = depositAmt - principal,
                 .sharesTotal = depositAmt,
-                .interestOutstanding = interest,
+                .unrealizedInterest = interest,
             });
 
         vault.addPaperLoss(paperLoss);
@@ -678,7 +680,7 @@ public:
                 .assetsTotal = depositAmt + interest,
                 .assetsAvailable = depositAmt - principal,
                 .sharesTotal = depositAmt,
-                .interestOutstanding = interest,
+                .unrealizedInterest = interest,
                 .lossUnrealized = paperLoss,
             });
 
@@ -696,14 +698,15 @@ public:
                 .assetsTotal = depositAmt + interest + depositAmt2,
                 .assetsAvailable = depositAmt - principal + depositAmt2,
                 .sharesTotal = depositAmt + depositAmt2,
-                .interestOutstanding = interest,
+                .unrealizedInterest = interest,
                 .lossUnrealized = paperLoss,
             });
 
         // Redeem at withdrawalNAV (subtracts both interest and loss)
         {
             Number const expectedAssets = vault.redeemAssets(redeemShares);
-            // withdrawalNAV = 1001 - 50 - 100 = 851; sharesTotal = 951; assetsOut = 851/951
+            // withdrawalNAV = 1001 (assetsTotal) - 50 (unrealizedInterest) - 100 (unrealizedLoss) =
+            // 851; sharesTotal = 951; assetsOut = 851/951
             BEAST_EXPECT(expectedAssets == Number{851} / Number{951});
             // Compare as STAmount: redeem() returns STAmount which truncates
             // to 16 significant digits, so comparing directly to the
@@ -721,7 +724,7 @@ public:
                     .assetsAvailable =
                         STAmount(usd_, depositAmt - principal + depositAmt2 - expectedAssets),
                     .sharesTotal = depositAmt + depositAmt2 - redeemShares,
-                    .interestOutstanding = interest,
+                    .unrealizedInterest = interest,
                     .lossUnrealized = paperLoss,
                 });
         }
@@ -808,7 +811,8 @@ public:
 
             Number const expectedShares = vault.withdrawShares(Number(withdrawRequested));
             Number const expectedAssetsOut = vault.withdrawAssets(expectedShares);
-            // withdrawalNAV = 10 - 3 = 7; shares = floor(1 * 10 / 7) = 1; assetsOut = 7/10 = 0.7
+            // withdrawalNAV = 10 (assetsTotal) - 3 (unrealizedLoss) = 7; shares = floor(1 * 10 / 7)
+            // = 1; assetsOut = 7/10 = 0.7
             BEAST_EXPECT(expectedShares == 1);
             BEAST_EXPECT(expectedAssetsOut == Number(7, -1));
 
@@ -971,7 +975,8 @@ public:
 
         // Loss reduces withdrawalNAV but not depositNAV
         Number const expectedAssets = vault.redeemAssets(redeemShares);
-        // withdrawalNAV = 1100 - 200 = 900; sharesTotal = 1100; assetsOut = 100 * 900/1100 = 900/11
+        // withdrawalNAV = 1100 (assetsTotal) - 200 (unrealizedLoss) = 900; sharesTotal = 1100;
+        // assetsOut = 100 * 900/1100 = 900/11
         BEAST_EXPECT(expectedAssets == Number{900} / Number{11});
         // Compare as STAmount: redeem() returns STAmount which truncates
         // to 16 significant digits, so comparing directly to the
@@ -1034,7 +1039,8 @@ public:
         // User B deposits 100: shares = floor(deposit * sharesTotal / depositNAV)
         Number const expectedSharesB = vault.depositShares(Number(depositA));
         Number const expectedAssetsB = vault.depositAssets(expectedSharesB);
-        // depositNAV = 110; shares = floor(100 * 100 / 110) = 90; assets = 90 * 110 / 100 = 99
+        // depositNAV = 110 (assetsTotal); shares = floor(100 * 100 / 110) = 90; assets = 90 * 110 /
+        // 100 = 99
         BEAST_EXPECT(expectedSharesB == 90);
         BEAST_EXPECT(expectedAssetsB == 99);
         auto const [sharesB, assetsB] = vault.deposit(STAmount{usd_, depositA}).value();
@@ -1477,7 +1483,7 @@ public:
                 .assetsTotal = seedAmt + interest,
                 .assetsAvailable = seedAmt - principal,
                 .sharesTotal = seedAmt,
-                .interestOutstanding = interest,
+                .unrealizedInterest = interest,
             });
 
         auto const [actualShares, actualAssets] =
@@ -1490,7 +1496,7 @@ public:
                 .assetsTotal = seedAmt + interest + tinyDeposit,
                 .assetsAvailable = seedAmt - principal + tinyDeposit,
                 .sharesTotal = seedAmt + tinyDeposit,
-                .interestOutstanding = interest,
+                .unrealizedInterest = interest,
             });
 
         // Loan repaid: interestUnrealized -> 0, assetsAvailable fully restored
@@ -1561,7 +1567,8 @@ public:
             });
 
         Number const expectedOut = vault.redeemAssets(redeemShares);
-        // withdrawalNAV = 1e12 - 2e11 = 8e11; assetsOut = 1 * 8e11 / 1e12 = 0.8
+        // withdrawalNAV = 1e12 (assetsTotal) - 2e11 (unrealizedLoss) = 8e11; assetsOut = 1 * 8e11 /
+        // 1e12 = 0.8
         BEAST_EXPECT(expectedOut == Number(8, -1));
         STAmount const expectedAmt(usd_, expectedOut);
         auto const out = vault.redeem(STAmount{vault.shareAsset(), redeemShares}).value();
@@ -1766,7 +1773,7 @@ public:
                 .assetsTotal = depositAmt + interest,
                 .assetsAvailable = depositAmt - principal,
                 .sharesTotal = depositAmt,
-                .interestOutstanding = interest,
+                .unrealizedInterest = interest,
             });
 
         // Hard default the full loan (isPaperLoss=false)
@@ -1783,7 +1790,7 @@ public:
             });
 
         Number const expectedOut = vault.redeemAssets(redeemShares);
-        // assetsTotal=600, sharesTotal=1000; assetsOut = 500 * 600 / 1000 = 300
+        // withdrawalNAV = 600 (assetsTotal); sharesTotal = 1000; assetsOut = 500 * 600 / 1000 = 300
         BEAST_EXPECT(expectedOut == 300);
         auto const out = vault.redeem(STAmount{vault.shareAsset(), redeemShares}).value();
         BEAST_EXPECT(out == expectedOut);
@@ -1826,7 +1833,7 @@ public:
                 .assetsTotal = depositAmt + interest,
                 .assetsAvailable = depositAmt - principal,
                 .sharesTotal = depositAmt,
-                .interestOutstanding = interest,
+                .unrealizedInterest = interest,
             });
 
         // Pre-announce the full loan as paper loss
@@ -1837,7 +1844,7 @@ public:
                 .assetsTotal = depositAmt + interest,
                 .assetsAvailable = depositAmt - principal,
                 .sharesTotal = depositAmt,
-                .interestOutstanding = interest,
+                .unrealizedInterest = interest,
                 .lossUnrealized = principal + interest,
             });
 
@@ -1855,7 +1862,7 @@ public:
             });
 
         Number const expectedOut = vault.redeemAssets(redeemShares);
-        // assetsTotal=600, sharesTotal=1000; assetsOut = 500 * 600 / 1000 = 300
+        // withdrawalNAV = 600 (assetsTotal); sharesTotal = 1000; assetsOut = 500 * 600 / 1000 = 300
         BEAST_EXPECT(expectedOut == 300);
         auto const out = vault.redeem(STAmount{vault.shareAsset(), redeemShares}).value();
         BEAST_EXPECT(out == expectedOut);
@@ -1933,7 +1940,8 @@ public:
             });
 
         Number const expectedOut1 = vault.redeemAssets(redeemShares1);
-        // lossUnrealized=100; withdrawalNAV = 1000 - 100 = 900; assetsOut = 100 * 900 / 1000 = 90
+        // withdrawalNAV = 1000 (assetsTotal) - 100 (unrealizedLoss) = 900; assetsOut = 100 * 900 /
+        // 1000 = 90
         BEAST_EXPECT(expectedOut1 == 90);
         auto const out = vault.redeem(STAmount{vault.shareAsset(), redeemShares1}).value();
         BEAST_EXPECT(out == expectedOut1);
@@ -1972,7 +1980,7 @@ public:
         // Redeem 100 shares: assetsOut = 100 * withdrawalNAV / sharesTotal
         auto const redeemShares2 = 100;
         Number const expectedOut2 = vault.redeemAssets(redeemShares2);
-        // assetsTotal=910, sharesTotal=900, no loss; assetsOut = 100 * 910 / 900 = 910/9
+        // withdrawalNAV = 910 (assetsTotal); sharesTotal = 900; assetsOut = 100 * 910 / 900 = 910/9
         BEAST_EXPECT(expectedOut2 == Number{910} / Number{9});
         STAmount const expectedAmt2(usd_, expectedOut2);
         auto const out2 = vault.redeem(STAmount{vault.shareAsset(), redeemShares2}).value();
@@ -2243,7 +2251,7 @@ public:
                 .assetsTotal = depositAmt + interest1,
                 .assetsAvailable = depositAmt - principal1,
                 .sharesTotal = depositAmt,
-                .interestOutstanding = interest1,
+                .unrealizedInterest = interest1,
             });
 
         // Repay 500 principal + 50 interest: assetsAvailable fully restored
@@ -2338,7 +2346,8 @@ public:
 
         // A redeems 1000 shares: assetsOut = 1000 * withdrawalNAV / sharesTotal
         Number const expectedA = vault.redeemAssets(Number(depositAmtA));
-        // withdrawalNAV = 1500 - 200 = 1300; assetsOut = 1000 * 1300 / 1500 = 2600/3
+        // withdrawalNAV = 1500 (assetsTotal) - 200 (unrealizedLoss) = 1300; assetsOut = 1000 * 1300
+        // / 1500 = 2600/3
         BEAST_EXPECT(expectedA == Number{2600} / Number{3});
         STAmount const expectedAmtA(usd_, expectedA);
         auto const outA = vault.redeem(STAmount{vault.shareAsset(), depositAmtA}).value();
@@ -2400,7 +2409,7 @@ public:
                 .assetsTotal = depositAmt + interest,
                 .assetsAvailable = depositAmt - principal,
                 .sharesTotal = depositAmt,
-                .interestOutstanding = interest,
+                .unrealizedInterest = interest,
             });
 
         vault.addPaperLoss(paperLoss);
@@ -2410,14 +2419,15 @@ public:
                 .assetsTotal = depositAmt + interest,
                 .assetsAvailable = depositAmt - principal,
                 .sharesTotal = depositAmt,
-                .interestOutstanding = interest,
+                .unrealizedInterest = interest,
                 .lossUnrealized = paperLoss,
             });
 
         // New depositor: shares = floor(newDeposit * sharesTotal / depositNAV)
         Number const expectedNewShares = vault.depositShares(Number(newDeposit));
         Number const expectedNewAssets = vault.depositAssets(expectedNewShares);
-        // depositNAV = 1100 - 100 = 1000; shares = floor(100 * 1000 / 1000) = 100; assets = 100
+        // depositNAV = 1100 (assetsTotal) - 100 (unrealizedInterest) = 1000; shares = floor(100 *
+        // 1000 / 1000) = 100; assets = 100
         BEAST_EXPECT(expectedNewShares == 100);
         BEAST_EXPECT(expectedNewAssets == 100);
 
@@ -2430,14 +2440,14 @@ public:
                 .assetsTotal = depositAmt + interest + expectedNewAssets,
                 .assetsAvailable = depositAmt - principal + expectedNewAssets,
                 .sharesTotal = depositAmt + expectedNewShares,
-                .interestOutstanding = interest,
+                .unrealizedInterest = interest,
                 .lossUnrealized = paperLoss,
             });
 
         // Existing holder redeems shares using withdrawalNAV (lower than depositNAV)
         Number const expectedRedeemAssets = vault.redeemAssets(Number(redeemShares));
-        // withdrawalNAV = 1200 - 100 - 150 = 950; sharesTotal = 1100; assetsOut = 100*950/1100 =
-        // 950/11
+        // withdrawalNAV = 1200 (assetsTotal) - 100 (unrealizedInterest) - 150 (unrealizedLoss) =
+        // 950; sharesTotal = 1100; assetsOut = 100*950/1100 = 950/11
         BEAST_EXPECT(expectedRedeemAssets == Number{950} / Number{11});
         STAmount const expectedRedeemAmt(usd_, expectedRedeemAssets);
         auto const redeemOut = vault.redeem(STAmount{vault.shareAsset(), redeemShares}).value();
@@ -2453,7 +2463,7 @@ public:
                 .assetsTotal = totalNum,
                 .assetsAvailable = availNum,
                 .sharesTotal = depositAmt + expectedNewShares - redeemShares,
-                .interestOutstanding = interest,
+                .unrealizedInterest = interest,
                 .lossUnrealized = paperLoss,
             });
 
@@ -2593,7 +2603,7 @@ public:
                 .assetsTotal = depositAmt + interest,
                 .assetsAvailable = depositAmt - principal,
                 .sharesTotal = depositAmt,
-                .interestOutstanding = interest,
+                .unrealizedInterest = interest,
             });
 
         // Step 1: Pre-announce as paper loss (lossUnrealized = principal + interest = 330)
@@ -2604,13 +2614,14 @@ public:
                 .assetsTotal = depositAmt + interest,
                 .assetsAvailable = depositAmt - principal,
                 .sharesTotal = depositAmt,
-                .interestOutstanding = interest,
+                .unrealizedInterest = interest,
                 .lossUnrealized = principal + interest,
             });
 
         // Intermediate redeem to confirm discounted NAV is applied
         Number const expectedBefore = vault.redeemAssets(intermediateRedeem);
-        // withdrawalNAV = 1030 - 30 - 330 = 670; assetsOut = 100 * 670 / 1000 = 67
+        // withdrawalNAV = 1030 (assetsTotal) - 30 (unrealizedInterest) - 330 (unrealizedLoss) =
+        // 670; assetsOut = 100 * 670 / 1000 = 67
         BEAST_EXPECT(expectedBefore == 67);
         auto const outBefore =
             vault.redeem(STAmount{vault.shareAsset(), intermediateRedeem}).value();
@@ -2621,7 +2632,7 @@ public:
                 .assetsTotal = depositAmt + interest - expectedBefore,
                 .assetsAvailable = depositAmt - principal - expectedBefore,
                 .sharesTotal = depositAmt - intermediateRedeem,
-                .interestOutstanding = interest,
+                .unrealizedInterest = interest,
                 .lossUnrealized = principal + interest,
             });
 
@@ -2642,7 +2653,7 @@ public:
         // Redeem all remaining shares
         auto const remainingShares = depositAmt - intermediateRedeem;
         Number const expectedAfter = vault.redeemAssets(remainingShares);
-        // After default: assetsTotal=633, sharesTotal=900; assetsOut = 900 * 633 / 900 = 633
+        // withdrawalNAV = 633 (assetsTotal); sharesTotal = 900; assetsOut = 900 * 633 / 900 = 633
         BEAST_EXPECT(expectedAfter == 633);
         auto const outAfter =
             vault.redeem(STAmount{vault.shareAsset(), Number(remainingShares)}).value();
@@ -2769,7 +2780,7 @@ public:
                 .sharesTotal = depositAmt,
             });
 
-        // lossUnrealized=2: withdrawalNAV = 10 - 0 - 2 = 8
+        // lossUnrealized=2: withdrawalNAV = 10 (assetsTotal) - 2 (unrealizedLoss) = 8
         vault.addPaperLoss(paperLoss);
         expectState(
             vault,
@@ -2784,7 +2795,8 @@ public:
         Number const expectedShares = vault.withdrawShares(Number(withdrawRequested));
         // assetsOut = shares * withdrawalNAV / sharesTotal
         Number const expectedAssetsOut = vault.withdrawAssets(expectedShares);
-        // withdrawalNAV = 10 - 2 = 8; shares = floor(3 * 10 / 8) = 3; assetsOut = 3 * 8 / 10 = 2.4
+        // withdrawalNAV = 10 (assetsTotal) - 2 (unrealizedLoss) = 8; shares = floor(3 * 10 / 8) =
+        // 3; assetsOut = 3 * 8 / 10 = 2.4
         BEAST_EXPECT(expectedShares == 3);
         BEAST_EXPECT(expectedAssetsOut == Number(24, -1));
 
@@ -2841,7 +2853,7 @@ public:
             });
 
         vault.repay(1, 0, extraInterest);
-        // assetsTotal=10, sharesTotal=7, depositNAV=10
+        // depositNAV = 10 (assetsTotal); sharesTotal = 7
         expectState(
             vault,
             {
@@ -2854,7 +2866,8 @@ public:
         Number const expectedShares = vault.depositShares(Number(depositRequested));
         // actualAssets = shares * depositNAV / sharesTotal
         Number const expectedAssets = vault.depositAssets(expectedShares);
-        // depositNAV = 10; shares = floor(3 * 7 / 10) = 2;  assets = 2 * 10 / 7 = 20/7
+        // depositNAV = 10 (assetsTotal); shares = floor(3 * 7 / 10) = 2;  assets = 2 * 10 / 7 =
+        // 20/7
         BEAST_EXPECT(expectedShares == 2);
         BEAST_EXPECT(expectedAssets == Number{20} / Number{7});
 
@@ -2925,7 +2938,7 @@ public:
 
         // 1/3 is non-terminating -- STAmount truncates to 16 digits
         Number const expectedOut = vault.redeemAssets(Number(redeemShares));
-        // assetsTotal=1, sharesTotal=3; assetsOut = 1 * 1 / 3 = 1/3
+        // withdrawalNAV = 1 (assetsTotal); sharesTotal = 3; assetsOut = 1 * 1 / 3 = 1/3
         BEAST_EXPECT(expectedOut == Number{1} / Number{3});
         // Compare as STAmount: redeem() returns STAmount which truncates
         // to 16 significant digits, so comparing directly to the
