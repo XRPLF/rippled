@@ -198,15 +198,15 @@ EscrowCreate::preflight(PreflightContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfFinishFunction))
     {
-        if (ctx.registry.config().FEES.extension_size_limit == 0 ||
-            ctx.registry.config().FEES.extension_compute_limit == 0)
+        auto const fees(ctx.registry.getFees());
+        if (fees.extensionSizeLimit == 0 || fees.extensionComputeLimit == 0)
         {
             JLOG(ctx.j.debug()) << "WASM runtime deactivated by fee voting";
             return temTEMP_DISABLED;
         }
 
         auto const code = ctx.tx.getFieldVL(sfFinishFunction);
-        if (code.size() == 0 || code.size() > ctx.registry.config().FEES.extension_size_limit)
+        if (code.size() == 0 || code.size() > fees.extensionSizeLimit)
         {
             JLOG(ctx.j.debug()) << "EscrowCreate.FinishFunction bad size " << code.size();
             return temMALFORMED;
@@ -654,7 +654,8 @@ EscrowFinish::preflight(PreflightContext const& ctx)
 
     if (auto const allowance = ctx.tx[~sfComputationAllowance]; allowance)
     {
-        if (ctx.registry.config().FEES.extension_compute_limit == 0)
+        auto const fees(ctx.registry.getFees());
+        if (fees.extensionComputeLimit == 0)
         {
             JLOG(ctx.j.debug()) << "WASM runtime deactivated by fee voting";
             return temTEMP_DISABLED;
@@ -663,7 +664,7 @@ EscrowFinish::preflight(PreflightContext const& ctx)
         {
             return temBAD_LIMIT;
         }
-        if (*allowance > ctx.registry.config().FEES.extension_compute_limit)
+        if (*allowance > fees.extensionComputeLimit)
         {
             JLOG(ctx.j.debug()) << "ComputationAllowance too large: " << *allowance;
             return temBAD_LIMIT;
@@ -1178,8 +1179,8 @@ EscrowFinish::doApply()
             // already checked above, this check is just in case
             return tecINTERNAL;
         }
-        std::uint32_t allowance = ctx_.tx[sfComputationAllowance];
-        auto re = runEscrowWasm(wasm, ledgerDataProvider, allowance, ESCROW_FUNCTION_NAME, {});
+        std::uint32_t const allowance = ctx_.tx[sfComputationAllowance];
+        auto re = runEscrowWasm(wasm, ledgerDataProvider, allowance, ESCROW_FUNCTION_NAME);
         JLOG(j_.trace()) << "Escrow WASM ran";
 
         if (auto const& data = ledgerDataProvider.getData(); data.has_value())
@@ -1195,8 +1196,8 @@ EscrowFinish::doApply()
 
         if (re.has_value())
         {
-            auto reValue = re.value().result;
-            auto reCost = re.value().cost;
+            auto const reValue = re.value().result;
+            auto const reCost = re.value().cost;
             JLOG(j_.debug()) << "WASM Success: " + std::to_string(reValue) << ", cost: " << reCost;
 
             ctx_.setWasmReturnCode(reValue);

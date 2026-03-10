@@ -787,6 +787,24 @@ public:
         return *mWalletDB;
     }
 
+    virtual Fees
+    getFees() const override
+    {
+        XRPL_ASSERT(config_, "xrpl::ApplicationImp::getFees : non-null config");
+
+        auto const& f1(config_->FEES);
+
+        Fees f2;
+        f2.base = f1.reference_fee;
+        f2.reserve = f1.account_reserve;
+        f2.increment = f1.owner_reserve;
+        f2.extensionComputeLimit = f1.extension_compute_limit;
+        f2.extensionSizeLimit = f1.extension_size_limit;
+        f2.gasPrice = f1.gas_price;
+
+        return f2;
+    }
+
     bool
     serverOkay(std::string& reason) override;
 

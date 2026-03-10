@@ -4,6 +4,7 @@
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/ledger/CachedSLEs.h>
+#include <xrpl/protocol/Fees.h>
 
 #include <boost/asio.hpp>
 
@@ -224,6 +225,9 @@ public:
     /** Retrieve the "wallet database" */
     virtual DatabaseCon&
     getWalletDB() = 0;
+
+    virtual Fees
+    getFees() const = 0;
 
     // Temporary: Get the underlying Application for functions that haven't
     // been migrated yet. This should be removed once all code is migrated.

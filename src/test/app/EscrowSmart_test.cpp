@@ -1,14 +1,13 @@
 #include <test/app/wasm_fixtures/fixtures.h>
 #include <test/jtx.h>
 
-#include <xrpld/app/tx/applySteps.h>
-#include <xrpld/app/wasm/WasmVM.h>
-
 #include <xrpl/ledger/Dir.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/wasm/WasmVM.h>
 
 #include <algorithm>
 #include <iterator>
@@ -177,7 +176,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
         Env env(
             *this,
             envconfig([](std::unique_ptr<Config> cfg) {
-                cfg->START_UP = Config::FRESH;
+                cfg->START_UP = StartUpType::FRESH;
                 return cfg;
             }),
             features);
