@@ -26,11 +26,10 @@ repos:
         args: [--style=file]
         "types_or": [c++, c, proto]
 
-  - repo: https://github.com/cheshirekow/cmake-format-precommit
-    rev: e2c2116d86a80e72e7146a06e68b7c228afc6319 # frozen: v0.6.13
+  - repo: https://github.com/BlankSpruce/gersemi
+    rev: 0.26.0
     hooks:
-      - id: cmake-format
-        additional_dependencies: [PyYAML]
+      - id: gersemi
 
   - repo: https://github.com/rbubley/mirrors-prettier
     rev: c2bc67fe8f8f549cc489e00ba8b45aa18ee713b1 # frozen: v3.8.1
