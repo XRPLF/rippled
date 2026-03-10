@@ -1903,7 +1903,6 @@ protected:
         }
 
         // Finally! Create a loan
-        std::string testData;
 
         auto coverAvailable = [&env, this](uint256 const& brokerID, Number const& expected) {
             if (auto const brokerSle = env.le(keylet::loanbroker(brokerID));
@@ -3765,10 +3764,8 @@ protected:
 
         Account const alice{"alice"};
         std::string const borrowerPass = "borrower";
-        std::string const borrowerSeed = "ssBRAsLpH4778sLNYC4ik1JBJsBVf";
         Account borrower{borrowerPass, KeyType::ed25519};
         auto const lenderPass = "lender";
-        std::string const lenderSeed = "shPTCZGwTEhJrYT8NbcNkeaa8pzPM";
         Account lender{lenderPass, KeyType::ed25519};
 
         env.fund(XRP(1'000'000), alice, lender, borrower);
@@ -7091,7 +7088,6 @@ public:
     void
     run() override
     {
-        auto const argument = arg();
         auto const numIterations = [s = arg()]() -> int {
             int defaultNum = 5;
             if (s.empty())
