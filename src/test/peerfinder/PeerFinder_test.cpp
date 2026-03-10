@@ -123,7 +123,6 @@ public:
                 if (!BEAST_EXPECT(
                         logic.onConnected(slot, beast::IP::Endpoint::from_string("65.0.0.2:5"))))
                     return;
-                std::string s = ".";
                 if (!BEAST_EXPECT(logic.activate(slot, pk, false) == PeerFinder::Result::success))
                     return;
                 logic.on_closed(slot);
