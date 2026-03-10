@@ -1280,7 +1280,7 @@ r.ripple.com:51235
         for (auto const& t : tests)
         {
             Section s;
-            s.append(t.line.data());
+            s.append(std::string(t.line));
             BEAST_EXPECT(s.had_trailing_comments() == t.had_comment);
             if (t.field.empty())
             {
@@ -1289,7 +1289,7 @@ r.ripple.com:51235
             else
             {
                 std::string field;
-                BEAST_EXPECTS(set(field, t.field.data(), s), t.line);
+                BEAST_EXPECTS(set(field, std::string(t.field), s), t.line);
                 BEAST_EXPECTS(field == t.expect, t.line);
             }
         }
