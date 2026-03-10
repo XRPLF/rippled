@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/lending/LoanSet.h>
 //
+#include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/lending/LendingHelpers.h>
@@ -327,6 +328,27 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     {
         JLOG(ctx.j.warn()) << "Broker owner account is frozen.";
         return ret;
+    }
+
+    if (brokerSle->isFlag(lsfLoanBrokerPrivate))
+    {
+        auto const domainID = brokerSle->at(~sfDomainID);
+        if (!domainID)
+        {
+            JLOG(ctx.j.warn()) << "Private LoanBroker must have a DomainID.";
+            return tecNO_AUTH;
+        }
+
+        auto const sleDomain = ctx.view.read(keylet::permissionedDomain(*domainID));
+        if (!sleDomain)
+        {
+            JLOG(ctx.j.warn()) << "Domain does not exist.";  // LCOV_EXCL_LINE
+            return tecOBJECT_NOT_FOUND;                      // LCOV_EXCL_LINE
+        }
+
+        if (auto const ter = credentials::validDomain(ctx.view, *domainID, borrower);
+            !isTesSuccess(ter))
+            return ter;
     }
 
     return tesSUCCESS;

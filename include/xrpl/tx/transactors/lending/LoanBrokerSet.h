@@ -22,6 +22,9 @@ public:
     static std::vector<OptionaledField<STNumber>> const&
     getValueFields();
 
+    static std::uint32_t
+    getFlagsMask(PreflightContext const& ctx);
+
     static TER
     preclaim(PreclaimContext const& ctx);
 

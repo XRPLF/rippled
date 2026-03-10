@@ -515,6 +515,7 @@ LEDGER_ENTRY(ltLOAN_BROKER, 0x0088, LoanBroker, loan_broker, ({
     {sfCoverAvailable,       soeDEFAULT},
     {sfCoverRateMinimum,     soeDEFAULT},
     {sfCoverRateLiquidation, soeDEFAULT},
+    {sfDomainID,             soeOPTIONAL},
 }))
 
 /** A ledger object representing a loan between a Borrower and a Loan Broker

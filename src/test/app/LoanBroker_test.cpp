@@ -1,4 +1,6 @@
 #include <test/jtx.h>
+#include <test/jtx/credentials.h>
+#include <test/jtx/permissioned_domains.h>
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/tx/transactors/lending/LoanBrokerCoverDeposit.h>
@@ -1797,6 +1799,338 @@ class LoanBroker_test : public beast::unit_test::suite
         BEAST_EXPECT(env.enabled(fixLendingProtocolV1_1));
     }
 
+    void
+    testPrivateLoanBroker()
+    {
+        testcase("Private Loan Broker with Permissioned Domain");
+        using namespace jtx;
+        using namespace loanBroker;
+
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+        Account const credIssuer{"credIssuer"};
+        std::string const credType = "LoanCredential";
+
+        Env env{*this};
+        Vault vault{env};
+
+        env.fund(XRP(100'000), issuer, alice, credIssuer);
+        env.close();
+
+        // Create an IOU asset and vault
+        env(trust(alice, issuer["IOU"](1'000'000)));
+        env.close();
+        PrettyAsset const asset{issuer["IOU"]};
+        env(pay(issuer, alice, asset(100'000)));
+        env.close();
+
+        auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
+        env(tx);
+        env.close();
+
+        // Create a permissioned domain
+        pdomain::Credentials const credentials{{credIssuer, credType}};
+        env(pdomain::setTx(credIssuer, credentials));
+        env.close();
+        auto const domainId = pdomain::getNewDomain(env.meta());
+        BEAST_EXPECT(domainId != beast::zero);
+
+        // Test 1: Cannot set tfLoanBrokerPrivate without fixLendingProtocolV1_1
+        {
+            Env envNoFix{*this};
+            envNoFix.disableFeature(fixLendingProtocolV1_1);
+            Vault vault2{envNoFix};
+
+            envNoFix.fund(XRP(100'000), issuer, alice);
+            envNoFix.close();
+            envNoFix(trust(alice, issuer["IOU"](1'000'000)));
+            envNoFix.close();
+            envNoFix(pay(issuer, alice, asset(100'000)));
+            envNoFix.close();
+
+            auto [tx2, vaultKeylet2] = vault2.create({.owner = alice, .asset = asset});
+            envNoFix(tx2);
+            envNoFix.close();
+
+            // tfLoanBrokerPrivate should be disabled
+            envNoFix(set(alice, vaultKeylet2.key, tfLoanBrokerPrivate), ter(temINVALID_FLAG));
+        }
+
+        // Test 2: Create a private loan broker with DomainID
+        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        env(set(alice, vaultKeylet.key, tfLoanBrokerPrivate), domainID(domainId));
+        env.close();
+
+        // Verify the broker was created with the correct flags and DomainID
+        {
+            auto const sleBroker = env.le(brokerKeylet);
+            BEAST_EXPECT(sleBroker);
+            if (sleBroker)
+            {
+                BEAST_EXPECT(sleBroker->isFlag(lsfLoanBrokerPrivate));
+                BEAST_EXPECT(sleBroker->at(~sfDomainID) == domainId);
+            }
+        }
+
+        // Test 3: Cannot create public broker with DomainID
+        {
+            // Public broker (no tfLoanBrokerPrivate) with DomainID should fail
+            env(set(alice, vaultKeylet.key), domainID(domainId), ter(temINVALID));
+        }
+
+        // Test 4: Cannot create broker with zero DomainID
+        {
+            env(set(alice, vaultKeylet.key, tfLoanBrokerPrivate),
+                domainID(beast::zero),
+                ter(temMALFORMED));
+        }
+
+        // Test 5: Cannot create broker with non-existent DomainID
+        {
+            uint256 fakeDomainId;
+            BEAST_EXPECT(fakeDomainId.parseHex(
+                "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF"));
+            env(set(alice, vaultKeylet.key, tfLoanBrokerPrivate),
+                domainID(fakeDomainId),
+                ter(tecOBJECT_NOT_FOUND));
+        }
+    }
+
+    void
+    testPrivateLoanBrokerModify()
+    {
+        testcase("Modify Private Loan Broker DomainID");
+        using namespace jtx;
+        using namespace loanBroker;
+
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+        Account const credIssuer{"credIssuer"};
+        std::string const credType = "LoanCredential";
+
+        Env env{*this};
+        Vault vault{env};
+
+        env.fund(XRP(100'000), issuer, alice, credIssuer);
+        env.close();
+
+        // Create an IOU asset and vault
+        env(trust(alice, issuer["IOU"](1'000'000)));
+        env.close();
+        PrettyAsset const asset{issuer["IOU"]};
+        env(pay(issuer, alice, asset(100'000)));
+        env.close();
+
+        auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
+        env(tx);
+        env.close();
+
+        // Create two permissioned domains
+        pdomain::Credentials const credentials{{credIssuer, credType}};
+        env(pdomain::setTx(credIssuer, credentials));
+        env.close();
+        auto const domainId1 = pdomain::getNewDomain(env.meta());
+
+        env(pdomain::setTx(credIssuer, credentials));
+        env.close();
+        auto const domainId2 = pdomain::getNewDomain(env.meta());
+
+        // Create a private loan broker with DomainID
+        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        env(set(alice, vaultKeylet.key, tfLoanBrokerPrivate), domainID(domainId1));
+        env.close();
+
+        // Test 1: Modify DomainID to a different domain
+        env(set(alice, vaultKeylet.key), loanBrokerID(brokerKeylet.key), domainID(domainId2));
+        env.close();
+        {
+            auto const sleBroker = env.le(brokerKeylet);
+            BEAST_EXPECT(sleBroker);
+            if (sleBroker)
+            {
+                BEAST_EXPECT(sleBroker->at(~sfDomainID) == domainId2);
+            }
+        }
+
+        // Test 2: Clear DomainID by setting to zero
+        env(set(alice, vaultKeylet.key), loanBrokerID(brokerKeylet.key), domainID(beast::zero));
+        env.close();
+        {
+            auto const sleBroker = env.le(brokerKeylet);
+            BEAST_EXPECT(sleBroker);
+            if (sleBroker)
+            {
+                BEAST_EXPECT(!sleBroker->at(~sfDomainID));
+            }
+        }
+
+        // Test 3: Set DomainID back
+        env(set(alice, vaultKeylet.key), loanBrokerID(brokerKeylet.key), domainID(domainId1));
+        env.close();
+        {
+            auto const sleBroker = env.le(brokerKeylet);
+            BEAST_EXPECT(sleBroker);
+            if (sleBroker)
+            {
+                BEAST_EXPECT(sleBroker->at(~sfDomainID) == domainId1);
+            }
+        }
+
+        // Test 4: Cannot set tfLoanBrokerPrivate when modifying (flag is immutable)
+        env(set(alice, vaultKeylet.key, tfLoanBrokerPrivate),
+            loanBrokerID(brokerKeylet.key),
+            ter(temINVALID));
+
+        // Test 5: Create a public broker and try to set DomainID on it
+        auto const publicBrokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        env(set(alice, vaultKeylet.key));  // No tfLoanBrokerPrivate = public
+        env.close();
+        {
+            auto const sleBroker = env.le(publicBrokerKeylet);
+            BEAST_EXPECT(sleBroker);
+            if (sleBroker)
+            {
+                BEAST_EXPECT(!sleBroker->isFlag(lsfLoanBrokerPrivate));
+            }
+        }
+
+        // Cannot set non-zero DomainID on public broker
+        env(set(alice, vaultKeylet.key),
+            loanBrokerID(publicBrokerKeylet.key),
+            domainID(domainId1),
+            ter(tecNO_PERMISSION));
+
+        // But zero DomainID on public broker is allowed (no-op)
+        env(set(alice, vaultKeylet.key),
+            loanBrokerID(publicBrokerKeylet.key),
+            domainID(beast::zero));
+        env.close();
+    }
+
+    void
+    testPrivateBrokerUnsetDomainBlocksLoans()
+    {
+        testcase("Unsetting DomainID on private broker blocks new loans");
+        using namespace jtx;
+        using namespace loanBroker;
+
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};  // Broker owner
+        Account const bob{"bob"};      // Borrower
+        Account const credIssuer{"credIssuer"};
+        std::string const credType = "LoanCredential";
+
+        Env env{*this};
+        Vault vault{env};
+
+        env.fund(XRP(100'000), issuer, alice, bob, credIssuer);
+        env.close();
+
+        // Create an IOU asset and vault
+        env(trust(alice, issuer["IOU"](1'000'000)));
+        env(trust(bob, issuer["IOU"](1'000'000)));
+        env.close();
+        PrettyAsset const asset{issuer["IOU"]};
+        env(pay(issuer, alice, asset(100'000)));
+        env(pay(issuer, bob, asset(10'000)));
+        env.close();
+
+        auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
+        env(tx);
+        env.close();
+
+        // Deposit into vault
+        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(50'000)}));
+        env.close();
+
+        // Create a permissioned domain
+        pdomain::Credentials const credentials{{credIssuer, credType}};
+        env(pdomain::setTx(credIssuer, credentials));
+        env.close();
+        auto const domainId = pdomain::getNewDomain(env.meta());
+
+        // Create credential for bob and accept it
+        env(credentials::create(bob, credIssuer, credType));
+        env.close();
+        env(credentials::accept(bob, credIssuer, credType));
+        env.close();
+
+        // Create a private loan broker with DomainID
+        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        env(set(alice, vaultKeylet.key, tfLoanBrokerPrivate), domainID(domainId));
+        env.close();
+
+        // Deposit cover into broker
+        env(coverDeposit(alice, brokerKeylet.key, asset(1000)));
+        env.close();
+
+        // Bob can create a loan (has credentials, domain is set)
+        {
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, 1);
+            auto setTx = env.jt(loan::set(bob, brokerKeylet.key, asset(100).number()));
+            sig(sfCounterpartySignature, alice)(env, setTx);
+            fee{env.current()->fees().base * 2}(env, setTx);
+            loan::counterparty(alice)(env, setTx);
+            loan::interestRate(TenthBips32{1000})(env, setTx);
+            loan::paymentTotal(2)(env, setTx);
+            loan::paymentInterval(100)(env, setTx);
+            env(setTx);
+            env.close();
+
+            BEAST_EXPECT(env.le(loanKeylet));
+        }
+
+        // Now unset the DomainID by setting it to zero
+        env(set(alice, vaultKeylet.key), loanBrokerID(brokerKeylet.key), domainID(beast::zero));
+        env.close();
+
+        // Verify DomainID is unset
+        {
+            auto const sleBroker = env.le(brokerKeylet);
+            BEAST_EXPECT(sleBroker);
+            if (sleBroker)
+            {
+                BEAST_EXPECT(!sleBroker->at(~sfDomainID));
+                BEAST_EXPECT(sleBroker->isFlag(lsfLoanBrokerPrivate));
+            }
+        }
+
+        // Bob cannot create a new loan (private broker has no domain configured)
+        {
+            auto const loanKeylet2 = keylet::loan(brokerKeylet.key, 2);
+            auto setTx = env.jt(loan::set(bob, brokerKeylet.key, asset(100).number()));
+            sig(sfCounterpartySignature, alice)(env, setTx);
+            fee{env.current()->fees().base * 2}(env, setTx);
+            loan::counterparty(alice)(env, setTx);
+            loan::interestRate(TenthBips32{1000})(env, setTx);
+            loan::paymentTotal(2)(env, setTx);
+            loan::paymentInterval(100)(env, setTx);
+            env(setTx, ter(tecNO_AUTH));
+
+            BEAST_EXPECT(!env.le(loanKeylet2));
+        }
+
+        // Set the DomainID back
+        env(set(alice, vaultKeylet.key), loanBrokerID(brokerKeylet.key), domainID(domainId));
+        env.close();
+
+        // Now bob can create a loan again
+        {
+            auto const loanKeylet3 = keylet::loan(brokerKeylet.key, 2);
+            auto setTx = env.jt(loan::set(bob, brokerKeylet.key, asset(100).number()));
+            sig(sfCounterpartySignature, alice)(env, setTx);
+            fee{env.current()->fees().base * 2}(env, setTx);
+            loan::counterparty(alice)(env, setTx);
+            loan::interestRate(TenthBips32{1000})(env, setTx);
+            loan::paymentTotal(2)(env, setTx);
+            loan::paymentInterval(100)(env, setTx);
+            env(setTx);
+            env.close();
+
+            BEAST_EXPECT(env.le(loanKeylet3));
+        }
+    }
+
 public:
     void
     run() override
@@ -1818,6 +2152,10 @@ public:
         testAMB06_VaultFreezeCheckMissing();
 
         testRIPD4274();
+
+        testPrivateLoanBroker();
+        testPrivateLoanBrokerModify();
+        testPrivateBrokerUnsetDomainBlocksLoans();
 
         // TODO: Write clawback failure tests with an issuer / MPT that doesn't
         // have the right flags set.

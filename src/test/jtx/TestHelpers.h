@@ -717,6 +717,8 @@ auto const coverRateLiquidation =
 
 auto const destination = JTxFieldWrapper<accountIDField>(sfDestination);
 
+auto const domainID = JTxFieldWrapper<uint256Field>(sfDomainID);
+
 }  // namespace loanBroker
 
 /* Loan */
