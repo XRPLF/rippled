@@ -39,6 +39,9 @@ Consumer::~Consumer()
 Consumer&
 Consumer::operator=(Consumer const& other)
 {
+    if (this == &other)
+        return *this;
+
     // remove old ref
     if (m_logic && m_entry)
         m_logic->release(*m_entry);
