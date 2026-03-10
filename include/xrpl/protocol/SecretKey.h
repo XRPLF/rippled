@@ -85,6 +85,12 @@ public:
     }
 };
 
+inline bool
+operator==(SecretKey const& lhs, SecretKey const& rhs) = delete;
+
+inline bool
+operator!=(SecretKey const& lhs, SecretKey const& rhs) = delete;
+
 //------------------------------------------------------------------------------
 
 /** Parse a secret key */
