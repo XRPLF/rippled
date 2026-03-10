@@ -287,7 +287,6 @@ class DeliveredAmount_test : public beast::unit_test::suite
             env.require(balance(carol, USD(0)));
 
             env.close();
-            std::string index;
             Json::Value jvParams;
             jvParams[jss::ledger_index] = 4u;
             jvParams[jss::transactions] = true;
