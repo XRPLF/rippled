@@ -1,9 +1,9 @@
+#include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/delegate/DelegateUtils.h>
 #include <xrpl/tx/transactors/token/MPTokenIssuanceSet.h>
-#include <xrpl/protocol/ConfidentialTransfer.h>
 
 namespace xrpl {
 
@@ -53,7 +53,8 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     auto const hasAuditorElGamalKey = ctx.tx.isFieldPresent(sfAuditorElGamalPublicKey);
     auto const txFlags = ctx.tx.getFlags();
 
-    auto const mutatePrivacy = mutableFlags && ((*mutableFlags & (tmfMPTSetPrivacy | tmfMPTClearPrivacy)));
+    auto const mutatePrivacy =
+        mutableFlags && ((*mutableFlags & (tmfMPTSetPrivacy | tmfMPTClearPrivacy)));
 
     auto const hasDomain = ctx.tx.isFieldPresent(sfDomainID);
     auto const hasHolder = ctx.tx.isFieldPresent(sfHolder);
@@ -84,7 +85,8 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
         ctx.rules.enabled(featureConfidentialTransfer))
     {
         // Is this transaction actually changing anything ?
-        if (txFlags == 0 && !hasDomain && !hasIssuerElGamalKey && !hasAuditorElGamalKey && !isMutate)
+        if (txFlags == 0 && !hasDomain && !hasIssuerElGamalKey && !hasAuditorElGamalKey &&
+            !isMutate)
             return temMALFORMED;
     }
 
@@ -233,16 +235,19 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     if (mutableFlags)
     {
         if (std::any_of(
-                mptMutabilityFlags.begin(), mptMutabilityFlags.end(), [mutableFlags, &isMutableFlag](auto const& f) {
-                    bool const canMutate =
-                        f.isCannotMutate ? isMutableFlag(f.mutabilityFlag) : !isMutableFlag(f.mutabilityFlag);
+                mptMutabilityFlags.begin(),
+                mptMutabilityFlags.end(),
+                [mutableFlags, &isMutableFlag](auto const& f) {
+                    bool const canMutate = f.isCannotMutate ? isMutableFlag(f.mutabilityFlag)
+                                                            : !isMutableFlag(f.mutabilityFlag);
                     return canMutate && (*mutableFlags & (f.setFlag | f.clearFlag));
                 }))
             return tecNO_PERMISSION;
 
         if ((*mutableFlags & tmfMPTSetPrivacy) || (*mutableFlags & tmfMPTClearPrivacy))
         {
-            std::uint64_t const confidentialOA = (*sleMptIssuance)[~sfConfidentialOutstandingAmount].value_or(0);
+            std::uint64_t const confidentialOA =
+                (*sleMptIssuance)[~sfConfidentialOutstandingAmount].value_or(0);
 
             // If there's any confidential outstanding amount, disallow toggling
             // the lsfMPTCanPrivacy flag
@@ -268,29 +273,34 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     }
 
     // cannot update issuer public key
-    if (ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) && sleMptIssuance->isFieldPresent(sfIssuerElGamalPublicKey))
+    if (ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) &&
+        sleMptIssuance->isFieldPresent(sfIssuerElGamalPublicKey))
     {
         return tecNO_PERMISSION;
     }
 
     // cannot update auditor public key
-    if (ctx.tx.isFieldPresent(sfAuditorElGamalPublicKey) && sleMptIssuance->isFieldPresent(sfAuditorElGamalPublicKey))
+    if (ctx.tx.isFieldPresent(sfAuditorElGamalPublicKey) &&
+        sleMptIssuance->isFieldPresent(sfAuditorElGamalPublicKey))
     {
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
     }
 
-    if (ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) && !sleMptIssuance->isFlag(lsfMPTCanPrivacy))
+    if (ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) &&
+        !sleMptIssuance->isFlag(lsfMPTCanPrivacy))
     {
         return tecNO_PERMISSION;
     }
 
-    if (ctx.tx.isFieldPresent(sfAuditorElGamalPublicKey) && !sleMptIssuance->isFlag(lsfMPTCanPrivacy))
+    if (ctx.tx.isFieldPresent(sfAuditorElGamalPublicKey) &&
+        !sleMptIssuance->isFlag(lsfMPTCanPrivacy))
     {
         return tecNO_PERMISSION;
     }
 
     // cannot upload key if there's circulating supply of COA
-    if ((ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) || ctx.tx.isFieldPresent(sfAuditorElGamalPublicKey)) &&
+    if ((ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) ||
+         ctx.tx.isFieldPresent(sfAuditorElGamalPublicKey)) &&
         sleMptIssuance->isFieldPresent(sfConfidentialOutstandingAmount))
     {
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
@@ -386,7 +396,9 @@ MPTokenIssuanceSet::doApply()
     if (auto const pubKey = ctx_.tx[~sfIssuerElGamalPublicKey])
     {
         // This is enforced in preflight.
-        XRPL_ASSERT(sle->getType() == ltMPTOKEN_ISSUANCE, "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
+        XRPL_ASSERT(
+            sle->getType() == ltMPTOKEN_ISSUANCE,
+            "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
 
         sle->setFieldVL(sfIssuerElGamalPublicKey, *pubKey);
     }
@@ -394,7 +406,9 @@ MPTokenIssuanceSet::doApply()
     if (auto const pubKey = ctx_.tx[~sfAuditorElGamalPublicKey])
     {
         // This is enforced in preflight.
-        XRPL_ASSERT(sle->getType() == ltMPTOKEN_ISSUANCE, "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
+        XRPL_ASSERT(
+            sle->getType() == ltMPTOKEN_ISSUANCE,
+            "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
 
         sle->setFieldVL(sfAuditorElGamalPublicKey, *pubKey);
     }

@@ -365,7 +365,8 @@ public:
     checkIssuanceConfidentialBalance(std::int64_t expectedAmount) const;
 
     [[nodiscard]] bool
-    checkFlags(uint32_t const expectedFlags, std::optional<Account> const& holder = std::nullopt) const;
+    checkFlags(uint32_t const expectedFlags, std::optional<Account> const& holder = std::nullopt)
+        const;
 
     [[nodiscard]] bool
     checkMetadata(std::string const& metadata) const;
@@ -420,7 +421,9 @@ public:
     getIssuanceConfidentialBalance() const;
 
     std::optional<Buffer>
-    getEncryptedBalance(Account const& account, EncryptedBalanceType option = HOLDER_ENCRYPTED_INBOX) const;
+    getEncryptedBalance(
+        Account const& account,
+        EncryptedBalanceType option = HOLDER_ENCRYPTED_INBOX) const;
 
     MPT
     operator[](std::string const& name) const;
@@ -455,8 +458,11 @@ public:
     getIssuanceOutstandingBalance() const;
 
     std::optional<Buffer>
-    getClawbackProof(Account const& holder, std::uint64_t amount, Buffer const& privateKey, uint256 const& txHash)
-        const;
+    getClawbackProof(
+        Account const& holder,
+        std::uint64_t amount,
+        Buffer const& privateKey,
+        uint256 const& txHash) const;
 
     std::optional<Buffer>
     getSchnorrProof(Account const& account, uint256 const& ctxHash) const;

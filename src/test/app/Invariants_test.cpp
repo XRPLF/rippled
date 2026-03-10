@@ -3804,7 +3804,8 @@ class Invariants_test : public beast::unit_test::suite
 
         // Generate an MPT with privacy, issue 100 tokens to A2.
         // Perform a confidential conversion to populate encrypted state.
-        auto const precloseConfidential = [&mptID](Account const& A1, Account const& A2, Env& env) -> bool {
+        auto const precloseConfidential =
+            [&mptID](Account const& A1, Account const& A2, Env& env) -> bool {
             MPTTester mpt(env, A1, {.holders = {A2}, .fund = false});
             mpt.create({.flags = tfMPTCanTransfer | tfMPTCanPrivacy});
             mptID = mpt.issuanceID();
@@ -3858,7 +3859,8 @@ class Invariants_test : public beast::unit_test::suite
             precloseConfidential);
 
         // requiresPrivacyFlag
-        auto const precloseNoPrivacy = [&mptID](Account const& A1, Account const& A2, Env& env) -> bool {
+        auto const precloseNoPrivacy = [&mptID](
+                                           Account const& A1, Account const& A2, Env& env) -> bool {
             MPTTester mpt(env, A1, {.holders = {A2}, .fund = false});
             // completely omitted the tfMPTCanPrivacy flag here.
             mpt.create({.flags = tfMPTCanTransfer});
@@ -3911,7 +3913,8 @@ class Invariants_test : public beast::unit_test::suite
                     return false;
 
                 sleIssuance->setFieldU64(
-                    sfConfidentialOutstandingAmount, sleIssuance->getFieldU64(sfConfidentialOutstandingAmount) - 10);
+                    sfConfidentialOutstandingAmount,
+                    sleIssuance->getFieldU64(sfConfidentialOutstandingAmount) - 10);
                 ac.view().update(sleIssuance);
 
                 return true;
@@ -3923,7 +3926,8 @@ class Invariants_test : public beast::unit_test::suite
 
         // badVersion
         doInvariantCheck(
-            {"MPToken sfConfidentialBalanceVersion not updated when sfConfidentialBalanceSpending changed"},
+            {"MPToken sfConfidentialBalanceVersion not updated when sfConfidentialBalanceSpending "
+             "changed"},
             [&mptID](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto sleToken = ac.view().peek(keylet::mptoken(mptID, A2.id()));
                 if (!sleToken)
@@ -3940,7 +3944,8 @@ class Invariants_test : public beast::unit_test::suite
             precloseConfidential);
 
         // Skipping Deleted MPTs (Issuance deleted)
-        auto const precloseOrphan = [&mptID](Account const& A1, Account const& A2, Env& env) -> bool {
+        auto const precloseOrphan = [&mptID](
+                                        Account const& A1, Account const& A2, Env& env) -> bool {
             MPTTester mpt(env, A1, {.holders = {A2}, .fund = false});
             mpt.create({.flags = tfMPTCanTransfer | tfMPTCanPrivacy});
             mptID = mpt.issuanceID();
