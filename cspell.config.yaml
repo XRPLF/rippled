@@ -43,6 +43,7 @@ suggestWords:
   - synch->sync
 words:
   - abempty
+  - Agentic
   - AMMID
   - amt
   - amts
@@ -94,6 +95,7 @@ words:
   - desynced
   - determ
   - distro
+  - Emdash
   - doxyfile
   - dxrpl
   - endmacro
@@ -254,6 +256,7 @@ words:
   - superpeers
   - takergets
   - takerpays
+  - Tauri
   - ters
   - TMEndpointv2
   - trixie
@@ -293,6 +296,7 @@ words:
   - venv
   - vfalco
   - vinnie
+  - Werror
   - wextra
   - wptr
   - writeme
@@ -309,3 +313,4 @@ words:
   - xrplf
   - xxhash
   - xxhasher
+  - zeroization
