@@ -1,10 +1,10 @@
 #include <test/jtx.h>
 
 #include <xrpld/app/consensus/RCLValidations.h>
-#include <xrpld/app/ledger/Ledger.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/ledger/Ledger.h>
 
 namespace xrpl {
 namespace test {
@@ -55,9 +55,10 @@ class RCLValidations_test : public beast::unit_test::suite
         std::vector<std::shared_ptr<Ledger const>> history;
 
         jtx::Env env(*this);
-        Config config;
+        Rules const rules{{}};
+        Fees const fees{XRPAmount{10}, XRPAmount{10000000}, XRPAmount{2000000}};
         auto prev = std::make_shared<Ledger const>(
-            create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
+            create_genesis, rules, fees, std::vector<uint256>{}, env.app().getNodeFamily());
         history.push_back(prev);
         for (auto i = 0; i < (2 * maxAncestors + 1); ++i)
         {
@@ -213,9 +214,10 @@ class RCLValidations_test : public beast::unit_test::suite
         // Generate a chain of 256 + 10 ledgers
         jtx::Env env(*this);
         auto& j = env.journal;
-        Config config;
+        Rules const rules{{}};
+        Fees const fees{XRPAmount{10}, XRPAmount{10000000}, XRPAmount{2000000}};
         auto prev = std::make_shared<Ledger const>(
-            create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
+            create_genesis, rules, fees, std::vector<uint256>{}, env.app().getNodeFamily());
         history.push_back(prev);
         for (auto i = 0; i < (maxAncestors + 10); ++i)
         {

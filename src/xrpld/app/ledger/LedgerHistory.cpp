@@ -1,5 +1,6 @@
 #include <xrpld/app/ledger/LedgerHistory.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
+#include <xrpld/app/main/Application.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
@@ -73,7 +74,9 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
         }
     }
 
-    std::shared_ptr<Ledger const> ret = loadByIndex(index, app_);
+    Rules const rules{app_.config().features};
+    Fees const fees = app_.config().FEES.toFees();
+    std::shared_ptr<Ledger const> ret = loadByIndex(index, rules, fees, app_);
 
     if (!ret)
         return ret;
@@ -111,7 +114,9 @@ LedgerHistory::getLedgerByHash(LedgerHash const& hash)
         return ret;
     }
 
-    ret = loadByHash(hash, app_);
+    Rules const rules{app_.config().features};
+    Fees const fees = app_.config().FEES.toFees();
+    ret = loadByHash(hash, rules, fees, app_);
 
     if (!ret)
         return ret;

@@ -1,5 +1,3 @@
-#include <xrpld/app/paths/detail/StepChecks.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/Credit.h>
 #include <xrpl/ledger/PaymentSandbox.h>
@@ -8,6 +6,7 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/paths/detail/AmountSpec.h>
+#include <xrpl/tx/paths/detail/StepChecks.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
 #include <boost/container/flat_set.hpp>

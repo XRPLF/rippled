@@ -1,17 +1,12 @@
-#include <xrpld/app/ledger/InboundLedgers.h>
-#include <xrpld/app/ledger/Ledger.h>
-#include <xrpld/app/ledger/LedgerToJson.h>
-#include <xrpld/app/ledger/PendingSaves.h>
-#include <xrpld/app/main/Application.h>
-#include <xrpld/consensus/LedgerTiming.h>
-#include <xrpld/core/Config.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/ledger/LedgerTiming.h>
+#include <xrpl/ledger/PendingSaves.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/detail/DatabaseNodeImp.h>
 #include <xrpl/protocol/Feature.h>
@@ -147,13 +142,15 @@ public:
 
 Ledger::Ledger(
     create_genesis_t,
-    Config const& config,
+    Rules const& rules,
+    Fees const& fees,
     std::vector<uint256> const& amendments,
     Family& family)
     : mImmutable(false)
     , txMap_(SHAMapType::TRANSACTION, family)
     , stateMap_(SHAMapType::STATE, family)
-    , rules_{config.features}
+    , fees_(fees)
+    , rules_(rules)
     , j_(beast::Journal(beast::Journal::getNullSink()))
 {
     header_.seq = 1;
@@ -182,19 +179,19 @@ Ledger::Ledger(
         // Whether featureXRPFees is supported will depend on startup options.
         if (std::find(amendments.begin(), amendments.end(), featureXRPFees) != amendments.end())
         {
-            sle->at(sfBaseFeeDrops) = config.FEES.reference_fee;
-            sle->at(sfReserveBaseDrops) = config.FEES.account_reserve;
-            sle->at(sfReserveIncrementDrops) = config.FEES.owner_reserve;
+            sle->at(sfBaseFeeDrops) = fees.base;
+            sle->at(sfReserveBaseDrops) = fees.reserve;
+            sle->at(sfReserveIncrementDrops) = fees.increment;
         }
         else
         {
-            if (auto const f = config.FEES.reference_fee.dropsAs<std::uint64_t>())
+            if (auto const f = fees.base.dropsAs<std::uint64_t>())
                 sle->at(sfBaseFee) = *f;
-            if (auto const f = config.FEES.account_reserve.dropsAs<std::uint32_t>())
+            if (auto const f = fees.reserve.dropsAs<std::uint32_t>())
                 sle->at(sfReserveBase) = *f;
-            if (auto const f = config.FEES.owner_reserve.dropsAs<std::uint32_t>())
+            if (auto const f = fees.increment.dropsAs<std::uint32_t>())
                 sle->at(sfReserveIncrement) = *f;
-            sle->at(sfReferenceFeeUnits) = Config::FEE_UNITS_DEPRECATED;
+            sle->at(sfReferenceFeeUnits) = FEE_UNITS_DEPRECATED;
         }
         rawInsert(sle);
     }
@@ -207,13 +204,15 @@ Ledger::Ledger(
     LedgerHeader const& info,
     bool& loaded,
     bool acquire,
-    Config const& config,
+    Rules const& rules,
+    Fees const& fees,
     Family& family,
     beast::Journal j)
     : mImmutable(true)
     , txMap_(SHAMapType::TRANSACTION, info.txHash, family)
     , stateMap_(SHAMapType::STATE, info.accountHash, family)
-    , rules_(config.features)
+    , fees_(fees)
+    , rules_(rules)
     , header_(info)
     , j_(j)
 {
@@ -235,7 +234,7 @@ Ledger::Ledger(
     txMap_.setImmutable();
     stateMap_.setImmutable();
 
-    defaultFees(config);
+    // Note: fees_ is passed in, but setup() may override it from the ledger state
     if (!setup())
         loaded = false;
 
@@ -275,11 +274,11 @@ Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
     }
 }
 
-Ledger::Ledger(LedgerHeader const& info, Config const& config, Family& family)
+Ledger::Ledger(LedgerHeader const& info, Rules const& rules, Family& family)
     : mImmutable(true)
     , txMap_(SHAMapType::TRANSACTION, info.txHash, family)
     , stateMap_(SHAMapType::STATE, info.accountHash, family)
-    , rules_{config.features}
+    , rules_(rules)
     , header_(info)
     , j_(beast::Journal(beast::Journal::getNullSink()))
 {
@@ -289,18 +288,19 @@ Ledger::Ledger(LedgerHeader const& info, Config const& config, Family& family)
 Ledger::Ledger(
     std::uint32_t ledgerSeq,
     NetClock::time_point closeTime,
-    Config const& config,
+    Rules const& rules,
+    Fees const& fees,
     Family& family)
     : mImmutable(false)
     , txMap_(SHAMapType::TRANSACTION, family)
     , stateMap_(SHAMapType::STATE, family)
-    , rules_{config.features}
+    , fees_(fees)
+    , rules_(rules)
     , j_(beast::Journal(beast::Journal::getNullSink()))
 {
     header_.seq = ledgerSeq;
     header_.closeTime = closeTime;
     header_.closeTimeResolution = ledgerDefaultTimeResolution;
-    defaultFees(config);
     setup();
 }
 
@@ -628,20 +628,6 @@ Ledger::setup()
     return ret;
 }
 
-void
-Ledger::defaultFees(Config const& config)
-{
-    XRPL_ASSERT(
-        fees_.base == 0 && fees_.reserve == 0 && fees_.increment == 0,
-        "xrpl::Ledger::defaultFees : zero fees");
-    if (fees_.base == 0)
-        fees_.base = config.FEES.reference_fee;
-    if (fees_.reserve == 0)
-        fees_.reserve = config.FEES.account_reserve;
-    if (fees_.increment == 0)
-        fees_.increment = config.FEES.owner_reserve;
-}
-
 std::shared_ptr<SLE>
 Ledger::peek(Keylet const& k) const
 {
@@ -806,27 +792,11 @@ Ledger::walkLedger(beast::Journal j, bool parallel) const
 }
 
 bool
-Ledger::assertSensible(beast::Journal ledgerJ) const
+Ledger::isSensible() const
 {
-    if (header_.hash.isNonZero() && header_.accountHash.isNonZero() &&
+    return header_.hash.isNonZero() && header_.accountHash.isNonZero() &&
         (header_.accountHash == stateMap_.getHash().as_uint256()) &&
-        (header_.txHash == txMap_.getHash().as_uint256()))
-    {
-        return true;
-    }
-
-    // LCOV_EXCL_START
-    Json::Value j = getJson({*this, {}});
-
-    j[jss::accountTreeHash] = to_string(header_.accountHash);
-    j[jss::transTreeHash] = to_string(header_.txHash);
-
-    JLOG(ledgerJ.fatal()) << "ledger is not sensible" << j;
-
-    UNREACHABLE("xrpl::Ledger::assertSensible : ledger is not sensible");
-
-    return false;
-    // LCOV_EXCL_STOP
+        (header_.txHash == txMap_.getHash().as_uint256());
 }
 
 // update the skip list with the information from our previous ledger
@@ -908,24 +878,27 @@ Ledger::isVotingLedger() const
 }
 
 static bool
-saveValidatedLedger(Application& app, std::shared_ptr<Ledger const> const& ledger, bool current)
+saveValidatedLedger(
+    ServiceRegistry& registry,
+    std::shared_ptr<Ledger const> const& ledger,
+    bool current)
 {
-    auto j = app.journal("Ledger");
+    auto j = registry.journal("Ledger");
     auto seq = ledger->header().seq;
-    if (!app.pendingSaves().startWork(seq))
+    if (!registry.pendingSaves().startWork(seq))
     {
         // The save was completed synchronously
         JLOG(j.debug()) << "Save aborted";
         return true;
     }
 
-    auto& db = app.getRelationalDatabase();
+    auto& db = registry.getRelationalDatabase();
 
     auto const res = db.saveValidatedLedger(ledger, current);
 
     // Clients can now trust the database for
     // information about this ledger sequence.
-    app.pendingSaves().finishWork(seq);
+    registry.pendingSaves().finishWork(seq);
     return res;
 }
 
@@ -934,18 +907,18 @@ saveValidatedLedger(Application& app, std::shared_ptr<Ledger const> const& ledge
 */
 bool
 pendSaveValidated(
-    Application& app,
+    ServiceRegistry& registry,
     std::shared_ptr<Ledger const> const& ledger,
     bool isSynchronous,
     bool isCurrent)
 {
-    if (!app.getHashRouter().setFlags(ledger->header().hash, HashRouterFlags::SAVED))
+    if (!registry.getHashRouter().setFlags(ledger->header().hash, HashRouterFlags::SAVED))
     {
         // We have tried to save this ledger recently
-        auto stream = app.journal("Ledger").debug();
+        auto stream = registry.journal("Ledger").debug();
         JLOG(stream) << "Double pend save for " << ledger->header().seq;
 
-        if (!isSynchronous || !app.pendingSaves().pending(ledger->header().seq))
+        if (!isSynchronous || !registry.pendingSaves().pending(ledger->header().seq))
         {
             // Either we don't need it to be finished
             // or it is finished
@@ -955,9 +928,9 @@ pendSaveValidated(
 
     XRPL_ASSERT(ledger->isImmutable(), "xrpl::pendSaveValidated : immutable ledger");
 
-    if (!app.pendingSaves().shouldWork(ledger->header().seq, isSynchronous))
+    if (!registry.pendingSaves().shouldWork(ledger->header().seq, isSynchronous))
     {
-        auto stream = app.journal("Ledger").debug();
+        auto stream = registry.journal("Ledger").debug();
         JLOG(stream) << "Pend save with seq in pending saves " << ledger->header().seq;
 
         return true;
@@ -965,16 +938,16 @@ pendSaveValidated(
 
     // See if we can use the JobQueue.
     if (!isSynchronous &&
-        app.getJobQueue().addJob(
+        registry.getJobQueue().addJob(
             isCurrent ? jtPUBLEDGER : jtPUBOLDLEDGER,
             std::to_string(ledger->seq()),
-            [&app, ledger, isCurrent]() { saveValidatedLedger(app, ledger, isCurrent); }))
+            [&registry, ledger, isCurrent]() { saveValidatedLedger(registry, ledger, isCurrent); }))
     {
         return true;
     }
 
     // The JobQueue won't do the Job.  Do the save synchronously.
-    return saveValidatedLedger(app, ledger, isCurrent);
+    return saveValidatedLedger(registry, ledger, isCurrent);
 }
 
 void
@@ -995,17 +968,24 @@ Ledger::invariants() const
 /*
  * Make ledger using info loaded from database.
  *
- * @param LedgerHeader: Ledger information.
- * @param app: Link to the Application.
+ * @param info: Ledger information.
+ * @param rules: Rules to use (may be overwritten by setup()).
+ * @param fees: Fees to use (may be overwritten by setup()).
+ * @param registry: Service registry for dependency injection.
  * @param acquire: Acquire the ledger if not found locally.
  * @return Shared pointer to the ledger.
  */
 std::shared_ptr<Ledger>
-loadLedgerHelper(LedgerHeader const& info, Application& app, bool acquire)
+loadLedgerHelper(
+    LedgerHeader const& info,
+    Rules const& rules,
+    Fees const& fees,
+    ServiceRegistry& registry,
+    bool acquire)
 {
     bool loaded;
     auto ledger = std::make_shared<Ledger>(
-        info, loaded, acquire, app.config(), app.getNodeFamily(), app.journal("Ledger"));
+        info, loaded, acquire, rules, fees, registry.getNodeFamily(), registry.journal("Ledger"));
 
     if (!loaded)
         ledger.reset();
@@ -1014,10 +994,7 @@ loadLedgerHelper(LedgerHeader const& info, Application& app, bool acquire)
 }
 
 static void
-finishLoadByIndexOrHash(
-    std::shared_ptr<Ledger> const& ledger,
-    Config const& config,
-    beast::Journal j)
+finishLoadByIndexOrHash(std::shared_ptr<Ledger> const& ledger, beast::Journal j)
 {
     if (!ledger)
         return;
@@ -1033,35 +1010,45 @@ finishLoadByIndexOrHash(
 }
 
 std::tuple<std::shared_ptr<Ledger>, std::uint32_t, uint256>
-getLatestLedger(Application& app)
+getLatestLedger(Rules const& rules, Fees const& fees, ServiceRegistry& registry)
 {
-    std::optional<LedgerHeader> const info = app.getRelationalDatabase().getNewestLedgerInfo();
+    std::optional<LedgerHeader> const info = registry.getRelationalDatabase().getNewestLedgerInfo();
     if (!info)
         return {std::shared_ptr<Ledger>(), {}, {}};
-    return {loadLedgerHelper(*info, app, true), info->seq, info->hash};
+    return {loadLedgerHelper(*info, rules, fees, registry, true), info->seq, info->hash};
 }
 
 std::shared_ptr<Ledger>
-loadByIndex(std::uint32_t ledgerIndex, Application& app, bool acquire)
+loadByIndex(
+    std::uint32_t ledgerIndex,
+    Rules const& rules,
+    Fees const& fees,
+    ServiceRegistry& registry,
+    bool acquire)
 {
     if (std::optional<LedgerHeader> info =
-            app.getRelationalDatabase().getLedgerInfoByIndex(ledgerIndex))
+            registry.getRelationalDatabase().getLedgerInfoByIndex(ledgerIndex))
     {
-        std::shared_ptr<Ledger> ledger = loadLedgerHelper(*info, app, acquire);
-        finishLoadByIndexOrHash(ledger, app.config(), app.journal("Ledger"));
+        std::shared_ptr<Ledger> ledger = loadLedgerHelper(*info, rules, fees, registry, acquire);
+        finishLoadByIndexOrHash(ledger, registry.journal("Ledger"));
         return ledger;
     }
     return {};
 }
 
 std::shared_ptr<Ledger>
-loadByHash(uint256 const& ledgerHash, Application& app, bool acquire)
+loadByHash(
+    uint256 const& ledgerHash,
+    Rules const& rules,
+    Fees const& fees,
+    ServiceRegistry& registry,
+    bool acquire)
 {
     if (std::optional<LedgerHeader> info =
-            app.getRelationalDatabase().getLedgerInfoByHash(ledgerHash))
+            registry.getRelationalDatabase().getLedgerInfoByHash(ledgerHash))
     {
-        std::shared_ptr<Ledger> ledger = loadLedgerHelper(*info, app, acquire);
-        finishLoadByIndexOrHash(ledger, app.config(), app.journal("Ledger"));
+        std::shared_ptr<Ledger> ledger = loadLedgerHelper(*info, rules, fees, registry, acquire);
+        finishLoadByIndexOrHash(ledger, registry.journal("Ledger"));
         XRPL_ASSERT(
             !ledger || ledger->header().hash == ledgerHash,
             "xrpl::loadByHash : ledger hash match if loaded");

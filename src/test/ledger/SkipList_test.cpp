@@ -1,8 +1,7 @@
 #include <test/jtx/Env.h>
 
-#include <xrpld/app/ledger/Ledger.h>
-
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/View.h>
 
 namespace xrpl {
@@ -16,9 +15,10 @@ class SkipList_test : public beast::unit_test::suite
         jtx::Env env(*this);
         std::vector<std::shared_ptr<Ledger>> history;
         {
-            Config config;
+            Rules const rules{{}};
+            Fees const fees{XRPAmount{10}, XRPAmount{10000000}, XRPAmount{2000000}};
             auto prev = std::make_shared<Ledger>(
-                create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
+                create_genesis, rules, fees, std::vector<uint256>{}, env.app().getNodeFamily());
             history.push_back(prev);
             for (auto i = 0; i < 1023; ++i)
             {

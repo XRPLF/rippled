@@ -11,17 +11,17 @@
 #include <test/jtx/vault.h>
 #include <test/unit_test/SuiteJournal.h>
 
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/paths/Pathfinder.h>
 #include <xrpld/core/Config.h>
+#include <xrpld/rpc/detail/Pathfinder.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>

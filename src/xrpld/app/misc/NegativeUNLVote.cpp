@@ -1,7 +1,7 @@
 #include <xrpld/app/consensus/RCLValidations.h>
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/misc/NegativeUNLVote.h>
 
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/shamap/SHAMapItem.h>
 
 namespace xrpl {

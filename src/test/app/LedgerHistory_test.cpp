@@ -36,11 +36,10 @@ public:
         if (!prev)
         {
             assert(!stx);
+            Rules const rules{env.app().config().features};
+            Fees const fees = env.app().config().FEES.toFees();
             return std::make_shared<Ledger>(
-                create_genesis,
-                env.app().config(),
-                std::vector<uint256>{},
-                env.app().getNodeFamily());
+                create_genesis, rules, fees, std::vector<uint256>{}, env.app().getNodeFamily());
         }
         auto res = std::make_shared<Ledger>(*prev, prev->header().closeTime + closeOffset);
 

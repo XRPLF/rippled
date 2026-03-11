@@ -7,7 +7,6 @@
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/ledger/OrderBookDBImpl.h>
-#include <xrpld/app/ledger/PendingSaves.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/BasicApp.h>
@@ -21,13 +20,13 @@
 #include <xrpld/app/misc/ValidatorSite.h>
 #include <xrpld/app/misc/make_NetworkOPs.h>
 #include <xrpld/app/misc/setup_HashRouter.h>
-#include <xrpld/app/paths/PathRequests.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/core/NetworkIDServiceImpl.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/PeerSet.h>
 #include <xrpld/overlay/make_Overlay.h>
+#include <xrpld/rpc/detail/PathRequestManager.h>
 #include <xrpld/shamap/NodeFamily.h>
 
 #include <xrpl/basics/ByteUtilities.h>
@@ -42,6 +41,7 @@
 #include <xrpl/crypto/csprng.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/ledger/AmendmentTable.h>
+#include <xrpl/ledger/PendingSaves.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/BuildInfo.h>
@@ -170,7 +170,7 @@ public:
     std::unique_ptr<NodeStore::Database> m_nodeStore;
     NodeFamily nodeFamily_;
     std::unique_ptr<OrderBookDB> m_orderBookDB;
-    std::unique_ptr<PathRequests> m_pathRequests;
+    std::unique_ptr<PathRequestManager> m_pathRequestManager;
     std::unique_ptr<LedgerMaster> m_ledgerMaster;
     std::unique_ptr<LedgerCleaner> ledgerCleaner_;
     std::unique_ptr<InboundLedgers> m_inboundLedgers;
@@ -324,8 +324,8 @@ public:
 
         , m_orderBookDB(make_OrderBookDB(*this, {config_->PATH_SEARCH_MAX, config_->standalone()}))
 
-        , m_pathRequests(
-              std::make_unique<PathRequests>(
+        , m_pathRequestManager(
+              std::make_unique<PathRequestManager>(
                   *this,
                   logs_->journal("PathRequest"),
                   m_collectorManager->collector()))
@@ -654,10 +654,10 @@ public:
         return *m_orderBookDB;
     }
 
-    PathRequests&
-    getPathRequests() override
+    PathRequestManager&
+    getPathRequestManager() override
     {
-        return *m_pathRequests;
+        return *m_pathRequestManager;
     }
 
     CachedSLEs&
@@ -1630,8 +1630,12 @@ ApplicationImp::startGenesisLedger()
         ? m_amendmentTable->getDesired()
         : std::vector<uint256>{};
 
-    std::shared_ptr<Ledger> const genesis =
-        std::make_shared<Ledger>(create_genesis, *config_, initialAmendments, nodeFamily_);
+    std::shared_ptr<Ledger> const genesis = std::make_shared<Ledger>(
+        create_genesis,
+        Rules{config_->features},
+        config_->FEES.toFees(),
+        initialAmendments,
+        nodeFamily_);
     m_ledgerMaster->storeLedger(genesis);
 
     auto const next = std::make_shared<Ledger>(*genesis, timeKeeper().closeTime());
@@ -1652,7 +1656,8 @@ ApplicationImp::getLastFullLedger()
 
     try
     {
-        auto const [ledger, seq, hash] = getLatestLedger(*this);
+        auto const [ledger, seq, hash] =
+            getLatestLedger(Rules{config_->features}, config_->FEES.toFees(), *this);
 
         if (!ledger)
             return ledger;
@@ -1763,7 +1768,8 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
             return nullptr;
         }
 
-        auto loadLedger = std::make_shared<Ledger>(seq, closeTime, *config_, nodeFamily_);
+        auto loadLedger = std::make_shared<Ledger>(
+            seq, closeTime, Rules{config_->features}, config_->FEES.toFees(), nodeFamily_);
         loadLedger->setTotalDrops(totalDrops);
 
         for (Json::UInt index = 0; index < ledger.get().size(); ++index)
@@ -1843,7 +1849,8 @@ ApplicationImp::loadOldLedger(
 
             if (hash.parseHex(ledgerID))
             {
-                loadLedger = loadByHash(hash, *this);
+                loadLedger =
+                    loadByHash(hash, Rules{config_->features}, config_->FEES.toFees(), *this);
 
                 if (!loadLedger)
                 {
@@ -1870,7 +1877,8 @@ ApplicationImp::loadOldLedger(
             std::uint32_t index;
 
             if (beast::lexicalCastChecked(index, ledgerID))
-                loadLedger = loadByIndex(index, *this);
+                loadLedger =
+                    loadByIndex(index, Rules{config_->features}, config_->FEES.toFees(), *this);
         }
 
         if (!loadLedger)
@@ -1885,7 +1893,11 @@ ApplicationImp::loadOldLedger(
 
             JLOG(m_journal.info()) << "Loading parent ledger";
 
-            loadLedger = loadByHash(replayLedger->header().parentHash, *this);
+            loadLedger = loadByHash(
+                replayLedger->header().parentHash,
+                Rules{config_->features},
+                config_->FEES.toFees(),
+                *this);
             if (!loadLedger)
             {
                 JLOG(m_journal.info()) << "Loading parent ledger from node store";
@@ -1954,10 +1966,13 @@ ApplicationImp::loadOldLedger(
             // LCOV_EXCL_STOP
         }
 
-        if (!loadLedger->assertSensible(journal("Ledger")))
+        if (!loadLedger->isSensible())
         {
             // LCOV_EXCL_START
-            JLOG(m_journal.fatal()) << "Ledger is not sensible.";
+            Json::Value j = getJson({*loadLedger, {}});
+            j[jss::accountTreeHash] = to_string(loadLedger->header().accountHash);
+            j[jss::transTreeHash] = to_string(loadLedger->header().txHash);
+            JLOG(m_journal.fatal()) << "Ledger is not sensible: " << j;
             UNREACHABLE(
                 "xrpl::ApplicationImp::loadOldLedger : ledger is not "
                 "sensible");

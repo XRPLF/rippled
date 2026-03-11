@@ -4,6 +4,10 @@
 
 namespace xrpl {
 
+// Deprecated constant for backwards compatibility with pre-XRPFees amendment.
+// This was the reference fee units used in the old fee calculation.
+inline constexpr std::uint32_t FEE_UNITS_DEPRECATED = 10;
+
 /** Reflects the fee settings for a particular ledger.
 
     The fees are always the same for any transactions applied
@@ -19,6 +23,11 @@ struct Fees
     Fees(Fees const&) = default;
     Fees&
     operator=(Fees const&) = default;
+
+    Fees(XRPAmount base_, XRPAmount reserve_, XRPAmount increment_)
+        : base(base_), reserve(reserve_), increment(increment_)
+    {
+    }
 
     /** Returns the account reserve given the owner count, in drops.
 
