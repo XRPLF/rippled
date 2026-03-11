@@ -96,17 +96,14 @@ consteval auto
 validFeatureName(auto fn) -> bool
 {
     constexpr char const* n = fn();
-    constexpr bool ret = [](auto n) {
-        for (auto ptr = n; *ptr != '\0'; ++ptr)
-        {
-            // Prevent the use of visually confusable characters and enforce that feature names
-            // are always valid ASCII. This is needed because C++ allows Unicode identifiers.
-            if (*ptr & 0x80 || *ptr < 0x20)
-                return false;
-        }
-        return true;
-    }(n);
-    return ret;
+    // Prevent the use of visually confusable characters and enforce that feature names
+    // are always valid ASCII. This is needed because C++ allows Unicode identifiers.
+    for (auto ptr = n; *ptr != '\0'; ++ptr)
+    {
+        if (*ptr & 0x80 || *ptr < 0x20)
+            return false;
+    }
+    return true;
 }
 
 enum class VoteBehavior : int { Obsolete = -1, DefaultNo = 0, DefaultYes };
