@@ -112,7 +112,8 @@ public:
     XRPAmount
     operator-() const
     {
-        return XRPAmount{-drops_};
+        // Negate in unsigned domain to avoid UB when drops_ == INT64_MIN
+        return XRPAmount{static_cast<value_type>(-static_cast<std::uint64_t>(drops_))};
     }
 
     bool

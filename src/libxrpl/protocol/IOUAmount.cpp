@@ -91,7 +91,8 @@ IOUAmount::normalize()
     bool const negative = (mantissa_ < 0);
 
     if (negative)
-        mantissa_ = -mantissa_;
+        // Negate in unsigned domain to avoid UB when mantissa_ == INT64_MIN
+        mantissa_ = static_cast<mantissa_type>(-static_cast<std::uint64_t>(mantissa_));
 
     while ((mantissa_ < minMantissa) && (exponent_ > minExponent))
     {
@@ -118,7 +119,8 @@ IOUAmount::normalize()
         Throw<std::overflow_error>("value overflow");
 
     if (negative)
-        mantissa_ = -mantissa_;
+        // Negate back in unsigned domain to restore sign
+        mantissa_ = static_cast<mantissa_type>(-static_cast<std::uint64_t>(mantissa_));
 }
 
 IOUAmount::IOUAmount(Number const& other) : IOUAmount(fromNumber(other))

@@ -207,7 +207,6 @@ jobs:
         run: |
           echo "ASAN_OPTIONS=print_stacktrace=1:detect_container_overflow=0:suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/asan.supp" >> ${GITHUB_ENV}
           echo "TSAN_OPTIONS=second_deadlock_stack=1:halt_on_error=0:suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/tsan.supp" >> ${GITHUB_ENV}
-          echo "UBSAN_OPTIONS=suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/ubsan.supp" >> ${GITHUB_ENV}
           echo "LSAN_OPTIONS=suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/lsan.supp" >> ${GITHUB_ENV}
 
       - name: Run the separate tests

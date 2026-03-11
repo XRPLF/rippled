@@ -67,8 +67,11 @@ private:
             }
             else
             {
-                while (elapsed--)
+                while (elapsed > 0)
+                {
+                    --elapsed;
                     m_value -= (m_value + Window - 1) / Window;
+                }
             }
         }
 

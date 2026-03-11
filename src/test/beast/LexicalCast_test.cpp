@@ -19,7 +19,7 @@ public:
     testInteger(IntType in)
     {
         std::string s;
-        IntType out(in + 1);
+        IntType out{};  // Initialize to avoid relying on overflow behavior
 
         expect(lexicalCastChecked(s, in));
         expect(lexicalCastChecked(out, s));

@@ -1,4 +1,5 @@
 import re
+import os
 
 from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout
 
@@ -125,6 +126,12 @@ class Xrpl(ConanFile):
             self.options["boost"].visibility = "global"
         if self.settings.compiler in ["clang", "gcc"]:
             self.options["boost"].without_cobalt = True
+
+        # Check if environment variable exists
+        if "SANITIZERS" in os.environ:
+            sanitizers = os.environ["SANITIZERS"]
+            if "Address" in sanitizers:
+                self.default_options["fPIC"] = False
 
     def requirements(self):
         # Conan 2 requires transitive headers to be specified
