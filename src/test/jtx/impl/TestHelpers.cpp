@@ -344,6 +344,16 @@ set(AccountID const& account, uint256 const& vaultId, uint32_t flags)
 }
 
 Json::Value
+set(AccountID const& account, uint32_t flags)
+{
+    Json::Value jv;
+    jv[sfTransactionType] = jss::LoanBrokerSet;
+    jv[sfAccount] = to_string(account);
+    jv[sfFlags] = flags;
+    return jv;
+}
+
+Json::Value
 del(AccountID const& account, uint256 const& brokerID, uint32_t flags)
 {
     Json::Value jv;

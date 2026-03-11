@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/lending/LoanBrokerSet.h>
 //
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/tx/transactors/lending/LendingHelpers.h>
 
@@ -29,7 +30,9 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
     if (!validNumericRange(tx[~sfDebtMaximum], Number(maxMPTokenAmount), Number(0)))
         return temINVALID;
 
-    if (tx.isFieldPresent(sfLoanBrokerID))
+    auto const isLoanBrokerUpdate = tx.isFieldPresent(sfLoanBrokerID);
+
+    if (isLoanBrokerUpdate)
     {
         // Fixed fields can not be specified if we're modifying an existing
         // LoanBroker Object
@@ -41,9 +44,27 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
             return temINVALID;
     }
 
-    if (auto const vaultID = tx.at(~sfVaultID))
+    // Amendment-specific field presence rules
+    if (ctx.rules.enabled(fixLendingProtocolV1_1))
     {
-        if (*vaultID == beast::zero)
+        if (isLoanBrokerUpdate)
+        {
+            if (tx.isFieldPresent(sfVaultID))
+                return temINVALID;
+        }
+        else
+        {
+            if (!tx.isFieldPresent(sfVaultID) || tx[sfVaultID] == beast::zero)
+                return temINVALID;
+        }
+    }
+    else
+    {
+        // Pre-amendment: VaultID was soeREQUIRED, must always be present
+        if (!tx.isFieldPresent(sfVaultID))
+            return temINVALID;
+
+        if (tx[sfVaultID] == beast::zero)
             return temINVALID;
     }
 
@@ -68,77 +89,152 @@ LoanBrokerSet::getValueFields()
     return valueFields;
 }
 
-TER
-LoanBrokerSet::preclaim(PreclaimContext const& ctx)
+/** Read and validate a vault, checking existence and ownership.
+ *
+ * @param ctx The preclaim context.
+ * @param account The expected vault owner.
+ * @param id The vault ID to look up.
+ * @return The vault SLE on success, or a TER error.
+ */
+static Expected<std::shared_ptr<SLE const>, TER>
+readVault(PreclaimContext const& ctx, AccountID const& account, uint256 const& id)
 {
-    auto const& tx = ctx.tx;
-
-    auto const account = tx[sfAccount];
-    auto const vaultID = tx[sfVaultID];
-
-    auto const sleVault = ctx.view.read(keylet::vault(vaultID));
-    if (!sleVault)
+    auto const sle = ctx.view.read(keylet::vault(id));
+    if (!sle)
     {
         JLOG(ctx.j.warn()) << "Vault does not exist.";
-        return tecNO_ENTRY;
+        return Unexpected(tecNO_ENTRY);
     }
-    Asset const asset = sleVault->at(sfAsset);
-
-    if (account != sleVault->at(sfOwner))
+    if (account != sle->at(sfOwner))
     {
         JLOG(ctx.j.warn()) << "Account is not the owner of the Vault.";
-        return tecNO_PERMISSION;
+        return Unexpected(tecNO_PERMISSION);
     }
+    return sle;
+}
 
-    if (auto const brokerID = tx[~sfLoanBrokerID])
+/** Preclaim validation for updating an existing LoanBroker.
+ *
+ * @param ctx The preclaim context.
+ * @param account The transaction submitter.
+ * @param brokerID The LoanBroker ID to update.
+ * @return The vault SLE on success, or a TER error.
+ */
+static Expected<std::shared_ptr<SLE const>, TER>
+preclaimUpdate(PreclaimContext const& ctx, AccountID const& account, uint256 const& brokerID)
+{
+    auto const& tx = ctx.tx;
+    bool const fixEnabled = ctx.view.rules().enabled(fixLendingProtocolV1_1);
+
+    std::shared_ptr<SLE const> sleBroker;
+    std::shared_ptr<SLE const> sleVault;
+
+    if (fixEnabled)
     {
-        // Updating an existing Broker
-
-        auto const sleBroker = ctx.view.read(keylet::loanbroker(*brokerID));
+        // Post-amendment: VaultID is not in the tx, read it from broker
+        sleBroker = ctx.view.read(keylet::loanbroker(brokerID));
         if (!sleBroker)
         {
             JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
-            return tecNO_ENTRY;
-        }
-        if (vaultID != sleBroker->at(sfVaultID))
-        {
-            JLOG(ctx.j.warn()) << "Can not change VaultID on an existing LoanBroker.";
-            return tecNO_PERMISSION;
-        }
-        if (account != sleBroker->at(sfOwner))
-        {
-            JLOG(ctx.j.warn()) << "Account is not the owner of the LoanBroker.";
-            return tecNO_PERMISSION;
+            return Unexpected(tecNO_ENTRY);
         }
 
-        if (auto const debtMax = tx[~sfDebtMaximum])
-        {
-            // Can't reduce the debt maximum below the current total debt
-            auto const currentDebtTotal = sleBroker->at(sfDebtTotal);
-            if (*debtMax != 0 && *debtMax < currentDebtTotal)
-            {
-                JLOG(ctx.j.warn()) << "Cannot reduce DebtMaximum below current DebtTotal.";
-                return tecLIMIT_EXCEEDED;
-            }
-        }
+        auto const vault = readVault(ctx, account, sleBroker->at(sfVaultID));
+        if (!vault)
+            return vault;
+        sleVault = *vault;
     }
     else
     {
-        if (auto const ter = canAddHolding(ctx.view, asset))
-            return ter;
+        XRPL_ASSERT(
+            tx.isFieldPresent(sfVaultID),
+            "xrpl::LoanBrokerSet::preclaimUpdate : VaultID is present in the transaction");
+        // Pre-amendment: vault is validated before broker to preserve
+        // the original error ordering for historical transaction replay.
+        auto const vault = readVault(ctx, account, tx[sfVaultID]);
+        if (!vault)
+            return vault;
+        sleVault = *vault;
 
-        if (auto const ter = checkFrozen(ctx.view, sleVault->at(sfAccount), sleVault->at(sfAsset)))
+        sleBroker = ctx.view.read(keylet::loanbroker(brokerID));
+        if (!sleBroker)
         {
-            JLOG(ctx.j.warn()) << "Vault pseudo-account is frozen.";
-            return ter;
+            JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
+            return Unexpected(tecNO_ENTRY);
+        }
+        if (tx[sfVaultID] != sleBroker->at(sfVaultID))
+        {
+            JLOG(ctx.j.warn()) << "Can not change VaultID on an existing LoanBroker.";
+            return Unexpected(tecNO_PERMISSION);
         }
     }
 
+    if (account != sleBroker->at(sfOwner))
+    {
+        JLOG(ctx.j.warn()) << "Account is not the owner of the LoanBroker.";
+        return Unexpected(tecNO_PERMISSION);
+    }
+
+    if (auto const debtMax = tx[~sfDebtMaximum])
+    {
+        auto const currentDebtTotal = sleBroker->at(sfDebtTotal);
+        if (*debtMax != 0 && *debtMax < currentDebtTotal)
+        {
+            JLOG(ctx.j.warn()) << "Cannot reduce DebtMaximum below current DebtTotal.";
+            return Unexpected(tecLIMIT_EXCEEDED);
+        }
+    }
+
+    return sleVault;
+}
+
+/** Preclaim validation for creating a new LoanBroker.
+ *
+ * @param ctx The preclaim context.
+ * @param account The transaction submitter (vault owner).
+ * @return The vault SLE on success, or a TER error.
+ */
+static Expected<std::shared_ptr<SLE const>, TER>
+preclaimCreate(PreclaimContext const& ctx, AccountID const& account)
+{
+    auto const vault = readVault(ctx, account, ctx.tx[sfVaultID]);
+    if (!vault)
+        return vault;
+    auto const& sleVault = *vault;
+
+    Asset const asset = sleVault->at(sfAsset);
+    if (auto const ter = canAddHolding(ctx.view, asset))
+        return Unexpected(ter);
+
+    if (auto const ter = checkFrozen(ctx.view, sleVault->at(sfAccount), sleVault->at(sfAsset)))
+    {
+        JLOG(ctx.j.warn()) << "Vault pseudo-account is frozen.";
+        return Unexpected(ter);
+    }
+
+    return sleVault;
+}
+
+TER
+LoanBrokerSet::preclaim(PreclaimContext const& ctx)
+{
+    auto const account = ctx.tx[sfAccount];
+
+    auto const vault = [&]() -> Expected<std::shared_ptr<SLE const>, TER> {
+        if (auto const brokerID = ctx.tx[~sfLoanBrokerID])
+            return preclaimUpdate(ctx, account, *brokerID);
+        return preclaimCreate(ctx, account);
+    }();
+
+    if (!vault)
+        return vault.error();
+
     // Check that relevant values can be represented as the vault asset
-    // type. This is mostly only relevant for integral (non-IOU) types
+    // type. This is mostly only relevant for integral (non-IOU) types.
+    Asset const asset = (*vault)->at(sfAsset);
     for (auto const& field : getValueFields())
     {
-        if (auto const value = tx[field]; value && STAmount{asset, *value} != *value)
+        if (auto const value = ctx.tx[field]; value && STAmount{asset, *value} != *value)
         {
             JLOG(ctx.j.warn()) << field.f->getName() << " (" << *value
                                << ") can not be represented as a(n) " << to_string(asset) << ".";

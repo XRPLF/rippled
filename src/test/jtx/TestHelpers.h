@@ -682,6 +682,10 @@ namespace loanBroker {
 Json::Value
 set(AccountID const& account, uint256 const& vaultId, std::uint32_t flags = 0);
 
+// Overload for modifying an existing LoanBroker (use with loanBrokerID())
+Json::Value
+set(AccountID const& account, std::uint32_t flags = 0);
+
 // Use "del" because "delete" is a reserved word in C++.
 Json::Value
 del(AccountID const& account, uint256 const& brokerID, std::uint32_t flags = 0);

@@ -397,7 +397,7 @@ class LoanBroker_test : public beast::unit_test::suite
             }
 
             // no-op
-            env(set(alice, vault.vaultID), loanBrokerID(keylet.key));
+            env(set(alice), loanBrokerID(keylet.key));
             env.close();
 
             // Make modifications to the broker
@@ -413,10 +413,7 @@ class LoanBroker_test : public beast::unit_test::suite
             // Verify that fields get removed when set to default values
             // Debt maximum: explicit 0
             // Data: explicit empty
-            env(set(alice, vault.vaultID),
-                loanBrokerID(broker->key()),
-                debtMaximum(Number(0)),
-                data(""));
+            env(set(alice), loanBrokerID(broker->key()), debtMaximum(Number(0)), data(""));
             env.close();
 
             // Check the updated fields
@@ -673,35 +670,29 @@ class LoanBroker_test : public beast::unit_test::suite
                     auto const nextKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
 
                     // fields that can't be changed
-                    // LoanBrokerID
+                    // LoanBrokerID (non-existent)
+                    env(set(alice), loanBrokerID(nextKeylet.key), ter(tecNO_ENTRY), THISLINE);
+                    // VaultID is rejected on update (post-amendment)
                     env(set(alice, vault.vaultID),
-                        loanBrokerID(nextKeylet.key),
-                        ter(tecNO_ENTRY),
-                        THISLINE);
-                    // VaultID
-                    env(set(alice, nextKeylet.key),
                         loanBrokerID(broker->key()),
-                        ter(tecNO_ENTRY),
+                        ter(temINVALID),
                         THISLINE);
                     // Owner
-                    env(set(evan, vault.vaultID),
-                        loanBrokerID(broker->key()),
-                        ter(tecNO_PERMISSION),
-                        THISLINE);
+                    env(set(evan), loanBrokerID(broker->key()), ter(tecNO_PERMISSION), THISLINE);
                     // ManagementFeeRate
-                    env(set(alice, vault.vaultID),
+                    env(set(alice),
                         loanBrokerID(broker->key()),
                         managementFeeRate(maxManagementFeeRate),
                         ter(temINVALID),
                         THISLINE);
                     // CoverRateMinimum
-                    env(set(alice, vault.vaultID),
+                    env(set(alice),
                         loanBrokerID(broker->key()),
                         coverRateMinimum(maxManagementFeeRate),
                         ter(temINVALID),
                         THISLINE);
                     // CoverRateLiquidation
-                    env(set(alice, vault.vaultID),
+                    env(set(alice),
                         loanBrokerID(broker->key()),
                         coverRateLiquidation(maxManagementFeeRate),
                         ter(temINVALID),
@@ -710,14 +701,14 @@ class LoanBroker_test : public beast::unit_test::suite
                     // fields that can be changed
                     testData = "Test Data 1234";
                     // Bad data: too long
-                    env(set(alice, vault.vaultID),
+                    env(set(alice),
                         loanBrokerID(broker->key()),
                         data(std::string(maxDataPayloadLength + 1, 'W')),
                         ter(temINVALID),
                         THISLINE);
 
                     // Bad debt maximum
-                    env(set(alice, vault.vaultID),
+                    env(set(alice),
                         loanBrokerID(broker->key()),
                         debtMaximum(Number(-175, -1)),
                         ter(temINVALID),
@@ -725,7 +716,7 @@ class LoanBroker_test : public beast::unit_test::suite
                     Number debtMax{175, -1};
                     if (vault.asset.integral())
                     {
-                        env(set(alice, vault.vaultID),
+                        env(set(alice),
                             loanBrokerID(broker->key()),
                             data(testData),
                             debtMaximum(debtMax),
@@ -734,7 +725,7 @@ class LoanBroker_test : public beast::unit_test::suite
                         roundToAsset(vault.asset, debtMax);
                     }
                     // Data & Debt maximum
-                    env(set(alice, vault.vaultID),
+                    env(set(alice),
                         loanBrokerID(broker->key()),
                         data(testData),
                         debtMaximum(debtMax),
@@ -781,10 +772,7 @@ class LoanBroker_test : public beast::unit_test::suite
                 },
                 [&](SLE::const_ref broker) {
                     // Reset Data & Debt maximum to default values
-                    env(set(alice, vault.vaultID),
-                        loanBrokerID(broker->key()),
-                        data(""),
-                        debtMaximum(Number(0)));
+                    env(set(alice), loanBrokerID(broker->key()), data(""), debtMaximum(Number(0)));
                 },
                 [&](SLE::const_ref broker) {
                     // Check the updated fields
@@ -1035,13 +1023,8 @@ class LoanBroker_test : public beast::unit_test::suite
         if (brokerTest == Set)
         {
             // preflight: temINVALID (empty/zero broker id)
-            testZeroBrokerID([&]() {
-                return env.json(set(alice, vaultInfo.vaultID), loanBrokerID(brokerKeylet.key));
-            });
-            // preflight: temINVALID (empty/zero vault id)
-            testZeroVaultID([&]() {
-                return env.json(set(alice, vaultInfo.vaultID), loanBrokerID(brokerKeylet.key));
-            });
+            testZeroBrokerID(
+                [&]() { return env.json(set(alice), loanBrokerID(brokerKeylet.key)); });
 
             if (asset.holds<Issue>())
             {
@@ -1392,7 +1375,7 @@ class LoanBroker_test : public beast::unit_test::suite
         BEAST_EXPECT(broker->at(sfDebtTotal) == 50);
         auto debtTotal = broker->at(sfDebtTotal);
 
-        auto tx2 = set(alice, vaultInfo.vaultID);
+        auto tx2 = set(alice);
         tx2[sfLoanBrokerID] = to_string(brokerKeylet.key);
         tx2[sfDebtMaximum] = debtTotal - 1;
         env(tx2, ter(tecLIMIT_EXCEEDED), THISLINE);
@@ -1797,11 +1780,195 @@ class LoanBroker_test : public beast::unit_test::suite
         BEAST_EXPECT(env.enabled(fixLendingProtocolV1_1));
     }
 
+    void
+    testLoanBrokerSetVaultIDAmendment()
+    {
+        using namespace jtx;
+        using namespace loanBroker;
+
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+        Account const evan{"evan"};
+
+        // Helper to set up a vault and broker for testing
+        auto const setup = [&](Env& env) {
+            Vault vault{env};
+            env.fund(XRP(100'000), issuer, alice, evan);
+            env.close();
+
+            env(trust(alice, issuer["IOU"](1'000'000)), THISLINE);
+            env.close();
+            PrettyAsset const asset = issuer["IOU"];
+            env(pay(issuer, alice, asset(100'000)), THISLINE);
+            env.close();
+
+            auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
+            env(tx, THISLINE);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(50)}),
+                THISLINE);
+            env.close();
+
+            auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+            env(set(alice, vaultKeylet.key), THISLINE);
+            env.close();
+
+            struct Result
+            {
+                uint256 vaultID;
+                Keylet brokerKeylet;
+            };
+            return Result{vaultKeylet.key, brokerKeylet};
+        };
+
+        // Post-amendment: VaultID must not be present on update
+        {
+            testcase("LoanBrokerSet post-amendment: VaultID rejected on update");
+            Env env(*this);
+            BEAST_EXPECT(env.enabled(fixLendingProtocolV1_1));
+            auto const [vaultID, brokerKL] = setup(env);
+
+            // Update with VaultID → temINVALID
+            env(set(alice, vaultID), loanBrokerID(brokerKL.key), ter(temINVALID), THISLINE);
+
+            // Update without VaultID succeeds
+            env(set(alice), loanBrokerID(brokerKL.key), data("post-amendment update"), THISLINE);
+            env.close();
+
+            auto const broker = env.le(brokerKL);
+            BEAST_EXPECT(broker);
+            if (broker)
+                BEAST_EXPECT(checkVL(broker->at(sfData), "post-amendment update"));
+        }
+
+        // Post-amendment: Create requires VaultID
+        {
+            testcase("LoanBrokerSet post-amendment: VaultID required on create");
+            Env env(*this);
+            BEAST_EXPECT(env.enabled(fixLendingProtocolV1_1));
+            env.fund(XRP(100'000), issuer, alice);
+            env.close();
+
+            // Create without VaultID → temINVALID
+            env(set(alice), ter(temINVALID), THISLINE);
+
+            // Create with zero VaultID → temINVALID
+            env(set(alice, uint256{}), ter(temINVALID), THISLINE);
+        }
+
+        // Post-amendment: Update by wrong owner → tecNO_PERMISSION
+        {
+            testcase("LoanBrokerSet post-amendment: wrong owner rejected");
+            Env env(*this);
+            auto const [vaultID, brokerKL] = setup(env);
+
+            env(set(evan), loanBrokerID(brokerKL.key), ter(tecNO_PERMISSION), THISLINE);
+        }
+
+        // Post-amendment: Update non-existent broker → tecNO_ENTRY
+        {
+            testcase("LoanBrokerSet post-amendment: non-existent broker");
+            Env env(*this);
+            auto const [vaultID, brokerKL] = setup(env);
+
+            env(set(alice), loanBrokerID(uint256{1}), ter(tecNO_ENTRY), THISLINE);
+        }
+
+        // Pre-amendment: VaultID required on both create and update
+        {
+            testcase("LoanBrokerSet pre-amendment: VaultID required on update");
+            Env env(*this);
+            env.disableFeature(fixLendingProtocolV1_1);
+            BEAST_EXPECT(!env.enabled(fixLendingProtocolV1_1));
+            auto const [vaultID, brokerKL] = setup(env);
+
+            // Update without VaultID → temINVALID (pre-amendment requires it)
+            env(set(alice), loanBrokerID(brokerKL.key), ter(temINVALID), THISLINE);
+
+            // Update with matching VaultID succeeds (old behavior)
+            env(set(alice, vaultID),
+                loanBrokerID(brokerKL.key),
+                data("pre-amendment update"),
+                THISLINE);
+            env.close();
+
+            auto const broker = env.le(brokerKL);
+            BEAST_EXPECT(broker);
+            if (broker)
+                BEAST_EXPECT(checkVL(broker->at(sfData), "pre-amendment update"));
+        }
+
+        // Pre-amendment: mismatched VaultID on update → tecNO_PERMISSION
+        {
+            testcase("LoanBrokerSet pre-amendment: mismatched VaultID");
+            Env env(*this);
+            env.disableFeature(fixLendingProtocolV1_1);
+
+            Vault vault{env};
+            env.fund(XRP(100'000), issuer, alice);
+            env.close();
+            env(trust(alice, issuer["IOU"](1'000'000)), THISLINE);
+            env.close();
+            PrettyAsset const asset = issuer["IOU"];
+            env(pay(issuer, alice, asset(100'000)), THISLINE);
+            env.close();
+
+            // Create two vaults
+            auto [tx1, vaultKL1] = vault.create({.owner = alice, .asset = asset});
+            env(tx1, THISLINE);
+            env.close();
+            auto [tx2, vaultKL2] = vault.create({.owner = alice, .asset = asset});
+            env(tx2, THISLINE);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKL1.key, .amount = asset(50)}),
+                THISLINE);
+            env.close();
+
+            auto const brokerKL = keylet::loanbroker(alice.id(), env.seq(alice));
+            env(set(alice, vaultKL1.key), THISLINE);
+            env.close();
+
+            // Update with different vault → tecNO_PERMISSION
+            env(set(alice, vaultKL2.key),
+                loanBrokerID(brokerKL.key),
+                ter(tecNO_PERMISSION),
+                THISLINE);
+        }
+
+        // Pre-amendment: Create without VaultID → temINVALID
+        {
+            testcase("LoanBrokerSet pre-amendment: create requires VaultID");
+            Env env(*this);
+            env.disableFeature(fixLendingProtocolV1_1);
+            env.fund(XRP(100'000), issuer, alice);
+            env.close();
+
+            env(set(alice), ter(temINVALID), THISLINE);
+        }
+
+        // Pre-amendment: immutable fields still rejected on update
+        {
+            testcase("LoanBrokerSet pre-amendment: immutable fields on update");
+            Env env(*this);
+            env.disableFeature(fixLendingProtocolV1_1);
+            auto const [vaultID, brokerKL] = setup(env);
+
+            env(set(alice, vaultID),
+                loanBrokerID(brokerKL.key),
+                managementFeeRate(TenthBips16(1)),
+                ter(temINVALID),
+                THISLINE);
+        }
+    }
+
 public:
     void
     run() override
     {
         testFixAmendmentEnabled();
+        testLoanBrokerSetVaultIDAmendment();
         testLoanBrokerSetDebtMaximum();
         testLoanBrokerCoverDepositNullVault();
 

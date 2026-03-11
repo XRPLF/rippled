@@ -936,7 +936,7 @@ TRANSACTION(ttLOAN_BROKER_SET, 74, LoanBrokerSet,
     Delegation::delegable,
     featureLendingProtocol,
     createPseudoAcct | mayAuthorizeMPT, ({
-    {sfVaultID, soeREQUIRED},
+    {sfVaultID, soeOPTIONAL},
     {sfLoanBrokerID, soeOPTIONAL},
     {sfData, soeOPTIONAL},
     {sfManagementFeeRate, soeOPTIONAL},
