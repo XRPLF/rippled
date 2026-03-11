@@ -43,7 +43,7 @@ env:
   # events, we can obtain the full branch name (e.g. `refs/heads/develop`) from its base ref. For
   # push events, we can obtain the full branch name directly from the ref. For consistency, we
   # normalize the short ref to a full ref in all cases.
-  BASE_REF: ${{ github.event_name == 'pull_request' && format('refs/heads/{0}', github.event.pull_request.base.ref) || (github.event_name == 'merge_group' && github.merge_group.base_ref) || github.ref }}
+  BASE_REF: ${{ github.event_name == 'pull_request' && format('refs/heads/{0}', github.event.pull_request.base.ref) || (github.event_name == 'merge_group' && github.event.merge_group.base_ref) || github.ref }}
 
 jobs:
   upload:
