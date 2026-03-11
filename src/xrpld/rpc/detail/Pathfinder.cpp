@@ -1254,7 +1254,6 @@ Pathfinder::initPathTable()
          {5, "sabxd"},  // source -> gateway -> book -> book(XRP) -> dest
          {6, "saaxd"},
          {7, "sbxd"},
-         {8, "sabxd"},
          {8, "sabbxd"},  // source -> gateway -> book -> book -> book(XRP) -> dest
          {9, "sabaxd"}});
 
