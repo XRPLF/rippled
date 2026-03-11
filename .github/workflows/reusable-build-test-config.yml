@@ -227,17 +227,10 @@ jobs:
         if: ${{ !inputs.build_only }}
         working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
         env:
-          BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
+          BUILD_NPROC: ${{ env.COVERAGE_ENABLED == '1' && steps.nproc.outputs.nproc - 2 || steps.nproc.outputs.nproc }}
         run: |
           set -o pipefail
-          # Debug builds with code coverage are significantly slower due to
-          # instrumentation overhead; decrease the number of test jobs to avoid flakyness
-          if [ "${{ env.COVERAGE_ENABLED }}" = "true" ] && [ "${{ inputs.build_type }}" = "Debug" ]; then
-            TEST_JOBS=$(( BUILD_NPROC - 2 > 1 ? BUILD_NPROC - 2 : 1 ))
-          else
-            TEST_JOBS="${BUILD_NPROC}"
-          fi
-          ./xrpld --unittest --unittest-jobs "${TEST_JOBS}" 2>&1 | tee unittest.log
+          ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee unittest.log
 
       - name: Show test failure summary
         if: ${{ failure() && !inputs.build_only }}
