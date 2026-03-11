@@ -319,7 +319,7 @@ StyledWriter::writeValue(Value const& value)
                     document_ += " : ";
                     writeValue(childValue);
 
-                    if (++it == members.end())
+                    if (++it; it == members.end())
                         break;
 
                     document_ += ",";

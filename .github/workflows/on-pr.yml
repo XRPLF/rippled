@@ -141,9 +141,8 @@ jobs:
     needs:
       - should-run
       - build-test
-    # Only run when committing to a PR that targets a release branch in the
-    # XRPLF repository.
-    if: ${{ github.repository_owner == 'XRPLF' && needs.should-run.outputs.go == 'true' && startsWith(github.ref, 'refs/heads/release') }}
+    # Only run when committing to a PR that targets a release branch.
+    if: ${{ github.repository == 'XRPLF/rippled' && needs.should-run.outputs.go == 'true' && startsWith(github.ref, 'refs/heads/release') }}
     uses: ./.github/workflows/reusable-upload-recipe.yml
     secrets:
       remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
