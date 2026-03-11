@@ -15,7 +15,6 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List, Tuple, Set, Optional
 
-
 # Compile regex patterns once at module level
 INCLUDE_PATTERN = re.compile(r"^\s*#include.*/.*\.h")
 INCLUDE_PATH_PATTERN = re.compile(r'[<"]([^>"]+)[>"]')
