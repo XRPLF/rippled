@@ -129,7 +129,6 @@ serializeEcPair(EcPair const& pair)
     if (!res1 || !res2)
         return std::nullopt;
 
-    // Implicit move; explicit std::move triggers warnings.
     return buffer;
 }
 
@@ -166,10 +165,12 @@ homomorphicAdd(Slice const& a, Slice const& b)
         return std::nullopt;
 
     EcPair sum;
-    if (secp256k1_elgamal_add(
-            secp256k1Context(), &sum.c1, &sum.c2, &pairA->c1, &pairA->c2, &pairB->c1, &pairB->c2) !=
-        1)
+    if (auto res = secp256k1_elgamal_add(
+            secp256k1Context(), &sum.c1, &sum.c2, &pairA->c1, &pairA->c2, &pairB->c1, &pairB->c2);
+        res != 1)
+    {
         return std::nullopt;
+    }
 
     return serializeEcPair(sum);
 }
@@ -187,15 +188,12 @@ homomorphicSubtract(Slice const& a, Slice const& b)
         return std::nullopt;
 
     EcPair diff;
-    if (secp256k1_elgamal_subtract(
-            secp256k1Context(),
-            &diff.c1,
-            &diff.c2,
-            &pairA->c1,
-            &pairA->c2,
-            &pairB->c1,
-            &pairB->c2) != 1)
+    if (auto res = secp256k1_elgamal_subtract(
+            secp256k1Context(), &diff.c1, &diff.c2, &pairA->c1, &pairA->c2, &pairB->c1, &pairB->c2);
+        res != 1)
+    {
         return std::nullopt;
+    }
 
     return serializeEcPair(diff);
 }
@@ -223,13 +221,19 @@ encryptAmount(uint64_t const amt, Slice const& pubKeySlice, Slice const& blindin
 
     EcPair pair;
     secp256k1_pubkey pubKey;
-    if (secp256k1_ec_pubkey_parse(
-            secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength) != 1)
+    if (auto res = secp256k1_ec_pubkey_parse(
+            secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength);
+        res != 1)
+    {
         return std::nullopt;
+    }
 
-    if (!secp256k1_elgamal_encrypt(
-            secp256k1Context(), &pair.c1, &pair.c2, &pubKey, amt, blindingFactor.data()))
+    if (auto res = secp256k1_elgamal_encrypt(
+            secp256k1Context(), &pair.c1, &pair.c2, &pubKey, amt, blindingFactor.data());
+        res != 1)
+    {
         return std::nullopt;
+    }
 
     return serializeEcPair(pair);
 }
@@ -242,13 +246,19 @@ encryptCanonicalZeroAmount(Slice const& pubKeySlice, AccountID const& account, M
 
     EcPair pair;
     secp256k1_pubkey pubKey;
-    if (secp256k1_ec_pubkey_parse(
-            secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength) != 1)
+    if (auto res = secp256k1_ec_pubkey_parse(
+            secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength);
+        res != 1)
+    {
         return std::nullopt;  // LCOV_EXCL_LINE
+    }
 
-    if (!generate_canonical_encrypted_zero(
-            secp256k1Context(), &pair.c1, &pair.c2, &pubKey, account.data(), mptId.data()))
+    if (auto res = generate_canonical_encrypted_zero(
+            secp256k1Context(), &pair.c1, &pair.c2, &pubKey, account.data(), mptId.data());
+        res != 1)
+    {
         return std::nullopt;  // LCOV_EXCL_LINE
+    }
 
     return serializeEcPair(pair);
 }
@@ -263,13 +273,19 @@ verifySchnorrProof(Slice const& pubKeySlice, Slice const& proofSlice, uint256 co
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     secp256k1_pubkey pubKey;
-    if (secp256k1_ec_pubkey_parse(
-            secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength) != 1)
+    if (auto res = secp256k1_ec_pubkey_parse(
+            secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength);
+        res != 1)
+    {
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
-    if (secp256k1_mpt_pok_sk_verify(
-            secp256k1Context(), proofSlice.data(), &pubKey, contextHash.data()) != 1)
+    if (auto res = secp256k1_mpt_pok_sk_verify(
+            secp256k1Context(), proofSlice.data(), &pubKey, contextHash.data());
+        res != 1)
+    {
         return tecBAD_PROOF;
+    }
 
     return tesSUCCESS;
 }
@@ -286,17 +302,23 @@ verifyElGamalEncryption(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     secp256k1_pubkey pubKey;
-    if (secp256k1_ec_pubkey_parse(
-            secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength) != 1)
+    if (auto res = secp256k1_ec_pubkey_parse(
+            secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength);
+        res != 1)
+    {
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     auto const pair = makeEcPair(ciphertext);
     if (!pair)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (secp256k1_elgamal_verify_encryption(
-            secp256k1Context(), &pair->c1, &pair->c2, &pubKey, amount, blindingFactor.data()) != 1)
+    if (auto res = secp256k1_elgamal_verify_encryption(
+            secp256k1Context(), &pair->c1, &pair->c2, &pubKey, amount, blindingFactor.data());
+        res != 1)
+    {
         return tecBAD_PROOF;
+    }
 
     return tesSUCCESS;
 }
@@ -368,9 +390,12 @@ verifyMultiCiphertextEqualityProof(
         // Parse Shared C1 from the first recipient only
         if (i == 0)
         {
-            if (!secp256k1_ec_pubkey_parse(
-                    ctx, &c1, recipient.encryptedAmount.data(), ecGamalEncryptedLength))
+            if (auto res = secp256k1_ec_pubkey_parse(
+                    ctx, &c1, recipient.encryptedAmount.data(), ecGamalEncryptedLength);
+                res != 1)
+            {
                 return tecINTERNAL;  // LCOV_EXCL_LINE
+            }
         }
         else
         {
@@ -384,25 +409,30 @@ verifyMultiCiphertextEqualityProof(
             }
         }
 
-        if (secp256k1_ec_pubkey_parse(
+        if (auto res = secp256k1_ec_pubkey_parse(
                 ctx,
                 &c2_vec[i],
                 recipient.encryptedAmount.data() + ecGamalEncryptedLength,
-                ecGamalEncryptedLength) != 1)
+                ecGamalEncryptedLength);
+            res != 1)
         {
             return tecINTERNAL;  // LCOV_EXCL_LINE
         }
 
-        if (secp256k1_ec_pubkey_parse(
-                ctx, &pk_vec[i], recipient.publicKey.data(), ecPubKeyLength) != 1)
+        if (auto res = secp256k1_ec_pubkey_parse(
+                ctx, &pk_vec[i], recipient.publicKey.data(), ecPubKeyLength);
+            res != 1)
+        {
             return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
     }
 
-    int const result = secp256k1_mpt_verify_equality_shared_r(
-        ctx, proof.data(), nRecipients, &c1, c2_vec.data(), pk_vec.data(), contextHash.data());
-
-    if (result != 1)
+    if (auto res = secp256k1_mpt_verify_equality_shared_r(
+            ctx, proof.data(), nRecipients, &c1, c2_vec.data(), pk_vec.data(), contextHash.data());
+        res != 1)
+    {
         return tecBAD_PROOF;
+    }
 
     return tesSUCCESS;
 }
@@ -424,21 +454,25 @@ verifyClawbackEqualityProof(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     secp256k1_pubkey pubKey;
-    if (secp256k1_ec_pubkey_parse(
-            secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength) != 1)
+    if (auto res = secp256k1_ec_pubkey_parse(
+            secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength);
+        res != 1)
+    {
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     // Note: c2, c1 order - the proof is generated with c2 first (the encrypted
     // message component) because the equality proof structure expects the
     // message-containing term before the blinding term.
-    if (secp256k1_equality_plaintext_verify(
+    if (auto res = secp256k1_equality_plaintext_verify(
             secp256k1Context(),
             proof.data(),
             &pubKey,
             &pair->c2,
             &pair->c1,
             amount,
-            contextHash.data()) != 1)
+            contextHash.data());
+        res != 1)
     {
         return tecBAD_PROOF;
     }
@@ -496,23 +530,30 @@ verifyAmountPcmLinkage(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     secp256k1_pubkey pubKey;
-    if (secp256k1_ec_pubkey_parse(
-            secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength) != 1)
+    if (auto res = secp256k1_ec_pubkey_parse(
+            secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength);
+        res != 1)
+    {
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     secp256k1_pubkey pcm;
-    if (secp256k1_ec_pubkey_parse(
-            secp256k1Context(), &pcm, pcmSlice.data(), ecPedersenCommitmentLength) != 1)
+    if (auto res = secp256k1_ec_pubkey_parse(
+            secp256k1Context(), &pcm, pcmSlice.data(), ecPedersenCommitmentLength);
+        res != 1)
+    {
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
-    if (secp256k1_elgamal_pedersen_link_verify(
+    if (auto res = secp256k1_elgamal_pedersen_link_verify(
             secp256k1Context(),
             proof.data(),
             &pair->c1,
             &pair->c2,
             &pubKey,
             &pcm,
-            contextHash.data()) != 1)
+            contextHash.data());
+        res != 1)
     {
         return tecBAD_PROOF;
     }
@@ -542,25 +583,32 @@ verifyBalancePcmLinkage(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     secp256k1_pubkey pubKey;
-    if (secp256k1_ec_pubkey_parse(
-            secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength) != 1)
+    if (auto res = secp256k1_ec_pubkey_parse(
+            secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength);
+        res != 1)
+    {
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     secp256k1_pubkey pcm;
-    if (secp256k1_ec_pubkey_parse(
-            secp256k1Context(), &pcm, pcmSlice.data(), ecPedersenCommitmentLength) != 1)
+    if (auto res = secp256k1_ec_pubkey_parse(
+            secp256k1Context(), &pcm, pcmSlice.data(), ecPedersenCommitmentLength);
+        res != 1)
+    {
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     // Note: c2, c1 order - the linkage proof expects the message-containing
     // component (c2 = m*G + r*Pk) before the blinding component (c1 = r*G).
-    if (secp256k1_elgamal_pedersen_link_verify(
+    if (auto res = secp256k1_elgamal_pedersen_link_verify(
             secp256k1Context(),
             proof.data(),
             &pubKey,
             &pair->c2,
             &pair->c1,
             &pcm,
-            contextHash.data()) != 1)
+            contextHash.data());
+        res != 1)
     {
         return tecBAD_PROOF;
     }
@@ -594,12 +642,12 @@ verifyAggregatedBulletproof(
         if (compressedCommitments[i].size() != ecPedersenCommitmentLength)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        if (secp256k1_ec_pubkey_parse(
-                ctx,
-                &commitments[i],
-                compressedCommitments[i].data(),
-                ecPedersenCommitmentLength) != 1)
+        if (auto res = secp256k1_ec_pubkey_parse(
+                ctx, &commitments[i], compressedCommitments[i].data(), ecPedersenCommitmentLength);
+            res != 1)
+        {
             return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
     }
 
     // 3. Prepare Generator Vectors (G_vec, H_vec)
@@ -609,37 +657,42 @@ verifyAggregatedBulletproof(
     std::vector<secp256k1_pubkey> H_vec(n);
 
     // Retrieve deterministic generators "G" and "H"
-    if (secp256k1_mpt_get_generator_vector(ctx, G_vec.data(), n, (unsigned char const*)"G", 1) != 1)
+    if (auto res =
+            secp256k1_mpt_get_generator_vector(ctx, G_vec.data(), n, (unsigned char const*)"G", 1);
+        res != 1)
     {
         return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
-    if (secp256k1_mpt_get_generator_vector(ctx, H_vec.data(), n, (unsigned char const*)"H", 1) != 1)
+    if (auto res =
+            secp256k1_mpt_get_generator_vector(ctx, H_vec.data(), n, (unsigned char const*)"H", 1);
+        res != 1)
     {
         return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
     // 4. Prepare Base Generator (pk_base / H)
     secp256k1_pubkey pk_base;
-    if (secp256k1_mpt_get_h_generator(ctx, &pk_base) != 1)
+    if (auto res = secp256k1_mpt_get_h_generator(ctx, &pk_base); res != 1)
     {
         return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
     // 5. Verify the Proof
-    int const result = secp256k1_bulletproof_verify_agg(
-        ctx,
-        G_vec.data(),
-        H_vec.data(),
-        reinterpret_cast<unsigned char const*>(proof.data()),
-        proof.size(),
-        commitments.data(),
-        m,
-        &pk_base,
-        contextHash.data());
-
-    if (result != 1)
+    if (auto res = secp256k1_bulletproof_verify_agg(
+            ctx,
+            G_vec.data(),
+            H_vec.data(),
+            reinterpret_cast<unsigned char const*>(proof.data()),
+            proof.size(),
+            commitments.data(),
+            m,
+            &pk_base,
+            contextHash.data());
+        res != 1)
+    {
         return tecBAD_PROOF;
+    }
 
     return tesSUCCESS;
 }
@@ -654,31 +707,44 @@ computeSendRemainder(Slice const& balanceCommitment, Slice const& amountCommitme
     auto const ctx = secp256k1Context();
 
     secp256k1_pubkey pcBalance;
-    if (secp256k1_ec_pubkey_parse(
-            ctx, &pcBalance, balanceCommitment.data(), ecPedersenCommitmentLength) != 1)
+    if (auto res = secp256k1_ec_pubkey_parse(
+            ctx, &pcBalance, balanceCommitment.data(), ecPedersenCommitmentLength);
+        res != 1)
+    {
         return tecINTERNAL;
+    }
 
     secp256k1_pubkey pcAmount;
-    if (secp256k1_ec_pubkey_parse(
-            ctx, &pcAmount, amountCommitment.data(), ecPedersenCommitmentLength) != 1)
+    if (auto res = secp256k1_ec_pubkey_parse(
+            ctx, &pcAmount, amountCommitment.data(), ecPedersenCommitmentLength);
+        res != 1)
+    {
         return tecINTERNAL;
+    }
 
     // Negate PC_amount point to get -PC_amount
-    if (!secp256k1_ec_pubkey_negate(ctx, &pcAmount))
+    if (auto res = secp256k1_ec_pubkey_negate(ctx, &pcAmount); res != 1)
+    {
         return tecINTERNAL;
+    }
 
     // Compute pcRem = pcBalance + (-pcAmount)
     secp256k1_pubkey const* summands[2] = {&pcBalance, &pcAmount};
     secp256k1_pubkey pcRem;
-    if (!secp256k1_ec_pubkey_combine(ctx, &pcRem, summands, 2))
+    if (auto res = secp256k1_ec_pubkey_combine(ctx, &pcRem, summands, 2); res != 1)
+    {
         return tecINTERNAL;
+    }
 
     // Serialize result to compressed format
     out.alloc(ecPedersenCommitmentLength);
     size_t outLen = ecPedersenCommitmentLength;
-    if (secp256k1_ec_pubkey_serialize(ctx, out.data(), &outLen, &pcRem, SECP256K1_EC_COMPRESSED) !=
-        1)
+    if (auto res = secp256k1_ec_pubkey_serialize(
+            ctx, out.data(), &outLen, &pcRem, SECP256K1_EC_COMPRESSED);
+        res != 1)
+    {
         return tecINTERNAL;
+    }
 
     return tesSUCCESS;
 }
@@ -693,9 +759,12 @@ computeConvertBackRemainder(Slice const& commitment, uint64_t amount, Buffer& ou
 
     // Parse commitment from compressed format
     secp256k1_pubkey pcBalance;
-    if (secp256k1_ec_pubkey_parse(ctx, &pcBalance, commitment.data(), ecPedersenCommitmentLength) !=
-        1)
+    if (auto res = secp256k1_ec_pubkey_parse(
+            ctx, &pcBalance, commitment.data(), ecPedersenCommitmentLength);
+        res != 1)
+    {
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     // Convert amount to 32-byte big-endian scalar
     unsigned char mScalar[32] = {0};
@@ -704,26 +773,34 @@ computeConvertBackRemainder(Slice const& commitment, uint64_t amount, Buffer& ou
 
     // Compute mG = amount * G
     secp256k1_pubkey mG;
-    if (!secp256k1_ec_pubkey_create(ctx, &mG, mScalar))
+    if (auto res = secp256k1_ec_pubkey_create(ctx, &mG, mScalar); res != 1)
+    {
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     // Negate mG to get -mG
-    if (!secp256k1_ec_pubkey_negate(ctx, &mG))
+    if (auto res = secp256k1_ec_pubkey_negate(ctx, &mG); res != 1)
+    {
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     // Compute pcRem = pcBalance + (-mG)
     secp256k1_pubkey const* summands[2] = {&pcBalance, &mG};
     secp256k1_pubkey pcRem;
-    if (!secp256k1_ec_pubkey_combine(ctx, &pcRem, summands, 2))
+    if (auto res = secp256k1_ec_pubkey_combine(ctx, &pcRem, summands, 2); res != 1)
+    {
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     // Serialize result to compressed format
     out.alloc(ecPedersenCommitmentLength);
     size_t outLen = ecPedersenCommitmentLength;
-    if (secp256k1_ec_pubkey_serialize(ctx, out.data(), &outLen, &pcRem, SECP256K1_EC_COMPRESSED) !=
-            1 ||
-        outLen != ecPedersenCommitmentLength)
+    if (auto res = secp256k1_ec_pubkey_serialize(
+            ctx, out.data(), &outLen, &pcRem, SECP256K1_EC_COMPRESSED);
+        res != 1 || outLen != ecPedersenCommitmentLength)
+    {
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     return tesSUCCESS;
 }
