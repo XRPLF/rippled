@@ -39,11 +39,10 @@ defaults:
 
 env:
   # The target branch name is used to determine which recipe version to upload. For pull request
-  # events, we can obtain the short branch name (e.g. `develop`) from its base ref. For merge group
-  # events, we can obtain the full branch name (e.g. `refs/heads/develop`) from its base ref. For
-  # push events, we can obtain the full branch name directly from the ref. For consistency, we
-  # normalize the short ref to a full ref in all cases.
-  BASE_REF: ${{ github.event_name == 'pull_request' && format('refs/heads/{0}', github.event.pull_request.base.ref) || (github.event_name == 'merge_group' && github.event.merge_group.base_ref) || github.ref }}
+  # events, we can obtain the short branch name (e.g. `develop`) from its base ref, while for push
+  # events, we get the full branch name directly from the ref. For consistency, we normalize the
+  # short ref to a full ref. Tags are handled separately.
+  BASE_REF: ${{ github.event_name == 'pull_request' && format('refs/heads/{0}', github.event.pull_request.base.ref) || github.ref }}
 
 jobs:
   upload:
