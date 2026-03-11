@@ -86,7 +86,7 @@ Permission::getPermissionName(std::uint32_t const value) const
 {
     auto const permissionValue = static_cast<GranularPermissionType>(value);
     if (auto const granular = getGranularName(permissionValue))
-        return *granular;
+        return granular;
 
     // not a granular permission, check if it maps to a transaction type
     auto const txType = permissionToTxType(value);
