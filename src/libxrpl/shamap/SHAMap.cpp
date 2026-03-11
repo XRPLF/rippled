@@ -686,6 +686,8 @@ SHAMap::delItem(uint256 const& id)
             int const bc = node->getBranchCount();
             if (bc == 0)
             {
+                // no children below this branch
+                //
                 // Note: This is unnecessary due to the std::move above but left here for safety
                 prevNode = nullptr;
             }
