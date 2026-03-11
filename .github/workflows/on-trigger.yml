@@ -92,8 +92,8 @@ jobs:
 
   upload-recipe:
     needs: build-test
-    # Only run when pushing to the develop branch in the XRPLF repository.
-    if: ${{ github.repository_owner == 'XRPLF' && github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
+    # Only run when pushing to the develop branch.
+    if: ${{ github.repository == 'XRPLF/rippled' && github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
     uses: ./.github/workflows/reusable-upload-recipe.yml
     secrets:
       remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
