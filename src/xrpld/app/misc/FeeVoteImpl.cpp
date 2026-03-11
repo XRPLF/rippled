@@ -5,6 +5,9 @@
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/st.h>
 
+#include <mutex>
+#include <tuple>
+
 namespace xrpl {
 
 namespace detail {
@@ -72,6 +75,7 @@ VotableValue::getVotes() const -> std::pair<value_type, bool>
 class FeeVoteImpl : public FeeVote
 {
 private:
+    mutable std::mutex mutex_;
     FeeSetup target_;
     beast::Journal const journal_;
 
@@ -86,6 +90,12 @@ public:
         std::shared_ptr<ReadView const> const& lastClosedLedger,
         std::vector<std::shared_ptr<STValidation>> const& parentValidations,
         std::shared_ptr<SHAMap> const& initialPosition) override;
+
+    void
+    setTarget(XRPAmount referenceFee, XRPAmount accountReserve, XRPAmount ownerReserve) override;
+
+    std::tuple<XRPAmount, XRPAmount, XRPAmount>
+    getTarget() const override;
 };
 
 //--------------------------------------------------------------------------
@@ -98,6 +108,8 @@ FeeVoteImpl::FeeVoteImpl(FeeSetup const& setup, beast::Journal journal)
 void
 FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation& v)
 {
+    auto const [referenceFee, accountReserve, ownerReserve] = getTarget();
+
     // Values should always be in a valid range (because the voting process
     // will ignore out-of-range values) but if we detect such a case, we do
     // not send a value.
@@ -112,13 +124,9 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
                     v[sfield] = target;
                 }
             };
-        vote(lastFees.base, target_.reference_fee, "base fee", sfBaseFeeDrops);
-        vote(lastFees.reserve, target_.account_reserve, "base reserve", sfReserveBaseDrops);
-        vote(
-            lastFees.increment,
-            target_.owner_reserve,
-            "reserve increment",
-            sfReserveIncrementDrops);
+        vote(lastFees.base, referenceFee, "base fee", sfBaseFeeDrops);
+        vote(lastFees.reserve, accountReserve, "base reserve", sfReserveBaseDrops);
+        vote(lastFees.increment, ownerReserve, "reserve increment", sfReserveIncrementDrops);
     }
     else
     {
@@ -139,14 +147,9 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
             }
         };
 
-        vote(lastFees.base, target_.reference_fee, to64, "base fee", sfBaseFee);
-        vote(lastFees.reserve, target_.account_reserve, to32, "base reserve", sfReserveBase);
-        vote(
-            lastFees.increment,
-            target_.owner_reserve,
-            to32,
-            "reserve increment",
-            sfReserveIncrement);
+        vote(lastFees.base, referenceFee, to64, "base fee", sfBaseFee);
+        vote(lastFees.reserve, accountReserve, to32, "base reserve", sfReserveBase);
+        vote(lastFees.increment, ownerReserve, to32, "reserve increment", sfReserveIncrement);
     }
 }
 
@@ -156,16 +159,18 @@ FeeVoteImpl::doVoting(
     std::vector<std::shared_ptr<STValidation>> const& set,
     std::shared_ptr<SHAMap> const& initialPosition)
 {
+    auto const [referenceFee, accountReserve, ownerReserve] = getTarget();
+
     // LCL must be flag ledger
     XRPL_ASSERT(
         lastClosedLedger && isFlagLedger(lastClosedLedger->seq()),
         "xrpl::FeeVoteImpl::doVoting : has a flag ledger");
 
-    detail::VotableValue baseFeeVote(lastClosedLedger->fees().base, target_.reference_fee);
+    detail::VotableValue baseFeeVote(lastClosedLedger->fees().base, referenceFee);
 
-    detail::VotableValue baseReserveVote(lastClosedLedger->fees().reserve, target_.account_reserve);
+    detail::VotableValue baseReserveVote(lastClosedLedger->fees().reserve, accountReserve);
 
-    detail::VotableValue incReserveVote(lastClosedLedger->fees().increment, target_.owner_reserve);
+    detail::VotableValue incReserveVote(lastClosedLedger->fees().increment, ownerReserve);
 
     auto const& rules = lastClosedLedger->rules();
     if (rules.enabled(featureXRPFees))
@@ -281,6 +286,22 @@ FeeVoteImpl::doVoting(
             JLOG(journal_.warn()) << "Ledger already had fee change";
         }
     }
+}
+
+void
+FeeVoteImpl::setTarget(XRPAmount referenceFee, XRPAmount accountReserve, XRPAmount ownerReserve)
+{
+    std::lock_guard lock(mutex_);
+    target_.reference_fee = referenceFee;
+    target_.account_reserve = accountReserve;
+    target_.owner_reserve = ownerReserve;
+}
+
+std::tuple<XRPAmount, XRPAmount, XRPAmount>
+FeeVoteImpl::getTarget() const
+{
+    std::lock_guard lock(mutex_);
+    return {target_.reference_fee, target_.account_reserve, target_.owner_reserve};
 }
 
 //------------------------------------------------------------------------------

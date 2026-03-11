@@ -19,6 +19,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <tuple>
 
 namespace xrpl {
 
@@ -109,6 +110,12 @@ class RCLConsensus
         {
             return mode_;
         }
+
+        void
+        setFeeVote(XRPAmount referenceFee, XRPAmount accountReserve, XRPAmount ownerReserve);
+
+        std::tuple<XRPAmount, XRPAmount, XRPAmount>
+        getFeeVote() const;
 
         /** Called before kicking off a new consensus round.
 
@@ -491,6 +498,12 @@ public:
     {
         return adaptor_.parms();
     }
+
+    void
+    setFeeVote(XRPAmount referenceFee, XRPAmount accountReserve, XRPAmount ownerReserve);
+
+    std::tuple<XRPAmount, XRPAmount, XRPAmount>
+    getFeeVote() const;
 
 private:
     // Since Consensus does not provide intrinsic thread-safety, this mutex

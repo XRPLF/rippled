@@ -84,6 +84,7 @@ Handler const handlerArray[]{
     {"deposit_authorized", byRef(&doDepositAuthorized), Role::USER, NO_CONDITION},
     {"feature", byRef(&doFeature), Role::USER, NO_CONDITION},
     {"fee", byRef(&doFee), Role::USER, NEEDS_CURRENT_LEDGER},
+    {"fee_vote", byRef(&doFeeVote), Role::USER, NO_CONDITION},
     {"fetch_info", byRef(&doFetchInfo), Role::ADMIN, NO_CONDITION},
     {"gateway_balances", byRef(&doGatewayBalances), Role::USER, NO_CONDITION},
     {"get_counts", byRef(&doGetCounts), Role::ADMIN, NO_CONDITION},

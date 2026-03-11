@@ -126,6 +126,7 @@ printHelp(po::options_description const& desc)
                  "     deposit_authorized <source_account> <destination_account> "
                  "[<ledger> [<credentials>, ...]]\n"
                  "     feature [<feature> [accept|reject]]\n"
+                 "     fee_vote [<reference_fee> [<account_reserve> [<owner_reserve>]]]\n"
                  "     fetch_info [clear]\n"
                  "     gateway_balances [<ledger>] <issuer_account> [ <hotwallet> [ "
                  "<hotwallet> ]]\n"

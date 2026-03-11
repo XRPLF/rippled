@@ -833,6 +833,21 @@ RCLConsensus::Adaptor::onModeChange(ConsensusMode before, ConsensusMode after)
     mode_ = after;
 }
 
+void
+RCLConsensus::Adaptor::setFeeVote(
+    XRPAmount referenceFee,
+    XRPAmount accountReserve,
+    XRPAmount ownerReserve)
+{
+    feeVote_->setTarget(referenceFee, accountReserve, ownerReserve);
+}
+
+std::tuple<XRPAmount, XRPAmount, XRPAmount>
+RCLConsensus::Adaptor::getFeeVote() const
+{
+    return feeVote_->getTarget();
+}
+
 Json::Value
 RCLConsensus::getJson(bool full) const
 {
@@ -843,6 +858,18 @@ RCLConsensus::getJson(bool full) const
     }
     ret["validating"] = adaptor_.validating();
     return ret;
+}
+
+void
+RCLConsensus::setFeeVote(XRPAmount referenceFee, XRPAmount accountReserve, XRPAmount ownerReserve)
+{
+    adaptor_.setFeeVote(referenceFee, accountReserve, ownerReserve);
+}
+
+std::tuple<XRPAmount, XRPAmount, XRPAmount>
+RCLConsensus::getFeeVote() const
+{
+    return adaptor_.getFeeVote();
 }
 
 void

@@ -2603,6 +2603,52 @@ static RPCCallTestData const rpcCallTestArray[] = {
     ]
     })"},
 
+    // fee_vote
+    // ------------------------------------------------------------------
+    {"fee_vote: minimal.",
+     __LINE__,
+     {
+         "fee_vote",
+     },
+     RPCCallTestData::no_exception,
+     R"({
+    "method" : "fee_vote",
+    "params" : [
+      {
+         "api_version" : %API_VER%,
+      }
+    ]
+    })"},
+    {"fee_vote: with params.",
+     __LINE__,
+     {"fee_vote", "10", "20000000", "3000000"},
+     RPCCallTestData::no_exception,
+     R"({
+    "method" : "fee_vote",
+    "params" : [
+      {
+         "account_reserve" : "20000000",
+         "api_version" : %API_VER%,
+         "owner_reserve" : "3000000",
+         "reference_fee" : "10"
+      }
+    ]
+    })"},
+    {"fee_vote: too many arguments.",
+     __LINE__,
+     {"fee_vote", "10", "20000000", "3000000", "extra"},
+     RPCCallTestData::no_exception,
+     R"({
+    "method" : "fee_vote",
+    "params" : [
+      {
+         "error" : "badSyntax",
+         "error_code" : 1,
+         "error_message" : "Syntax error."
+      }
+    ]
+    })"},
+
     // fetch_info
     // ------------------------------------------------------------------
     {"fetch_info: minimal.",
