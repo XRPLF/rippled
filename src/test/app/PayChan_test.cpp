@@ -985,6 +985,24 @@ struct PayChan_test : public beast::unit_test::suite
             testInvalidAccountParam(Json::Value(Json::arrayValue));
         }
         {
+            // test destination_account non-string
+            auto testInvalidDestAccountParam = [&](auto const& param) {
+                Json::Value params;
+                params[jss::account] = alice.human();
+                params[jss::destination_account] = param;
+                auto jrr = env.rpc("json", "account_channels", to_string(params))[jss::result];
+                BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'destination_account'.");
+            };
+
+            testInvalidDestAccountParam(1);
+            testInvalidDestAccountParam(1.1);
+            testInvalidDestAccountParam(true);
+            testInvalidDestAccountParam(Json::Value(Json::nullValue));
+            testInvalidDestAccountParam(Json::Value(Json::objectValue));
+            testInvalidDestAccountParam(Json::Value(Json::arrayValue));
+        }
+        {
             auto const r = env.rpc("account_channels", alice.human(), bob.human());
             BEAST_EXPECT(r[jss::result][jss::channels].size() == 1);
             BEAST_EXPECT(r[jss::result][jss::channels][0u][jss::channel_id] == chan1Str);
