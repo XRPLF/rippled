@@ -395,20 +395,20 @@ featureToName(uint256 const& f)
 #pragma push_macro("XRPL_RETIRE_FIX")
 #undef XRPL_RETIRE_FIX
 
-template <std::size_t N>
-constexpr auto
-enforceValidFeatureNameSize(char const (&n)[N]) -> char const*
+consteval auto
+enforceValidFeatureName(auto fn) -> char const*
 {
-    static_assert(validFeatureNameSize<N>(nullptr), "Invalid feature name size");
-    return n;
+    static_assert(validFeatureName(fn), "Invalid feature name");
+    static_assert(validFeatureNameSize(fn), "Invalid feature name size");
+    return fn();
 }
 
 #define XRPL_FEATURE(name, supported, vote) \
     uint256 const feature##name =           \
-        registerFeature(enforceValidFeatureNameSize(#name), supported, vote);
+        registerFeature(enforceValidFeatureName([] { return #name; }), supported, vote);
 #define XRPL_FIX(name, supported, vote) \
     uint256 const fix##name =           \
-        registerFeature(enforceValidFeatureNameSize("fix" #name), supported, vote);
+        registerFeature(enforceValidFeatureName([] { return "fix" #name; }), supported, vote);
 
 // clang-format off
 #define XRPL_RETIRE_FEATURE(name)                                       \

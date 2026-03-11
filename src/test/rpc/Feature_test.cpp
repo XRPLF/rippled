@@ -191,22 +191,37 @@ class Feature_test : public beast::unit_test::suite
         BEAST_EXPECT(jrr[jss::error_message] == "Feature unknown or invalid.");
 
         // Test feature name size checks
-        char const ok63Name[] = "123456789012345678901234567890123456789012345678901234567890123";
-        static_assert(validFeatureNameSize(&ok63Name));
+        constexpr auto ok63Name = [] {
+            return "123456789012345678901234567890123456789012345678901234567890123";
+        };
+        static_assert(validFeatureNameSize(ok63Name));
 
-        char const bad64Name[] = "1234567890123456789012345678901234567890123456789012345678901234";
-        static_assert(!validFeatureNameSize(&bad64Name));
+        constexpr auto bad64Name = [] {
+            return "1234567890123456789012345678901234567890123456789012345678901234";
+        };
+        static_assert(!validFeatureNameSize(bad64Name));
 
-        char const ok31Name[] = "1234567890123456789012345678901";
-        static_assert(validFeatureNameSize(&ok31Name));
+        constexpr auto ok31Name = [] { return "1234567890123456789012345678901"; };
+        static_assert(validFeatureNameSize(ok31Name));
 
-        char const bad32Name[] = "12345678901234567890123456789012";
-        static_assert(!validFeatureNameSize(&bad32Name));
-        char const bad33Name[] = "123456789012345678901234567890123";
-        static_assert(!validFeatureNameSize(&bad33Name));
+        constexpr auto bad32Name = [] { return "12345678901234567890123456789012"; };
+        static_assert(!validFeatureNameSize(bad32Name));
+        constexpr auto bad33Name = [] { return "123456789012345678901234567890123"; };
+        static_assert(!validFeatureNameSize(bad33Name));
 
-        char const ok34Name[] = "1234567890123456789012345678901234";
-        static_assert(validFeatureNameSize(&ok34Name));
+        constexpr auto ok34Name = [] { return "1234567890123456789012345678901234"; };
+        static_assert(validFeatureNameSize(ok34Name));
+
+        // Test feature character set checks
+        constexpr auto okName = [] { return "AMM_123"; };
+        static_assert(validFeatureName(okName));
+
+        // First character is Greek Capital Alpha, visually confusable with ASCII 'A'
+        constexpr auto badName = [] { return "ΑMM_123"; };
+        static_assert(!validFeatureName(badName));
+
+        constexpr auto badEmoji = [] { return "🔥"; };
+        static_assert(!validFeatureName(badEmoji));
     }
 
     void

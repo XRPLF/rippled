@@ -71,15 +71,42 @@ static constexpr std::size_t maxFeatureNameSize = 63;
 // as a compact, fixed-size feature selector without conflicting with human-readable names.
 static constexpr std::size_t reservedFeatureNameSize = 32;
 
-// Exposed for testing, used only by enforceValidFeatureNameSize in Feature.cpp
-template <std::size_t N>
-constexpr auto
-validFeatureNameSize(char const (*)[N]) -> bool
+// Both validFeatureNameSize and validFeatureName are consteval functions that can be used in
+// static_asserts to validate feature names at compile time. They are only used inside
+// enforceValidFeatureName in Feature.cpp, but are exposed here for testing. The expected
+// parameter `auto fn` is a constexpr lambda which returns a const char*, making it available
+// for compile-time evaluation. Read more in https://accu.org/journals/overload/30/172/wu/
+consteval auto
+validFeatureNameSize(auto fn) -> bool
 {
-    // The -1 is to account for the null terminator in the string literal.
-    return N - 1 != reservedFeatureNameSize &&   //
-        N - 1 != reservedFeatureNameSize + 1 &&  //
-        N - 1 <= maxFeatureNameSize;
+    constexpr char const* n = fn();
+    // Note, std::strlen is not constexpr, we need to implement our own here.
+    constexpr std::size_t N = [](auto n) {
+        std::size_t ret = 0;
+        for (auto ptr = n; *ptr != '\0'; ret++, ++ptr)
+            ;
+        return ret;
+    }(n);
+    return N != reservedFeatureNameSize &&   //
+        N != reservedFeatureNameSize + 1 &&  //
+        N <= maxFeatureNameSize;
+}
+
+consteval auto
+validFeatureName(auto fn) -> bool
+{
+    constexpr char const* n = fn();
+    constexpr bool ret = [](auto n) {
+        for (auto ptr = n; *ptr != '\0'; ++ptr)
+        {
+            // Prevent the use of visually confusable characters and enforce that feature names
+            // are always valid ASCII. This is needed because C++ allows Unicode identifiers.
+            if (*ptr & 0x80 || *ptr < 0x20)
+                return false;
+        }
+        return true;
+    }(n);
+    return ret;
 }
 
 enum class VoteBehavior : int { Obsolete = -1, DefaultNo = 0, DefaultYes };
