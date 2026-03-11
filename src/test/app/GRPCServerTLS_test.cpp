@@ -244,7 +244,8 @@ public:
     TemporaryTLSCertificates()
     {
         auto tmpDir = std::filesystem::temp_directory_path();
-        auto uniqueDirName = boost::filesystem::unique_path(std::string(kCERTS_DIR_PREFIX) + "%%%%%%%%");
+        auto uniqueDirName =
+            boost::filesystem::unique_path(std::string(kCERTS_DIR_PREFIX) + "%%%%%%%%");
         tempDir_ = tmpDir / uniqueDirName.string();
         std::filesystem::create_directories(tempDir_);
 
@@ -375,7 +376,8 @@ public:
         using namespace jtx;
 
         // Test with just server cert and key (no client verification)
-        auto cfg = envconfig(addGrpcConfigWithTLS, getServerCertPath().string(), getServerKeyPath().string());
+        auto cfg = envconfig(
+            addGrpcConfigWithTLS, getServerCertPath().string(), getServerKeyPath().string());
         Env env(*this, std::move(cfg));
 
         // Verify the server actually started by checking the port
@@ -458,7 +460,8 @@ public:
         }
         catch (std::runtime_error const& e)
         {
-            BEAST_EXPECT(std::string(e.what()).find("Incomplete TLS configuration") != std::string::npos);
+            BEAST_EXPECT(
+                std::string(e.what()).find("Incomplete TLS configuration") != std::string::npos);
         }
     }
 
@@ -483,7 +486,8 @@ public:
         }
         catch (std::runtime_error const& e)
         {
-            BEAST_EXPECT(std::string(e.what()).find("Incomplete TLS configuration") != std::string::npos);
+            BEAST_EXPECT(
+                std::string(e.what()).find("Incomplete TLS configuration") != std::string::npos);
         }
     }
 
@@ -510,8 +514,8 @@ public:
             catch (std::runtime_error const& e)
             {
                 BEAST_EXPECT(
-                    std::string(e.what()).find("ssl_client_ca requires both ssl_cert and ssl_key") !=
-                    std::string::npos);
+                    std::string(e.what()).find(
+                        "ssl_client_ca requires both ssl_cert and ssl_key") != std::string::npos);
             }
         }
 
@@ -533,7 +537,9 @@ public:
             {
                 // This should fail with "Incomplete TLS configuration" first
                 // because ssl_cert is specified without ssl_key
-                BEAST_EXPECT(std::string(e.what()).find("Incomplete TLS configuration") != std::string::npos);
+                BEAST_EXPECT(
+                    std::string(e.what()).find("Incomplete TLS configuration") !=
+                    std::string::npos);
             }
         }
 
@@ -555,7 +561,9 @@ public:
             {
                 // This should fail with "Incomplete TLS configuration" first
                 // because ssl_key is specified without ssl_cert
-                BEAST_EXPECT(std::string(e.what()).find("Incomplete TLS configuration") != std::string::npos);
+                BEAST_EXPECT(
+                    std::string(e.what()).find("Incomplete TLS configuration") !=
+                    std::string::npos);
             }
         }
     }
@@ -583,8 +591,8 @@ public:
             catch (std::runtime_error const& e)
             {
                 BEAST_EXPECT(
-                    std::string(e.what()).find("ssl_cert_chain requires both ssl_cert and ssl_key") !=
-                    std::string::npos);
+                    std::string(e.what()).find(
+                        "ssl_cert_chain requires both ssl_cert and ssl_key") != std::string::npos);
             }
         }
 
@@ -606,7 +614,9 @@ public:
             {
                 // This should fail with "Incomplete TLS configuration" first
                 // because ssl_cert is specified without ssl_key
-                BEAST_EXPECT(std::string(e.what()).find("Incomplete TLS configuration") != std::string::npos);
+                BEAST_EXPECT(
+                    std::string(e.what()).find("Incomplete TLS configuration") !=
+                    std::string::npos);
             }
         }
     }
@@ -773,7 +783,8 @@ public:
         (*cfg)[SECTION_PORT_GRPC].set("port", "0");
         (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", getServerCertPath().string());
         (*cfg)[SECTION_PORT_GRPC].set("ssl_key", getServerKeyPath().string());
-        (*cfg)[SECTION_PORT_GRPC].set("ssl_cert_chain", getCACertPath().string());  // Using CA as intermediate
+        (*cfg)[SECTION_PORT_GRPC].set(
+            "ssl_cert_chain", getCACertPath().string());  // Using CA as intermediate
         (*cfg)[SECTION_PORT_GRPC].set("ssl_client_ca", getCACertPath().string());
 
         Env env(*this, std::move(cfg));
