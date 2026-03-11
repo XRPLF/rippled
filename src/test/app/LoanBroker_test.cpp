@@ -848,17 +848,6 @@ class LoanBroker_test : public beast::unit_test::suite
             // test
             env(jv, txflags(tfFullyCanonicalSig), ter(temINVALID), THISLINE);
         };
-        auto testZeroVaultID = [&](auto&& getTxJv) {
-            auto jv = getTxJv();
-            // empty broker ID
-            jv[sfVaultID] = "";
-            env(jv, ter(temINVALID), THISLINE);
-            // zero broker ID
-            jv[sfVaultID] = to_string(uint256{});
-            // needs a flag to distinguish the parsed STTx from the prior
-            // test
-            env(jv, txflags(tfFullyCanonicalSig), ter(temINVALID), THISLINE);
-        };
 
         if (brokerTest == CoverDeposit)
         {
@@ -1870,7 +1859,8 @@ class LoanBroker_test : public beast::unit_test::suite
         {
             testcase("LoanBrokerSet post-amendment: non-existent broker");
             Env env(*this);
-            auto const [vaultID, brokerKL] = setup(env);
+            env.fund(XRP(100'000), alice);
+            env.close();
 
             env(set(alice), loanBrokerID(uint256{1}), ter(tecNO_ENTRY), THISLINE);
         }
