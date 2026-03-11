@@ -132,7 +132,7 @@ jobs:
     with:
       # Enable ccache only for events targeting the XRPLF repository, since
       # other accounts will not have access to our remote cache storage.
-      ccache_enabled: ${{ github.repository_owner == 'XRPLF' }}
+      ccache_enabled: ${{ github.repository == 'XRPLF/rippled' }}
       os: ${{ matrix.os }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -143,7 +143,7 @@ jobs:
       - build-test
     # Only run when committing to a PR that targets a release branch in the
     # XRPLF repository.
-    if: ${{ github.repository_owner == 'XRPLF' && needs.should-run.outputs.go == 'true' && startsWith(github.ref, 'refs/heads/release') }}
+    if: ${{ github.repository == 'XRPLF/rippled' && needs.should-run.outputs.go == 'true' && startsWith(github.ref, 'refs/heads/release') }}
     uses: ./.github/workflows/reusable-upload-recipe.yml
     secrets:
       remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
