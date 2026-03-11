@@ -26,6 +26,18 @@ This version is supported by all `rippled` versions. For WebSocket and HTTP JSON
 
 This section contains changes targeting a future version.
 
+### Breaking changes
+
+### Bug fixes
+
+- `account_channels`: The `destination_account` field now returns an error if the value is not a string.
+- `subscribe`: The `taker` field in the `books` array now returns an error if the value is not a string.
+- `account_info`: The `urlgravatar` field now uses HTTPS instead of HTTP.
+- `ledger`: The `full`, `accounts`, `transactions`, `expand`, `binary`, `owner_funds`, and `queue` fields now return an error if the value is not a boolean.
+- `ledger_data`: The `binary` field now returns an error if the value is not a boolean.
+- `submit`: The `fail_hard` field now returns an error if the value is not a boolean.
+- `subscribe`: The `taker` field in the `books` array now returns `actMalformed` instead of `badIssuer` if the value is not a valid account.
+
 ### Additions
 
 - `server_definitions`: Added the following new sections to the response ([#6321](https://github.com/XRPLF/rippled/pull/6321)):
