@@ -256,37 +256,32 @@ ConfidentialMPTConvertBack::doApply()
 
     // homomorphically subtract holder's encrypted balance
     {
-        Buffer res(ecGamalEncryptedTotalLength);
-        if (TER const ter = homomorphicSubtract(
-                (*sleMptoken)[sfConfidentialBalanceSpending],
-                ctx_.tx[sfHolderEncryptedAmount],
-                res);
-            !isTesSuccess(ter))
+        auto res = homomorphicSubtract(
+            (*sleMptoken)[sfConfidentialBalanceSpending], ctx_.tx[sfHolderEncryptedAmount]);
+        if (!res)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        (*sleMptoken)[sfConfidentialBalanceSpending] = res;
+        (*sleMptoken)[sfConfidentialBalanceSpending] = std::move(*res);
     }
 
     // homomorphically subtract issuer's encrypted balance
     {
-        Buffer res(ecGamalEncryptedTotalLength);
-        if (TER const ter = homomorphicSubtract(
-                (*sleMptoken)[sfIssuerEncryptedBalance], ctx_.tx[sfIssuerEncryptedAmount], res);
-            !isTesSuccess(ter))
+        auto res = homomorphicSubtract(
+            (*sleMptoken)[sfIssuerEncryptedBalance], ctx_.tx[sfIssuerEncryptedAmount]);
+        if (!res)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        (*sleMptoken)[sfIssuerEncryptedBalance] = res;
+        (*sleMptoken)[sfIssuerEncryptedBalance] = std::move(*res);
     }
 
     if (auditorEc)
     {
-        Buffer res(ecGamalEncryptedTotalLength);
-        if (TER const ter = homomorphicSubtract(
-                (*sleMptoken)[sfAuditorEncryptedBalance], ctx_.tx[sfAuditorEncryptedAmount], res);
-            !isTesSuccess(ter))
+        auto res = homomorphicSubtract(
+            (*sleMptoken)[sfAuditorEncryptedBalance], ctx_.tx[sfAuditorEncryptedAmount]);
+        if (!res)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        (*sleMptoken)[sfAuditorEncryptedBalance] = res;
+        (*sleMptoken)[sfAuditorEncryptedBalance] = std::move(*res);
     }
 
     incrementConfidentialVersion(*sleMptoken);

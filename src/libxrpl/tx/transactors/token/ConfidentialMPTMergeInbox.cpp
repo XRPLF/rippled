@@ -68,25 +68,22 @@ ConfidentialMPTMergeInbox::doApply()
     // Merge inbox into spending: spending = spending + inbox
     // This allows holder to use received funds. Without merging, incoming
     // transfers sit in inbox and cannot be spent or converted back.
-    Buffer sum(ecGamalEncryptedTotalLength);
-    if (TER const ter = homomorphicAdd(
-            (*sleMptoken)[sfConfidentialBalanceSpending],
-            (*sleMptoken)[sfConfidentialBalanceInbox],
-            sum);
-        !isTesSuccess(ter))
+    auto sum = homomorphicAdd(
+        (*sleMptoken)[sfConfidentialBalanceSpending], (*sleMptoken)[sfConfidentialBalanceInbox]);
+    if (!sum)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    (*sleMptoken)[sfConfidentialBalanceSpending] = sum;
+    (*sleMptoken)[sfConfidentialBalanceSpending] = std::move(*sum);
 
     // Reset inbox to encrypted zero. Must use canonical zero encryption
     // (deterministic ciphertext) so the ledger state is reproducible.
-    auto const zeroEncryption = encryptCanonicalZeroAmount(
+    auto zeroEncryption = encryptCanonicalZeroAmount(
         (*sleMptoken)[sfHolderElGamalPublicKey], account_, mptIssuanceID);
 
     if (!zeroEncryption)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    (*sleMptoken)[sfConfidentialBalanceInbox] = *zeroEncryption;
+    (*sleMptoken)[sfConfidentialBalanceInbox] = std::move(*zeroEncryption);
 
     incrementConfidentialVersion(*sleMptoken);
 

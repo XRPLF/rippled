@@ -1629,10 +1629,8 @@ MPTTester::decryptAmount(Account const& account, Buffer const& amt) const
     if (amt.size() != ecGamalEncryptedTotalLength)
         return std::nullopt;
 
-    secp256k1_pubkey c1;
-    secp256k1_pubkey c2;
-
-    if (!makeEcPair(amt, c1, c2))
+    auto const pair = makeEcPair(amt);
+    if (!pair)
         return std::nullopt;
 
     auto const privKey = getPrivKey(account);
@@ -1640,7 +1638,8 @@ MPTTester::decryptAmount(Account const& account, Buffer const& amt) const
         return std::nullopt;
 
     uint64_t decryptedAmt;
-    if (!secp256k1_elgamal_decrypt(secp256k1Context(), &decryptedAmt, &c1, &c2, privKey->data()))
+    if (!secp256k1_elgamal_decrypt(
+            secp256k1Context(), &decryptedAmt, &pair->c1, &pair->c2, privKey->data()))
     {
         return std::nullopt;
     }

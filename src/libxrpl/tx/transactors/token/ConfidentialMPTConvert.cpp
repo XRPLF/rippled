@@ -189,36 +189,30 @@ ConfidentialMPTConvert::doApply()
     {
         // Case 1: Add to existing inbox balance (holder will merge later)
         {
-            Buffer sum(ecGamalEncryptedTotalLength);
-            if (TER const ter =
-                    homomorphicAdd(holderEc, (*sleMptoken)[sfConfidentialBalanceInbox], sum);
-                !isTesSuccess(ter))
+            auto sum = homomorphicAdd(holderEc, (*sleMptoken)[sfConfidentialBalanceInbox]);
+            if (!sum)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
-            (*sleMptoken)[sfConfidentialBalanceInbox] = sum;
+            (*sleMptoken)[sfConfidentialBalanceInbox] = std::move(*sum);
         }
 
         // homomorphically add issuer's encrypted balance
         {
-            Buffer sum(ecGamalEncryptedTotalLength);
-            if (TER const ter =
-                    homomorphicAdd(issuerEc, (*sleMptoken)[sfIssuerEncryptedBalance], sum);
-                !isTesSuccess(ter))
+            auto sum = homomorphicAdd(issuerEc, (*sleMptoken)[sfIssuerEncryptedBalance]);
+            if (!sum)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
-            (*sleMptoken)[sfIssuerEncryptedBalance] = sum;
+            (*sleMptoken)[sfIssuerEncryptedBalance] = std::move(*sum);
         }
 
         // homomorphically add auditor's encrypted balance
         if (auditorEc)
         {
-            Buffer sum(ecGamalEncryptedTotalLength);
-            if (TER const ter =
-                    homomorphicAdd(*auditorEc, (*sleMptoken)[sfAuditorEncryptedBalance], sum);
-                !isTesSuccess(ter))
+            auto sum = homomorphicAdd(*auditorEc, (*sleMptoken)[sfAuditorEncryptedBalance]);
+            if (!sum)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
-            (*sleMptoken)[sfAuditorEncryptedBalance] = sum;
+            (*sleMptoken)[sfAuditorEncryptedBalance] = std::move(*sum);
         }
     }
     else if (
@@ -236,13 +230,13 @@ ConfidentialMPTConvert::doApply()
 
         // Spending balance starts at zero. Must use canonical zero encryption
         // (deterministic ciphertext) so the ledger state is reproducible.
-        auto const zeroBalance = encryptCanonicalZeroAmount(
+        auto zeroBalance = encryptCanonicalZeroAmount(
             (*sleMptoken)[sfHolderElGamalPublicKey], account_, mptIssuanceID);
 
         if (!zeroBalance)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        (*sleMptoken)[sfConfidentialBalanceSpending] = *zeroBalance;
+        (*sleMptoken)[sfConfidentialBalanceSpending] = std::move(*zeroBalance);
     }
     else
     {

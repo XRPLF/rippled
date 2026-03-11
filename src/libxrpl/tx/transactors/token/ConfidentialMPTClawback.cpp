@@ -117,14 +117,14 @@ ConfidentialMPTClawback::doApply()
     if (!encZeroForHolder)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const encZeroForIssuer = encryptCanonicalZeroAmount(issuerPubKey, holder, mptIssuanceID);
+    auto encZeroForIssuer = encryptCanonicalZeroAmount(issuerPubKey, holder, mptIssuanceID);
     if (!encZeroForIssuer)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // Set holder's confidential balances to encrypted zero
     (*sleHolderMPToken)[sfConfidentialBalanceInbox] = *encZeroForHolder;
     (*sleHolderMPToken)[sfConfidentialBalanceSpending] = *encZeroForHolder;
-    (*sleHolderMPToken)[sfIssuerEncryptedBalance] = *encZeroForIssuer;
+    (*sleHolderMPToken)[sfIssuerEncryptedBalance] = std::move(*encZeroForIssuer);
     incrementConfidentialVersion(*sleHolderMPToken);
 
     if (sleHolderMPToken->isFieldPresent(sfAuditorEncryptedBalance))
@@ -136,13 +136,12 @@ ConfidentialMPTClawback::doApply()
 
         Slice const auditorPubKey = (*sleIssuance)[sfAuditorElGamalPublicKey];
 
-        auto const encZeroForAuditor =
-            encryptCanonicalZeroAmount(auditorPubKey, holder, mptIssuanceID);
+        auto encZeroForAuditor = encryptCanonicalZeroAmount(auditorPubKey, holder, mptIssuanceID);
 
         if (!encZeroForAuditor)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        (*sleHolderMPToken)[sfAuditorEncryptedBalance] = *encZeroForAuditor;
+        (*sleHolderMPToken)[sfAuditorEncryptedBalance] = std::move(*encZeroForAuditor);
     }
 
     // Decrease Global Confidential Outstanding Amount
