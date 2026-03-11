@@ -1,0 +1,224 @@
+#include <xrpl/basics/contract.h>
+#include <xrpl/ledger/AmendmentTable.h>
+#include <xrpl/ledger/CanonicalTXSet.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/ledger/TrustLine.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol_autogen/ledger_entries/AccountRoot.h>
+#include <xrpl/protocol_autogen/transactions/AccountSet.h>
+#include <xrpl/protocol_autogen/transactions/Payment.h>
+#include <xrpl/tx/apply.h>
+
+#include <helpers/TxTest.h>
+
+namespace xrpl::test {
+
+//------------------------------------------------------------------------------
+// Feature helpers
+//------------------------------------------------------------------------------
+
+FeatureBitset
+allFeatures()
+{
+    static FeatureBitset const features = [] {
+        auto const& sa = allAmendments();
+        std::vector<uint256> feats;
+        feats.reserve(sa.size());
+        for (auto const& [name, vote] : sa)
+        {
+            (void)vote;
+            if (auto const f = getRegisteredFeature(name))
+                feats.push_back(*f);
+        }
+        return FeatureBitset(feats);
+    }();
+    return features;
+}
+
+//------------------------------------------------------------------------------
+// TxTest
+//------------------------------------------------------------------------------
+
+TxTest::TxTest(std::optional<FeatureBitset> features)
+{
+    // Convert FeatureBitset to unordered_set for Rules constructor
+    auto const featureBits = features.value_or(allFeatures());
+    foreachFeature(featureBits, [&](uint256 const& f) { featureSet_.insert(f); });
+
+    // Create rules with the specified features
+    rules_ = std::make_unique<Rules>(featureSet_);
+
+    // Default fees for testing
+    Fees const fees{XRPAmount{10}, XRPAmount{10000000}, XRPAmount{2000000}};
+
+    // Create a genesis ledger as the base
+    closedLedger_ = std::make_shared<Ledger>(
+        create_genesis,
+        *rules_,
+        fees,
+        std::vector<uint256>{featureSet_.begin(), featureSet_.end()},
+        registry_.getNodeFamily());
+
+    // Initialize time from the genesis ledger
+    now_ = closedLedger_->header().closeTime;
+
+    // Create an open view on top of the genesis ledger
+    openLedger_ =
+        std::make_shared<OpenView>(open_ledger, closedLedger_.get(), *rules_, closedLedger_);
+}
+
+bool
+TxTest::isEnabled(uint256 const& feature) const
+{
+    return rules_->enabled(feature);
+}
+
+Rules const&
+TxTest::getRules() const
+{
+    return *rules_;
+}
+
+[[nodiscard]] TxResult
+TxTest::submit(STTx const& stx)
+{
+    auto const result = apply(registry_, *openLedger_, stx, tapNONE, registry_.journal("apply"));
+
+    // Track successfully applied transactions for canonical reordering on close
+    // We make a copy since the TransactionBase doesn't own the STTx
+    if (result.applied)
+        pendingTxs_.push_back(std::make_shared<STTx>(stx));
+
+    return TxResult{
+        .ter = result.ter,
+        .applied = result.applied,
+        .metadata = std::move(result.metadata),
+        .tx = &stx};
+}
+
+void
+TxTest::createAccount(Account const& account, XRPAmount xrp, uint32_t accountFlags)
+{
+    EXPECT_EQ(
+        submit(transactions::PaymentBuilder{Account::master, account, xrp}, Account::master).ter,
+        tesSUCCESS);
+
+    close();
+
+    if (accountFlags != 0)
+    {
+        EXPECT_EQ(
+            submit(transactions::AccountSetBuilder{account}.setSetFlag(accountFlags), account).ter,
+            tesSUCCESS);
+        close();
+    }
+}
+
+ledger_entries::AccountRoot
+TxTest::getAccountRoot(AccountID const& id) const
+{
+    auto const sle = getOpenLedger().read(keylet::account(id));
+    if (!sle)
+        Throw<std::runtime_error>("TxTest::getAccountRoot: account not found");
+    return ledger_entries::AccountRoot{std::const_pointer_cast<SLE const>(sle)};
+}
+
+OpenView&
+TxTest::getOpenLedger()
+{
+    return *openLedger_;
+}
+
+OpenView const&
+TxTest::getOpenLedger() const
+{
+    return *openLedger_;
+}
+
+ReadView const&
+TxTest::getClosedLedger() const
+{
+    return *closedLedger_;
+}
+
+void
+TxTest::close()
+{
+    // Build a new closed ledger from the previous closed ledger,
+    // similar to how buildLedgerImpl works:
+    // 1. Create a new Ledger from the previous closed ledger
+    // 2. Re-apply transactions in canonical order
+    // 3. Mark it as accepted/immutable
+
+    auto const& prevLedger = *closedLedger_;
+
+    // Use provided close time, or advance by resolution
+    auto const ledgerCloseTime = now_ + prevLedger.header().closeTimeResolution;
+
+    // Update our tracked time
+    now_ = ledgerCloseTime;
+
+    // Create new ledger following the previous one
+    auto newLedger = std::make_shared<Ledger>(prevLedger, ledgerCloseTime);
+
+    // Put transactions into canonical order
+    // The salt is the hash of the previous ledger (used to randomize ordering)
+    CanonicalTXSet txSet(prevLedger.header().hash);
+    for (auto const& tx : pendingTxs_)
+        txSet.insert(tx);
+
+    // Create an OpenView on the new ledger and apply transactions in order
+    {
+        OpenView accum(&*newLedger);
+        for (auto const& [key, tx] : txSet)
+        {
+            apply(registry_, accum, *tx, tapNONE, registry_.journal("apply"));
+        }
+        accum.apply(*newLedger);
+    }
+
+    // Mark the ledger as accepted (makes it immutable)
+    newLedger->setAccepted(
+        ledgerCloseTime,
+        newLedger->header().closeTimeResolution,
+        true);  // closeTimeCorrect
+
+    // The new ledger becomes our closed ledger
+    closedLedger_ = newLedger;
+
+    // Clear pending transactions
+    pendingTxs_.clear();
+
+    // Create a fresh open view on top of the new closed ledger
+    // Use our rules_ to ensure consistent feature flags
+    openLedger_ =
+        std::make_shared<OpenView>(open_ledger, closedLedger_.get(), *rules_, closedLedger_);
+}
+
+void
+TxTest::advanceTime(NetClock::duration duration)
+{
+    now_ += duration;
+}
+
+NetClock::time_point
+TxTest::getCloseTime() const
+{
+    return now_;
+}
+
+STAmount
+TxTest::getBalance(AccountID const& account, IOU const& iou) const
+{
+    auto const sle = openLedger_->read(keylet::line(account, iou.issue()));
+    if (!sle)
+        return STAmount{iou.issue(), 0};
+
+    auto trustLine = TrustLine::makeItem(account, sle);
+    if (!trustLine)
+        Throw<std::runtime_error>("TxTest::getBalance: failed to create TrustLine");
+    return trustLine->getBalance();
+}
+
+}  // namespace xrpl::test

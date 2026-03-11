@@ -1,0 +1,16 @@
+#include <xrpl/protocol/Seed.h>
+
+#include <helpers/Account.h>
+
+namespace xrpl::test {
+
+Account const Account::master{"masterpassphrase"};
+
+Account::Account(std::string_view name, KeyType type)
+    : name_(name)
+    , keyPair_(generateKeyPair(type, generateSeed(name_)))
+    , id_(calcAccountID(keyPair_.first))
+{
+}
+
+}  // namespace xrpl::test
