@@ -170,8 +170,6 @@ STObject::applyTemplate(SOTemplate const& type)
         {
             if ((e.style() == soeDEFAULT) && iter->get().isDefault())
             {
-                auto& stv = (*iter);
-                auto test = dynamic_cast<STUInt32*>(&stv.get());
                 throwFieldErr(e.sField().fieldName, "may not be explicitly set to default.");
             }
             v.emplace_back(std::move(*iter));
