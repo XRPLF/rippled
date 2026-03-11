@@ -129,9 +129,7 @@ class Xrpl(ConanFile):
             self.options["boost"].visibility = "global"
         if self.settings.compiler in ["clang", "gcc"]:
             self.options["boost"].without_cobalt = True
-        self.options["boost"].without_context = False
-        self.options["boost"].without_coroutine = True
-        self.options["boost"].without_coroutine2 = False
+
         # Check if environment variable exists
         if "SANITIZERS" in os.environ:
             sanitizers = os.environ["SANITIZERS"]
