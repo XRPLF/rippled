@@ -23,19 +23,42 @@ LedgerHandler::check()
     auto const& params = context_.params;
     bool needsLedger = params.isMember(jss::ledger) || params.isMember(jss::ledger_hash) ||
         params.isMember(jss::ledger_index);
-    if (!needsLedger)
+    if (needsLedger)
+    {
+        if (auto s = lookupLedger(ledger_, context_, result_))
+            return s;
+    }
+
+    auto getBool = [&](Json::StaticString const& field, bool& out) -> Status {
+        if (!params.isMember(field))
+        {
+            out = false;
+            return Status::OK;
+        }
+        if (!params[field].isBool())
+        {
+            return rpcINVALID_PARAMS;
+        }
+
+        out = params[field].asBool();
         return Status::OK;
+    };
 
-    if (auto s = lookupLedger(ledger_, context_, result_))
+    bool full, transactions, accounts, expand, binary, owner_funds, queue;
+    if (auto s = getBool(jss::full, full))
         return s;
-
-    bool const full = params[jss::full].asBool();
-    bool const transactions = params[jss::transactions].asBool();
-    bool const accounts = params[jss::accounts].asBool();
-    bool const expand = params[jss::expand].asBool();
-    bool const binary = params[jss::binary].asBool();
-    bool const owner_funds = params[jss::owner_funds].asBool();
-    bool const queue = params[jss::queue].asBool();
+    if (auto s = getBool(jss::transactions, transactions))
+        return s;
+    if (auto s = getBool(jss::accounts, accounts))
+        return s;
+    if (auto s = getBool(jss::expand, expand))
+        return s;
+    if (auto s = getBool(jss::binary, binary))
+        return s;
+    if (auto s = getBool(jss::owner_funds, owner_funds))
+        return s;
+    if (auto s = getBool(jss::queue, queue))
+        return s;
 
     options_ = (full ? LedgerFill::full : 0) | (expand ? LedgerFill::expand : 0) |
         (transactions ? LedgerFill::dumpTxrp : 0) | (accounts ? LedgerFill::dumpState : 0) |
