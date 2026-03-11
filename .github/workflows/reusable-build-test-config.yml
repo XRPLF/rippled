@@ -230,6 +230,8 @@ jobs:
           BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
         run: |
           set -o pipefail
+          # Coverage builds are slower due to instrumentation; use fewer parallel jobs to avoid flakiness
+          [ "$COVERAGE_ENABLED" = "true" ] && BUILD_NPROC=$(( BUILD_NPROC - 2 ))
           ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee unittest.log
 
       - name: Show test failure summary
