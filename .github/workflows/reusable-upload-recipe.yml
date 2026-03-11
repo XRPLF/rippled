@@ -38,9 +38,11 @@ defaults:
     shell: bash
 
 env:
-  # The base ref is used to determine which recipe version to upload. For pull request events, the
-  # base ref is the short ref (e.g. `develop`), while for merge group and other events, the base ref
-  # is the full ref (e.g. `refs/heads/develop`), so we normalize the short ref to a full ref.
+  # The target branch name is used to determine which recipe version to upload. For pull request
+  # events, we can obtain the short branch name (e.g. `develop`) from its base ref. For merge group
+  # events, we can obtain the full branch name (e.g. `refs/heads/develop`) from its base ref. For
+  # push events, we can obtain the full branch name directly from the ref. For consistency, we
+  # normalize the short ref to a full ref in all cases.
   BASE_REF: ${{ github.event_name == 'pull_request' && format('refs/heads/{0}', github.event.pull_request.base.ref) || (github.event_name == 'merge_group' && github.merge_group.base_ref) || github.ref }}
 
 jobs:
