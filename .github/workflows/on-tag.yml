@@ -17,8 +17,7 @@ defaults:
 
 jobs:
   upload-recipe:
-    # Only run when a tag is pushed to the XRPLF repository.
-    if: ${{ github.repository_owner == 'XRPLF' }}
+    if: ${{ github.repository == 'XRPLF/rippled' }}
     uses: ./.github/workflows/reusable-upload-recipe.yml
     secrets:
       remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
