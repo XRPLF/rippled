@@ -42,7 +42,7 @@ injectSLE(Json::Value& jv, SLE const& sle)
             // VFALCO TODO Give a name and move this constant
             //             to a more visible location. Also
             //             shouldn't this be https?
-            jv[jss::urlgravatar] = str(boost::format("http://www.gravatar.com/avatar/%s") % md5);
+            jv[jss::urlgravatar] = str(boost::format("https://www.gravatar.com/avatar/%s") % md5);
         }
     }
     else
