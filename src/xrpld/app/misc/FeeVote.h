@@ -1,8 +1,11 @@
 #pragma once
 
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/shamap/SHAMap.h>
+
+#include <tuple>
 
 namespace xrpl {
 
@@ -30,6 +33,16 @@ public:
         std::shared_ptr<ReadView const> const& lastClosedLedger,
         std::vector<std::shared_ptr<STValidation>> const& parentValidations,
         std::shared_ptr<SHAMap> const& initialPosition) = 0;
+
+    /** Update local fee target used for voting.
+     */
+    virtual void
+    setTarget(XRPAmount referenceFee, XRPAmount accountReserve, XRPAmount ownerReserve) = 0;
+
+    /** Get current local fee vote target.
+     */
+    virtual std::tuple<XRPAmount, XRPAmount, XRPAmount>
+    getTarget() const = 0;
 };
 
 struct FeeSetup;

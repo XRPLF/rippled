@@ -100,6 +100,7 @@ JSS(account_hash);           // out: LedgerToJson
 JSS(account_id);             // out: WalletPropose
 JSS(account_nfts);           // out: AccountNFTs
 JSS(account_objects);        // out: AccountObjects
+JSS(account_reserve);        // in/out: FeeVote
 JSS(account_root);           // in: LedgerEntry
 JSS(account_sequence_next);  // out: SubmitTransaction
 JSS(account_sequence_available);  // out: SubmitTransaction
@@ -260,6 +261,7 @@ JSS(fail_hard);               // in: Sign, Submit
 JSS(failed);                  // out: InboundLedger
 JSS(feature);                 // in: Feature
 JSS(features);                // out: Feature
+JSS(fee_vote);                // in/out: FeeVote
 JSS(fee_base);                // out: NetworkOPs
 JSS(fee_div_max);             // in: TransactionSign
 JSS(fee_level);               // out: AccountInfo
@@ -466,6 +468,7 @@ JSS(oracles);                 // in: get_aggregate_price
 JSS(oracle_document_id);      // in: get_aggregate_price
 JSS(owner);                   // in: LedgerEntry, out: NetworkOPs
 JSS(owner_funds);             // in/out: Ledger, NetworkOPs, AcceptedLedgerTx
+JSS(owner_reserve);           // in/out: FeeVote
 JSS(page_index);
 JSS(params);                  // RPC
 JSS(parent_close_time);       // out: LedgerToJson
@@ -523,6 +526,7 @@ JSS(remote);                  // out: Logic.h
 JSS(request);                 // RPC
 JSS(requested);               // out: Manifest
 JSS(reservations);            // out: Reservations
+JSS(reference_fee);           // in/out: FeeVote
 JSS(reserve_base);            // out: NetworkOPs
 JSS(reserve_base_xrp);        // out: NetworkOPs
 JSS(reserve_inc);             // out: NetworkOPs
