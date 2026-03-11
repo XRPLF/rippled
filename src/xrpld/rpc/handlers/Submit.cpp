@@ -10,9 +10,13 @@
 
 namespace xrpl {
 
-static NetworkOPs::FailHard
+static Expected<NetworkOPs::FailHard, Json::Value>
 getFailHard(RPC::JsonContext const& context)
 {
+    if (context.params.isMember(jss::fail_hard) && !context.params[jss::fail_hard].isBool())
+    {
+        return Unexpected(RPC::expected_field_error(jss::fail_hard, "boolean"));
+    }
     return NetworkOPs::doFailHard(
         context.params.isMember("fail_hard") && context.params["fail_hard"].asBool());
 }
@@ -29,6 +33,8 @@ doSubmit(RPC::JsonContext& context)
     if (!context.params.isMember(jss::tx_blob))
     {
         auto const failType = getFailHard(context);
+        if (!failType)
+            return failType.error();
 
         if (context.role != Role::ADMIN && !context.app.config().canSign())
             return RPC::make_error(rpcNOT_SUPPORTED, "Signing is not supported by this server.");
@@ -36,7 +42,7 @@ doSubmit(RPC::JsonContext& context)
         auto ret = RPC::transactionSubmit(
             context.params,
             context.apiVersion,
-            failType,
+            *failType,
             context.role,
             context.ledgerMaster.getValidatedLedgerAge(),
             context.app,
@@ -102,8 +108,10 @@ doSubmit(RPC::JsonContext& context)
     try
     {
         auto const failType = getFailHard(context);
+        if (!failType)
+            return failType.error();
 
-        context.netOps.processTransaction(transaction, isUnlimited(context.role), true, failType);
+        context.netOps.processTransaction(transaction, isUnlimited(context.role), true, *failType);
     }
     catch (std::exception& e)
     {
