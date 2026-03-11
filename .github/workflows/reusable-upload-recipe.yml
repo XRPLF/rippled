@@ -82,7 +82,7 @@ jobs:
       # When this workflow is triggered by a pull request event, it will always be when merging into
       # one of the 'release' branches, see on-pr.yml.
       - name: Upload Conan recipe (rc)
-        if: ${{ startsWith(env.BASE_REF, 'refs/heads/release') }}
+        if: ${{ github.event_name == 'pull_request' }}
         env:
           REMOTE_NAME: ${{ inputs.remote_name }}
         run: |
