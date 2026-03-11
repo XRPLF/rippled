@@ -154,7 +154,7 @@ private:
     std::chrono::steady_clock::time_point quick_reply_;
     std::chrono::steady_clock::time_point full_reply_;
 
-    // payments accept up to 6 paths - account for fullLiquidityPath can be appended
+    // payments accept up to 6 paths - account for +1 fullLiquidityPath can be appended
     static unsigned int const max_paths_ = 5;
 };
 
