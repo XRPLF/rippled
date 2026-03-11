@@ -2,7 +2,6 @@
 #
 # ASAN_OPTIONS="print_stacktrace=1:detect_container_overflow=0:suppressions=sanitizers/suppressions/asan.supp:halt_on_error=0"
 
-
 # Leaks in Doctest tests: xrpl.test.*
 interceptor_name:src/libxrpl/net/HTTPClient.cpp
 interceptor_name:src/libxrpl/net/RegisterSSLCerts.cpp
@@ -11,25 +10,6 @@ interceptor_name:xrpl/net/AutoSocket.h
 interceptor_name:xrpl/net/HTTPClient.h
 interceptor_name:xrpl/net/HTTPClientSSLContext.h
 interceptor_name:xrpl/net/RegisterSSLCerts.h
-
-# Boost.Context fiber/coroutine false positives
-# ASan doesn't fully support makecontext/swapcontext (see first warning in output)
-# The "attempting free on address which was not malloc()-ed" errors are false positives
-# caused by Boost.Context's fiber stack management.
-#
-# Suppress bad-free errors in Boost.Context fiber/coroutine stack deallocation
-# These are triggered when fiber stacks are deallocated but ASan doesn't recognize them
-# as having been allocated via malloc (because they use mmap via boost's stack allocator)
-# We ignore these files from intrumentation already on Clang, but on GCC, we need to suppress the issues.
-
-#interceptor_via_fun:swapcontext
-#interceptor_via_fun:makecontext
-#interceptor_via_fun:boost::context::basic_fixedsize_stack*deallocate
-#interceptor_via_fun:boost::context::fiber::~fiber
-#interceptor_name:boost/context/fiber_ucontext.hpp
-#interceptor_name:boost/context/fixedsize_stack.hpp
-#interceptor_name:Coro.ipp
-
 
 # Suppress false positive stack-buffer errors in thread stack allocation
 # Related to ASan's __asan_handle_no_return warnings (github.com/google/sanitizers/issues/189)

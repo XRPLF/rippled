@@ -61,15 +61,3 @@ if(enable_asan)
         INTERFACE BOOST_USE_ASAN BOOST_USE_UCONTEXT
     )
 endif()
-
-# if (SANITIZERS_ENABLED AND is_clang)
-#     # TODO: gcc does not support -fsanitize-blacklist...can we do something else for gcc ?
-#     if (NOT Boost_INCLUDE_DIRS AND TARGET Boost::headers)
-#         get_target_property(Boost_INCLUDE_DIRS Boost::headers INTERFACE_INCLUDE_DIRECTORIES)
-#     endif ()
-#     message(STATUS "Adding [${Boost_INCLUDE_DIRS}] to sanitizer blacklist")
-#     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/san_bl.txt "src:${Boost_INCLUDE_DIRS}/*")
-#     target_compile_options(
-#         opts INTERFACE # ignore boost headers for sanitizing
-#                        -fsanitize-blacklist=${CMAKE_CURRENT_BINARY_DIR}/san_bl.txt)
-# endif ()
