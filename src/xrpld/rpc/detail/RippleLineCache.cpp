@@ -1,5 +1,6 @@
 #include <xrpld/rpc/detail/RippleLineCache.h>
-#include <xrpld/rpc/detail/TrustLine.h>
+
+#include <xrpl/ledger/TrustLine.h>
 
 namespace xrpl {
 
@@ -16,7 +17,7 @@ RippleLineCache::~RippleLineCache()
                            << " distinct trust lines.";
 }
 
-std::shared_ptr<std::vector<PathFindTrustLine>>
+std::shared_ptr<std::vector<TrustLine>>
 RippleLineCache::getRippleLines(AccountID const& accountID, LineDirection direction)
 {
     auto const hash = hasher_(accountID);
@@ -75,10 +76,10 @@ RippleLineCache::getRippleLines(AccountID const& accountID, LineDirection direct
     if (inserted)
     {
         XRPL_ASSERT(it->second == nullptr, "xrpl::RippleLineCache::getRippleLines : null lines");
-        auto lines = PathFindTrustLine::getItems(accountID, *ledger_, direction);
+        auto lines = TrustLine::getItems(accountID, *ledger_, direction);
         if (lines.size())
         {
-            it->second = std::make_shared<std::vector<PathFindTrustLine>>(std::move(lines));
+            it->second = std::make_shared<std::vector<TrustLine>>(std::move(lines));
             totalLineCount_ += it->second->size();
         }
     }

@@ -1,9 +1,9 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
-#include <xrpld/rpc/detail/TrustLine.h>
 
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/TrustLine.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -158,7 +158,7 @@ doGatewayBalances(RPC::JsonContext& context)
                 }
             }
 
-            auto rs = PathFindTrustLine::makeItem(accountID, sle);
+            auto rs = TrustLine::makeItem(accountID, sle);
 
             if (!rs)
                 return;

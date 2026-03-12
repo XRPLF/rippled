@@ -1,8 +1,8 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
-#include <xrpld/rpc/detail/TrustLine.h>
 
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/TrustLine.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
@@ -50,7 +50,7 @@ doAccountCurrencies(RPC::JsonContext& context)
         return rpcError(rpcACT_NOT_FOUND);
 
     std::set<Currency> send, receive;
-    for (auto const& rspEntry : RPCTrustLine::getItems(accountID, *ledger))
+    for (auto const& rspEntry : TrustLine::getItems(accountID, *ledger))
     {
         STAmount const& saBalance = rspEntry.getBalance();
 
