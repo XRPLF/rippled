@@ -3303,8 +3303,7 @@ protected:
                     interestRate(TenthBips32(10'000)),
                     sig(sfCounterpartySignature, lender),
                     fee(env.current()->fees().base * 5),
-                    ter(tecLIMIT_EXCEEDED),
-                    THISLINE);
+                    ter(tecLIMIT_EXCEEDED));
             },
             nullptr);
 
@@ -3327,8 +3326,7 @@ protected:
                     fee(env.current()->fees().base * 5),
                     paymentTotal(2),
                     paymentInterval(3600 * 24),
-                    ter(tecLIMIT_EXCEEDED),
-                    THISLINE);
+                    ter(tecLIMIT_EXCEEDED));
             },
             nullptr);
     }
@@ -3727,7 +3725,7 @@ protected:
         createJson = env.json(createJson, sig(sfCounterpartySignature, lender));
         // Fails in preclaim because principal requested can't be
         // represented as XRP
-        env(createJson, ter(tecPRECISION_LOSS), THISLINE);
+        env(createJson, ter(tecPRECISION_LOSS));
         env.close();
 
         BEAST_EXPECT(!env.le(keylet));
@@ -3739,7 +3737,7 @@ protected:
         createJson = env.json(createJson, sig(sfCounterpartySignature, lender));
         // Fails in doApply because the payment is too small to be
         // represented as XRP.
-        env(createJson, ter(tecPRECISION_LOSS), THISLINE);
+        env(createJson, ter(tecPRECISION_LOSS));
         env.close();
     }
 
@@ -4217,8 +4215,8 @@ protected:
         // preclaim
         Env env(*this);
         env.fund(XRP(1'000), lender, issuer, borrower);
-        env(trust(lender, IOU(10'000'000)), THISLINE);
-        env(pay(issuer, lender, IOU(5'000'000)), THISLINE);
+        env(trust(lender, IOU(10'000'000)));
+        env(pay(issuer, lender, IOU(5'000'000)));
         BrokerInfo brokerInfo{createVaultAndBroker(env, issuer["IOU"], lender)};
 
         auto const loanSetFee = fee(env.current()->fees().base * 2);
@@ -4226,22 +4224,21 @@ protected:
 
         env(set(borrower, brokerInfo.brokerID, debtMaximumRequest),
             sig(sfCounterpartySignature, lender),
-            loanSetFee,
-            THISLINE);
+            loanSetFee);
 
         env.close();
 
         std::uint32_t const loanSequence = 1;
         auto const loanKeylet = keylet::loan(brokerInfo.brokerID, loanSequence);
 
-        env(fset(issuer, asfGlobalFreeze), THISLINE);
+        env(fset(issuer, asfGlobalFreeze));
         env.close();
 
         // preclaim: tecFROZEN
-        env(pay(borrower, loanKeylet.key, debtMaximumRequest), ter(tecFROZEN), THISLINE);
+        env(pay(borrower, loanKeylet.key, debtMaximumRequest), ter(tecFROZEN));
         env.close();
 
-        env(fclear(issuer, asfGlobalFreeze), THISLINE);
+        env(fclear(issuer, asfGlobalFreeze));
         env.close();
 
         auto const pseudoBroker = [&]() -> std::optional<Account> {
@@ -4259,33 +4256,29 @@ protected:
             return;
 
         // Lender and pseudoaccount must both be frozen
-        env(trust(issuer, lender["IOU"](1'000), lender, tfSetFreeze | tfSetDeepFreeze), THISLINE);
+        env(trust(issuer, lender["IOU"](1'000), lender, tfSetFreeze | tfSetDeepFreeze));
         env(trust(
-                issuer,
-                (*pseudoBroker)["IOU"](1'000),
-                *pseudoBroker,
-                tfSetFreeze | tfSetDeepFreeze),
-            THISLINE);
+            issuer, (*pseudoBroker)["IOU"](1'000), *pseudoBroker, tfSetFreeze | tfSetDeepFreeze));
         env.close();
 
         // preclaim: tecFROZEN due to deep frozen
-        env(pay(borrower, loanKeylet.key, debtMaximumRequest), ter(tecFROZEN), THISLINE);
+        env(pay(borrower, loanKeylet.key, debtMaximumRequest), ter(tecFROZEN));
         env.close();
 
         // Only one needs to be unfrozen
-        env(trust(issuer, lender["IOU"](1'000), tfClearFreeze | tfClearDeepFreeze), THISLINE);
+        env(trust(issuer, lender["IOU"](1'000), tfClearFreeze | tfClearDeepFreeze));
         env.close();
 
         // The payment is late by this point
-        env(pay(borrower, loanKeylet.key, debtMaximumRequest), ter(tecEXPIRED), THISLINE);
+        env(pay(borrower, loanKeylet.key, debtMaximumRequest), ter(tecEXPIRED));
         env.close();
-        env(pay(borrower, loanKeylet.key, debtMaximumRequest, tfLoanLatePayment), THISLINE);
+        env(pay(borrower, loanKeylet.key, debtMaximumRequest, tfLoanLatePayment));
         env.close();
 
         // preclaim: tecKILLED
         // note that tecKILLED in loanMakePayment()
         // doesn't happen because of the preclaim check.
-        env(pay(borrower, loanKeylet.key, debtMaximumRequest), ter(tecKILLED), THISLINE);
+        env(pay(borrower, loanKeylet.key, debtMaximumRequest), ter(tecKILLED));
     }
 
     void
@@ -4637,12 +4630,12 @@ protected:
         auto const keylet = keylet::loan(broker.brokerID, loanSequence);
 
         createJson = env.json(createJson, sig(sfCounterpartySignature, lender));
-        env(createJson, THISLINE);
+        env(createJson);
         env.close();
 
         auto loanPayTx = env.json(pay(borrower, keylet.key, STAmount{broker.asset, Number{}}));
         loanPayTx["Amount"]["value"] = "0.000281284125490196";
-        env(loanPayTx, ter(tecINSUFFICIENT_PAYMENT), THISLINE);
+        env(loanPayTx, ter(tecINSUFFICIENT_PAYMENT));
         env.close();
     }
 
