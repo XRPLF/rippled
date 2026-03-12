@@ -190,10 +190,12 @@ def main():
     path_counts: Dict[Tuple[str, str], int] = defaultdict(int)
 
     for file_path, include_line in raw_includes:
-        level = get_level(file_path)
         include_level = extract_include_level(include_line)
-
-        if include_level and level != include_level:
+        if not include_level:
+           continue
+        
+        level = get_level(file_path)
+        if level != include_level:
             path_counts[(level, include_level)] += 1
 
     # Sort and deduplicate paths (using dictionary order like bash 'sort -d').
