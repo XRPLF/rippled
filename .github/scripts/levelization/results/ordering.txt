@@ -7,9 +7,12 @@ libxrpl.crypto > xrpl.basics
 libxrpl.json > xrpl.basics
 libxrpl.json > xrpl.json
 libxrpl.ledger > xrpl.basics
+libxrpl.ledger > xrpl.core
 libxrpl.ledger > xrpl.json
 libxrpl.ledger > xrpl.ledger
+libxrpl.ledger > xrpl.nodestore
 libxrpl.ledger > xrpl.protocol
+libxrpl.ledger > xrpl.rdb
 libxrpl.net > xrpl.basics
 libxrpl.net > xrpl.net
 libxrpl.nodestore > xrpl.basics
@@ -90,6 +93,7 @@ test.core > xrpl.server
 test.csf > xrpl.basics
 test.csf > xrpld.consensus
 test.csf > xrpl.json
+test.csf > xrpl.ledger
 test.csf > xrpl.protocol
 test.json > test.jtx
 test.json > xrpl.json
@@ -108,7 +112,6 @@ test.jtx > xrpl.tx
 test.ledger > test.jtx
 test.ledger > test.toplevel
 test.ledger > xrpl.basics
-test.ledger > xrpld.app
 test.ledger > xrpld.core
 test.ledger > xrpl.ledger
 test.ledger > xrpl.protocol
@@ -125,6 +128,7 @@ test.overlay > xrpl.basics
 test.overlay > xrpld.app
 test.overlay > xrpld.overlay
 test.overlay > xrpld.peerfinder
+test.overlay > xrpl.ledger
 test.overlay > xrpl.nodestore
 test.overlay > xrpl.protocol
 test.overlay > xrpl.shamap
@@ -186,6 +190,7 @@ xrpl.core > xrpl.protocol
 xrpl.json > xrpl.basics
 xrpl.ledger > xrpl.basics
 xrpl.ledger > xrpl.protocol
+xrpl.ledger > xrpl.protocol_autogen
 xrpl.ledger > xrpl.server
 xrpl.ledger > xrpl.shamap
 xrpl.net > xrpl.basics
@@ -232,6 +237,7 @@ xrpld.app > xrpl.shamap
 xrpld.app > xrpl.tx
 xrpld.consensus > xrpl.basics
 xrpld.consensus > xrpl.json
+xrpld.consensus > xrpl.ledger
 xrpld.consensus > xrpl.protocol
 xrpld.core > xrpl.basics
 xrpld.core > xrpl.core
