@@ -44,10 +44,12 @@ struct Regression_test : public beast::unit_test::suite
         // The low balance scenario can not deterministically
         // be reproduced against an open ledger. Make a local
         // closed ledger and work with it directly.
-        Rules const rules{env.app().config().features};
-        Fees const fees = env.app().config().FEES.toFees();
         auto closed = std::make_shared<Ledger>(
-            create_genesis, rules, fees, std::vector<uint256>{}, env.app().getNodeFamily());
+            create_genesis,
+            Rules{env.app().config().features},
+            env.app().config().FEES.toFees(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
         auto expectedDrops = INITIAL_XRP;
         BEAST_EXPECT(closed->header().drops == expectedDrops);
 

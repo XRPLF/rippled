@@ -15,11 +15,13 @@ class SkipList_test : public beast::unit_test::suite
         jtx::Env env(*this);
         std::vector<std::shared_ptr<Ledger>> history;
         {
-            std::unordered_set<uint256, beast::uhash<>> features;
-            Rules const rules{features};
-            Fees const fees{XRPAmount{10}, XRPAmount{10000000}, XRPAmount{2000000}};
+            Config config;
             auto prev = std::make_shared<Ledger>(
-                create_genesis, rules, fees, std::vector<uint256>{}, env.app().getNodeFamily());
+                create_genesis,
+                Rules{config.features},
+                config.FEES.toFees(),
+                std::vector<uint256>{},
+                env.app().getNodeFamily());
             history.push_back(prev);
             for (auto i = 0; i < 1023; ++i)
             {

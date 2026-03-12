@@ -210,10 +210,12 @@ class NegativeUNL_test : public beast::unit_test::suite
         jtx::Env env(*this, jtx::testable_amendments());
         std::vector<PublicKey> publicKeys = createPublicKeys(3);
         // genesis ledger
-        Rules const rules{env.app().config().features};
-        Fees const fees = env.app().config().FEES.toFees();
         auto l = std::make_shared<Ledger>(
-            create_genesis, rules, fees, std::vector<uint256>{}, env.app().getNodeFamily());
+            create_genesis,
+            Rules{env.app().config().features},
+            env.app().config().FEES.toFees(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
 
         // Record the public keys and ledger sequences of expected negative UNL
         // validators when we build the ledger history
@@ -543,12 +545,10 @@ struct NetworkHistory
     createLedgerHistory()
     {
         static uint256 fake_amendment;  // So we have different genesis ledgers
-        Rules const rules{env.app().config().features};
-        Fees const fees = env.app().config().FEES.toFees();
         auto l = std::make_shared<Ledger>(
             create_genesis,
-            rules,
-            fees,
+            Rules{env.app().config().features},
+            env.app().config().FEES.toFees(),
             std::vector<uint256>{fake_amendment++},
             env.app().getNodeFamily());
         history.push_back(l);
@@ -1661,10 +1661,12 @@ class NegativeUNLVoteFilterValidations_test : public beast::unit_test::suite
     {
         testcase("Filter Validations");
         jtx::Env env(*this);
-        Rules const rules{env.app().config().features};
-        Fees const fees = env.app().config().FEES.toFees();
         auto l = std::make_shared<Ledger>(
-            create_genesis, rules, fees, std::vector<uint256>{}, env.app().getNodeFamily());
+            create_genesis,
+            Rules{env.app().config().features},
+            env.app().config().FEES.toFees(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
 
         auto createSTVal = [&](std::pair<PublicKey, SecretKey> const& keys) {
             return std::make_shared<STValidation>(
