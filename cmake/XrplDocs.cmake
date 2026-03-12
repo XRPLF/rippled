@@ -42,7 +42,11 @@ function(verbose_find_path variable name)
     endif()
 endfunction()
 
-verbose_find_path(doxygen_plantuml_jar_path plantuml.jar PATH_SUFFIXES share/plantuml)
+verbose_find_path(
+    doxygen_plantuml_jar_path
+    plantuml.jar
+    PATH_SUFFIXES share/plantuml
+)
 verbose_find_path(doxygen_dot_path dot)
 
 # https://en.cppreference.com/w/Cppreference:Archives
