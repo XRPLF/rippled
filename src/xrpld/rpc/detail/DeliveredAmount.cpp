@@ -34,7 +34,7 @@ getDeliveredAmount(
     if (auto const& deliveredAmount = transactionMeta.getDeliveredAmount();
         deliveredAmount.has_value())
     {
-        return *deliveredAmount;
+        return deliveredAmount;
     }
 
     if (serializedTx->isFieldPresent(sfAmount))
