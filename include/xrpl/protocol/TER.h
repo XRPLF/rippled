@@ -347,7 +347,7 @@ enum TECcodes : TERUnderlyingType {
     // backward compatibility with historical data on non-prod networks, can be
     // reclaimed after those networks reset.
     tecNO_DELEGATE_PERMISSION = 198,
-    tecBAD_PROOF = 199
+    tecBAD_PROOF = 199,
 };
 
 //------------------------------------------------------------------------------
