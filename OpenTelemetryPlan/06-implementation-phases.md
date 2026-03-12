@@ -154,11 +154,30 @@ gantt
 
 ### Exit Criteria
 
-- [ ] Complete consensus round traces
-- [ ] Phase transitions visible
-- [ ] Proposals and validations traced
-- [ ] No impact on consensus timing
+- [x] Complete consensus round traces
+- [x] Phase transitions visible
+- [x] Proposals and validations traced
+- [x] No impact on consensus timing
 - [ ] Multi-validator test network validated
+
+### Implementation Status — Phase 4a Complete
+
+Phase 4a (establish-phase gap fill & cross-node correlation) adds:
+
+- **Deterministic trace ID** derived from `previousLedger.id()` so all validators
+  in the same round share the same `trace_id` (switchable via
+  `consensus_trace_strategy` config: `"deterministic"` or `"attribute"`).
+- **Round lifecycle spans**: `consensus.round` with round-to-round span links.
+- **Establish phase**: `consensus.establish`, `consensus.update_positions` (with
+  `dispute.resolve` events), `consensus.check` (with threshold tracking).
+- **Mode changes**: `consensus.mode_change` spans.
+- **Validation**: `consensus.validation.send` with span link to round span
+  (thread-safe cross-thread access via `roundSpanContext_` snapshot).
+- **Separation of concerns**: telemetry extracted to private helpers
+  (`startRoundTracing`, `createValidationSpan`, `startEstablishTracing`,
+  `updateEstablishTracing`, `endEstablishTracing`).
+
+See [Phase4_taskList.md](./Phase4_taskList.md) for the full spec and implementation notes.
 
 ---
 
