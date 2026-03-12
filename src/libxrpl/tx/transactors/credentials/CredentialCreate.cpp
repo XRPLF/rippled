@@ -146,14 +146,15 @@ CredentialCreate::doApply()
     }
     else
     {
+        // Added to both dirs, owned only by issuer. CredentialAccept will transfer ownership to
+        // subject. CredentialDelete will remove from both dirs and decrement 1 ownerCount.
         auto const page =
             view().dirInsert(keylet::ownerDir(subject), credentialKey, describeOwnerDir(subject));
-        JLOG(j_.trace()) << "Adding Credential to owner directory " << to_string(credentialKey.key)
-                         << ": " << (page ? "success" : "failure");
+        JLOG(j_.trace()) << "Adding Credential to subject directory "
+                         << to_string(credentialKey.key) << ": " << (page ? "success" : "failure");
         if (!page)
             return tecDIR_FULL;
         sleCred->setFieldU64(sfSubjectNode, *page);
-        view().update(view().peek(keylet::account(subject)));
     }
 
     view().insert(sleCred);
