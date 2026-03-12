@@ -126,18 +126,6 @@ def main():
     script_dir = Path(__file__).parent.resolve()
     os.chdir(script_dir)
 
-    # If the shell is interactive, clean up any flotsam before analyzing.
-    # Match bash behavior: check if PS1 is set (indicates interactive shell).
-    # When running a script, PS1 is not set even if stdin/stdout are TTYs.
-    if os.environ.get("PS1"):
-        try:
-            subprocess.run(["git", "clean", "-ix"], check=False, timeout=30)
-        except (subprocess.TimeoutExpired, KeyboardInterrupt):
-            print("Skipping git clean...")
-        except Exception:
-            # If git clean fails for any reason, just continue
-            pass
-
     # Clean up and create results directory.
     results_dir = script_dir / "results"
     if results_dir.exists():
