@@ -50,6 +50,13 @@ if(MSVC AND CMAKE_GENERATOR_PLATFORM STREQUAL "Win32")
     message(FATAL_ERROR "Visual Studio 32-bit build is not supported.")
 endif()
 
+if(voidstar AND NOT is_amd64)
+    message(
+        FATAL_ERROR
+        "The voidstar library only supported on amd64/x86_64. Detected archictecture was: ${CMAKE_SYSTEM_PROCESSOR}"
+    )
+endif()
+
 if(APPLE AND NOT HOMEBREW)
     find_program(HOMEBREW brew)
 endif()

@@ -98,8 +98,12 @@ LedgerReplayer::createDeltas(std::shared_ptr<LedgerReplayTask> task)
     {
         auto skipListItem =
             std::find(parameter.skipList_.begin(), parameter.skipList_.end(), parameter.startHash_);
-        if (skipListItem == parameter.skipList_.end() ||
-            ++skipListItem == parameter.skipList_.end())
+        auto const wasLast = skipListItem == parameter.skipList_.end();
+        if (not wasLast)
+            ++skipListItem;
+        auto const isLast = skipListItem == parameter.skipList_.end();
+
+        if (wasLast || isLast)
         {
             JLOG(j_.error()) << "Task parameter error when creating deltas "
                              << parameter.finishHash_;

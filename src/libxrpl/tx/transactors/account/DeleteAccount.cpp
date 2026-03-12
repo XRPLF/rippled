@@ -1,5 +1,4 @@
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/mulDiv.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/ledger/View.h>
