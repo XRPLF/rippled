@@ -22,6 +22,19 @@ API version 2 is available in `rippled` version 2.0.0 and later. See [API-VERSIO
 
 This version is supported by all `rippled` versions. For WebSocket and HTTP JSON-RPC requests, it is currently the default API version used when no `api_version` is specified.
 
+## Unreleased
+
+This section contains changes targeting a future version.
+
+### Additions
+
+- `server_definitions`: Added the following new sections to the response ([#6321](https://github.com/XRPLF/rippled/pull/6321)):
+  - `TRANSACTION_FORMATS`: Describes the fields and their optionality for each transaction type, including common fields shared across all transactions.
+  - `LEDGER_ENTRY_FORMATS`: Describes the fields and their optionality for each ledger entry type, including common fields shared across all ledger entries.
+  - `TRANSACTION_FLAGS`: Maps transaction type names to their supported flags and flag values.
+  - `LEDGER_ENTRY_FLAGS`: Maps ledger entry type names to their flags and flag values.
+  - `ACCOUNT_SET_FLAGS`: Maps AccountSet flag names (asf flags) to their numeric values.
+
 ## XRP Ledger server version 3.1.0
 
 [Version 3.1.0](https://github.com/XRPLF/rippled/releases/tag/3.1.0) was released on Jan 27, 2026.

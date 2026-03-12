@@ -6,12 +6,15 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 
 #include <boost/algorithm/string.hpp>
 
+#include <set>
+#include <string_view>
 #include <unordered_map>
 
 namespace xrpl {
@@ -47,13 +50,14 @@ public:
 std::string
 ServerDefinitions::translate(std::string const& inp)
 {
-    auto replace = [&](char const* oldStr, char const* newStr) -> std::string {
+    auto replace = [&](std::string_view oldStr, std::string_view newStr) -> std::string {
         std::string out = inp;
         boost::replace_all(out, oldStr, newStr);
         return out;
     };
 
-    auto contains = [&](char const* s) -> bool { return inp.find(s) != std::string::npos; };
+    // TODO: use string::contains with C++23
+    auto contains = [&](std::string_view s) -> bool { return inp.find(s) != std::string::npos; };
 
     if (contains("UINT"))
     {
@@ -64,7 +68,7 @@ ServerDefinitions::translate(std::string const& inp)
             return replace("UINT", "UInt");
     }
 
-    std::unordered_map<std::string, std::string> replacements{
+    static std::unordered_map<std::string_view, std::string_view> const replacements{
         {"OBJECT", "STObject"},
         {"ARRAY", "STArray"},
         {"ACCOUNT", "AccountID"},
@@ -77,7 +81,7 @@ ServerDefinitions::translate(std::string const& inp)
 
     if (auto const& it = replacements.find(inp); it != replacements.end())
     {
-        return it->second;
+        return std::string(it->second);
     }
 
     std::string out;
@@ -211,36 +215,35 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
         defs_[jss::FIELDS][i++] = a;
     }
 
-    for (auto const& [code, f] : xrpl::SField::getKnownCodeToField())
+    for (auto const& [code, field] : xrpl::SField::getKnownCodeToField())
     {
-        if (f->fieldName == "")
+        if (field->fieldName == "")
             continue;
 
         Json::Value innerObj = Json::objectValue;
 
-        uint32_t type = f->fieldType;
+        uint32_t type = field->fieldType;
 
-        innerObj[jss::nth] = f->fieldValue;
+        innerObj[jss::nth] = field->fieldValue;
 
-        // whether the field is variable-length encoded
-        // this means that the length is included before the content
+        // whether the field is variable-length encoded this means that the length is included
+        // before the content
         innerObj[jss::isVLEncoded] =
-            (type == 7U /* Blob       */ || type == 8U /* AccountID  */ ||
-             type == 19U /* Vector256  */);
+            (type == 7U /* Blob */ || type == 8U /* AccountID */ || type == 19U /* Vector256 */);
 
         // whether the field is included in serialization
         innerObj[jss::isSerialized] =
-            (type < 10000 && f->fieldName != "hash" &&
-             f->fieldName != "index"); /* hash, index, TRANSACTION,
-                                         LEDGER_ENTRY, VALIDATION, METADATA */
+            (type < 10000 && field->fieldName != "hash" &&
+             field->fieldName !=
+                 "index");  // hash, index, TRANSACTION, LEDGER_ENTRY, VALIDATION, METADATA
 
         // whether the field is included in serialization when signing
-        innerObj[jss::isSigningField] = f->shouldInclude(false);
+        innerObj[jss::isSigningField] = field->shouldInclude(false);
 
         innerObj[jss::type] = typeMap[type];
 
         Json::Value innerArray = Json::arrayValue;
-        innerArray[0U] = f->fieldName;
+        innerArray[0U] = field->fieldName;
         innerArray[1U] = innerObj;
 
         defs_[jss::FIELDS][i++] = innerArray;
@@ -260,6 +263,92 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
     for (auto const& f : TxFormats::getInstance())
     {
         defs_[jss::TRANSACTION_TYPES][f.getName()] = f.getType();
+    }
+
+    // populate TxFormats
+    defs_[jss::TRANSACTION_FORMATS] = Json::objectValue;
+
+    defs_[jss::TRANSACTION_FORMATS][jss::common] = Json::arrayValue;
+    auto txCommonFields = std::set<std::string>();
+    for (auto const& element : TxFormats::getCommonFields())
+    {
+        Json::Value elementObj = Json::objectValue;
+        elementObj[jss::name] = element.sField().getName();
+        elementObj[jss::optionality] = element.style();
+        defs_[jss::TRANSACTION_FORMATS][jss::common].append(elementObj);
+        txCommonFields.insert(element.sField().getName());
+    }
+
+    for (auto const& format : TxFormats::getInstance())
+    {
+        auto const& soTemplate = format.getSOTemplate();
+        Json::Value templateArray = Json::arrayValue;
+        for (auto const& element : soTemplate)
+        {
+            if (txCommonFields.contains(element.sField().getName()))
+                continue;  // skip common fields, already added
+            Json::Value elementObj = Json::objectValue;
+            elementObj[jss::name] = element.sField().getName();
+            elementObj[jss::optionality] = element.style();
+            templateArray.append(elementObj);
+        }
+        defs_[jss::TRANSACTION_FORMATS][format.getName()] = templateArray;
+    }
+
+    // populate LedgerFormats
+    defs_[jss::LEDGER_ENTRY_FORMATS] = Json::objectValue;
+    defs_[jss::LEDGER_ENTRY_FORMATS][jss::common] = Json::arrayValue;
+    auto ledgerCommonFields = std::set<std::string>();
+    for (auto const& element : LedgerFormats::getCommonFields())
+    {
+        Json::Value elementObj = Json::objectValue;
+        elementObj[jss::name] = element.sField().getName();
+        elementObj[jss::optionality] = element.style();
+        defs_[jss::LEDGER_ENTRY_FORMATS][jss::common].append(elementObj);
+        ledgerCommonFields.insert(element.sField().getName());
+    }
+    for (auto const& format : LedgerFormats::getInstance())
+    {
+        auto const& soTemplate = format.getSOTemplate();
+        Json::Value templateArray = Json::arrayValue;
+        for (auto const& element : soTemplate)
+        {
+            if (ledgerCommonFields.contains(element.sField().getName()))
+                continue;  // skip common fields, already added
+            Json::Value elementObj = Json::objectValue;
+            elementObj[jss::name] = element.sField().getName();
+            elementObj[jss::optionality] = element.style();
+            templateArray.append(elementObj);
+        }
+        defs_[jss::LEDGER_ENTRY_FORMATS][format.getName()] = templateArray;
+    }
+
+    defs_[jss::TRANSACTION_FLAGS] = Json::objectValue;
+    for (auto const& [name, value] : getAllTxFlags())
+    {
+        Json::Value txObj = Json::objectValue;
+        for (auto const& [flagName, flagValue] : value)
+        {
+            txObj[flagName] = flagValue;
+        }
+        defs_[jss::TRANSACTION_FLAGS][name] = txObj;
+    }
+
+    defs_[jss::LEDGER_ENTRY_FLAGS] = Json::objectValue;
+    for (auto const& [name, value] : getAllLedgerFlags())
+    {
+        Json::Value ledgerObj = Json::objectValue;
+        for (auto const& [flagName, flagValue] : value)
+        {
+            ledgerObj[flagName] = flagValue;
+        }
+        defs_[jss::LEDGER_ENTRY_FLAGS][name] = ledgerObj;
+    }
+
+    defs_[jss::ACCOUNT_SET_FLAGS] = Json::objectValue;
+    for (auto const& [name, value] : getAsfFlagMap())
+    {
+        defs_[jss::ACCOUNT_SET_FLAGS][name] = value;
     }
 
     // generate hash
