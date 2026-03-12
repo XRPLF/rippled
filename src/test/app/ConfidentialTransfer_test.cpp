@@ -58,7 +58,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Buffer buf(ecPedersenCommitmentLength);
             std::memset(buf.data(), 0, ecPedersenCommitmentLength);
 
-            // Prefix for compressed EC point with even y-coordinate
             buf.data()[0] = ecCompressedPrefixEvenY;
             // Set last byte to make it a valid x-coordinate on the curve
             buf.data()[ecPedersenCommitmentLength - 1] = 0x01;
