@@ -1474,7 +1474,7 @@ public:
         // Signer {
         //     Account: "...",
         //     TxnSignature: "...",
-        //     PublicKey: "...""
+        //     PublicKey: "..."
         // }
         // Make one well formed Signer and several mal-formed ones.  See
         // whether the serializer lets the good one through and catches
