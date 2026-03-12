@@ -13,11 +13,11 @@
 
 namespace xrpl::ledger_entries {
 
-// Forward declaration
 class XChainOwnedClaimIDBuilder;
 
 /**
- * Ledger Entry: XChainOwnedClaimID
+ * @brief Ledger Entry: XChainOwnedClaimID
+ *
  * Type: ltXCHAIN_OWNED_CLAIM_ID (0x0071)
  * RPC Name: xchain_owned_claim_id
  *
@@ -30,7 +30,7 @@ public:
     static constexpr LedgerEntryType entryType = ltXCHAIN_OWNED_CLAIM_ID;
 
     /**
-     * Construct a XChainOwnedClaimID ledger entry wrapper from an existing SLE object.
+     * @brief Construct a XChainOwnedClaimID ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
     explicit XChainOwnedClaimID(std::shared_ptr<SLE const> sle)
@@ -46,7 +46,8 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * Get sfAccount (soeREQUIRED)
+     * @brief Get sfAccount (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -56,7 +57,8 @@ public:
     }
 
     /**
-     * Get sfXChainBridge (soeREQUIRED)
+     * @brief Get sfXChainBridge (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_XCHAIN_BRIDGE::type::value_type
@@ -66,7 +68,8 @@ public:
     }
 
     /**
-     * Get sfXChainClaimID (soeREQUIRED)
+     * @brief Get sfXChainClaimID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -76,7 +79,8 @@ public:
     }
 
     /**
-     * Get sfOtherChainSource (soeREQUIRED)
+     * @brief Get sfOtherChainSource (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -86,8 +90,9 @@ public:
     }
 
     /**
-     * Get sfXChainClaimAttestations (soeREQUIRED)
-     * Note: This is an untyped field (unknown).
+     * @brief Get sfXChainClaimAttestations (soeREQUIRED)
+     * @note This is an untyped field (unknown).
+     * @return The field value.
      */
     [[nodiscard]]
     STArray const&
@@ -97,7 +102,8 @@ public:
     }
 
     /**
-     * Get sfSignatureReward (soeREQUIRED)
+     * @brief Get sfSignatureReward (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_AMOUNT::type::value_type
@@ -107,7 +113,8 @@ public:
     }
 
     /**
-     * Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -117,7 +124,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -127,7 +135,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -138,7 +147,8 @@ public:
 };
 
 /**
- * Builder for XChainOwnedClaimID ledger entries.
+ * @brief Builder for XChainOwnedClaimID ledger entries.
+ *
  * Provides a fluent interface for constructing ledger entries with method chaining.
  * Uses Json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
@@ -146,6 +156,18 @@ public:
 class XChainOwnedClaimIDBuilder : public LedgerEntryBuilderBase<XChainOwnedClaimIDBuilder>
 {
 public:
+    /**
+     * @brief Construct a new XChainOwnedClaimIDBuilder with required fields.
+     * @param account The sfAccount field value.
+     * @param xChainBridge The sfXChainBridge field value.
+     * @param xChainClaimID The sfXChainClaimID field value.
+     * @param otherChainSource The sfOtherChainSource field value.
+     * @param xChainClaimAttestations The sfXChainClaimAttestations field value.
+     * @param signatureReward The sfSignatureReward field value.
+     * @param ownerNode The sfOwnerNode field value.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
+     */
     XChainOwnedClaimIDBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,std::decay_t<typename SF_UINT64::type::value_type> const& xChainClaimID,std::decay_t<typename SF_ACCOUNT::type::value_type> const& otherChainSource,STArray const& xChainClaimAttestations,std::decay_t<typename SF_AMOUNT::type::value_type> const& signatureReward,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<XChainOwnedClaimIDBuilder>(ltXCHAIN_OWNED_CLAIM_ID)
     {
@@ -160,6 +182,11 @@ public:
         setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
+    /**
+     * @brief Construct a XChainOwnedClaimIDBuilder from an existing SLE object.
+     * @param sle The existing ledger entry to copy from.
+     * @throws std::runtime_error if the ledger entry type doesn't match.
+     */
     XChainOwnedClaimIDBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltXCHAIN_OWNED_CLAIM_ID)
@@ -169,10 +196,10 @@ public:
         object_ = *sle;
     }
 
-    // Ledger entry-specific field setters
+    /** @brief Ledger entry-specific field setters */
 
     /**
-     * Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedClaimIDBuilder&
@@ -183,7 +210,7 @@ public:
     }
 
     /**
-     * Set sfXChainBridge (soeREQUIRED)
+     * @brief Set sfXChainBridge (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedClaimIDBuilder&
@@ -194,7 +221,7 @@ public:
     }
 
     /**
-     * Set sfXChainClaimID (soeREQUIRED)
+     * @brief Set sfXChainClaimID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedClaimIDBuilder&
@@ -205,7 +232,7 @@ public:
     }
 
     /**
-     * Set sfOtherChainSource (soeREQUIRED)
+     * @brief Set sfOtherChainSource (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedClaimIDBuilder&
@@ -216,7 +243,7 @@ public:
     }
 
     /**
-     * Set sfXChainClaimAttestations (soeREQUIRED)
+     * @brief Set sfXChainClaimAttestations (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedClaimIDBuilder&
@@ -227,7 +254,7 @@ public:
     }
 
     /**
-     * Set sfSignatureReward (soeREQUIRED)
+     * @brief Set sfSignatureReward (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedClaimIDBuilder&
@@ -238,7 +265,7 @@ public:
     }
 
     /**
-     * Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedClaimIDBuilder&
@@ -249,7 +276,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedClaimIDBuilder&
@@ -260,7 +287,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedClaimIDBuilder&
@@ -271,7 +298,8 @@ public:
     }
 
     /**
-     * Build and return the completed XChainOwnedClaimID wrapper.
+     * @brief Build and return the completed XChainOwnedClaimID wrapper.
+     * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     XChainOwnedClaimID

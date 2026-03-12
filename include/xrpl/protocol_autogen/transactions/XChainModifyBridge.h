@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class XChainModifyBridgeBuilder;
 
 /**
- * Transaction: XChainModifyBridge
+ * @brief Transaction: XChainModifyBridge
+ *
  * Type: ttXCHAIN_MODIFY_BRIDGE (47)
  * Delegable: Delegation::delegable
  * Amendment: featureXChainBridge
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttXCHAIN_MODIFY_BRIDGE;
 
     /**
-     * Construct a XChainModifyBridge transaction wrapper from an existing STTx object.
+     * @brief Construct a XChainModifyBridge transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit XChainModifyBridge(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfXChainBridge (soeREQUIRED)
+     * @brief Get sfXChainBridge (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_XCHAIN_BRIDGE::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfSignatureReward (soeOPTIONAL)
+     * @brief Get sfSignatureReward (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_AMOUNT::type::value_type>
@@ -71,6 +73,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfSignatureReward is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasSignatureReward() const
@@ -79,7 +85,8 @@ public:
     }
 
     /**
-     * Get sfMinAccountCreateAmount (soeOPTIONAL)
+     * @brief Get sfMinAccountCreateAmount (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_AMOUNT::type::value_type>
@@ -92,6 +99,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfMinAccountCreateAmount is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasMinAccountCreateAmount() const
@@ -101,7 +112,8 @@ public:
 };
 
 /**
- * Builder for XChainModifyBridge transactions.
+ * @brief Builder for XChainModifyBridge transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -109,6 +121,13 @@ public:
 class XChainModifyBridgeBuilder : public TransactionBuilderBase<XChainModifyBridgeBuilder>
 {
 public:
+    /**
+     * @brief Construct a new XChainModifyBridgeBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param xChainBridge The sfXChainBridge field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     XChainModifyBridgeBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -118,6 +137,11 @@ public:
         setXChainBridge(xChainBridge);
     }
 
+    /**
+     * @brief Construct a XChainModifyBridgeBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     XChainModifyBridgeBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttXCHAIN_MODIFY_BRIDGE)
@@ -127,10 +151,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfXChainBridge (soeREQUIRED)
+     * @brief Set sfXChainBridge (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainModifyBridgeBuilder&
@@ -141,7 +165,7 @@ public:
     }
 
     /**
-     * Set sfSignatureReward (soeOPTIONAL)
+     * @brief Set sfSignatureReward (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     XChainModifyBridgeBuilder&
@@ -152,7 +176,7 @@ public:
     }
 
     /**
-     * Set sfMinAccountCreateAmount (soeOPTIONAL)
+     * @brief Set sfMinAccountCreateAmount (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     XChainModifyBridgeBuilder&
@@ -163,9 +187,9 @@ public:
     }
 
     /**
-     * Build and return the XChainModifyBridge wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the XChainModifyBridge wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     XChainModifyBridge

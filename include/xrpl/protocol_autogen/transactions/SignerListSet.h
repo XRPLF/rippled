@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class SignerListSetBuilder;
 
 /**
- * Transaction: SignerListSet
+ * @brief Transaction: SignerListSet
+ *
  * Type: ttSIGNER_LIST_SET (12)
  * Delegable: Delegation::notDelegable
  * Amendment: uint256{}
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttSIGNER_LIST_SET;
 
     /**
-     * Construct a SignerListSet transaction wrapper from an existing STTx object.
+     * @brief Construct a SignerListSet transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit SignerListSet(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfSignerQuorum (soeREQUIRED)
+     * @brief Get sfSignerQuorum (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -57,8 +58,9 @@ public:
         return this->tx_->at(sfSignerQuorum);
     }
     /**
-     * Get sfSignerEntries (soeOPTIONAL)
-     * Note: This is an untyped field
+     * @brief Get sfSignerEntries (soeOPTIONAL)
+     * @note This is an untyped field.
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     std::optional<std::reference_wrapper<STArray const>>
@@ -69,6 +71,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfSignerEntries is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasSignerEntries() const
@@ -78,7 +84,8 @@ public:
 };
 
 /**
- * Builder for SignerListSet transactions.
+ * @brief Builder for SignerListSet transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -86,6 +93,13 @@ public:
 class SignerListSetBuilder : public TransactionBuilderBase<SignerListSetBuilder>
 {
 public:
+    /**
+     * @brief Construct a new SignerListSetBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param signerQuorum The sfSignerQuorum field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     SignerListSetBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_UINT32::type::value_type> const& signerQuorum,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -95,6 +109,11 @@ public:
         setSignerQuorum(signerQuorum);
     }
 
+    /**
+     * @brief Construct a SignerListSetBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     SignerListSetBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttSIGNER_LIST_SET)
@@ -104,10 +123,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfSignerQuorum (soeREQUIRED)
+     * @brief Set sfSignerQuorum (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     SignerListSetBuilder&
@@ -118,7 +137,7 @@ public:
     }
 
     /**
-     * Set sfSignerEntries (soeOPTIONAL)
+     * @brief Set sfSignerEntries (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     SignerListSetBuilder&
@@ -129,9 +148,9 @@ public:
     }
 
     /**
-     * Build and return the SignerListSet wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the SignerListSet wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     SignerListSet

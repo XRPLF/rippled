@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class OfferCancelBuilder;
 
 /**
- * Transaction: OfferCancel
+ * @brief Transaction: OfferCancel
+ *
  * Type: ttOFFER_CANCEL (8)
  * Delegable: Delegation::delegable
  * Amendment: uint256{}
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttOFFER_CANCEL;
 
     /**
-     * Construct a OfferCancel transaction wrapper from an existing STTx object.
+     * @brief Construct a OfferCancel transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit OfferCancel(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfOfferSequence (soeREQUIRED)
+     * @brief Get sfOfferSequence (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -59,7 +60,8 @@ public:
 };
 
 /**
- * Builder for OfferCancel transactions.
+ * @brief Builder for OfferCancel transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -67,6 +69,13 @@ public:
 class OfferCancelBuilder : public TransactionBuilderBase<OfferCancelBuilder>
 {
 public:
+    /**
+     * @brief Construct a new OfferCancelBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param offerSequence The sfOfferSequence field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     OfferCancelBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_UINT32::type::value_type> const& offerSequence,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -76,6 +85,11 @@ public:
         setOfferSequence(offerSequence);
     }
 
+    /**
+     * @brief Construct a OfferCancelBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     OfferCancelBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttOFFER_CANCEL)
@@ -85,10 +99,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfOfferSequence (soeREQUIRED)
+     * @brief Set sfOfferSequence (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     OfferCancelBuilder&
@@ -99,9 +113,9 @@ public:
     }
 
     /**
-     * Build and return the OfferCancel wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the OfferCancel wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     OfferCancel

@@ -193,6 +193,41 @@ function(setup_protocol_autogen)
         message(STATUS "Ledger entry classes generated successfully")
     endif()
 
+    # Format generated files using pre-commit (clang-format)
+    if(WIN32)
+        set(VENV_PRECOMMIT "${VENV_DIR}/Scripts/pre-commit.exe")
+    else()
+        set(VENV_PRECOMMIT "${VENV_DIR}/bin/pre-commit")
+    endif()
+
+    file(
+        GLOB GENERATED_FILES
+        "${AUTOGEN_HEADER_DIR}/transactions/*.h"
+        "${AUTOGEN_HEADER_DIR}/ledger_entries/*.h"
+        "${AUTOGEN_TEST_DIR}/transactions/*.cpp"
+        "${AUTOGEN_TEST_DIR}/ledger_entries/*.cpp"
+    )
+
+    if(GENERATED_FILES)
+        message(STATUS "Formatting generated files with clang-format...")
+        execute_process(
+            COMMAND
+                ${VENV_PRECOMMIT} run clang-format --files ${GENERATED_FILES}
+            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+            RESULT_VARIABLE FORMAT_RESULT
+            OUTPUT_VARIABLE FORMAT_OUTPUT
+            ERROR_VARIABLE FORMAT_ERROR
+        )
+        if(NOT FORMAT_RESULT EQUAL 0)
+            message(
+                WARNING
+                "Failed to format generated files:\n${FORMAT_ERROR}"
+            )
+        else()
+            message(STATUS "Generated files formatted successfully")
+        endif()
+    endif()
+
     # Register dependencies so CMake reconfigures when these files change
     set_property(
         DIRECTORY

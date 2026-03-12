@@ -13,11 +13,11 @@
 
 namespace xrpl::ledger_entries {
 
-// Forward declaration
 class AMMBuilder;
 
 /**
- * Ledger Entry: AMM
+ * @brief Ledger Entry: AMM
+ *
  * Type: ltAMM (0x0079)
  * RPC Name: amm
  *
@@ -30,7 +30,7 @@ public:
     static constexpr LedgerEntryType entryType = ltAMM;
 
     /**
-     * Construct a AMM ledger entry wrapper from an existing SLE object.
+     * @brief Construct a AMM ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
     explicit AMM(std::shared_ptr<SLE const> sle)
@@ -46,7 +46,8 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * Get sfAccount (soeREQUIRED)
+     * @brief Get sfAccount (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -56,7 +57,8 @@ public:
     }
 
     /**
-     * Get sfTradingFee (soeDEFAULT)
+     * @brief Get sfTradingFee (soeDEFAULT)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT16::type::value_type>
@@ -67,6 +69,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfTradingFee is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasTradingFee() const
@@ -75,8 +81,9 @@ public:
     }
 
     /**
-     * Get sfVoteSlots (soeOPTIONAL)
-     * Note: This is an untyped field (unknown).
+     * @brief Get sfVoteSlots (soeOPTIONAL)
+     * @note This is an untyped field (unknown).
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     std::optional<std::reference_wrapper<STArray const>>
@@ -87,6 +94,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfVoteSlots is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasVoteSlots() const
@@ -95,8 +106,9 @@ public:
     }
 
     /**
-     * Get sfAuctionSlot (soeOPTIONAL)
-     * Note: This is an untyped field (unknown).
+     * @brief Get sfAuctionSlot (soeOPTIONAL)
+     * @note This is an untyped field (unknown).
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     std::optional<STObject>
@@ -107,6 +119,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfAuctionSlot is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasAuctionSlot() const
@@ -115,7 +131,8 @@ public:
     }
 
     /**
-     * Get sfLPTokenBalance (soeREQUIRED)
+     * @brief Get sfLPTokenBalance (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_AMOUNT::type::value_type
@@ -125,7 +142,8 @@ public:
     }
 
     /**
-     * Get sfAsset (soeREQUIRED)
+     * @brief Get sfAsset (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ISSUE::type::value_type
@@ -135,7 +153,8 @@ public:
     }
 
     /**
-     * Get sfAsset2 (soeREQUIRED)
+     * @brief Get sfAsset2 (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ISSUE::type::value_type
@@ -145,7 +164,8 @@ public:
     }
 
     /**
-     * Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -155,7 +175,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnID (soeOPTIONAL)
+     * @brief Get sfPreviousTxnID (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT256::type::value_type>
@@ -166,6 +187,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfPreviousTxnID is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasPreviousTxnID() const
@@ -174,7 +199,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnLgrSeq (soeOPTIONAL)
+     * @brief Get sfPreviousTxnLgrSeq (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -185,6 +211,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfPreviousTxnLgrSeq is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasPreviousTxnLgrSeq() const
@@ -194,7 +224,8 @@ public:
 };
 
 /**
- * Builder for AMM ledger entries.
+ * @brief Builder for AMM ledger entries.
+ *
  * Provides a fluent interface for constructing ledger entries with method chaining.
  * Uses Json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
@@ -202,6 +233,14 @@ public:
 class AMMBuilder : public LedgerEntryBuilderBase<AMMBuilder>
 {
 public:
+    /**
+     * @brief Construct a new AMMBuilder with required fields.
+     * @param account The sfAccount field value.
+     * @param lPTokenBalance The sfLPTokenBalance field value.
+     * @param asset The sfAsset field value.
+     * @param asset2 The sfAsset2 field value.
+     * @param ownerNode The sfOwnerNode field value.
+     */
     AMMBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_AMOUNT::type::value_type> const& lPTokenBalance,std::decay_t<typename SF_ISSUE::type::value_type> const& asset,std::decay_t<typename SF_ISSUE::type::value_type> const& asset2,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode)
         : LedgerEntryBuilderBase<AMMBuilder>(ltAMM)
     {
@@ -212,6 +251,11 @@ public:
         setOwnerNode(ownerNode);
     }
 
+    /**
+     * @brief Construct a AMMBuilder from an existing SLE object.
+     * @param sle The existing ledger entry to copy from.
+     * @throws std::runtime_error if the ledger entry type doesn't match.
+     */
     AMMBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltAMM)
@@ -221,10 +265,10 @@ public:
         object_ = *sle;
     }
 
-    // Ledger entry-specific field setters
+    /** @brief Ledger entry-specific field setters */
 
     /**
-     * Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -235,7 +279,7 @@ public:
     }
 
     /**
-     * Set sfTradingFee (soeDEFAULT)
+     * @brief Set sfTradingFee (soeDEFAULT)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -246,7 +290,7 @@ public:
     }
 
     /**
-     * Set sfVoteSlots (soeOPTIONAL)
+     * @brief Set sfVoteSlots (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -257,7 +301,7 @@ public:
     }
 
     /**
-     * Set sfAuctionSlot (soeOPTIONAL)
+     * @brief Set sfAuctionSlot (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -268,7 +312,7 @@ public:
     }
 
     /**
-     * Set sfLPTokenBalance (soeREQUIRED)
+     * @brief Set sfLPTokenBalance (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -279,7 +323,7 @@ public:
     }
 
     /**
-     * Set sfAsset (soeREQUIRED)
+     * @brief Set sfAsset (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -290,7 +334,7 @@ public:
     }
 
     /**
-     * Set sfAsset2 (soeREQUIRED)
+     * @brief Set sfAsset2 (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -301,7 +345,7 @@ public:
     }
 
     /**
-     * Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -312,7 +356,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnID (soeOPTIONAL)
+     * @brief Set sfPreviousTxnID (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -323,7 +367,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnLgrSeq (soeOPTIONAL)
+     * @brief Set sfPreviousTxnLgrSeq (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -334,7 +378,8 @@ public:
     }
 
     /**
-     * Build and return the completed AMM wrapper.
+     * @brief Build and return the completed AMM wrapper.
+     * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     AMM

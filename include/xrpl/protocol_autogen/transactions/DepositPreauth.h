@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class DepositPreauthBuilder;
 
 /**
- * Transaction: DepositPreauth
+ * @brief Transaction: DepositPreauth
+ *
  * Type: ttDEPOSIT_PREAUTH (19)
  * Delegable: Delegation::delegable
  * Amendment: uint256{}
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttDEPOSIT_PREAUTH;
 
     /**
-     * Construct a DepositPreauth transaction wrapper from an existing STTx object.
+     * @brief Construct a DepositPreauth transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit DepositPreauth(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfAuthorize (soeOPTIONAL)
+     * @brief Get sfAuthorize (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
@@ -61,6 +62,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfAuthorize is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasAuthorize() const
@@ -69,7 +74,8 @@ public:
     }
 
     /**
-     * Get sfUnauthorize (soeOPTIONAL)
+     * @brief Get sfUnauthorize (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
@@ -82,6 +88,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfUnauthorize is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasUnauthorize() const
@@ -89,8 +99,9 @@ public:
         return this->tx_->isFieldPresent(sfUnauthorize);
     }
     /**
-     * Get sfAuthorizeCredentials (soeOPTIONAL)
-     * Note: This is an untyped field
+     * @brief Get sfAuthorizeCredentials (soeOPTIONAL)
+     * @note This is an untyped field.
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     std::optional<std::reference_wrapper<STArray const>>
@@ -101,6 +112,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfAuthorizeCredentials is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasAuthorizeCredentials() const
@@ -108,8 +123,9 @@ public:
         return this->tx_->isFieldPresent(sfAuthorizeCredentials);
     }
     /**
-     * Get sfUnauthorizeCredentials (soeOPTIONAL)
-     * Note: This is an untyped field
+     * @brief Get sfUnauthorizeCredentials (soeOPTIONAL)
+     * @note This is an untyped field.
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     std::optional<std::reference_wrapper<STArray const>>
@@ -120,6 +136,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfUnauthorizeCredentials is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasUnauthorizeCredentials() const
@@ -129,7 +149,8 @@ public:
 };
 
 /**
- * Builder for DepositPreauth transactions.
+ * @brief Builder for DepositPreauth transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -137,6 +158,12 @@ public:
 class DepositPreauthBuilder : public TransactionBuilderBase<DepositPreauthBuilder>
 {
 public:
+    /**
+     * @brief Construct a new DepositPreauthBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     DepositPreauthBuilder(SF_ACCOUNT::type::value_type account,
                     std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -145,6 +172,11 @@ public:
     {
     }
 
+    /**
+     * @brief Construct a DepositPreauthBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     DepositPreauthBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttDEPOSIT_PREAUTH)
@@ -154,10 +186,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfAuthorize (soeOPTIONAL)
+     * @brief Set sfAuthorize (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     DepositPreauthBuilder&
@@ -168,7 +200,7 @@ public:
     }
 
     /**
-     * Set sfUnauthorize (soeOPTIONAL)
+     * @brief Set sfUnauthorize (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     DepositPreauthBuilder&
@@ -179,7 +211,7 @@ public:
     }
 
     /**
-     * Set sfAuthorizeCredentials (soeOPTIONAL)
+     * @brief Set sfAuthorizeCredentials (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     DepositPreauthBuilder&
@@ -190,7 +222,7 @@ public:
     }
 
     /**
-     * Set sfUnauthorizeCredentials (soeOPTIONAL)
+     * @brief Set sfUnauthorizeCredentials (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     DepositPreauthBuilder&
@@ -201,9 +233,9 @@ public:
     }
 
     /**
-     * Build and return the DepositPreauth wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the DepositPreauth wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     DepositPreauth

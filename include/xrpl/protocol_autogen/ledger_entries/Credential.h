@@ -13,11 +13,11 @@
 
 namespace xrpl::ledger_entries {
 
-// Forward declaration
 class CredentialBuilder;
 
 /**
- * Ledger Entry: Credential
+ * @brief Ledger Entry: Credential
+ *
  * Type: ltCREDENTIAL (0x0081)
  * RPC Name: credential
  *
@@ -30,7 +30,7 @@ public:
     static constexpr LedgerEntryType entryType = ltCREDENTIAL;
 
     /**
-     * Construct a Credential ledger entry wrapper from an existing SLE object.
+     * @brief Construct a Credential ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
     explicit Credential(std::shared_ptr<SLE const> sle)
@@ -46,7 +46,8 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * Get sfSubject (soeREQUIRED)
+     * @brief Get sfSubject (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -56,7 +57,8 @@ public:
     }
 
     /**
-     * Get sfIssuer (soeREQUIRED)
+     * @brief Get sfIssuer (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -66,7 +68,8 @@ public:
     }
 
     /**
-     * Get sfCredentialType (soeREQUIRED)
+     * @brief Get sfCredentialType (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_VL::type::value_type
@@ -76,7 +79,8 @@ public:
     }
 
     /**
-     * Get sfExpiration (soeOPTIONAL)
+     * @brief Get sfExpiration (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -87,6 +91,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfExpiration is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasExpiration() const
@@ -95,7 +103,8 @@ public:
     }
 
     /**
-     * Get sfURI (soeOPTIONAL)
+     * @brief Get sfURI (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
@@ -106,6 +115,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfURI is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasURI() const
@@ -114,7 +127,8 @@ public:
     }
 
     /**
-     * Get sfIssuerNode (soeREQUIRED)
+     * @brief Get sfIssuerNode (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -124,7 +138,8 @@ public:
     }
 
     /**
-     * Get sfSubjectNode (soeOPTIONAL)
+     * @brief Get sfSubjectNode (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT64::type::value_type>
@@ -135,6 +150,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfSubjectNode is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasSubjectNode() const
@@ -143,7 +162,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -153,7 +173,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -164,7 +185,8 @@ public:
 };
 
 /**
- * Builder for Credential ledger entries.
+ * @brief Builder for Credential ledger entries.
+ *
  * Provides a fluent interface for constructing ledger entries with method chaining.
  * Uses Json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
@@ -172,6 +194,15 @@ public:
 class CredentialBuilder : public LedgerEntryBuilderBase<CredentialBuilder>
 {
 public:
+    /**
+     * @brief Construct a new CredentialBuilder with required fields.
+     * @param subject The sfSubject field value.
+     * @param issuer The sfIssuer field value.
+     * @param credentialType The sfCredentialType field value.
+     * @param issuerNode The sfIssuerNode field value.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
+     */
     CredentialBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& subject,std::decay_t<typename SF_ACCOUNT::type::value_type> const& issuer,std::decay_t<typename SF_VL::type::value_type> const& credentialType,std::decay_t<typename SF_UINT64::type::value_type> const& issuerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<CredentialBuilder>(ltCREDENTIAL)
     {
@@ -183,6 +214,11 @@ public:
         setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
+    /**
+     * @brief Construct a CredentialBuilder from an existing SLE object.
+     * @param sle The existing ledger entry to copy from.
+     * @throws std::runtime_error if the ledger entry type doesn't match.
+     */
     CredentialBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltCREDENTIAL)
@@ -192,10 +228,10 @@ public:
         object_ = *sle;
     }
 
-    // Ledger entry-specific field setters
+    /** @brief Ledger entry-specific field setters */
 
     /**
-     * Set sfSubject (soeREQUIRED)
+     * @brief Set sfSubject (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
@@ -206,7 +242,7 @@ public:
     }
 
     /**
-     * Set sfIssuer (soeREQUIRED)
+     * @brief Set sfIssuer (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
@@ -217,7 +253,7 @@ public:
     }
 
     /**
-     * Set sfCredentialType (soeREQUIRED)
+     * @brief Set sfCredentialType (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
@@ -228,7 +264,7 @@ public:
     }
 
     /**
-     * Set sfExpiration (soeOPTIONAL)
+     * @brief Set sfExpiration (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
@@ -239,7 +275,7 @@ public:
     }
 
     /**
-     * Set sfURI (soeOPTIONAL)
+     * @brief Set sfURI (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
@@ -250,7 +286,7 @@ public:
     }
 
     /**
-     * Set sfIssuerNode (soeREQUIRED)
+     * @brief Set sfIssuerNode (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
@@ -261,7 +297,7 @@ public:
     }
 
     /**
-     * Set sfSubjectNode (soeOPTIONAL)
+     * @brief Set sfSubjectNode (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
@@ -272,7 +308,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
@@ -283,7 +319,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
@@ -294,7 +330,8 @@ public:
     }
 
     /**
-     * Build and return the completed Credential wrapper.
+     * @brief Build and return the completed Credential wrapper.
+     * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     Credential

@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class OfferCreateBuilder;
 
 /**
- * Transaction: OfferCreate
+ * @brief Transaction: OfferCreate
+ *
  * Type: ttOFFER_CREATE (7)
  * Delegable: Delegation::delegable
  * Amendment: uint256{}
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttOFFER_CREATE;
 
     /**
-     * Construct a OfferCreate transaction wrapper from an existing STTx object.
+     * @brief Construct a OfferCreate transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit OfferCreate(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfTakerPays (soeREQUIRED)
+     * @brief Get sfTakerPays (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_AMOUNT::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfTakerGets (soeREQUIRED)
+     * @brief Get sfTakerGets (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_AMOUNT::type::value_type
@@ -68,7 +70,8 @@ public:
     }
 
     /**
-     * Get sfExpiration (soeOPTIONAL)
+     * @brief Get sfExpiration (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -81,6 +84,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfExpiration is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasExpiration() const
@@ -89,7 +96,8 @@ public:
     }
 
     /**
-     * Get sfOfferSequence (soeOPTIONAL)
+     * @brief Get sfOfferSequence (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -102,6 +110,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfOfferSequence is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasOfferSequence() const
@@ -110,7 +122,8 @@ public:
     }
 
     /**
-     * Get sfDomainID (soeOPTIONAL)
+     * @brief Get sfDomainID (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT256::type::value_type>
@@ -123,6 +136,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDomainID is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDomainID() const
@@ -132,7 +149,8 @@ public:
 };
 
 /**
- * Builder for OfferCreate transactions.
+ * @brief Builder for OfferCreate transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -140,6 +158,14 @@ public:
 class OfferCreateBuilder : public TransactionBuilderBase<OfferCreateBuilder>
 {
 public:
+    /**
+     * @brief Construct a new OfferCreateBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param takerPays The sfTakerPays field value.
+     * @param takerGets The sfTakerGets field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     OfferCreateBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_AMOUNT::type::value_type> const& takerPays,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& takerGets,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -150,6 +176,11 @@ public:
         setTakerGets(takerGets);
     }
 
+    /**
+     * @brief Construct a OfferCreateBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     OfferCreateBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttOFFER_CREATE)
@@ -159,10 +190,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfTakerPays (soeREQUIRED)
+     * @brief Set sfTakerPays (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     OfferCreateBuilder&
@@ -173,7 +204,7 @@ public:
     }
 
     /**
-     * Set sfTakerGets (soeREQUIRED)
+     * @brief Set sfTakerGets (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     OfferCreateBuilder&
@@ -184,7 +215,7 @@ public:
     }
 
     /**
-     * Set sfExpiration (soeOPTIONAL)
+     * @brief Set sfExpiration (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     OfferCreateBuilder&
@@ -195,7 +226,7 @@ public:
     }
 
     /**
-     * Set sfOfferSequence (soeOPTIONAL)
+     * @brief Set sfOfferSequence (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     OfferCreateBuilder&
@@ -206,7 +237,7 @@ public:
     }
 
     /**
-     * Set sfDomainID (soeOPTIONAL)
+     * @brief Set sfDomainID (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     OfferCreateBuilder&
@@ -217,9 +248,9 @@ public:
     }
 
     /**
-     * Build and return the OfferCreate wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the OfferCreate wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     OfferCreate

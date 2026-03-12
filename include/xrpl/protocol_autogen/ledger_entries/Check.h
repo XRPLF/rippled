@@ -13,11 +13,11 @@
 
 namespace xrpl::ledger_entries {
 
-// Forward declaration
 class CheckBuilder;
 
 /**
- * Ledger Entry: Check
+ * @brief Ledger Entry: Check
+ *
  * Type: ltCHECK (0x0043)
  * RPC Name: check
  *
@@ -30,7 +30,7 @@ public:
     static constexpr LedgerEntryType entryType = ltCHECK;
 
     /**
-     * Construct a Check ledger entry wrapper from an existing SLE object.
+     * @brief Construct a Check ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
     explicit Check(std::shared_ptr<SLE const> sle)
@@ -46,7 +46,8 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * Get sfAccount (soeREQUIRED)
+     * @brief Get sfAccount (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -56,7 +57,8 @@ public:
     }
 
     /**
-     * Get sfDestination (soeREQUIRED)
+     * @brief Get sfDestination (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -66,7 +68,8 @@ public:
     }
 
     /**
-     * Get sfSendMax (soeREQUIRED)
+     * @brief Get sfSendMax (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_AMOUNT::type::value_type
@@ -76,7 +79,8 @@ public:
     }
 
     /**
-     * Get sfSequence (soeREQUIRED)
+     * @brief Get sfSequence (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -86,7 +90,8 @@ public:
     }
 
     /**
-     * Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -96,7 +101,8 @@ public:
     }
 
     /**
-     * Get sfDestinationNode (soeREQUIRED)
+     * @brief Get sfDestinationNode (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -106,7 +112,8 @@ public:
     }
 
     /**
-     * Get sfExpiration (soeOPTIONAL)
+     * @brief Get sfExpiration (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -117,6 +124,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfExpiration is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasExpiration() const
@@ -125,7 +136,8 @@ public:
     }
 
     /**
-     * Get sfInvoiceID (soeOPTIONAL)
+     * @brief Get sfInvoiceID (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT256::type::value_type>
@@ -136,6 +148,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfInvoiceID is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasInvoiceID() const
@@ -144,7 +160,8 @@ public:
     }
 
     /**
-     * Get sfSourceTag (soeOPTIONAL)
+     * @brief Get sfSourceTag (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -155,6 +172,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfSourceTag is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasSourceTag() const
@@ -163,7 +184,8 @@ public:
     }
 
     /**
-     * Get sfDestinationTag (soeOPTIONAL)
+     * @brief Get sfDestinationTag (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -174,6 +196,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDestinationTag is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDestinationTag() const
@@ -182,7 +208,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -192,7 +219,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -203,7 +231,8 @@ public:
 };
 
 /**
- * Builder for Check ledger entries.
+ * @brief Builder for Check ledger entries.
+ *
  * Provides a fluent interface for constructing ledger entries with method chaining.
  * Uses Json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
@@ -211,6 +240,17 @@ public:
 class CheckBuilder : public LedgerEntryBuilderBase<CheckBuilder>
 {
 public:
+    /**
+     * @brief Construct a new CheckBuilder with required fields.
+     * @param account The sfAccount field value.
+     * @param destination The sfDestination field value.
+     * @param sendMax The sfSendMax field value.
+     * @param sequence The sfSequence field value.
+     * @param ownerNode The sfOwnerNode field value.
+     * @param destinationNode The sfDestinationNode field value.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
+     */
     CheckBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,std::decay_t<typename SF_AMOUNT::type::value_type> const& sendMax,std::decay_t<typename SF_UINT32::type::value_type> const& sequence,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT64::type::value_type> const& destinationNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<CheckBuilder>(ltCHECK)
     {
@@ -224,6 +264,11 @@ public:
         setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
+    /**
+     * @brief Construct a CheckBuilder from an existing SLE object.
+     * @param sle The existing ledger entry to copy from.
+     * @throws std::runtime_error if the ledger entry type doesn't match.
+     */
     CheckBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltCHECK)
@@ -233,10 +278,10 @@ public:
         object_ = *sle;
     }
 
-    // Ledger entry-specific field setters
+    /** @brief Ledger entry-specific field setters */
 
     /**
-     * Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     CheckBuilder&
@@ -247,7 +292,7 @@ public:
     }
 
     /**
-     * Set sfDestination (soeREQUIRED)
+     * @brief Set sfDestination (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     CheckBuilder&
@@ -258,7 +303,7 @@ public:
     }
 
     /**
-     * Set sfSendMax (soeREQUIRED)
+     * @brief Set sfSendMax (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     CheckBuilder&
@@ -269,7 +314,7 @@ public:
     }
 
     /**
-     * Set sfSequence (soeREQUIRED)
+     * @brief Set sfSequence (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     CheckBuilder&
@@ -280,7 +325,7 @@ public:
     }
 
     /**
-     * Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     CheckBuilder&
@@ -291,7 +336,7 @@ public:
     }
 
     /**
-     * Set sfDestinationNode (soeREQUIRED)
+     * @brief Set sfDestinationNode (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     CheckBuilder&
@@ -302,7 +347,7 @@ public:
     }
 
     /**
-     * Set sfExpiration (soeOPTIONAL)
+     * @brief Set sfExpiration (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     CheckBuilder&
@@ -313,7 +358,7 @@ public:
     }
 
     /**
-     * Set sfInvoiceID (soeOPTIONAL)
+     * @brief Set sfInvoiceID (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     CheckBuilder&
@@ -324,7 +369,7 @@ public:
     }
 
     /**
-     * Set sfSourceTag (soeOPTIONAL)
+     * @brief Set sfSourceTag (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     CheckBuilder&
@@ -335,7 +380,7 @@ public:
     }
 
     /**
-     * Set sfDestinationTag (soeOPTIONAL)
+     * @brief Set sfDestinationTag (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     CheckBuilder&
@@ -346,7 +391,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     CheckBuilder&
@@ -357,7 +402,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     CheckBuilder&
@@ -368,7 +413,8 @@ public:
     }
 
     /**
-     * Build and return the completed Check wrapper.
+     * @brief Build and return the completed Check wrapper.
+     * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     Check

@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class XChainCreateClaimIDBuilder;
 
 /**
- * Transaction: XChainCreateClaimID
+ * @brief Transaction: XChainCreateClaimID
+ *
  * Type: ttXCHAIN_CREATE_CLAIM_ID (41)
  * Delegable: Delegation::delegable
  * Amendment: featureXChainBridge
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttXCHAIN_CREATE_CLAIM_ID;
 
     /**
-     * Construct a XChainCreateClaimID transaction wrapper from an existing STTx object.
+     * @brief Construct a XChainCreateClaimID transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit XChainCreateClaimID(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfXChainBridge (soeREQUIRED)
+     * @brief Get sfXChainBridge (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_XCHAIN_BRIDGE::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfSignatureReward (soeREQUIRED)
+     * @brief Get sfSignatureReward (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_AMOUNT::type::value_type
@@ -68,7 +70,8 @@ public:
     }
 
     /**
-     * Get sfOtherChainSource (soeREQUIRED)
+     * @brief Get sfOtherChainSource (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -79,7 +82,8 @@ public:
 };
 
 /**
- * Builder for XChainCreateClaimID transactions.
+ * @brief Builder for XChainCreateClaimID transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -87,6 +91,15 @@ public:
 class XChainCreateClaimIDBuilder : public TransactionBuilderBase<XChainCreateClaimIDBuilder>
 {
 public:
+    /**
+     * @brief Construct a new XChainCreateClaimIDBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param xChainBridge The sfXChainBridge field value.
+     * @param signatureReward The sfSignatureReward field value.
+     * @param otherChainSource The sfOtherChainSource field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     XChainCreateClaimIDBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& signatureReward,                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& otherChainSource,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -98,6 +111,11 @@ public:
         setOtherChainSource(otherChainSource);
     }
 
+    /**
+     * @brief Construct a XChainCreateClaimIDBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     XChainCreateClaimIDBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttXCHAIN_CREATE_CLAIM_ID)
@@ -107,10 +125,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfXChainBridge (soeREQUIRED)
+     * @brief Set sfXChainBridge (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainCreateClaimIDBuilder&
@@ -121,7 +139,7 @@ public:
     }
 
     /**
-     * Set sfSignatureReward (soeREQUIRED)
+     * @brief Set sfSignatureReward (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainCreateClaimIDBuilder&
@@ -132,7 +150,7 @@ public:
     }
 
     /**
-     * Set sfOtherChainSource (soeREQUIRED)
+     * @brief Set sfOtherChainSource (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainCreateClaimIDBuilder&
@@ -143,9 +161,9 @@ public:
     }
 
     /**
-     * Build and return the XChainCreateClaimID wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the XChainCreateClaimID wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     XChainCreateClaimID

@@ -13,11 +13,11 @@
 
 namespace xrpl::ledger_entries {
 
-// Forward declaration
 class TicketBuilder;
 
 /**
- * Ledger Entry: Ticket
+ * @brief Ledger Entry: Ticket
+ *
  * Type: ltTICKET (0x0054)
  * RPC Name: ticket
  *
@@ -30,7 +30,7 @@ public:
     static constexpr LedgerEntryType entryType = ltTICKET;
 
     /**
-     * Construct a Ticket ledger entry wrapper from an existing SLE object.
+     * @brief Construct a Ticket ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
     explicit Ticket(std::shared_ptr<SLE const> sle)
@@ -46,7 +46,8 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * Get sfAccount (soeREQUIRED)
+     * @brief Get sfAccount (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -56,7 +57,8 @@ public:
     }
 
     /**
-     * Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -66,7 +68,8 @@ public:
     }
 
     /**
-     * Get sfTicketSequence (soeREQUIRED)
+     * @brief Get sfTicketSequence (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -76,7 +79,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -86,7 +90,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -97,7 +102,8 @@ public:
 };
 
 /**
- * Builder for Ticket ledger entries.
+ * @brief Builder for Ticket ledger entries.
+ *
  * Provides a fluent interface for constructing ledger entries with method chaining.
  * Uses Json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
@@ -105,6 +111,14 @@ public:
 class TicketBuilder : public LedgerEntryBuilderBase<TicketBuilder>
 {
 public:
+    /**
+     * @brief Construct a new TicketBuilder with required fields.
+     * @param account The sfAccount field value.
+     * @param ownerNode The sfOwnerNode field value.
+     * @param ticketSequence The sfTicketSequence field value.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
+     */
     TicketBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT32::type::value_type> const& ticketSequence,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<TicketBuilder>(ltTICKET)
     {
@@ -115,6 +129,11 @@ public:
         setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
+    /**
+     * @brief Construct a TicketBuilder from an existing SLE object.
+     * @param sle The existing ledger entry to copy from.
+     * @throws std::runtime_error if the ledger entry type doesn't match.
+     */
     TicketBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltTICKET)
@@ -124,10 +143,10 @@ public:
         object_ = *sle;
     }
 
-    // Ledger entry-specific field setters
+    /** @brief Ledger entry-specific field setters */
 
     /**
-     * Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     TicketBuilder&
@@ -138,7 +157,7 @@ public:
     }
 
     /**
-     * Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     TicketBuilder&
@@ -149,7 +168,7 @@ public:
     }
 
     /**
-     * Set sfTicketSequence (soeREQUIRED)
+     * @brief Set sfTicketSequence (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     TicketBuilder&
@@ -160,7 +179,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     TicketBuilder&
@@ -171,7 +190,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     TicketBuilder&
@@ -182,7 +201,8 @@ public:
     }
 
     /**
-     * Build and return the completed Ticket wrapper.
+     * @brief Build and return the completed Ticket wrapper.
+     * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     Ticket

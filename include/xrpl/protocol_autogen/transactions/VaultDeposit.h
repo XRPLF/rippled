@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class VaultDepositBuilder;
 
 /**
- * Transaction: VaultDeposit
+ * @brief Transaction: VaultDeposit
+ *
  * Type: ttVAULT_DEPOSIT (68)
  * Delegable: Delegation::delegable
  * Amendment: featureSingleAssetVault
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttVAULT_DEPOSIT;
 
     /**
-     * Construct a VaultDeposit transaction wrapper from an existing STTx object.
+     * @brief Construct a VaultDeposit transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit VaultDeposit(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfVaultID (soeREQUIRED)
+     * @brief Get sfVaultID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -58,8 +59,9 @@ public:
     }
 
     /**
-     * Get sfAmount (soeREQUIRED)
-     * Note: This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Get sfAmount (soeREQUIRED)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @return The field value.
      */
     [[nodiscard]]
     SF_AMOUNT::type::value_type
@@ -70,7 +72,8 @@ public:
 };
 
 /**
- * Builder for VaultDeposit transactions.
+ * @brief Builder for VaultDeposit transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -78,6 +81,14 @@ public:
 class VaultDepositBuilder : public TransactionBuilderBase<VaultDepositBuilder>
 {
 public:
+    /**
+     * @brief Construct a new VaultDepositBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param vaultID The sfVaultID field value.
+     * @param amount The sfAmount field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     VaultDepositBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_UINT256::type::value_type> const& vaultID,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -88,6 +99,11 @@ public:
         setAmount(amount);
     }
 
+    /**
+     * @brief Construct a VaultDepositBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     VaultDepositBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttVAULT_DEPOSIT)
@@ -97,10 +113,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfVaultID (soeREQUIRED)
+     * @brief Set sfVaultID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     VaultDepositBuilder&
@@ -111,8 +127,8 @@ public:
     }
 
     /**
-     * Set sfAmount (soeREQUIRED)
-     * Note: This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfAmount (soeREQUIRED)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     VaultDepositBuilder&
@@ -123,9 +139,9 @@ public:
     }
 
     /**
-     * Build and return the VaultDeposit wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the VaultDeposit wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     VaultDeposit

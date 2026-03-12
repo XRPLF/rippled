@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class XChainCommitBuilder;
 
 /**
- * Transaction: XChainCommit
+ * @brief Transaction: XChainCommit
+ *
  * Type: ttXCHAIN_COMMIT (42)
  * Delegable: Delegation::delegable
  * Amendment: featureXChainBridge
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttXCHAIN_COMMIT;
 
     /**
-     * Construct a XChainCommit transaction wrapper from an existing STTx object.
+     * @brief Construct a XChainCommit transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit XChainCommit(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfXChainBridge (soeREQUIRED)
+     * @brief Get sfXChainBridge (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_XCHAIN_BRIDGE::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfXChainClaimID (soeREQUIRED)
+     * @brief Get sfXChainClaimID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -68,7 +70,8 @@ public:
     }
 
     /**
-     * Get sfAmount (soeREQUIRED)
+     * @brief Get sfAmount (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_AMOUNT::type::value_type
@@ -78,7 +81,8 @@ public:
     }
 
     /**
-     * Get sfOtherChainDestination (soeOPTIONAL)
+     * @brief Get sfOtherChainDestination (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
@@ -91,6 +95,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfOtherChainDestination is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasOtherChainDestination() const
@@ -100,7 +108,8 @@ public:
 };
 
 /**
- * Builder for XChainCommit transactions.
+ * @brief Builder for XChainCommit transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -108,6 +117,15 @@ public:
 class XChainCommitBuilder : public TransactionBuilderBase<XChainCommitBuilder>
 {
 public:
+    /**
+     * @brief Construct a new XChainCommitBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param xChainBridge The sfXChainBridge field value.
+     * @param xChainClaimID The sfXChainClaimID field value.
+     * @param amount The sfAmount field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     XChainCommitBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,                     std::decay_t<typename SF_UINT64::type::value_type> const& xChainClaimID,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -119,6 +137,11 @@ public:
         setAmount(amount);
     }
 
+    /**
+     * @brief Construct a XChainCommitBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     XChainCommitBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttXCHAIN_COMMIT)
@@ -128,10 +151,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfXChainBridge (soeREQUIRED)
+     * @brief Set sfXChainBridge (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainCommitBuilder&
@@ -142,7 +165,7 @@ public:
     }
 
     /**
-     * Set sfXChainClaimID (soeREQUIRED)
+     * @brief Set sfXChainClaimID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainCommitBuilder&
@@ -153,7 +176,7 @@ public:
     }
 
     /**
-     * Set sfAmount (soeREQUIRED)
+     * @brief Set sfAmount (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainCommitBuilder&
@@ -164,7 +187,7 @@ public:
     }
 
     /**
-     * Set sfOtherChainDestination (soeOPTIONAL)
+     * @brief Set sfOtherChainDestination (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     XChainCommitBuilder&
@@ -175,9 +198,9 @@ public:
     }
 
     /**
-     * Build and return the XChainCommit wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the XChainCommit wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     XChainCommit

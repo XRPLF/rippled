@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class AccountSetBuilder;
 
 /**
- * Transaction: AccountSet
+ * @brief Transaction: AccountSet
+ *
  * Type: ttACCOUNT_SET (3)
  * Delegable: Delegation::notDelegable
  * Amendment: uint256{}
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttACCOUNT_SET;
 
     /**
-     * Construct a AccountSet transaction wrapper from an existing STTx object.
+     * @brief Construct a AccountSet transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit AccountSet(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfEmailHash (soeOPTIONAL)
+     * @brief Get sfEmailHash (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT128::type::value_type>
@@ -61,6 +62,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfEmailHash is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasEmailHash() const
@@ -69,7 +74,8 @@ public:
     }
 
     /**
-     * Get sfWalletLocator (soeOPTIONAL)
+     * @brief Get sfWalletLocator (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT256::type::value_type>
@@ -82,6 +88,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfWalletLocator is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasWalletLocator() const
@@ -90,7 +100,8 @@ public:
     }
 
     /**
-     * Get sfWalletSize (soeOPTIONAL)
+     * @brief Get sfWalletSize (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -103,6 +114,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfWalletSize is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasWalletSize() const
@@ -111,7 +126,8 @@ public:
     }
 
     /**
-     * Get sfMessageKey (soeOPTIONAL)
+     * @brief Get sfMessageKey (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
@@ -124,6 +140,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfMessageKey is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasMessageKey() const
@@ -132,7 +152,8 @@ public:
     }
 
     /**
-     * Get sfDomain (soeOPTIONAL)
+     * @brief Get sfDomain (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
@@ -145,6 +166,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDomain is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDomain() const
@@ -153,7 +178,8 @@ public:
     }
 
     /**
-     * Get sfTransferRate (soeOPTIONAL)
+     * @brief Get sfTransferRate (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -166,6 +192,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfTransferRate is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasTransferRate() const
@@ -174,7 +204,8 @@ public:
     }
 
     /**
-     * Get sfSetFlag (soeOPTIONAL)
+     * @brief Get sfSetFlag (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -187,6 +218,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfSetFlag is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasSetFlag() const
@@ -195,7 +230,8 @@ public:
     }
 
     /**
-     * Get sfClearFlag (soeOPTIONAL)
+     * @brief Get sfClearFlag (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -208,6 +244,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfClearFlag is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasClearFlag() const
@@ -216,7 +256,8 @@ public:
     }
 
     /**
-     * Get sfTickSize (soeOPTIONAL)
+     * @brief Get sfTickSize (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT8::type::value_type>
@@ -229,6 +270,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfTickSize is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasTickSize() const
@@ -237,7 +282,8 @@ public:
     }
 
     /**
-     * Get sfNFTokenMinter (soeOPTIONAL)
+     * @brief Get sfNFTokenMinter (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
@@ -250,6 +296,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfNFTokenMinter is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasNFTokenMinter() const
@@ -259,7 +309,8 @@ public:
 };
 
 /**
- * Builder for AccountSet transactions.
+ * @brief Builder for AccountSet transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -267,6 +318,12 @@ public:
 class AccountSetBuilder : public TransactionBuilderBase<AccountSetBuilder>
 {
 public:
+    /**
+     * @brief Construct a new AccountSetBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     AccountSetBuilder(SF_ACCOUNT::type::value_type account,
                     std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -275,6 +332,11 @@ public:
     {
     }
 
+    /**
+     * @brief Construct a AccountSetBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     AccountSetBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttACCOUNT_SET)
@@ -284,10 +346,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfEmailHash (soeOPTIONAL)
+     * @brief Set sfEmailHash (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
@@ -298,7 +360,7 @@ public:
     }
 
     /**
-     * Set sfWalletLocator (soeOPTIONAL)
+     * @brief Set sfWalletLocator (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
@@ -309,7 +371,7 @@ public:
     }
 
     /**
-     * Set sfWalletSize (soeOPTIONAL)
+     * @brief Set sfWalletSize (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
@@ -320,7 +382,7 @@ public:
     }
 
     /**
-     * Set sfMessageKey (soeOPTIONAL)
+     * @brief Set sfMessageKey (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
@@ -331,7 +393,7 @@ public:
     }
 
     /**
-     * Set sfDomain (soeOPTIONAL)
+     * @brief Set sfDomain (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
@@ -342,7 +404,7 @@ public:
     }
 
     /**
-     * Set sfTransferRate (soeOPTIONAL)
+     * @brief Set sfTransferRate (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
@@ -353,7 +415,7 @@ public:
     }
 
     /**
-     * Set sfSetFlag (soeOPTIONAL)
+     * @brief Set sfSetFlag (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
@@ -364,7 +426,7 @@ public:
     }
 
     /**
-     * Set sfClearFlag (soeOPTIONAL)
+     * @brief Set sfClearFlag (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
@@ -375,7 +437,7 @@ public:
     }
 
     /**
-     * Set sfTickSize (soeOPTIONAL)
+     * @brief Set sfTickSize (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
@@ -386,7 +448,7 @@ public:
     }
 
     /**
-     * Set sfNFTokenMinter (soeOPTIONAL)
+     * @brief Set sfNFTokenMinter (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
@@ -397,9 +459,9 @@ public:
     }
 
     /**
-     * Build and return the AccountSet wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the AccountSet wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     AccountSet

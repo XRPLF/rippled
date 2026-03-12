@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class AMMDeleteBuilder;
 
 /**
- * Transaction: AMMDelete
+ * @brief Transaction: AMMDelete
+ *
  * Type: ttAMM_DELETE (40)
  * Delegable: Delegation::delegable
  * Amendment: featureAMM
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttAMM_DELETE;
 
     /**
-     * Construct a AMMDelete transaction wrapper from an existing STTx object.
+     * @brief Construct a AMMDelete transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit AMMDelete(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfAsset (soeREQUIRED)
+     * @brief Get sfAsset (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ISSUE::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfAsset2 (soeREQUIRED)
+     * @brief Get sfAsset2 (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ISSUE::type::value_type
@@ -69,7 +71,8 @@ public:
 };
 
 /**
- * Builder for AMMDelete transactions.
+ * @brief Builder for AMMDelete transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -77,6 +80,14 @@ public:
 class AMMDeleteBuilder : public TransactionBuilderBase<AMMDeleteBuilder>
 {
 public:
+    /**
+     * @brief Construct a new AMMDeleteBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param asset The sfAsset field value.
+     * @param asset2 The sfAsset2 field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     AMMDeleteBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_ISSUE::type::value_type> const& asset,                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset2,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -87,6 +98,11 @@ public:
         setAsset2(asset2);
     }
 
+    /**
+     * @brief Construct a AMMDeleteBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     AMMDeleteBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttAMM_DELETE)
@@ -96,10 +112,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfAsset (soeREQUIRED)
+     * @brief Set sfAsset (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     AMMDeleteBuilder&
@@ -110,7 +126,7 @@ public:
     }
 
     /**
-     * Set sfAsset2 (soeREQUIRED)
+     * @brief Set sfAsset2 (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     AMMDeleteBuilder&
@@ -121,9 +137,9 @@ public:
     }
 
     /**
-     * Build and return the AMMDelete wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the AMMDelete wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     AMMDelete

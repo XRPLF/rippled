@@ -13,11 +13,11 @@
 
 namespace xrpl::ledger_entries {
 
-// Forward declaration
 class MPTokenIssuanceBuilder;
 
 /**
- * Ledger Entry: MPTokenIssuance
+ * @brief Ledger Entry: MPTokenIssuance
+ *
  * Type: ltMPTOKEN_ISSUANCE (0x007e)
  * RPC Name: mpt_issuance
  *
@@ -30,7 +30,7 @@ public:
     static constexpr LedgerEntryType entryType = ltMPTOKEN_ISSUANCE;
 
     /**
-     * Construct a MPTokenIssuance ledger entry wrapper from an existing SLE object.
+     * @brief Construct a MPTokenIssuance ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
     explicit MPTokenIssuance(std::shared_ptr<SLE const> sle)
@@ -46,7 +46,8 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * Get sfIssuer (soeREQUIRED)
+     * @brief Get sfIssuer (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -56,7 +57,8 @@ public:
     }
 
     /**
-     * Get sfSequence (soeREQUIRED)
+     * @brief Get sfSequence (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -66,7 +68,8 @@ public:
     }
 
     /**
-     * Get sfTransferFee (soeDEFAULT)
+     * @brief Get sfTransferFee (soeDEFAULT)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT16::type::value_type>
@@ -77,6 +80,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfTransferFee is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasTransferFee() const
@@ -85,7 +92,8 @@ public:
     }
 
     /**
-     * Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -95,7 +103,8 @@ public:
     }
 
     /**
-     * Get sfAssetScale (soeDEFAULT)
+     * @brief Get sfAssetScale (soeDEFAULT)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT8::type::value_type>
@@ -106,6 +115,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfAssetScale is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasAssetScale() const
@@ -114,7 +127,8 @@ public:
     }
 
     /**
-     * Get sfMaximumAmount (soeOPTIONAL)
+     * @brief Get sfMaximumAmount (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT64::type::value_type>
@@ -125,6 +139,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfMaximumAmount is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasMaximumAmount() const
@@ -133,7 +151,8 @@ public:
     }
 
     /**
-     * Get sfOutstandingAmount (soeREQUIRED)
+     * @brief Get sfOutstandingAmount (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -143,7 +162,8 @@ public:
     }
 
     /**
-     * Get sfLockedAmount (soeOPTIONAL)
+     * @brief Get sfLockedAmount (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT64::type::value_type>
@@ -154,6 +174,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfLockedAmount is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasLockedAmount() const
@@ -162,7 +186,8 @@ public:
     }
 
     /**
-     * Get sfMPTokenMetadata (soeOPTIONAL)
+     * @brief Get sfMPTokenMetadata (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
@@ -173,6 +198,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfMPTokenMetadata is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasMPTokenMetadata() const
@@ -181,7 +210,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -191,7 +221,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -201,7 +232,8 @@ public:
     }
 
     /**
-     * Get sfDomainID (soeOPTIONAL)
+     * @brief Get sfDomainID (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT256::type::value_type>
@@ -212,6 +244,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDomainID is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDomainID() const
@@ -220,7 +256,8 @@ public:
     }
 
     /**
-     * Get sfMutableFlags (soeDEFAULT)
+     * @brief Get sfMutableFlags (soeDEFAULT)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -231,6 +268,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfMutableFlags is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasMutableFlags() const
@@ -240,7 +281,8 @@ public:
 };
 
 /**
- * Builder for MPTokenIssuance ledger entries.
+ * @brief Builder for MPTokenIssuance ledger entries.
+ *
  * Provides a fluent interface for constructing ledger entries with method chaining.
  * Uses Json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
@@ -248,6 +290,15 @@ public:
 class MPTokenIssuanceBuilder : public LedgerEntryBuilderBase<MPTokenIssuanceBuilder>
 {
 public:
+    /**
+     * @brief Construct a new MPTokenIssuanceBuilder with required fields.
+     * @param issuer The sfIssuer field value.
+     * @param sequence The sfSequence field value.
+     * @param ownerNode The sfOwnerNode field value.
+     * @param outstandingAmount The sfOutstandingAmount field value.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
+     */
     MPTokenIssuanceBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& issuer,std::decay_t<typename SF_UINT32::type::value_type> const& sequence,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT64::type::value_type> const& outstandingAmount,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<MPTokenIssuanceBuilder>(ltMPTOKEN_ISSUANCE)
     {
@@ -259,6 +310,11 @@ public:
         setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
+    /**
+     * @brief Construct a MPTokenIssuanceBuilder from an existing SLE object.
+     * @param sle The existing ledger entry to copy from.
+     * @throws std::runtime_error if the ledger entry type doesn't match.
+     */
     MPTokenIssuanceBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltMPTOKEN_ISSUANCE)
@@ -268,10 +324,10 @@ public:
         object_ = *sle;
     }
 
-    // Ledger entry-specific field setters
+    /** @brief Ledger entry-specific field setters */
 
     /**
-     * Set sfIssuer (soeREQUIRED)
+     * @brief Set sfIssuer (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -282,7 +338,7 @@ public:
     }
 
     /**
-     * Set sfSequence (soeREQUIRED)
+     * @brief Set sfSequence (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -293,7 +349,7 @@ public:
     }
 
     /**
-     * Set sfTransferFee (soeDEFAULT)
+     * @brief Set sfTransferFee (soeDEFAULT)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -304,7 +360,7 @@ public:
     }
 
     /**
-     * Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -315,7 +371,7 @@ public:
     }
 
     /**
-     * Set sfAssetScale (soeDEFAULT)
+     * @brief Set sfAssetScale (soeDEFAULT)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -326,7 +382,7 @@ public:
     }
 
     /**
-     * Set sfMaximumAmount (soeOPTIONAL)
+     * @brief Set sfMaximumAmount (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -337,7 +393,7 @@ public:
     }
 
     /**
-     * Set sfOutstandingAmount (soeREQUIRED)
+     * @brief Set sfOutstandingAmount (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -348,7 +404,7 @@ public:
     }
 
     /**
-     * Set sfLockedAmount (soeOPTIONAL)
+     * @brief Set sfLockedAmount (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -359,7 +415,7 @@ public:
     }
 
     /**
-     * Set sfMPTokenMetadata (soeOPTIONAL)
+     * @brief Set sfMPTokenMetadata (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -370,7 +426,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -381,7 +437,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -392,7 +448,7 @@ public:
     }
 
     /**
-     * Set sfDomainID (soeOPTIONAL)
+     * @brief Set sfDomainID (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -403,7 +459,7 @@ public:
     }
 
     /**
-     * Set sfMutableFlags (soeDEFAULT)
+     * @brief Set sfMutableFlags (soeDEFAULT)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -414,7 +470,8 @@ public:
     }
 
     /**
-     * Build and return the completed MPTokenIssuance wrapper.
+     * @brief Build and return the completed MPTokenIssuance wrapper.
+     * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     MPTokenIssuance

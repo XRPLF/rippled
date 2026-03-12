@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class NFTokenBurnBuilder;
 
 /**
- * Transaction: NFTokenBurn
+ * @brief Transaction: NFTokenBurn
+ *
  * Type: ttNFTOKEN_BURN (26)
  * Delegable: Delegation::delegable
  * Amendment: uint256{}
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttNFTOKEN_BURN;
 
     /**
-     * Construct a NFTokenBurn transaction wrapper from an existing STTx object.
+     * @brief Construct a NFTokenBurn transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit NFTokenBurn(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfNFTokenID (soeREQUIRED)
+     * @brief Get sfNFTokenID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfOwner (soeOPTIONAL)
+     * @brief Get sfOwner (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
@@ -71,6 +73,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfOwner is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasOwner() const
@@ -80,7 +86,8 @@ public:
 };
 
 /**
- * Builder for NFTokenBurn transactions.
+ * @brief Builder for NFTokenBurn transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -88,6 +95,13 @@ public:
 class NFTokenBurnBuilder : public TransactionBuilderBase<NFTokenBurnBuilder>
 {
 public:
+    /**
+     * @brief Construct a new NFTokenBurnBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param nFTokenID The sfNFTokenID field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     NFTokenBurnBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_UINT256::type::value_type> const& nFTokenID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -97,6 +111,11 @@ public:
         setNFTokenID(nFTokenID);
     }
 
+    /**
+     * @brief Construct a NFTokenBurnBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     NFTokenBurnBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttNFTOKEN_BURN)
@@ -106,10 +125,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfNFTokenID (soeREQUIRED)
+     * @brief Set sfNFTokenID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     NFTokenBurnBuilder&
@@ -120,7 +139,7 @@ public:
     }
 
     /**
-     * Set sfOwner (soeOPTIONAL)
+     * @brief Set sfOwner (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     NFTokenBurnBuilder&
@@ -131,9 +150,9 @@ public:
     }
 
     /**
-     * Build and return the NFTokenBurn wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the NFTokenBurn wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     NFTokenBurn

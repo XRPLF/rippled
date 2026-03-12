@@ -13,11 +13,11 @@
 
 namespace xrpl::ledger_entries {
 
-// Forward declaration
 class MPTokenBuilder;
 
 /**
- * Ledger Entry: MPToken
+ * @brief Ledger Entry: MPToken
+ *
  * Type: ltMPTOKEN (0x007f)
  * RPC Name: mptoken
  *
@@ -30,7 +30,7 @@ public:
     static constexpr LedgerEntryType entryType = ltMPTOKEN;
 
     /**
-     * Construct a MPToken ledger entry wrapper from an existing SLE object.
+     * @brief Construct a MPToken ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
     explicit MPToken(std::shared_ptr<SLE const> sle)
@@ -46,7 +46,8 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * Get sfAccount (soeREQUIRED)
+     * @brief Get sfAccount (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -56,7 +57,8 @@ public:
     }
 
     /**
-     * Get sfMPTokenIssuanceID (soeREQUIRED)
+     * @brief Get sfMPTokenIssuanceID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT192::type::value_type
@@ -66,7 +68,8 @@ public:
     }
 
     /**
-     * Get sfMPTAmount (soeDEFAULT)
+     * @brief Get sfMPTAmount (soeDEFAULT)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT64::type::value_type>
@@ -77,6 +80,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfMPTAmount is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasMPTAmount() const
@@ -85,7 +92,8 @@ public:
     }
 
     /**
-     * Get sfLockedAmount (soeOPTIONAL)
+     * @brief Get sfLockedAmount (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT64::type::value_type>
@@ -96,6 +104,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfLockedAmount is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasLockedAmount() const
@@ -104,7 +116,8 @@ public:
     }
 
     /**
-     * Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -114,7 +127,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -124,7 +138,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -135,7 +150,8 @@ public:
 };
 
 /**
- * Builder for MPToken ledger entries.
+ * @brief Builder for MPToken ledger entries.
+ *
  * Provides a fluent interface for constructing ledger entries with method chaining.
  * Uses Json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
@@ -143,6 +159,14 @@ public:
 class MPTokenBuilder : public LedgerEntryBuilderBase<MPTokenBuilder>
 {
 public:
+    /**
+     * @brief Construct a new MPTokenBuilder with required fields.
+     * @param account The sfAccount field value.
+     * @param mPTokenIssuanceID The sfMPTokenIssuanceID field value.
+     * @param ownerNode The sfOwnerNode field value.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
+     */
     MPTokenBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_UINT192::type::value_type> const& mPTokenIssuanceID,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<MPTokenBuilder>(ltMPTOKEN)
     {
@@ -153,6 +177,11 @@ public:
         setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
+    /**
+     * @brief Construct a MPTokenBuilder from an existing SLE object.
+     * @param sle The existing ledger entry to copy from.
+     * @throws std::runtime_error if the ledger entry type doesn't match.
+     */
     MPTokenBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltMPTOKEN)
@@ -162,10 +191,10 @@ public:
         object_ = *sle;
     }
 
-    // Ledger entry-specific field setters
+    /** @brief Ledger entry-specific field setters */
 
     /**
-     * Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
@@ -176,7 +205,7 @@ public:
     }
 
     /**
-     * Set sfMPTokenIssuanceID (soeREQUIRED)
+     * @brief Set sfMPTokenIssuanceID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
@@ -187,7 +216,7 @@ public:
     }
 
     /**
-     * Set sfMPTAmount (soeDEFAULT)
+     * @brief Set sfMPTAmount (soeDEFAULT)
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
@@ -198,7 +227,7 @@ public:
     }
 
     /**
-     * Set sfLockedAmount (soeOPTIONAL)
+     * @brief Set sfLockedAmount (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
@@ -209,7 +238,7 @@ public:
     }
 
     /**
-     * Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
@@ -220,7 +249,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
@@ -231,7 +260,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
@@ -242,7 +271,8 @@ public:
     }
 
     /**
-     * Build and return the completed MPToken wrapper.
+     * @brief Build and return the completed MPToken wrapper.
+     * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     MPToken

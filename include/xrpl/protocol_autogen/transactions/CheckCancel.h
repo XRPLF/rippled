@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class CheckCancelBuilder;
 
 /**
- * Transaction: CheckCancel
+ * @brief Transaction: CheckCancel
+ *
  * Type: ttCHECK_CANCEL (18)
  * Delegable: Delegation::delegable
  * Amendment: uint256{}
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttCHECK_CANCEL;
 
     /**
-     * Construct a CheckCancel transaction wrapper from an existing STTx object.
+     * @brief Construct a CheckCancel transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit CheckCancel(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfCheckID (soeREQUIRED)
+     * @brief Get sfCheckID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -59,7 +60,8 @@ public:
 };
 
 /**
- * Builder for CheckCancel transactions.
+ * @brief Builder for CheckCancel transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -67,6 +69,13 @@ public:
 class CheckCancelBuilder : public TransactionBuilderBase<CheckCancelBuilder>
 {
 public:
+    /**
+     * @brief Construct a new CheckCancelBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param checkID The sfCheckID field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     CheckCancelBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_UINT256::type::value_type> const& checkID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -76,6 +85,11 @@ public:
         setCheckID(checkID);
     }
 
+    /**
+     * @brief Construct a CheckCancelBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     CheckCancelBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttCHECK_CANCEL)
@@ -85,10 +99,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfCheckID (soeREQUIRED)
+     * @brief Set sfCheckID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     CheckCancelBuilder&
@@ -99,9 +113,9 @@ public:
     }
 
     /**
-     * Build and return the CheckCancel wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the CheckCancel wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     CheckCancel

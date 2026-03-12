@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class DelegateSetBuilder;
 
 /**
- * Transaction: DelegateSet
+ * @brief Transaction: DelegateSet
+ *
  * Type: ttDELEGATE_SET (64)
  * Delegable: Delegation::notDelegable
  * Amendment: featurePermissionDelegationV1_1
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttDELEGATE_SET;
 
     /**
-     * Construct a DelegateSet transaction wrapper from an existing STTx object.
+     * @brief Construct a DelegateSet transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit DelegateSet(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfAuthorize (soeREQUIRED)
+     * @brief Get sfAuthorize (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -57,8 +58,9 @@ public:
         return this->tx_->at(sfAuthorize);
     }
     /**
-     * Get sfPermissions (soeREQUIRED)
-     * Note: This is an untyped field
+     * @brief Get sfPermissions (soeREQUIRED)
+     * @note This is an untyped field.
+     * @return The field value.
      */
     [[nodiscard]]
     STArray const&
@@ -69,7 +71,8 @@ public:
 };
 
 /**
- * Builder for DelegateSet transactions.
+ * @brief Builder for DelegateSet transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -77,6 +80,14 @@ public:
 class DelegateSetBuilder : public TransactionBuilderBase<DelegateSetBuilder>
 {
 public:
+    /**
+     * @brief Construct a new DelegateSetBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param authorize The sfAuthorize field value.
+     * @param permissions The sfPermissions field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     DelegateSetBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_ACCOUNT::type::value_type> const& authorize,                     STArray const& permissions,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -87,6 +98,11 @@ public:
         setPermissions(permissions);
     }
 
+    /**
+     * @brief Construct a DelegateSetBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     DelegateSetBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttDELEGATE_SET)
@@ -96,10 +112,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfAuthorize (soeREQUIRED)
+     * @brief Set sfAuthorize (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     DelegateSetBuilder&
@@ -110,7 +126,7 @@ public:
     }
 
     /**
-     * Set sfPermissions (soeREQUIRED)
+     * @brief Set sfPermissions (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     DelegateSetBuilder&
@@ -121,9 +137,9 @@ public:
     }
 
     /**
-     * Build and return the DelegateSet wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the DelegateSet wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     DelegateSet

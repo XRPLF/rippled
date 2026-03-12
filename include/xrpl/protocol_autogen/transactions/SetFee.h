@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class SetFeeBuilder;
 
 /**
- * Transaction: SetFee
+ * @brief Transaction: SetFee
+ *
  * Type: ttFEE (101)
  * Delegable: Delegation::notDelegable
  * Amendment: uint256{}
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttFEE;
 
     /**
-     * Construct a SetFee transaction wrapper from an existing STTx object.
+     * @brief Construct a SetFee transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit SetFee(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfLedgerSequence (soeOPTIONAL)
+     * @brief Get sfLedgerSequence (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -61,6 +62,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfLedgerSequence is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasLedgerSequence() const
@@ -69,7 +74,8 @@ public:
     }
 
     /**
-     * Get sfBaseFee (soeOPTIONAL)
+     * @brief Get sfBaseFee (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT64::type::value_type>
@@ -82,6 +88,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfBaseFee is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasBaseFee() const
@@ -90,7 +100,8 @@ public:
     }
 
     /**
-     * Get sfReferenceFeeUnits (soeOPTIONAL)
+     * @brief Get sfReferenceFeeUnits (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -103,6 +114,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfReferenceFeeUnits is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasReferenceFeeUnits() const
@@ -111,7 +126,8 @@ public:
     }
 
     /**
-     * Get sfReserveBase (soeOPTIONAL)
+     * @brief Get sfReserveBase (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -124,6 +140,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfReserveBase is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasReserveBase() const
@@ -132,7 +152,8 @@ public:
     }
 
     /**
-     * Get sfReserveIncrement (soeOPTIONAL)
+     * @brief Get sfReserveIncrement (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -145,6 +166,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfReserveIncrement is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasReserveIncrement() const
@@ -153,7 +178,8 @@ public:
     }
 
     /**
-     * Get sfBaseFeeDrops (soeOPTIONAL)
+     * @brief Get sfBaseFeeDrops (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_AMOUNT::type::value_type>
@@ -166,6 +192,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfBaseFeeDrops is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasBaseFeeDrops() const
@@ -174,7 +204,8 @@ public:
     }
 
     /**
-     * Get sfReserveBaseDrops (soeOPTIONAL)
+     * @brief Get sfReserveBaseDrops (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_AMOUNT::type::value_type>
@@ -187,6 +218,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfReserveBaseDrops is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasReserveBaseDrops() const
@@ -195,7 +230,8 @@ public:
     }
 
     /**
-     * Get sfReserveIncrementDrops (soeOPTIONAL)
+     * @brief Get sfReserveIncrementDrops (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_AMOUNT::type::value_type>
@@ -208,6 +244,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfReserveIncrementDrops is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasReserveIncrementDrops() const
@@ -217,7 +257,8 @@ public:
 };
 
 /**
- * Builder for SetFee transactions.
+ * @brief Builder for SetFee transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -225,6 +266,12 @@ public:
 class SetFeeBuilder : public TransactionBuilderBase<SetFeeBuilder>
 {
 public:
+    /**
+     * @brief Construct a new SetFeeBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     SetFeeBuilder(SF_ACCOUNT::type::value_type account,
                     std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -233,6 +280,11 @@ public:
     {
     }
 
+    /**
+     * @brief Construct a SetFeeBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     SetFeeBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttFEE)
@@ -242,10 +294,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfLedgerSequence (soeOPTIONAL)
+     * @brief Set sfLedgerSequence (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
@@ -256,7 +308,7 @@ public:
     }
 
     /**
-     * Set sfBaseFee (soeOPTIONAL)
+     * @brief Set sfBaseFee (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
@@ -267,7 +319,7 @@ public:
     }
 
     /**
-     * Set sfReferenceFeeUnits (soeOPTIONAL)
+     * @brief Set sfReferenceFeeUnits (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
@@ -278,7 +330,7 @@ public:
     }
 
     /**
-     * Set sfReserveBase (soeOPTIONAL)
+     * @brief Set sfReserveBase (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
@@ -289,7 +341,7 @@ public:
     }
 
     /**
-     * Set sfReserveIncrement (soeOPTIONAL)
+     * @brief Set sfReserveIncrement (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
@@ -300,7 +352,7 @@ public:
     }
 
     /**
-     * Set sfBaseFeeDrops (soeOPTIONAL)
+     * @brief Set sfBaseFeeDrops (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
@@ -311,7 +363,7 @@ public:
     }
 
     /**
-     * Set sfReserveBaseDrops (soeOPTIONAL)
+     * @brief Set sfReserveBaseDrops (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
@@ -322,7 +374,7 @@ public:
     }
 
     /**
-     * Set sfReserveIncrementDrops (soeOPTIONAL)
+     * @brief Set sfReserveIncrementDrops (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
@@ -333,9 +385,9 @@ public:
     }
 
     /**
-     * Build and return the SetFee wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the SetFee wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     SetFee

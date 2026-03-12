@@ -13,11 +13,11 @@
 
 namespace xrpl::ledger_entries {
 
-// Forward declaration
 class PayChannelBuilder;
 
 /**
- * Ledger Entry: PayChannel
+ * @brief Ledger Entry: PayChannel
+ *
  * Type: ltPAYCHAN (0x0078)
  * RPC Name: payment_channel
  *
@@ -30,7 +30,7 @@ public:
     static constexpr LedgerEntryType entryType = ltPAYCHAN;
 
     /**
-     * Construct a PayChannel ledger entry wrapper from an existing SLE object.
+     * @brief Construct a PayChannel ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
     explicit PayChannel(std::shared_ptr<SLE const> sle)
@@ -46,7 +46,8 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * Get sfAccount (soeREQUIRED)
+     * @brief Get sfAccount (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -56,7 +57,8 @@ public:
     }
 
     /**
-     * Get sfDestination (soeREQUIRED)
+     * @brief Get sfDestination (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -66,7 +68,8 @@ public:
     }
 
     /**
-     * Get sfSequence (soeOPTIONAL)
+     * @brief Get sfSequence (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -77,6 +80,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfSequence is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasSequence() const
@@ -85,7 +92,8 @@ public:
     }
 
     /**
-     * Get sfAmount (soeREQUIRED)
+     * @brief Get sfAmount (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_AMOUNT::type::value_type
@@ -95,7 +103,8 @@ public:
     }
 
     /**
-     * Get sfBalance (soeREQUIRED)
+     * @brief Get sfBalance (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_AMOUNT::type::value_type
@@ -105,7 +114,8 @@ public:
     }
 
     /**
-     * Get sfPublicKey (soeREQUIRED)
+     * @brief Get sfPublicKey (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_VL::type::value_type
@@ -115,7 +125,8 @@ public:
     }
 
     /**
-     * Get sfSettleDelay (soeREQUIRED)
+     * @brief Get sfSettleDelay (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -125,7 +136,8 @@ public:
     }
 
     /**
-     * Get sfExpiration (soeOPTIONAL)
+     * @brief Get sfExpiration (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -136,6 +148,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfExpiration is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasExpiration() const
@@ -144,7 +160,8 @@ public:
     }
 
     /**
-     * Get sfCancelAfter (soeOPTIONAL)
+     * @brief Get sfCancelAfter (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -155,6 +172,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfCancelAfter is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasCancelAfter() const
@@ -163,7 +184,8 @@ public:
     }
 
     /**
-     * Get sfSourceTag (soeOPTIONAL)
+     * @brief Get sfSourceTag (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -174,6 +196,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfSourceTag is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasSourceTag() const
@@ -182,7 +208,8 @@ public:
     }
 
     /**
-     * Get sfDestinationTag (soeOPTIONAL)
+     * @brief Get sfDestinationTag (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -193,6 +220,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDestinationTag is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDestinationTag() const
@@ -201,7 +232,8 @@ public:
     }
 
     /**
-     * Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -211,7 +243,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -221,7 +254,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -231,7 +265,8 @@ public:
     }
 
     /**
-     * Get sfDestinationNode (soeOPTIONAL)
+     * @brief Get sfDestinationNode (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT64::type::value_type>
@@ -242,6 +277,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDestinationNode is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDestinationNode() const
@@ -251,7 +290,8 @@ public:
 };
 
 /**
- * Builder for PayChannel ledger entries.
+ * @brief Builder for PayChannel ledger entries.
+ *
  * Provides a fluent interface for constructing ledger entries with method chaining.
  * Uses Json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
@@ -259,6 +299,18 @@ public:
 class PayChannelBuilder : public LedgerEntryBuilderBase<PayChannelBuilder>
 {
 public:
+    /**
+     * @brief Construct a new PayChannelBuilder with required fields.
+     * @param account The sfAccount field value.
+     * @param destination The sfDestination field value.
+     * @param amount The sfAmount field value.
+     * @param balance The sfBalance field value.
+     * @param publicKey The sfPublicKey field value.
+     * @param settleDelay The sfSettleDelay field value.
+     * @param ownerNode The sfOwnerNode field value.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
+     */
     PayChannelBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,std::decay_t<typename SF_AMOUNT::type::value_type> const& balance,std::decay_t<typename SF_VL::type::value_type> const& publicKey,std::decay_t<typename SF_UINT32::type::value_type> const& settleDelay,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<PayChannelBuilder>(ltPAYCHAN)
     {
@@ -273,6 +325,11 @@ public:
         setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
+    /**
+     * @brief Construct a PayChannelBuilder from an existing SLE object.
+     * @param sle The existing ledger entry to copy from.
+     * @throws std::runtime_error if the ledger entry type doesn't match.
+     */
     PayChannelBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltPAYCHAN)
@@ -282,10 +339,10 @@ public:
         object_ = *sle;
     }
 
-    // Ledger entry-specific field setters
+    /** @brief Ledger entry-specific field setters */
 
     /**
-     * Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
@@ -296,7 +353,7 @@ public:
     }
 
     /**
-     * Set sfDestination (soeREQUIRED)
+     * @brief Set sfDestination (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
@@ -307,7 +364,7 @@ public:
     }
 
     /**
-     * Set sfSequence (soeOPTIONAL)
+     * @brief Set sfSequence (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
@@ -318,7 +375,7 @@ public:
     }
 
     /**
-     * Set sfAmount (soeREQUIRED)
+     * @brief Set sfAmount (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
@@ -329,7 +386,7 @@ public:
     }
 
     /**
-     * Set sfBalance (soeREQUIRED)
+     * @brief Set sfBalance (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
@@ -340,7 +397,7 @@ public:
     }
 
     /**
-     * Set sfPublicKey (soeREQUIRED)
+     * @brief Set sfPublicKey (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
@@ -351,7 +408,7 @@ public:
     }
 
     /**
-     * Set sfSettleDelay (soeREQUIRED)
+     * @brief Set sfSettleDelay (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
@@ -362,7 +419,7 @@ public:
     }
 
     /**
-     * Set sfExpiration (soeOPTIONAL)
+     * @brief Set sfExpiration (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
@@ -373,7 +430,7 @@ public:
     }
 
     /**
-     * Set sfCancelAfter (soeOPTIONAL)
+     * @brief Set sfCancelAfter (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
@@ -384,7 +441,7 @@ public:
     }
 
     /**
-     * Set sfSourceTag (soeOPTIONAL)
+     * @brief Set sfSourceTag (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
@@ -395,7 +452,7 @@ public:
     }
 
     /**
-     * Set sfDestinationTag (soeOPTIONAL)
+     * @brief Set sfDestinationTag (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
@@ -406,7 +463,7 @@ public:
     }
 
     /**
-     * Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
@@ -417,7 +474,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
@@ -428,7 +485,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
@@ -439,7 +496,7 @@ public:
     }
 
     /**
-     * Set sfDestinationNode (soeOPTIONAL)
+     * @brief Set sfDestinationNode (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
@@ -450,7 +507,8 @@ public:
     }
 
     /**
-     * Build and return the completed PayChannel wrapper.
+     * @brief Build and return the completed PayChannel wrapper.
+     * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     PayChannel

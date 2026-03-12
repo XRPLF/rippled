@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class XChainAddClaimAttestationBuilder;
 
 /**
- * Transaction: XChainAddClaimAttestation
+ * @brief Transaction: XChainAddClaimAttestation
+ *
  * Type: ttXCHAIN_ADD_CLAIM_ATTESTATION (45)
  * Delegable: Delegation::delegable
  * Amendment: featureXChainBridge
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttXCHAIN_ADD_CLAIM_ATTESTATION;
 
     /**
-     * Construct a XChainAddClaimAttestation transaction wrapper from an existing STTx object.
+     * @brief Construct a XChainAddClaimAttestation transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit XChainAddClaimAttestation(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfXChainBridge (soeREQUIRED)
+     * @brief Get sfXChainBridge (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_XCHAIN_BRIDGE::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfAttestationSignerAccount (soeREQUIRED)
+     * @brief Get sfAttestationSignerAccount (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -68,7 +70,8 @@ public:
     }
 
     /**
-     * Get sfPublicKey (soeREQUIRED)
+     * @brief Get sfPublicKey (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_VL::type::value_type
@@ -78,7 +81,8 @@ public:
     }
 
     /**
-     * Get sfSignature (soeREQUIRED)
+     * @brief Get sfSignature (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_VL::type::value_type
@@ -88,7 +92,8 @@ public:
     }
 
     /**
-     * Get sfOtherChainSource (soeREQUIRED)
+     * @brief Get sfOtherChainSource (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -98,7 +103,8 @@ public:
     }
 
     /**
-     * Get sfAmount (soeREQUIRED)
+     * @brief Get sfAmount (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_AMOUNT::type::value_type
@@ -108,7 +114,8 @@ public:
     }
 
     /**
-     * Get sfAttestationRewardAccount (soeREQUIRED)
+     * @brief Get sfAttestationRewardAccount (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -118,7 +125,8 @@ public:
     }
 
     /**
-     * Get sfWasLockingChainSend (soeREQUIRED)
+     * @brief Get sfWasLockingChainSend (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT8::type::value_type
@@ -128,7 +136,8 @@ public:
     }
 
     /**
-     * Get sfXChainClaimID (soeREQUIRED)
+     * @brief Get sfXChainClaimID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -138,7 +147,8 @@ public:
     }
 
     /**
-     * Get sfDestination (soeOPTIONAL)
+     * @brief Get sfDestination (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
@@ -151,6 +161,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDestination is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDestination() const
@@ -160,7 +174,8 @@ public:
 };
 
 /**
- * Builder for XChainAddClaimAttestation transactions.
+ * @brief Builder for XChainAddClaimAttestation transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -168,6 +183,21 @@ public:
 class XChainAddClaimAttestationBuilder : public TransactionBuilderBase<XChainAddClaimAttestationBuilder>
 {
 public:
+    /**
+     * @brief Construct a new XChainAddClaimAttestationBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param xChainBridge The sfXChainBridge field value.
+     * @param attestationSignerAccount The sfAttestationSignerAccount field value.
+     * @param publicKey The sfPublicKey field value.
+     * @param signature The sfSignature field value.
+     * @param otherChainSource The sfOtherChainSource field value.
+     * @param amount The sfAmount field value.
+     * @param attestationRewardAccount The sfAttestationRewardAccount field value.
+     * @param wasLockingChainSend The sfWasLockingChainSend field value.
+     * @param xChainClaimID The sfXChainClaimID field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     XChainAddClaimAttestationBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& attestationSignerAccount,                     std::decay_t<typename SF_VL::type::value_type> const& publicKey,                     std::decay_t<typename SF_VL::type::value_type> const& signature,                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& otherChainSource,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& attestationRewardAccount,                     std::decay_t<typename SF_UINT8::type::value_type> const& wasLockingChainSend,                     std::decay_t<typename SF_UINT64::type::value_type> const& xChainClaimID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -185,6 +215,11 @@ public:
         setXChainClaimID(xChainClaimID);
     }
 
+    /**
+     * @brief Construct a XChainAddClaimAttestationBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     XChainAddClaimAttestationBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttXCHAIN_ADD_CLAIM_ATTESTATION)
@@ -194,10 +229,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfXChainBridge (soeREQUIRED)
+     * @brief Set sfXChainBridge (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainAddClaimAttestationBuilder&
@@ -208,7 +243,7 @@ public:
     }
 
     /**
-     * Set sfAttestationSignerAccount (soeREQUIRED)
+     * @brief Set sfAttestationSignerAccount (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainAddClaimAttestationBuilder&
@@ -219,7 +254,7 @@ public:
     }
 
     /**
-     * Set sfPublicKey (soeREQUIRED)
+     * @brief Set sfPublicKey (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainAddClaimAttestationBuilder&
@@ -230,7 +265,7 @@ public:
     }
 
     /**
-     * Set sfSignature (soeREQUIRED)
+     * @brief Set sfSignature (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainAddClaimAttestationBuilder&
@@ -241,7 +276,7 @@ public:
     }
 
     /**
-     * Set sfOtherChainSource (soeREQUIRED)
+     * @brief Set sfOtherChainSource (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainAddClaimAttestationBuilder&
@@ -252,7 +287,7 @@ public:
     }
 
     /**
-     * Set sfAmount (soeREQUIRED)
+     * @brief Set sfAmount (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainAddClaimAttestationBuilder&
@@ -263,7 +298,7 @@ public:
     }
 
     /**
-     * Set sfAttestationRewardAccount (soeREQUIRED)
+     * @brief Set sfAttestationRewardAccount (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainAddClaimAttestationBuilder&
@@ -274,7 +309,7 @@ public:
     }
 
     /**
-     * Set sfWasLockingChainSend (soeREQUIRED)
+     * @brief Set sfWasLockingChainSend (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainAddClaimAttestationBuilder&
@@ -285,7 +320,7 @@ public:
     }
 
     /**
-     * Set sfXChainClaimID (soeREQUIRED)
+     * @brief Set sfXChainClaimID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainAddClaimAttestationBuilder&
@@ -296,7 +331,7 @@ public:
     }
 
     /**
-     * Set sfDestination (soeOPTIONAL)
+     * @brief Set sfDestination (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     XChainAddClaimAttestationBuilder&
@@ -307,9 +342,9 @@ public:
     }
 
     /**
-     * Build and return the XChainAddClaimAttestation wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the XChainAddClaimAttestation wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     XChainAddClaimAttestation

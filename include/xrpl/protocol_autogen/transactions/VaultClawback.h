@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class VaultClawbackBuilder;
 
 /**
- * Transaction: VaultClawback
+ * @brief Transaction: VaultClawback
+ *
  * Type: ttVAULT_CLAWBACK (70)
  * Delegable: Delegation::delegable
  * Amendment: featureSingleAssetVault
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttVAULT_CLAWBACK;
 
     /**
-     * Construct a VaultClawback transaction wrapper from an existing STTx object.
+     * @brief Construct a VaultClawback transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit VaultClawback(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfVaultID (soeREQUIRED)
+     * @brief Get sfVaultID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfHolder (soeREQUIRED)
+     * @brief Get sfHolder (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -68,8 +70,9 @@ public:
     }
 
     /**
-     * Get sfAmount (soeOPTIONAL)
-     * Note: This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Get sfAmount (soeOPTIONAL)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_AMOUNT::type::value_type>
@@ -82,6 +85,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfAmount is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasAmount() const
@@ -91,7 +98,8 @@ public:
 };
 
 /**
- * Builder for VaultClawback transactions.
+ * @brief Builder for VaultClawback transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -99,6 +107,14 @@ public:
 class VaultClawbackBuilder : public TransactionBuilderBase<VaultClawbackBuilder>
 {
 public:
+    /**
+     * @brief Construct a new VaultClawbackBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param vaultID The sfVaultID field value.
+     * @param holder The sfHolder field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     VaultClawbackBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_UINT256::type::value_type> const& vaultID,                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& holder,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -109,6 +125,11 @@ public:
         setHolder(holder);
     }
 
+    /**
+     * @brief Construct a VaultClawbackBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     VaultClawbackBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttVAULT_CLAWBACK)
@@ -118,10 +139,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfVaultID (soeREQUIRED)
+     * @brief Set sfVaultID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     VaultClawbackBuilder&
@@ -132,7 +153,7 @@ public:
     }
 
     /**
-     * Set sfHolder (soeREQUIRED)
+     * @brief Set sfHolder (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     VaultClawbackBuilder&
@@ -143,8 +164,8 @@ public:
     }
 
     /**
-     * Set sfAmount (soeOPTIONAL)
-     * Note: This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfAmount (soeOPTIONAL)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     VaultClawbackBuilder&
@@ -155,9 +176,9 @@ public:
     }
 
     /**
-     * Build and return the VaultClawback wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the VaultClawback wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     VaultClawback

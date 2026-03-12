@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class DIDDeleteBuilder;
 
 /**
- * Transaction: DIDDelete
+ * @brief Transaction: DIDDelete
+ *
  * Type: ttDID_DELETE (50)
  * Delegable: Delegation::delegable
  * Amendment: featureDID
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttDID_DELETE;
 
     /**
-     * Construct a DIDDelete transaction wrapper from an existing STTx object.
+     * @brief Construct a DIDDelete transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit DIDDelete(std::shared_ptr<STTx const> tx)
@@ -49,7 +49,8 @@ public:
 };
 
 /**
- * Builder for DIDDelete transactions.
+ * @brief Builder for DIDDelete transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -57,6 +58,12 @@ public:
 class DIDDeleteBuilder : public TransactionBuilderBase<DIDDeleteBuilder>
 {
 public:
+    /**
+     * @brief Construct a new DIDDeleteBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     DIDDeleteBuilder(SF_ACCOUNT::type::value_type account,
                     std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -65,6 +72,11 @@ public:
     {
     }
 
+    /**
+     * @brief Construct a DIDDeleteBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     DIDDeleteBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttDID_DELETE)
@@ -74,12 +86,12 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Build and return the DIDDelete wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the DIDDelete wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     DIDDelete

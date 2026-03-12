@@ -13,11 +13,11 @@
 
 namespace xrpl::ledger_entries {
 
-// Forward declaration
 class OracleBuilder;
 
 /**
- * Ledger Entry: Oracle
+ * @brief Ledger Entry: Oracle
+ *
  * Type: ltORACLE (0x0080)
  * RPC Name: oracle
  *
@@ -30,7 +30,7 @@ public:
     static constexpr LedgerEntryType entryType = ltORACLE;
 
     /**
-     * Construct a Oracle ledger entry wrapper from an existing SLE object.
+     * @brief Construct a Oracle ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
     explicit Oracle(std::shared_ptr<SLE const> sle)
@@ -46,7 +46,8 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * Get sfOwner (soeREQUIRED)
+     * @brief Get sfOwner (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -56,7 +57,8 @@ public:
     }
 
     /**
-     * Get sfOracleDocumentID (soeOPTIONAL)
+     * @brief Get sfOracleDocumentID (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -67,6 +69,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfOracleDocumentID is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasOracleDocumentID() const
@@ -75,7 +81,8 @@ public:
     }
 
     /**
-     * Get sfProvider (soeREQUIRED)
+     * @brief Get sfProvider (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_VL::type::value_type
@@ -85,8 +92,9 @@ public:
     }
 
     /**
-     * Get sfPriceDataSeries (soeREQUIRED)
-     * Note: This is an untyped field (unknown).
+     * @brief Get sfPriceDataSeries (soeREQUIRED)
+     * @note This is an untyped field (unknown).
+     * @return The field value.
      */
     [[nodiscard]]
     STArray const&
@@ -96,7 +104,8 @@ public:
     }
 
     /**
-     * Get sfAssetClass (soeREQUIRED)
+     * @brief Get sfAssetClass (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_VL::type::value_type
@@ -106,7 +115,8 @@ public:
     }
 
     /**
-     * Get sfLastUpdateTime (soeREQUIRED)
+     * @brief Get sfLastUpdateTime (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -116,7 +126,8 @@ public:
     }
 
     /**
-     * Get sfURI (soeOPTIONAL)
+     * @brief Get sfURI (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
@@ -127,6 +138,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfURI is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasURI() const
@@ -135,7 +150,8 @@ public:
     }
 
     /**
-     * Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -145,7 +161,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -155,7 +172,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -166,7 +184,8 @@ public:
 };
 
 /**
- * Builder for Oracle ledger entries.
+ * @brief Builder for Oracle ledger entries.
+ *
  * Provides a fluent interface for constructing ledger entries with method chaining.
  * Uses Json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
@@ -174,6 +193,17 @@ public:
 class OracleBuilder : public LedgerEntryBuilderBase<OracleBuilder>
 {
 public:
+    /**
+     * @brief Construct a new OracleBuilder with required fields.
+     * @param owner The sfOwner field value.
+     * @param provider The sfProvider field value.
+     * @param priceDataSeries The sfPriceDataSeries field value.
+     * @param assetClass The sfAssetClass field value.
+     * @param lastUpdateTime The sfLastUpdateTime field value.
+     * @param ownerNode The sfOwnerNode field value.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
+     */
     OracleBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,std::decay_t<typename SF_VL::type::value_type> const& provider,STArray const& priceDataSeries,std::decay_t<typename SF_VL::type::value_type> const& assetClass,std::decay_t<typename SF_UINT32::type::value_type> const& lastUpdateTime,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<OracleBuilder>(ltORACLE)
     {
@@ -187,6 +217,11 @@ public:
         setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
+    /**
+     * @brief Construct a OracleBuilder from an existing SLE object.
+     * @param sle The existing ledger entry to copy from.
+     * @throws std::runtime_error if the ledger entry type doesn't match.
+     */
     OracleBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltORACLE)
@@ -196,10 +231,10 @@ public:
         object_ = *sle;
     }
 
-    // Ledger entry-specific field setters
+    /** @brief Ledger entry-specific field setters */
 
     /**
-     * Set sfOwner (soeREQUIRED)
+     * @brief Set sfOwner (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -210,7 +245,7 @@ public:
     }
 
     /**
-     * Set sfOracleDocumentID (soeOPTIONAL)
+     * @brief Set sfOracleDocumentID (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -221,7 +256,7 @@ public:
     }
 
     /**
-     * Set sfProvider (soeREQUIRED)
+     * @brief Set sfProvider (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -232,7 +267,7 @@ public:
     }
 
     /**
-     * Set sfPriceDataSeries (soeREQUIRED)
+     * @brief Set sfPriceDataSeries (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -243,7 +278,7 @@ public:
     }
 
     /**
-     * Set sfAssetClass (soeREQUIRED)
+     * @brief Set sfAssetClass (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -254,7 +289,7 @@ public:
     }
 
     /**
-     * Set sfLastUpdateTime (soeREQUIRED)
+     * @brief Set sfLastUpdateTime (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -265,7 +300,7 @@ public:
     }
 
     /**
-     * Set sfURI (soeOPTIONAL)
+     * @brief Set sfURI (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -276,7 +311,7 @@ public:
     }
 
     /**
-     * Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -287,7 +322,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -298,7 +333,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -309,7 +344,8 @@ public:
     }
 
     /**
-     * Build and return the completed Oracle wrapper.
+     * @brief Build and return the completed Oracle wrapper.
+     * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     Oracle

@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class MPTokenIssuanceDestroyBuilder;
 
 /**
- * Transaction: MPTokenIssuanceDestroy
+ * @brief Transaction: MPTokenIssuanceDestroy
+ *
  * Type: ttMPTOKEN_ISSUANCE_DESTROY (55)
  * Delegable: Delegation::delegable
  * Amendment: featureMPTokensV1
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttMPTOKEN_ISSUANCE_DESTROY;
 
     /**
-     * Construct a MPTokenIssuanceDestroy transaction wrapper from an existing STTx object.
+     * @brief Construct a MPTokenIssuanceDestroy transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit MPTokenIssuanceDestroy(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfMPTokenIssuanceID (soeREQUIRED)
+     * @brief Get sfMPTokenIssuanceID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT192::type::value_type
@@ -59,7 +60,8 @@ public:
 };
 
 /**
- * Builder for MPTokenIssuanceDestroy transactions.
+ * @brief Builder for MPTokenIssuanceDestroy transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -67,6 +69,13 @@ public:
 class MPTokenIssuanceDestroyBuilder : public TransactionBuilderBase<MPTokenIssuanceDestroyBuilder>
 {
 public:
+    /**
+     * @brief Construct a new MPTokenIssuanceDestroyBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param mPTokenIssuanceID The sfMPTokenIssuanceID field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     MPTokenIssuanceDestroyBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_UINT192::type::value_type> const& mPTokenIssuanceID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -76,6 +85,11 @@ public:
         setMPTokenIssuanceID(mPTokenIssuanceID);
     }
 
+    /**
+     * @brief Construct a MPTokenIssuanceDestroyBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     MPTokenIssuanceDestroyBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttMPTOKEN_ISSUANCE_DESTROY)
@@ -85,10 +99,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfMPTokenIssuanceID (soeREQUIRED)
+     * @brief Set sfMPTokenIssuanceID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceDestroyBuilder&
@@ -99,9 +113,9 @@ public:
     }
 
     /**
-     * Build and return the MPTokenIssuanceDestroy wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the MPTokenIssuanceDestroy wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     MPTokenIssuanceDestroy

@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class EnableAmendmentBuilder;
 
 /**
- * Transaction: EnableAmendment
+ * @brief Transaction: EnableAmendment
+ *
  * Type: ttAMENDMENT (100)
  * Delegable: Delegation::notDelegable
  * Amendment: uint256{}
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttAMENDMENT;
 
     /**
-     * Construct a EnableAmendment transaction wrapper from an existing STTx object.
+     * @brief Construct a EnableAmendment transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit EnableAmendment(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfLedgerSequence (soeREQUIRED)
+     * @brief Get sfLedgerSequence (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfAmendment (soeREQUIRED)
+     * @brief Get sfAmendment (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -69,7 +71,8 @@ public:
 };
 
 /**
- * Builder for EnableAmendment transactions.
+ * @brief Builder for EnableAmendment transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -77,6 +80,14 @@ public:
 class EnableAmendmentBuilder : public TransactionBuilderBase<EnableAmendmentBuilder>
 {
 public:
+    /**
+     * @brief Construct a new EnableAmendmentBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param ledgerSequence The sfLedgerSequence field value.
+     * @param amendment The sfAmendment field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     EnableAmendmentBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_UINT32::type::value_type> const& ledgerSequence,                     std::decay_t<typename SF_UINT256::type::value_type> const& amendment,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -87,6 +98,11 @@ public:
         setAmendment(amendment);
     }
 
+    /**
+     * @brief Construct a EnableAmendmentBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     EnableAmendmentBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttAMENDMENT)
@@ -96,10 +112,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfLedgerSequence (soeREQUIRED)
+     * @brief Set sfLedgerSequence (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     EnableAmendmentBuilder&
@@ -110,7 +126,7 @@ public:
     }
 
     /**
-     * Set sfAmendment (soeREQUIRED)
+     * @brief Set sfAmendment (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     EnableAmendmentBuilder&
@@ -121,9 +137,9 @@ public:
     }
 
     /**
-     * Build and return the EnableAmendment wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the EnableAmendment wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     EnableAmendment

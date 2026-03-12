@@ -13,11 +13,11 @@
 
 namespace xrpl::ledger_entries {
 
-// Forward declaration
 class OfferBuilder;
 
 /**
- * Ledger Entry: Offer
+ * @brief Ledger Entry: Offer
+ *
  * Type: ltOFFER (0x006f)
  * RPC Name: offer
  *
@@ -30,7 +30,7 @@ public:
     static constexpr LedgerEntryType entryType = ltOFFER;
 
     /**
-     * Construct a Offer ledger entry wrapper from an existing SLE object.
+     * @brief Construct a Offer ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
     explicit Offer(std::shared_ptr<SLE const> sle)
@@ -46,7 +46,8 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * Get sfAccount (soeREQUIRED)
+     * @brief Get sfAccount (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -56,7 +57,8 @@ public:
     }
 
     /**
-     * Get sfSequence (soeREQUIRED)
+     * @brief Get sfSequence (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -66,7 +68,8 @@ public:
     }
 
     /**
-     * Get sfTakerPays (soeREQUIRED)
+     * @brief Get sfTakerPays (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_AMOUNT::type::value_type
@@ -76,7 +79,8 @@ public:
     }
 
     /**
-     * Get sfTakerGets (soeREQUIRED)
+     * @brief Get sfTakerGets (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_AMOUNT::type::value_type
@@ -86,7 +90,8 @@ public:
     }
 
     /**
-     * Get sfBookDirectory (soeREQUIRED)
+     * @brief Get sfBookDirectory (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -96,7 +101,8 @@ public:
     }
 
     /**
-     * Get sfBookNode (soeREQUIRED)
+     * @brief Get sfBookNode (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -106,7 +112,8 @@ public:
     }
 
     /**
-     * Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -116,7 +123,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -126,7 +134,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -136,7 +145,8 @@ public:
     }
 
     /**
-     * Get sfExpiration (soeOPTIONAL)
+     * @brief Get sfExpiration (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -147,6 +157,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfExpiration is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasExpiration() const
@@ -155,7 +169,8 @@ public:
     }
 
     /**
-     * Get sfDomainID (soeOPTIONAL)
+     * @brief Get sfDomainID (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT256::type::value_type>
@@ -166,6 +181,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDomainID is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDomainID() const
@@ -174,8 +193,9 @@ public:
     }
 
     /**
-     * Get sfAdditionalBooks (soeOPTIONAL)
-     * Note: This is an untyped field (unknown).
+     * @brief Get sfAdditionalBooks (soeOPTIONAL)
+     * @note This is an untyped field (unknown).
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     std::optional<std::reference_wrapper<STArray const>>
@@ -186,6 +206,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfAdditionalBooks is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasAdditionalBooks() const
@@ -195,7 +219,8 @@ public:
 };
 
 /**
- * Builder for Offer ledger entries.
+ * @brief Builder for Offer ledger entries.
+ *
  * Provides a fluent interface for constructing ledger entries with method chaining.
  * Uses Json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
@@ -203,6 +228,18 @@ public:
 class OfferBuilder : public LedgerEntryBuilderBase<OfferBuilder>
 {
 public:
+    /**
+     * @brief Construct a new OfferBuilder with required fields.
+     * @param account The sfAccount field value.
+     * @param sequence The sfSequence field value.
+     * @param takerPays The sfTakerPays field value.
+     * @param takerGets The sfTakerGets field value.
+     * @param bookDirectory The sfBookDirectory field value.
+     * @param bookNode The sfBookNode field value.
+     * @param ownerNode The sfOwnerNode field value.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
+     */
     OfferBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_UINT32::type::value_type> const& sequence,std::decay_t<typename SF_AMOUNT::type::value_type> const& takerPays,std::decay_t<typename SF_AMOUNT::type::value_type> const& takerGets,std::decay_t<typename SF_UINT256::type::value_type> const& bookDirectory,std::decay_t<typename SF_UINT64::type::value_type> const& bookNode,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<OfferBuilder>(ltOFFER)
     {
@@ -217,6 +254,11 @@ public:
         setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
+    /**
+     * @brief Construct a OfferBuilder from an existing SLE object.
+     * @param sle The existing ledger entry to copy from.
+     * @throws std::runtime_error if the ledger entry type doesn't match.
+     */
     OfferBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltOFFER)
@@ -226,10 +268,10 @@ public:
         object_ = *sle;
     }
 
-    // Ledger entry-specific field setters
+    /** @brief Ledger entry-specific field setters */
 
     /**
-     * Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -240,7 +282,7 @@ public:
     }
 
     /**
-     * Set sfSequence (soeREQUIRED)
+     * @brief Set sfSequence (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -251,7 +293,7 @@ public:
     }
 
     /**
-     * Set sfTakerPays (soeREQUIRED)
+     * @brief Set sfTakerPays (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -262,7 +304,7 @@ public:
     }
 
     /**
-     * Set sfTakerGets (soeREQUIRED)
+     * @brief Set sfTakerGets (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -273,7 +315,7 @@ public:
     }
 
     /**
-     * Set sfBookDirectory (soeREQUIRED)
+     * @brief Set sfBookDirectory (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -284,7 +326,7 @@ public:
     }
 
     /**
-     * Set sfBookNode (soeREQUIRED)
+     * @brief Set sfBookNode (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -295,7 +337,7 @@ public:
     }
 
     /**
-     * Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -306,7 +348,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -317,7 +359,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -328,7 +370,7 @@ public:
     }
 
     /**
-     * Set sfExpiration (soeOPTIONAL)
+     * @brief Set sfExpiration (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -339,7 +381,7 @@ public:
     }
 
     /**
-     * Set sfDomainID (soeOPTIONAL)
+     * @brief Set sfDomainID (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -350,7 +392,7 @@ public:
     }
 
     /**
-     * Set sfAdditionalBooks (soeOPTIONAL)
+     * @brief Set sfAdditionalBooks (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -361,7 +403,8 @@ public:
     }
 
     /**
-     * Build and return the completed Offer wrapper.
+     * @brief Build and return the completed Offer wrapper.
+     * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     Offer

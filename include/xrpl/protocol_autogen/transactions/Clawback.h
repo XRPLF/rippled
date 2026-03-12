@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class ClawbackBuilder;
 
 /**
- * Transaction: Clawback
+ * @brief Transaction: Clawback
+ *
  * Type: ttCLAWBACK (30)
  * Delegable: Delegation::delegable
  * Amendment: featureClawback
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttCLAWBACK;
 
     /**
-     * Construct a Clawback transaction wrapper from an existing STTx object.
+     * @brief Construct a Clawback transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit Clawback(std::shared_ptr<STTx const> tx)
@@ -48,8 +48,9 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfAmount (soeREQUIRED)
-     * Note: This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Get sfAmount (soeREQUIRED)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @return The field value.
      */
     [[nodiscard]]
     SF_AMOUNT::type::value_type
@@ -59,7 +60,8 @@ public:
     }
 
     /**
-     * Get sfHolder (soeOPTIONAL)
+     * @brief Get sfHolder (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
@@ -72,6 +74,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfHolder is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasHolder() const
@@ -81,7 +87,8 @@ public:
 };
 
 /**
- * Builder for Clawback transactions.
+ * @brief Builder for Clawback transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -89,6 +96,13 @@ public:
 class ClawbackBuilder : public TransactionBuilderBase<ClawbackBuilder>
 {
 public:
+    /**
+     * @brief Construct a new ClawbackBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param amount The sfAmount field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     ClawbackBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -98,6 +112,11 @@ public:
         setAmount(amount);
     }
 
+    /**
+     * @brief Construct a ClawbackBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     ClawbackBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttCLAWBACK)
@@ -107,11 +126,11 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfAmount (soeREQUIRED)
-     * Note: This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfAmount (soeREQUIRED)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     ClawbackBuilder&
@@ -122,7 +141,7 @@ public:
     }
 
     /**
-     * Set sfHolder (soeOPTIONAL)
+     * @brief Set sfHolder (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     ClawbackBuilder&
@@ -133,9 +152,9 @@ public:
     }
 
     /**
-     * Build and return the Clawback wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the Clawback wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     Clawback

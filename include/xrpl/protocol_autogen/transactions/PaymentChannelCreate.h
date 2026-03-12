@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class PaymentChannelCreateBuilder;
 
 /**
- * Transaction: PaymentChannelCreate
+ * @brief Transaction: PaymentChannelCreate
+ *
  * Type: ttPAYCHAN_CREATE (13)
  * Delegable: Delegation::delegable
  * Amendment: uint256{}
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttPAYCHAN_CREATE;
 
     /**
-     * Construct a PaymentChannelCreate transaction wrapper from an existing STTx object.
+     * @brief Construct a PaymentChannelCreate transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit PaymentChannelCreate(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfDestination (soeREQUIRED)
+     * @brief Get sfDestination (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfAmount (soeREQUIRED)
+     * @brief Get sfAmount (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_AMOUNT::type::value_type
@@ -68,7 +70,8 @@ public:
     }
 
     /**
-     * Get sfSettleDelay (soeREQUIRED)
+     * @brief Get sfSettleDelay (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -78,7 +81,8 @@ public:
     }
 
     /**
-     * Get sfPublicKey (soeREQUIRED)
+     * @brief Get sfPublicKey (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_VL::type::value_type
@@ -88,7 +92,8 @@ public:
     }
 
     /**
-     * Get sfCancelAfter (soeOPTIONAL)
+     * @brief Get sfCancelAfter (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -101,6 +106,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfCancelAfter is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasCancelAfter() const
@@ -109,7 +118,8 @@ public:
     }
 
     /**
-     * Get sfDestinationTag (soeOPTIONAL)
+     * @brief Get sfDestinationTag (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -122,6 +132,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDestinationTag is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDestinationTag() const
@@ -131,7 +145,8 @@ public:
 };
 
 /**
- * Builder for PaymentChannelCreate transactions.
+ * @brief Builder for PaymentChannelCreate transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -139,6 +154,16 @@ public:
 class PaymentChannelCreateBuilder : public TransactionBuilderBase<PaymentChannelCreateBuilder>
 {
 public:
+    /**
+     * @brief Construct a new PaymentChannelCreateBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param destination The sfDestination field value.
+     * @param amount The sfAmount field value.
+     * @param settleDelay The sfSettleDelay field value.
+     * @param publicKey The sfPublicKey field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     PaymentChannelCreateBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                     std::decay_t<typename SF_UINT32::type::value_type> const& settleDelay,                     std::decay_t<typename SF_VL::type::value_type> const& publicKey,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -151,6 +176,11 @@ public:
         setPublicKey(publicKey);
     }
 
+    /**
+     * @brief Construct a PaymentChannelCreateBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     PaymentChannelCreateBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttPAYCHAN_CREATE)
@@ -160,10 +190,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfDestination (soeREQUIRED)
+     * @brief Set sfDestination (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelCreateBuilder&
@@ -174,7 +204,7 @@ public:
     }
 
     /**
-     * Set sfAmount (soeREQUIRED)
+     * @brief Set sfAmount (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelCreateBuilder&
@@ -185,7 +215,7 @@ public:
     }
 
     /**
-     * Set sfSettleDelay (soeREQUIRED)
+     * @brief Set sfSettleDelay (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelCreateBuilder&
@@ -196,7 +226,7 @@ public:
     }
 
     /**
-     * Set sfPublicKey (soeREQUIRED)
+     * @brief Set sfPublicKey (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelCreateBuilder&
@@ -207,7 +237,7 @@ public:
     }
 
     /**
-     * Set sfCancelAfter (soeOPTIONAL)
+     * @brief Set sfCancelAfter (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelCreateBuilder&
@@ -218,7 +248,7 @@ public:
     }
 
     /**
-     * Set sfDestinationTag (soeOPTIONAL)
+     * @brief Set sfDestinationTag (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelCreateBuilder&
@@ -229,9 +259,9 @@ public:
     }
 
     /**
-     * Build and return the PaymentChannelCreate wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the PaymentChannelCreate wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     PaymentChannelCreate

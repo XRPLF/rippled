@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class LoanBrokerDeleteBuilder;
 
 /**
- * Transaction: LoanBrokerDelete
+ * @brief Transaction: LoanBrokerDelete
+ *
  * Type: ttLOAN_BROKER_DELETE (75)
  * Delegable: Delegation::delegable
  * Amendment: featureLendingProtocol
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttLOAN_BROKER_DELETE;
 
     /**
-     * Construct a LoanBrokerDelete transaction wrapper from an existing STTx object.
+     * @brief Construct a LoanBrokerDelete transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit LoanBrokerDelete(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfLoanBrokerID (soeREQUIRED)
+     * @brief Get sfLoanBrokerID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -59,7 +60,8 @@ public:
 };
 
 /**
- * Builder for LoanBrokerDelete transactions.
+ * @brief Builder for LoanBrokerDelete transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -67,6 +69,13 @@ public:
 class LoanBrokerDeleteBuilder : public TransactionBuilderBase<LoanBrokerDeleteBuilder>
 {
 public:
+    /**
+     * @brief Construct a new LoanBrokerDeleteBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param loanBrokerID The sfLoanBrokerID field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     LoanBrokerDeleteBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_UINT256::type::value_type> const& loanBrokerID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -76,6 +85,11 @@ public:
         setLoanBrokerID(loanBrokerID);
     }
 
+    /**
+     * @brief Construct a LoanBrokerDeleteBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     LoanBrokerDeleteBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttLOAN_BROKER_DELETE)
@@ -85,10 +99,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfLoanBrokerID (soeREQUIRED)
+     * @brief Set sfLoanBrokerID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerDeleteBuilder&
@@ -99,9 +113,9 @@ public:
     }
 
     /**
-     * Build and return the LoanBrokerDelete wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the LoanBrokerDelete wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     LoanBrokerDelete

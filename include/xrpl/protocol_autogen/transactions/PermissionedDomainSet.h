@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class PermissionedDomainSetBuilder;
 
 /**
- * Transaction: PermissionedDomainSet
+ * @brief Transaction: PermissionedDomainSet
+ *
  * Type: ttPERMISSIONED_DOMAIN_SET (62)
  * Delegable: Delegation::delegable
  * Amendment: featurePermissionedDomains
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttPERMISSIONED_DOMAIN_SET;
 
     /**
-     * Construct a PermissionedDomainSet transaction wrapper from an existing STTx object.
+     * @brief Construct a PermissionedDomainSet transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit PermissionedDomainSet(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfDomainID (soeOPTIONAL)
+     * @brief Get sfDomainID (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT256::type::value_type>
@@ -61,6 +62,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDomainID is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDomainID() const
@@ -68,8 +73,9 @@ public:
         return this->tx_->isFieldPresent(sfDomainID);
     }
     /**
-     * Get sfAcceptedCredentials (soeREQUIRED)
-     * Note: This is an untyped field
+     * @brief Get sfAcceptedCredentials (soeREQUIRED)
+     * @note This is an untyped field.
+     * @return The field value.
      */
     [[nodiscard]]
     STArray const&
@@ -80,7 +86,8 @@ public:
 };
 
 /**
- * Builder for PermissionedDomainSet transactions.
+ * @brief Builder for PermissionedDomainSet transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -88,6 +95,13 @@ public:
 class PermissionedDomainSetBuilder : public TransactionBuilderBase<PermissionedDomainSetBuilder>
 {
 public:
+    /**
+     * @brief Construct a new PermissionedDomainSetBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param acceptedCredentials The sfAcceptedCredentials field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     PermissionedDomainSetBuilder(SF_ACCOUNT::type::value_type account,
                      STArray const& acceptedCredentials,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -97,6 +111,11 @@ public:
         setAcceptedCredentials(acceptedCredentials);
     }
 
+    /**
+     * @brief Construct a PermissionedDomainSetBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     PermissionedDomainSetBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttPERMISSIONED_DOMAIN_SET)
@@ -106,10 +125,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfDomainID (soeOPTIONAL)
+     * @brief Set sfDomainID (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainSetBuilder&
@@ -120,7 +139,7 @@ public:
     }
 
     /**
-     * Set sfAcceptedCredentials (soeREQUIRED)
+     * @brief Set sfAcceptedCredentials (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainSetBuilder&
@@ -131,9 +150,9 @@ public:
     }
 
     /**
-     * Build and return the PermissionedDomainSet wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the PermissionedDomainSet wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     PermissionedDomainSet

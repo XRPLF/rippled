@@ -13,11 +13,11 @@
 
 namespace xrpl::ledger_entries {
 
-// Forward declaration
 class LoanBrokerBuilder;
 
 /**
- * Ledger Entry: LoanBroker
+ * @brief Ledger Entry: LoanBroker
+ *
  * Type: ltLOAN_BROKER (0x0088)
  * RPC Name: loan_broker
  *
@@ -30,7 +30,7 @@ public:
     static constexpr LedgerEntryType entryType = ltLOAN_BROKER;
 
     /**
-     * Construct a LoanBroker ledger entry wrapper from an existing SLE object.
+     * @brief Construct a LoanBroker ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
     explicit LoanBroker(std::shared_ptr<SLE const> sle)
@@ -46,7 +46,8 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -56,7 +57,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -66,7 +68,8 @@ public:
     }
 
     /**
-     * Get sfSequence (soeREQUIRED)
+     * @brief Get sfSequence (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -76,7 +79,8 @@ public:
     }
 
     /**
-     * Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -86,7 +90,8 @@ public:
     }
 
     /**
-     * Get sfVaultNode (soeREQUIRED)
+     * @brief Get sfVaultNode (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -96,7 +101,8 @@ public:
     }
 
     /**
-     * Get sfVaultID (soeREQUIRED)
+     * @brief Get sfVaultID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -106,7 +112,8 @@ public:
     }
 
     /**
-     * Get sfAccount (soeREQUIRED)
+     * @brief Get sfAccount (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -116,7 +123,8 @@ public:
     }
 
     /**
-     * Get sfOwner (soeREQUIRED)
+     * @brief Get sfOwner (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -126,7 +134,8 @@ public:
     }
 
     /**
-     * Get sfLoanSequence (soeREQUIRED)
+     * @brief Get sfLoanSequence (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -136,7 +145,8 @@ public:
     }
 
     /**
-     * Get sfData (soeDEFAULT)
+     * @brief Get sfData (soeDEFAULT)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
@@ -147,6 +157,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfData is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasData() const
@@ -155,7 +169,8 @@ public:
     }
 
     /**
-     * Get sfManagementFeeRate (soeDEFAULT)
+     * @brief Get sfManagementFeeRate (soeDEFAULT)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT16::type::value_type>
@@ -166,6 +181,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfManagementFeeRate is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasManagementFeeRate() const
@@ -174,7 +193,8 @@ public:
     }
 
     /**
-     * Get sfOwnerCount (soeDEFAULT)
+     * @brief Get sfOwnerCount (soeDEFAULT)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -185,6 +205,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfOwnerCount is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasOwnerCount() const
@@ -193,7 +217,8 @@ public:
     }
 
     /**
-     * Get sfDebtTotal (soeDEFAULT)
+     * @brief Get sfDebtTotal (soeDEFAULT)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_NUMBER::type::value_type>
@@ -204,6 +229,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDebtTotal is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDebtTotal() const
@@ -212,7 +241,8 @@ public:
     }
 
     /**
-     * Get sfDebtMaximum (soeDEFAULT)
+     * @brief Get sfDebtMaximum (soeDEFAULT)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_NUMBER::type::value_type>
@@ -223,6 +253,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDebtMaximum is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDebtMaximum() const
@@ -231,7 +265,8 @@ public:
     }
 
     /**
-     * Get sfCoverAvailable (soeDEFAULT)
+     * @brief Get sfCoverAvailable (soeDEFAULT)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_NUMBER::type::value_type>
@@ -242,6 +277,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfCoverAvailable is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasCoverAvailable() const
@@ -250,7 +289,8 @@ public:
     }
 
     /**
-     * Get sfCoverRateMinimum (soeDEFAULT)
+     * @brief Get sfCoverRateMinimum (soeDEFAULT)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -261,6 +301,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfCoverRateMinimum is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasCoverRateMinimum() const
@@ -269,7 +313,8 @@ public:
     }
 
     /**
-     * Get sfCoverRateLiquidation (soeDEFAULT)
+     * @brief Get sfCoverRateLiquidation (soeDEFAULT)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -280,6 +325,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfCoverRateLiquidation is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasCoverRateLiquidation() const
@@ -289,7 +338,8 @@ public:
 };
 
 /**
- * Builder for LoanBroker ledger entries.
+ * @brief Builder for LoanBroker ledger entries.
+ *
  * Provides a fluent interface for constructing ledger entries with method chaining.
  * Uses Json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
@@ -297,6 +347,18 @@ public:
 class LoanBrokerBuilder : public LedgerEntryBuilderBase<LoanBrokerBuilder>
 {
 public:
+    /**
+     * @brief Construct a new LoanBrokerBuilder with required fields.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
+     * @param sequence The sfSequence field value.
+     * @param ownerNode The sfOwnerNode field value.
+     * @param vaultNode The sfVaultNode field value.
+     * @param vaultID The sfVaultID field value.
+     * @param account The sfAccount field value.
+     * @param owner The sfOwner field value.
+     * @param loanSequence The sfLoanSequence field value.
+     */
     LoanBrokerBuilder(std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq,std::decay_t<typename SF_UINT32::type::value_type> const& sequence,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT64::type::value_type> const& vaultNode,std::decay_t<typename SF_UINT256::type::value_type> const& vaultID,std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,std::decay_t<typename SF_UINT32::type::value_type> const& loanSequence)
         : LedgerEntryBuilderBase<LoanBrokerBuilder>(ltLOAN_BROKER)
     {
@@ -311,6 +373,11 @@ public:
         setLoanSequence(loanSequence);
     }
 
+    /**
+     * @brief Construct a LoanBrokerBuilder from an existing SLE object.
+     * @param sle The existing ledger entry to copy from.
+     * @throws std::runtime_error if the ledger entry type doesn't match.
+     */
     LoanBrokerBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltLOAN_BROKER)
@@ -320,10 +387,10 @@ public:
         object_ = *sle;
     }
 
-    // Ledger entry-specific field setters
+    /** @brief Ledger entry-specific field setters */
 
     /**
-     * Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerBuilder&
@@ -334,7 +401,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerBuilder&
@@ -345,7 +412,7 @@ public:
     }
 
     /**
-     * Set sfSequence (soeREQUIRED)
+     * @brief Set sfSequence (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerBuilder&
@@ -356,7 +423,7 @@ public:
     }
 
     /**
-     * Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerBuilder&
@@ -367,7 +434,7 @@ public:
     }
 
     /**
-     * Set sfVaultNode (soeREQUIRED)
+     * @brief Set sfVaultNode (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerBuilder&
@@ -378,7 +445,7 @@ public:
     }
 
     /**
-     * Set sfVaultID (soeREQUIRED)
+     * @brief Set sfVaultID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerBuilder&
@@ -389,7 +456,7 @@ public:
     }
 
     /**
-     * Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerBuilder&
@@ -400,7 +467,7 @@ public:
     }
 
     /**
-     * Set sfOwner (soeREQUIRED)
+     * @brief Set sfOwner (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerBuilder&
@@ -411,7 +478,7 @@ public:
     }
 
     /**
-     * Set sfLoanSequence (soeREQUIRED)
+     * @brief Set sfLoanSequence (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerBuilder&
@@ -422,7 +489,7 @@ public:
     }
 
     /**
-     * Set sfData (soeDEFAULT)
+     * @brief Set sfData (soeDEFAULT)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerBuilder&
@@ -433,7 +500,7 @@ public:
     }
 
     /**
-     * Set sfManagementFeeRate (soeDEFAULT)
+     * @brief Set sfManagementFeeRate (soeDEFAULT)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerBuilder&
@@ -444,7 +511,7 @@ public:
     }
 
     /**
-     * Set sfOwnerCount (soeDEFAULT)
+     * @brief Set sfOwnerCount (soeDEFAULT)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerBuilder&
@@ -455,7 +522,7 @@ public:
     }
 
     /**
-     * Set sfDebtTotal (soeDEFAULT)
+     * @brief Set sfDebtTotal (soeDEFAULT)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerBuilder&
@@ -466,7 +533,7 @@ public:
     }
 
     /**
-     * Set sfDebtMaximum (soeDEFAULT)
+     * @brief Set sfDebtMaximum (soeDEFAULT)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerBuilder&
@@ -477,7 +544,7 @@ public:
     }
 
     /**
-     * Set sfCoverAvailable (soeDEFAULT)
+     * @brief Set sfCoverAvailable (soeDEFAULT)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerBuilder&
@@ -488,7 +555,7 @@ public:
     }
 
     /**
-     * Set sfCoverRateMinimum (soeDEFAULT)
+     * @brief Set sfCoverRateMinimum (soeDEFAULT)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerBuilder&
@@ -499,7 +566,7 @@ public:
     }
 
     /**
-     * Set sfCoverRateLiquidation (soeDEFAULT)
+     * @brief Set sfCoverRateLiquidation (soeDEFAULT)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerBuilder&
@@ -510,7 +577,8 @@ public:
     }
 
     /**
-     * Build and return the completed LoanBroker wrapper.
+     * @brief Build and return the completed LoanBroker wrapper.
+     * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     LoanBroker

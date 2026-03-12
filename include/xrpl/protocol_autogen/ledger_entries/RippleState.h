@@ -13,11 +13,11 @@
 
 namespace xrpl::ledger_entries {
 
-// Forward declaration
 class RippleStateBuilder;
 
 /**
- * Ledger Entry: RippleState
+ * @brief Ledger Entry: RippleState
+ *
  * Type: ltRIPPLE_STATE (0x0072)
  * RPC Name: state
  *
@@ -30,7 +30,7 @@ public:
     static constexpr LedgerEntryType entryType = ltRIPPLE_STATE;
 
     /**
-     * Construct a RippleState ledger entry wrapper from an existing SLE object.
+     * @brief Construct a RippleState ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
     explicit RippleState(std::shared_ptr<SLE const> sle)
@@ -46,7 +46,8 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * Get sfBalance (soeREQUIRED)
+     * @brief Get sfBalance (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_AMOUNT::type::value_type
@@ -56,7 +57,8 @@ public:
     }
 
     /**
-     * Get sfLowLimit (soeREQUIRED)
+     * @brief Get sfLowLimit (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_AMOUNT::type::value_type
@@ -66,7 +68,8 @@ public:
     }
 
     /**
-     * Get sfHighLimit (soeREQUIRED)
+     * @brief Get sfHighLimit (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_AMOUNT::type::value_type
@@ -76,7 +79,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -86,7 +90,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -96,7 +101,8 @@ public:
     }
 
     /**
-     * Get sfLowNode (soeOPTIONAL)
+     * @brief Get sfLowNode (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT64::type::value_type>
@@ -107,6 +113,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfLowNode is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasLowNode() const
@@ -115,7 +125,8 @@ public:
     }
 
     /**
-     * Get sfLowQualityIn (soeOPTIONAL)
+     * @brief Get sfLowQualityIn (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -126,6 +137,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfLowQualityIn is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasLowQualityIn() const
@@ -134,7 +149,8 @@ public:
     }
 
     /**
-     * Get sfLowQualityOut (soeOPTIONAL)
+     * @brief Get sfLowQualityOut (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -145,6 +161,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfLowQualityOut is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasLowQualityOut() const
@@ -153,7 +173,8 @@ public:
     }
 
     /**
-     * Get sfHighNode (soeOPTIONAL)
+     * @brief Get sfHighNode (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT64::type::value_type>
@@ -164,6 +185,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfHighNode is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasHighNode() const
@@ -172,7 +197,8 @@ public:
     }
 
     /**
-     * Get sfHighQualityIn (soeOPTIONAL)
+     * @brief Get sfHighQualityIn (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -183,6 +209,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfHighQualityIn is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasHighQualityIn() const
@@ -191,7 +221,8 @@ public:
     }
 
     /**
-     * Get sfHighQualityOut (soeOPTIONAL)
+     * @brief Get sfHighQualityOut (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -202,6 +233,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfHighQualityOut is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasHighQualityOut() const
@@ -211,7 +246,8 @@ public:
 };
 
 /**
- * Builder for RippleState ledger entries.
+ * @brief Builder for RippleState ledger entries.
+ *
  * Provides a fluent interface for constructing ledger entries with method chaining.
  * Uses Json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
@@ -219,6 +255,14 @@ public:
 class RippleStateBuilder : public LedgerEntryBuilderBase<RippleStateBuilder>
 {
 public:
+    /**
+     * @brief Construct a new RippleStateBuilder with required fields.
+     * @param balance The sfBalance field value.
+     * @param lowLimit The sfLowLimit field value.
+     * @param highLimit The sfHighLimit field value.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
+     */
     RippleStateBuilder(std::decay_t<typename SF_AMOUNT::type::value_type> const& balance,std::decay_t<typename SF_AMOUNT::type::value_type> const& lowLimit,std::decay_t<typename SF_AMOUNT::type::value_type> const& highLimit,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<RippleStateBuilder>(ltRIPPLE_STATE)
     {
@@ -229,6 +273,11 @@ public:
         setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
+    /**
+     * @brief Construct a RippleStateBuilder from an existing SLE object.
+     * @param sle The existing ledger entry to copy from.
+     * @throws std::runtime_error if the ledger entry type doesn't match.
+     */
     RippleStateBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltRIPPLE_STATE)
@@ -238,10 +287,10 @@ public:
         object_ = *sle;
     }
 
-    // Ledger entry-specific field setters
+    /** @brief Ledger entry-specific field setters */
 
     /**
-     * Set sfBalance (soeREQUIRED)
+     * @brief Set sfBalance (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -252,7 +301,7 @@ public:
     }
 
     /**
-     * Set sfLowLimit (soeREQUIRED)
+     * @brief Set sfLowLimit (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -263,7 +312,7 @@ public:
     }
 
     /**
-     * Set sfHighLimit (soeREQUIRED)
+     * @brief Set sfHighLimit (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -274,7 +323,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -285,7 +334,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -296,7 +345,7 @@ public:
     }
 
     /**
-     * Set sfLowNode (soeOPTIONAL)
+     * @brief Set sfLowNode (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -307,7 +356,7 @@ public:
     }
 
     /**
-     * Set sfLowQualityIn (soeOPTIONAL)
+     * @brief Set sfLowQualityIn (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -318,7 +367,7 @@ public:
     }
 
     /**
-     * Set sfLowQualityOut (soeOPTIONAL)
+     * @brief Set sfLowQualityOut (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -329,7 +378,7 @@ public:
     }
 
     /**
-     * Set sfHighNode (soeOPTIONAL)
+     * @brief Set sfHighNode (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -340,7 +389,7 @@ public:
     }
 
     /**
-     * Set sfHighQualityIn (soeOPTIONAL)
+     * @brief Set sfHighQualityIn (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -351,7 +400,7 @@ public:
     }
 
     /**
-     * Set sfHighQualityOut (soeOPTIONAL)
+     * @brief Set sfHighQualityOut (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -362,7 +411,8 @@ public:
     }
 
     /**
-     * Build and return the completed RippleState wrapper.
+     * @brief Build and return the completed RippleState wrapper.
+     * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     RippleState

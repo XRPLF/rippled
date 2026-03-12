@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class PaymentChannelClaimBuilder;
 
 /**
- * Transaction: PaymentChannelClaim
+ * @brief Transaction: PaymentChannelClaim
+ *
  * Type: ttPAYCHAN_CLAIM (15)
  * Delegable: Delegation::delegable
  * Amendment: uint256{}
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttPAYCHAN_CLAIM;
 
     /**
-     * Construct a PaymentChannelClaim transaction wrapper from an existing STTx object.
+     * @brief Construct a PaymentChannelClaim transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit PaymentChannelClaim(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfChannel (soeREQUIRED)
+     * @brief Get sfChannel (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfAmount (soeOPTIONAL)
+     * @brief Get sfAmount (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_AMOUNT::type::value_type>
@@ -71,6 +73,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfAmount is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasAmount() const
@@ -79,7 +85,8 @@ public:
     }
 
     /**
-     * Get sfBalance (soeOPTIONAL)
+     * @brief Get sfBalance (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_AMOUNT::type::value_type>
@@ -92,6 +99,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfBalance is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasBalance() const
@@ -100,7 +111,8 @@ public:
     }
 
     /**
-     * Get sfSignature (soeOPTIONAL)
+     * @brief Get sfSignature (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
@@ -113,6 +125,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfSignature is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasSignature() const
@@ -121,7 +137,8 @@ public:
     }
 
     /**
-     * Get sfPublicKey (soeOPTIONAL)
+     * @brief Get sfPublicKey (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
@@ -134,6 +151,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfPublicKey is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasPublicKey() const
@@ -142,7 +163,8 @@ public:
     }
 
     /**
-     * Get sfCredentialIDs (soeOPTIONAL)
+     * @brief Get sfCredentialIDs (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VECTOR256::type::value_type>
@@ -155,6 +177,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfCredentialIDs is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasCredentialIDs() const
@@ -164,7 +190,8 @@ public:
 };
 
 /**
- * Builder for PaymentChannelClaim transactions.
+ * @brief Builder for PaymentChannelClaim transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -172,6 +199,13 @@ public:
 class PaymentChannelClaimBuilder : public TransactionBuilderBase<PaymentChannelClaimBuilder>
 {
 public:
+    /**
+     * @brief Construct a new PaymentChannelClaimBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param channel The sfChannel field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     PaymentChannelClaimBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_UINT256::type::value_type> const& channel,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -181,6 +215,11 @@ public:
         setChannel(channel);
     }
 
+    /**
+     * @brief Construct a PaymentChannelClaimBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     PaymentChannelClaimBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttPAYCHAN_CLAIM)
@@ -190,10 +229,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfChannel (soeREQUIRED)
+     * @brief Set sfChannel (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelClaimBuilder&
@@ -204,7 +243,7 @@ public:
     }
 
     /**
-     * Set sfAmount (soeOPTIONAL)
+     * @brief Set sfAmount (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelClaimBuilder&
@@ -215,7 +254,7 @@ public:
     }
 
     /**
-     * Set sfBalance (soeOPTIONAL)
+     * @brief Set sfBalance (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelClaimBuilder&
@@ -226,7 +265,7 @@ public:
     }
 
     /**
-     * Set sfSignature (soeOPTIONAL)
+     * @brief Set sfSignature (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelClaimBuilder&
@@ -237,7 +276,7 @@ public:
     }
 
     /**
-     * Set sfPublicKey (soeOPTIONAL)
+     * @brief Set sfPublicKey (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelClaimBuilder&
@@ -248,7 +287,7 @@ public:
     }
 
     /**
-     * Set sfCredentialIDs (soeOPTIONAL)
+     * @brief Set sfCredentialIDs (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelClaimBuilder&
@@ -259,9 +298,9 @@ public:
     }
 
     /**
-     * Build and return the PaymentChannelClaim wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the PaymentChannelClaim wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     PaymentChannelClaim

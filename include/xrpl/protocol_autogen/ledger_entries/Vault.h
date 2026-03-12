@@ -13,11 +13,11 @@
 
 namespace xrpl::ledger_entries {
 
-// Forward declaration
 class VaultBuilder;
 
 /**
- * Ledger Entry: Vault
+ * @brief Ledger Entry: Vault
+ *
  * Type: ltVAULT (0x0084)
  * RPC Name: vault
  *
@@ -30,7 +30,7 @@ public:
     static constexpr LedgerEntryType entryType = ltVAULT;
 
     /**
-     * Construct a Vault ledger entry wrapper from an existing SLE object.
+     * @brief Construct a Vault ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
     explicit Vault(std::shared_ptr<SLE const> sle)
@@ -46,7 +46,8 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -56,7 +57,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -66,7 +68,8 @@ public:
     }
 
     /**
-     * Get sfSequence (soeREQUIRED)
+     * @brief Get sfSequence (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -76,7 +79,8 @@ public:
     }
 
     /**
-     * Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -86,7 +90,8 @@ public:
     }
 
     /**
-     * Get sfOwner (soeREQUIRED)
+     * @brief Get sfOwner (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -96,7 +101,8 @@ public:
     }
 
     /**
-     * Get sfAccount (soeREQUIRED)
+     * @brief Get sfAccount (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -106,7 +112,8 @@ public:
     }
 
     /**
-     * Get sfData (soeOPTIONAL)
+     * @brief Get sfData (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
@@ -117,6 +124,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfData is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasData() const
@@ -125,7 +136,8 @@ public:
     }
 
     /**
-     * Get sfAsset (soeREQUIRED)
+     * @brief Get sfAsset (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ISSUE::type::value_type
@@ -135,7 +147,8 @@ public:
     }
 
     /**
-     * Get sfAssetsTotal (soeDEFAULT)
+     * @brief Get sfAssetsTotal (soeDEFAULT)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_NUMBER::type::value_type>
@@ -146,6 +159,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfAssetsTotal is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasAssetsTotal() const
@@ -154,7 +171,8 @@ public:
     }
 
     /**
-     * Get sfAssetsAvailable (soeDEFAULT)
+     * @brief Get sfAssetsAvailable (soeDEFAULT)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_NUMBER::type::value_type>
@@ -165,6 +183,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfAssetsAvailable is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasAssetsAvailable() const
@@ -173,7 +195,8 @@ public:
     }
 
     /**
-     * Get sfAssetsMaximum (soeDEFAULT)
+     * @brief Get sfAssetsMaximum (soeDEFAULT)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_NUMBER::type::value_type>
@@ -184,6 +207,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfAssetsMaximum is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasAssetsMaximum() const
@@ -192,7 +219,8 @@ public:
     }
 
     /**
-     * Get sfLossUnrealized (soeDEFAULT)
+     * @brief Get sfLossUnrealized (soeDEFAULT)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_NUMBER::type::value_type>
@@ -203,6 +231,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfLossUnrealized is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasLossUnrealized() const
@@ -211,7 +243,8 @@ public:
     }
 
     /**
-     * Get sfShareMPTID (soeREQUIRED)
+     * @brief Get sfShareMPTID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT192::type::value_type
@@ -221,7 +254,8 @@ public:
     }
 
     /**
-     * Get sfWithdrawalPolicy (soeREQUIRED)
+     * @brief Get sfWithdrawalPolicy (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT8::type::value_type
@@ -231,7 +265,8 @@ public:
     }
 
     /**
-     * Get sfScale (soeDEFAULT)
+     * @brief Get sfScale (soeDEFAULT)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT8::type::value_type>
@@ -242,6 +277,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfScale is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasScale() const
@@ -251,7 +290,8 @@ public:
 };
 
 /**
- * Builder for Vault ledger entries.
+ * @brief Builder for Vault ledger entries.
+ *
  * Provides a fluent interface for constructing ledger entries with method chaining.
  * Uses Json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
@@ -259,6 +299,18 @@ public:
 class VaultBuilder : public LedgerEntryBuilderBase<VaultBuilder>
 {
 public:
+    /**
+     * @brief Construct a new VaultBuilder with required fields.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
+     * @param sequence The sfSequence field value.
+     * @param ownerNode The sfOwnerNode field value.
+     * @param owner The sfOwner field value.
+     * @param account The sfAccount field value.
+     * @param asset The sfAsset field value.
+     * @param shareMPTID The sfShareMPTID field value.
+     * @param withdrawalPolicy The sfWithdrawalPolicy field value.
+     */
     VaultBuilder(std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq,std::decay_t<typename SF_UINT32::type::value_type> const& sequence,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_ISSUE::type::value_type> const& asset,std::decay_t<typename SF_UINT192::type::value_type> const& shareMPTID,std::decay_t<typename SF_UINT8::type::value_type> const& withdrawalPolicy)
         : LedgerEntryBuilderBase<VaultBuilder>(ltVAULT)
     {
@@ -273,6 +325,11 @@ public:
         setWithdrawalPolicy(withdrawalPolicy);
     }
 
+    /**
+     * @brief Construct a VaultBuilder from an existing SLE object.
+     * @param sle The existing ledger entry to copy from.
+     * @throws std::runtime_error if the ledger entry type doesn't match.
+     */
     VaultBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltVAULT)
@@ -282,10 +339,10 @@ public:
         object_ = *sle;
     }
 
-    // Ledger entry-specific field setters
+    /** @brief Ledger entry-specific field setters */
 
     /**
-     * Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
@@ -296,7 +353,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
@@ -307,7 +364,7 @@ public:
     }
 
     /**
-     * Set sfSequence (soeREQUIRED)
+     * @brief Set sfSequence (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
@@ -318,7 +375,7 @@ public:
     }
 
     /**
-     * Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
@@ -329,7 +386,7 @@ public:
     }
 
     /**
-     * Set sfOwner (soeREQUIRED)
+     * @brief Set sfOwner (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
@@ -340,7 +397,7 @@ public:
     }
 
     /**
-     * Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
@@ -351,7 +408,7 @@ public:
     }
 
     /**
-     * Set sfData (soeOPTIONAL)
+     * @brief Set sfData (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
@@ -362,7 +419,7 @@ public:
     }
 
     /**
-     * Set sfAsset (soeREQUIRED)
+     * @brief Set sfAsset (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
@@ -373,7 +430,7 @@ public:
     }
 
     /**
-     * Set sfAssetsTotal (soeDEFAULT)
+     * @brief Set sfAssetsTotal (soeDEFAULT)
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
@@ -384,7 +441,7 @@ public:
     }
 
     /**
-     * Set sfAssetsAvailable (soeDEFAULT)
+     * @brief Set sfAssetsAvailable (soeDEFAULT)
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
@@ -395,7 +452,7 @@ public:
     }
 
     /**
-     * Set sfAssetsMaximum (soeDEFAULT)
+     * @brief Set sfAssetsMaximum (soeDEFAULT)
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
@@ -406,7 +463,7 @@ public:
     }
 
     /**
-     * Set sfLossUnrealized (soeDEFAULT)
+     * @brief Set sfLossUnrealized (soeDEFAULT)
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
@@ -417,7 +474,7 @@ public:
     }
 
     /**
-     * Set sfShareMPTID (soeREQUIRED)
+     * @brief Set sfShareMPTID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
@@ -428,7 +485,7 @@ public:
     }
 
     /**
-     * Set sfWithdrawalPolicy (soeREQUIRED)
+     * @brief Set sfWithdrawalPolicy (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
@@ -439,7 +496,7 @@ public:
     }
 
     /**
-     * Set sfScale (soeDEFAULT)
+     * @brief Set sfScale (soeDEFAULT)
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
@@ -450,7 +507,8 @@ public:
     }
 
     /**
-     * Build and return the completed Vault wrapper.
+     * @brief Build and return the completed Vault wrapper.
+     * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     Vault

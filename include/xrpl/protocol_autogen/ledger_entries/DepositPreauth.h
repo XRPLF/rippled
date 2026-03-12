@@ -13,11 +13,11 @@
 
 namespace xrpl::ledger_entries {
 
-// Forward declaration
 class DepositPreauthBuilder;
 
 /**
- * Ledger Entry: DepositPreauth
+ * @brief Ledger Entry: DepositPreauth
+ *
  * Type: ltDEPOSIT_PREAUTH (0x0070)
  * RPC Name: deposit_preauth
  *
@@ -30,7 +30,7 @@ public:
     static constexpr LedgerEntryType entryType = ltDEPOSIT_PREAUTH;
 
     /**
-     * Construct a DepositPreauth ledger entry wrapper from an existing SLE object.
+     * @brief Construct a DepositPreauth ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
     explicit DepositPreauth(std::shared_ptr<SLE const> sle)
@@ -46,7 +46,8 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * Get sfAccount (soeREQUIRED)
+     * @brief Get sfAccount (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -56,7 +57,8 @@ public:
     }
 
     /**
-     * Get sfAuthorize (soeOPTIONAL)
+     * @brief Get sfAuthorize (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
@@ -67,6 +69,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfAuthorize is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasAuthorize() const
@@ -75,7 +81,8 @@ public:
     }
 
     /**
-     * Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -85,7 +92,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -95,7 +103,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -105,8 +114,9 @@ public:
     }
 
     /**
-     * Get sfAuthorizeCredentials (soeOPTIONAL)
-     * Note: This is an untyped field (unknown).
+     * @brief Get sfAuthorizeCredentials (soeOPTIONAL)
+     * @note This is an untyped field (unknown).
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     std::optional<std::reference_wrapper<STArray const>>
@@ -117,6 +127,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfAuthorizeCredentials is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasAuthorizeCredentials() const
@@ -126,7 +140,8 @@ public:
 };
 
 /**
- * Builder for DepositPreauth ledger entries.
+ * @brief Builder for DepositPreauth ledger entries.
+ *
  * Provides a fluent interface for constructing ledger entries with method chaining.
  * Uses Json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
@@ -134,6 +149,13 @@ public:
 class DepositPreauthBuilder : public LedgerEntryBuilderBase<DepositPreauthBuilder>
 {
 public:
+    /**
+     * @brief Construct a new DepositPreauthBuilder with required fields.
+     * @param account The sfAccount field value.
+     * @param ownerNode The sfOwnerNode field value.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
+     */
     DepositPreauthBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<DepositPreauthBuilder>(ltDEPOSIT_PREAUTH)
     {
@@ -143,6 +165,11 @@ public:
         setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
+    /**
+     * @brief Construct a DepositPreauthBuilder from an existing SLE object.
+     * @param sle The existing ledger entry to copy from.
+     * @throws std::runtime_error if the ledger entry type doesn't match.
+     */
     DepositPreauthBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltDEPOSIT_PREAUTH)
@@ -152,10 +179,10 @@ public:
         object_ = *sle;
     }
 
-    // Ledger entry-specific field setters
+    /** @brief Ledger entry-specific field setters */
 
     /**
-     * Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     DepositPreauthBuilder&
@@ -166,7 +193,7 @@ public:
     }
 
     /**
-     * Set sfAuthorize (soeOPTIONAL)
+     * @brief Set sfAuthorize (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     DepositPreauthBuilder&
@@ -177,7 +204,7 @@ public:
     }
 
     /**
-     * Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     DepositPreauthBuilder&
@@ -188,7 +215,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     DepositPreauthBuilder&
@@ -199,7 +226,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     DepositPreauthBuilder&
@@ -210,7 +237,7 @@ public:
     }
 
     /**
-     * Set sfAuthorizeCredentials (soeOPTIONAL)
+     * @brief Set sfAuthorizeCredentials (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     DepositPreauthBuilder&
@@ -221,7 +248,8 @@ public:
     }
 
     /**
-     * Build and return the completed DepositPreauth wrapper.
+     * @brief Build and return the completed DepositPreauth wrapper.
+     * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     DepositPreauth

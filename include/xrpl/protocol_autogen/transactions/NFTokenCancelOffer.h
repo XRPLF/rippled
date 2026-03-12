@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class NFTokenCancelOfferBuilder;
 
 /**
- * Transaction: NFTokenCancelOffer
+ * @brief Transaction: NFTokenCancelOffer
+ *
  * Type: ttNFTOKEN_CANCEL_OFFER (28)
  * Delegable: Delegation::delegable
  * Amendment: uint256{}
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttNFTOKEN_CANCEL_OFFER;
 
     /**
-     * Construct a NFTokenCancelOffer transaction wrapper from an existing STTx object.
+     * @brief Construct a NFTokenCancelOffer transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit NFTokenCancelOffer(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfNFTokenOffers (soeREQUIRED)
+     * @brief Get sfNFTokenOffers (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_VECTOR256::type::value_type
@@ -59,7 +60,8 @@ public:
 };
 
 /**
- * Builder for NFTokenCancelOffer transactions.
+ * @brief Builder for NFTokenCancelOffer transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -67,6 +69,13 @@ public:
 class NFTokenCancelOfferBuilder : public TransactionBuilderBase<NFTokenCancelOfferBuilder>
 {
 public:
+    /**
+     * @brief Construct a new NFTokenCancelOfferBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param nFTokenOffers The sfNFTokenOffers field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     NFTokenCancelOfferBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_VECTOR256::type::value_type> const& nFTokenOffers,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -76,6 +85,11 @@ public:
         setNFTokenOffers(nFTokenOffers);
     }
 
+    /**
+     * @brief Construct a NFTokenCancelOfferBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     NFTokenCancelOfferBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttNFTOKEN_CANCEL_OFFER)
@@ -85,10 +99,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfNFTokenOffers (soeREQUIRED)
+     * @brief Set sfNFTokenOffers (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     NFTokenCancelOfferBuilder&
@@ -99,9 +113,9 @@ public:
     }
 
     /**
-     * Build and return the NFTokenCancelOffer wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the NFTokenCancelOffer wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     NFTokenCancelOffer

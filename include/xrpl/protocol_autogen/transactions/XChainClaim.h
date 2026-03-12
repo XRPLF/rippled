@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class XChainClaimBuilder;
 
 /**
- * Transaction: XChainClaim
+ * @brief Transaction: XChainClaim
+ *
  * Type: ttXCHAIN_CLAIM (43)
  * Delegable: Delegation::delegable
  * Amendment: featureXChainBridge
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttXCHAIN_CLAIM;
 
     /**
-     * Construct a XChainClaim transaction wrapper from an existing STTx object.
+     * @brief Construct a XChainClaim transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit XChainClaim(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfXChainBridge (soeREQUIRED)
+     * @brief Get sfXChainBridge (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_XCHAIN_BRIDGE::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfXChainClaimID (soeREQUIRED)
+     * @brief Get sfXChainClaimID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -68,7 +70,8 @@ public:
     }
 
     /**
-     * Get sfDestination (soeREQUIRED)
+     * @brief Get sfDestination (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -78,7 +81,8 @@ public:
     }
 
     /**
-     * Get sfDestinationTag (soeOPTIONAL)
+     * @brief Get sfDestinationTag (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -91,6 +95,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDestinationTag is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDestinationTag() const
@@ -99,7 +107,8 @@ public:
     }
 
     /**
-     * Get sfAmount (soeREQUIRED)
+     * @brief Get sfAmount (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_AMOUNT::type::value_type
@@ -110,7 +119,8 @@ public:
 };
 
 /**
- * Builder for XChainClaim transactions.
+ * @brief Builder for XChainClaim transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -118,6 +128,16 @@ public:
 class XChainClaimBuilder : public TransactionBuilderBase<XChainClaimBuilder>
 {
 public:
+    /**
+     * @brief Construct a new XChainClaimBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param xChainBridge The sfXChainBridge field value.
+     * @param xChainClaimID The sfXChainClaimID field value.
+     * @param destination The sfDestination field value.
+     * @param amount The sfAmount field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     XChainClaimBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,                     std::decay_t<typename SF_UINT64::type::value_type> const& xChainClaimID,                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -130,6 +150,11 @@ public:
         setAmount(amount);
     }
 
+    /**
+     * @brief Construct a XChainClaimBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     XChainClaimBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttXCHAIN_CLAIM)
@@ -139,10 +164,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfXChainBridge (soeREQUIRED)
+     * @brief Set sfXChainBridge (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainClaimBuilder&
@@ -153,7 +178,7 @@ public:
     }
 
     /**
-     * Set sfXChainClaimID (soeREQUIRED)
+     * @brief Set sfXChainClaimID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainClaimBuilder&
@@ -164,7 +189,7 @@ public:
     }
 
     /**
-     * Set sfDestination (soeREQUIRED)
+     * @brief Set sfDestination (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainClaimBuilder&
@@ -175,7 +200,7 @@ public:
     }
 
     /**
-     * Set sfDestinationTag (soeOPTIONAL)
+     * @brief Set sfDestinationTag (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     XChainClaimBuilder&
@@ -186,7 +211,7 @@ public:
     }
 
     /**
-     * Set sfAmount (soeREQUIRED)
+     * @brief Set sfAmount (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainClaimBuilder&
@@ -197,9 +222,9 @@ public:
     }
 
     /**
-     * Build and return the XChainClaim wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the XChainClaim wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     XChainClaim

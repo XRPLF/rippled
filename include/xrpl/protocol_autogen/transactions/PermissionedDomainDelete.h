@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class PermissionedDomainDeleteBuilder;
 
 /**
- * Transaction: PermissionedDomainDelete
+ * @brief Transaction: PermissionedDomainDelete
+ *
  * Type: ttPERMISSIONED_DOMAIN_DELETE (63)
  * Delegable: Delegation::delegable
  * Amendment: featurePermissionedDomains
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttPERMISSIONED_DOMAIN_DELETE;
 
     /**
-     * Construct a PermissionedDomainDelete transaction wrapper from an existing STTx object.
+     * @brief Construct a PermissionedDomainDelete transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit PermissionedDomainDelete(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfDomainID (soeREQUIRED)
+     * @brief Get sfDomainID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -59,7 +60,8 @@ public:
 };
 
 /**
- * Builder for PermissionedDomainDelete transactions.
+ * @brief Builder for PermissionedDomainDelete transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -67,6 +69,13 @@ public:
 class PermissionedDomainDeleteBuilder : public TransactionBuilderBase<PermissionedDomainDeleteBuilder>
 {
 public:
+    /**
+     * @brief Construct a new PermissionedDomainDeleteBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param domainID The sfDomainID field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     PermissionedDomainDeleteBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_UINT256::type::value_type> const& domainID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -76,6 +85,11 @@ public:
         setDomainID(domainID);
     }
 
+    /**
+     * @brief Construct a PermissionedDomainDeleteBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     PermissionedDomainDeleteBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttPERMISSIONED_DOMAIN_DELETE)
@@ -85,10 +99,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfDomainID (soeREQUIRED)
+     * @brief Set sfDomainID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainDeleteBuilder&
@@ -99,9 +113,9 @@ public:
     }
 
     /**
-     * Build and return the PermissionedDomainDelete wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the PermissionedDomainDelete wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     PermissionedDomainDelete

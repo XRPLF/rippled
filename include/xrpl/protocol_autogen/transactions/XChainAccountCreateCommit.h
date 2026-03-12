@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class XChainAccountCreateCommitBuilder;
 
 /**
- * Transaction: XChainAccountCreateCommit
+ * @brief Transaction: XChainAccountCreateCommit
+ *
  * Type: ttXCHAIN_ACCOUNT_CREATE_COMMIT (44)
  * Delegable: Delegation::delegable
  * Amendment: featureXChainBridge
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttXCHAIN_ACCOUNT_CREATE_COMMIT;
 
     /**
-     * Construct a XChainAccountCreateCommit transaction wrapper from an existing STTx object.
+     * @brief Construct a XChainAccountCreateCommit transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit XChainAccountCreateCommit(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfXChainBridge (soeREQUIRED)
+     * @brief Get sfXChainBridge (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_XCHAIN_BRIDGE::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfDestination (soeREQUIRED)
+     * @brief Get sfDestination (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -68,7 +70,8 @@ public:
     }
 
     /**
-     * Get sfAmount (soeREQUIRED)
+     * @brief Get sfAmount (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_AMOUNT::type::value_type
@@ -78,7 +81,8 @@ public:
     }
 
     /**
-     * Get sfSignatureReward (soeREQUIRED)
+     * @brief Get sfSignatureReward (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_AMOUNT::type::value_type
@@ -89,7 +93,8 @@ public:
 };
 
 /**
- * Builder for XChainAccountCreateCommit transactions.
+ * @brief Builder for XChainAccountCreateCommit transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -97,6 +102,16 @@ public:
 class XChainAccountCreateCommitBuilder : public TransactionBuilderBase<XChainAccountCreateCommitBuilder>
 {
 public:
+    /**
+     * @brief Construct a new XChainAccountCreateCommitBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param xChainBridge The sfXChainBridge field value.
+     * @param destination The sfDestination field value.
+     * @param amount The sfAmount field value.
+     * @param signatureReward The sfSignatureReward field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     XChainAccountCreateCommitBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& signatureReward,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -109,6 +124,11 @@ public:
         setSignatureReward(signatureReward);
     }
 
+    /**
+     * @brief Construct a XChainAccountCreateCommitBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     XChainAccountCreateCommitBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttXCHAIN_ACCOUNT_CREATE_COMMIT)
@@ -118,10 +138,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfXChainBridge (soeREQUIRED)
+     * @brief Set sfXChainBridge (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainAccountCreateCommitBuilder&
@@ -132,7 +152,7 @@ public:
     }
 
     /**
-     * Set sfDestination (soeREQUIRED)
+     * @brief Set sfDestination (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainAccountCreateCommitBuilder&
@@ -143,7 +163,7 @@ public:
     }
 
     /**
-     * Set sfAmount (soeREQUIRED)
+     * @brief Set sfAmount (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainAccountCreateCommitBuilder&
@@ -154,7 +174,7 @@ public:
     }
 
     /**
-     * Set sfSignatureReward (soeREQUIRED)
+     * @brief Set sfSignatureReward (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     XChainAccountCreateCommitBuilder&
@@ -165,9 +185,9 @@ public:
     }
 
     /**
-     * Build and return the XChainAccountCreateCommit wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the XChainAccountCreateCommit wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     XChainAccountCreateCommit

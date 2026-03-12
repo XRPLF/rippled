@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class BatchBuilder;
 
 /**
- * Transaction: Batch
+ * @brief Transaction: Batch
+ *
  * Type: ttBATCH (71)
  * Delegable: Delegation::notDelegable
  * Amendment: featureBatch
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttBATCH;
 
     /**
-     * Construct a Batch transaction wrapper from an existing STTx object.
+     * @brief Construct a Batch transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit Batch(std::shared_ptr<STTx const> tx)
@@ -47,8 +47,9 @@ public:
 
     // Transaction-specific field getters
     /**
-     * Get sfRawTransactions (soeREQUIRED)
-     * Note: This is an untyped field
+     * @brief Get sfRawTransactions (soeREQUIRED)
+     * @note This is an untyped field.
+     * @return The field value.
      */
     [[nodiscard]]
     STArray const&
@@ -57,8 +58,9 @@ public:
         return this->tx_->getFieldArray(sfRawTransactions);
     }
     /**
-     * Get sfBatchSigners (soeOPTIONAL)
-     * Note: This is an untyped field
+     * @brief Get sfBatchSigners (soeOPTIONAL)
+     * @note This is an untyped field.
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     std::optional<std::reference_wrapper<STArray const>>
@@ -69,6 +71,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfBatchSigners is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasBatchSigners() const
@@ -78,7 +84,8 @@ public:
 };
 
 /**
- * Builder for Batch transactions.
+ * @brief Builder for Batch transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -86,6 +93,13 @@ public:
 class BatchBuilder : public TransactionBuilderBase<BatchBuilder>
 {
 public:
+    /**
+     * @brief Construct a new BatchBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param rawTransactions The sfRawTransactions field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     BatchBuilder(SF_ACCOUNT::type::value_type account,
                      STArray const& rawTransactions,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -95,6 +109,11 @@ public:
         setRawTransactions(rawTransactions);
     }
 
+    /**
+     * @brief Construct a BatchBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     BatchBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttBATCH)
@@ -104,10 +123,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfRawTransactions (soeREQUIRED)
+     * @brief Set sfRawTransactions (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     BatchBuilder&
@@ -118,7 +137,7 @@ public:
     }
 
     /**
-     * Set sfBatchSigners (soeOPTIONAL)
+     * @brief Set sfBatchSigners (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     BatchBuilder&
@@ -129,9 +148,9 @@ public:
     }
 
     /**
-     * Build and return the Batch wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the Batch wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     Batch

@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class VaultDeleteBuilder;
 
 /**
- * Transaction: VaultDelete
+ * @brief Transaction: VaultDelete
+ *
  * Type: ttVAULT_DELETE (67)
  * Delegable: Delegation::delegable
  * Amendment: featureSingleAssetVault
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttVAULT_DELETE;
 
     /**
-     * Construct a VaultDelete transaction wrapper from an existing STTx object.
+     * @brief Construct a VaultDelete transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit VaultDelete(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfVaultID (soeREQUIRED)
+     * @brief Get sfVaultID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -59,7 +60,8 @@ public:
 };
 
 /**
- * Builder for VaultDelete transactions.
+ * @brief Builder for VaultDelete transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -67,6 +69,13 @@ public:
 class VaultDeleteBuilder : public TransactionBuilderBase<VaultDeleteBuilder>
 {
 public:
+    /**
+     * @brief Construct a new VaultDeleteBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param vaultID The sfVaultID field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     VaultDeleteBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_UINT256::type::value_type> const& vaultID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -76,6 +85,11 @@ public:
         setVaultID(vaultID);
     }
 
+    /**
+     * @brief Construct a VaultDeleteBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     VaultDeleteBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttVAULT_DELETE)
@@ -85,10 +99,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfVaultID (soeREQUIRED)
+     * @brief Set sfVaultID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     VaultDeleteBuilder&
@@ -99,9 +113,9 @@ public:
     }
 
     /**
-     * Build and return the VaultDelete wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the VaultDelete wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     VaultDelete

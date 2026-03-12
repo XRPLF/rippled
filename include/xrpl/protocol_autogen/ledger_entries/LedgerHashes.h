@@ -13,11 +13,11 @@
 
 namespace xrpl::ledger_entries {
 
-// Forward declaration
 class LedgerHashesBuilder;
 
 /**
- * Ledger Entry: LedgerHashes
+ * @brief Ledger Entry: LedgerHashes
+ *
  * Type: ltLEDGER_HASHES (0x0068)
  * RPC Name: hashes
  *
@@ -30,7 +30,7 @@ public:
     static constexpr LedgerEntryType entryType = ltLEDGER_HASHES;
 
     /**
-     * Construct a LedgerHashes ledger entry wrapper from an existing SLE object.
+     * @brief Construct a LedgerHashes ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
     explicit LedgerHashes(std::shared_ptr<SLE const> sle)
@@ -46,7 +46,8 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * Get sfFirstLedgerSequence (soeOPTIONAL)
+     * @brief Get sfFirstLedgerSequence (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -57,6 +58,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfFirstLedgerSequence is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasFirstLedgerSequence() const
@@ -65,7 +70,8 @@ public:
     }
 
     /**
-     * Get sfLastLedgerSequence (soeOPTIONAL)
+     * @brief Get sfLastLedgerSequence (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -76,6 +82,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfLastLedgerSequence is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasLastLedgerSequence() const
@@ -84,7 +94,8 @@ public:
     }
 
     /**
-     * Get sfHashes (soeREQUIRED)
+     * @brief Get sfHashes (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_VECTOR256::type::value_type
@@ -95,7 +106,8 @@ public:
 };
 
 /**
- * Builder for LedgerHashes ledger entries.
+ * @brief Builder for LedgerHashes ledger entries.
+ *
  * Provides a fluent interface for constructing ledger entries with method chaining.
  * Uses Json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
@@ -103,12 +115,21 @@ public:
 class LedgerHashesBuilder : public LedgerEntryBuilderBase<LedgerHashesBuilder>
 {
 public:
+    /**
+     * @brief Construct a new LedgerHashesBuilder with required fields.
+     * @param hashes The sfHashes field value.
+     */
     LedgerHashesBuilder(std::decay_t<typename SF_VECTOR256::type::value_type> const& hashes)
         : LedgerEntryBuilderBase<LedgerHashesBuilder>(ltLEDGER_HASHES)
     {
         setHashes(hashes);
     }
 
+    /**
+     * @brief Construct a LedgerHashesBuilder from an existing SLE object.
+     * @param sle The existing ledger entry to copy from.
+     * @throws std::runtime_error if the ledger entry type doesn't match.
+     */
     LedgerHashesBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltLEDGER_HASHES)
@@ -118,10 +139,10 @@ public:
         object_ = *sle;
     }
 
-    // Ledger entry-specific field setters
+    /** @brief Ledger entry-specific field setters */
 
     /**
-     * Set sfFirstLedgerSequence (soeOPTIONAL)
+     * @brief Set sfFirstLedgerSequence (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     LedgerHashesBuilder&
@@ -132,7 +153,7 @@ public:
     }
 
     /**
-     * Set sfLastLedgerSequence (soeOPTIONAL)
+     * @brief Set sfLastLedgerSequence (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     LedgerHashesBuilder&
@@ -143,7 +164,7 @@ public:
     }
 
     /**
-     * Set sfHashes (soeREQUIRED)
+     * @brief Set sfHashes (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     LedgerHashesBuilder&
@@ -154,7 +175,8 @@ public:
     }
 
     /**
-     * Build and return the completed LedgerHashes wrapper.
+     * @brief Build and return the completed LedgerHashes wrapper.
+     * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     LedgerHashes

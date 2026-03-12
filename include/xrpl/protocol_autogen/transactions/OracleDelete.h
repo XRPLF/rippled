@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class OracleDeleteBuilder;
 
 /**
- * Transaction: OracleDelete
+ * @brief Transaction: OracleDelete
+ *
  * Type: ttORACLE_DELETE (52)
  * Delegable: Delegation::delegable
  * Amendment: featurePriceOracle
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttORACLE_DELETE;
 
     /**
-     * Construct a OracleDelete transaction wrapper from an existing STTx object.
+     * @brief Construct a OracleDelete transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit OracleDelete(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfOracleDocumentID (soeREQUIRED)
+     * @brief Get sfOracleDocumentID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -59,7 +60,8 @@ public:
 };
 
 /**
- * Builder for OracleDelete transactions.
+ * @brief Builder for OracleDelete transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -67,6 +69,13 @@ public:
 class OracleDeleteBuilder : public TransactionBuilderBase<OracleDeleteBuilder>
 {
 public:
+    /**
+     * @brief Construct a new OracleDeleteBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param oracleDocumentID The sfOracleDocumentID field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     OracleDeleteBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_UINT32::type::value_type> const& oracleDocumentID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -76,6 +85,11 @@ public:
         setOracleDocumentID(oracleDocumentID);
     }
 
+    /**
+     * @brief Construct a OracleDeleteBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     OracleDeleteBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttORACLE_DELETE)
@@ -85,10 +99,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfOracleDocumentID (soeREQUIRED)
+     * @brief Set sfOracleDocumentID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     OracleDeleteBuilder&
@@ -99,9 +113,9 @@ public:
     }
 
     /**
-     * Build and return the OracleDelete wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the OracleDelete wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     OracleDelete

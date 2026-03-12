@@ -13,11 +13,11 @@
 
 namespace xrpl::ledger_entries {
 
-// Forward declaration
 class PermissionedDomainBuilder;
 
 /**
- * Ledger Entry: PermissionedDomain
+ * @brief Ledger Entry: PermissionedDomain
+ *
  * Type: ltPERMISSIONED_DOMAIN (0x0082)
  * RPC Name: permissioned_domain
  *
@@ -30,7 +30,7 @@ public:
     static constexpr LedgerEntryType entryType = ltPERMISSIONED_DOMAIN;
 
     /**
-     * Construct a PermissionedDomain ledger entry wrapper from an existing SLE object.
+     * @brief Construct a PermissionedDomain ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
     explicit PermissionedDomain(std::shared_ptr<SLE const> sle)
@@ -46,7 +46,8 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * Get sfOwner (soeREQUIRED)
+     * @brief Get sfOwner (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -56,7 +57,8 @@ public:
     }
 
     /**
-     * Get sfSequence (soeREQUIRED)
+     * @brief Get sfSequence (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -66,8 +68,9 @@ public:
     }
 
     /**
-     * Get sfAcceptedCredentials (soeREQUIRED)
-     * Note: This is an untyped field (unknown).
+     * @brief Get sfAcceptedCredentials (soeREQUIRED)
+     * @note This is an untyped field (unknown).
+     * @return The field value.
      */
     [[nodiscard]]
     STArray const&
@@ -77,7 +80,8 @@ public:
     }
 
     /**
-     * Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -87,7 +91,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -97,7 +102,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -108,7 +114,8 @@ public:
 };
 
 /**
- * Builder for PermissionedDomain ledger entries.
+ * @brief Builder for PermissionedDomain ledger entries.
+ *
  * Provides a fluent interface for constructing ledger entries with method chaining.
  * Uses Json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
@@ -116,6 +123,15 @@ public:
 class PermissionedDomainBuilder : public LedgerEntryBuilderBase<PermissionedDomainBuilder>
 {
 public:
+    /**
+     * @brief Construct a new PermissionedDomainBuilder with required fields.
+     * @param owner The sfOwner field value.
+     * @param sequence The sfSequence field value.
+     * @param acceptedCredentials The sfAcceptedCredentials field value.
+     * @param ownerNode The sfOwnerNode field value.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
+     */
     PermissionedDomainBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,std::decay_t<typename SF_UINT32::type::value_type> const& sequence,STArray const& acceptedCredentials,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<PermissionedDomainBuilder>(ltPERMISSIONED_DOMAIN)
     {
@@ -127,6 +143,11 @@ public:
         setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
+    /**
+     * @brief Construct a PermissionedDomainBuilder from an existing SLE object.
+     * @param sle The existing ledger entry to copy from.
+     * @throws std::runtime_error if the ledger entry type doesn't match.
+     */
     PermissionedDomainBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltPERMISSIONED_DOMAIN)
@@ -136,10 +157,10 @@ public:
         object_ = *sle;
     }
 
-    // Ledger entry-specific field setters
+    /** @brief Ledger entry-specific field setters */
 
     /**
-     * Set sfOwner (soeREQUIRED)
+     * @brief Set sfOwner (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainBuilder&
@@ -150,7 +171,7 @@ public:
     }
 
     /**
-     * Set sfSequence (soeREQUIRED)
+     * @brief Set sfSequence (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainBuilder&
@@ -161,7 +182,7 @@ public:
     }
 
     /**
-     * Set sfAcceptedCredentials (soeREQUIRED)
+     * @brief Set sfAcceptedCredentials (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainBuilder&
@@ -172,7 +193,7 @@ public:
     }
 
     /**
-     * Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainBuilder&
@@ -183,7 +204,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainBuilder&
@@ -194,7 +215,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainBuilder&
@@ -205,7 +226,8 @@ public:
     }
 
     /**
-     * Build and return the completed PermissionedDomain wrapper.
+     * @brief Build and return the completed PermissionedDomain wrapper.
+     * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     PermissionedDomain

@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class ${name}Builder;
 
 /**
- * Transaction: ${name}
+ * @brief Transaction: ${name}
+ *
  * Type: ${tag} (${value})
  * Delegable: ${delegable}
  * Amendment: ${amendments}
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ${tag};
 
     /**
-     * Construct a ${name} transaction wrapper from an existing STTx object.
+     * @brief Construct a ${name} transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit ${name}(std::shared_ptr<STTx const> tx)
@@ -50,9 +50,14 @@ public:
 % if field['typed']:
 
     /**
-     * Get ${field['name']} (${field['requirement']})
+     * @brief Get ${field['name']} (${field['requirement']})
 % if field.get('supports_mpt'):
-     * Note: This field supports MPT (Multi-Purpose Token) amounts.
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
+% endif
+% if field['requirement'] == 'soeREQUIRED':
+     * @return The field value.
+% else:
+     * @return The field value, or std::nullopt if not present.
 % endif
      */
 % if field['requirement'] == 'soeREQUIRED':
@@ -74,6 +79,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if ${field['name']} is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     has${field['name'][2:]}() const
@@ -83,11 +92,16 @@ public:
 % endif
 % else:
     /**
-     * Get ${field['name']} (${field['requirement']})
+     * @brief Get ${field['name']} (${field['requirement']})
 % if field.get('supports_mpt'):
-     * Note: This field supports MPT (Multi-Purpose Token) amounts.
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
 % endif
-     * Note: This is an untyped field
+     * @note This is an untyped field.
+% if field['requirement'] == 'soeREQUIRED':
+     * @return The field value.
+% else:
+     * @return The field value, or std::nullopt if not present.
+% endif
      */
 % if field['requirement'] == 'soeREQUIRED':
     [[nodiscard]]
@@ -106,6 +120,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if ${field['name']} is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     has${field['name'][2:]}() const
@@ -121,7 +139,8 @@ public:
     required_fields = [f for f in fields if f['requirement'] == 'soeREQUIRED']
 %>\
 /**
- * Builder for ${name} transactions.
+ * @brief Builder for ${name} transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -129,6 +148,15 @@ public:
 class ${name}Builder : public TransactionBuilderBase<${name}Builder>
 {
 public:
+    /**
+     * @brief Construct a new ${name}Builder with required fields.
+     * @param account The account initiating the transaction.
+% for field in required_fields:
+     * @param ${field['paramName']} The ${field['name']} field value.
+% endfor
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     ${name}Builder(SF_ACCOUNT::type::value_type account,
 % for i, field in enumerate(required_fields):
                      ${field['typeData']['setter_type']} ${field['paramName']},\
@@ -143,6 +171,11 @@ public:
 % endfor
     }
 
+    /**
+     * @brief Construct a ${name}Builder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     ${name}Builder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ${tag})
@@ -152,13 +185,13 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 % for field in fields:
 
     /**
-     * Set ${field['name']} (${field['requirement']})
+     * @brief Set ${field['name']} (${field['requirement']})
 % if field.get('supports_mpt'):
-     * Note: This field supports MPT (Multi-Purpose Token) amounts.
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
 % endif
      * @return Reference to this builder for method chaining.
      */
@@ -177,9 +210,9 @@ public:
 % endfor
 
     /**
-     * Build and return the ${name} wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the ${name} wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     ${name}

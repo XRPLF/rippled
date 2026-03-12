@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class NFTokenAcceptOfferBuilder;
 
 /**
- * Transaction: NFTokenAcceptOffer
+ * @brief Transaction: NFTokenAcceptOffer
+ *
  * Type: ttNFTOKEN_ACCEPT_OFFER (29)
  * Delegable: Delegation::delegable
  * Amendment: uint256{}
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttNFTOKEN_ACCEPT_OFFER;
 
     /**
-     * Construct a NFTokenAcceptOffer transaction wrapper from an existing STTx object.
+     * @brief Construct a NFTokenAcceptOffer transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit NFTokenAcceptOffer(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfNFTokenBuyOffer (soeOPTIONAL)
+     * @brief Get sfNFTokenBuyOffer (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT256::type::value_type>
@@ -61,6 +62,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfNFTokenBuyOffer is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasNFTokenBuyOffer() const
@@ -69,7 +74,8 @@ public:
     }
 
     /**
-     * Get sfNFTokenSellOffer (soeOPTIONAL)
+     * @brief Get sfNFTokenSellOffer (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT256::type::value_type>
@@ -82,6 +88,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfNFTokenSellOffer is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasNFTokenSellOffer() const
@@ -90,7 +100,8 @@ public:
     }
 
     /**
-     * Get sfNFTokenBrokerFee (soeOPTIONAL)
+     * @brief Get sfNFTokenBrokerFee (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_AMOUNT::type::value_type>
@@ -103,6 +114,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfNFTokenBrokerFee is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasNFTokenBrokerFee() const
@@ -112,7 +127,8 @@ public:
 };
 
 /**
- * Builder for NFTokenAcceptOffer transactions.
+ * @brief Builder for NFTokenAcceptOffer transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -120,6 +136,12 @@ public:
 class NFTokenAcceptOfferBuilder : public TransactionBuilderBase<NFTokenAcceptOfferBuilder>
 {
 public:
+    /**
+     * @brief Construct a new NFTokenAcceptOfferBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     NFTokenAcceptOfferBuilder(SF_ACCOUNT::type::value_type account,
                     std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -128,6 +150,11 @@ public:
     {
     }
 
+    /**
+     * @brief Construct a NFTokenAcceptOfferBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     NFTokenAcceptOfferBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttNFTOKEN_ACCEPT_OFFER)
@@ -137,10 +164,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfNFTokenBuyOffer (soeOPTIONAL)
+     * @brief Set sfNFTokenBuyOffer (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     NFTokenAcceptOfferBuilder&
@@ -151,7 +178,7 @@ public:
     }
 
     /**
-     * Set sfNFTokenSellOffer (soeOPTIONAL)
+     * @brief Set sfNFTokenSellOffer (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     NFTokenAcceptOfferBuilder&
@@ -162,7 +189,7 @@ public:
     }
 
     /**
-     * Set sfNFTokenBrokerFee (soeOPTIONAL)
+     * @brief Set sfNFTokenBrokerFee (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     NFTokenAcceptOfferBuilder&
@@ -173,9 +200,9 @@ public:
     }
 
     /**
-     * Build and return the NFTokenAcceptOffer wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the NFTokenAcceptOffer wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     NFTokenAcceptOffer

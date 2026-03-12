@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class LedgerStateFixBuilder;
 
 /**
- * Transaction: LedgerStateFix
+ * @brief Transaction: LedgerStateFix
+ *
  * Type: ttLEDGER_STATE_FIX (53)
  * Delegable: Delegation::delegable
  * Amendment: fixNFTokenPageLinks
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttLEDGER_STATE_FIX;
 
     /**
-     * Construct a LedgerStateFix transaction wrapper from an existing STTx object.
+     * @brief Construct a LedgerStateFix transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit LedgerStateFix(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfLedgerFixType (soeREQUIRED)
+     * @brief Get sfLedgerFixType (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT16::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfOwner (soeOPTIONAL)
+     * @brief Get sfOwner (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
@@ -71,6 +73,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfOwner is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasOwner() const
@@ -80,7 +86,8 @@ public:
 };
 
 /**
- * Builder for LedgerStateFix transactions.
+ * @brief Builder for LedgerStateFix transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -88,6 +95,13 @@ public:
 class LedgerStateFixBuilder : public TransactionBuilderBase<LedgerStateFixBuilder>
 {
 public:
+    /**
+     * @brief Construct a new LedgerStateFixBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param ledgerFixType The sfLedgerFixType field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     LedgerStateFixBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_UINT16::type::value_type> const& ledgerFixType,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -97,6 +111,11 @@ public:
         setLedgerFixType(ledgerFixType);
     }
 
+    /**
+     * @brief Construct a LedgerStateFixBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     LedgerStateFixBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttLEDGER_STATE_FIX)
@@ -106,10 +125,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfLedgerFixType (soeREQUIRED)
+     * @brief Set sfLedgerFixType (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     LedgerStateFixBuilder&
@@ -120,7 +139,7 @@ public:
     }
 
     /**
-     * Set sfOwner (soeOPTIONAL)
+     * @brief Set sfOwner (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     LedgerStateFixBuilder&
@@ -131,9 +150,9 @@ public:
     }
 
     /**
-     * Build and return the LedgerStateFix wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the LedgerStateFix wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     LedgerStateFix

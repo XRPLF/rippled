@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class CheckCashBuilder;
 
 /**
- * Transaction: CheckCash
+ * @brief Transaction: CheckCash
+ *
  * Type: ttCHECK_CASH (17)
  * Delegable: Delegation::delegable
  * Amendment: uint256{}
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttCHECK_CASH;
 
     /**
-     * Construct a CheckCash transaction wrapper from an existing STTx object.
+     * @brief Construct a CheckCash transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit CheckCash(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfCheckID (soeREQUIRED)
+     * @brief Get sfCheckID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfAmount (soeOPTIONAL)
+     * @brief Get sfAmount (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_AMOUNT::type::value_type>
@@ -71,6 +73,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfAmount is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasAmount() const
@@ -79,7 +85,8 @@ public:
     }
 
     /**
-     * Get sfDeliverMin (soeOPTIONAL)
+     * @brief Get sfDeliverMin (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_AMOUNT::type::value_type>
@@ -92,6 +99,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDeliverMin is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDeliverMin() const
@@ -101,7 +112,8 @@ public:
 };
 
 /**
- * Builder for CheckCash transactions.
+ * @brief Builder for CheckCash transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -109,6 +121,13 @@ public:
 class CheckCashBuilder : public TransactionBuilderBase<CheckCashBuilder>
 {
 public:
+    /**
+     * @brief Construct a new CheckCashBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param checkID The sfCheckID field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     CheckCashBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_UINT256::type::value_type> const& checkID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -118,6 +137,11 @@ public:
         setCheckID(checkID);
     }
 
+    /**
+     * @brief Construct a CheckCashBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     CheckCashBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttCHECK_CASH)
@@ -127,10 +151,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfCheckID (soeREQUIRED)
+     * @brief Set sfCheckID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     CheckCashBuilder&
@@ -141,7 +165,7 @@ public:
     }
 
     /**
-     * Set sfAmount (soeOPTIONAL)
+     * @brief Set sfAmount (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     CheckCashBuilder&
@@ -152,7 +176,7 @@ public:
     }
 
     /**
-     * Set sfDeliverMin (soeOPTIONAL)
+     * @brief Set sfDeliverMin (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     CheckCashBuilder&
@@ -163,9 +187,9 @@ public:
     }
 
     /**
-     * Build and return the CheckCash wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the CheckCash wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     CheckCash

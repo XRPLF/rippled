@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class NFTokenModifyBuilder;
 
 /**
- * Transaction: NFTokenModify
+ * @brief Transaction: NFTokenModify
+ *
  * Type: ttNFTOKEN_MODIFY (61)
  * Delegable: Delegation::delegable
  * Amendment: featureDynamicNFT
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttNFTOKEN_MODIFY;
 
     /**
-     * Construct a NFTokenModify transaction wrapper from an existing STTx object.
+     * @brief Construct a NFTokenModify transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit NFTokenModify(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfNFTokenID (soeREQUIRED)
+     * @brief Get sfNFTokenID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfOwner (soeOPTIONAL)
+     * @brief Get sfOwner (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
@@ -71,6 +73,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfOwner is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasOwner() const
@@ -79,7 +85,8 @@ public:
     }
 
     /**
-     * Get sfURI (soeOPTIONAL)
+     * @brief Get sfURI (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
@@ -92,6 +99,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfURI is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasURI() const
@@ -101,7 +112,8 @@ public:
 };
 
 /**
- * Builder for NFTokenModify transactions.
+ * @brief Builder for NFTokenModify transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -109,6 +121,13 @@ public:
 class NFTokenModifyBuilder : public TransactionBuilderBase<NFTokenModifyBuilder>
 {
 public:
+    /**
+     * @brief Construct a new NFTokenModifyBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param nFTokenID The sfNFTokenID field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     NFTokenModifyBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_UINT256::type::value_type> const& nFTokenID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -118,6 +137,11 @@ public:
         setNFTokenID(nFTokenID);
     }
 
+    /**
+     * @brief Construct a NFTokenModifyBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     NFTokenModifyBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttNFTOKEN_MODIFY)
@@ -127,10 +151,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfNFTokenID (soeREQUIRED)
+     * @brief Set sfNFTokenID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     NFTokenModifyBuilder&
@@ -141,7 +165,7 @@ public:
     }
 
     /**
-     * Set sfOwner (soeOPTIONAL)
+     * @brief Set sfOwner (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     NFTokenModifyBuilder&
@@ -152,7 +176,7 @@ public:
     }
 
     /**
-     * Set sfURI (soeOPTIONAL)
+     * @brief Set sfURI (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     NFTokenModifyBuilder&
@@ -163,9 +187,9 @@ public:
     }
 
     /**
-     * Build and return the NFTokenModify wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the NFTokenModify wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     NFTokenModify

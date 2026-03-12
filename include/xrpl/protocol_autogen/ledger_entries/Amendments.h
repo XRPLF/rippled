@@ -13,11 +13,11 @@
 
 namespace xrpl::ledger_entries {
 
-// Forward declaration
 class AmendmentsBuilder;
 
 /**
- * Ledger Entry: Amendments
+ * @brief Ledger Entry: Amendments
+ *
  * Type: ltAMENDMENTS (0x0066)
  * RPC Name: amendments
  *
@@ -30,7 +30,7 @@ public:
     static constexpr LedgerEntryType entryType = ltAMENDMENTS;
 
     /**
-     * Construct a Amendments ledger entry wrapper from an existing SLE object.
+     * @brief Construct a Amendments ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
     explicit Amendments(std::shared_ptr<SLE const> sle)
@@ -46,7 +46,8 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * Get sfAmendments (soeOPTIONAL)
+     * @brief Get sfAmendments (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VECTOR256::type::value_type>
@@ -57,6 +58,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfAmendments is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasAmendments() const
@@ -65,8 +70,9 @@ public:
     }
 
     /**
-     * Get sfMajorities (soeOPTIONAL)
-     * Note: This is an untyped field (unknown).
+     * @brief Get sfMajorities (soeOPTIONAL)
+     * @note This is an untyped field (unknown).
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     std::optional<std::reference_wrapper<STArray const>>
@@ -77,6 +83,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfMajorities is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasMajorities() const
@@ -85,7 +95,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnID (soeOPTIONAL)
+     * @brief Get sfPreviousTxnID (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT256::type::value_type>
@@ -96,6 +107,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfPreviousTxnID is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasPreviousTxnID() const
@@ -104,7 +119,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnLgrSeq (soeOPTIONAL)
+     * @brief Get sfPreviousTxnLgrSeq (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -115,6 +131,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfPreviousTxnLgrSeq is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasPreviousTxnLgrSeq() const
@@ -124,7 +144,8 @@ public:
 };
 
 /**
- * Builder for Amendments ledger entries.
+ * @brief Builder for Amendments ledger entries.
+ *
  * Provides a fluent interface for constructing ledger entries with method chaining.
  * Uses Json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
@@ -132,11 +153,19 @@ public:
 class AmendmentsBuilder : public LedgerEntryBuilderBase<AmendmentsBuilder>
 {
 public:
+    /**
+     * @brief Construct a new AmendmentsBuilder with required fields.
+     */
     AmendmentsBuilder()
         : LedgerEntryBuilderBase<AmendmentsBuilder>(ltAMENDMENTS)
     {
     }
 
+    /**
+     * @brief Construct a AmendmentsBuilder from an existing SLE object.
+     * @param sle The existing ledger entry to copy from.
+     * @throws std::runtime_error if the ledger entry type doesn't match.
+     */
     AmendmentsBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltAMENDMENTS)
@@ -146,10 +175,10 @@ public:
         object_ = *sle;
     }
 
-    // Ledger entry-specific field setters
+    /** @brief Ledger entry-specific field setters */
 
     /**
-     * Set sfAmendments (soeOPTIONAL)
+     * @brief Set sfAmendments (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     AmendmentsBuilder&
@@ -160,7 +189,7 @@ public:
     }
 
     /**
-     * Set sfMajorities (soeOPTIONAL)
+     * @brief Set sfMajorities (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     AmendmentsBuilder&
@@ -171,7 +200,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnID (soeOPTIONAL)
+     * @brief Set sfPreviousTxnID (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     AmendmentsBuilder&
@@ -182,7 +211,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnLgrSeq (soeOPTIONAL)
+     * @brief Set sfPreviousTxnLgrSeq (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     AmendmentsBuilder&
@@ -193,7 +222,8 @@ public:
     }
 
     /**
-     * Build and return the completed Amendments wrapper.
+     * @brief Build and return the completed Amendments wrapper.
+     * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     Amendments

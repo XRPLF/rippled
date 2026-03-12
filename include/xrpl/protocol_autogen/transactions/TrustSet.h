@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class TrustSetBuilder;
 
 /**
- * Transaction: TrustSet
+ * @brief Transaction: TrustSet
+ *
  * Type: ttTRUST_SET (20)
  * Delegable: Delegation::delegable
  * Amendment: uint256{}
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttTRUST_SET;
 
     /**
-     * Construct a TrustSet transaction wrapper from an existing STTx object.
+     * @brief Construct a TrustSet transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit TrustSet(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfLimitAmount (soeOPTIONAL)
+     * @brief Get sfLimitAmount (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_AMOUNT::type::value_type>
@@ -61,6 +62,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfLimitAmount is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasLimitAmount() const
@@ -69,7 +74,8 @@ public:
     }
 
     /**
-     * Get sfQualityIn (soeOPTIONAL)
+     * @brief Get sfQualityIn (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -82,6 +88,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfQualityIn is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasQualityIn() const
@@ -90,7 +100,8 @@ public:
     }
 
     /**
-     * Get sfQualityOut (soeOPTIONAL)
+     * @brief Get sfQualityOut (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -103,6 +114,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfQualityOut is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasQualityOut() const
@@ -112,7 +127,8 @@ public:
 };
 
 /**
- * Builder for TrustSet transactions.
+ * @brief Builder for TrustSet transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -120,6 +136,12 @@ public:
 class TrustSetBuilder : public TransactionBuilderBase<TrustSetBuilder>
 {
 public:
+    /**
+     * @brief Construct a new TrustSetBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     TrustSetBuilder(SF_ACCOUNT::type::value_type account,
                     std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -128,6 +150,11 @@ public:
     {
     }
 
+    /**
+     * @brief Construct a TrustSetBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     TrustSetBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttTRUST_SET)
@@ -137,10 +164,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfLimitAmount (soeOPTIONAL)
+     * @brief Set sfLimitAmount (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     TrustSetBuilder&
@@ -151,7 +178,7 @@ public:
     }
 
     /**
-     * Set sfQualityIn (soeOPTIONAL)
+     * @brief Set sfQualityIn (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     TrustSetBuilder&
@@ -162,7 +189,7 @@ public:
     }
 
     /**
-     * Set sfQualityOut (soeOPTIONAL)
+     * @brief Set sfQualityOut (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     TrustSetBuilder&
@@ -173,9 +200,9 @@ public:
     }
 
     /**
-     * Build and return the TrustSet wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the TrustSet wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     TrustSet

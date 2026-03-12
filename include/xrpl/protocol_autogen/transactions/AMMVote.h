@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class AMMVoteBuilder;
 
 /**
- * Transaction: AMMVote
+ * @brief Transaction: AMMVote
+ *
  * Type: ttAMM_VOTE (38)
  * Delegable: Delegation::delegable
  * Amendment: featureAMM
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttAMM_VOTE;
 
     /**
-     * Construct a AMMVote transaction wrapper from an existing STTx object.
+     * @brief Construct a AMMVote transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit AMMVote(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfAsset (soeREQUIRED)
+     * @brief Get sfAsset (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ISSUE::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfAsset2 (soeREQUIRED)
+     * @brief Get sfAsset2 (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ISSUE::type::value_type
@@ -68,7 +70,8 @@ public:
     }
 
     /**
-     * Get sfTradingFee (soeREQUIRED)
+     * @brief Get sfTradingFee (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT16::type::value_type
@@ -79,7 +82,8 @@ public:
 };
 
 /**
- * Builder for AMMVote transactions.
+ * @brief Builder for AMMVote transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -87,6 +91,15 @@ public:
 class AMMVoteBuilder : public TransactionBuilderBase<AMMVoteBuilder>
 {
 public:
+    /**
+     * @brief Construct a new AMMVoteBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param asset The sfAsset field value.
+     * @param asset2 The sfAsset2 field value.
+     * @param tradingFee The sfTradingFee field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     AMMVoteBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_ISSUE::type::value_type> const& asset,                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset2,                     std::decay_t<typename SF_UINT16::type::value_type> const& tradingFee,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -98,6 +111,11 @@ public:
         setTradingFee(tradingFee);
     }
 
+    /**
+     * @brief Construct a AMMVoteBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     AMMVoteBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttAMM_VOTE)
@@ -107,10 +125,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfAsset (soeREQUIRED)
+     * @brief Set sfAsset (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     AMMVoteBuilder&
@@ -121,7 +139,7 @@ public:
     }
 
     /**
-     * Set sfAsset2 (soeREQUIRED)
+     * @brief Set sfAsset2 (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     AMMVoteBuilder&
@@ -132,7 +150,7 @@ public:
     }
 
     /**
-     * Set sfTradingFee (soeREQUIRED)
+     * @brief Set sfTradingFee (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     AMMVoteBuilder&
@@ -143,9 +161,9 @@ public:
     }
 
     /**
-     * Build and return the AMMVote wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the AMMVote wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     AMMVote

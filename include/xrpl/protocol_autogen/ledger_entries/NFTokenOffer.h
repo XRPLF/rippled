@@ -13,11 +13,11 @@
 
 namespace xrpl::ledger_entries {
 
-// Forward declaration
 class NFTokenOfferBuilder;
 
 /**
- * Ledger Entry: NFTokenOffer
+ * @brief Ledger Entry: NFTokenOffer
+ *
  * Type: ltNFTOKEN_OFFER (0x0037)
  * RPC Name: nft_offer
  *
@@ -30,7 +30,7 @@ public:
     static constexpr LedgerEntryType entryType = ltNFTOKEN_OFFER;
 
     /**
-     * Construct a NFTokenOffer ledger entry wrapper from an existing SLE object.
+     * @brief Construct a NFTokenOffer ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
     explicit NFTokenOffer(std::shared_ptr<SLE const> sle)
@@ -46,7 +46,8 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * Get sfOwner (soeREQUIRED)
+     * @brief Get sfOwner (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -56,7 +57,8 @@ public:
     }
 
     /**
-     * Get sfNFTokenID (soeREQUIRED)
+     * @brief Get sfNFTokenID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -66,7 +68,8 @@ public:
     }
 
     /**
-     * Get sfAmount (soeREQUIRED)
+     * @brief Get sfAmount (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_AMOUNT::type::value_type
@@ -76,7 +79,8 @@ public:
     }
 
     /**
-     * Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -86,7 +90,8 @@ public:
     }
 
     /**
-     * Get sfNFTokenOfferNode (soeREQUIRED)
+     * @brief Get sfNFTokenOfferNode (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -96,7 +101,8 @@ public:
     }
 
     /**
-     * Get sfDestination (soeOPTIONAL)
+     * @brief Get sfDestination (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
@@ -107,6 +113,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDestination is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDestination() const
@@ -115,7 +125,8 @@ public:
     }
 
     /**
-     * Get sfExpiration (soeOPTIONAL)
+     * @brief Get sfExpiration (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -126,6 +137,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfExpiration is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasExpiration() const
@@ -134,7 +149,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -144,7 +160,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -155,7 +172,8 @@ public:
 };
 
 /**
- * Builder for NFTokenOffer ledger entries.
+ * @brief Builder for NFTokenOffer ledger entries.
+ *
  * Provides a fluent interface for constructing ledger entries with method chaining.
  * Uses Json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
@@ -163,6 +181,16 @@ public:
 class NFTokenOfferBuilder : public LedgerEntryBuilderBase<NFTokenOfferBuilder>
 {
 public:
+    /**
+     * @brief Construct a new NFTokenOfferBuilder with required fields.
+     * @param owner The sfOwner field value.
+     * @param nFTokenID The sfNFTokenID field value.
+     * @param amount The sfAmount field value.
+     * @param ownerNode The sfOwnerNode field value.
+     * @param nFTokenOfferNode The sfNFTokenOfferNode field value.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
+     */
     NFTokenOfferBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,std::decay_t<typename SF_UINT256::type::value_type> const& nFTokenID,std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT64::type::value_type> const& nFTokenOfferNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<NFTokenOfferBuilder>(ltNFTOKEN_OFFER)
     {
@@ -175,6 +203,11 @@ public:
         setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
+    /**
+     * @brief Construct a NFTokenOfferBuilder from an existing SLE object.
+     * @param sle The existing ledger entry to copy from.
+     * @throws std::runtime_error if the ledger entry type doesn't match.
+     */
     NFTokenOfferBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltNFTOKEN_OFFER)
@@ -184,10 +217,10 @@ public:
         object_ = *sle;
     }
 
-    // Ledger entry-specific field setters
+    /** @brief Ledger entry-specific field setters */
 
     /**
-     * Set sfOwner (soeREQUIRED)
+     * @brief Set sfOwner (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
@@ -198,7 +231,7 @@ public:
     }
 
     /**
-     * Set sfNFTokenID (soeREQUIRED)
+     * @brief Set sfNFTokenID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
@@ -209,7 +242,7 @@ public:
     }
 
     /**
-     * Set sfAmount (soeREQUIRED)
+     * @brief Set sfAmount (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
@@ -220,7 +253,7 @@ public:
     }
 
     /**
-     * Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
@@ -231,7 +264,7 @@ public:
     }
 
     /**
-     * Set sfNFTokenOfferNode (soeREQUIRED)
+     * @brief Set sfNFTokenOfferNode (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
@@ -242,7 +275,7 @@ public:
     }
 
     /**
-     * Set sfDestination (soeOPTIONAL)
+     * @brief Set sfDestination (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
@@ -253,7 +286,7 @@ public:
     }
 
     /**
-     * Set sfExpiration (soeOPTIONAL)
+     * @brief Set sfExpiration (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
@@ -264,7 +297,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
@@ -275,7 +308,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
@@ -286,7 +319,8 @@ public:
     }
 
     /**
-     * Build and return the completed NFTokenOffer wrapper.
+     * @brief Build and return the completed NFTokenOffer wrapper.
+     * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     NFTokenOffer

@@ -13,11 +13,11 @@
 
 namespace xrpl::ledger_entries {
 
-// Forward declaration
 class NegativeUNLBuilder;
 
 /**
- * Ledger Entry: NegativeUNL
+ * @brief Ledger Entry: NegativeUNL
+ *
  * Type: ltNEGATIVE_UNL (0x004e)
  * RPC Name: nunl
  *
@@ -30,7 +30,7 @@ public:
     static constexpr LedgerEntryType entryType = ltNEGATIVE_UNL;
 
     /**
-     * Construct a NegativeUNL ledger entry wrapper from an existing SLE object.
+     * @brief Construct a NegativeUNL ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
     explicit NegativeUNL(std::shared_ptr<SLE const> sle)
@@ -46,8 +46,9 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * Get sfDisabledValidators (soeOPTIONAL)
-     * Note: This is an untyped field (unknown).
+     * @brief Get sfDisabledValidators (soeOPTIONAL)
+     * @note This is an untyped field (unknown).
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     std::optional<std::reference_wrapper<STArray const>>
@@ -58,6 +59,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDisabledValidators is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDisabledValidators() const
@@ -66,7 +71,8 @@ public:
     }
 
     /**
-     * Get sfValidatorToDisable (soeOPTIONAL)
+     * @brief Get sfValidatorToDisable (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
@@ -77,6 +83,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfValidatorToDisable is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasValidatorToDisable() const
@@ -85,7 +95,8 @@ public:
     }
 
     /**
-     * Get sfValidatorToReEnable (soeOPTIONAL)
+     * @brief Get sfValidatorToReEnable (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
@@ -96,6 +107,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfValidatorToReEnable is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasValidatorToReEnable() const
@@ -104,7 +119,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnID (soeOPTIONAL)
+     * @brief Get sfPreviousTxnID (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT256::type::value_type>
@@ -115,6 +131,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfPreviousTxnID is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasPreviousTxnID() const
@@ -123,7 +143,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnLgrSeq (soeOPTIONAL)
+     * @brief Get sfPreviousTxnLgrSeq (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -134,6 +155,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfPreviousTxnLgrSeq is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasPreviousTxnLgrSeq() const
@@ -143,7 +168,8 @@ public:
 };
 
 /**
- * Builder for NegativeUNL ledger entries.
+ * @brief Builder for NegativeUNL ledger entries.
+ *
  * Provides a fluent interface for constructing ledger entries with method chaining.
  * Uses Json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
@@ -151,11 +177,19 @@ public:
 class NegativeUNLBuilder : public LedgerEntryBuilderBase<NegativeUNLBuilder>
 {
 public:
+    /**
+     * @brief Construct a new NegativeUNLBuilder with required fields.
+     */
     NegativeUNLBuilder()
         : LedgerEntryBuilderBase<NegativeUNLBuilder>(ltNEGATIVE_UNL)
     {
     }
 
+    /**
+     * @brief Construct a NegativeUNLBuilder from an existing SLE object.
+     * @param sle The existing ledger entry to copy from.
+     * @throws std::runtime_error if the ledger entry type doesn't match.
+     */
     NegativeUNLBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltNEGATIVE_UNL)
@@ -165,10 +199,10 @@ public:
         object_ = *sle;
     }
 
-    // Ledger entry-specific field setters
+    /** @brief Ledger entry-specific field setters */
 
     /**
-     * Set sfDisabledValidators (soeOPTIONAL)
+     * @brief Set sfDisabledValidators (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     NegativeUNLBuilder&
@@ -179,7 +213,7 @@ public:
     }
 
     /**
-     * Set sfValidatorToDisable (soeOPTIONAL)
+     * @brief Set sfValidatorToDisable (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     NegativeUNLBuilder&
@@ -190,7 +224,7 @@ public:
     }
 
     /**
-     * Set sfValidatorToReEnable (soeOPTIONAL)
+     * @brief Set sfValidatorToReEnable (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     NegativeUNLBuilder&
@@ -201,7 +235,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnID (soeOPTIONAL)
+     * @brief Set sfPreviousTxnID (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     NegativeUNLBuilder&
@@ -212,7 +246,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnLgrSeq (soeOPTIONAL)
+     * @brief Set sfPreviousTxnLgrSeq (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     NegativeUNLBuilder&
@@ -223,7 +257,8 @@ public:
     }
 
     /**
-     * Build and return the completed NegativeUNL wrapper.
+     * @brief Build and return the completed NegativeUNL wrapper.
+     * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     NegativeUNL

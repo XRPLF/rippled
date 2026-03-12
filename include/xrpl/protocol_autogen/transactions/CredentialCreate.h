@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class CredentialCreateBuilder;
 
 /**
- * Transaction: CredentialCreate
+ * @brief Transaction: CredentialCreate
+ *
  * Type: ttCREDENTIAL_CREATE (58)
  * Delegable: Delegation::delegable
  * Amendment: featureCredentials
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttCREDENTIAL_CREATE;
 
     /**
-     * Construct a CredentialCreate transaction wrapper from an existing STTx object.
+     * @brief Construct a CredentialCreate transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit CredentialCreate(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfSubject (soeREQUIRED)
+     * @brief Get sfSubject (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfCredentialType (soeREQUIRED)
+     * @brief Get sfCredentialType (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_VL::type::value_type
@@ -68,7 +70,8 @@ public:
     }
 
     /**
-     * Get sfExpiration (soeOPTIONAL)
+     * @brief Get sfExpiration (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -81,6 +84,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfExpiration is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasExpiration() const
@@ -89,7 +96,8 @@ public:
     }
 
     /**
-     * Get sfURI (soeOPTIONAL)
+     * @brief Get sfURI (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
@@ -102,6 +110,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfURI is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasURI() const
@@ -111,7 +123,8 @@ public:
 };
 
 /**
- * Builder for CredentialCreate transactions.
+ * @brief Builder for CredentialCreate transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -119,6 +132,14 @@ public:
 class CredentialCreateBuilder : public TransactionBuilderBase<CredentialCreateBuilder>
 {
 public:
+    /**
+     * @brief Construct a new CredentialCreateBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param subject The sfSubject field value.
+     * @param credentialType The sfCredentialType field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     CredentialCreateBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_ACCOUNT::type::value_type> const& subject,                     std::decay_t<typename SF_VL::type::value_type> const& credentialType,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -129,6 +150,11 @@ public:
         setCredentialType(credentialType);
     }
 
+    /**
+     * @brief Construct a CredentialCreateBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     CredentialCreateBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttCREDENTIAL_CREATE)
@@ -138,10 +164,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfSubject (soeREQUIRED)
+     * @brief Set sfSubject (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     CredentialCreateBuilder&
@@ -152,7 +178,7 @@ public:
     }
 
     /**
-     * Set sfCredentialType (soeREQUIRED)
+     * @brief Set sfCredentialType (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     CredentialCreateBuilder&
@@ -163,7 +189,7 @@ public:
     }
 
     /**
-     * Set sfExpiration (soeOPTIONAL)
+     * @brief Set sfExpiration (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     CredentialCreateBuilder&
@@ -174,7 +200,7 @@ public:
     }
 
     /**
-     * Set sfURI (soeOPTIONAL)
+     * @brief Set sfURI (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     CredentialCreateBuilder&
@@ -185,9 +211,9 @@ public:
     }
 
     /**
-     * Build and return the CredentialCreate wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the CredentialCreate wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     CredentialCreate

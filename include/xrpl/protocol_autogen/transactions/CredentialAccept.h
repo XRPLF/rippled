@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class CredentialAcceptBuilder;
 
 /**
- * Transaction: CredentialAccept
+ * @brief Transaction: CredentialAccept
+ *
  * Type: ttCREDENTIAL_ACCEPT (59)
  * Delegable: Delegation::delegable
  * Amendment: featureCredentials
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttCREDENTIAL_ACCEPT;
 
     /**
-     * Construct a CredentialAccept transaction wrapper from an existing STTx object.
+     * @brief Construct a CredentialAccept transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit CredentialAccept(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfIssuer (soeREQUIRED)
+     * @brief Get sfIssuer (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfCredentialType (soeREQUIRED)
+     * @brief Get sfCredentialType (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_VL::type::value_type
@@ -69,7 +71,8 @@ public:
 };
 
 /**
- * Builder for CredentialAccept transactions.
+ * @brief Builder for CredentialAccept transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -77,6 +80,14 @@ public:
 class CredentialAcceptBuilder : public TransactionBuilderBase<CredentialAcceptBuilder>
 {
 public:
+    /**
+     * @brief Construct a new CredentialAcceptBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param issuer The sfIssuer field value.
+     * @param credentialType The sfCredentialType field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     CredentialAcceptBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_ACCOUNT::type::value_type> const& issuer,                     std::decay_t<typename SF_VL::type::value_type> const& credentialType,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -87,6 +98,11 @@ public:
         setCredentialType(credentialType);
     }
 
+    /**
+     * @brief Construct a CredentialAcceptBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     CredentialAcceptBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttCREDENTIAL_ACCEPT)
@@ -96,10 +112,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfIssuer (soeREQUIRED)
+     * @brief Set sfIssuer (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     CredentialAcceptBuilder&
@@ -110,7 +126,7 @@ public:
     }
 
     /**
-     * Set sfCredentialType (soeREQUIRED)
+     * @brief Set sfCredentialType (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     CredentialAcceptBuilder&
@@ -121,9 +137,9 @@ public:
     }
 
     /**
-     * Build and return the CredentialAccept wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the CredentialAccept wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     CredentialAccept

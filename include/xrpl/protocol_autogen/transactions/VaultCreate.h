@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class VaultCreateBuilder;
 
 /**
- * Transaction: VaultCreate
+ * @brief Transaction: VaultCreate
+ *
  * Type: ttVAULT_CREATE (65)
  * Delegable: Delegation::delegable
  * Amendment: featureSingleAssetVault
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttVAULT_CREATE;
 
     /**
-     * Construct a VaultCreate transaction wrapper from an existing STTx object.
+     * @brief Construct a VaultCreate transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit VaultCreate(std::shared_ptr<STTx const> tx)
@@ -48,8 +48,9 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfAsset (soeREQUIRED)
-     * Note: This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Get sfAsset (soeREQUIRED)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ISSUE::type::value_type
@@ -59,7 +60,8 @@ public:
     }
 
     /**
-     * Get sfAssetsMaximum (soeOPTIONAL)
+     * @brief Get sfAssetsMaximum (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_NUMBER::type::value_type>
@@ -72,6 +74,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfAssetsMaximum is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasAssetsMaximum() const
@@ -80,7 +86,8 @@ public:
     }
 
     /**
-     * Get sfMPTokenMetadata (soeOPTIONAL)
+     * @brief Get sfMPTokenMetadata (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
@@ -93,6 +100,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfMPTokenMetadata is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasMPTokenMetadata() const
@@ -101,7 +112,8 @@ public:
     }
 
     /**
-     * Get sfDomainID (soeOPTIONAL)
+     * @brief Get sfDomainID (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT256::type::value_type>
@@ -114,6 +126,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDomainID is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDomainID() const
@@ -122,7 +138,8 @@ public:
     }
 
     /**
-     * Get sfWithdrawalPolicy (soeOPTIONAL)
+     * @brief Get sfWithdrawalPolicy (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT8::type::value_type>
@@ -135,6 +152,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfWithdrawalPolicy is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasWithdrawalPolicy() const
@@ -143,7 +164,8 @@ public:
     }
 
     /**
-     * Get sfData (soeOPTIONAL)
+     * @brief Get sfData (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
@@ -156,6 +178,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfData is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasData() const
@@ -164,7 +190,8 @@ public:
     }
 
     /**
-     * Get sfScale (soeOPTIONAL)
+     * @brief Get sfScale (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT8::type::value_type>
@@ -177,6 +204,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfScale is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasScale() const
@@ -186,7 +217,8 @@ public:
 };
 
 /**
- * Builder for VaultCreate transactions.
+ * @brief Builder for VaultCreate transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -194,6 +226,13 @@ public:
 class VaultCreateBuilder : public TransactionBuilderBase<VaultCreateBuilder>
 {
 public:
+    /**
+     * @brief Construct a new VaultCreateBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param asset The sfAsset field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     VaultCreateBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_ISSUE::type::value_type> const& asset,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -203,6 +242,11 @@ public:
         setAsset(asset);
     }
 
+    /**
+     * @brief Construct a VaultCreateBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     VaultCreateBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttVAULT_CREATE)
@@ -212,11 +256,11 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfAsset (soeREQUIRED)
-     * Note: This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfAsset (soeREQUIRED)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     VaultCreateBuilder&
@@ -227,7 +271,7 @@ public:
     }
 
     /**
-     * Set sfAssetsMaximum (soeOPTIONAL)
+     * @brief Set sfAssetsMaximum (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     VaultCreateBuilder&
@@ -238,7 +282,7 @@ public:
     }
 
     /**
-     * Set sfMPTokenMetadata (soeOPTIONAL)
+     * @brief Set sfMPTokenMetadata (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     VaultCreateBuilder&
@@ -249,7 +293,7 @@ public:
     }
 
     /**
-     * Set sfDomainID (soeOPTIONAL)
+     * @brief Set sfDomainID (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     VaultCreateBuilder&
@@ -260,7 +304,7 @@ public:
     }
 
     /**
-     * Set sfWithdrawalPolicy (soeOPTIONAL)
+     * @brief Set sfWithdrawalPolicy (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     VaultCreateBuilder&
@@ -271,7 +315,7 @@ public:
     }
 
     /**
-     * Set sfData (soeOPTIONAL)
+     * @brief Set sfData (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     VaultCreateBuilder&
@@ -282,7 +326,7 @@ public:
     }
 
     /**
-     * Set sfScale (soeOPTIONAL)
+     * @brief Set sfScale (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     VaultCreateBuilder&
@@ -293,9 +337,9 @@ public:
     }
 
     /**
-     * Build and return the VaultCreate wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the VaultCreate wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     VaultCreate

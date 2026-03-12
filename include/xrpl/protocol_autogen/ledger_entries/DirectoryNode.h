@@ -13,11 +13,11 @@
 
 namespace xrpl::ledger_entries {
 
-// Forward declaration
 class DirectoryNodeBuilder;
 
 /**
- * Ledger Entry: DirectoryNode
+ * @brief Ledger Entry: DirectoryNode
+ *
  * Type: ltDIR_NODE (0x0064)
  * RPC Name: directory
  *
@@ -30,7 +30,7 @@ public:
     static constexpr LedgerEntryType entryType = ltDIR_NODE;
 
     /**
-     * Construct a DirectoryNode ledger entry wrapper from an existing SLE object.
+     * @brief Construct a DirectoryNode ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
     explicit DirectoryNode(std::shared_ptr<SLE const> sle)
@@ -46,7 +46,8 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * Get sfOwner (soeOPTIONAL)
+     * @brief Get sfOwner (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
@@ -57,6 +58,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfOwner is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasOwner() const
@@ -65,7 +70,8 @@ public:
     }
 
     /**
-     * Get sfTakerPaysCurrency (soeOPTIONAL)
+     * @brief Get sfTakerPaysCurrency (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT160::type::value_type>
@@ -76,6 +82,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfTakerPaysCurrency is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasTakerPaysCurrency() const
@@ -84,7 +94,8 @@ public:
     }
 
     /**
-     * Get sfTakerPaysIssuer (soeOPTIONAL)
+     * @brief Get sfTakerPaysIssuer (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT160::type::value_type>
@@ -95,6 +106,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfTakerPaysIssuer is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasTakerPaysIssuer() const
@@ -103,7 +118,8 @@ public:
     }
 
     /**
-     * Get sfTakerGetsCurrency (soeOPTIONAL)
+     * @brief Get sfTakerGetsCurrency (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT160::type::value_type>
@@ -114,6 +130,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfTakerGetsCurrency is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasTakerGetsCurrency() const
@@ -122,7 +142,8 @@ public:
     }
 
     /**
-     * Get sfTakerGetsIssuer (soeOPTIONAL)
+     * @brief Get sfTakerGetsIssuer (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT160::type::value_type>
@@ -133,6 +154,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfTakerGetsIssuer is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasTakerGetsIssuer() const
@@ -141,7 +166,8 @@ public:
     }
 
     /**
-     * Get sfExchangeRate (soeOPTIONAL)
+     * @brief Get sfExchangeRate (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT64::type::value_type>
@@ -152,6 +178,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfExchangeRate is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasExchangeRate() const
@@ -160,7 +190,8 @@ public:
     }
 
     /**
-     * Get sfIndexes (soeREQUIRED)
+     * @brief Get sfIndexes (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_VECTOR256::type::value_type
@@ -170,7 +201,8 @@ public:
     }
 
     /**
-     * Get sfRootIndex (soeREQUIRED)
+     * @brief Get sfRootIndex (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -180,7 +212,8 @@ public:
     }
 
     /**
-     * Get sfIndexNext (soeOPTIONAL)
+     * @brief Get sfIndexNext (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT64::type::value_type>
@@ -191,6 +224,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfIndexNext is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasIndexNext() const
@@ -199,7 +236,8 @@ public:
     }
 
     /**
-     * Get sfIndexPrevious (soeOPTIONAL)
+     * @brief Get sfIndexPrevious (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT64::type::value_type>
@@ -210,6 +248,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfIndexPrevious is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasIndexPrevious() const
@@ -218,7 +260,8 @@ public:
     }
 
     /**
-     * Get sfNFTokenID (soeOPTIONAL)
+     * @brief Get sfNFTokenID (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT256::type::value_type>
@@ -229,6 +272,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfNFTokenID is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasNFTokenID() const
@@ -237,7 +284,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnID (soeOPTIONAL)
+     * @brief Get sfPreviousTxnID (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT256::type::value_type>
@@ -248,6 +296,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfPreviousTxnID is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasPreviousTxnID() const
@@ -256,7 +308,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnLgrSeq (soeOPTIONAL)
+     * @brief Get sfPreviousTxnLgrSeq (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -267,6 +320,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfPreviousTxnLgrSeq is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasPreviousTxnLgrSeq() const
@@ -275,7 +332,8 @@ public:
     }
 
     /**
-     * Get sfDomainID (soeOPTIONAL)
+     * @brief Get sfDomainID (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT256::type::value_type>
@@ -286,6 +344,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDomainID is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDomainID() const
@@ -295,7 +357,8 @@ public:
 };
 
 /**
- * Builder for DirectoryNode ledger entries.
+ * @brief Builder for DirectoryNode ledger entries.
+ *
  * Provides a fluent interface for constructing ledger entries with method chaining.
  * Uses Json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
@@ -303,6 +366,11 @@ public:
 class DirectoryNodeBuilder : public LedgerEntryBuilderBase<DirectoryNodeBuilder>
 {
 public:
+    /**
+     * @brief Construct a new DirectoryNodeBuilder with required fields.
+     * @param indexes The sfIndexes field value.
+     * @param rootIndex The sfRootIndex field value.
+     */
     DirectoryNodeBuilder(std::decay_t<typename SF_VECTOR256::type::value_type> const& indexes,std::decay_t<typename SF_UINT256::type::value_type> const& rootIndex)
         : LedgerEntryBuilderBase<DirectoryNodeBuilder>(ltDIR_NODE)
     {
@@ -310,6 +378,11 @@ public:
         setRootIndex(rootIndex);
     }
 
+    /**
+     * @brief Construct a DirectoryNodeBuilder from an existing SLE object.
+     * @param sle The existing ledger entry to copy from.
+     * @throws std::runtime_error if the ledger entry type doesn't match.
+     */
     DirectoryNodeBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltDIR_NODE)
@@ -319,10 +392,10 @@ public:
         object_ = *sle;
     }
 
-    // Ledger entry-specific field setters
+    /** @brief Ledger entry-specific field setters */
 
     /**
-     * Set sfOwner (soeOPTIONAL)
+     * @brief Set sfOwner (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
@@ -333,7 +406,7 @@ public:
     }
 
     /**
-     * Set sfTakerPaysCurrency (soeOPTIONAL)
+     * @brief Set sfTakerPaysCurrency (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
@@ -344,7 +417,7 @@ public:
     }
 
     /**
-     * Set sfTakerPaysIssuer (soeOPTIONAL)
+     * @brief Set sfTakerPaysIssuer (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
@@ -355,7 +428,7 @@ public:
     }
 
     /**
-     * Set sfTakerGetsCurrency (soeOPTIONAL)
+     * @brief Set sfTakerGetsCurrency (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
@@ -366,7 +439,7 @@ public:
     }
 
     /**
-     * Set sfTakerGetsIssuer (soeOPTIONAL)
+     * @brief Set sfTakerGetsIssuer (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
@@ -377,7 +450,7 @@ public:
     }
 
     /**
-     * Set sfExchangeRate (soeOPTIONAL)
+     * @brief Set sfExchangeRate (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
@@ -388,7 +461,7 @@ public:
     }
 
     /**
-     * Set sfIndexes (soeREQUIRED)
+     * @brief Set sfIndexes (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
@@ -399,7 +472,7 @@ public:
     }
 
     /**
-     * Set sfRootIndex (soeREQUIRED)
+     * @brief Set sfRootIndex (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
@@ -410,7 +483,7 @@ public:
     }
 
     /**
-     * Set sfIndexNext (soeOPTIONAL)
+     * @brief Set sfIndexNext (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
@@ -421,7 +494,7 @@ public:
     }
 
     /**
-     * Set sfIndexPrevious (soeOPTIONAL)
+     * @brief Set sfIndexPrevious (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
@@ -432,7 +505,7 @@ public:
     }
 
     /**
-     * Set sfNFTokenID (soeOPTIONAL)
+     * @brief Set sfNFTokenID (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
@@ -443,7 +516,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnID (soeOPTIONAL)
+     * @brief Set sfPreviousTxnID (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
@@ -454,7 +527,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnLgrSeq (soeOPTIONAL)
+     * @brief Set sfPreviousTxnLgrSeq (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
@@ -465,7 +538,7 @@ public:
     }
 
     /**
-     * Set sfDomainID (soeOPTIONAL)
+     * @brief Set sfDomainID (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
@@ -476,7 +549,8 @@ public:
     }
 
     /**
-     * Build and return the completed DirectoryNode wrapper.
+     * @brief Build and return the completed DirectoryNode wrapper.
+     * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     DirectoryNode

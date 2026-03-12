@@ -13,11 +13,11 @@
 
 namespace xrpl::ledger_entries {
 
-// Forward declaration
 class DIDBuilder;
 
 /**
- * Ledger Entry: DID
+ * @brief Ledger Entry: DID
+ *
  * Type: ltDID (0x0049)
  * RPC Name: did
  *
@@ -30,7 +30,7 @@ public:
     static constexpr LedgerEntryType entryType = ltDID;
 
     /**
-     * Construct a DID ledger entry wrapper from an existing SLE object.
+     * @brief Construct a DID ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
     explicit DID(std::shared_ptr<SLE const> sle)
@@ -46,7 +46,8 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * Get sfAccount (soeREQUIRED)
+     * @brief Get sfAccount (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -56,7 +57,8 @@ public:
     }
 
     /**
-     * Get sfDIDDocument (soeOPTIONAL)
+     * @brief Get sfDIDDocument (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
@@ -67,6 +69,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDIDDocument is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDIDDocument() const
@@ -75,7 +81,8 @@ public:
     }
 
     /**
-     * Get sfURI (soeOPTIONAL)
+     * @brief Get sfURI (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
@@ -86,6 +93,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfURI is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasURI() const
@@ -94,7 +105,8 @@ public:
     }
 
     /**
-     * Get sfData (soeOPTIONAL)
+     * @brief Get sfData (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
@@ -105,6 +117,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfData is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasData() const
@@ -113,7 +129,8 @@ public:
     }
 
     /**
-     * Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -123,7 +140,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -133,7 +151,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -144,7 +163,8 @@ public:
 };
 
 /**
- * Builder for DID ledger entries.
+ * @brief Builder for DID ledger entries.
+ *
  * Provides a fluent interface for constructing ledger entries with method chaining.
  * Uses Json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
@@ -152,6 +172,13 @@ public:
 class DIDBuilder : public LedgerEntryBuilderBase<DIDBuilder>
 {
 public:
+    /**
+     * @brief Construct a new DIDBuilder with required fields.
+     * @param account The sfAccount field value.
+     * @param ownerNode The sfOwnerNode field value.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
+     */
     DIDBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<DIDBuilder>(ltDID)
     {
@@ -161,6 +188,11 @@ public:
         setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
+    /**
+     * @brief Construct a DIDBuilder from an existing SLE object.
+     * @param sle The existing ledger entry to copy from.
+     * @throws std::runtime_error if the ledger entry type doesn't match.
+     */
     DIDBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltDID)
@@ -170,10 +202,10 @@ public:
         object_ = *sle;
     }
 
-    // Ledger entry-specific field setters
+    /** @brief Ledger entry-specific field setters */
 
     /**
-     * Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     DIDBuilder&
@@ -184,7 +216,7 @@ public:
     }
 
     /**
-     * Set sfDIDDocument (soeOPTIONAL)
+     * @brief Set sfDIDDocument (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     DIDBuilder&
@@ -195,7 +227,7 @@ public:
     }
 
     /**
-     * Set sfURI (soeOPTIONAL)
+     * @brief Set sfURI (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     DIDBuilder&
@@ -206,7 +238,7 @@ public:
     }
 
     /**
-     * Set sfData (soeOPTIONAL)
+     * @brief Set sfData (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     DIDBuilder&
@@ -217,7 +249,7 @@ public:
     }
 
     /**
-     * Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     DIDBuilder&
@@ -228,7 +260,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     DIDBuilder&
@@ -239,7 +271,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     DIDBuilder&
@@ -250,7 +282,8 @@ public:
     }
 
     /**
-     * Build and return the completed DID wrapper.
+     * @brief Build and return the completed DID wrapper.
+     * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     DID

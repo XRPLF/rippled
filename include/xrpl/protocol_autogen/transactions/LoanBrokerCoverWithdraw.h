@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class LoanBrokerCoverWithdrawBuilder;
 
 /**
- * Transaction: LoanBrokerCoverWithdraw
+ * @brief Transaction: LoanBrokerCoverWithdraw
+ *
  * Type: ttLOAN_BROKER_COVER_WITHDRAW (77)
  * Delegable: Delegation::delegable
  * Amendment: featureLendingProtocol
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttLOAN_BROKER_COVER_WITHDRAW;
 
     /**
-     * Construct a LoanBrokerCoverWithdraw transaction wrapper from an existing STTx object.
+     * @brief Construct a LoanBrokerCoverWithdraw transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit LoanBrokerCoverWithdraw(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfLoanBrokerID (soeREQUIRED)
+     * @brief Get sfLoanBrokerID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -58,8 +59,9 @@ public:
     }
 
     /**
-     * Get sfAmount (soeREQUIRED)
-     * Note: This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Get sfAmount (soeREQUIRED)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @return The field value.
      */
     [[nodiscard]]
     SF_AMOUNT::type::value_type
@@ -69,7 +71,8 @@ public:
     }
 
     /**
-     * Get sfDestination (soeOPTIONAL)
+     * @brief Get sfDestination (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
@@ -82,6 +85,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDestination is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDestination() const
@@ -90,7 +97,8 @@ public:
     }
 
     /**
-     * Get sfDestinationTag (soeOPTIONAL)
+     * @brief Get sfDestinationTag (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -103,6 +111,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDestinationTag is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDestinationTag() const
@@ -112,7 +124,8 @@ public:
 };
 
 /**
- * Builder for LoanBrokerCoverWithdraw transactions.
+ * @brief Builder for LoanBrokerCoverWithdraw transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -120,6 +133,14 @@ public:
 class LoanBrokerCoverWithdrawBuilder : public TransactionBuilderBase<LoanBrokerCoverWithdrawBuilder>
 {
 public:
+    /**
+     * @brief Construct a new LoanBrokerCoverWithdrawBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param loanBrokerID The sfLoanBrokerID field value.
+     * @param amount The sfAmount field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     LoanBrokerCoverWithdrawBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_UINT256::type::value_type> const& loanBrokerID,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -130,6 +151,11 @@ public:
         setAmount(amount);
     }
 
+    /**
+     * @brief Construct a LoanBrokerCoverWithdrawBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     LoanBrokerCoverWithdrawBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttLOAN_BROKER_COVER_WITHDRAW)
@@ -139,10 +165,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfLoanBrokerID (soeREQUIRED)
+     * @brief Set sfLoanBrokerID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerCoverWithdrawBuilder&
@@ -153,8 +179,8 @@ public:
     }
 
     /**
-     * Set sfAmount (soeREQUIRED)
-     * Note: This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfAmount (soeREQUIRED)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerCoverWithdrawBuilder&
@@ -165,7 +191,7 @@ public:
     }
 
     /**
-     * Set sfDestination (soeOPTIONAL)
+     * @brief Set sfDestination (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerCoverWithdrawBuilder&
@@ -176,7 +202,7 @@ public:
     }
 
     /**
-     * Set sfDestinationTag (soeOPTIONAL)
+     * @brief Set sfDestinationTag (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerCoverWithdrawBuilder&
@@ -187,9 +213,9 @@ public:
     }
 
     /**
-     * Build and return the LoanBrokerCoverWithdraw wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the LoanBrokerCoverWithdraw wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     LoanBrokerCoverWithdraw

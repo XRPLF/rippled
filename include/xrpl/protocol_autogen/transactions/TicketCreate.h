@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class TicketCreateBuilder;
 
 /**
- * Transaction: TicketCreate
+ * @brief Transaction: TicketCreate
+ *
  * Type: ttTICKET_CREATE (10)
  * Delegable: Delegation::delegable
  * Amendment: uint256{}
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttTICKET_CREATE;
 
     /**
-     * Construct a TicketCreate transaction wrapper from an existing STTx object.
+     * @brief Construct a TicketCreate transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit TicketCreate(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfTicketCount (soeREQUIRED)
+     * @brief Get sfTicketCount (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -59,7 +60,8 @@ public:
 };
 
 /**
- * Builder for TicketCreate transactions.
+ * @brief Builder for TicketCreate transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -67,6 +69,13 @@ public:
 class TicketCreateBuilder : public TransactionBuilderBase<TicketCreateBuilder>
 {
 public:
+    /**
+     * @brief Construct a new TicketCreateBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param ticketCount The sfTicketCount field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     TicketCreateBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_UINT32::type::value_type> const& ticketCount,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -76,6 +85,11 @@ public:
         setTicketCount(ticketCount);
     }
 
+    /**
+     * @brief Construct a TicketCreateBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     TicketCreateBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttTICKET_CREATE)
@@ -85,10 +99,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfTicketCount (soeREQUIRED)
+     * @brief Set sfTicketCount (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     TicketCreateBuilder&
@@ -99,9 +113,9 @@ public:
     }
 
     /**
-     * Build and return the TicketCreate wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the TicketCreate wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     TicketCreate

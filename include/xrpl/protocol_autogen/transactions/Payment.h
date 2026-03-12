@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class PaymentBuilder;
 
 /**
- * Transaction: Payment
+ * @brief Transaction: Payment
+ *
  * Type: ttPAYMENT (0)
  * Delegable: Delegation::delegable
  * Amendment: uint256{}
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttPAYMENT;
 
     /**
-     * Construct a Payment transaction wrapper from an existing STTx object.
+     * @brief Construct a Payment transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit Payment(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfDestination (soeREQUIRED)
+     * @brief Get sfDestination (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -58,8 +59,9 @@ public:
     }
 
     /**
-     * Get sfAmount (soeREQUIRED)
-     * Note: This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Get sfAmount (soeREQUIRED)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @return The field value.
      */
     [[nodiscard]]
     SF_AMOUNT::type::value_type
@@ -69,8 +71,9 @@ public:
     }
 
     /**
-     * Get sfSendMax (soeOPTIONAL)
-     * Note: This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Get sfSendMax (soeOPTIONAL)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_AMOUNT::type::value_type>
@@ -83,6 +86,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfSendMax is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasSendMax() const
@@ -90,8 +97,9 @@ public:
         return this->tx_->isFieldPresent(sfSendMax);
     }
     /**
-     * Get sfPaths (soeDEFAULT)
-     * Note: This is an untyped field
+     * @brief Get sfPaths (soeDEFAULT)
+     * @note This is an untyped field.
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     std::optional<std::reference_wrapper<STPathSet const>>
@@ -102,6 +110,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfPaths is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasPaths() const
@@ -110,7 +122,8 @@ public:
     }
 
     /**
-     * Get sfInvoiceID (soeOPTIONAL)
+     * @brief Get sfInvoiceID (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT256::type::value_type>
@@ -123,6 +136,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfInvoiceID is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasInvoiceID() const
@@ -131,7 +148,8 @@ public:
     }
 
     /**
-     * Get sfDestinationTag (soeOPTIONAL)
+     * @brief Get sfDestinationTag (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -144,6 +162,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDestinationTag is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDestinationTag() const
@@ -152,8 +174,9 @@ public:
     }
 
     /**
-     * Get sfDeliverMin (soeOPTIONAL)
-     * Note: This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Get sfDeliverMin (soeOPTIONAL)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_AMOUNT::type::value_type>
@@ -166,6 +189,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDeliverMin is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDeliverMin() const
@@ -174,7 +201,8 @@ public:
     }
 
     /**
-     * Get sfCredentialIDs (soeOPTIONAL)
+     * @brief Get sfCredentialIDs (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VECTOR256::type::value_type>
@@ -187,6 +215,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfCredentialIDs is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasCredentialIDs() const
@@ -195,7 +227,8 @@ public:
     }
 
     /**
-     * Get sfDomainID (soeOPTIONAL)
+     * @brief Get sfDomainID (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT256::type::value_type>
@@ -208,6 +241,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDomainID is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDomainID() const
@@ -217,7 +254,8 @@ public:
 };
 
 /**
- * Builder for Payment transactions.
+ * @brief Builder for Payment transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -225,6 +263,14 @@ public:
 class PaymentBuilder : public TransactionBuilderBase<PaymentBuilder>
 {
 public:
+    /**
+     * @brief Construct a new PaymentBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param destination The sfDestination field value.
+     * @param amount The sfAmount field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     PaymentBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -235,6 +281,11 @@ public:
         setAmount(amount);
     }
 
+    /**
+     * @brief Construct a PaymentBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     PaymentBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttPAYMENT)
@@ -244,10 +295,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfDestination (soeREQUIRED)
+     * @brief Set sfDestination (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     PaymentBuilder&
@@ -258,8 +309,8 @@ public:
     }
 
     /**
-     * Set sfAmount (soeREQUIRED)
-     * Note: This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfAmount (soeREQUIRED)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     PaymentBuilder&
@@ -270,8 +321,8 @@ public:
     }
 
     /**
-     * Set sfSendMax (soeOPTIONAL)
-     * Note: This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfSendMax (soeOPTIONAL)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     PaymentBuilder&
@@ -282,7 +333,7 @@ public:
     }
 
     /**
-     * Set sfPaths (soeDEFAULT)
+     * @brief Set sfPaths (soeDEFAULT)
      * @return Reference to this builder for method chaining.
      */
     PaymentBuilder&
@@ -293,7 +344,7 @@ public:
     }
 
     /**
-     * Set sfInvoiceID (soeOPTIONAL)
+     * @brief Set sfInvoiceID (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     PaymentBuilder&
@@ -304,7 +355,7 @@ public:
     }
 
     /**
-     * Set sfDestinationTag (soeOPTIONAL)
+     * @brief Set sfDestinationTag (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     PaymentBuilder&
@@ -315,8 +366,8 @@ public:
     }
 
     /**
-     * Set sfDeliverMin (soeOPTIONAL)
-     * Note: This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfDeliverMin (soeOPTIONAL)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     PaymentBuilder&
@@ -327,7 +378,7 @@ public:
     }
 
     /**
-     * Set sfCredentialIDs (soeOPTIONAL)
+     * @brief Set sfCredentialIDs (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     PaymentBuilder&
@@ -338,7 +389,7 @@ public:
     }
 
     /**
-     * Set sfDomainID (soeOPTIONAL)
+     * @brief Set sfDomainID (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     PaymentBuilder&
@@ -349,9 +400,9 @@ public:
     }
 
     /**
-     * Build and return the Payment wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the Payment wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     Payment

@@ -13,11 +13,11 @@
 
 namespace xrpl::ledger_entries {
 
-// Forward declaration
 class DelegateBuilder;
 
 /**
- * Ledger Entry: Delegate
+ * @brief Ledger Entry: Delegate
+ *
  * Type: ltDELEGATE (0x0083)
  * RPC Name: delegate
  *
@@ -30,7 +30,7 @@ public:
     static constexpr LedgerEntryType entryType = ltDELEGATE;
 
     /**
-     * Construct a Delegate ledger entry wrapper from an existing SLE object.
+     * @brief Construct a Delegate ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
     explicit Delegate(std::shared_ptr<SLE const> sle)
@@ -46,7 +46,8 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * Get sfAccount (soeREQUIRED)
+     * @brief Get sfAccount (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -56,7 +57,8 @@ public:
     }
 
     /**
-     * Get sfAuthorize (soeREQUIRED)
+     * @brief Get sfAuthorize (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -66,8 +68,9 @@ public:
     }
 
     /**
-     * Get sfPermissions (soeREQUIRED)
-     * Note: This is an untyped field (unknown).
+     * @brief Get sfPermissions (soeREQUIRED)
+     * @note This is an untyped field (unknown).
+     * @return The field value.
      */
     [[nodiscard]]
     STArray const&
@@ -77,7 +80,8 @@ public:
     }
 
     /**
-     * Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -87,7 +91,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -97,7 +102,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -108,7 +114,8 @@ public:
 };
 
 /**
- * Builder for Delegate ledger entries.
+ * @brief Builder for Delegate ledger entries.
+ *
  * Provides a fluent interface for constructing ledger entries with method chaining.
  * Uses Json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
@@ -116,6 +123,15 @@ public:
 class DelegateBuilder : public LedgerEntryBuilderBase<DelegateBuilder>
 {
 public:
+    /**
+     * @brief Construct a new DelegateBuilder with required fields.
+     * @param account The sfAccount field value.
+     * @param authorize The sfAuthorize field value.
+     * @param permissions The sfPermissions field value.
+     * @param ownerNode The sfOwnerNode field value.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
+     */
     DelegateBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_ACCOUNT::type::value_type> const& authorize,STArray const& permissions,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<DelegateBuilder>(ltDELEGATE)
     {
@@ -127,6 +143,11 @@ public:
         setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
+    /**
+     * @brief Construct a DelegateBuilder from an existing SLE object.
+     * @param sle The existing ledger entry to copy from.
+     * @throws std::runtime_error if the ledger entry type doesn't match.
+     */
     DelegateBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltDELEGATE)
@@ -136,10 +157,10 @@ public:
         object_ = *sle;
     }
 
-    // Ledger entry-specific field setters
+    /** @brief Ledger entry-specific field setters */
 
     /**
-     * Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     DelegateBuilder&
@@ -150,7 +171,7 @@ public:
     }
 
     /**
-     * Set sfAuthorize (soeREQUIRED)
+     * @brief Set sfAuthorize (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     DelegateBuilder&
@@ -161,7 +182,7 @@ public:
     }
 
     /**
-     * Set sfPermissions (soeREQUIRED)
+     * @brief Set sfPermissions (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     DelegateBuilder&
@@ -172,7 +193,7 @@ public:
     }
 
     /**
-     * Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     DelegateBuilder&
@@ -183,7 +204,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     DelegateBuilder&
@@ -194,7 +215,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     DelegateBuilder&
@@ -205,7 +226,8 @@ public:
     }
 
     /**
-     * Build and return the completed Delegate wrapper.
+     * @brief Build and return the completed Delegate wrapper.
+     * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     Delegate

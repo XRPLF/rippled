@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class AccountDeleteBuilder;
 
 /**
- * Transaction: AccountDelete
+ * @brief Transaction: AccountDelete
+ *
  * Type: ttACCOUNT_DELETE (21)
  * Delegable: Delegation::notDelegable
  * Amendment: uint256{}
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttACCOUNT_DELETE;
 
     /**
-     * Construct a AccountDelete transaction wrapper from an existing STTx object.
+     * @brief Construct a AccountDelete transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit AccountDelete(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfDestination (soeREQUIRED)
+     * @brief Get sfDestination (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfDestinationTag (soeOPTIONAL)
+     * @brief Get sfDestinationTag (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -71,6 +73,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDestinationTag is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDestinationTag() const
@@ -79,7 +85,8 @@ public:
     }
 
     /**
-     * Get sfCredentialIDs (soeOPTIONAL)
+     * @brief Get sfCredentialIDs (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VECTOR256::type::value_type>
@@ -92,6 +99,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfCredentialIDs is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasCredentialIDs() const
@@ -101,7 +112,8 @@ public:
 };
 
 /**
- * Builder for AccountDelete transactions.
+ * @brief Builder for AccountDelete transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -109,6 +121,13 @@ public:
 class AccountDeleteBuilder : public TransactionBuilderBase<AccountDeleteBuilder>
 {
 public:
+    /**
+     * @brief Construct a new AccountDeleteBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param destination The sfDestination field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     AccountDeleteBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -118,6 +137,11 @@ public:
         setDestination(destination);
     }
 
+    /**
+     * @brief Construct a AccountDeleteBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     AccountDeleteBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttACCOUNT_DELETE)
@@ -127,10 +151,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfDestination (soeREQUIRED)
+     * @brief Set sfDestination (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     AccountDeleteBuilder&
@@ -141,7 +165,7 @@ public:
     }
 
     /**
-     * Set sfDestinationTag (soeOPTIONAL)
+     * @brief Set sfDestinationTag (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     AccountDeleteBuilder&
@@ -152,7 +176,7 @@ public:
     }
 
     /**
-     * Set sfCredentialIDs (soeOPTIONAL)
+     * @brief Set sfCredentialIDs (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     AccountDeleteBuilder&
@@ -163,9 +187,9 @@ public:
     }
 
     /**
-     * Build and return the AccountDelete wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the AccountDelete wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     AccountDelete

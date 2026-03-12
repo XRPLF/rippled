@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class CheckCreateBuilder;
 
 /**
- * Transaction: CheckCreate
+ * @brief Transaction: CheckCreate
+ *
  * Type: ttCHECK_CREATE (16)
  * Delegable: Delegation::delegable
  * Amendment: uint256{}
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttCHECK_CREATE;
 
     /**
-     * Construct a CheckCreate transaction wrapper from an existing STTx object.
+     * @brief Construct a CheckCreate transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit CheckCreate(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfDestination (soeREQUIRED)
+     * @brief Get sfDestination (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfSendMax (soeREQUIRED)
+     * @brief Get sfSendMax (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_AMOUNT::type::value_type
@@ -68,7 +70,8 @@ public:
     }
 
     /**
-     * Get sfExpiration (soeOPTIONAL)
+     * @brief Get sfExpiration (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -81,6 +84,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfExpiration is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasExpiration() const
@@ -89,7 +96,8 @@ public:
     }
 
     /**
-     * Get sfDestinationTag (soeOPTIONAL)
+     * @brief Get sfDestinationTag (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -102,6 +110,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDestinationTag is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDestinationTag() const
@@ -110,7 +122,8 @@ public:
     }
 
     /**
-     * Get sfInvoiceID (soeOPTIONAL)
+     * @brief Get sfInvoiceID (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT256::type::value_type>
@@ -123,6 +136,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfInvoiceID is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasInvoiceID() const
@@ -132,7 +149,8 @@ public:
 };
 
 /**
- * Builder for CheckCreate transactions.
+ * @brief Builder for CheckCreate transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -140,6 +158,14 @@ public:
 class CheckCreateBuilder : public TransactionBuilderBase<CheckCreateBuilder>
 {
 public:
+    /**
+     * @brief Construct a new CheckCreateBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param destination The sfDestination field value.
+     * @param sendMax The sfSendMax field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     CheckCreateBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& sendMax,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -150,6 +176,11 @@ public:
         setSendMax(sendMax);
     }
 
+    /**
+     * @brief Construct a CheckCreateBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     CheckCreateBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttCHECK_CREATE)
@@ -159,10 +190,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfDestination (soeREQUIRED)
+     * @brief Set sfDestination (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     CheckCreateBuilder&
@@ -173,7 +204,7 @@ public:
     }
 
     /**
-     * Set sfSendMax (soeREQUIRED)
+     * @brief Set sfSendMax (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     CheckCreateBuilder&
@@ -184,7 +215,7 @@ public:
     }
 
     /**
-     * Set sfExpiration (soeOPTIONAL)
+     * @brief Set sfExpiration (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     CheckCreateBuilder&
@@ -195,7 +226,7 @@ public:
     }
 
     /**
-     * Set sfDestinationTag (soeOPTIONAL)
+     * @brief Set sfDestinationTag (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     CheckCreateBuilder&
@@ -206,7 +237,7 @@ public:
     }
 
     /**
-     * Set sfInvoiceID (soeOPTIONAL)
+     * @brief Set sfInvoiceID (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     CheckCreateBuilder&
@@ -217,9 +248,9 @@ public:
     }
 
     /**
-     * Build and return the CheckCreate wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the CheckCreate wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     CheckCreate

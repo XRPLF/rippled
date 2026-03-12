@@ -13,11 +13,11 @@
 
 namespace xrpl::ledger_entries {
 
-// Forward declaration
 class NFTokenPageBuilder;
 
 /**
- * Ledger Entry: NFTokenPage
+ * @brief Ledger Entry: NFTokenPage
+ *
  * Type: ltNFTOKEN_PAGE (0x0050)
  * RPC Name: nft_page
  *
@@ -30,7 +30,7 @@ public:
     static constexpr LedgerEntryType entryType = ltNFTOKEN_PAGE;
 
     /**
-     * Construct a NFTokenPage ledger entry wrapper from an existing SLE object.
+     * @brief Construct a NFTokenPage ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
     explicit NFTokenPage(std::shared_ptr<SLE const> sle)
@@ -46,7 +46,8 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * Get sfPreviousPageMin (soeOPTIONAL)
+     * @brief Get sfPreviousPageMin (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT256::type::value_type>
@@ -57,6 +58,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfPreviousPageMin is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasPreviousPageMin() const
@@ -65,7 +70,8 @@ public:
     }
 
     /**
-     * Get sfNextPageMin (soeOPTIONAL)
+     * @brief Get sfNextPageMin (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT256::type::value_type>
@@ -76,6 +82,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfNextPageMin is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasNextPageMin() const
@@ -84,8 +94,9 @@ public:
     }
 
     /**
-     * Get sfNFTokens (soeREQUIRED)
-     * Note: This is an untyped field (unknown).
+     * @brief Get sfNFTokens (soeREQUIRED)
+     * @note This is an untyped field (unknown).
+     * @return The field value.
      */
     [[nodiscard]]
     STArray const&
@@ -95,7 +106,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -105,7 +117,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -116,7 +129,8 @@ public:
 };
 
 /**
- * Builder for NFTokenPage ledger entries.
+ * @brief Builder for NFTokenPage ledger entries.
+ *
  * Provides a fluent interface for constructing ledger entries with method chaining.
  * Uses Json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
@@ -124,6 +138,12 @@ public:
 class NFTokenPageBuilder : public LedgerEntryBuilderBase<NFTokenPageBuilder>
 {
 public:
+    /**
+     * @brief Construct a new NFTokenPageBuilder with required fields.
+     * @param nFTokens The sfNFTokens field value.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
+     */
     NFTokenPageBuilder(STArray const& nFTokens,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<NFTokenPageBuilder>(ltNFTOKEN_PAGE)
     {
@@ -132,6 +152,11 @@ public:
         setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
+    /**
+     * @brief Construct a NFTokenPageBuilder from an existing SLE object.
+     * @param sle The existing ledger entry to copy from.
+     * @throws std::runtime_error if the ledger entry type doesn't match.
+     */
     NFTokenPageBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltNFTOKEN_PAGE)
@@ -141,10 +166,10 @@ public:
         object_ = *sle;
     }
 
-    // Ledger entry-specific field setters
+    /** @brief Ledger entry-specific field setters */
 
     /**
-     * Set sfPreviousPageMin (soeOPTIONAL)
+     * @brief Set sfPreviousPageMin (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     NFTokenPageBuilder&
@@ -155,7 +180,7 @@ public:
     }
 
     /**
-     * Set sfNextPageMin (soeOPTIONAL)
+     * @brief Set sfNextPageMin (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     NFTokenPageBuilder&
@@ -166,7 +191,7 @@ public:
     }
 
     /**
-     * Set sfNFTokens (soeREQUIRED)
+     * @brief Set sfNFTokens (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     NFTokenPageBuilder&
@@ -177,7 +202,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     NFTokenPageBuilder&
@@ -188,7 +213,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     NFTokenPageBuilder&
@@ -199,7 +224,8 @@ public:
     }
 
     /**
-     * Build and return the completed NFTokenPage wrapper.
+     * @brief Build and return the completed NFTokenPage wrapper.
+     * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     NFTokenPage

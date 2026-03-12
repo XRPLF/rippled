@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class DIDSetBuilder;
 
 /**
- * Transaction: DIDSet
+ * @brief Transaction: DIDSet
+ *
  * Type: ttDID_SET (49)
  * Delegable: Delegation::delegable
  * Amendment: featureDID
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttDID_SET;
 
     /**
-     * Construct a DIDSet transaction wrapper from an existing STTx object.
+     * @brief Construct a DIDSet transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit DIDSet(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfDIDDocument (soeOPTIONAL)
+     * @brief Get sfDIDDocument (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
@@ -61,6 +62,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDIDDocument is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDIDDocument() const
@@ -69,7 +74,8 @@ public:
     }
 
     /**
-     * Get sfURI (soeOPTIONAL)
+     * @brief Get sfURI (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
@@ -82,6 +88,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfURI is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasURI() const
@@ -90,7 +100,8 @@ public:
     }
 
     /**
-     * Get sfData (soeOPTIONAL)
+     * @brief Get sfData (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
@@ -103,6 +114,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfData is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasData() const
@@ -112,7 +127,8 @@ public:
 };
 
 /**
- * Builder for DIDSet transactions.
+ * @brief Builder for DIDSet transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -120,6 +136,12 @@ public:
 class DIDSetBuilder : public TransactionBuilderBase<DIDSetBuilder>
 {
 public:
+    /**
+     * @brief Construct a new DIDSetBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     DIDSetBuilder(SF_ACCOUNT::type::value_type account,
                     std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -128,6 +150,11 @@ public:
     {
     }
 
+    /**
+     * @brief Construct a DIDSetBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     DIDSetBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttDID_SET)
@@ -137,10 +164,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfDIDDocument (soeOPTIONAL)
+     * @brief Set sfDIDDocument (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     DIDSetBuilder&
@@ -151,7 +178,7 @@ public:
     }
 
     /**
-     * Set sfURI (soeOPTIONAL)
+     * @brief Set sfURI (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     DIDSetBuilder&
@@ -162,7 +189,7 @@ public:
     }
 
     /**
-     * Set sfData (soeOPTIONAL)
+     * @brief Set sfData (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     DIDSetBuilder&
@@ -173,9 +200,9 @@ public:
     }
 
     /**
-     * Build and return the DIDSet wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the DIDSet wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     DIDSet

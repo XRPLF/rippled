@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class AMMBidBuilder;
 
 /**
- * Transaction: AMMBid
+ * @brief Transaction: AMMBid
+ *
  * Type: ttAMM_BID (39)
  * Delegable: Delegation::delegable
  * Amendment: featureAMM
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttAMM_BID;
 
     /**
-     * Construct a AMMBid transaction wrapper from an existing STTx object.
+     * @brief Construct a AMMBid transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit AMMBid(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfAsset (soeREQUIRED)
+     * @brief Get sfAsset (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ISSUE::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfAsset2 (soeREQUIRED)
+     * @brief Get sfAsset2 (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ISSUE::type::value_type
@@ -68,7 +70,8 @@ public:
     }
 
     /**
-     * Get sfBidMin (soeOPTIONAL)
+     * @brief Get sfBidMin (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_AMOUNT::type::value_type>
@@ -81,6 +84,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfBidMin is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasBidMin() const
@@ -89,7 +96,8 @@ public:
     }
 
     /**
-     * Get sfBidMax (soeOPTIONAL)
+     * @brief Get sfBidMax (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_AMOUNT::type::value_type>
@@ -102,6 +110,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfBidMax is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasBidMax() const
@@ -109,8 +121,9 @@ public:
         return this->tx_->isFieldPresent(sfBidMax);
     }
     /**
-     * Get sfAuthAccounts (soeOPTIONAL)
-     * Note: This is an untyped field
+     * @brief Get sfAuthAccounts (soeOPTIONAL)
+     * @note This is an untyped field.
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     std::optional<std::reference_wrapper<STArray const>>
@@ -121,6 +134,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfAuthAccounts is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasAuthAccounts() const
@@ -130,7 +147,8 @@ public:
 };
 
 /**
- * Builder for AMMBid transactions.
+ * @brief Builder for AMMBid transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -138,6 +156,14 @@ public:
 class AMMBidBuilder : public TransactionBuilderBase<AMMBidBuilder>
 {
 public:
+    /**
+     * @brief Construct a new AMMBidBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param asset The sfAsset field value.
+     * @param asset2 The sfAsset2 field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     AMMBidBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_ISSUE::type::value_type> const& asset,                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset2,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -148,6 +174,11 @@ public:
         setAsset2(asset2);
     }
 
+    /**
+     * @brief Construct a AMMBidBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     AMMBidBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttAMM_BID)
@@ -157,10 +188,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfAsset (soeREQUIRED)
+     * @brief Set sfAsset (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     AMMBidBuilder&
@@ -171,7 +202,7 @@ public:
     }
 
     /**
-     * Set sfAsset2 (soeREQUIRED)
+     * @brief Set sfAsset2 (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     AMMBidBuilder&
@@ -182,7 +213,7 @@ public:
     }
 
     /**
-     * Set sfBidMin (soeOPTIONAL)
+     * @brief Set sfBidMin (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     AMMBidBuilder&
@@ -193,7 +224,7 @@ public:
     }
 
     /**
-     * Set sfBidMax (soeOPTIONAL)
+     * @brief Set sfBidMax (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     AMMBidBuilder&
@@ -204,7 +235,7 @@ public:
     }
 
     /**
-     * Set sfAuthAccounts (soeOPTIONAL)
+     * @brief Set sfAuthAccounts (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     AMMBidBuilder&
@@ -215,9 +246,9 @@ public:
     }
 
     /**
-     * Build and return the AMMBid wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the AMMBid wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     AMMBid

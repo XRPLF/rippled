@@ -13,11 +13,11 @@
 
 namespace xrpl::ledger_entries {
 
-// Forward declaration
 class BridgeBuilder;
 
 /**
- * Ledger Entry: Bridge
+ * @brief Ledger Entry: Bridge
+ *
  * Type: ltBRIDGE (0x0069)
  * RPC Name: bridge
  *
@@ -30,7 +30,7 @@ public:
     static constexpr LedgerEntryType entryType = ltBRIDGE;
 
     /**
-     * Construct a Bridge ledger entry wrapper from an existing SLE object.
+     * @brief Construct a Bridge ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
     explicit Bridge(std::shared_ptr<SLE const> sle)
@@ -46,7 +46,8 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * Get sfAccount (soeREQUIRED)
+     * @brief Get sfAccount (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -56,7 +57,8 @@ public:
     }
 
     /**
-     * Get sfSignatureReward (soeREQUIRED)
+     * @brief Get sfSignatureReward (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_AMOUNT::type::value_type
@@ -66,7 +68,8 @@ public:
     }
 
     /**
-     * Get sfMinAccountCreateAmount (soeOPTIONAL)
+     * @brief Get sfMinAccountCreateAmount (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_AMOUNT::type::value_type>
@@ -77,6 +80,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfMinAccountCreateAmount is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasMinAccountCreateAmount() const
@@ -85,7 +92,8 @@ public:
     }
 
     /**
-     * Get sfXChainBridge (soeREQUIRED)
+     * @brief Get sfXChainBridge (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_XCHAIN_BRIDGE::type::value_type
@@ -95,7 +103,8 @@ public:
     }
 
     /**
-     * Get sfXChainClaimID (soeREQUIRED)
+     * @brief Get sfXChainClaimID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -105,7 +114,8 @@ public:
     }
 
     /**
-     * Get sfXChainAccountCreateCount (soeREQUIRED)
+     * @brief Get sfXChainAccountCreateCount (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -115,7 +125,8 @@ public:
     }
 
     /**
-     * Get sfXChainAccountClaimCount (soeREQUIRED)
+     * @brief Get sfXChainAccountClaimCount (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -125,7 +136,8 @@ public:
     }
 
     /**
-     * Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -135,7 +147,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -145,7 +158,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -156,7 +170,8 @@ public:
 };
 
 /**
- * Builder for Bridge ledger entries.
+ * @brief Builder for Bridge ledger entries.
+ *
  * Provides a fluent interface for constructing ledger entries with method chaining.
  * Uses Json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
@@ -164,6 +179,18 @@ public:
 class BridgeBuilder : public LedgerEntryBuilderBase<BridgeBuilder>
 {
 public:
+    /**
+     * @brief Construct a new BridgeBuilder with required fields.
+     * @param account The sfAccount field value.
+     * @param signatureReward The sfSignatureReward field value.
+     * @param xChainBridge The sfXChainBridge field value.
+     * @param xChainClaimID The sfXChainClaimID field value.
+     * @param xChainAccountCreateCount The sfXChainAccountCreateCount field value.
+     * @param xChainAccountClaimCount The sfXChainAccountClaimCount field value.
+     * @param ownerNode The sfOwnerNode field value.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
+     */
     BridgeBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_AMOUNT::type::value_type> const& signatureReward,std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,std::decay_t<typename SF_UINT64::type::value_type> const& xChainClaimID,std::decay_t<typename SF_UINT64::type::value_type> const& xChainAccountCreateCount,std::decay_t<typename SF_UINT64::type::value_type> const& xChainAccountClaimCount,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<BridgeBuilder>(ltBRIDGE)
     {
@@ -178,6 +205,11 @@ public:
         setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
+    /**
+     * @brief Construct a BridgeBuilder from an existing SLE object.
+     * @param sle The existing ledger entry to copy from.
+     * @throws std::runtime_error if the ledger entry type doesn't match.
+     */
     BridgeBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltBRIDGE)
@@ -187,10 +219,10 @@ public:
         object_ = *sle;
     }
 
-    // Ledger entry-specific field setters
+    /** @brief Ledger entry-specific field setters */
 
     /**
-     * Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -201,7 +233,7 @@ public:
     }
 
     /**
-     * Set sfSignatureReward (soeREQUIRED)
+     * @brief Set sfSignatureReward (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -212,7 +244,7 @@ public:
     }
 
     /**
-     * Set sfMinAccountCreateAmount (soeOPTIONAL)
+     * @brief Set sfMinAccountCreateAmount (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -223,7 +255,7 @@ public:
     }
 
     /**
-     * Set sfXChainBridge (soeREQUIRED)
+     * @brief Set sfXChainBridge (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -234,7 +266,7 @@ public:
     }
 
     /**
-     * Set sfXChainClaimID (soeREQUIRED)
+     * @brief Set sfXChainClaimID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -245,7 +277,7 @@ public:
     }
 
     /**
-     * Set sfXChainAccountCreateCount (soeREQUIRED)
+     * @brief Set sfXChainAccountCreateCount (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -256,7 +288,7 @@ public:
     }
 
     /**
-     * Set sfXChainAccountClaimCount (soeREQUIRED)
+     * @brief Set sfXChainAccountClaimCount (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -267,7 +299,7 @@ public:
     }
 
     /**
-     * Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -278,7 +310,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -289,7 +321,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -300,7 +332,8 @@ public:
     }
 
     /**
-     * Build and return the completed Bridge wrapper.
+     * @brief Build and return the completed Bridge wrapper.
+     * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     Bridge

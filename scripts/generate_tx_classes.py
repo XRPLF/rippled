@@ -6,8 +6,6 @@ and generate C++ classes for each transaction type.
 Uses pcpp to preprocess the macro file and pyparsing to parse the DSL.
 """
 
-# cspell:words sfields
-
 import io
 import argparse
 from pathlib import Path

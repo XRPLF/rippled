@@ -13,11 +13,11 @@
 
 namespace xrpl::ledger_entries {
 
-// Forward declaration
 class SignerListBuilder;
 
 /**
- * Ledger Entry: SignerList
+ * @brief Ledger Entry: SignerList
+ *
  * Type: ltSIGNER_LIST (0x0053)
  * RPC Name: signer_list
  *
@@ -30,7 +30,7 @@ public:
     static constexpr LedgerEntryType entryType = ltSIGNER_LIST;
 
     /**
-     * Construct a SignerList ledger entry wrapper from an existing SLE object.
+     * @brief Construct a SignerList ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
     explicit SignerList(std::shared_ptr<SLE const> sle)
@@ -46,7 +46,8 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * Get sfOwner (soeOPTIONAL)
+     * @brief Get sfOwner (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
@@ -57,6 +58,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfOwner is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasOwner() const
@@ -65,7 +70,8 @@ public:
     }
 
     /**
-     * Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT64::type::value_type
@@ -75,7 +81,8 @@ public:
     }
 
     /**
-     * Get sfSignerQuorum (soeREQUIRED)
+     * @brief Get sfSignerQuorum (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -85,8 +92,9 @@ public:
     }
 
     /**
-     * Get sfSignerEntries (soeREQUIRED)
-     * Note: This is an untyped field (unknown).
+     * @brief Get sfSignerEntries (soeREQUIRED)
+     * @note This is an untyped field (unknown).
+     * @return The field value.
      */
     [[nodiscard]]
     STArray const&
@@ -96,7 +104,8 @@ public:
     }
 
     /**
-     * Get sfSignerListID (soeREQUIRED)
+     * @brief Get sfSignerListID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -106,7 +115,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -116,7 +126,8 @@ public:
     }
 
     /**
-     * Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -127,7 +138,8 @@ public:
 };
 
 /**
- * Builder for SignerList ledger entries.
+ * @brief Builder for SignerList ledger entries.
+ *
  * Provides a fluent interface for constructing ledger entries with method chaining.
  * Uses Json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
@@ -135,6 +147,15 @@ public:
 class SignerListBuilder : public LedgerEntryBuilderBase<SignerListBuilder>
 {
 public:
+    /**
+     * @brief Construct a new SignerListBuilder with required fields.
+     * @param ownerNode The sfOwnerNode field value.
+     * @param signerQuorum The sfSignerQuorum field value.
+     * @param signerEntries The sfSignerEntries field value.
+     * @param signerListID The sfSignerListID field value.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
+     */
     SignerListBuilder(std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT32::type::value_type> const& signerQuorum,STArray const& signerEntries,std::decay_t<typename SF_UINT32::type::value_type> const& signerListID,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<SignerListBuilder>(ltSIGNER_LIST)
     {
@@ -146,6 +167,11 @@ public:
         setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
+    /**
+     * @brief Construct a SignerListBuilder from an existing SLE object.
+     * @param sle The existing ledger entry to copy from.
+     * @throws std::runtime_error if the ledger entry type doesn't match.
+     */
     SignerListBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltSIGNER_LIST)
@@ -155,10 +181,10 @@ public:
         object_ = *sle;
     }
 
-    // Ledger entry-specific field setters
+    /** @brief Ledger entry-specific field setters */
 
     /**
-     * Set sfOwner (soeOPTIONAL)
+     * @brief Set sfOwner (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     SignerListBuilder&
@@ -169,7 +195,7 @@ public:
     }
 
     /**
-     * Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     SignerListBuilder&
@@ -180,7 +206,7 @@ public:
     }
 
     /**
-     * Set sfSignerQuorum (soeREQUIRED)
+     * @brief Set sfSignerQuorum (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     SignerListBuilder&
@@ -191,7 +217,7 @@ public:
     }
 
     /**
-     * Set sfSignerEntries (soeREQUIRED)
+     * @brief Set sfSignerEntries (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     SignerListBuilder&
@@ -202,7 +228,7 @@ public:
     }
 
     /**
-     * Set sfSignerListID (soeREQUIRED)
+     * @brief Set sfSignerListID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     SignerListBuilder&
@@ -213,7 +239,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     SignerListBuilder&
@@ -224,7 +250,7 @@ public:
     }
 
     /**
-     * Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     SignerListBuilder&
@@ -235,7 +261,8 @@ public:
     }
 
     /**
-     * Build and return the completed SignerList wrapper.
+     * @brief Build and return the completed SignerList wrapper.
+     * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     SignerList

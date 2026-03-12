@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class EscrowCancelBuilder;
 
 /**
- * Transaction: EscrowCancel
+ * @brief Transaction: EscrowCancel
+ *
  * Type: ttESCROW_CANCEL (4)
  * Delegable: Delegation::delegable
  * Amendment: uint256{}
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttESCROW_CANCEL;
 
     /**
-     * Construct a EscrowCancel transaction wrapper from an existing STTx object.
+     * @brief Construct a EscrowCancel transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit EscrowCancel(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfOwner (soeREQUIRED)
+     * @brief Get sfOwner (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ACCOUNT::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfOfferSequence (soeREQUIRED)
+     * @brief Get sfOfferSequence (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -69,7 +71,8 @@ public:
 };
 
 /**
- * Builder for EscrowCancel transactions.
+ * @brief Builder for EscrowCancel transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -77,6 +80,14 @@ public:
 class EscrowCancelBuilder : public TransactionBuilderBase<EscrowCancelBuilder>
 {
 public:
+    /**
+     * @brief Construct a new EscrowCancelBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param owner The sfOwner field value.
+     * @param offerSequence The sfOfferSequence field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     EscrowCancelBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,                     std::decay_t<typename SF_UINT32::type::value_type> const& offerSequence,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -87,6 +98,11 @@ public:
         setOfferSequence(offerSequence);
     }
 
+    /**
+     * @brief Construct a EscrowCancelBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     EscrowCancelBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttESCROW_CANCEL)
@@ -96,10 +112,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfOwner (soeREQUIRED)
+     * @brief Set sfOwner (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     EscrowCancelBuilder&
@@ -110,7 +126,7 @@ public:
     }
 
     /**
-     * Set sfOfferSequence (soeREQUIRED)
+     * @brief Set sfOfferSequence (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     EscrowCancelBuilder&
@@ -121,9 +137,9 @@ public:
     }
 
     /**
-     * Build and return the EscrowCancel wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the EscrowCancel wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     EscrowCancel

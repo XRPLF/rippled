@@ -13,11 +13,11 @@
 
 namespace xrpl::ledger_entries {
 
-// Forward declaration
 class ${name}Builder;
 
 /**
- * Ledger Entry: ${name}
+ * @brief Ledger Entry: ${name}
+ *
  * Type: ${tag} (${value})
  * RPC Name: ${rpc_name}
  *
@@ -30,7 +30,7 @@ public:
     static constexpr LedgerEntryType entryType = ${tag};
 
     /**
-     * Construct a ${name} ledger entry wrapper from an existing SLE object.
+     * @brief Construct a ${name} ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
     explicit ${name}(std::shared_ptr<SLE const> sle)
@@ -48,9 +48,14 @@ public:
 % if field['typed']:
 
     /**
-     * Get ${field['name']} (${field['requirement']})
+     * @brief Get ${field['name']} (${field['requirement']})
 % if field.get('mpt_support'):
      * MPT Support: ${field['mpt_support']}
+% endif
+% if field['requirement'] == 'soeREQUIRED':
+     * @return The field value.
+% else:
+     * @return The field value, or std::nullopt if not present.
 % endif
      */
 % if field['requirement'] == 'soeREQUIRED':
@@ -70,6 +75,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if ${field['name']} is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     has${field['name'][2:]}() const
@@ -80,11 +89,16 @@ public:
 % else:
 
     /**
-     * Get ${field['name']} (${field['requirement']})
+     * @brief Get ${field['name']} (${field['requirement']})
 % if field.get('mpt_support'):
      * MPT Support: ${field['mpt_support']}
 % endif
-     * Note: This is an untyped field (${field.get('cppType', 'unknown')}).
+     * @note This is an untyped field (${field.get('cppType', 'unknown')}).
+% if field['requirement'] == 'soeREQUIRED':
+     * @return The field value.
+% else:
+     * @return The field value, or std::nullopt if not present.
+% endif
      */
 % if field['requirement'] == 'soeREQUIRED':
     [[nodiscard]]
@@ -103,6 +117,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if ${field['name']} is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     has${field['name'][2:]}() const
@@ -118,7 +136,8 @@ public:
     required_fields = [f for f in fields if f['requirement'] == 'soeREQUIRED']
 %>\
 /**
- * Builder for ${name} ledger entries.
+ * @brief Builder for ${name} ledger entries.
+ *
  * Provides a fluent interface for constructing ledger entries with method chaining.
  * Uses Json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
@@ -126,6 +145,12 @@ public:
 class ${name}Builder : public LedgerEntryBuilderBase<${name}Builder>
 {
 public:
+    /**
+     * @brief Construct a new ${name}Builder with required fields.
+% for field in required_fields:
+     * @param ${field['paramName']} The ${field['name']} field value.
+% endfor
+     */
     ${name}Builder(\
 % for i, field in enumerate(required_fields):
 ${field['typeData']['setter_type']} ${field['paramName']}${',' if i < len(required_fields) - 1 else ''}\
@@ -138,6 +163,11 @@ ${field['typeData']['setter_type']} ${field['paramName']}${',' if i < len(requir
 % endfor
     }
 
+    /**
+     * @brief Construct a ${name}Builder from an existing SLE object.
+     * @param sle The existing ledger entry to copy from.
+     * @throws std::runtime_error if the ledger entry type doesn't match.
+     */
     ${name}Builder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ${tag})
@@ -147,11 +177,11 @@ ${field['typeData']['setter_type']} ${field['paramName']}${',' if i < len(requir
         object_ = *sle;
     }
 
-    // Ledger entry-specific field setters
+    /** @brief Ledger entry-specific field setters */
 % for field in fields:
 
     /**
-     * Set ${field['name']} (${field['requirement']})
+     * @brief Set ${field['name']} (${field['requirement']})
 % if field.get('mpt_support'):
      * MPT Support: ${field['mpt_support']}
 % endif
@@ -172,7 +202,8 @@ ${field['typeData']['setter_type']} ${field['paramName']}${',' if i < len(requir
 % endfor
 
     /**
-     * Build and return the completed ${name} wrapper.
+     * @brief Build and return the completed ${name} wrapper.
+     * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     ${name}

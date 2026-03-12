@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class UNLModifyBuilder;
 
 /**
- * Transaction: UNLModify
+ * @brief Transaction: UNLModify
+ *
  * Type: ttUNL_MODIFY (102)
  * Delegable: Delegation::notDelegable
  * Amendment: uint256{}
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttUNL_MODIFY;
 
     /**
-     * Construct a UNLModify transaction wrapper from an existing STTx object.
+     * @brief Construct a UNLModify transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit UNLModify(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfUNLModifyDisabling (soeREQUIRED)
+     * @brief Get sfUNLModifyDisabling (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT8::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfLedgerSequence (soeREQUIRED)
+     * @brief Get sfLedgerSequence (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -68,7 +70,8 @@ public:
     }
 
     /**
-     * Get sfUNLModifyValidator (soeREQUIRED)
+     * @brief Get sfUNLModifyValidator (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_VL::type::value_type
@@ -79,7 +82,8 @@ public:
 };
 
 /**
- * Builder for UNLModify transactions.
+ * @brief Builder for UNLModify transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -87,6 +91,15 @@ public:
 class UNLModifyBuilder : public TransactionBuilderBase<UNLModifyBuilder>
 {
 public:
+    /**
+     * @brief Construct a new UNLModifyBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param uNLModifyDisabling The sfUNLModifyDisabling field value.
+     * @param ledgerSequence The sfLedgerSequence field value.
+     * @param uNLModifyValidator The sfUNLModifyValidator field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     UNLModifyBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_UINT8::type::value_type> const& uNLModifyDisabling,                     std::decay_t<typename SF_UINT32::type::value_type> const& ledgerSequence,                     std::decay_t<typename SF_VL::type::value_type> const& uNLModifyValidator,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -98,6 +111,11 @@ public:
         setUNLModifyValidator(uNLModifyValidator);
     }
 
+    /**
+     * @brief Construct a UNLModifyBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     UNLModifyBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttUNL_MODIFY)
@@ -107,10 +125,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfUNLModifyDisabling (soeREQUIRED)
+     * @brief Set sfUNLModifyDisabling (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     UNLModifyBuilder&
@@ -121,7 +139,7 @@ public:
     }
 
     /**
-     * Set sfLedgerSequence (soeREQUIRED)
+     * @brief Set sfLedgerSequence (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     UNLModifyBuilder&
@@ -132,7 +150,7 @@ public:
     }
 
     /**
-     * Set sfUNLModifyValidator (soeREQUIRED)
+     * @brief Set sfUNLModifyValidator (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     UNLModifyBuilder&
@@ -143,9 +161,9 @@ public:
     }
 
     /**
-     * Build and return the UNLModify wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the UNLModify wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     UNLModify

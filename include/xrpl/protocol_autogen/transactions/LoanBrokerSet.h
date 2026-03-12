@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class LoanBrokerSetBuilder;
 
 /**
- * Transaction: LoanBrokerSet
+ * @brief Transaction: LoanBrokerSet
+ *
  * Type: ttLOAN_BROKER_SET (74)
  * Delegable: Delegation::delegable
  * Amendment: featureLendingProtocol
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttLOAN_BROKER_SET;
 
     /**
-     * Construct a LoanBrokerSet transaction wrapper from an existing STTx object.
+     * @brief Construct a LoanBrokerSet transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit LoanBrokerSet(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfVaultID (soeREQUIRED)
+     * @brief Get sfVaultID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfLoanBrokerID (soeOPTIONAL)
+     * @brief Get sfLoanBrokerID (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT256::type::value_type>
@@ -71,6 +73,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfLoanBrokerID is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasLoanBrokerID() const
@@ -79,7 +85,8 @@ public:
     }
 
     /**
-     * Get sfData (soeOPTIONAL)
+     * @brief Get sfData (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
@@ -92,6 +99,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfData is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasData() const
@@ -100,7 +111,8 @@ public:
     }
 
     /**
-     * Get sfManagementFeeRate (soeOPTIONAL)
+     * @brief Get sfManagementFeeRate (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT16::type::value_type>
@@ -113,6 +125,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfManagementFeeRate is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasManagementFeeRate() const
@@ -121,7 +137,8 @@ public:
     }
 
     /**
-     * Get sfDebtMaximum (soeOPTIONAL)
+     * @brief Get sfDebtMaximum (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_NUMBER::type::value_type>
@@ -134,6 +151,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDebtMaximum is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDebtMaximum() const
@@ -142,7 +163,8 @@ public:
     }
 
     /**
-     * Get sfCoverRateMinimum (soeOPTIONAL)
+     * @brief Get sfCoverRateMinimum (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -155,6 +177,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfCoverRateMinimum is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasCoverRateMinimum() const
@@ -163,7 +189,8 @@ public:
     }
 
     /**
-     * Get sfCoverRateLiquidation (soeOPTIONAL)
+     * @brief Get sfCoverRateLiquidation (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -176,6 +203,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfCoverRateLiquidation is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasCoverRateLiquidation() const
@@ -185,7 +216,8 @@ public:
 };
 
 /**
- * Builder for LoanBrokerSet transactions.
+ * @brief Builder for LoanBrokerSet transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -193,6 +225,13 @@ public:
 class LoanBrokerSetBuilder : public TransactionBuilderBase<LoanBrokerSetBuilder>
 {
 public:
+    /**
+     * @brief Construct a new LoanBrokerSetBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param vaultID The sfVaultID field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     LoanBrokerSetBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_UINT256::type::value_type> const& vaultID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -202,6 +241,11 @@ public:
         setVaultID(vaultID);
     }
 
+    /**
+     * @brief Construct a LoanBrokerSetBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     LoanBrokerSetBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttLOAN_BROKER_SET)
@@ -211,10 +255,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfVaultID (soeREQUIRED)
+     * @brief Set sfVaultID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerSetBuilder&
@@ -225,7 +269,7 @@ public:
     }
 
     /**
-     * Set sfLoanBrokerID (soeOPTIONAL)
+     * @brief Set sfLoanBrokerID (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerSetBuilder&
@@ -236,7 +280,7 @@ public:
     }
 
     /**
-     * Set sfData (soeOPTIONAL)
+     * @brief Set sfData (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerSetBuilder&
@@ -247,7 +291,7 @@ public:
     }
 
     /**
-     * Set sfManagementFeeRate (soeOPTIONAL)
+     * @brief Set sfManagementFeeRate (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerSetBuilder&
@@ -258,7 +302,7 @@ public:
     }
 
     /**
-     * Set sfDebtMaximum (soeOPTIONAL)
+     * @brief Set sfDebtMaximum (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerSetBuilder&
@@ -269,7 +313,7 @@ public:
     }
 
     /**
-     * Set sfCoverRateMinimum (soeOPTIONAL)
+     * @brief Set sfCoverRateMinimum (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerSetBuilder&
@@ -280,7 +324,7 @@ public:
     }
 
     /**
-     * Set sfCoverRateLiquidation (soeOPTIONAL)
+     * @brief Set sfCoverRateLiquidation (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerSetBuilder&
@@ -291,9 +335,9 @@ public:
     }
 
     /**
-     * Build and return the LoanBrokerSet wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the LoanBrokerSet wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     LoanBrokerSet

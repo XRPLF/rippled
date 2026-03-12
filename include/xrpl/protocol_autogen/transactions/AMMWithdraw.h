@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class AMMWithdrawBuilder;
 
 /**
- * Transaction: AMMWithdraw
+ * @brief Transaction: AMMWithdraw
+ *
  * Type: ttAMM_WITHDRAW (37)
  * Delegable: Delegation::delegable
  * Amendment: featureAMM
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttAMM_WITHDRAW;
 
     /**
-     * Construct a AMMWithdraw transaction wrapper from an existing STTx object.
+     * @brief Construct a AMMWithdraw transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit AMMWithdraw(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfAsset (soeREQUIRED)
+     * @brief Get sfAsset (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ISSUE::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfAsset2 (soeREQUIRED)
+     * @brief Get sfAsset2 (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_ISSUE::type::value_type
@@ -68,7 +70,8 @@ public:
     }
 
     /**
-     * Get sfAmount (soeOPTIONAL)
+     * @brief Get sfAmount (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_AMOUNT::type::value_type>
@@ -81,6 +84,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfAmount is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasAmount() const
@@ -89,7 +96,8 @@ public:
     }
 
     /**
-     * Get sfAmount2 (soeOPTIONAL)
+     * @brief Get sfAmount2 (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_AMOUNT::type::value_type>
@@ -102,6 +110,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfAmount2 is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasAmount2() const
@@ -110,7 +122,8 @@ public:
     }
 
     /**
-     * Get sfEPrice (soeOPTIONAL)
+     * @brief Get sfEPrice (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_AMOUNT::type::value_type>
@@ -123,6 +136,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfEPrice is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasEPrice() const
@@ -131,7 +148,8 @@ public:
     }
 
     /**
-     * Get sfLPTokenIn (soeOPTIONAL)
+     * @brief Get sfLPTokenIn (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_AMOUNT::type::value_type>
@@ -144,6 +162,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfLPTokenIn is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasLPTokenIn() const
@@ -153,7 +175,8 @@ public:
 };
 
 /**
- * Builder for AMMWithdraw transactions.
+ * @brief Builder for AMMWithdraw transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -161,6 +184,14 @@ public:
 class AMMWithdrawBuilder : public TransactionBuilderBase<AMMWithdrawBuilder>
 {
 public:
+    /**
+     * @brief Construct a new AMMWithdrawBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param asset The sfAsset field value.
+     * @param asset2 The sfAsset2 field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     AMMWithdrawBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_ISSUE::type::value_type> const& asset,                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset2,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -171,6 +202,11 @@ public:
         setAsset2(asset2);
     }
 
+    /**
+     * @brief Construct a AMMWithdrawBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     AMMWithdrawBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttAMM_WITHDRAW)
@@ -180,10 +216,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfAsset (soeREQUIRED)
+     * @brief Set sfAsset (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     AMMWithdrawBuilder&
@@ -194,7 +230,7 @@ public:
     }
 
     /**
-     * Set sfAsset2 (soeREQUIRED)
+     * @brief Set sfAsset2 (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     AMMWithdrawBuilder&
@@ -205,7 +241,7 @@ public:
     }
 
     /**
-     * Set sfAmount (soeOPTIONAL)
+     * @brief Set sfAmount (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     AMMWithdrawBuilder&
@@ -216,7 +252,7 @@ public:
     }
 
     /**
-     * Set sfAmount2 (soeOPTIONAL)
+     * @brief Set sfAmount2 (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     AMMWithdrawBuilder&
@@ -227,7 +263,7 @@ public:
     }
 
     /**
-     * Set sfEPrice (soeOPTIONAL)
+     * @brief Set sfEPrice (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     AMMWithdrawBuilder&
@@ -238,7 +274,7 @@ public:
     }
 
     /**
-     * Set sfLPTokenIn (soeOPTIONAL)
+     * @brief Set sfLPTokenIn (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     AMMWithdrawBuilder&
@@ -249,9 +285,9 @@ public:
     }
 
     /**
-     * Build and return the AMMWithdraw wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the AMMWithdraw wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     AMMWithdraw

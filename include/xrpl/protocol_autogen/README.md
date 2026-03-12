@@ -1,5 +1,3 @@
-<!-- cspell:words pyparsing -->
-
 # Protocol Autogen
 
 This directory contains auto-generated C++ wrapper classes for XRP Ledger protocol types.

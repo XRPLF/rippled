@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class LoanManageBuilder;
 
 /**
- * Transaction: LoanManage
+ * @brief Transaction: LoanManage
+ *
  * Type: ttLOAN_MANAGE (82)
  * Delegable: Delegation::delegable
  * Amendment: featureLendingProtocol
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttLOAN_MANAGE;
 
     /**
-     * Construct a LoanManage transaction wrapper from an existing STTx object.
+     * @brief Construct a LoanManage transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit LoanManage(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfLoanID (soeREQUIRED)
+     * @brief Get sfLoanID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -59,7 +60,8 @@ public:
 };
 
 /**
- * Builder for LoanManage transactions.
+ * @brief Builder for LoanManage transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -67,6 +69,13 @@ public:
 class LoanManageBuilder : public TransactionBuilderBase<LoanManageBuilder>
 {
 public:
+    /**
+     * @brief Construct a new LoanManageBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param loanID The sfLoanID field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     LoanManageBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_UINT256::type::value_type> const& loanID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -76,6 +85,11 @@ public:
         setLoanID(loanID);
     }
 
+    /**
+     * @brief Construct a LoanManageBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     LoanManageBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttLOAN_MANAGE)
@@ -85,10 +99,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfLoanID (soeREQUIRED)
+     * @brief Set sfLoanID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     LoanManageBuilder&
@@ -99,9 +113,9 @@ public:
     }
 
     /**
-     * Build and return the LoanManage wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the LoanManage wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     LoanManage

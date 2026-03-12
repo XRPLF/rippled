@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class OracleSetBuilder;
 
 /**
- * Transaction: OracleSet
+ * @brief Transaction: OracleSet
+ *
  * Type: ttORACLE_SET (51)
  * Delegable: Delegation::delegable
  * Amendment: featurePriceOracle
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttORACLE_SET;
 
     /**
-     * Construct a OracleSet transaction wrapper from an existing STTx object.
+     * @brief Construct a OracleSet transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit OracleSet(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfOracleDocumentID (soeREQUIRED)
+     * @brief Get sfOracleDocumentID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfProvider (soeOPTIONAL)
+     * @brief Get sfProvider (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
@@ -71,6 +73,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfProvider is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasProvider() const
@@ -79,7 +85,8 @@ public:
     }
 
     /**
-     * Get sfURI (soeOPTIONAL)
+     * @brief Get sfURI (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
@@ -92,6 +99,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfURI is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasURI() const
@@ -100,7 +111,8 @@ public:
     }
 
     /**
-     * Get sfAssetClass (soeOPTIONAL)
+     * @brief Get sfAssetClass (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
@@ -113,6 +125,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfAssetClass is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasAssetClass() const
@@ -121,7 +137,8 @@ public:
     }
 
     /**
-     * Get sfLastUpdateTime (soeREQUIRED)
+     * @brief Get sfLastUpdateTime (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
@@ -130,8 +147,9 @@ public:
         return this->tx_->at(sfLastUpdateTime);
     }
     /**
-     * Get sfPriceDataSeries (soeREQUIRED)
-     * Note: This is an untyped field
+     * @brief Get sfPriceDataSeries (soeREQUIRED)
+     * @note This is an untyped field.
+     * @return The field value.
      */
     [[nodiscard]]
     STArray const&
@@ -142,7 +160,8 @@ public:
 };
 
 /**
- * Builder for OracleSet transactions.
+ * @brief Builder for OracleSet transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -150,6 +169,15 @@ public:
 class OracleSetBuilder : public TransactionBuilderBase<OracleSetBuilder>
 {
 public:
+    /**
+     * @brief Construct a new OracleSetBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param oracleDocumentID The sfOracleDocumentID field value.
+     * @param lastUpdateTime The sfLastUpdateTime field value.
+     * @param priceDataSeries The sfPriceDataSeries field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     OracleSetBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_UINT32::type::value_type> const& oracleDocumentID,                     std::decay_t<typename SF_UINT32::type::value_type> const& lastUpdateTime,                     STArray const& priceDataSeries,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -161,6 +189,11 @@ public:
         setPriceDataSeries(priceDataSeries);
     }
 
+    /**
+     * @brief Construct a OracleSetBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     OracleSetBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttORACLE_SET)
@@ -170,10 +203,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfOracleDocumentID (soeREQUIRED)
+     * @brief Set sfOracleDocumentID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     OracleSetBuilder&
@@ -184,7 +217,7 @@ public:
     }
 
     /**
-     * Set sfProvider (soeOPTIONAL)
+     * @brief Set sfProvider (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     OracleSetBuilder&
@@ -195,7 +228,7 @@ public:
     }
 
     /**
-     * Set sfURI (soeOPTIONAL)
+     * @brief Set sfURI (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     OracleSetBuilder&
@@ -206,7 +239,7 @@ public:
     }
 
     /**
-     * Set sfAssetClass (soeOPTIONAL)
+     * @brief Set sfAssetClass (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     OracleSetBuilder&
@@ -217,7 +250,7 @@ public:
     }
 
     /**
-     * Set sfLastUpdateTime (soeREQUIRED)
+     * @brief Set sfLastUpdateTime (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     OracleSetBuilder&
@@ -228,7 +261,7 @@ public:
     }
 
     /**
-     * Set sfPriceDataSeries (soeREQUIRED)
+     * @brief Set sfPriceDataSeries (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     OracleSetBuilder&
@@ -239,9 +272,9 @@ public:
     }
 
     /**
-     * Build and return the OracleSet wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the OracleSet wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     OracleSet

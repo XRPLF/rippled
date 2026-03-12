@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class LoanSetBuilder;
 
 /**
- * Transaction: LoanSet
+ * @brief Transaction: LoanSet
+ *
  * Type: ttLOAN_SET (80)
  * Delegable: Delegation::delegable
  * Amendment: featureLendingProtocol
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttLOAN_SET;
 
     /**
-     * Construct a LoanSet transaction wrapper from an existing STTx object.
+     * @brief Construct a LoanSet transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit LoanSet(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfLoanBrokerID (soeREQUIRED)
+     * @brief Get sfLoanBrokerID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfData (soeOPTIONAL)
+     * @brief Get sfData (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
@@ -71,6 +73,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfData is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasData() const
@@ -79,7 +85,8 @@ public:
     }
 
     /**
-     * Get sfCounterparty (soeOPTIONAL)
+     * @brief Get sfCounterparty (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
@@ -92,6 +99,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfCounterparty is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasCounterparty() const
@@ -99,8 +110,9 @@ public:
         return this->tx_->isFieldPresent(sfCounterparty);
     }
     /**
-     * Get sfCounterpartySignature (soeOPTIONAL)
-     * Note: This is an untyped field
+     * @brief Get sfCounterpartySignature (soeOPTIONAL)
+     * @note This is an untyped field.
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     std::optional<STObject>
@@ -111,6 +123,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfCounterpartySignature is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasCounterpartySignature() const
@@ -119,7 +135,8 @@ public:
     }
 
     /**
-     * Get sfLoanOriginationFee (soeOPTIONAL)
+     * @brief Get sfLoanOriginationFee (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_NUMBER::type::value_type>
@@ -132,6 +149,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfLoanOriginationFee is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasLoanOriginationFee() const
@@ -140,7 +161,8 @@ public:
     }
 
     /**
-     * Get sfLoanServiceFee (soeOPTIONAL)
+     * @brief Get sfLoanServiceFee (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_NUMBER::type::value_type>
@@ -153,6 +175,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfLoanServiceFee is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasLoanServiceFee() const
@@ -161,7 +187,8 @@ public:
     }
 
     /**
-     * Get sfLatePaymentFee (soeOPTIONAL)
+     * @brief Get sfLatePaymentFee (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_NUMBER::type::value_type>
@@ -174,6 +201,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfLatePaymentFee is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasLatePaymentFee() const
@@ -182,7 +213,8 @@ public:
     }
 
     /**
-     * Get sfClosePaymentFee (soeOPTIONAL)
+     * @brief Get sfClosePaymentFee (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_NUMBER::type::value_type>
@@ -195,6 +227,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfClosePaymentFee is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasClosePaymentFee() const
@@ -203,7 +239,8 @@ public:
     }
 
     /**
-     * Get sfOverpaymentFee (soeOPTIONAL)
+     * @brief Get sfOverpaymentFee (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -216,6 +253,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfOverpaymentFee is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasOverpaymentFee() const
@@ -224,7 +265,8 @@ public:
     }
 
     /**
-     * Get sfInterestRate (soeOPTIONAL)
+     * @brief Get sfInterestRate (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -237,6 +279,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfInterestRate is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasInterestRate() const
@@ -245,7 +291,8 @@ public:
     }
 
     /**
-     * Get sfLateInterestRate (soeOPTIONAL)
+     * @brief Get sfLateInterestRate (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -258,6 +305,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfLateInterestRate is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasLateInterestRate() const
@@ -266,7 +317,8 @@ public:
     }
 
     /**
-     * Get sfCloseInterestRate (soeOPTIONAL)
+     * @brief Get sfCloseInterestRate (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -279,6 +331,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfCloseInterestRate is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasCloseInterestRate() const
@@ -287,7 +343,8 @@ public:
     }
 
     /**
-     * Get sfOverpaymentInterestRate (soeOPTIONAL)
+     * @brief Get sfOverpaymentInterestRate (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -300,6 +357,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfOverpaymentInterestRate is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasOverpaymentInterestRate() const
@@ -308,7 +369,8 @@ public:
     }
 
     /**
-     * Get sfPrincipalRequested (soeREQUIRED)
+     * @brief Get sfPrincipalRequested (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_NUMBER::type::value_type
@@ -318,7 +380,8 @@ public:
     }
 
     /**
-     * Get sfPaymentTotal (soeOPTIONAL)
+     * @brief Get sfPaymentTotal (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -331,6 +394,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfPaymentTotal is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasPaymentTotal() const
@@ -339,7 +406,8 @@ public:
     }
 
     /**
-     * Get sfPaymentInterval (soeOPTIONAL)
+     * @brief Get sfPaymentInterval (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -352,6 +420,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfPaymentInterval is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasPaymentInterval() const
@@ -360,7 +432,8 @@ public:
     }
 
     /**
-     * Get sfGracePeriod (soeOPTIONAL)
+     * @brief Get sfGracePeriod (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -373,6 +446,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfGracePeriod is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasGracePeriod() const
@@ -382,7 +459,8 @@ public:
 };
 
 /**
- * Builder for LoanSet transactions.
+ * @brief Builder for LoanSet transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -390,6 +468,14 @@ public:
 class LoanSetBuilder : public TransactionBuilderBase<LoanSetBuilder>
 {
 public:
+    /**
+     * @brief Construct a new LoanSetBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param loanBrokerID The sfLoanBrokerID field value.
+     * @param principalRequested The sfPrincipalRequested field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     LoanSetBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_UINT256::type::value_type> const& loanBrokerID,                     std::decay_t<typename SF_NUMBER::type::value_type> const& principalRequested,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -400,6 +486,11 @@ public:
         setPrincipalRequested(principalRequested);
     }
 
+    /**
+     * @brief Construct a LoanSetBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     LoanSetBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttLOAN_SET)
@@ -409,10 +500,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfLoanBrokerID (soeREQUIRED)
+     * @brief Set sfLoanBrokerID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -423,7 +514,7 @@ public:
     }
 
     /**
-     * Set sfData (soeOPTIONAL)
+     * @brief Set sfData (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -434,7 +525,7 @@ public:
     }
 
     /**
-     * Set sfCounterparty (soeOPTIONAL)
+     * @brief Set sfCounterparty (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -445,7 +536,7 @@ public:
     }
 
     /**
-     * Set sfCounterpartySignature (soeOPTIONAL)
+     * @brief Set sfCounterpartySignature (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -456,7 +547,7 @@ public:
     }
 
     /**
-     * Set sfLoanOriginationFee (soeOPTIONAL)
+     * @brief Set sfLoanOriginationFee (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -467,7 +558,7 @@ public:
     }
 
     /**
-     * Set sfLoanServiceFee (soeOPTIONAL)
+     * @brief Set sfLoanServiceFee (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -478,7 +569,7 @@ public:
     }
 
     /**
-     * Set sfLatePaymentFee (soeOPTIONAL)
+     * @brief Set sfLatePaymentFee (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -489,7 +580,7 @@ public:
     }
 
     /**
-     * Set sfClosePaymentFee (soeOPTIONAL)
+     * @brief Set sfClosePaymentFee (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -500,7 +591,7 @@ public:
     }
 
     /**
-     * Set sfOverpaymentFee (soeOPTIONAL)
+     * @brief Set sfOverpaymentFee (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -511,7 +602,7 @@ public:
     }
 
     /**
-     * Set sfInterestRate (soeOPTIONAL)
+     * @brief Set sfInterestRate (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -522,7 +613,7 @@ public:
     }
 
     /**
-     * Set sfLateInterestRate (soeOPTIONAL)
+     * @brief Set sfLateInterestRate (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -533,7 +624,7 @@ public:
     }
 
     /**
-     * Set sfCloseInterestRate (soeOPTIONAL)
+     * @brief Set sfCloseInterestRate (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -544,7 +635,7 @@ public:
     }
 
     /**
-     * Set sfOverpaymentInterestRate (soeOPTIONAL)
+     * @brief Set sfOverpaymentInterestRate (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -555,7 +646,7 @@ public:
     }
 
     /**
-     * Set sfPrincipalRequested (soeREQUIRED)
+     * @brief Set sfPrincipalRequested (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -566,7 +657,7 @@ public:
     }
 
     /**
-     * Set sfPaymentTotal (soeOPTIONAL)
+     * @brief Set sfPaymentTotal (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -577,7 +668,7 @@ public:
     }
 
     /**
-     * Set sfPaymentInterval (soeOPTIONAL)
+     * @brief Set sfPaymentInterval (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -588,7 +679,7 @@ public:
     }
 
     /**
-     * Set sfGracePeriod (soeOPTIONAL)
+     * @brief Set sfGracePeriod (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -599,9 +690,9 @@ public:
     }
 
     /**
-     * Build and return the LoanSet wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the LoanSet wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     LoanSet

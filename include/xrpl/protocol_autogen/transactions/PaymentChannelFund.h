@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class PaymentChannelFundBuilder;
 
 /**
- * Transaction: PaymentChannelFund
+ * @brief Transaction: PaymentChannelFund
+ *
  * Type: ttPAYCHAN_FUND (14)
  * Delegable: Delegation::delegable
  * Amendment: uint256{}
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttPAYCHAN_FUND;
 
     /**
-     * Construct a PaymentChannelFund transaction wrapper from an existing STTx object.
+     * @brief Construct a PaymentChannelFund transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit PaymentChannelFund(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfChannel (soeREQUIRED)
+     * @brief Get sfChannel (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT256::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfAmount (soeREQUIRED)
+     * @brief Get sfAmount (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_AMOUNT::type::value_type
@@ -68,7 +70,8 @@ public:
     }
 
     /**
-     * Get sfExpiration (soeOPTIONAL)
+     * @brief Get sfExpiration (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -81,6 +84,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfExpiration is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasExpiration() const
@@ -90,7 +97,8 @@ public:
 };
 
 /**
- * Builder for PaymentChannelFund transactions.
+ * @brief Builder for PaymentChannelFund transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -98,6 +106,14 @@ public:
 class PaymentChannelFundBuilder : public TransactionBuilderBase<PaymentChannelFundBuilder>
 {
 public:
+    /**
+     * @brief Construct a new PaymentChannelFundBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param channel The sfChannel field value.
+     * @param amount The sfAmount field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     PaymentChannelFundBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_UINT256::type::value_type> const& channel,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -108,6 +124,11 @@ public:
         setAmount(amount);
     }
 
+    /**
+     * @brief Construct a PaymentChannelFundBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     PaymentChannelFundBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttPAYCHAN_FUND)
@@ -117,10 +138,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfChannel (soeREQUIRED)
+     * @brief Set sfChannel (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelFundBuilder&
@@ -131,7 +152,7 @@ public:
     }
 
     /**
-     * Set sfAmount (soeREQUIRED)
+     * @brief Set sfAmount (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelFundBuilder&
@@ -142,7 +163,7 @@ public:
     }
 
     /**
-     * Set sfExpiration (soeOPTIONAL)
+     * @brief Set sfExpiration (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelFundBuilder&
@@ -153,9 +174,9 @@ public:
     }
 
     /**
-     * Build and return the PaymentChannelFund wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the PaymentChannelFund wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     PaymentChannelFund

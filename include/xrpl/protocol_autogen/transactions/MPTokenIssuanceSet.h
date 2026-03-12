@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class MPTokenIssuanceSetBuilder;
 
 /**
- * Transaction: MPTokenIssuanceSet
+ * @brief Transaction: MPTokenIssuanceSet
+ *
  * Type: ttMPTOKEN_ISSUANCE_SET (56)
  * Delegable: Delegation::delegable
  * Amendment: featureMPTokensV1
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttMPTOKEN_ISSUANCE_SET;
 
     /**
-     * Construct a MPTokenIssuanceSet transaction wrapper from an existing STTx object.
+     * @brief Construct a MPTokenIssuanceSet transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit MPTokenIssuanceSet(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfMPTokenIssuanceID (soeREQUIRED)
+     * @brief Get sfMPTokenIssuanceID (soeREQUIRED)
+     * @return The field value.
      */
     [[nodiscard]]
     SF_UINT192::type::value_type
@@ -58,7 +59,8 @@ public:
     }
 
     /**
-     * Get sfHolder (soeOPTIONAL)
+     * @brief Get sfHolder (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
@@ -71,6 +73,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfHolder is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasHolder() const
@@ -79,7 +85,8 @@ public:
     }
 
     /**
-     * Get sfDomainID (soeOPTIONAL)
+     * @brief Get sfDomainID (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT256::type::value_type>
@@ -92,6 +99,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfDomainID is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasDomainID() const
@@ -100,7 +111,8 @@ public:
     }
 
     /**
-     * Get sfMPTokenMetadata (soeOPTIONAL)
+     * @brief Get sfMPTokenMetadata (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
@@ -113,6 +125,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfMPTokenMetadata is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasMPTokenMetadata() const
@@ -121,7 +137,8 @@ public:
     }
 
     /**
-     * Get sfTransferFee (soeOPTIONAL)
+     * @brief Get sfTransferFee (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT16::type::value_type>
@@ -134,6 +151,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfTransferFee is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasTransferFee() const
@@ -142,7 +163,8 @@ public:
     }
 
     /**
-     * Get sfMutableFlags (soeOPTIONAL)
+     * @brief Get sfMutableFlags (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
@@ -155,6 +177,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfMutableFlags is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasMutableFlags() const
@@ -164,7 +190,8 @@ public:
 };
 
 /**
- * Builder for MPTokenIssuanceSet transactions.
+ * @brief Builder for MPTokenIssuanceSet transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -172,6 +199,13 @@ public:
 class MPTokenIssuanceSetBuilder : public TransactionBuilderBase<MPTokenIssuanceSetBuilder>
 {
 public:
+    /**
+     * @brief Construct a new MPTokenIssuanceSetBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param mPTokenIssuanceID The sfMPTokenIssuanceID field value.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     MPTokenIssuanceSetBuilder(SF_ACCOUNT::type::value_type account,
                      std::decay_t<typename SF_UINT192::type::value_type> const& mPTokenIssuanceID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -181,6 +215,11 @@ public:
         setMPTokenIssuanceID(mPTokenIssuanceID);
     }
 
+    /**
+     * @brief Construct a MPTokenIssuanceSetBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     MPTokenIssuanceSetBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttMPTOKEN_ISSUANCE_SET)
@@ -190,10 +229,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfMPTokenIssuanceID (soeREQUIRED)
+     * @brief Set sfMPTokenIssuanceID (soeREQUIRED)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
@@ -204,7 +243,7 @@ public:
     }
 
     /**
-     * Set sfHolder (soeOPTIONAL)
+     * @brief Set sfHolder (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
@@ -215,7 +254,7 @@ public:
     }
 
     /**
-     * Set sfDomainID (soeOPTIONAL)
+     * @brief Set sfDomainID (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
@@ -226,7 +265,7 @@ public:
     }
 
     /**
-     * Set sfMPTokenMetadata (soeOPTIONAL)
+     * @brief Set sfMPTokenMetadata (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
@@ -237,7 +276,7 @@ public:
     }
 
     /**
-     * Set sfTransferFee (soeOPTIONAL)
+     * @brief Set sfTransferFee (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
@@ -248,7 +287,7 @@ public:
     }
 
     /**
-     * Set sfMutableFlags (soeOPTIONAL)
+     * @brief Set sfMutableFlags (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
@@ -259,9 +298,9 @@ public:
     }
 
     /**
-     * Build and return the MPTokenIssuanceSet wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the MPTokenIssuanceSet wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     MPTokenIssuanceSet

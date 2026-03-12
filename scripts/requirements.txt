@@ -2,7 +2,6 @@
 #
 # These packages are required to run the code generation scripts that
 # parse macro files and generate C++ wrapper classes.
-# cspell:words pyparsing
 
 # C preprocessor for Python - used to preprocess macro files
 pcpp>=1.30
@@ -12,3 +11,9 @@ pyparsing>=3.0.0
 
 # Template engine - used to generate C++ code from templates
 Mako>=1.2.0
+
+# Pre-commit - used to format generated C++ code
+pre-commit>=3.0.0
+
+# Code formatter - used to format generated C++ code
+clang-format>=18.1.0

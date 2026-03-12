@@ -13,11 +13,11 @@
 
 namespace xrpl::transactions {
 
-// Forward declaration
 class SetRegularKeyBuilder;
 
 /**
- * Transaction: SetRegularKey
+ * @brief Transaction: SetRegularKey
+ *
  * Type: ttREGULAR_KEY_SET (5)
  * Delegable: Delegation::notDelegable
  * Amendment: uint256{}
@@ -32,7 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttREGULAR_KEY_SET;
 
     /**
-     * Construct a SetRegularKey transaction wrapper from an existing STTx object.
+     * @brief Construct a SetRegularKey transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit SetRegularKey(std::shared_ptr<STTx const> tx)
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * Get sfRegularKey (soeOPTIONAL)
+     * @brief Get sfRegularKey (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
@@ -61,6 +62,10 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * @brief Check if sfRegularKey is present.
+     * @return True if the field is present, false otherwise.
+     */
     [[nodiscard]]
     bool
     hasRegularKey() const
@@ -70,7 +75,8 @@ public:
 };
 
 /**
- * Builder for SetRegularKey transactions.
+ * @brief Builder for SetRegularKey transactions.
+ *
  * Provides a fluent interface for constructing transactions with method chaining.
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
@@ -78,6 +84,12 @@ public:
 class SetRegularKeyBuilder : public TransactionBuilderBase<SetRegularKeyBuilder>
 {
 public:
+    /**
+     * @brief Construct a new SetRegularKeyBuilder with required fields.
+     * @param account The account initiating the transaction.
+     * @param sequence Optional sequence number for the transaction.
+     * @param fee Optional fee for the transaction.
+     */
     SetRegularKeyBuilder(SF_ACCOUNT::type::value_type account,
                     std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
@@ -86,6 +98,11 @@ public:
     {
     }
 
+    /**
+     * @brief Construct a SetRegularKeyBuilder from an existing STTx object.
+     * @param tx The existing transaction to copy from.
+     * @throws std::runtime_error if the transaction type doesn't match.
+     */
     SetRegularKeyBuilder(std::shared_ptr<STTx const> tx)
     {
         if (tx->getTxnType() != ttREGULAR_KEY_SET)
@@ -95,10 +112,10 @@ public:
         object_ = *tx;
     }
 
-    // Transaction-specific field setters
+    /** @brief Transaction-specific field setters */
 
     /**
-     * Set sfRegularKey (soeOPTIONAL)
+     * @brief Set sfRegularKey (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
     SetRegularKeyBuilder&
@@ -109,9 +126,9 @@ public:
     }
 
     /**
-     * Build and return the SetRegularKey wrapper.
-     * @param publicKey The public key for signing
-     * @param secretKey The secret key for signing
+     * @brief Build and return the SetRegularKey wrapper.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
      * @return The constructed transaction wrapper.
      */
     SetRegularKey
