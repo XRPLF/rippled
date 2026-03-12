@@ -163,7 +163,7 @@ def main():
                 try:
                     rel_path_str = str(file_path.relative_to(repo_root))
 
-                    # Read file with large buffer for performance.
+                    # Read file with a large buffer for performance.
                     with open(
                         file_path,
                         "r",
@@ -192,8 +192,8 @@ def main():
     for file_path, include_line in raw_includes:
         include_level = extract_include_level(include_line)
         if not include_level:
-           continue
-        
+            continue
+
         level = get_level(file_path)
         if level != include_level:
             path_counts[(level, include_level)] += 1
