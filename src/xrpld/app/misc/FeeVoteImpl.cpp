@@ -1,4 +1,5 @@
 #include <xrpld/app/misc/FeeVote.h>
+#include <xrpld/core/Config.h>
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/Ledger.h>
