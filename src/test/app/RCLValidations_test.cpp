@@ -217,10 +217,13 @@ class RCLValidations_test : public beast::unit_test::suite
         // Generate a chain of 256 + 10 ledgers
         jtx::Env env(*this);
         auto& j = env.journal;
-        Rules const rules{env.app().config().features};
-        Fees const fees = env.app().config().FEES.toFees();
+        Config config;
         auto prev = std::make_shared<Ledger const>(
-            create_genesis, rules, fees, std::vector<uint256>{}, env.app().getNodeFamily());
+            create_genesis,
+            Rules{config.features},
+            config.FEES.toFees(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
         history.push_back(prev);
         for (auto i = 0; i < (maxAncestors + 10); ++i)
         {

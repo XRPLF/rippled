@@ -36,9 +36,6 @@ public:
 
     Rules() = delete;
 
-    // Prevent passing temporary presets - they would create a dangling reference
-    explicit Rules(std::unordered_set<uint256, beast::uhash<>>&& presets) = delete;
-
     /** Construct an empty rule set.
 
         These are the rules reflected by
