@@ -163,7 +163,7 @@ def main():
                 try:
                     rel_path_str = str(file_path.relative_to(repo_root))
 
-                    # Read file with larger buffer for better performance.
+                    # Read file with large buffer for performance.
                     with open(
                         file_path,
                         "r",
