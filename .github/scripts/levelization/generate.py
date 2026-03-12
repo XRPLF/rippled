@@ -2,9 +2,7 @@
 
 """
 Usage: generate.py
-This script takes no parameters, and can be run from any directory,
-as long as it is in the expected.
-location in the repo.
+This script takes no parameters, and can be called from any directory in the file system.
 """
 
 import os
