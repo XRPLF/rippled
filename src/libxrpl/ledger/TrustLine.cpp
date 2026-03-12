@@ -142,7 +142,7 @@ TrustLine::getQualityIn() const
 {
     auto const quality =
         viewLowest_ ? rippleState_.getLowQualityIn() : rippleState_.getHighQualityIn();
-    return Rate{quality.value_or(QUALITY_ONE)};
+    return Rate{quality.value_or(0)};
 }
 
 Rate
@@ -150,7 +150,7 @@ TrustLine::getQualityOut() const
 {
     auto const quality =
         viewLowest_ ? rippleState_.getLowQualityOut() : rippleState_.getHighQualityOut();
-    return Rate{quality.value_or(QUALITY_ONE)};
+    return Rate{quality.value_or(0)};
 }
 
 Json::Value
