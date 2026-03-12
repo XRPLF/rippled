@@ -713,17 +713,24 @@ public:
 
         auto const result = six_path_append_request_result();
         BEAST_EXPECT(result.isMember(jss::alternatives));
-        if (!result.isMember(jss::alternatives) || !result[jss::alternatives].isArray())
+        if (!result.isMember(jss::alternatives))
             return;
 
+        BEAST_EXPECT(result[jss::alternatives].isArray());
+        if (!result[jss::alternatives].isArray())
+            return;
+
+        bool sawPathsComputed = false;
         for (auto const& alt : result[jss::alternatives])
         {
             if (!alt.isMember(jss::paths_computed))
                 continue;
+            sawPathsComputed = true;
             BEAST_EXPECT(alt[jss::paths_computed].isArray());
             if (alt[jss::paths_computed].isArray())
                 BEAST_EXPECT(alt[jss::paths_computed].size() <= 6);
         }
+        BEAST_EXPECT(sawPathsComputed);
     }
 
     void
