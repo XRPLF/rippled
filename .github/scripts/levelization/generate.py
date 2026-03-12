@@ -88,27 +88,25 @@ def extract_include_level(include_line: str) -> Optional[str]:
     return include_level.replace("/", ".")
 
 
-def find_repo_root(start_path: Path, depth_limit: int = 10) -> Path:
+def find_repository_directories(
+    start_path: Path, depth_limit: int = 10
+) -> Tuple[Path, List[Path]]:
     """
-    Find the repository root by looking for .git directory or src/include folders.
+    Find the repository root by looking for src or include folders.
     Walks up the directory tree from the start path.
     """
     current = start_path.resolve()
 
     # Walk up the directory tree
     for _ in range(depth_limit):  # Limit search depth to prevent infinite loops
+        src_path = current / "src"
+        include_path = current / "include"
         # Check if this directory has src or include folders
-        has_src = (current / "src").exists()
-        has_include = (current / "include").exists()
+        has_src = src_path.exists()
+        has_include = include_path.exists()
 
         if has_src or has_include:
-            return current
-
-        # Check if this is a git repository root
-        if (current / ".git").exists():
-            # Check if it has src or include nearby
-            if has_src or has_include:
-                return current
+            return current, [src_path, include_path]
 
         # Move up one level
         parent = current.parent
@@ -123,32 +121,14 @@ def find_repo_root(start_path: Path, depth_limit: int = 10) -> Path:
     )
 
 
-def get_scan_directories(repo_root: Path) -> List[Path]:
-    """
-    Get the list of directories to scan for include files.
-    Returns paths that actually exist.
-    """
-    directories = []
-
-    for dir_name in ["include", "src"]:
-        dir_path = repo_root / dir_name
-        if dir_path.exists() and dir_path.is_dir():
-            directories.append(dir_path)
-
-    if not directories:
-        raise RuntimeError(f"No 'src' or 'include' directories found in {repo_root}")
-
-    return directories
-
-
 def main():
     # Change to the script's directory
     script_dir = Path(__file__).parent.resolve()
     os.chdir(script_dir)
 
-    # If the shell is interactive, clean up any flotsam before analyzing
-    # Match bash behavior: check if PS1 is set (indicates interactive shell)
-    # When running a script, PS1 is not set even if stdin/stdout are TTYs
+    # If the shell is interactive, clean up any flotsam before analyzing.
+    # Match bash behavior: check if PS1 is set (indicates interactive shell).
+    # When running a script, PS1 is not set even if stdin/stdout are TTYs.
     if os.environ.get("PS1"):
         try:
             subprocess.run(["git", "clean", "-ix"], check=False, timeout=30)
@@ -158,7 +138,7 @@ def main():
             # If git clean fails for any reason, just continue
             pass
 
-    # Clean up and create results directory
+    # Clean up and create results directory.
     results_dir = script_dir / "results"
     if results_dir.exists():
         import shutil
@@ -166,10 +146,9 @@ def main():
         shutil.rmtree(results_dir)
     results_dir.mkdir()
 
-    # Find the repository root by searching for src and include directories
+    # Find the repository root by searching for src and include directories.
     try:
-        repo_root = find_repo_root(script_dir)
-        scan_dirs = get_scan_directories(repo_root)
+        repo_root, scan_dirs = find_repository_directories(script_dir)
 
         print(f"Found repository root: {repo_root}")
         print(f"Scanning directories:")
@@ -184,7 +163,7 @@ def main():
     raw_includes: List[Tuple[str, str]] = []
     rawincludes_file = results_dir / "rawincludes.txt"
 
-    # Write to file as we go to avoid storing everything in memory
+    # Write to file as we go to avoid storing everything in memory.
     with open(rawincludes_file, "w", buffering=8192) as raw_f:
         for dir_path in scan_dirs:
             print(f"  Scanning {dir_path.relative_to(repo_root)}...")
@@ -196,7 +175,7 @@ def main():
                 try:
                     rel_path_str = str(file_path.relative_to(repo_root))
 
-                    # Read file with larger buffer for better performance
+                    # Read file with larger buffer for better performance.
                     with open(
                         file_path,
                         "r",
@@ -218,7 +197,7 @@ def main():
                 except Exception as e:
                     print(f"Error reading {file_path}: {e}", file=sys.stderr)
 
-    # Build levelization paths and count directly (no need to sort first)
+    # Build levelization paths and count directly (no need to sort first).
     print("Build levelization paths")
     path_counts: Dict[Tuple[str, str], int] = defaultdict(int)
 
@@ -229,7 +208,7 @@ def main():
         if include_level and level != include_level:
             path_counts[(level, include_level)] += 1
 
-    # Sort and deduplicate paths (using dictionary order like bash 'sort -d')
+    # Sort and deduplicate paths (using dictionary order like bash 'sort -d').
     print("Sort and deduplicate paths")
 
     paths_file = results_dir / "paths.txt"
@@ -251,11 +230,11 @@ def main():
     includes_dir.mkdir()
     included_by_dir.mkdir()
 
-    # Batch writes by grouping data first to avoid repeated file opens
+    # Batch writes by grouping data first to avoid repeated file opens.
     includes_data: Dict[str, List[Tuple[str, int]]] = defaultdict(list)
     included_by_data: Dict[str, List[Tuple[str, int]]] = defaultdict(list)
 
-    # Process in sorted order to match bash script behavior (dictionary order)
+    # Process in sorted order to match bash script behaviour (dictionary order).
     sorted_items = sorted(
         path_counts.items(),
         key=lambda x: (dictionary_sort_key(x[0][0]), dictionary_sort_key(x[0][1])),
@@ -264,7 +243,7 @@ def main():
         includes_data[level].append((include_level, count))
         included_by_data[include_level].append((level, count))
 
-    # Write all includes files in sorted order (dictionary order)
+    # Write all includes files in sorted order (dictionary order).
     for level in sorted(includes_data.keys(), key=dictionary_sort_key):
         entries = includes_data[level]
         with open(includes_dir / level, "w") as f:
@@ -273,7 +252,7 @@ def main():
                 print(line.rstrip())
                 f.write(line)
 
-    # Write all included_by files in sorted order (dictionary order)
+    # Write all included_by files in sorted order (dictionary order).
     for include_level in sorted(included_by_data.keys(), key=dictionary_sort_key):
         entries = included_by_data[include_level]
         with open(included_by_dir / include_level, "w") as f:
@@ -289,9 +268,9 @@ def main():
 
     loops_found: Set[Tuple[str, str]] = set()
 
-    # Pre-load all include files into memory to avoid repeated I/O
-    # This is the biggest optimization - we were reading files repeatedly in nested loops
-    # Use list of tuples to preserve file order
+    # Pre-load all include files into memory to avoid repeated I/O.
+    # This is the biggest optimisation - we were reading files repeatedly in nested loops.
+    # Use list of tuples to preserve file order.
     includes_cache: Dict[str, List[Tuple[str, int]]] = {}
     includes_lookup: Dict[str, Dict[str, int]] = {}  # For fast lookup
 
@@ -318,7 +297,7 @@ def main():
         ordering_file, "w", buffering=8192
     ) as ordering_f:
 
-        # Use standard sorting to match bash glob expansion 'for source in *'
+        # Use standard sorting to match bash glob expansion 'for source in *'.
         for source in sorted(includes_cache.keys()):
             source_includes = includes_cache[source]
 
@@ -339,7 +318,7 @@ def main():
                     loops_f.write(f"Loop: {source} {include}\n")
 
                     # If the counts are close, indicate that the two modules are
-                    # on the same level, though they shouldn't be
+                    # on the same level, though they shouldn't be.
                     diff = include_freq - source_freq
                     if diff > 3:
                         loops_f.write(f"  {source} > {include}\n\n")
