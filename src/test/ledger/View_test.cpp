@@ -112,7 +112,8 @@ class View_test : public beast::unit_test::suite
 
         using namespace jtx;
         Env env(*this);
-        Rules const rules{{}};
+        std::unordered_set<uint256, beast::uhash<>> features;
+        Rules const rules{features};
         Fees const fees{XRPAmount{10}, XRPAmount{10000000}, XRPAmount{2000000}};
         std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
             create_genesis, rules, fees, std::vector<uint256>{}, env.app().getNodeFamily());
@@ -376,8 +377,8 @@ class View_test : public beast::unit_test::suite
 
         using namespace jtx;
         Env env(*this);
-        Rules const rules{{}};
-        Fees const fees{XRPAmount{10}, XRPAmount{10000000}, XRPAmount{2000000}};
+        Rules const rules{env.app().config().features};
+        Fees const fees = env.app().config().FEES.toFees();
         std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
             create_genesis, rules, fees, std::vector<uint256>{}, env.app().getNodeFamily());
         auto const ledger = std::make_shared<Ledger>(*genesis, env.app().timeKeeper().closeTime());
@@ -581,8 +582,8 @@ class View_test : public beast::unit_test::suite
 
         using namespace jtx;
         Env env(*this);
-        Rules const rules{{}};
-        Fees const fees{XRPAmount{10}, XRPAmount{10000000}, XRPAmount{2000000}};
+        Rules const rules{env.app().config().features};
+        Fees const fees = env.app().config().FEES.toFees();
         std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
             create_genesis, rules, fees, std::vector<uint256>{}, env.app().getNodeFamily());
         auto const ledger = std::make_shared<Ledger>(*genesis, env.app().timeKeeper().closeTime());
@@ -928,8 +929,8 @@ class View_test : public beast::unit_test::suite
         // erase the item, apply.
         {
             Env env(*this);
-            Rules const rules{{}};
-            Fees const fees{XRPAmount{10}, XRPAmount{10000000}, XRPAmount{2000000}};
+            Rules const rules{env.app().config().features};
+            Fees const fees = env.app().config().FEES.toFees();
             std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
                 create_genesis, rules, fees, std::vector<uint256>{}, env.app().getNodeFamily());
             auto const ledger =
