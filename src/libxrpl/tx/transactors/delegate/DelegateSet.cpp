@@ -67,30 +67,31 @@ DelegateSet::doApply()
         return tesSUCCESS;
     }
 
+    // Deleting the delegate object is invalid if it doesn’t exist.
     auto const& permissions = ctx_.tx.getFieldArray(sfPermissions);
-    if (!permissions.empty())
-    {
-        STAmount const reserve{
-            ctx_.view().fees().accountReserve(sleOwner->getFieldU32(sfOwnerCount) + 1)};
+    if (permissions.empty())
+        return tecNO_ENTRY;
 
-        if (mPriorBalance < reserve)
-            return tecINSUFFICIENT_RESERVE;
+    STAmount const reserve{
+        ctx_.view().fees().accountReserve(sleOwner->getFieldU32(sfOwnerCount) + 1)};
 
-        sle = std::make_shared<SLE>(delegateKey);
-        sle->setAccountID(sfAccount, account_);
-        sle->setAccountID(sfAuthorize, authAccount);
+    if (mPriorBalance < reserve)
+        return tecINSUFFICIENT_RESERVE;
 
-        sle->setFieldArray(sfPermissions, permissions);
-        auto const page = ctx_.view().dirInsert(
-            keylet::ownerDir(account_), delegateKey, describeOwnerDir(account_));
+    sle = std::make_shared<SLE>(delegateKey);
+    sle->setAccountID(sfAccount, account_);
+    sle->setAccountID(sfAuthorize, authAccount);
 
-        if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
+    sle->setFieldArray(sfPermissions, permissions);
+    auto const page =
+        ctx_.view().dirInsert(keylet::ownerDir(account_), delegateKey, describeOwnerDir(account_));
 
-        (*sle)[sfOwnerNode] = *page;
-        ctx_.view().insert(sle);
-        adjustOwnerCount(ctx_.view(), sleOwner, 1, ctx_.journal);
-    }
+    if (!page)
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
+
+    (*sle)[sfOwnerNode] = *page;
+    ctx_.view().insert(sle);
+    adjustOwnerCount(ctx_.view(), sleOwner, 1, ctx_.journal);
 
     return tesSUCCESS;
 }

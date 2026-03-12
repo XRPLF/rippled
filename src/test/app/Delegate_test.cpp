@@ -45,11 +45,9 @@ class Delegate_test : public beast::unit_test::suite
         env.close();
 
         // delegating an empty permission list when the delegate ledger object
-        // does not exist will not create the ledger object
-        env(delegate::set(gw, alice, std::vector<std::string>{}));
+        // does not exist is not allowed
+        env(delegate::set(gw, alice, {}), ter(tecNO_ENTRY));
         env.close();
-        auto const entry = delegate::entry(env, gw, alice);
-        BEAST_EXPECT(entry[jss::result][jss::error] == "entryNotFound");
 
         auto const permissions = std::vector<std::string>{
             "Payment", "EscrowCreate", "EscrowFinish", "TrustlineAuthorize", "CheckCreate"};
@@ -215,9 +213,6 @@ class Delegate_test : public beast::unit_test::suite
 
             // alice does not have enough reserve to create Delegate
             env(delegate::set(alice, bob, {"Payment"}), ter(tecINSUFFICIENT_RESERVE));
-
-            // alice can provide empty permissions, which will not require a reserve
-            env(delegate::set(alice, bob, {}));
         }
 
         // reserve recovered after deleting delegation object
