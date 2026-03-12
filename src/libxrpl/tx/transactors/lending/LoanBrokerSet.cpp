@@ -169,6 +169,8 @@ preclaimUpdate(PreclaimContext const& ctx, AccountID const& account, uint256 con
         }
     }
 
+    XRPL_ASSERT(sleVault, "xrpl::LoanBrokerSet::preclaimUpdate : sleVault is initialized");
+
     if (account != sleBroker->at(sfOwner))
     {
         JLOG(ctx.j.warn()) << "Account is not the owner of the LoanBroker.";

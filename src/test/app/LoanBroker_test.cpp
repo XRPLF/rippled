@@ -1951,6 +1951,16 @@ class LoanBroker_test : public beast::unit_test::suite
                 ter(temINVALID),
                 THISLINE);
         }
+
+        // Pre-amendment: zero VaultID on update → temINVALID
+        {
+            testcase("LoanBrokerSet pre-amendment: zero VaultID on update");
+            Env env(*this);
+            env.disableFeature(fixLendingProtocolV1_1);
+            auto const [vaultID, brokerKL] = setup(env);
+
+            env(set(alice, uint256{}), loanBrokerID(brokerKL.key), ter(temINVALID), THISLINE);
+        }
     }
 
 public:
