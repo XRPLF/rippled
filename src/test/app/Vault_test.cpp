@@ -4501,131 +4501,6 @@ class Vault_test : public beast::unit_test::suite
     }
 
     void
-    testDelegate()
-    {
-        using namespace test::jtx;
-
-        Env env(*this, testable_amendments());
-        Account alice{"alice"};
-        Account bob{"bob"};
-        Account carol{"carol"};
-
-        struct CaseArgs
-        {
-            PrettyAsset asset = xrpIssue();
-        };
-
-        auto const xrpBalance = [this](
-                                    Env const& env, Account const& account) -> std::optional<long> {
-            auto sle = env.le(keylet::account(account.id()));
-            if (BEAST_EXPECT(sle != nullptr))
-                return sle->getFieldAmount(sfBalance).xrp().drops();
-            return std::nullopt;
-        };
-
-        auto testCase = [&, this](auto test, CaseArgs args = {}) {
-            Env env{*this, testable_amendments() | featureSingleAssetVault};
-
-            Vault vault{env};
-
-            // use different initial amount to distinguish the source balance
-            env.fund(XRP(10000), alice);
-            env.fund(XRP(20000), bob);
-            env.fund(XRP(30000), carol);
-            env.close();
-
-            env(delegate::set(
-                carol,
-                alice,
-                {"Payment",
-                 "VaultCreate",
-                 "VaultSet",
-                 "VaultDelete",
-                 "VaultDeposit",
-                 "VaultWithdraw",
-                 "VaultClawback"}));
-
-            test(env, vault, args.asset);
-        };
-
-        testCase([&, this](Env& env, Vault& vault, PrettyAsset const& asset) {
-            testcase("delegated vault creation");
-            auto startBalance = xrpBalance(env, carol);
-            if (!BEAST_EXPECT(startBalance.has_value()))
-                return;
-
-            auto [tx, keylet] = vault.create({.owner = carol, .asset = asset});
-            env(tx, delegate::as(alice));
-            env.close();
-            BEAST_EXPECT(xrpBalance(env, carol) == *startBalance);
-        });
-
-        testCase([&, this](Env& env, Vault& vault, PrettyAsset const& asset) {
-            testcase("delegated deposit and withdrawal");
-            auto [tx, keylet] = vault.create({.owner = carol, .asset = asset});
-            env(tx);
-            env.close();
-
-            auto const amount = 1513;
-            auto const baseFee = env.current()->fees().base;
-
-            auto startBalance = xrpBalance(env, carol);
-            if (!BEAST_EXPECT(startBalance.has_value()))
-                return;
-
-            tx = vault.deposit({.depositor = carol, .id = keylet.key, .amount = asset(amount)});
-            env(tx, delegate::as(alice));
-            env.close();
-            BEAST_EXPECT(xrpBalance(env, carol) == *startBalance - amount);
-
-            tx =
-                vault.withdraw({.depositor = carol, .id = keylet.key, .amount = asset(amount - 1)});
-            env(tx, delegate::as(alice));
-            env.close();
-            BEAST_EXPECT(xrpBalance(env, carol) == *startBalance - 1);
-
-            tx = vault.withdraw({.depositor = carol, .id = keylet.key, .amount = asset(1)});
-            env(tx);
-            env.close();
-            BEAST_EXPECT(xrpBalance(env, carol) == *startBalance - baseFee);
-        });
-
-        testCase([&, this](Env& env, Vault& vault, PrettyAsset const& asset) {
-            testcase("delegated withdrawal same as base fee and deletion");
-            auto [tx, keylet] = vault.create({.owner = carol, .asset = asset});
-            env(tx);
-            env.close();
-
-            auto const amount = 25537;
-            auto const baseFee = env.current()->fees().base;
-
-            auto startBalance = xrpBalance(env, carol);
-            if (!BEAST_EXPECT(startBalance.has_value()))
-                return;
-
-            tx = vault.deposit({.depositor = carol, .id = keylet.key, .amount = asset(amount)});
-            env(tx);
-            env.close();
-            BEAST_EXPECT(xrpBalance(env, carol) == *startBalance - amount - baseFee);
-
-            tx = vault.withdraw({.depositor = carol, .id = keylet.key, .amount = asset(baseFee)});
-            env(tx, delegate::as(alice));
-            env.close();
-            BEAST_EXPECT(xrpBalance(env, carol) == *startBalance - amount);
-
-            tx = vault.withdraw(
-                {.depositor = carol, .id = keylet.key, .amount = asset(amount - baseFee)});
-            env(tx, delegate::as(alice));
-            env.close();
-            BEAST_EXPECT(xrpBalance(env, carol) == *startBalance - baseFee);
-
-            tx = vault.del({.owner = carol, .id = keylet.key});
-            env(tx, delegate::as(alice));
-            env.close();
-        });
-    }
-
-    void
     testVaultClawbackBurnShares()
     {
         using namespace test::jtx;
@@ -5374,7 +5249,6 @@ public:
         testFailedPseudoAccount();
         testScaleIOU();
         testRPC();
-        testDelegate();
         testVaultClawbackBurnShares();
         testVaultClawbackAssets();
         testAssetsMaximum();

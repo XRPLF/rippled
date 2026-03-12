@@ -297,7 +297,7 @@ private:
             auto const localSigningPublic =
                 parseBase58<PublicKey>(TokenType::NodePublic, cfgKeys.front());
 
-            BEAST_EXPECT(trustedKeys->load(*localSigningPublic, cfgKeys, emptyCfgPublishers));
+            BEAST_EXPECT(trustedKeys->load(localSigningPublic, cfgKeys, emptyCfgPublishers));
 
             BEAST_EXPECT(trustedKeys->localPublicKey() == localSigningPublic);
             BEAST_EXPECT(trustedKeys->listed(*localSigningPublic));
