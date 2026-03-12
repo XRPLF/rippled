@@ -332,7 +332,7 @@ EscrowFinish::doApply()
                         ctx_.view(),
                         lockedRate,
                         sled,
-                        preFeeBalance,
+                        preFeeBalance_,
                         amount,
                         issuer,
                         account,

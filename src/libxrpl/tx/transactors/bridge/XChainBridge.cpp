@@ -337,7 +337,7 @@ enum class DepositAuthPolicy { normal, dstCanBypass };
 struct TransferHelperSubmittingAccountInfo
 {
     AccountID account;
-    STAmount preFeeBalance;
+    STAmount preFeeBalance_;
     STAmount postFeeBalance;
 };
 
@@ -423,7 +423,7 @@ transferHelper(
                 if (!submittingAccountInfo || submittingAccountInfo->account != src ||
                     submittingAccountInfo->postFeeBalance != curBal)
                     return curBal;
-                return submittingAccountInfo->preFeeBalance;
+                return submittingAccountInfo->preFeeBalance_;
             }();
 
             if (availableBalance < amt + reserve)
@@ -1864,7 +1864,7 @@ XChainCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        account_, preFeeBalance, (*sleAccount)[sfBalance]};
+        account_, preFeeBalance_, (*sleAccount)[sfBalance]};
 
     auto const thTer = transferHelper(
         psb,
@@ -2133,7 +2133,7 @@ XChainCreateAccountCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        account_, preFeeBalance, (*sle)[sfBalance]};
+        account_, preFeeBalance_, (*sle)[sfBalance]};
     STAmount const toTransfer = amount + reward;
     auto const thTer = transferHelper(
         psb,

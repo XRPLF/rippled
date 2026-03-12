@@ -544,16 +544,16 @@ Payment::doApply()
     // This is the total reserve in drops.
     auto const reserve = view().fees().accountReserve(ownerCount);
 
-    // preFeeBalance is the balance on the sending account BEFORE the
+    // preFeeBalance_ is the balance on the sending account BEFORE the
     // fees were charged. We want to make sure we have enough reserve
     // to send. Allow final spend to use reserve for fee.
     auto const mmm = std::max(reserve, ctx_.tx.getFieldAmount(sfFee).xrp());
 
-    if (preFeeBalance < dstAmount.xrp() + mmm)
+    if (preFeeBalance_ < dstAmount.xrp() + mmm)
     {
         // Vote no. However the transaction might succeed, if applied in
         // a different order.
-        JLOG(j_.trace()) << "Delay transaction: Insufficient funds: " << to_string(preFeeBalance)
+        JLOG(j_.trace()) << "Delay transaction: Insufficient funds: " << to_string(preFeeBalance_)
                          << " / " << to_string(dstAmount.xrp() + mmm) << " (" << to_string(reserve)
                          << ")";
 

@@ -74,7 +74,7 @@ NFTokenCreateOffer::doApply()
         ctx_.tx[~sfExpiration],
         ctx_.tx.getSeqProxy(),
         ctx_.tx[sfNFTokenID],
-        preFeeBalance,
+        preFeeBalance_,
         j_,
         ctx_.tx.getFlags());
 }
