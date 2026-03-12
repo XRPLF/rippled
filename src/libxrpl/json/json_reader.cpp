@@ -729,21 +729,18 @@ Reader::decodeUnicodeCodePoint(Token& token, Location& current, Location end, un
 
         unsigned int surrogatePair;
 
-        if (*(current++) == '\\' && *(current++) == 'u')
-        {
-            if (decodeUnicodeEscapeSequence(token, current, end, surrogatePair))
-            {
-                unicode = 0x10000 + ((unicode & 0x3FF) << 10) + (surrogatePair & 0x3FF);
-            }
-            else
-                return false;
-        }
-        else
+        if (*current != '\\' || *(current + 1) != 'u')
             return addError(
-                "expecting another \\u token to begin the second half of a "
-                "unicode surrogate pair",
+                "expecting another \\u token to begin the second half of a unicode surrogate pair",
                 token,
                 current);
+
+        current += 2;  // skip two characters checked above
+
+        if (!decodeUnicodeEscapeSequence(token, current, end, surrogatePair))
+            return false;
+
+        unicode = 0x10000 + ((unicode & 0x3FF) << 10) + (surrogatePair & 0x3FF);
     }
 
     return true;
