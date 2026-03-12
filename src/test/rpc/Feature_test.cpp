@@ -206,11 +206,9 @@ class Feature_test : public beast::unit_test::suite
 
         constexpr auto bad32Name = [] { return "12345678901234567890123456789012"; };
         static_assert(!validFeatureNameSize(bad32Name));
-        constexpr auto bad33Name = [] { return "123456789012345678901234567890123"; };
-        static_assert(!validFeatureNameSize(bad33Name));
 
-        constexpr auto ok34Name = [] { return "1234567890123456789012345678901234"; };
-        static_assert(validFeatureNameSize(ok34Name));
+        constexpr auto ok33Name = [] { return "123456789012345678901234567890123"; };
+        static_assert(validFeatureNameSize(ok33Name));
 
         // Test feature character set checks
         constexpr auto okName = [] { return "AMM_123"; };

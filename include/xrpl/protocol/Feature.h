@@ -87,8 +87,7 @@ validFeatureNameSize(auto fn) -> bool
             ;
         return ret;
     }(n);
-    return N != reservedFeatureNameSize &&   //
-        N != reservedFeatureNameSize + 1 &&  //
+    return N != reservedFeatureNameSize &&  //
         N <= maxFeatureNameSize;
 }
 
