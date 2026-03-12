@@ -830,7 +830,7 @@ TRANSACTION(ttDELEGATE_SET, 64, DelegateSet,
 #   include <xrpl/tx/transactors/vault/VaultCreate.h>
 #endif
 TRANSACTION(ttVAULT_CREATE, 65, VaultCreate,
-    Delegation::delegable,
+    Delegation::notDelegable,
     featureSingleAssetVault,
     createPseudoAcct | createMPTIssuance | mustModifyVault,
     ({
@@ -848,7 +848,7 @@ TRANSACTION(ttVAULT_CREATE, 65, VaultCreate,
 #   include <xrpl/tx/transactors/vault/VaultSet.h>
 #endif
 TRANSACTION(ttVAULT_SET, 66, VaultSet,
-    Delegation::delegable,
+    Delegation::notDelegable,
     featureSingleAssetVault,
     mustModifyVault,
     ({
@@ -863,7 +863,7 @@ TRANSACTION(ttVAULT_SET, 66, VaultSet,
 #   include <xrpl/tx/transactors/vault/VaultDelete.h>
 #endif
 TRANSACTION(ttVAULT_DELETE, 67, VaultDelete,
-    Delegation::delegable,
+    Delegation::notDelegable,
     featureSingleAssetVault,
     mustDeleteAcct | destroyMPTIssuance | mustModifyVault,
     ({
@@ -875,7 +875,7 @@ TRANSACTION(ttVAULT_DELETE, 67, VaultDelete,
 #   include <xrpl/tx/transactors/vault/VaultDeposit.h>
 #endif
 TRANSACTION(ttVAULT_DEPOSIT, 68, VaultDeposit,
-    Delegation::delegable,
+    Delegation::notDelegable,
     featureSingleAssetVault,
     mayAuthorizeMPT | mustModifyVault,
     ({
@@ -888,7 +888,7 @@ TRANSACTION(ttVAULT_DEPOSIT, 68, VaultDeposit,
 #   include <xrpl/tx/transactors/vault/VaultWithdraw.h>
 #endif
 TRANSACTION(ttVAULT_WITHDRAW, 69, VaultWithdraw,
-    Delegation::delegable,
+    Delegation::notDelegable,
     featureSingleAssetVault,
     mayDeleteMPT | mayAuthorizeMPT | mustModifyVault,
     ({
@@ -903,7 +903,7 @@ TRANSACTION(ttVAULT_WITHDRAW, 69, VaultWithdraw,
 #   include <xrpl/tx/transactors/vault/VaultClawback.h>
 #endif
 TRANSACTION(ttVAULT_CLAWBACK, 70, VaultClawback,
-    Delegation::delegable,
+    Delegation::notDelegable,
     featureSingleAssetVault,
     mayDeleteMPT | mustModifyVault,
     ({
@@ -932,7 +932,7 @@ TRANSACTION(ttBATCH, 71, Batch,
 #   include <xrpl/tx/transactors/lending/LoanBrokerSet.h>
 #endif
 TRANSACTION(ttLOAN_BROKER_SET, 74, LoanBrokerSet,
-    Delegation::delegable,
+    Delegation::notDelegable,
     featureLendingProtocol,
     createPseudoAcct | mayAuthorizeMPT, ({
     {sfVaultID, soeREQUIRED},
@@ -949,7 +949,7 @@ TRANSACTION(ttLOAN_BROKER_SET, 74, LoanBrokerSet,
 #   include <xrpl/tx/transactors/lending/LoanBrokerDelete.h>
 #endif
 TRANSACTION(ttLOAN_BROKER_DELETE, 75, LoanBrokerDelete,
-    Delegation::delegable,
+    Delegation::notDelegable,
     featureLendingProtocol,
     mustDeleteAcct | mayAuthorizeMPT, ({
     {sfLoanBrokerID, soeREQUIRED},
@@ -960,7 +960,7 @@ TRANSACTION(ttLOAN_BROKER_DELETE, 75, LoanBrokerDelete,
 #   include <xrpl/tx/transactors/lending/LoanBrokerCoverDeposit.h>
 #endif
 TRANSACTION(ttLOAN_BROKER_COVER_DEPOSIT, 76, LoanBrokerCoverDeposit,
-    Delegation::delegable,
+    Delegation::notDelegable,
     featureLendingProtocol,
     noPriv, ({
     {sfLoanBrokerID, soeREQUIRED},
@@ -972,7 +972,7 @@ TRANSACTION(ttLOAN_BROKER_COVER_DEPOSIT, 76, LoanBrokerCoverDeposit,
 #   include <xrpl/tx/transactors/lending/LoanBrokerCoverWithdraw.h>
 #endif
 TRANSACTION(ttLOAN_BROKER_COVER_WITHDRAW, 77, LoanBrokerCoverWithdraw,
-    Delegation::delegable,
+    Delegation::notDelegable,
     featureLendingProtocol,
     mayAuthorizeMPT, ({
     {sfLoanBrokerID, soeREQUIRED},
@@ -987,7 +987,7 @@ TRANSACTION(ttLOAN_BROKER_COVER_WITHDRAW, 77, LoanBrokerCoverWithdraw,
 #   include <xrpl/tx/transactors/lending/LoanBrokerCoverClawback.h>
 #endif
 TRANSACTION(ttLOAN_BROKER_COVER_CLAWBACK, 78, LoanBrokerCoverClawback,
-    Delegation::delegable,
+    Delegation::notDelegable,
     featureLendingProtocol,
     noPriv, ({
     {sfLoanBrokerID, soeOPTIONAL},
@@ -999,7 +999,7 @@ TRANSACTION(ttLOAN_BROKER_COVER_CLAWBACK, 78, LoanBrokerCoverClawback,
 #   include <xrpl/tx/transactors/lending/LoanSet.h>
 #endif
 TRANSACTION(ttLOAN_SET, 80, LoanSet,
-    Delegation::delegable,
+    Delegation::notDelegable,
     featureLendingProtocol,
     mayAuthorizeMPT | mustModifyVault, ({
     {sfLoanBrokerID, soeREQUIRED},
@@ -1026,7 +1026,7 @@ TRANSACTION(ttLOAN_SET, 80, LoanSet,
 #   include <xrpl/tx/transactors/lending/LoanDelete.h>
 #endif
 TRANSACTION(ttLOAN_DELETE, 81, LoanDelete,
-    Delegation::delegable,
+    Delegation::notDelegable,
     featureLendingProtocol,
     noPriv, ({
     {sfLoanID, soeREQUIRED},
@@ -1037,7 +1037,7 @@ TRANSACTION(ttLOAN_DELETE, 81, LoanDelete,
 #   include <xrpl/tx/transactors/lending/LoanManage.h>
 #endif
 TRANSACTION(ttLOAN_MANAGE, 82, LoanManage,
-    Delegation::delegable,
+    Delegation::notDelegable,
     featureLendingProtocol,
     // All of the LoanManage options will modify the vault, but the
     // transaction can succeed without options, essentially making it
@@ -1051,7 +1051,7 @@ TRANSACTION(ttLOAN_MANAGE, 82, LoanManage,
 #   include <xrpl/tx/transactors/lending/LoanPay.h>
 #endif
 TRANSACTION(ttLOAN_PAY, 84, LoanPay,
-    Delegation::delegable,
+    Delegation::notDelegable,
     featureLendingProtocol,
     mayAuthorizeMPT | mustModifyVault, ({
     {sfLoanID, soeREQUIRED},
