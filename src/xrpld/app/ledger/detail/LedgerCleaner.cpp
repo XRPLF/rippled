@@ -356,10 +356,10 @@ private:
 
         while (!shouldExit())
         {
-            LedgerIndex ledgerIndex;
+            LedgerIndex ledgerIndex = 0;
             LedgerHash ledgerHash;
-            bool doNodes;
-            bool doTxns;
+            bool doNodes = false;
+            bool doTxns = false;
 
             if (app_.getFeeTrack().isLoadedLocal())
             {

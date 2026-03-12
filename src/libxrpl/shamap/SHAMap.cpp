@@ -1,5 +1,6 @@
 #include <xrpl/basics/TaggedCache.ipp>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapAccountStateLeafNode.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
@@ -122,7 +123,7 @@ SHAMap::walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack) const
 
     if (stack != nullptr)
         stack->push({inNode, nodeID});
-    return static_cast<SHAMapLeafNode*>(inNode.get());
+    return safe_downcast<SHAMapLeafNode*>(inNode.get());
 }
 
 SHAMapLeafNode*
@@ -471,7 +472,7 @@ SHAMap::onlyBelow(SHAMapTreeNode* node) const
     while (!node->isLeaf())
     {
         SHAMapTreeNode* nextNode = nullptr;
-        auto inner = static_cast<SHAMapInnerNode*>(node);
+        auto inner = safe_downcast<SHAMapInnerNode*>(node);
         for (int i = 0; i < branchFactor; ++i)
         {
             if (!inner->isEmptyBranch(i))
@@ -496,7 +497,7 @@ SHAMap::onlyBelow(SHAMapTreeNode* node) const
 
     // An inner node must have at least one leaf
     // below it, unless it's the root_
-    auto const leaf = static_cast<SHAMapLeafNode const*>(node);
+    auto const leaf = safe_downcast<SHAMapLeafNode const*>(node);
     XRPL_ASSERT(
         leaf->peekItem() || (leaf == root_.get()), "xrpl::SHAMap::onlyBelow : valid inner node");
     return leaf->peekItem();
@@ -578,7 +579,7 @@ SHAMap::upper_bound(uint256 const& id) const
         auto [node, nodeID] = stack.top();
         if (node->isLeaf())
         {
-            auto leaf = static_cast<SHAMapLeafNode*>(node.get());
+            auto leaf = safe_downcast<SHAMapLeafNode*>(node.get());
             if (leaf->peekItem()->key() > id)
                 return const_iterator(this, leaf->peekItem().get(), std::move(stack));
         }
@@ -611,7 +612,7 @@ SHAMap::lower_bound(uint256 const& id) const
         auto [node, nodeID] = stack.top();
         if (node->isLeaf())
         {
-            auto leaf = static_cast<SHAMapLeafNode*>(node.get());
+            auto leaf = safe_downcast<SHAMapLeafNode*>(node.get());
             if (leaf->peekItem()->key() < id)
                 return const_iterator(this, leaf->peekItem().get(), std::move(stack));
         }
@@ -764,7 +765,7 @@ SHAMap::addGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> 
 
         node = intr_ptr::make_shared<SHAMapInnerNode>(node->cowid());
 
-        unsigned int b1, b2;
+        unsigned int b1 = 0, b2 = 0;
 
         while ((b1 = selectBranch(nodeID, tag)) == (b2 = selectBranch(nodeID, otherItem->key())))
         {
@@ -779,7 +780,7 @@ SHAMap::addGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> 
         // we can add the two leaf nodes here
         XRPL_ASSERT(node->isInner(), "xrpl::SHAMap::addGiveItem : node is inner");
 
-        auto inner = static_cast<SHAMapInnerNode*>(node.get());
+        auto inner = safe_downcast<SHAMapInnerNode*>(node.get());
         inner->setChild(b1, makeTypedLeaf(type, std::move(item), cowid_));
         inner->setChild(b2, makeTypedLeaf(type, std::move(otherItem), cowid_));
     }
@@ -1088,7 +1089,7 @@ SHAMap::dump(bool hash) const
 
         if (node->isInner())
         {
-            auto inner = static_cast<SHAMapInnerNode*>(node);
+            auto inner = safe_downcast<SHAMapInnerNode*>(node);
             for (int i = 0; i < branchFactor; ++i)
             {
                 if (!inner->isEmptyBranch(i))

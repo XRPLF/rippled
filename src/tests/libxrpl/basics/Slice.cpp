@@ -44,8 +44,8 @@ TEST(Slice, equality_and_inequality)
     }
 
     // Test slices of equal size but pointing to different data:
-    std::array<std::uint8_t, sizeof(data)> a;
-    std::array<std::uint8_t, sizeof(data)> b;
+    std::array<std::uint8_t, sizeof(data)> a{};
+    std::array<std::uint8_t, sizeof(data)> b{};
 
     for (std::size_t i = 0; i != sizeof(data); ++i)
         a[i] = b[i] = data[i];
