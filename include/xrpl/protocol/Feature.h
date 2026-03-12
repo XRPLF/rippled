@@ -98,6 +98,8 @@ validFeatureName(auto fn) -> bool
     constexpr char const* n = fn();
     // Prevent the use of visually confusable characters and enforce that feature names
     // are always valid ASCII. This is needed because C++ allows Unicode identifiers.
+    // Characters below 0x20 are nonprintable control characters, and characters with the 0x80 bit
+    // set are non-ASCII (e.g. UTF-8 encoding of Unicode), so both are disallowed.
     for (auto ptr = n; *ptr != '\0'; ++ptr)
     {
         if (*ptr & 0x80 || *ptr < 0x20)
