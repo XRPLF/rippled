@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a PaymentChannelClaim transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit PaymentChannelClaim(STTx const& tx)
-        : TransactionBase(tx)
+    explicit PaymentChannelClaim(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for PaymentChannelClaim");
         }
@@ -55,7 +54,7 @@ public:
     SF_UINT256::type::value_type
     getChannel() const
     {
-        return this->tx_.at(sfChannel);
+        return this->tx_->at(sfChannel);
     }
 
     /**
@@ -67,7 +66,7 @@ public:
     {
         if (hasAmount())
         {
-            return this->tx_.at(sfAmount);
+            return this->tx_->at(sfAmount);
         }
         return std::nullopt;
     }
@@ -76,7 +75,7 @@ public:
     bool
     hasAmount() const
     {
-        return this->tx_.isFieldPresent(sfAmount);
+        return this->tx_->isFieldPresent(sfAmount);
     }
 
     /**
@@ -88,7 +87,7 @@ public:
     {
         if (hasBalance())
         {
-            return this->tx_.at(sfBalance);
+            return this->tx_->at(sfBalance);
         }
         return std::nullopt;
     }
@@ -97,7 +96,7 @@ public:
     bool
     hasBalance() const
     {
-        return this->tx_.isFieldPresent(sfBalance);
+        return this->tx_->isFieldPresent(sfBalance);
     }
 
     /**
@@ -109,7 +108,7 @@ public:
     {
         if (hasSignature())
         {
-            return this->tx_.at(sfSignature);
+            return this->tx_->at(sfSignature);
         }
         return std::nullopt;
     }
@@ -118,7 +117,7 @@ public:
     bool
     hasSignature() const
     {
-        return this->tx_.isFieldPresent(sfSignature);
+        return this->tx_->isFieldPresent(sfSignature);
     }
 
     /**
@@ -130,7 +129,7 @@ public:
     {
         if (hasPublicKey())
         {
-            return this->tx_.at(sfPublicKey);
+            return this->tx_->at(sfPublicKey);
         }
         return std::nullopt;
     }
@@ -139,7 +138,7 @@ public:
     bool
     hasPublicKey() const
     {
-        return this->tx_.isFieldPresent(sfPublicKey);
+        return this->tx_->isFieldPresent(sfPublicKey);
     }
 
     /**
@@ -151,7 +150,7 @@ public:
     {
         if (hasCredentialIDs())
         {
-            return this->tx_.at(sfCredentialIDs);
+            return this->tx_->at(sfCredentialIDs);
         }
         return std::nullopt;
     }
@@ -160,7 +159,7 @@ public:
     bool
     hasCredentialIDs() const
     {
-        return this->tx_.isFieldPresent(sfCredentialIDs);
+        return this->tx_->isFieldPresent(sfCredentialIDs);
     }
 };
 
@@ -182,13 +181,13 @@ public:
         setChannel(channel);
     }
 
-    PaymentChannelClaimBuilder(STTx const& tx)
+    PaymentChannelClaimBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttPAYCHAN_CLAIM)
+        if (tx->getTxnType() != ttPAYCHAN_CLAIM)
         {
             throw std::runtime_error("Invalid transaction type for PaymentChannelClaimBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -260,16 +259,16 @@ public:
     }
 
     /**
-     * Build and return the completed PaymentChannelClaim wrapper.
+     * Build and return the PaymentChannelClaim wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, PaymentChannelClaim>
+    PaymentChannelClaim
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, PaymentChannelClaim>{STTx{std::move(object_)}};
+        return PaymentChannelClaim{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

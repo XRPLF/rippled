@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a LoanBrokerSet transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit LoanBrokerSet(STTx const& tx)
-        : TransactionBase(tx)
+    explicit LoanBrokerSet(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for LoanBrokerSet");
         }
@@ -55,7 +54,7 @@ public:
     SF_UINT256::type::value_type
     getVaultID() const
     {
-        return this->tx_.at(sfVaultID);
+        return this->tx_->at(sfVaultID);
     }
 
     /**
@@ -67,7 +66,7 @@ public:
     {
         if (hasLoanBrokerID())
         {
-            return this->tx_.at(sfLoanBrokerID);
+            return this->tx_->at(sfLoanBrokerID);
         }
         return std::nullopt;
     }
@@ -76,7 +75,7 @@ public:
     bool
     hasLoanBrokerID() const
     {
-        return this->tx_.isFieldPresent(sfLoanBrokerID);
+        return this->tx_->isFieldPresent(sfLoanBrokerID);
     }
 
     /**
@@ -88,7 +87,7 @@ public:
     {
         if (hasData())
         {
-            return this->tx_.at(sfData);
+            return this->tx_->at(sfData);
         }
         return std::nullopt;
     }
@@ -97,7 +96,7 @@ public:
     bool
     hasData() const
     {
-        return this->tx_.isFieldPresent(sfData);
+        return this->tx_->isFieldPresent(sfData);
     }
 
     /**
@@ -109,7 +108,7 @@ public:
     {
         if (hasManagementFeeRate())
         {
-            return this->tx_.at(sfManagementFeeRate);
+            return this->tx_->at(sfManagementFeeRate);
         }
         return std::nullopt;
     }
@@ -118,7 +117,7 @@ public:
     bool
     hasManagementFeeRate() const
     {
-        return this->tx_.isFieldPresent(sfManagementFeeRate);
+        return this->tx_->isFieldPresent(sfManagementFeeRate);
     }
 
     /**
@@ -130,7 +129,7 @@ public:
     {
         if (hasDebtMaximum())
         {
-            return this->tx_.at(sfDebtMaximum);
+            return this->tx_->at(sfDebtMaximum);
         }
         return std::nullopt;
     }
@@ -139,7 +138,7 @@ public:
     bool
     hasDebtMaximum() const
     {
-        return this->tx_.isFieldPresent(sfDebtMaximum);
+        return this->tx_->isFieldPresent(sfDebtMaximum);
     }
 
     /**
@@ -151,7 +150,7 @@ public:
     {
         if (hasCoverRateMinimum())
         {
-            return this->tx_.at(sfCoverRateMinimum);
+            return this->tx_->at(sfCoverRateMinimum);
         }
         return std::nullopt;
     }
@@ -160,7 +159,7 @@ public:
     bool
     hasCoverRateMinimum() const
     {
-        return this->tx_.isFieldPresent(sfCoverRateMinimum);
+        return this->tx_->isFieldPresent(sfCoverRateMinimum);
     }
 
     /**
@@ -172,7 +171,7 @@ public:
     {
         if (hasCoverRateLiquidation())
         {
-            return this->tx_.at(sfCoverRateLiquidation);
+            return this->tx_->at(sfCoverRateLiquidation);
         }
         return std::nullopt;
     }
@@ -181,7 +180,7 @@ public:
     bool
     hasCoverRateLiquidation() const
     {
-        return this->tx_.isFieldPresent(sfCoverRateLiquidation);
+        return this->tx_->isFieldPresent(sfCoverRateLiquidation);
     }
 };
 
@@ -203,13 +202,13 @@ public:
         setVaultID(vaultID);
     }
 
-    LoanBrokerSetBuilder(STTx const& tx)
+    LoanBrokerSetBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttLOAN_BROKER_SET)
+        if (tx->getTxnType() != ttLOAN_BROKER_SET)
         {
             throw std::runtime_error("Invalid transaction type for LoanBrokerSetBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -292,16 +291,16 @@ public:
     }
 
     /**
-     * Build and return the completed LoanBrokerSet wrapper.
+     * Build and return the LoanBrokerSet wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, LoanBrokerSet>
+    LoanBrokerSet
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, LoanBrokerSet>{STTx{std::move(object_)}};
+        return LoanBrokerSet{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a AMMWithdraw transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit AMMWithdraw(STTx const& tx)
-        : TransactionBase(tx)
+    explicit AMMWithdraw(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for AMMWithdraw");
         }
@@ -55,7 +54,7 @@ public:
     SF_ISSUE::type::value_type
     getAsset() const
     {
-        return this->tx_.at(sfAsset);
+        return this->tx_->at(sfAsset);
     }
 
     /**
@@ -65,7 +64,7 @@ public:
     SF_ISSUE::type::value_type
     getAsset2() const
     {
-        return this->tx_.at(sfAsset2);
+        return this->tx_->at(sfAsset2);
     }
 
     /**
@@ -77,7 +76,7 @@ public:
     {
         if (hasAmount())
         {
-            return this->tx_.at(sfAmount);
+            return this->tx_->at(sfAmount);
         }
         return std::nullopt;
     }
@@ -86,7 +85,7 @@ public:
     bool
     hasAmount() const
     {
-        return this->tx_.isFieldPresent(sfAmount);
+        return this->tx_->isFieldPresent(sfAmount);
     }
 
     /**
@@ -98,7 +97,7 @@ public:
     {
         if (hasAmount2())
         {
-            return this->tx_.at(sfAmount2);
+            return this->tx_->at(sfAmount2);
         }
         return std::nullopt;
     }
@@ -107,7 +106,7 @@ public:
     bool
     hasAmount2() const
     {
-        return this->tx_.isFieldPresent(sfAmount2);
+        return this->tx_->isFieldPresent(sfAmount2);
     }
 
     /**
@@ -119,7 +118,7 @@ public:
     {
         if (hasEPrice())
         {
-            return this->tx_.at(sfEPrice);
+            return this->tx_->at(sfEPrice);
         }
         return std::nullopt;
     }
@@ -128,7 +127,7 @@ public:
     bool
     hasEPrice() const
     {
-        return this->tx_.isFieldPresent(sfEPrice);
+        return this->tx_->isFieldPresent(sfEPrice);
     }
 
     /**
@@ -140,7 +139,7 @@ public:
     {
         if (hasLPTokenIn())
         {
-            return this->tx_.at(sfLPTokenIn);
+            return this->tx_->at(sfLPTokenIn);
         }
         return std::nullopt;
     }
@@ -149,7 +148,7 @@ public:
     bool
     hasLPTokenIn() const
     {
-        return this->tx_.isFieldPresent(sfLPTokenIn);
+        return this->tx_->isFieldPresent(sfLPTokenIn);
     }
 };
 
@@ -172,13 +171,13 @@ public:
         setAsset2(asset2);
     }
 
-    AMMWithdrawBuilder(STTx const& tx)
+    AMMWithdrawBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttAMM_WITHDRAW)
+        if (tx->getTxnType() != ttAMM_WITHDRAW)
         {
             throw std::runtime_error("Invalid transaction type for AMMWithdrawBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -250,16 +249,16 @@ public:
     }
 
     /**
-     * Build and return the completed AMMWithdraw wrapper.
+     * Build and return the AMMWithdraw wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, AMMWithdraw>
+    AMMWithdraw
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, AMMWithdraw>{STTx{std::move(object_)}};
+        return AMMWithdraw{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

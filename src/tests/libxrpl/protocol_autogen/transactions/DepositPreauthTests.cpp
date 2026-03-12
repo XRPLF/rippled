@@ -49,49 +49,49 @@ TEST(TransactionsDepositPreauthTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     // Verify optional fields
     {
         auto const& expected = authorizeValue;
-        auto const actualOpt = tx->getAuthorize();
+        auto const actualOpt = tx.getAuthorize();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAuthorize should be present";
         expectEqualField(expected, *actualOpt, "sfAuthorize");
-        EXPECT_TRUE(tx->hasAuthorize());
+        EXPECT_TRUE(tx.hasAuthorize());
     }
 
     {
         auto const& expected = unauthorizeValue;
-        auto const actualOpt = tx->getUnauthorize();
+        auto const actualOpt = tx.getUnauthorize();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfUnauthorize should be present";
         expectEqualField(expected, *actualOpt, "sfUnauthorize");
-        EXPECT_TRUE(tx->hasUnauthorize());
+        EXPECT_TRUE(tx.hasUnauthorize());
     }
 
     {
         auto const& expected = authorizeCredentialsValue;
-        auto const actualOpt = tx->getAuthorizeCredentials();
+        auto const actualOpt = tx.getAuthorizeCredentials();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAuthorizeCredentials should be present";
         expectEqualField(expected, *actualOpt, "sfAuthorizeCredentials");
-        EXPECT_TRUE(tx->hasAuthorizeCredentials());
+        EXPECT_TRUE(tx.hasAuthorizeCredentials());
     }
 
     {
         auto const& expected = unauthorizeCredentialsValue;
-        auto const actualOpt = tx->getUnauthorizeCredentials();
+        auto const actualOpt = tx.getUnauthorizeCredentials();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfUnauthorizeCredentials should be present";
         expectEqualField(expected, *actualOpt, "sfUnauthorizeCredentials");
-        EXPECT_TRUE(tx->hasUnauthorizeCredentials());
+        EXPECT_TRUE(tx.hasUnauthorizeCredentials());
     }
 
 }
@@ -130,44 +130,44 @@ TEST(TransactionsDepositPreauthTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    DepositPreauthBuilder builderFromTx{initialTx.object()};
+    DepositPreauthBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     // Verify optional fields
     {
         auto const& expected = authorizeValue;
-        auto const actualOpt = rebuiltTx->getAuthorize();
+        auto const actualOpt = rebuiltTx.getAuthorize();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAuthorize should be present";
         expectEqualField(expected, *actualOpt, "sfAuthorize");
     }
 
     {
         auto const& expected = unauthorizeValue;
-        auto const actualOpt = rebuiltTx->getUnauthorize();
+        auto const actualOpt = rebuiltTx.getUnauthorize();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfUnauthorize should be present";
         expectEqualField(expected, *actualOpt, "sfUnauthorize");
     }
 
     {
         auto const& expected = authorizeCredentialsValue;
-        auto const actualOpt = rebuiltTx->getAuthorizeCredentials();
+        auto const actualOpt = rebuiltTx.getAuthorizeCredentials();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAuthorizeCredentials should be present";
         expectEqualField(expected, *actualOpt, "sfAuthorizeCredentials");
     }
 
     {
         auto const& expected = unauthorizeCredentialsValue;
-        auto const actualOpt = rebuiltTx->getUnauthorizeCredentials();
+        auto const actualOpt = rebuiltTx.getUnauthorizeCredentials();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfUnauthorizeCredentials should be present";
         expectEqualField(expected, *actualOpt, "sfUnauthorizeCredentials");
     }
@@ -185,7 +185,7 @@ TEST(TransactionsDepositPreauthTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(DepositPreauth{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(DepositPreauth{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -199,7 +199,7 @@ TEST(TransactionsDepositPreauthTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(DepositPreauthBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(DepositPreauthBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 5) Build with only required fields and verify optional fields return nullopt.
@@ -227,14 +227,14 @@ TEST(TransactionsDepositPreauthTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx->hasAuthorize());
-    EXPECT_FALSE(tx->getAuthorize().has_value());
-    EXPECT_FALSE(tx->hasUnauthorize());
-    EXPECT_FALSE(tx->getUnauthorize().has_value());
-    EXPECT_FALSE(tx->hasAuthorizeCredentials());
-    EXPECT_FALSE(tx->getAuthorizeCredentials().has_value());
-    EXPECT_FALSE(tx->hasUnauthorizeCredentials());
-    EXPECT_FALSE(tx->getUnauthorizeCredentials().has_value());
+    EXPECT_FALSE(tx.hasAuthorize());
+    EXPECT_FALSE(tx.getAuthorize().has_value());
+    EXPECT_FALSE(tx.hasUnauthorize());
+    EXPECT_FALSE(tx.getUnauthorize().has_value());
+    EXPECT_FALSE(tx.hasAuthorizeCredentials());
+    EXPECT_FALSE(tx.getAuthorizeCredentials().has_value());
+    EXPECT_FALSE(tx.hasUnauthorizeCredentials());
+    EXPECT_FALSE(tx.getUnauthorizeCredentials().has_value());
 }
 
 }

@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a XChainAddClaimAttestation transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit XChainAddClaimAttestation(STTx const& tx)
-        : TransactionBase(tx)
+    explicit XChainAddClaimAttestation(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for XChainAddClaimAttestation");
         }
@@ -55,7 +54,7 @@ public:
     SF_XCHAIN_BRIDGE::type::value_type
     getXChainBridge() const
     {
-        return this->tx_.at(sfXChainBridge);
+        return this->tx_->at(sfXChainBridge);
     }
 
     /**
@@ -65,7 +64,7 @@ public:
     SF_ACCOUNT::type::value_type
     getAttestationSignerAccount() const
     {
-        return this->tx_.at(sfAttestationSignerAccount);
+        return this->tx_->at(sfAttestationSignerAccount);
     }
 
     /**
@@ -75,7 +74,7 @@ public:
     SF_VL::type::value_type
     getPublicKey() const
     {
-        return this->tx_.at(sfPublicKey);
+        return this->tx_->at(sfPublicKey);
     }
 
     /**
@@ -85,7 +84,7 @@ public:
     SF_VL::type::value_type
     getSignature() const
     {
-        return this->tx_.at(sfSignature);
+        return this->tx_->at(sfSignature);
     }
 
     /**
@@ -95,7 +94,7 @@ public:
     SF_ACCOUNT::type::value_type
     getOtherChainSource() const
     {
-        return this->tx_.at(sfOtherChainSource);
+        return this->tx_->at(sfOtherChainSource);
     }
 
     /**
@@ -105,7 +104,7 @@ public:
     SF_AMOUNT::type::value_type
     getAmount() const
     {
-        return this->tx_.at(sfAmount);
+        return this->tx_->at(sfAmount);
     }
 
     /**
@@ -115,7 +114,7 @@ public:
     SF_ACCOUNT::type::value_type
     getAttestationRewardAccount() const
     {
-        return this->tx_.at(sfAttestationRewardAccount);
+        return this->tx_->at(sfAttestationRewardAccount);
     }
 
     /**
@@ -125,7 +124,7 @@ public:
     SF_UINT8::type::value_type
     getWasLockingChainSend() const
     {
-        return this->tx_.at(sfWasLockingChainSend);
+        return this->tx_->at(sfWasLockingChainSend);
     }
 
     /**
@@ -135,7 +134,7 @@ public:
     SF_UINT64::type::value_type
     getXChainClaimID() const
     {
-        return this->tx_.at(sfXChainClaimID);
+        return this->tx_->at(sfXChainClaimID);
     }
 
     /**
@@ -147,7 +146,7 @@ public:
     {
         if (hasDestination())
         {
-            return this->tx_.at(sfDestination);
+            return this->tx_->at(sfDestination);
         }
         return std::nullopt;
     }
@@ -156,7 +155,7 @@ public:
     bool
     hasDestination() const
     {
-        return this->tx_.isFieldPresent(sfDestination);
+        return this->tx_->isFieldPresent(sfDestination);
     }
 };
 
@@ -186,13 +185,13 @@ public:
         setXChainClaimID(xChainClaimID);
     }
 
-    XChainAddClaimAttestationBuilder(STTx const& tx)
+    XChainAddClaimAttestationBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttXCHAIN_ADD_CLAIM_ATTESTATION)
+        if (tx->getTxnType() != ttXCHAIN_ADD_CLAIM_ATTESTATION)
         {
             throw std::runtime_error("Invalid transaction type for XChainAddClaimAttestationBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -308,16 +307,16 @@ public:
     }
 
     /**
-     * Build and return the completed XChainAddClaimAttestation wrapper.
+     * Build and return the XChainAddClaimAttestation wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, XChainAddClaimAttestation>
+    XChainAddClaimAttestation
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, XChainAddClaimAttestation>{STTx{std::move(object_)}};
+        return XChainAddClaimAttestation{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

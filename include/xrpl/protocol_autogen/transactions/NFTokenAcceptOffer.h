@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a NFTokenAcceptOffer transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit NFTokenAcceptOffer(STTx const& tx)
-        : TransactionBase(tx)
+    explicit NFTokenAcceptOffer(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for NFTokenAcceptOffer");
         }
@@ -57,7 +56,7 @@ public:
     {
         if (hasNFTokenBuyOffer())
         {
-            return this->tx_.at(sfNFTokenBuyOffer);
+            return this->tx_->at(sfNFTokenBuyOffer);
         }
         return std::nullopt;
     }
@@ -66,7 +65,7 @@ public:
     bool
     hasNFTokenBuyOffer() const
     {
-        return this->tx_.isFieldPresent(sfNFTokenBuyOffer);
+        return this->tx_->isFieldPresent(sfNFTokenBuyOffer);
     }
 
     /**
@@ -78,7 +77,7 @@ public:
     {
         if (hasNFTokenSellOffer())
         {
-            return this->tx_.at(sfNFTokenSellOffer);
+            return this->tx_->at(sfNFTokenSellOffer);
         }
         return std::nullopt;
     }
@@ -87,7 +86,7 @@ public:
     bool
     hasNFTokenSellOffer() const
     {
-        return this->tx_.isFieldPresent(sfNFTokenSellOffer);
+        return this->tx_->isFieldPresent(sfNFTokenSellOffer);
     }
 
     /**
@@ -99,7 +98,7 @@ public:
     {
         if (hasNFTokenBrokerFee())
         {
-            return this->tx_.at(sfNFTokenBrokerFee);
+            return this->tx_->at(sfNFTokenBrokerFee);
         }
         return std::nullopt;
     }
@@ -108,7 +107,7 @@ public:
     bool
     hasNFTokenBrokerFee() const
     {
-        return this->tx_.isFieldPresent(sfNFTokenBrokerFee);
+        return this->tx_->isFieldPresent(sfNFTokenBrokerFee);
     }
 };
 
@@ -129,13 +128,13 @@ public:
     {
     }
 
-    NFTokenAcceptOfferBuilder(STTx const& tx)
+    NFTokenAcceptOfferBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttNFTOKEN_ACCEPT_OFFER)
+        if (tx->getTxnType() != ttNFTOKEN_ACCEPT_OFFER)
         {
             throw std::runtime_error("Invalid transaction type for NFTokenAcceptOfferBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -174,16 +173,16 @@ public:
     }
 
     /**
-     * Build and return the completed NFTokenAcceptOffer wrapper.
+     * Build and return the NFTokenAcceptOffer wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, NFTokenAcceptOffer>
+    NFTokenAcceptOffer
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, NFTokenAcceptOffer>{STTx{std::move(object_)}};
+        return NFTokenAcceptOffer{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

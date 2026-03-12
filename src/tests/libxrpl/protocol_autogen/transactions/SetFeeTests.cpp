@@ -57,81 +57,81 @@ TEST(TransactionsSetFeeTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     // Verify optional fields
     {
         auto const& expected = ledgerSequenceValue;
-        auto const actualOpt = tx->getLedgerSequence();
+        auto const actualOpt = tx.getLedgerSequence();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLedgerSequence should be present";
         expectEqualField(expected, *actualOpt, "sfLedgerSequence");
-        EXPECT_TRUE(tx->hasLedgerSequence());
+        EXPECT_TRUE(tx.hasLedgerSequence());
     }
 
     {
         auto const& expected = baseFeeValue;
-        auto const actualOpt = tx->getBaseFee();
+        auto const actualOpt = tx.getBaseFee();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfBaseFee should be present";
         expectEqualField(expected, *actualOpt, "sfBaseFee");
-        EXPECT_TRUE(tx->hasBaseFee());
+        EXPECT_TRUE(tx.hasBaseFee());
     }
 
     {
         auto const& expected = referenceFeeUnitsValue;
-        auto const actualOpt = tx->getReferenceFeeUnits();
+        auto const actualOpt = tx.getReferenceFeeUnits();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfReferenceFeeUnits should be present";
         expectEqualField(expected, *actualOpt, "sfReferenceFeeUnits");
-        EXPECT_TRUE(tx->hasReferenceFeeUnits());
+        EXPECT_TRUE(tx.hasReferenceFeeUnits());
     }
 
     {
         auto const& expected = reserveBaseValue;
-        auto const actualOpt = tx->getReserveBase();
+        auto const actualOpt = tx.getReserveBase();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfReserveBase should be present";
         expectEqualField(expected, *actualOpt, "sfReserveBase");
-        EXPECT_TRUE(tx->hasReserveBase());
+        EXPECT_TRUE(tx.hasReserveBase());
     }
 
     {
         auto const& expected = reserveIncrementValue;
-        auto const actualOpt = tx->getReserveIncrement();
+        auto const actualOpt = tx.getReserveIncrement();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfReserveIncrement should be present";
         expectEqualField(expected, *actualOpt, "sfReserveIncrement");
-        EXPECT_TRUE(tx->hasReserveIncrement());
+        EXPECT_TRUE(tx.hasReserveIncrement());
     }
 
     {
         auto const& expected = baseFeeDropsValue;
-        auto const actualOpt = tx->getBaseFeeDrops();
+        auto const actualOpt = tx.getBaseFeeDrops();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfBaseFeeDrops should be present";
         expectEqualField(expected, *actualOpt, "sfBaseFeeDrops");
-        EXPECT_TRUE(tx->hasBaseFeeDrops());
+        EXPECT_TRUE(tx.hasBaseFeeDrops());
     }
 
     {
         auto const& expected = reserveBaseDropsValue;
-        auto const actualOpt = tx->getReserveBaseDrops();
+        auto const actualOpt = tx.getReserveBaseDrops();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfReserveBaseDrops should be present";
         expectEqualField(expected, *actualOpt, "sfReserveBaseDrops");
-        EXPECT_TRUE(tx->hasReserveBaseDrops());
+        EXPECT_TRUE(tx.hasReserveBaseDrops());
     }
 
     {
         auto const& expected = reserveIncrementDropsValue;
-        auto const actualOpt = tx->getReserveIncrementDrops();
+        auto const actualOpt = tx.getReserveIncrementDrops();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfReserveIncrementDrops should be present";
         expectEqualField(expected, *actualOpt, "sfReserveIncrementDrops");
-        EXPECT_TRUE(tx->hasReserveIncrementDrops());
+        EXPECT_TRUE(tx.hasReserveIncrementDrops());
     }
 
 }
@@ -178,72 +178,72 @@ TEST(TransactionsSetFeeTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    SetFeeBuilder builderFromTx{initialTx.object()};
+    SetFeeBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     // Verify optional fields
     {
         auto const& expected = ledgerSequenceValue;
-        auto const actualOpt = rebuiltTx->getLedgerSequence();
+        auto const actualOpt = rebuiltTx.getLedgerSequence();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLedgerSequence should be present";
         expectEqualField(expected, *actualOpt, "sfLedgerSequence");
     }
 
     {
         auto const& expected = baseFeeValue;
-        auto const actualOpt = rebuiltTx->getBaseFee();
+        auto const actualOpt = rebuiltTx.getBaseFee();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfBaseFee should be present";
         expectEqualField(expected, *actualOpt, "sfBaseFee");
     }
 
     {
         auto const& expected = referenceFeeUnitsValue;
-        auto const actualOpt = rebuiltTx->getReferenceFeeUnits();
+        auto const actualOpt = rebuiltTx.getReferenceFeeUnits();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfReferenceFeeUnits should be present";
         expectEqualField(expected, *actualOpt, "sfReferenceFeeUnits");
     }
 
     {
         auto const& expected = reserveBaseValue;
-        auto const actualOpt = rebuiltTx->getReserveBase();
+        auto const actualOpt = rebuiltTx.getReserveBase();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfReserveBase should be present";
         expectEqualField(expected, *actualOpt, "sfReserveBase");
     }
 
     {
         auto const& expected = reserveIncrementValue;
-        auto const actualOpt = rebuiltTx->getReserveIncrement();
+        auto const actualOpt = rebuiltTx.getReserveIncrement();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfReserveIncrement should be present";
         expectEqualField(expected, *actualOpt, "sfReserveIncrement");
     }
 
     {
         auto const& expected = baseFeeDropsValue;
-        auto const actualOpt = rebuiltTx->getBaseFeeDrops();
+        auto const actualOpt = rebuiltTx.getBaseFeeDrops();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfBaseFeeDrops should be present";
         expectEqualField(expected, *actualOpt, "sfBaseFeeDrops");
     }
 
     {
         auto const& expected = reserveBaseDropsValue;
-        auto const actualOpt = rebuiltTx->getReserveBaseDrops();
+        auto const actualOpt = rebuiltTx.getReserveBaseDrops();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfReserveBaseDrops should be present";
         expectEqualField(expected, *actualOpt, "sfReserveBaseDrops");
     }
 
     {
         auto const& expected = reserveIncrementDropsValue;
-        auto const actualOpt = rebuiltTx->getReserveIncrementDrops();
+        auto const actualOpt = rebuiltTx.getReserveIncrementDrops();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfReserveIncrementDrops should be present";
         expectEqualField(expected, *actualOpt, "sfReserveIncrementDrops");
     }
@@ -261,7 +261,7 @@ TEST(TransactionsSetFeeTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(SetFee{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(SetFee{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -275,7 +275,7 @@ TEST(TransactionsSetFeeTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(SetFeeBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(SetFeeBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 5) Build with only required fields and verify optional fields return nullopt.
@@ -303,22 +303,22 @@ TEST(TransactionsSetFeeTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx->hasLedgerSequence());
-    EXPECT_FALSE(tx->getLedgerSequence().has_value());
-    EXPECT_FALSE(tx->hasBaseFee());
-    EXPECT_FALSE(tx->getBaseFee().has_value());
-    EXPECT_FALSE(tx->hasReferenceFeeUnits());
-    EXPECT_FALSE(tx->getReferenceFeeUnits().has_value());
-    EXPECT_FALSE(tx->hasReserveBase());
-    EXPECT_FALSE(tx->getReserveBase().has_value());
-    EXPECT_FALSE(tx->hasReserveIncrement());
-    EXPECT_FALSE(tx->getReserveIncrement().has_value());
-    EXPECT_FALSE(tx->hasBaseFeeDrops());
-    EXPECT_FALSE(tx->getBaseFeeDrops().has_value());
-    EXPECT_FALSE(tx->hasReserveBaseDrops());
-    EXPECT_FALSE(tx->getReserveBaseDrops().has_value());
-    EXPECT_FALSE(tx->hasReserveIncrementDrops());
-    EXPECT_FALSE(tx->getReserveIncrementDrops().has_value());
+    EXPECT_FALSE(tx.hasLedgerSequence());
+    EXPECT_FALSE(tx.getLedgerSequence().has_value());
+    EXPECT_FALSE(tx.hasBaseFee());
+    EXPECT_FALSE(tx.getBaseFee().has_value());
+    EXPECT_FALSE(tx.hasReferenceFeeUnits());
+    EXPECT_FALSE(tx.getReferenceFeeUnits().has_value());
+    EXPECT_FALSE(tx.hasReserveBase());
+    EXPECT_FALSE(tx.getReserveBase().has_value());
+    EXPECT_FALSE(tx.hasReserveIncrement());
+    EXPECT_FALSE(tx.getReserveIncrement().has_value());
+    EXPECT_FALSE(tx.hasBaseFeeDrops());
+    EXPECT_FALSE(tx.getBaseFeeDrops().has_value());
+    EXPECT_FALSE(tx.hasReserveBaseDrops());
+    EXPECT_FALSE(tx.getReserveBaseDrops().has_value());
+    EXPECT_FALSE(tx.hasReserveIncrementDrops());
+    EXPECT_FALSE(tx.getReserveIncrementDrops().has_value());
 }
 
 }

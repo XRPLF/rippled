@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a TicketCreate transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit TicketCreate(STTx const& tx)
-        : TransactionBase(tx)
+    explicit TicketCreate(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for TicketCreate");
         }
@@ -55,7 +54,7 @@ public:
     SF_UINT32::type::value_type
     getTicketCount() const
     {
-        return this->tx_.at(sfTicketCount);
+        return this->tx_->at(sfTicketCount);
     }
 };
 
@@ -77,13 +76,13 @@ public:
         setTicketCount(ticketCount);
     }
 
-    TicketCreateBuilder(STTx const& tx)
+    TicketCreateBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttTICKET_CREATE)
+        if (tx->getTxnType() != ttTICKET_CREATE)
         {
             throw std::runtime_error("Invalid transaction type for TicketCreateBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -100,16 +99,16 @@ public:
     }
 
     /**
-     * Build and return the completed TicketCreate wrapper.
+     * Build and return the TicketCreate wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, TicketCreate>
+    TicketCreate
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, TicketCreate>{STTx{std::move(object_)}};
+        return TicketCreate{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

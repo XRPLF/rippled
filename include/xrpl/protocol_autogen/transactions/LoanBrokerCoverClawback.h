@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a LoanBrokerCoverClawback transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit LoanBrokerCoverClawback(STTx const& tx)
-        : TransactionBase(tx)
+    explicit LoanBrokerCoverClawback(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for LoanBrokerCoverClawback");
         }
@@ -57,7 +56,7 @@ public:
     {
         if (hasLoanBrokerID())
         {
-            return this->tx_.at(sfLoanBrokerID);
+            return this->tx_->at(sfLoanBrokerID);
         }
         return std::nullopt;
     }
@@ -66,7 +65,7 @@ public:
     bool
     hasLoanBrokerID() const
     {
-        return this->tx_.isFieldPresent(sfLoanBrokerID);
+        return this->tx_->isFieldPresent(sfLoanBrokerID);
     }
 
     /**
@@ -79,7 +78,7 @@ public:
     {
         if (hasAmount())
         {
-            return this->tx_.at(sfAmount);
+            return this->tx_->at(sfAmount);
         }
         return std::nullopt;
     }
@@ -88,7 +87,7 @@ public:
     bool
     hasAmount() const
     {
-        return this->tx_.isFieldPresent(sfAmount);
+        return this->tx_->isFieldPresent(sfAmount);
     }
 };
 
@@ -109,13 +108,13 @@ public:
     {
     }
 
-    LoanBrokerCoverClawbackBuilder(STTx const& tx)
+    LoanBrokerCoverClawbackBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttLOAN_BROKER_COVER_CLAWBACK)
+        if (tx->getTxnType() != ttLOAN_BROKER_COVER_CLAWBACK)
         {
             throw std::runtime_error("Invalid transaction type for LoanBrokerCoverClawbackBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -144,16 +143,16 @@ public:
     }
 
     /**
-     * Build and return the completed LoanBrokerCoverClawback wrapper.
+     * Build and return the LoanBrokerCoverClawback wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, LoanBrokerCoverClawback>
+    LoanBrokerCoverClawback
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, LoanBrokerCoverClawback>{STTx{std::move(object_)}};
+        return LoanBrokerCoverClawback{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

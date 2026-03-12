@@ -75,149 +75,149 @@ TEST(TransactionsLoanSetTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = loanBrokerIDValue;
-        auto const actual = tx->getLoanBrokerID();
+        auto const actual = tx.getLoanBrokerID();
         expectEqualField(expected, actual, "sfLoanBrokerID");
     }
 
     {
         auto const& expected = principalRequestedValue;
-        auto const actual = tx->getPrincipalRequested();
+        auto const actual = tx.getPrincipalRequested();
         expectEqualField(expected, actual, "sfPrincipalRequested");
     }
 
     // Verify optional fields
     {
         auto const& expected = dataValue;
-        auto const actualOpt = tx->getData();
+        auto const actualOpt = tx.getData();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfData should be present";
         expectEqualField(expected, *actualOpt, "sfData");
-        EXPECT_TRUE(tx->hasData());
+        EXPECT_TRUE(tx.hasData());
     }
 
     {
         auto const& expected = counterpartyValue;
-        auto const actualOpt = tx->getCounterparty();
+        auto const actualOpt = tx.getCounterparty();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCounterparty should be present";
         expectEqualField(expected, *actualOpt, "sfCounterparty");
-        EXPECT_TRUE(tx->hasCounterparty());
+        EXPECT_TRUE(tx.hasCounterparty());
     }
 
     {
         auto const& expected = counterpartySignatureValue;
-        auto const actualOpt = tx->getCounterpartySignature();
+        auto const actualOpt = tx.getCounterpartySignature();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCounterpartySignature should be present";
         expectEqualField(expected, *actualOpt, "sfCounterpartySignature");
-        EXPECT_TRUE(tx->hasCounterpartySignature());
+        EXPECT_TRUE(tx.hasCounterpartySignature());
     }
 
     {
         auto const& expected = loanOriginationFeeValue;
-        auto const actualOpt = tx->getLoanOriginationFee();
+        auto const actualOpt = tx.getLoanOriginationFee();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLoanOriginationFee should be present";
         expectEqualField(expected, *actualOpt, "sfLoanOriginationFee");
-        EXPECT_TRUE(tx->hasLoanOriginationFee());
+        EXPECT_TRUE(tx.hasLoanOriginationFee());
     }
 
     {
         auto const& expected = loanServiceFeeValue;
-        auto const actualOpt = tx->getLoanServiceFee();
+        auto const actualOpt = tx.getLoanServiceFee();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLoanServiceFee should be present";
         expectEqualField(expected, *actualOpt, "sfLoanServiceFee");
-        EXPECT_TRUE(tx->hasLoanServiceFee());
+        EXPECT_TRUE(tx.hasLoanServiceFee());
     }
 
     {
         auto const& expected = latePaymentFeeValue;
-        auto const actualOpt = tx->getLatePaymentFee();
+        auto const actualOpt = tx.getLatePaymentFee();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLatePaymentFee should be present";
         expectEqualField(expected, *actualOpt, "sfLatePaymentFee");
-        EXPECT_TRUE(tx->hasLatePaymentFee());
+        EXPECT_TRUE(tx.hasLatePaymentFee());
     }
 
     {
         auto const& expected = closePaymentFeeValue;
-        auto const actualOpt = tx->getClosePaymentFee();
+        auto const actualOpt = tx.getClosePaymentFee();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfClosePaymentFee should be present";
         expectEqualField(expected, *actualOpt, "sfClosePaymentFee");
-        EXPECT_TRUE(tx->hasClosePaymentFee());
+        EXPECT_TRUE(tx.hasClosePaymentFee());
     }
 
     {
         auto const& expected = overpaymentFeeValue;
-        auto const actualOpt = tx->getOverpaymentFee();
+        auto const actualOpt = tx.getOverpaymentFee();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfOverpaymentFee should be present";
         expectEqualField(expected, *actualOpt, "sfOverpaymentFee");
-        EXPECT_TRUE(tx->hasOverpaymentFee());
+        EXPECT_TRUE(tx.hasOverpaymentFee());
     }
 
     {
         auto const& expected = interestRateValue;
-        auto const actualOpt = tx->getInterestRate();
+        auto const actualOpt = tx.getInterestRate();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfInterestRate should be present";
         expectEqualField(expected, *actualOpt, "sfInterestRate");
-        EXPECT_TRUE(tx->hasInterestRate());
+        EXPECT_TRUE(tx.hasInterestRate());
     }
 
     {
         auto const& expected = lateInterestRateValue;
-        auto const actualOpt = tx->getLateInterestRate();
+        auto const actualOpt = tx.getLateInterestRate();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLateInterestRate should be present";
         expectEqualField(expected, *actualOpt, "sfLateInterestRate");
-        EXPECT_TRUE(tx->hasLateInterestRate());
+        EXPECT_TRUE(tx.hasLateInterestRate());
     }
 
     {
         auto const& expected = closeInterestRateValue;
-        auto const actualOpt = tx->getCloseInterestRate();
+        auto const actualOpt = tx.getCloseInterestRate();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCloseInterestRate should be present";
         expectEqualField(expected, *actualOpt, "sfCloseInterestRate");
-        EXPECT_TRUE(tx->hasCloseInterestRate());
+        EXPECT_TRUE(tx.hasCloseInterestRate());
     }
 
     {
         auto const& expected = overpaymentInterestRateValue;
-        auto const actualOpt = tx->getOverpaymentInterestRate();
+        auto const actualOpt = tx.getOverpaymentInterestRate();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfOverpaymentInterestRate should be present";
         expectEqualField(expected, *actualOpt, "sfOverpaymentInterestRate");
-        EXPECT_TRUE(tx->hasOverpaymentInterestRate());
+        EXPECT_TRUE(tx.hasOverpaymentInterestRate());
     }
 
     {
         auto const& expected = paymentTotalValue;
-        auto const actualOpt = tx->getPaymentTotal();
+        auto const actualOpt = tx.getPaymentTotal();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfPaymentTotal should be present";
         expectEqualField(expected, *actualOpt, "sfPaymentTotal");
-        EXPECT_TRUE(tx->hasPaymentTotal());
+        EXPECT_TRUE(tx.hasPaymentTotal());
     }
 
     {
         auto const& expected = paymentIntervalValue;
-        auto const actualOpt = tx->getPaymentInterval();
+        auto const actualOpt = tx.getPaymentInterval();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfPaymentInterval should be present";
         expectEqualField(expected, *actualOpt, "sfPaymentInterval");
-        EXPECT_TRUE(tx->hasPaymentInterval());
+        EXPECT_TRUE(tx.hasPaymentInterval());
     }
 
     {
         auto const& expected = gracePeriodValue;
-        auto const actualOpt = tx->getGracePeriod();
+        auto const actualOpt = tx.getGracePeriod();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfGracePeriod should be present";
         expectEqualField(expected, *actualOpt, "sfGracePeriod");
-        EXPECT_TRUE(tx->hasGracePeriod());
+        EXPECT_TRUE(tx.hasGracePeriod());
     }
 
 }
@@ -282,133 +282,133 @@ TEST(TransactionsLoanSetTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    LoanSetBuilder builderFromTx{initialTx.object()};
+    LoanSetBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = loanBrokerIDValue;
-        auto const actual = rebuiltTx->getLoanBrokerID();
+        auto const actual = rebuiltTx.getLoanBrokerID();
         expectEqualField(expected, actual, "sfLoanBrokerID");
     }
 
     {
         auto const& expected = principalRequestedValue;
-        auto const actual = rebuiltTx->getPrincipalRequested();
+        auto const actual = rebuiltTx.getPrincipalRequested();
         expectEqualField(expected, actual, "sfPrincipalRequested");
     }
 
     // Verify optional fields
     {
         auto const& expected = dataValue;
-        auto const actualOpt = rebuiltTx->getData();
+        auto const actualOpt = rebuiltTx.getData();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfData should be present";
         expectEqualField(expected, *actualOpt, "sfData");
     }
 
     {
         auto const& expected = counterpartyValue;
-        auto const actualOpt = rebuiltTx->getCounterparty();
+        auto const actualOpt = rebuiltTx.getCounterparty();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCounterparty should be present";
         expectEqualField(expected, *actualOpt, "sfCounterparty");
     }
 
     {
         auto const& expected = counterpartySignatureValue;
-        auto const actualOpt = rebuiltTx->getCounterpartySignature();
+        auto const actualOpt = rebuiltTx.getCounterpartySignature();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCounterpartySignature should be present";
         expectEqualField(expected, *actualOpt, "sfCounterpartySignature");
     }
 
     {
         auto const& expected = loanOriginationFeeValue;
-        auto const actualOpt = rebuiltTx->getLoanOriginationFee();
+        auto const actualOpt = rebuiltTx.getLoanOriginationFee();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLoanOriginationFee should be present";
         expectEqualField(expected, *actualOpt, "sfLoanOriginationFee");
     }
 
     {
         auto const& expected = loanServiceFeeValue;
-        auto const actualOpt = rebuiltTx->getLoanServiceFee();
+        auto const actualOpt = rebuiltTx.getLoanServiceFee();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLoanServiceFee should be present";
         expectEqualField(expected, *actualOpt, "sfLoanServiceFee");
     }
 
     {
         auto const& expected = latePaymentFeeValue;
-        auto const actualOpt = rebuiltTx->getLatePaymentFee();
+        auto const actualOpt = rebuiltTx.getLatePaymentFee();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLatePaymentFee should be present";
         expectEqualField(expected, *actualOpt, "sfLatePaymentFee");
     }
 
     {
         auto const& expected = closePaymentFeeValue;
-        auto const actualOpt = rebuiltTx->getClosePaymentFee();
+        auto const actualOpt = rebuiltTx.getClosePaymentFee();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfClosePaymentFee should be present";
         expectEqualField(expected, *actualOpt, "sfClosePaymentFee");
     }
 
     {
         auto const& expected = overpaymentFeeValue;
-        auto const actualOpt = rebuiltTx->getOverpaymentFee();
+        auto const actualOpt = rebuiltTx.getOverpaymentFee();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfOverpaymentFee should be present";
         expectEqualField(expected, *actualOpt, "sfOverpaymentFee");
     }
 
     {
         auto const& expected = interestRateValue;
-        auto const actualOpt = rebuiltTx->getInterestRate();
+        auto const actualOpt = rebuiltTx.getInterestRate();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfInterestRate should be present";
         expectEqualField(expected, *actualOpt, "sfInterestRate");
     }
 
     {
         auto const& expected = lateInterestRateValue;
-        auto const actualOpt = rebuiltTx->getLateInterestRate();
+        auto const actualOpt = rebuiltTx.getLateInterestRate();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLateInterestRate should be present";
         expectEqualField(expected, *actualOpt, "sfLateInterestRate");
     }
 
     {
         auto const& expected = closeInterestRateValue;
-        auto const actualOpt = rebuiltTx->getCloseInterestRate();
+        auto const actualOpt = rebuiltTx.getCloseInterestRate();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCloseInterestRate should be present";
         expectEqualField(expected, *actualOpt, "sfCloseInterestRate");
     }
 
     {
         auto const& expected = overpaymentInterestRateValue;
-        auto const actualOpt = rebuiltTx->getOverpaymentInterestRate();
+        auto const actualOpt = rebuiltTx.getOverpaymentInterestRate();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfOverpaymentInterestRate should be present";
         expectEqualField(expected, *actualOpt, "sfOverpaymentInterestRate");
     }
 
     {
         auto const& expected = paymentTotalValue;
-        auto const actualOpt = rebuiltTx->getPaymentTotal();
+        auto const actualOpt = rebuiltTx.getPaymentTotal();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfPaymentTotal should be present";
         expectEqualField(expected, *actualOpt, "sfPaymentTotal");
     }
 
     {
         auto const& expected = paymentIntervalValue;
-        auto const actualOpt = rebuiltTx->getPaymentInterval();
+        auto const actualOpt = rebuiltTx.getPaymentInterval();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfPaymentInterval should be present";
         expectEqualField(expected, *actualOpt, "sfPaymentInterval");
     }
 
     {
         auto const& expected = gracePeriodValue;
-        auto const actualOpt = rebuiltTx->getGracePeriod();
+        auto const actualOpt = rebuiltTx.getGracePeriod();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfGracePeriod should be present";
         expectEqualField(expected, *actualOpt, "sfGracePeriod");
     }
@@ -426,7 +426,7 @@ TEST(TransactionsLoanSetTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(LoanSet{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(LoanSet{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -440,7 +440,7 @@ TEST(TransactionsLoanSetTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(LoanSetBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(LoanSetBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 5) Build with only required fields and verify optional fields return nullopt.
@@ -472,36 +472,36 @@ TEST(TransactionsLoanSetTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx->hasData());
-    EXPECT_FALSE(tx->getData().has_value());
-    EXPECT_FALSE(tx->hasCounterparty());
-    EXPECT_FALSE(tx->getCounterparty().has_value());
-    EXPECT_FALSE(tx->hasCounterpartySignature());
-    EXPECT_FALSE(tx->getCounterpartySignature().has_value());
-    EXPECT_FALSE(tx->hasLoanOriginationFee());
-    EXPECT_FALSE(tx->getLoanOriginationFee().has_value());
-    EXPECT_FALSE(tx->hasLoanServiceFee());
-    EXPECT_FALSE(tx->getLoanServiceFee().has_value());
-    EXPECT_FALSE(tx->hasLatePaymentFee());
-    EXPECT_FALSE(tx->getLatePaymentFee().has_value());
-    EXPECT_FALSE(tx->hasClosePaymentFee());
-    EXPECT_FALSE(tx->getClosePaymentFee().has_value());
-    EXPECT_FALSE(tx->hasOverpaymentFee());
-    EXPECT_FALSE(tx->getOverpaymentFee().has_value());
-    EXPECT_FALSE(tx->hasInterestRate());
-    EXPECT_FALSE(tx->getInterestRate().has_value());
-    EXPECT_FALSE(tx->hasLateInterestRate());
-    EXPECT_FALSE(tx->getLateInterestRate().has_value());
-    EXPECT_FALSE(tx->hasCloseInterestRate());
-    EXPECT_FALSE(tx->getCloseInterestRate().has_value());
-    EXPECT_FALSE(tx->hasOverpaymentInterestRate());
-    EXPECT_FALSE(tx->getOverpaymentInterestRate().has_value());
-    EXPECT_FALSE(tx->hasPaymentTotal());
-    EXPECT_FALSE(tx->getPaymentTotal().has_value());
-    EXPECT_FALSE(tx->hasPaymentInterval());
-    EXPECT_FALSE(tx->getPaymentInterval().has_value());
-    EXPECT_FALSE(tx->hasGracePeriod());
-    EXPECT_FALSE(tx->getGracePeriod().has_value());
+    EXPECT_FALSE(tx.hasData());
+    EXPECT_FALSE(tx.getData().has_value());
+    EXPECT_FALSE(tx.hasCounterparty());
+    EXPECT_FALSE(tx.getCounterparty().has_value());
+    EXPECT_FALSE(tx.hasCounterpartySignature());
+    EXPECT_FALSE(tx.getCounterpartySignature().has_value());
+    EXPECT_FALSE(tx.hasLoanOriginationFee());
+    EXPECT_FALSE(tx.getLoanOriginationFee().has_value());
+    EXPECT_FALSE(tx.hasLoanServiceFee());
+    EXPECT_FALSE(tx.getLoanServiceFee().has_value());
+    EXPECT_FALSE(tx.hasLatePaymentFee());
+    EXPECT_FALSE(tx.getLatePaymentFee().has_value());
+    EXPECT_FALSE(tx.hasClosePaymentFee());
+    EXPECT_FALSE(tx.getClosePaymentFee().has_value());
+    EXPECT_FALSE(tx.hasOverpaymentFee());
+    EXPECT_FALSE(tx.getOverpaymentFee().has_value());
+    EXPECT_FALSE(tx.hasInterestRate());
+    EXPECT_FALSE(tx.getInterestRate().has_value());
+    EXPECT_FALSE(tx.hasLateInterestRate());
+    EXPECT_FALSE(tx.getLateInterestRate().has_value());
+    EXPECT_FALSE(tx.hasCloseInterestRate());
+    EXPECT_FALSE(tx.getCloseInterestRate().has_value());
+    EXPECT_FALSE(tx.hasOverpaymentInterestRate());
+    EXPECT_FALSE(tx.getOverpaymentInterestRate().has_value());
+    EXPECT_FALSE(tx.hasPaymentTotal());
+    EXPECT_FALSE(tx.getPaymentTotal().has_value());
+    EXPECT_FALSE(tx.hasPaymentInterval());
+    EXPECT_FALSE(tx.getPaymentInterval().has_value());
+    EXPECT_FALSE(tx.hasGracePeriod());
+    EXPECT_FALSE(tx.getGracePeriod().has_value());
 }
 
 }

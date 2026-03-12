@@ -47,41 +47,41 @@ TEST(TransactionsNFTokenAcceptOfferTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     // Verify optional fields
     {
         auto const& expected = nFTokenBuyOfferValue;
-        auto const actualOpt = tx->getNFTokenBuyOffer();
+        auto const actualOpt = tx.getNFTokenBuyOffer();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfNFTokenBuyOffer should be present";
         expectEqualField(expected, *actualOpt, "sfNFTokenBuyOffer");
-        EXPECT_TRUE(tx->hasNFTokenBuyOffer());
+        EXPECT_TRUE(tx.hasNFTokenBuyOffer());
     }
 
     {
         auto const& expected = nFTokenSellOfferValue;
-        auto const actualOpt = tx->getNFTokenSellOffer();
+        auto const actualOpt = tx.getNFTokenSellOffer();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfNFTokenSellOffer should be present";
         expectEqualField(expected, *actualOpt, "sfNFTokenSellOffer");
-        EXPECT_TRUE(tx->hasNFTokenSellOffer());
+        EXPECT_TRUE(tx.hasNFTokenSellOffer());
     }
 
     {
         auto const& expected = nFTokenBrokerFeeValue;
-        auto const actualOpt = tx->getNFTokenBrokerFee();
+        auto const actualOpt = tx.getNFTokenBrokerFee();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfNFTokenBrokerFee should be present";
         expectEqualField(expected, *actualOpt, "sfNFTokenBrokerFee");
-        EXPECT_TRUE(tx->hasNFTokenBrokerFee());
+        EXPECT_TRUE(tx.hasNFTokenBrokerFee());
     }
 
 }
@@ -118,37 +118,37 @@ TEST(TransactionsNFTokenAcceptOfferTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    NFTokenAcceptOfferBuilder builderFromTx{initialTx.object()};
+    NFTokenAcceptOfferBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     // Verify optional fields
     {
         auto const& expected = nFTokenBuyOfferValue;
-        auto const actualOpt = rebuiltTx->getNFTokenBuyOffer();
+        auto const actualOpt = rebuiltTx.getNFTokenBuyOffer();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfNFTokenBuyOffer should be present";
         expectEqualField(expected, *actualOpt, "sfNFTokenBuyOffer");
     }
 
     {
         auto const& expected = nFTokenSellOfferValue;
-        auto const actualOpt = rebuiltTx->getNFTokenSellOffer();
+        auto const actualOpt = rebuiltTx.getNFTokenSellOffer();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfNFTokenSellOffer should be present";
         expectEqualField(expected, *actualOpt, "sfNFTokenSellOffer");
     }
 
     {
         auto const& expected = nFTokenBrokerFeeValue;
-        auto const actualOpt = rebuiltTx->getNFTokenBrokerFee();
+        auto const actualOpt = rebuiltTx.getNFTokenBrokerFee();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfNFTokenBrokerFee should be present";
         expectEqualField(expected, *actualOpt, "sfNFTokenBrokerFee");
     }
@@ -166,7 +166,7 @@ TEST(TransactionsNFTokenAcceptOfferTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(NFTokenAcceptOffer{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(NFTokenAcceptOffer{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -180,7 +180,7 @@ TEST(TransactionsNFTokenAcceptOfferTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(NFTokenAcceptOfferBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(NFTokenAcceptOfferBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 5) Build with only required fields and verify optional fields return nullopt.
@@ -208,12 +208,12 @@ TEST(TransactionsNFTokenAcceptOfferTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx->hasNFTokenBuyOffer());
-    EXPECT_FALSE(tx->getNFTokenBuyOffer().has_value());
-    EXPECT_FALSE(tx->hasNFTokenSellOffer());
-    EXPECT_FALSE(tx->getNFTokenSellOffer().has_value());
-    EXPECT_FALSE(tx->hasNFTokenBrokerFee());
-    EXPECT_FALSE(tx->getNFTokenBrokerFee().has_value());
+    EXPECT_FALSE(tx.hasNFTokenBuyOffer());
+    EXPECT_FALSE(tx.getNFTokenBuyOffer().has_value());
+    EXPECT_FALSE(tx.hasNFTokenSellOffer());
+    EXPECT_FALSE(tx.getNFTokenSellOffer().has_value());
+    EXPECT_FALSE(tx.hasNFTokenBrokerFee());
+    EXPECT_FALSE(tx.getNFTokenBrokerFee().has_value());
 }
 
 }

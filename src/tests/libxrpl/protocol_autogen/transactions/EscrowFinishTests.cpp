@@ -51,53 +51,53 @@ TEST(TransactionsEscrowFinishTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = ownerValue;
-        auto const actual = tx->getOwner();
+        auto const actual = tx.getOwner();
         expectEqualField(expected, actual, "sfOwner");
     }
 
     {
         auto const& expected = offerSequenceValue;
-        auto const actual = tx->getOfferSequence();
+        auto const actual = tx.getOfferSequence();
         expectEqualField(expected, actual, "sfOfferSequence");
     }
 
     // Verify optional fields
     {
         auto const& expected = fulfillmentValue;
-        auto const actualOpt = tx->getFulfillment();
+        auto const actualOpt = tx.getFulfillment();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfFulfillment should be present";
         expectEqualField(expected, *actualOpt, "sfFulfillment");
-        EXPECT_TRUE(tx->hasFulfillment());
+        EXPECT_TRUE(tx.hasFulfillment());
     }
 
     {
         auto const& expected = conditionValue;
-        auto const actualOpt = tx->getCondition();
+        auto const actualOpt = tx.getCondition();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCondition should be present";
         expectEqualField(expected, *actualOpt, "sfCondition");
-        EXPECT_TRUE(tx->hasCondition());
+        EXPECT_TRUE(tx.hasCondition());
     }
 
     {
         auto const& expected = credentialIDsValue;
-        auto const actualOpt = tx->getCredentialIDs();
+        auto const actualOpt = tx.getCredentialIDs();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCredentialIDs should be present";
         expectEqualField(expected, *actualOpt, "sfCredentialIDs");
-        EXPECT_TRUE(tx->hasCredentialIDs());
+        EXPECT_TRUE(tx.hasCredentialIDs());
     }
 
 }
@@ -138,49 +138,49 @@ TEST(TransactionsEscrowFinishTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    EscrowFinishBuilder builderFromTx{initialTx.object()};
+    EscrowFinishBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = ownerValue;
-        auto const actual = rebuiltTx->getOwner();
+        auto const actual = rebuiltTx.getOwner();
         expectEqualField(expected, actual, "sfOwner");
     }
 
     {
         auto const& expected = offerSequenceValue;
-        auto const actual = rebuiltTx->getOfferSequence();
+        auto const actual = rebuiltTx.getOfferSequence();
         expectEqualField(expected, actual, "sfOfferSequence");
     }
 
     // Verify optional fields
     {
         auto const& expected = fulfillmentValue;
-        auto const actualOpt = rebuiltTx->getFulfillment();
+        auto const actualOpt = rebuiltTx.getFulfillment();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfFulfillment should be present";
         expectEqualField(expected, *actualOpt, "sfFulfillment");
     }
 
     {
         auto const& expected = conditionValue;
-        auto const actualOpt = rebuiltTx->getCondition();
+        auto const actualOpt = rebuiltTx.getCondition();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCondition should be present";
         expectEqualField(expected, *actualOpt, "sfCondition");
     }
 
     {
         auto const& expected = credentialIDsValue;
-        auto const actualOpt = rebuiltTx->getCredentialIDs();
+        auto const actualOpt = rebuiltTx.getCredentialIDs();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCredentialIDs should be present";
         expectEqualField(expected, *actualOpt, "sfCredentialIDs");
     }
@@ -198,7 +198,7 @@ TEST(TransactionsEscrowFinishTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(EscrowFinish{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(EscrowFinish{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -212,7 +212,7 @@ TEST(TransactionsEscrowFinishTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(EscrowFinishBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(EscrowFinishBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 5) Build with only required fields and verify optional fields return nullopt.
@@ -244,12 +244,12 @@ TEST(TransactionsEscrowFinishTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx->hasFulfillment());
-    EXPECT_FALSE(tx->getFulfillment().has_value());
-    EXPECT_FALSE(tx->hasCondition());
-    EXPECT_FALSE(tx->getCondition().has_value());
-    EXPECT_FALSE(tx->hasCredentialIDs());
-    EXPECT_FALSE(tx->getCredentialIDs().has_value());
+    EXPECT_FALSE(tx.hasFulfillment());
+    EXPECT_FALSE(tx.getFulfillment().has_value());
+    EXPECT_FALSE(tx.hasCondition());
+    EXPECT_FALSE(tx.getCondition().has_value());
+    EXPECT_FALSE(tx.hasCredentialIDs());
+    EXPECT_FALSE(tx.getCredentialIDs().has_value());
 }
 
 }

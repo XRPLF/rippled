@@ -49,45 +49,45 @@ TEST(TransactionsLoanBrokerCoverWithdrawTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = loanBrokerIDValue;
-        auto const actual = tx->getLoanBrokerID();
+        auto const actual = tx.getLoanBrokerID();
         expectEqualField(expected, actual, "sfLoanBrokerID");
     }
 
     {
         auto const& expected = amountValue;
-        auto const actual = tx->getAmount();
+        auto const actual = tx.getAmount();
         expectEqualField(expected, actual, "sfAmount");
     }
 
     // Verify optional fields
     {
         auto const& expected = destinationValue;
-        auto const actualOpt = tx->getDestination();
+        auto const actualOpt = tx.getDestination();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDestination should be present";
         expectEqualField(expected, *actualOpt, "sfDestination");
-        EXPECT_TRUE(tx->hasDestination());
+        EXPECT_TRUE(tx.hasDestination());
     }
 
     {
         auto const& expected = destinationTagValue;
-        auto const actualOpt = tx->getDestinationTag();
+        auto const actualOpt = tx.getDestinationTag();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDestinationTag should be present";
         expectEqualField(expected, *actualOpt, "sfDestinationTag");
-        EXPECT_TRUE(tx->hasDestinationTag());
+        EXPECT_TRUE(tx.hasDestinationTag());
     }
 
 }
@@ -126,42 +126,42 @@ TEST(TransactionsLoanBrokerCoverWithdrawTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    LoanBrokerCoverWithdrawBuilder builderFromTx{initialTx.object()};
+    LoanBrokerCoverWithdrawBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = loanBrokerIDValue;
-        auto const actual = rebuiltTx->getLoanBrokerID();
+        auto const actual = rebuiltTx.getLoanBrokerID();
         expectEqualField(expected, actual, "sfLoanBrokerID");
     }
 
     {
         auto const& expected = amountValue;
-        auto const actual = rebuiltTx->getAmount();
+        auto const actual = rebuiltTx.getAmount();
         expectEqualField(expected, actual, "sfAmount");
     }
 
     // Verify optional fields
     {
         auto const& expected = destinationValue;
-        auto const actualOpt = rebuiltTx->getDestination();
+        auto const actualOpt = rebuiltTx.getDestination();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDestination should be present";
         expectEqualField(expected, *actualOpt, "sfDestination");
     }
 
     {
         auto const& expected = destinationTagValue;
-        auto const actualOpt = rebuiltTx->getDestinationTag();
+        auto const actualOpt = rebuiltTx.getDestinationTag();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDestinationTag should be present";
         expectEqualField(expected, *actualOpt, "sfDestinationTag");
     }
@@ -179,7 +179,7 @@ TEST(TransactionsLoanBrokerCoverWithdrawTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(LoanBrokerCoverWithdraw{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(LoanBrokerCoverWithdraw{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -193,7 +193,7 @@ TEST(TransactionsLoanBrokerCoverWithdrawTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(LoanBrokerCoverWithdrawBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(LoanBrokerCoverWithdrawBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 5) Build with only required fields and verify optional fields return nullopt.
@@ -225,10 +225,10 @@ TEST(TransactionsLoanBrokerCoverWithdrawTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx->hasDestination());
-    EXPECT_FALSE(tx->getDestination().has_value());
-    EXPECT_FALSE(tx->hasDestinationTag());
-    EXPECT_FALSE(tx->getDestinationTag().has_value());
+    EXPECT_FALSE(tx.hasDestination());
+    EXPECT_FALSE(tx.getDestination().has_value());
+    EXPECT_FALSE(tx.hasDestinationTag());
+    EXPECT_FALSE(tx.getDestinationTag().has_value());
 }
 
 }

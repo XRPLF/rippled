@@ -9,7 +9,7 @@ This directory contains auto-generated C++ wrapper classes for XRP Ledger protoc
 The files in this directory are automatically generated at **CMake configure time** from macro definition files:
 
 - **Transaction classes** (in `transactions/`): Generated from `include/xrpl/protocol/detail/transactions.macro` by `scripts/generate_tx_classes.py`
-- **Ledger entry classes** (in `ledger_objects/`): Generated from `include/xrpl/protocol/detail/ledger_entries.macro` by `scripts/generate_ledger_classes.py`
+- **Ledger entry classes** (in `ledger_entries/`): Generated from `include/xrpl/protocol/detail/ledger_entries.macro` by `scripts/generate_ledger_classes.py`
 
 ## Generation Process
 

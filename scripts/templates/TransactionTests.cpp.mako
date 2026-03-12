@@ -62,22 +62,22 @@ TEST(Transactions${name}Tests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
 % for field in required_fields:
     {
         auto const& expected = ${field["paramName"]}Value;
-        auto const actual = tx->get${field["name"][2:]}();
+        auto const actual = tx.get${field["name"][2:]}();
         expectEqualField(expected, actual, "${field["name"]}");
     }
 
@@ -86,10 +86,10 @@ TEST(Transactions${name}Tests, BuilderSettersRoundTrip)
 % for field in optional_fields:
     {
         auto const& expected = ${field["paramName"]}Value;
-        auto const actualOpt = tx->get${field["name"][2:]}();
+        auto const actualOpt = tx.get${field["name"][2:]}();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field ${field["name"]} should be present";
         expectEqualField(expected, *actualOpt, "${field["name"]}");
-        EXPECT_TRUE(tx->has${field["name"][2:]}());
+        EXPECT_TRUE(tx.has${field["name"][2:]}());
     }
 
 % endfor
@@ -130,23 +130,23 @@ TEST(Transactions${name}Tests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    ${name}Builder builderFromTx{initialTx.object()};
+    ${name}Builder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
 % for field in required_fields:
     {
         auto const& expected = ${field["paramName"]}Value;
-        auto const actual = rebuiltTx->get${field["name"][2:]}();
+        auto const actual = rebuiltTx.get${field["name"][2:]}();
         expectEqualField(expected, actual, "${field["name"]}");
     }
 
@@ -155,7 +155,7 @@ TEST(Transactions${name}Tests, BuilderFromStTxRoundTrip)
 % for field in optional_fields:
     {
         auto const& expected = ${field["paramName"]}Value;
-        auto const actualOpt = rebuiltTx->get${field["name"][2:]}();
+        auto const actualOpt = rebuiltTx.get${field["name"][2:]}();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field ${field["name"]} should be present";
         expectEqualField(expected, *actualOpt, "${field["name"]}");
     }
@@ -178,7 +178,7 @@ TEST(Transactions${name}Tests, WrapperThrowsOnWrongTxType)
 % endif
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(${name}{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(${name}{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -196,7 +196,7 @@ TEST(Transactions${name}Tests, BuilderThrowsOnWrongTxType)
 % endif
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(${name}Builder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(${name}Builder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 % if optional_fields:
@@ -232,8 +232,8 @@ TEST(Transactions${name}Tests, OptionalFieldsReturnNullopt)
 
     // Verify optional fields are not present
 % for field in optional_fields:
-    EXPECT_FALSE(tx->has${field["name"][2:]}());
-    EXPECT_FALSE(tx->get${field["name"][2:]}().has_value());
+    EXPECT_FALSE(tx.has${field["name"][2:]}());
+    EXPECT_FALSE(tx.get${field["name"][2:]}().has_value());
 % endfor
 }
 % endif

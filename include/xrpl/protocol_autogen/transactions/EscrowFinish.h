@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a EscrowFinish transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit EscrowFinish(STTx const& tx)
-        : TransactionBase(tx)
+    explicit EscrowFinish(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for EscrowFinish");
         }
@@ -55,7 +54,7 @@ public:
     SF_ACCOUNT::type::value_type
     getOwner() const
     {
-        return this->tx_.at(sfOwner);
+        return this->tx_->at(sfOwner);
     }
 
     /**
@@ -65,7 +64,7 @@ public:
     SF_UINT32::type::value_type
     getOfferSequence() const
     {
-        return this->tx_.at(sfOfferSequence);
+        return this->tx_->at(sfOfferSequence);
     }
 
     /**
@@ -77,7 +76,7 @@ public:
     {
         if (hasFulfillment())
         {
-            return this->tx_.at(sfFulfillment);
+            return this->tx_->at(sfFulfillment);
         }
         return std::nullopt;
     }
@@ -86,7 +85,7 @@ public:
     bool
     hasFulfillment() const
     {
-        return this->tx_.isFieldPresent(sfFulfillment);
+        return this->tx_->isFieldPresent(sfFulfillment);
     }
 
     /**
@@ -98,7 +97,7 @@ public:
     {
         if (hasCondition())
         {
-            return this->tx_.at(sfCondition);
+            return this->tx_->at(sfCondition);
         }
         return std::nullopt;
     }
@@ -107,7 +106,7 @@ public:
     bool
     hasCondition() const
     {
-        return this->tx_.isFieldPresent(sfCondition);
+        return this->tx_->isFieldPresent(sfCondition);
     }
 
     /**
@@ -119,7 +118,7 @@ public:
     {
         if (hasCredentialIDs())
         {
-            return this->tx_.at(sfCredentialIDs);
+            return this->tx_->at(sfCredentialIDs);
         }
         return std::nullopt;
     }
@@ -128,7 +127,7 @@ public:
     bool
     hasCredentialIDs() const
     {
-        return this->tx_.isFieldPresent(sfCredentialIDs);
+        return this->tx_->isFieldPresent(sfCredentialIDs);
     }
 };
 
@@ -151,13 +150,13 @@ public:
         setOfferSequence(offerSequence);
     }
 
-    EscrowFinishBuilder(STTx const& tx)
+    EscrowFinishBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttESCROW_FINISH)
+        if (tx->getTxnType() != ttESCROW_FINISH)
         {
             throw std::runtime_error("Invalid transaction type for EscrowFinishBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -218,16 +217,16 @@ public:
     }
 
     /**
-     * Build and return the completed EscrowFinish wrapper.
+     * Build and return the EscrowFinish wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, EscrowFinish>
+    EscrowFinish
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, EscrowFinish>{STTx{std::move(object_)}};
+        return EscrowFinish{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

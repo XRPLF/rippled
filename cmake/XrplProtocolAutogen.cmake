@@ -34,8 +34,8 @@ function(setup_protocol_autogen)
 
     # Create output directories
     file(MAKE_DIRECTORY "${AUTOGEN_HEADER_DIR}/transactions")
-    file(MAKE_DIRECTORY "${AUTOGEN_HEADER_DIR}/ledger_objects")
-    file(MAKE_DIRECTORY "${AUTOGEN_TEST_DIR}/ledger_objects")
+    file(MAKE_DIRECTORY "${AUTOGEN_HEADER_DIR}/ledger_entries")
+    file(MAKE_DIRECTORY "${AUTOGEN_TEST_DIR}/ledger_entries")
     file(MAKE_DIRECTORY "${AUTOGEN_TEST_DIR}/transactions")
 
     # Find Python3 - check if already found by Conan or find it ourselves
@@ -176,8 +176,8 @@ function(setup_protocol_autogen)
     execute_process(
         COMMAND
             ${VENV_PYTHON} "${GENERATE_LEDGER_SCRIPT}" "${LEDGER_ENTRIES_MACRO}"
-            --header-dir "${AUTOGEN_HEADER_DIR}/ledger_objects" --test-dir
-            "${AUTOGEN_TEST_DIR}/ledger_objects" --sfields-macro
+            --header-dir "${AUTOGEN_HEADER_DIR}/ledger_entries" --test-dir
+            "${AUTOGEN_TEST_DIR}/ledger_entries" --sfields-macro
             "${SFIELDS_MACRO}"
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
         RESULT_VARIABLE LEDGER_GEN_RESULT

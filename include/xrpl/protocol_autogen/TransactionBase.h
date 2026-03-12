@@ -28,7 +28,7 @@ public:
      * @brief Construct a transaction wrapper from an existing STTx object.
      * @param tx The underlying transaction object to wrap
      */
-    explicit TransactionBase(STTx const& tx) : tx_(tx)
+    explicit TransactionBase(std::shared_ptr<STTx const> tx) : tx_(std::move(tx))
     {
     }
 
@@ -41,18 +41,18 @@ public:
     validate(std::string& reason) const
     {
         if (!protocol_autogen::validateSTObject(
-                tx_, TxFormats::getInstance().findByType(tx_.getTxnType())->getSOTemplate()))
+                *tx_, TxFormats::getInstance().findByType(tx_->getTxnType())->getSOTemplate()))
         {
             reason = "Transaction failed schema validation";
             return false;
         }
 
         // Pseudo transactions are not submitted to the network
-        if (isPseudoTx(tx_))
+        if (isPseudoTx(*tx_))
         {
             return true;
         }
-        return passesLocalChecks(tx_, reason);
+        return passesLocalChecks(*tx_, reason);
     }
 
     /**
@@ -63,7 +63,7 @@ public:
     xrpl::TxType
     getTransactionType() const
     {
-        return tx_.getTxnType();
+        return tx_->getTxnType();
     }
 
     /**
@@ -76,7 +76,7 @@ public:
     AccountID
     getAccount() const
     {
-        return tx_.at(sfAccount);
+        return tx_->at(sfAccount);
     }
 
     /**
@@ -89,7 +89,7 @@ public:
     std::uint32_t
     getSequence() const
     {
-        return tx_.at(sfSequence);
+        return tx_->at(sfSequence);
     }
 
     /**
@@ -102,7 +102,7 @@ public:
     STAmount
     getFee() const
     {
-        return tx_.at(sfFee);
+        return tx_->at(sfFee);
     }
 
     /**
@@ -115,7 +115,7 @@ public:
     Blob
     getSigningPubKey() const
     {
-        return tx_.getFieldVL(sfSigningPubKey);
+        return tx_->getFieldVL(sfSigningPubKey);
     }
 
     /**
@@ -128,8 +128,8 @@ public:
     std::optional<uint32_t>
     getFlags() const
     {
-        if (tx_.isFieldPresent(sfFlags))
-            return tx_.at(sfFlags);
+        if (tx_->isFieldPresent(sfFlags))
+            return tx_->at(sfFlags);
         return std::nullopt;
     }
 
@@ -141,7 +141,7 @@ public:
     bool
     hasFlags() const
     {
-        return tx_.isFieldPresent(sfFlags);
+        return tx_->isFieldPresent(sfFlags);
     }
 
     /**
@@ -154,8 +154,8 @@ public:
     std::optional<uint32_t>
     getSourceTag() const
     {
-        if (tx_.isFieldPresent(sfSourceTag))
-            return tx_.at(sfSourceTag);
+        if (tx_->isFieldPresent(sfSourceTag))
+            return tx_->at(sfSourceTag);
         return std::nullopt;
     }
 
@@ -167,7 +167,7 @@ public:
     bool
     hasSourceTag() const
     {
-        return tx_.isFieldPresent(sfSourceTag);
+        return tx_->isFieldPresent(sfSourceTag);
     }
 
     /**
@@ -180,8 +180,8 @@ public:
     std::optional<uint256>
     getPreviousTxnID() const
     {
-        if (tx_.isFieldPresent(sfPreviousTxnID))
-            return tx_.at(sfPreviousTxnID);
+        if (tx_->isFieldPresent(sfPreviousTxnID))
+            return tx_->at(sfPreviousTxnID);
         return std::nullopt;
     }
 
@@ -193,7 +193,7 @@ public:
     bool
     hasPreviousTxnID() const
     {
-        return tx_.isFieldPresent(sfPreviousTxnID);
+        return tx_->isFieldPresent(sfPreviousTxnID);
     }
 
     /**
@@ -207,8 +207,8 @@ public:
     std::optional<uint32_t>
     getLastLedgerSequence() const
     {
-        if (tx_.isFieldPresent(sfLastLedgerSequence))
-            return tx_.at(sfLastLedgerSequence);
+        if (tx_->isFieldPresent(sfLastLedgerSequence))
+            return tx_->at(sfLastLedgerSequence);
         return std::nullopt;
     }
 
@@ -220,7 +220,7 @@ public:
     bool
     hasLastLedgerSequence() const
     {
-        return tx_.isFieldPresent(sfLastLedgerSequence);
+        return tx_->isFieldPresent(sfLastLedgerSequence);
     }
 
     /**
@@ -233,8 +233,8 @@ public:
     std::optional<uint256>
     getAccountTxnID() const
     {
-        if (tx_.isFieldPresent(sfAccountTxnID))
-            return tx_.at(sfAccountTxnID);
+        if (tx_->isFieldPresent(sfAccountTxnID))
+            return tx_->at(sfAccountTxnID);
         return std::nullopt;
     }
 
@@ -246,7 +246,7 @@ public:
     bool
     hasAccountTxnID() const
     {
-        return tx_.isFieldPresent(sfAccountTxnID);
+        return tx_->isFieldPresent(sfAccountTxnID);
     }
 
     /**
@@ -259,8 +259,8 @@ public:
     std::optional<uint32_t>
     getOperationLimit() const
     {
-        if (tx_.isFieldPresent(sfOperationLimit))
-            return tx_.at(sfOperationLimit);
+        if (tx_->isFieldPresent(sfOperationLimit))
+            return tx_->at(sfOperationLimit);
         return std::nullopt;
     }
 
@@ -272,7 +272,7 @@ public:
     bool
     hasOperationLimit() const
     {
-        return tx_.isFieldPresent(sfOperationLimit);
+        return tx_->isFieldPresent(sfOperationLimit);
     }
 
     /**
@@ -286,8 +286,8 @@ public:
     std::optional<std::reference_wrapper<STArray const>>
     getMemos() const
     {
-        if (tx_.isFieldPresent(sfMemos))
-            return tx_.getFieldArray(sfMemos);
+        if (tx_->isFieldPresent(sfMemos))
+            return tx_->getFieldArray(sfMemos);
         return std::nullopt;
     }
 
@@ -299,7 +299,7 @@ public:
     bool
     hasMemos() const
     {
-        return tx_.isFieldPresent(sfMemos);
+        return tx_->isFieldPresent(sfMemos);
     }
 
     /**
@@ -312,8 +312,8 @@ public:
     std::optional<uint32_t>
     getTicketSequence() const
     {
-        if (tx_.isFieldPresent(sfTicketSequence))
-            return tx_.at(sfTicketSequence);
+        if (tx_->isFieldPresent(sfTicketSequence))
+            return tx_->at(sfTicketSequence);
         return std::nullopt;
     }
 
@@ -325,7 +325,7 @@ public:
     bool
     hasTicketSequence() const
     {
-        return tx_.isFieldPresent(sfTicketSequence);
+        return tx_->isFieldPresent(sfTicketSequence);
     }
 
     /**
@@ -338,8 +338,8 @@ public:
     std::optional<Blob>
     getTxnSignature() const
     {
-        if (tx_.isFieldPresent(sfTxnSignature))
-            return tx_.getFieldVL(sfTxnSignature);
+        if (tx_->isFieldPresent(sfTxnSignature))
+            return tx_->getFieldVL(sfTxnSignature);
         return std::nullopt;
     }
 
@@ -351,7 +351,7 @@ public:
     bool
     hasTxnSignature() const
     {
-        return tx_.isFieldPresent(sfTxnSignature);
+        return tx_->isFieldPresent(sfTxnSignature);
     }
 
     /**
@@ -365,8 +365,8 @@ public:
     std::optional<std::reference_wrapper<STArray const>>
     getSigners() const
     {
-        if (tx_.isFieldPresent(sfSigners))
-            return tx_.getFieldArray(sfSigners);
+        if (tx_->isFieldPresent(sfSigners))
+            return tx_->getFieldArray(sfSigners);
         return std::nullopt;
     }
 
@@ -378,7 +378,7 @@ public:
     bool
     hasSigners() const
     {
-        return tx_.isFieldPresent(sfSigners);
+        return tx_->isFieldPresent(sfSigners);
     }
 
     /**
@@ -391,8 +391,8 @@ public:
     std::optional<uint32_t>
     getNetworkID() const
     {
-        if (tx_.isFieldPresent(sfNetworkID))
-            return tx_.at(sfNetworkID);
+        if (tx_->isFieldPresent(sfNetworkID))
+            return tx_->at(sfNetworkID);
         return std::nullopt;
     }
 
@@ -404,7 +404,7 @@ public:
     bool
     hasNetworkID() const
     {
-        return tx_.isFieldPresent(sfNetworkID);
+        return tx_->isFieldPresent(sfNetworkID);
     }
 
     /**
@@ -417,8 +417,8 @@ public:
     std::optional<AccountID>
     getDelegate() const
     {
-        if (tx_.isFieldPresent(sfDelegate))
-            return tx_.at(sfDelegate);
+        if (tx_->isFieldPresent(sfDelegate))
+            return tx_->at(sfDelegate);
         return std::nullopt;
     }
 
@@ -430,7 +430,7 @@ public:
     bool
     hasDelegate() const
     {
-        return tx_.isFieldPresent(sfDelegate);
+        return tx_->isFieldPresent(sfDelegate);
     }
 
     /**
@@ -441,7 +441,7 @@ public:
      * @return A constant reference to the underlying STTx object
      */
     [[nodiscard]]
-    STTx const&
+    std::shared_ptr<STTx const>
     getSTTx() const
     {
         return tx_;
@@ -449,7 +449,7 @@ public:
 
 protected:
     /** @brief The underlying transaction object being wrapped. */
-    STTx const& tx_;
+    std::shared_ptr<STTx const> tx_;
 };
 
 }  // namespace xrpl::transactions

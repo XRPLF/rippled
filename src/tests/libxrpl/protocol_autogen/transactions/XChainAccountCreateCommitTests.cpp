@@ -49,39 +49,39 @@ TEST(TransactionsXChainAccountCreateCommitTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = xChainBridgeValue;
-        auto const actual = tx->getXChainBridge();
+        auto const actual = tx.getXChainBridge();
         expectEqualField(expected, actual, "sfXChainBridge");
     }
 
     {
         auto const& expected = destinationValue;
-        auto const actual = tx->getDestination();
+        auto const actual = tx.getDestination();
         expectEqualField(expected, actual, "sfDestination");
     }
 
     {
         auto const& expected = amountValue;
-        auto const actual = tx->getAmount();
+        auto const actual = tx.getAmount();
         expectEqualField(expected, actual, "sfAmount");
     }
 
     {
         auto const& expected = signatureRewardValue;
-        auto const actual = tx->getSignatureReward();
+        auto const actual = tx.getSignatureReward();
         expectEqualField(expected, actual, "sfSignatureReward");
     }
 
@@ -122,40 +122,40 @@ TEST(TransactionsXChainAccountCreateCommitTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    XChainAccountCreateCommitBuilder builderFromTx{initialTx.object()};
+    XChainAccountCreateCommitBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = xChainBridgeValue;
-        auto const actual = rebuiltTx->getXChainBridge();
+        auto const actual = rebuiltTx.getXChainBridge();
         expectEqualField(expected, actual, "sfXChainBridge");
     }
 
     {
         auto const& expected = destinationValue;
-        auto const actual = rebuiltTx->getDestination();
+        auto const actual = rebuiltTx.getDestination();
         expectEqualField(expected, actual, "sfDestination");
     }
 
     {
         auto const& expected = amountValue;
-        auto const actual = rebuiltTx->getAmount();
+        auto const actual = rebuiltTx.getAmount();
         expectEqualField(expected, actual, "sfAmount");
     }
 
     {
         auto const& expected = signatureRewardValue;
-        auto const actual = rebuiltTx->getSignatureReward();
+        auto const actual = rebuiltTx.getSignatureReward();
         expectEqualField(expected, actual, "sfSignatureReward");
     }
 
@@ -173,7 +173,7 @@ TEST(TransactionsXChainAccountCreateCommitTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(XChainAccountCreateCommit{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(XChainAccountCreateCommit{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -187,7 +187,7 @@ TEST(TransactionsXChainAccountCreateCommitTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(XChainAccountCreateCommitBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(XChainAccountCreateCommitBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 

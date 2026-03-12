@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a XChainAccountCreateCommit transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit XChainAccountCreateCommit(STTx const& tx)
-        : TransactionBase(tx)
+    explicit XChainAccountCreateCommit(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for XChainAccountCreateCommit");
         }
@@ -55,7 +54,7 @@ public:
     SF_XCHAIN_BRIDGE::type::value_type
     getXChainBridge() const
     {
-        return this->tx_.at(sfXChainBridge);
+        return this->tx_->at(sfXChainBridge);
     }
 
     /**
@@ -65,7 +64,7 @@ public:
     SF_ACCOUNT::type::value_type
     getDestination() const
     {
-        return this->tx_.at(sfDestination);
+        return this->tx_->at(sfDestination);
     }
 
     /**
@@ -75,7 +74,7 @@ public:
     SF_AMOUNT::type::value_type
     getAmount() const
     {
-        return this->tx_.at(sfAmount);
+        return this->tx_->at(sfAmount);
     }
 
     /**
@@ -85,7 +84,7 @@ public:
     SF_AMOUNT::type::value_type
     getSignatureReward() const
     {
-        return this->tx_.at(sfSignatureReward);
+        return this->tx_->at(sfSignatureReward);
     }
 };
 
@@ -110,13 +109,13 @@ public:
         setSignatureReward(signatureReward);
     }
 
-    XChainAccountCreateCommitBuilder(STTx const& tx)
+    XChainAccountCreateCommitBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttXCHAIN_ACCOUNT_CREATE_COMMIT)
+        if (tx->getTxnType() != ttXCHAIN_ACCOUNT_CREATE_COMMIT)
         {
             throw std::runtime_error("Invalid transaction type for XChainAccountCreateCommitBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -166,16 +165,16 @@ public:
     }
 
     /**
-     * Build and return the completed XChainAccountCreateCommit wrapper.
+     * Build and return the XChainAccountCreateCommit wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, XChainAccountCreateCommit>
+    XChainAccountCreateCommit
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, XChainAccountCreateCommit>{STTx{std::move(object_)}};
+        return XChainAccountCreateCommit{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

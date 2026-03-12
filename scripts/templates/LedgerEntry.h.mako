@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/LedgerEntryBase.h>
 #include <xrpl/protocol_autogen/LedgerEntryBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -34,11 +33,11 @@ public:
      * Construct a ${name} ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit ${name}(SLE const& sle)
-        : LedgerEntryBase(sle)
+    explicit ${name}(std::shared_ptr<SLE const> sle)
+        : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
-        if (sle.getType() != entryType)
+        if (sle_->getType() != entryType)
         {
             throw std::runtime_error("Invalid ledger entry type for ${name}");
         }
@@ -59,7 +58,7 @@ public:
     ${field['typeData']['return_type']}
     get${field['name'][2:]}() const
     {
-        return this->sle_.${field['typeData']['getter_method']}(${field['name']});
+        return this->sle_->${field['typeData']['getter_method']}(${field['name']});
     }
 % else:
     [[nodiscard]]
@@ -67,7 +66,7 @@ public:
     get${field['name'][2:]}() const
     {
         if (has${field['name'][2:]}())
-            return this->sle_.${field['typeData']['getter_method']}(${field['name']});
+            return this->sle_->${field['typeData']['getter_method']}(${field['name']});
         return std::nullopt;
     }
 
@@ -75,7 +74,7 @@ public:
     bool
     has${field['name'][2:]}() const
     {
-        return this->sle_.isFieldPresent(${field['name']});
+        return this->sle_->isFieldPresent(${field['name']});
     }
 % endif
 % else:
@@ -92,15 +91,15 @@ public:
     ${field['typeData']['return_type']}
     get${field['name'][2:]}() const
     {
-        return this->sle_.${field['typeData']['getter_method']}(${field['name']});
+        return this->sle_->${field['typeData']['getter_method']}(${field['name']});
     }
 % else:
     [[nodiscard]]
     ${field['typeData']['return_type_optional']}
     get${field['name'][2:]}() const
     {
-        if (this->sle_.isFieldPresent(${field['name']}))
-            return this->sle_.${field['typeData']['getter_method']}(${field['name']});
+        if (this->sle_->isFieldPresent(${field['name']}))
+            return this->sle_->${field['typeData']['getter_method']}(${field['name']});
         return std::nullopt;
     }
 
@@ -108,7 +107,7 @@ public:
     bool
     has${field['name'][2:]}() const
     {
-        return this->sle_.isFieldPresent(${field['name']});
+        return this->sle_->isFieldPresent(${field['name']});
     }
 % endif
 % endif
@@ -139,13 +138,13 @@ ${field['typeData']['setter_type']} ${field['paramName']}${',' if i < len(requir
 % endfor
     }
 
-    ${name}Builder(SLE const& sle)
+    ${name}Builder(std::shared_ptr<SLE const> sle)
     {
-        if (sle[sfLedgerEntryType] != ${tag})
+        if (sle->at(sfLedgerEntryType) != ${tag})
         {
             throw std::runtime_error("Invalid ledger entry type for ${name}");
         }
-        object_ = sle;
+        object_ = *sle;
     }
 
     // Ledger entry-specific field setters
@@ -176,10 +175,10 @@ ${field['typeData']['setter_type']} ${field['paramName']}${',' if i < len(requir
      * Build and return the completed ${name} wrapper.
      * @return The constructed ledger entry wrapper.
      */
-    protocol_autogen::Owning<SLE, ${name}>
+    ${name}
     build(uint256 const& index)
     {
-        return protocol_autogen::Owning<SLE, ${name}>{SLE{object_, index}};
+        return ${name}{std::make_shared<SLE>(std::move(object_), index)};
     }
 };
 

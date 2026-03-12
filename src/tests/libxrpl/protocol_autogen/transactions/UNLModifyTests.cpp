@@ -47,33 +47,33 @@ TEST(TransactionsUNLModifyTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = uNLModifyDisablingValue;
-        auto const actual = tx->getUNLModifyDisabling();
+        auto const actual = tx.getUNLModifyDisabling();
         expectEqualField(expected, actual, "sfUNLModifyDisabling");
     }
 
     {
         auto const& expected = ledgerSequenceValue;
-        auto const actual = tx->getLedgerSequence();
+        auto const actual = tx.getLedgerSequence();
         expectEqualField(expected, actual, "sfLedgerSequence");
     }
 
     {
         auto const& expected = uNLModifyValidatorValue;
-        auto const actual = tx->getUNLModifyValidator();
+        auto const actual = tx.getUNLModifyValidator();
         expectEqualField(expected, actual, "sfUNLModifyValidator");
     }
 
@@ -112,34 +112,34 @@ TEST(TransactionsUNLModifyTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    UNLModifyBuilder builderFromTx{initialTx.object()};
+    UNLModifyBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = uNLModifyDisablingValue;
-        auto const actual = rebuiltTx->getUNLModifyDisabling();
+        auto const actual = rebuiltTx.getUNLModifyDisabling();
         expectEqualField(expected, actual, "sfUNLModifyDisabling");
     }
 
     {
         auto const& expected = ledgerSequenceValue;
-        auto const actual = rebuiltTx->getLedgerSequence();
+        auto const actual = rebuiltTx.getLedgerSequence();
         expectEqualField(expected, actual, "sfLedgerSequence");
     }
 
     {
         auto const& expected = uNLModifyValidatorValue;
-        auto const actual = rebuiltTx->getUNLModifyValidator();
+        auto const actual = rebuiltTx.getUNLModifyValidator();
         expectEqualField(expected, actual, "sfUNLModifyValidator");
     }
 
@@ -157,7 +157,7 @@ TEST(TransactionsUNLModifyTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(UNLModify{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(UNLModify{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -171,7 +171,7 @@ TEST(TransactionsUNLModifyTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(UNLModifyBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(UNLModifyBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 

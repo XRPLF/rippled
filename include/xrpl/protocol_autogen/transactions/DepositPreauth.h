@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a DepositPreauth transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit DepositPreauth(STTx const& tx)
-        : TransactionBase(tx)
+    explicit DepositPreauth(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for DepositPreauth");
         }
@@ -57,7 +56,7 @@ public:
     {
         if (hasAuthorize())
         {
-            return this->tx_.at(sfAuthorize);
+            return this->tx_->at(sfAuthorize);
         }
         return std::nullopt;
     }
@@ -66,7 +65,7 @@ public:
     bool
     hasAuthorize() const
     {
-        return this->tx_.isFieldPresent(sfAuthorize);
+        return this->tx_->isFieldPresent(sfAuthorize);
     }
 
     /**
@@ -78,7 +77,7 @@ public:
     {
         if (hasUnauthorize())
         {
-            return this->tx_.at(sfUnauthorize);
+            return this->tx_->at(sfUnauthorize);
         }
         return std::nullopt;
     }
@@ -87,7 +86,7 @@ public:
     bool
     hasUnauthorize() const
     {
-        return this->tx_.isFieldPresent(sfUnauthorize);
+        return this->tx_->isFieldPresent(sfUnauthorize);
     }
     /**
      * Get sfAuthorizeCredentials (soeOPTIONAL)
@@ -97,8 +96,8 @@ public:
     std::optional<std::reference_wrapper<STArray const>>
     getAuthorizeCredentials() const
     {
-        if (this->tx_.isFieldPresent(sfAuthorizeCredentials))
-            return this->tx_.getFieldArray(sfAuthorizeCredentials);
+        if (this->tx_->isFieldPresent(sfAuthorizeCredentials))
+            return this->tx_->getFieldArray(sfAuthorizeCredentials);
         return std::nullopt;
     }
 
@@ -106,7 +105,7 @@ public:
     bool
     hasAuthorizeCredentials() const
     {
-        return this->tx_.isFieldPresent(sfAuthorizeCredentials);
+        return this->tx_->isFieldPresent(sfAuthorizeCredentials);
     }
     /**
      * Get sfUnauthorizeCredentials (soeOPTIONAL)
@@ -116,8 +115,8 @@ public:
     std::optional<std::reference_wrapper<STArray const>>
     getUnauthorizeCredentials() const
     {
-        if (this->tx_.isFieldPresent(sfUnauthorizeCredentials))
-            return this->tx_.getFieldArray(sfUnauthorizeCredentials);
+        if (this->tx_->isFieldPresent(sfUnauthorizeCredentials))
+            return this->tx_->getFieldArray(sfUnauthorizeCredentials);
         return std::nullopt;
     }
 
@@ -125,7 +124,7 @@ public:
     bool
     hasUnauthorizeCredentials() const
     {
-        return this->tx_.isFieldPresent(sfUnauthorizeCredentials);
+        return this->tx_->isFieldPresent(sfUnauthorizeCredentials);
     }
 };
 
@@ -146,13 +145,13 @@ public:
     {
     }
 
-    DepositPreauthBuilder(STTx const& tx)
+    DepositPreauthBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttDEPOSIT_PREAUTH)
+        if (tx->getTxnType() != ttDEPOSIT_PREAUTH)
         {
             throw std::runtime_error("Invalid transaction type for DepositPreauthBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -202,16 +201,16 @@ public:
     }
 
     /**
-     * Build and return the completed DepositPreauth wrapper.
+     * Build and return the DepositPreauth wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, DepositPreauth>
+    DepositPreauth
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, DepositPreauth>{STTx{std::move(object_)}};
+        return DepositPreauth{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

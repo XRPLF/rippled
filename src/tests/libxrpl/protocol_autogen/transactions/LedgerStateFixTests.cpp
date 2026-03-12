@@ -45,31 +45,31 @@ TEST(TransactionsLedgerStateFixTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = ledgerFixTypeValue;
-        auto const actual = tx->getLedgerFixType();
+        auto const actual = tx.getLedgerFixType();
         expectEqualField(expected, actual, "sfLedgerFixType");
     }
 
     // Verify optional fields
     {
         auto const& expected = ownerValue;
-        auto const actualOpt = tx->getOwner();
+        auto const actualOpt = tx.getOwner();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfOwner should be present";
         expectEqualField(expected, *actualOpt, "sfOwner");
-        EXPECT_TRUE(tx->hasOwner());
+        EXPECT_TRUE(tx.hasOwner());
     }
 
 }
@@ -104,29 +104,29 @@ TEST(TransactionsLedgerStateFixTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    LedgerStateFixBuilder builderFromTx{initialTx.object()};
+    LedgerStateFixBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = ledgerFixTypeValue;
-        auto const actual = rebuiltTx->getLedgerFixType();
+        auto const actual = rebuiltTx.getLedgerFixType();
         expectEqualField(expected, actual, "sfLedgerFixType");
     }
 
     // Verify optional fields
     {
         auto const& expected = ownerValue;
-        auto const actualOpt = rebuiltTx->getOwner();
+        auto const actualOpt = rebuiltTx.getOwner();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfOwner should be present";
         expectEqualField(expected, *actualOpt, "sfOwner");
     }
@@ -144,7 +144,7 @@ TEST(TransactionsLedgerStateFixTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(LedgerStateFix{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(LedgerStateFix{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -158,7 +158,7 @@ TEST(TransactionsLedgerStateFixTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(LedgerStateFixBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(LedgerStateFixBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 5) Build with only required fields and verify optional fields return nullopt.
@@ -188,8 +188,8 @@ TEST(TransactionsLedgerStateFixTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx->hasOwner());
-    EXPECT_FALSE(tx->getOwner().has_value());
+    EXPECT_FALSE(tx.hasOwner());
+    EXPECT_FALSE(tx.getOwner().has_value());
 }
 
 }

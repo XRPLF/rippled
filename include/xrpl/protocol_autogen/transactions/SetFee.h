@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a SetFee transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit SetFee(STTx const& tx)
-        : TransactionBase(tx)
+    explicit SetFee(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for SetFee");
         }
@@ -57,7 +56,7 @@ public:
     {
         if (hasLedgerSequence())
         {
-            return this->tx_.at(sfLedgerSequence);
+            return this->tx_->at(sfLedgerSequence);
         }
         return std::nullopt;
     }
@@ -66,7 +65,7 @@ public:
     bool
     hasLedgerSequence() const
     {
-        return this->tx_.isFieldPresent(sfLedgerSequence);
+        return this->tx_->isFieldPresent(sfLedgerSequence);
     }
 
     /**
@@ -78,7 +77,7 @@ public:
     {
         if (hasBaseFee())
         {
-            return this->tx_.at(sfBaseFee);
+            return this->tx_->at(sfBaseFee);
         }
         return std::nullopt;
     }
@@ -87,7 +86,7 @@ public:
     bool
     hasBaseFee() const
     {
-        return this->tx_.isFieldPresent(sfBaseFee);
+        return this->tx_->isFieldPresent(sfBaseFee);
     }
 
     /**
@@ -99,7 +98,7 @@ public:
     {
         if (hasReferenceFeeUnits())
         {
-            return this->tx_.at(sfReferenceFeeUnits);
+            return this->tx_->at(sfReferenceFeeUnits);
         }
         return std::nullopt;
     }
@@ -108,7 +107,7 @@ public:
     bool
     hasReferenceFeeUnits() const
     {
-        return this->tx_.isFieldPresent(sfReferenceFeeUnits);
+        return this->tx_->isFieldPresent(sfReferenceFeeUnits);
     }
 
     /**
@@ -120,7 +119,7 @@ public:
     {
         if (hasReserveBase())
         {
-            return this->tx_.at(sfReserveBase);
+            return this->tx_->at(sfReserveBase);
         }
         return std::nullopt;
     }
@@ -129,7 +128,7 @@ public:
     bool
     hasReserveBase() const
     {
-        return this->tx_.isFieldPresent(sfReserveBase);
+        return this->tx_->isFieldPresent(sfReserveBase);
     }
 
     /**
@@ -141,7 +140,7 @@ public:
     {
         if (hasReserveIncrement())
         {
-            return this->tx_.at(sfReserveIncrement);
+            return this->tx_->at(sfReserveIncrement);
         }
         return std::nullopt;
     }
@@ -150,7 +149,7 @@ public:
     bool
     hasReserveIncrement() const
     {
-        return this->tx_.isFieldPresent(sfReserveIncrement);
+        return this->tx_->isFieldPresent(sfReserveIncrement);
     }
 
     /**
@@ -162,7 +161,7 @@ public:
     {
         if (hasBaseFeeDrops())
         {
-            return this->tx_.at(sfBaseFeeDrops);
+            return this->tx_->at(sfBaseFeeDrops);
         }
         return std::nullopt;
     }
@@ -171,7 +170,7 @@ public:
     bool
     hasBaseFeeDrops() const
     {
-        return this->tx_.isFieldPresent(sfBaseFeeDrops);
+        return this->tx_->isFieldPresent(sfBaseFeeDrops);
     }
 
     /**
@@ -183,7 +182,7 @@ public:
     {
         if (hasReserveBaseDrops())
         {
-            return this->tx_.at(sfReserveBaseDrops);
+            return this->tx_->at(sfReserveBaseDrops);
         }
         return std::nullopt;
     }
@@ -192,7 +191,7 @@ public:
     bool
     hasReserveBaseDrops() const
     {
-        return this->tx_.isFieldPresent(sfReserveBaseDrops);
+        return this->tx_->isFieldPresent(sfReserveBaseDrops);
     }
 
     /**
@@ -204,7 +203,7 @@ public:
     {
         if (hasReserveIncrementDrops())
         {
-            return this->tx_.at(sfReserveIncrementDrops);
+            return this->tx_->at(sfReserveIncrementDrops);
         }
         return std::nullopt;
     }
@@ -213,7 +212,7 @@ public:
     bool
     hasReserveIncrementDrops() const
     {
-        return this->tx_.isFieldPresent(sfReserveIncrementDrops);
+        return this->tx_->isFieldPresent(sfReserveIncrementDrops);
     }
 };
 
@@ -234,13 +233,13 @@ public:
     {
     }
 
-    SetFeeBuilder(STTx const& tx)
+    SetFeeBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttFEE)
+        if (tx->getTxnType() != ttFEE)
         {
             throw std::runtime_error("Invalid transaction type for SetFeeBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -334,16 +333,16 @@ public:
     }
 
     /**
-     * Build and return the completed SetFee wrapper.
+     * Build and return the SetFee wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, SetFee>
+    SetFee
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, SetFee>{STTx{std::move(object_)}};
+        return SetFee{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

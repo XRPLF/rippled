@@ -47,39 +47,39 @@ TEST(TransactionsXChainModifyBridgeTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = xChainBridgeValue;
-        auto const actual = tx->getXChainBridge();
+        auto const actual = tx.getXChainBridge();
         expectEqualField(expected, actual, "sfXChainBridge");
     }
 
     // Verify optional fields
     {
         auto const& expected = signatureRewardValue;
-        auto const actualOpt = tx->getSignatureReward();
+        auto const actualOpt = tx.getSignatureReward();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSignatureReward should be present";
         expectEqualField(expected, *actualOpt, "sfSignatureReward");
-        EXPECT_TRUE(tx->hasSignatureReward());
+        EXPECT_TRUE(tx.hasSignatureReward());
     }
 
     {
         auto const& expected = minAccountCreateAmountValue;
-        auto const actualOpt = tx->getMinAccountCreateAmount();
+        auto const actualOpt = tx.getMinAccountCreateAmount();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMinAccountCreateAmount should be present";
         expectEqualField(expected, *actualOpt, "sfMinAccountCreateAmount");
-        EXPECT_TRUE(tx->hasMinAccountCreateAmount());
+        EXPECT_TRUE(tx.hasMinAccountCreateAmount());
     }
 
 }
@@ -116,36 +116,36 @@ TEST(TransactionsXChainModifyBridgeTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    XChainModifyBridgeBuilder builderFromTx{initialTx.object()};
+    XChainModifyBridgeBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = xChainBridgeValue;
-        auto const actual = rebuiltTx->getXChainBridge();
+        auto const actual = rebuiltTx.getXChainBridge();
         expectEqualField(expected, actual, "sfXChainBridge");
     }
 
     // Verify optional fields
     {
         auto const& expected = signatureRewardValue;
-        auto const actualOpt = rebuiltTx->getSignatureReward();
+        auto const actualOpt = rebuiltTx.getSignatureReward();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSignatureReward should be present";
         expectEqualField(expected, *actualOpt, "sfSignatureReward");
     }
 
     {
         auto const& expected = minAccountCreateAmountValue;
-        auto const actualOpt = rebuiltTx->getMinAccountCreateAmount();
+        auto const actualOpt = rebuiltTx.getMinAccountCreateAmount();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMinAccountCreateAmount should be present";
         expectEqualField(expected, *actualOpt, "sfMinAccountCreateAmount");
     }
@@ -163,7 +163,7 @@ TEST(TransactionsXChainModifyBridgeTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(XChainModifyBridge{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(XChainModifyBridge{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -177,7 +177,7 @@ TEST(TransactionsXChainModifyBridgeTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(XChainModifyBridgeBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(XChainModifyBridgeBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 5) Build with only required fields and verify optional fields return nullopt.
@@ -207,10 +207,10 @@ TEST(TransactionsXChainModifyBridgeTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx->hasSignatureReward());
-    EXPECT_FALSE(tx->getSignatureReward().has_value());
-    EXPECT_FALSE(tx->hasMinAccountCreateAmount());
-    EXPECT_FALSE(tx->getMinAccountCreateAmount().has_value());
+    EXPECT_FALSE(tx.hasSignatureReward());
+    EXPECT_FALSE(tx.getSignatureReward().has_value());
+    EXPECT_FALSE(tx.hasMinAccountCreateAmount());
+    EXPECT_FALSE(tx.getMinAccountCreateAmount().has_value());
 }
 
 }

@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a VaultCreate transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit VaultCreate(STTx const& tx)
-        : TransactionBase(tx)
+    explicit VaultCreate(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for VaultCreate");
         }
@@ -56,7 +55,7 @@ public:
     SF_ISSUE::type::value_type
     getAsset() const
     {
-        return this->tx_.at(sfAsset);
+        return this->tx_->at(sfAsset);
     }
 
     /**
@@ -68,7 +67,7 @@ public:
     {
         if (hasAssetsMaximum())
         {
-            return this->tx_.at(sfAssetsMaximum);
+            return this->tx_->at(sfAssetsMaximum);
         }
         return std::nullopt;
     }
@@ -77,7 +76,7 @@ public:
     bool
     hasAssetsMaximum() const
     {
-        return this->tx_.isFieldPresent(sfAssetsMaximum);
+        return this->tx_->isFieldPresent(sfAssetsMaximum);
     }
 
     /**
@@ -89,7 +88,7 @@ public:
     {
         if (hasMPTokenMetadata())
         {
-            return this->tx_.at(sfMPTokenMetadata);
+            return this->tx_->at(sfMPTokenMetadata);
         }
         return std::nullopt;
     }
@@ -98,7 +97,7 @@ public:
     bool
     hasMPTokenMetadata() const
     {
-        return this->tx_.isFieldPresent(sfMPTokenMetadata);
+        return this->tx_->isFieldPresent(sfMPTokenMetadata);
     }
 
     /**
@@ -110,7 +109,7 @@ public:
     {
         if (hasDomainID())
         {
-            return this->tx_.at(sfDomainID);
+            return this->tx_->at(sfDomainID);
         }
         return std::nullopt;
     }
@@ -119,7 +118,7 @@ public:
     bool
     hasDomainID() const
     {
-        return this->tx_.isFieldPresent(sfDomainID);
+        return this->tx_->isFieldPresent(sfDomainID);
     }
 
     /**
@@ -131,7 +130,7 @@ public:
     {
         if (hasWithdrawalPolicy())
         {
-            return this->tx_.at(sfWithdrawalPolicy);
+            return this->tx_->at(sfWithdrawalPolicy);
         }
         return std::nullopt;
     }
@@ -140,7 +139,7 @@ public:
     bool
     hasWithdrawalPolicy() const
     {
-        return this->tx_.isFieldPresent(sfWithdrawalPolicy);
+        return this->tx_->isFieldPresent(sfWithdrawalPolicy);
     }
 
     /**
@@ -152,7 +151,7 @@ public:
     {
         if (hasData())
         {
-            return this->tx_.at(sfData);
+            return this->tx_->at(sfData);
         }
         return std::nullopt;
     }
@@ -161,7 +160,7 @@ public:
     bool
     hasData() const
     {
-        return this->tx_.isFieldPresent(sfData);
+        return this->tx_->isFieldPresent(sfData);
     }
 
     /**
@@ -173,7 +172,7 @@ public:
     {
         if (hasScale())
         {
-            return this->tx_.at(sfScale);
+            return this->tx_->at(sfScale);
         }
         return std::nullopt;
     }
@@ -182,7 +181,7 @@ public:
     bool
     hasScale() const
     {
-        return this->tx_.isFieldPresent(sfScale);
+        return this->tx_->isFieldPresent(sfScale);
     }
 };
 
@@ -204,13 +203,13 @@ public:
         setAsset(asset);
     }
 
-    VaultCreateBuilder(STTx const& tx)
+    VaultCreateBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttVAULT_CREATE)
+        if (tx->getTxnType() != ttVAULT_CREATE)
         {
             throw std::runtime_error("Invalid transaction type for VaultCreateBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -294,16 +293,16 @@ public:
     }
 
     /**
-     * Build and return the completed VaultCreate wrapper.
+     * Build and return the VaultCreate wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, VaultCreate>
+    VaultCreate
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, VaultCreate>{STTx{std::move(object_)}};
+        return VaultCreate{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

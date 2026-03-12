@@ -47,41 +47,41 @@ TEST(TransactionsTrustSetTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     // Verify optional fields
     {
         auto const& expected = limitAmountValue;
-        auto const actualOpt = tx->getLimitAmount();
+        auto const actualOpt = tx.getLimitAmount();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLimitAmount should be present";
         expectEqualField(expected, *actualOpt, "sfLimitAmount");
-        EXPECT_TRUE(tx->hasLimitAmount());
+        EXPECT_TRUE(tx.hasLimitAmount());
     }
 
     {
         auto const& expected = qualityInValue;
-        auto const actualOpt = tx->getQualityIn();
+        auto const actualOpt = tx.getQualityIn();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfQualityIn should be present";
         expectEqualField(expected, *actualOpt, "sfQualityIn");
-        EXPECT_TRUE(tx->hasQualityIn());
+        EXPECT_TRUE(tx.hasQualityIn());
     }
 
     {
         auto const& expected = qualityOutValue;
-        auto const actualOpt = tx->getQualityOut();
+        auto const actualOpt = tx.getQualityOut();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfQualityOut should be present";
         expectEqualField(expected, *actualOpt, "sfQualityOut");
-        EXPECT_TRUE(tx->hasQualityOut());
+        EXPECT_TRUE(tx.hasQualityOut());
     }
 
 }
@@ -118,37 +118,37 @@ TEST(TransactionsTrustSetTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    TrustSetBuilder builderFromTx{initialTx.object()};
+    TrustSetBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     // Verify optional fields
     {
         auto const& expected = limitAmountValue;
-        auto const actualOpt = rebuiltTx->getLimitAmount();
+        auto const actualOpt = rebuiltTx.getLimitAmount();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLimitAmount should be present";
         expectEqualField(expected, *actualOpt, "sfLimitAmount");
     }
 
     {
         auto const& expected = qualityInValue;
-        auto const actualOpt = rebuiltTx->getQualityIn();
+        auto const actualOpt = rebuiltTx.getQualityIn();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfQualityIn should be present";
         expectEqualField(expected, *actualOpt, "sfQualityIn");
     }
 
     {
         auto const& expected = qualityOutValue;
-        auto const actualOpt = rebuiltTx->getQualityOut();
+        auto const actualOpt = rebuiltTx.getQualityOut();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfQualityOut should be present";
         expectEqualField(expected, *actualOpt, "sfQualityOut");
     }
@@ -166,7 +166,7 @@ TEST(TransactionsTrustSetTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(TrustSet{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(TrustSet{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -180,7 +180,7 @@ TEST(TransactionsTrustSetTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(TrustSetBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(TrustSetBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 5) Build with only required fields and verify optional fields return nullopt.
@@ -208,12 +208,12 @@ TEST(TransactionsTrustSetTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx->hasLimitAmount());
-    EXPECT_FALSE(tx->getLimitAmount().has_value());
-    EXPECT_FALSE(tx->hasQualityIn());
-    EXPECT_FALSE(tx->getQualityIn().has_value());
-    EXPECT_FALSE(tx->hasQualityOut());
-    EXPECT_FALSE(tx->getQualityOut().has_value());
+    EXPECT_FALSE(tx.hasLimitAmount());
+    EXPECT_FALSE(tx.getLimitAmount().has_value());
+    EXPECT_FALSE(tx.hasQualityIn());
+    EXPECT_FALSE(tx.getQualityIn().has_value());
+    EXPECT_FALSE(tx.hasQualityOut());
+    EXPECT_FALSE(tx.getQualityOut().has_value());
 }
 
 }

@@ -51,53 +51,53 @@ TEST(TransactionsNFTokenCreateOfferTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = nFTokenIDValue;
-        auto const actual = tx->getNFTokenID();
+        auto const actual = tx.getNFTokenID();
         expectEqualField(expected, actual, "sfNFTokenID");
     }
 
     {
         auto const& expected = amountValue;
-        auto const actual = tx->getAmount();
+        auto const actual = tx.getAmount();
         expectEqualField(expected, actual, "sfAmount");
     }
 
     // Verify optional fields
     {
         auto const& expected = destinationValue;
-        auto const actualOpt = tx->getDestination();
+        auto const actualOpt = tx.getDestination();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDestination should be present";
         expectEqualField(expected, *actualOpt, "sfDestination");
-        EXPECT_TRUE(tx->hasDestination());
+        EXPECT_TRUE(tx.hasDestination());
     }
 
     {
         auto const& expected = ownerValue;
-        auto const actualOpt = tx->getOwner();
+        auto const actualOpt = tx.getOwner();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfOwner should be present";
         expectEqualField(expected, *actualOpt, "sfOwner");
-        EXPECT_TRUE(tx->hasOwner());
+        EXPECT_TRUE(tx.hasOwner());
     }
 
     {
         auto const& expected = expirationValue;
-        auto const actualOpt = tx->getExpiration();
+        auto const actualOpt = tx.getExpiration();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfExpiration should be present";
         expectEqualField(expected, *actualOpt, "sfExpiration");
-        EXPECT_TRUE(tx->hasExpiration());
+        EXPECT_TRUE(tx.hasExpiration());
     }
 
 }
@@ -138,49 +138,49 @@ TEST(TransactionsNFTokenCreateOfferTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    NFTokenCreateOfferBuilder builderFromTx{initialTx.object()};
+    NFTokenCreateOfferBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = nFTokenIDValue;
-        auto const actual = rebuiltTx->getNFTokenID();
+        auto const actual = rebuiltTx.getNFTokenID();
         expectEqualField(expected, actual, "sfNFTokenID");
     }
 
     {
         auto const& expected = amountValue;
-        auto const actual = rebuiltTx->getAmount();
+        auto const actual = rebuiltTx.getAmount();
         expectEqualField(expected, actual, "sfAmount");
     }
 
     // Verify optional fields
     {
         auto const& expected = destinationValue;
-        auto const actualOpt = rebuiltTx->getDestination();
+        auto const actualOpt = rebuiltTx.getDestination();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDestination should be present";
         expectEqualField(expected, *actualOpt, "sfDestination");
     }
 
     {
         auto const& expected = ownerValue;
-        auto const actualOpt = rebuiltTx->getOwner();
+        auto const actualOpt = rebuiltTx.getOwner();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfOwner should be present";
         expectEqualField(expected, *actualOpt, "sfOwner");
     }
 
     {
         auto const& expected = expirationValue;
-        auto const actualOpt = rebuiltTx->getExpiration();
+        auto const actualOpt = rebuiltTx.getExpiration();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfExpiration should be present";
         expectEqualField(expected, *actualOpt, "sfExpiration");
     }
@@ -198,7 +198,7 @@ TEST(TransactionsNFTokenCreateOfferTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(NFTokenCreateOffer{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(NFTokenCreateOffer{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -212,7 +212,7 @@ TEST(TransactionsNFTokenCreateOfferTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(NFTokenCreateOfferBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(NFTokenCreateOfferBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 5) Build with only required fields and verify optional fields return nullopt.
@@ -244,12 +244,12 @@ TEST(TransactionsNFTokenCreateOfferTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx->hasDestination());
-    EXPECT_FALSE(tx->getDestination().has_value());
-    EXPECT_FALSE(tx->hasOwner());
-    EXPECT_FALSE(tx->getOwner().has_value());
-    EXPECT_FALSE(tx->hasExpiration());
-    EXPECT_FALSE(tx->getExpiration().has_value());
+    EXPECT_FALSE(tx.hasDestination());
+    EXPECT_FALSE(tx.getDestination().has_value());
+    EXPECT_FALSE(tx.hasOwner());
+    EXPECT_FALSE(tx.getOwner().has_value());
+    EXPECT_FALSE(tx.hasExpiration());
+    EXPECT_FALSE(tx.getExpiration().has_value());
 }
 
 }

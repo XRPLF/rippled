@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a CredentialCreate transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit CredentialCreate(STTx const& tx)
-        : TransactionBase(tx)
+    explicit CredentialCreate(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for CredentialCreate");
         }
@@ -55,7 +54,7 @@ public:
     SF_ACCOUNT::type::value_type
     getSubject() const
     {
-        return this->tx_.at(sfSubject);
+        return this->tx_->at(sfSubject);
     }
 
     /**
@@ -65,7 +64,7 @@ public:
     SF_VL::type::value_type
     getCredentialType() const
     {
-        return this->tx_.at(sfCredentialType);
+        return this->tx_->at(sfCredentialType);
     }
 
     /**
@@ -77,7 +76,7 @@ public:
     {
         if (hasExpiration())
         {
-            return this->tx_.at(sfExpiration);
+            return this->tx_->at(sfExpiration);
         }
         return std::nullopt;
     }
@@ -86,7 +85,7 @@ public:
     bool
     hasExpiration() const
     {
-        return this->tx_.isFieldPresent(sfExpiration);
+        return this->tx_->isFieldPresent(sfExpiration);
     }
 
     /**
@@ -98,7 +97,7 @@ public:
     {
         if (hasURI())
         {
-            return this->tx_.at(sfURI);
+            return this->tx_->at(sfURI);
         }
         return std::nullopt;
     }
@@ -107,7 +106,7 @@ public:
     bool
     hasURI() const
     {
-        return this->tx_.isFieldPresent(sfURI);
+        return this->tx_->isFieldPresent(sfURI);
     }
 };
 
@@ -130,13 +129,13 @@ public:
         setCredentialType(credentialType);
     }
 
-    CredentialCreateBuilder(STTx const& tx)
+    CredentialCreateBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttCREDENTIAL_CREATE)
+        if (tx->getTxnType() != ttCREDENTIAL_CREATE)
         {
             throw std::runtime_error("Invalid transaction type for CredentialCreateBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -186,16 +185,16 @@ public:
     }
 
     /**
-     * Build and return the completed CredentialCreate wrapper.
+     * Build and return the CredentialCreate wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, CredentialCreate>
+    CredentialCreate
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, CredentialCreate>{STTx{std::move(object_)}};
+        return CredentialCreate{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a AMMDeposit transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit AMMDeposit(STTx const& tx)
-        : TransactionBase(tx)
+    explicit AMMDeposit(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for AMMDeposit");
         }
@@ -55,7 +54,7 @@ public:
     SF_ISSUE::type::value_type
     getAsset() const
     {
-        return this->tx_.at(sfAsset);
+        return this->tx_->at(sfAsset);
     }
 
     /**
@@ -65,7 +64,7 @@ public:
     SF_ISSUE::type::value_type
     getAsset2() const
     {
-        return this->tx_.at(sfAsset2);
+        return this->tx_->at(sfAsset2);
     }
 
     /**
@@ -77,7 +76,7 @@ public:
     {
         if (hasAmount())
         {
-            return this->tx_.at(sfAmount);
+            return this->tx_->at(sfAmount);
         }
         return std::nullopt;
     }
@@ -86,7 +85,7 @@ public:
     bool
     hasAmount() const
     {
-        return this->tx_.isFieldPresent(sfAmount);
+        return this->tx_->isFieldPresent(sfAmount);
     }
 
     /**
@@ -98,7 +97,7 @@ public:
     {
         if (hasAmount2())
         {
-            return this->tx_.at(sfAmount2);
+            return this->tx_->at(sfAmount2);
         }
         return std::nullopt;
     }
@@ -107,7 +106,7 @@ public:
     bool
     hasAmount2() const
     {
-        return this->tx_.isFieldPresent(sfAmount2);
+        return this->tx_->isFieldPresent(sfAmount2);
     }
 
     /**
@@ -119,7 +118,7 @@ public:
     {
         if (hasEPrice())
         {
-            return this->tx_.at(sfEPrice);
+            return this->tx_->at(sfEPrice);
         }
         return std::nullopt;
     }
@@ -128,7 +127,7 @@ public:
     bool
     hasEPrice() const
     {
-        return this->tx_.isFieldPresent(sfEPrice);
+        return this->tx_->isFieldPresent(sfEPrice);
     }
 
     /**
@@ -140,7 +139,7 @@ public:
     {
         if (hasLPTokenOut())
         {
-            return this->tx_.at(sfLPTokenOut);
+            return this->tx_->at(sfLPTokenOut);
         }
         return std::nullopt;
     }
@@ -149,7 +148,7 @@ public:
     bool
     hasLPTokenOut() const
     {
-        return this->tx_.isFieldPresent(sfLPTokenOut);
+        return this->tx_->isFieldPresent(sfLPTokenOut);
     }
 
     /**
@@ -161,7 +160,7 @@ public:
     {
         if (hasTradingFee())
         {
-            return this->tx_.at(sfTradingFee);
+            return this->tx_->at(sfTradingFee);
         }
         return std::nullopt;
     }
@@ -170,7 +169,7 @@ public:
     bool
     hasTradingFee() const
     {
-        return this->tx_.isFieldPresent(sfTradingFee);
+        return this->tx_->isFieldPresent(sfTradingFee);
     }
 };
 
@@ -193,13 +192,13 @@ public:
         setAsset2(asset2);
     }
 
-    AMMDepositBuilder(STTx const& tx)
+    AMMDepositBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttAMM_DEPOSIT)
+        if (tx->getTxnType() != ttAMM_DEPOSIT)
         {
             throw std::runtime_error("Invalid transaction type for AMMDepositBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -282,16 +281,16 @@ public:
     }
 
     /**
-     * Build and return the completed AMMDeposit wrapper.
+     * Build and return the AMMDeposit wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, AMMDeposit>
+    AMMDeposit
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, AMMDeposit>{STTx{std::move(object_)}};
+        return AMMDeposit{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

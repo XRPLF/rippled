@@ -27,7 +27,7 @@ public:
      * @brief Construct a ledger entry wrapper from an existing SLE object.
      * @param sle The underlying serialized ledger entry to wrap
      */
-    explicit LedgerEntryBase(SLE const& sle) : sle_(sle)
+    explicit LedgerEntryBase(std::shared_ptr<SLE const> sle) : sle_(std::move(sle))
     {
     }
 
@@ -39,13 +39,13 @@ public:
     bool
     validate() const
     {
-        if (!sle_.isFieldPresent(sfLedgerEntryType))
+        if (!sle_->isFieldPresent(sfLedgerEntryType))
         {
             return false;
         }
-        auto ledgerEntryType = static_cast<LedgerEntryType>(sle_.getFieldU16(sfLedgerEntryType));
+        auto ledgerEntryType = static_cast<LedgerEntryType>(sle_->getFieldU16(sfLedgerEntryType));
         return protocol_autogen::validateSTObject(
-            sle_, LedgerFormats::getInstance().findByType(ledgerEntryType)->getSOTemplate());
+            *sle_, LedgerFormats::getInstance().findByType(ledgerEntryType)->getSOTemplate());
     }
 
     /**
@@ -56,7 +56,7 @@ public:
     LedgerEntryType
     getType() const
     {
-        return sle_.getType();
+        return sle_->getType();
     }
 
     /**
@@ -69,7 +69,7 @@ public:
     uint256 const&
     getKey() const
     {
-        return sle_.key();
+        return sle_->key();
     }
 
     // Common field getters (from LedgerFormats.cpp commonFields)
@@ -84,9 +84,9 @@ public:
     std::optional<uint256>
     getLedgerIndex() const
     {
-        if (sle_.isFieldPresent(sfLedgerIndex))
+        if (sle_->isFieldPresent(sfLedgerIndex))
         {
-            return sle_.at(sfLedgerIndex);
+            return sle_->at(sfLedgerIndex);
         }
         return std::nullopt;
     }
@@ -99,7 +99,7 @@ public:
     bool
     hasLedgerIndex() const
     {
-        return sle_.isFieldPresent(sfLedgerIndex);
+        return sle_->isFieldPresent(sfLedgerIndex);
     }
 
     /**
@@ -113,7 +113,7 @@ public:
     uint16_t
     getLedgerEntryType() const
     {
-        return sle_.at(sfLedgerEntryType);
+        return sle_->at(sfLedgerEntryType);
     }
 
     /**
@@ -127,7 +127,7 @@ public:
     std::uint32_t
     getFlags() const
     {
-        return sle_.at(sfFlags);
+        return sle_->at(sfFlags);
     }
 
     /**
@@ -138,7 +138,7 @@ public:
      * @return A constant reference to the underlying SLE object
      */
     [[nodiscard]]
-    SLE const&
+    std::shared_ptr<SLE const>
     getSle() const
     {
         return sle_;
@@ -146,7 +146,7 @@ public:
 
 protected:
     /** @brief The underlying serialized ledger entry being wrapped. */
-    SLE const& sle_;
+    std::shared_ptr<SLE const> sle_;
 };
 
 }  // namespace xrpl::ledger_entries

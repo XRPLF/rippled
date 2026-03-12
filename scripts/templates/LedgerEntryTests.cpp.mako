@@ -19,8 +19,8 @@
 #include <protocol_autogen/TestHelpers.h>
 
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol_autogen/ledger_objects/${name}.h>
-#include <xrpl/protocol_autogen/ledger_objects/${wrong_le_include}.h>
+#include <xrpl/protocol_autogen/ledger_entries/${name}.h>
+#include <xrpl/protocol_autogen/ledger_entries/${wrong_le_include}.h>
 
 #include <string>
 
@@ -54,12 +54,12 @@ TEST(${name}Tests, BuilderSettersRoundTrip)
 
     auto const entry = builder.build(index);
 
-    EXPECT_TRUE(entry->validate());
+    EXPECT_TRUE(entry.validate());
 
 % for field in required_fields:
     {
         auto const& expected = ${field["paramName"]}Value;
-        auto const actual = entry->get${field["name"][2:]}();
+        auto const actual = entry.get${field["name"][2:]}();
         expectEqualField(expected, actual, "${field["name"]}");
     }
 
@@ -67,18 +67,18 @@ TEST(${name}Tests, BuilderSettersRoundTrip)
 % for field in optional_fields:
     {
         auto const& expected = ${field["paramName"]}Value;
-        auto const actualOpt = entry->get${field["name"][2:]}();
+        auto const actualOpt = entry.get${field["name"][2:]}();
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "${field["name"]}");
-        EXPECT_TRUE(entry->has${field["name"][2:]}());
+        EXPECT_TRUE(entry.has${field["name"][2:]}());
     }
 
 % endfor
-    EXPECT_TRUE(entry->hasLedgerIndex());
-    auto const ledgerIndex = entry->getLedgerIndex();
+    EXPECT_TRUE(entry.hasLedgerIndex());
+    auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
     EXPECT_EQ(*ledgerIndex, index);
-    EXPECT_EQ(entry->getKey(), index);
+    EXPECT_EQ(entry.getKey(), index);
 }
 
 // 2 & 4) Start from an SLE, set fields directly on it, construct a builder
@@ -91,15 +91,15 @@ TEST(${name}Tests, BuilderFromSleRoundTrip)
     auto const ${field["paramName"]}Value = ${canonical_expr(field)};
 % endfor
 
-    SLE sle{${name}::entryType, index};
+    auto sle = std::make_shared<SLE>(${name}::entryType, index);
 
 % for field in fields:
 % if field.get("stiSuffix") == "ISSUE":
-    sle[${field["name"]}] = STIssue(${field["name"]}, ${field["paramName"]}Value);
+    sle->at(${field["name"]}) = STIssue(${field["name"]}, ${field["paramName"]}Value);
 % elif field["typeData"].get("setter_use_brackets"):
-    sle[${field["name"]}] = ${field["paramName"]}Value;
+    sle->at(${field["name"]}) = ${field["paramName"]}Value;
 % else:
-    sle.${field["typeData"]["setter_method"]}(${field["name"]}, ${field["paramName"]}Value);
+    sle->${field["typeData"]["setter_method"]}(${field["name"]}, ${field["paramName"]}Value);
 % endif
 % endfor
 
@@ -109,7 +109,7 @@ TEST(${name}Tests, BuilderFromSleRoundTrip)
     auto const entryFromBuilder = builderFromSle.build(index);
 
     ${name} entryFromSle{sle};
-    EXPECT_TRUE(entryFromBuilder->validate());
+    EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
 % for field in required_fields:
@@ -117,7 +117,7 @@ TEST(${name}Tests, BuilderFromSleRoundTrip)
         auto const& expected = ${field["paramName"]}Value;
 
         auto const fromSle = entryFromSle.get${field["name"][2:]}();
-        auto const fromBuilder = entryFromBuilder->get${field["name"][2:]}();
+        auto const fromBuilder = entryFromBuilder.get${field["name"][2:]}();
 
         expectEqualField(expected, fromSle, "${field["name"]}");
         expectEqualField(expected, fromBuilder, "${field["name"]}");
@@ -129,7 +129,7 @@ TEST(${name}Tests, BuilderFromSleRoundTrip)
         auto const& expected = ${field["paramName"]}Value;
 
         auto const fromSleOpt = entryFromSle.get${field["name"][2:]}();
-        auto const fromBuilderOpt = entryFromBuilder->get${field["name"][2:]}();
+        auto const fromBuilderOpt = entryFromBuilder.get${field["name"][2:]}();
 
         ASSERT_TRUE(fromSleOpt.has_value());
         ASSERT_TRUE(fromBuilderOpt.has_value());
@@ -140,7 +140,7 @@ TEST(${name}Tests, BuilderFromSleRoundTrip)
 
 % endfor
     EXPECT_EQ(entryFromSle.getKey(), index);
-    EXPECT_EQ(entryFromBuilder->getKey(), index);
+    EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
 
 // 3) Verify wrapper throws when constructed from wrong ledger entry type.
@@ -171,7 +171,7 @@ TEST(${name}Tests, WrapperThrowsOnWrongEntryType)
 % endif
     auto wrongEntry = wrongBuilder.build(index);
 
-    EXPECT_THROW(${name}{wrongEntry.object()}, std::runtime_error);
+    EXPECT_THROW(${name}{wrongEntry.getSle()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong ledger entry type.
@@ -200,7 +200,7 @@ TEST(${name}Tests, BuilderThrowsOnWrongEntryType)
 % endif
     auto wrongEntry = wrongBuilder.build(index);
 
-    EXPECT_THROW(${name}Builder{wrongEntry.object()}, std::runtime_error);
+    EXPECT_THROW(${name}Builder{wrongEntry.getSle()}, std::runtime_error);
 }
 
 % if optional_fields:
@@ -223,8 +223,8 @@ TEST(${name}Tests, OptionalFieldsReturnNullopt)
 
     // Verify optional fields are not present
 % for field in optional_fields:
-    EXPECT_FALSE(entry->has${field["name"][2:]}());
-    EXPECT_FALSE(entry->get${field["name"][2:]}().has_value());
+    EXPECT_FALSE(entry.has${field["name"][2:]}());
+    EXPECT_FALSE(entry.get${field["name"][2:]}().has_value());
 % endfor
 }
 % endif

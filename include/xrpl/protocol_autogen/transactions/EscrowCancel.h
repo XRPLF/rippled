@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a EscrowCancel transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit EscrowCancel(STTx const& tx)
-        : TransactionBase(tx)
+    explicit EscrowCancel(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for EscrowCancel");
         }
@@ -55,7 +54,7 @@ public:
     SF_ACCOUNT::type::value_type
     getOwner() const
     {
-        return this->tx_.at(sfOwner);
+        return this->tx_->at(sfOwner);
     }
 
     /**
@@ -65,7 +64,7 @@ public:
     SF_UINT32::type::value_type
     getOfferSequence() const
     {
-        return this->tx_.at(sfOfferSequence);
+        return this->tx_->at(sfOfferSequence);
     }
 };
 
@@ -88,13 +87,13 @@ public:
         setOfferSequence(offerSequence);
     }
 
-    EscrowCancelBuilder(STTx const& tx)
+    EscrowCancelBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttESCROW_CANCEL)
+        if (tx->getTxnType() != ttESCROW_CANCEL)
         {
             throw std::runtime_error("Invalid transaction type for EscrowCancelBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -122,16 +121,16 @@ public:
     }
 
     /**
-     * Build and return the completed EscrowCancel wrapper.
+     * Build and return the EscrowCancel wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, EscrowCancel>
+    EscrowCancel
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, EscrowCancel>{STTx{std::move(object_)}};
+        return EscrowCancel{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

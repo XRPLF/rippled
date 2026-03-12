@@ -47,39 +47,39 @@ TEST(TransactionsCredentialDeleteTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = credentialTypeValue;
-        auto const actual = tx->getCredentialType();
+        auto const actual = tx.getCredentialType();
         expectEqualField(expected, actual, "sfCredentialType");
     }
 
     // Verify optional fields
     {
         auto const& expected = subjectValue;
-        auto const actualOpt = tx->getSubject();
+        auto const actualOpt = tx.getSubject();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSubject should be present";
         expectEqualField(expected, *actualOpt, "sfSubject");
-        EXPECT_TRUE(tx->hasSubject());
+        EXPECT_TRUE(tx.hasSubject());
     }
 
     {
         auto const& expected = issuerValue;
-        auto const actualOpt = tx->getIssuer();
+        auto const actualOpt = tx.getIssuer();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfIssuer should be present";
         expectEqualField(expected, *actualOpt, "sfIssuer");
-        EXPECT_TRUE(tx->hasIssuer());
+        EXPECT_TRUE(tx.hasIssuer());
     }
 
 }
@@ -116,36 +116,36 @@ TEST(TransactionsCredentialDeleteTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    CredentialDeleteBuilder builderFromTx{initialTx.object()};
+    CredentialDeleteBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = credentialTypeValue;
-        auto const actual = rebuiltTx->getCredentialType();
+        auto const actual = rebuiltTx.getCredentialType();
         expectEqualField(expected, actual, "sfCredentialType");
     }
 
     // Verify optional fields
     {
         auto const& expected = subjectValue;
-        auto const actualOpt = rebuiltTx->getSubject();
+        auto const actualOpt = rebuiltTx.getSubject();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSubject should be present";
         expectEqualField(expected, *actualOpt, "sfSubject");
     }
 
     {
         auto const& expected = issuerValue;
-        auto const actualOpt = rebuiltTx->getIssuer();
+        auto const actualOpt = rebuiltTx.getIssuer();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfIssuer should be present";
         expectEqualField(expected, *actualOpt, "sfIssuer");
     }
@@ -163,7 +163,7 @@ TEST(TransactionsCredentialDeleteTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(CredentialDelete{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(CredentialDelete{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -177,7 +177,7 @@ TEST(TransactionsCredentialDeleteTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(CredentialDeleteBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(CredentialDeleteBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 5) Build with only required fields and verify optional fields return nullopt.
@@ -207,10 +207,10 @@ TEST(TransactionsCredentialDeleteTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx->hasSubject());
-    EXPECT_FALSE(tx->getSubject().has_value());
-    EXPECT_FALSE(tx->hasIssuer());
-    EXPECT_FALSE(tx->getIssuer().has_value());
+    EXPECT_FALSE(tx.hasSubject());
+    EXPECT_FALSE(tx.getSubject().has_value());
+    EXPECT_FALSE(tx.hasIssuer());
+    EXPECT_FALSE(tx.getIssuer().has_value());
 }
 
 }

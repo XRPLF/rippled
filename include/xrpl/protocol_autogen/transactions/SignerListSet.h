@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a SignerListSet transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit SignerListSet(STTx const& tx)
-        : TransactionBase(tx)
+    explicit SignerListSet(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for SignerListSet");
         }
@@ -55,7 +54,7 @@ public:
     SF_UINT32::type::value_type
     getSignerQuorum() const
     {
-        return this->tx_.at(sfSignerQuorum);
+        return this->tx_->at(sfSignerQuorum);
     }
     /**
      * Get sfSignerEntries (soeOPTIONAL)
@@ -65,8 +64,8 @@ public:
     std::optional<std::reference_wrapper<STArray const>>
     getSignerEntries() const
     {
-        if (this->tx_.isFieldPresent(sfSignerEntries))
-            return this->tx_.getFieldArray(sfSignerEntries);
+        if (this->tx_->isFieldPresent(sfSignerEntries))
+            return this->tx_->getFieldArray(sfSignerEntries);
         return std::nullopt;
     }
 
@@ -74,7 +73,7 @@ public:
     bool
     hasSignerEntries() const
     {
-        return this->tx_.isFieldPresent(sfSignerEntries);
+        return this->tx_->isFieldPresent(sfSignerEntries);
     }
 };
 
@@ -96,13 +95,13 @@ public:
         setSignerQuorum(signerQuorum);
     }
 
-    SignerListSetBuilder(STTx const& tx)
+    SignerListSetBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttSIGNER_LIST_SET)
+        if (tx->getTxnType() != ttSIGNER_LIST_SET)
         {
             throw std::runtime_error("Invalid transaction type for SignerListSetBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -130,16 +129,16 @@ public:
     }
 
     /**
-     * Build and return the completed SignerListSet wrapper.
+     * Build and return the SignerListSet wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, SignerListSet>
+    SignerListSet
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, SignerListSet>{STTx{std::move(object_)}};
+        return SignerListSet{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

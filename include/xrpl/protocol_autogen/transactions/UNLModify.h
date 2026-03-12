@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a UNLModify transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit UNLModify(STTx const& tx)
-        : TransactionBase(tx)
+    explicit UNLModify(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for UNLModify");
         }
@@ -55,7 +54,7 @@ public:
     SF_UINT8::type::value_type
     getUNLModifyDisabling() const
     {
-        return this->tx_.at(sfUNLModifyDisabling);
+        return this->tx_->at(sfUNLModifyDisabling);
     }
 
     /**
@@ -65,7 +64,7 @@ public:
     SF_UINT32::type::value_type
     getLedgerSequence() const
     {
-        return this->tx_.at(sfLedgerSequence);
+        return this->tx_->at(sfLedgerSequence);
     }
 
     /**
@@ -75,7 +74,7 @@ public:
     SF_VL::type::value_type
     getUNLModifyValidator() const
     {
-        return this->tx_.at(sfUNLModifyValidator);
+        return this->tx_->at(sfUNLModifyValidator);
     }
 };
 
@@ -99,13 +98,13 @@ public:
         setUNLModifyValidator(uNLModifyValidator);
     }
 
-    UNLModifyBuilder(STTx const& tx)
+    UNLModifyBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttUNL_MODIFY)
+        if (tx->getTxnType() != ttUNL_MODIFY)
         {
             throw std::runtime_error("Invalid transaction type for UNLModifyBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -144,16 +143,16 @@ public:
     }
 
     /**
-     * Build and return the completed UNLModify wrapper.
+     * Build and return the UNLModify wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, UNLModify>
+    UNLModify
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, UNLModify>{STTx{std::move(object_)}};
+        return UNLModify{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

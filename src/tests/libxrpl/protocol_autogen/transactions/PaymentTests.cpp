@@ -59,85 +59,85 @@ TEST(TransactionsPaymentTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = destinationValue;
-        auto const actual = tx->getDestination();
+        auto const actual = tx.getDestination();
         expectEqualField(expected, actual, "sfDestination");
     }
 
     {
         auto const& expected = amountValue;
-        auto const actual = tx->getAmount();
+        auto const actual = tx.getAmount();
         expectEqualField(expected, actual, "sfAmount");
     }
 
     // Verify optional fields
     {
         auto const& expected = sendMaxValue;
-        auto const actualOpt = tx->getSendMax();
+        auto const actualOpt = tx.getSendMax();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSendMax should be present";
         expectEqualField(expected, *actualOpt, "sfSendMax");
-        EXPECT_TRUE(tx->hasSendMax());
+        EXPECT_TRUE(tx.hasSendMax());
     }
 
     {
         auto const& expected = pathsValue;
-        auto const actualOpt = tx->getPaths();
+        auto const actualOpt = tx.getPaths();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfPaths should be present";
         expectEqualField(expected, *actualOpt, "sfPaths");
-        EXPECT_TRUE(tx->hasPaths());
+        EXPECT_TRUE(tx.hasPaths());
     }
 
     {
         auto const& expected = invoiceIDValue;
-        auto const actualOpt = tx->getInvoiceID();
+        auto const actualOpt = tx.getInvoiceID();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfInvoiceID should be present";
         expectEqualField(expected, *actualOpt, "sfInvoiceID");
-        EXPECT_TRUE(tx->hasInvoiceID());
+        EXPECT_TRUE(tx.hasInvoiceID());
     }
 
     {
         auto const& expected = destinationTagValue;
-        auto const actualOpt = tx->getDestinationTag();
+        auto const actualOpt = tx.getDestinationTag();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDestinationTag should be present";
         expectEqualField(expected, *actualOpt, "sfDestinationTag");
-        EXPECT_TRUE(tx->hasDestinationTag());
+        EXPECT_TRUE(tx.hasDestinationTag());
     }
 
     {
         auto const& expected = deliverMinValue;
-        auto const actualOpt = tx->getDeliverMin();
+        auto const actualOpt = tx.getDeliverMin();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDeliverMin should be present";
         expectEqualField(expected, *actualOpt, "sfDeliverMin");
-        EXPECT_TRUE(tx->hasDeliverMin());
+        EXPECT_TRUE(tx.hasDeliverMin());
     }
 
     {
         auto const& expected = credentialIDsValue;
-        auto const actualOpt = tx->getCredentialIDs();
+        auto const actualOpt = tx.getCredentialIDs();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCredentialIDs should be present";
         expectEqualField(expected, *actualOpt, "sfCredentialIDs");
-        EXPECT_TRUE(tx->hasCredentialIDs());
+        EXPECT_TRUE(tx.hasCredentialIDs());
     }
 
     {
         auto const& expected = domainIDValue;
-        auto const actualOpt = tx->getDomainID();
+        auto const actualOpt = tx.getDomainID();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDomainID should be present";
         expectEqualField(expected, *actualOpt, "sfDomainID");
-        EXPECT_TRUE(tx->hasDomainID());
+        EXPECT_TRUE(tx.hasDomainID());
     }
 
 }
@@ -186,77 +186,77 @@ TEST(TransactionsPaymentTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    PaymentBuilder builderFromTx{initialTx.object()};
+    PaymentBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = destinationValue;
-        auto const actual = rebuiltTx->getDestination();
+        auto const actual = rebuiltTx.getDestination();
         expectEqualField(expected, actual, "sfDestination");
     }
 
     {
         auto const& expected = amountValue;
-        auto const actual = rebuiltTx->getAmount();
+        auto const actual = rebuiltTx.getAmount();
         expectEqualField(expected, actual, "sfAmount");
     }
 
     // Verify optional fields
     {
         auto const& expected = sendMaxValue;
-        auto const actualOpt = rebuiltTx->getSendMax();
+        auto const actualOpt = rebuiltTx.getSendMax();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSendMax should be present";
         expectEqualField(expected, *actualOpt, "sfSendMax");
     }
 
     {
         auto const& expected = pathsValue;
-        auto const actualOpt = rebuiltTx->getPaths();
+        auto const actualOpt = rebuiltTx.getPaths();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfPaths should be present";
         expectEqualField(expected, *actualOpt, "sfPaths");
     }
 
     {
         auto const& expected = invoiceIDValue;
-        auto const actualOpt = rebuiltTx->getInvoiceID();
+        auto const actualOpt = rebuiltTx.getInvoiceID();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfInvoiceID should be present";
         expectEqualField(expected, *actualOpt, "sfInvoiceID");
     }
 
     {
         auto const& expected = destinationTagValue;
-        auto const actualOpt = rebuiltTx->getDestinationTag();
+        auto const actualOpt = rebuiltTx.getDestinationTag();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDestinationTag should be present";
         expectEqualField(expected, *actualOpt, "sfDestinationTag");
     }
 
     {
         auto const& expected = deliverMinValue;
-        auto const actualOpt = rebuiltTx->getDeliverMin();
+        auto const actualOpt = rebuiltTx.getDeliverMin();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDeliverMin should be present";
         expectEqualField(expected, *actualOpt, "sfDeliverMin");
     }
 
     {
         auto const& expected = credentialIDsValue;
-        auto const actualOpt = rebuiltTx->getCredentialIDs();
+        auto const actualOpt = rebuiltTx.getCredentialIDs();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCredentialIDs should be present";
         expectEqualField(expected, *actualOpt, "sfCredentialIDs");
     }
 
     {
         auto const& expected = domainIDValue;
-        auto const actualOpt = rebuiltTx->getDomainID();
+        auto const actualOpt = rebuiltTx.getDomainID();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDomainID should be present";
         expectEqualField(expected, *actualOpt, "sfDomainID");
     }
@@ -274,7 +274,7 @@ TEST(TransactionsPaymentTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(Payment{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(Payment{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -288,7 +288,7 @@ TEST(TransactionsPaymentTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(PaymentBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(PaymentBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 5) Build with only required fields and verify optional fields return nullopt.
@@ -320,20 +320,20 @@ TEST(TransactionsPaymentTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx->hasSendMax());
-    EXPECT_FALSE(tx->getSendMax().has_value());
-    EXPECT_FALSE(tx->hasPaths());
-    EXPECT_FALSE(tx->getPaths().has_value());
-    EXPECT_FALSE(tx->hasInvoiceID());
-    EXPECT_FALSE(tx->getInvoiceID().has_value());
-    EXPECT_FALSE(tx->hasDestinationTag());
-    EXPECT_FALSE(tx->getDestinationTag().has_value());
-    EXPECT_FALSE(tx->hasDeliverMin());
-    EXPECT_FALSE(tx->getDeliverMin().has_value());
-    EXPECT_FALSE(tx->hasCredentialIDs());
-    EXPECT_FALSE(tx->getCredentialIDs().has_value());
-    EXPECT_FALSE(tx->hasDomainID());
-    EXPECT_FALSE(tx->getDomainID().has_value());
+    EXPECT_FALSE(tx.hasSendMax());
+    EXPECT_FALSE(tx.getSendMax().has_value());
+    EXPECT_FALSE(tx.hasPaths());
+    EXPECT_FALSE(tx.getPaths().has_value());
+    EXPECT_FALSE(tx.hasInvoiceID());
+    EXPECT_FALSE(tx.getInvoiceID().has_value());
+    EXPECT_FALSE(tx.hasDestinationTag());
+    EXPECT_FALSE(tx.getDestinationTag().has_value());
+    EXPECT_FALSE(tx.hasDeliverMin());
+    EXPECT_FALSE(tx.getDeliverMin().has_value());
+    EXPECT_FALSE(tx.hasCredentialIDs());
+    EXPECT_FALSE(tx.getCredentialIDs().has_value());
+    EXPECT_FALSE(tx.hasDomainID());
+    EXPECT_FALSE(tx.getDomainID().has_value());
 }
 
 }

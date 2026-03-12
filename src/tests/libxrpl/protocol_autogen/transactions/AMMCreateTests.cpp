@@ -47,33 +47,33 @@ TEST(TransactionsAMMCreateTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = amountValue;
-        auto const actual = tx->getAmount();
+        auto const actual = tx.getAmount();
         expectEqualField(expected, actual, "sfAmount");
     }
 
     {
         auto const& expected = amount2Value;
-        auto const actual = tx->getAmount2();
+        auto const actual = tx.getAmount2();
         expectEqualField(expected, actual, "sfAmount2");
     }
 
     {
         auto const& expected = tradingFeeValue;
-        auto const actual = tx->getTradingFee();
+        auto const actual = tx.getTradingFee();
         expectEqualField(expected, actual, "sfTradingFee");
     }
 
@@ -112,34 +112,34 @@ TEST(TransactionsAMMCreateTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    AMMCreateBuilder builderFromTx{initialTx.object()};
+    AMMCreateBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = amountValue;
-        auto const actual = rebuiltTx->getAmount();
+        auto const actual = rebuiltTx.getAmount();
         expectEqualField(expected, actual, "sfAmount");
     }
 
     {
         auto const& expected = amount2Value;
-        auto const actual = rebuiltTx->getAmount2();
+        auto const actual = rebuiltTx.getAmount2();
         expectEqualField(expected, actual, "sfAmount2");
     }
 
     {
         auto const& expected = tradingFeeValue;
-        auto const actual = rebuiltTx->getTradingFee();
+        auto const actual = rebuiltTx.getTradingFee();
         expectEqualField(expected, actual, "sfTradingFee");
     }
 
@@ -157,7 +157,7 @@ TEST(TransactionsAMMCreateTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(AMMCreate{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(AMMCreate{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -171,7 +171,7 @@ TEST(TransactionsAMMCreateTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(AMMCreateBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(AMMCreateBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 

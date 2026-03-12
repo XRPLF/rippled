@@ -47,39 +47,39 @@ TEST(TransactionsCheckCashTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = checkIDValue;
-        auto const actual = tx->getCheckID();
+        auto const actual = tx.getCheckID();
         expectEqualField(expected, actual, "sfCheckID");
     }
 
     // Verify optional fields
     {
         auto const& expected = amountValue;
-        auto const actualOpt = tx->getAmount();
+        auto const actualOpt = tx.getAmount();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
         expectEqualField(expected, *actualOpt, "sfAmount");
-        EXPECT_TRUE(tx->hasAmount());
+        EXPECT_TRUE(tx.hasAmount());
     }
 
     {
         auto const& expected = deliverMinValue;
-        auto const actualOpt = tx->getDeliverMin();
+        auto const actualOpt = tx.getDeliverMin();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDeliverMin should be present";
         expectEqualField(expected, *actualOpt, "sfDeliverMin");
-        EXPECT_TRUE(tx->hasDeliverMin());
+        EXPECT_TRUE(tx.hasDeliverMin());
     }
 
 }
@@ -116,36 +116,36 @@ TEST(TransactionsCheckCashTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    CheckCashBuilder builderFromTx{initialTx.object()};
+    CheckCashBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = checkIDValue;
-        auto const actual = rebuiltTx->getCheckID();
+        auto const actual = rebuiltTx.getCheckID();
         expectEqualField(expected, actual, "sfCheckID");
     }
 
     // Verify optional fields
     {
         auto const& expected = amountValue;
-        auto const actualOpt = rebuiltTx->getAmount();
+        auto const actualOpt = rebuiltTx.getAmount();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
         expectEqualField(expected, *actualOpt, "sfAmount");
     }
 
     {
         auto const& expected = deliverMinValue;
-        auto const actualOpt = rebuiltTx->getDeliverMin();
+        auto const actualOpt = rebuiltTx.getDeliverMin();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDeliverMin should be present";
         expectEqualField(expected, *actualOpt, "sfDeliverMin");
     }
@@ -163,7 +163,7 @@ TEST(TransactionsCheckCashTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(CheckCash{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(CheckCash{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -177,7 +177,7 @@ TEST(TransactionsCheckCashTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(CheckCashBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(CheckCashBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 5) Build with only required fields and verify optional fields return nullopt.
@@ -207,10 +207,10 @@ TEST(TransactionsCheckCashTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx->hasAmount());
-    EXPECT_FALSE(tx->getAmount().has_value());
-    EXPECT_FALSE(tx->hasDeliverMin());
-    EXPECT_FALSE(tx->getDeliverMin().has_value());
+    EXPECT_FALSE(tx.hasAmount());
+    EXPECT_FALSE(tx.getAmount().has_value());
+    EXPECT_FALSE(tx.hasDeliverMin());
+    EXPECT_FALSE(tx.getDeliverMin().has_value());
 }
 
 }

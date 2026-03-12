@@ -61,97 +61,97 @@ TEST(TransactionsAccountSetTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     // Verify optional fields
     {
         auto const& expected = emailHashValue;
-        auto const actualOpt = tx->getEmailHash();
+        auto const actualOpt = tx.getEmailHash();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfEmailHash should be present";
         expectEqualField(expected, *actualOpt, "sfEmailHash");
-        EXPECT_TRUE(tx->hasEmailHash());
+        EXPECT_TRUE(tx.hasEmailHash());
     }
 
     {
         auto const& expected = walletLocatorValue;
-        auto const actualOpt = tx->getWalletLocator();
+        auto const actualOpt = tx.getWalletLocator();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfWalletLocator should be present";
         expectEqualField(expected, *actualOpt, "sfWalletLocator");
-        EXPECT_TRUE(tx->hasWalletLocator());
+        EXPECT_TRUE(tx.hasWalletLocator());
     }
 
     {
         auto const& expected = walletSizeValue;
-        auto const actualOpt = tx->getWalletSize();
+        auto const actualOpt = tx.getWalletSize();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfWalletSize should be present";
         expectEqualField(expected, *actualOpt, "sfWalletSize");
-        EXPECT_TRUE(tx->hasWalletSize());
+        EXPECT_TRUE(tx.hasWalletSize());
     }
 
     {
         auto const& expected = messageKeyValue;
-        auto const actualOpt = tx->getMessageKey();
+        auto const actualOpt = tx.getMessageKey();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMessageKey should be present";
         expectEqualField(expected, *actualOpt, "sfMessageKey");
-        EXPECT_TRUE(tx->hasMessageKey());
+        EXPECT_TRUE(tx.hasMessageKey());
     }
 
     {
         auto const& expected = domainValue;
-        auto const actualOpt = tx->getDomain();
+        auto const actualOpt = tx.getDomain();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDomain should be present";
         expectEqualField(expected, *actualOpt, "sfDomain");
-        EXPECT_TRUE(tx->hasDomain());
+        EXPECT_TRUE(tx.hasDomain());
     }
 
     {
         auto const& expected = transferRateValue;
-        auto const actualOpt = tx->getTransferRate();
+        auto const actualOpt = tx.getTransferRate();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfTransferRate should be present";
         expectEqualField(expected, *actualOpt, "sfTransferRate");
-        EXPECT_TRUE(tx->hasTransferRate());
+        EXPECT_TRUE(tx.hasTransferRate());
     }
 
     {
         auto const& expected = setFlagValue;
-        auto const actualOpt = tx->getSetFlag();
+        auto const actualOpt = tx.getSetFlag();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSetFlag should be present";
         expectEqualField(expected, *actualOpt, "sfSetFlag");
-        EXPECT_TRUE(tx->hasSetFlag());
+        EXPECT_TRUE(tx.hasSetFlag());
     }
 
     {
         auto const& expected = clearFlagValue;
-        auto const actualOpt = tx->getClearFlag();
+        auto const actualOpt = tx.getClearFlag();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfClearFlag should be present";
         expectEqualField(expected, *actualOpt, "sfClearFlag");
-        EXPECT_TRUE(tx->hasClearFlag());
+        EXPECT_TRUE(tx.hasClearFlag());
     }
 
     {
         auto const& expected = tickSizeValue;
-        auto const actualOpt = tx->getTickSize();
+        auto const actualOpt = tx.getTickSize();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfTickSize should be present";
         expectEqualField(expected, *actualOpt, "sfTickSize");
-        EXPECT_TRUE(tx->hasTickSize());
+        EXPECT_TRUE(tx.hasTickSize());
     }
 
     {
         auto const& expected = nFTokenMinterValue;
-        auto const actualOpt = tx->getNFTokenMinter();
+        auto const actualOpt = tx.getNFTokenMinter();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfNFTokenMinter should be present";
         expectEqualField(expected, *actualOpt, "sfNFTokenMinter");
-        EXPECT_TRUE(tx->hasNFTokenMinter());
+        EXPECT_TRUE(tx.hasNFTokenMinter());
     }
 
 }
@@ -202,86 +202,86 @@ TEST(TransactionsAccountSetTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    AccountSetBuilder builderFromTx{initialTx.object()};
+    AccountSetBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     // Verify optional fields
     {
         auto const& expected = emailHashValue;
-        auto const actualOpt = rebuiltTx->getEmailHash();
+        auto const actualOpt = rebuiltTx.getEmailHash();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfEmailHash should be present";
         expectEqualField(expected, *actualOpt, "sfEmailHash");
     }
 
     {
         auto const& expected = walletLocatorValue;
-        auto const actualOpt = rebuiltTx->getWalletLocator();
+        auto const actualOpt = rebuiltTx.getWalletLocator();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfWalletLocator should be present";
         expectEqualField(expected, *actualOpt, "sfWalletLocator");
     }
 
     {
         auto const& expected = walletSizeValue;
-        auto const actualOpt = rebuiltTx->getWalletSize();
+        auto const actualOpt = rebuiltTx.getWalletSize();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfWalletSize should be present";
         expectEqualField(expected, *actualOpt, "sfWalletSize");
     }
 
     {
         auto const& expected = messageKeyValue;
-        auto const actualOpt = rebuiltTx->getMessageKey();
+        auto const actualOpt = rebuiltTx.getMessageKey();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMessageKey should be present";
         expectEqualField(expected, *actualOpt, "sfMessageKey");
     }
 
     {
         auto const& expected = domainValue;
-        auto const actualOpt = rebuiltTx->getDomain();
+        auto const actualOpt = rebuiltTx.getDomain();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDomain should be present";
         expectEqualField(expected, *actualOpt, "sfDomain");
     }
 
     {
         auto const& expected = transferRateValue;
-        auto const actualOpt = rebuiltTx->getTransferRate();
+        auto const actualOpt = rebuiltTx.getTransferRate();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfTransferRate should be present";
         expectEqualField(expected, *actualOpt, "sfTransferRate");
     }
 
     {
         auto const& expected = setFlagValue;
-        auto const actualOpt = rebuiltTx->getSetFlag();
+        auto const actualOpt = rebuiltTx.getSetFlag();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSetFlag should be present";
         expectEqualField(expected, *actualOpt, "sfSetFlag");
     }
 
     {
         auto const& expected = clearFlagValue;
-        auto const actualOpt = rebuiltTx->getClearFlag();
+        auto const actualOpt = rebuiltTx.getClearFlag();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfClearFlag should be present";
         expectEqualField(expected, *actualOpt, "sfClearFlag");
     }
 
     {
         auto const& expected = tickSizeValue;
-        auto const actualOpt = rebuiltTx->getTickSize();
+        auto const actualOpt = rebuiltTx.getTickSize();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfTickSize should be present";
         expectEqualField(expected, *actualOpt, "sfTickSize");
     }
 
     {
         auto const& expected = nFTokenMinterValue;
-        auto const actualOpt = rebuiltTx->getNFTokenMinter();
+        auto const actualOpt = rebuiltTx.getNFTokenMinter();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfNFTokenMinter should be present";
         expectEqualField(expected, *actualOpt, "sfNFTokenMinter");
     }
@@ -299,7 +299,7 @@ TEST(TransactionsAccountSetTests, WrapperThrowsOnWrongTxType)
     OfferCancelBuilder wrongBuilder{account, canonical_UINT32(), 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(AccountSet{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(AccountSet{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -313,7 +313,7 @@ TEST(TransactionsAccountSetTests, BuilderThrowsOnWrongTxType)
     OfferCancelBuilder wrongBuilder{account, canonical_UINT32(), 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(AccountSetBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(AccountSetBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 5) Build with only required fields and verify optional fields return nullopt.
@@ -341,26 +341,26 @@ TEST(TransactionsAccountSetTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx->hasEmailHash());
-    EXPECT_FALSE(tx->getEmailHash().has_value());
-    EXPECT_FALSE(tx->hasWalletLocator());
-    EXPECT_FALSE(tx->getWalletLocator().has_value());
-    EXPECT_FALSE(tx->hasWalletSize());
-    EXPECT_FALSE(tx->getWalletSize().has_value());
-    EXPECT_FALSE(tx->hasMessageKey());
-    EXPECT_FALSE(tx->getMessageKey().has_value());
-    EXPECT_FALSE(tx->hasDomain());
-    EXPECT_FALSE(tx->getDomain().has_value());
-    EXPECT_FALSE(tx->hasTransferRate());
-    EXPECT_FALSE(tx->getTransferRate().has_value());
-    EXPECT_FALSE(tx->hasSetFlag());
-    EXPECT_FALSE(tx->getSetFlag().has_value());
-    EXPECT_FALSE(tx->hasClearFlag());
-    EXPECT_FALSE(tx->getClearFlag().has_value());
-    EXPECT_FALSE(tx->hasTickSize());
-    EXPECT_FALSE(tx->getTickSize().has_value());
-    EXPECT_FALSE(tx->hasNFTokenMinter());
-    EXPECT_FALSE(tx->getNFTokenMinter().has_value());
+    EXPECT_FALSE(tx.hasEmailHash());
+    EXPECT_FALSE(tx.getEmailHash().has_value());
+    EXPECT_FALSE(tx.hasWalletLocator());
+    EXPECT_FALSE(tx.getWalletLocator().has_value());
+    EXPECT_FALSE(tx.hasWalletSize());
+    EXPECT_FALSE(tx.getWalletSize().has_value());
+    EXPECT_FALSE(tx.hasMessageKey());
+    EXPECT_FALSE(tx.getMessageKey().has_value());
+    EXPECT_FALSE(tx.hasDomain());
+    EXPECT_FALSE(tx.getDomain().has_value());
+    EXPECT_FALSE(tx.hasTransferRate());
+    EXPECT_FALSE(tx.getTransferRate().has_value());
+    EXPECT_FALSE(tx.hasSetFlag());
+    EXPECT_FALSE(tx.getSetFlag().has_value());
+    EXPECT_FALSE(tx.hasClearFlag());
+    EXPECT_FALSE(tx.getClearFlag().has_value());
+    EXPECT_FALSE(tx.hasTickSize());
+    EXPECT_FALSE(tx.getTickSize().has_value());
+    EXPECT_FALSE(tx.hasNFTokenMinter());
+    EXPECT_FALSE(tx.getNFTokenMinter().has_value());
 }
 
 }

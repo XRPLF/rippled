@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a MPTokenIssuanceDestroy transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit MPTokenIssuanceDestroy(STTx const& tx)
-        : TransactionBase(tx)
+    explicit MPTokenIssuanceDestroy(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for MPTokenIssuanceDestroy");
         }
@@ -55,7 +54,7 @@ public:
     SF_UINT192::type::value_type
     getMPTokenIssuanceID() const
     {
-        return this->tx_.at(sfMPTokenIssuanceID);
+        return this->tx_->at(sfMPTokenIssuanceID);
     }
 };
 
@@ -77,13 +76,13 @@ public:
         setMPTokenIssuanceID(mPTokenIssuanceID);
     }
 
-    MPTokenIssuanceDestroyBuilder(STTx const& tx)
+    MPTokenIssuanceDestroyBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttMPTOKEN_ISSUANCE_DESTROY)
+        if (tx->getTxnType() != ttMPTOKEN_ISSUANCE_DESTROY)
         {
             throw std::runtime_error("Invalid transaction type for MPTokenIssuanceDestroyBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -100,16 +99,16 @@ public:
     }
 
     /**
-     * Build and return the completed MPTokenIssuanceDestroy wrapper.
+     * Build and return the MPTokenIssuanceDestroy wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, MPTokenIssuanceDestroy>
+    MPTokenIssuanceDestroy
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, MPTokenIssuanceDestroy>{STTx{std::move(object_)}};
+        return MPTokenIssuanceDestroy{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

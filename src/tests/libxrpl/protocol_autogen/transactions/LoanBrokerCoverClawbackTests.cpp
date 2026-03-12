@@ -45,33 +45,33 @@ TEST(TransactionsLoanBrokerCoverClawbackTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     // Verify optional fields
     {
         auto const& expected = loanBrokerIDValue;
-        auto const actualOpt = tx->getLoanBrokerID();
+        auto const actualOpt = tx.getLoanBrokerID();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLoanBrokerID should be present";
         expectEqualField(expected, *actualOpt, "sfLoanBrokerID");
-        EXPECT_TRUE(tx->hasLoanBrokerID());
+        EXPECT_TRUE(tx.hasLoanBrokerID());
     }
 
     {
         auto const& expected = amountValue;
-        auto const actualOpt = tx->getAmount();
+        auto const actualOpt = tx.getAmount();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
         expectEqualField(expected, *actualOpt, "sfAmount");
-        EXPECT_TRUE(tx->hasAmount());
+        EXPECT_TRUE(tx.hasAmount());
     }
 
 }
@@ -106,30 +106,30 @@ TEST(TransactionsLoanBrokerCoverClawbackTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    LoanBrokerCoverClawbackBuilder builderFromTx{initialTx.object()};
+    LoanBrokerCoverClawbackBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     // Verify optional fields
     {
         auto const& expected = loanBrokerIDValue;
-        auto const actualOpt = rebuiltTx->getLoanBrokerID();
+        auto const actualOpt = rebuiltTx.getLoanBrokerID();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLoanBrokerID should be present";
         expectEqualField(expected, *actualOpt, "sfLoanBrokerID");
     }
 
     {
         auto const& expected = amountValue;
-        auto const actualOpt = rebuiltTx->getAmount();
+        auto const actualOpt = rebuiltTx.getAmount();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
         expectEqualField(expected, *actualOpt, "sfAmount");
     }
@@ -147,7 +147,7 @@ TEST(TransactionsLoanBrokerCoverClawbackTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(LoanBrokerCoverClawback{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(LoanBrokerCoverClawback{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -161,7 +161,7 @@ TEST(TransactionsLoanBrokerCoverClawbackTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(LoanBrokerCoverClawbackBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(LoanBrokerCoverClawbackBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 5) Build with only required fields and verify optional fields return nullopt.
@@ -189,10 +189,10 @@ TEST(TransactionsLoanBrokerCoverClawbackTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx->hasLoanBrokerID());
-    EXPECT_FALSE(tx->getLoanBrokerID().has_value());
-    EXPECT_FALSE(tx->hasAmount());
-    EXPECT_FALSE(tx->getAmount().has_value());
+    EXPECT_FALSE(tx.hasLoanBrokerID());
+    EXPECT_FALSE(tx.getLoanBrokerID().has_value());
+    EXPECT_FALSE(tx.hasAmount());
+    EXPECT_FALSE(tx.getAmount().has_value());
 }
 
 }

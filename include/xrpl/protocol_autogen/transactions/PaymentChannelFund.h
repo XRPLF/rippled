@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a PaymentChannelFund transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit PaymentChannelFund(STTx const& tx)
-        : TransactionBase(tx)
+    explicit PaymentChannelFund(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for PaymentChannelFund");
         }
@@ -55,7 +54,7 @@ public:
     SF_UINT256::type::value_type
     getChannel() const
     {
-        return this->tx_.at(sfChannel);
+        return this->tx_->at(sfChannel);
     }
 
     /**
@@ -65,7 +64,7 @@ public:
     SF_AMOUNT::type::value_type
     getAmount() const
     {
-        return this->tx_.at(sfAmount);
+        return this->tx_->at(sfAmount);
     }
 
     /**
@@ -77,7 +76,7 @@ public:
     {
         if (hasExpiration())
         {
-            return this->tx_.at(sfExpiration);
+            return this->tx_->at(sfExpiration);
         }
         return std::nullopt;
     }
@@ -86,7 +85,7 @@ public:
     bool
     hasExpiration() const
     {
-        return this->tx_.isFieldPresent(sfExpiration);
+        return this->tx_->isFieldPresent(sfExpiration);
     }
 };
 
@@ -109,13 +108,13 @@ public:
         setAmount(amount);
     }
 
-    PaymentChannelFundBuilder(STTx const& tx)
+    PaymentChannelFundBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttPAYCHAN_FUND)
+        if (tx->getTxnType() != ttPAYCHAN_FUND)
         {
             throw std::runtime_error("Invalid transaction type for PaymentChannelFundBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -154,16 +153,16 @@ public:
     }
 
     /**
-     * Build and return the completed PaymentChannelFund wrapper.
+     * Build and return the PaymentChannelFund wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, PaymentChannelFund>
+    PaymentChannelFund
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, PaymentChannelFund>{STTx{std::move(object_)}};
+        return PaymentChannelFund{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

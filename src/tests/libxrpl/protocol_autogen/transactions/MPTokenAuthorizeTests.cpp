@@ -45,31 +45,31 @@ TEST(TransactionsMPTokenAuthorizeTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = mPTokenIssuanceIDValue;
-        auto const actual = tx->getMPTokenIssuanceID();
+        auto const actual = tx.getMPTokenIssuanceID();
         expectEqualField(expected, actual, "sfMPTokenIssuanceID");
     }
 
     // Verify optional fields
     {
         auto const& expected = holderValue;
-        auto const actualOpt = tx->getHolder();
+        auto const actualOpt = tx.getHolder();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfHolder should be present";
         expectEqualField(expected, *actualOpt, "sfHolder");
-        EXPECT_TRUE(tx->hasHolder());
+        EXPECT_TRUE(tx.hasHolder());
     }
 
 }
@@ -104,29 +104,29 @@ TEST(TransactionsMPTokenAuthorizeTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    MPTokenAuthorizeBuilder builderFromTx{initialTx.object()};
+    MPTokenAuthorizeBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = mPTokenIssuanceIDValue;
-        auto const actual = rebuiltTx->getMPTokenIssuanceID();
+        auto const actual = rebuiltTx.getMPTokenIssuanceID();
         expectEqualField(expected, actual, "sfMPTokenIssuanceID");
     }
 
     // Verify optional fields
     {
         auto const& expected = holderValue;
-        auto const actualOpt = rebuiltTx->getHolder();
+        auto const actualOpt = rebuiltTx.getHolder();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfHolder should be present";
         expectEqualField(expected, *actualOpt, "sfHolder");
     }
@@ -144,7 +144,7 @@ TEST(TransactionsMPTokenAuthorizeTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(MPTokenAuthorize{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(MPTokenAuthorize{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -158,7 +158,7 @@ TEST(TransactionsMPTokenAuthorizeTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(MPTokenAuthorizeBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(MPTokenAuthorizeBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 5) Build with only required fields and verify optional fields return nullopt.
@@ -188,8 +188,8 @@ TEST(TransactionsMPTokenAuthorizeTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx->hasHolder());
-    EXPECT_FALSE(tx->getHolder().has_value());
+    EXPECT_FALSE(tx.hasHolder());
+    EXPECT_FALSE(tx.getHolder().has_value());
 }
 
 }

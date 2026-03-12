@@ -5,6 +5,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STBlob.h>
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/STObject.h>
@@ -89,6 +90,20 @@ public:
     }
 
     /**
+     * Set the ticket sequence to use for this transaction.
+     * When using a ticket, the regular sequence number is set to 0.
+     * @param value Ticket sequence number
+     * @return Reference to the derived builder for method chaining.
+     */
+    Derived&
+    setTicketSequence(std::uint32_t const& value)
+    {
+        object_[sfSequence] = 0u;
+        object_[sfTicketSequence] = value;
+        return static_cast<Derived&>(*this);
+    }
+
+    /**
      * Set transaction flags.
      * @param value Flags value
      * @return Reference to the derived builder for method chaining.
@@ -134,6 +149,89 @@ public:
     {
         object_[sfAccountTxnID] = value;
         return static_cast<Derived&>(*this);
+    }
+
+    /**
+     * Set the previous transaction ID.
+     * Used for emulate027 compatibility.
+     * @param value Previous transaction ID
+     * @return Reference to the derived builder for method chaining.
+     */
+    Derived&
+    setPreviousTxnID(uint256 const& value)
+    {
+        object_[sfPreviousTxnID] = value;
+        return static_cast<Derived&>(*this);
+    }
+
+    /**
+     * Set the operation limit.
+     * @param value Operation limit
+     * @return Reference to the derived builder for method chaining.
+     */
+    Derived&
+    setOperationLimit(std::uint32_t const& value)
+    {
+        object_[sfOperationLimit] = value;
+        return static_cast<Derived&>(*this);
+    }
+
+    /**
+     * Set the memos array.
+     * @param value Array of memo objects
+     * @return Reference to the derived builder for method chaining.
+     */
+    Derived&
+    setMemos(STArray const& value)
+    {
+        object_.setFieldArray(sfMemos, value);
+        return static_cast<Derived&>(*this);
+    }
+
+    /**
+     * Set the signers array for multi-signing.
+     * @param value Array of signer objects
+     * @return Reference to the derived builder for method chaining.
+     */
+    Derived&
+    setSigners(STArray const& value)
+    {
+        object_.setFieldArray(sfSigners, value);
+        return static_cast<Derived&>(*this);
+    }
+
+    /**
+     * Set the network ID.
+     * @param value Network ID
+     * @return Reference to the derived builder for method chaining.
+     */
+    Derived&
+    setNetworkID(std::uint32_t const& value)
+    {
+        object_[sfNetworkID] = value;
+        return static_cast<Derived&>(*this);
+    }
+
+    /**
+     * Set the delegate account for delegated transactions.
+     * @param value Delegate account ID
+     * @return Reference to the derived builder for method chaining.
+     */
+    Derived&
+    setDelegate(AccountID const& value)
+    {
+        object_[sfDelegate] = value;
+        return static_cast<Derived&>(*this);
+    }
+
+    /**
+     * Get the underlying STObject.
+     * @return The STObject
+     */
+    STObject const&
+    getSTObject() const
+    {
+        return object_;
     }
 
 protected:

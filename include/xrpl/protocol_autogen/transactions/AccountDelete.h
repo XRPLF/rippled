@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a AccountDelete transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit AccountDelete(STTx const& tx)
-        : TransactionBase(tx)
+    explicit AccountDelete(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for AccountDelete");
         }
@@ -55,7 +54,7 @@ public:
     SF_ACCOUNT::type::value_type
     getDestination() const
     {
-        return this->tx_.at(sfDestination);
+        return this->tx_->at(sfDestination);
     }
 
     /**
@@ -67,7 +66,7 @@ public:
     {
         if (hasDestinationTag())
         {
-            return this->tx_.at(sfDestinationTag);
+            return this->tx_->at(sfDestinationTag);
         }
         return std::nullopt;
     }
@@ -76,7 +75,7 @@ public:
     bool
     hasDestinationTag() const
     {
-        return this->tx_.isFieldPresent(sfDestinationTag);
+        return this->tx_->isFieldPresent(sfDestinationTag);
     }
 
     /**
@@ -88,7 +87,7 @@ public:
     {
         if (hasCredentialIDs())
         {
-            return this->tx_.at(sfCredentialIDs);
+            return this->tx_->at(sfCredentialIDs);
         }
         return std::nullopt;
     }
@@ -97,7 +96,7 @@ public:
     bool
     hasCredentialIDs() const
     {
-        return this->tx_.isFieldPresent(sfCredentialIDs);
+        return this->tx_->isFieldPresent(sfCredentialIDs);
     }
 };
 
@@ -119,13 +118,13 @@ public:
         setDestination(destination);
     }
 
-    AccountDeleteBuilder(STTx const& tx)
+    AccountDeleteBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttACCOUNT_DELETE)
+        if (tx->getTxnType() != ttACCOUNT_DELETE)
         {
             throw std::runtime_error("Invalid transaction type for AccountDeleteBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -164,16 +163,16 @@ public:
     }
 
     /**
-     * Build and return the completed AccountDelete wrapper.
+     * Build and return the AccountDelete wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, AccountDelete>
+    AccountDelete
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, AccountDelete>{STTx{std::move(object_)}};
+        return AccountDelete{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

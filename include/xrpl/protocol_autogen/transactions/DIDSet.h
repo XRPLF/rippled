@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a DIDSet transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit DIDSet(STTx const& tx)
-        : TransactionBase(tx)
+    explicit DIDSet(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for DIDSet");
         }
@@ -57,7 +56,7 @@ public:
     {
         if (hasDIDDocument())
         {
-            return this->tx_.at(sfDIDDocument);
+            return this->tx_->at(sfDIDDocument);
         }
         return std::nullopt;
     }
@@ -66,7 +65,7 @@ public:
     bool
     hasDIDDocument() const
     {
-        return this->tx_.isFieldPresent(sfDIDDocument);
+        return this->tx_->isFieldPresent(sfDIDDocument);
     }
 
     /**
@@ -78,7 +77,7 @@ public:
     {
         if (hasURI())
         {
-            return this->tx_.at(sfURI);
+            return this->tx_->at(sfURI);
         }
         return std::nullopt;
     }
@@ -87,7 +86,7 @@ public:
     bool
     hasURI() const
     {
-        return this->tx_.isFieldPresent(sfURI);
+        return this->tx_->isFieldPresent(sfURI);
     }
 
     /**
@@ -99,7 +98,7 @@ public:
     {
         if (hasData())
         {
-            return this->tx_.at(sfData);
+            return this->tx_->at(sfData);
         }
         return std::nullopt;
     }
@@ -108,7 +107,7 @@ public:
     bool
     hasData() const
     {
-        return this->tx_.isFieldPresent(sfData);
+        return this->tx_->isFieldPresent(sfData);
     }
 };
 
@@ -129,13 +128,13 @@ public:
     {
     }
 
-    DIDSetBuilder(STTx const& tx)
+    DIDSetBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttDID_SET)
+        if (tx->getTxnType() != ttDID_SET)
         {
             throw std::runtime_error("Invalid transaction type for DIDSetBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -174,16 +173,16 @@ public:
     }
 
     /**
-     * Build and return the completed DIDSet wrapper.
+     * Build and return the DIDSet wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, DIDSet>
+    DIDSet
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, DIDSet>{STTx{std::move(object_)}};
+        return DIDSet{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a VaultSet transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit VaultSet(STTx const& tx)
-        : TransactionBase(tx)
+    explicit VaultSet(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for VaultSet");
         }
@@ -55,7 +54,7 @@ public:
     SF_UINT256::type::value_type
     getVaultID() const
     {
-        return this->tx_.at(sfVaultID);
+        return this->tx_->at(sfVaultID);
     }
 
     /**
@@ -67,7 +66,7 @@ public:
     {
         if (hasAssetsMaximum())
         {
-            return this->tx_.at(sfAssetsMaximum);
+            return this->tx_->at(sfAssetsMaximum);
         }
         return std::nullopt;
     }
@@ -76,7 +75,7 @@ public:
     bool
     hasAssetsMaximum() const
     {
-        return this->tx_.isFieldPresent(sfAssetsMaximum);
+        return this->tx_->isFieldPresent(sfAssetsMaximum);
     }
 
     /**
@@ -88,7 +87,7 @@ public:
     {
         if (hasDomainID())
         {
-            return this->tx_.at(sfDomainID);
+            return this->tx_->at(sfDomainID);
         }
         return std::nullopt;
     }
@@ -97,7 +96,7 @@ public:
     bool
     hasDomainID() const
     {
-        return this->tx_.isFieldPresent(sfDomainID);
+        return this->tx_->isFieldPresent(sfDomainID);
     }
 
     /**
@@ -109,7 +108,7 @@ public:
     {
         if (hasData())
         {
-            return this->tx_.at(sfData);
+            return this->tx_->at(sfData);
         }
         return std::nullopt;
     }
@@ -118,7 +117,7 @@ public:
     bool
     hasData() const
     {
-        return this->tx_.isFieldPresent(sfData);
+        return this->tx_->isFieldPresent(sfData);
     }
 };
 
@@ -140,13 +139,13 @@ public:
         setVaultID(vaultID);
     }
 
-    VaultSetBuilder(STTx const& tx)
+    VaultSetBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttVAULT_SET)
+        if (tx->getTxnType() != ttVAULT_SET)
         {
             throw std::runtime_error("Invalid transaction type for VaultSetBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -196,16 +195,16 @@ public:
     }
 
     /**
-     * Build and return the completed VaultSet wrapper.
+     * Build and return the VaultSet wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, VaultSet>
+    VaultSet
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, VaultSet>{STTx{std::move(object_)}};
+        return VaultSet{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

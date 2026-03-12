@@ -55,71 +55,71 @@ TEST(TransactionsVaultCreateTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = assetValue;
-        auto const actual = tx->getAsset();
+        auto const actual = tx.getAsset();
         expectEqualField(expected, actual, "sfAsset");
     }
 
     // Verify optional fields
     {
         auto const& expected = assetsMaximumValue;
-        auto const actualOpt = tx->getAssetsMaximum();
+        auto const actualOpt = tx.getAssetsMaximum();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAssetsMaximum should be present";
         expectEqualField(expected, *actualOpt, "sfAssetsMaximum");
-        EXPECT_TRUE(tx->hasAssetsMaximum());
+        EXPECT_TRUE(tx.hasAssetsMaximum());
     }
 
     {
         auto const& expected = mPTokenMetadataValue;
-        auto const actualOpt = tx->getMPTokenMetadata();
+        auto const actualOpt = tx.getMPTokenMetadata();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMPTokenMetadata should be present";
         expectEqualField(expected, *actualOpt, "sfMPTokenMetadata");
-        EXPECT_TRUE(tx->hasMPTokenMetadata());
+        EXPECT_TRUE(tx.hasMPTokenMetadata());
     }
 
     {
         auto const& expected = domainIDValue;
-        auto const actualOpt = tx->getDomainID();
+        auto const actualOpt = tx.getDomainID();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDomainID should be present";
         expectEqualField(expected, *actualOpt, "sfDomainID");
-        EXPECT_TRUE(tx->hasDomainID());
+        EXPECT_TRUE(tx.hasDomainID());
     }
 
     {
         auto const& expected = withdrawalPolicyValue;
-        auto const actualOpt = tx->getWithdrawalPolicy();
+        auto const actualOpt = tx.getWithdrawalPolicy();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfWithdrawalPolicy should be present";
         expectEqualField(expected, *actualOpt, "sfWithdrawalPolicy");
-        EXPECT_TRUE(tx->hasWithdrawalPolicy());
+        EXPECT_TRUE(tx.hasWithdrawalPolicy());
     }
 
     {
         auto const& expected = dataValue;
-        auto const actualOpt = tx->getData();
+        auto const actualOpt = tx.getData();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfData should be present";
         expectEqualField(expected, *actualOpt, "sfData");
-        EXPECT_TRUE(tx->hasData());
+        EXPECT_TRUE(tx.hasData());
     }
 
     {
         auto const& expected = scaleValue;
-        auto const actualOpt = tx->getScale();
+        auto const actualOpt = tx.getScale();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfScale should be present";
         expectEqualField(expected, *actualOpt, "sfScale");
-        EXPECT_TRUE(tx->hasScale());
+        EXPECT_TRUE(tx.hasScale());
     }
 
 }
@@ -164,64 +164,64 @@ TEST(TransactionsVaultCreateTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    VaultCreateBuilder builderFromTx{initialTx.object()};
+    VaultCreateBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = assetValue;
-        auto const actual = rebuiltTx->getAsset();
+        auto const actual = rebuiltTx.getAsset();
         expectEqualField(expected, actual, "sfAsset");
     }
 
     // Verify optional fields
     {
         auto const& expected = assetsMaximumValue;
-        auto const actualOpt = rebuiltTx->getAssetsMaximum();
+        auto const actualOpt = rebuiltTx.getAssetsMaximum();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAssetsMaximum should be present";
         expectEqualField(expected, *actualOpt, "sfAssetsMaximum");
     }
 
     {
         auto const& expected = mPTokenMetadataValue;
-        auto const actualOpt = rebuiltTx->getMPTokenMetadata();
+        auto const actualOpt = rebuiltTx.getMPTokenMetadata();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMPTokenMetadata should be present";
         expectEqualField(expected, *actualOpt, "sfMPTokenMetadata");
     }
 
     {
         auto const& expected = domainIDValue;
-        auto const actualOpt = rebuiltTx->getDomainID();
+        auto const actualOpt = rebuiltTx.getDomainID();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDomainID should be present";
         expectEqualField(expected, *actualOpt, "sfDomainID");
     }
 
     {
         auto const& expected = withdrawalPolicyValue;
-        auto const actualOpt = rebuiltTx->getWithdrawalPolicy();
+        auto const actualOpt = rebuiltTx.getWithdrawalPolicy();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfWithdrawalPolicy should be present";
         expectEqualField(expected, *actualOpt, "sfWithdrawalPolicy");
     }
 
     {
         auto const& expected = dataValue;
-        auto const actualOpt = rebuiltTx->getData();
+        auto const actualOpt = rebuiltTx.getData();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfData should be present";
         expectEqualField(expected, *actualOpt, "sfData");
     }
 
     {
         auto const& expected = scaleValue;
-        auto const actualOpt = rebuiltTx->getScale();
+        auto const actualOpt = rebuiltTx.getScale();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfScale should be present";
         expectEqualField(expected, *actualOpt, "sfScale");
     }
@@ -239,7 +239,7 @@ TEST(TransactionsVaultCreateTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(VaultCreate{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(VaultCreate{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -253,7 +253,7 @@ TEST(TransactionsVaultCreateTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(VaultCreateBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(VaultCreateBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 5) Build with only required fields and verify optional fields return nullopt.
@@ -283,18 +283,18 @@ TEST(TransactionsVaultCreateTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx->hasAssetsMaximum());
-    EXPECT_FALSE(tx->getAssetsMaximum().has_value());
-    EXPECT_FALSE(tx->hasMPTokenMetadata());
-    EXPECT_FALSE(tx->getMPTokenMetadata().has_value());
-    EXPECT_FALSE(tx->hasDomainID());
-    EXPECT_FALSE(tx->getDomainID().has_value());
-    EXPECT_FALSE(tx->hasWithdrawalPolicy());
-    EXPECT_FALSE(tx->getWithdrawalPolicy().has_value());
-    EXPECT_FALSE(tx->hasData());
-    EXPECT_FALSE(tx->getData().has_value());
-    EXPECT_FALSE(tx->hasScale());
-    EXPECT_FALSE(tx->getScale().has_value());
+    EXPECT_FALSE(tx.hasAssetsMaximum());
+    EXPECT_FALSE(tx.getAssetsMaximum().has_value());
+    EXPECT_FALSE(tx.hasMPTokenMetadata());
+    EXPECT_FALSE(tx.getMPTokenMetadata().has_value());
+    EXPECT_FALSE(tx.hasDomainID());
+    EXPECT_FALSE(tx.getDomainID().has_value());
+    EXPECT_FALSE(tx.hasWithdrawalPolicy());
+    EXPECT_FALSE(tx.getWithdrawalPolicy().has_value());
+    EXPECT_FALSE(tx.hasData());
+    EXPECT_FALSE(tx.getData().has_value());
+    EXPECT_FALSE(tx.hasScale());
+    EXPECT_FALSE(tx.getScale().has_value());
 }
 
 }

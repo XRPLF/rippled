@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a LoanPay transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit LoanPay(STTx const& tx)
-        : TransactionBase(tx)
+    explicit LoanPay(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for LoanPay");
         }
@@ -55,7 +54,7 @@ public:
     SF_UINT256::type::value_type
     getLoanID() const
     {
-        return this->tx_.at(sfLoanID);
+        return this->tx_->at(sfLoanID);
     }
 
     /**
@@ -66,7 +65,7 @@ public:
     SF_AMOUNT::type::value_type
     getAmount() const
     {
-        return this->tx_.at(sfAmount);
+        return this->tx_->at(sfAmount);
     }
 };
 
@@ -89,13 +88,13 @@ public:
         setAmount(amount);
     }
 
-    LoanPayBuilder(STTx const& tx)
+    LoanPayBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttLOAN_PAY)
+        if (tx->getTxnType() != ttLOAN_PAY)
         {
             throw std::runtime_error("Invalid transaction type for LoanPayBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -124,16 +123,16 @@ public:
     }
 
     /**
-     * Build and return the completed LoanPay wrapper.
+     * Build and return the LoanPay wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, LoanPay>
+    LoanPay
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, LoanPay>{STTx{std::move(object_)}};
+        return LoanPay{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

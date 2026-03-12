@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a CredentialAccept transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit CredentialAccept(STTx const& tx)
-        : TransactionBase(tx)
+    explicit CredentialAccept(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for CredentialAccept");
         }
@@ -55,7 +54,7 @@ public:
     SF_ACCOUNT::type::value_type
     getIssuer() const
     {
-        return this->tx_.at(sfIssuer);
+        return this->tx_->at(sfIssuer);
     }
 
     /**
@@ -65,7 +64,7 @@ public:
     SF_VL::type::value_type
     getCredentialType() const
     {
-        return this->tx_.at(sfCredentialType);
+        return this->tx_->at(sfCredentialType);
     }
 };
 
@@ -88,13 +87,13 @@ public:
         setCredentialType(credentialType);
     }
 
-    CredentialAcceptBuilder(STTx const& tx)
+    CredentialAcceptBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttCREDENTIAL_ACCEPT)
+        if (tx->getTxnType() != ttCREDENTIAL_ACCEPT)
         {
             throw std::runtime_error("Invalid transaction type for CredentialAcceptBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -122,16 +121,16 @@ public:
     }
 
     /**
-     * Build and return the completed CredentialAccept wrapper.
+     * Build and return the CredentialAccept wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, CredentialAccept>
+    CredentialAccept
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, CredentialAccept>{STTx{std::move(object_)}};
+        return CredentialAccept{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

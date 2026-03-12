@@ -47,33 +47,33 @@ TEST(TransactionsXChainCreateClaimIDTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = xChainBridgeValue;
-        auto const actual = tx->getXChainBridge();
+        auto const actual = tx.getXChainBridge();
         expectEqualField(expected, actual, "sfXChainBridge");
     }
 
     {
         auto const& expected = signatureRewardValue;
-        auto const actual = tx->getSignatureReward();
+        auto const actual = tx.getSignatureReward();
         expectEqualField(expected, actual, "sfSignatureReward");
     }
 
     {
         auto const& expected = otherChainSourceValue;
-        auto const actual = tx->getOtherChainSource();
+        auto const actual = tx.getOtherChainSource();
         expectEqualField(expected, actual, "sfOtherChainSource");
     }
 
@@ -112,34 +112,34 @@ TEST(TransactionsXChainCreateClaimIDTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    XChainCreateClaimIDBuilder builderFromTx{initialTx.object()};
+    XChainCreateClaimIDBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = xChainBridgeValue;
-        auto const actual = rebuiltTx->getXChainBridge();
+        auto const actual = rebuiltTx.getXChainBridge();
         expectEqualField(expected, actual, "sfXChainBridge");
     }
 
     {
         auto const& expected = signatureRewardValue;
-        auto const actual = rebuiltTx->getSignatureReward();
+        auto const actual = rebuiltTx.getSignatureReward();
         expectEqualField(expected, actual, "sfSignatureReward");
     }
 
     {
         auto const& expected = otherChainSourceValue;
-        auto const actual = rebuiltTx->getOtherChainSource();
+        auto const actual = rebuiltTx.getOtherChainSource();
         expectEqualField(expected, actual, "sfOtherChainSource");
     }
 
@@ -157,7 +157,7 @@ TEST(TransactionsXChainCreateClaimIDTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(XChainCreateClaimID{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(XChainCreateClaimID{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -171,7 +171,7 @@ TEST(TransactionsXChainCreateClaimIDTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(XChainCreateClaimIDBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(XChainCreateClaimIDBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 

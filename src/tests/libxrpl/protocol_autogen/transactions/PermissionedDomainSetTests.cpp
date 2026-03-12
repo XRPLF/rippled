@@ -45,31 +45,31 @@ TEST(TransactionsPermissionedDomainSetTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = acceptedCredentialsValue;
-        auto const actual = tx->getAcceptedCredentials();
+        auto const actual = tx.getAcceptedCredentials();
         expectEqualField(expected, actual, "sfAcceptedCredentials");
     }
 
     // Verify optional fields
     {
         auto const& expected = domainIDValue;
-        auto const actualOpt = tx->getDomainID();
+        auto const actualOpt = tx.getDomainID();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDomainID should be present";
         expectEqualField(expected, *actualOpt, "sfDomainID");
-        EXPECT_TRUE(tx->hasDomainID());
+        EXPECT_TRUE(tx.hasDomainID());
     }
 
 }
@@ -104,29 +104,29 @@ TEST(TransactionsPermissionedDomainSetTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    PermissionedDomainSetBuilder builderFromTx{initialTx.object()};
+    PermissionedDomainSetBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = acceptedCredentialsValue;
-        auto const actual = rebuiltTx->getAcceptedCredentials();
+        auto const actual = rebuiltTx.getAcceptedCredentials();
         expectEqualField(expected, actual, "sfAcceptedCredentials");
     }
 
     // Verify optional fields
     {
         auto const& expected = domainIDValue;
-        auto const actualOpt = rebuiltTx->getDomainID();
+        auto const actualOpt = rebuiltTx.getDomainID();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDomainID should be present";
         expectEqualField(expected, *actualOpt, "sfDomainID");
     }
@@ -144,7 +144,7 @@ TEST(TransactionsPermissionedDomainSetTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(PermissionedDomainSet{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(PermissionedDomainSet{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -158,7 +158,7 @@ TEST(TransactionsPermissionedDomainSetTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(PermissionedDomainSetBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(PermissionedDomainSetBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 5) Build with only required fields and verify optional fields return nullopt.
@@ -188,8 +188,8 @@ TEST(TransactionsPermissionedDomainSetTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx->hasDomainID());
-    EXPECT_FALSE(tx->getDomainID().has_value());
+    EXPECT_FALSE(tx.hasDomainID());
+    EXPECT_FALSE(tx.getDomainID().has_value());
 }
 
 }

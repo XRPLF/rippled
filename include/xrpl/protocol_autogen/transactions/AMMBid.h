@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a AMMBid transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit AMMBid(STTx const& tx)
-        : TransactionBase(tx)
+    explicit AMMBid(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for AMMBid");
         }
@@ -55,7 +54,7 @@ public:
     SF_ISSUE::type::value_type
     getAsset() const
     {
-        return this->tx_.at(sfAsset);
+        return this->tx_->at(sfAsset);
     }
 
     /**
@@ -65,7 +64,7 @@ public:
     SF_ISSUE::type::value_type
     getAsset2() const
     {
-        return this->tx_.at(sfAsset2);
+        return this->tx_->at(sfAsset2);
     }
 
     /**
@@ -77,7 +76,7 @@ public:
     {
         if (hasBidMin())
         {
-            return this->tx_.at(sfBidMin);
+            return this->tx_->at(sfBidMin);
         }
         return std::nullopt;
     }
@@ -86,7 +85,7 @@ public:
     bool
     hasBidMin() const
     {
-        return this->tx_.isFieldPresent(sfBidMin);
+        return this->tx_->isFieldPresent(sfBidMin);
     }
 
     /**
@@ -98,7 +97,7 @@ public:
     {
         if (hasBidMax())
         {
-            return this->tx_.at(sfBidMax);
+            return this->tx_->at(sfBidMax);
         }
         return std::nullopt;
     }
@@ -107,7 +106,7 @@ public:
     bool
     hasBidMax() const
     {
-        return this->tx_.isFieldPresent(sfBidMax);
+        return this->tx_->isFieldPresent(sfBidMax);
     }
     /**
      * Get sfAuthAccounts (soeOPTIONAL)
@@ -117,8 +116,8 @@ public:
     std::optional<std::reference_wrapper<STArray const>>
     getAuthAccounts() const
     {
-        if (this->tx_.isFieldPresent(sfAuthAccounts))
-            return this->tx_.getFieldArray(sfAuthAccounts);
+        if (this->tx_->isFieldPresent(sfAuthAccounts))
+            return this->tx_->getFieldArray(sfAuthAccounts);
         return std::nullopt;
     }
 
@@ -126,7 +125,7 @@ public:
     bool
     hasAuthAccounts() const
     {
-        return this->tx_.isFieldPresent(sfAuthAccounts);
+        return this->tx_->isFieldPresent(sfAuthAccounts);
     }
 };
 
@@ -149,13 +148,13 @@ public:
         setAsset2(asset2);
     }
 
-    AMMBidBuilder(STTx const& tx)
+    AMMBidBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttAMM_BID)
+        if (tx->getTxnType() != ttAMM_BID)
         {
             throw std::runtime_error("Invalid transaction type for AMMBidBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -216,16 +215,16 @@ public:
     }
 
     /**
-     * Build and return the completed AMMBid wrapper.
+     * Build and return the AMMBid wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, AMMBid>
+    AMMBid
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, AMMBid>{STTx{std::move(object_)}};
+        return AMMBid{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

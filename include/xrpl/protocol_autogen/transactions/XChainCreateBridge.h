@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a XChainCreateBridge transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit XChainCreateBridge(STTx const& tx)
-        : TransactionBase(tx)
+    explicit XChainCreateBridge(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for XChainCreateBridge");
         }
@@ -55,7 +54,7 @@ public:
     SF_XCHAIN_BRIDGE::type::value_type
     getXChainBridge() const
     {
-        return this->tx_.at(sfXChainBridge);
+        return this->tx_->at(sfXChainBridge);
     }
 
     /**
@@ -65,7 +64,7 @@ public:
     SF_AMOUNT::type::value_type
     getSignatureReward() const
     {
-        return this->tx_.at(sfSignatureReward);
+        return this->tx_->at(sfSignatureReward);
     }
 
     /**
@@ -77,7 +76,7 @@ public:
     {
         if (hasMinAccountCreateAmount())
         {
-            return this->tx_.at(sfMinAccountCreateAmount);
+            return this->tx_->at(sfMinAccountCreateAmount);
         }
         return std::nullopt;
     }
@@ -86,7 +85,7 @@ public:
     bool
     hasMinAccountCreateAmount() const
     {
-        return this->tx_.isFieldPresent(sfMinAccountCreateAmount);
+        return this->tx_->isFieldPresent(sfMinAccountCreateAmount);
     }
 };
 
@@ -109,13 +108,13 @@ public:
         setSignatureReward(signatureReward);
     }
 
-    XChainCreateBridgeBuilder(STTx const& tx)
+    XChainCreateBridgeBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttXCHAIN_CREATE_BRIDGE)
+        if (tx->getTxnType() != ttXCHAIN_CREATE_BRIDGE)
         {
             throw std::runtime_error("Invalid transaction type for XChainCreateBridgeBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -154,16 +153,16 @@ public:
     }
 
     /**
-     * Build and return the completed XChainCreateBridge wrapper.
+     * Build and return the XChainCreateBridge wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, XChainCreateBridge>
+    XChainCreateBridge
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, XChainCreateBridge>{STTx{std::move(object_)}};
+        return XChainCreateBridge{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

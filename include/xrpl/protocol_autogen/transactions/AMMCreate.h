@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a AMMCreate transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit AMMCreate(STTx const& tx)
-        : TransactionBase(tx)
+    explicit AMMCreate(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for AMMCreate");
         }
@@ -55,7 +54,7 @@ public:
     SF_AMOUNT::type::value_type
     getAmount() const
     {
-        return this->tx_.at(sfAmount);
+        return this->tx_->at(sfAmount);
     }
 
     /**
@@ -65,7 +64,7 @@ public:
     SF_AMOUNT::type::value_type
     getAmount2() const
     {
-        return this->tx_.at(sfAmount2);
+        return this->tx_->at(sfAmount2);
     }
 
     /**
@@ -75,7 +74,7 @@ public:
     SF_UINT16::type::value_type
     getTradingFee() const
     {
-        return this->tx_.at(sfTradingFee);
+        return this->tx_->at(sfTradingFee);
     }
 };
 
@@ -99,13 +98,13 @@ public:
         setTradingFee(tradingFee);
     }
 
-    AMMCreateBuilder(STTx const& tx)
+    AMMCreateBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttAMM_CREATE)
+        if (tx->getTxnType() != ttAMM_CREATE)
         {
             throw std::runtime_error("Invalid transaction type for AMMCreateBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -144,16 +143,16 @@ public:
     }
 
     /**
-     * Build and return the completed AMMCreate wrapper.
+     * Build and return the AMMCreate wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, AMMCreate>
+    AMMCreate
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, AMMCreate>{STTx{std::move(object_)}};
+        return AMMCreate{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

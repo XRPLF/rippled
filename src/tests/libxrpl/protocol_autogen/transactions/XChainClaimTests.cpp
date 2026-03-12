@@ -51,49 +51,49 @@ TEST(TransactionsXChainClaimTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = xChainBridgeValue;
-        auto const actual = tx->getXChainBridge();
+        auto const actual = tx.getXChainBridge();
         expectEqualField(expected, actual, "sfXChainBridge");
     }
 
     {
         auto const& expected = xChainClaimIDValue;
-        auto const actual = tx->getXChainClaimID();
+        auto const actual = tx.getXChainClaimID();
         expectEqualField(expected, actual, "sfXChainClaimID");
     }
 
     {
         auto const& expected = destinationValue;
-        auto const actual = tx->getDestination();
+        auto const actual = tx.getDestination();
         expectEqualField(expected, actual, "sfDestination");
     }
 
     {
         auto const& expected = amountValue;
-        auto const actual = tx->getAmount();
+        auto const actual = tx.getAmount();
         expectEqualField(expected, actual, "sfAmount");
     }
 
     // Verify optional fields
     {
         auto const& expected = destinationTagValue;
-        auto const actualOpt = tx->getDestinationTag();
+        auto const actualOpt = tx.getDestinationTag();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDestinationTag should be present";
         expectEqualField(expected, *actualOpt, "sfDestinationTag");
-        EXPECT_TRUE(tx->hasDestinationTag());
+        EXPECT_TRUE(tx.hasDestinationTag());
     }
 
 }
@@ -134,47 +134,47 @@ TEST(TransactionsXChainClaimTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    XChainClaimBuilder builderFromTx{initialTx.object()};
+    XChainClaimBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = xChainBridgeValue;
-        auto const actual = rebuiltTx->getXChainBridge();
+        auto const actual = rebuiltTx.getXChainBridge();
         expectEqualField(expected, actual, "sfXChainBridge");
     }
 
     {
         auto const& expected = xChainClaimIDValue;
-        auto const actual = rebuiltTx->getXChainClaimID();
+        auto const actual = rebuiltTx.getXChainClaimID();
         expectEqualField(expected, actual, "sfXChainClaimID");
     }
 
     {
         auto const& expected = destinationValue;
-        auto const actual = rebuiltTx->getDestination();
+        auto const actual = rebuiltTx.getDestination();
         expectEqualField(expected, actual, "sfDestination");
     }
 
     {
         auto const& expected = amountValue;
-        auto const actual = rebuiltTx->getAmount();
+        auto const actual = rebuiltTx.getAmount();
         expectEqualField(expected, actual, "sfAmount");
     }
 
     // Verify optional fields
     {
         auto const& expected = destinationTagValue;
-        auto const actualOpt = rebuiltTx->getDestinationTag();
+        auto const actualOpt = rebuiltTx.getDestinationTag();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDestinationTag should be present";
         expectEqualField(expected, *actualOpt, "sfDestinationTag");
     }
@@ -192,7 +192,7 @@ TEST(TransactionsXChainClaimTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(XChainClaim{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(XChainClaim{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -206,7 +206,7 @@ TEST(TransactionsXChainClaimTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(XChainClaimBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(XChainClaimBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 5) Build with only required fields and verify optional fields return nullopt.
@@ -242,8 +242,8 @@ TEST(TransactionsXChainClaimTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx->hasDestinationTag());
-    EXPECT_FALSE(tx->getDestinationTag().has_value());
+    EXPECT_FALSE(tx.hasDestinationTag());
+    EXPECT_FALSE(tx.getDestinationTag().has_value());
 }
 
 }

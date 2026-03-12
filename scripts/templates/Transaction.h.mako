@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a ${name} transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit ${name}(STTx const& tx)
-        : TransactionBase(tx)
+    explicit ${name}(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for ${name}");
         }
@@ -61,7 +60,7 @@ public:
     ${field['typeData']['return_type']}
     get${field['name'][2:]}() const
     {
-        return this->tx_.${field['typeData']['getter_method']}(${field['name']});
+        return this->tx_->${field['typeData']['getter_method']}(${field['name']});
     }
 % else:
     [[nodiscard]]
@@ -70,7 +69,7 @@ public:
     {
         if (has${field['name'][2:]}())
         {
-            return this->tx_.${field['typeData']['getter_method']}(${field['name']});
+            return this->tx_->${field['typeData']['getter_method']}(${field['name']});
         }
         return std::nullopt;
     }
@@ -79,7 +78,7 @@ public:
     bool
     has${field['name'][2:]}() const
     {
-        return this->tx_.isFieldPresent(${field['name']});
+        return this->tx_->isFieldPresent(${field['name']});
     }
 % endif
 % else:
@@ -95,15 +94,15 @@ public:
     ${field['typeData']['return_type']}
     get${field['name'][2:]}() const
     {
-        return this->tx_.${field['typeData']['getter_method']}(${field['name']});
+        return this->tx_->${field['typeData']['getter_method']}(${field['name']});
     }
 % else:
     [[nodiscard]]
     ${field['typeData']['return_type_optional']}
     get${field['name'][2:]}() const
     {
-        if (this->tx_.isFieldPresent(${field['name']}))
-            return this->tx_.${field['typeData']['getter_method']}(${field['name']});
+        if (this->tx_->isFieldPresent(${field['name']}))
+            return this->tx_->${field['typeData']['getter_method']}(${field['name']});
         return std::nullopt;
     }
 
@@ -111,7 +110,7 @@ public:
     bool
     has${field['name'][2:]}() const
     {
-        return this->tx_.isFieldPresent(${field['name']});
+        return this->tx_->isFieldPresent(${field['name']});
     }
 % endif
 % endif
@@ -144,13 +143,13 @@ public:
 % endfor
     }
 
-    ${name}Builder(STTx const& tx)
+    ${name}Builder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ${tag})
+        if (tx->getTxnType() != ${tag})
         {
             throw std::runtime_error("Invalid transaction type for ${name}Builder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -178,16 +177,16 @@ public:
 % endfor
 
     /**
-     * Build and return the completed ${name} wrapper.
+     * Build and return the ${name} wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, ${name}>
+    ${name}
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, ${name}>{STTx{std::move(object_)}};
+        return ${name}{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

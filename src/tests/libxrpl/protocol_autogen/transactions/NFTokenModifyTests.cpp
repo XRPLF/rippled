@@ -47,39 +47,39 @@ TEST(TransactionsNFTokenModifyTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = nFTokenIDValue;
-        auto const actual = tx->getNFTokenID();
+        auto const actual = tx.getNFTokenID();
         expectEqualField(expected, actual, "sfNFTokenID");
     }
 
     // Verify optional fields
     {
         auto const& expected = ownerValue;
-        auto const actualOpt = tx->getOwner();
+        auto const actualOpt = tx.getOwner();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfOwner should be present";
         expectEqualField(expected, *actualOpt, "sfOwner");
-        EXPECT_TRUE(tx->hasOwner());
+        EXPECT_TRUE(tx.hasOwner());
     }
 
     {
         auto const& expected = uRIValue;
-        auto const actualOpt = tx->getURI();
+        auto const actualOpt = tx.getURI();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfURI should be present";
         expectEqualField(expected, *actualOpt, "sfURI");
-        EXPECT_TRUE(tx->hasURI());
+        EXPECT_TRUE(tx.hasURI());
     }
 
 }
@@ -116,36 +116,36 @@ TEST(TransactionsNFTokenModifyTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    NFTokenModifyBuilder builderFromTx{initialTx.object()};
+    NFTokenModifyBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = nFTokenIDValue;
-        auto const actual = rebuiltTx->getNFTokenID();
+        auto const actual = rebuiltTx.getNFTokenID();
         expectEqualField(expected, actual, "sfNFTokenID");
     }
 
     // Verify optional fields
     {
         auto const& expected = ownerValue;
-        auto const actualOpt = rebuiltTx->getOwner();
+        auto const actualOpt = rebuiltTx.getOwner();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfOwner should be present";
         expectEqualField(expected, *actualOpt, "sfOwner");
     }
 
     {
         auto const& expected = uRIValue;
-        auto const actualOpt = rebuiltTx->getURI();
+        auto const actualOpt = rebuiltTx.getURI();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfURI should be present";
         expectEqualField(expected, *actualOpt, "sfURI");
     }
@@ -163,7 +163,7 @@ TEST(TransactionsNFTokenModifyTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(NFTokenModify{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(NFTokenModify{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -177,7 +177,7 @@ TEST(TransactionsNFTokenModifyTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(NFTokenModifyBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(NFTokenModifyBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 5) Build with only required fields and verify optional fields return nullopt.
@@ -207,10 +207,10 @@ TEST(TransactionsNFTokenModifyTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx->hasOwner());
-    EXPECT_FALSE(tx->getOwner().has_value());
-    EXPECT_FALSE(tx->hasURI());
-    EXPECT_FALSE(tx->getURI().has_value());
+    EXPECT_FALSE(tx.hasOwner());
+    EXPECT_FALSE(tx.getOwner().has_value());
+    EXPECT_FALSE(tx.hasURI());
+    EXPECT_FALSE(tx.getURI().has_value());
 }
 
 }

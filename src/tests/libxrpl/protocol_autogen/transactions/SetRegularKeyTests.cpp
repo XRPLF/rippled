@@ -43,25 +43,25 @@ TEST(TransactionsSetRegularKeyTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     // Verify optional fields
     {
         auto const& expected = regularKeyValue;
-        auto const actualOpt = tx->getRegularKey();
+        auto const actualOpt = tx.getRegularKey();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfRegularKey should be present";
         expectEqualField(expected, *actualOpt, "sfRegularKey");
-        EXPECT_TRUE(tx->hasRegularKey());
+        EXPECT_TRUE(tx.hasRegularKey());
     }
 
 }
@@ -94,23 +94,23 @@ TEST(TransactionsSetRegularKeyTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    SetRegularKeyBuilder builderFromTx{initialTx.object()};
+    SetRegularKeyBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     // Verify optional fields
     {
         auto const& expected = regularKeyValue;
-        auto const actualOpt = rebuiltTx->getRegularKey();
+        auto const actualOpt = rebuiltTx.getRegularKey();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfRegularKey should be present";
         expectEqualField(expected, *actualOpt, "sfRegularKey");
     }
@@ -128,7 +128,7 @@ TEST(TransactionsSetRegularKeyTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(SetRegularKey{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(SetRegularKey{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -142,7 +142,7 @@ TEST(TransactionsSetRegularKeyTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(SetRegularKeyBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(SetRegularKeyBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 5) Build with only required fields and verify optional fields return nullopt.
@@ -170,8 +170,8 @@ TEST(TransactionsSetRegularKeyTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx->hasRegularKey());
-    EXPECT_FALSE(tx->getRegularKey().has_value());
+    EXPECT_FALSE(tx.hasRegularKey());
+    EXPECT_FALSE(tx.getRegularKey().has_value());
 }
 
 }

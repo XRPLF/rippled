@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a NFTokenMint transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit NFTokenMint(STTx const& tx)
-        : TransactionBase(tx)
+    explicit NFTokenMint(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for NFTokenMint");
         }
@@ -55,7 +54,7 @@ public:
     SF_UINT32::type::value_type
     getNFTokenTaxon() const
     {
-        return this->tx_.at(sfNFTokenTaxon);
+        return this->tx_->at(sfNFTokenTaxon);
     }
 
     /**
@@ -67,7 +66,7 @@ public:
     {
         if (hasTransferFee())
         {
-            return this->tx_.at(sfTransferFee);
+            return this->tx_->at(sfTransferFee);
         }
         return std::nullopt;
     }
@@ -76,7 +75,7 @@ public:
     bool
     hasTransferFee() const
     {
-        return this->tx_.isFieldPresent(sfTransferFee);
+        return this->tx_->isFieldPresent(sfTransferFee);
     }
 
     /**
@@ -88,7 +87,7 @@ public:
     {
         if (hasIssuer())
         {
-            return this->tx_.at(sfIssuer);
+            return this->tx_->at(sfIssuer);
         }
         return std::nullopt;
     }
@@ -97,7 +96,7 @@ public:
     bool
     hasIssuer() const
     {
-        return this->tx_.isFieldPresent(sfIssuer);
+        return this->tx_->isFieldPresent(sfIssuer);
     }
 
     /**
@@ -109,7 +108,7 @@ public:
     {
         if (hasURI())
         {
-            return this->tx_.at(sfURI);
+            return this->tx_->at(sfURI);
         }
         return std::nullopt;
     }
@@ -118,7 +117,7 @@ public:
     bool
     hasURI() const
     {
-        return this->tx_.isFieldPresent(sfURI);
+        return this->tx_->isFieldPresent(sfURI);
     }
 
     /**
@@ -130,7 +129,7 @@ public:
     {
         if (hasAmount())
         {
-            return this->tx_.at(sfAmount);
+            return this->tx_->at(sfAmount);
         }
         return std::nullopt;
     }
@@ -139,7 +138,7 @@ public:
     bool
     hasAmount() const
     {
-        return this->tx_.isFieldPresent(sfAmount);
+        return this->tx_->isFieldPresent(sfAmount);
     }
 
     /**
@@ -151,7 +150,7 @@ public:
     {
         if (hasDestination())
         {
-            return this->tx_.at(sfDestination);
+            return this->tx_->at(sfDestination);
         }
         return std::nullopt;
     }
@@ -160,7 +159,7 @@ public:
     bool
     hasDestination() const
     {
-        return this->tx_.isFieldPresent(sfDestination);
+        return this->tx_->isFieldPresent(sfDestination);
     }
 
     /**
@@ -172,7 +171,7 @@ public:
     {
         if (hasExpiration())
         {
-            return this->tx_.at(sfExpiration);
+            return this->tx_->at(sfExpiration);
         }
         return std::nullopt;
     }
@@ -181,7 +180,7 @@ public:
     bool
     hasExpiration() const
     {
-        return this->tx_.isFieldPresent(sfExpiration);
+        return this->tx_->isFieldPresent(sfExpiration);
     }
 };
 
@@ -203,13 +202,13 @@ public:
         setNFTokenTaxon(nFTokenTaxon);
     }
 
-    NFTokenMintBuilder(STTx const& tx)
+    NFTokenMintBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttNFTOKEN_MINT)
+        if (tx->getTxnType() != ttNFTOKEN_MINT)
         {
             throw std::runtime_error("Invalid transaction type for NFTokenMintBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -292,16 +291,16 @@ public:
     }
 
     /**
-     * Build and return the completed NFTokenMint wrapper.
+     * Build and return the NFTokenMint wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, NFTokenMint>
+    NFTokenMint
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, NFTokenMint>{STTx{std::move(object_)}};
+        return NFTokenMint{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

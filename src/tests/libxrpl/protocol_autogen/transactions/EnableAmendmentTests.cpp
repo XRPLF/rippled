@@ -45,27 +45,27 @@ TEST(TransactionsEnableAmendmentTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = ledgerSequenceValue;
-        auto const actual = tx->getLedgerSequence();
+        auto const actual = tx.getLedgerSequence();
         expectEqualField(expected, actual, "sfLedgerSequence");
     }
 
     {
         auto const& expected = amendmentValue;
-        auto const actual = tx->getAmendment();
+        auto const actual = tx.getAmendment();
         expectEqualField(expected, actual, "sfAmendment");
     }
 
@@ -102,28 +102,28 @@ TEST(TransactionsEnableAmendmentTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    EnableAmendmentBuilder builderFromTx{initialTx.object()};
+    EnableAmendmentBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = ledgerSequenceValue;
-        auto const actual = rebuiltTx->getLedgerSequence();
+        auto const actual = rebuiltTx.getLedgerSequence();
         expectEqualField(expected, actual, "sfLedgerSequence");
     }
 
     {
         auto const& expected = amendmentValue;
-        auto const actual = rebuiltTx->getAmendment();
+        auto const actual = rebuiltTx.getAmendment();
         expectEqualField(expected, actual, "sfAmendment");
     }
 
@@ -141,7 +141,7 @@ TEST(TransactionsEnableAmendmentTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(EnableAmendment{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(EnableAmendment{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -155,7 +155,7 @@ TEST(TransactionsEnableAmendmentTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(EnableAmendmentBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(EnableAmendmentBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 

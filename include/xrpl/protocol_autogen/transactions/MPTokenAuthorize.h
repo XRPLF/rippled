@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a MPTokenAuthorize transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit MPTokenAuthorize(STTx const& tx)
-        : TransactionBase(tx)
+    explicit MPTokenAuthorize(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for MPTokenAuthorize");
         }
@@ -55,7 +54,7 @@ public:
     SF_UINT192::type::value_type
     getMPTokenIssuanceID() const
     {
-        return this->tx_.at(sfMPTokenIssuanceID);
+        return this->tx_->at(sfMPTokenIssuanceID);
     }
 
     /**
@@ -67,7 +66,7 @@ public:
     {
         if (hasHolder())
         {
-            return this->tx_.at(sfHolder);
+            return this->tx_->at(sfHolder);
         }
         return std::nullopt;
     }
@@ -76,7 +75,7 @@ public:
     bool
     hasHolder() const
     {
-        return this->tx_.isFieldPresent(sfHolder);
+        return this->tx_->isFieldPresent(sfHolder);
     }
 };
 
@@ -98,13 +97,13 @@ public:
         setMPTokenIssuanceID(mPTokenIssuanceID);
     }
 
-    MPTokenAuthorizeBuilder(STTx const& tx)
+    MPTokenAuthorizeBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttMPTOKEN_AUTHORIZE)
+        if (tx->getTxnType() != ttMPTOKEN_AUTHORIZE)
         {
             throw std::runtime_error("Invalid transaction type for MPTokenAuthorizeBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -132,16 +131,16 @@ public:
     }
 
     /**
-     * Build and return the completed MPTokenAuthorize wrapper.
+     * Build and return the MPTokenAuthorize wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, MPTokenAuthorize>
+    MPTokenAuthorize
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, MPTokenAuthorize>{STTx{std::move(object_)}};
+        return MPTokenAuthorize{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

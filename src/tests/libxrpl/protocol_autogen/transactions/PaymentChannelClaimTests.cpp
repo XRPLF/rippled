@@ -53,63 +53,63 @@ TEST(TransactionsPaymentChannelClaimTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = channelValue;
-        auto const actual = tx->getChannel();
+        auto const actual = tx.getChannel();
         expectEqualField(expected, actual, "sfChannel");
     }
 
     // Verify optional fields
     {
         auto const& expected = amountValue;
-        auto const actualOpt = tx->getAmount();
+        auto const actualOpt = tx.getAmount();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
         expectEqualField(expected, *actualOpt, "sfAmount");
-        EXPECT_TRUE(tx->hasAmount());
+        EXPECT_TRUE(tx.hasAmount());
     }
 
     {
         auto const& expected = balanceValue;
-        auto const actualOpt = tx->getBalance();
+        auto const actualOpt = tx.getBalance();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfBalance should be present";
         expectEqualField(expected, *actualOpt, "sfBalance");
-        EXPECT_TRUE(tx->hasBalance());
+        EXPECT_TRUE(tx.hasBalance());
     }
 
     {
         auto const& expected = signatureValue;
-        auto const actualOpt = tx->getSignature();
+        auto const actualOpt = tx.getSignature();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSignature should be present";
         expectEqualField(expected, *actualOpt, "sfSignature");
-        EXPECT_TRUE(tx->hasSignature());
+        EXPECT_TRUE(tx.hasSignature());
     }
 
     {
         auto const& expected = publicKeyValue;
-        auto const actualOpt = tx->getPublicKey();
+        auto const actualOpt = tx.getPublicKey();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfPublicKey should be present";
         expectEqualField(expected, *actualOpt, "sfPublicKey");
-        EXPECT_TRUE(tx->hasPublicKey());
+        EXPECT_TRUE(tx.hasPublicKey());
     }
 
     {
         auto const& expected = credentialIDsValue;
-        auto const actualOpt = tx->getCredentialIDs();
+        auto const actualOpt = tx.getCredentialIDs();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCredentialIDs should be present";
         expectEqualField(expected, *actualOpt, "sfCredentialIDs");
-        EXPECT_TRUE(tx->hasCredentialIDs());
+        EXPECT_TRUE(tx.hasCredentialIDs());
     }
 
 }
@@ -152,57 +152,57 @@ TEST(TransactionsPaymentChannelClaimTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    PaymentChannelClaimBuilder builderFromTx{initialTx.object()};
+    PaymentChannelClaimBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = channelValue;
-        auto const actual = rebuiltTx->getChannel();
+        auto const actual = rebuiltTx.getChannel();
         expectEqualField(expected, actual, "sfChannel");
     }
 
     // Verify optional fields
     {
         auto const& expected = amountValue;
-        auto const actualOpt = rebuiltTx->getAmount();
+        auto const actualOpt = rebuiltTx.getAmount();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
         expectEqualField(expected, *actualOpt, "sfAmount");
     }
 
     {
         auto const& expected = balanceValue;
-        auto const actualOpt = rebuiltTx->getBalance();
+        auto const actualOpt = rebuiltTx.getBalance();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfBalance should be present";
         expectEqualField(expected, *actualOpt, "sfBalance");
     }
 
     {
         auto const& expected = signatureValue;
-        auto const actualOpt = rebuiltTx->getSignature();
+        auto const actualOpt = rebuiltTx.getSignature();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSignature should be present";
         expectEqualField(expected, *actualOpt, "sfSignature");
     }
 
     {
         auto const& expected = publicKeyValue;
-        auto const actualOpt = rebuiltTx->getPublicKey();
+        auto const actualOpt = rebuiltTx.getPublicKey();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfPublicKey should be present";
         expectEqualField(expected, *actualOpt, "sfPublicKey");
     }
 
     {
         auto const& expected = credentialIDsValue;
-        auto const actualOpt = rebuiltTx->getCredentialIDs();
+        auto const actualOpt = rebuiltTx.getCredentialIDs();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCredentialIDs should be present";
         expectEqualField(expected, *actualOpt, "sfCredentialIDs");
     }
@@ -220,7 +220,7 @@ TEST(TransactionsPaymentChannelClaimTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(PaymentChannelClaim{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(PaymentChannelClaim{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -234,7 +234,7 @@ TEST(TransactionsPaymentChannelClaimTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(PaymentChannelClaimBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(PaymentChannelClaimBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 5) Build with only required fields and verify optional fields return nullopt.
@@ -264,16 +264,16 @@ TEST(TransactionsPaymentChannelClaimTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx->hasAmount());
-    EXPECT_FALSE(tx->getAmount().has_value());
-    EXPECT_FALSE(tx->hasBalance());
-    EXPECT_FALSE(tx->getBalance().has_value());
-    EXPECT_FALSE(tx->hasSignature());
-    EXPECT_FALSE(tx->getSignature().has_value());
-    EXPECT_FALSE(tx->hasPublicKey());
-    EXPECT_FALSE(tx->getPublicKey().has_value());
-    EXPECT_FALSE(tx->hasCredentialIDs());
-    EXPECT_FALSE(tx->getCredentialIDs().has_value());
+    EXPECT_FALSE(tx.hasAmount());
+    EXPECT_FALSE(tx.getAmount().has_value());
+    EXPECT_FALSE(tx.hasBalance());
+    EXPECT_FALSE(tx.getBalance().has_value());
+    EXPECT_FALSE(tx.hasSignature());
+    EXPECT_FALSE(tx.getSignature().has_value());
+    EXPECT_FALSE(tx.hasPublicKey());
+    EXPECT_FALSE(tx.getPublicKey().has_value());
+    EXPECT_FALSE(tx.hasCredentialIDs());
+    EXPECT_FALSE(tx.getCredentialIDs().has_value());
 }
 
 }

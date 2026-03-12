@@ -45,31 +45,31 @@ TEST(TransactionsSignerListSetTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = signerQuorumValue;
-        auto const actual = tx->getSignerQuorum();
+        auto const actual = tx.getSignerQuorum();
         expectEqualField(expected, actual, "sfSignerQuorum");
     }
 
     // Verify optional fields
     {
         auto const& expected = signerEntriesValue;
-        auto const actualOpt = tx->getSignerEntries();
+        auto const actualOpt = tx.getSignerEntries();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSignerEntries should be present";
         expectEqualField(expected, *actualOpt, "sfSignerEntries");
-        EXPECT_TRUE(tx->hasSignerEntries());
+        EXPECT_TRUE(tx.hasSignerEntries());
     }
 
 }
@@ -104,29 +104,29 @@ TEST(TransactionsSignerListSetTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    SignerListSetBuilder builderFromTx{initialTx.object()};
+    SignerListSetBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = signerQuorumValue;
-        auto const actual = rebuiltTx->getSignerQuorum();
+        auto const actual = rebuiltTx.getSignerQuorum();
         expectEqualField(expected, actual, "sfSignerQuorum");
     }
 
     // Verify optional fields
     {
         auto const& expected = signerEntriesValue;
-        auto const actualOpt = rebuiltTx->getSignerEntries();
+        auto const actualOpt = rebuiltTx.getSignerEntries();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSignerEntries should be present";
         expectEqualField(expected, *actualOpt, "sfSignerEntries");
     }
@@ -144,7 +144,7 @@ TEST(TransactionsSignerListSetTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(SignerListSet{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(SignerListSet{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -158,7 +158,7 @@ TEST(TransactionsSignerListSetTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(SignerListSetBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(SignerListSetBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 5) Build with only required fields and verify optional fields return nullopt.
@@ -188,8 +188,8 @@ TEST(TransactionsSignerListSetTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx->hasSignerEntries());
-    EXPECT_FALSE(tx->getSignerEntries().has_value());
+    EXPECT_FALSE(tx.hasSignerEntries());
+    EXPECT_FALSE(tx.getSignerEntries().has_value());
 }
 
 }

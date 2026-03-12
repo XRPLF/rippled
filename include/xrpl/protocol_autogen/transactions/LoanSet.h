@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a LoanSet transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit LoanSet(STTx const& tx)
-        : TransactionBase(tx)
+    explicit LoanSet(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for LoanSet");
         }
@@ -55,7 +54,7 @@ public:
     SF_UINT256::type::value_type
     getLoanBrokerID() const
     {
-        return this->tx_.at(sfLoanBrokerID);
+        return this->tx_->at(sfLoanBrokerID);
     }
 
     /**
@@ -67,7 +66,7 @@ public:
     {
         if (hasData())
         {
-            return this->tx_.at(sfData);
+            return this->tx_->at(sfData);
         }
         return std::nullopt;
     }
@@ -76,7 +75,7 @@ public:
     bool
     hasData() const
     {
-        return this->tx_.isFieldPresent(sfData);
+        return this->tx_->isFieldPresent(sfData);
     }
 
     /**
@@ -88,7 +87,7 @@ public:
     {
         if (hasCounterparty())
         {
-            return this->tx_.at(sfCounterparty);
+            return this->tx_->at(sfCounterparty);
         }
         return std::nullopt;
     }
@@ -97,7 +96,7 @@ public:
     bool
     hasCounterparty() const
     {
-        return this->tx_.isFieldPresent(sfCounterparty);
+        return this->tx_->isFieldPresent(sfCounterparty);
     }
     /**
      * Get sfCounterpartySignature (soeOPTIONAL)
@@ -107,8 +106,8 @@ public:
     std::optional<STObject>
     getCounterpartySignature() const
     {
-        if (this->tx_.isFieldPresent(sfCounterpartySignature))
-            return this->tx_.getFieldObject(sfCounterpartySignature);
+        if (this->tx_->isFieldPresent(sfCounterpartySignature))
+            return this->tx_->getFieldObject(sfCounterpartySignature);
         return std::nullopt;
     }
 
@@ -116,7 +115,7 @@ public:
     bool
     hasCounterpartySignature() const
     {
-        return this->tx_.isFieldPresent(sfCounterpartySignature);
+        return this->tx_->isFieldPresent(sfCounterpartySignature);
     }
 
     /**
@@ -128,7 +127,7 @@ public:
     {
         if (hasLoanOriginationFee())
         {
-            return this->tx_.at(sfLoanOriginationFee);
+            return this->tx_->at(sfLoanOriginationFee);
         }
         return std::nullopt;
     }
@@ -137,7 +136,7 @@ public:
     bool
     hasLoanOriginationFee() const
     {
-        return this->tx_.isFieldPresent(sfLoanOriginationFee);
+        return this->tx_->isFieldPresent(sfLoanOriginationFee);
     }
 
     /**
@@ -149,7 +148,7 @@ public:
     {
         if (hasLoanServiceFee())
         {
-            return this->tx_.at(sfLoanServiceFee);
+            return this->tx_->at(sfLoanServiceFee);
         }
         return std::nullopt;
     }
@@ -158,7 +157,7 @@ public:
     bool
     hasLoanServiceFee() const
     {
-        return this->tx_.isFieldPresent(sfLoanServiceFee);
+        return this->tx_->isFieldPresent(sfLoanServiceFee);
     }
 
     /**
@@ -170,7 +169,7 @@ public:
     {
         if (hasLatePaymentFee())
         {
-            return this->tx_.at(sfLatePaymentFee);
+            return this->tx_->at(sfLatePaymentFee);
         }
         return std::nullopt;
     }
@@ -179,7 +178,7 @@ public:
     bool
     hasLatePaymentFee() const
     {
-        return this->tx_.isFieldPresent(sfLatePaymentFee);
+        return this->tx_->isFieldPresent(sfLatePaymentFee);
     }
 
     /**
@@ -191,7 +190,7 @@ public:
     {
         if (hasClosePaymentFee())
         {
-            return this->tx_.at(sfClosePaymentFee);
+            return this->tx_->at(sfClosePaymentFee);
         }
         return std::nullopt;
     }
@@ -200,7 +199,7 @@ public:
     bool
     hasClosePaymentFee() const
     {
-        return this->tx_.isFieldPresent(sfClosePaymentFee);
+        return this->tx_->isFieldPresent(sfClosePaymentFee);
     }
 
     /**
@@ -212,7 +211,7 @@ public:
     {
         if (hasOverpaymentFee())
         {
-            return this->tx_.at(sfOverpaymentFee);
+            return this->tx_->at(sfOverpaymentFee);
         }
         return std::nullopt;
     }
@@ -221,7 +220,7 @@ public:
     bool
     hasOverpaymentFee() const
     {
-        return this->tx_.isFieldPresent(sfOverpaymentFee);
+        return this->tx_->isFieldPresent(sfOverpaymentFee);
     }
 
     /**
@@ -233,7 +232,7 @@ public:
     {
         if (hasInterestRate())
         {
-            return this->tx_.at(sfInterestRate);
+            return this->tx_->at(sfInterestRate);
         }
         return std::nullopt;
     }
@@ -242,7 +241,7 @@ public:
     bool
     hasInterestRate() const
     {
-        return this->tx_.isFieldPresent(sfInterestRate);
+        return this->tx_->isFieldPresent(sfInterestRate);
     }
 
     /**
@@ -254,7 +253,7 @@ public:
     {
         if (hasLateInterestRate())
         {
-            return this->tx_.at(sfLateInterestRate);
+            return this->tx_->at(sfLateInterestRate);
         }
         return std::nullopt;
     }
@@ -263,7 +262,7 @@ public:
     bool
     hasLateInterestRate() const
     {
-        return this->tx_.isFieldPresent(sfLateInterestRate);
+        return this->tx_->isFieldPresent(sfLateInterestRate);
     }
 
     /**
@@ -275,7 +274,7 @@ public:
     {
         if (hasCloseInterestRate())
         {
-            return this->tx_.at(sfCloseInterestRate);
+            return this->tx_->at(sfCloseInterestRate);
         }
         return std::nullopt;
     }
@@ -284,7 +283,7 @@ public:
     bool
     hasCloseInterestRate() const
     {
-        return this->tx_.isFieldPresent(sfCloseInterestRate);
+        return this->tx_->isFieldPresent(sfCloseInterestRate);
     }
 
     /**
@@ -296,7 +295,7 @@ public:
     {
         if (hasOverpaymentInterestRate())
         {
-            return this->tx_.at(sfOverpaymentInterestRate);
+            return this->tx_->at(sfOverpaymentInterestRate);
         }
         return std::nullopt;
     }
@@ -305,7 +304,7 @@ public:
     bool
     hasOverpaymentInterestRate() const
     {
-        return this->tx_.isFieldPresent(sfOverpaymentInterestRate);
+        return this->tx_->isFieldPresent(sfOverpaymentInterestRate);
     }
 
     /**
@@ -315,7 +314,7 @@ public:
     SF_NUMBER::type::value_type
     getPrincipalRequested() const
     {
-        return this->tx_.at(sfPrincipalRequested);
+        return this->tx_->at(sfPrincipalRequested);
     }
 
     /**
@@ -327,7 +326,7 @@ public:
     {
         if (hasPaymentTotal())
         {
-            return this->tx_.at(sfPaymentTotal);
+            return this->tx_->at(sfPaymentTotal);
         }
         return std::nullopt;
     }
@@ -336,7 +335,7 @@ public:
     bool
     hasPaymentTotal() const
     {
-        return this->tx_.isFieldPresent(sfPaymentTotal);
+        return this->tx_->isFieldPresent(sfPaymentTotal);
     }
 
     /**
@@ -348,7 +347,7 @@ public:
     {
         if (hasPaymentInterval())
         {
-            return this->tx_.at(sfPaymentInterval);
+            return this->tx_->at(sfPaymentInterval);
         }
         return std::nullopt;
     }
@@ -357,7 +356,7 @@ public:
     bool
     hasPaymentInterval() const
     {
-        return this->tx_.isFieldPresent(sfPaymentInterval);
+        return this->tx_->isFieldPresent(sfPaymentInterval);
     }
 
     /**
@@ -369,7 +368,7 @@ public:
     {
         if (hasGracePeriod())
         {
-            return this->tx_.at(sfGracePeriod);
+            return this->tx_->at(sfGracePeriod);
         }
         return std::nullopt;
     }
@@ -378,7 +377,7 @@ public:
     bool
     hasGracePeriod() const
     {
-        return this->tx_.isFieldPresent(sfGracePeriod);
+        return this->tx_->isFieldPresent(sfGracePeriod);
     }
 };
 
@@ -401,13 +400,13 @@ public:
         setPrincipalRequested(principalRequested);
     }
 
-    LoanSetBuilder(STTx const& tx)
+    LoanSetBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttLOAN_SET)
+        if (tx->getTxnType() != ttLOAN_SET)
         {
             throw std::runtime_error("Invalid transaction type for LoanSetBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -600,16 +599,16 @@ public:
     }
 
     /**
-     * Build and return the completed LoanSet wrapper.
+     * Build and return the LoanSet wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, LoanSet>
+    LoanSet
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, LoanSet>{STTx{std::move(object_)}};
+        return LoanSet{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a OracleSet transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit OracleSet(STTx const& tx)
-        : TransactionBase(tx)
+    explicit OracleSet(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for OracleSet");
         }
@@ -55,7 +54,7 @@ public:
     SF_UINT32::type::value_type
     getOracleDocumentID() const
     {
-        return this->tx_.at(sfOracleDocumentID);
+        return this->tx_->at(sfOracleDocumentID);
     }
 
     /**
@@ -67,7 +66,7 @@ public:
     {
         if (hasProvider())
         {
-            return this->tx_.at(sfProvider);
+            return this->tx_->at(sfProvider);
         }
         return std::nullopt;
     }
@@ -76,7 +75,7 @@ public:
     bool
     hasProvider() const
     {
-        return this->tx_.isFieldPresent(sfProvider);
+        return this->tx_->isFieldPresent(sfProvider);
     }
 
     /**
@@ -88,7 +87,7 @@ public:
     {
         if (hasURI())
         {
-            return this->tx_.at(sfURI);
+            return this->tx_->at(sfURI);
         }
         return std::nullopt;
     }
@@ -97,7 +96,7 @@ public:
     bool
     hasURI() const
     {
-        return this->tx_.isFieldPresent(sfURI);
+        return this->tx_->isFieldPresent(sfURI);
     }
 
     /**
@@ -109,7 +108,7 @@ public:
     {
         if (hasAssetClass())
         {
-            return this->tx_.at(sfAssetClass);
+            return this->tx_->at(sfAssetClass);
         }
         return std::nullopt;
     }
@@ -118,7 +117,7 @@ public:
     bool
     hasAssetClass() const
     {
-        return this->tx_.isFieldPresent(sfAssetClass);
+        return this->tx_->isFieldPresent(sfAssetClass);
     }
 
     /**
@@ -128,7 +127,7 @@ public:
     SF_UINT32::type::value_type
     getLastUpdateTime() const
     {
-        return this->tx_.at(sfLastUpdateTime);
+        return this->tx_->at(sfLastUpdateTime);
     }
     /**
      * Get sfPriceDataSeries (soeREQUIRED)
@@ -138,7 +137,7 @@ public:
     STArray const&
     getPriceDataSeries() const
     {
-        return this->tx_.getFieldArray(sfPriceDataSeries);
+        return this->tx_->getFieldArray(sfPriceDataSeries);
     }
 };
 
@@ -162,13 +161,13 @@ public:
         setPriceDataSeries(priceDataSeries);
     }
 
-    OracleSetBuilder(STTx const& tx)
+    OracleSetBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttORACLE_SET)
+        if (tx->getTxnType() != ttORACLE_SET)
         {
             throw std::runtime_error("Invalid transaction type for OracleSetBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -240,16 +239,16 @@ public:
     }
 
     /**
-     * Build and return the completed OracleSet wrapper.
+     * Build and return the OracleSet wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, OracleSet>
+    OracleSet
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, OracleSet>{STTx{std::move(object_)}};
+        return OracleSet{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

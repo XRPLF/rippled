@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a MPTokenIssuanceCreate transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit MPTokenIssuanceCreate(STTx const& tx)
-        : TransactionBase(tx)
+    explicit MPTokenIssuanceCreate(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for MPTokenIssuanceCreate");
         }
@@ -57,7 +56,7 @@ public:
     {
         if (hasAssetScale())
         {
-            return this->tx_.at(sfAssetScale);
+            return this->tx_->at(sfAssetScale);
         }
         return std::nullopt;
     }
@@ -66,7 +65,7 @@ public:
     bool
     hasAssetScale() const
     {
-        return this->tx_.isFieldPresent(sfAssetScale);
+        return this->tx_->isFieldPresent(sfAssetScale);
     }
 
     /**
@@ -78,7 +77,7 @@ public:
     {
         if (hasTransferFee())
         {
-            return this->tx_.at(sfTransferFee);
+            return this->tx_->at(sfTransferFee);
         }
         return std::nullopt;
     }
@@ -87,7 +86,7 @@ public:
     bool
     hasTransferFee() const
     {
-        return this->tx_.isFieldPresent(sfTransferFee);
+        return this->tx_->isFieldPresent(sfTransferFee);
     }
 
     /**
@@ -99,7 +98,7 @@ public:
     {
         if (hasMaximumAmount())
         {
-            return this->tx_.at(sfMaximumAmount);
+            return this->tx_->at(sfMaximumAmount);
         }
         return std::nullopt;
     }
@@ -108,7 +107,7 @@ public:
     bool
     hasMaximumAmount() const
     {
-        return this->tx_.isFieldPresent(sfMaximumAmount);
+        return this->tx_->isFieldPresent(sfMaximumAmount);
     }
 
     /**
@@ -120,7 +119,7 @@ public:
     {
         if (hasMPTokenMetadata())
         {
-            return this->tx_.at(sfMPTokenMetadata);
+            return this->tx_->at(sfMPTokenMetadata);
         }
         return std::nullopt;
     }
@@ -129,7 +128,7 @@ public:
     bool
     hasMPTokenMetadata() const
     {
-        return this->tx_.isFieldPresent(sfMPTokenMetadata);
+        return this->tx_->isFieldPresent(sfMPTokenMetadata);
     }
 
     /**
@@ -141,7 +140,7 @@ public:
     {
         if (hasDomainID())
         {
-            return this->tx_.at(sfDomainID);
+            return this->tx_->at(sfDomainID);
         }
         return std::nullopt;
     }
@@ -150,7 +149,7 @@ public:
     bool
     hasDomainID() const
     {
-        return this->tx_.isFieldPresent(sfDomainID);
+        return this->tx_->isFieldPresent(sfDomainID);
     }
 
     /**
@@ -162,7 +161,7 @@ public:
     {
         if (hasMutableFlags())
         {
-            return this->tx_.at(sfMutableFlags);
+            return this->tx_->at(sfMutableFlags);
         }
         return std::nullopt;
     }
@@ -171,7 +170,7 @@ public:
     bool
     hasMutableFlags() const
     {
-        return this->tx_.isFieldPresent(sfMutableFlags);
+        return this->tx_->isFieldPresent(sfMutableFlags);
     }
 };
 
@@ -192,13 +191,13 @@ public:
     {
     }
 
-    MPTokenIssuanceCreateBuilder(STTx const& tx)
+    MPTokenIssuanceCreateBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttMPTOKEN_ISSUANCE_CREATE)
+        if (tx->getTxnType() != ttMPTOKEN_ISSUANCE_CREATE)
         {
             throw std::runtime_error("Invalid transaction type for MPTokenIssuanceCreateBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -270,16 +269,16 @@ public:
     }
 
     /**
-     * Build and return the completed MPTokenIssuanceCreate wrapper.
+     * Build and return the MPTokenIssuanceCreate wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, MPTokenIssuanceCreate>
+    MPTokenIssuanceCreate
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, MPTokenIssuanceCreate>{STTx{std::move(object_)}};
+        return MPTokenIssuanceCreate{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

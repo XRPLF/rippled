@@ -51,53 +51,53 @@ TEST(TransactionsOfferCreateTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = takerPaysValue;
-        auto const actual = tx->getTakerPays();
+        auto const actual = tx.getTakerPays();
         expectEqualField(expected, actual, "sfTakerPays");
     }
 
     {
         auto const& expected = takerGetsValue;
-        auto const actual = tx->getTakerGets();
+        auto const actual = tx.getTakerGets();
         expectEqualField(expected, actual, "sfTakerGets");
     }
 
     // Verify optional fields
     {
         auto const& expected = expirationValue;
-        auto const actualOpt = tx->getExpiration();
+        auto const actualOpt = tx.getExpiration();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfExpiration should be present";
         expectEqualField(expected, *actualOpt, "sfExpiration");
-        EXPECT_TRUE(tx->hasExpiration());
+        EXPECT_TRUE(tx.hasExpiration());
     }
 
     {
         auto const& expected = offerSequenceValue;
-        auto const actualOpt = tx->getOfferSequence();
+        auto const actualOpt = tx.getOfferSequence();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfOfferSequence should be present";
         expectEqualField(expected, *actualOpt, "sfOfferSequence");
-        EXPECT_TRUE(tx->hasOfferSequence());
+        EXPECT_TRUE(tx.hasOfferSequence());
     }
 
     {
         auto const& expected = domainIDValue;
-        auto const actualOpt = tx->getDomainID();
+        auto const actualOpt = tx.getDomainID();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDomainID should be present";
         expectEqualField(expected, *actualOpt, "sfDomainID");
-        EXPECT_TRUE(tx->hasDomainID());
+        EXPECT_TRUE(tx.hasDomainID());
     }
 
 }
@@ -138,49 +138,49 @@ TEST(TransactionsOfferCreateTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    OfferCreateBuilder builderFromTx{initialTx.object()};
+    OfferCreateBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = takerPaysValue;
-        auto const actual = rebuiltTx->getTakerPays();
+        auto const actual = rebuiltTx.getTakerPays();
         expectEqualField(expected, actual, "sfTakerPays");
     }
 
     {
         auto const& expected = takerGetsValue;
-        auto const actual = rebuiltTx->getTakerGets();
+        auto const actual = rebuiltTx.getTakerGets();
         expectEqualField(expected, actual, "sfTakerGets");
     }
 
     // Verify optional fields
     {
         auto const& expected = expirationValue;
-        auto const actualOpt = rebuiltTx->getExpiration();
+        auto const actualOpt = rebuiltTx.getExpiration();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfExpiration should be present";
         expectEqualField(expected, *actualOpt, "sfExpiration");
     }
 
     {
         auto const& expected = offerSequenceValue;
-        auto const actualOpt = rebuiltTx->getOfferSequence();
+        auto const actualOpt = rebuiltTx.getOfferSequence();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfOfferSequence should be present";
         expectEqualField(expected, *actualOpt, "sfOfferSequence");
     }
 
     {
         auto const& expected = domainIDValue;
-        auto const actualOpt = rebuiltTx->getDomainID();
+        auto const actualOpt = rebuiltTx.getDomainID();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDomainID should be present";
         expectEqualField(expected, *actualOpt, "sfDomainID");
     }
@@ -198,7 +198,7 @@ TEST(TransactionsOfferCreateTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(OfferCreate{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(OfferCreate{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -212,7 +212,7 @@ TEST(TransactionsOfferCreateTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(OfferCreateBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(OfferCreateBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 5) Build with only required fields and verify optional fields return nullopt.
@@ -244,12 +244,12 @@ TEST(TransactionsOfferCreateTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx->hasExpiration());
-    EXPECT_FALSE(tx->getExpiration().has_value());
-    EXPECT_FALSE(tx->hasOfferSequence());
-    EXPECT_FALSE(tx->getOfferSequence().has_value());
-    EXPECT_FALSE(tx->hasDomainID());
-    EXPECT_FALSE(tx->getDomainID().has_value());
+    EXPECT_FALSE(tx.hasExpiration());
+    EXPECT_FALSE(tx.getExpiration().has_value());
+    EXPECT_FALSE(tx.hasOfferSequence());
+    EXPECT_FALSE(tx.getOfferSequence().has_value());
+    EXPECT_FALSE(tx.hasDomainID());
+    EXPECT_FALSE(tx.getDomainID().has_value());
 }
 
 }

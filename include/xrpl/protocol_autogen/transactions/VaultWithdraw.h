@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a VaultWithdraw transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit VaultWithdraw(STTx const& tx)
-        : TransactionBase(tx)
+    explicit VaultWithdraw(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for VaultWithdraw");
         }
@@ -55,7 +54,7 @@ public:
     SF_UINT256::type::value_type
     getVaultID() const
     {
-        return this->tx_.at(sfVaultID);
+        return this->tx_->at(sfVaultID);
     }
 
     /**
@@ -66,7 +65,7 @@ public:
     SF_AMOUNT::type::value_type
     getAmount() const
     {
-        return this->tx_.at(sfAmount);
+        return this->tx_->at(sfAmount);
     }
 
     /**
@@ -78,7 +77,7 @@ public:
     {
         if (hasDestination())
         {
-            return this->tx_.at(sfDestination);
+            return this->tx_->at(sfDestination);
         }
         return std::nullopt;
     }
@@ -87,7 +86,7 @@ public:
     bool
     hasDestination() const
     {
-        return this->tx_.isFieldPresent(sfDestination);
+        return this->tx_->isFieldPresent(sfDestination);
     }
 
     /**
@@ -99,7 +98,7 @@ public:
     {
         if (hasDestinationTag())
         {
-            return this->tx_.at(sfDestinationTag);
+            return this->tx_->at(sfDestinationTag);
         }
         return std::nullopt;
     }
@@ -108,7 +107,7 @@ public:
     bool
     hasDestinationTag() const
     {
-        return this->tx_.isFieldPresent(sfDestinationTag);
+        return this->tx_->isFieldPresent(sfDestinationTag);
     }
 };
 
@@ -131,13 +130,13 @@ public:
         setAmount(amount);
     }
 
-    VaultWithdrawBuilder(STTx const& tx)
+    VaultWithdrawBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttVAULT_WITHDRAW)
+        if (tx->getTxnType() != ttVAULT_WITHDRAW)
         {
             throw std::runtime_error("Invalid transaction type for VaultWithdrawBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -188,16 +187,16 @@ public:
     }
 
     /**
-     * Build and return the completed VaultWithdraw wrapper.
+     * Build and return the VaultWithdraw wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, VaultWithdraw>
+    VaultWithdraw
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, VaultWithdraw>{STTx{std::move(object_)}};
+        return VaultWithdraw{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

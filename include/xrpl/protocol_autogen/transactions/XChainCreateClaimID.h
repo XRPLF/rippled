@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a XChainCreateClaimID transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit XChainCreateClaimID(STTx const& tx)
-        : TransactionBase(tx)
+    explicit XChainCreateClaimID(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for XChainCreateClaimID");
         }
@@ -55,7 +54,7 @@ public:
     SF_XCHAIN_BRIDGE::type::value_type
     getXChainBridge() const
     {
-        return this->tx_.at(sfXChainBridge);
+        return this->tx_->at(sfXChainBridge);
     }
 
     /**
@@ -65,7 +64,7 @@ public:
     SF_AMOUNT::type::value_type
     getSignatureReward() const
     {
-        return this->tx_.at(sfSignatureReward);
+        return this->tx_->at(sfSignatureReward);
     }
 
     /**
@@ -75,7 +74,7 @@ public:
     SF_ACCOUNT::type::value_type
     getOtherChainSource() const
     {
-        return this->tx_.at(sfOtherChainSource);
+        return this->tx_->at(sfOtherChainSource);
     }
 };
 
@@ -99,13 +98,13 @@ public:
         setOtherChainSource(otherChainSource);
     }
 
-    XChainCreateClaimIDBuilder(STTx const& tx)
+    XChainCreateClaimIDBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttXCHAIN_CREATE_CLAIM_ID)
+        if (tx->getTxnType() != ttXCHAIN_CREATE_CLAIM_ID)
         {
             throw std::runtime_error("Invalid transaction type for XChainCreateClaimIDBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -144,16 +143,16 @@ public:
     }
 
     /**
-     * Build and return the completed XChainCreateClaimID wrapper.
+     * Build and return the XChainCreateClaimID wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, XChainCreateClaimID>
+    XChainCreateClaimID
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, XChainCreateClaimID>{STTx{std::move(object_)}};
+        return XChainCreateClaimID{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

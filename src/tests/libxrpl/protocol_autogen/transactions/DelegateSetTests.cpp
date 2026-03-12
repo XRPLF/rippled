@@ -45,27 +45,27 @@ TEST(TransactionsDelegateSetTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = authorizeValue;
-        auto const actual = tx->getAuthorize();
+        auto const actual = tx.getAuthorize();
         expectEqualField(expected, actual, "sfAuthorize");
     }
 
     {
         auto const& expected = permissionsValue;
-        auto const actual = tx->getPermissions();
+        auto const actual = tx.getPermissions();
         expectEqualField(expected, actual, "sfPermissions");
     }
 
@@ -102,28 +102,28 @@ TEST(TransactionsDelegateSetTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    DelegateSetBuilder builderFromTx{initialTx.object()};
+    DelegateSetBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = authorizeValue;
-        auto const actual = rebuiltTx->getAuthorize();
+        auto const actual = rebuiltTx.getAuthorize();
         expectEqualField(expected, actual, "sfAuthorize");
     }
 
     {
         auto const& expected = permissionsValue;
-        auto const actual = rebuiltTx->getPermissions();
+        auto const actual = rebuiltTx.getPermissions();
         expectEqualField(expected, actual, "sfPermissions");
     }
 
@@ -141,7 +141,7 @@ TEST(TransactionsDelegateSetTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(DelegateSet{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(DelegateSet{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -155,7 +155,7 @@ TEST(TransactionsDelegateSetTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(DelegateSetBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(DelegateSetBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 

@@ -53,61 +53,61 @@ TEST(TransactionsAMMWithdrawTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = assetValue;
-        auto const actual = tx->getAsset();
+        auto const actual = tx.getAsset();
         expectEqualField(expected, actual, "sfAsset");
     }
 
     {
         auto const& expected = asset2Value;
-        auto const actual = tx->getAsset2();
+        auto const actual = tx.getAsset2();
         expectEqualField(expected, actual, "sfAsset2");
     }
 
     // Verify optional fields
     {
         auto const& expected = amountValue;
-        auto const actualOpt = tx->getAmount();
+        auto const actualOpt = tx.getAmount();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
         expectEqualField(expected, *actualOpt, "sfAmount");
-        EXPECT_TRUE(tx->hasAmount());
+        EXPECT_TRUE(tx.hasAmount());
     }
 
     {
         auto const& expected = amount2Value;
-        auto const actualOpt = tx->getAmount2();
+        auto const actualOpt = tx.getAmount2();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount2 should be present";
         expectEqualField(expected, *actualOpt, "sfAmount2");
-        EXPECT_TRUE(tx->hasAmount2());
+        EXPECT_TRUE(tx.hasAmount2());
     }
 
     {
         auto const& expected = ePriceValue;
-        auto const actualOpt = tx->getEPrice();
+        auto const actualOpt = tx.getEPrice();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfEPrice should be present";
         expectEqualField(expected, *actualOpt, "sfEPrice");
-        EXPECT_TRUE(tx->hasEPrice());
+        EXPECT_TRUE(tx.hasEPrice());
     }
 
     {
         auto const& expected = lPTokenInValue;
-        auto const actualOpt = tx->getLPTokenIn();
+        auto const actualOpt = tx.getLPTokenIn();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLPTokenIn should be present";
         expectEqualField(expected, *actualOpt, "sfLPTokenIn");
-        EXPECT_TRUE(tx->hasLPTokenIn());
+        EXPECT_TRUE(tx.hasLPTokenIn());
     }
 
 }
@@ -150,56 +150,56 @@ TEST(TransactionsAMMWithdrawTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    AMMWithdrawBuilder builderFromTx{initialTx.object()};
+    AMMWithdrawBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = assetValue;
-        auto const actual = rebuiltTx->getAsset();
+        auto const actual = rebuiltTx.getAsset();
         expectEqualField(expected, actual, "sfAsset");
     }
 
     {
         auto const& expected = asset2Value;
-        auto const actual = rebuiltTx->getAsset2();
+        auto const actual = rebuiltTx.getAsset2();
         expectEqualField(expected, actual, "sfAsset2");
     }
 
     // Verify optional fields
     {
         auto const& expected = amountValue;
-        auto const actualOpt = rebuiltTx->getAmount();
+        auto const actualOpt = rebuiltTx.getAmount();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
         expectEqualField(expected, *actualOpt, "sfAmount");
     }
 
     {
         auto const& expected = amount2Value;
-        auto const actualOpt = rebuiltTx->getAmount2();
+        auto const actualOpt = rebuiltTx.getAmount2();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount2 should be present";
         expectEqualField(expected, *actualOpt, "sfAmount2");
     }
 
     {
         auto const& expected = ePriceValue;
-        auto const actualOpt = rebuiltTx->getEPrice();
+        auto const actualOpt = rebuiltTx.getEPrice();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfEPrice should be present";
         expectEqualField(expected, *actualOpt, "sfEPrice");
     }
 
     {
         auto const& expected = lPTokenInValue;
-        auto const actualOpt = rebuiltTx->getLPTokenIn();
+        auto const actualOpt = rebuiltTx.getLPTokenIn();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLPTokenIn should be present";
         expectEqualField(expected, *actualOpt, "sfLPTokenIn");
     }
@@ -217,7 +217,7 @@ TEST(TransactionsAMMWithdrawTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(AMMWithdraw{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(AMMWithdraw{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -231,7 +231,7 @@ TEST(TransactionsAMMWithdrawTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(AMMWithdrawBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(AMMWithdrawBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 5) Build with only required fields and verify optional fields return nullopt.
@@ -263,14 +263,14 @@ TEST(TransactionsAMMWithdrawTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx->hasAmount());
-    EXPECT_FALSE(tx->getAmount().has_value());
-    EXPECT_FALSE(tx->hasAmount2());
-    EXPECT_FALSE(tx->getAmount2().has_value());
-    EXPECT_FALSE(tx->hasEPrice());
-    EXPECT_FALSE(tx->getEPrice().has_value());
-    EXPECT_FALSE(tx->hasLPTokenIn());
-    EXPECT_FALSE(tx->getLPTokenIn().has_value());
+    EXPECT_FALSE(tx.hasAmount());
+    EXPECT_FALSE(tx.getAmount().has_value());
+    EXPECT_FALSE(tx.hasAmount2());
+    EXPECT_FALSE(tx.getAmount2().has_value());
+    EXPECT_FALSE(tx.hasEPrice());
+    EXPECT_FALSE(tx.getEPrice().has_value());
+    EXPECT_FALSE(tx.hasLPTokenIn());
+    EXPECT_FALSE(tx.getLPTokenIn().has_value());
 }
 
 }

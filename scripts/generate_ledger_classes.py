@@ -128,7 +128,7 @@ def main():
     parser.add_argument(
         "--header-dir",
         help="Output directory for header files",
-        default="include/xrpl/protocol_autogen/ledger_objects",
+        default="include/xrpl/protocol_autogen/ledger_entries",
     )
     parser.add_argument(
         "--test-dir",

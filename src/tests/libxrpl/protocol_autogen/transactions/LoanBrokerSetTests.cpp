@@ -55,71 +55,71 @@ TEST(TransactionsLoanBrokerSetTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = vaultIDValue;
-        auto const actual = tx->getVaultID();
+        auto const actual = tx.getVaultID();
         expectEqualField(expected, actual, "sfVaultID");
     }
 
     // Verify optional fields
     {
         auto const& expected = loanBrokerIDValue;
-        auto const actualOpt = tx->getLoanBrokerID();
+        auto const actualOpt = tx.getLoanBrokerID();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLoanBrokerID should be present";
         expectEqualField(expected, *actualOpt, "sfLoanBrokerID");
-        EXPECT_TRUE(tx->hasLoanBrokerID());
+        EXPECT_TRUE(tx.hasLoanBrokerID());
     }
 
     {
         auto const& expected = dataValue;
-        auto const actualOpt = tx->getData();
+        auto const actualOpt = tx.getData();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfData should be present";
         expectEqualField(expected, *actualOpt, "sfData");
-        EXPECT_TRUE(tx->hasData());
+        EXPECT_TRUE(tx.hasData());
     }
 
     {
         auto const& expected = managementFeeRateValue;
-        auto const actualOpt = tx->getManagementFeeRate();
+        auto const actualOpt = tx.getManagementFeeRate();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfManagementFeeRate should be present";
         expectEqualField(expected, *actualOpt, "sfManagementFeeRate");
-        EXPECT_TRUE(tx->hasManagementFeeRate());
+        EXPECT_TRUE(tx.hasManagementFeeRate());
     }
 
     {
         auto const& expected = debtMaximumValue;
-        auto const actualOpt = tx->getDebtMaximum();
+        auto const actualOpt = tx.getDebtMaximum();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDebtMaximum should be present";
         expectEqualField(expected, *actualOpt, "sfDebtMaximum");
-        EXPECT_TRUE(tx->hasDebtMaximum());
+        EXPECT_TRUE(tx.hasDebtMaximum());
     }
 
     {
         auto const& expected = coverRateMinimumValue;
-        auto const actualOpt = tx->getCoverRateMinimum();
+        auto const actualOpt = tx.getCoverRateMinimum();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCoverRateMinimum should be present";
         expectEqualField(expected, *actualOpt, "sfCoverRateMinimum");
-        EXPECT_TRUE(tx->hasCoverRateMinimum());
+        EXPECT_TRUE(tx.hasCoverRateMinimum());
     }
 
     {
         auto const& expected = coverRateLiquidationValue;
-        auto const actualOpt = tx->getCoverRateLiquidation();
+        auto const actualOpt = tx.getCoverRateLiquidation();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCoverRateLiquidation should be present";
         expectEqualField(expected, *actualOpt, "sfCoverRateLiquidation");
-        EXPECT_TRUE(tx->hasCoverRateLiquidation());
+        EXPECT_TRUE(tx.hasCoverRateLiquidation());
     }
 
 }
@@ -164,64 +164,64 @@ TEST(TransactionsLoanBrokerSetTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    LoanBrokerSetBuilder builderFromTx{initialTx.object()};
+    LoanBrokerSetBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     {
         auto const& expected = vaultIDValue;
-        auto const actual = rebuiltTx->getVaultID();
+        auto const actual = rebuiltTx.getVaultID();
         expectEqualField(expected, actual, "sfVaultID");
     }
 
     // Verify optional fields
     {
         auto const& expected = loanBrokerIDValue;
-        auto const actualOpt = rebuiltTx->getLoanBrokerID();
+        auto const actualOpt = rebuiltTx.getLoanBrokerID();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLoanBrokerID should be present";
         expectEqualField(expected, *actualOpt, "sfLoanBrokerID");
     }
 
     {
         auto const& expected = dataValue;
-        auto const actualOpt = rebuiltTx->getData();
+        auto const actualOpt = rebuiltTx.getData();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfData should be present";
         expectEqualField(expected, *actualOpt, "sfData");
     }
 
     {
         auto const& expected = managementFeeRateValue;
-        auto const actualOpt = rebuiltTx->getManagementFeeRate();
+        auto const actualOpt = rebuiltTx.getManagementFeeRate();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfManagementFeeRate should be present";
         expectEqualField(expected, *actualOpt, "sfManagementFeeRate");
     }
 
     {
         auto const& expected = debtMaximumValue;
-        auto const actualOpt = rebuiltTx->getDebtMaximum();
+        auto const actualOpt = rebuiltTx.getDebtMaximum();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDebtMaximum should be present";
         expectEqualField(expected, *actualOpt, "sfDebtMaximum");
     }
 
     {
         auto const& expected = coverRateMinimumValue;
-        auto const actualOpt = rebuiltTx->getCoverRateMinimum();
+        auto const actualOpt = rebuiltTx.getCoverRateMinimum();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCoverRateMinimum should be present";
         expectEqualField(expected, *actualOpt, "sfCoverRateMinimum");
     }
 
     {
         auto const& expected = coverRateLiquidationValue;
-        auto const actualOpt = rebuiltTx->getCoverRateLiquidation();
+        auto const actualOpt = rebuiltTx.getCoverRateLiquidation();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCoverRateLiquidation should be present";
         expectEqualField(expected, *actualOpt, "sfCoverRateLiquidation");
     }
@@ -239,7 +239,7 @@ TEST(TransactionsLoanBrokerSetTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(LoanBrokerSet{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(LoanBrokerSet{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -253,7 +253,7 @@ TEST(TransactionsLoanBrokerSetTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(LoanBrokerSetBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(LoanBrokerSetBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 5) Build with only required fields and verify optional fields return nullopt.
@@ -283,18 +283,18 @@ TEST(TransactionsLoanBrokerSetTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx->hasLoanBrokerID());
-    EXPECT_FALSE(tx->getLoanBrokerID().has_value());
-    EXPECT_FALSE(tx->hasData());
-    EXPECT_FALSE(tx->getData().has_value());
-    EXPECT_FALSE(tx->hasManagementFeeRate());
-    EXPECT_FALSE(tx->getManagementFeeRate().has_value());
-    EXPECT_FALSE(tx->hasDebtMaximum());
-    EXPECT_FALSE(tx->getDebtMaximum().has_value());
-    EXPECT_FALSE(tx->hasCoverRateMinimum());
-    EXPECT_FALSE(tx->getCoverRateMinimum().has_value());
-    EXPECT_FALSE(tx->hasCoverRateLiquidation());
-    EXPECT_FALSE(tx->getCoverRateLiquidation().has_value());
+    EXPECT_FALSE(tx.hasLoanBrokerID());
+    EXPECT_FALSE(tx.getLoanBrokerID().has_value());
+    EXPECT_FALSE(tx.hasData());
+    EXPECT_FALSE(tx.getData().has_value());
+    EXPECT_FALSE(tx.hasManagementFeeRate());
+    EXPECT_FALSE(tx.getManagementFeeRate().has_value());
+    EXPECT_FALSE(tx.hasDebtMaximum());
+    EXPECT_FALSE(tx.getDebtMaximum().has_value());
+    EXPECT_FALSE(tx.hasCoverRateMinimum());
+    EXPECT_FALSE(tx.getCoverRateMinimum().has_value());
+    EXPECT_FALSE(tx.hasCoverRateLiquidation());
+    EXPECT_FALSE(tx.getCoverRateLiquidation().has_value());
 }
 
 }

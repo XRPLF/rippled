@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a PaymentChannelCreate transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit PaymentChannelCreate(STTx const& tx)
-        : TransactionBase(tx)
+    explicit PaymentChannelCreate(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for PaymentChannelCreate");
         }
@@ -55,7 +54,7 @@ public:
     SF_ACCOUNT::type::value_type
     getDestination() const
     {
-        return this->tx_.at(sfDestination);
+        return this->tx_->at(sfDestination);
     }
 
     /**
@@ -65,7 +64,7 @@ public:
     SF_AMOUNT::type::value_type
     getAmount() const
     {
-        return this->tx_.at(sfAmount);
+        return this->tx_->at(sfAmount);
     }
 
     /**
@@ -75,7 +74,7 @@ public:
     SF_UINT32::type::value_type
     getSettleDelay() const
     {
-        return this->tx_.at(sfSettleDelay);
+        return this->tx_->at(sfSettleDelay);
     }
 
     /**
@@ -85,7 +84,7 @@ public:
     SF_VL::type::value_type
     getPublicKey() const
     {
-        return this->tx_.at(sfPublicKey);
+        return this->tx_->at(sfPublicKey);
     }
 
     /**
@@ -97,7 +96,7 @@ public:
     {
         if (hasCancelAfter())
         {
-            return this->tx_.at(sfCancelAfter);
+            return this->tx_->at(sfCancelAfter);
         }
         return std::nullopt;
     }
@@ -106,7 +105,7 @@ public:
     bool
     hasCancelAfter() const
     {
-        return this->tx_.isFieldPresent(sfCancelAfter);
+        return this->tx_->isFieldPresent(sfCancelAfter);
     }
 
     /**
@@ -118,7 +117,7 @@ public:
     {
         if (hasDestinationTag())
         {
-            return this->tx_.at(sfDestinationTag);
+            return this->tx_->at(sfDestinationTag);
         }
         return std::nullopt;
     }
@@ -127,7 +126,7 @@ public:
     bool
     hasDestinationTag() const
     {
-        return this->tx_.isFieldPresent(sfDestinationTag);
+        return this->tx_->isFieldPresent(sfDestinationTag);
     }
 };
 
@@ -152,13 +151,13 @@ public:
         setPublicKey(publicKey);
     }
 
-    PaymentChannelCreateBuilder(STTx const& tx)
+    PaymentChannelCreateBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttPAYCHAN_CREATE)
+        if (tx->getTxnType() != ttPAYCHAN_CREATE)
         {
             throw std::runtime_error("Invalid transaction type for PaymentChannelCreateBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -230,16 +229,16 @@ public:
     }
 
     /**
-     * Build and return the completed PaymentChannelCreate wrapper.
+     * Build and return the PaymentChannelCreate wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, PaymentChannelCreate>
+    PaymentChannelCreate
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, PaymentChannelCreate>{STTx{std::move(object_)}};
+        return PaymentChannelCreate{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

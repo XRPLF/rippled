@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a AccountSet transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit AccountSet(STTx const& tx)
-        : TransactionBase(tx)
+    explicit AccountSet(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for AccountSet");
         }
@@ -57,7 +56,7 @@ public:
     {
         if (hasEmailHash())
         {
-            return this->tx_.at(sfEmailHash);
+            return this->tx_->at(sfEmailHash);
         }
         return std::nullopt;
     }
@@ -66,7 +65,7 @@ public:
     bool
     hasEmailHash() const
     {
-        return this->tx_.isFieldPresent(sfEmailHash);
+        return this->tx_->isFieldPresent(sfEmailHash);
     }
 
     /**
@@ -78,7 +77,7 @@ public:
     {
         if (hasWalletLocator())
         {
-            return this->tx_.at(sfWalletLocator);
+            return this->tx_->at(sfWalletLocator);
         }
         return std::nullopt;
     }
@@ -87,7 +86,7 @@ public:
     bool
     hasWalletLocator() const
     {
-        return this->tx_.isFieldPresent(sfWalletLocator);
+        return this->tx_->isFieldPresent(sfWalletLocator);
     }
 
     /**
@@ -99,7 +98,7 @@ public:
     {
         if (hasWalletSize())
         {
-            return this->tx_.at(sfWalletSize);
+            return this->tx_->at(sfWalletSize);
         }
         return std::nullopt;
     }
@@ -108,7 +107,7 @@ public:
     bool
     hasWalletSize() const
     {
-        return this->tx_.isFieldPresent(sfWalletSize);
+        return this->tx_->isFieldPresent(sfWalletSize);
     }
 
     /**
@@ -120,7 +119,7 @@ public:
     {
         if (hasMessageKey())
         {
-            return this->tx_.at(sfMessageKey);
+            return this->tx_->at(sfMessageKey);
         }
         return std::nullopt;
     }
@@ -129,7 +128,7 @@ public:
     bool
     hasMessageKey() const
     {
-        return this->tx_.isFieldPresent(sfMessageKey);
+        return this->tx_->isFieldPresent(sfMessageKey);
     }
 
     /**
@@ -141,7 +140,7 @@ public:
     {
         if (hasDomain())
         {
-            return this->tx_.at(sfDomain);
+            return this->tx_->at(sfDomain);
         }
         return std::nullopt;
     }
@@ -150,7 +149,7 @@ public:
     bool
     hasDomain() const
     {
-        return this->tx_.isFieldPresent(sfDomain);
+        return this->tx_->isFieldPresent(sfDomain);
     }
 
     /**
@@ -162,7 +161,7 @@ public:
     {
         if (hasTransferRate())
         {
-            return this->tx_.at(sfTransferRate);
+            return this->tx_->at(sfTransferRate);
         }
         return std::nullopt;
     }
@@ -171,7 +170,7 @@ public:
     bool
     hasTransferRate() const
     {
-        return this->tx_.isFieldPresent(sfTransferRate);
+        return this->tx_->isFieldPresent(sfTransferRate);
     }
 
     /**
@@ -183,7 +182,7 @@ public:
     {
         if (hasSetFlag())
         {
-            return this->tx_.at(sfSetFlag);
+            return this->tx_->at(sfSetFlag);
         }
         return std::nullopt;
     }
@@ -192,7 +191,7 @@ public:
     bool
     hasSetFlag() const
     {
-        return this->tx_.isFieldPresent(sfSetFlag);
+        return this->tx_->isFieldPresent(sfSetFlag);
     }
 
     /**
@@ -204,7 +203,7 @@ public:
     {
         if (hasClearFlag())
         {
-            return this->tx_.at(sfClearFlag);
+            return this->tx_->at(sfClearFlag);
         }
         return std::nullopt;
     }
@@ -213,7 +212,7 @@ public:
     bool
     hasClearFlag() const
     {
-        return this->tx_.isFieldPresent(sfClearFlag);
+        return this->tx_->isFieldPresent(sfClearFlag);
     }
 
     /**
@@ -225,7 +224,7 @@ public:
     {
         if (hasTickSize())
         {
-            return this->tx_.at(sfTickSize);
+            return this->tx_->at(sfTickSize);
         }
         return std::nullopt;
     }
@@ -234,7 +233,7 @@ public:
     bool
     hasTickSize() const
     {
-        return this->tx_.isFieldPresent(sfTickSize);
+        return this->tx_->isFieldPresent(sfTickSize);
     }
 
     /**
@@ -246,7 +245,7 @@ public:
     {
         if (hasNFTokenMinter())
         {
-            return this->tx_.at(sfNFTokenMinter);
+            return this->tx_->at(sfNFTokenMinter);
         }
         return std::nullopt;
     }
@@ -255,7 +254,7 @@ public:
     bool
     hasNFTokenMinter() const
     {
-        return this->tx_.isFieldPresent(sfNFTokenMinter);
+        return this->tx_->isFieldPresent(sfNFTokenMinter);
     }
 };
 
@@ -276,13 +275,13 @@ public:
     {
     }
 
-    AccountSetBuilder(STTx const& tx)
+    AccountSetBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttACCOUNT_SET)
+        if (tx->getTxnType() != ttACCOUNT_SET)
         {
             throw std::runtime_error("Invalid transaction type for AccountSetBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -398,16 +397,16 @@ public:
     }
 
     /**
-     * Build and return the completed AccountSet wrapper.
+     * Build and return the AccountSet wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, AccountSet>
+    AccountSet
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, AccountSet>{STTx{std::move(object_)}};
+        return AccountSet{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

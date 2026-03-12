@@ -4,7 +4,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol_autogen/Owning.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/json/json_value.h>
@@ -36,11 +35,11 @@ public:
      * Construct a TrustSet transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit TrustSet(STTx const& tx)
-        : TransactionBase(tx)
+    explicit TrustSet(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
-        if (tx.getTxnType() != txType)
+        if (tx_->getTxnType() != txType)
         {
             throw std::runtime_error("Invalid transaction type for TrustSet");
         }
@@ -57,7 +56,7 @@ public:
     {
         if (hasLimitAmount())
         {
-            return this->tx_.at(sfLimitAmount);
+            return this->tx_->at(sfLimitAmount);
         }
         return std::nullopt;
     }
@@ -66,7 +65,7 @@ public:
     bool
     hasLimitAmount() const
     {
-        return this->tx_.isFieldPresent(sfLimitAmount);
+        return this->tx_->isFieldPresent(sfLimitAmount);
     }
 
     /**
@@ -78,7 +77,7 @@ public:
     {
         if (hasQualityIn())
         {
-            return this->tx_.at(sfQualityIn);
+            return this->tx_->at(sfQualityIn);
         }
         return std::nullopt;
     }
@@ -87,7 +86,7 @@ public:
     bool
     hasQualityIn() const
     {
-        return this->tx_.isFieldPresent(sfQualityIn);
+        return this->tx_->isFieldPresent(sfQualityIn);
     }
 
     /**
@@ -99,7 +98,7 @@ public:
     {
         if (hasQualityOut())
         {
-            return this->tx_.at(sfQualityOut);
+            return this->tx_->at(sfQualityOut);
         }
         return std::nullopt;
     }
@@ -108,7 +107,7 @@ public:
     bool
     hasQualityOut() const
     {
-        return this->tx_.isFieldPresent(sfQualityOut);
+        return this->tx_->isFieldPresent(sfQualityOut);
     }
 };
 
@@ -129,13 +128,13 @@ public:
     {
     }
 
-    TrustSetBuilder(STTx const& tx)
+    TrustSetBuilder(std::shared_ptr<STTx const> tx)
     {
-        if (tx.getTxnType() != ttTRUST_SET)
+        if (tx->getTxnType() != ttTRUST_SET)
         {
             throw std::runtime_error("Invalid transaction type for TrustSetBuilder");
         }
-        object_ = tx;
+        object_ = *tx;
     }
 
     // Transaction-specific field setters
@@ -174,16 +173,16 @@ public:
     }
 
     /**
-     * Build and return the completed TrustSet wrapper.
+     * Build and return the TrustSet wrapper.
      * @param publicKey The public key for signing
      * @param secretKey The secret key for signing
      * @return The constructed transaction wrapper.
      */
-    protocol_autogen::Owning<STTx, TrustSet>
+    TrustSet
     build(PublicKey const& publicKey, SecretKey const& secretKey)
     {
         sign(publicKey, secretKey);
-        return protocol_autogen::Owning<STTx, TrustSet>{STTx{std::move(object_)}};
+        return TrustSet{std::make_shared<STTx>(std::move(object_))};
     }
 };
 

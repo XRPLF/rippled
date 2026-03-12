@@ -47,41 +47,41 @@ TEST(TransactionsDIDSetTests, BuilderSettersRoundTrip)
     auto tx = builder.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(tx->validate(reason)) << reason;
+    EXPECT_TRUE(tx.validate(reason)) << reason;
 
     // Verify signing was applied
-    EXPECT_FALSE(tx->getSigningPubKey().empty());
-    EXPECT_TRUE(tx->hasTxnSignature());
+    EXPECT_FALSE(tx.getSigningPubKey().empty());
+    EXPECT_TRUE(tx.hasTxnSignature());
 
     // Verify common fields
-    EXPECT_EQ(tx->getAccount(), accountValue);
-    EXPECT_EQ(tx->getSequence(), sequenceValue);
-    EXPECT_EQ(tx->getFee(), feeValue);
+    EXPECT_EQ(tx.getAccount(), accountValue);
+    EXPECT_EQ(tx.getSequence(), sequenceValue);
+    EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
     // Verify optional fields
     {
         auto const& expected = dIDDocumentValue;
-        auto const actualOpt = tx->getDIDDocument();
+        auto const actualOpt = tx.getDIDDocument();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDIDDocument should be present";
         expectEqualField(expected, *actualOpt, "sfDIDDocument");
-        EXPECT_TRUE(tx->hasDIDDocument());
+        EXPECT_TRUE(tx.hasDIDDocument());
     }
 
     {
         auto const& expected = uRIValue;
-        auto const actualOpt = tx->getURI();
+        auto const actualOpt = tx.getURI();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfURI should be present";
         expectEqualField(expected, *actualOpt, "sfURI");
-        EXPECT_TRUE(tx->hasURI());
+        EXPECT_TRUE(tx.hasURI());
     }
 
     {
         auto const& expected = dataValue;
-        auto const actualOpt = tx->getData();
+        auto const actualOpt = tx.getData();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfData should be present";
         expectEqualField(expected, *actualOpt, "sfData");
-        EXPECT_TRUE(tx->hasData());
+        EXPECT_TRUE(tx.hasData());
     }
 
 }
@@ -118,37 +118,37 @@ TEST(TransactionsDIDSetTests, BuilderFromStTxRoundTrip)
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
     // Create builder from existing STTx
-    DIDSetBuilder builderFromTx{initialTx.object()};
+    DIDSetBuilder builderFromTx{initialTx.getSTTx()};
 
     auto rebuiltTx = builderFromTx.build(publicKey, secretKey);
 
     std::string reason;
-    EXPECT_TRUE(rebuiltTx->validate(reason)) << reason;
+    EXPECT_TRUE(rebuiltTx.validate(reason)) << reason;
 
     // Verify common fields
-    EXPECT_EQ(rebuiltTx->getAccount(), accountValue);
-    EXPECT_EQ(rebuiltTx->getSequence(), sequenceValue);
-    EXPECT_EQ(rebuiltTx->getFee(), feeValue);
+    EXPECT_EQ(rebuiltTx.getAccount(), accountValue);
+    EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
+    EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
     // Verify optional fields
     {
         auto const& expected = dIDDocumentValue;
-        auto const actualOpt = rebuiltTx->getDIDDocument();
+        auto const actualOpt = rebuiltTx.getDIDDocument();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDIDDocument should be present";
         expectEqualField(expected, *actualOpt, "sfDIDDocument");
     }
 
     {
         auto const& expected = uRIValue;
-        auto const actualOpt = rebuiltTx->getURI();
+        auto const actualOpt = rebuiltTx.getURI();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfURI should be present";
         expectEqualField(expected, *actualOpt, "sfURI");
     }
 
     {
         auto const& expected = dataValue;
-        auto const actualOpt = rebuiltTx->getData();
+        auto const actualOpt = rebuiltTx.getData();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfData should be present";
         expectEqualField(expected, *actualOpt, "sfData");
     }
@@ -166,7 +166,7 @@ TEST(TransactionsDIDSetTests, WrapperThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(DIDSet{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(DIDSet{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 4) Verify builder throws when constructed from wrong transaction type.
@@ -180,7 +180,7 @@ TEST(TransactionsDIDSetTests, BuilderThrowsOnWrongTxType)
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
     auto wrongTx = wrongBuilder.build(pk, sk);
 
-    EXPECT_THROW(DIDSetBuilder{wrongTx.object()}, std::runtime_error);
+    EXPECT_THROW(DIDSetBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
 // 5) Build with only required fields and verify optional fields return nullopt.
@@ -208,12 +208,12 @@ TEST(TransactionsDIDSetTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx->hasDIDDocument());
-    EXPECT_FALSE(tx->getDIDDocument().has_value());
-    EXPECT_FALSE(tx->hasURI());
-    EXPECT_FALSE(tx->getURI().has_value());
-    EXPECT_FALSE(tx->hasData());
-    EXPECT_FALSE(tx->getData().has_value());
+    EXPECT_FALSE(tx.hasDIDDocument());
+    EXPECT_FALSE(tx.getDIDDocument().has_value());
+    EXPECT_FALSE(tx.hasURI());
+    EXPECT_FALSE(tx.getURI().has_value());
+    EXPECT_FALSE(tx.hasData());
+    EXPECT_FALSE(tx.getData().has_value());
 }
 
 }
