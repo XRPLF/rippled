@@ -40,20 +40,20 @@ TrustLine::getItems(AccountID const& accountID, ReadView const& view, LineDirect
     return items;
 }
 
-uint256 const&
+uint256
 TrustLine::key() const
 {
     return rippleState_.getSle()->key();
 }
 
-AccountID const&
+AccountID
 TrustLine::getAccountID() const
 {
     return viewLowest_ ? rippleState_.getLowLimit().getIssuer()
                        : rippleState_.getHighLimit().getIssuer();
 }
 
-AccountID const&
+AccountID
 TrustLine::getAccountIDPeer() const
 {
     return !viewLowest_ ? rippleState_.getLowLimit().getIssuer()

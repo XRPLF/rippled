@@ -78,21 +78,21 @@ public:
      * @brief Returns the state map key for the ledger entry.
      * @return The key (hash) of the RippleState entry.
      */
-    uint256 const&
+    uint256
     key() const;
 
     /**
      * @brief Get our account ID.
      * @return The account ID from whose perspective this line is viewed.
      */
-    AccountID const&
+    AccountID
     getAccountID() const;
 
     /**
      * @brief Get the peer's account ID.
      * @return The account ID of the other party on this trust line.
      */
-    AccountID const&
+    AccountID
     getAccountIDPeer() const;
 
     /**
