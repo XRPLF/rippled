@@ -127,26 +127,6 @@ tl;dr
 > 6. Wrap the body at 72 characters.
 > 7. Use the body to explain what and why vs. how.
 
-In addition to those guidelines, please add one of the following
-prefixes to the subject line if appropriate.
-
-- `fix:` - The primary purpose is to fix an existing bug.
-- `perf:` - The primary purpose is performance improvements.
-- `refactor:` - The changes refactor code without affecting
-  functionality.
-- `test:` - The changes _only_ affect unit tests.
-- `docs:` - The changes _only_ affect documentation. This can
-  include code comments in addition to `.md` files like this one.
-- `build:` - The changes _only_ affect the build process,
-  including CMake and/or Conan settings.
-- `chore:` - Other tasks that don't affect the binary, but don't fit
-  any of the other cases. e.g. formatting, git settings, updating
-  Github Actions jobs.
-
-Whenever possible, when updating commits after the PR is open, please
-add the PR number to the end of the subject line. e.g. `test: Add
-unit tests for Feature X (#1234)`.
-
 ## Pull requests
 
 In general, pull requests use `develop` as the base branch.
@@ -179,6 +159,23 @@ credibility of the existing approvals is insufficient.
 
 Pull requests must be merged by [squash-and-merge][squash]
 to preserve a linear history for the `develop` branch.
+
+### Type of Change
+
+In addition to those guidelines, please start your PR title with one of the following:
+
+- `build:` - The changes _only_ affect the build process, including CMake and/or Conan settings.
+- `feat`: New feature (change which adds functionality).
+- `fix:` - The primary purpose is to fix an existing bug.
+- `docs:` - The changes _only_ affect documentation.
+- `test:` - The changes _only_ affect unit tests.
+- `ci`: Continuous Integration (changes to our CI configuration files and scripts).
+- `style`: Code style (formatting).
+- `refactor:` - The changes refactor code without affecting functionality.
+- `perf:` - The primary purpose is performance improvements.
+- `chore:` - Other tasks that don't affect the binary, but don't fit any of the other cases. e.g. `git` settings, `clang-tidy`, removing dead code, dropping support for older tooling.
+
+First letter after the type prefix should be capitalized, and the type prefix should be followed by a colon and a space. e.g. `feat: Add support for Borrowing Protocol`.
 
 ### "Ready to merge"
 
