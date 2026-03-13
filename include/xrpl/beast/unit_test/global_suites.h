@@ -22,7 +22,12 @@ global_suites()
 template <class Suite>
 struct insert_suite
 {
-    insert_suite(char const* name, char const* module, char const* library, bool manual, int priority)
+    insert_suite(
+        char const* name,
+        char const* module,
+        char const* library,
+        bool manual,
+        int priority)
     {
         global_suites().insert<Suite>(name, module, library, manual, priority);
     }

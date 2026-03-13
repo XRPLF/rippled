@@ -222,8 +222,8 @@ public:
     state_string() const
     {
         std::stringstream ss;
-        ss << m_out_active << "/" << m_out_max << " out, " << m_in_active << "/" << m_in_max << " in, "
-           << connectCount() << " connecting, " << closingCount() << " closing";
+        ss << m_out_active << "/" << m_out_max << " out, " << m_in_active << "/" << m_in_max
+           << " in, " << connectCount() << " connecting, " << closingCount() << " closing";
         return ss.str();
     }
 

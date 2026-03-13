@@ -6,6 +6,7 @@ ignorePaths:
   - docs/**/*.puml
   - cmake/**
   - LICENSE.md
+  - .clang-tidy
 language: en
 allowCompoundWords: true # TODO (#6334)
 ignoreRandomStrings: true
@@ -176,6 +177,11 @@ words:
   - nftokens
   - nftpage
   - nikb
+  - nixfmt
+  - nixos
+  - nixpkgs
+  - NOLINT
+  - NOLINTNEXTLINE
   - nonxrp
   - noripple
   - nudb

@@ -1,6 +1,5 @@
-#include <xrpld/app/tx/detail/OfferStream.h>
-
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/tx/paths/OfferStream.h>
 
 namespace xrpl {
 

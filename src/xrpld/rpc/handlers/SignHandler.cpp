@@ -20,8 +20,8 @@ doSign(RPC::JsonContext& context)
     }
 
     context.loadType = Resource::feeHeavyBurdenRPC;
-    NetworkOPs::FailHard const failType =
-        NetworkOPs::doFailHard(context.params.isMember(jss::fail_hard) && context.params[jss::fail_hard].asBool());
+    NetworkOPs::FailHard const failType = NetworkOPs::doFailHard(
+        context.params.isMember(jss::fail_hard) && context.params[jss::fail_hard].asBool());
 
     auto ret = RPC::transactionSign(
         context.params,

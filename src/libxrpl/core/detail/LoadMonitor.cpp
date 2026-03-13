@@ -89,7 +89,8 @@ LoadMonitor::addLoadSample(LoadEvent const& s)
     if (latency > 500ms)
     {
         auto mj = (latency > 1s) ? j_.warn() : j_.info();
-        JLOG(mj) << "Job: " << s.name() << " run: " << round<milliseconds>(s.runTime()).count() << "ms"
+        JLOG(mj) << "Job: " << s.name() << " run: " << round<milliseconds>(s.runTime()).count()
+                 << "ms"
                  << " wait: " << round<milliseconds>(s.waitTime()).count() << "ms";
     }
 
@@ -142,7 +143,8 @@ LoadMonitor::isOver()
     if (mLatencyEvents == 0)
         return 0;
 
-    return isOverTarget(mLatencyMSAvg / (mLatencyEvents * 4), mLatencyMSPeak / (mLatencyEvents * 4));
+    return isOverTarget(
+        mLatencyMSAvg / (mLatencyEvents * 4), mLatencyMSPeak / (mLatencyEvents * 4));
 }
 
 LoadMonitor::Stats

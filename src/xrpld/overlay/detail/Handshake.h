@@ -143,7 +143,10 @@ getFeatureValue(boost::beast::http::fields const& headers, std::string const& fe
    doesn't match or the feature is not found in the header
  */
 bool
-isFeatureValue(boost::beast::http::fields const& headers, std::string const& feature, std::string const& value);
+isFeatureValue(
+    boost::beast::http::fields const& headers,
+    std::string const& feature,
+    std::string const& value);
 
 /** Check if a feature is enabled
    @param headers request/response header
@@ -165,7 +168,11 @@ featureEnabled(boost::beast::http::fields const& headers, std::string const& fea
  */
 template <typename headers>
 bool
-peerFeatureEnabled(headers const& request, std::string const& feature, std::string value, bool config)
+peerFeatureEnabled(
+    headers const& request,
+    std::string const& feature,
+    std::string value,
+    bool config)
 {
     return config && isFeatureValue(request, feature, value);
 }

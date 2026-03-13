@@ -109,7 +109,8 @@ public:
 
             unexpected(a.size() < 1, "NodeSize");
 
-            BEAST_EXPECT(destination.addRootNode(source.getHash(), makeSlice(a[0].second), nullptr).isGood());
+            BEAST_EXPECT(destination.addRootNode(source.getHash(), makeSlice(a[0].second), nullptr)
+                             .isGood());
         }
 
         do
@@ -145,7 +146,8 @@ public:
                 // Don't use BEAST_EXPECT here b/c it will be called a
                 // non-deterministic number of times and the number of tests run
                 // should be deterministic
-                if (!destination.addKnownNode(b[i].first, makeSlice(b[i].second), nullptr).isUseful())
+                if (!destination.addKnownNode(b[i].first, makeSlice(b[i].second), nullptr)
+                         .isUseful())
                     fail("", __FILE__, __LINE__);
             }
         } while (true);

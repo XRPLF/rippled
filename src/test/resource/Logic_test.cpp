@@ -24,7 +24,8 @@ public:
         using clock_type = boost::base_from_member<TestStopwatch>;
 
     public:
-        explicit TestLogic(beast::Journal journal) : Logic(beast::insight::NullCollector::New(), member, journal)
+        explicit TestLogic(beast::Journal journal)
+            : Logic(beast::insight::NullCollector::New(), member, journal)
         {
         }
 

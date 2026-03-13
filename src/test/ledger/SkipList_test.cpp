@@ -17,8 +17,8 @@ class SkipList_test : public beast::unit_test::suite
         std::vector<std::shared_ptr<Ledger>> history;
         {
             Config config;
-            auto prev =
-                std::make_shared<Ledger>(create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
+            auto prev = std::make_shared<Ledger>(
+                create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
             history.push_back(prev);
             for (auto i = 0; i < 1023; ++i)
             {
@@ -43,7 +43,8 @@ class SkipList_test : public beast::unit_test::suite
         {
             for (auto n = i; n != std::next(i, (*i)->header().seq - 256 > 1 ? 257 : 256); ++n)
             {
-                BEAST_EXPECT(hashOfSeq(**i, (*n)->header().seq, env.journal) == (*n)->header().hash);
+                BEAST_EXPECT(
+                    hashOfSeq(**i, (*n)->header().seq, env.journal) == (*n)->header().hash);
             }
 
             // edge case accessing beyond 256
@@ -55,7 +56,8 @@ class SkipList_test : public beast::unit_test::suite
         {
             for (auto n = std::next(i, 512); n != history.crend(); n += 256)
             {
-                BEAST_EXPECT(hashOfSeq(**i, (*n)->header().seq, env.journal) == (*n)->header().hash);
+                BEAST_EXPECT(
+                    hashOfSeq(**i, (*n)->header().seq, env.journal) == (*n)->header().hash);
             }
         }
     }

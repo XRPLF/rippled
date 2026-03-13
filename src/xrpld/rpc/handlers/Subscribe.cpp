@@ -1,6 +1,5 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/RPCSub.h>
 #include <xrpld/rpc/Role.h>
@@ -12,6 +11,7 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/server/NetworkOPs.h>
 
 namespace xrpl {
 
@@ -34,10 +34,12 @@ doSubscribe(RPC::JsonContext& context)
             return rpcError(rpcNO_PERMISSION);
 
         std::string strUrl = context.params[jss::url].asString();
-        std::string strUsername =
-            context.params.isMember(jss::url_username) ? context.params[jss::url_username].asString() : "";
-        std::string strPassword =
-            context.params.isMember(jss::url_password) ? context.params[jss::url_password].asString() : "";
+        std::string strUsername = context.params.isMember(jss::url_username)
+            ? context.params[jss::url_username].asString()
+            : "";
+        std::string strPassword = context.params.isMember(jss::url_password)
+            ? context.params[jss::url_password].asString()
+            : "";
 
         // DEPRECATED
         if (context.params.isMember(jss::username))
@@ -61,7 +63,8 @@ doSubscribe(RPC::JsonContext& context)
                     strUsername,
                     strPassword,
                     context.app.logs());
-                ispSub = context.netOps.addRpcSub(strUrl, std::dynamic_pointer_cast<InfoSub>(rspSub));
+                ispSub =
+                    context.netOps.addRpcSub(strUrl, std::dynamic_pointer_cast<InfoSub>(rspSub));
             }
             catch (std::runtime_error& ex)
             {
@@ -125,7 +128,9 @@ doSubscribe(RPC::JsonContext& context)
             {
                 context.netOps.subTransactions(ispSub);
             }
-            else if (streamName == "transactions_proposed" || streamName == "rt_transactions")  // DEPRECATED
+            else if (
+                streamName == "transactions_proposed" ||
+                streamName == "rt_transactions")  // DEPRECATED
             {
                 context.netOps.subRTTransactions(ispSub);
             }
@@ -150,8 +155,9 @@ doSubscribe(RPC::JsonContext& context)
         }
     }
 
-    auto accountsProposed =
-        context.params.isMember(jss::accounts_proposed) ? jss::accounts_proposed : jss::rt_accounts;  // DEPRECATED
+    auto accountsProposed = context.params.isMember(jss::accounts_proposed)
+        ? jss::accounts_proposed
+        : jss::rt_accounts;  // DEPRECATED
     if (context.params.isMember(accountsProposed))
     {
         if (!context.params[accountsProposed].isArray())
@@ -301,7 +307,8 @@ doSubscribe(RPC::JsonContext& context)
                 (j.isMember(jss::state_now) && j[jss::state_now].asBool()))
             {
                 context.loadType = Resource::feeMediumBurdenRPC;
-                std::shared_ptr<ReadView const> lpLedger = context.app.getLedgerMaster().getPublishedLedger();
+                std::shared_ptr<ReadView const> lpLedger =
+                    context.app.getLedgerMaster().getPublishedLedger();
                 if (lpLedger)
                 {
                     Json::Value const jvMarker = Json::Value(Json::nullValue);

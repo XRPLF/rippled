@@ -167,7 +167,8 @@ namespace RPC {
 struct ErrorInfo
 {
     // Default ctor needed to produce an empty std::array during constexpr eval.
-    constexpr ErrorInfo() : code(rpcUNKNOWN), token("unknown"), message("An unknown error code."), http_status(200)
+    constexpr ErrorInfo()
+        : code(rpcUNKNOWN), token("unknown"), message("An unknown error code."), http_status(200)
     {
     }
 
@@ -176,7 +177,11 @@ struct ErrorInfo
     {
     }
 
-    constexpr ErrorInfo(error_code_i code_, char const* token_, char const* message_, int http_status_)
+    constexpr ErrorInfo(
+        error_code_i code_,
+        char const* token_,
+        char const* message_,
+        int http_status_)
         : code(code_), token(token_), message(message_), http_status(http_status_)
     {
     }

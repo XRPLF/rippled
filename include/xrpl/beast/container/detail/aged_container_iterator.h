@@ -35,22 +35,26 @@ public:
         class = typename std::enable_if<
             (other_is_const == false || is_const == true) &&
             std::is_same<Iterator, OtherIterator>::value == false>::type>
-    explicit aged_container_iterator(aged_container_iterator<other_is_const, OtherIterator> const& other)
+    explicit aged_container_iterator(
+        aged_container_iterator<other_is_const, OtherIterator> const& other)
         : m_iter(other.m_iter)
     {
     }
 
     // Disable constructing a const_iterator from a non-const_iterator.
-    template <bool other_is_const, class = typename std::enable_if<other_is_const == false || is_const == true>::type>
-    aged_container_iterator(aged_container_iterator<other_is_const, Iterator> const& other) : m_iter(other.m_iter)
+    template <
+        bool other_is_const,
+        class = typename std::enable_if<other_is_const == false || is_const == true>::type>
+    aged_container_iterator(aged_container_iterator<other_is_const, Iterator> const& other)
+        : m_iter(other.m_iter)
     {
     }
 
     // Disable assigning a const_iterator to a non-const iterator
     template <bool other_is_const, class OtherIterator>
     auto
-    operator=(aged_container_iterator<other_is_const, OtherIterator> const& other) ->
-        typename std::enable_if<other_is_const == false || is_const == true, aged_container_iterator&>::type
+    operator=(aged_container_iterator<other_is_const, OtherIterator> const& other) -> typename std::
+        enable_if<other_is_const == false || is_const == true, aged_container_iterator&>::type
     {
         m_iter = other.m_iter;
         return *this;

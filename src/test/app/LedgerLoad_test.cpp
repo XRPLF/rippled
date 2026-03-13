@@ -82,7 +82,8 @@ class LedgerLoad_test : public beast::unit_test::suite
 
         BEAST_EXPECT(retval.hashes.size() == 41);
         retval.trapTxHash = [&]() {
-            auto const txs = env.rpc("ledger", std::to_string(41), "tx")[jss::result][jss::ledger][jss::transactions];
+            auto const txs = env.rpc(
+                "ledger", std::to_string(41), "tx")[jss::result][jss::ledger][jss::transactions];
             BEAST_EXPECT(txs.isArray() && txs.size() > 0);
             uint256 tmp;
             BEAST_EXPECT(tmp.parseHex(txs[0u][jss::hash].asString()));
@@ -109,7 +110,9 @@ class LedgerLoad_test : public beast::unit_test::suite
             nullptr,
             beast::severities::kDisabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];
-        BEAST_EXPECT(sd.ledger[jss::ledger][jss::accountState].size() == jrb[jss::ledger][jss::accountState].size());
+        BEAST_EXPECT(
+            sd.ledger[jss::ledger][jss::accountState].size() ==
+            jrb[jss::ledger][jss::accountState].size());
     }
 
     void
@@ -132,7 +135,8 @@ class LedgerLoad_test : public beast::unit_test::suite
         except([&] {
             Env env(
                 *this,
-                envconfig(ledgerConfig, sd.dbPath, "badfile.json", StartUpType::LOAD_FILE, std::nullopt),
+                envconfig(
+                    ledgerConfig, sd.dbPath, "badfile.json", StartUpType::LOAD_FILE, std::nullopt),
                 nullptr,
                 beast::severities::kDisabled);
         });
@@ -153,7 +157,12 @@ class LedgerLoad_test : public beast::unit_test::suite
         except([&] {
             Env env(
                 *this,
-                envconfig(ledgerConfig, sd.dbPath, ledgerFileCorrupt.string(), StartUpType::LOAD_FILE, std::nullopt),
+                envconfig(
+                    ledgerConfig,
+                    sd.dbPath,
+                    ledgerFileCorrupt.string(),
+                    StartUpType::LOAD_FILE,
+                    std::nullopt),
                 nullptr,
                 beast::severities::kDisabled);
         });
@@ -175,7 +184,9 @@ class LedgerLoad_test : public beast::unit_test::suite
             beast::severities::kDisabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];
         BEAST_EXPECT(jrb[jss::ledger][jss::accountState].size() == 98);
-        BEAST_EXPECT(jrb[jss::ledger][jss::accountState].size() <= sd.ledger[jss::ledger][jss::accountState].size());
+        BEAST_EXPECT(
+            jrb[jss::ledger][jss::accountState].size() <=
+            sd.ledger[jss::ledger][jss::accountState].size());
     }
 
     void
@@ -199,7 +210,9 @@ class LedgerLoad_test : public beast::unit_test::suite
         env.close();
         auto const closed = env.rpc("ledger", "current", "full")[jss::result];
         BEAST_EXPECT(closed[jss::ledger][jss::accountState].size() == 98);
-        BEAST_EXPECT(closed[jss::ledger][jss::accountState].size() <= sd.ledger[jss::ledger][jss::accountState].size());
+        BEAST_EXPECT(
+            closed[jss::ledger][jss::accountState].size() <=
+            sd.ledger[jss::ledger][jss::accountState].size());
     }
 
     void
@@ -223,7 +236,9 @@ class LedgerLoad_test : public beast::unit_test::suite
         env.close();
         auto const closed = env.rpc("ledger", "current", "full")[jss::result];
         BEAST_EXPECT(closed[jss::ledger][jss::accountState].size() == 98);
-        BEAST_EXPECT(closed[jss::ledger][jss::accountState].size() <= sd.ledger[jss::ledger][jss::accountState].size());
+        BEAST_EXPECT(
+            closed[jss::ledger][jss::accountState].size() <=
+            sd.ledger[jss::ledger][jss::accountState].size());
     }
 
     void
@@ -269,7 +284,9 @@ class LedgerLoad_test : public beast::unit_test::suite
             nullptr,
             beast::severities::kDisabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];
-        BEAST_EXPECT(sd.ledger[jss::ledger][jss::accountState].size() == jrb[jss::ledger][jss::accountState].size());
+        BEAST_EXPECT(
+            sd.ledger[jss::ledger][jss::accountState].size() ==
+            jrb[jss::ledger][jss::accountState].size());
     }
 
     void
@@ -285,7 +302,9 @@ class LedgerLoad_test : public beast::unit_test::suite
             nullptr,
             beast::severities::kDisabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];
-        BEAST_EXPECT(sd.ledger[jss::ledger][jss::accountState].size() == jrb[jss::ledger][jss::accountState].size());
+        BEAST_EXPECT(
+            sd.ledger[jss::ledger][jss::accountState].size() ==
+            jrb[jss::ledger][jss::accountState].size());
     }
 
 public:
