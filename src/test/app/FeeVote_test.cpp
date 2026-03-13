@@ -400,8 +400,6 @@ class FeeVote_test : public beast::unit_test::suite
         testcase("Multiple Fee Updates");
 
         jtx::Env env(*this, jtx::testable_amendments() | featureXRPFees);
-        Rules const rules{env.app().config().features};
-        Fees const fees = env.app().config().FEES.toFees();
         auto ledger = std::make_shared<Ledger>(
             create_genesis,
             Rules{env.app().config().features},
