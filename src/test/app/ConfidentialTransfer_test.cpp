@@ -4578,7 +4578,9 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         MPTTester mptAlice(env, alice, {.holders = {bob}});
 
         mptAlice.create(
-            {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+            {.ownerCount = 1,
+             .holderCount = 0,
+             .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
 
         mptAlice.authorize({.account = bob});
         mptAlice.pay(alice, bob, 100);
@@ -4609,18 +4611,22 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         auto const deltaCipherText = mptAlice.encryptAmount(bob, 1, deltaBf);
 
         // Homomorphically add Delta to HolderCipherText: Tampered = Enc(10) + Enc(1) = Enc(11)
-        Buffer tamperedHolderCipherText(ecGamalEncryptedTotalLength);
-        BEAST_EXPECT(homomorphicAdd(holderCipherText, deltaCipherText, tamperedHolderCipherText) == tesSUCCESS);
+        auto tamperedOpt = homomorphicAdd(holderCipherText, deltaCipherText);
+        BEAST_EXPECT(tamperedOpt.has_value());
+        Buffer tamperedHolderCipherText = std::move(*tamperedOpt);
 
         // Generate a valid proof for the ORIGINAL amount (10)
-        auto const spendingBal = mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
-        auto const spendingBalEnc = mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+        auto const spendingBal =
+            mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+        auto const spendingBalEnc =
+            mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
         Buffer const pcBf = generateBlindingFactor();
         auto const pedersenCommitment = mptAlice.getPedersenCommitment(*spendingBal, pcBf);
 
         auto const currentVersion = mptAlice.getMPTokenVersion(bob);
         // Uses the new signature: Account, IssuanceID, Sequence, Version
-        uint256 const contextHash = getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), currentVersion);
+        uint256 const contextHash =
+            getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), currentVersion);
 
         Buffer const proof = mptAlice.getConvertBackProof(
             bob,
@@ -4635,7 +4641,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         // Submit transaction with Divergent Ciphertexts
         // Holder Ciphertext encrypts 11. Issuer Ciphertext encrypts 10.
-        // The consistency check (re-encryption of `amt` with `bf`) will match Issuer but FAIL for Holder.
+        // The consistency check (re-encryption of `amt` with `bf`) will match Issuer but FAIL for
+        // Holder.
         mptAlice.convertBack(
             {.account = bob,
              .amt = amt,
@@ -4666,7 +4673,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Account const carol("carol");
         MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
 
-        mptAlice.create({.ownerCount = 1, .flags = tfMPTCanLock | tfMPTCanPrivacy | tfMPTCanTransfer});
+        mptAlice.create(
+            {.ownerCount = 1, .flags = tfMPTCanLock | tfMPTCanPrivacy | tfMPTCanTransfer});
         mptAlice.authorize({.account = bob});
         mptAlice.authorize({.account = carol});
 
@@ -4690,7 +4698,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.send({.account = bob, .dest = carol, .amt = 10});
 
         // Bob's spending balance is 90 after the baseline send.
-        auto const bobSpendingBefore = mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+        auto const bobSpendingBefore =
+            mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
         BEAST_EXPECT(bobSpendingBefore == 90);
 
         // Construct Enc(maxMPTokenAmount) with Bob's public key.
@@ -4702,8 +4711,9 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Buffer const encOne = mptAlice.encryptAmount(bob, 1, bf2);
 
         // Homomorphically add to produce CB_S_holder' = Enc(MAX) + Enc(1)
-        Buffer overflowedCt(ecGamalEncryptedTotalLength);
-        BEAST_EXPECT(homomorphicAdd(encMax, encOne, overflowedCt) == tesSUCCESS);
+        auto overflowedOpt = homomorphicAdd(encMax, encOne);
+        BEAST_EXPECT(overflowedOpt.has_value());
+        Buffer overflowedCt = std::move(*overflowedOpt);
 
         // Submit the send transaction with the tampered ciphertext.
         // Setting amt = maxMPTokenAmount + 1 drives proof generation for the
@@ -4717,7 +4727,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             .err = tecBAD_PROOF,
         });
 
-        auto const bobSpendingAfter = mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+        auto const bobSpendingAfter =
+            mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
         BEAST_EXPECT(bobSpendingBefore == bobSpendingAfter);
     }
 
@@ -4740,7 +4751,9 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         MPTTester mptAlice(env, alice, {.holders = {bob}});
 
         mptAlice.create(
-            {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+            {.ownerCount = 1,
+             .holderCount = 0,
+             .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
 
         mptAlice.authorize({.account = bob});
         mptAlice.pay(alice, bob, 10);
@@ -4758,7 +4771,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.convertBack({.account = bob, .amt = 1});
 
         // Bob's spending balance is now 9; public balance is 1.
-        auto const bobSpendingBefore = mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+        auto const bobSpendingBefore =
+            mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
         BEAST_EXPECT(bobSpendingBefore == 9);
         auto const bobPublicBefore = mptAlice.getBalance(bob);
         BEAST_EXPECT(bobPublicBefore == 1);
@@ -4773,8 +4787,9 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         // Homomorphically subtract to produce CB_S_holder' = Enc(0) − Enc(1)
         // = Enc(−1), which lies below [0, maxMPTokenAmount].
-        Buffer underflowedCt(ecGamalEncryptedTotalLength);
-        BEAST_EXPECT(homomorphicSubtract(encZero, encOne, underflowedCt) == tesSUCCESS);
+        auto underflowedOpt = homomorphicSubtract(encZero, encOne);
+        BEAST_EXPECT(underflowedOpt.has_value());
+        Buffer underflowedCt = std::move(*underflowedOpt);
 
         // Submit ConvertBack(1) with the underflowed ciphertext.
         // A pre-formed zero proof bypasses the proof generator, which would throw
@@ -4794,7 +4809,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // Supply invariant: both public and confidential balances must be unchanged
         // after the rejected attack.
         BEAST_EXPECT(mptAlice.getBalance(bob) == bobPublicBefore);
-        auto const bobSpendingAfter = mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+        auto const bobSpendingAfter =
+            mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
         BEAST_EXPECT(bobSpendingBefore == bobSpendingAfter);
     }
 
