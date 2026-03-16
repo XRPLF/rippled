@@ -615,7 +615,7 @@ encodeBase58Token(
     {
         return Unexpected(TokenCodecErrc::inputTooLarge);
     }
-    if (input.size() == 0)
+    if (input.empty())
     {
         return Unexpected(TokenCodecErrc::inputTooSmall);
     }

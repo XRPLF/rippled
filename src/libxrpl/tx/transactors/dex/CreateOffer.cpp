@@ -337,14 +337,18 @@ CreateOffer::flowCross(
             // specified.  Since we don't know how much they might offer,
             // we allow delivery of the largest possible amount.
             if (deliver.native())
+            {
                 deliver = STAmount{STAmount::cMaxNative};
+            }
             else
+            {
                 // We can't use the maximum possible currency here because
                 // there might be a gateway transfer rate to account for.
                 // Since the transfer rate cannot exceed 200%, we use 1/2
                 // maxValue for our limit.
                 deliver = STAmount{
                     takerAmount.out.issue(), STAmount::cMaxValue / 2, STAmount::cMaxOffset};
+            }
         }
 
         // Call the payment engine's flow() to do the actual work.
@@ -402,17 +406,21 @@ CreateOffer::flowCross(
                     // gateway's transfer rate.
                     STAmount nonGatewayAmountIn = result.actualAmountIn;
                     if (gatewayXferRate.value != QUALITY_ONE)
+                    {
                         nonGatewayAmountIn = divideRound(
                             result.actualAmountIn, gatewayXferRate, takerAmount.in.issue(), true);
+                    }
 
                     afterCross.in -= nonGatewayAmountIn;
 
                     // It's possible that the divRound will cause our subtract
                     // to go slightly negative.  So limit afterCross.in to zero.
                     if (afterCross.in < beast::zero)
+                    {
                         // We should verify that the difference *is* small, but
                         // what is a good threshold to check?
                         afterCross.in.clear();
+                    }
 
                     afterCross.out =
                         divRoundStrict(afterCross.in, rate, takerAmount.out.issue(), false);
@@ -713,10 +721,12 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     {
         JLOG(j_.trace()) << "Immediate or cancel: offer canceled";
         if (!crossed)
+        {
             // Any ImmediateOrCancel offer that transfers absolutely no funds
             // returns tecKILLED rather than tesSUCCESS.  Motivation for the
             // change is here: https://github.com/ripple/rippled/issues/4115
             return {tecKILLED, false};
+        }
         return {tesSUCCESS, true};
     }
 
@@ -855,9 +865,13 @@ CreateOffer::doApply()
 
     auto const result = applyGuts(sb, sbCancel);
     if (result.second)
+    {
         sb.apply(ctx_.rawView());
+    }
     else
+    {
         sbCancel.apply(ctx_.rawView());
+    }
     return result.first;
 }
 

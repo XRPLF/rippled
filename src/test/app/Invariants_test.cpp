@@ -71,7 +71,7 @@ class Invariants_test : public beast::unit_test::suite
         Preclose const& preclose = {},
         TxAccount setTxAccount = TxAccount::None)
     {
-        return doInvariantCheck(
+        doInvariantCheck(
             test::jtx::Env(*this, defaultAmendments()),
             expect_logs,
             precheck,
@@ -105,7 +105,7 @@ class Invariants_test : public beast::unit_test::suite
         if (setTxAccount != TxAccount::None)
             tx.setAccountID(sfAccount, setTxAccount == TxAccount::A1 ? A1.id() : A2.id());
 
-        return doInvariantCheck(std::move(env), A1, A2, expect_logs, precheck, fee, tx, ters);
+        doInvariantCheck(std::move(env), A1, A2, expect_logs, precheck, fee, tx, ters);
     }
 
     void
@@ -2290,8 +2290,10 @@ class Invariants_test : public beast::unit_test::suite
             if (args.assetsTotal)
                 (*sleVault)[sfAssetsTotal] = *(*sleVault)[sfAssetsTotal] + *args.assetsTotal;
             if (args.assetsAvailable)
+            {
                 (*sleVault)[sfAssetsAvailable] =
                     *(*sleVault)[sfAssetsAvailable] + *args.assetsAvailable;
+            }
             ac.update(sleVault);
 
             if (args.sharesTotal)
@@ -2324,7 +2326,9 @@ class Invariants_test : public beast::unit_test::suite
                     ac.update(sleMPToken);
                 }
                 else
+                {
                     return false;  // Not supporting testing with IOU
+                }
             }
 
             if (args.accountAssets)
@@ -2348,7 +2352,9 @@ class Invariants_test : public beast::unit_test::suite
                     ac.update(sleMPToken);
                 }
                 else
+                {
                     return false;  // Not supporting testing with IOU
+                }
             }
 
             if (args.accountShares)

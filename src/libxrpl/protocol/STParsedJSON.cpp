@@ -267,8 +267,10 @@ parseUint16(
             }
         }
         if (!ret)
+        {
             return parseUnsigned<STResult, Integer>(
                 field, json_name, fieldName, name, value, error);
+        }
     }
     catch (std::exception const&)
     {
@@ -320,8 +322,10 @@ parseUint32(
             }
         }
         if (!ret)
+        {
             return parseUnsigned<STResult, Integer>(
                 field, json_name, fieldName, name, value, error);
+        }
     }
     catch (std::exception const&)
     {

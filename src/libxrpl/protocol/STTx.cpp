@@ -199,8 +199,10 @@ STTx::getSeqProxy() const
 
     std::optional<std::uint32_t> const ticketSeq{operator[](~sfTicketSequence)};
     if (!ticketSeq)
+    {
         // No TicketSequence specified.  Return the Sequence, whatever it is.
         return SeqProxy::sequence(seq);
+    }
 
     return SeqProxy{SeqProxy::ticket, *ticketSeq};
 }
@@ -324,7 +326,9 @@ STTx::getJson(JsonOptions options, bool binary) const
             return ret;
         }
         else
+        {
             return Json::Value{dataBin};
+        }
     }
 
     Json::Value ret = STObject::getJson(JsonOptions::none);
@@ -486,9 +490,11 @@ multiSignHelper(
             errorWhat = e.what();
         }
         if (!validSig)
+        {
             return Unexpected(
                 std::string("Invalid signature on account ") + toBase58(accountID) +
                 errorWhat.value_or("") + ".");
+        }
     }
     // All signatures verified.
     return {};
@@ -562,7 +568,7 @@ STTx::getBatchTransactionIDs() const
     // The list of inner ids is built once, then reused on subsequent calls.
     // After the list is built, it must always have the same size as the array
     // `sfRawTransactions`. The assert below verifies that.
-    if (batchTxnIds_.size() == 0)
+    if (batchTxnIds_.empty())
     {
         for (STObject const& rb : getFieldArray(sfRawTransactions))
             batchTxnIds_.push_back(rb.getHash(HashPrefix::transactionID));

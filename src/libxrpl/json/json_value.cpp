@@ -98,8 +98,11 @@ Value::CZString::CZString(CZString const& other)
           other.index_ != noDuplication && other.cstr_ != 0
               ? valueAllocator()->makeMemberName(other.cstr_)
               : other.cstr_)
-    , index_(
-          other.cstr_ ? (other.index_ == noDuplication ? noDuplication : duplicate) : other.index_)
+    , index_([&]() -> int {
+        if (!other.cstr_)
+            return other.index_;
+        return other.index_ == noDuplication ? noDuplication : duplicate;
+    }())
 {
 }
 
@@ -254,7 +257,9 @@ Value::Value(Value const& other) : type_(other.type_)
                 allocated_ = true;
             }
             else
+            {
                 value_.string_ = 0;
+            }
 
             break;
 
@@ -351,7 +356,9 @@ integerCmp(Int i, UInt ui)
         return -1;
 
     // Now we can safely compare.
-    return (i < ui) ? -1 : (i == ui) ? 0 : 1;
+    if (i < ui)
+        return -1;
+    return (i == ui) ? 0 : 1;
 }
 
 bool
@@ -360,9 +367,13 @@ operator<(Value const& x, Value const& y)
     if (auto signum = x.type_ - y.type_)
     {
         if (x.type_ == intValue && y.type_ == uintValue)
+        {
             signum = integerCmp(x.value_.int_, y.value_.uint_);
+        }
         else if (x.type_ == uintValue && y.type_ == intValue)
+        {
             signum = -integerCmp(y.value_.int_, x.value_.uint_);
+        }
         return signum < 0;
     }
 
@@ -696,7 +707,7 @@ Value::asBool() const
 
         case arrayValue:
         case objectValue:
-            return value_.map_->size() != 0;
+            return !value_.map_->empty();
 
             // LCOV_EXCL_START
         default:
@@ -743,10 +754,10 @@ Value::isConvertibleTo(ValueType other) const
                 (other == nullValue && (!value_.string_ || value_.string_[0] == 0));
 
         case arrayValue:
-            return other == arrayValue || (other == nullValue && value_.map_->size() == 0);
+            return other == arrayValue || (other == nullValue && value_.map_->empty());
 
         case objectValue:
-            return other == objectValue || (other == nullValue && value_.map_->size() == 0);
+            return other == objectValue || (other == nullValue && value_.map_->empty());
 
         // LCOV_EXCL_START
         default:

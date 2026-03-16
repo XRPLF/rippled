@@ -316,17 +316,25 @@ DirectIPaymentStep::quality(ReadView const& sb, QualityDirection qDir) const
         {
             // compute dst quality in
             if (this->dst_ < this->src_)
+            {
                 return sfLowQualityIn;
+            }
             else
+            {
                 return sfHighQualityIn;
+            }
         }
         else
         {
             // compute src quality out
             if (this->src_ < this->dst_)
+            {
                 return sfLowQualityOut;
+            }
             else
+            {
                 return sfHighQualityOut;
+            }
         }
     }();
 

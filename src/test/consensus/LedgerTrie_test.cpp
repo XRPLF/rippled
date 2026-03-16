@@ -638,9 +638,13 @@ class LedgerTrie_test : public beast::unit_test::suite
 
             // 50-50 to add remove
             if (flip(gen) == 0)
+            {
                 t.insert(h[curr]);
+            }
             else
+            {
                 t.remove(h[curr]);
+            }
             if (!BEAST_EXPECT(t.checkInvariants()))
                 return;
         }

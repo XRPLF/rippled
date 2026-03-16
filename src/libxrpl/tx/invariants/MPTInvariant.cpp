@@ -19,15 +19,21 @@ ValidMPTIssuance::visitEntry(
     if (after && after->getType() == ltMPTOKEN_ISSUANCE)
     {
         if (isDelete)
+        {
             mptIssuancesDeleted_++;
+        }
         else if (!before)
+        {
             mptIssuancesCreated_++;
+        }
     }
 
     if (after && after->getType() == ltMPTOKEN)
     {
         if (isDelete)
+        {
             mptokensDeleted_++;
+        }
         else if (!before)
         {
             mptokensCreated_++;

@@ -82,17 +82,25 @@ parseLedgerArgs(RPC::Context& context, Json::Value const& params)
     {
         LedgerSpecifier ledger;
         if (params[jss::ledger_index].isNumeric())
+        {
             ledger = params[jss::ledger_index].asUInt();
+        }
         else
         {
             std::string ledgerStr = params[jss::ledger_index].asString();
 
             if (ledgerStr == "current" || ledgerStr.empty())
+            {
                 ledger = LedgerShortcut::Current;
+            }
             else if (ledgerStr == "closed")
+            {
                 ledger = LedgerShortcut::Closed;
+            }
             else if (ledgerStr == "validated")
+            {
                 ledger = LedgerShortcut::Validated;
+            }
             else
             {
                 RPC::Status status{rpcINVALID_PARAMS, "ledger_index string malformed"};
@@ -298,7 +306,9 @@ populateJsonResponse(
                             jvObj[jss::close_time_iso] = to_string_iso(*closeTime);
                     }
                     else
+                    {
                         jvObj[json_tx] = txn->getJson(JsonOptions::include_date);
+                    }
 
                     auto const& sttx = txn->getSTransaction();
                     RPC::insertDeliverMax(jvObj[json_tx], sttx->getTxnType(), context.apiVersion);

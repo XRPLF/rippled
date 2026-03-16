@@ -285,13 +285,21 @@ RFC1751::standard(std::string& strWord)
     for (auto& letter : strWord)
     {
         if (islower(static_cast<unsigned char>(letter)))
+        {
             letter = toupper(static_cast<unsigned char>(letter));
+        }
         else if (letter == '1')
+        {
             letter = 'L';
+        }
         else if (letter == '0')
+        {
             letter = 'O';
+        }
         else if (letter == '5')
+        {
             letter = 'S';
+        }
     }
 }
 

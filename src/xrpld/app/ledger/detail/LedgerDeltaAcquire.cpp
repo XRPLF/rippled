@@ -145,7 +145,7 @@ LedgerDeltaAcquire::addDataCallback(InboundLedger::Reason reason, OnDeltaDataCB&
 {
     ScopedLockType sl(mtx_);
     dataReadyCallbacks_.emplace_back(std::move(cb));
-    if (reasons_.count(reason) == 0)
+    if (!reasons_.contains(reason))
     {
         reasons_.emplace(reason);
         if (fullLedger_)

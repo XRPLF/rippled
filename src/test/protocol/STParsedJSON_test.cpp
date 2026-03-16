@@ -727,8 +727,10 @@ class STParsedJSON_test : public beast::unit_test::suite
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
             if (BEAST_EXPECT(obj.object->isFieldPresent(sfLoanScale)))
+            {
                 BEAST_EXPECT(
                     obj.object->getFieldI32(sfLoanScale) == static_cast<int32_t>(maxUInt32));
+            }
         }
 
         // Test with string value
@@ -820,7 +822,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             BEAST_EXPECT(obj.object.has_value());
             BEAST_EXPECT(obj.object->isFieldPresent(sfPublicKey));
             auto const& blob = obj.object->getFieldVL(sfPublicKey);
-            BEAST_EXPECT(blob.size() == 0);
+            BEAST_EXPECT(blob.empty());
         }
 
         // Test lowercase hex string for blob
@@ -895,7 +897,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             BEAST_EXPECT(obj.object.has_value());
             BEAST_EXPECT(obj.object->isFieldPresent(sfHashes));
             auto const& vec = obj.object->getFieldV256(sfHashes);
-            BEAST_EXPECT(vec.size() == 0);
+            BEAST_EXPECT(vec.empty());
         }
 
         // Test array with invalid hex string (should fail)

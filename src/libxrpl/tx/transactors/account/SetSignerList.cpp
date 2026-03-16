@@ -124,7 +124,7 @@ SetSignerList::preCompute()
     signers_ = std::get<2>(result);
     do_ = std::get<3>(result);
 
-    return Transactor::preCompute();
+    Transactor::preCompute();
 }
 
 // The return type is signed so it is compatible with the 3rd argument

@@ -33,15 +33,21 @@ getMaxSourceAmount(
     std::optional<STAmount> const& sendMax)
 {
     if (sendMax)
+    {
         return *sendMax;
+    }
     else if (dstAmount.native() || dstAmount.holds<MPTIssue>())
+    {
         return dstAmount;
+    }
     else
+    {
         return STAmount(
             Issue{dstAmount.get<Issue>().currency, account},
             dstAmount.mantissa(),
             dstAmount.exponent(),
             dstAmount < beast::zero);
+    }
 }
 
 bool
@@ -438,9 +444,13 @@ Payment::doApply()
         if (rc.result() == tesSUCCESS && rc.actualAmountOut != dstAmount)
         {
             if (deliverMin && rc.actualAmountOut < *deliverMin)
+            {
                 rc.setResult(tecPATH_PARTIAL);
+            }
             else
+            {
                 ctx_.deliver(rc.actualAmountOut);
+            }
         }
 
         auto terResult = rc.result();
@@ -524,7 +534,9 @@ Payment::doApply()
                 ctx_.deliver(amountDeliver);
         }
         else if (res == tecINSUFFICIENT_FUNDS || res == tecPATH_DRY)
+        {
             res = tecPATH_PARTIAL;
+        }
 
         return res;
     }

@@ -78,10 +78,12 @@ ledgerFromRequest(T& ledger, JsonContext const& context)
         // while `ledger` is still supported, it is deprecated
         // and therefore shouldn't be mentioned in the error message
         if (hasLedger)
+        {
             return {
                 rpcINVALID_PARAMS,
                 "Exactly one of 'ledger', 'ledger_hash', or "
                 "'ledger_index' can be specified."};
+        }
         return {
             rpcINVALID_PARAMS,
             "Exactly one of 'ledger_hash' or "
@@ -97,9 +99,13 @@ ledgerFromRequest(T& ledger, JsonContext const& context)
             return {rpcINVALID_PARAMS, expected_field_message(jss::ledger, "string or number")};
         }
         if (legacyLedger.isString() && legacyLedger.asString().size() == 64)
+        {
             return ledgerFromHash(ledger, legacyLedger, context, jss::ledger);
+        }
         else
+        {
             return ledgerFromIndex(ledger, legacyLedger, context, jss::ledger);
+        }
     }
 
     if (hasHash)

@@ -278,11 +278,17 @@ public:
                       // for the job queue if the server is configured as
                       // "large" or "huge" if there are enough cores.
                       if (config->NODE_SIZE >= 4 && count >= 16)
+                      {
                           count = 6 + std::min(count, 8);
+                      }
                       else if (config->NODE_SIZE >= 3 && count >= 8)
+                      {
                           count = 4 + std::min(count, 6);
+                      }
                       else
+                      {
                           count = 2 + std::min(count, 4);
+                      }
 
                       return count;
                   }(config_),
@@ -1572,7 +1578,9 @@ ApplicationImp::signalStop(std::string msg)
     if (!isTimeToStop.test_and_set(std::memory_order_acquire))
     {
         if (msg.empty())
+        {
             JLOG(m_journal.warn()) << "Server stopping";
+        }
         else
             JLOG(m_journal.warn()) << "Server stopping: " << msg;
 

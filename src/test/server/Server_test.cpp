@@ -121,9 +121,13 @@ public:
         {
             session.write(std::string("Hello, world!\n"));
             if (beast::rfc2616::is_keep_alive(session.request()))
+            {
                 session.complete();
+            }
             else
+            {
                 session.close(true);
+            }
         }
 
         void

@@ -137,9 +137,13 @@ public:
             check(false, "Not an " + ((type == array ? "array: " : "object: ") + message));
         }
         if (stack_.top().isFirst)
+        {
             stack_.top().isFirst = false;
+        }
         else
+        {
             output_({&comma, 1});
+        }
     }
 
     void

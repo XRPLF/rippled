@@ -913,9 +913,13 @@ to_string(Number const& amount)
 
     // Assemble the output:
     if (pre_from == pre_to)
+    {
         ret.append(1, '0');
+    }
     else
+    {
         ret.append(pre_from, pre_to);
+    }
 
     if (post_to != post_from)
     {

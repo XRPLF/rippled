@@ -28,18 +28,26 @@ TEST(Slice, equality_and_inequality)
         EXPECT_NE(s1.data(), nullptr);
 
         if (i == 0)
+        {
             EXPECT_EQ(s1, s0);
+        }
         else
+        {
             EXPECT_NE(s1, s0);
+        }
 
         for (std::size_t j = 0; j != sizeof(data); ++j)
         {
             Slice const s2{data, j};
 
             if (i == j)
+            {
                 EXPECT_EQ(s1, s2);
+            }
             else
+            {
                 EXPECT_NE(s1, s2);
+            }
         }
     }
 

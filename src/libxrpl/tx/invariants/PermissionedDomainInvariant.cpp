@@ -90,9 +90,11 @@ ValidPermissionedDomain::finalize(
     {
         // No permissioned domains should be affected if the transaction failed
         if (result != tesSUCCESS)
+        {
             // If nothing changed, all is good. If there were changes, that's
             // bad.
             return sleStatus_.empty();
+        }
 
         if (sleStatus_.size() > 1)
         {

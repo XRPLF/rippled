@@ -55,8 +55,10 @@ validBalances(
     bool const positive =
         amount > beast::zero && amount2 > beast::zero && lptAMMBalance > beast::zero;
     if (zeroAllowed == ValidAMM::ZeroAllowed::Yes)
+    {
         return positive ||
             (amount == beast::zero && amount2 == beast::zero && lptAMMBalance == beast::zero);
+    }
     return positive;
 }
 
@@ -236,7 +238,9 @@ ValidAMM::finalizeDeposit(
         // LCOV_EXCL_STOP
     }
     else if (!generalInvariant(tx, view, ZeroAllowed::No, j) && enforce)
+    {
         return false;
+    }
 
     return true;
 }

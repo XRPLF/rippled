@@ -231,7 +231,7 @@ class HashRouter_test : public beast::unit_test::suite
         ++stopwatch;
         // Confirm that peers list is empty.
         peers = router.shouldRelay(key1);
-        BEAST_EXPECT(peers && peers->size() == 0);
+        BEAST_EXPECT(peers && peers->empty());
     }
 
     void

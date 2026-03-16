@@ -698,10 +698,12 @@ protected:
 
         env.close();
         if (asset.native() || lender != issuer)
+        {
             env(
                 pay((asset.native() ? env.master : issuer),
                     lender,
                     asset(brokerParams.vaultDeposit + brokerParams.coverDeposit)));
+        }
         // Fund the borrower later once we know the total loan
         // size
 
@@ -773,10 +775,12 @@ protected:
         auto const shortage = totalNeeded - borrowerBalance.number();
 
         if (shortage > beast::zero && (broker.asset.native() || issuer != borrower))
+        {
             env(
                 pay((broker.asset.native() ? env.master : issuer),
                     borrower,
                     STAmount{broker.asset, shortage}));
+        }
     }
 
     void
@@ -826,6 +830,7 @@ protected:
             roundPeriodicPayment(broker.asset, state.periodicPayment, state.loanScale)};
 
         if (!showStepBalances)
+        {
             log << currencyLabel << " Payment components: "
                 << "Payments remaining, "
                 << "rawInterest, rawPrincipal, "
@@ -833,6 +838,7 @@ protected:
                 << "trackedValueDelta, trackedPrincipalDelta, "
                    "trackedInterestDelta, trackedMgmtFeeDelta, special"
                 << std::endl;
+        }
 
         // Include the service fee
         STAmount const totalDue =
@@ -947,18 +953,21 @@ protected:
                 (state.loanScale - (deltas.total() - state.periodicPayment).exponent()) > 14);
 
             if (!showStepBalances)
+            {
                 log << currencyLabel << " Payment components: " << state.paymentRemaining << ", "
 
                     << deltas.interest << ", " << deltas.principal << ", " << deltas.managementFee
                     << ", " << paymentComponents.trackedValueDelta << ", "
                     << paymentComponents.trackedPrincipalDelta << ", "
                     << paymentComponents.trackedInterestPart() << ", "
-                    << paymentComponents.trackedManagementFeeDelta << ", "
-                    << (paymentComponents.specialCase == detail::PaymentSpecialCase::final ? "final"
-                            : paymentComponents.specialCase == detail::PaymentSpecialCase::extra
-                            ? "extra"
-                            : "none")
-                    << std::endl;
+                    << paymentComponents.trackedManagementFeeDelta << ", " << [&]() -> char const* {
+                    if (paymentComponents.specialCase == detail::PaymentSpecialCase::final)
+                        return "final";
+                    if (paymentComponents.specialCase == detail::PaymentSpecialCase::extra)
+                        return "extra";
+                    return "none";
+                }() << std::endl;
+            }
 
             auto const totalDueAmount =
                 STAmount{broker.asset, paymentComponents.trackedValueDelta + serviceFee};
@@ -1016,8 +1025,10 @@ protected:
             {
                 auto const loanSle = env.le(loanKeylet);
                 if (!BEAST_EXPECT(loanSle))
+                {
                     // No reason for this not to exist
                     return;
+                }
                 auto const current = constructRoundedLoanState(loanSle);
                 auto const errors = nextTrueState - current;
                 log << currencyLabel << " Loan balances: "
@@ -1091,8 +1102,10 @@ protected:
         {
             auto const loanSle = env.le(loanKeylet);
             if (!BEAST_EXPECT(loanSle))
+            {
                 // No reason for this not to exist
                 return;
+            }
             log << currencyLabel << " Total amounts paid: "
                 << "\n\tTotal value: " << totalPaid.trackedValueDelta
                 << " (initial: " << truncate(initialState.totalValue)
@@ -1179,8 +1192,10 @@ protected:
         auto const [keylet, loanSequence] = [&]() {
             auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
+            {
                 // will be invalid
                 return std::make_pair(keylet::loan(broker.brokerID), std::uint32_t(0));
+            }
 
             // Broker has no loans
             BEAST_EXPECT(brokerSle->at(sfOwnerCount) == 0);
@@ -1454,11 +1469,13 @@ protected:
     std::string
     getCurrencyLabel(Asset const& asset)
     {
-        return (
-            asset.native()                ? "XRP"
-                : asset.holds<Issue>()    ? "IOU"
-                : asset.holds<MPTIssue>() ? "MPT"
-                                          : "Unknown");
+        if (asset.native())
+            return "XRP";
+        if (asset.holds<Issue>())
+            return "IOU";
+        if (asset.holds<MPTIssue>())
+            return "MPT";
+        return "Unknown";
     }
 
     /** Wrapper to run a series of lifecycle tests for a given asset and loan
@@ -1788,8 +1805,10 @@ protected:
             auto const vaultPseudo = [&]() {
                 auto const vaultSle = env.le(keylet::vault(brokerSle->at(sfVaultID)));
                 if (!BEAST_EXPECT(vaultSle))
+                {
                     // This will be wrong, but the test has failed anyway.
                     return lender;
+                }
                 auto const vaultPseudo = Account("Vault pseudo-account", vaultSle->at(sfAccount));
                 return vaultPseudo;
             }();
@@ -2511,12 +2530,13 @@ protected:
                              << ", " << paymentComponents.trackedPrincipalDelta << ", "
                              << paymentComponents.trackedInterestPart() << ", "
                              << paymentComponents.trackedManagementFeeDelta << ", "
-                             << (paymentComponents.specialCase == detail::PaymentSpecialCase::final
-                                     ? "final"
-                                     : paymentComponents.specialCase ==
-                                         detail::PaymentSpecialCase::extra
-                                     ? "extra"
-                                     : "none");
+                             << [&]() -> char const* {
+                        if (paymentComponents.specialCase == detail::PaymentSpecialCase::final)
+                            return "final";
+                        if (paymentComponents.specialCase == detail::PaymentSpecialCase::extra)
+                            return "extra";
+                        return "none";
+                    }();
 
                     auto const totalDueAmount = STAmount{
                         broker.asset, paymentComponents.trackedValueDelta + serviceFee.number()};
@@ -2568,8 +2588,10 @@ protected:
                     auto const borrowerBalanceBeforePayment = env.balance(borrower, broker.asset);
 
                     if (canImpairLoan(env, broker, state))
+                    {
                         // Making a payment will unimpair the loan
                         env(manage(lender, loanKeylet.key, tfLoanImpair));
+                    }
 
                     env.close();
 
@@ -6247,9 +6269,13 @@ protected:
             Vault vault(env);
 
             if (borrower == broker)
+            {
                 env.fund(XRP(10'000), broker, issuer, depositor);
+            }
             else
+            {
                 env.fund(XRP(10'000), broker, borrower, issuer, depositor);
+            }
             env.close();
 
             auto const xrpFee = XRP(100);

@@ -420,9 +420,9 @@ public:
 
             STObject st(sot, sfGeneric);
             auto const& cst(st);
-            BEAST_EXPECT(cst[sf1].size() == 0);
+            BEAST_EXPECT(cst[sf1].empty());
             BEAST_EXPECT(!cst[~sf2]);
-            BEAST_EXPECT(cst[sf3].size() == 0);
+            BEAST_EXPECT(cst[sf3].empty());
             std::vector<uint256> v;
             v.emplace_back(1);
             st[sf1] = v;
@@ -437,7 +437,7 @@ public:
             BEAST_EXPECT(cst[sf3].size() == 1);
             BEAST_EXPECT(cst[sf3][0] == uint256{1});
             st[sf3] = std::vector<uint256>{};
-            BEAST_EXPECT(cst[sf3].size() == 0);
+            BEAST_EXPECT(cst[sf3].empty());
         }
     }  // namespace xrpl
 

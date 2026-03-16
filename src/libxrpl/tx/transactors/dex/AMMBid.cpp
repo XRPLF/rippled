@@ -193,14 +193,22 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
         auctionSlot.setAccountID(sfAccount, account_);
         auctionSlot.setFieldU32(sfExpiration, current + TOTAL_TIME_SLOT_SECS);
         if (fee != 0)
+        {
             auctionSlot.setFieldU16(sfDiscountedFee, fee);
+        }
         else if (auctionSlot.isFieldPresent(sfDiscountedFee))
+        {
             auctionSlot.makeFieldAbsent(sfDiscountedFee);
+        }
         auctionSlot.setFieldAmount(sfPrice, toSTAmount(lpTokens.issue(), minPrice));
         if (ctx_.tx.isFieldPresent(sfAuthAccounts))
+        {
             auctionSlot.setFieldArray(sfAuthAccounts, ctx_.tx.getFieldArray(sfAuthAccounts));
+        }
         else
+        {
             auctionSlot.makeFieldAbsent(sfAuthAccounts);
+        }
         // Burn the remaining bid amount
         auto const saBurn =
             adjustLPTokens(lptAMMBalance, toSTAmount(lptAMMBalance.issue(), burn), IsDeposit::No);
@@ -254,12 +262,18 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
                 return std::nullopt;
             }
             else
+            {
                 return computedPrice;
+            }
         }();
         if (!payPrice)
+        {
             return Unexpected(tecAMM_FAILED);
+        }
         else if (payPrice > lpTokens)
+        {
             return Unexpected(tecAMM_INVALID_TOKENS);
+        }
         return *payPrice;
     };
 
@@ -267,9 +281,13 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
     if (auto const acct = auctionSlot[~sfAccount]; !acct || !validOwner(*acct))
     {
         if (auto const payPrice = getPayPrice(minSlotPrice); !payPrice)
+        {
             return {payPrice.error(), false};
+        }
         else
+        {
             res = updateSlot(discountedFee, *payPrice, *payPrice);
+        }
     }
     else
     {

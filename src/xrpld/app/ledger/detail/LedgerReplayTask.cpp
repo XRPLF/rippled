@@ -183,7 +183,9 @@ LedgerReplayTask::tryAdvance(ScopedLockType& sl)
                 parent_ = l;
             }
             else
+            {
                 return;
+            }
         }
 
         complete_ = true;
@@ -248,9 +250,13 @@ LedgerReplayTask::addDelta(std::shared_ptr<LedgerDeltaAcquire> const& delta)
         if (auto sptr = wptr.lock(); sptr)
         {
             if (!good)
+            {
                 sptr->cancel();
+            }
             else
+            {
                 sptr->deltaReady(hash);
+            }
         }
     });
 

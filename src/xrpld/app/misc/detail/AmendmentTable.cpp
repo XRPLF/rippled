@@ -40,8 +40,10 @@ parseSection(Section const& section)
         uint256 id;
 
         if (!id.parseHex(match[1]))
+        {
             Throw<std::runtime_error>(
                 "Invalid amendment ID '" + match[1] + "' in [" + section.name() + "]");
+        }
 
         names.push_back(std::make_pair(id, match[2]));
     }
@@ -547,7 +549,7 @@ AmendmentTableImpl::AmendmentTableImpl(
         }
         else
         {  // Otherwise transfer config data into the table
-            if (detect_conflict.count(a.first) == 0)
+            if (!detect_conflict.contains(a.first))
             {
                 persistVote(a.first, a.second, AmendmentVote::down);
             }
@@ -749,7 +751,7 @@ AmendmentTableImpl::doValidation(std::set<uint256> const& enabled) const
         for (auto const& e : amendmentMap_)
         {
             if (e.second.supported && e.second.vote == AmendmentVote::up &&
-                (enabled.count(e.first) == 0))
+                (!enabled.contains(e.first)))
             {
                 amendments.push_back(e.first);
                 JLOG(j_.info()) << "Voting for amendment " << e.second.name;
@@ -931,9 +933,13 @@ AmendmentTableImpl::injectJson(
     if (!fs.enabled && isAdmin)
     {
         if (fs.vote == AmendmentVote::obsolete)
+        {
             v[jss::vetoed] = "Obsolete";
+        }
         else
+        {
             v[jss::vetoed] = fs.vote == AmendmentVote::down;
+        }
     }
     v[jss::enabled] = fs.enabled;
 

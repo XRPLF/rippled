@@ -171,9 +171,11 @@ ed25519Canonical(Slice const& sig)
 PublicKey::PublicKey(Slice const& slice)
 {
     if (slice.size() < size_)
+    {
         LogicError(
             "PublicKey::PublicKey - Input slice cannot be an undersized "
             "buffer");
+    }
 
     if (!publicKeyType(slice))
         LogicError("PublicKey::PublicKey invalid type");

@@ -264,9 +264,13 @@ toStrand(
         auto const next = &normPath[i + 1];
 
         if (cur->isAccount())
+        {
             curIssue.account = cur->getAccountID();
+        }
         else if (cur->hasIssuer())
+        {
             curIssue.account = cur->getIssuerID();
+        }
 
         if (cur->hasCurrency())
         {
@@ -313,7 +317,9 @@ toStrand(
                 if (isXRP(curIssue))
                 {
                     if (i != normPath.size() - 2)
+                    {
                         return {temBAD_PATH, Strand{}};
+                    }
                     else
                     {
                         // Last step. insert xrp endpoint step
@@ -347,7 +353,9 @@ toStrand(
 
         auto s = toStep(ctx(/*isLast*/ i == normPath.size() - 2), cur, next, curIssue);
         if (s.first == tesSUCCESS)
+        {
             result.emplace_back(std::move(s.second));
+        }
         else
         {
             JLOG(j.debug()) << "toStep failed: " << s.first;

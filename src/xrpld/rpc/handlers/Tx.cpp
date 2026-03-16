@@ -192,7 +192,9 @@ populateJsonResponse(
             constexpr auto optionsJson =
                 JsonOptions::include_date | JsonOptions::disable_API_prior_V2;
             if (args.binary)
+            {
                 response[jss::tx_blob] = result.txn->getJson(optionsJson, true);
+            }
             else
             {
                 response[jss::tx_json] = result.txn->getJson(optionsJson);
@@ -258,8 +260,10 @@ doTxJson(RPC::JsonContext& context)
     TxArgs args;
 
     if (context.params.isMember(jss::transaction) && context.params.isMember(jss::ctid))
+    {
         // specifying both is ambiguous
         return rpcError(rpcINVALID_PARAMS);
+    }
 
     if (context.params.isMember(jss::transaction))
     {
@@ -286,7 +290,9 @@ doTxJson(RPC::JsonContext& context)
         args.ctid = {lgr_seq, txn_idx};
     }
     else
+    {
         return rpcError(rpcINVALID_PARAMS);
+    }
 
     args.binary = context.params.isMember(jss::binary) && context.params[jss::binary].asBool();
 

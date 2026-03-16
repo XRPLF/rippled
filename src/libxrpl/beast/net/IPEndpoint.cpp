@@ -95,10 +95,14 @@ operator>>(std::istream& is, Endpoint& endpoint)
     char i{0};
     char readTo{0};
     is.get(i);
-    if (i == '[')  // we are an IPv6 endpoint
+    if (i == '[')
+    {  // we are an IPv6 endpoint
         readTo = ']';
+    }
     else
+    {
         addrStr += i;
+    }
 
     while (is && is.rdbuf()->in_avail() > 0 && is.get(i))
     {
@@ -166,7 +170,9 @@ operator>>(std::istream& is, Endpoint& endpoint)
         endpoint = Endpoint(addr, port);
     }
     else
+    {
         endpoint = Endpoint(addr);
+    }
 
     return is;
 }

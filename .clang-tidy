@@ -82,6 +82,11 @@ Checks: "-*,
   misc-throw-by-value-catch-by-reference,
   misc-unused-alias-decls,
   misc-unused-using-decls,
+  readability-avoid-nested-conditional-operator,
+  readability-avoid-return-with-void-value,
+  readability-braces-around-statements,
+  readability-container-contains,
+  readability-container-size-empty,
   readability-duplicate-include,
   readability-enum-initial-value,
   readability-misleading-indentation,
@@ -115,11 +120,6 @@ Checks: "-*,
 # misc-include-cleaner,
 # misc-redundant-expression,
 #
-# readability-avoid-nested-conditional-operator,
-# readability-avoid-return-with-void-value,
-# readability-braces-around-statements,
-# readability-container-contains,
-# readability-container-size-empty,
 # readability-convert-member-functions-to-static,
 # readability-const-return-type,
 # readability-else-after-return,
@@ -159,7 +159,7 @@ Checks: "-*,
 # ---
 #
 CheckOptions:
-  #   readability-braces-around-statements.ShortStatementLines: 2
+  readability-braces-around-statements.ShortStatementLines: 2
   #   readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
   #   readability-identifier-naming.ClassCase: CamelCase
   #   readability-identifier-naming.StructCase: CamelCase

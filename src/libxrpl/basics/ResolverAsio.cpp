@@ -374,7 +374,7 @@ public:
             JLOG(m_journal.debug()) << "Queued new job with " << names.size() << " tasks. "
                                     << m_work.size() << " jobs outstanding.";
 
-            if (m_work.size() > 0)
+            if (!m_work.empty())
             {
                 boost::asio::post(
                     m_io_context,

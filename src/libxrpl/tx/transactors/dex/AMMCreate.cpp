@@ -164,9 +164,13 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         if (isXRP(issue))
             return tesSUCCESS;
         if (auto const sle = ctx.view.read(keylet::account(issue.account)); !sle)
+        {
             return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
         else if (sle->getFlags() & lsfAllowTrustLineClawback)
+        {
             return tecNO_PERMISSION;
+        }
         return tesSUCCESS;
     };
 
@@ -246,7 +250,9 @@ applyCreate(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::J
         {
             if (SLE::pointer sleRippleState = sb.peek(keylet::line(accountId, amount.issue()));
                 !sleRippleState)
+            {
                 return tecINTERNAL;  // LCOV_EXCL_LINE
+            }
             else
             {
                 auto const flags = sleRippleState->getFlags();

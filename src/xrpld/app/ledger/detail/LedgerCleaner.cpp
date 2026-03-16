@@ -93,7 +93,9 @@ public:
         std::lock_guard lock(mutex_);
 
         if (maxRange_ == 0)
+        {
             map["status"] = "idle";
+        }
         else
         {
             map["status"] = "running";

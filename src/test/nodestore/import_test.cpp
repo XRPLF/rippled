@@ -367,8 +367,10 @@ public:
             for (it->SeekToFirst(); it->Valid(); it->Next())
             {
                 if (it->key().size() != 32)
+                {
                     Throw<std::runtime_error>(
                         "Unexpected key size " + std::to_string(it->key().size()));
+                }
                 void const* const key = it->key().data();
                 void const* const data = it->value().data();
                 auto const size = it->value().size();

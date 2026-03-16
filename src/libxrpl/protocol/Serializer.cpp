@@ -112,8 +112,10 @@ Serializer::addFieldID(int type, int name)
 
     if (type < 16)
     {
-        if (name < 16)  // common type, common name
+        if (name < 16)
+        {  // common type, common name
             mData.push_back(static_cast<unsigned char>((type << 4) | name));
+        }
         else
         {
             // common type, uncommon name
@@ -187,7 +189,7 @@ int
 Serializer::addVL(Slice const& slice)
 {
     int ret = addEncoded(slice.size());
-    if (slice.size())
+    if (!slice.empty())
         addRaw(slice.data(), slice.size());
     return ret;
 }
@@ -230,7 +232,9 @@ Serializer::addEncoded(int length)
         numBytes = 3;
     }
     else
+    {
         Throw<std::overflow_error>("lenlen");
+    }
 
     return addRaw(&bytes[0], numBytes);
 }

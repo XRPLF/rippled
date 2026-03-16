@@ -194,29 +194,43 @@ adjustAmountsByLPTokens(
             auto const amountActual = toSTAmount(amount.issue(), fr * amount);
             auto const amount2Actual = toSTAmount(amount2->issue(), fr * *amount2);
             if (!ammRoundingEnabled)
+            {
                 return std::make_tuple(
                     amountActual < amount ? amountActual : amount,
                     amount2Actual < amount2 ? amount2Actual : amount2,
                     lpTokensActual);
+            }
             else
+            {
                 return std::make_tuple(amountActual, amount2Actual, lpTokensActual);
+            }
         }
 
         // Single trade
         auto const amountActual = [&]() {
             if (isDeposit == IsDeposit::Yes)
+            {
                 return ammAssetIn(amountBalance, lptAMMBalance, lpTokensActual, tfee);
+            }
             else if (!ammRoundingEnabled)
+            {
                 return ammAssetOut(amountBalance, lptAMMBalance, lpTokens, tfee);
+            }
             else
+            {
                 return ammAssetOut(amountBalance, lptAMMBalance, lpTokensActual, tfee);
+            }
         }();
         if (!ammRoundingEnabled)
+        {
             return amountActual < amount
                 ? std::make_tuple(amountActual, std::nullopt, lpTokensActual)
                 : std::make_tuple(amount, std::nullopt, lpTokensActual);
+        }
         else
+        {
             return std::make_tuple(amountActual, std::nullopt, lpTokensActual);
+        }
     }
 
     XRPL_ASSERT(
@@ -241,9 +255,13 @@ solveQuadraticEqSmallest(Number const& a, Number const& b, Number const& c)
     // use numerically stable citardauq formula for quadratic equation solution
     // https://people.csail.mit.edu/bkph/articles/Quadratics.pdf
     if (b > 0)
+    {
         return (2 * c) / (-b - root2(d));
+    }
     else
+    {
         return (2 * c) / (-b + root2(d));
+    }
 }
 
 STAmount

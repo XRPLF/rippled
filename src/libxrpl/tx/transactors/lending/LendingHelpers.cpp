@@ -856,9 +856,11 @@ computeFullPayment(
                     << ", untrackedInterest: " << full.untrackedInterest;
 
     if (amount < full.totalDue)
+    {
         // If the payment is less than the full payment amount, it's not
         // sufficient to be a full payment.
         return Unexpected(tecINSUFFICIENT_PAYMENT);
+    }
 
     return full;
 }
@@ -1665,10 +1667,12 @@ loanMakePayment(
                 paymentInterval);
         }
         else if (fullPaymentComponents.error())
+        {
             // error() will be the TER returned if a payment is not made. It
             // will only evaluate to true if it's unsuccessful. Otherwise,
             // tesSUCCESS means nothing was done, so continue.
             return Unexpected(fullPaymentComponents.error());
+        }
 
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::loanMakePayment : invalid full payment result");
@@ -1858,13 +1862,17 @@ loanMakePayment(
                     paymentRemainingProxy,
                     managementFeeRate,
                     j))
+            {
                 totalParts += *overResult;
+            }
             else if (overResult.error())
+            {
                 // error() will be the TER returned if a payment is not
                 // made. It will only evaluate to true if it's unsuccessful.
                 // Otherwise, tesSUCCESS means nothing was done, so
                 // continue.
                 return Unexpected(overResult.error());
+            }
         }
     }
 

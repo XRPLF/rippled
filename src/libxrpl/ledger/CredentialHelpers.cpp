@@ -187,9 +187,13 @@ validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
                 continue;
             }
             else if (sleCredential->getFlags() & lsfAccepted)
+            {
                 return tesSUCCESS;
+            }
             else
+            {
                 continue;
+            }
         }
     }
 
@@ -337,9 +341,11 @@ verifyDepositPreauth(
         if (src != dst)
         {
             if (!view.exists(keylet::depositPreauth(dst, src)))
+            {
                 return !credentialsPresent ? tecNO_PERMISSION
                                            : credentials::authorizedDepositPreauth(
                                                  view, tx.getFieldV256(sfCredentialIDs), dst);
+            }
         }
     }
 

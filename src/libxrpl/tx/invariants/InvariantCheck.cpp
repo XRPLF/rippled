@@ -385,8 +385,10 @@ AccountRootsNotDeleted::finalize(
             return true;
 
         if (accountsDeleted_ == 0)
+        {
             JLOG(j.fatal()) << "Invariant failed: account deletion "
                                "succeeded without deleting an account";
+        }
         else
             JLOG(j.fatal()) << "Invariant failed: account deletion "
                                "succeeded but deleted multiple accounts!";
@@ -814,8 +816,10 @@ ValidPseudoAccounts::visitEntry(
     std::shared_ptr<SLE const> const& after)
 {
     if (isDelete)
+    {
         // Deletion is ignored
         return;
+    }
 
     if (after && after->getType() == ltACCOUNT_ROOT)
     {
@@ -903,8 +907,10 @@ NoModifiedUnmodifiableFields::visitEntry(
     std::shared_ptr<SLE const> const& after)
 {
     if (isDelete || !before)
+    {
         // Creation and deletion are ignored
         return;
+    }
 
     changedEntries_.emplace(before, after);
 }

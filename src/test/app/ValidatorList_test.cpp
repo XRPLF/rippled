@@ -1034,9 +1034,13 @@ private:
                 auto const valKey = randomNode();
                 cfgKeys.push_back(toBase58(TokenType::NodePublic, valKey));
                 if (cfgKeys.size() <= maxKeys - 5)
+                {
                     activeValidatorsOuter.emplace(calcNodeID(valKey));
+                }
                 else
+                {
                     unseenValidators.emplace(calcNodeID(valKey));
+                }
             }
 
             BEAST_EXPECT(trustedKeysOuter->load({}, cfgKeys, cfgPublishersOuter));
@@ -1064,7 +1068,9 @@ private:
                     BEAST_EXPECT(trustedKeysOuter->trusted(*valKey));
                 }
                 else
+                {
                     fail();
+                }
             }
 
             changes = trustedKeysOuter->updateTrusted(
@@ -1250,9 +1256,13 @@ private:
                 cfgKeys.push_back(toBase58(TokenType::NodePublic, valKey));
                 expectedTrusted.emplace(calcNodeID(valKey));
                 if (cfgKeys.size() < std::ceil(n * 0.8f))
+                {
                     activeValidators.emplace(calcNodeID(valKey));
+                }
                 else if (cfgKeys.size() < std::ceil(n * 0.8f))
+                {
                     toBeSeen = calcNodeID(valKey);
+                }
             }
 
             BEAST_EXPECT(trustedKeys->load({}, cfgKeys, cfgPublishersOuter));
@@ -1446,9 +1456,13 @@ private:
                     env.app().getHashRouter());
                 BEAST_EXPECT(changes.removed.empty());
                 if (cfgKeys.size() > 2)
+                {
                     BEAST_EXPECT(changes.added == asNodeIDs({valKey}));
+                }
                 else
+                {
                     BEAST_EXPECT(changes.added == asNodeIDs({localKey, valKey}));
+                }
 
                 BEAST_EXPECT(trustedKeys->quorum() == std::ceil(cfgKeys.size() * 0.8f));
 
@@ -1601,14 +1615,28 @@ private:
                     auto const sequence = 1;
                     using namespace std::chrono_literals;
                     // Want to drop 1 sooner
-                    NetClock::time_point const validUntil = env.timeKeeper().now() +
-                        (i == 2       ? 120s
-                             : i == 1 ? 60s
-                                      : 3600s);
+                    std::chrono::seconds duration;
+                    if (i == 2)
+                    {
+                        duration = 120s;
+                    }
+                    else if (i == 1)
+                    {
+                        duration = 60s;
+                    }
+                    else
+                    {
+                        duration = 3600s;
+                    }
+                    NetClock::time_point const validUntil = env.timeKeeper().now() + duration;
                     if (i == 1)
+                    {
                         validUntil1 = validUntil;
+                    }
                     else if (i == 2)
+                    {
                         validUntil2 = validUntil;
+                    }
                     std::vector<Validator> localKeys{locals[i].first, locals[i].second};
                     auto const blob =
                         makeList(localKeys, sequence, validUntil.time_since_epoch().count());
@@ -1649,7 +1677,9 @@ private:
                     added.insert(calcNodeID(val.masterPublic));
                 }
                 else
+                {
                     BEAST_EXPECT(!trustedKeys->trusted(val.masterPublic));
+                }
             }
             BEAST_EXPECT(changes.added == added);
             BEAST_EXPECT(changes.removed.empty());
@@ -1673,7 +1703,9 @@ private:
             {
                 auto const& val = valKeys[i];
                 if (i >= 2 && i < maxKeys - 4)
+                {
                     BEAST_EXPECT(trustedKeys->trusted(val.masterPublic));
+                }
                 else
                 {
                     BEAST_EXPECT(!trustedKeys->trusted(val.masterPublic));
@@ -1701,9 +1733,13 @@ private:
             {
                 auto const& val = valKeys[i];
                 if (i < maxKeys - 4)
+                {
                     BEAST_EXPECT(trustedKeys->listed(val.masterPublic));
+                }
                 else
+                {
                     BEAST_EXPECT(!trustedKeys->listed(val.masterPublic));
+                }
 
                 BEAST_EXPECT(!trustedKeys->trusted(val.masterPublic));
                 if (i >= 2 && i < maxKeys - 4)
@@ -2004,7 +2040,7 @@ private:
                         {
                             for (auto& n : nUnl_temp)
                             {
-                                if (nUnl.find(n) == nUnl.end())
+                                if (!nUnl.contains(n))
                                     return false;
                             }
                             validators->updateTrusted(
@@ -2322,7 +2358,7 @@ private:
                 1, 8, maxSequence, version, manifest, blobInfos, messages),
             0,
             0);
-        BEAST_EXPECT(messages.size() == 0);
+        BEAST_EXPECT(messages.empty());
 
         // Don't repeat the work if messages is populated, even though the
         // peerSequence provided indicates it should. Note that this
@@ -2374,7 +2410,7 @@ private:
                 2, maxSequence * 2, maxSequence, version, manifest, blobInfos, messages),
             0,
             0);
-        BEAST_EXPECT(messages.size() == 0);
+        BEAST_EXPECT(messages.empty());
 
         // Don't repeat the work if messages is populated, even though the
         // peerSequence provided indicates it should. Note that this
@@ -2652,7 +2688,7 @@ private:
                 env.app().overlay(),
                 env.app().getHashRouter());
             BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
-            BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 0);
+            BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().empty());
 
             hash_set<NodeID> removed;
             for (auto const& val : valKeys)
@@ -2920,7 +2956,7 @@ private:
                 env.app().overlay(),
                 env.app().getHashRouter());
             BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
-            BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 0);
+            BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().empty());
 
             hash_set<NodeID> removed;
             for (auto const& val : valKeys)
@@ -3358,7 +3394,7 @@ private:
                 env.app().overlay(),
                 env.app().getHashRouter());
             BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
-            BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 0);
+            BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().empty());
 
             hash_set<NodeID> removed;
             for (auto const& val : valKeys)
@@ -3540,7 +3576,7 @@ private:
                 env.app().overlay(),
                 env.app().getHashRouter());
             BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
-            BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 0);
+            BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().empty());
 
             hash_set<NodeID> removed;
             for (auto const& val : valKeys)

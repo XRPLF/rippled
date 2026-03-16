@@ -54,9 +54,13 @@ struct RippleCalcTestParams
                         auto const currency = to_currency(pe[jss::currency].asString());
                         std::optional<AccountID> issuer;
                         if (!isXRP(currency))
+                        {
                             issuer = *parseBase58<AccountID>(pe[jss::issuer].asString());
+                        }
                         else
+                        {
                             assert(isXRP(*parseBase58<AccountID>(pe[jss::issuer].asString())));
+                        }
                         p.emplace_back(std::nullopt, currency, issuer);
                     }
                     else

@@ -172,9 +172,13 @@ public:
                 inboundSet.mSeq = m_seq;
 
             if (inboundSet.mSet)
+            {
                 isNew = false;
+            }
             else
+            {
                 inboundSet.mSet = set;
+            }
 
             inboundSet.mAcquire.reset();
         }
@@ -203,9 +207,13 @@ public:
             while (it != m_map.end())
             {
                 if (it->second.mSeq < minSeq || it->second.mSeq > maxSeq)
+                {
                     it = m_map.erase(it);
+                }
                 else
+                {
                     ++it;
+                }
             }
         }
     }

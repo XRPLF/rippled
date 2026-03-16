@@ -475,7 +475,9 @@ EscrowCreate::doApply()
 
     // Deduct owner's balance
     if (isXRP(amount))
+    {
         (*sle)[sfBalance] = (*sle)[sfBalance] - amount;
+    }
     else
     {
         if (auto const ret = std::visit(

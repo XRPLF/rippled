@@ -265,8 +265,10 @@ CashCheck::doApply()
             }
 
             if (optDeliverMin)
+            {
                 // Set the DeliveredAmount metadata.
                 ctx_.deliver(xrpDeliver);
+            }
 
             // The source account has enough XRP so make the ledger change.
             if (TER const ter{transferXRP(psb, srcId, account_, xrpDeliver, viewJ)};

@@ -93,9 +93,13 @@ Config::makeConfig(
         // Calculate the largest number of inbound connections we could
         // take.
         if (config.maxPeers >= config.outPeers)
+        {
             config.inPeers = config.maxPeers - config.outPeers;
+        }
         else
+        {
             config.inPeers = 0;
+        }
     }
     else
     {

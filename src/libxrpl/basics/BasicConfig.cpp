@@ -83,9 +83,13 @@ Section::append(std::vector<std::string> const& lines)
 
         boost::smatch match;
         if (boost::regex_match(line, match, re1))
+        {
             set(match[1], match[2]);
+        }
         else
+        {
             values_.push_back(line);
+        }
 
         lines_.push_back(std::move(line));
     }

@@ -24,9 +24,13 @@ getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID)
     if (sle->getType() == ltRIPPLE_STATE)
     {
         if (sle->getFieldAmount(sfLowLimit).getIssuer() == accountID)
+        {
             return sle->getFieldU64(sfLowNode);
+        }
         else if (sle->getFieldAmount(sfHighLimit).getIssuer() == accountID)
+        {
             return sle->getFieldU64(sfHighNode);
+        }
     }
 
     if (!sle->isFieldPresent(sfOwnerNode))
@@ -234,9 +238,13 @@ keypairForSignature(Json::Value const& params, Json::Value& error, unsigned int 
         if (!keyType)
         {
             if (apiVersion > 1u)
+            {
                 error = RPC::make_error(rpcBAD_KEY_TYPE);
+            }
             else
+            {
                 error = RPC::invalid_field_error(jss::key_type);
+            }
             return {};
         }
 
@@ -279,7 +287,9 @@ keypairForSignature(Json::Value const& params, Json::Value& error, unsigned int 
     if (!seed)
     {
         if (has_key_type)
+        {
             seed = getSeedFromRPC(params, error);
+        }
         else
         {
             if (!params[jss::secret].isString())

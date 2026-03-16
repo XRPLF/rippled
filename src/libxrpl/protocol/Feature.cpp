@@ -250,9 +250,13 @@ FeatureCollections::registerFeature(std::string const& name, Supported support, 
             supported.emplace(name, vote);
 
             if (vote == VoteBehavior::DefaultYes)
+            {
                 ++upVotes;
+            }
             else
+            {
                 ++downVotes;
+            }
         }
         check(upVotes + downVotes == supported.size(), "Feature counting logic broke");
         check(supported.size() <= features.size(), "More supported features than defined features");
@@ -260,8 +264,10 @@ FeatureCollections::registerFeature(std::string const& name, Supported support, 
         return f;
     }
     else
+    {
         // Each feature should only be registered once
         LogicError("Duplicate feature registration");
+    }
 }
 
 /** Tell FeatureCollections when registration is complete. */

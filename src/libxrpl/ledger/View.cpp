@@ -51,9 +51,13 @@ internalDirNext(
         }
 
         if constexpr (std::is_const_v<N>)
+        {
             page = view.read(keylet::page(root, next));
+        }
         else
+        {
             page = view.peek(keylet::page(root, next));
+        }
 
         XRPL_ASSERT(page, "xrpl::detail::internalDirNext : non-null root");
 
@@ -83,9 +87,13 @@ internalDirFirst(
     uint256& entry)
 {
     if constexpr (std::is_const_v<N>)
+    {
         page = view.read(keylet::page(root));
+    }
     else
+    {
         page = view.peek(keylet::page(root));
+    }
 
     if (!page)
         return false;
@@ -180,9 +188,13 @@ isGlobalFrozen(ReadView const& view, Asset const& asset)
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
+            {
                 return isGlobalFrozen(view, issue.getIssuer());
+            }
             else
+            {
                 return isGlobalFrozen(view, issue);
+            }
         },
         asset.value());
 }
@@ -457,9 +469,11 @@ accountHolds(
 
     bool const returnSpendable = (includeFullBalance == shFULL_BALANCE);
     if (returnSpendable && account == issuer)
+    {
         // If the account is the issuer, then their limit is effectively
         // infinite
         return STAmount{Issue{currency, issuer}, STAmount::cMaxValue, STAmount::cMaxOffset};
+    }
 
     // IOU: Return balance on trust line modulo freeze
     SLE::const_pointer const sle =
@@ -514,9 +528,13 @@ accountHolds(
     auto const sleMpt = view.read(keylet::mptoken(mptIssue.getMptID(), account));
 
     if (!sleMpt)
+    {
         amount.clear(mptIssue);
+    }
     else if (zeroIfFrozen == fhZERO_IF_FROZEN && isFrozen(view, account, mptIssue))
+    {
         amount.clear(mptIssue);
+    }
     else
     {
         amount = STAmount{mptIssue, sleMpt->getFieldU64(sfMPTAmount)};
@@ -751,8 +769,10 @@ forEachItemAfter(
             if (!ownerDir)
                 return true;
             for (auto const& key : ownerDir->getFieldV256(sfIndexes))
+            {
                 if (f(view.read(keylet::child(key))) && limit-- <= 1)
                     return true;
+            }
             auto const uNodeNext = ownerDir->getFieldU64(sfIndexNext);
             if (uNodeNext == 0)
                 return true;
@@ -791,9 +811,13 @@ transferRate(ReadView const& view, STAmount const& amount)
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
+            {
                 return transferRate(view, issue.getIssuer());
+            }
             else
+            {
                 return transferRate(view, issue.getMptID());
+            }
         },
         amount.asset().value());
 }
@@ -1168,9 +1192,13 @@ canAddHolding(ReadView const& view, Issue const& issue)
 
     auto const issuer = view.read(keylet::account(issue.getIssuer()));
     if (!issuer)
+    {
         return terNO_ACCOUNT;
+    }
     else if (!issuer->isFlag(lsfDefaultRipple))
+    {
         return terNO_RIPPLE;
+    }
 
     return tesSUCCESS;
 }
@@ -1526,11 +1554,15 @@ authorizeMPToken(
     // Issuer wants to unauthorize the holder, unset lsfMPTAuthorized on
     // their MPToken
     if (flags & tfMPTUnauthorize)
+    {
         flagsOut &= ~lsfMPTAuthorized;
-    // Issuer wants to authorize a holder, set lsfMPTAuthorized on their
-    // MPToken
+        // Issuer wants to authorize a holder, set lsfMPTAuthorized on their
+        // MPToken
+    }
     else
+    {
         flagsOut |= lsfMPTAuthorized;
+    }
 
     if (flagsIn != flagsOut)
         sleMpt->setFieldU32(sfFlags, flagsOut);
@@ -2375,7 +2407,9 @@ rippleCreditMPT(
             view.update(sle);
         }
         else
+        {
             return tecNO_AUTH;
+        }
     }
 
     if (uReceiverID == issuer)
@@ -2388,7 +2422,9 @@ rippleCreditMPT(
             view.update(sleIssuance);
         }
         else
+        {
             return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
     }
     else
     {
@@ -2399,7 +2435,9 @@ rippleCreditMPT(
             view.update(sle);
         }
         else
+        {
             return tecNO_AUTH;
+        }
     }
 
     return tesSUCCESS;
@@ -2599,9 +2637,13 @@ accountSend(
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
+            {
                 return accountSendIOU(view, uSenderID, uReceiverID, saAmount, j, waiveFee);
+            }
             else
+            {
                 return accountSendMPT(view, uSenderID, uReceiverID, saAmount, j, waiveFee);
+            }
         },
         saAmount.asset().value());
 }
@@ -2620,9 +2662,13 @@ accountSendMulti(
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
+            {
                 return accountSendMultiIOU(view, senderID, issue, receivers, j, waiveFee);
+            }
             else
+            {
                 return accountSendMultiMPT(view, senderID, issue, receivers, j, waiveFee);
+            }
         },
         asset.value());
 }
@@ -2725,12 +2771,14 @@ issueIOU(
         // time of deletion.
         state->setFieldAmount(sfBalance, final_balance);
         if (must_delete)
+        {
             return trustDelete(
                 view,
                 state,
                 bSenderHigh ? account : issue.account,
                 bSenderHigh ? issue.account : account,
                 j);
+        }
 
         view.update(state);
 
@@ -2898,9 +2946,11 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, 
         issuerAccount && (*issuerAccount)[sfFlags] & lsfRequireAuth)
     {
         if (trustLine)
+        {
             return ((*trustLine)[sfFlags] & ((account > issue.account) ? lsfLowAuth : lsfHighAuth))
                 ? tesSUCCESS
                 : TER{tecNO_AUTH};
+        }
         return TER{tecNO_LINE};
     }
 
@@ -2948,9 +2998,13 @@ requireAuth(
             if (auto const err = std::visit(
                     [&]<ValidIssueType TIss>(TIss const& issue) {
                         if constexpr (std::is_same_v<TIss, Issue>)
+                        {
                             return requireAuth(view, issue, account, authType);
+                        }
                         else
+                        {
                             return requireAuth(view, issue, account, authType, depth + 1);
+                        }
                     },
                     asset.value());
                 !isTesSuccess(err))
@@ -2976,9 +3030,13 @@ requireAuth(
         // ter = tefINTERNAL | tecOBJECT_NOT_FOUND | tecNO_AUTH | tecEXPIRED
         if (auto const ter = credentials::validDomain(view, *maybeDomainID, account);
             isTesSuccess(ter))
+        {
             return ter;  // Note: sleToken might be null
+        }
         else if (!sleToken)
+        {
             return ter;
+        }
         // We ignore error from validDomain if we found sleToken, as it could
         // belong to someone who is explicitly authorized e.g. a vault owner.
     }
@@ -3314,9 +3372,11 @@ assetsToSharesDeposit(
     Number const assetTotal = vault->at(sfAssetsTotal);
     STAmount shares{vault->at(sfShareMPTID)};
     if (assetTotal == 0)
+    {
         return STAmount{
             shares.asset(),
             Number(assets.mantissa(), assets.exponent() + vault->at(sfScale)).truncate()};
+    }
 
     Number const shareTotal = issuance->at(sfOutstandingAmount);
     shares = ((shareTotal * assets) / assetTotal).truncate();
@@ -3339,8 +3399,10 @@ sharesToAssetsDeposit(
     Number const assetTotal = vault->at(sfAssetsTotal);
     STAmount assets{vault->at(sfAsset)};
     if (assetTotal == 0)
+    {
         return STAmount{
             assets.asset(), shares.mantissa(), shares.exponent() - vault->at(sfScale), false};
+    }
 
     Number const shareTotal = issuance->at(sfOutstandingAmount);
     assets = (assetTotal * shares) / shareTotal;
@@ -3455,9 +3517,13 @@ rippleLockEscrowMPT(
         }  // LCOV_EXCL_STOP
 
         if (sle->isFieldPresent(sfLockedAmount))
+        {
             (*sle)[sfLockedAmount] += pay;
+        }
         else
+        {
             sle->setFieldU64(sfLockedAmount, pay);
+        }
 
         view.update(sle);
     }
@@ -3478,9 +3544,13 @@ rippleLockEscrowMPT(
         }  // LCOV_EXCL_STOP
 
         if (sleIssuance->isFieldPresent(sfLockedAmount))
+        {
             (*sleIssuance)[sfLockedAmount] += pay;
+        }
         else
+        {
             sleIssuance->setFieldU64(sfLockedAmount, pay);
+        }
 
         view.update(sleIssuance);
     }
@@ -3497,8 +3567,10 @@ rippleUnlockEscrowMPT(
     beast::Journal j)
 {
     if (!view.rules().enabled(fixTokenEscrowV1))
+    {
         XRPL_ASSERT(
             netAmount == grossAmount, "xrpl::rippleUnlockEscrowMPT : netAmount == grossAmount");
+    }
 
     auto const& issuer = netAmount.getIssuer();
     auto const& mptIssue = netAmount.get<MPTIssue>();
@@ -3533,9 +3605,13 @@ rippleUnlockEscrowMPT(
 
         auto const newLocked = locked - redeem;
         if (newLocked == 0)
+        {
             sleIssuance->makeFieldAbsent(sfLockedAmount);
+        }
         else
+        {
             sleIssuance->setFieldU64(sfLockedAmount, newLocked);
+        }
         view.update(sleIssuance);
     }
 
@@ -3619,9 +3695,13 @@ rippleUnlockEscrowMPT(
 
         auto const newLocked = locked - delta;
         if (newLocked == 0)
+        {
             sle->makeFieldAbsent(sfLockedAmount);
+        }
         else
+        {
             sle->setFieldU64(sfLockedAmount, newLocked);
+        }
         view.update(sle);
     }
 

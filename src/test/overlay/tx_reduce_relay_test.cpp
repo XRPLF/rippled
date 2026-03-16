@@ -53,16 +53,24 @@ private:
                     BEAST_EXPECT(c.TX_REDUCE_RELAY_MIN_PEERS == min);
                     BEAST_EXPECT(c.TX_RELAY_PERCENTAGE == pct);
                     if (success)
+                    {
                         pass();
+                    }
                     else
+                    {
                         fail();
+                    }
                 }
                 catch (...)
                 {
                     if (success)
+                    {
                         fail();
+                    }
                     else
+                    {
                         pass();
+                    }
                 }
             };
 

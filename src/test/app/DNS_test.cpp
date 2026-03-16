@@ -76,7 +76,7 @@ public:
     parse()
     {
         std::string url = arg();
-        if (url == "")
+        if (url.empty())
             url = "https://vl.ripple.com";
         BEAST_EXPECT(parseUrl(pUrl_, url));
         port_ = pUrl_.port ? std::to_string(*pUrl_.port) : "443";
