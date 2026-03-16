@@ -138,8 +138,27 @@ def main():
         "--sfields-macro",
         help="Path to sfields.macro (default: auto-detect from macro_path)",
     )
+    parser.add_argument(
+        "--list-outputs",
+        action="store_true",
+        help="List output files without generating (one per line)",
+    )
 
     args = parser.parse_args()
+
+    # Parse the macro file to get ledger entry names
+    entries = parse_macro_file(args.macro_path)
+
+    # If --list-outputs, just print the output file paths and exit
+    if args.list_outputs:
+        header_dir = Path(args.header_dir)
+        for entry in entries:
+            print(header_dir / f"{entry['name']}.h")
+        if args.test_dir:
+            test_dir = Path(args.test_dir)
+            for entry in entries:
+                print(test_dir / f"{entry['name']}Tests.cpp")
+        return
 
     # Auto-detect sfields.macro path if not provided
     if args.sfields_macro:
@@ -155,9 +174,6 @@ def main():
     print(
         f"Found {len(field_types)} field definitions ({sum(1 for f in field_types.values() if f['typed'])} typed, {sum(1 for f in field_types.values() if not f['typed'])} untyped)\n"
     )
-
-    # Parse the file
-    entries = parse_macro_file(args.macro_path)
 
     print(f"Found {len(entries)} ledger entries\n")
 
