@@ -1,3 +1,5 @@
+#include <test/unit_test/utils.h>
+
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/crypto/csprng.h>
@@ -183,7 +185,7 @@ public:
                 TokenType::NodePrivate, "pnen77YEeUd4fFKG7iycBWcwKpTaeFRkW2WFostaATy1DSupwXe");
             BEAST_EXPECT(sk2);
 
-            BEAST_EXPECT(sk1 == *sk2);
+            BEAST_EXPECT(test::equal(sk1, *sk2));
         }
 
         {
@@ -193,7 +195,7 @@ public:
                 TokenType::NodePrivate, "paKv46LztLqK3GaKz1rG2nQGN6M4JLyRtxFBYFTw4wAVHtGys36");
             BEAST_EXPECT(sk2);
 
-            BEAST_EXPECT(sk1 == *sk2);
+            BEAST_EXPECT(test::equal(sk1, *sk2));
         }
 
         // Try converting short, long and malformed data
@@ -261,20 +263,20 @@ public:
             BEAST_EXPECT(!si.empty());
 
             auto const ski = parseBase58<SecretKey>(TokenType::NodePrivate, si);
-            BEAST_EXPECT(ski && keys[i] == *ski);
+            BEAST_EXPECT(ski && test::equal(keys[i], *ski));
 
             for (std::size_t j = i; j != keys.size(); ++j)
             {
-                BEAST_EXPECT((keys[i] == keys[j]) == (i == j));
+                BEAST_EXPECT(test::equal(keys[i], keys[j]) == (i == j));
 
                 auto const sj = toBase58(TokenType::NodePrivate, keys[j]);
 
                 BEAST_EXPECT((si == sj) == (i == j));
 
                 auto const skj = parseBase58<SecretKey>(TokenType::NodePrivate, sj);
-                BEAST_EXPECT(skj && keys[j] == *skj);
+                BEAST_EXPECT(skj && test::equal(keys[j], *skj));
 
-                BEAST_EXPECT((*ski == *skj) == (i == j));
+                BEAST_EXPECT(test::equal(*ski, *skj) == (i == j));
             }
         }
     }
@@ -292,7 +294,7 @@ public:
             auto kp = generateKeyPair(KeyType::secp256k1, Seed{makeSlice(test.seed)});
 
             BEAST_EXPECT(kp.first == PublicKey{makeSlice(test.pubkey)});
-            BEAST_EXPECT(kp.second == SecretKey{makeSlice(test.seckey)});
+            BEAST_EXPECT(test::equal(kp.second, SecretKey{makeSlice(test.seckey)}));
             BEAST_EXPECT(calcAccountID(kp.first) == *id);
         }
     }
@@ -310,7 +312,7 @@ public:
             auto kp = generateKeyPair(KeyType::ed25519, Seed{makeSlice(test.seed)});
 
             BEAST_EXPECT(kp.first == PublicKey{makeSlice(test.pubkey)});
-            BEAST_EXPECT(kp.second == SecretKey{makeSlice(test.seckey)});
+            BEAST_EXPECT(test::equal(kp.second, SecretKey{makeSlice(test.seckey)}));
             BEAST_EXPECT(calcAccountID(kp.first) == *id);
         }
     }
