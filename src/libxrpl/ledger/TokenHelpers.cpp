@@ -1162,7 +1162,7 @@ rippleSendMultiMPT(
             {
                 XRPL_ASSERT_PARTS(
                     takeFromSender == beast::zero,
-                    "rippler::rippleSendMultiMPT",
+                    "xrpl::rippleSendMultiMPT",
                     "sender == issuer, takeFromSender == zero");
                 auto const sendAmount = amount.mpt().value();
                 auto const maximumAmount = sle->at(~sfMaximumAmount).value_or(maxMPTokenAmount);

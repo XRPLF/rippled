@@ -61,7 +61,7 @@ assetsToSharesWithdraw(
     STAmount const& assets,
     TruncateShares truncate)
 {
-    XRPL_ASSERT(!assets.negative(), "xrpl::assetsToSharesDeposit : non-negative assets");
+    XRPL_ASSERT(!assets.negative(), "xrpl::assetsToSharesWithdraw : non-negative assets");
     XRPL_ASSERT(
         assets.asset() == vault->at(sfAsset),
         "xrpl::assetsToSharesWithdraw : assets and vault match");

@@ -8,12 +8,6 @@
 
 namespace xrpl {
 
-//------------------------------------------------------------------------------
-//
-// Vault (ltVAULT) helpers
-//
-//------------------------------------------------------------------------------
-
 /** From the perspective of a vault, return the number of shares to give
     depositor when they offer a fixed amount of assets. Note, since shares are
     MPT, this number is integral and always truncated in this calculation.

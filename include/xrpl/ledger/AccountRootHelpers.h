@@ -15,12 +15,6 @@
 
 namespace xrpl {
 
-//------------------------------------------------------------------------------
-//
-// AccountRoot (ltACCOUNT_ROOT) helper functions
-//
-//------------------------------------------------------------------------------
-
 /** Check if the issuer has the global freeze flag set.
     @param issuer The account to check
     @return true if the account has global freeze set
