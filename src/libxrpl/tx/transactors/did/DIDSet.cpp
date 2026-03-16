@@ -47,7 +47,7 @@ DIDSet::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 addSLE(ApplyContext& ctx, std::shared_ptr<SLE> const& sle, AccountID const& owner)
 {
     auto const sleAccount = ctx.view().peek(keylet::account(owner));
