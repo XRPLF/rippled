@@ -4791,18 +4791,36 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         BEAST_EXPECT(underflowedOpt.has_value());
         Buffer underflowedCt = std::move(*underflowedOpt);
 
-        // Submit ConvertBack(1) with the underflowed ciphertext.
-        // A pre-formed zero proof bypasses the proof generator, which would throw
-        // when asked to produce a bulletproof for an out-of-range (negative) value.
-        // The validator independently rejects the transaction because:
-        //   (a) Equality check fails: holderEncryptedAmt = Enc(−1) ≠ Enc(1).
-        //   (b) Range proof would fail: −1 is outside [0, maxMPTokenAmount].
-        Buffer const dummyProof = makeZeroBuffer(ecPedersenProofLength + ecSingleBulletproofLength);
+        // The underflowed value as uint64_t: 0 - 1 wraps to 0xFFFFFFFFFFFFFFFF.
+        // Generate a real proof using this wrapped value. The validator must still reject it
+        // because 0xFFFFFFFFFFFFFFFE (remaining balance) is outside [0, maxMPTokenAmount].
+        constexpr std::uint64_t underflowedAmt =
+            static_cast<std::uint64_t>(0) - static_cast<std::uint64_t>(1);
+
+        Buffer const pcBf = generateBlindingFactor();
+        Buffer const pedersenCommitment = mptAlice.getPedersenCommitment(underflowedAmt, pcBf);
+
+        auto const currentVersion = mptAlice.getMPTokenVersion(bob);
+        uint256 const contextHash =
+            getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), currentVersion);
+
+        Buffer const proof = mptAlice.getConvertBackProof(
+            bob,
+            1,
+            contextHash,
+            {
+                .pedersenCommitment = pedersenCommitment,
+                .amt = underflowedAmt,
+                .encryptedAmt = underflowedCt,
+                .blindingFactor = pcBf,
+            });
+
         mptAlice.convertBack({
             .account = bob,
             .amt = 1,
-            .proof = dummyProof,
+            .proof = proof,
             .holderEncryptedAmt = underflowedCt,
+            .pedersenCommitment = pedersenCommitment,
             .err = tecBAD_PROOF,
         });
 
@@ -4835,7 +4853,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testSendPreflight(features);
         testSendPreclaim(features);
         testSendRangeProof(features);
-        testSendHomomorphicOverflow(features);
         testSendDepositPreauth(features);
         testSendCredentialValidation(features);
         testSendWithAuditor(features);
@@ -4856,9 +4873,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testConvertBackWithAuditor(features);
         testConvertBackPedersenProof(features);
         testConvertBackBulletproof(features);
+
+        // Homomorphic operation tests
+        testSendHomomorphicOverflow(features);
         testHomomorphicCiphertextModification(features);
         testConvertBackHomomorphicUnderflow(features);
 
+        // Replay Tests
         testMutatePrivacy(features);
         testProofContextBinding(features);
         testProofCiphertextBinding(features);
