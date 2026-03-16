@@ -139,7 +139,7 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfMPTCanTrade, lsfMPTCanTrade)                                                                                                                 \
         TF_FLAG(tfMPTCanTransfer, lsfMPTCanTransfer)                                                                                                           \
         TF_FLAG(tfMPTCanClawback, lsfMPTCanClawback)                                                                                                           \
-        TF_FLAG(tfMPTCanPrivacy, lsfMPTCanPrivacy),                                                                                                            \
+        TF_FLAG(tfMPTCanConfidentialAmount, lsfMPTCanConfidentialAmount),                                                                                                            \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(MPTokenAuthorize,                                                                                                                              \
@@ -348,11 +348,12 @@ inline constexpr FlagValue tmfMPTCanMutateCanTransfer = lsmfMPTCanMutateCanTrans
 inline constexpr FlagValue tmfMPTCanMutateCanClawback = lsmfMPTCanMutateCanClawback;
 inline constexpr FlagValue tmfMPTCanMutateMetadata = lsmfMPTCanMutateMetadata;
 inline constexpr FlagValue tmfMPTCanMutateTransferFee = lsmfMPTCanMutateTransferFee;
-inline constexpr FlagValue tmfMPTCannotMutatePrivacy = lsmfMPTCannotMutatePrivacy;
-inline constexpr FlagValue tmfMPTokenIssuanceCreateMutableMask =
-    ~(tmfMPTCanMutateCanLock | tmfMPTCanMutateRequireAuth | tmfMPTCanMutateCanEscrow |
-      tmfMPTCanMutateCanTrade | tmfMPTCanMutateCanTransfer | tmfMPTCanMutateCanClawback |
-      tmfMPTCanMutateMetadata | tmfMPTCanMutateTransferFee | tmfMPTCannotMutatePrivacy);
+inline constexpr FlagValue tmfMPTCannotMutateCanConfidentialAmount =
+    lsmfMPTCannotMutateCanConfidentialAmount;
+inline constexpr FlagValue tmfMPTokenIssuanceCreateMutableMask = ~(
+    tmfMPTCanMutateCanLock | tmfMPTCanMutateRequireAuth | tmfMPTCanMutateCanEscrow |
+    tmfMPTCanMutateCanTrade | tmfMPTCanMutateCanTransfer | tmfMPTCanMutateCanClawback |
+    tmfMPTCanMutateMetadata | tmfMPTCanMutateTransferFee | tmfMPTCannotMutateCanConfidentialAmount);
 
 // MPTokenIssuanceSet MutableFlags:
 // Set or Clear flags.
@@ -369,13 +370,13 @@ inline constexpr FlagValue tmfMPTSetCanTransfer = 0x00000100;
 inline constexpr FlagValue tmfMPTClearCanTransfer = 0x00000200;
 inline constexpr FlagValue tmfMPTSetCanClawback = 0x00000400;
 inline constexpr FlagValue tmfMPTClearCanClawback = 0x00000800;
-inline constexpr FlagValue tmfMPTSetPrivacy = 0x00001000;
-inline constexpr FlagValue tmfMPTClearPrivacy = 0x00002000;
+inline constexpr FlagValue tmfMPTSetCanConfidentialAmount = 0x00001000;
+inline constexpr FlagValue tmfMPTClearCanConfidentialAmount = 0x00002000;
 inline constexpr FlagValue tmfMPTokenIssuanceSetMutableMask =
     ~(tmfMPTSetCanLock | tmfMPTClearCanLock | tmfMPTSetRequireAuth | tmfMPTClearRequireAuth |
       tmfMPTSetCanEscrow | tmfMPTClearCanEscrow | tmfMPTSetCanTrade | tmfMPTClearCanTrade |
       tmfMPTSetCanTransfer | tmfMPTClearCanTransfer | tmfMPTSetCanClawback |
-      tmfMPTClearCanClawback | tmfMPTSetPrivacy | tmfMPTClearPrivacy);
+      tmfMPTClearCanClawback | tmfMPTSetCanConfidentialAmount | tmfMPTClearCanConfidentialAmount);
 
 // Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between accounts allowed a
 // TrustLine to be added to the issuer of that token without explicit permission from that issuer.

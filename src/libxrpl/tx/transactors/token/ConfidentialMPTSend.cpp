@@ -126,16 +126,15 @@ verifySendProofs(
     recipients.reserve(recipientCount);
 
     recipients.push_back(
-        {(*sleSenderMPToken)[sfHolderElGamalPublicKey], ctx.tx[sfSenderEncryptedAmount]});
+        {(*sleSenderMPToken)[sfHolderEncryptionKey], ctx.tx[sfSenderEncryptedAmount]});
     recipients.push_back(
-        {(*sleDestinationMPToken)[sfHolderElGamalPublicKey], ctx.tx[sfDestinationEncryptedAmount]});
-    recipients.push_back(
-        {(*sleIssuance)[sfIssuerElGamalPublicKey], ctx.tx[sfIssuerEncryptedAmount]});
+        {(*sleDestinationMPToken)[sfHolderEncryptionKey], ctx.tx[sfDestinationEncryptedAmount]});
+    recipients.push_back({(*sleIssuance)[sfIssuerEncryptionKey], ctx.tx[sfIssuerEncryptedAmount]});
 
     if (hasAuditor)
     {
         recipients.push_back(
-            {(*sleIssuance)[sfAuditorElGamalPublicKey], ctx.tx[sfAuditorEncryptedAmount]});
+            {(*sleIssuance)[sfAuditorEncryptionKey], ctx.tx[sfAuditorEncryptedAmount]});
     }
 
     // Prepare the context hash
@@ -162,7 +161,7 @@ verifySendProofs(
     if (auto const ter = verifyAmountPcmLinkage(
             amountLinkageProof,
             ctx.tx[sfSenderEncryptedAmount],
-            (*sleSenderMPToken)[sfHolderElGamalPublicKey],
+            (*sleSenderMPToken)[sfHolderEncryptionKey],
             ctx.tx[sfAmountCommitment],
             contextHash);
         !isTesSuccess(ter))
@@ -174,7 +173,7 @@ verifySendProofs(
     if (auto const ter = verifyBalancePcmLinkage(
             balanceLinkageProof,
             (*sleSenderMPToken)[sfConfidentialBalanceSpending],
-            (*sleSenderMPToken)[sfHolderElGamalPublicKey],
+            (*sleSenderMPToken)[sfHolderEncryptionKey],
             ctx.tx[sfBalanceCommitment],
             contextHash);
         !isTesSuccess(ter))
@@ -242,15 +241,15 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
         return tecNO_AUTH;
 
     // Check if issuance allows confidential transfer
-    if (!sleIssuance->isFlag(lsfMPTCanPrivacy))
+    if (!sleIssuance->isFlag(lsfMPTCanConfidentialAmount))
         return tecNO_PERMISSION;
 
     // Check if issuance has issuer ElGamal public key
-    if (!sleIssuance->isFieldPresent(sfIssuerElGamalPublicKey))
+    if (!sleIssuance->isFieldPresent(sfIssuerEncryptionKey))
         return tecNO_PERMISSION;
 
     bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
-    bool const requiresAuditor = sleIssuance->isFieldPresent(sfAuditorElGamalPublicKey);
+    bool const requiresAuditor = sleIssuance->isFieldPresent(sfAuditorEncryptionKey);
 
     // Tx must include auditor ciphertext if the issuance has enabled
     // auditing, and must not include it if auditing is not enabled
@@ -267,7 +266,7 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
         return tecOBJECT_NOT_FOUND;
 
     // Check sender's MPToken has necessary fields for confidential send
-    if (!sleSenderMPToken->isFieldPresent(sfHolderElGamalPublicKey) ||
+    if (!sleSenderMPToken->isFieldPresent(sfHolderEncryptionKey) ||
         !sleSenderMPToken->isFieldPresent(sfConfidentialBalanceSpending) ||
         !sleSenderMPToken->isFieldPresent(sfIssuerEncryptedBalance))
         return tecNO_PERMISSION;
@@ -283,7 +282,7 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
         return tecOBJECT_NOT_FOUND;
 
     // Check destination's MPToken has necessary fields for confidential send
-    if (!sleDestinationMPToken->isFieldPresent(sfHolderElGamalPublicKey) ||
+    if (!sleDestinationMPToken->isFieldPresent(sfHolderEncryptionKey) ||
         !sleDestinationMPToken->isFieldPresent(sfConfidentialBalanceInbox) ||
         !sleDestinationMPToken->isFieldPresent(sfIssuerEncryptedBalance))
         return tecNO_PERMISSION;

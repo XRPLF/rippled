@@ -356,9 +356,9 @@ MPTTester::setJV(MPTSet const& arg)
     if (arg.metadata)
         jv[sfMPTokenMetadata] = strHex(*arg.metadata);
     if (arg.issuerPubKey)
-        jv[sfIssuerElGamalPublicKey] = strHex(*arg.issuerPubKey);
+        jv[sfIssuerEncryptionKey] = strHex(*arg.issuerPubKey);
     if (arg.auditorPubKey)
-        jv[sfAuditorElGamalPublicKey] = strHex(*arg.auditorPubKey);
+        jv[sfAuditorEncryptionKey] = strHex(*arg.auditorPubKey);
     jv[sfTransactionType] = jss::MPTokenIssuanceSet;
 
     return jv;
@@ -428,10 +428,10 @@ MPTTester::set(MPTSet const& arg)
                         else if (*arg.mutableFlags & tmfMPTClearCanTransfer)
                             flags &= ~lsfMPTCanTransfer;
 
-                        if (*arg.mutableFlags & tmfMPTSetPrivacy)
-                            flags |= lsfMPTCanPrivacy;
-                        else if (*arg.mutableFlags & tmfMPTClearPrivacy)
-                            flags &= ~lsfMPTCanPrivacy;
+                        if (*arg.mutableFlags & tmfMPTSetCanConfidentialAmount)
+                            flags |= lsfMPTCanConfidentialAmount;
+                        else if (*arg.mutableFlags & tmfMPTClearCanConfidentialAmount)
+                            flags &= ~lsfMPTCanConfidentialAmount;
                     }
                 }
                 env_.require(mptflags(*this, flags, holder));
@@ -452,7 +452,7 @@ MPTTester::set(MPTSet const& arg)
                         if (!issuerPubKey)
                             Throw<std::runtime_error>("MPTTester::set: issuer's pubkey is not set");
 
-                        return strHex((*sle)[sfIssuerElGamalPublicKey]) == strHex(*issuerPubKey);
+                        return strHex((*sle)[sfIssuerEncryptionKey]) == strHex(*issuerPubKey);
                     }
                     return false;
                 });
@@ -473,7 +473,7 @@ MPTTester::set(MPTSet const& arg)
                             Throw<std::runtime_error>(
                                 "MPTTester::set: auditor's pubkey is not set");
 
-                        return strHex((*sle)[sfAuditorElGamalPublicKey]) == strHex(*auditorPubKey);
+                        return strHex((*sle)[sfAuditorEncryptionKey]) == strHex(*auditorPubKey);
                     }
                     return false;
                 });
@@ -712,7 +712,7 @@ MPTTester::getClawbackProof(
     if (ciphertextBlob.size() != ecGamalEncryptedTotalLength)
         return std::nullopt;
 
-    auto const pubKeyBlob = sleIssuance->getFieldVL(sfIssuerElGamalPublicKey);
+    auto const pubKeyBlob = sleIssuance->getFieldVL(sfIssuerEncryptionKey);
     if (pubKeyBlob.size() != ecPubKeyLength)
         return std::nullopt;
 
@@ -1086,7 +1086,7 @@ MPTTester::convert(MPTConvert const& arg)
     if (arg.amt)
         jv[sfMPTAmount.jsonName] = std::to_string(*arg.amt);
     if (arg.holderPubKey)
-        jv[sfHolderElGamalPublicKey.jsonName] = strHex(*arg.holderPubKey);
+        jv[sfHolderEncryptionKey.jsonName] = strHex(*arg.holderPubKey);
 
     Buffer holderCiphertext;
     Buffer issuerCiphertext;
@@ -1192,8 +1192,7 @@ MPTTester::convert(MPTConvert const& arg)
                                     "MPTTester::convert: holder's pubkey is "
                                     "not set");
 
-                            return strHex((*sle)[sfHolderElGamalPublicKey]) ==
-                                strHex(*holderPubKey);
+                            return strHex((*sle)[sfHolderEncryptionKey]) == strHex(*holderPubKey);
                         }
                         return false;
                     },
