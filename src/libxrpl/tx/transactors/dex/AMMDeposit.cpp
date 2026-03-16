@@ -17,7 +17,6 @@ AMMDeposit::checkExtraFeatures(PreflightContext const& ctx)
 
 std::uint32_t
 AMMDeposit::getFlagsMask(PreflightContext const& ctx)
-
 {
     return tfAMMDepositMask;
 }
