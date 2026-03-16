@@ -29,6 +29,18 @@ public:
         bool sslVerify,
         beast::Journal j);
 
+    /** Destroys the global SSL context created by initializeSSLContext().
+     *
+     *  This releases the underlying boost::asio::ssl::context and any
+     *  associated OpenSSL resources. Must not be called while any
+     *  HTTPClient requests are in flight.
+     *
+     *  @note Currently only called from tests during teardown. In production,
+     *        the SSL context lives for the lifetime of the process.
+     */
+    static void
+    cleanupSSLContext();
+
     static void
     get(bool bSSL,
         boost::asio::io_context& io_context,

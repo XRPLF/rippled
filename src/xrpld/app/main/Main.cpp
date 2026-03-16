@@ -6,6 +6,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/git/Git.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/server/Vacuum.h>
 
@@ -476,12 +477,8 @@ run(int argc, char** argv)
     if (vm.count("version"))
     {
         std::cout << "rippled version " << BuildInfo::getVersionString() << std::endl;
-#ifdef GIT_COMMIT_HASH
-        std::cout << "Git commit hash: " << GIT_COMMIT_HASH << std::endl;
-#endif
-#ifdef GIT_BRANCH
-        std::cout << "Git build branch: " << GIT_BRANCH << std::endl;
-#endif
+        std::cout << "Git commit hash: " << xrpl::git::getCommitHash() << std::endl;
+        std::cout << "Git build branch: " << xrpl::git::getBuildBranch() << std::endl;
         return 0;
     }
 

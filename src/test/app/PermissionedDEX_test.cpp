@@ -16,7 +16,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/tx/transactors/PermissionedDomain/PermissionedDomainSet.h>
+#include <xrpl/tx/transactors/permissioned_domain/PermissionedDomainSet.h>
 
 #include <atomic>
 #include <cstdint>
