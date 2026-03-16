@@ -7,7 +7,8 @@
 #include <xrpl/core/detail/Workers.h>
 #include <xrpl/json/json_value.h>
 
-#include <boost/coroutine/all.hpp>
+#include <boost/context/protected_fixedsize_stack.hpp>
+#include <boost/coroutine2/all.hpp>
 
 #include <set>
 
@@ -48,8 +49,8 @@ public:
         std::mutex mutex_;
         std::mutex mutex_run_;
         std::condition_variable cv_;
-        boost::coroutines::asymmetric_coroutine<void>::pull_type coro_;
-        boost::coroutines::asymmetric_coroutine<void>::push_type* yield_;
+        boost::coroutines2::coroutine<void>::pull_type coro_;
+        boost::coroutines2::coroutine<void>::push_type* yield_;
 #ifndef NDEBUG
         bool finished_ = false;
 #endif

@@ -69,6 +69,7 @@ Checks: "-*,
   bugprone-unique-ptr-array-mismatch,
   bugprone-unsafe-functions,
   bugprone-unused-raii,
+  bugprone-unused-return-value,
   bugprone-unused-local-non-trivial-variable,
   bugprone-virtual-near-miss,
   cppcoreguidelines-no-suspend-with-lock,
@@ -100,8 +101,6 @@ Checks: "-*,
 # bugprone-crtp-constructor-accessibility,
 # bugprone-move-forwarding-reference,
 # bugprone-switch-missing-default-case,
-# bugprone-unused-raii,
-# bugprone-unused-return-value,
 # bugprone-use-after-move,
 #
 # cppcoreguidelines-misleading-capture-default-by-value,
@@ -195,7 +194,7 @@ CheckOptions:
   #   readability-identifier-naming.PublicMemberSuffix: ""
   #   readability-identifier-naming.FunctionIgnoredRegexp: ".*tag_invoke.*"
   bugprone-unsafe-functions.ReportMoreUnsafeFunctions: true
-#   bugprone-unused-return-value.CheckedReturnTypes: ::std::error_code;::std::error_condition;::std::errc
+  bugprone-unused-return-value.CheckedReturnTypes: ::std::error_code;::std::error_condition;::std::errc
 #   misc-include-cleaner.IgnoreHeaders: '.*/(detail|impl)/.*;.*(expected|unexpected).*;.*ranges_lower_bound\.h;time.h;stdlib.h;__chrono/.*;fmt/chrono.h;boost/uuid/uuid_hash.hpp'
 #
 # HeaderFilterRegex: '^.*/(src|tests)/.*\.(h|hpp)$'
