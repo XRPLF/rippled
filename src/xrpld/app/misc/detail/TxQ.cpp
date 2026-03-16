@@ -690,7 +690,7 @@ TxQ::apply(
     // etc. before doing potentially expensive queue
     // replace and multi-transaction operations.
     auto const pfResult = preflight(app, view.rules(), *tx, flags, j);
-    if (pfResult.ter != tesSUCCESS)
+    if (!isTesSuccess(pfResult.ter))
         return {pfResult.ter, false};
 
     // See if the transaction paid a high enough fee that it can go straight

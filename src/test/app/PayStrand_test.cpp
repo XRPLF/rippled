@@ -636,7 +636,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     std::nullopt,
                     env.app().logs().journal("Flow"));
                 (void)_;
-                BEAST_EXPECT(ter == tesSUCCESS);
+                BEAST_EXPECT(isTesSuccess(ter));
             }
             {
                 STPath const path = STPath({ipe(USD), cpe(xrpCurrency())});
@@ -654,7 +654,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     std::nullopt,
                     env.app().logs().journal("Flow"));
                 (void)_;
-                BEAST_EXPECT(ter == tesSUCCESS);
+                BEAST_EXPECT(isTesSuccess(ter));
             }
         }
 
@@ -921,7 +921,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 ammContext,
                 std::nullopt,
                 env.app().logs().journal("Flow"));
-            BEAST_EXPECT(ter == tesSUCCESS);
+            BEAST_EXPECT(isTesSuccess(ter));
             BEAST_EXPECT(equal(strand, D{alice, gw, usdC}));
         }
 
@@ -949,7 +949,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 ammContext,
                 std::nullopt,
                 env.app().logs().journal("Flow"));
-            BEAST_EXPECT(ter == tesSUCCESS);
+            BEAST_EXPECT(isTesSuccess(ter));
             BEAST_EXPECT(equal(
                 strand, D{alice, gw, usdC}, B{USD.issue(), xrpIssue(), std::nullopt}, XRPS{bob}));
         }

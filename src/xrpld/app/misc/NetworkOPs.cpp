@@ -1449,7 +1449,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                 registry_.getHashRouter().setFlags(e.transaction->getID(), HashRouterFlags::BAD);
 
 #ifdef DEBUG
-            if (e.result != tesSUCCESS)
+            if (!isTesSuccess(e.result))
             {
                 std::string token, human;
 
@@ -1462,7 +1462,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
 
             bool addLocal = e.local;
 
-            if (e.result == tesSUCCESS)
+            if (isTesSuccess(e.result))
             {
                 JLOG(m_journal.debug()) << "Transaction is now included in open ledger";
                 e.transaction->setStatus(INCLUDED);
