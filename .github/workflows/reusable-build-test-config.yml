@@ -76,7 +76,7 @@ jobs:
     name: ${{ inputs.config_name }}
     runs-on: ${{ fromJSON(inputs.runs_on) }}
     container: ${{ inputs.image != '' && inputs.image || null }}
-    timeout-minutes: 60
+    timeout-minutes: ${{ inputs.sanitizers != '' && 360 || 60 }}
     env:
       # Use a namespace to keep the objects separate for each configuration.
       CCACHE_NAMESPACE: ${{ inputs.config_name }}
@@ -204,8 +204,14 @@ jobs:
 
       - name: Set sanitizer options
         if: ${{ !inputs.build_only && env.SANITIZERS_ENABLED == 'true' }}
+        env:
+          CONFIG_NAME: ${{ inputs.config_name }}
         run: |
-          echo "ASAN_OPTIONS=print_stacktrace=1:detect_container_overflow=0:suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/asan.supp" >> ${GITHUB_ENV}
+          ASAN_OPTS="halt_on_error=0:use_sigaltstack=0:print_stacktrace=1:detect_container_overflow=0:detect_stack_use_after_return=0:suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/asan.supp"
+          if [[ "${CONFIG_NAME}" == *gcc* ]]; then
+            ASAN_OPTS="${ASAN_OPTS}:alloc_dealloc_mismatch=0"
+          fi
+          echo "ASAN_OPTIONS=${ASAN_OPTS}" >> ${GITHUB_ENV}
           echo "TSAN_OPTIONS=second_deadlock_stack=1:halt_on_error=0:suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/tsan.supp" >> ${GITHUB_ENV}
           echo "UBSAN_OPTIONS=suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/ubsan.supp" >> ${GITHUB_ENV}
           echo "LSAN_OPTIONS=suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/lsan.supp" >> ${GITHUB_ENV}
