@@ -16,14 +16,12 @@ class RPCSubImp : public RPCSub
 public:
     RPCSubImp(
         InfoSub::Source& source,
-        boost::asio::io_context& io_context,
         JobQueue& jobQueue,
         std::string const& strUrl,
         std::string const& strUsername,
         std::string const& strPassword,
         Logs& logs)
         : RPCSub(source)
-        , m_io_context(io_context)
         , m_jobQueue(jobQueue)
         , mUrl(strUrl)
         , mSSL(false)
@@ -59,6 +57,14 @@ public:
     {
         std::lock_guard sl(mLock);
 
+        if (mDeque.size() >= maxQueueSize)
+        {
+            JLOG(j_.warn()) << "RPCCall::fromNetwork drop: queue full (" << mDeque.size()
+                            << "), seq=" << mSeq << ", endpoint=" << mIp;
+            ++mSeq;
+            return;
+        }
+
         auto jm = broadcast ? j_.debug() : j_.info();
         JLOG(jm) << "RPCCall::fromNetwork push: " << jvObj;
 
@@ -91,69 +97,83 @@ public:
     }
 
 private:
-    // XXX Could probably create a bunch of send jobs in a single get of the
-    // lock.
+    // Maximum concurrent HTTP deliveries per batch. Bounds file
+    // descriptor usage while still allowing parallel delivery to
+    // capable endpoints.
+    static constexpr int maxInFlight = 32;
+
+    // Maximum queued events before dropping. Consumers detect
+    // gaps via the seq field.
+    static constexpr std::size_t maxQueueSize = 16384;
+
     void
     sendThread()
     {
-        Json::Value jvEvent;
-        bool bSend;
-
-        do
+        try
         {
+            for (;;)
             {
-                // Obtain the lock to manipulate the queue and change sending.
-                std::lock_guard sl(mLock);
+                boost::asio::io_context io_context;
+                int dispatched = 0;
 
-                if (mDeque.empty())
                 {
-                    mSending = false;
-                    bSend = false;
+                    std::lock_guard sl(mLock);
+
+                    while (!mDeque.empty() && dispatched < maxInFlight)
+                    {
+                        auto const [seq, env] = mDeque.front();
+                        mDeque.pop_front();
+
+                        Json::Value jvEvent = env;
+                        jvEvent["seq"] = seq;
+
+                        RPCCall::fromNetwork(
+                            io_context,
+                            mIp,
+                            mPort,
+                            mUsername,
+                            mPassword,
+                            mPath,
+                            "event",
+                            jvEvent,
+                            mSSL,
+                            true,
+                            logs_);
+                        ++dispatched;
+                    }
+
+                    if (dispatched == 0)
+                    {
+                        // Reset under the lock to avoid a lost-wakeup race with send().
+                        mSending = false;
+                        return;
+                    }
                 }
-                else
-                {
-                    auto const [seq, env] = mDeque.front();
 
-                    mDeque.pop_front();
-
-                    jvEvent = env;
-                    jvEvent["seq"] = seq;
-
-                    bSend = true;
-                }
-            }
-
-            // Send outside of the lock.
-            if (bSend)
-            {
-                // XXX Might not need this in a try.
+                JLOG(j_.info()) << "RPCCall::fromNetwork: " << mIp << " dispatching " << dispatched
+                                << " events";
                 try
                 {
-                    JLOG(j_.info()) << "RPCCall::fromNetwork: " << mIp;
-
-                    RPCCall::fromNetwork(
-                        m_io_context,
-                        mIp,
-                        mPort,
-                        mUsername,
-                        mPassword,
-                        mPath,
-                        "event",
-                        jvEvent,
-                        mSSL,
-                        true,
-                        logs_);
+                    io_context.run();
                 }
                 catch (std::exception const& e)
                 {
-                    JLOG(j_.info()) << "RPCCall::fromNetwork exception: " << e.what();
+                    JLOG(j_.warn()) << "io_context.run exception: " << e.what();
+                    std::lock_guard sl(mLock);
+                    mSending = false;
+                    return;
                 }
             }
-        } while (bSend);
+        }
+        catch (std::exception const& e)
+        {
+            JLOG(j_.warn()) << "sendThread exception: " << e.what();
+            std::lock_guard sl(mLock);
+            mSending = false;
+        }
     }
 
 private:
-    boost::asio::io_context& m_io_context;
     JobQueue& m_jobQueue;
 
     std::string mUrl;
@@ -183,7 +203,6 @@ RPCSub::RPCSub(InfoSub::Source& source) : InfoSub(source, Consumer())
 std::shared_ptr<RPCSub>
 make_RPCSub(
     InfoSub::Source& source,
-    boost::asio::io_context& io_context,
     JobQueue& jobQueue,
     std::string const& strUrl,
     std::string const& strUsername,
@@ -191,13 +210,7 @@ make_RPCSub(
     Logs& logs)
 {
     return std::make_shared<RPCSubImp>(
-        std::ref(source),
-        std::ref(io_context),
-        std::ref(jobQueue),
-        strUrl,
-        strUsername,
-        strPassword,
-        logs);
+        std::ref(source), std::ref(jobQueue), strUrl, strUsername, strPassword, logs);
 }
 
 }  // namespace xrpl
