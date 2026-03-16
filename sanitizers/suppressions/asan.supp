@@ -2,43 +2,6 @@
 #
 # ASAN_OPTIONS="print_stacktrace=1:detect_container_overflow=0:suppressions=sanitizers/suppressions/asan.supp:halt_on_error=0"
 
-# Leaks in Doctest tests: xrpl.test.*
-interceptor_name:src/libxrpl/net/HTTPClient.cpp
-interceptor_name:src/libxrpl/net/RegisterSSLCerts.cpp
-interceptor_name:src/tests/libxrpl/net/HTTPClient.cpp
-interceptor_name:xrpl/net/AutoSocket.h
-interceptor_name:xrpl/net/HTTPClient.h
-interceptor_name:xrpl/net/HTTPClientSSLContext.h
-interceptor_name:xrpl/net/RegisterSSLCerts.h
-
-# The issue is a well-known interaction between ASan's use-after-scope detection and aggressive inlining. All the Json::StaticString overloads in ErrorCodes.h follow this pattern:
-# inline Json::Value
-# invalid_field_error(Json::StaticString name)
-# {
-#     return invalid_field_error(std::string(name));  // temporary passed by const ref
-# }
-# When Clang inlines the entire call chain (invalid_field_error(StaticString) → invalid_field_error(const string&) → invalid_field_message(const string&)),
-# the compiler inserts ASan scope-poisoning markers for the temporary std::string. Because there's no actual function call boundary after inlining,
-# ASan can poison the temporary before the inlined callee finishes reading through the const string&.
-#
-# Per the C++ standard the temporary's lifetime extends through the full-expression, so the original code is technically valid.
-# But ASan's scope tracking doesn't model this correctly after inlining, causing it to flag a use-after-scope and (on the coroutine stack) crash the Simulate test.
-#
-# The fix is to use a named local variable instead of a temporary. This gives the std::string an unambiguous scope that ASan tracks correctly:
-# inline Json::Value
-# invalid_field_error(Json::StaticString name)
-# {
-#     std::string s(name);
-#     return invalid_field_error(s);
-# }
-# The same pattern should be fixed in all the StaticString overloads in that file
-# -- missing_field_error, object_field_error, invalid_field_message, expected_field_message, and expected_field_error (lines 237-306).
-# They all do the same return func(std::string(name)) with a temporary.
-# In this PR we just suppress the error for the whole file.
-# Then in another PR we will mark the functions with `__attribute__((no_sanitize("address")))`, to keep the original code but disable the false positive.
-interceptor_name:xrpl/protocol/ErrorCodes.h
-
-
 # Suppress false positive stack-buffer errors in thread stack allocation
 # Related to ASan's __asan_handle_no_return warnings (github.com/google/sanitizers/issues/189)
 # These occur during multi-threaded test initialization on macOS
