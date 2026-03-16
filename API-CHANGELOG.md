@@ -24,9 +24,17 @@ This version is supported by all `rippled` versions. For WebSocket and HTTP JSON
 
 ## Unreleased
 
-### Additions and bugfixes in unreleased version
+This section contains changes targeting a future version.
 
-- `noripple_check`: The `transactions` field is no longer included in the response if the response is an error or if there are no `problems`.
+### Additions
+
+- `server_definitions`: Added the following new sections to the response ([#6321](https://github.com/XRPLF/rippled/pull/6321)):
+  - `TRANSACTION_FORMATS`: Describes the fields and their optionality for each transaction type, including common fields shared across all transactions.
+  - `LEDGER_ENTRY_FORMATS`: Describes the fields and their optionality for each ledger entry type, including common fields shared across all ledger entries.
+  - `TRANSACTION_FLAGS`: Maps transaction type names to their supported flags and flag values.
+  - `LEDGER_ENTRY_FLAGS`: Maps ledger entry type names to their flags and flag values.
+  - `ACCOUNT_SET_FLAGS`: Maps AccountSet flag names (asf flags) to their numeric values.
+- `noripple_check`: The `transactions` field is no longer included in the response if the response is an error or if there are no `problems` ([#6303](https://github.com/XRPLF/rippled/pull/6303)).
 
 ## XRP Ledger server version 3.1.0
 
