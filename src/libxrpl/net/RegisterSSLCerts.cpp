@@ -79,6 +79,7 @@ registerSSLCerts(boost::asio::ssl::context& ctx, boost::system::error_code& ec, 
     SSL_CTX_set_cert_store(ctx.native_handle(), store.release());
 
 #else
+    // NOLINTNEXTLINE(bugprone-unused-return-value)
     ctx.set_default_verify_paths(ec);
 #endif
 }
