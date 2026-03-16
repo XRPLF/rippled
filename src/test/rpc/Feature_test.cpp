@@ -2,6 +2,7 @@
 
 #include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 
 namespace xrpl {
@@ -168,16 +169,18 @@ class Feature_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this};
 
-        auto jrr = env.rpc("feature", "fixAMMOverflowOffer")[jss::result];
+        std::string const name = "fixAMMOverflowOffer";
+        auto jrr = env.rpc("feature", name)[jss::result];
         BEAST_EXPECTS(jrr[jss::status] == jss::success, "status");
         jrr.removeMember(jss::status);
         BEAST_EXPECT(jrr.size() == 1);
-        BEAST_EXPECT(jrr.isMember(
-            "12523DF04B553A0B1AD74F42DDB741DE8DC06A03FC089A0EF197E"
-            "2A87F1D8107"));
+        auto const expected = to_string(sha512Half(Slice(name.data(), name.size())));
+        char const sha[] = "12523DF04B553A0B1AD74F42DDB741DE8DC06A03FC089A0EF197E2A87F1D8107";
+        BEAST_EXPECT(expected == sha);
+        BEAST_EXPECT(jrr.isMember(expected));
         auto feature = *(jrr.begin());
 
-        BEAST_EXPECTS(feature[jss::name] == "fixAMMOverflowOffer", "name");
+        BEAST_EXPECTS(feature[jss::name] == name, "name");
         BEAST_EXPECTS(!feature[jss::enabled].asBool(), "enabled");
         BEAST_EXPECTS(feature[jss::vetoed].isBool() && !feature[jss::vetoed].asBool(), "vetoed");
         BEAST_EXPECTS(feature[jss::supported].asBool(), "supported");
@@ -186,6 +189,37 @@ class Feature_test : public beast::unit_test::suite
         jrr = env.rpc("feature", "fMM")[jss::result];
         BEAST_EXPECT(jrr[jss::error] == "badFeature");
         BEAST_EXPECT(jrr[jss::error_message] == "Feature unknown or invalid.");
+
+        // Test feature name size checks
+        constexpr auto ok63Name = [] {
+            return "123456789012345678901234567890123456789012345678901234567890123";
+        };
+        static_assert(validFeatureNameSize(ok63Name));
+
+        constexpr auto bad64Name = [] {
+            return "1234567890123456789012345678901234567890123456789012345678901234";
+        };
+        static_assert(!validFeatureNameSize(bad64Name));
+
+        constexpr auto ok31Name = [] { return "1234567890123456789012345678901"; };
+        static_assert(validFeatureNameSize(ok31Name));
+
+        constexpr auto bad32Name = [] { return "12345678901234567890123456789012"; };
+        static_assert(!validFeatureNameSize(bad32Name));
+
+        constexpr auto ok33Name = [] { return "123456789012345678901234567890123"; };
+        static_assert(validFeatureNameSize(ok33Name));
+
+        // Test feature character set checks
+        constexpr auto okName = [] { return "AMM_123"; };
+        static_assert(validFeatureName(okName));
+
+        // First character is Greek Capital Alpha, visually confusable with ASCII 'A'
+        constexpr auto badName = [] { return "ΑMM_123"; };
+        static_assert(!validFeatureName(badName));
+
+        constexpr auto badEmoji = [] { return "🔥"; };
+        static_assert(!validFeatureName(badEmoji));
     }
 
     void

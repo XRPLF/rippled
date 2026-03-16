@@ -491,7 +491,7 @@ SetAccount::doApply()
 
         if (messageKey.empty())
         {
-            JLOG(j_.debug()) << "set message key";
+            JLOG(j_.debug()) << "clear message key";
             sle->makeFieldAbsent(sfMessageKey);
         }
         else
