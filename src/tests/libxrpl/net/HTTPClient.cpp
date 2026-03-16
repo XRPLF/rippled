@@ -173,6 +173,8 @@ private:
 
             // Shutdown socket gracefully
             boost::system::error_code shutdownEc;
+
+            // NOLINTNEXTLINE(bugprone-unused-return-value)
             socket.shutdown(boost::asio::ip::tcp::socket::shutdown_send, shutdownEc);
         }
         catch (std::exception const& e)
