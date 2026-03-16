@@ -134,6 +134,7 @@ test.peerfinder > xrpld.core
 test.peerfinder > xrpld.peerfinder
 test.peerfinder > xrpl.protocol
 test.protocol > test.toplevel
+test.protocol > test.unit_test
 test.protocol > xrpl.basics
 test.protocol > xrpl.json
 test.protocol > xrpl.protocol
@@ -171,6 +172,7 @@ test.shamap > xrpl.shamap
 test.toplevel > test.csf
 test.toplevel > xrpl.json
 test.unit_test > xrpl.basics
+test.unit_test > xrpl.protocol
 tests.libxrpl > xrpl.basics
 tests.libxrpl > xrpl.json
 tests.libxrpl > xrpl.net
