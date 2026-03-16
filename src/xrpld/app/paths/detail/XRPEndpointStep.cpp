@@ -37,12 +37,12 @@ private:
         return EitherAmount(*cache_);
     }
 
-public:
     XRPEndpointStep(StrandContext const& ctx, AccountID const& acc)
         : acc_(acc), isLast_(ctx.isLast), j_(ctx.j)
     {
     }
 
+public:
     AccountID const&
     acc() const
     {
@@ -135,6 +135,8 @@ private:
         }
         return false;
     }
+
+    friend TDerived;
 };
 
 //------------------------------------------------------------------------------
@@ -149,7 +151,10 @@ private:
 class XRPEndpointPaymentStep : public XRPEndpointStep<XRPEndpointPaymentStep>
 {
 public:
-    using XRPEndpointStep<XRPEndpointPaymentStep>::XRPEndpointStep;
+    XRPEndpointPaymentStep(StrandContext const& ctx, AccountID const& acc)
+        : XRPEndpointStep<XRPEndpointPaymentStep>(ctx, acc)
+    {
+    }
 
     XRPAmount
     xrpLiquid(ReadView& sb) const
