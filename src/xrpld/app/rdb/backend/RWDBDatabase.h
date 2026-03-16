@@ -325,6 +325,7 @@ public:
                 auto const& txn = acceptedLedgerTx->getTxn();
                 auto const& meta = acceptedLedgerTx->getMeta();
                 auto const& id = txn->getTransactionID();
+                auto const affectedAccounts = meta.getAffectedAccounts();
                 std::string reason;
 
                 auto accTx = std::make_pair(
@@ -341,8 +342,8 @@ public:
                         id,
                         accTx,
                         std::vector<AccountID>(
-                            meta.getAffectedAccounts().begin(),
-                            meta.getAffectedAccounts().end()),
+                            affectedAccounts.begin(),
+                            affectedAccounts.end()),
                         acceptedLedgerTx->getTxnSeq()});
             }
 
