@@ -162,6 +162,7 @@ jobs:
             Build with code generation enabled (XRPL_NO_CODEGEN=OFF).
             Then commit and push the changes.
         run: |
+          set -e
           DIFF=$(git status --porcelain -- include/xrpl/protocol_autogen src/tests/libxrpl/protocol_autogen)
           if [ -n "${DIFF}" ]; then
             git diff -- include/xrpl/protocol_autogen src/tests/libxrpl/protocol_autogen
