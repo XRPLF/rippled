@@ -1,4 +1,5 @@
 #include <test/jtx/Env.h>
+#include <test/unit_test/utils.h>
 
 #include <xrpld/app/misc/ValidatorKeys.h>
 #include <xrpld/core/Config.h>
@@ -92,7 +93,7 @@ public:
             if (BEAST_EXPECT(k.keys))
             {
                 BEAST_EXPECT(k.keys->publicKey == seedPublicKey);
-                BEAST_EXPECT(k.keys->secretKey == seedSecretKey);
+                BEAST_EXPECT(test::equal(k.keys->secretKey, seedSecretKey));
             }
             BEAST_EXPECT(k.nodeID == seedNodeID);
             BEAST_EXPECT(k.manifest.empty());
@@ -119,7 +120,7 @@ public:
             if (BEAST_EXPECT(k.keys))
             {
                 BEAST_EXPECT(k.keys->publicKey == tokenPublicKey);
-                BEAST_EXPECT(k.keys->secretKey == tokenSecretKey);
+                BEAST_EXPECT(test::equal(k.keys->secretKey, tokenSecretKey));
             }
             BEAST_EXPECT(k.nodeID == tokenNodeID);
             BEAST_EXPECT(k.manifest == tokenManifest);
