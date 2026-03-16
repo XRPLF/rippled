@@ -7,6 +7,7 @@
 #include <xrpld/overlay/detail/Tuning.h>
 #include <xrpld/overlay/predicates.h>
 #include <xrpld/peerfinder/make_Manager.h>
+#include <xrpld/core/ConfigSections.h>
 #include <xrpld/rpc/handlers/GetCounts.h>
 #include <xrpld/rpc/json_body.h>
 
@@ -34,6 +35,14 @@ enum {
     ServerCounts = (1 << 2),
     Unl = (1 << 3)
 };
+}
+
+bool
+useSqlitePeerFinderStore(Config const& config)
+{
+    auto const& rdbSection = config.section(SECTION_RELATIONAL_DB);
+    auto const backend = get(rdbSection, "backend", "sqlite");
+    return !boost::iequals(backend, "rwdb");
 }
 
 //------------------------------------------------------------------------------
@@ -121,7 +130,8 @@ OverlayImpl::OverlayImpl(
               stopwatch(),
               app_.journal("PeerFinder"),
               config,
-              collector))
+              collector,
+              useSqlitePeerFinderStore(app.config())))
     , m_resolver(resolver)
     , next_id_(1)
     , timer_count_(0)

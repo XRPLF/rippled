@@ -1528,6 +1528,85 @@ r.ripple.com:51235
     }
 
     void
+    testRWDBOnlineDelete()
+    {
+        testcase("rwdb online_delete validation");
+
+        {
+            Config c;
+            c.setupControl(true, true, true);
+            std::string const toLoad = "[node_db]\n"
+                                       "type=rwdb\n"
+                                       "path=main\n";
+            try
+            {
+                c.loadFromString(toLoad);
+                pass();
+            }
+            catch (std::runtime_error const&)
+            {
+                fail("Should not throw in standalone mode");
+            }
+        }
+
+        {
+            Config c;
+            c.setupControl(true, true, false);
+            std::string const toLoad = "[node_db]\n"
+                                       "type=rwdb\n"
+                                       "path=main\n";
+            try
+            {
+                c.loadFromString(toLoad);
+                fail("Expected exception for RWDB without online_delete");
+            }
+            catch (std::runtime_error const& e)
+            {
+                BEAST_EXPECT(
+                    std::string(e.what()).find(
+                        "RWDB (in-memory backend) requires online_delete") !=
+                    std::string::npos);
+                pass();
+            }
+        }
+
+        {
+            Config c;
+            c.setupControl(true, true, false);
+            std::string const toLoad = "[node_db]\n"
+                                       "type=rwdb\n"
+                                       "path=main\n"
+                                       "online_delete=256\n";
+            try
+            {
+                c.loadFromString(toLoad);
+                pass();
+            }
+            catch (std::runtime_error const&)
+            {
+                fail("Should not throw when online_delete is configured");
+            }
+        }
+
+        {
+            Config c;
+            c.setupControl(true, true, false);
+            std::string const toLoad = "[node_db]\n"
+                                       "type=nudb\n"
+                                       "path=main\n";
+            try
+            {
+                c.loadFromString(toLoad);
+                pass();
+            }
+            catch (std::runtime_error const&)
+            {
+                fail("Should not throw for non-RWDB backends");
+            }
+        }
+    }
+
+    void
     run() override
     {
         testLegacy();
@@ -1544,6 +1623,7 @@ r.ripple.com:51235
         testComments();
         testGetters();
         testAmendment();
+        testRWDBOnlineDelete();
         testOverlay();
         testNetworkID();
     }

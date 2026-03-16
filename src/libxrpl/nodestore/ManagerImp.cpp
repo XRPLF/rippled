@@ -34,6 +34,8 @@ void
 registerNullFactory(Manager& manager);
 void
 registerMemoryFactory(Manager& manager);
+void
+registerRWDBFactory(Manager& manager);
 
 ManagerImp::ManagerImp()
 {
@@ -41,6 +43,7 @@ ManagerImp::ManagerImp()
     registerRocksDBFactory(*this);
     registerNullFactory(*this);
     registerMemoryFactory(*this);
+    registerRWDBFactory(*this);
 }
 
 std::unique_ptr<Backend>

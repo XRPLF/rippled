@@ -1,5 +1,6 @@
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Checker.h>
+#include <xrpld/peerfinder/detail/InMemoryStore.h>
 #include <xrpld/peerfinder/detail/Logic.h>
 #include <xrpld/peerfinder/detail/SourceStrings.h>
 #include <xrpld/peerfinder/detail/StoreSqdb.h>
@@ -20,7 +21,7 @@ public:
     std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
     clock_type& m_clock;
     beast::Journal m_journal;
-    StoreSqdb m_store;
+    std::unique_ptr<Store> m_store;
     Checker<boost::asio::ip::tcp> checker_;
     Logic<decltype(checker_)> m_logic;
     BasicConfig const& m_config;
@@ -32,15 +33,21 @@ public:
         clock_type& clock,
         beast::Journal journal,
         BasicConfig const& config,
-        beast::insight::Collector::ptr const& collector)
+        beast::insight::Collector::ptr const& collector,
+        bool useSqliteStore)
         : Manager()
         , io_context_(io_context)
         , work_(std::in_place, boost::asio::make_work_guard(io_context_))
         , m_clock(clock)
         , m_journal(journal)
-        , m_store(journal)
+        , m_store([&]() -> std::unique_ptr<Store> {
+            if (useSqliteStore)
+                return std::make_unique<StoreSqdb>(journal);
+
+            return std::make_unique<InMemoryStore>();
+        }())
         , checker_(io_context_)
-        , m_logic(clock, m_store, checker_, journal)
+        , m_logic(clock, *m_store, checker_, journal)
         , m_config(config)
         , m_stats(std::bind(&ManagerImp::collect_metrics, this), collector)
     {
@@ -189,7 +196,9 @@ public:
     void
     start() override
     {
-        m_store.open(m_config);
+        if (auto* sqliteStore = dynamic_cast<StoreSqdb*>(m_store.get()))
+            sqliteStore->open(m_config);
+
         m_logic.load();
     }
 
@@ -245,9 +254,11 @@ make_Manager(
     clock_type& clock,
     beast::Journal journal,
     BasicConfig const& config,
-    beast::insight::Collector::ptr const& collector)
+    beast::insight::Collector::ptr const& collector,
+    bool useSqliteStore)
 {
-    return std::make_unique<ManagerImp>(io_context, clock, journal, config, collector);
+    return std::make_unique<ManagerImp>(
+        io_context, clock, journal, config, collector, useSqliteStore);
 }
 
 }  // namespace PeerFinder

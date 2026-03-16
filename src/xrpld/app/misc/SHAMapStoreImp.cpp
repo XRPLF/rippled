@@ -92,6 +92,12 @@ SHAMapStoreImp::SHAMapStoreImp(
     }
 
     get_if_exists(section, "online_delete", deleteInterval_);
+    bool const isMemoryBackend = boost::iequals(get(section, "type"), "rwdb");
+
+    // For RWDB, default online_delete to ledger_history only if user did not
+    // explicitly set online_delete.
+    if (isMemoryBackend && deleteInterval_ == 0)
+        deleteInterval_ = config.LEDGER_HISTORY;
 
     if (deleteInterval_)
     {
@@ -128,7 +134,8 @@ SHAMapStoreImp::SHAMapStoreImp(
         }
 
         state_db_.init(config, dbName_);
-        dbPaths();
+        if (!isMemoryBackend)
+            dbPaths();
     }
 }
 

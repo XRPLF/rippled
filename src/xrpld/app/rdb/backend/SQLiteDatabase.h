@@ -14,7 +14,7 @@ class Config;
 class JobQueue;
 class ServiceRegistry;
 
-class SQLiteDatabase final : public RelationalDatabase
+class SQLiteDatabase : public RelationalDatabase
 {
 public:
     /**
@@ -478,7 +478,7 @@ private:
  * @param jobQueue JobQueue object.
  * @return SQLiteDatabase instance.
  */
-SQLiteDatabase
+std::unique_ptr<RelationalDatabase>
 setup_RelationalDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue);
 
 }  // namespace xrpl
