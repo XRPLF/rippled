@@ -2032,13 +2032,13 @@ class LoanBroker_test : public beast::unit_test::Suite
     }
 
     void
-    testFixAmendmentEnabled()
+    testFeatureLendingProtocolV1_1enabled()
     {
         using namespace jtx;
-        testcase("testFixAmendmentEnabled");
+        testcase("featureLendingProtocolV1_1 enabled");
         Env env{*this};
 
-        BEAST_EXPECT(env.enabled(fixLendingProtocolV1_1));
+        BEAST_EXPECT(env.enabled(featureLendingProtocolV1_1));
     }
 
     // Exercises canApplyToBrokerCover (fixCleanup3_2_0): a deposit, withdraw,
@@ -2254,9 +2254,8 @@ public:
     void
     run() override
     {
-        testFixAmendmentEnabled();
+        testFeatureLendingProtocolV1_1enabled();
         testCoverPrecisionGuard();
-
         testLoanBrokerSetDebtMaximum();
         testLoanBrokerCoverDepositNullVault();
 
