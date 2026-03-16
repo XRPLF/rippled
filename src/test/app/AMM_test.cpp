@@ -2342,7 +2342,7 @@ private:
             // The vote is not added to the slots
             ammAlice.vote(carol, 1'000);
             auto const info = ammAlice.ammRpcInfo()[jss::amm][jss::vote_slots];
-            for (std::uint16_t i = 0; i < info.size(); ++i)
+            for (std::uint32_t i = 0; i < info.size(); ++i)
                 BEAST_EXPECT(info[i][jss::account] != carol.human());
             // But the slots are refreshed and the fee is changed
             BEAST_EXPECT(ammAlice.expectTradingFee(82));

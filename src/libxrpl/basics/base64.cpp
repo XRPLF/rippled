@@ -116,6 +116,7 @@ encode(void* dest, void const* src, std::size_t len)
         in += 3;
     }
 
+    // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
     switch (len % 3)
     {
         case 2:
@@ -168,7 +169,7 @@ decode(void* dest, char const* src, std::size_t len)
             break;
         ++in;
         c4[i] = v;
-        if (++i == 4)
+        if (++i; i == 4)
         {
             c3[0] = (c4[0] << 2) + ((c4[1] & 0x30) >> 4);
             c3[1] = ((c4[1] & 0xf) << 4) + ((c4[2] & 0x3c) >> 2);
