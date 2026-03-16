@@ -2,6 +2,7 @@
 #include <test/jtx/mpt.h>
 
 #include <xrpl/protocol/ConfidentialTransfer.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
@@ -906,7 +907,7 @@ MPTTester::getPedersenCommitment(std::uint64_t const amount, Buffer const& peder
     {
         Buffer buf(ecPedersenCommitmentLength);
         std::memset(buf.data(), 0, ecPedersenCommitmentLength);
-        buf.data()[0] = 0x02;
+        buf.data()[0] = ecCompressedPrefixEvenY;
         buf.data()[ecPedersenCommitmentLength - 1] = 0x01;
         return buf;
     }

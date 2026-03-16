@@ -311,7 +311,7 @@ std::size_t constexpr maxBatchTxCount = 8;
 std::size_t constexpr ecGamalEncryptedLength = 33;
 
 /** EC ElGamal ciphertext length: two 33-byte components concatenated */
-std::size_t constexpr ecGamalEncryptedTotalLength = 66;
+std::size_t constexpr ecGamalEncryptedTotalLength = ecGamalEncryptedLength * 2;
 
 /** Length of equality ZKProof in bytes */
 std::size_t constexpr ecEqualityProofLength = 98;
@@ -345,5 +345,11 @@ std::size_t constexpr ecSingleBulletproofLength = 688;
 
 /** Length of double bulletproof (range proof for 2 commitments) in bytes */
 std::size_t constexpr ecDoubleBulletproofLength = 754;
+
+/** Compressed EC point prefix for even y-coordinate */
+static constexpr std::uint8_t ecCompressedPrefixEvenY = 0x02;
+
+/** Compressed EC point prefix for odd y-coordinate */
+static constexpr std::uint8_t ecCompressedPrefixOddY = 0x03;
 
 }  // namespace xrpl
