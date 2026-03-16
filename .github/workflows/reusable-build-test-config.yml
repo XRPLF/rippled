@@ -153,6 +153,19 @@ jobs:
             ${CMAKE_ARGS} \
             ..
 
+      - name: Build the binary
+        working-directory: ${{ env.BUILD_DIR }}
+        env:
+          BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
+          BUILD_TYPE: ${{ inputs.build_type }}
+          CMAKE_TARGET: ${{ inputs.cmake_target }}
+        run: |
+          cmake \
+            --build . \
+            --config "${BUILD_TYPE}" \
+            --parallel "${BUILD_NPROC}" \
+            --target "${CMAKE_TARGET}"
+
       - name: Check protocol autogen files are up-to-date
         env:
           MESSAGE: |
@@ -169,19 +182,6 @@ jobs:
             echo "${MESSAGE}"
             exit 1
           fi
-
-      - name: Build the binary
-        working-directory: ${{ env.BUILD_DIR }}
-        env:
-          BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
-          BUILD_TYPE: ${{ inputs.build_type }}
-          CMAKE_TARGET: ${{ inputs.cmake_target }}
-        run: |
-          cmake \
-            --build . \
-            --config "${BUILD_TYPE}" \
-            --parallel "${BUILD_NPROC}" \
-            --target "${CMAKE_TARGET}"
 
       - name: Show ccache statistics
         if: ${{ inputs.ccache_enabled }}
