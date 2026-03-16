@@ -26,6 +26,12 @@ HTTPClient::initializeSSLContext(
     httpClientSSLContext.emplace(sslVerifyDir, sslVerifyFile, sslVerify, j);
 }
 
+void
+HTTPClient::cleanupSSLContext()
+{
+    httpClientSSLContext.reset();
+}
+
 //------------------------------------------------------------------------------
 //
 // Fetch a web page via http or https.

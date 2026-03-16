@@ -419,16 +419,15 @@ Env::postconditions(
     Json::Value const& jr,
     std::source_location const& loc)
 {
-    auto const line = jt.testLine ? " (" + to_string(*jt.testLine) + ")" : "";
     auto const locStr = std::string("(") + loc.file_name() + ":" + to_string(loc.line()) + ")";
-    bool bad = !test.expect(parsed.ter, "apply " + locStr + ": No ter result!" + line);
+    bool bad = !test.expect(parsed.ter, "apply " + locStr + ": No ter result!");
     bad =
         (jt.ter && parsed.ter &&
          !test.expect(
              *parsed.ter == *jt.ter,
              "apply " + locStr + ": Got " + transToken(*parsed.ter) + " (" +
                  transHuman(*parsed.ter) + "); Expected " + transToken(*jt.ter) + " (" +
-                 transHuman(*jt.ter) + ")" + line));
+                 transHuman(*jt.ter) + ")"));
     using namespace std::string_literals;
     bad = (jt.rpcCode &&
            !test.expect(
@@ -438,7 +437,7 @@ Env::postconditions(
                                    : "NO RESULT") +
                    " (" + parsed.rpcMessage + "); Expected " +
                    RPC::get_error_info(jt.rpcCode->first).token.c_str() + " (" +
-                   jt.rpcCode->second + ")" + line)) ||
+                   jt.rpcCode->second + ")")) ||
         bad;
     // If we have an rpcCode (just checked), then the rpcException check is
     // optional - the 'error' field may not be defined, but if it is, it must
@@ -450,7 +449,7 @@ Env::postconditions(
                     (!jt.rpcException->second || parsed.rpcException == *jt.rpcException->second)),
                "apply " + locStr + ": Got RPC result "s + parsed.rpcError + " (" +
                    parsed.rpcException + "); Expected " + jt.rpcException->first + " (" +
-                   jt.rpcException->second.value_or("n/a") + ")" + line)) ||
+                   jt.rpcException->second.value_or("n/a") + ")")) ||
         bad;
     if (bad)
     {
