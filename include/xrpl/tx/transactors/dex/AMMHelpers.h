@@ -370,7 +370,7 @@ changeSpotPriceQuality(
     if (!amounts)
     {
         JLOG(j.trace()) << "changeSpotPrice calc failed: " << to_string(pool.in) << " "
-                        << to_string(pool.out) << " " << quality << " " << tfee << std::endl;
+                        << to_string(pool.out) << " " << quality << " " << tfee;
         return std::nullopt;
     }
 

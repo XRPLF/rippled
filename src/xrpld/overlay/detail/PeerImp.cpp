@@ -635,7 +635,7 @@ PeerImp::close()
     cancelTimer();
 
     error_code ec;
-    socket_.close(ec);
+    socket_.close(ec);  // NOLINT(bugprone-unused-return-value)
 
     overlay_.incPeerDisconnect();
 
