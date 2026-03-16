@@ -509,9 +509,9 @@ struct FinalizeClaimHelperResult
     bool
     isTesSuccess() const
     {
-        return (mainFundsTer && xrpl::isTesSuccess(*mainFundsTer)) &&
-            (rewardTer && xrpl::isTesSuccess(*rewardTer)) &&
-            (rmSleTer && xrpl::isTesSuccess(*rmSleTer));
+        return (!mainFundsTer || xrpl::isTesSuccess(*mainFundsTer)) &&
+            (!rewardTer || xrpl::isTesSuccess(*rewardTer)) &&
+            (!rmSleTer || xrpl::isTesSuccess(*rmSleTer));
     }
 
     TER
