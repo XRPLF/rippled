@@ -267,8 +267,9 @@ onNewAttestations(
     bool changed = false;
     for (auto att = attBegin; att != attEnd; ++att)
     {
-        if (!isTesSuccess(checkAttestationPublicKey(
-                view, signersList, att->attestationSignerAccount, att->publicKey, j)))
+        auto const ter = checkAttestationPublicKey(
+            view, signersList, att->attestationSignerAccount, att->publicKey, j);
+        if (!isTesSuccess(ter))
         {
             // The checkAttestationPublicKey is not strictly necessary here (it
             // should be checked in a preclaim step), but it would be bad to let
@@ -508,17 +509,15 @@ struct FinalizeClaimHelperResult
     bool
     isTesSuccess() const
     {
-        return (!mainFundsTer || xrpl::isTesSuccess(*mainFundsTer)) &&
-            (!rewardTer || xrpl::isTesSuccess(*rewardTer)) &&
-            (!rmSleTer || xrpl::isTesSuccess(*rmSleTer));
+        return (mainFundsTer && xrpl::isTesSuccess(*mainFundsTer)) &&
+            (rewardTer && xrpl::isTesSuccess(*rewardTer)) &&
+            (rmSleTer && xrpl::isTesSuccess(*rmSleTer));
     }
 
     TER
     ter() const
     {
-        if ((!mainFundsTer || xrpl::isTesSuccess(*mainFundsTer)) &&
-            (!rewardTer || xrpl::isTesSuccess(*rewardTer)) &&
-            (!rmSleTer || xrpl::isTesSuccess(*rmSleTer)))
+        if (isTesSuccess())
             return tesSUCCESS;
 
         // if any phase return a tecINTERNAL or a tef, prefer returning those
