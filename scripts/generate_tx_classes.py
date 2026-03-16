@@ -18,6 +18,7 @@ from macro_parser_common import (
     parse_field_list,
     generate_cpp_class,
     generate_from_template,
+    clear_output_directory,
 )
 
 
@@ -182,6 +183,9 @@ def main():
     header_dir = Path(args.header_dir)
     header_dir.mkdir(parents=True, exist_ok=True)
 
+    # Clear existing generated files before regenerating
+    clear_output_directory(header_dir)
+
     print(f"\nGenerating header-only template classes...")
     print(f"  Headers: {header_dir}\n")
 
@@ -206,6 +210,9 @@ def main():
     if args.test_dir:
         test_dir = Path(args.test_dir)
         test_dir.mkdir(parents=True, exist_ok=True)
+
+        # Clear existing generated test files before regenerating
+        clear_output_directory(test_dir)
 
         for tx_info in transactions:
             # Fields are already enriched from generate_cpp_class above

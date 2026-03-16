@@ -7,9 +7,31 @@ and ledger_entries.macro files using pcpp and pyparsing.
 """
 
 import re
+import shutil
 from pathlib import Path
 import pyparsing as pp
 from pcpp import Preprocessor
+
+
+def clear_output_directory(directory):
+    """Clear all generated files from an output directory.
+
+    Removes all .h and .cpp files from the directory, but preserves
+    the directory itself and any subdirectories.
+
+    Args:
+        directory: Path to the directory to clear
+    """
+    dir_path = Path(directory)
+    if not dir_path.exists():
+        return
+
+    # Remove generated files (headers and source files)
+    for pattern in ["*.h", "*.cpp"]:
+        for file_path in dir_path.glob(pattern):
+            file_path.unlink()
+
+    print(f"Cleared output directory: {dir_path}")
 
 
 class CppCleaner(Preprocessor):
