@@ -106,7 +106,7 @@ struct STAccount_test : public beast::unit_test::suite
         auto const s = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
         if (auto const parsed = parseBase58<AccountID>(s); BEAST_EXPECT(parsed))
         {
-            BEAST_EXPECT(toBase58(*parsed) == s);
+            BEAST_EXPECT(toBase58(*parsed) == s);  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         {
