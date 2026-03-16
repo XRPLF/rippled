@@ -3,6 +3,8 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
 
+#include <memory>
+
 namespace xrpl {
 
 class ServiceRegistry;
@@ -340,5 +342,16 @@ calculateDefaultBaseFee(ReadView const& view, STTx const& tx);
 */
 ApplyResult
 doApply(PreclaimResult const& preclaimResult, ServiceRegistry& registry, OpenView& view);
+
+class ApplyContext;
+class Transactor;
+
+/** Create a concrete Transactor subclass for the given ApplyContext.
+ *
+ *  The transaction type is determined from the STTx held in the context.
+ *  Returns nullptr if the transaction type is unknown.
+ */
+std::unique_ptr<Transactor>
+makeTransactor(ApplyContext& ctx);
 
 }  // namespace xrpl

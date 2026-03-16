@@ -15,7 +15,9 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/apply.h>
+#include <xrpl/tx/applySteps.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 
@@ -128,6 +130,9 @@ class Invariants_test : public beast::unit_test::suite
 
         BEAST_EXPECT(precheck(A1, A2, ac));
 
+        auto transactor = makeTransactor(ac);
+        BEAST_EXPECT(transactor);
+
         // invoke check twice to cover tec and tef cases
         if (!BEAST_EXPECT(ters.size() == 2))
             return;
@@ -135,8 +140,10 @@ class Invariants_test : public beast::unit_test::suite
         TER terActual = tesSUCCESS;
         for (TER const& terExpect : ters)
         {
-            terActual = ac.checkInvariants(terActual, fee);
-            BEAST_EXPECTS(terExpect == terActual, std::to_string(TERtoInt(terActual)));
+            terActual = transactor->checkInvariants(terActual, fee);
+            BEAST_EXPECTS(
+                terExpect == terActual,
+                "expected: " + transToken(terExpect) + " got: " + transToken(terActual));
             auto const messages = sink.messages().str();
 
             if (terActual != tesSUCCESS)

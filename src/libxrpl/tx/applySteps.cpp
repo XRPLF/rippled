@@ -295,6 +295,15 @@ invoke_apply(ApplyContext& ctx)
     }
 }
 
+std::unique_ptr<Transactor>
+makeTransactor(ApplyContext& ctx)
+{
+    return with_txn_type(
+        ctx.view().rules(), ctx.tx.getTxnType(), [&]<typename T>() -> std::unique_ptr<Transactor> {
+            return std::make_unique<T>(ctx);
+        });
+}
+
 PreflightResult
 preflight(
     ServiceRegistry& registry,
