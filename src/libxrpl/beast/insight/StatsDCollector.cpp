@@ -470,6 +470,7 @@ public:
 
         m_io_context.run();
 
+        // NOLINTNEXTLINE(bugprone-unused-return-value)
         m_socket.shutdown(boost::asio::ip::udp::socket::shutdown_send, ec);
 
         m_socket.close();
