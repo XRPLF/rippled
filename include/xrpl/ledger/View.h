@@ -1,16 +1,16 @@
 #pragma once
 
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/ledger/AccountRootHelpers.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/DirectoryHelpers.h>
-#include <xrpl/ledger/MPTokenHelpers.h>
-#include <xrpl/ledger/OfferHelpers.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/RippleStateHelpers.h>
-#include <xrpl/ledger/TokenHelpers.h>
-#include <xrpl/ledger/VaultHelpers.h>
+#include <xrpl/ledger/entries/AccountRootHelpers.h>
+#include <xrpl/ledger/entries/DirectoryHelpers.h>
+#include <xrpl/ledger/entries/MPTokenHelpers.h>
+#include <xrpl/ledger/entries/OfferHelpers.h>
+#include <xrpl/ledger/entries/RippleStateHelpers.h>
+#include <xrpl/ledger/entries/TokenHelpers.h>
+#include <xrpl/ledger/entries/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>

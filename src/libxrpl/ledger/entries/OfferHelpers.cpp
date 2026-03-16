@@ -1,5 +1,5 @@
-#include <xrpl/ledger/AccountRootHelpers.h>
-#include <xrpl/ledger/OfferHelpers.h>
+#include <xrpl/ledger/entries/AccountRootHelpers.h>
+#include <xrpl/ledger/entries/OfferHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/st.h>

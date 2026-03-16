@@ -1,6 +1,6 @@
-#include <xrpl/ledger/AccountRootHelpers.h>
-#include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/AccountRootHelpers.h>
+#include <xrpl/ledger/entries/CredentialHelpers.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/digest.h>
 
