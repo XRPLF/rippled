@@ -232,7 +232,7 @@ public:
             return;
 
         boost::system::error_code ec;
-        s.shutdown(socket::shutdown_both, ec);
+        s.shutdown(socket::shutdown_both, ec);  // NOLINT(bugprone-unused-return-value)
 
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
@@ -268,7 +268,7 @@ public:
             return;
 
         boost::system::error_code ec;
-        s.shutdown(socket::shutdown_both, ec);
+        s.shutdown(socket::shutdown_both, ec);  // NOLINT(bugprone-unused-return-value)
     }
 
     void
