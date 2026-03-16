@@ -3,6 +3,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/detail/secp256k1.h>
@@ -206,7 +207,7 @@ publicKeyType(Slice const& slice)
         if (slice[0] == 0xED)
             return KeyType::ed25519;
 
-        if (slice[0] == 0x02 || slice[0] == 0x03)
+        if (slice[0] == ecCompressedPrefixEvenY || slice[0] == ecCompressedPrefixOddY)
             return KeyType::secp256k1;
     }
 

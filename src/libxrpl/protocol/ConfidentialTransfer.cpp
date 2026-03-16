@@ -7,6 +7,9 @@
 #include <openssl/sha.h>
 
 namespace xrpl {
+
+static constexpr std::uint32_t defaultVersion = 0;
+
 void
 addCommonZKPFields(
     Serializer& s,
@@ -52,7 +55,7 @@ getClawbackContextHash(
 
     // TxSpecific = identity || freshness
     s.addBitString(holder);
-    s.addInteger(0);
+    s.addInteger(defaultVersion);
 
     return s.getSHA512Half();
 }
@@ -65,7 +68,7 @@ getConvertContextHash(AccountID const& account, uint192 const& issuanceID, std::
 
     // TxSpecific = identity || freshness
     s.addBitString(account);
-    s.addInteger(0);
+    s.addInteger(defaultVersion);
 
     return s.getSHA512Half();
 }
@@ -145,7 +148,7 @@ isValidCompressedECPoint(Slice const& buffer)
         return false;
 
     // Compressed EC points must start with 0x02 or 0x03
-    if (buffer[0] != 0x02 && buffer[0] != 0x03)
+    if (buffer[0] != ecCompressedPrefixEvenY && buffer[0] != ecCompressedPrefixOddY)
         return false;
 
     secp256k1_pubkey point;
