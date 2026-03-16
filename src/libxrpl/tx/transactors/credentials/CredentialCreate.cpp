@@ -107,7 +107,7 @@ CredentialCreate::doApply()
             return tecEXPIRED;
         }
 
-        sleCred->setFieldU32(sfExpiration, ctx_.tx.getFieldU32(sfExpiration));
+        sleCred->setFieldU32(sfExpiration, *optExp);
     }
 
     auto const sleIssuer = view().peek(keylet::account(account_));
