@@ -3,6 +3,11 @@
 #]===================================================================]
 
 # Options for code generation
+option(
+    XRPL_NO_CODEGEN
+    "Disable code generation (use pre-generated files from repository)"
+    OFF
+)
 set(CODEGEN_VENV_DIR
     ""
     CACHE PATH
@@ -32,6 +37,16 @@ function(setup_protocol_autogen)
     set(GENERATE_LEDGER_SCRIPT "${SCRIPTS_DIR}/generate_ledger_classes.py")
     set(REQUIREMENTS_FILE "${SCRIPTS_DIR}/requirements.txt")
 
+    # Check if code generation is disabled
+    if(XRPL_NO_CODEGEN)
+        message(
+            WARNING
+            "Protocol autogen: Code generation is disabled (XRPL_NO_CODEGEN=ON). "
+            "Generated files may be out of date."
+        )
+        return()
+    endif()
+
     # Create output directories
     file(MAKE_DIRECTORY "${AUTOGEN_HEADER_DIR}/transactions")
     file(MAKE_DIRECTORY "${AUTOGEN_HEADER_DIR}/ledger_entries")
@@ -51,7 +66,8 @@ function(setup_protocol_autogen)
     if(NOT Python3_EXECUTABLE)
         message(
             FATAL_ERROR
-            "Python3 not found. Code generation cannot proceed."
+            "Python3 not found. Code generation cannot proceed.\n"
+            "Please install Python 3, or set -DXRPL_NO_CODEGEN=ON to use existing generated files."
         )
         return()
     endif()
@@ -191,13 +207,6 @@ function(setup_protocol_autogen)
         )
     else()
         message(STATUS "Ledger entry classes generated successfully")
-    endif()
-
-    # Format generated files using pre-commit (clang-format)
-    if(WIN32)
-        set(VENV_PRECOMMIT "${VENV_DIR}/Scripts/pre-commit.exe")
-    else()
-        set(VENV_PRECOMMIT "${VENV_DIR}/bin/pre-commit")
     endif()
 
     # Register dependencies so CMake reconfigures when these files change
