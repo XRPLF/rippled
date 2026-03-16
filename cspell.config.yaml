@@ -99,6 +99,7 @@ words:
   - endmacro
   - exceptioned
   - Falco
+  - fcontext
   - finalizers
   - firewalled
   - fmtdur
@@ -176,6 +177,8 @@ words:
   - nixfmt
   - nixos
   - nixpkgs
+  - NOLINT
+  - NOLINTNEXTLINE
   - nonxrp
   - noripple
   - nudb

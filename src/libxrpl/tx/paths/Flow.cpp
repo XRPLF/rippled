@@ -6,7 +6,7 @@
 #include <xrpl/tx/paths/detail/AmountSpec.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 #include <xrpl/tx/paths/detail/StrandFlow.h>
-#include <xrpl/tx/transactors/AMM/AMMContext.h>
+#include <xrpl/tx/transactors/dex/AMMContext.h>
 
 namespace xrpl {
 

@@ -2,7 +2,7 @@
 
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/tx/transactors/LedgerStateFix.h>
+#include <xrpl/tx/transactors/system/LedgerStateFix.h>
 
 namespace xrpl {
 namespace test {

@@ -160,7 +160,7 @@ ConnectAttempt::close()
     cancelTimer();
 
     error_code ec;
-    socket_.close(ec);
+    socket_.close(ec);  // NOLINT(bugprone-unused-return-value)
 }
 
 void
@@ -252,7 +252,7 @@ ConnectAttempt::cancelTimer()
         timer_.cancel();
         stepTimer_.cancel();
     }
-    catch (boost::system::system_error const&)
+    catch (boost::system::system_error const&)  // NOLINT(bugprone-empty-catch)
     {
         // ignored
     }
