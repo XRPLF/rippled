@@ -142,14 +142,10 @@ WasmImpFunc(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-struct WasmParamVec
-{
-    std::uint8_t const* d = nullptr;
-    std::int32_t sz = 0;
-};
-
 struct WasmParam
 {
+    // We are not supporting float/double
+
     WasmTypes type = WT_I32;
     union
     {
