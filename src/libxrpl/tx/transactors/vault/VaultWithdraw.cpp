@@ -233,4 +233,23 @@ VaultWithdraw::doApply()
         view(), ctx_.tx, account_, dstAcct, vaultAccount, mPriorBalance, assetsWithdrawn, j_);
 }
 
+void
+VaultWithdraw::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+VaultWithdraw::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
+}
+
 }  // namespace xrpl

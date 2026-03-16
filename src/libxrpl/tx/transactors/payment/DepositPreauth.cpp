@@ -280,4 +280,23 @@ DepositPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, b
     return tesSUCCESS;
 }
 
+void
+DepositPreauth::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+DepositPreauth::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
+}
+
 }  // namespace xrpl

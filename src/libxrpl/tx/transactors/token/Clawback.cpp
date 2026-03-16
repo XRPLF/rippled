@@ -243,4 +243,18 @@ Clawback::doApply()
         ctx_.tx[sfAmount].asset().value());
 }
 
+void
+Clawback::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+Clawback::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
+}
+
 }  // namespace xrpl

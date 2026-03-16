@@ -867,4 +867,18 @@ CreateOffer::doApply()
     return result.first;
 }
 
+void
+CreateOffer::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+CreateOffer::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
+}
+
 }  // namespace xrpl

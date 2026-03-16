@@ -126,6 +126,20 @@ LoanDelete::doApply()
     return tesSUCCESS;
 }
 
+void
+LoanDelete::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+LoanDelete::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
+}
+
 //------------------------------------------------------------------------------
 
 }  // namespace xrpl

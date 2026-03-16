@@ -258,6 +258,25 @@ LoanBrokerSet::doApply()
     return tesSUCCESS;
 }
 
+void
+LoanBrokerSet::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+LoanBrokerSet::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
+}
+
 //------------------------------------------------------------------------------
 
 }  // namespace xrpl

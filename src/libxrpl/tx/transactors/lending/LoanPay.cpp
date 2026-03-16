@@ -609,6 +609,20 @@ LoanPay::doApply()
     return tesSUCCESS;
 }
 
+void
+LoanPay::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+LoanPay::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
+}
+
 //------------------------------------------------------------------------------
 
 }  // namespace xrpl

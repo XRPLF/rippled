@@ -319,4 +319,23 @@ MPTokenIssuanceSet::doApply()
     return tesSUCCESS;
 }
 
+void
+MPTokenIssuanceSet::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+MPTokenIssuanceSet::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
+}
+
 }  // namespace xrpl

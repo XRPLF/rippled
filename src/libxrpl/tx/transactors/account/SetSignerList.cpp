@@ -385,4 +385,23 @@ SetSignerList::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t 
     ledgerEntry->setFieldArray(sfSignerEntries, toLedger);
 }
 
+void
+SetSignerList::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+SetSignerList::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
+}
+
 }  // namespace xrpl
