@@ -41,7 +41,7 @@ DIDSet::preflight(PreflightContext const& ctx)
     };
 
     if (isTooLong(sfURI, maxDIDURILength) || isTooLong(sfDIDDocument, maxDIDDocumentLength) ||
-        isTooLong(sfData, maxDIDAttestationLength))
+        isTooLong(sfData, maxDIDDataLength))
         return temMALFORMED;
 
     return tesSUCCESS;
