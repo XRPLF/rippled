@@ -92,6 +92,9 @@ public:
     /** Used for ledgers loaded from JSON files
 
         @param acquire If true, acquires the ledger if not found locally
+
+        @note The fees parameter provides default values, but setup() may
+              override them from the ledger state if fee-related SLEs exist.
     */
     Ledger(
         LedgerHeader const& info,

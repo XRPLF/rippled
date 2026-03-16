@@ -234,7 +234,6 @@ Ledger::Ledger(
     txMap_.setImmutable();
     stateMap_.setImmutable();
 
-    // Note: fees_ is passed in, but setup() may override it from the ledger state
     if (!setup())
         loaded = false;
 
