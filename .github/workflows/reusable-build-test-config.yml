@@ -153,6 +153,22 @@ jobs:
             ${CMAKE_ARGS} \
             ..
 
+      - name: Check protocol autogen files are up-to-date
+        env:
+          MESSAGE: |
+
+            The generated protocol wrapper classes are out of date.
+
+            Build with code generation enabled (XRPL_NO_CODEGEN=OFF).
+            Then commit and push the changes.
+        run: |
+          DIFF=$(git status --porcelain -- include/xrpl/protocol_autogen src/tests/libxrpl/protocol_autogen)
+          if [ -n "${DIFF}" ]; then
+            git diff -- include/xrpl/protocol_autogen src/tests/libxrpl/protocol_autogen
+            echo "${MESSAGE}"
+            exit 1
+          fi
+
       - name: Build the binary
         working-directory: ${{ env.BUILD_DIR }}
         env:
