@@ -12,7 +12,7 @@ inline bool
 equal(SecretKey const& lhs, SecretKey const& rhs)
 {
     return lhs.size() == SecretKey::size_ && rhs.size() == SecretKey::size_ &&
-        std::memcmp(lhs.data(), rhs.data(), rhs.size()) == 0;
+        std::memcmp(lhs.data(), rhs.data(), SecretKey::size_) == 0;
 }
 
 }  // namespace test
