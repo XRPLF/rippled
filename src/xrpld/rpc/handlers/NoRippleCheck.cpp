@@ -109,14 +109,14 @@ doNoRippleCheck(RPC::JsonContext& context)
 
     Json::Value jvTransactions = Json::arrayValue;
 
-    if (defaultRipple & !roleGateway)
+    if (defaultRipple && !roleGateway)
     {
         problems.append(
             "You appear to have set your default ripple flag even though you "
             "are not a gateway. This is not recommended unless you are "
             "experimenting");
     }
-    else if (roleGateway & !defaultRipple)
+    else if (roleGateway && !defaultRipple)
     {
         problems.append("You should immediately set your default ripple flag");
         if (transactions)
