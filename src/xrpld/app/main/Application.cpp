@@ -196,7 +196,7 @@ public:
     boost::asio::steady_timer sweepTimer_;
     boost::asio::steady_timer entropyTimer_;
 
-    std::optional<SQLiteDatabase> relationalDatabase_;
+    std::unique_ptr<RelationalDatabase> relationalDatabase_;
     std::unique_ptr<DatabaseCon> mWalletDB;
     std::unique_ptr<Overlay> overlay_;
     std::optional<uint256> trapTxID_;
@@ -811,7 +811,7 @@ public:
 
         try
         {
-            relationalDatabase_.emplace(setup_RelationalDatabase(*this, *config_, *m_jobQueue));
+            relationalDatabase_ = setup_RelationalDatabase(*this, *config_, *m_jobQueue);
 
             // wallet database
             auto setup = setup_DatabaseCon(*config_, m_journal);
@@ -933,7 +933,8 @@ public:
     {
         XRPL_ASSERT(
             relationalDatabase_, "xrpl::ApplicationImp::doSweep : non-null relational database");
-        if (!config_->standalone() && !relationalDatabase_->transactionDbHasSpace(*config_))
+        auto* sqdb = dynamic_cast<SQLiteDatabase*>(relationalDatabase_.get());
+        if (!config_->standalone() && sqdb && !sqdb->transactionDbHasSpace(*config_))
         {
             signalStop("Out of transaction DB space");
         }

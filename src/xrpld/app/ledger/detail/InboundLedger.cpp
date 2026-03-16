@@ -4,6 +4,7 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/TransactionStateSF.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/core/ConfigSections.h>
 #include <xrpld/overlay/Overlay.h>
 
 #include <xrpl/core/JobQueue.h>
@@ -13,6 +14,7 @@
 #include <xrpl/shamap/SHAMapNodeID.h>
 
 #include <boost/iterator/function_output_iterator.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 
 #include <algorithm>
 #include <random>
@@ -53,6 +55,13 @@ enum {
 // millisecond for each ledger timeout
 auto constexpr ledgerAcquireTimeout = 3000ms;
 
+std::uint32_t
+inboundLedgerJobLimit(Application& app)
+{
+    auto const type = get(app.config().section(ConfigSection::nodeDatabase()), "type", "");
+    return boost::iequals(type, "rwdb") ? 500u : 5u;
+}
+
 InboundLedger::InboundLedger(
     Application& app,
     uint256 const& hash,
@@ -64,7 +73,7 @@ InboundLedger::InboundLedger(
           app,
           hash,
           ledgerAcquireTimeout,
-          {jtLEDGER_DATA, "InboundLedger", 5},
+            {jtLEDGER_DATA, "InboundLedger", inboundLedgerJobLimit(app)},
           app.getJournal("InboundLedger"))
     , m_clock(clock)
     , mSeq(seq)

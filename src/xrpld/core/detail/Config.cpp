@@ -1110,6 +1110,20 @@ Config::loadFromString(std::string const& fileContents)
                 "the maximum number of allowed peers (peers_max)");
         }
     }
+
+    if (!RUN_STANDALONE)
+    {
+        auto const& dbSection = section(ConfigSection::nodeDatabase());
+        if (boost::iequals(get(dbSection, "type", ""), "rwdb"))
+        {
+            if (get(dbSection, "online_delete", 0) == 0)
+            {
+                Throw<std::runtime_error>(
+                    "RWDB (in-memory backend) requires online_delete when not in "
+                    "standalone mode");
+            }
+        }
+    }
 }
 
 boost::filesystem::path
