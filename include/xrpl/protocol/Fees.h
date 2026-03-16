@@ -15,9 +15,14 @@ inline constexpr std::uint32_t FEE_UNITS_DEPRECATED = 10;
 */
 struct Fees
 {
-    XRPAmount base{0};       // Reference tx cost (drops)
-    XRPAmount reserve{0};    // Reserve base (drops)
-    XRPAmount increment{0};  // Reserve increment (drops)
+    /** @brief Cost of a reference transaction in drops. */
+    XRPAmount base{0};
+
+    /** @brief Minimum XRP an account must hold to exist on the ledger. */
+    XRPAmount reserve{0};
+
+    /** @brief Additional XRP reserve required per owned ledger object. */
+    XRPAmount increment{0};
 
     explicit Fees() = default;
     Fees(Fees const&) = default;
