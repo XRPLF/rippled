@@ -676,7 +676,7 @@ AMMWithdraw::equalWithdrawTokens(
     STAmount const& lpTokens,
     STAmount const& lpTokensWithdraw,
     std::uint16_t tfee,
-    FreezeHandling freezeHanding,
+    FreezeHandling freezeHandling,
     WithdrawAll withdrawAll,
     XRPAmount const& priorBalance,
     beast::Journal const& journal)
@@ -697,7 +697,7 @@ AMMWithdraw::equalWithdrawTokens(
                 lptAMMBalance,
                 lpTokensWithdraw,
                 tfee,
-                freezeHanding,
+                freezeHandling,
                 WithdrawAll::Yes,
                 priorBalance,
                 journal);
@@ -731,7 +731,7 @@ AMMWithdraw::equalWithdrawTokens(
             lptAMMBalance,
             tokensAdj,
             tfee,
-            freezeHanding,
+            freezeHandling,
             withdrawAll,
             priorBalance,
             journal);

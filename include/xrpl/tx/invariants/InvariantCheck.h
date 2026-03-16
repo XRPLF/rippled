@@ -27,6 +27,33 @@ namespace xrpl {
  * communicate the interface required of any invariant checker. Any invariant
  * check implementation should implement the public methods documented here.
  *
+ * ## Rules for implementing `finalize`
+ *
+ * ### Invariants must run regardless of transaction result
+ *
+ * An invariant's `finalize` method MUST perform meaningful checks even when
+ * the transaction has failed (i.e., `!isTesSuccess(tec)`). The following
+ * pattern is almost certainly wrong and must never be used:
+ *
+ * @code
+ * // WRONG: skipping all checks on failure defeats the purpose of invariants
+ * if (!isTesSuccess(tec))
+ *     return true;
+ * @endcode
+ *
+ * The entire purpose of invariants is to detect and prevent the impossible.
+ * A bug or exploit could cause a failed transaction to mutate ledger state in
+ * unexpected ways. Invariants are the last line of defense against such
+ * scenarios.
+ *
+ * In general: an invariant that expects a domain-specific state change to
+ * occur (e.g., a new object being created) should only expect that change
+ * when the transaction succeeded. A failed VaultCreate must not have created
+ * a Vault. A failed LoanSet must not have created a Loan.
+ *
+ * Also be aware that failed transactions, regardless of type, carry no
+ * Privileges. Any privilege-gated checks must therefore also be applied to
+ * failed transactions.
  */
 class InvariantChecker_PROTOTYPE
 {
@@ -48,7 +75,11 @@ public:
 
     /**
      * @brief called after all ledger entries have been visited to determine
-     * the final status of the check
+     * the final status of the check.
+     *
+     * This method MUST perform meaningful checks even when `tec` indicates a
+     * failed transaction. See the class-level documentation for the rules
+     * governing how failed transactions must be handled.
      *
      * @param tx the transaction being applied
      * @param tec the current TER result of the transaction

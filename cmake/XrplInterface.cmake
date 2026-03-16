@@ -23,7 +23,7 @@ target_compile_definitions(
         BOOST_FILESYSTEM_NO_DEPRECATED
         >
         $<$<NOT:$<BOOL:${boost_show_deprecated}>>:
-        BOOST_COROUTINES_NO_DEPRECATION_WARNING
+        BOOST_COROUTINES2_NO_DEPRECATION_WARNING
         BOOST_BEAST_ALLOW_DEPRECATED
         BOOST_FILESYSTEM_DEPRECATED
         >

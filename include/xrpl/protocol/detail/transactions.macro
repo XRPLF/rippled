@@ -42,7 +42,7 @@ TRANSACTION(ttPAYMENT, 0, Payment,
 
 /** This transaction type creates an escrow object. */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/escrow/Escrow.h>
+#   include <xrpl/tx/transactors/escrow/EscrowCreate.h>
 #endif
 TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate,
     Delegation::delegable,
@@ -58,6 +58,9 @@ TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate,
 }))
 
 /** This transaction type completes an existing escrow. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/escrow/EscrowFinish.h>
+#endif
 TRANSACTION(ttESCROW_FINISH, 2, EscrowFinish,
     Delegation::delegable,
     uint256{},
@@ -94,7 +97,7 @@ TRANSACTION(ttACCOUNT_SET, 3, AccountSet,
 
 /** This transaction type cancels an existing escrow. */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/escrow/Escrow.h>
+#   include <xrpl/tx/transactors/escrow/EscrowCancel.h>
 #endif
 TRANSACTION(ttESCROW_CANCEL, 4, EscrowCancel,
     Delegation::delegable,
@@ -180,7 +183,7 @@ TRANSACTION(ttSIGNER_LIST_SET, 12, SignerListSet,
 
 /** This transaction type creates a new unidirectional XRP payment channel. */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/payment_channel/PayChan.h>
+#   include <xrpl/tx/transactors/payment_channel/PayChanCreate.h>
 #endif
 TRANSACTION(ttPAYCHAN_CREATE, 13, PaymentChannelCreate,
     Delegation::delegable,
@@ -196,6 +199,9 @@ TRANSACTION(ttPAYCHAN_CREATE, 13, PaymentChannelCreate,
 }))
 
 /** This transaction type funds an existing unidirectional XRP payment channel. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/payment_channel/PayChanFund.h>
+#endif
 TRANSACTION(ttPAYCHAN_FUND, 14, PaymentChannelFund,
     Delegation::delegable,
     uint256{},
@@ -207,6 +213,9 @@ TRANSACTION(ttPAYCHAN_FUND, 14, PaymentChannelFund,
 }))
 
 /** This transaction type submits a claim against an existing unidirectional payment channel. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/payment_channel/PayChanClaim.h>
+#endif
 TRANSACTION(ttPAYCHAN_CLAIM, 15, PaymentChannelClaim,
     Delegation::delegable,
     uint256{},
@@ -617,7 +626,7 @@ TRANSACTION(ttXCHAIN_CREATE_BRIDGE, 48, XChainCreateBridge,
 
 /** This transaction type creates or updates a DID */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/did/DID.h>
+#   include <xrpl/tx/transactors/did/DIDSet.h>
 #endif
 TRANSACTION(ttDID_SET, 49, DIDSet,
     Delegation::delegable,
@@ -630,6 +639,9 @@ TRANSACTION(ttDID_SET, 49, DIDSet,
 }))
 
 /** This transaction type deletes a DID */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/did/DIDDelete.h>
+#endif
 TRANSACTION(ttDID_DELETE, 50, DIDDelete,
     Delegation::delegable,
     featureDID,
@@ -739,7 +751,7 @@ TRANSACTION(ttMPTOKEN_AUTHORIZE, 57, MPTokenAuthorize,
 
 /** This transaction type create an Credential instance */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/credentials/Credentials.h>
+#   include <xrpl/tx/transactors/credentials/CredentialCreate.h>
 #endif
 TRANSACTION(ttCREDENTIAL_CREATE, 58, CredentialCreate,
     Delegation::delegable,
@@ -753,6 +765,9 @@ TRANSACTION(ttCREDENTIAL_CREATE, 58, CredentialCreate,
 }))
 
 /** This transaction type accept an Credential object */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/credentials/CredentialAccept.h>
+#endif
 TRANSACTION(ttCREDENTIAL_ACCEPT, 59, CredentialAccept,
     Delegation::delegable,
     featureCredentials,
@@ -763,6 +778,9 @@ TRANSACTION(ttCREDENTIAL_ACCEPT, 59, CredentialAccept,
 }))
 
 /** This transaction type delete an Credential object */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/credentials/CredentialDelete.h>
+#endif
 TRANSACTION(ttCREDENTIAL_DELETE, 60, CredentialDelete,
     Delegation::delegable,
     featureCredentials,

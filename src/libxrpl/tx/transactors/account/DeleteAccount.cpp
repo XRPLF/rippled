@@ -10,7 +10,7 @@
 #include <xrpl/tx/transactors/account/DeleteAccount.h>
 #include <xrpl/tx/transactors/account/SetSignerList.h>
 #include <xrpl/tx/transactors/delegate/DelegateSet.h>
-#include <xrpl/tx/transactors/did/DID.h>
+#include <xrpl/tx/transactors/did/DIDDelete.h>
 #include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 #include <xrpl/tx/transactors/oracle/DeleteOracle.h>
 #include <xrpl/tx/transactors/payment/DepositPreauth.h>
