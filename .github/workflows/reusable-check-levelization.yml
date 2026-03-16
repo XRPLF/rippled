@@ -20,7 +20,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Check levelization
-        run: .github/scripts/levelization/generate.sh
+        run: python .github/scripts/levelization/generate.py
       - name: Check for differences
         env:
           MESSAGE: |
@@ -32,7 +32,7 @@ jobs:
             removed from loops.txt, it's probably an improvement, while if
             something was added, it's probably a regression.
 
-            Run '.github/scripts/levelization/generate.sh' in your repo, commit
+            Run '.github/scripts/levelization/generate.py' in your repo, commit
             and push the changes. See .github/scripts/levelization/README.md for
             more info.
         run: |

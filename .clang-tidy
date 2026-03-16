@@ -102,7 +102,6 @@ Checks: "-*,
 # bugprone-move-forwarding-reference,
 # bugprone-switch-missing-default-case,
 # bugprone-use-after-move,
-# bugprone-unused-raii,
 #
 # cppcoreguidelines-misleading-capture-default-by-value,
 # cppcoreguidelines-init-variables,
