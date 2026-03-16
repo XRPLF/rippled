@@ -12,13 +12,11 @@
 namespace xrpl {
 
 bool
-isGlobalFrozen(ReadView const& view, AccountID const& issuer)
+WrappedAccountRoot::isGlobalFrozen()
 {
-    if (isXRP(issuer))
+    if (isXRP(id_))
         return false;
-    if (auto const sle = view.read(keylet::account(issuer)))
-        return sle->isFlag(lsfGlobalFreeze);
-    return false;
+    return sle_->isFlag(lsfGlobalFreeze);
 }
 
 // An owner count cannot be negative. If adjustment would cause a negative
@@ -64,23 +62,19 @@ confineOwnerCount(
 }
 
 XRPAmount
-xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj, beast::Journal j)
+WrappedAccountRoot::xrpLiquid(std::int32_t ownerCountAdj, beast::Journal j)
 {
-    auto const sle = view.read(keylet::account(id));
-    if (sle == nullptr)
-        return beast::zero;
-
     // Return balance minus reserve
-    std::uint32_t const ownerCount =
-        confineOwnerCount(view.ownerCountHook(id, sle->getFieldU32(sfOwnerCount)), ownerCountAdj);
+    std::uint32_t const ownerCount = confineOwnerCount(
+        readView_.ownerCountHook(id, sle_->getFieldU32(sfOwnerCount)), ownerCountAdj);
 
     // Pseudo-accounts have no reserve requirement
     auto const reserve =
-        isPseudoAccount(sle) ? XRPAmount{0} : view.fees().accountReserve(ownerCount);
+        isPseudoAccount(sle_) ? XRPAmount{0} : readView_.fees().accountReserve(ownerCount);
 
-    auto const fullBalance = sle->getFieldAmount(sfBalance);
+    auto const fullBalance = sle_->getFieldAmount(sfBalance);
 
-    auto const balance = view.balanceHook(id, xrpAccount(), fullBalance);
+    auto const balance = readView_.balanceHook(id, xrpAccount(), fullBalance);
 
     STAmount const amount = (balance < reserve) ? STAmount{0} : balance - reserve;
 
@@ -94,32 +88,26 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
 }
 
 Rate
-transferRate(ReadView const& view, AccountID const& issuer)
+WrappedAccountRoot::transferRate()
 {
-    auto const sle = view.read(keylet::account(issuer));
-
-    if (sle && sle->isFieldPresent(sfTransferRate))
-        return Rate{sle->getFieldU32(sfTransferRate)};
+    if (sle_ && sle_->isFieldPresent(sfTransferRate))
+        return Rate{sle_->getFieldU32(sfTransferRate)};
 
     return parityRate;
 }
 
 void
-adjustOwnerCount(
-    ApplyView& view,
-    std::shared_ptr<SLE> const& sle,
-    std::int32_t amount,
-    beast::Journal j)
+WrappedAccountRoot::adjustOwnerCount(std::int32_t amount, beast::Journal j)
 {
     if (!sle)
         return;
     XRPL_ASSERT(amount, "xrpl::adjustOwnerCount : nonzero amount input");
-    std::uint32_t const current{sle->getFieldU32(sfOwnerCount)};
-    AccountID const id = (*sle)[sfAccount];
+    std::uint32_t const current{sle_->getFieldU32(sfOwnerCount)};
+    AccountID const id = (*sle_)[sfAccount];
     std::uint32_t const adjusted = confineOwnerCount(current, amount, id, j);
     view.adjustOwnerCountHook(id, current, adjusted);
-    sle->at(sfOwnerCount) = adjusted;
-    view.update(sle);
+    sle_->at(sfOwnerCount) = adjusted;
+    view.update(sle_);
 }
 
 AccountID
@@ -231,14 +219,14 @@ createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const
 }
 
 [[nodiscard]] TER
-checkDestinationAndTag(SLE::const_ref toSle, bool hasDestinationTag)
+WrappedAccountRoot::checkDestinationAndTag(bool hasDestinationTag)
 {
-    if (toSle == nullptr)
+    if (sle_ == nullptr)
         return tecNO_DST;
 
     // The tag is basically account-specific information we don't
     // understand, but we can require someone to fill it in.
-    if (toSle->isFlag(lsfRequireDestTag) && !hasDestinationTag)
+    if (sle_->isFlag(lsfRequireDestTag) && !hasDestinationTag)
         return tecDST_TAG_NEEDED;  // Cannot send without a tag
 
     return tesSUCCESS;
