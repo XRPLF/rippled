@@ -16,7 +16,8 @@ MPTokenIssuanceCreate::checkExtraFeatures(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfMutableFlags) && !ctx.rules.enabled(featureDynamicMPT))
         return false;
 
-    if (ctx.tx.isFlag(tfMPTCanConfidentialAmount) && !ctx.rules.enabled(featureConfidentialTransfer))
+    if (ctx.tx.isFlag(tfMPTCanConfidentialAmount) &&
+        !ctx.rules.enabled(featureConfidentialTransfer))
         return false;
 
     // can not set tmfMPTCannotMutateCanConfidentialAmount without featureConfidentialTransfer

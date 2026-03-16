@@ -40,7 +40,11 @@ static constexpr std::array<MPTMutabilityFlags, 7> mptMutabilityFlags = {
      {tmfMPTSetCanTrade, tmfMPTClearCanTrade, lsmfMPTCanMutateCanTrade, lsfMPTCanTrade},
      {tmfMPTSetCanTransfer, tmfMPTClearCanTransfer, lsmfMPTCanMutateCanTransfer, lsfMPTCanTransfer},
      {tmfMPTSetCanClawback, tmfMPTClearCanClawback, lsmfMPTCanMutateCanClawback, lsfMPTCanClawback},
-     {tmfMPTSetCanConfidentialAmount, tmfMPTClearCanConfidentialAmount, lsmfMPTCannotMutateCanConfidentialAmount, lsfMPTCanConfidentialAmount, true}}};
+     {tmfMPTSetCanConfidentialAmount,
+      tmfMPTClearCanConfidentialAmount,
+      lsmfMPTCannotMutateCanConfidentialAmount,
+      lsfMPTCanConfidentialAmount,
+      true}}};
 
 NotTEC
 MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
@@ -53,8 +57,8 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     auto const hasAuditorElGamalKey = ctx.tx.isFieldPresent(sfAuditorEncryptionKey);
     auto const txFlags = ctx.tx.getFlags();
 
-    auto const mutatePrivacy =
-        mutableFlags && ((*mutableFlags & (tmfMPTSetCanConfidentialAmount | tmfMPTClearCanConfidentialAmount)));
+    auto const mutatePrivacy = mutableFlags &&
+        ((*mutableFlags & (tmfMPTSetCanConfidentialAmount | tmfMPTClearCanConfidentialAmount)));
 
     auto const hasDomain = ctx.tx.isFieldPresent(sfDomainID);
     auto const hasHolder = ctx.tx.isFieldPresent(sfHolder);
@@ -244,7 +248,8 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
                 }))
             return tecNO_PERMISSION;
 
-        if ((*mutableFlags & tmfMPTSetCanConfidentialAmount) || (*mutableFlags & tmfMPTClearCanConfidentialAmount))
+        if ((*mutableFlags & tmfMPTSetCanConfidentialAmount) ||
+            (*mutableFlags & tmfMPTClearCanConfidentialAmount))
         {
             std::uint64_t const confidentialOA =
                 (*sleMptIssuance)[~sfConfidentialOutstandingAmount].value_or(0);

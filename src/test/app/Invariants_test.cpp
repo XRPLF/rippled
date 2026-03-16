@@ -3871,7 +3871,8 @@ class Invariants_test : public beast::unit_test::suite
         };
 
         doInvariantCheck(
-            {"MPToken has encrypted fields but Issuance does not have lsfMPTCanConfidentialAmount set"},
+            {"MPToken has encrypted fields but Issuance does not have lsfMPTCanConfidentialAmount "
+             "set"},
             [&mptID](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto sleToken = ac.view().peek(keylet::mptoken(mptID, A2.id()));
                 if (!sleToken)
