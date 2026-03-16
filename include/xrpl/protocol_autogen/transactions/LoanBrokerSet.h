@@ -19,7 +19,7 @@ class LoanBrokerSetBuilder;
  * @brief Transaction: LoanBrokerSet
  *
  * Type: ttLOAN_BROKER_SET (74)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::notDelegable
  * Amendment: featureLendingProtocol
  * Privileges: createPseudoAcct | mayAuthorizeMPT
  *

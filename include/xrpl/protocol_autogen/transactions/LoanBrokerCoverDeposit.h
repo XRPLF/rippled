@@ -19,7 +19,7 @@ class LoanBrokerCoverDepositBuilder;
  * @brief Transaction: LoanBrokerCoverDeposit
  *
  * Type: ttLOAN_BROKER_COVER_DEPOSIT (76)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::notDelegable
  * Amendment: featureLendingProtocol
  * Privileges: noPriv
  *

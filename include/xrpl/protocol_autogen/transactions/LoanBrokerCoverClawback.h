@@ -19,7 +19,7 @@ class LoanBrokerCoverClawbackBuilder;
  * @brief Transaction: LoanBrokerCoverClawback
  *
  * Type: ttLOAN_BROKER_COVER_CLAWBACK (78)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::notDelegable
  * Amendment: featureLendingProtocol
  * Privileges: noPriv
  *

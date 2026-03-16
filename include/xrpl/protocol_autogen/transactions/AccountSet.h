@@ -14,7 +14,7 @@
 namespace xrpl::transactions {
 
 class AccountSetBuilder;
-class AccountSetBuilderAAATest {};
+
 /**
  * @brief Transaction: AccountSet
  *
