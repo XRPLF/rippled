@@ -351,7 +351,7 @@ STTx::getMetaSQL(std::uint32_t inLedger, std::string const& escapedMetaData) con
 {
     Serializer s;
     add(s);
-    return getMetaSQL(s, inLedger, txnSqlValidated, escapedMetaData);
+    return getMetaSQL(s, inLedger, TxnSql::txnSqlValidated, escapedMetaData);
 }
 
 // VFALCO This could be a free function elsewhere
@@ -359,7 +359,7 @@ std::string
 STTx::getMetaSQL(
     Serializer rawTxn,
     std::uint32_t inLedger,
-    char status,
+    TxnSql status,
     std::string const& escapedMetaData) const
 {
     static boost::format bfTrans("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
@@ -370,8 +370,8 @@ STTx::getMetaSQL(
 
     return str(
         boost::format(bfTrans) % to_string(getTransactionID()) % format->getName() %
-        toBase58(getAccountID(sfAccount)) % getFieldU32(sfSequence) % inLedger % status % rTxn %
-        escapedMetaData);
+        toBase58(getAccountID(sfAccount)) % getFieldU32(sfSequence) % inLedger %
+        safe_cast<char>(status) % rTxn % escapedMetaData);
 }
 
 static Expected<void, std::string>

@@ -116,6 +116,7 @@ encode(void* dest, void const* src, std::size_t len)
         in += 3;
     }
 
+    // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
     switch (len % 3)
     {
         case 2:
