@@ -218,6 +218,12 @@ doGetAggregatePrice(RPC::JsonContext& context)
         return result;
     }
 
+    // Get the ledger
+    std::shared_ptr<ReadView const> ledger;
+    result = RPC::lookupLedger(ledger, context);
+    if (!ledger)
+        return result;  // LCOV_EXCL_LINE
+
     // Collect the dataset into bimap keyed by lastUpdateTime and
     // STAmount (Number is int64 and price is uint64)
     Prices prices;
@@ -237,11 +243,6 @@ doGetAggregatePrice(RPC::JsonContext& context)
             RPC::inject_error(rpcINVALID_PARAMS, result);
             return result;
         }
-
-        std::shared_ptr<ReadView const> ledger;
-        result = RPC::lookupLedger(ledger, context);
-        if (!ledger)
-            return result;  // LCOV_EXCL_LINE
 
         auto const sle = ledger->read(keylet::oracle(*account, *documentID));
         iteratePriceData(context, sle, [&](STObject const& node) {
