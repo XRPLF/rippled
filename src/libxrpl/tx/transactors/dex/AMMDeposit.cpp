@@ -186,7 +186,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     // Have to check again in deposit() because
     // amounts might be derived based on tokens or
     // limits.
-    WrappedAccountRoot wrappedAcct(accountID, &ctx.view);
+    AccountRoot wrappedAcct(accountID, &ctx.view);
     auto balance = [&](auto const& deposit) -> TER {
         if (isXRP(deposit))
         {
@@ -456,7 +456,7 @@ AMMDeposit::deposit(
 {
     // Check account has sufficient funds.
     // Return true if it does, false otherwise.
-    WrappedAccountRoot wrappedAcct(account_, &view);
+    WritableAccountRoot wrappedAcct(account_, &view);
     auto checkBalance = [&](auto const& depositAmount) -> TER {
         if (depositAmount <= beast::zero)
             return temBAD_AMOUNT;

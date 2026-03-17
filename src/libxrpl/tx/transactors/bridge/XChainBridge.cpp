@@ -694,7 +694,7 @@ finalizeClaimHelper(
         auto const cidOwner = (*sleClaimID)[sfAccount];
         {
             // Remove the claim id
-            WrappedAccountRoot wrappedOwner(cidOwner, &outerSb);
+            WritableAccountRoot wrappedOwner(cidOwner, &outerSb);
             auto const page = (*sleClaimID)[sfOwnerNode];
             if (!outerSb.dirRemove(keylet::ownerDir(cidOwner), page, sleClaimID->key(), true))
             {
@@ -1110,7 +1110,7 @@ applyCreateAccountAttestations(
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*createdSleClaimID)[sfOwnerNode] = *page;
 
-        WrappedAccountRoot wrappedDoor(doorAccount, &psb);
+        WritableAccountRoot wrappedDoor(doorAccount, &psb);
         if (!wrappedDoor)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -1429,7 +1429,7 @@ XChainCreateBridge::doApply()
     auto const reward = ctx_.tx[sfSignatureReward];
     auto const minAccountCreate = ctx_.tx[~sfMinAccountCreateAmount];
 
-    WrappedAccountRoot wrappedAcct(account, &ctx_.view());
+    WritableAccountRoot wrappedAcct(account, &ctx_.view());
     if (!wrappedAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -1975,7 +1975,7 @@ XChainCreateClaimID::doApply()
     auto const reward = ctx_.tx[sfSignatureReward];
     auto const otherChainSrc = ctx_.tx[sfOtherChainSource];
 
-    WrappedAccountRoot wrappedAcct(account, &ctx_.view());
+    WritableAccountRoot wrappedAcct(account, &ctx_.view());
     if (!wrappedAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 

@@ -39,7 +39,7 @@ isGlobalFrozen(ReadView const& view, Asset const& asset)
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
             {
-                WrappedAccountRoot issuer(issue.getIssuer(), &view);
+                AccountRoot issuer(issue.getIssuer(), &view);
                 return issuer.isGlobalFrozen();
             }
             else
@@ -257,7 +257,7 @@ accountHolds(
     STAmount amount;
     if (isXRP(currency))
     {
-        WrappedAccountRoot accountRoot(account, &view);
+        AccountRoot accountRoot(account, &view);
         return {accountRoot.xrpLiquid(0, j)};
     }
 
@@ -404,7 +404,7 @@ transferRate(ReadView const& view, STAmount const& amount)
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
             {
-                WrappedAccountRoot issuer(issue.getIssuer(), &view);
+                AccountRoot issuer(issue.getIssuer(), &view);
                 return issuer.transferRate();
             }
             else
@@ -587,7 +587,7 @@ rippleCreditIOU(
         // Sender quality out is 0.
         {
             // Clear the reserve of the sender, possibly delete the line!
-            WrappedAccountRoot wrappedSender(uSenderID, &view);
+            WritableAccountRoot wrappedSender(uSenderID, &view);
             wrappedSender.adjustOwnerCount(-1, j);
 
             // Clear reserve flag.
@@ -631,7 +631,7 @@ rippleCreditIOU(
                     << to_string(uSenderID) << " -> " << to_string(uReceiverID) << " : "
                     << saAmount.getFullText();
 
-    WrappedAccountRoot wrappedAccount(uReceiverID, &view);
+    WritableAccountRoot wrappedAccount(uReceiverID, &view);
     if (!wrappedAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -689,7 +689,7 @@ rippleSendIOU(
 
     // Calculate the amount to transfer accounting
     // for any transfer fees if the fee is not waived:
-    WrappedAccountRoot wrappedIssuer(issuer, &view);
+    WritableAccountRoot wrappedIssuer(issuer, &view);
     saActual = (waiveFee == WaiveTransferFee::Yes)
         ? saAmount
         : multiply(saAmount, wrappedIssuer.transferRate());
@@ -757,7 +757,7 @@ rippleSendMultiIOU(
 
         // Calculate the amount to transfer accounting
         // for any transfer fees if the fee is not waived:
-        WrappedAccountRoot wrappedIssuer(issuer, &view);
+        WritableAccountRoot wrappedIssuer(issuer, &view);
         STAmount actualSend = (waiveFee == WaiveTransferFee::Yes)
             ? amount
             : multiply(amount, wrappedIssuer.transferRate());

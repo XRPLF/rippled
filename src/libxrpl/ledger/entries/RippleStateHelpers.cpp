@@ -158,16 +158,16 @@ trustCreate(
     bool const bSrcHigh,
     AccountID const& uSrcAccountID,
     AccountID const& uDstAccountID,
-    uint256 const& uIndex,            // --> ripple state entry
-    WrappedAccountRoot& wrappedAcct,  // --> the account being set.
-    bool const bAuth,                 // --> authorize account.
-    bool const bNoRipple,             // --> others cannot ripple through
-    bool const bFreeze,               // --> funds cannot leave
-    bool bDeepFreeze,                 // --> can neither receive nor send funds
-    STAmount const& saBalance,        // --> balance of account being set.
-                                      // Issuer should be noAccount()
-    STAmount const& saLimit,          // --> limit for account being set.
-                                      // Issuer should be the account being set.
+    uint256 const& uIndex,             // --> ripple state entry
+    WritableAccountRoot& wrappedAcct,  // --> the account being set.
+    bool const bAuth,                  // --> authorize account.
+    bool const bNoRipple,              // --> others cannot ripple through
+    bool const bFreeze,                // --> funds cannot leave
+    bool bDeepFreeze,                  // --> can neither receive nor send funds
+    STAmount const& saBalance,         // --> balance of account being set.
+                                       // Issuer should be noAccount()
+    STAmount const& saLimit,           // --> limit for account being set.
+                                       // Issuer should be the account being set.
     std::uint32_t uQualityIn,
     std::uint32_t uQualityOut,
     beast::Journal j)
@@ -318,7 +318,7 @@ updateTrustLine(
         return false;
     std::uint32_t const flags(state->getFieldU32(sfFlags));
 
-    WrappedAccountRoot wrappedAcct(sender, &view);
+    WritableAccountRoot wrappedAcct(sender, &view);
     if (!wrappedAcct)
         return false;
 
@@ -424,7 +424,7 @@ issueIOU(
 
     final_balance.setIssuer(noAccount());
 
-    WrappedAccountRoot receiverAccount(account, &view);
+    WritableAccountRoot receiverAccount(account, &view);
     if (!receiverAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -605,7 +605,7 @@ addEmptyHolding(
 
     auto const& issuerId = issue.getIssuer();
     auto const& currency = issue.currency;
-    WrappedAccountRoot wrappedIssuer(issuerId, &view);
+    WritableAccountRoot wrappedIssuer(issuerId, &view);
     if (wrappedIssuer.isGlobalFrozen())
         return tecFROZEN;  // LCOV_EXCL_LINE
 
@@ -613,8 +613,8 @@ addEmptyHolding(
     auto const& dstId = accountID;
     auto const high = srcId > dstId;
     auto const index = keylet::line(srcId, dstId, currency);
-    WrappedAccountRoot wrappedSrc(srcId, &view);
-    WrappedAccountRoot wrappedDst(dstId, &view);
+    WritableAccountRoot wrappedSrc(srcId, &view);
+    WritableAccountRoot wrappedDst(dstId, &view);
     if (!wrappedDst || !wrappedSrc)
         return tefINTERNAL;  // LCOV_EXCL_LINE
     if (!wrappedSrc->isFlag(lsfDefaultRipple))
@@ -680,7 +680,7 @@ removeEmptyHolding(
     if (line->isFlag(lsfLowReserve))
     {
         // Clear reserve for low account.
-        WrappedAccountRoot wrappedLow(line->at(sfLowLimit)->getIssuer(), &view);
+        WritableAccountRoot wrappedLow(line->at(sfLowLimit)->getIssuer(), &view);
         if (!wrappedLow)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -694,7 +694,7 @@ removeEmptyHolding(
     if (line->isFlag(lsfHighReserve))
     {
         // Clear reserve for high account.
-        WrappedAccountRoot wrappedHigh(line->at(sfHighLimit)->getIssuer(), &view);
+        WritableAccountRoot wrappedHigh(line->at(sfHighLimit)->getIssuer(), &view);
         if (!wrappedHigh)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -722,8 +722,8 @@ deleteAMMTrustLine(
     auto const& [low, high] = std::minmax(
         sleState->getFieldAmount(sfLowLimit).getIssuer(),
         sleState->getFieldAmount(sfHighLimit).getIssuer());
-    WrappedAccountRoot wrappedLow(low, &view);
-    WrappedAccountRoot wrappedHigh(high, &view);
+    WritableAccountRoot wrappedLow(low, &view);
+    WritableAccountRoot wrappedHigh(high, &view);
     if (!wrappedLow || !wrappedHigh)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -752,7 +752,7 @@ deleteAMMTrustLine(
     if (!(sleState->getFlags() & uFlags))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    WrappedAccountRoot wrappedHolder = !ammLow ? wrappedLow : wrappedHigh;
+    WritableAccountRoot wrappedHolder = !ammLow ? wrappedLow : wrappedHigh;
     wrappedHolder.adjustOwnerCount(-1, j);
 
     return tesSUCCESS;

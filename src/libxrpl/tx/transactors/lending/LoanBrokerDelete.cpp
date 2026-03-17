@@ -160,7 +160,7 @@ LoanBrokerDelete::doApply()
     view().erase(broker);
 
     {
-        WrappedAccountRoot wrappedOwner(account_, &view());
+        WritableAccountRoot wrappedOwner(account_, &view());
         if (!wrappedOwner)
             return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 

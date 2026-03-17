@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Expected.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/WrappedSLEBase.h>
@@ -16,19 +17,19 @@
 
 namespace xrpl {
 
-class WrappedAccountRoot : public WrappedSLEBase
+/**
+ * Read-only wrapper for AccountRoot ledger entries.
+ *
+ * Provides read-only access to account data.
+ */
+class AccountRoot : public ReadOnlySLE
 {
 protected:
     AccountID const id_;
 
 public:
-    WrappedAccountRoot(AccountID const& id, ReadView const* view)
-        : WrappedSLEBase(view->read(keylet::account(id)), view), id_(id)
-    {
-    }
-
-    WrappedAccountRoot(AccountID const& id, ApplyView* view)
-        : WrappedSLEBase(view->peek(keylet::account(id)), view), id_(id)
+    AccountRoot(AccountID const& id, ReadView const* view)
+        : ReadOnlySLE(view->read(keylet::account(id)), view), id_(id)
     {
     }
 
@@ -63,10 +64,6 @@ public:
     [[nodiscard]] XRPAmount
     xrpLiquid(std::int32_t ownerCountAdj, beast::Journal j) const;
 
-    /** Adjust the owner count up or down. */
-    void
-    adjustOwnerCount(std::int32_t amount, beast::Journal j);
-
     /** Checks the destination and tag.
 
        - Checks that the SLE is not null.
@@ -74,6 +71,32 @@ public:
     */
     [[nodiscard]] TER
     checkDestinationAndTag(bool hasDestinationTag) const;
+};
+
+/**
+ * Writable wrapper for AccountRoot ledger entries.
+ *
+ * Provides read-write access to account data.
+ * Inherits from AccountRoot to reuse read-only methods,
+ * and adds write capabilities.
+ */
+class WritableAccountRoot : public AccountRoot, public WritableSLE
+{
+public:
+    WritableAccountRoot(AccountID const& id, ApplyView* view)
+        : AccountRoot(id, view), WritableSLE(view->peek(keylet::account(id)), view)
+    {
+    }
+
+    // Resolve ambiguity: use writable operator-> for non-const, read-only for const
+    using WritableSLE::operator->;
+    using AccountRoot::operator->;
+    using WritableSLE::operator*;
+    using AccountRoot::operator*;
+
+    /** Adjust the owner count up or down. */
+    void
+    adjustOwnerCount(std::int32_t amount, beast::Journal j);
 };
 
 /** Generate a pseudo-account address from a pseudo owner key.

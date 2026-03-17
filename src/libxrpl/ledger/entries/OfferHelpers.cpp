@@ -48,7 +48,7 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
         }
     }
 
-    WrappedAccountRoot wrappedOwner(owner, &view);
+    WritableAccountRoot wrappedOwner(owner, &view);
     wrappedOwner.adjustOwnerCount(-1, j);
 
     view.erase(sle);

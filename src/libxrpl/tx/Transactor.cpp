@@ -537,7 +537,7 @@ Transactor::ticketDelete(
 
     // Update the account root's TicketCount.  If the ticket count drops to
     // zero remove the (optional) field.
-    WrappedAccountRoot wrappedAcct(account, &view);
+    WritableAccountRoot wrappedAcct(account, &view);
     if (!wrappedAcct)
     {
         // LCOV_EXCL_START

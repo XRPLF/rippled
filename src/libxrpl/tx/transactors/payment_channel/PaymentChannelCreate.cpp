@@ -105,7 +105,7 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
 TER
 PaymentChannelCreate::doApply()
 {
-    WrappedAccountRoot wrappedOwner(account_, &ctx_.view());
+    WritableAccountRoot wrappedOwner(account_, &ctx_.view());
     if (!wrappedOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
