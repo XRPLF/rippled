@@ -35,17 +35,17 @@ AMMVote::preflight(PreflightContext const& ctx)
 TER
 AMMVote::preclaim(PreclaimContext const& ctx)
 {
-    if (auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2])); !ammSle)
+    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
+    if (!ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Vote: Invalid asset pair.";
         return terNO_AMM;
     }
-    else if (ammSle->getFieldAmount(sfLPTokenBalance) == beast::zero)
+    if (ammSle->getFieldAmount(sfLPTokenBalance) == beast::zero)
     {
         return tecAMM_EMPTY;
     }
-    else if (
-        auto const lpTokensNew = ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
+    if (auto const lpTokensNew = ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
         lpTokensNew == beast::zero)
     {
         JLOG(ctx.j.debug()) << "AMM Vote: account is not LP.";

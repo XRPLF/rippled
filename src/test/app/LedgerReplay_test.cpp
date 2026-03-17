@@ -972,7 +972,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
     {
         testcase("TaskParameter");
 
-        auto makeSkipList = [](int count) -> std::vector<uint256> const {
+        auto makeSkipList = [](int count) -> std::vector<uint256> {
             std::vector<uint256> sList;
             for (int i = 0; i < count; ++i)
                 sList.emplace_back(i);

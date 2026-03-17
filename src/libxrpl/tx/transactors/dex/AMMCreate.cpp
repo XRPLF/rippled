@@ -163,14 +163,11 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     auto clawbackDisabled = [&](Issue const& issue) -> TER {
         if (isXRP(issue))
             return tesSUCCESS;
-        if (auto const sle = ctx.view.read(keylet::account(issue.account)); !sle)
-        {
+        auto const sle = ctx.view.read(keylet::account(issue.account));
+        if (!sle)
             return tecINTERNAL;  // LCOV_EXCL_LINE
-        }
-        else if (sle->getFlags() & lsfAllowTrustLineClawback)
-        {
+        if (sle->getFlags() & lsfAllowTrustLineClawback)
             return tecNO_PERMISSION;
-        }
         return tesSUCCESS;
     };
 

@@ -1852,7 +1852,7 @@ class Check_test : public beast::unit_test::suite
             }
 
             // Operators to make using the class more convenient.
-            operator Account const() const
+            operator Account() const
             {
                 return acct;
             }

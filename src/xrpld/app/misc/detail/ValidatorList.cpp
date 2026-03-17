@@ -508,32 +508,29 @@ splitMessageParts(
             1);
         return messages.back().numVLs;
     }
-    else
+
+    std::optional<protocol::TMValidatorListCollection> smallMsg;
+    smallMsg.emplace();
+    smallMsg->set_version(largeMsg.version());
+    smallMsg->set_manifest(largeMsg.manifest());
+
+    for (std::size_t i = begin; i < end; ++i)
     {
-        std::optional<protocol::TMValidatorListCollection> smallMsg;
-        smallMsg.emplace();
-        smallMsg->set_version(largeMsg.version());
-        smallMsg->set_manifest(largeMsg.manifest());
-
-        for (std::size_t i = begin; i < end; ++i)
-        {
-            *smallMsg->add_blobs() = largeMsg.blobs(i);
-        }
-
-        if (Message::totalSize(*smallMsg) > maxSize)
-        {
-            // free up the message space
-            smallMsg.reset();
-            return splitMessage(messages, largeMsg, maxSize, begin, end);
-        }
-
-        messages.emplace_back(
-            std::make_shared<Message>(*smallMsg, protocol::mtVALIDATOR_LIST_COLLECTION),
-            sha512Half(*smallMsg),
-            smallMsg->blobs_size());
-        return messages.back().numVLs;
+        *smallMsg->add_blobs() = largeMsg.blobs(i);
     }
-    return 0;
+
+    if (Message::totalSize(*smallMsg) > maxSize)
+    {
+        // free up the message space
+        smallMsg.reset();
+        return splitMessage(messages, largeMsg, maxSize, begin, end);
+    }
+
+    messages.emplace_back(
+        std::make_shared<Message>(*smallMsg, protocol::mtVALIDATOR_LIST_COLLECTION),
+        sha512Half(*smallMsg),
+        smallMsg->blobs_size());
+    return messages.back().numVLs;
 }
 
 // Build a v1 protocol message using only the current VL

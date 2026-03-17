@@ -436,11 +436,13 @@ verifyAndAdjustLPTokenBalance(
     std::shared_ptr<SLE>& ammSle,
     AccountID const& account)
 {
-    if (auto const res = isOnlyLiquidityProvider(sb, lpTokens.issue(), account); !res)
+    auto const res = isOnlyLiquidityProvider(sb, lpTokens.issue(), account);
+    if (!res.has_value())
     {
         return Unexpected<TER>(res.error());
     }
-    else if (res.value())
+
+    if (res.value())
     {
         if (withinRelativeDistance(
                 lpTokens, ammSle->getFieldAmount(sfLPTokenBalance), Number{1, -3}))

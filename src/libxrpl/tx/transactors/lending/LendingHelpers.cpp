@@ -1637,24 +1637,26 @@ loanMakePayment(
         LoanState const roundedLoanState = constructLoanState(
             totalValueOutstandingProxy, principalOutstandingProxy, managementFeeOutstandingProxy);
 
-        if (auto const fullPaymentComponents = detail::computeFullPayment(
-                asset,
-                view,
-                principalOutstandingProxy,
-                managementFeeOutstandingProxy,
-                periodicPayment,
-                paymentRemainingProxy,
-                prevPaymentDateProxy,
-                startDate,
-                paymentInterval,
-                closeInterestRate,
-                loanScale,
-                roundedLoanState.interestDue,
-                periodicRate,
-                closePaymentFee,
-                amount,
-                managementFeeRate,
-                j))
+        auto const fullPaymentComponents = detail::computeFullPayment(
+            asset,
+            view,
+            principalOutstandingProxy,
+            managementFeeOutstandingProxy,
+            periodicPayment,
+            paymentRemainingProxy,
+            prevPaymentDateProxy,
+            startDate,
+            paymentInterval,
+            closeInterestRate,
+            loanScale,
+            roundedLoanState.interestDue,
+            periodicRate,
+            closePaymentFee,
+            amount,
+            managementFeeRate,
+            j);
+
+        if (fullPaymentComponents.has_value())
         {
             return doPayment(
                 *fullPaymentComponents,
@@ -1666,7 +1668,8 @@ loanMakePayment(
                 nextDueDateProxy,
                 paymentInterval);
         }
-        else if (fullPaymentComponents.error())
+
+        if (fullPaymentComponents.error())
         {
             // error() will be the TER returned if a payment is not made. It
             // will only evaluate to true if it's unsuccessful. Otherwise,
@@ -1708,18 +1711,20 @@ loanMakePayment(
         TenthBips32 const lateInterestRate{loan->at(sfLateInterestRate)};
         Number const latePaymentFee = loan->at(sfLatePaymentFee);
 
-        if (auto const latePaymentComponents = detail::computeLatePayment(
-                asset,
-                view,
-                principalOutstandingProxy,
-                nextDueDateProxy,
-                periodic,
-                lateInterestRate,
-                loanScale,
-                latePaymentFee,
-                amount,
-                managementFeeRate,
-                j))
+        auto const latePaymentComponents = detail::computeLatePayment(
+            asset,
+            view,
+            principalOutstandingProxy,
+            nextDueDateProxy,
+            periodic,
+            lateInterestRate,
+            loanScale,
+            latePaymentFee,
+            amount,
+            managementFeeRate,
+            j);
+
+        if (latePaymentComponents.has_value())
         {
             return doPayment(
                 *latePaymentComponents,
@@ -1731,7 +1736,8 @@ loanMakePayment(
                 nextDueDateProxy,
                 paymentInterval);
         }
-        else if (latePaymentComponents.error())
+
+        if (latePaymentComponents.error())
         {
             // error() will be the TER returned if a payment is not made. It
             // will only evaluate to true if it's unsuccessful.
