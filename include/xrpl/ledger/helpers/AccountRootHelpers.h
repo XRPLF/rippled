@@ -23,12 +23,12 @@ protected:
 
 public:
     WrappedAccountRoot(AccountID const& id, ReadView const* view)
-        : WrappedSLEBase(view->read(keylet::account(id)), view), id_(sle_ ? (*sle_)[sfAccount] : id)
+        : WrappedSLEBase(view->read(keylet::account(id)), view), id_(id)
     {
     }
 
     WrappedAccountRoot(AccountID const& id, ApplyView* view)
-        : WrappedSLEBase(view->peek(keylet::account(id)), view), id_(sle_ ? (*sle_)[sfAccount] : id)
+        : WrappedSLEBase(view->peek(keylet::account(id)), view), id_(id)
     {
     }
 
