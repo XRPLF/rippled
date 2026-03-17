@@ -1427,7 +1427,7 @@ r.ripple.com:51235
             {"months", 2592000, 1, false},
             {"years", 31536000, 1, false}};
 
-        std::string space = "";
+        std::string space;
         for (auto& [unit, sec, val, shouldPass] : units)
         {
             Config c;

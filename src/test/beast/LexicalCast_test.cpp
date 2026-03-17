@@ -220,7 +220,7 @@ public:
         testcase("entire range");
 
         std::int32_t i = std::numeric_limits<std::int16_t>::min();
-        std::string const empty("");
+        std::string const empty;
 
         while (i <= std::numeric_limits<std::int16_t>::max())
         {

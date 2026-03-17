@@ -261,10 +261,8 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
                     << "AMM Bid: not in range " << computedPrice << " " << *bidMax;
                 return std::nullopt;
             }
-            else
-            {
-                return computedPrice;
-            }
+
+            return computedPrice;
         }();
         if (!payPrice)
         {

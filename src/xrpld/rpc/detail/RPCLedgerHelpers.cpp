@@ -192,7 +192,7 @@ ledgerFromSpecifier(
             {
                 return getLedger(ledger, LedgerShortcut::Current, context);
             }
-            else if (shortcut == org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_CLOSED)
+            if (shortcut == org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_CLOSED)
             {
                 return getLedger(ledger, LedgerShortcut::Closed, context);
             }

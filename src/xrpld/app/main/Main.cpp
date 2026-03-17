@@ -510,15 +510,15 @@ run(int argc, char** argv)
         bool unittestChild = false;
         if (vm.contains("unittest-jobs"))
             numJobs = std::max(numJobs, vm["unittest-jobs"].as<std::size_t>());
-        unittestChild = bool(vm.contains("unittest-child"));
+        unittestChild = vm.contains("unittest-child");
 
         return runUnitTests(
             vm["unittest"].as<std::string>(),
             argument,
-            bool(vm.contains("quiet")),
-            bool(vm.contains("unittest-log")),
+            vm.contains("quiet"),
+            vm.contains("unittest-log"),
             unittestChild,
-            bool(vm.contains("unittest-ipv6")),
+            vm.contains("unittest-ipv6"),
             numJobs,
             argc,
             argv);
@@ -543,10 +543,7 @@ run(int argc, char** argv)
 
     // config file, quiet flag.
     config->setup(
-        configFile,
-        bool(vm.contains("quiet")),
-        bool(vm.contains("silent")),
-        bool(vm.contains("standalone")));
+        configFile, vm.contains("quiet"), vm.contains("silent"), vm.contains("standalone"));
 
     if (vm.contains("vacuum"))
     {

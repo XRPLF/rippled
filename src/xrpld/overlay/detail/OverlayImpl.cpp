@@ -884,16 +884,14 @@ OverlayImpl::processValidatorList(http_request_type const& req, Handoff& handoff
     {
         return fail(boost::beast::http::status::bad_request);
     }
-    else
-    {
-        msg.result(boost::beast::http::status::ok);
 
-        msg.body() = *vl;
+    msg.result(boost::beast::http::status::ok);
 
-        msg.prepare_payload();
-        handoff.response = std::make_shared<SimpleWriter>(msg);
-        return true;
-    }
+    msg.body() = *vl;
+
+    msg.prepare_payload();
+    handoff.response = std::make_shared<SimpleWriter>(msg);
+    return true;
 }
 
 bool

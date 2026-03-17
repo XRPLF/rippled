@@ -3108,7 +3108,7 @@ enforceMPTokenAuthorization(
         // credentials used to create the MPToken have expired or been deleted.
         return expired ? tecEXPIRED : tecNO_AUTH;
     }
-    else if (!authorizedByDomain)
+    if (!authorizedByDomain)
     {
         // We found an MPToken, but sfDomainID is not set, so this is a classic
         // MPToken which requires authorization by the token issuer.

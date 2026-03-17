@@ -30,10 +30,8 @@ public:
             {
                 return bogie;
             }
-            else
-            {
-                return std::nullopt;
-            }
+
+            return std::nullopt;
         };
 
         // Invalid tokens pair

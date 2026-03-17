@@ -92,7 +92,7 @@ private:
             beast::Journal journal,
             std::chrono::milliseconds interval,
             boost::asio::io_context& ios)
-            : m_event(ev), m_journal(journal), m_probe(interval, ios), lastSample_{}
+            : m_event(ev), m_journal(journal), m_probe(interval, ios)
         {
         }
 

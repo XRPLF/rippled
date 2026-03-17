@@ -78,7 +78,7 @@ parseLedgerArgs(RPC::Context& context, Json::Value const& params)
         }
         return hash;
     }
-    else if (params.isMember(jss::ledger_index))
+    if (params.isMember(jss::ledger_index))
     {
         LedgerSpecifier ledger;
         if (params[jss::ledger_index].isNumeric())

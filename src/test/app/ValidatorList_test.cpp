@@ -2509,7 +2509,7 @@ private:
             PublicKey pubKey;
             std::pair<PublicKey, SecretKey> signingKeys;
             std::string manifest;
-            NetClock::time_point expiry = {};
+            NetClock::time_point expiry;
         };
 
         // Create ValidatorList with a set of countTotal publishers, of which
@@ -2546,7 +2546,12 @@ private:
                     pubSigningKeys.second,
                     i < countRevoked ? revoked : 1));
                 publishers.push_back(
-                    Publisher{i < countRevoked, publisherPublic, pubSigningKeys, manifest});
+                    Publisher{
+                        .revoked = i < countRevoked,
+                        .pubKey = publisherPublic,
+                        .signingKeys = pubSigningKeys,
+                        .manifest = manifest,
+                    });
             }
 
             std::vector<std::string> const emptyCfgKeys;

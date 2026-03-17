@@ -40,14 +40,12 @@ getMaxSourceAmount(
     {
         return dstAmount;
     }
-    else
-    {
-        return STAmount(
-            Issue{dstAmount.get<Issue>().currency, account},
-            dstAmount.mantissa(),
-            dstAmount.exponent(),
-            dstAmount < beast::zero);
-    }
+
+    return STAmount(
+        Issue{dstAmount.get<Issue>().currency, account},
+        dstAmount.mantissa(),
+        dstAmount.exponent(),
+        dstAmount < beast::zero);
 }
 
 bool
@@ -299,7 +297,7 @@ Payment::preclaim(PreclaimContext const& ctx)
             // transaction would succeed.
             return telNO_DST_PARTIAL;
         }
-        else if (dstAmount < STAmount(ctx.view.fees().reserve))
+        if (dstAmount < STAmount(ctx.view.fees().reserve))
         {
             // accountReserve is the minimum amount that an account can have.
             // Reserve is not scaled by load.

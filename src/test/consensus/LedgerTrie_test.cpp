@@ -626,7 +626,7 @@ class LedgerTrie_test : public beast::unit_test::suite
         for (std::uint32_t i = 0; i < iterations; ++i)
         {
             // pick a random ledger history
-            std::string curr = "";
+            std::string curr;
             char depth = depthDist(gen);
             char offset = 0;
             for (char d = 0; d < depth; ++d)

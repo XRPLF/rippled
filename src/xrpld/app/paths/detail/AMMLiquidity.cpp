@@ -179,8 +179,7 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
                 // nullopt if the pool is small.
                 return maxOffer(balances, view.rules());
             }
-            else if (
-                auto const amounts =
+            if (auto const amounts =
                     changeSpotPriceQuality(balances, *clobQuality, tradingFee_, view.rules(), j_))
             {
                 return AMMOffer<TIn, TOut>(*this, *amounts, balances, Quality{*amounts});

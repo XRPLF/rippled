@@ -124,10 +124,8 @@ determineAsset(
         // issuer
         return Issue{amount.getCurrency(), account};
     }
-    else
-    {
-        return Unexpected(tecWRONG_ASSET);
-    }
+
+    return Unexpected(tecWRONG_ASSET);
 }
 
 Expected<STAmount, TER>

@@ -190,10 +190,8 @@ validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
             {
                 return tesSUCCESS;
             }
-            else
-            {
-                continue;
-            }
+
+            continue;
         }
     }
 

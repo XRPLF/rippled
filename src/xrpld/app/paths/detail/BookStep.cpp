@@ -894,10 +894,8 @@ BookStep<TIn, TOut, TDerived>::tipOfferQuality(ReadView const& view) const
     {
         return std::make_pair(*q, OfferType::CLOB);
     }
-    else
-    {
-        return std::make_pair(std::get<AMMOffer<TIn, TOut>>(*res).quality(), OfferType::AMM);
-    }
+
+    return std::make_pair(std::get<AMMOffer<TIn, TOut>>(*res).quality(), OfferType::AMM);
 }
 
 template <class TIn, class TOut, class TDerived>
@@ -913,10 +911,8 @@ BookStep<TIn, TOut, TDerived>::tipOfferQualityF(ReadView const& view) const
     {
         return QualityFunction{*q, QualityFunction::CLOBLikeTag{}};
     }
-    else
-    {
-        return std::get<AMMOffer<TIn, TOut>>(*res).getQualityFunc();
-    }
+
+    return std::get<AMMOffer<TIn, TOut>>(*res).getQualityFunc();
 }
 
 template <class TCollection>

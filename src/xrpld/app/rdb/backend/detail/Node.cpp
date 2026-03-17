@@ -671,8 +671,8 @@ transactionsSQL(
         numberOfResults = options.limit;
     }
 
-    std::string maxClause = "";
-    std::string minClause = "";
+    std::string maxClause;
+    std::string minClause;
 
     if (options.maxLedger)
     {

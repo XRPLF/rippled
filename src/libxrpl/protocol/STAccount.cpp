@@ -16,7 +16,7 @@
 
 namespace xrpl {
 
-STAccount::STAccount() : STBase(), value_(beast::zero), default_(true)
+STAccount::STAccount() : value_(beast::zero), default_(true)
 {
 }
 

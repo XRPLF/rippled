@@ -134,7 +134,7 @@ ValidMPTIssuance::finalize(
                                    "succeeded but deleted issuances";
                 return false;
             }
-            else if (lendingProtocolEnabled && mptokensCreated_ + mptokensDeleted_ > 1)
+            if (lendingProtocolEnabled && mptokensCreated_ + mptokensDeleted_ > 1)
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT authorize succeeded "
                                    "but created/deleted bad number mptokens";

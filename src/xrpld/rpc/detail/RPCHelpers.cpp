@@ -61,7 +61,7 @@ isRelatedToAccount(
         return sle->getAccountID(sfAccount) == accountID ||
             (sle->isFieldPresent(sfDestination) && sle->getAccountID(sfDestination) == accountID);
     }
-    else if (sle->getType() == ltSIGNER_LIST)
+    if (sle->getType() == ltSIGNER_LIST)
     {
         Keylet const accountSignerList = keylet::signers(accountID);
         return sle->key() == accountSignerList.key;

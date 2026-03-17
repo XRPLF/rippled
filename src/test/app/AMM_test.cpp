@@ -4615,10 +4615,8 @@ private:
                     {
                         return STAmount(USD, UINT64_C(30'443'43891402714), -11);
                     }
-                    else
-                    {
-                        return STAmount(USD, UINT64_C(30'443'43891402713), -11);
-                    }
+
+                    return STAmount(USD, UINT64_C(30'443'43891402713), -11);
                 }();
                 BEAST_EXPECT(env.balance(carol, USD) == balanceAfterWithdraw);
                 // Set to original pool size
@@ -6009,7 +6007,7 @@ private:
             STAmount const goodUsdBIT;
             STAmount const goodUsdBITr;
             IOUAmount const lpTokenBalance;
-            std::optional<IOUAmount> const lpTokenBalanceAlt = {};
+            std::optional<IOUAmount> const lpTokenBalanceAlt;
             double const offer1BtcGH = 0.1;
             double const offer2BtcGH = 0.1;
             double const offer2UsdGH = 1;

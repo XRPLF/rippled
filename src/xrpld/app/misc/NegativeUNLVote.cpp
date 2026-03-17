@@ -200,15 +200,12 @@ NegativeUNLVote::buildScoreTable(
     {
         return scoreTable;
     }
-    else
-    {
-        // cannot happen because validations.getTrustedForLedger does not
-        // return multiple validations of the same ledger from a validator.
-        JLOG(j_.error()) << "N-UNL: ledger " << seq << ". Local node issued " << myValidationCount
-                         << " validations in last " << FLAG_LEDGER_INTERVAL
-                         << " ledgers. Too many!";
-        return {};
-    }
+
+    // cannot happen because validations.getTrustedForLedger does not
+    // return multiple validations of the same ledger from a validator.
+    JLOG(j_.error()) << "N-UNL: ledger " << seq << ". Local node issued " << myValidationCount
+                     << " validations in last " << FLAG_LEDGER_INTERVAL << " ledgers. Too many!";
+    return {};
 }
 
 NegativeUNLVote::Candidates

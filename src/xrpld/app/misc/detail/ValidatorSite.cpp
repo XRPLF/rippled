@@ -63,7 +63,6 @@ ValidatorSite::Site::Site(std::string uri)
     , redirCount{0}
     , refreshInterval{default_refresh_interval}
     , nextRefresh{clock_type::now()}
-    , lastRequestEndpoint{}
     , lastRequestSuccessful{false}
 {
 }

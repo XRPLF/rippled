@@ -1346,7 +1346,7 @@ ValidatorList::verify(
         {
             return {ListDisposition::stale, masterPubKey};
         }
-        else if (sequence == listCollection.current.sequence)
+        if (sequence == listCollection.current.sequence)
         {
             return {ListDisposition::same_sequence, masterPubKey};
         }

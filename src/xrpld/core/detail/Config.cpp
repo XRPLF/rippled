@@ -154,7 +154,7 @@ parseIniFile(std::string const& strInput, bool const bTrim)
     boost::algorithm::split(vLines, strData, boost::algorithm::is_any_of("\n"));
 
     // Set the default Section name.
-    std::string strSection = SECTION_DEFAULT_NAME;
+    std::string strSection;
 
     // Initialize the default Section.
     secResult[strSection] = IniFileSections::mapped_type();
@@ -1053,7 +1053,7 @@ Config::loadFromString(std::string const& fileContents)
                 {
                     return std::nullopt;  // NOTE: Explicitly ask for computed
                 }
-                else if (listThreshold > section(SECTION_VALIDATOR_LIST_KEYS).values().size())
+                if (listThreshold > section(SECTION_VALIDATOR_LIST_KEYS).values().size())
                 {
                     Throw<std::runtime_error>(
                         "Value in config section "
@@ -1062,12 +1062,10 @@ Config::loadFromString(std::string const& fileContents)
                 }
                 return listThreshold;
             }
-            else
-            {
-                Throw<std::runtime_error>(
-                    "Config section "
-                    "[" SECTION_VALIDATOR_LIST_THRESHOLD "] should contain single value only");
-            }
+
+            Throw<std::runtime_error>(
+                "Config section "
+                "[" SECTION_VALIDATOR_LIST_THRESHOLD "] should contain single value only");
         }();
 
         // Consolidate [validator_keys] and [validators]

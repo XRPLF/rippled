@@ -52,8 +52,6 @@ AMM::AMM(
     , log_(log)
     , doClose_(close)
     , lastPurchasePrice_(0)
-    , bidMin_()
-    , bidMax_()
     , msig_(ms)
     , fee_(fee)
     , ammAccount_(create(tfee, flags, seq, ter))
@@ -672,10 +670,8 @@ AMM::bid(BidArg const& arg)
         {
             return toSTAmount(std::get<IOUAmount>(bid), lptIssue_);
         }
-        else
-        {
-            return std::get<STAmount>(bid);
-        }
+
+        return std::get<STAmount>(bid);
     };
     if (arg.bidMin)
     {

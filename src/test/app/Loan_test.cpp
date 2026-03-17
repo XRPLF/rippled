@@ -81,7 +81,7 @@ protected:
         int coverDeposit = 1000;
         TenthBips16 managementFeeRate{100};
         TenthBips32 coverRateLiquidation = percentageToTenthBips(25);
-        std::string data{};
+        std::string data;
         std::uint32_t flags = 0;
 
         Number
@@ -150,20 +150,20 @@ protected:
         // only signs.
         bool counterpartyExplicit = true;
         Number principalRequest;
-        std::optional<STAmount> setFee{};
-        std::optional<Number> originationFee{};
-        std::optional<Number> serviceFee{};
-        std::optional<Number> lateFee{};
-        std::optional<Number> closeFee{};
-        std::optional<TenthBips32> overFee{};
-        std::optional<TenthBips32> interest{};
-        std::optional<TenthBips32> lateInterest{};
-        std::optional<TenthBips32> closeInterest{};
-        std::optional<TenthBips32> overpaymentInterest{};
-        std::optional<std::uint32_t> payTotal{};
-        std::optional<std::uint32_t> payInterval{};
-        std::optional<std::uint32_t> gracePd{};
-        std::optional<std::uint32_t> flags{};
+        std::optional<STAmount> setFee;
+        std::optional<Number> originationFee;
+        std::optional<Number> serviceFee;
+        std::optional<Number> lateFee;
+        std::optional<Number> closeFee;
+        std::optional<TenthBips32> overFee;
+        std::optional<TenthBips32> interest;
+        std::optional<TenthBips32> lateInterest;
+        std::optional<TenthBips32> closeInterest;
+        std::optional<TenthBips32> overpaymentInterest;
+        std::optional<std::uint32_t> payTotal;
+        std::optional<std::uint32_t> payInterval;
+        std::optional<std::uint32_t> gracePd;
+        std::optional<std::uint32_t> flags;
 
         template <class... FN>
         jtx::JTx
@@ -232,7 +232,7 @@ protected:
     struct LoanState
     {
         std::uint32_t previousPaymentDate = 0;
-        NetClock::time_point startDate = {};
+        NetClock::time_point startDate;
         std::uint32_t nextPaymentDate = 0;
         std::uint32_t paymentRemaining = 0;
         std::int32_t const loanScale = 0;
@@ -1840,16 +1840,14 @@ protected:
                     };
                     return std::make_tuple(freeze, deepfreeze, unfreeze, tecFROZEN);
                 }
-                else
-                {
-                    auto freeze = [&](Account const& holder) {
-                        mptt.set({.account = issuer, .holder = holder, .flags = tfMPTLock});
-                    };
-                    auto unfreeze = [&](Account const& holder) {
-                        mptt.set({.account = issuer, .holder = holder, .flags = tfMPTUnlock});
-                    };
-                    return std::make_tuple(freeze, empty, unfreeze, tecLOCKED);
-                }
+
+                auto freeze = [&](Account const& holder) {
+                    mptt.set({.account = issuer, .holder = holder, .flags = tfMPTLock});
+                };
+                auto unfreeze = [&](Account const& holder) {
+                    mptt.set({.account = issuer, .holder = holder, .flags = tfMPTUnlock});
+                };
+                return std::make_tuple(freeze, empty, unfreeze, tecLOCKED);
             }();
 
             // Try freezing the accounts that can't be frozen

@@ -15,7 +15,7 @@ class DNS_test : public beast::unit_test::suite
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using error_code = boost::system::error_code;
     std::weak_ptr<xrpl::detail::Work> work_;
-    endpoint_type lastEndpoint_{};
+    endpoint_type lastEndpoint_;
     parsedURL pUrl_;
     std::string port_;
     jtx::Env env_;

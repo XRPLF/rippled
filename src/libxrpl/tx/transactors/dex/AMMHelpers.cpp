@@ -206,10 +206,8 @@ adjustAmountsByLPTokens(
             {
                 return ammAssetOut(amountBalance, lptAMMBalance, lpTokens, tfee);
             }
-            else
-            {
-                return ammAssetOut(amountBalance, lptAMMBalance, lpTokensActual, tfee);
-            }
+
+            return ammAssetOut(amountBalance, lptAMMBalance, lpTokensActual, tfee);
         }();
         if (!ammRoundingEnabled)
         {

@@ -17,7 +17,7 @@ namespace cryptoconditions {
 
 class PreimageSha256_test : public beast::unit_test::suite
 {
-    inline Buffer
+    Buffer
     hexblob(std::string const& s)
     {
         auto blob = strUnHex(s);
