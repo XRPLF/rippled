@@ -38,7 +38,8 @@ ConfidentialMPTConvert::preflight(PreflightContext const& ctx)
     }
     else
     {
-        // Either both sfHolderEncryptionKey and sfZKProof should be present, or both should be absent.
+        // Either both sfHolderEncryptionKey and sfZKProof should be present, or both should be
+        // absent.
         if (ctx.tx.isFieldPresent(sfZKProof))
             return temMALFORMED;
     }
@@ -63,7 +64,8 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if (!sleIssuance->isFlag(lsfMPTCanConfidentialAmount) || !sleIssuance->isFieldPresent(sfIssuerEncryptionKey))
+    if (!sleIssuance->isFlag(lsfMPTCanConfidentialAmount) ||
+        !sleIssuance->isFieldPresent(sfIssuerEncryptionKey))
         return tecNO_PERMISSION;
 
     // already checked in preflight, but should also check that issuer on the
