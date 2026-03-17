@@ -1655,6 +1655,86 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
+    testDelegateHighFeePayment(FeatureBitset features)
+    {
+        testcase("test delegate payment with high fee but enough reserve");
+        using namespace jtx;
+
+        // Delegatee has enough balance to pay and delegator has enough reserve
+        {
+            Env env(*this);
+            Account alice{"alice"};
+            Account bob{"bob"};
+            Account carol{"carol"};
+
+            auto const baseFee = env.current()->fees().base;
+            auto const reserve = env.current()->fees().accountReserve(1);
+
+            // Alice starts with exactly (Reserve + 1.0 XRP).
+            // She can afford a 1.0 XRP payment, if fee is paid by others, eg. delegate account.
+            env.fund(reserve + XRP(1.0), alice);
+            env.fund(XRP(1000), bob);
+            env.fund(XRP(1000), carol);
+            env.close();
+
+            // Alice grants Bob permission to pay
+            env(delegate::set(alice, bob, {"Payment"}));
+            env.close();
+
+            // We set a high fee that Alice cannot afford, but Bob can.
+            auto const paymentAmount = XRP(0.5);
+            auto const highFee = baseFee * 10;
+
+            auto const alicePrePay = env.balance(alice, XRP);
+            auto const bobPrePay = env.balance(bob, XRP);
+            auto const carolPrePay = env.balance(carol, XRP);
+
+            // The payment succeed because bob has enough balance to pay.
+            env(pay(alice, carol, paymentAmount), delegate::as(bob), fee(highFee));
+
+            env.close();
+
+            env.require(balance(alice, alicePrePay - paymentAmount));
+            env.require(balance(bob, bobPrePay - highFee));
+            env.require(balance(carol, carolPrePay + paymentAmount));
+        }
+
+        // Delegatee has enough balance to pay but delegator does not have enough reserve
+        {
+            Env env(*this);
+            Account alice{"alice"};
+            Account bob{"bob"};
+            Account carol{"carol"};
+
+            auto const baseFee = env.current()->fees().base;
+            auto const reserve = env.current()->fees().accountReserve(1);
+
+            // Alice has enough balance, Bob has minimum reserve.
+            // Bob can not afford fee.
+            env.fund(reserve + baseFee, alice);
+            env.fund(XRP(1000), bob);
+            env.fund(XRP(1000), carol);
+            env.close();
+
+            // Alice grants Bob permission
+            env(delegate::set(alice, bob, {"Payment"}));
+            env.close();
+
+            auto const alicePrePay = env.balance(alice, XRP);
+            auto const bobPrePay = env.balance(bob, XRP);
+            auto const carolPrePay = env.balance(carol, XRP);
+
+            // Bob has enough balance to pay the fee,
+            // but Alice will not have enough balance for reserve.
+            env(pay(alice, carol, XRP(10)), delegate::as(bob), ter(tecUNFUNDED_PAYMENT));
+
+            env.require(balance(alice, alicePrePay));
+            env.require(balance(bob, bobPrePay - drops(baseFee)));
+            env.require(balance(carol, carolPrePay));
+        }
+    }
+
+    void
     testTxDelegableCount()
     {
         testcase("Delegable Transactions Completeness");
@@ -1728,6 +1808,7 @@ class Delegate_test : public beast::unit_test::suite
         testMultiSignQuorumNotMet();
         testPermissionValue(all);
         testTxRequireFeatures(all);
+        testDelegateHighFeePayment(all);
         testTxDelegableCount();
     }
 };
