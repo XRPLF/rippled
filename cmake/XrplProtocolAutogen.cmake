@@ -187,7 +187,7 @@ function(setup_protocol_autogen)
         )
     endif()
     # Convert newline-separated list to CMake list
-    string(REPLACE "\r\n" "\n" TX_OUTPUT_FILES "${TX_OUTPUT_FILES}")
+    string(REPLACE "\\" "/" TX_OUTPUT_FILES "${TX_OUTPUT_FILES}")
     string(REPLACE "\n" ";" TX_OUTPUT_FILES "${TX_OUTPUT_FILES}")
 
     # At configure time - get list of output files for ledger entries
@@ -208,7 +208,7 @@ function(setup_protocol_autogen)
         )
     endif()
     # Convert newline-separated list to CMake list
-    string(REPLACE "\r\n" "\n" LEDGER_OUTPUT_FILES "${LEDGER_OUTPUT_FILES}")
+    string(REPLACE "\\" "/" LEDGER_OUTPUT_FILES "${LEDGER_OUTPUT_FILES}")
     string(REPLACE "\n" ";" LEDGER_OUTPUT_FILES "${LEDGER_OUTPUT_FILES}")
 
     # Custom command to generate transaction classes at build time
