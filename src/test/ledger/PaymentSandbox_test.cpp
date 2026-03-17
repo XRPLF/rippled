@@ -2,7 +2,6 @@
 
 #include <xrpl/ledger/ApplyViewImpl.h>
 #include <xrpl/ledger/PaymentSandbox.h>
-#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AmountConversions.h>
