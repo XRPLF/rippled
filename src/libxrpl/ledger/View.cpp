@@ -1556,9 +1556,9 @@ authorizeMPToken(
     if (flags & tfMPTUnauthorize)
     {
         flagsOut &= ~lsfMPTAuthorized;
-        // Issuer wants to authorize a holder, set lsfMPTAuthorized on their
-        // MPToken
     }
+    // Issuer wants to authorize a holder, set lsfMPTAuthorized on their
+    // MPToken
     else
     {
         flagsOut |= lsfMPTAuthorized;

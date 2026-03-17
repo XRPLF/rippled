@@ -573,14 +573,10 @@ PeerImp::fail(std::string const& reason)
 {
     if (!strand_.running_in_this_thread())
     {
-        {
-            post(
-                strand_,
-                std::bind(
-                    (void (Peer::*)(std::string const&))&PeerImp::fail,
-                    shared_from_this(),
-                    reason));
-        }
+        post(
+            strand_,
+            std::bind(
+                (void (Peer::*)(std::string const&))&PeerImp::fail, shared_from_this(), reason));
         return;
     }
 
@@ -3389,7 +3385,7 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
     // Add requested node data to reply
     if (m->nodeids_size() > 0)
     {
-        int const defaultDepth = isHighLatency() ? 2 : 1;
+        std::uint32_t const defaultDepth = isHighLatency() ? 2 : 1;
         auto const queryDepth{m->has_querydepth() ? m->querydepth() : defaultDepth};
 
         std::vector<std::pair<SHAMapNodeID, Blob>> data;

@@ -154,7 +154,7 @@ parseIniFile(std::string const& strInput, bool const bTrim)
     boost::algorithm::split(vLines, strData, boost::algorithm::is_any_of("\n"));
 
     // Set the default Section name.
-    std::string strSection;
+    std::string strSection = SECTION_DEFAULT_NAME;
 
     // Initialize the default Section.
     secResult[strSection] = IniFileSections::mapped_type();
