@@ -1476,8 +1476,8 @@ rpcClient(
             xrpl::ServerHandler::Setup setup;
             try
             {
-                setup = setup_ServerHandler(
-                    config, beast::logstream{logs.journal("HTTPClient").warn()});
+                beast::logstream rpcCallLog{logs.journal("HTTPClient").warn()};
+                setup = setup_ServerHandler(config, rpcCallLog);
             }
             catch (std::exception const&)  // NOLINT(bugprone-empty-catch)
             {

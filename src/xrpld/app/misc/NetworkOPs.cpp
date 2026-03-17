@@ -165,9 +165,9 @@ class NetworkOPsImp final : public NetworkOPs
         struct CounterData
         {
             decltype(counters_) counters;
-            decltype(mode_) mode;
+            decltype(mode_) mode = OperatingMode::DISCONNECTED;
             decltype(start_) start;
-            decltype(initialSyncUs_) initialSyncUs;
+            decltype(initialSyncUs_) initialSyncUs{};
         };
 
         CounterData
@@ -648,23 +648,16 @@ private:
     {
         AccountID const accountId;
         // forward
-        std::uint32_t forwardTxIndex;
+        std::uint32_t forwardTxIndex{0};
         // separate backward and forward
-        std::uint32_t separationLedgerSeq;
+        std::uint32_t separationLedgerSeq{0};
         // history, backward
-        std::uint32_t historyLastLedgerSeq;
-        std::int32_t historyTxIndex;
-        bool haveHistorical;
-        std::atomic<bool> stopHistorical;
+        std::uint32_t historyLastLedgerSeq{0};
+        std::int32_t historyTxIndex{-1};
+        bool haveHistorical{false};
+        std::atomic<bool> stopHistorical{false};
 
-        SubAccountHistoryIndex(AccountID const& accountId)
-            : accountId(accountId)
-            , forwardTxIndex(0)
-            , separationLedgerSeq(0)
-            , historyLastLedgerSeq(0)
-            , historyTxIndex(-1)
-            , haveHistorical(false)
-            , stopHistorical(false)
+        SubAccountHistoryIndex(AccountID const& accountId) : accountId(accountId)
         {
         }
     };
@@ -717,7 +710,7 @@ private:
     std::optional<PublicKey> const validatorPK_;
     std::optional<PublicKey> const validatorMasterPK_;
 
-    ConsensusPhase lastConsensusPhase_;
+    ConsensusPhase lastConsensusPhase_{ConsensusPhase::open};
 
     LedgerMaster& ledgerMaster_;
 
@@ -1638,7 +1631,7 @@ NetworkOPsImp::getOwnerInfo(std::shared_ptr<ReadView const> lpLedger, AccountID 
     auto sleNode = lpLedger->read(keylet::page(root));
     if (sleNode)
     {
-        std::uint64_t uNodeDir;
+        std::uint64_t uNodeDir = 0;
 
         do
         {
@@ -3596,7 +3589,8 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                 switch (dbType)
                 {
                     case Sqlite: {
-                        auto db = static_cast<SQLiteDatabase*>(&registry_.getRelationalDatabase());
+                        auto db =
+                            safe_downcast<SQLiteDatabase*>(&registry_.getRelationalDatabase());
                         RelationalDatabase::AccountTxPageOptions options{
                             accountId, minLedger, maxLedger, marker, 0, true};
                         return db->newestAccountTxPage(options);
@@ -4202,7 +4196,7 @@ NetworkOPsImp::getBookPage(
 
     std::shared_ptr<SLE const> sleOfferDir;
     uint256 offerIndex;
-    unsigned int uBookEntry;
+    unsigned int uBookEntry = 0;
     STAmount saDirRate;
 
     auto const rate = transferRate(view, book.out.account);

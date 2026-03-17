@@ -148,7 +148,7 @@ struct Regression_test : public beast::unit_test::suite
         testcase("Autofilled fee should use the escalated fee");
         using namespace jtx;
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->section("transaction_queue").set("minimum_txn_in_ledger_standalone_", "3");
+            cfg->section("transaction_queue").set("minimum_txn_in_ledger_standalone", "3");
             cfg->FEES.reference_fee = 10;
             return cfg;
         }));
@@ -189,8 +189,8 @@ struct Regression_test : public beast::unit_test::suite
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
             auto& s = cfg->section("transaction_queue");
-            s.set("minimum_txn_in_ledger_standalone_", "4294967295");
-            s.set("minimum_txn_in_ledger_", "4294967295");
+            s.set("minimum_txn_in_ledger_standalone", "4294967295");
+            s.set("minimum_txn_in_ledger", "4294967295");
             s.set("target_txn_in_ledger", "4294967295");
             s.set("normal_consensus_increase_percent", "4294967295");
 

@@ -29,7 +29,7 @@ print_identifiers(SemanticVersion::identifier_list const& list)
 bool
 isNumeric(std::string const& s)
 {
-    int n;
+    int n = 0;
 
     // Must be convertible to an integer
     if (!lexicalCastChecked(n, s))
@@ -68,7 +68,7 @@ chopUInt(int& value, int limit, std::string& input)
     if (item.empty())
         return false;
 
-    int n;
+    int n = 0;
 
     // Must be convertible to an integer
     if (!lexicalCastChecked(n, item))

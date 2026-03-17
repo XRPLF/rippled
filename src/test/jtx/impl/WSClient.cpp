@@ -27,7 +27,7 @@ class WSClientImpl : public WSClient
     {
         Json::Value jv;
 
-        explicit msg(Json::Value&& jv) : jv(jv)
+        explicit msg(Json::Value&& jv) : jv(std::move(jv))
         {
         }
     };

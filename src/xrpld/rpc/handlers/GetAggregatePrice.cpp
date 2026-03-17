@@ -3,6 +3,7 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -25,7 +26,7 @@ static void
 iteratePriceData(
     RPC::JsonContext& context,
     std::shared_ptr<SLE const> const& sle,
-    std::function<bool(STObject const&)>&& f)
+    std::function<bool(STObject const&)> const& f)
 {
     using Meta = std::shared_ptr<STObject const>;
     constexpr std::uint8_t maxHistory = 3;
@@ -87,8 +88,8 @@ iteratePriceData(
             if (isNew && history == 1)
                 return;
 
-            oracle = isNew ? &static_cast<STObject const&>(node.peekAtField(sfNewFields))
-                           : &static_cast<STObject const&>(node.peekAtField(sfFinalFields));
+            oracle = isNew ? &safe_downcast<STObject const&>(node.peekAtField(sfNewFields))
+                           : &safe_downcast<STObject const&>(node.peekAtField(sfFinalFields));
             break;
         }
     }
@@ -148,7 +149,7 @@ doGetAggregatePrice(RPC::JsonContext& context)
     // support positive int, uint, and a number represented as a string
     auto validUInt = [](Json::Value const& params, Json::StaticString const& field) {
         auto const& jv = params[field];
-        std::uint32_t v;
+        std::uint32_t v = 0;
         return jv.isUInt() || (jv.isInt() && jv.asInt() >= 0) ||
             (jv.isString() && beast::lexicalCastChecked(v, jv.asString()));
     };

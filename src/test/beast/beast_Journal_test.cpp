@@ -9,10 +9,10 @@ public:
     class TestSink : public Journal::Sink
     {
     private:
-        int count_;
+        int count_{0};
 
     public:
-        TestSink() : Sink(severities::kWarning, false), count_(0)
+        TestSink() : Sink(severities::kWarning, false)
         {
         }
 

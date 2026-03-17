@@ -7087,7 +7087,7 @@ public:
                 return defaultNum;
             try
             {
-                std::size_t pos;
+                std::size_t pos = 0;
                 auto const r = stoi(s, &pos);
                 if (pos != s.size())
                     return defaultNum;

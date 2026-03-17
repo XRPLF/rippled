@@ -84,7 +84,7 @@ struct SEnv
 
     template <class... FN>
     SEnv&
-    multiTx(jtx::JValueVec&& jvv, FN const&... fN)
+    multiTx(jtx::JValueVec const& jvv, FN const&... fN)
     {
         for (auto const& jv : jvv)
             env(jv, fN...);
@@ -3809,7 +3809,7 @@ private:
         void
         sendAttestations()
         {
-            bool callbackCalled;
+            bool callbackCalled = false;
 
             // we have this "do {} while" loop because we want to process
             // all the account create which can reach quorum at this time
@@ -4027,7 +4027,7 @@ private:
             std::shared_ptr<ChainStateTracker> const& chainstate,
             BridgeDef const& bridge,
             AccountCreate create)
-            : Base(chainstate, bridge), sm_state_(st_initial), cr_(std::move(create))
+            : Base(chainstate, bridge), cr_(std::move(create))
         {
         }
 
@@ -4060,7 +4060,7 @@ private:
             ChainStateTrack& st = destState();
 
             // check all signers, but start at a random one
-            size_t i;
+            size_t i = 0;
             for (i = 0; i < num_signers; ++i)
             {
                 size_t signerIdx = (rnd + i) % num_signers;
@@ -4141,7 +4141,7 @@ private:
         }
 
     private:
-        SmState sm_state_;
+        SmState sm_state_{st_initial};
         AccountCreate cr_;
     };
 
@@ -4155,7 +4155,7 @@ private:
             std::shared_ptr<ChainStateTracker> const& chainstate,
             BridgeDef const& bridge,
             Transfer xfer)
-            : Base(chainstate, bridge), xfer_(std::move(xfer)), sm_state_(st_initial)
+            : Base(chainstate, bridge), xfer_(std::move(xfer))
         {
         }
 
@@ -4303,7 +4303,7 @@ private:
 
     private:
         Transfer xfer_;
-        SmState sm_state_;
+        SmState sm_state_{st_initial};
     };
 
     // --------------------------------------------------

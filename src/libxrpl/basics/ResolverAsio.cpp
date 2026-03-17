@@ -109,7 +109,7 @@ public:
 
     std::condition_variable cv;
     std::mutex mut;
-    bool asyncHandlersCompleted;
+    bool asyncHandlersCompleted{true};
 
     std::atomic<bool> stop_called;
     std::atomic<bool> stopped;
@@ -136,7 +136,6 @@ public:
         , io_context(ioContext)
         , strand(boost::asio::make_strand(ioContext))
         , resolver(ioContext)
-        , asyncHandlersCompleted(true)
         , stop_called(false)
         , stopped(true)
     {

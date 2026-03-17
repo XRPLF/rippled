@@ -113,7 +113,7 @@ class Batch_test : public beast::unit_test::suite
         auto p = test::jtx::envconfig();
         auto& section = p->section("transaction_queue");
         section.set("ledgers_in_queue", "2");
-        section.set("minimum_queue_size_", "2");
+        section.set("minimum_queue_size", "2");
         section.set("min_ledgers_to_compute_size_limit", "3");
         section.set("max_ledger_counts_to_store", "100");
         section.set("retry_sequence_percent", "25");
@@ -3726,7 +3726,7 @@ class Batch_test : public beast::unit_test::suite
         {
             test::jtx::Env env{
                 *this,
-                makeSmallQueueConfig({{"minimum_txn_in_ledger_standalone_", "2"}}),
+                makeSmallQueueConfig({{"minimum_txn_in_ledger_standalone", "2"}}),
                 features,
                 nullptr,
                 beast::severities::kError};
@@ -3782,7 +3782,7 @@ class Batch_test : public beast::unit_test::suite
         {
             test::jtx::Env env{
                 *this,
-                makeSmallQueueConfig({{"minimum_txn_in_ledger_standalone_", "2"}}),
+                makeSmallQueueConfig({{"minimum_txn_in_ledger_standalone", "2"}}),
                 features,
                 nullptr,
                 beast::severities::kError};

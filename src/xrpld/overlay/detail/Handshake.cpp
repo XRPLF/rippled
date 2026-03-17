@@ -211,7 +211,7 @@ verifyHandshake(
 
     if (auto const iter = headers.find("Network-ID"); iter != headers.end())
     {
-        std::uint32_t nid;
+        std::uint32_t nid = 0;
 
         if (!beast::lexicalCastChecked(nid, iter->value()))
             throw std::runtime_error("Invalid peer network identifier");
@@ -223,7 +223,7 @@ verifyHandshake(
     if (auto const iter = headers.find("Network-Time"); iter != headers.end())
     {
         auto const netTime = [str = iter->value()]() -> TimeKeeper::time_point {
-            TimeKeeper::duration::rep val;
+            TimeKeeper::duration::rep val = 0;
 
             if (beast::lexicalCastChecked(val, str))
                 return TimeKeeper::time_point{TimeKeeper::duration{val}};

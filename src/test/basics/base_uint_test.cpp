@@ -141,7 +141,7 @@ struct base_uint_test : beast::unit_test::suite
         // Test hash_append by "hashing" with a no-op hasher (h)
         // and then extracting the bytes that were written during hashing
         // back into another base_uint (w) for comparison with the original
-        nonhash<96> h;
+        nonhash<96> h{};
         hash_append(h, u);
         test96 w{std::vector<std::uint8_t>(h.data.begin(), h.data.end())};
         BEAST_EXPECT(w == u);

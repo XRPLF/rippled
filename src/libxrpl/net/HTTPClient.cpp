@@ -85,7 +85,7 @@ public:
             int iStatus,
             std::string const& strData)> complete)
     {
-        sSL_ = bSSL;
+        ssl_ = bSSL;
         deqSites_ = deqSites;
         build_ = build;
         complete_ = complete;
@@ -271,7 +271,7 @@ public:
         {
             invokeComplete(shutdown_);
         }
-        else if (sSL_)
+        else if (ssl_)
         {
             socket_.async_handshake(
                 AutoSocket::ssl_socket::client,
@@ -478,7 +478,7 @@ public:
 private:
     using pointer = std::shared_ptr<HTTPClient>;
 
-    bool sSL_;
+    bool ssl_{};
     AutoSocket socket_;
     boost::asio::ip::tcp::resolver resolver_;
 
@@ -496,7 +496,7 @@ private:
     std::string body_;
     unsigned short const port_;
     std::size_t const maxResponseSize_;
-    int status_;
+    int status_{};
     std::function<void(boost::asio::streambuf& sb, std::string const& strHost)> build_;
     std::function<
         bool(boost::system::error_code const& ecResult, int iStatus, std::string const& strData)>
@@ -508,7 +508,7 @@ private:
     boost::system::error_code shutdown_;
 
     std::deque<std::string> deqSites_;
-    std::chrono::seconds timeout_;
+    std::chrono::seconds timeout_{};
     beast::Journal j_;
 };
 

@@ -635,7 +635,7 @@ OverlayImpl::onManifests(
 
     if (!relay.list().empty())
         for_each([m2 = std::make_shared<Message>(relay, protocol::mtMANIFESTS)](
-                     std::shared_ptr<PeerImp>&& p) { p->send(m2); });
+                     std::shared_ptr<PeerImp> const& p) { p->send(m2); });
 }
 
 void
@@ -673,7 +673,7 @@ OverlayImpl::getOverlayInfo()
     Json::Value jv;
     auto& av = jv["active"] = Json::Value(Json::arrayValue);
 
-    for_each([&](std::shared_ptr<PeerImp>&& sp) {
+    for_each([&](std::shared_ptr<PeerImp> const& sp) {
         auto& pv = av.append(Json::Value(Json::objectValue));
         pv[jss::public_key] = base64_encode(sp->getNodePublic().data(), sp->getNodePublic().size());
         pv[jss::type] = sp->slot()->inbound() ? "in" : "out";
@@ -699,7 +699,7 @@ OverlayImpl::getOverlayInfo()
                 pv[jss::version] = std::string{version};
         }
 
-        std::uint32_t minSeq, maxSeq;
+        std::uint32_t minSeq = 0, maxSeq = 0;
         sp->ledgerRange(minSeq, maxSeq);
         if (minSeq != 0 || maxSeq != 0)
             pv[jss::complete_ledgers] = std::to_string(minSeq) + "-" + std::to_string(maxSeq);
@@ -991,7 +991,7 @@ OverlayImpl::getActivePeers() const
     Overlay::PeerSequence ret;
     ret.reserve(size());
 
-    for_each([&ret](std::shared_ptr<PeerImp>&& sp) { ret.emplace_back(std::move(sp)); });
+    for_each([&ret](std::shared_ptr<PeerImp> const& sp) { ret.emplace_back(std::move(sp)); });
 
     return ret;
 }
@@ -1034,7 +1034,7 @@ OverlayImpl::getActivePeers(
 void
 OverlayImpl::checkTracking(std::uint32_t index)
 {
-    for_each([index](std::shared_ptr<PeerImp>&& sp) { sp->checkTracking(index); });
+    for_each([index](std::shared_ptr<PeerImp> const& sp) { sp->checkTracking(index); });
 }
 
 std::shared_ptr<Peer>
@@ -1070,7 +1070,7 @@ void
 OverlayImpl::broadcast(protocol::TMProposeSet& m)
 {
     auto const sm = std::make_shared<Message>(m, protocol::mtPROPOSE_LEDGER);
-    for_each([&](std::shared_ptr<PeerImp>&& p) { p->send(sm); });
+    for_each([&](std::shared_ptr<PeerImp> const& p) { p->send(sm); });
 }
 
 std::set<Peer::id_t>
@@ -1079,7 +1079,7 @@ OverlayImpl::relay(protocol::TMProposeSet& m, uint256 const& uid, PublicKey cons
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
     {
         auto const sm = std::make_shared<Message>(m, protocol::mtPROPOSE_LEDGER, validator);
-        for_each([&](std::shared_ptr<PeerImp>&& p) {
+        for_each([&](std::shared_ptr<PeerImp> const& p) {
             if (toSkip->find(p->id()) == toSkip->end())
                 p->send(sm);
         });
@@ -1092,7 +1092,7 @@ void
 OverlayImpl::broadcast(protocol::TMValidation& m)
 {
     auto const sm = std::make_shared<Message>(m, protocol::mtVALIDATION);
-    for_each([sm](std::shared_ptr<PeerImp>&& p) { p->send(sm); });
+    for_each([sm](std::shared_ptr<PeerImp> const& p) { p->send(sm); });
 }
 
 std::set<Peer::id_t>
@@ -1101,7 +1101,7 @@ OverlayImpl::relay(protocol::TMValidation& m, uint256 const& uid, PublicKey cons
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
     {
         auto const sm = std::make_shared<Message>(m, protocol::mtVALIDATION, validator);
-        for_each([&](std::shared_ptr<PeerImp>&& p) {
+        for_each([&](std::shared_ptr<PeerImp> const& p) {
             if (toSkip->find(p->id()) == toSkip->end())
                 p->send(sm);
         });

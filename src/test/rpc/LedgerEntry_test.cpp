@@ -2737,7 +2737,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
     void
     testClaimID()
     {
-        testcase("ledger_entry: xchain_claim_id_");
+        testcase("ledger_entry: xchain_claim_id");
         using namespace test::jtx;
 
         Env mcEnv{*this, features};
@@ -2790,7 +2790,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
     void
     testCreateAccountClaimID()
     {
-        testcase("ledger_entry: xchain_create_account_claim_id_");
+        testcase("ledger_entry: xchain_create_account_claim_id");
         using namespace test::jtx;
 
         Env mcEnv{*this, features};

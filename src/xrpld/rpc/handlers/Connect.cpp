@@ -33,7 +33,7 @@ doConnect(RPC::JsonContext& context)
         return rpcError(rpcINVALID_PARAMS);
     }
 
-    int iPort;
+    int iPort = 0;
 
     if (context.params.isMember(jss::port))
         iPort = context.params[jss::port].asInt();

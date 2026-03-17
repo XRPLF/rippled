@@ -21,7 +21,7 @@ ConsensusTransSetSF::gotNode(
     bool fromFilter,
     SHAMapHash const& nodeHash,
     std::uint32_t,
-    Blob&& nodeData,
+    Blob&& nodeData,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     SHAMapNodeType type) const
 {
     if (fromFilter)

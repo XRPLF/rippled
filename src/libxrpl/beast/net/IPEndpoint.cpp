@@ -159,7 +159,7 @@ operator>>(std::istream& is, Endpoint& endpoint)
 
     if (is.rdbuf()->in_avail() > 0)
     {
-        Port port;
+        Port port = 0;
         is >> port;
         if (is.fail())
             return is;

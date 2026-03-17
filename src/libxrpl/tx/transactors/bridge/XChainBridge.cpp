@@ -981,7 +981,7 @@ applyCreateAccountAttestations(
     struct ScopeResult
     {
         OnNewAttestationResult newAttResult;
-        bool createCID;
+        bool createCID{};
         XChainCreateAccountAttestations curAtts;
     };
 
@@ -1209,9 +1209,9 @@ attestationDoApply(ApplyContext& ctx)
 
     struct ScopeResult
     {
-        STXChainBridge::ChainType srcChain;
+        STXChainBridge::ChainType srcChain = STXChainBridge::ChainType::locking;
         std::unordered_map<AccountID, std::uint32_t> signersList;
-        std::uint32_t quorum;
+        std::uint32_t quorum{};
         AccountID thisDoor;
         Keylet bridgeK;
     };

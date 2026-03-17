@@ -149,7 +149,7 @@ applyBatchTransactions(
     auto const parentBatchId = batchTxn.getTransactionID();
     auto const mode = batchTxn.getFlags();
 
-    auto applyOneTransaction = [&registry, &j, &parentBatchId, &batchView](STTx&& tx) {
+    auto applyOneTransaction = [&registry, &j, &parentBatchId, &batchView](STTx const& tx) {
         OpenView perTxBatchView(batch_view, batchView);
 
         auto const ret = apply(registry, perTxBatchView, parentBatchId, tx, tapBATCH, j);

@@ -273,7 +273,7 @@ Oracle::ledgerEntry(
         toJson(jvParams[jss::oracle][jss::oracle_document_id], *documentID);
     if (index)
     {
-        std::uint32_t i;
+        std::uint32_t i = 0;
         if (boost::conversion::try_lexical_convert(*index, i))
             jvParams[jss::oracle][jss::ledger_index] = i;
         else

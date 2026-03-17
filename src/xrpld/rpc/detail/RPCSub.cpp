@@ -26,10 +26,8 @@ public:
         , io_context_(ioContext)
         , jobQueue_(jobQueue)
         , url_(strUrl)
-        , sSL_(false)
         , username_(strUsername)
         , password_(strPassword)
-        , sending_(false)
         , j_(logs.journal("RPCSub"))
         , logs_(logs)
     {
@@ -38,18 +36,18 @@ public:
         if (!parseUrl(pUrl, strUrl))
             Throw<std::runtime_error>("Failed to parse url.");
         else if (pUrl.scheme == "https")
-            sSL_ = true;
+            ssl_ = true;
         else if (pUrl.scheme != "http")
             Throw<std::runtime_error>("Only http and https is supported.");
 
         seq_ = 1;
 
         ip_ = pUrl.domain;
-        port_ = (!pUrl.port) ? (sSL_ ? 443 : 80) : *pUrl.port;
+        port_ = (!pUrl.port) ? (ssl_ ? 443 : 80) : *pUrl.port;
         path_ = pUrl.path;
 
         JLOG(j_.info()) << "RPCCall::fromNetwork sub: ip=" << ip_ << " port=" << port_
-                        << " ssl= " << (sSL_ ? "yes" : "no") << " path='" << path_ << "'";
+                        << " ssl= " << (ssl_ ? "yes" : "no") << " path='" << path_ << "'";
     }
 
     ~RPCSubImp() = default;
@@ -97,7 +95,7 @@ private:
     sendThread()
     {
         Json::Value jvEvent;
-        bool bSend;
+        bool bSend = false;
 
         do
         {
@@ -140,7 +138,7 @@ private:
                         path_,
                         "event",
                         jvEvent,
-                        sSL_,
+                        ssl_,
                         true,
                         logs_);
                 }
@@ -159,14 +157,14 @@ private:
     std::string url_;
     std::string ip_;
     std::uint16_t port_;
-    bool sSL_;
+    bool ssl_{false};
     std::string username_;
     std::string password_;
     std::string path_;
 
     int seq_;  // Next id to allocate.
 
-    bool sending_;  // Sending thread is active.
+    bool sending_{false};  // Sending thread is active.
 
     std::deque<std::pair<int, Json::Value>> deque_;
 
