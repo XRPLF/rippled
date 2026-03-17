@@ -100,7 +100,7 @@ STIssue::add(Serializer& s) const
         auto const& issue = asset_.get<MPTIssue>();
         s.addBitString(issue.getIssuer());
         s.addBitString(noAccount());
-        std::uint32_t sequence;
+        std::uint32_t sequence = 0;
         memcpy(&sequence, issue.getMptID().data(), sizeof(sequence));
         s.add32(sequence);
     }

@@ -20,7 +20,7 @@ public:
     static constexpr std::size_t size_ = 32;
 
 private:
-    std::uint8_t buf_[size_];
+    std::uint8_t buf_[size_]{};
 
 public:
     using const_iterator = std::uint8_t const*;

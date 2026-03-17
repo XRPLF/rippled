@@ -66,14 +66,12 @@ concept UnsignedMantissa = std::is_unsigned_v<T> || std::is_same_v<T, uint128_t>
 
 class Number::Guard
 {
-    std::uint64_t digits_;   // 16 decimal guard digits
-    std::uint8_t xbit_ : 1;  // has a non-zero digit been shifted off the end
-    std::uint8_t sbit_ : 1;  // the sign of the guard digits
+    std::uint64_t digits_{0};    // 16 decimal guard digits
+    std::uint8_t xbit_ : 1 {0};  // has a non-zero digit been shifted off the end
+    std::uint8_t sbit_ : 1 {0};  // the sign of the guard digits
 
 public:
-    explicit Guard() : digits_{0}, xbit_{0}, sbit_{0}
-    {
-    }
+    explicit Guard() = default;
 
     // set & test the sign bit
     void
