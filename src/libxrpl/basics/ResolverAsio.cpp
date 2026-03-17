@@ -143,8 +143,8 @@ public:
 
     ~ResolverAsioImpl() override
     {
-        XRPL_ASSERT(work_.empty(), "xrpl::ResolverAsioImpl::~ResolverAsioImpl : no pending work");
-        XRPL_ASSERT(stopped_, "xrpl::ResolverAsioImpl::~ResolverAsioImpl : stopped");
+        XRPL_ASSERT(work.empty(), "xrpl::ResolverAsioImpl::~ResolverAsioImpl : no pending work");
+        XRPL_ASSERT(stopped, "xrpl::ResolverAsioImpl::~ResolverAsioImpl : stopped");
     }
 
     //-------------------------------------------------------------------------
@@ -166,8 +166,8 @@ public:
     void
     start() override
     {
-        XRPL_ASSERT(stopped_ == true, "xrpl::ResolverAsioImpl::start : stopped");
-        XRPL_ASSERT(stop_called_ == false, "xrpl::ResolverAsioImpl::start : not stopping");
+        XRPL_ASSERT(stopped == true, "xrpl::ResolverAsioImpl::start : stopped");
+        XRPL_ASSERT(stop_called == false, "xrpl::ResolverAsioImpl::start : not stopping");
 
         if (stopped.exchange(false) == true)
         {
@@ -208,7 +208,7 @@ public:
     void
     resolve(std::vector<std::string> const& names, HandlerType const& handler) override
     {
-        XRPL_ASSERT(stop_called_ == false, "xrpl::ResolverAsioImpl::resolve : not stopping");
+        XRPL_ASSERT(stop_called == false, "xrpl::ResolverAsioImpl::resolve : not stopping");
         XRPL_ASSERT(!names.empty(), "xrpl::ResolverAsioImpl::resolve : names non-empty");
 
         // TODO NIKB use rvalue references to construct and move
@@ -226,7 +226,7 @@ public:
     void
     do_stop(CompletionCounter)
     {
-        XRPL_ASSERT(stop_called_ == true, "xrpl::ResolverAsioImpl::do_stop : stopping");
+        XRPL_ASSERT(stop_called == true, "xrpl::ResolverAsioImpl::do_stop : stopping");
 
         if (stopped.exchange(true) == false)
         {

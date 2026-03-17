@@ -207,7 +207,7 @@ std::optional<uint256>
 FeatureCollections::getRegisteredFeature(std::string const& name) const
 {
     XRPL_ASSERT(
-        readOnly.load(), "xrpl::FeatureCollections::getRegisteredFeature : startup completed");
+        readOnly_.load(), "xrpl::FeatureCollections::getRegisteredFeature : startup completed");
     Feature const* feature = getByName(name);
     if (feature)
         return feature->feature;
@@ -277,7 +277,7 @@ size_t
 FeatureCollections::featureToBitsetIndex(uint256 const& f) const
 {
     XRPL_ASSERT(
-        readOnly.load(), "xrpl::FeatureCollections::featureToBitsetIndex : startup completed");
+        readOnly_.load(), "xrpl::FeatureCollections::featureToBitsetIndex : startup completed");
 
     Feature const* feature = getByFeature(f);
     if (!feature)
@@ -290,7 +290,7 @@ uint256 const&
 FeatureCollections::bitsetIndexToFeature(size_t i) const
 {
     XRPL_ASSERT(
-        readOnly.load(), "xrpl::FeatureCollections::bitsetIndexToFeature : startup completed");
+        readOnly_.load(), "xrpl::FeatureCollections::bitsetIndexToFeature : startup completed");
     Feature const& feature = getByIndex(i);
     return feature.feature;
 }
@@ -298,7 +298,7 @@ FeatureCollections::bitsetIndexToFeature(size_t i) const
 std::string
 FeatureCollections::featureToName(uint256 const& f) const
 {
-    XRPL_ASSERT(readOnly.load(), "xrpl::FeatureCollections::featureToName : startup completed");
+    XRPL_ASSERT(readOnly_.load(), "xrpl::FeatureCollections::featureToName : startup completed");
     Feature const* feature = getByFeature(f);
     return feature ? feature->name : to_string(f);
 }
@@ -437,8 +437,7 @@ enforceValidFeatureName(auto fn) -> char const*
 // All of the features should now be registered, since variables in a cpp file
 // are initialized from top to bottom.
 //
-// Use initialization of one final static variable to set
-// featureCollections::readOnly.
+// Use initialization of one final static variable to set featureCollections::readOnly_.
 [[maybe_unused]] static bool const readOnlySet = featureCollections.registrationIsDone();
 
 }  // namespace xrpl

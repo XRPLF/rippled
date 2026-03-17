@@ -33,9 +33,9 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
         using duration = typename Clock::duration;
         using rep = typename MeasureClock::duration::rep;
 
-        std::vector<duration> elapsed_times_;
+        std::vector<duration> elapsedTimes_;
 
-        measure_asio_timers(duration interval = 100ms, size_t nusamples_ = 50)
+        measure_asio_timers(duration interval = 100ms, size_t numSamples = 50)
         {
             using namespace std::chrono;
             boost::asio::io_context ios;
@@ -43,23 +43,23 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
                 work{boost::asio::make_work_guard(ios)};
             std::thread worker{[&] { ios.run(); }};
             boost::asio::basic_waitable_timer<Clock> timer{ios};
-            elapsed_times_.reserve(nusamples_);
+            elapsedTimes_.reserve(numSamples);
             std::mutex mtx;
             std::unique_lock<std::mutex> mainlock{mtx};
             std::condition_variable cv;
             bool done = false;
-            boost::system::error_code wait_err;
+            boost::system::error_code waitErr;
 
-            while (--nusamples_)
+            while (--numSamples)
             {
                 auto const start{MeasureClock::now()};
                 done = false;
                 timer.expires_after(interval);
                 timer.async_wait([&](boost::system::error_code const& ec) {
                     if (ec)
-                        wait_err = ec;
+                        waitErr = ec;
                     auto const end{MeasureClock::now()};
-                    elapsed_times_.emplace_back(end - start);
+                    elapsedTimes_.emplace_back(end - start);
                     std::lock_guard lk{mtx};
                     done = true;
                     cv.notify_one();
@@ -68,8 +68,8 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
             }
             work.reset();
             worker.join();
-            if (wait_err)
-                boost::asio::detail::throw_error(wait_err, "wait");
+            if (waitErr)
+                boost::asio::detail::throw_error(waitErr, "wait");
         }
 
         template <class D>
@@ -77,11 +77,11 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
         getMean()
         {
             double sum = {0};
-            for (auto const& v : elapsed_times_)
+            for (auto const& v : elapsedTimes_)
             {
                 sum += static_cast<double>(std::chrono::duration_cast<D>(v).count());
             }
-            return sum / elapsed_times_.size();
+            return sum / elapsedTimes_.size();
         }
 
         template <class D>
@@ -89,7 +89,7 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
         getMax()
         {
             return std::chrono::duration_cast<D>(
-                       *std::max_element(elapsed_times_.begin(), elapsed_times_.end()))
+                       *std::max_element(elapsedTimes_.begin(), elapsedTimes_.end()))
                 .count();
         }
 
@@ -98,7 +98,7 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
         getMin()
         {
             return std::chrono::duration_cast<D>(
-                       *std::min_element(elapsed_times_.begin(), elapsed_times_.end()))
+                       *std::min_element(elapsedTimes_.begin(), elapsedTimes_.end()))
                 .count();
         }
     };
@@ -165,8 +165,8 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
         measure_asio_timers<steady_clock> tt{interval};
         log << "measured mean for timers: " << tt.getMean<milliseconds>() << "ms\n";
         log << "measured max for timers: " << tt.getMax<milliseconds>() << "ms\n";
-        expected_probe_count_min =
-            static_cast<size_t>(duration_cast<milliseconds>(probe_duration).count()) /
+        expectedProbeCountMin =
+            static_cast<size_t>(duration_cast<milliseconds>(probeDuration).count()) /
             static_cast<size_t>(tt.getMean<milliseconds>());
 #endif
         test_sampler ioProbe{interval, get_io_context()};

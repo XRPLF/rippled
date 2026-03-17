@@ -31,7 +31,7 @@ spin_pause() noexcept
 #ifdef __aarch64__
     asm volatile("yield");
 #else
-    _mpause_();
+    _mm_pause();
 #endif
 }
 
