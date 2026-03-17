@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/lending/LoanSet.h>
 //
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/lending/LendingHelpers.h>
@@ -296,11 +297,12 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    if (auto const ter = canAddHolding(ctx.view, asset))
+    if (auto const ter = makeTokenBase(ctx.view, asset)->canAddHolding())
         return ter;
 
+    auto token = makeTokenBase(ctx.view, asset);
     // vaultPseudo is going to send funds, so it can't be frozen.
-    if (auto const ret = checkFrozen(ctx.view, vaultPseudo, asset))
+    if (auto const ret = token->checkFrozen(vaultPseudo))
     {
         JLOG(ctx.j.warn()) << "Vault pseudo-account is frozen.";
         return ret;
@@ -309,7 +311,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     // brokerPseudo is the fallback account to receive LoanPay fees, even if the
     // broker owner is unable to accept them. Don't create the loan if it is
     // deep frozen.
-    if (auto const ret = checkDeepFrozen(ctx.view, brokerPseudo, asset))
+    if (auto const ret = token->checkDeepFrozen(brokerPseudo))
     {
         JLOG(ctx.j.warn()) << "Broker pseudo-account is frozen.";
         return ret;
@@ -319,14 +321,14 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     // frozen now. It is also going to receive funds, so it can't be deep
     // frozen, but being frozen is a prerequisite for being deep frozen, so
     // checking the one is sufficient.
-    if (auto const ret = checkFrozen(ctx.view, borrower, asset))
+    if (auto const ret = token->checkFrozen(borrower))
     {
         JLOG(ctx.j.warn()) << "Borrower account is frozen.";
         return ret;
     }
     // brokerOwner is going to receive funds if there's an origination fee, so
     // it can't be deep frozen
-    if (auto const ret = checkDeepFrozen(ctx.view, brokerOwner, asset))
+    if (auto const ret = token->checkDeepFrozen(brokerOwner))
     {
         JLOG(ctx.j.warn()) << "Broker owner account is frozen.";
         return ret;
@@ -492,8 +494,9 @@ LoanSet::doApply()
         borrower == accountID_ || borrower == counterparty,
         "xrpl::LoanSet::doApply",
         "borrower signed transaction");
-    if (auto const ter = addEmptyHolding(
-            view, borrower, wrappedBorrower->at(sfBalance).value().xrp(), vaultAsset, j_);
+    if (auto const ter =
+            makeWritableTokenBase(view, vaultAsset)
+                ->addEmptyHolding(borrower, wrappedBorrower->at(sfBalance).value().xrp(), j_);
         ter && ter != tecDUPLICATE)
     {
         // ignore tecDUPLICATE. That means the holding already exists, and
@@ -501,7 +504,8 @@ LoanSet::doApply()
         return ter;
     }
 
-    if (auto const ter = requireAuth(view, vaultAsset, borrower, AuthType::StrongAuth))
+    auto const token = makeTokenBase(view, vaultAsset);
+    if (auto const ter = token->requireAuth(borrower, AuthType::StrongAuth))
         return ter;
 
     // 2. Transfer originationFee, if any, from vault pseudo-account to
@@ -515,8 +519,9 @@ LoanSet::doApply()
             "xrpl::LoanSet::doApply",
             "broker owner signed transaction");
 
-        if (auto const ter = addEmptyHolding(
-                view, brokerOwner, brokerOwnerAcct->at(sfBalance).value().xrp(), vaultAsset, j_);
+        if (auto const ter =
+                makeWritableTokenBase(view, vaultAsset)
+                    ->addEmptyHolding(brokerOwner, brokerOwnerAcct->at(sfBalance).value().xrp(), j_);
             ter && ter != tecDUPLICATE)
         {
             // ignore tecDUPLICATE. That means the holding already exists,
@@ -525,7 +530,7 @@ LoanSet::doApply()
         }
     }
 
-    if (auto const ter = requireAuth(view, vaultAsset, brokerOwner, AuthType::StrongAuth))
+    if (auto const ter = token->requireAuth(brokerOwner, AuthType::StrongAuth))
         return ter;
 
     if (auto const ter = accountSendMulti(

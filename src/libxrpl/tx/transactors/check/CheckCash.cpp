@@ -2,6 +2,8 @@
 #include <xrpl/basics/scope.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TER.h>
@@ -127,8 +129,13 @@ CheckCash::preclaim(PreclaimContext const& ctx)
         // Make sure the check owner holds at least value.  If they have
         // less than value the check cannot be cashed.
         {
-            STAmount availableFunds{
-                accountFunds(ctx.view, sleCheck->at(sfAccount), value, fhZERO_IF_FROZEN, ctx.j)};
+            auto const checkAccount = sleCheck->at(sfAccount);
+            STAmount availableFunds = [&]() -> STAmount {
+                if (!value.native() && value.getIssuer() == checkAccount)
+                    return value;
+                return makeTokenBase(ctx.view, value.asset())
+                    ->accountHolds(checkAccount, fhZERO_IF_FROZEN, ctx.j);
+            }();
 
             // Note that src will have one reserve's worth of additional XRP
             // once the check is cashed, since the check's reserve will no
@@ -187,7 +194,8 @@ CheckCash::preclaim(PreclaimContext const& ctx)
 
             // However, the trustline from destination to issuer may not
             // be frozen.
-            if (isFrozen(ctx.view, dstId, currency, issuerId))
+            IOUToken wrapped(ctx.view, Issue{currency, issuerId});
+            if (wrapped.isFrozen(dstId))
             {
                 JLOG(ctx.j.warn()) << "Cashing a check to a frozen trustline.";
                 return tecFROZEN;

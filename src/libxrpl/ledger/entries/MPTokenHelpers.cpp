@@ -1,9 +1,9 @@
-#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpersMPTokenHelpers.h>
 //
 #include <xrpl/basics/Log.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/CredentialHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpersAccountRootHelpers.h>
+#include <xrpl/ledger/helpersCredentialHelpers.h>
+#include <xrpl/ledger/helpersDirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -28,7 +28,7 @@ dirLink(
     SF_UINT64 const& node = sfOwnerNode);
 
 bool
-MPToken::isGlobalFrozen() const
+MPTokenIssuance::isGlobalFrozen() const
 {
     if (sle_)
         return sle_->isFlag(lsfMPTLocked);
@@ -36,7 +36,7 @@ MPToken::isGlobalFrozen() const
 }
 
 bool
-MPToken::isIndividualFrozen(AccountID const& account) const
+MPTokenIssuance::isIndividualFrozen(AccountID const& account) const
 {
     if (auto const sle = readView_.read(keylet::mptoken(mptID_, account)))
         return sle->isFlag(lsfMPTLocked);
@@ -44,14 +44,14 @@ MPToken::isIndividualFrozen(AccountID const& account) const
 }
 
 bool
-MPToken::isFrozen(AccountID const& account, int depth) const
+MPTokenIssuance::isFrozen(AccountID const& account, int depth) const
 {
     return isGlobalFrozen() || isIndividualFrozen(account) ||
         isVaultPseudoAccountFrozen(readView_, account, mptIssue_, depth);
 }
 
 [[nodiscard]] bool
-MPToken::isAnyFrozen(std::initializer_list<AccountID> const& accounts, int depth) const
+MPTokenIssuance::isAnyFrozen(std::initializer_list<AccountID> const& accounts, int depth) const
 {
     if (isGlobalFrozen())
         return true;
@@ -72,26 +72,25 @@ MPToken::isAnyFrozen(std::initializer_list<AccountID> const& accounts, int depth
 }
 
 TER
-MPToken::checkFrozen(AccountID const& account) const
+MPTokenIssuance::checkFrozen(AccountID const& account) const
 {
-    return isFrozen(account) ? TER{tecFROZEN} : TER{tesSUCCESS};
+    return isFrozen(account) ? TER{tecLOCKED} : TER{tesSUCCESS};
 }
 
 bool
-MPToken::isDeepFrozen(AccountID const& account, int depth) const
+MPTokenIssuance::isDeepFrozen(AccountID const& account, int depth) const
 {
-    // MPTs don't have deep freeze, so this always returns false
-    return false;
+    return isFrozen(account, depth);
 }
 
 TER
-MPToken::checkDeepFrozen(AccountID const& account) const
+MPTokenIssuance::checkDeepFrozen(AccountID const& account) const
 {
     return isDeepFrozen(account) ? TER{tecLOCKED} : TER{tesSUCCESS};
 }
 
 Rate
-MPToken::transferRate() const
+MPTokenIssuance::transferRate() const
 {
     // fee is 0-50,000 (0-50%), rate is 1,000,000,000-2,000,000,000
     // For example, if transfer fee is 50% then 10,000 * 50,000 = 500,000
@@ -103,7 +102,7 @@ MPToken::transferRate() const
 }
 
 [[nodiscard]] TER
-MPToken::canAddHolding() const
+MPTokenIssuance::canAddHolding() const
 {
     if (!sle_)
     {
@@ -118,7 +117,7 @@ MPToken::canAddHolding() const
 }
 
 [[nodiscard]] TER
-WritableMPToken::addEmptyHolding(
+WritableMPTokenIssuance::addEmptyHolding(
     AccountID const& accountID,
     XRPAmount priorBalance,
     beast::Journal journal)
@@ -136,7 +135,7 @@ WritableMPToken::addEmptyHolding(
 }
 
 [[nodiscard]] TER
-WritableMPToken::authorizeMPToken(
+WritableMPTokenIssuance::authorizeMPToken(
     XRPAmount const& priorBalance,
     AccountID const& account,
     beast::Journal journal,
@@ -252,7 +251,7 @@ WritableMPToken::authorizeMPToken(
 }
 
 [[nodiscard]] TER
-WritableMPToken::removeEmptyHolding(AccountID const& accountID, beast::Journal journal)
+WritableMPTokenIssuance::removeEmptyHolding(AccountID const& accountID, beast::Journal journal)
 {
     // If the account is the issuer, then no token should exist. MPTs do not
     // have the legacy ability to create such a situation, but check anyway. If
@@ -277,7 +276,7 @@ WritableMPToken::removeEmptyHolding(AccountID const& accountID, beast::Journal j
 }
 
 [[nodiscard]] TER
-MPToken::requireAuth(AccountID const& account, AuthType authType, int depth) const
+MPTokenIssuance::requireAuth(AccountID const& account, AuthType authType, int depth) const
 {
     if (!sle_)
         return tecOBJECT_NOT_FOUND;
@@ -356,7 +355,7 @@ MPToken::requireAuth(AccountID const& account, AuthType authType, int depth) con
 }
 
 [[nodiscard]] TER
-WritableMPToken::enforceMPTokenAuthorization(
+WritableMPTokenIssuance::enforceMPTokenAuthorization(
     AccountID const& account,
     XRPAmount const& priorBalance,  // for MPToken authorization
     beast::Journal j)
@@ -449,7 +448,7 @@ WritableMPToken::enforceMPTokenAuthorization(
 }
 
 TER
-MPToken::canTransfer(AccountID const& from, AccountID const& to) const
+MPTokenIssuance::canTransfer(AccountID const& from, AccountID const& to) const
 {
     if (!sle_)
         return tecOBJECT_NOT_FOUND;
@@ -462,6 +461,28 @@ MPToken::canTransfer(AccountID const& from, AccountID const& to) const
     return tesSUCCESS;
 }
 
+//------------------------------------------------------------------------------
+//
+// Token capability checks (MPT-specific)
+//
+//------------------------------------------------------------------------------
+
+bool
+MPTokenIssuance::canClawback() const
+{
+    if (!sle_)
+        return false;
+    return sle_->isFlag(lsfMPTCanClawback);
+}
+
+bool
+MPTokenIssuance::requiresAuth() const
+{
+    if (!sle_)
+        return false;
+    return sle_->isFlag(lsfMPTRequireAuth);
+}
+
 TER
 rippleLockEscrowMPT(
     ApplyView& view,
@@ -470,7 +491,7 @@ rippleLockEscrowMPT(
     beast::Journal j)
 {
     auto const mptIssue = amount.get<MPTIssue>();
-    auto mptIssuance = WritableMPToken(view, mptIssue);
+    auto mptIssuance = WritableMPTokenIssuance(view, mptIssue);
     if (!mptIssuance.exists())
     {  // LCOV_EXCL_START
         JLOG(j.error()) << "rippleLockEscrowMPT: MPT issuance not found for "
@@ -576,7 +597,7 @@ rippleUnlockEscrowMPT(
 
     auto const& issuer = netAmount.getIssuer();
     auto const& mptIssue = netAmount.get<MPTIssue>();
-    auto mptIssuance = WritableMPToken(view, mptIssue);
+    auto mptIssuance = WritableMPTokenIssuance(view, mptIssue);
     if (!mptIssuance)
     {  // LCOV_EXCL_START
         JLOG(j.error()) << "rippleUnlockEscrowMPT: MPT issuance not found for "
@@ -722,7 +743,7 @@ rippleUnlockEscrowMPT(
 }
 
 STAmount
-MPToken::accountHolds(
+MPTokenIssuance::accountHolds(
     AccountID const& account,
     FreezeHandling zeroIfFrozen,
     beast::Journal j,
@@ -732,7 +753,7 @@ MPToken::accountHolds(
 }
 
 STAmount
-MPToken::accountHolds(
+MPTokenIssuance::accountHolds(
     AccountID const& account,
     FreezeHandling zeroIfFrozen,
     AuthHandling zeroIfUnauthorized,

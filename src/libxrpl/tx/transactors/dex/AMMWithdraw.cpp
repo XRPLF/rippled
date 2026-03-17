@@ -192,21 +192,22 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
                     << "AMM Withdraw: withdrawing more than the balance, " << *amount;
                 return tecAMM_BALANCE;
             }
-            if (auto const ter = requireAuth(ctx.view, amount->issue(), accountID))
+            // AMM account or currency frozen
+            auto const token = IOUToken(ctx.view, amount->issue());
+            if (auto const ter = token.requireAuth(accountID))
             {
                 JLOG(ctx.j.debug())
                     << "AMM Withdraw: account is not authorized, " << amount->issue();
                 return ter;
             }
-            // AMM account or currency frozen
-            if (isFrozen(ctx.view, ammAccountID, amount->issue()))
+            if (token.isFrozen(ammAccountID))
             {
                 JLOG(ctx.j.debug())
                     << "AMM Withdraw: AMM account or currency is frozen, " << to_string(accountID);
                 return tecFROZEN;
             }
             // Account frozen
-            if (isIndividualFrozen(ctx.view, accountID, amount->issue()))
+            if (token.isIndividualFrozen(accountID))
             {
                 JLOG(ctx.j.debug()) << "AMM Withdraw: account is frozen, " << to_string(accountID)
                                     << " " << to_string(amount->issue().currency);

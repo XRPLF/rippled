@@ -43,6 +43,7 @@
 #include <xrpl/git/Git.h>
 #include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/ledger/OrderBookDB.h>
+#include <xrpl/ledger/helpersTokenHelpers.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/MultiApiJson.h>
@@ -3165,7 +3166,8 @@ NetworkOPsImp::transJson(
         if (account != amount.issue().account)
         {
             auto const ownerFunds =
-                accountFunds(*ledger, account, amount, fhIGNORE_FREEZE, registry_.journal("View"));
+                makeTokenBase(*ledger, amount.asset())
+                    ->accountHolds(account, fhIGNORE_FREEZE, registry_.journal("View"));
             jvObj[jss::transaction][jss::owner_funds] = ownerFunds.getText();
         }
     }

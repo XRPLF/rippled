@@ -1,5 +1,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SField.h>
@@ -50,7 +52,8 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     auto const& vaultAccount = vault->at(sfAccount);
     auto const& account = ctx.tx[sfAccount];
     auto const& dstAcct = ctx.tx[~sfDestination].value_or(account);
-    if (auto ter = canTransfer(ctx.view, vaultAsset, vaultAccount, dstAcct); !isTesSuccess(ter))
+    auto const vaultAssetToken = makeTokenBase(ctx.view, vaultAsset);
+    if (auto ter = vaultAssetToken->canTransfer(vaultAccount, dstAcct); !isTesSuccess(ter))
     {
         JLOG(ctx.j.debug()) << "VaultWithdraw: vault assets are non-transferable.";
         return ter;
@@ -72,16 +75,16 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     // if authorized) a trust line or MPToken as needed, in doApply().
     // Destination MPToken or trust line must exist if _not_ sending to Account.
     AuthType const authType = account == dstAcct ? AuthType::WeakAuth : AuthType::StrongAuth;
-    if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct, authType); !isTesSuccess(ter))
+    if (auto const ter = vaultAssetToken->requireAuth(dstAcct, authType); !isTesSuccess(ter))
         return ter;
 
     // Cannot withdraw from a Vault an Asset frozen for the destination account
-    if (auto const ret = checkFrozen(ctx.view, dstAcct, vaultAsset))
+    if (auto const ret = vaultAssetToken->checkFrozen(dstAcct))
         return ret;
 
     // Cannot return shares to the vault, if the underlying asset was frozen for
     // the submitter
-    if (auto const ret = checkFrozen(ctx.view, account, vaultShare))
+    if (auto const ret = MPToken(ctx.view, vaultShare).checkFrozen(account))
         return ret;
 
     return tesSUCCESS;
@@ -205,7 +208,8 @@ VaultWithdraw::doApply()
     // Keep MPToken if holder is the vault owner.
     if (accountID_ != vault->at(sfOwner))
     {
-        if (auto const ter = removeEmptyHolding(view(), accountID_, sharesRedeemed.asset(), j_);
+        if (auto const ter = makeWritableTokenBase(view(), sharesRedeemed.asset())
+                                 ->removeEmptyHolding(accountID_, j_);
             isTesSuccess(ter))
         {
             JLOG(j_.debug())  //

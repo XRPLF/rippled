@@ -463,15 +463,15 @@ Payment::doApply()
     {
         JLOG(j_.trace()) << " dstAmount=" << dstAmount.getFullText();
         auto const& mptIssue = dstAmount.get<MPTIssue>();
+        MPToken mptToken(view(), mptIssue);
 
-        if (auto const ter = requireAuth(view(), mptIssue, accountID_); !isTesSuccess(ter))
+        if (auto const ter = mptToken.requireAuth(accountID_); !isTesSuccess(ter))
             return ter;
 
-        if (auto const ter = requireAuth(view(), mptIssue, dstAccountID); !isTesSuccess(ter))
+        if (auto const ter = mptToken.requireAuth(dstAccountID); !isTesSuccess(ter))
             return ter;
 
-        if (auto const ter = canTransfer(view(), mptIssue, accountID_, dstAccountID);
-            !isTesSuccess(ter))
+        if (auto const ter = mptToken.canTransfer(accountID_, dstAccountID); !isTesSuccess(ter))
             return ter;
 
         if (auto err = verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, dst, ctx_.journal);
@@ -489,11 +489,11 @@ Payment::doApply()
             //   - can't send between holders
             //   - holder can send back to issuer
             //   - issuer can send to holder
-            if (isAnyFrozen(view(), {accountID_, dstAccountID}, mptIssue))
+            if (mptToken.isAnyFrozen({accountID_, dstAccountID}))
                 return tecLOCKED;
 
             // Get the rate for a payment between the holders.
-            rate = transferRate(view(), mptIssue.getMptID());
+            rate = mptToken.transferRate();
         }
 
         // Amount to deliver.

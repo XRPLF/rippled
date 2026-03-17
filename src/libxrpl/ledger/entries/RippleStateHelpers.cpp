@@ -1,11 +1,11 @@
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpersRippleStateHelpers.h>
 //
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpersAccountRootHelpers.h>
+#include <xrpl/ledger/helpersDirectoryHelpers.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -98,7 +98,7 @@ IOUToken::isIndividualFrozen(AccountID const& account) const
 bool
 IOUToken::isFrozen(AccountID const& account, int depth) const
 {
-    XRPL_ASSERT(depth == 0, "IOUToken::isFrozen : depth is 0");
+    // NOTE: depth is ignored here because it's only relevant for MPTs
     if (isXRP(currency_))
         return false;
     if (issuerAccount_.exists() && issuerAccount_->isFlag(lsfGlobalFreeze))
@@ -116,7 +116,7 @@ IOUToken::isFrozen(AccountID const& account, int depth) const
 bool
 IOUToken::isDeepFrozen(AccountID const& account, int depth) const
 {
-    XRPL_ASSERT(depth == 0, "IOUToken::isDeepFrozen : depth is 0");
+    // NOTE: depth is ignored here because it's only relevant for MPTs
     if (isXRP(currency_))
     {
         return false;
@@ -151,7 +151,7 @@ IOUToken::checkDeepFrozen(AccountID const& account) const
 bool
 IOUToken::isAnyFrozen(std::initializer_list<AccountID> const& accounts, int depth) const
 {
-    XRPL_ASSERT(depth == 0, "IOUToken::isAnyFrozen : depth is 0");
+    // NOTE: depth is ignored here because it's only relevant for MPTs
     if (isGlobalFrozen())
         return true;
 
@@ -162,6 +162,19 @@ IOUToken::isAnyFrozen(std::initializer_list<AccountID> const& accounts, int dept
     }
 
     return false;
+}
+
+STAmount
+IOUToken::accountFunds(
+    AccountID const& id,
+    STAmount const& saDefault,
+    FreezeHandling freezeHandling,
+    beast::Journal j) const
+{
+    if (!saDefault.native() && saDefault.getIssuer() == id)
+        return saDefault;
+
+    return accountHolds(id, freezeHandling, j);
 }
 
 STAmount
@@ -184,7 +197,8 @@ IOUToken::accountHolds(
 {
     if (isXRP(currency_))
     {
-        return {issuerAccount_.xrpLiquid(0, j)};
+        AccountRoot accountRoot(account, readView_);
+        return {accountRoot.xrpLiquid(0, j)};
     }
 
     bool const returnSpendable = (includeFullBalance == shFULL_BALANCE);
@@ -194,35 +208,24 @@ IOUToken::accountHolds(
         return STAmount{issue_, STAmount::cMaxValue, STAmount::cMaxOffset};
 
     // IOU: Return balance on trust line modulo freeze
-    // Check if line exists and is usable
-    auto const sle = readView_.read(keylet::line(account, issuer_, currency_));
-    if (!sle)
-    {
-        STAmount result;
-        result.clear(Issue{currency_, issuer_});
-        return result;
-    }
+    // Check if line exists and is usable (mirrors old getLineIfUsable)
+    SLE::const_pointer sle = readView_.read(keylet::line(account, issuer_, currency_));
 
-    // Check freeze status
-    if (zeroIfFrozen == fhZERO_IF_FROZEN)
+    if (sle && zeroIfFrozen == fhZERO_IF_FROZEN)
     {
         if (isFrozen(account) || isDeepFrozen(account))
         {
-            STAmount result;
-            result.clear(Issue{currency_, issuer_});
-            return result;
+            sle = nullptr;
         }
 
         // when fixFrozenLPTokenTransfer is enabled, if currency is lptoken,
         // we need to check if the associated assets have been frozen
-        if (readView_.rules().enabled(fixFrozenLPTokenTransfer))
+        if (sle && readView_.rules().enabled(fixFrozenLPTokenTransfer))
         {
             auto const sleIssuer = readView_.read(keylet::account(issuer_));
             if (!sleIssuer)
             {
-                STAmount result;
-                result.clear(Issue{currency_, issuer_});
-                return result;
+                sle = nullptr;  // LCOV_EXCL_LINE
             }
             else if (sleIssuer->isFieldPresent(sfAMMID))
             {
@@ -235,39 +238,54 @@ IOUToken::accountHolds(
                         (*sleAmm)[sfAsset].get<Issue>(),
                         (*sleAmm)[sfAsset2].get<Issue>()))
                 {
-                    STAmount result;
-                    result.clear(Issue{currency_, issuer_});
-                    return result;
+                    sle = nullptr;
                 }
             }
         }
     }
 
-    // Extract balance from SLE
-    STAmount amount = sle->getFieldAmount(sfBalance);
-    bool const accountHigh = account > issuer_;
-    auto const& oppositeField = accountHigh ? sfLowLimit : sfHighLimit;
-    if (accountHigh)
+    // Extract balance (mirrors old getTrustLineBalance)
+    STAmount amount;
+    if (sle)
     {
-        // Put balance in account terms.
-        amount.negate();
+        amount = sle->getFieldAmount(sfBalance);
+        bool const accountHigh = account > issuer_;
+        auto const& oppositeField = accountHigh ? sfLowLimit : sfHighLimit;
+        if (accountHigh)
+        {
+            // Put balance in account terms.
+            amount.negate();
+        }
+        if (returnSpendable)
+        {
+            amount += sle->getFieldAmount(oppositeField);
+        }
+        amount.setIssuer(issuer_);
     }
-    if (returnSpendable)
+    else
     {
-        amount += sle->getFieldAmount(oppositeField);
+        amount.clear(Issue{currency_, issuer_});
     }
-    amount.setIssuer(issuer_);
 
     JLOG(j.trace()) << "IOUToken::accountHolds:" << " account=" << to_string(account)
                     << " amount=" << amount.getFullText();
 
-    return amount;
+    return readView_.balanceHook(account, issuer_, amount);
 }
 
 TER
 IOUToken::canAddHolding() const
 {
-    return tesSUCCESS;  // IOUs don't have restrictions on adding holdings
+    if (isXRP(issue_))
+        return tesSUCCESS;
+
+    if (!issuerAccount_.exists())
+        return terNO_ACCOUNT;
+
+    if (!issuerAccount_->isFlag(lsfDefaultRipple))
+        return terNO_RIPPLE;
+
+    return tesSUCCESS;
 }
 
 Rate
@@ -398,7 +416,7 @@ trustCreate(
 
 TER
 trustDelete(
-    ApplyView& readView_,
+    ApplyView& view,
     std::shared_ptr<SLE> const& sleRippleState,
     AccountID const& uLowAccountID,
     AccountID const& uHighAccountID,
@@ -410,22 +428,20 @@ trustDelete(
 
     JLOG(j.trace()) << "trustDelete: Deleting ripple line: low";
 
-    if (!readView_.dirRemove(
-            keylet::ownerDir(uLowAccountID), uLowNode, sleRippleState->key(), false))
+    if (!view.dirRemove(keylet::ownerDir(uLowAccountID), uLowNode, sleRippleState->key(), false))
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
     JLOG(j.trace()) << "trustDelete: Deleting ripple line: high";
 
-    if (!readView_.dirRemove(
-            keylet::ownerDir(uHighAccountID), uHighNode, sleRippleState->key(), false))
+    if (!view.dirRemove(keylet::ownerDir(uHighAccountID), uHighNode, sleRippleState->key(), false))
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
     JLOG(j.trace()) << "trustDelete: Deleting ripple line: state";
-    readView_.erase(sleRippleState);
+    view.erase(sleRippleState);
 
     return tesSUCCESS;
 }
@@ -660,7 +676,7 @@ redeemIOU(
 TER
 IOUToken::requireAuth(AccountID const& account, AuthType authType, int depth) const
 {
-    XRPL_ASSERT(depth == 0, "IOUToken::requireAuth : depth is 0");
+    // NOTE: depth is ignored here because it's only relevant for MPTs
     if (isXRP(issue_) || issuer_ == account)
         return tesSUCCESS;
 
@@ -713,6 +729,29 @@ IOUToken::canTransfer(AccountID const& from, AccountID const& to) const
         return terNO_RIPPLE;
 
     return tesSUCCESS;
+}
+
+//------------------------------------------------------------------------------
+//
+// Token capability checks (IOU-specific)
+//
+//------------------------------------------------------------------------------
+
+bool
+IOUToken::canClawback() const
+{
+    if (!issuerAccount_.exists())
+        return false;
+    return issuerAccount_->isFlag(lsfAllowTrustLineClawback) &&
+        !issuerAccount_->isFlag(lsfNoFreeze);
+}
+
+bool
+IOUToken::requiresAuth() const
+{
+    if (!issuerAccount_.exists())
+        return false;
+    return issuerAccount_->isFlag(lsfRequireAuth);
 }
 
 //------------------------------------------------------------------------------
