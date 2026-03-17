@@ -140,14 +140,13 @@ ValidMPTIssuance::finalize(
                                    "but created/deleted bad number mptokens";
                 return false;
             }
-            else if (submittedByIssuer && (mptokensCreated_ > 0 || mptokensDeleted_ > 0))
+            if (submittedByIssuer && (mptokensCreated_ > 0 || mptokensDeleted_ > 0))
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT authorize submitted by issuer "
                                    "succeeded but created/deleted mptokens";
                 return false;
             }
-            else if (
-                !submittedByIssuer && hasPrivilege(tx, mustAuthorizeMPT) &&
+            if (!submittedByIssuer && hasPrivilege(tx, mustAuthorizeMPT) &&
                 (mptokensCreated_ + mptokensDeleted_ != 1))
             {
                 // if the holder submitted this tx, then a mptoken must be

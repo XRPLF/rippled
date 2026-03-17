@@ -3120,7 +3120,7 @@ enforceMPTokenAuthorization(
 
         return tecNO_AUTH;
     }
-    else if (authorizedByDomain && sleToken != nullptr)
+    if (authorizedByDomain && sleToken != nullptr)
     {
         // Found an MPToken, authorized by the domain. Ignore authorization flag
         // lsfMPTAuthorized because it is meaningless. Return tesSUCCESS
@@ -3129,7 +3129,7 @@ enforceMPTokenAuthorization(
             "xrpl::enforceMPTokenAuthorization : found MPToken for domain");
         return tesSUCCESS;
     }
-    else if (authorizedByDomain)
+    if (authorizedByDomain)
     {
         // Could not find MPToken but there should be one because we are
         // authorized by domain. Proceed to create it, then return tesSUCCESS

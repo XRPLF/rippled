@@ -66,7 +66,7 @@ isRelatedToAccount(
         Keylet const accountSignerList = keylet::signers(accountID);
         return sle->key() == accountSignerList.key;
     }
-    else if (sle->getType() == ltNFTOKEN_OFFER)
+    if (sle->getType() == ltNFTOKEN_OFFER)
     {
         // Do not check the sfDestination field. NFToken Offers are NOT added to
         // the Destination account's directory.

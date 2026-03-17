@@ -1350,11 +1350,11 @@ ValidatorList::verify(
         {
             return {ListDisposition::same_sequence, masterPubKey};
         }
-        else if (validUntil <= now)
+        if (validUntil <= now)
         {
             return {ListDisposition::expired, masterPubKey};
         }
-        else if (validFrom > now)
+        if (validFrom > now)
         {
             // Not yet valid. Return pending if one of the following is true
             // * There's no maxSequence, indicating this is the first blob seen

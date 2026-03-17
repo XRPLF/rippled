@@ -184,7 +184,7 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
             {
                 return AMMOffer<TIn, TOut>(*this, *amounts, balances, Quality{*amounts});
             }
-            else if (view.rules().enabled(fixAMMv1_2))
+            if (view.rules().enabled(fixAMMv1_2))
             {
                 if (auto const maxAMMOffer = maxOffer(balances, view.rules());
                     maxAMMOffer && Quality{maxAMMOffer->amount()} > *clobQuality)
