@@ -393,21 +393,21 @@ SQLiteDatabase::oldestAccountTxPage(AccountTxPageOptions const& options)
     if (!useTxTables_)
         return {};
 
-    static std::uint32_t const page_length(200);
+    static std::uint32_t const pageLength(200);
     auto onUnsavedLedger =
         std::bind(saveLedgerAsync, std::ref(registry_.app()), std::placeholders::_1);
     AccountTxs ret;
     auto onTransaction =
         [&ret, &app = registry_.app()](
-            std::uint32_t ledger_index, std::string const& status, Blob&& rawTxn, Blob&& rawMeta) {
-            convertBlobsToTxResult(ret, ledger_index, status, rawTxn, rawMeta, app);
+            std::uint32_t ledgerIndex, std::string const& status, Blob&& rawTxn, Blob&& rawMeta) {
+            convertBlobsToTxResult(ret, ledgerIndex, status, rawTxn, rawMeta, app);
         };
 
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
         auto newmarker =
-            detail::oldestAccountTxPage(*db, onUnsavedLedger, onTransaction, options, page_length)
+            detail::oldestAccountTxPage(*db, onUnsavedLedger, onTransaction, options, pageLength)
                 .first;
         return {ret, newmarker};
     }
@@ -421,21 +421,21 @@ SQLiteDatabase::newestAccountTxPage(AccountTxPageOptions const& options)
     if (!useTxTables_)
         return {};
 
-    static std::uint32_t const page_length(200);
+    static std::uint32_t const pageLength(200);
     auto onUnsavedLedger =
         std::bind(saveLedgerAsync, std::ref(registry_.app()), std::placeholders::_1);
     AccountTxs ret;
     auto onTransaction =
         [&ret, &app = registry_.app()](
-            std::uint32_t ledger_index, std::string const& status, Blob&& rawTxn, Blob&& rawMeta) {
-            convertBlobsToTxResult(ret, ledger_index, status, rawTxn, rawMeta, app);
+            std::uint32_t ledgerIndex, std::string const& status, Blob&& rawTxn, Blob&& rawMeta) {
+            convertBlobsToTxResult(ret, ledgerIndex, status, rawTxn, rawMeta, app);
         };
 
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
         auto newmarker =
-            detail::newestAccountTxPage(*db, onUnsavedLedger, onTransaction, options, page_length)
+            detail::newestAccountTxPage(*db, onUnsavedLedger, onTransaction, options, pageLength)
                 .first;
         return {ret, newmarker};
     }
@@ -449,7 +449,7 @@ SQLiteDatabase::oldestAccountTxPageB(AccountTxPageOptions const& options)
     if (!useTxTables_)
         return {};
 
-    static std::uint32_t const page_length(500);
+    static std::uint32_t const pageLength(500);
     auto onUnsavedLedger =
         std::bind(saveLedgerAsync, std::ref(registry_.app()), std::placeholders::_1);
     MetaTxsList ret;
@@ -463,7 +463,7 @@ SQLiteDatabase::oldestAccountTxPageB(AccountTxPageOptions const& options)
     {
         auto db = checkoutTransaction();
         auto newmarker =
-            detail::oldestAccountTxPage(*db, onUnsavedLedger, onTransaction, options, page_length)
+            detail::oldestAccountTxPage(*db, onUnsavedLedger, onTransaction, options, pageLength)
                 .first;
         return {ret, newmarker};
     }
@@ -477,7 +477,7 @@ SQLiteDatabase::newestAccountTxPageB(AccountTxPageOptions const& options)
     if (!useTxTables_)
         return {};
 
-    static std::uint32_t const page_length(500);
+    static std::uint32_t const pageLength(500);
     auto onUnsavedLedger =
         std::bind(saveLedgerAsync, std::ref(registry_.app()), std::placeholders::_1);
     MetaTxsList ret;
@@ -491,7 +491,7 @@ SQLiteDatabase::newestAccountTxPageB(AccountTxPageOptions const& options)
     {
         auto db = checkoutTransaction();
         auto newmarker =
-            detail::newestAccountTxPage(*db, onUnsavedLedger, onTransaction, options, page_length)
+            detail::newestAccountTxPage(*db, onUnsavedLedger, onTransaction, options, pageLength)
                 .first;
         return {ret, newmarker};
     }

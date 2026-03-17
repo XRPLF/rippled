@@ -15,7 +15,7 @@ public:
         testcase("Constructor");
         using namespace jtx;
         Account const alice{"alice"};
-        auto const USD = alice["USD"];
+        auto const usd = alice["USD"];
         Issue issue;
 
         try
@@ -32,7 +32,7 @@ public:
 
         try
         {
-            issue = USD;
+            issue = usd;
             issue.account = xrpAccount();
             STIssue stissue(sfAsset, Asset{issue});
             fail("Inconsistent IOU Issue doesn't fail");
@@ -70,7 +70,7 @@ public:
 
         try
         {
-            STIssue stissue(sfAsset, Asset{USD});
+            STIssue stissue(sfAsset, Asset{usd});
         }
         catch (...)
         {
@@ -86,7 +86,7 @@ public:
             (void)uint.parseHex(data);
             SerialIter iter(Slice(uint.data(), uint.size()));
             STIssue stissue(iter, sfAsset);
-            BEAST_EXPECT(stissue.value() == USD);
+            BEAST_EXPECT(stissue.value() == usd);
         }
         catch (...)
         {
@@ -114,9 +114,9 @@ public:
         testcase("Compare");
         using namespace jtx;
         Account const alice{"alice"};
-        auto const USD = alice["USD"];
+        auto const usd = alice["USD"];
         Asset const asset1{xrpIssue()};
-        Asset const asset2{USD};
+        Asset const asset2{usd};
         Asset const asset3{MPTID{2}};
 
         BEAST_EXPECT(STIssue(sfAsset, asset1) != asset2);

@@ -746,47 +746,47 @@ parseVault(
 
 static Expected<uint256, Json::Value>
 parseXChainOwnedClaimID(
-    Json::Value const& claim_id_,
+    Json::Value const& claimId,
     Json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
-    if (!claim_id_.isObject())
+    if (!claimId.isObject())
     {
-        return parseObjectID(claim_id_, fieldName);
+        return parseObjectID(claimId, fieldName);
     }
 
-    auto const bridge_spec = LedgerEntryHelpers::parseBridgeFields(claim_id_);
-    if (!bridge_spec)
-        return Unexpected(bridge_spec.error());
+    auto const bridgeSpec = LedgerEntryHelpers::parseBridgeFields(claimId);
+    if (!bridgeSpec)
+        return Unexpected(bridgeSpec.error());
 
     auto const seq = LedgerEntryHelpers::requiredUInt32(
-        claim_id_, jss::xchain_owned_claim_id, "malformedXChainOwnedClaimID");
+        claimId, jss::xchain_owned_claim_id, "malformedXChainOwnedClaimID");
     if (!seq)
     {
         return Unexpected(seq.error());
     }
 
-    Keylet keylet = keylet::xChainClaimID(*bridge_spec, *seq);
+    Keylet keylet = keylet::xChainClaimID(*bridgeSpec, *seq);
     return keylet.key;
 }
 
 static Expected<uint256, Json::Value>
 parseXChainOwnedCreateAccountClaimID(
-    Json::Value const& claim_id_,
+    Json::Value const& claimId,
     Json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
-    if (!claim_id_.isObject())
+    if (!claimId.isObject())
     {
-        return parseObjectID(claim_id_, fieldName);
+        return parseObjectID(claimId, fieldName);
     }
 
-    auto const bridge_spec = LedgerEntryHelpers::parseBridgeFields(claim_id_);
-    if (!bridge_spec)
-        return Unexpected(bridge_spec.error());
+    auto const bridgeSpec = LedgerEntryHelpers::parseBridgeFields(claimId);
+    if (!bridgeSpec)
+        return Unexpected(bridgeSpec.error());
 
     auto const seq = LedgerEntryHelpers::requiredUInt32(
-        claim_id_,
+        claimId,
         jss::xchain_owned_create_account_claim_id,
         "malformedXChainOwnedCreateAccountClaimID");
     if (!seq)
@@ -794,7 +794,7 @@ parseXChainOwnedCreateAccountClaimID(
         return Unexpected(seq.error());
     }
 
-    Keylet keylet = keylet::xChainCreateAccountClaimID(*bridge_spec, *seq);
+    Keylet keylet = keylet::xChainCreateAccountClaimID(*bridgeSpec, *seq);
     return keylet.key;
 }
 

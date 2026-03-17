@@ -11,8 +11,8 @@ namespace xrpl {
 
 ConnectAttempt::ConnectAttempt(
     Application& app,
-    boost::asio::io_context& io_context,
-    endpoint_type const& remote_endpoint,
+    boost::asio::io_context& ioContext,
+    endpoint_type const& remoteEndpoint,
     Resource::Consumer usage,
     shared_context const& context,
     std::uint32_t id,
@@ -24,14 +24,14 @@ ConnectAttempt::ConnectAttempt(
     , id_(id)
     , sink_(journal, OverlayImpl::makePrefix(id))
     , journal_(sink_)
-    , remote_endpoint_(remote_endpoint)
+    , remote_endpoint_(remoteEndpoint)
     , usage_(usage)
-    , strand_(boost::asio::make_strand(io_context))
-    , timer_(io_context)
-    , stepTimer_(io_context)
+    , strand_(boost::asio::make_strand(ioContext))
+    , timer_(ioContext)
+    , stepTimer_(ioContext)
     , stream_ptr_(
           std::make_unique<stream_type>(
-              socket_type(std::forward<boost::asio::io_context&>(io_context)),
+              socket_type(std::forward<boost::asio::io_context&>(ioContext)),
               *context))
     , socket_(stream_ptr_->next_layer().socket())
     , stream_(*stream_ptr_)
@@ -345,7 +345,7 @@ ConnectAttempt::onHandshake(error_code ec)
         return fail("onHandshake", ec);
     }
 
-    auto const local_endpoint = socket_.local_endpoint(ec);
+    auto const localEndpoint = socket_.local_endpoint(ec);
     if (ec)
         return fail("onHandshake", ec);
 
@@ -353,7 +353,7 @@ ConnectAttempt::onHandshake(error_code ec)
 
     // check if we connected to ourselves
     if (!overlay_.peerFinder().onConnected(
-            slot_, beast::IPAddressConversion::from_asio(local_endpoint)))
+            slot_, beast::IPAddressConversion::from_asio(localEndpoint)))
         return fail("Self connection");
 
     auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);

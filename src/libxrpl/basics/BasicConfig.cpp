@@ -43,8 +43,8 @@ Section::append(std::vector<std::string> const& lines)
     lines_.reserve(lines_.size() + lines.size());
     for (auto line : lines)
     {
-        auto remove_comment = [](std::string& val) -> bool {
-            bool removed_trailing = false;
+        auto removeComment = [](std::string& val) -> bool {
+            bool removedTrailing = false;
             auto comment = val.find('#');
             while (comment != std::string::npos)
             {
@@ -66,16 +66,16 @@ Section::append(std::vector<std::string> const& lines)
                     // this must be a real comment. Extract the value
                     // as a substring and stop looking.
                     val = trim_whitespace(val.substr(0, comment));
-                    removed_trailing = true;
+                    removedTrailing = true;
                     break;
                 }
 
                 comment = val.find('#', comment);
             }
-            return removed_trailing;
+            return removedTrailing;
         };
 
-        if (remove_comment(line) && !line.empty())
+        if (removeComment(line) && !line.empty())
             had_trailing_comments_ = true;
 
         if (line.empty())

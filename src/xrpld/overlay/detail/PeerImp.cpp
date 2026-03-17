@@ -58,7 +58,7 @@ PeerImp::PeerImp(
     PublicKey const& publicKey,
     ProtocolVersion protocol,
     Resource::Consumer consumer,
-    std::unique_ptr<stream_type>&& stream_ptr,
+    std::unique_ptr<stream_type>&& streamPtr,
     OverlayImpl& overlay)
     : Child(overlay)
     , app_(app)
@@ -69,7 +69,7 @@ PeerImp::PeerImp(
     , p_sink_(app_.journal("Protocol"), prefix_)
     , journal_(sink_)
     , p_journal_(p_sink_)
-    , stream_ptr_(std::move(stream_ptr))
+    , stream_ptr_(std::move(streamPtr))
     , socket_(stream_ptr_->next_layer().socket())
     , stream_(*stream_ptr_)
     , strand_(boost::asio::make_strand(socket_.get_executor()))
@@ -236,24 +236,24 @@ PeerImp::send(std::shared_ptr<Message> const& m)
     overlay_.reportOutboundTraffic(
         TrafficCount::category::total, static_cast<int>(m->getBuffer(compressionEnabled_).size()));
 
-    auto sendq_size = send_queue_.size();
+    auto sendqSize = send_queue_.size();
 
-    if (sendq_size < Tuning::targetSendQueue)
+    if (sendqSize < Tuning::targetSendQueue)
     {
         // To detect a peer that does not read from their
         // side of the connection, we expect a peer to have
         // a small senq periodically
         large_sendq_ = 0;
     }
-    else if (auto sink = journal_.debug(); sink && (sendq_size % Tuning::sendQueueLogFreq) == 0)
+    else if (auto sink = journal_.debug(); sink && (sendqSize % Tuning::sendQueueLogFreq) == 0)
     {
         std::string const n = name();
-        sink << n << " sendq: " << sendq_size;
+        sink << n << " sendq: " << sendqSize;
     }
 
     send_queue_.push(m);
 
-    if (sendq_size != 0)
+    if (sendqSize != 0)
         return;
 
     writePending_ = true;
@@ -414,19 +414,19 @@ PeerImp::json()
     }
 
     uint256 closedLedgerHash;
-    protocol::TMStatusChange last_status;
+    protocol::TMStatusChange lastStatus;
     {
         std::lock_guard sl(recentLock_);
         closedLedgerHash = closedLedgerHash_;
-        last_status = last_status_;
+        lastStatus = last_status_;
     }
 
     if (closedLedgerHash != beast::zero)
         ret[jss::ledger] = to_string(closedLedgerHash);
 
-    if (last_status.has_newstatus())
+    if (lastStatus.has_newstatus())
     {
-        switch (last_status.newstatus())
+        switch (lastStatus.newstatus())
         {
             case protocol::nsCONNECTING:
                 ret[jss::status] = "connecting";
@@ -449,7 +449,7 @@ PeerImp::json()
                 break;
 
             default:
-                JLOG(p_journal_.warn()) << "Unknown status: " << last_status.newstatus();
+                JLOG(p_journal_.warn()) << "Unknown status: " << lastStatus.newstatus();
         }
     }
 
@@ -787,9 +787,9 @@ PeerImp::doAccept()
     // XXX Set timer: connection idle (idle may vary depending on connection
     // type.)
 
-    auto write_buffer = std::make_shared<boost::beast::multi_buffer>();
+    auto writeBuffer = std::make_shared<boost::beast::multi_buffer>();
 
-    boost::beast::ostream(*write_buffer) << makeResponse(
+    boost::beast::ostream(*writeBuffer) << makeResponse(
         !overlay_.peerFinder().config().peerPrivate,
         request_,
         overlay_.setup().public_ip,
@@ -802,19 +802,19 @@ PeerImp::doAccept()
     // Write the whole buffer and only start protocol when that's done.
     boost::asio::async_write(
         stream_,
-        write_buffer->data(),
+        writeBuffer->data(),
         boost::asio::transfer_all(),
         bind_executor(
             strand_,
-            [this, write_buffer, self = shared_from_this()](
-                error_code ec, std::size_t bytes_transferred) {
+            [this, writeBuffer, self = shared_from_this()](
+                error_code ec, std::size_t bytesTransferred) {
                 if (!socket_.is_open())
                     return;
                 if (ec == boost::asio::error::operation_aborted)
                     return tryAsyncShutdown();
                 if (ec)
                     return fail("onWriteResponse", ec);
-                if (write_buffer->size() == bytes_transferred)
+                if (writeBuffer->size() == bytesTransferred)
                     return doProtocolStart();
                 return fail("Failed to write header");
             }));
@@ -823,7 +823,7 @@ PeerImp::doAccept()
 std::string
 PeerImp::name() const
 {
-    std::shared_lock read_lock{nameMutex_};
+    std::shared_lock readLock{nameMutex_};
     return name_;
 }
 
@@ -880,7 +880,7 @@ PeerImp::doProtocolStart()
 
 // Called repeatedly with protocol message data
 void
-PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
+PeerImp::onReadMessage(error_code ec, std::size_t bytesTransferred)
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(), "xrpl::PeerImp::onReadMessage : strand in this thread");
@@ -910,21 +910,21 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
     if (auto stream = journal_.trace())
     {
         stream << "onReadMessage: "
-               << (bytes_transferred > 0 ? to_string(bytes_transferred) + " bytes" : "");
+               << (bytesTransferred > 0 ? to_string(bytesTransferred) + " bytes" : "");
     }
 
-    metrics_.recv.add_message(bytes_transferred);
+    metrics_.recv.add_message(bytesTransferred);
 
-    read_buffer_.commit(bytes_transferred);
+    read_buffer_.commit(bytesTransferred);
 
     auto hint = Tuning::readBufferBytes;
 
     while (read_buffer_.size() > 0)
     {
-        std::size_t bytes_consumed;
+        std::size_t bytesConsumed;
 
         using namespace std::chrono_literals;
-        std::tie(bytes_consumed, ec) = perf::measureDurationAndLog(
+        std::tie(bytesConsumed, ec) = perf::measureDurationAndLog(
             [&]() { return invokeProtocolMessage(read_buffer_.data(), *this, hint); },
             "invokeProtocolMessage",
             350ms,
@@ -938,10 +938,10 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
         if (ec)
             return fail("onReadMessage", ec);
 
-        if (bytes_consumed == 0)
+        if (bytesConsumed == 0)
             break;
 
-        read_buffer_.consume(bytes_consumed);
+        read_buffer_.consume(bytesConsumed);
     }
 
     // check if a shutdown was initiated while processing messages
@@ -965,7 +965,7 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
 }
 
 void
-PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
+PeerImp::onWriteMessage(error_code ec, std::size_t bytesTransferred)
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(), "xrpl::PeerImp::onWriteMessage : strand in this thread");
@@ -986,10 +986,10 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
     if (auto stream = journal_.trace())
     {
         stream << "onWriteMessage: "
-               << (bytes_transferred > 0 ? to_string(bytes_transferred) + " bytes" : "");
+               << (bytesTransferred > 0 ? to_string(bytesTransferred) + " bytes" : "");
     }
 
-    metrics_.sent.add_message(bytes_transferred);
+    metrics_.sent.add_message(bytesTransferred);
 
     XRPL_ASSERT(!send_queue_.empty(), "xrpl::PeerImp::onWriteMessage : non-empty send buffer");
     send_queue_.pop();
@@ -1033,7 +1033,7 @@ PeerImp::onMessageBegin(
     std::uint16_t type,
     std::shared_ptr<::google::protobuf::Message> const& m,
     std::size_t size,
-    std::size_t uncompressed_size,
+    std::size_t uncompressedSize,
     bool isCompressed)
 {
     auto const name = protocolMessageName(type);
@@ -1064,7 +1064,7 @@ PeerImp::onMessageBegin(
     {
         overlay_.addTxMetrics(static_cast<MessageType>(type), static_cast<std::uint64_t>(size));
     }
-    JLOG(journal_.trace()) << "onMessageBegin: " << type << " " << size << " " << uncompressed_size
+    JLOG(journal_.trace()) << "onMessageBegin: " << type << " " << size << " " << uncompressedSize
                            << " " << isCompressed;
 }
 
@@ -1316,9 +1316,9 @@ PeerImp::handleTransaction(
         // LCOV_EXCL_STOP
 
         HashRouterFlags flags;
-        constexpr std::chrono::seconds tx_interval = 10s;
+        constexpr std::chrono::seconds txInterval = 10s;
 
-        if (!app_.getHashRouter().shouldProcess(txID, id_, flags, tx_interval))
+        if (!app_.getHashRouter().shouldProcess(txID, id_, flags, txInterval))
         {
             // we have seen this transaction recently
             if (any(flags & HashRouterFlags::BAD))

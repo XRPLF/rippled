@@ -106,30 +106,30 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
 
     struct test_sampler
     {
-        beast::io_latency_probe<std::chrono::steady_clock> probe_;
-        std::vector<std::chrono::steady_clock::duration> durations_;
+        beast::io_latency_probe<std::chrono::steady_clock> probe;
+        std::vector<std::chrono::steady_clock::duration> durations;
 
         test_sampler(std::chrono::milliseconds interval, boost::asio::io_context& ios)
-            : probe_(interval, ios)
+            : probe(interval, ios)
         {
         }
 
         void
         start()
         {
-            probe_.sample(std::ref(*this));
+            probe.sample(std::ref(*this));
         }
 
         void
         start_one()
         {
-            probe_.sample_one(std::ref(*this));
+            probe.sample_one(std::ref(*this));
         }
 
         void
         operator()(std::chrono::steady_clock::duration const& elapsed)
         {
-            durations_.push_back(elapsed);
+            durations.push_back(elapsed);
         }
     };
 
@@ -138,14 +138,14 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
     {
         testcase << "sample one";
         boost::system::error_code ec;
-        test_sampler io_probe{100ms, get_io_context()};
-        io_probe.start_one();
+        test_sampler ioProbe{100ms, get_io_context()};
+        ioProbe.start_one();
         MyTimer timer{get_io_context(), 1s};
         timer.async_wait(yield[ec]);
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
-        BEAST_EXPECT(io_probe.durations_.size() == 1);
-        io_probe.probe_.cancel_async();
+        BEAST_EXPECT(ioProbe.durations.size() == 1);
+        ioProbe.probe.cancel_async();
     }
 
     void
@@ -155,10 +155,10 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
         boost::system::error_code ec;
         using namespace std::chrono;
         auto interval = 99ms;
-        auto probe_duration = 1s;
+        auto probeDuration = 1s;
 
-        size_t expected_probe_count_max = (probe_duration / interval);
-        size_t expected_probe_count_min = expected_probe_count_max;
+        size_t expectedProbeCountMax = (probeDuration / interval);
+        size_t expectedProbeCountMin = expectedProbeCountMax;
 #ifdef XRPL_RUNNING_IN_CI
         // adjust min expected based on measurements
         // if running in CI/VM environment
@@ -169,18 +169,17 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
             static_cast<size_t>(duration_cast<milliseconds>(probe_duration).count()) /
             static_cast<size_t>(tt.getMean<milliseconds>());
 #endif
-        test_sampler io_probe{interval, get_io_context()};
-        io_probe.start();
-        MyTimer timer{get_io_context(), probe_duration};
+        test_sampler ioProbe{interval, get_io_context()};
+        ioProbe.start();
+        MyTimer timer{get_io_context(), probeDuration};
         timer.async_wait(yield[ec]);
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
-        auto probes_seen = io_probe.durations_.size();
+        auto probesSeen = ioProbe.durations.size();
         BEAST_EXPECTS(
-            probes_seen >= (expected_probe_count_min - 1) &&
-                probes_seen <= (expected_probe_count_max + 1),
-            std::string("probe count is ") + std::to_string(probes_seen));
-        io_probe.probe_.cancel_async();
+            probesSeen >= (expectedProbeCountMin - 1) && probesSeen <= (expectedProbeCountMax + 1),
+            std::string("probe count is ") + std::to_string(probesSeen));
+        ioProbe.probe.cancel_async();
         // wait again in order to flush the remaining
         // probes from the work queue
         timer.expires_after(1s);
@@ -191,10 +190,10 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
     testCanceled(boost::asio::yield_context& yield)
     {
         testcase << "canceled";
-        test_sampler io_probe{100ms, get_io_context()};
-        io_probe.probe_.cancel_async();
-        except<std::logic_error>([&io_probe]() { io_probe.start_one(); });
-        except<std::logic_error>([&io_probe]() { io_probe.start(); });
+        test_sampler ioProbe{100ms, get_io_context()};
+        ioProbe.probe.cancel_async();
+        except<std::logic_error>([&ioProbe]() { ioProbe.start_one(); });
+        except<std::logic_error>([&ioProbe]() { ioProbe.start(); });
     }
 
 public:

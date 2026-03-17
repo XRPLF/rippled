@@ -45,7 +45,7 @@ public:
 
         auto testFlags = [this, &alice, &alie, &env](
                              std::initializer_list<std::uint32_t> goodFlags) {
-            std::uint32_t const orig_flags = (*env.le(alice))[sfFlags];
+            std::uint32_t const origFlags = (*env.le(alice))[sfFlags];
             for (std::uint32_t flag{1u}; flag < std::numeric_limits<std::uint32_t>::digits; ++flag)
             {
                 if (flag == asfNoFreeze)
@@ -93,19 +93,19 @@ public:
                     env(fclear(alice, flag), sig(alie));
                     env.close();
                     env.require(nflags(alice, flag));
-                    std::uint32_t const now_flags = (*env.le(alice))[sfFlags];
-                    BEAST_EXPECT(now_flags == orig_flags);
+                    std::uint32_t const nowFlags = (*env.le(alice))[sfFlags];
+                    BEAST_EXPECT(nowFlags == origFlags);
                 }
                 else
                 {
                     // Bad flag
-                    BEAST_EXPECT((*env.le(alice))[sfFlags] == orig_flags);
+                    BEAST_EXPECT((*env.le(alice))[sfFlags] == origFlags);
                     env(fset(alice, flag), sig(alice));
                     env.close();
-                    BEAST_EXPECT((*env.le(alice))[sfFlags] == orig_flags);
+                    BEAST_EXPECT((*env.le(alice))[sfFlags] == origFlags);
                     env(fclear(alice, flag), sig(alie));
                     env.close();
-                    BEAST_EXPECT((*env.le(alice))[sfFlags] == orig_flags);
+                    BEAST_EXPECT((*env.le(alice))[sfFlags] == origFlags);
                 }
             }
         };
@@ -129,7 +129,7 @@ public:
         Account const alice("alice");
         env.fund(XRP(10000), noripple(alice));
 
-        std::uint32_t const orig_flags = (*env.le(alice))[sfFlags];
+        std::uint32_t const origFlags = (*env.le(alice))[sfFlags];
 
         // asfAccountTxnID is special and not actually set as a flag,
         // so we check the field presence instead
@@ -138,8 +138,8 @@ public:
         BEAST_EXPECT(env.le(alice)->isFieldPresent(sfAccountTxnID));
         env(fclear(alice, asfAccountTxnID));
         BEAST_EXPECT(!env.le(alice)->isFieldPresent(sfAccountTxnID));
-        std::uint32_t const now_flags = (*env.le(alice))[sfFlags];
-        BEAST_EXPECT(now_flags == orig_flags);
+        std::uint32_t const nowFlags = (*env.le(alice))[sfFlags];
+        BEAST_EXPECT(nowFlags == origFlags);
     }
 
     void
@@ -334,7 +334,7 @@ public:
         Account const alice("alice");
         Account const bob("bob");
         Account const gw("gateway");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         // Test gateway with a variety of allowed transfer rates
         for (double transferRate = 1.0; transferRate <= 2.0; transferRate += 0.03125)
@@ -342,22 +342,22 @@ public:
             Env env(*this);
             env.fund(XRP(10000), gw, alice, bob);
             env.close();
-            env.trust(USD(10), alice, bob);
+            env.trust(usd(10), alice, bob);
             env.close();
             env(rate(gw, transferRate));
             env.close();
 
-            auto const amount = USD(1);
+            auto const amount = usd(1);
             Rate const rate(transferRate * QUALITY_ONE);
             auto const amountWithRate = toAmount<STAmount>(multiply(amount.value(), rate));
 
-            env(pay(gw, alice, USD(10)));
+            env(pay(gw, alice, usd(10)));
             env.close();
-            env(pay(alice, bob, USD(1)), sendmax(USD(10)));
+            env(pay(alice, bob, usd(1)), sendmax(usd(10)));
             env.close();
 
-            env.require(balance(alice, USD(10) - amountWithRate));
-            env.require(balance(bob, USD(1)));
+            env.require(balance(alice, usd(10) - amountWithRate));
+            env.require(balance(bob, usd(1)));
         }
 
         // Since fix1201 was enabled on Nov 14 2017 a rate in excess of
@@ -373,7 +373,7 @@ public:
             Env env(*this);
             env.fund(XRP(10000), gw, alice, bob);
             env.close();
-            env.trust(USD(10), alice, bob);
+            env.trust(usd(10), alice, bob);
             env.close();
 
             // We'd like to use transferRate here, but the transactor
@@ -413,14 +413,14 @@ public:
                 return true;
             });
 
-            auto const amount = USD(1);
+            auto const amount = usd(1);
             auto const amountWithRate =
                 toAmount<STAmount>(multiply(amount.value(), Rate(transferRate * QUALITY_ONE)));
 
-            env(pay(gw, alice, USD(10)));
-            env(pay(alice, bob, amount), sendmax(USD(10)));
+            env(pay(gw, alice, usd(10)));
+            env(pay(alice, bob, amount), sendmax(usd(10)));
 
-            env.require(balance(alice, USD(10) - amountWithRate));
+            env.require(balance(alice, usd(10) - amountWithRate));
             env.require(balance(bob, amount));
         }
     }

@@ -568,14 +568,14 @@ class PermissionedDEX_test : public beast::unit_test::suite
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
                 PermissionedDEX(env);
 
-            auto const EUR = gw["EUR"];
-            env.trust(EUR(1000), alice);
+            auto const eur = gw["EUR"];
+            env.trust(eur(1000), alice);
             env.close();
-            env.trust(EUR(1000), bob);
+            env.trust(eur(1000), bob);
             env.close();
-            env.trust(EUR(1000), carol);
+            env.trust(eur(1000), carol);
             env.close();
-            env(pay(gw, bob, EUR(100)));
+            env(pay(gw, bob, eur(100)));
             env.close();
 
             // create XRP/USD domain offer
@@ -586,8 +586,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
             BEAST_EXPECT(checkOffer(env, bob, usdOfferSeq, XRP(10), USD(10), 0, true));
 
             // payment fail because there isn't eur offer
-            env(pay(alice, carol, EUR(10)),
-                path(~USD, ~EUR),
+            env(pay(alice, carol, eur(10)),
+                path(~USD, ~eur),
                 sendmax(XRP(10)),
                 domain(domainID),
                 ter(tecPATH_PARTIAL));
@@ -596,14 +596,14 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
             // bob creates a regular USD/EUR offer
             auto const regularOfferSeq{env.seq(bob)};
-            env(offer(bob, USD(10), EUR(10)));
+            env(offer(bob, USD(10), eur(10)));
             env.close();
-            BEAST_EXPECT(checkOffer(env, bob, regularOfferSeq, USD(10), EUR(10)));
+            BEAST_EXPECT(checkOffer(env, bob, regularOfferSeq, USD(10), eur(10)));
 
             // alice tries to pay again, but still fails because the regular
             // offer cannot be consumed
-            env(pay(alice, carol, EUR(10)),
-                path(~USD, ~EUR),
+            env(pay(alice, carol, eur(10)),
+                path(~USD, ~eur),
                 sendmax(XRP(10)),
                 domain(domainID),
                 ter(tecPATH_PARTIAL));
@@ -611,27 +611,27 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
             // bob creates a domain USD/EUR offer
             auto const eurOfferSeq{env.seq(bob)};
-            env(offer(bob, USD(10), EUR(10)), domain(domainID));
+            env(offer(bob, USD(10), eur(10)), domain(domainID));
             env.close();
-            BEAST_EXPECT(checkOffer(env, bob, eurOfferSeq, USD(10), EUR(10), 0, true));
+            BEAST_EXPECT(checkOffer(env, bob, eurOfferSeq, USD(10), eur(10), 0, true));
 
             // alice successfully consume two domain offers: xrp/usd and usd/eur
-            env(pay(alice, carol, EUR(5)), sendmax(XRP(5)), domain(domainID), path(~USD, ~EUR));
+            env(pay(alice, carol, eur(5)), sendmax(XRP(5)), domain(domainID), path(~USD, ~eur));
             env.close();
 
             BEAST_EXPECT(checkOffer(env, bob, usdOfferSeq, XRP(5), USD(5), 0, true));
-            BEAST_EXPECT(checkOffer(env, bob, eurOfferSeq, USD(5), EUR(5), 0, true));
+            BEAST_EXPECT(checkOffer(env, bob, eurOfferSeq, USD(5), eur(5), 0, true));
 
             // alice successfully consume two domain offers and deletes them
             // we compute path this time using `paths`
-            env(pay(alice, carol, EUR(5)), sendmax(XRP(5)), domain(domainID), paths(XRP));
+            env(pay(alice, carol, eur(5)), sendmax(XRP(5)), domain(domainID), paths(XRP));
             env.close();
 
             BEAST_EXPECT(!offerExists(env, bob, usdOfferSeq));
             BEAST_EXPECT(!offerExists(env, bob, eurOfferSeq));
 
             // regular offer is not consumed
-            BEAST_EXPECT(checkOffer(env, bob, regularOfferSeq, USD(10), EUR(10)));
+            BEAST_EXPECT(checkOffer(env, bob, regularOfferSeq, USD(10), eur(10)));
         }
 
         // domain payment cannot consume offer from another domain
@@ -802,11 +802,11 @@ class PermissionedDEX_test : public beast::unit_test::suite
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
             PermissionedDEX(env);
 
-        auto const EURA = alice["EUR"];
-        auto const EURB = bob["EUR"];
+        auto const eura = alice["EUR"];
+        auto const eurb = bob["EUR"];
 
-        env.trust(EURA(100), bob);
-        env.trust(EURB(100), carol);
+        env.trust(eura(100), bob);
+        env.trust(eurb(100), carol);
         env.close();
 
         // remove bob from domain
@@ -815,18 +815,18 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
         // alice can still ripple through bob even though he's not part
         // of the domain, this is intentional
-        env(pay(alice, carol, EURB(10)), paths(EURA), domain(domainID));
+        env(pay(alice, carol, eurb(10)), paths(eura), domain(domainID));
         env.close();
-        env.require(balance(bob, EURA(10)), balance(carol, EURB(10)));
+        env.require(balance(bob, eura(10)), balance(carol, eurb(10)));
 
         // carol sets no ripple on bob
         env(trust(carol, bob["EUR"](0), bob, tfSetNoRipple));
         env.close();
 
         // payment no longer works because carol has no ripple on bob
-        env(pay(alice, carol, EURB(5)), paths(EURA), domain(domainID), ter(tecPATH_DRY));
+        env(pay(alice, carol, eurb(5)), paths(eura), domain(domainID), ter(tecPATH_DRY));
         env.close();
-        env.require(balance(bob, EURA(10)), balance(carol, EURB(10)));
+        env.require(balance(bob, eura(10)), balance(carol, eurb(10)));
     }
 
     void
@@ -1210,14 +1210,14 @@ class PermissionedDEX_test : public beast::unit_test::suite
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
                 PermissionedDEX(env);
 
-            auto const EUR = gw["EUR"];
-            env.trust(EUR(1000), alice);
+            auto const eur = gw["EUR"];
+            env.trust(eur(1000), alice);
             env.close();
-            env.trust(EUR(1000), bob);
+            env.trust(eur(1000), bob);
             env.close();
-            env.trust(EUR(1000), carol);
+            env.trust(eur(1000), carol);
             env.close();
-            env(pay(gw, bob, EUR(100)));
+            env(pay(gw, bob, eur(100)));
             env.close();
 
             auto const usdOfferSeq{env.seq(bob)};
@@ -1227,8 +1227,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
             BEAST_EXPECT(checkOffer(env, bob, usdOfferSeq, XRP(10), USD(10), 0, true));
 
             // payment fail because there isn't eur offer
-            env(pay(alice, carol, EUR(5)),
-                path(~USD, ~EUR),
+            env(pay(alice, carol, eur(5)),
+                path(~USD, ~eur),
                 sendmax(XRP(5)),
                 domain(domainID),
                 ter(tecPATH_PARTIAL));
@@ -1237,16 +1237,16 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
             // bob creates a hybrid eur offer
             auto const eurOfferSeq{env.seq(bob)};
-            env(offer(bob, USD(10), EUR(10)), domain(domainID), txflags(tfHybrid));
+            env(offer(bob, USD(10), eur(10)), domain(domainID), txflags(tfHybrid));
             env.close();
-            BEAST_EXPECT(checkOffer(env, bob, eurOfferSeq, USD(10), EUR(10), lsfHybrid, true));
+            BEAST_EXPECT(checkOffer(env, bob, eurOfferSeq, USD(10), eur(10), lsfHybrid, true));
 
             // alice successfully consume two domain offers: xrp/usd and usd/eur
-            env(pay(alice, carol, EUR(5)), path(~USD, ~EUR), sendmax(XRP(5)), domain(domainID));
+            env(pay(alice, carol, eur(5)), path(~USD, ~eur), sendmax(XRP(5)), domain(domainID));
             env.close();
 
             BEAST_EXPECT(checkOffer(env, bob, usdOfferSeq, XRP(5), USD(5), 0, true));
-            BEAST_EXPECT(checkOffer(env, bob, eurOfferSeq, USD(5), EUR(5), lsfHybrid, true));
+            BEAST_EXPECT(checkOffer(env, bob, eurOfferSeq, USD(5), eur(5), lsfHybrid, true));
         }
 
         // test regular payment using a regular offer and a hybrid offer
@@ -1255,14 +1255,14 @@ class PermissionedDEX_test : public beast::unit_test::suite
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
                 PermissionedDEX(env);
 
-            auto const EUR = gw["EUR"];
-            env.trust(EUR(1000), alice);
+            auto const eur = gw["EUR"];
+            env.trust(eur(1000), alice);
             env.close();
-            env.trust(EUR(1000), bob);
+            env.trust(eur(1000), bob);
             env.close();
-            env.trust(EUR(1000), carol);
+            env.trust(eur(1000), carol);
             env.close();
-            env(pay(gw, bob, EUR(100)));
+            env(pay(gw, bob, eur(100)));
             env.close();
 
             // bob creates a regular usd offer
@@ -1274,16 +1274,16 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
             // bob creates a hybrid eur offer
             auto const eurOfferSeq{env.seq(bob)};
-            env(offer(bob, USD(10), EUR(10)), domain(domainID), txflags(tfHybrid));
+            env(offer(bob, USD(10), eur(10)), domain(domainID), txflags(tfHybrid));
             env.close();
-            BEAST_EXPECT(checkOffer(env, bob, eurOfferSeq, USD(10), EUR(10), lsfHybrid, true));
+            BEAST_EXPECT(checkOffer(env, bob, eurOfferSeq, USD(10), eur(10), lsfHybrid, true));
 
             // alice successfully consume two offers: xrp/usd and usd/eur
-            env(pay(alice, carol, EUR(5)), path(~USD, ~EUR), sendmax(XRP(5)));
+            env(pay(alice, carol, eur(5)), path(~USD, ~eur), sendmax(XRP(5)));
             env.close();
 
             BEAST_EXPECT(checkOffer(env, bob, usdOfferSeq, XRP(5), USD(5), 0, false));
-            BEAST_EXPECT(checkOffer(env, bob, eurOfferSeq, USD(5), EUR(5), lsfHybrid, true));
+            BEAST_EXPECT(checkOffer(env, bob, eurOfferSeq, USD(5), eur(5), lsfHybrid, true));
         }
     }
 
@@ -1344,27 +1344,27 @@ class PermissionedDEX_test : public beast::unit_test::suite
         Env env(*this, features);
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
             PermissionedDEX(env);
-        auto const EUR = gw["EUR"];
+        auto const eur = gw["EUR"];
 
         for (auto const& account : {alice, bob, carol})
         {
-            env(trust(account, EUR(10000)));
+            env(trust(account, eur(10000)));
             env.close();
         }
 
-        env(pay(gw, carol, EUR(1)));
+        env(pay(gw, carol, eur(1)));
         env.close();
 
         auto const aliceOfferSeq{env.seq(alice)};
         auto const bobOfferSeq{env.seq(bob)};
         env(offer(alice, XRP(100), USD(1)), domain(domainID));
-        env(offer(bob, EUR(1), XRP(100)), domain(domainID));
+        env(offer(bob, eur(1), XRP(100)), domain(domainID));
         env.close();
 
         // carol's offer should cross bob and alice's offers due to auto
         // bridging
         auto const carolOfferSeq{env.seq(carol)};
-        env(offer(carol, USD(1), EUR(1)), domain(domainID));
+        env(offer(carol, USD(1), eur(1)), domain(domainID));
         env.close();
 
         BEAST_EXPECT(!offerExists(env, bob, aliceOfferSeq));

@@ -303,9 +303,11 @@ public:
         return fingerprint_;
     }
 
+    // NOLINTBEGIN(readability-identifier-naming)
     std::string fingerprint_;
     bool ledgerReplayEnabled_;
     PublicKey nodePublicKey_;
+    // NOLINTEND(readability-identifier-naming)
 };
 
 enum class PeerSetBehavior {
@@ -417,24 +419,24 @@ public:
         LedgerReplayMsgHandler& other,
         PeerSetBehavior bhvr,
         PeerFeature peerFeature)
-        : local(me)
-        , remote(other)
-        , behavior(bhvr)
-        , enableLedgerReplay(peerFeature == PeerFeature::LedgerReplayEnabled)
+        : local_(me)
+        , remote_(other)
+        , behavior_(bhvr)
+        , enableLedgerReplay_(peerFeature == PeerFeature::LedgerReplayEnabled)
     {
     }
 
     std::unique_ptr<PeerSet>
     build() override
     {
-        return std::make_unique<TestPeerSet>(local, remote, behavior, enableLedgerReplay);
+        return std::make_unique<TestPeerSet>(local_, remote_, behavior_, enableLedgerReplay_);
     }
 
 private:
-    LedgerReplayMsgHandler& local;
-    LedgerReplayMsgHandler& remote;
-    PeerSetBehavior behavior;
-    bool enableLedgerReplay;
+    LedgerReplayMsgHandler& local_;
+    LedgerReplayMsgHandler& remote_;
+    PeerSetBehavior behavior_;
+    bool enableLedgerReplay_;
 };
 
 /**
@@ -1049,19 +1051,19 @@ struct LedgerReplayer_test : public beast::unit_test::suite
         testcase("handshake test");
         auto handshake = [&](bool client, bool server, bool expecting) -> bool {
             auto request = xrpl::makeRequest(true, false, client, false, false);
-            http_request_type http_request;
-            http_request.version(request.version());
-            http_request.base() = request.base();
-            bool serverResult = peerFeatureEnabled(http_request, FEATURE_LEDGER_REPLAY, server);
+            http_request_type httpRequest;
+            httpRequest.version(request.version());
+            httpRequest.base() = request.base();
+            bool serverResult = peerFeatureEnabled(httpRequest, FEATURE_LEDGER_REPLAY, server);
             if (serverResult != expecting)
                 return false;
 
             beast::IP::Address addr = boost::asio::ip::make_address("172.1.1.100");
             jtx::Env serverEnv(*this);
             serverEnv.app().config().LEDGER_REPLAY = server;
-            auto http_resp = xrpl::makeResponse(
-                true, http_request, addr, addr, uint256{1}, 1, {1, 0}, serverEnv.app());
-            auto const clientResult = peerFeatureEnabled(http_resp, FEATURE_LEDGER_REPLAY, client);
+            auto httpResp = xrpl::makeResponse(
+                true, httpRequest, addr, addr, uint256{1}, 1, {1, 0}, serverEnv.app());
+            auto const clientResult = peerFeatureEnabled(httpResp, FEATURE_LEDGER_REPLAY, client);
             if (clientResult != expecting)
                 return false;
 
@@ -1319,29 +1321,28 @@ struct LedgerReplayer_test : public beast::unit_test::suite
         {
             l = net.server.ledgerMaster.getLedgerByHash(l->header().parentHash);
         }
-        auto finalHash_early = l->header().hash;
-        net.client.replayer.replay(InboundLedger::Reason::GENERIC, finalHash_early, totalReplay);
+        auto finalHashEarly = l->header().hash;
+        net.client.replayer.replay(InboundLedger::Reason::GENERIC, finalHashEarly, totalReplay);
         BEAST_EXPECT(net.client.waitAndCheckStatus(
-            finalHash_early,
+            finalHashEarly,
             totalReplay,
             TaskStatus::Completed,
             TaskStatus::Completed,
             deltaStatuses));  // deltaStatuses no change
-        BEAST_EXPECT(net.client.waitForLedgers(finalHash_early, totalReplay));
+        BEAST_EXPECT(net.client.waitForLedgers(finalHashEarly, totalReplay));
         BEAST_EXPECT(net.client.countsAsExpected(3, 2, 2 * (totalReplay - 1)));
 
         // partial overlap
         l = net.server.ledgerMaster.getLedgerByHash(l->header().parentHash);
-        auto finalHash_moreEarly = l->header().parentHash;
-        net.client.replayer.replay(
-            InboundLedger::Reason::GENERIC, finalHash_moreEarly, totalReplay);
+        auto finalHashMoreEarly = l->header().parentHash;
+        net.client.replayer.replay(InboundLedger::Reason::GENERIC, finalHashMoreEarly, totalReplay);
         BEAST_EXPECT(net.client.waitAndCheckStatus(
-            finalHash_moreEarly,
+            finalHashMoreEarly,
             totalReplay,
             TaskStatus::Completed,
             TaskStatus::Completed,
             deltaStatuses));  // deltaStatuses no change
-        BEAST_EXPECT(net.client.waitForLedgers(finalHash_moreEarly, totalReplay));
+        BEAST_EXPECT(net.client.waitForLedgers(finalHashMoreEarly, totalReplay));
         BEAST_EXPECT(net.client.countsAsExpected(4, 3, 2 * (totalReplay - 1) + 2));
 
         // cover

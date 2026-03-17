@@ -116,7 +116,8 @@ ecdsaCanonicality(Slice const& sig)
         boost::multiprecision::unchecked,
         void>>;
 
-    static uint264 const G("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
+    static uint264 const G(
+        "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");  // NOLINT(readability-identifier-naming)
 
     // The format of a signature should be:
     // <30> <len> [ <02> <lenR> <R> ] [ <02> <lenS> <S> ]
@@ -130,17 +131,17 @@ ecdsaCanonicality(Slice const& sig)
     if (!r || !s || !p.empty())
         return std::nullopt;
 
-    uint264 R(sliceToHex(*r));
+    uint264 R(sliceToHex(*r));  // NOLINT(readability-identifier-naming)
     if (R >= G)
         return std::nullopt;
 
-    uint264 S(sliceToHex(*s));
+    uint264 S(sliceToHex(*s));  // NOLINT(readability-identifier-naming)
     if (S >= G)
         return std::nullopt;
 
     // (R,S) and (R,G-S) are canonical,
     // but is fully canonical when S <= G-S
-    auto const Sp = G - S;
+    auto const Sp = G - S;  // NOLINT(readability-identifier-naming)
     if (S > Sp)
         return ECDSACanonicality::canonical;
     return ECDSACanonicality::fullyCanonical;
@@ -152,6 +153,7 @@ ed25519Canonical(Slice const& sig)
     if (sig.size() != 64)
         return false;
     // Big-endian Order, the Ed25519 subgroup order
+    // NOLINTNEXTLINE(readability-identifier-naming)
     std::uint8_t const Order[] = {
         0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0xDE, 0xF9, 0xDE, 0xA2, 0xF7,
@@ -160,7 +162,7 @@ ed25519Canonical(Slice const& sig)
     // Take the second half of signature
     // and byte-reverse it to big-endian.
     auto const le = sig.data() + 32;
-    std::uint8_t S[32];
+    std::uint8_t S[32];  // NOLINT(readability-identifier-naming)
     std::reverse_copy(le, le + 32, S);
     // Must be less than Order
     return std::lexicographical_compare(S, S + 32, Order, Order + 32);
@@ -228,37 +230,37 @@ verifyDigest(
     if (mustBeFullyCanonical && (*canonicality != ECDSACanonicality::fullyCanonical))
         return false;
 
-    secp256k1_pubkey pubkey_imp;
+    secp256k1_pubkey pubkeyImp;
     if (secp256k1_ec_pubkey_parse(
             secp256k1Context(),
-            &pubkey_imp,
+            &pubkeyImp,
             reinterpret_cast<unsigned char const*>(publicKey.data()),
             publicKey.size()) != 1)
         return false;
 
-    secp256k1_ecdsa_signature sig_imp;
+    secp256k1_ecdsa_signature sigImp;
     if (secp256k1_ecdsa_signature_parse_der(
             secp256k1Context(),
-            &sig_imp,
+            &sigImp,
             reinterpret_cast<unsigned char const*>(sig.data()),
             sig.size()) != 1)
         return false;
     if (*canonicality != ECDSACanonicality::fullyCanonical)
     {
-        secp256k1_ecdsa_signature sig_norm;
-        if (secp256k1_ecdsa_signature_normalize(secp256k1Context(), &sig_norm, &sig_imp) != 1)
+        secp256k1_ecdsa_signature sigNorm;
+        if (secp256k1_ecdsa_signature_normalize(secp256k1Context(), &sigNorm, &sigImp) != 1)
             return false;
         return secp256k1_ecdsa_verify(
                    secp256k1Context(),
-                   &sig_norm,
+                   &sigNorm,
                    reinterpret_cast<unsigned char const*>(digest.data()),
-                   &pubkey_imp) == 1;
+                   &pubkeyImp) == 1;
     }
     return secp256k1_ecdsa_verify(
                secp256k1Context(),
-               &sig_imp,
+               &sigImp,
                reinterpret_cast<unsigned char const*>(digest.data()),
-               &pubkey_imp) == 1;
+               &pubkeyImp) == 1;
 }
 
 bool

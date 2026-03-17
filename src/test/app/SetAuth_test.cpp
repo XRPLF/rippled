@@ -29,7 +29,7 @@ struct SetAuth_test : public beast::unit_test::suite
     {
         using namespace jtx;
         auto const gw = Account("gw");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         Env env(*this);
 
@@ -37,13 +37,13 @@ struct SetAuth_test : public beast::unit_test::suite
         env(fset(gw, asfRequireAuth));
         env.close();
         env(auth(gw, "alice", "USD"));
-        BEAST_EXPECT(env.le(keylet::line(Account("alice").id(), gw.id(), USD.currency)));
-        env(trust("alice", USD(1000)));
-        env(trust("bob", USD(1000)));
-        env(pay(gw, "alice", USD(100)));
-        env(pay(gw, "bob", USD(100)),
+        BEAST_EXPECT(env.le(keylet::line(Account("alice").id(), gw.id(), usd.currency)));
+        env(trust("alice", usd(1000)));
+        env(trust("bob", usd(1000)));
+        env(pay(gw, "alice", usd(100)));
+        env(pay(gw, "bob", usd(100)),
             ter(tecPATH_DRY));  // Should be terNO_AUTH
-        env(pay("alice", "bob", USD(50)),
+        env(pay("alice", "bob", usd(50)),
             ter(tecPATH_DRY));  // Should be terNO_AUTH
     }
 

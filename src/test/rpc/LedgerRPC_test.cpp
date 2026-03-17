@@ -91,12 +91,12 @@ class LedgerRPC_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this};
         Account const gw{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         Account const bob{"bob"};
 
         env.fund(XRP(10000), gw, bob);
         env.close();
-        env.trust(USD(1000), bob);
+        env.trust(usd(1000), bob);
         env.close();
 
         {

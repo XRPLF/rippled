@@ -6,8 +6,8 @@ namespace xrpl {
 namespace PeerFinder {
 
 SlotImp::SlotImp(
-    beast::IP::Endpoint const& local_endpoint,
-    beast::IP::Endpoint const& remote_endpoint,
+    beast::IP::Endpoint const& localEndpoint,
+    beast::IP::Endpoint const& remoteEndpoint,
     bool fixed,
     clock_type& clock)
     : recent(clock)
@@ -15,8 +15,8 @@ SlotImp::SlotImp(
     , fixed_(fixed)
     , reserved_(false)
     , state_(accept)
-    , remote_endpoint_(remote_endpoint)
-    , local_endpoint_(local_endpoint)
+    , remote_endpoint_(remoteEndpoint)
+    , local_endpoint_(localEndpoint)
     , listening_port_(unknownPort)
     , checked(false)
     , canAccept(false)
@@ -24,13 +24,13 @@ SlotImp::SlotImp(
 {
 }
 
-SlotImp::SlotImp(beast::IP::Endpoint const& remote_endpoint, bool fixed, clock_type& clock)
+SlotImp::SlotImp(beast::IP::Endpoint const& remoteEndpoint, bool fixed, clock_type& clock)
     : recent(clock)
     , inbound_(false)
     , fixed_(fixed)
     , reserved_(false)
     , state_(connect)
-    , remote_endpoint_(remote_endpoint)
+    , remote_endpoint_(remoteEndpoint)
     , listening_port_(unknownPort)
     , checked(true)
     , canAccept(true)

@@ -23,10 +23,10 @@ struct Regression_test : public beast::unit_test::suite
         using namespace jtx;
         Env env(*this);
         auto const gw = Account("gw");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(10000), "alice", gw);
-        env(offer("alice", USD(10), XRP(10)), require(owners("alice", 1)));
-        env(offer("alice", USD(20), XRP(10)),
+        env(offer("alice", usd(10), XRP(10)), require(owners("alice", 1)));
+        env(offer("alice", usd(20), XRP(10)),
             json(R"raw(
                 { "OfferSequence" : 4 }
             )raw"),
@@ -239,20 +239,20 @@ struct Regression_test : public beast::unit_test::suite
         env.close();
 
         {
-            auto const alice_index = keylet::account(alice).key;
-            if (BEAST_EXPECT(alice_index.isNonZero()))
+            auto const aliceIndex = keylet::account(alice).key;
+            if (BEAST_EXPECT(aliceIndex.isNonZero()))
             {
-                env(check::cash(alice, alice_index, check::DeliverMin(XRP(100))), ter(tecNO_ENTRY));
+                env(check::cash(alice, aliceIndex, check::DeliverMin(XRP(100))), ter(tecNO_ENTRY));
             }
         }
 
         {
-            auto const bob_index = keylet::account(bob).key;
+            auto const bobIndex = keylet::account(bob).key;
 
             auto const digest = [&]() -> std::optional<uint256> {
                 auto const& state = env.app().getLedgerMaster().getClosedLedger()->stateMap();
                 SHAMapHash digest;
-                if (!state.peekItem(bob_index, digest))
+                if (!state.peekItem(bobIndex, digest))
                     return std::nullopt;
                 return digest.as_uint256();
             }();
@@ -267,13 +267,13 @@ struct Regression_test : public beast::unit_test::suite
                 return result;
             };
 
-            if (BEAST_EXPECT(bob_index.isNonZero()) && BEAST_EXPECT(digest.has_value()))
+            if (BEAST_EXPECT(bobIndex.isNonZero()) && BEAST_EXPECT(digest.has_value()))
             {
                 auto& cache = env.app().cachedSLEs();
                 cache.del(*digest, false);  // NOLINT(bugprone-unchecked-optional-access)
                 auto const beforeCounts = mapCounts(CountedObjects::getInstance().getCounts(0));
 
-                env(check::cash(alice, bob_index, check::DeliverMin(XRP(100))), ter(tecNO_ENTRY));
+                env(check::cash(alice, bobIndex, check::DeliverMin(XRP(100))), ter(tecNO_ENTRY));
 
                 auto const afterCounts = mapCounts(CountedObjects::getInstance().getCounts(0));
 

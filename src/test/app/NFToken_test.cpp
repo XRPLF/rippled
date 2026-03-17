@@ -2168,9 +2168,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         // See the impact of rounding when the nft is sold for small amounts
         // of drops.
-        for (auto NumberSwitchOver : {true})
+        for (auto numberSwitchOver : {true})
         {
-            if (NumberSwitchOver)
+            if (numberSwitchOver)
                 env.enableFeature(fixUniversalNumber);
             else
                 env.disableFeature(fixUniversalNumber);
@@ -2196,7 +2196,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // minter sells to carol.  The payment is just small enough that
             // alice does not get any transfer fee.
-            auto pmt = NumberSwitchOver ? drops(50000) : drops(99999);
+            auto pmt = numberSwitchOver ? drops(50000) : drops(99999);
             STAmount carolBalance = env.balance(carol);
             uint256 const minterSellOfferIndex = keylet::nftoffer(minter, env.seq(minter)).key;
             env(token::createOffer(minter, nftID, pmt), txflags(tfSellNFToken));
@@ -2213,7 +2213,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             // transfer that enables a transfer fee of 1 basis point.
             STAmount beckyBalance = env.balance(becky);
             uint256 const beckyBuyOfferIndex = keylet::nftoffer(becky, env.seq(becky)).key;
-            pmt = NumberSwitchOver ? drops(50001) : drops(100000);
+            pmt = numberSwitchOver ? drops(50001) : drops(100000);
             env(token::createOffer(becky, nftID, pmt), token::owner(carol));
             env.close();
             env(token::acceptBuyOffer(carol, beckyBuyOfferIndex));
@@ -2421,7 +2421,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             std::string uri;
             std::uint32_t taxon;
 
-            Entry(std::string uri_, std::uint32_t taxon_) : uri(std::move(uri_)), taxon(taxon_)
+            Entry(std::string uri, std::uint32_t taxon) : uri(std::move(uri)), taxon(taxon)
             {
             }
         };
@@ -7079,7 +7079,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
     }
 
 protected:
-    FeatureBitset const allFeatures{test::jtx::testable_amendments()};
+    FeatureBitset const allFeatures_{test::jtx::testable_amendments()};
 
     void
     testWithFeats(FeatureBitset features)
@@ -7126,7 +7126,7 @@ public:
     run() override
     {
         testWithFeats(
-            allFeatures - fixNFTokenReserve - featureNFTokenMintOffer - featureDynamicNFT -
+            allFeatures_ - fixNFTokenReserve - featureNFTokenMintOffer - featureDynamicNFT -
             fixExpiredNFTokenOfferRemoval);
     }
 };
@@ -7137,7 +7137,7 @@ class NFTokenDisallowIncoming_test : public NFTokenBaseUtil_test
     run() override
     {
         testWithFeats(
-            allFeatures - fixNFTokenReserve - featureNFTokenMintOffer - featureDynamicNFT);
+            allFeatures_ - fixNFTokenReserve - featureNFTokenMintOffer - featureDynamicNFT);
     }
 };
 
@@ -7146,7 +7146,7 @@ class NFTokenWOMintOffer_test : public NFTokenBaseUtil_test
     void
     run() override
     {
-        testWithFeats(allFeatures - featureNFTokenMintOffer - featureDynamicNFT);
+        testWithFeats(allFeatures_ - featureNFTokenMintOffer - featureDynamicNFT);
     }
 };
 
@@ -7155,7 +7155,7 @@ class NFTokenWOModify_test : public NFTokenBaseUtil_test
     void
     run() override
     {
-        testWithFeats(allFeatures - featureDynamicNFT);
+        testWithFeats(allFeatures_ - featureDynamicNFT);
     }
 };
 
@@ -7164,7 +7164,7 @@ class NFTokenWOExpiredOfferRemoval_test : public NFTokenBaseUtil_test
     void
     run() override
     {
-        testWithFeats(allFeatures - fixExpiredNFTokenOfferRemoval);
+        testWithFeats(allFeatures_ - fixExpiredNFTokenOfferRemoval);
     }
 };
 
@@ -7173,7 +7173,7 @@ class NFTokenAllFeatures_test : public NFTokenBaseUtil_test
     void
     run() override
     {
-        testWithFeats(allFeatures);
+        testWithFeats(allFeatures_);
     }
 };
 

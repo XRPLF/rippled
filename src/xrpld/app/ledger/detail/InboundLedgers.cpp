@@ -217,14 +217,14 @@ public:
         format
     */
     void
-    gotStaleData(std::shared_ptr<protocol::TMLedgerData> packet_ptr) override
+    gotStaleData(std::shared_ptr<protocol::TMLedgerData> packetPtr) override
     {
         Serializer s;
         try
         {
-            for (int i = 0; i < packet_ptr->nodes().size(); ++i)
+            for (int i = 0; i < packetPtr->nodes().size(); ++i)
             {
-                auto const& node = packet_ptr->nodes(i);
+                auto const& node = packetPtr->nodes(i);
 
                 if (!node.has_nodeid() || !node.has_nodedata())
                     return;

@@ -20,7 +20,7 @@ public:
         Peer(Peer const&) = default;
         Peer(Peer&&) = default;
 
-        explicit Peer(int id_) : id(id_)
+        explicit Peer(int id) : id(id)
         {
         }
 

@@ -1324,65 +1324,65 @@ r.ripple.com:51235
         s.append("bool_ish = 1");
 
         {
-            auto val_1 = "value 1"s;
-            BEAST_EXPECT(set(val_1, "a_string", s));
-            BEAST_EXPECT(val_1 == "mystring");
+            auto val1 = "value 1"s;
+            BEAST_EXPECT(set(val1, "a_string", s));
+            BEAST_EXPECT(val1 == "mystring");
 
-            auto val_2 = "value 2"s;
-            BEAST_EXPECT(!set(val_2, "not_a_key", s));
-            BEAST_EXPECT(val_2 == "value 2");
-            BEAST_EXPECT(!set(val_2, "default"s, "not_a_key", s));
-            BEAST_EXPECT(val_2 == "default");
+            auto val2 = "value 2"s;
+            BEAST_EXPECT(!set(val2, "not_a_key", s));
+            BEAST_EXPECT(val2 == "value 2");
+            BEAST_EXPECT(!set(val2, "default"s, "not_a_key", s));
+            BEAST_EXPECT(val2 == "default");
 
-            auto val_3 = get<std::string>(s, "a_string");
-            BEAST_EXPECT(val_3 == "mystring");
-            auto val_4 = get<std::string>(s, "not_a_key");
-            BEAST_EXPECT(val_4 == "");
-            auto val_5 = get<std::string>(s, "not_a_key", "default");
-            BEAST_EXPECT(val_5 == "default");
+            auto val3 = get<std::string>(s, "a_string");
+            BEAST_EXPECT(val3 == "mystring");
+            auto val4 = get<std::string>(s, "not_a_key");
+            BEAST_EXPECT(val4 == "");
+            auto val5 = get<std::string>(s, "not_a_key", "default");
+            BEAST_EXPECT(val5 == "default");
 
-            auto val_6 = "value 6"s;
-            BEAST_EXPECT(get_if_exists(s, "a_string", val_6));
-            BEAST_EXPECT(val_6 == "mystring");
+            auto val6 = "value 6"s;
+            BEAST_EXPECT(get_if_exists(s, "a_string", val6));
+            BEAST_EXPECT(val6 == "mystring");
 
-            auto val_7 = "value 7"s;
-            BEAST_EXPECT(!get_if_exists(s, "not_a_key", val_7));
-            BEAST_EXPECT(val_7 == "value 7");
+            auto val7 = "value 7"s;
+            BEAST_EXPECT(!get_if_exists(s, "not_a_key", val7));
+            BEAST_EXPECT(val7 == "value 7");
         }
 
         {
-            int val_1 = 1;
-            BEAST_EXPECT(set(val_1, "positive_int", s));
-            BEAST_EXPECT(val_1 == 2);
+            int val1 = 1;
+            BEAST_EXPECT(set(val1, "positive_int", s));
+            BEAST_EXPECT(val1 == 2);
 
-            int val_2 = 2;
-            BEAST_EXPECT(set(val_2, "negative_int", s));
-            BEAST_EXPECT(val_2 == -3);
+            int val2 = 2;
+            BEAST_EXPECT(set(val2, "negative_int", s));
+            BEAST_EXPECT(val2 == -3);
 
-            int val_3 = 3;
-            BEAST_EXPECT(!set(val_3, "a_string", s));
-            BEAST_EXPECT(val_3 == 3);
+            int val3 = 3;
+            BEAST_EXPECT(!set(val3, "a_string", s));
+            BEAST_EXPECT(val3 == 3);
 
-            auto val_4 = get<int>(s, "positive_int");
-            BEAST_EXPECT(val_4 == 2);
-            auto val_5 = get<int>(s, "not_a_key");
-            BEAST_EXPECT(val_5 == 0);
-            auto val_6 = get<int>(s, "not_a_key", 5);
-            BEAST_EXPECT(val_6 == 5);
-            auto val_7 = get<int>(s, "a_string", 6);
-            BEAST_EXPECT(val_7 == 6);
+            auto val4 = get<int>(s, "positive_int");
+            BEAST_EXPECT(val4 == 2);
+            auto val5 = get<int>(s, "not_a_key");
+            BEAST_EXPECT(val5 == 0);
+            auto val6 = get<int>(s, "not_a_key", 5);
+            BEAST_EXPECT(val6 == 5);
+            auto val7 = get<int>(s, "a_string", 6);
+            BEAST_EXPECT(val7 == 6);
 
-            int val_8 = 8;
-            BEAST_EXPECT(get_if_exists(s, "positive_int", val_8));
-            BEAST_EXPECT(val_8 == 2);
+            int val8 = 8;
+            BEAST_EXPECT(get_if_exists(s, "positive_int", val8));
+            BEAST_EXPECT(val8 == 2);
 
-            auto val_9 = 9;
-            BEAST_EXPECT(!get_if_exists(s, "not_a_key", val_9));
-            BEAST_EXPECT(val_9 == 9);
+            auto val9 = 9;
+            BEAST_EXPECT(!get_if_exists(s, "not_a_key", val9));
+            BEAST_EXPECT(val9 == 9);
 
-            auto val_10 = 10;
-            BEAST_EXPECT(!get_if_exists(s, "a_string", val_10));
-            BEAST_EXPECT(val_10 == 10);
+            auto val10 = 10;
+            BEAST_EXPECT(!get_if_exists(s, "a_string", val10));
+            BEAST_EXPECT(val10 == 10);
 
             BEAST_EXPECT(s.get<int>("not_a_key") == std::nullopt);
             try
@@ -1397,13 +1397,13 @@ r.ripple.com:51235
         }
 
         {
-            bool flag_1 = false;
-            BEAST_EXPECT(get_if_exists(s, "bool_ish", flag_1));
-            BEAST_EXPECT(flag_1 == true);
+            bool flag1 = false;
+            BEAST_EXPECT(get_if_exists(s, "bool_ish", flag1));
+            BEAST_EXPECT(flag1 == true);
 
-            bool flag_2 = false;
-            BEAST_EXPECT(!get_if_exists(s, "not_a_key", flag_2));
-            BEAST_EXPECT(flag_2 == false);
+            bool flag2 = false;
+            BEAST_EXPECT(!get_if_exists(s, "not_a_key", flag2));
+            BEAST_EXPECT(flag2 == false);
         }
     }
 

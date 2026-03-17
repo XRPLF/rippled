@@ -232,7 +232,7 @@ forwardedFor(http_request_type const& request)
     // Look for the Forwarded field in the request.
     if (auto it = request.find(boost::beast::http::field::forwarded); it != request.end())
     {
-        auto ascii_tolower = [](char c) -> char {
+        auto asciiTolower = [](char c) -> char {
             return ((static_cast<unsigned>(c) - 65U) < 26) ? c + 'a' - 'A' : c;
         };
 
@@ -243,7 +243,7 @@ forwardedFor(http_request_type const& request)
             it->value().end(),
             forStr.begin(),
             forStr.end(),
-            [&ascii_tolower](char c1, char c2) { return ascii_tolower(c1) == ascii_tolower(c2); });
+            [&asciiTolower](char c1, char c2) { return asciiTolower(c1) == asciiTolower(c2); });
 
         if (found == it->value().end())
             return {};

@@ -573,10 +573,10 @@ public:
         }
 
         {
-            Env env_nonadmin{*this, single_thread_io(no_admin(envconfig()))};
+            Env envNonadmin{*this, single_thread_io(no_admin(envconfig()))};
             Json::Value jv;
             jv[jss::url] = "no-url";
-            auto jr = env_nonadmin.rpc("json", method, to_string(jv))[jss::result];
+            auto jr = envNonadmin.rpc("json", method, to_string(jv))[jss::result];
             BEAST_EXPECT(jr[jss::error] == "noPermission");
             BEAST_EXPECT(jr[jss::error_message] == "You don't have permission for this command.");
         }
@@ -807,7 +807,7 @@ public:
                             int numReplies,
                             std::chrono::milliseconds timeout =
                                 std::chrono::milliseconds{5000}) -> std::pair<bool, bool> {
-            bool first_flag = false;
+            bool firstFlag = false;
 
             for (int i = 0; i < numReplies; ++i)
             {
@@ -819,20 +819,20 @@ public:
                     if (r.isMember(jss::account_history_tx_index))
                         idx = r[jss::account_history_tx_index].asInt();
                     if (r.isMember(jss::account_history_tx_first))
-                        first_flag = true;
+                        firstFlag = true;
                     bool boundary = r.isMember(jss::account_history_boundary);
-                    int ledger_idx = r[jss::ledger_index].asInt();
+                    int ledgerIdx = r[jss::ledger_index].asInt();
                     if (r.isMember(jss::transaction) && r[jss::transaction].isMember(jss::hash))
                     {
                         auto t{r[jss::transaction]};
-                        v.emplace_back(idx, t[jss::hash].asString(), boundary, ledger_idx);
+                        v.emplace_back(idx, t[jss::hash].asString(), boundary, ledgerIdx);
                         continue;
                     }
                 }
-                return {false, first_flag};
+                return {false, firstFlag};
             }
 
-            return {true, first_flag};
+            return {true, firstFlag};
         };
 
         /*
@@ -932,11 +932,11 @@ public:
         // (-10, "E5B8B...", true, 4
 
         auto checkBoundary = [](IdxHashVec const& vec, bool /* forward */) {
-            size_t nutx_ = vec.size();
-            for (size_t i = 0; i < nutx_; ++i)
+            size_t nutx = vec.size();
+            for (size_t i = 0; i < nutx; ++i)
             {
                 auto [idx, hash, boundary, ledger] = vec[i];
-                if ((i + 1 == nutx_ || ledger != std::get<3>(vec[i + 1])) != boundary)
+                if ((i + 1 == nutx || ledger != std::get<3>(vec[i + 1])) != boundary)
                     return false;
             }
             return true;
@@ -1141,16 +1141,16 @@ public:
              * mix USD and XRP payments
              */
             Env env(*this, single_thread_io(envconfig()));
-            auto const USD_a = alice["USD"];
+            auto const usdA = alice["USD"];
 
             std::array<Account, 2> accounts = {alice, carol};
             env.fund(XRP(333333), accounts);
-            env.trust(USD_a(20000), carol);
+            env.trust(usdA(20000), carol);
             BEAST_EXPECT(env.syncClose());
 
             auto mixedPayments = [&]() -> int {
                 sendPayments(env, alice, carol, 1, 0);
-                env(pay(alice, carol, USD_a(100)));
+                env(pay(alice, carol, usdA(100)));
                 BEAST_EXPECT(env.syncClose());
                 return 2;
             };
@@ -1240,7 +1240,7 @@ public:
         auto const carol = permDex.carol;
         auto const domainID = permDex.domainID;
         auto const gw = permDex.gw;
-        auto const USD = permDex.USD;
+        auto const usd = permDex.USD;
 
         auto wsc = makeWSClient(env.app().config());
 
@@ -1251,10 +1251,10 @@ public:
         auto jv = wsc->invoke("subscribe", streams);
         if (!BEAST_EXPECT(jv[jss::status] == "success"))
             return;
-        env(offer(alice, XRP(10), USD(10)), domain(domainID), txflags(tfHybrid));
+        env(offer(alice, XRP(10), usd(10)), domain(domainID), txflags(tfHybrid));
         BEAST_EXPECT(env.syncClose());
 
-        env(pay(bob, carol, USD(5)), path(~USD), sendmax(XRP(5)), domain(domainID));
+        env(pay(bob, carol, usd(5)), path(~usd), sendmax(XRP(5)), domain(domainID));
         BEAST_EXPECT(env.syncClose());
 
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {

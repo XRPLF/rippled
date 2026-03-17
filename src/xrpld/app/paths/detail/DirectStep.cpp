@@ -36,11 +36,11 @@ protected:
         DebtDirection srcDebtDir;
 
         Cache(
-            IOUAmount const& in_,
-            IOUAmount const& srcToDst_,
-            IOUAmount const& out_,
-            DebtDirection srcDebtDir_)
-            : in(in_), srcToDst(srcToDst_), out(out_), srcDebtDir(srcDebtDir_)
+            IOUAmount const& in,
+            IOUAmount const& srcToDst,
+            IOUAmount const& out,
+            DebtDirection srcDebtDir)
+            : in(in), srcToDst(srcToDst), out(out), srcDebtDir(srcDebtDir)
         {
         }
     };

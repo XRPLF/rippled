@@ -323,14 +323,14 @@ STTx::getJson(JsonOptions options) const
 Json::Value
 STTx::getJson(JsonOptions options, bool binary) const
 {
-    bool const V1 = !(options & JsonOptions::disable_API_prior_V2);
+    bool const v1 = !(options & JsonOptions::disable_API_prior_V2);
 
     if (binary)
     {
         Serializer s = STObject::getSerializer();
         std::string const dataBin = strHex(s.peekData());
 
-        if (V1)
+        if (v1)
         {
             Json::Value ret(Json::objectValue);
             ret[jss::tx] = dataBin;
@@ -342,7 +342,7 @@ STTx::getJson(JsonOptions options, bool binary) const
     }
 
     Json::Value ret = STObject::getJson(JsonOptions::none);
-    if (V1)
+    if (v1)
         ret[jss::hash] = to_string(getTransactionID());
 
     return ret;

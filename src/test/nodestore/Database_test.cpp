@@ -515,10 +515,10 @@ public:
     {
         DummyScheduler scheduler;
 
-        beast::temp_dir node_db;
+        beast::temp_dir nodeDb;
         Section srcParams;
         srcParams.set("type", srcBackendType);
-        srcParams.set("path", node_db.path());
+        srcParams.set("path", nodeDb.path());
 
         // Create a batch
         auto batch = createPredictableBatch(numObjectsToTest, seedValue);
@@ -538,10 +538,10 @@ public:
                 Manager::instance().make_Database(megabytes(4), scheduler, 2, srcParams, journal_);
 
             // Set up the destination database
-            beast::temp_dir dest_db;
+            beast::temp_dir destDb;
             Section destParams;
             destParams.set("type", destBackendType);
-            destParams.set("path", dest_db.path());
+            destParams.set("path", destDb.path());
 
             std::unique_ptr<Database> dest =
                 Manager::instance().make_Database(megabytes(4), scheduler, 2, destParams, journal_);
@@ -576,10 +576,10 @@ public:
 
         testcase(s);
 
-        beast::temp_dir node_db;
+        beast::temp_dir nodeDb;
         Section nodeParams;
         nodeParams.set("type", type);
-        nodeParams.set("path", node_db.path());
+        nodeParams.set("path", nodeDb.path());
 
         beast::xor_shift_engine rng(seedValue);
 

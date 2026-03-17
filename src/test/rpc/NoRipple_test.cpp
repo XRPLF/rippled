@@ -23,28 +23,28 @@ public:
 
         env.fund(XRP(10000), gw, alice);
 
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
-        Json::Value account_gw;
-        account_gw[jss::account] = gw.human();
-        Json::Value account_alice;
-        account_alice[jss::account] = alice.human();
+        Json::Value accountGw;
+        accountGw[jss::account] = gw.human();
+        Json::Value accountAlice;
+        accountAlice[jss::account] = alice.human();
 
-        for (auto SetOrClear : {true, false})
+        for (auto setOrClear : {true, false})
         {
             // Create a trust line with no-ripple flag setting
-            env(trust(gw, USD(100), alice, SetOrClear ? tfSetNoRipple : tfClearNoRipple));
+            env(trust(gw, usd(100), alice, setOrClear ? tfSetNoRipple : tfClearNoRipple));
             env.close();
 
             // Check no-ripple flag on sender 'gateway'
-            Json::Value lines{env.rpc("json", "account_lines", to_string(account_gw))};
+            Json::Value lines{env.rpc("json", "account_lines", to_string(accountGw))};
             auto const& gwLine0 = lines[jss::result][jss::lines][0u];
-            BEAST_EXPECT(gwLine0[jss::no_ripple].asBool() == SetOrClear);
+            BEAST_EXPECT(gwLine0[jss::no_ripple].asBool() == setOrClear);
 
             // Check no-ripple peer flag on destination 'alice'
-            lines = env.rpc("json", "account_lines", to_string(account_alice));
+            lines = env.rpc("json", "account_lines", to_string(accountAlice));
             auto const& aline0 = lines[jss::result][jss::lines][0u];
-            BEAST_EXPECT(aline0[jss::no_ripple_peer].asBool() == SetOrClear);
+            BEAST_EXPECT(aline0[jss::no_ripple_peer].asBool() == setOrClear);
         }
     }
 
@@ -84,11 +84,11 @@ public:
         params[jss::source_account] = alice.human();
         params[jss::destination_account] = carol.human();
         params[jss::destination_amount] = [] {
-            Json::Value dest_amt;
-            dest_amt[jss::currency] = "USD";
-            dest_amt[jss::value] = "1";
-            dest_amt[jss::issuer] = Account("carol").human();
-            return dest_amt;
+            Json::Value destAmt;
+            destAmt[jss::currency] = "USD";
+            destAmt[jss::value] = "1";
+            destAmt[jss::issuer] = Account("carol").human();
+            return destAmt;
         }();
 
         auto const resp = env.rpc("json", "ripple_path_find", to_string(params));
@@ -154,11 +154,11 @@ public:
         params[jss::source_account] = alice.human();
         params[jss::destination_account] = carol.human();
         params[jss::destination_amount] = [] {
-            Json::Value dest_amt;
-            dest_amt[jss::currency] = "USD";
-            dest_amt[jss::value] = "1";
-            dest_amt[jss::issuer] = Account("carol").human();
-            return dest_amt;
+            Json::Value destAmt;
+            destAmt[jss::currency] = "USD";
+            destAmt[jss::value] = "1";
+            destAmt[jss::issuer] = Account("carol").human();
+            return destAmt;
         }();
 
         Json::Value const resp{env.rpc("json", "ripple_path_find", to_string(params))};
@@ -186,10 +186,10 @@ public:
 
         env(fset(bob, asfDefaultRipple));
 
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
-        env(trust(gw, USD(100), alice, 0));
-        env(trust(gw, USD(100), bob, 0));
+        env(trust(gw, usd(100), alice, 0));
+        env(trust(gw, usd(100), bob, 0));
         Json::Value params;
         params[jss::api_version] = apiVersion;
 

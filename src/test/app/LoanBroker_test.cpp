@@ -10,7 +10,7 @@ class LoanBroker_test : public beast::unit_test::suite
 {
     // Ensure that all the features needed for Lending Protocol are included,
     // even if they are set to unsupported.
-    FeatureBitset const all{
+    FeatureBitset const all_{
         jtx::testable_amendments() | featureMPTokensV1 | featureSingleAssetVault |
         featureLendingProtocol};
 
@@ -57,10 +57,10 @@ class LoanBroker_test : public beast::unit_test::suite
             // 4. LoanBrokerDelete
             env(del(alice, brokerKeylet.key), ter(temDISABLED));
         };
-        failAll(all - featureMPTokensV1);
-        failAll(all - featureSingleAssetVault - featureLendingProtocol);
-        failAll(all - featureSingleAssetVault);
-        failAll(all - featureLendingProtocol, true);
+        failAll(all_ - featureMPTokensV1);
+        failAll(all_ - featureSingleAssetVault - featureLendingProtocol);
+        failAll(all_ - featureSingleAssetVault);
+        failAll(all_ - featureLendingProtocol, true);
     }
 
     struct VaultInfo
@@ -68,8 +68,8 @@ class LoanBroker_test : public beast::unit_test::suite
         jtx::PrettyAsset asset;
         uint256 vaultID;
         jtx::Account pseudoAccount;
-        VaultInfo(jtx::PrettyAsset const& asset_, uint256 const& vaultID_, AccountID const& pseudo)
-            : asset(asset_), vaultID(vaultID_), pseudoAccount("vault", pseudo)
+        VaultInfo(jtx::PrettyAsset const& asset, uint256 const& vaultId, AccountID const& pseudo)
+            : asset(asset), vaultID(vaultId), pseudoAccount("vault", pseudo)
         {
         }
     };
@@ -479,7 +479,7 @@ class LoanBroker_test : public beast::unit_test::suite
 
         // Create 3 loan brokers: one for XRP, one for an IOU, and one for an
         // MPT. That'll require three corresponding SAVs.
-        Env env(*this, all);
+        Env env(*this, all_);
 
         Account issuer{"issuer"};
         // For simplicity, alice will be the sole actor for the vault & brokers.
@@ -1043,18 +1043,18 @@ class LoanBroker_test : public beast::unit_test::suite
         {
             Account const alice{"alice"};
             Account const issuer{"issuer"};
-            auto const USD = alice["USD"];
+            auto const usd = alice["USD"];
             Env env(*this);
             env.fund(XRP(100'000), alice);
             env.close();
 
-            auto jtx = env.jt(coverClawback(alice), amount(USD(100)));
+            auto jtx = env.jt(coverClawback(alice), amount(usd(100)));
 
             // holder == account
             env(jtx, ter(temINVALID));
 
             // holder == beast::zero
-            STAmount bad(Issue{USD.currency, beast::zero}, 100);
+            STAmount bad(Issue{usd.currency, beast::zero}, 100);
             jtx.jv[sfAmount] = bad.getJson();
             jtx.stx = env.ust(jtx);
             Serializer s;
@@ -1491,10 +1491,10 @@ class LoanBroker_test : public beast::unit_test::suite
 
         Account const issuer{"issuer"}, lender{"lender"}, borrower{"borrower"};
         env.fund(XRP(20'000), issuer, lender, borrower);
-        auto const IOU = issuer["IOU"];
+        auto const iou = issuer["IOU"];
 
         Vault vault{env};
-        auto [tx, vaultKeylet] = vault.create({.owner = lender, .asset = IOU.asset()});
+        auto [tx, vaultKeylet] = vault.create({.owner = lender, .asset = iou.asset()});
         env(tx);
         env.close();
 
@@ -1648,16 +1648,16 @@ class LoanBroker_test : public beast::unit_test::suite
             NoMPT,
         };
 
-        auto test = [&](MPTState MPTState) {
+        auto test = [&](MPTState mptState) {
             Env env(*this);
 
-            testcase << "RIPD-4274 MPT with state: " << static_cast<int>(MPTState);
+            testcase << "RIPD-4274 MPT with state: " << static_cast<int>(mptState);
 
             env.fund(XRP(1'000), issuer, broker, dest);
             env.close();
 
             auto const maybeToken = [&]() -> std::optional<MPT> {
-                switch (MPTState)
+                switch (mptState)
                 {
                     case RequireAuth: {
                         auto tester = MPTTester(
@@ -1716,7 +1716,7 @@ class LoanBroker_test : public beast::unit_test::suite
                 ter(std::ignore));
 
             // Shouldn't fail if at MaximumAmount since no new tokens are issued
-            TER const err = MPTState == ReachedMAX ? TER(tesSUCCESS) : tecNO_AUTH;
+            TER const err = mptState == ReachedMAX ? TER(tesSUCCESS) : tecNO_AUTH;
             BEAST_EXPECT(env.ter() == err);
             env.close();
 

@@ -24,28 +24,28 @@ public:
         using namespace jtx;
         Env env{*this, envconfig(no_admin)};
         Account const gw("G1");
-        auto const USD_gw = gw["USD"];
+        auto const usdGw = gw["USD"];
         Account const bob("bob");
-        auto const USD_bob = bob["USD"];
+        auto const usdBob = bob["USD"];
 
         env.fund(XRP(10000), gw, bob);
-        env.trust(USD_gw(1000), bob);
+        env.trust(usdGw(1000), bob);
 
         // this is to provide some USD from gw in the
         // bob account so that it can rightly
         // make offers that give those USDs
-        env(pay(gw, bob, USD_gw(10)));
-        unsigned const offer_count = 12u;
-        for (auto i = 0u; i < offer_count; i++)
+        env(pay(gw, bob, usdGw(10)));
+        unsigned const offerCount = 12u;
+        for (auto i = 0u; i < offerCount; i++)
         {
-            Json::Value jvo = offer(bob, XRP(100 + i), USD_gw(1));
+            Json::Value jvo = offer(bob, XRP(100 + i), usdGw(1));
             jvo[sfExpiration.fieldName] = 10000000u;
             env(jvo);
         }
 
         // make non-limited RPC call
-        auto const jro_nl = env.rpc("account_offers", bob.human())[jss::result][jss::offers];
-        BEAST_EXPECT(checkArraySize(jro_nl, offer_count));
+        auto const jroNl = env.rpc("account_offers", bob.human())[jss::result][jss::offers];
+        BEAST_EXPECT(checkArraySize(jroNl, offerCount));
 
         // now make a low-limit query, should get "corrected"
         // to a min of 10 results with a marker set since there
@@ -53,12 +53,11 @@ public:
         Json::Value jvParams;
         jvParams[jss::account] = bob.human();
         jvParams[jss::limit] = 1u;
-        auto const jrr_l =
-            env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
-        auto const& jro_l = jrr_l[jss::offers];
-        BEAST_EXPECT(checkMarker(jrr_l));
+        auto const jrrL = env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
+        auto const& jroL = jrrL[jss::offers];
+        BEAST_EXPECT(checkMarker(jrrL));
         // 9u is the expected size, since one account object is a trustline
-        BEAST_EXPECT(checkArraySize(jro_l, 9u));
+        BEAST_EXPECT(checkArraySize(jroL, 9u));
     }
 
     void
@@ -69,21 +68,21 @@ public:
         using namespace jtx;
         Env env{*this, asAdmin ? envconfig() : envconfig(no_admin)};
         Account const gw("G1");
-        auto const USD_gw = gw["USD"];
+        auto const usdGw = gw["USD"];
         Account const bob("bob");
-        auto const USD_bob = bob["USD"];
+        auto const usdBob = bob["USD"];
 
         env.fund(XRP(10000), gw, bob);
-        env.trust(USD_gw(1000), bob);
+        env.trust(usdGw(1000), bob);
 
         // this is to provide some USD from gw in the
         // bob account so that it can rightly
         // make offers that give those USDs
-        env(pay(gw, bob, USD_gw(10)));
+        env(pay(gw, bob, usdGw(10)));
 
-        env(offer(bob, XRP(100), USD_bob(1)));
-        env(offer(bob, XRP(200), USD_gw(2)));
-        env(offer(bob, XRP(30), USD_gw(6)));
+        env(offer(bob, XRP(100), usdBob(1)));
+        env(offer(bob, XRP(200), usdGw(2)));
+        env(offer(bob, XRP(30), usdGw(6)));
 
         // make the RPC call
         auto const jroOuter = env.rpc("account_offers", bob.human())[jss::result][jss::offers];
@@ -117,42 +116,42 @@ public:
             Json::Value jvParams;
             jvParams[jss::account] = bob.human();
             jvParams[jss::limit] = 1u;
-            auto const jrr_l_1 =
+            auto const jrrL1 =
                 env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
-            auto const& jro_l_1 = jrr_l_1[jss::offers];
+            auto const& jroL1 = jrrL1[jss::offers];
             // there is a difference in the validation of the limit param
             // between admin and non-admin requests. with admin requests, the
             // limit parameter is NOT subject to sane defaults, but with a
             // non-admin there are pre-configured limit ranges applied. That's
             // why we have different BEAST_EXPECT()s here for the two scenarios
-            BEAST_EXPECT(checkArraySize(jro_l_1, asAdmin ? 1u : 3u));
-            BEAST_EXPECT(asAdmin ? checkMarker(jrr_l_1) : (!jrr_l_1.isMember(jss::marker)));
+            BEAST_EXPECT(checkArraySize(jroL1, asAdmin ? 1u : 3u));
+            BEAST_EXPECT(asAdmin ? checkMarker(jrrL1) : (!jrrL1.isMember(jss::marker)));
             if (asAdmin)
             {
-                BEAST_EXPECT(jroOuter[0u] == jro_l_1[0u]);
+                BEAST_EXPECT(jroOuter[0u] == jroL1[0u]);
 
                 // second item...with previous marker passed
-                jvParams[jss::marker] = jrr_l_1[jss::marker];
-                auto const jrr_l_2 =
+                jvParams[jss::marker] = jrrL1[jss::marker];
+                auto const jrrL2 =
                     env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
-                auto const& jro_l_2 = jrr_l_2[jss::offers];
-                BEAST_EXPECT(checkMarker(jrr_l_2));
-                BEAST_EXPECT(checkArraySize(jro_l_2, 1u));
-                BEAST_EXPECT(jroOuter[1u] == jro_l_2[0u]);
+                auto const& jroL2 = jrrL2[jss::offers];
+                BEAST_EXPECT(checkMarker(jrrL2));
+                BEAST_EXPECT(checkArraySize(jroL2, 1u));
+                BEAST_EXPECT(jroOuter[1u] == jroL2[0u]);
 
                 // last item...with previous marker passed
-                jvParams[jss::marker] = jrr_l_2[jss::marker];
+                jvParams[jss::marker] = jrrL2[jss::marker];
                 jvParams[jss::limit] = 10u;
-                auto const jrr_l_3 =
+                auto const jrrL3 =
                     env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
-                auto const& jro_l_3 = jrr_l_3[jss::offers];
-                BEAST_EXPECT(!jrr_l_3.isMember(jss::marker));
-                BEAST_EXPECT(checkArraySize(jro_l_3, 1u));
-                BEAST_EXPECT(jroOuter[2u] == jro_l_3[0u]);
+                auto const& jroL3 = jrrL3[jss::offers];
+                BEAST_EXPECT(!jrrL3.isMember(jss::marker));
+                BEAST_EXPECT(checkArraySize(jroL3, 1u));
+                BEAST_EXPECT(jroOuter[2u] == jroL3[0u]);
             }
             else
             {
-                BEAST_EXPECT(jroOuter == jro_l_1);
+                BEAST_EXPECT(jroOuter == jroL1);
             }
         }
 
@@ -174,12 +173,12 @@ public:
         using namespace jtx;
         Env env(*this);
         Account const gw("G1");
-        auto const USD_gw = gw["USD"];
+        auto const usdGw = gw["USD"];
         Account const bob("bob");
-        auto const USD_bob = bob["USD"];
+        auto const usdBob = bob["USD"];
 
         env.fund(XRP(10000), gw, bob);
-        env.trust(USD_gw(1000), bob);
+        env.trust(usdGw(1000), bob);
 
         {
             // no account field

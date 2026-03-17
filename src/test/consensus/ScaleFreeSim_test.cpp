@@ -19,14 +19,14 @@ class ScaleFreeSim_test : public beast::unit_test::suite
         // Generate a quasi-random scale free network and simulate consensus
         // as we vary transaction submission rates
 
-        int const N = 100;  // Peers
+        int const n = 100;  // Peers
 
         int const numUNLs = 15;  //  UNL lists
-        int const minUNLSize = N / 4, maxUNLSize = N / 2;
+        int const minUNLSize = n / 4, maxUNLSize = n / 2;
 
         ConsensusParms const parms{};
         Sim sim;
-        PeerGroup network = sim.createGroup(N);
+        PeerGroup network = sim.createGroup(n);
 
         // generate trust ranks
         std::vector<double> const ranks =

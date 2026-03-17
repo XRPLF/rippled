@@ -77,9 +77,9 @@ doTransactionEntry(RPC::JsonContext& context)
 
             RPC::insertDeliverMax(jvResult[jss::tx_json], sttx->getTxnType(), context.apiVersion);
 
-            auto const json_meta = (context.apiVersion > 1 ? jss::meta : jss::metadata);
+            auto const jsonMeta = (context.apiVersion > 1 ? jss::meta : jss::metadata);
             if (stobj)
-                jvResult[json_meta] = stobj->getJson(JsonOptions::none);
+                jvResult[jsonMeta] = stobj->getJson(JsonOptions::none);
             // 'accounts'
             // 'engine_...'
             // 'ledger_...'

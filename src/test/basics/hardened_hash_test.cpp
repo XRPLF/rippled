@@ -14,10 +14,10 @@ template <class T>
 class test_user_type_member
 {
 private:
-    T t;
+    T t_;
 
 public:
-    explicit test_user_type_member(T const& t_ = T()) : t(t_)
+    explicit test_user_type_member(T const& t = T()) : t_(t)
     {
     }
 
@@ -26,7 +26,7 @@ public:
     hash_append(Hasher& h, test_user_type_member const& a) noexcept
     {
         using beast::hash_append;
-        hash_append(h, a.t);
+        hash_append(h, a.t_);
     }
 };
 
@@ -34,10 +34,10 @@ template <class T>
 class test_user_type_free
 {
 private:
-    T t;
+    T t_;
 
 public:
-    explicit test_user_type_free(T const& t_ = T()) : t(t_)
+    explicit test_user_type_free(T const& t = T()) : t_(t)
     {
     }
 
@@ -46,7 +46,7 @@ public:
     hash_append(Hasher& h, test_user_type_free const& a) noexcept
     {
         using beast::hash_append;
-        hash_append(h, a.t);
+        hash_append(h, a.t_);
     }
 };
 

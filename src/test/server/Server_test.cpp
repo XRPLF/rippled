@@ -102,7 +102,7 @@ public:
             Session& session,
             std::unique_ptr<stream_type>&& bundle,
             http_request_type&& request,
-            boost::asio::ip::tcp::endpoint remote_address)
+            boost::asio::ip::tcp::endpoint remoteAddress)
         {
             return Handoff{};
         }
@@ -111,7 +111,7 @@ public:
         onHandoff(
             Session& session,
             http_request_type&& request,
-            boost::asio::ip::tcp::endpoint remote_address)
+            boost::asio::ip::tcp::endpoint remoteAddress)
         {
             return Handoff{};
         }
@@ -310,7 +310,7 @@ public:
                 Session& session,
                 std::unique_ptr<stream_type>&& bundle,
                 http_request_type&& request,
-                boost::asio::ip::tcp::endpoint remote_address)
+                boost::asio::ip::tcp::endpoint remoteAddress)
             {
                 return Handoff{};
             }
@@ -319,7 +319,7 @@ public:
             onHandoff(
                 Session& session,
                 http_request_type&& request,
-                boost::asio::ip::tcp::endpoint remote_address)
+                boost::asio::ip::tcp::endpoint remoteAddress)
             {
                 return Handoff{};
             }

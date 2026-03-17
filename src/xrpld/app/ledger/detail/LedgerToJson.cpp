@@ -104,9 +104,9 @@ fillJsonTx(
         if (fill.context->apiVersion > 1)
             txJson[jss::hash] = to_string(txn->getTransactionID());
 
-        auto const json_meta = (fill.context->apiVersion > 1 ? jss::meta_blob : jss::meta);
+        auto const jsonMeta = (fill.context->apiVersion > 1 ? jss::meta_blob : jss::meta);
         if (stMeta)
-            txJson[json_meta] = serializeHex(*stMeta);
+            txJson[jsonMeta] = serializeHex(*stMeta);
     }
     else if (fill.context->apiVersion > 1)
     {

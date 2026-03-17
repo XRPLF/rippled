@@ -105,40 +105,40 @@ public:
 
     struct ResetStatesGuard
     {
-        bool resetCallback_{false};
+        bool resetCallback{false};
 
-        ResetStatesGuard(bool resetCallback) : resetCallback_{resetCallback}
+        ResetStatesGuard(bool resetCallback) : resetCallback{resetCallback}
         {
-            TIBase::resetStates(resetCallback_);
+            TIBase::resetStates(resetCallback);
         }
         ~ResetStatesGuard()
         {
-            TIBase::resetStates(resetCallback_);
+            TIBase::resetStates(resetCallback);
         }
     };
 
-    TIBase() : id_{checkoutID()}
+    TIBase() : id{checkoutID()}
     {
         assert(state.size() > id_);
-        state[id_].store(TrackedState::alive, std::memory_order_relaxed);
+        state[id].store(TrackedState::alive, std::memory_order_relaxed);
     }
     ~TIBase()
     {
         using enum TrackedState;
 
         assert(state.size() > id_);
-        tracingCallback_(state[id_].load(std::memory_order_relaxed), deletedStarted);
+        tracingCallback_(state[id].load(std::memory_order_relaxed), deletedStarted);
 
         assert(state.size() > id_);
         // Use relaxed memory order to try to avoid atomic operations from
         // adding additional memory synchronizations that may hide threading
         // errors in the underlying shared pointer class.
-        state[id_].store(deletedStarted, std::memory_order_relaxed);
+        state[id].store(deletedStarted, std::memory_order_relaxed);
 
         tracingCallback_(deletedStarted, deleted);
 
         assert(state.size() > id_);
-        state[id_].store(TrackedState::deleted, std::memory_order_relaxed);
+        state[id].store(TrackedState::deleted, std::memory_order_relaxed);
 
         tracingCallback_(TrackedState::deleted, std::nullopt);
     }
@@ -149,22 +149,22 @@ public:
         using enum TrackedState;
 
         assert(state.size() > id_);
-        tracingCallback_(state[id_].load(std::memory_order_relaxed), partiallyDeletedStarted);
+        tracingCallback_(state[id].load(std::memory_order_relaxed), partiallyDeletedStarted);
 
         assert(state.size() > id_);
-        state[id_].store(partiallyDeletedStarted, std::memory_order_relaxed);
+        state[id].store(partiallyDeletedStarted, std::memory_order_relaxed);
 
         tracingCallback_(partiallyDeletedStarted, partiallyDeleted);
 
         assert(state.size() > id_);
-        state[id_].store(partiallyDeleted, std::memory_order_relaxed);
+        state[id].store(partiallyDeleted, std::memory_order_relaxed);
 
         tracingCallback_(partiallyDeleted, std::nullopt);
     }
 
     static std::function<void(TrackedState, std::optional<TrackedState>)> tracingCallback_;
 
-    int id_;
+    int id;
 
 private:
     static int
@@ -214,7 +214,7 @@ public:
 
             using enum TrackedState;
             auto b = make_SharedIntrusive<TIBase>();
-            auto id = b->id_;
+            auto id = b->id;
             BEAST_EXPECT(TIBase::getState(id) == alive);
             BEAST_EXPECT(b->use_count() == 1);
             for (int i = 0; i < 10; ++i)
@@ -229,7 +229,7 @@ public:
             BEAST_EXPECT(TIBase::getState(id) == deleted);
 
             b = make_SharedIntrusive<TIBase>();
-            id = b->id_;
+            id = b->id;
             BEAST_EXPECT(TIBase::getState(id) == alive);
             BEAST_EXPECT(b->use_count() == 1);
             for (int i = 0; i < 10; ++i)
@@ -255,7 +255,7 @@ public:
 
             using enum TrackedState;
             auto b = make_SharedIntrusive<TIBase>();
-            auto id = b->id_;
+            auto id = b->id;
             BEAST_EXPECT(TIBase::getState(id) == alive);
             WeakIntrusive<TIBase> w{b};
             BEAST_EXPECT(TIBase::getState(id) == alive);
@@ -281,7 +281,7 @@ public:
             using swu = SharedWeakUnion<TIBase>;
             swu b = make_SharedIntrusive<TIBase>();
             BEAST_EXPECT(b.isStrong() && b.use_count() == 1);
-            auto id = b.get()->id_;
+            auto id = b.get()->id;
             BEAST_EXPECT(TIBase::getState(id) == alive);
             swu w = b;
             BEAST_EXPECT(TIBase::getState(id) == alive);
@@ -314,8 +314,8 @@ public:
             auto strong1 = make_SharedIntrusive<TIBase>();
             auto strong2 = make_SharedIntrusive<TIBase>();
 
-            auto id1 = strong1->id_;
-            auto id2 = strong2->id_;
+            auto id1 = strong1->id;
+            auto id2 = strong2->id;
 
             BEAST_EXPECT(id1 != id2);
 

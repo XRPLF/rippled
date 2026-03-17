@@ -23,7 +23,7 @@ class Hooks_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        std::vector<std::reference_wrapper<SField const>> fields_to_test = {
+        std::vector<std::reference_wrapper<SField const>> fieldsToTest = {
             sfHookResult,
             sfHookStateChangeCount,
             sfHookEmitCount,
@@ -61,7 +61,7 @@ class Hooks_test : public beast::unit_test::suite
             sfHooks,
             sfHookGrants};
 
-        for (auto const& rf : fields_to_test)
+        for (auto const& rf : fieldsToTest)
         {
             SField const& f = rf.get();
 

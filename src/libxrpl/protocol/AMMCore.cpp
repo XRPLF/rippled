@@ -24,11 +24,11 @@ Currency
 ammLPTCurrency(Currency const& cur1, Currency const& cur2)
 {
     // AMM LPToken is 0x03 plus 19 bytes of the hash
-    std::int32_t constexpr AMMCurrencyCode = 0x03;
+    std::int32_t constexpr ammCurrencyCode = 0x03;
     auto const [minC, maxC] = std::minmax(cur1, cur2);
     auto const hash = sha512Half(minC, maxC);
     Currency currency;
-    *currency.begin() = AMMCurrencyCode;
+    *currency.begin() = ammCurrencyCode;
     std::copy(hash.begin(), hash.begin() + currency.size() - 1, currency.begin() + 1);
     return currency;
 }

@@ -58,11 +58,11 @@ chopUInt(int& value, int limit, std::string& input)
     if (input.empty())
         return false;
 
-    auto left_iter = std::find_if_not(input.begin(), input.end(), [](std::string::value_type c) {
+    auto leftIter = std::find_if_not(input.begin(), input.end(), [](std::string::value_type c) {
         return std::isdigit(c, std::locale::classic());
     });
 
-    std::string item(input.begin(), left_iter);
+    std::string item(input.begin(), leftIter);
 
     // Must not be empty
     if (item.empty())
@@ -82,7 +82,7 @@ chopUInt(int& value, int limit, std::string& input)
     if (n < 0 || n > limit)
         return false;
 
-    input.erase(input.begin(), left_iter);
+    input.erase(input.begin(), leftIter);
     value = n;
 
     return true;
@@ -148,19 +148,19 @@ bool
 SemanticVersion::parse(std::string_view input)
 {
     // May not have leading or trailing whitespace
-    auto left_iter = std::find_if_not(input.begin(), input.end(), [](std::string::value_type c) {
+    auto leftIter = std::find_if_not(input.begin(), input.end(), [](std::string::value_type c) {
         return std::isspace(c, std::locale::classic());
     });
 
-    auto right_iter = std::find_if_not(input.rbegin(), input.rend(), [](std::string::value_type c) {
-                          return std::isspace(c, std::locale::classic());
-                      }).base();
+    auto rightIter = std::find_if_not(input.rbegin(), input.rend(), [](std::string::value_type c) {
+                         return std::isspace(c, std::locale::classic());
+                     }).base();
 
     // Must not be empty!
-    if (left_iter >= right_iter)
+    if (leftIter >= rightIter)
         return false;
 
-    std::string version(left_iter, right_iter);
+    std::string version(leftIter, rightIter);
 
     // May not have leading or trailing whitespace
     if (version != input)

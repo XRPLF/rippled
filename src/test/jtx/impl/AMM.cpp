@@ -295,10 +295,10 @@ AMM::expectAmmRpcInfo(
     STAmount const& asset2,
     IOUAmount const& balance,
     std::optional<AccountID> const& account,
-    std::optional<std::string> const& ledger_index,
+    std::optional<std::string> const& ledgerIndex,
     std::optional<AccountID> const& ammAccount) const
 {
-    auto const jv = ammRpcInfo(account, ledger_index, std::nullopt, std::nullopt, ammAccount);
+    auto const jv = ammRpcInfo(account, ledgerIndex, std::nullopt, std::nullopt, ammAccount);
     return expectAmmInfo(asset1, asset2, balance, jv);
 }
 

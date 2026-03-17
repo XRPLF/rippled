@@ -283,10 +283,10 @@ populateJsonResponse(
                     Json::Value& jvObj = jvTxns.append(Json::objectValue);
                     jvObj[jss::validated] = true;
 
-                    auto const json_tx = (context.apiVersion > 1 ? jss::tx_json : jss::tx);
+                    auto const jsonTx = (context.apiVersion > 1 ? jss::tx_json : jss::tx);
                     if (context.apiVersion > 1)
                     {
-                        jvObj[json_tx] = txn->getJson(
+                        jvObj[jsonTx] = txn->getJson(
                             JsonOptions::include_date | JsonOptions::disable_API_prior_V2, false);
                         jvObj[jss::hash] = to_string(txn->getID());
                         jvObj[jss::ledger_index] = txn->getLedger();
@@ -298,10 +298,10 @@ populateJsonResponse(
                             jvObj[jss::close_time_iso] = to_string_iso(*closeTime);
                     }
                     else
-                        jvObj[json_tx] = txn->getJson(JsonOptions::include_date);
+                        jvObj[jsonTx] = txn->getJson(JsonOptions::include_date);
 
                     auto const& sttx = txn->getSTransaction();
-                    RPC::insertDeliverMax(jvObj[json_tx], sttx->getTxnType(), context.apiVersion);
+                    RPC::insertDeliverMax(jvObj[jsonTx], sttx->getTxnType(), context.apiVersion);
                     if (txnMeta)
                     {
                         jvObj[jss::meta] = txnMeta->getJson(JsonOptions::include_date);
@@ -329,8 +329,8 @@ populateJsonResponse(
                 Json::Value& jvObj = jvTxns.append(Json::objectValue);
 
                 jvObj[jss::tx_blob] = strHex(std::get<0>(binaryData));
-                auto const json_meta = (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
-                jvObj[json_meta] = strHex(std::get<1>(binaryData));
+                auto const jsonMeta = (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
+                jvObj[jsonMeta] = strHex(std::get<1>(binaryData));
                 jvObj[jss::ledger_index] = std::get<2>(binaryData);
                 jvObj[jss::validated] = true;
             }

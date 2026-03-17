@@ -20,11 +20,11 @@
 namespace xrpl {
 
 static Expected<std::uint32_t, Json::Value>
-getAutofillSequence(Json::Value const& tx_json, RPC::JsonContext& context)
+getAutofillSequence(Json::Value const& txJson, RPC::JsonContext& context)
 {
     // autofill Sequence
-    bool const hasTicketSeq = tx_json.isMember(sfTicketSequence.jsonName);
-    auto const& accountStr = tx_json[jss::Account];
+    bool const hasTicketSeq = txJson.isMember(sfTicketSequence.jsonName);
+    auto const& accountStr = txJson[jss::Account];
     if (!accountStr.isString())
     {
         // sanity check, should fail earlier
@@ -106,9 +106,9 @@ autofillSignature(Json::Value& sigObject)
 }
 
 static std::optional<Json::Value>
-autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
+autofillTx(Json::Value& txJson, RPC::JsonContext& context)
 {
-    if (!tx_json.isMember(jss::Fee))
+    if (!txJson.isMember(jss::Fee))
     {
         // autofill Fee
         // Must happen after all the other autofills happen
@@ -119,28 +119,28 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
             context.app.getFeeTrack(),
             context.app.getTxQ(),
             context.app,
-            tx_json);
+            txJson);
         if (feeOrError.isMember(jss::error))
             return feeOrError;
-        tx_json[jss::Fee] = feeOrError;
+        txJson[jss::Fee] = feeOrError;
     }
 
-    if (auto error = autofillSignature(tx_json))
+    if (auto error = autofillSignature(txJson))
         return error;
 
-    if (!tx_json.isMember(jss::Sequence))
+    if (!txJson.isMember(jss::Sequence))
     {
-        auto const seq = getAutofillSequence(tx_json, context);
+        auto const seq = getAutofillSequence(txJson, context);
         if (!seq)
             return seq.error();
-        tx_json[sfSequence.jsonName] = *seq;
+        txJson[sfSequence.jsonName] = *seq;
     }
 
-    if (!tx_json.isMember(jss::NetworkID))
+    if (!txJson.isMember(jss::NetworkID))
     {
         auto const networkId = context.app.getNetworkIDService().getNetworkID();
         if (networkId > 1024)
-            tx_json[jss::NetworkID] = to_string(networkId);
+            txJson[jss::NetworkID] = to_string(networkId);
     }
 
     return std::nullopt;
@@ -149,7 +149,7 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
 static Json::Value
 getTxJsonFromParams(Json::Value const& params)
 {
-    Json::Value tx_json;
+    Json::Value txJson;
 
     if (params.isMember(jss::tx_blob))
     {
@@ -158,20 +158,20 @@ getTxJsonFromParams(Json::Value const& params)
             return RPC::make_paraerror_("Can only include one of `tx_blob` and `tx_json`.");
         }
 
-        auto const tx_blob = params[jss::tx_blob];
-        if (!tx_blob.isString())
+        auto const txBlob = params[jss::tx_blob];
+        if (!txBlob.isString())
         {
             return RPC::invalid_field_error(jss::tx_blob);
         }
 
-        auto unHexed = strUnHex(tx_blob.asString());
+        auto unHexed = strUnHex(txBlob.asString());
         if (!unHexed || unHexed->empty())
             return RPC::invalid_field_error(jss::tx_blob);
 
         try
         {
             SerialIter sitTrans(makeSlice(*unHexed));
-            tx_json = STObject(std::ref(sitTrans), sfGeneric).getJson(JsonOptions::none);
+            txJson = STObject(std::ref(sitTrans), sfGeneric).getJson(JsonOptions::none);
         }
         catch (std::runtime_error const&)
         {
@@ -180,8 +180,8 @@ getTxJsonFromParams(Json::Value const& params)
     }
     else if (params.isMember(jss::tx_json))
     {
-        tx_json = params[jss::tx_json];
-        if (!tx_json.isObject())
+        txJson = params[jss::tx_json];
+        if (!txJson.isObject())
         {
             return RPC::object_field_error(jss::tx_json);
         }
@@ -192,17 +192,17 @@ getTxJsonFromParams(Json::Value const& params)
     }
 
     // basic sanity checks for transaction shape
-    if (!tx_json.isMember(jss::TransactionType))
+    if (!txJson.isMember(jss::TransactionType))
     {
         return RPC::missing_field_error("tx.TransactionType");
     }
 
-    if (!tx_json.isMember(jss::Account))
+    if (!txJson.isMember(jss::Account))
     {
         return RPC::missing_field_error("tx.Account");
     }
 
-    return tx_json;
+    return txJson;
 }
 
 static Json::Value
@@ -285,7 +285,7 @@ doSimulate(RPC::JsonContext& context)
 {
     context.loadType = Resource::feeMediumBurdenRPC;
 
-    Json::Value tx_json;  // the tx as a JSON
+    Json::Value txJson;  // the tx as a JSON
 
     // check validity of `binary` param
     if (context.params.isMember(jss::binary) && !context.params[jss::binary].isBool())
@@ -302,15 +302,15 @@ doSimulate(RPC::JsonContext& context)
     }
 
     // get JSON equivalent of transaction
-    tx_json = getTxJsonFromParams(context.params);
-    if (tx_json.isMember(jss::error))
-        return tx_json;
+    txJson = getTxJsonFromParams(context.params);
+    if (txJson.isMember(jss::error))
+        return txJson;
 
     // autofill fields if they're not included (e.g. `Fee`, `Sequence`)
-    if (auto error = autofillTx(tx_json, context))
+    if (auto error = autofillTx(txJson, context))
         return *error;
 
-    STParsedJSONObject parsed(std::string(jss::tx_json), tx_json);
+    STParsedJSONObject parsed(std::string(jss::tx_json), txJson);
     if (!parsed.object.has_value())
         return parsed.error;
 

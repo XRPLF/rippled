@@ -19,13 +19,13 @@ getHTTPHeaderTimestamp()
     char buffer[96];
     time_t now;
     time(&now);
-    struct tm now_gmt{};
+    struct tm nowGmt{};
 #ifndef _MSC_VER
-    gmtime_r(&now, &now_gmt);
+    gmtime_r(&now, &nowGmt);
 #else
     gmtime_s(&now_gmt, &now);
 #endif
-    strftime(buffer, sizeof(buffer), "Date: %a, %d %b %Y %H:%M:%S +0000\r\n", &now_gmt);
+    strftime(buffer, sizeof(buffer), "Date: %a, %d %b %Y %H:%M:%S +0000\r\n", &nowGmt);
     return std::string(buffer);
 }
 

@@ -587,7 +587,7 @@ public:
 
         auto alice = Account("alice");
         auto gw = Account("gw");
-        auto USD = gw["USD"];
+        auto usd = gw["USD"];
 
         checkMetrics(*this, env, 0, std::nullopt, 0, 2);
 
@@ -598,14 +598,14 @@ public:
         checkMetrics(*this, env, 0, 4, 0, 2);
 
         // Alice creates an unfunded offer while the ledger is not full
-        env(offer(alice, XRP(1000), USD(1000)), ter(tecUNFUNDED_OFFER));
+        env(offer(alice, XRP(1000), usd(1000)), ter(tecUNFUNDED_OFFER));
         checkMetrics(*this, env, 0, 4, 1, 2);
 
         fillQueue(env, alice);
         checkMetrics(*this, env, 0, 4, 3, 2);
 
         // Alice creates an unfunded offer that goes in the queue
-        env(offer(alice, XRP(1000), USD(1000)), ter(terQUEUED));
+        env(offer(alice, XRP(1000), usd(1000)), ter(terQUEUED));
         checkMetrics(*this, env, 1, 4, 3, 2);
 
         // The offer comes out of the queue
@@ -1600,9 +1600,9 @@ public:
         env.fund(drops(5000), noripple(alice));
         env.fund(XRP(50000), noripple(bob));
         checkMetrics(*this, env, 0, initQueueMax, 2, 3);
-        auto USD = bob["USD"];
+        auto usd = bob["USD"];
 
-        env(offer(alice, USD(5000), drops(5000)), require(owners(alice, 1)));
+        env(offer(alice, usd(5000), drops(5000)), require(owners(alice, 1)));
         checkMetrics(*this, env, 0, initQueueMax, 3, 3);
 
         env.close();
@@ -1623,7 +1623,7 @@ public:
 
         // This offer should take Alice's offer
         // up to Alice's reserve.
-        env(offer(bob, drops(5000), USD(5000)),
+        env(offer(bob, drops(5000), usd(5000)),
             fee(openLedgerCost(env)),
             require(balance(alice, drops(250)), owners(alice, 1), lines(alice, 1)));
         checkMetrics(*this, env, 4, 6, 5, 3);
@@ -1980,8 +1980,8 @@ public:
         env.fund(XRP(50000), noripple(alice, charlie), gw);
         checkMetrics(*this, env, 0, initQueueMax, limit + 1, limit);
 
-        auto USD = gw["USD"];
-        auto BUX = gw["BUX"];
+        auto usd = gw["USD"];
+        auto bux = gw["BUX"];
 
         //////////////////////////////////////////
         // Offer with high XRP out and low fee doesn't block
@@ -1992,7 +1992,7 @@ public:
 
         // If this offer crosses, all of alice's
         // XRP will be taken (except the reserve).
-        env(offer(alice, BUX(5000), XRP(50000)), queued);
+        env(offer(alice, bux(5000), XRP(50000)), queued);
         checkMetrics(*this, env, 1, initQueueMax, limit + 1, limit);
 
         // But because the reserve is protected, another
@@ -2021,7 +2021,7 @@ public:
         env.require(owners(alice, 0));
 
         // Alice creates an offer with a fee of half the reserve
-        env(offer(alice, BUX(5000), XRP(50000)), fee(drops(100)), queued);
+        env(offer(alice, bux(5000), XRP(50000)), fee(drops(100)), queued);
         checkMetrics(*this, env, 1, limit * 2, limit + 1, limit);
 
         // Alice creates another offer with a fee
@@ -2056,7 +2056,7 @@ public:
 
         // Alice creates an offer with a fee larger than the reserve
         // This one can queue because it's the first in the queue for alice
-        env(offer(alice, BUX(5000), XRP(50000)), fee(drops(300)), queued);
+        env(offer(alice, bux(5000), XRP(50000)), fee(drops(300)), queued);
         checkMetrics(*this, env, 1, limit * 2, limit + 1, limit);
 
         // So even a noop will look like alice
@@ -2084,7 +2084,7 @@ public:
 
         // If this offer crosses, just a bit
         // of alice's XRP will be taken.
-        env(offer(alice, BUX(50), XRP(500)), queued);
+        env(offer(alice, bux(50), XRP(500)), queued);
 
         // And later transactions are just fine
         env(noop(alice), seq(aliceSeq + 1), queued);
@@ -2153,9 +2153,9 @@ public:
 
         //////////////////////////////////////////
         // Large IOU payment allows later txs
-        auto const amount = USD(500000);
-        env(trust(alice, USD(50000000)));
-        env(trust(charlie, USD(50000000)));
+        auto const amount = usd(500000);
+        env(trust(alice, usd(50000000)));
+        env(trust(charlie, usd(50000000)));
         checkMetrics(*this, env, 0, limit * 2, 4, limit);
         // Close so we don't have to deal
         // with tx ordering in consensus.
@@ -2172,7 +2172,7 @@ public:
 
         aliceSeq = env.seq(alice);
         aliceBal = env.balance(alice);
-        auto aliceUSD = env.balance(alice, USD);
+        auto aliceUSD = env.balance(alice, usd);
 
         // If this payment succeeds, alice will
         // send her entire USD balance to charlie.
@@ -2191,7 +2191,7 @@ public:
         // XRP balance, but her USD balance went to charlie.
         env.require(
             balance(alice, aliceBal - drops(20)),
-            balance(alice, USD(0)),
+            balance(alice, usd(0)),
             balance(charlie, aliceUSD),
             owners(alice, 1),
             owners(charlie, 1));
@@ -2199,7 +2199,7 @@ public:
         //////////////////////////////////////////
         // Large XRP to IOU payment doesn't block later txs.
 
-        env(offer(gw, XRP(500000), USD(50000)));
+        env(offer(gw, XRP(500000), usd(50000)));
         // Close so we don't have to deal
         // with tx ordering in consensus.
         env.close();
@@ -2209,14 +2209,14 @@ public:
 
         aliceSeq = env.seq(alice);
         aliceBal = env.balance(alice);
-        auto charlieUSD = env.balance(charlie, USD);
+        auto charlieUSD = env.balance(charlie, usd);
 
         // If this payment succeeds, and uses the
         // entire sendMax, alice will send her
         // entire XRP balance to charlie in the
         // form of USD.
         BEAST_EXPECT(XRP(60000) > aliceBal);
-        env(pay(alice, charlie, USD(1000)), sendmax(XRP(60000)), queued);
+        env(pay(alice, charlie, usd(1000)), sendmax(XRP(60000)), queued);
 
         // But because the reserve is protected, another
         // transaction will be allowed to queue
@@ -2231,8 +2231,8 @@ public:
         // to charlie using only a portion of her XRP balance
         env.require(
             balance(alice, aliceBal - XRP(10000) - drops(20)),
-            balance(alice, USD(0)),
-            balance(charlie, charlieUSD + USD(1000)),
+            balance(alice, usd(0)),
+            balance(charlie, charlieUSD + usd(1000)),
             owners(alice, 1),
             owners(charlie, 1));
 
@@ -2244,14 +2244,14 @@ public:
 
         aliceSeq = env.seq(alice);
         aliceBal = env.balance(alice);
-        charlieUSD = env.balance(charlie, USD);
+        charlieUSD = env.balance(charlie, usd);
 
         // If this payment succeeds, and uses the
         // entire sendMax, alice will only send
         // a portion of her XRP balance to charlie
         // in the form of USD.
         BEAST_EXPECT(aliceBal > XRP(6001));
-        env(pay(alice, charlie, USD(500)), sendmax(XRP(6000)), queued);
+        env(pay(alice, charlie, usd(500)), sendmax(XRP(6000)), queued);
 
         // And later transactions are just fine
         env(noop(alice), seq(aliceSeq + 1), queued);
@@ -2265,8 +2265,8 @@ public:
         // to charlie using only a portion of her XRP balance
         env.require(
             balance(alice, aliceBal - XRP(5000) - drops(20)),
-            balance(alice, USD(0)),
-            balance(charlie, charlieUSD + USD(500)),
+            balance(alice, usd(0)),
+            balance(charlie, charlieUSD + usd(500)),
             owners(alice, 1),
             owners(charlie, 1));
 
@@ -2317,9 +2317,9 @@ public:
         }
 
         {
-            auto USD = alice["USD"];
+            auto usd = alice["USD"];
 
-            auto const jtx = env.jt(trust("carol", USD(50000000)), seq(1), fee(10));
+            auto const jtx = env.jt(trust("carol", usd(50000000)), seq(1), fee(10));
             auto const pf =
                 preflight(env.app(), env.current()->rules(), *jtx.stx, tapNONE, env.journal);
             BEAST_EXPECT(pf.ter == tesSUCCESS);
@@ -2902,15 +2902,15 @@ public:
                 info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
             auto const& result = info[jss::result];
             BEAST_EXPECT(result.isMember(jss::queue_data));
-            auto const& queue_data = result[jss::queue_data];
-            BEAST_EXPECT(queue_data.isObject());
-            BEAST_EXPECT(queue_data.isMember(jss::txn_count));
-            BEAST_EXPECT(queue_data[jss::txn_count] == 0);
-            BEAST_EXPECT(!queue_data.isMember(jss::lowest_sequence));
-            BEAST_EXPECT(!queue_data.isMember(jss::highest_sequence));
-            BEAST_EXPECT(!queue_data.isMember(jss::auth_change_queued));
-            BEAST_EXPECT(!queue_data.isMember(jss::max_spend_drops_total));
-            BEAST_EXPECT(!queue_data.isMember(jss::transactions));
+            auto const& queueData = result[jss::queue_data];
+            BEAST_EXPECT(queueData.isObject());
+            BEAST_EXPECT(queueData.isMember(jss::txn_count));
+            BEAST_EXPECT(queueData[jss::txn_count] == 0);
+            BEAST_EXPECT(!queueData.isMember(jss::lowest_sequence));
+            BEAST_EXPECT(!queueData.isMember(jss::highest_sequence));
+            BEAST_EXPECT(!queueData.isMember(jss::auth_change_queued));
+            BEAST_EXPECT(!queueData.isMember(jss::max_spend_drops_total));
+            BEAST_EXPECT(!queueData.isMember(jss::transactions));
         }
         checkMetrics(*this, env, 0, 6, 0, 3);
 
@@ -2923,15 +2923,15 @@ public:
                 info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
             auto const& result = info[jss::result];
             BEAST_EXPECT(result.isMember(jss::queue_data));
-            auto const& queue_data = result[jss::queue_data];
-            BEAST_EXPECT(queue_data.isObject());
-            BEAST_EXPECT(queue_data.isMember(jss::txn_count));
-            BEAST_EXPECT(queue_data[jss::txn_count] == 0);
-            BEAST_EXPECT(!queue_data.isMember(jss::lowest_sequence));
-            BEAST_EXPECT(!queue_data.isMember(jss::highest_sequence));
-            BEAST_EXPECT(!queue_data.isMember(jss::auth_change_queued));
-            BEAST_EXPECT(!queue_data.isMember(jss::max_spend_drops_total));
-            BEAST_EXPECT(!queue_data.isMember(jss::transactions));
+            auto const& queueData = result[jss::queue_data];
+            BEAST_EXPECT(queueData.isObject());
+            BEAST_EXPECT(queueData.isMember(jss::txn_count));
+            BEAST_EXPECT(queueData[jss::txn_count] == 0);
+            BEAST_EXPECT(!queueData.isMember(jss::lowest_sequence));
+            BEAST_EXPECT(!queueData.isMember(jss::highest_sequence));
+            BEAST_EXPECT(!queueData.isMember(jss::auth_change_queued));
+            BEAST_EXPECT(!queueData.isMember(jss::max_spend_drops_total));
+            BEAST_EXPECT(!queueData.isMember(jss::transactions));
         }
 
         auto submitParams = Json::Value(Json::objectValue);
@@ -2948,23 +2948,23 @@ public:
             auto const& result = info[jss::result];
             auto const& data = result[jss::account_data];
             BEAST_EXPECT(result.isMember(jss::queue_data));
-            auto const& queue_data = result[jss::queue_data];
-            BEAST_EXPECT(queue_data.isObject());
-            BEAST_EXPECT(queue_data.isMember(jss::txn_count));
-            BEAST_EXPECT(queue_data[jss::txn_count] == 4);
-            BEAST_EXPECT(queue_data.isMember(jss::lowest_sequence));
-            BEAST_EXPECT(queue_data[jss::lowest_sequence] == data[jss::Sequence]);
-            BEAST_EXPECT(queue_data.isMember(jss::highest_sequence));
+            auto const& queueData = result[jss::queue_data];
+            BEAST_EXPECT(queueData.isObject());
+            BEAST_EXPECT(queueData.isMember(jss::txn_count));
+            BEAST_EXPECT(queueData[jss::txn_count] == 4);
+            BEAST_EXPECT(queueData.isMember(jss::lowest_sequence));
+            BEAST_EXPECT(queueData[jss::lowest_sequence] == data[jss::Sequence]);
+            BEAST_EXPECT(queueData.isMember(jss::highest_sequence));
             BEAST_EXPECT(
-                queue_data[jss::highest_sequence] ==
-                data[jss::Sequence].asUInt() + queue_data[jss::txn_count].asUInt() - 1);
-            BEAST_EXPECT(queue_data.isMember(jss::auth_change_queued));
-            BEAST_EXPECT(queue_data[jss::auth_change_queued] == false);
-            BEAST_EXPECT(queue_data.isMember(jss::max_spend_drops_total));
-            BEAST_EXPECT(queue_data[jss::max_spend_drops_total] == std::to_string(baseFee * 40));
-            BEAST_EXPECT(queue_data.isMember(jss::transactions));
-            auto const& queued = queue_data[jss::transactions];
-            BEAST_EXPECT(queued.size() == queue_data[jss::txn_count]);
+                queueData[jss::highest_sequence] ==
+                data[jss::Sequence].asUInt() + queueData[jss::txn_count].asUInt() - 1);
+            BEAST_EXPECT(queueData.isMember(jss::auth_change_queued));
+            BEAST_EXPECT(queueData[jss::auth_change_queued] == false);
+            BEAST_EXPECT(queueData.isMember(jss::max_spend_drops_total));
+            BEAST_EXPECT(queueData[jss::max_spend_drops_total] == std::to_string(baseFee * 40));
+            BEAST_EXPECT(queueData.isMember(jss::transactions));
+            auto const& queued = queueData[jss::transactions];
+            BEAST_EXPECT(queued.size() == queueData[jss::txn_count]);
             for (unsigned i = 0; i < queued.size(); ++i)
             {
                 auto const& item = queued[i];
@@ -3003,23 +3003,23 @@ public:
             auto const& result = info[jss::result];
             auto const& data = result[jss::account_data];
             BEAST_EXPECT(result.isMember(jss::queue_data));
-            auto const& queue_data = result[jss::queue_data];
-            BEAST_EXPECT(queue_data.isObject());
-            BEAST_EXPECT(queue_data.isMember(jss::txn_count));
-            BEAST_EXPECT(queue_data[jss::txn_count] == 1);
-            BEAST_EXPECT(queue_data.isMember(jss::lowest_sequence));
-            BEAST_EXPECT(queue_data[jss::lowest_sequence] == data[jss::Sequence]);
-            BEAST_EXPECT(queue_data.isMember(jss::highest_sequence));
+            auto const& queueData = result[jss::queue_data];
+            BEAST_EXPECT(queueData.isObject());
+            BEAST_EXPECT(queueData.isMember(jss::txn_count));
+            BEAST_EXPECT(queueData[jss::txn_count] == 1);
+            BEAST_EXPECT(queueData.isMember(jss::lowest_sequence));
+            BEAST_EXPECT(queueData[jss::lowest_sequence] == data[jss::Sequence]);
+            BEAST_EXPECT(queueData.isMember(jss::highest_sequence));
             BEAST_EXPECT(
-                queue_data[jss::highest_sequence] ==
-                data[jss::Sequence].asUInt() + queue_data[jss::txn_count].asUInt() - 1);
-            BEAST_EXPECT(queue_data.isMember(jss::auth_change_queued));
-            BEAST_EXPECT(queue_data[jss::auth_change_queued] == true);
-            BEAST_EXPECT(queue_data.isMember(jss::max_spend_drops_total));
-            BEAST_EXPECT(queue_data[jss::max_spend_drops_total] == std::to_string(baseFee * 10));
-            BEAST_EXPECT(queue_data.isMember(jss::transactions));
-            auto const& queued = queue_data[jss::transactions];
-            BEAST_EXPECT(queued.size() == queue_data[jss::txn_count]);
+                queueData[jss::highest_sequence] ==
+                data[jss::Sequence].asUInt() + queueData[jss::txn_count].asUInt() - 1);
+            BEAST_EXPECT(queueData.isMember(jss::auth_change_queued));
+            BEAST_EXPECT(queueData[jss::auth_change_queued] == true);
+            BEAST_EXPECT(queueData.isMember(jss::max_spend_drops_total));
+            BEAST_EXPECT(queueData[jss::max_spend_drops_total] == std::to_string(baseFee * 10));
+            BEAST_EXPECT(queueData.isMember(jss::transactions));
+            auto const& queued = queueData[jss::transactions];
+            BEAST_EXPECT(queued.size() == queueData[jss::txn_count]);
             for (unsigned i = 0; i < queued.size(); ++i)
             {
                 auto const& item = queued[i];
@@ -3056,23 +3056,23 @@ public:
             auto const& result = info[jss::result];
             auto const& data = result[jss::account_data];
             BEAST_EXPECT(result.isMember(jss::queue_data));
-            auto const& queue_data = result[jss::queue_data];
-            BEAST_EXPECT(queue_data.isObject());
-            BEAST_EXPECT(queue_data.isMember(jss::txn_count));
-            BEAST_EXPECT(queue_data[jss::txn_count] == 1);
-            BEAST_EXPECT(queue_data.isMember(jss::lowest_sequence));
-            BEAST_EXPECT(queue_data[jss::lowest_sequence] == data[jss::Sequence]);
-            BEAST_EXPECT(queue_data.isMember(jss::highest_sequence));
+            auto const& queueData = result[jss::queue_data];
+            BEAST_EXPECT(queueData.isObject());
+            BEAST_EXPECT(queueData.isMember(jss::txn_count));
+            BEAST_EXPECT(queueData[jss::txn_count] == 1);
+            BEAST_EXPECT(queueData.isMember(jss::lowest_sequence));
+            BEAST_EXPECT(queueData[jss::lowest_sequence] == data[jss::Sequence]);
+            BEAST_EXPECT(queueData.isMember(jss::highest_sequence));
             BEAST_EXPECT(
-                queue_data[jss::highest_sequence] ==
-                data[jss::Sequence].asUInt() + queue_data[jss::txn_count].asUInt() - 1);
-            BEAST_EXPECT(queue_data.isMember(jss::auth_change_queued));
-            BEAST_EXPECT(queue_data[jss::auth_change_queued].asBool());
-            BEAST_EXPECT(queue_data.isMember(jss::max_spend_drops_total));
-            BEAST_EXPECT(queue_data[jss::max_spend_drops_total] == std::to_string(baseFee * 10));
-            BEAST_EXPECT(queue_data.isMember(jss::transactions));
-            auto const& queued = queue_data[jss::transactions];
-            BEAST_EXPECT(queued.size() == queue_data[jss::txn_count]);
+                queueData[jss::highest_sequence] ==
+                data[jss::Sequence].asUInt() + queueData[jss::txn_count].asUInt() - 1);
+            BEAST_EXPECT(queueData.isMember(jss::auth_change_queued));
+            BEAST_EXPECT(queueData[jss::auth_change_queued].asBool());
+            BEAST_EXPECT(queueData.isMember(jss::max_spend_drops_total));
+            BEAST_EXPECT(queueData[jss::max_spend_drops_total] == std::to_string(baseFee * 10));
+            BEAST_EXPECT(queueData.isMember(jss::transactions));
+            auto const& queued = queueData[jss::transactions];
+            BEAST_EXPECT(queued.size() == queueData[jss::txn_count]);
             for (unsigned i = 0; i < queued.size(); ++i)
             {
                 auto const& item = queued[i];
@@ -3119,15 +3119,15 @@ public:
                 info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
             auto const& result = info[jss::result];
             BEAST_EXPECT(result.isMember(jss::queue_data));
-            auto const& queue_data = result[jss::queue_data];
-            BEAST_EXPECT(queue_data.isObject());
-            BEAST_EXPECT(queue_data.isMember(jss::txn_count));
-            BEAST_EXPECT(queue_data[jss::txn_count] == 0);
-            BEAST_EXPECT(!queue_data.isMember(jss::lowest_sequence));
-            BEAST_EXPECT(!queue_data.isMember(jss::highest_sequence));
-            BEAST_EXPECT(!queue_data.isMember(jss::auth_change_queued));
-            BEAST_EXPECT(!queue_data.isMember(jss::max_spend_drops_total));
-            BEAST_EXPECT(!queue_data.isMember(jss::transactions));
+            auto const& queueData = result[jss::queue_data];
+            BEAST_EXPECT(queueData.isObject());
+            BEAST_EXPECT(queueData.isMember(jss::txn_count));
+            BEAST_EXPECT(queueData[jss::txn_count] == 0);
+            BEAST_EXPECT(!queueData.isMember(jss::lowest_sequence));
+            BEAST_EXPECT(!queueData.isMember(jss::highest_sequence));
+            BEAST_EXPECT(!queueData.isMember(jss::auth_change_queued));
+            BEAST_EXPECT(!queueData.isMember(jss::max_spend_drops_total));
+            BEAST_EXPECT(!queueData.isMember(jss::transactions));
         }
     }
 
@@ -3146,10 +3146,10 @@ public:
         env.close();
 
         {
-            auto const server_info = env.rpc("server_info");
+            auto const serverInfo = env.rpc("server_info");
             BEAST_EXPECT(
-                server_info.isMember(jss::result) && server_info[jss::result].isMember(jss::info));
-            auto const& info = server_info[jss::result][jss::info];
+                serverInfo.isMember(jss::result) && serverInfo[jss::result].isMember(jss::info));
+            auto const& info = serverInfo[jss::result][jss::info];
             BEAST_EXPECT(info.isMember(jss::load_factor) && info[jss::load_factor] == 1);
             BEAST_EXPECT(!info.isMember(jss::load_factor_server));
             BEAST_EXPECT(!info.isMember(jss::load_factor_local));
@@ -3157,8 +3157,8 @@ public:
             BEAST_EXPECT(!info.isMember(jss::load_factor_fee_escalation));
         }
         {
-            auto const server_state = env.rpc("server_state");
-            auto const& state = server_state[jss::result][jss::state];
+            auto const serverState = env.rpc("server_state");
+            auto const& state = serverState[jss::result][jss::state];
             BEAST_EXPECT(state.isMember(jss::load_factor) && state[jss::load_factor] == 256);
             BEAST_EXPECT(state.isMember(jss::load_base) && state[jss::load_base] == 256);
             BEAST_EXPECT(
@@ -3186,10 +3186,10 @@ public:
         checkMetrics(*this, env, 4, 6, 4, 3);
 
         {
-            auto const server_info = env.rpc("server_info");
+            auto const serverInfo = env.rpc("server_info");
             BEAST_EXPECT(
-                server_info.isMember(jss::result) && server_info[jss::result].isMember(jss::info));
-            auto const& info = server_info[jss::result][jss::info];
+                serverInfo.isMember(jss::result) && serverInfo[jss::result].isMember(jss::info));
+            auto const& info = serverInfo[jss::result][jss::info];
             // Avoid double rounding issues by comparing to a range.
             BEAST_EXPECT(
                 info.isMember(jss::load_factor) && info[jss::load_factor] > 888.88 &&
@@ -3204,8 +3204,8 @@ public:
                 info[jss::load_factor_fee_escalation] < 888.89);
         }
         {
-            auto const server_state = env.rpc("server_state");
-            auto const& state = server_state[jss::result][jss::state];
+            auto const serverState = env.rpc("server_state");
+            auto const& state = serverState[jss::result][jss::state];
             BEAST_EXPECT(state.isMember(jss::load_factor) && state[jss::load_factor] == 227555);
             BEAST_EXPECT(state.isMember(jss::load_base) && state[jss::load_base] == 256);
             BEAST_EXPECT(
@@ -3224,10 +3224,10 @@ public:
         env.app().getFeeTrack().setRemoteFee(256000);
 
         {
-            auto const server_info = env.rpc("server_info");
+            auto const serverInfo = env.rpc("server_info");
             BEAST_EXPECT(
-                server_info.isMember(jss::result) && server_info[jss::result].isMember(jss::info));
-            auto const& info = server_info[jss::result][jss::info];
+                serverInfo.isMember(jss::result) && serverInfo[jss::result].isMember(jss::info));
+            auto const& info = serverInfo[jss::result][jss::info];
             // Avoid double rounding issues by comparing to a range.
             BEAST_EXPECT(info.isMember(jss::load_factor) && info[jss::load_factor] == 1000);
             BEAST_EXPECT(!info.isMember(jss::load_factor_server));
@@ -3239,8 +3239,8 @@ public:
                 info[jss::load_factor_fee_escalation] < 888.89);
         }
         {
-            auto const server_state = env.rpc("server_state");
-            auto const& state = server_state[jss::result][jss::state];
+            auto const serverState = env.rpc("server_state");
+            auto const& state = serverState[jss::result][jss::state];
             BEAST_EXPECT(state.isMember(jss::load_factor) && state[jss::load_factor] == 256000);
             BEAST_EXPECT(state.isMember(jss::load_base) && state[jss::load_base] == 256);
             BEAST_EXPECT(
@@ -3265,10 +3265,10 @@ public:
         BEAST_EXPECT(env.app().getFeeTrack().getLoadFactor() == 625);
 
         {
-            auto const server_info = env.rpc("server_info");
+            auto const serverInfo = env.rpc("server_info");
             BEAST_EXPECT(
-                server_info.isMember(jss::result) && server_info[jss::result].isMember(jss::info));
-            auto const& info = server_info[jss::result][jss::info];
+                serverInfo.isMember(jss::result) && serverInfo[jss::result].isMember(jss::info));
+            auto const& info = serverInfo[jss::result][jss::info];
             // Avoid double rounding issues by comparing to a range.
             BEAST_EXPECT(
                 info.isMember(jss::load_factor) && info[jss::load_factor] > 888.88 &&
@@ -3289,8 +3289,8 @@ public:
                 info[jss::load_factor_fee_escalation] < 888.89);
         }
         {
-            auto const server_state = env.rpc("server_state");
-            auto const& state = server_state[jss::result][jss::state];
+            auto const serverState = env.rpc("server_state");
+            auto const& state = serverState[jss::result][jss::state];
             BEAST_EXPECT(state.isMember(jss::load_factor) && state[jss::load_factor] == 227555);
             BEAST_EXPECT(state.isMember(jss::load_base) && state[jss::load_base] == 256);
             // There can be a race between LoadManager lowering the fee,
@@ -3313,10 +3313,10 @@ public:
         env.close();
 
         {
-            auto const server_info = env.rpc("server_info");
+            auto const serverInfo = env.rpc("server_info");
             BEAST_EXPECT(
-                server_info.isMember(jss::result) && server_info[jss::result].isMember(jss::info));
-            auto const& info = server_info[jss::result][jss::info];
+                serverInfo.isMember(jss::result) && serverInfo[jss::result].isMember(jss::info));
+            auto const& info = serverInfo[jss::result][jss::info];
             // Avoid double rounding issues by comparing to a range.
 
             // There can be a race between LoadManager lowering the fee,
@@ -3333,8 +3333,8 @@ public:
             BEAST_EXPECT(!info.isMember(jss::load_factor_fee_escalation));
         }
         {
-            auto const server_state = env.rpc("server_state");
-            auto const& state = server_state[jss::result][jss::state];
+            auto const serverState = env.rpc("server_state");
+            auto const& state = serverState[jss::result][jss::state];
             BEAST_EXPECT(
                 state.isMember(jss::load_factor) && state[jss::load_factor] >= 320 &&
                 state[jss::load_factor] <= 625);
@@ -4379,7 +4379,7 @@ public:
 
         Account const alice("alice");
         auto gw = Account("gw");
-        auto USD = gw["USD"];
+        auto usd = gw["USD"];
 
         auto cfg = makeConfig(
             {{"minimum_txn_in_ledger_standalone_", "5"},
@@ -4400,13 +4400,13 @@ public:
 
             // Alice creates a couple offers
             auto const aliceSeq = env.seq(alice);
-            env(offer(alice, USD(1000), XRP(1000)), ter(terQUEUED));
+            env(offer(alice, usd(1000), XRP(1000)), ter(terQUEUED));
 
-            env(offer(alice, USD(1000), XRP(1001)), seq(aliceSeq + 1), ter(terQUEUED));
+            env(offer(alice, usd(1000), XRP(1001)), seq(aliceSeq + 1), ter(terQUEUED));
 
             // Alice creates transactions that cancel the first set of
             // offers, one through another offer, and one cancel
-            env(offer(alice, USD(1000), XRP(1002)),
+            env(offer(alice, usd(1000), XRP(1002)),
                 seq(aliceSeq + 2),
                 json(jss::OfferSequence, aliceSeq),
                 ter(terQUEUED));
@@ -4431,9 +4431,9 @@ public:
             // Alice creates a couple offers using tickets, consuming the
             // tickets in reverse order
             auto const aliceSeq = env.seq(alice);
-            env(offer(alice, USD(1000), XRP(1000)), ticket::use(aliceTkt + 4), ter(terQUEUED));
+            env(offer(alice, usd(1000), XRP(1000)), ticket::use(aliceTkt + 4), ter(terQUEUED));
 
-            env(offer(alice, USD(1000), XRP(1001)), ticket::use(aliceTkt + 3), ter(terQUEUED));
+            env(offer(alice, usd(1000), XRP(1001)), ticket::use(aliceTkt + 3), ter(terQUEUED));
 
             // Alice creates a couple more transactions that cancel the first
             // set of offers, also in reverse order. This allows Alice to submit
@@ -4441,7 +4441,7 @@ public:
             // These transactions succeed because Ticket ordering is arbitrary
             // and it's up to the user to ensure they don't step on their own
             // feet.
-            env(offer(alice, USD(1000), XRP(1002)),
+            env(offer(alice, usd(1000), XRP(1002)),
                 ticket::use(aliceTkt + 2),
                 json(jss::OfferSequence, aliceTkt + 4),
                 ter(terQUEUED));
@@ -4449,12 +4449,12 @@ public:
             env(offer_cancel(alice, aliceTkt + 3), ticket::use(aliceTkt + 1), ter(terQUEUED));
 
             // Create a couple more offers using sequences
-            env(offer(alice, USD(1000), XRP(1000)), ter(terQUEUED));
+            env(offer(alice, usd(1000), XRP(1000)), ter(terQUEUED));
 
-            env(offer(alice, USD(1000), XRP(1001)), seq(aliceSeq + 1), ter(terQUEUED));
+            env(offer(alice, usd(1000), XRP(1001)), seq(aliceSeq + 1), ter(terQUEUED));
 
             // And try to cancel those using tickets
-            env(offer(alice, USD(1000), XRP(1002)),
+            env(offer(alice, usd(1000), XRP(1002)),
                 ticket::use(aliceTkt + 5),
                 json(jss::OfferSequence, aliceSeq),
                 ter(terQUEUED));

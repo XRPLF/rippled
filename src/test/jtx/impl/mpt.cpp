@@ -212,9 +212,9 @@ MPTTester::destroy(MPTDestroy const& arg)
 }
 
 Account const&
-MPTTester::holder(std::string const& holder_) const
+MPTTester::holder(std::string const& holder) const
 {
-    auto const& it = holders_.find(holder_);
+    auto const& it = holders_.find(holder);
     if (it == holders_.cend())
         Throw<std::runtime_error>("Holder is not found");
     return it->second;
@@ -410,11 +410,11 @@ MPTTester::set(MPTSet const& arg)
 bool
 MPTTester::forObject(
     std::function<bool(SLEP const& sle)> const& cb,
-    std::optional<Account> const& holder_) const
+    std::optional<Account> const& holder) const
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
-    auto const key = holder_ ? keylet::mptoken(*id_, holder_->id()) : keylet::mptIssuance(*id_);
+    auto const key = holder ? keylet::mptoken(*id_, holder->id()) : keylet::mptIssuance(*id_);
     if (auto const sle = env_.le(key))
         return cb(sle);
     return false;
@@ -431,10 +431,10 @@ MPTTester::checkDomainID(std::optional<uint256> expected) const
 }
 
 [[nodiscard]] bool
-MPTTester::checkMPTokenAmount(Account const& holder_, std::int64_t expectedAmount) const
+MPTTester::checkMPTokenAmount(Account const& holder, std::int64_t expectedAmount) const
 {
     return forObject(
-        [&](SLEP const& sle) { return expectedAmount == (*sle)[sfMPTAmount]; }, holder_);
+        [&](SLEP const& sle) { return expectedAmount == (*sle)[sfMPTAmount]; }, holder);
 }
 
 [[nodiscard]] bool

@@ -16,14 +16,14 @@ class RPCSubImp : public RPCSub
 public:
     RPCSubImp(
         InfoSub::Source& source,
-        boost::asio::io_context& io_context,
+        boost::asio::io_context& ioContext,
         JobQueue& jobQueue,
         std::string const& strUrl,
         std::string const& strUsername,
         std::string const& strPassword,
         Logs& logs)
         : RPCSub(source)
-        , io_context_(io_context)
+        , io_context_(ioContext)
         , jobQueue_(jobQueue)
         , url_(strUrl)
         , sSL_(false)
@@ -183,7 +183,7 @@ RPCSub::RPCSub(InfoSub::Source& source) : InfoSub(source, Consumer())
 std::shared_ptr<RPCSub>
 make_RPCSub(
     InfoSub::Source& source,
-    boost::asio::io_context& io_context,
+    boost::asio::io_context& ioContext,
     JobQueue& jobQueue,
     std::string const& strUrl,
     std::string const& strUsername,
@@ -192,7 +192,7 @@ make_RPCSub(
 {
     return std::make_shared<RPCSubImp>(
         std::ref(source),
-        std::ref(io_context),
+        std::ref(ioContext),
         std::ref(jobQueue),
         strUrl,
         strUsername,

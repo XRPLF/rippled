@@ -198,7 +198,7 @@ namespace b58_ref {
 namespace detail {
 
 std::string
-encodeBase58(void const* message, std::size_t size, void* temp, std::size_t temp_size)
+encodeBase58(void const* message, std::size_t size, void* temp, std::size_t tempSize)
 {
     auto pbegin = reinterpret_cast<unsigned char const*>(message);
     auto const pend = pbegin + size;
@@ -212,7 +212,7 @@ encodeBase58(void const* message, std::size_t size, void* temp, std::size_t temp
     }
 
     auto const b58begin = reinterpret_cast<unsigned char*>(temp);
-    auto const b58end = b58begin + temp_size;
+    auto const b58end = b58begin + tempSize;
 
     std::fill(b58begin, b58end, 0);
 
@@ -355,7 +355,7 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
         return Unexpected(TokenCodecErrc::inputTooLarge);
     };
 
-    auto count_leading_zeros = [](std::span<std::uint8_t const> const& col) -> std::size_t {
+    auto countLeadingZeros = [](std::span<std::uint8_t const> const& col) -> std::size_t {
         std::size_t count = 0;
         for (auto const& c : col)
         {
@@ -368,101 +368,101 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
         return count;
     };
 
-    auto const input_zeros = count_leading_zeros(input);
-    input = input.subspan(input_zeros);
+    auto const inputZeros = countLeadingZeros(input);
+    input = input.subspan(inputZeros);
 
     // Allocate enough base 2^64 coeff for encoding 38 bytes
     // log(2^(38*8),2^64)) ~= 4.75. So 5 coeff are enough
-    std::array<std::uint64_t, 5> base_2_64_coeff_buf{};
-    std::span<std::uint64_t> const base_2_64_coeff = [&]() -> std::span<std::uint64_t> {
+    std::array<std::uint64_t, 5> base264CoeffBuf{};
+    std::span<std::uint64_t> const base264Coeff = [&]() -> std::span<std::uint64_t> {
         // convert input from big endian to native u64, lowest coeff first
-        std::size_t num_coeff = 0;
-        for (int i = 0; i < base_2_64_coeff_buf.size(); ++i)
+        std::size_t numCoeff = 0;
+        for (int i = 0; i < base264CoeffBuf.size(); ++i)
         {
             if (i * 8 >= input.size())
             {
                 break;
             }
-            auto const src_i_end = input.size() - i * 8;
-            if (src_i_end >= 8)
+            auto const srcIEnd = input.size() - i * 8;
+            if (srcIEnd >= 8)
             {
-                std::memcpy(&base_2_64_coeff_buf[num_coeff], &input[src_i_end - 8], 8);
-                boost::endian::big_to_native_inplace(base_2_64_coeff_buf[num_coeff]);
+                std::memcpy(&base264CoeffBuf[numCoeff], &input[srcIEnd - 8], 8);
+                boost::endian::big_to_native_inplace(base264CoeffBuf[numCoeff]);
             }
             else
             {
                 std::uint64_t be = 0;
-                for (int bi = 0; bi < src_i_end; ++bi)
+                for (int bi = 0; bi < srcIEnd; ++bi)
                 {
                     be <<= 8;
                     be |= input[bi];
                 }
-                base_2_64_coeff_buf[num_coeff] = be;
+                base264CoeffBuf[numCoeff] = be;
             };
-            num_coeff += 1;
+            numCoeff += 1;
         }
-        return std::span(base_2_64_coeff_buf.data(), num_coeff);
+        return std::span(base264CoeffBuf.data(), numCoeff);
     }();
 
     // Allocate enough base 58^10 coeff for encoding 38 bytes
     // log(2^(38*8),58^10)) ~= 5.18. So 6 coeff are enough
-    std::array<std::uint64_t, 6> base_58_10_coeff{};
-    constexpr std::uint64_t B_58_10 = 430804206899405824;  // 58^10;
-    std::size_t num_58_10_coeffs = 0;
-    std::size_t cur_2_64_end = base_2_64_coeff.size();
+    std::array<std::uint64_t, 6> base5810Coeff{};
+    constexpr std::uint64_t b5810 = 430804206899405824;  // 58^10;
+    std::size_t num5810Coeffs = 0;
+    std::size_t cur264End = base264Coeff.size();
     // compute the base 58^10 coeffs
-    while (cur_2_64_end > 0)
+    while (cur264End > 0)
     {
-        base_58_10_coeff[num_58_10_coeffs] = xrpl::b58_fast::detail::inplace_bigint_div_rem(
-            base_2_64_coeff.subspan(0, cur_2_64_end), B_58_10);
-        num_58_10_coeffs += 1;
-        if (base_2_64_coeff[cur_2_64_end - 1] == 0)
+        base5810Coeff[num5810Coeffs] = xrpl::b58_fast::detail::inplace_bigint_div_rem(
+            base264Coeff.subspan(0, cur264End), b5810);
+        num5810Coeffs += 1;
+        if (base264Coeff[cur264End - 1] == 0)
         {
-            cur_2_64_end -= 1;
+            cur264End -= 1;
         }
     }
 
     // Translate the result into the alphabet
     // Put all the zeros at the beginning, then all the values from the output
-    std::fill(out.begin(), out.begin() + input_zeros, ::xrpl::alphabetForward[0]);
+    std::fill(out.begin(), out.begin() + inputZeros, ::xrpl::alphabetForward[0]);
 
     // iterate through the base 58^10 coeff
     // convert to base 58 big endian then
     // convert to alphabet big endian
-    bool skip_zeros = true;
-    auto out_index = input_zeros;
-    for (int i = num_58_10_coeffs - 1; i >= 0; --i)
+    bool skipZeros = true;
+    auto outIndex = inputZeros;
+    for (int i = num5810Coeffs - 1; i >= 0; --i)
     {
-        if (skip_zeros && base_58_10_coeff[i] == 0)
+        if (skipZeros && base5810Coeff[i] == 0)
         {
             continue;
         }
-        static constexpr std::uint64_t B_58_10 = 430804206899405824;  // 58^10;
-        if (base_58_10_coeff[i] >= B_58_10)
+        static constexpr std::uint64_t b5810 = 430804206899405824;  // 58^10;
+        if (base5810Coeff[i] >= b5810)
         {
             return Unexpected(TokenCodecErrc::inputTooLarge);
         }
-        std::array<std::uint8_t, 10> const b58_be =
-            xrpl::b58_fast::detail::b58_10_to_b58_be(base_58_10_coeff[i]);
-        std::size_t to_skip = 0;
-        std::span<std::uint8_t const> b58_be_s{b58_be.data(), b58_be.size()};
-        if (skip_zeros)
+        std::array<std::uint8_t, 10> const b58Be =
+            xrpl::b58_fast::detail::b58_10_to_b58_be(base5810Coeff[i]);
+        std::size_t toSkip = 0;
+        std::span<std::uint8_t const> b58BeS{b58Be.data(), b58Be.size()};
+        if (skipZeros)
         {
-            to_skip = count_leading_zeros(b58_be_s);
-            skip_zeros = false;
-            if (out.size() < (i + 1) * 10 - to_skip)
+            toSkip = countLeadingZeros(b58BeS);
+            skipZeros = false;
+            if (out.size() < (i + 1) * 10 - toSkip)
             {
                 return Unexpected(TokenCodecErrc::outputTooSmall);
             }
         }
-        for (auto b58_coeff : b58_be_s.subspan(to_skip))
+        for (auto b58Coeff : b58BeS.subspan(toSkip))
         {
-            out[out_index] = ::xrpl::alphabetForward[b58_coeff];
-            out_index += 1;
+            out[outIndex] = ::xrpl::alphabetForward[b58Coeff];
+            outIndex += 1;
         }
     }
 
-    return out.subspan(0, out_index);
+    return out.subspan(0, outIndex);
 }
 
 // Note the input is BIG ENDIAN (some fn in this module use little endian)
@@ -482,7 +482,7 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
         return Unexpected(TokenCodecErrc::outputTooSmall);
     }
 
-    auto count_leading_zeros = [&](auto const& col) -> std::size_t {
+    auto countLeadingZeros = [&](auto const& col) -> std::size_t {
         std::size_t count = 0;
         for (auto const& c : col)
         {
@@ -495,56 +495,56 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
         return count;
     };
 
-    auto const input_zeros = count_leading_zeros(input);
+    auto const inputZeros = countLeadingZeros(input);
 
     // Allocate enough base 58^10 coeff for encoding 38 bytes
     // (33 bytes for nodepublic + 1 byte token + 4 bytes checksum)
     // log(2^(38*8),58^10)) ~= 5.18. So 6 coeff are enough
-    std::array<std::uint64_t, 6> b_58_10_coeff{};
+    std::array<std::uint64_t, 6> b5810Coeff{};
     auto [num_full_coeffs, partial_coeff_len] = xrpl::b58_fast::detail::div_rem(input.size(), 10);
-    auto const num_partial_coeffs = partial_coeff_len ? 1 : 0;
-    auto const num_b_58_10_coeffs = num_full_coeffs + num_partial_coeffs;
+    auto const numPartialCoeffs = partial_coeff_len ? 1 : 0;
+    auto const numB5810Coeffs = num_full_coeffs + numPartialCoeffs;
     XRPL_ASSERT(
         num_b_58_10_coeffs <= b_58_10_coeff.size(),
         "xrpl::b58_fast::detail::b58_to_b256_be : maximum coeff");
     for (unsigned char c : input.substr(0, partial_coeff_len))
     {
-        auto cur_val = ::xrpl::alphabetReverse[c];
-        if (cur_val < 0)
+        auto curVal = ::xrpl::alphabetReverse[c];
+        if (curVal < 0)
         {
             return Unexpected(TokenCodecErrc::invalidEncodingChar);
         }
-        b_58_10_coeff[0] *= 58;
-        b_58_10_coeff[0] += cur_val;
+        b5810Coeff[0] *= 58;
+        b5810Coeff[0] += curVal;
     }
     for (int i = 0; i < 10; ++i)
     {
         for (int j = 0; j < num_full_coeffs; ++j)
         {
             unsigned char c = input[partial_coeff_len + j * 10 + i];
-            auto cur_val = ::xrpl::alphabetReverse[c];
-            if (cur_val < 0)
+            auto curVal = ::xrpl::alphabetReverse[c];
+            if (curVal < 0)
             {
                 return Unexpected(TokenCodecErrc::invalidEncodingChar);
             }
-            b_58_10_coeff[num_partial_coeffs + j] *= 58;
-            b_58_10_coeff[num_partial_coeffs + j] += cur_val;
+            b5810Coeff[numPartialCoeffs + j] *= 58;
+            b5810Coeff[numPartialCoeffs + j] += curVal;
         }
     }
 
-    constexpr std::uint64_t B_58_10 = 430804206899405824;  // 58^10;
+    constexpr std::uint64_t b5810 = 430804206899405824;  // 58^10;
 
     // log(2^(38*8),2^64) ~= 4.75)
     std::array<std::uint64_t, 5> result{};
-    result[0] = b_58_10_coeff[0];
-    std::size_t cur_result_size = 1;
-    for (int i = 1; i < num_b_58_10_coeffs; ++i)
+    result[0] = b5810Coeff[0];
+    std::size_t curResultSize = 1;
+    for (int i = 1; i < numB5810Coeffs; ++i)
     {
-        std::uint64_t const c = b_58_10_coeff[i];
+        std::uint64_t const c = b5810Coeff[i];
 
         {
             auto code = xrpl::b58_fast::detail::inplace_bigint_mul(
-                std::span(&result[0], cur_result_size + 1), B_58_10);
+                std::span(&result[0], curResultSize + 1), b5810);
             if (code != TokenCodecErrc::success)
             {
                 return Unexpected(code);
@@ -552,60 +552,60 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
         }
         {
             auto code = xrpl::b58_fast::detail::inplace_bigint_add(
-                std::span(&result[0], cur_result_size + 1), c);
+                std::span(&result[0], curResultSize + 1), c);
             if (code != TokenCodecErrc::success)
             {
                 return Unexpected(code);
             }
         }
-        if (result[cur_result_size] != 0)
+        if (result[curResultSize] != 0)
         {
-            cur_result_size += 1;
+            curResultSize += 1;
         }
     }
-    std::fill(out.begin(), out.begin() + input_zeros, 0);
-    auto cur_out_i = input_zeros;
+    std::fill(out.begin(), out.begin() + inputZeros, 0);
+    auto curOutI = inputZeros;
     // Don't write leading zeros to the output for the most significant
     // coeff
     {
-        std::uint64_t const c = result[cur_result_size - 1];
-        auto skip_zero = true;
+        std::uint64_t const c = result[curResultSize - 1];
+        auto skipZero = true;
         // start and end of output range
         for (int i = 0; i < 8; ++i)
         {
             std::uint8_t const b = (c >> (8 * (7 - i))) & 0xff;
-            if (skip_zero)
+            if (skipZero)
             {
                 if (b == 0)
                 {
                     continue;
                 }
-                skip_zero = false;
+                skipZero = false;
             }
-            out[cur_out_i] = b;
-            cur_out_i += 1;
+            out[curOutI] = b;
+            curOutI += 1;
         }
     }
-    if ((cur_out_i + 8 * (cur_result_size - 1)) > out.size())
+    if ((curOutI + 8 * (curResultSize - 1)) > out.size())
     {
         return Unexpected(TokenCodecErrc::outputTooSmall);
     }
 
-    for (int i = cur_result_size - 2; i >= 0; --i)
+    for (int i = curResultSize - 2; i >= 0; --i)
     {
         auto c = result[i];
         boost::endian::native_to_big_inplace(c);
-        memcpy(&out[cur_out_i], &c, 8);
-        cur_out_i += 8;
+        memcpy(&out[curOutI], &c, 8);
+        curOutI += 8;
     }
 
-    return out.subspan(0, cur_out_i);
+    return out.subspan(0, curOutI);
 }
 }  // namespace detail
 
 B58Result<std::span<std::uint8_t>>
 encodeBase58Token(
-    TokenType token_type,
+    TokenType tokenType,
     std::span<std::uint8_t const> input,
     std::span<std::uint8_t> out)
 {
@@ -620,12 +620,12 @@ encodeBase58Token(
         return Unexpected(TokenCodecErrc::inputTooSmall);
     }
     // <type (1 byte)><token (input len)><checksum (4 bytes)>
-    buf[0] = static_cast<std::uint8_t>(token_type);
+    buf[0] = static_cast<std::uint8_t>(tokenType);
     // buf[1..=input.len()] = input;
     memcpy(&buf[1], input.data(), input.size());
-    size_t const checksum_i = input.size() + 1;
+    size_t const checksumI = input.size() + 1;
     // buf[checksum_i..checksum_i + 4] = checksum
-    checksum(buf.data() + checksum_i, buf.data(), checksum_i);
+    checksum(buf.data() + checksumI, buf.data(), checksumI);
     std::span<std::uint8_t const> b58Span(buf.data(), input.size() + 5);
     return detail::b256_to_b58_be(b58Span, out);
 }

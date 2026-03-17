@@ -167,12 +167,12 @@ CashCheck::preclaim(PreclaimContext const& ctx)
                 // Entries have a canonical representation, determined by a
                 // lexicographical "greater than" comparison employing strict
                 // weak ordering. Determine which entry we need to access.
-                bool const canonical_gt(dstId > issuerId);
+                bool const canonicalGt(dstId > issuerId);
 
-                bool const is_authorized(
-                    sleTrustLine->at(sfFlags) & (canonical_gt ? lsfLowAuth : lsfHighAuth));
+                bool const isAuthorized(
+                    sleTrustLine->at(sfFlags) & (canonicalGt ? lsfLowAuth : lsfHighAuth));
 
-                if (!is_authorized)
+                if (!isAuthorized)
                 {
                     JLOG(ctx.j.warn()) << "Can't receive IOUs from issuer without auth.";
                     return tecNO_AUTH;

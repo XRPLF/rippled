@@ -22,44 +22,44 @@ public:
             // Gateway account and assets
             Account const alice{"alice"};
             env.fund(XRP(10000), "alice");
-            auto USD = alice["USD"];
-            auto CNY = alice["CNY"];
-            auto JPY = alice["JPY"];
+            auto usd = alice["USD"];
+            auto cny = alice["CNY"];
+            auto jpy = alice["JPY"];
 
             // Create a hotwallet
             Account const hw{"hw"};
             env.fund(XRP(10000), "hw");
             env.close();
-            env(trust(hw, USD(10000)));
-            env(trust(hw, JPY(10000)));
-            env(pay(alice, hw, USD(5000)));
-            env(pay(alice, hw, JPY(5000)));
+            env(trust(hw, usd(10000)));
+            env(trust(hw, jpy(10000)));
+            env(pay(alice, hw, usd(5000)));
+            env(pay(alice, hw, jpy(5000)));
 
             // Create some clients
             Account const bob{"bob"};
             env.fund(XRP(10000), "bob");
             env.close();
-            env(trust(bob, USD(100)));
-            env(trust(bob, CNY(100)));
-            env(pay(alice, bob, USD(50)));
+            env(trust(bob, usd(100)));
+            env(trust(bob, cny(100)));
+            env(pay(alice, bob, usd(50)));
 
             Account const charley{"charley"};
             env.fund(XRP(10000), "charley");
             env.close();
-            env(trust(charley, CNY(500)));
-            env(trust(charley, JPY(500)));
-            env(pay(alice, charley, CNY(250)));
-            env(pay(alice, charley, JPY(250)));
+            env(trust(charley, cny(500)));
+            env(trust(charley, jpy(500)));
+            env(pay(alice, charley, cny(250)));
+            env(pay(alice, charley, jpy(250)));
 
             Account const dave{"dave"};
             env.fund(XRP(10000), "dave");
             env.close();
-            env(trust(dave, CNY(100)));
-            env(pay(alice, dave, CNY(30)));
+            env(trust(dave, cny(100)));
+            env(pay(alice, dave, cny(30)));
 
             // give the gateway an asset
             env(trust(alice, charley["USD"](50)));
-            env(pay(charley, alice, USD(10)));
+            env(pay(charley, alice, usd(10)));
 
             // freeze dave
             env(trust(alice, dave["CNY"](0), dave, tfSetFreeze));
@@ -178,10 +178,10 @@ public:
         Account const alice{"alice"};
         env.fund(XRP(10000), alice);
         env.close();
-        auto USD = alice["USD"];
+        auto usd = alice["USD"];
 
         // The largest valid STAmount of USD:
-        STAmount const maxUSD(USD.issue(), STAmount::cMaxValue, STAmount::cMaxOffset);
+        STAmount const maxUSD(usd.issue(), STAmount::cMaxValue, STAmount::cMaxOffset);
 
         // Create a hotwallet
         Account const hw{"hw"};
@@ -249,7 +249,7 @@ public:
         mpt.pay(alice, bob, 1000);
 
         // Bob creates an escrow of MPT to Alice.
-        auto const MPT = mpt["MPT"];
+        auto const MPT = mpt["MPT"];  // NOLINT(readability-identifier-naming)
         env(escrow::create(bob, alice, MPT(100)), escrow::finish_time(env.now() + 10s));
         env.close();
 

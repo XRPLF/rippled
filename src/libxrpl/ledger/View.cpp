@@ -2149,18 +2149,17 @@ accountSendIOU(
 
     if (auto stream = j.trace())
     {
-        std::string sender_bal("-");
-        std::string receiver_bal("-");
+        std::string senderBal("-");
+        std::string receiverBal("-");
 
         if (sender)
-            sender_bal = sender->getFieldAmount(sfBalance).getFullText();
+            senderBal = sender->getFieldAmount(sfBalance).getFullText();
 
         if (receiver)
-            receiver_bal = receiver->getFieldAmount(sfBalance).getFullText();
+            receiverBal = receiver->getFieldAmount(sfBalance).getFullText();
 
-        stream << "accountSendIOU> " << to_string(uSenderID) << " (" << sender_bal << ") -> "
-               << to_string(uReceiverID) << " (" << receiver_bal
-               << ") : " << saAmount.getFullText();
+        stream << "accountSendIOU> " << to_string(uSenderID) << " (" << senderBal << ") -> "
+               << to_string(uReceiverID) << " (" << receiverBal << ") : " << saAmount.getFullText();
     }
 
     if (sender)
@@ -2196,18 +2195,17 @@ accountSendIOU(
 
     if (auto stream = j.trace())
     {
-        std::string sender_bal("-");
-        std::string receiver_bal("-");
+        std::string senderBal("-");
+        std::string receiverBal("-");
 
         if (sender)
-            sender_bal = sender->getFieldAmount(sfBalance).getFullText();
+            senderBal = sender->getFieldAmount(sfBalance).getFullText();
 
         if (receiver)
-            receiver_bal = receiver->getFieldAmount(sfBalance).getFullText();
+            receiverBal = receiver->getFieldAmount(sfBalance).getFullText();
 
-        stream << "accountSendIOU< " << to_string(uSenderID) << " (" << sender_bal << ") -> "
-               << to_string(uReceiverID) << " (" << receiver_bal
-               << ") : " << saAmount.getFullText();
+        stream << "accountSendIOU< " << to_string(uSenderID) << " (" << senderBal << ") -> "
+               << to_string(uReceiverID) << " (" << receiverBal << ") : " << saAmount.getFullText();
     }
 
     return terResult;
@@ -2245,12 +2243,12 @@ accountSendMultiIOU(
 
     if (auto stream = j.trace())
     {
-        std::string sender_bal("-");
+        std::string senderBal("-");
 
         if (sender)
-            sender_bal = sender->getFieldAmount(sfBalance).getFullText();
+            senderBal = sender->getFieldAmount(sfBalance).getFullText();
 
-        stream << "accountSendMultiIOU> " << to_string(senderID) << " (" << sender_bal << ") -> "
+        stream << "accountSendMultiIOU> " << to_string(senderID) << " (" << senderBal << ") -> "
                << receivers.size() << " receivers.";
     }
 
@@ -2277,13 +2275,13 @@ accountSendMultiIOU(
 
         if (auto stream = j.trace())
         {
-            std::string receiver_bal("-");
+            std::string receiverBal("-");
 
             if (receiver)
-                receiver_bal = receiver->getFieldAmount(sfBalance).getFullText();
+                receiverBal = receiver->getFieldAmount(sfBalance).getFullText();
 
             stream << "accountSendMultiIOU> " << to_string(senderID) << " -> "
-                   << to_string(receiverID) << " (" << receiver_bal
+                   << to_string(receiverID) << " (" << receiverBal
                    << ") : " << amount.getFullText();
         }
 
@@ -2302,13 +2300,13 @@ accountSendMultiIOU(
 
         if (auto stream = j.trace())
         {
-            std::string receiver_bal("-");
+            std::string receiverBal("-");
 
             if (receiver)
-                receiver_bal = receiver->getFieldAmount(sfBalance).getFullText();
+                receiverBal = receiver->getFieldAmount(sfBalance).getFullText();
 
             stream << "accountSendMultiIOU< " << to_string(senderID) << " -> "
-                   << to_string(receiverID) << " (" << receiver_bal
+                   << to_string(receiverID) << " (" << receiverBal
                    << ") : " << amount.getFullText();
         }
     }
@@ -2332,12 +2330,12 @@ accountSendMultiIOU(
 
     if (auto stream = j.trace())
     {
-        std::string sender_bal("-");
+        std::string senderBal("-");
 
         if (sender)
-            sender_bal = sender->getFieldAmount(sfBalance).getFullText();
+            senderBal = sender->getFieldAmount(sfBalance).getFullText();
 
-        stream << "accountSendMultiIOU< " << to_string(senderID) << " (" << sender_bal << ") -> "
+        stream << "accountSendMultiIOU< " << to_string(senderID) << " (" << senderBal << ") -> "
                << receivers.size() << " receivers.";
     }
     return tesSUCCESS;
@@ -2703,28 +2701,28 @@ issueIOU(
 
     if (auto state = view.peek(index))
     {
-        STAmount final_balance = state->getFieldAmount(sfBalance);
+        STAmount finalBalance = state->getFieldAmount(sfBalance);
 
         if (bSenderHigh)
-            final_balance.negate();  // Put balance in sender terms.
+            finalBalance.negate();  // Put balance in sender terms.
 
-        STAmount const start_balance = final_balance;
+        STAmount const startBalance = finalBalance;
 
-        final_balance -= amount;
+        finalBalance -= amount;
 
-        auto const must_delete = updateTrustLine(
-            view, state, bSenderHigh, issue.account, start_balance, final_balance, j);
+        auto const mustDelete =
+            updateTrustLine(view, state, bSenderHigh, issue.account, startBalance, finalBalance, j);
 
-        view.creditHook(issue.account, account, amount, start_balance);
+        view.creditHook(issue.account, account, amount, startBalance);
 
         if (bSenderHigh)
-            final_balance.negate();
+            finalBalance.negate();
 
         // Adjust the balance on the trust line if necessary. We do this even if
         // we are going to delete the line to reflect the correct balance at the
         // time of deletion.
-        state->setFieldAmount(sfBalance, final_balance);
-        if (must_delete)
+        state->setFieldAmount(sfBalance, finalBalance);
+        if (mustDelete)
             return trustDelete(
                 view,
                 state,
@@ -2741,9 +2739,9 @@ issueIOU(
     // this is unnecessarily inefficient as copying which could be avoided
     // is now required. Consider available options.
     STAmount const limit(Issue{issue.currency, account});
-    STAmount final_balance = amount;
+    STAmount finalBalance = amount;
 
-    final_balance.setIssuer(noAccount());
+    finalBalance.setIssuer(noAccount());
 
     auto const receiverAccount = view.peek(keylet::account(account));
     if (!receiverAccount)
@@ -2762,7 +2760,7 @@ issueIOU(
         noRipple,
         false,
         false,
-        final_balance,
+        finalBalance,
         limit,
         0,
         0,
@@ -2793,29 +2791,29 @@ redeemIOU(
 
     if (auto state = view.peek(keylet::line(account, issue.account, issue.currency)))
     {
-        STAmount final_balance = state->getFieldAmount(sfBalance);
+        STAmount finalBalance = state->getFieldAmount(sfBalance);
 
         if (bSenderHigh)
-            final_balance.negate();  // Put balance in sender terms.
+            finalBalance.negate();  // Put balance in sender terms.
 
-        STAmount const start_balance = final_balance;
+        STAmount const startBalance = finalBalance;
 
-        final_balance -= amount;
+        finalBalance -= amount;
 
-        auto const must_delete =
-            updateTrustLine(view, state, bSenderHigh, account, start_balance, final_balance, j);
+        auto const mustDelete =
+            updateTrustLine(view, state, bSenderHigh, account, startBalance, finalBalance, j);
 
-        view.creditHook(account, issue.account, amount, start_balance);
+        view.creditHook(account, issue.account, amount, startBalance);
 
         if (bSenderHigh)
-            final_balance.negate();
+            finalBalance.negate();
 
         // Adjust the balance on the trust line if necessary. We do this even if
         // we are going to delete the line to reflect the correct balance at the
         // time of deletion.
-        state->setFieldAmount(sfBalance, final_balance);
+        state->setFieldAmount(sfBalance, finalBalance);
 
-        if (must_delete)
+        if (mustDelete)
         {
             return trustDelete(
                 view,

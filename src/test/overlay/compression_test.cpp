@@ -341,11 +341,11 @@ public:
         protocol::TMManifests manifests;
         protocol::TMEndpoints endpoints;
         protocol::TMTransaction transaction;
-        protocol::TMGetLedger get_ledger;
-        protocol::TMLedgerData ledger_data;
-        protocol::TMGetObjectByHash get_object;
-        protocol::TMValidatorList validator_list;
-        protocol::TMValidatorListCollection validator_list_collection;
+        protocol::TMGetLedger getLedger;
+        protocol::TMLedgerData ledgerData;
+        protocol::TMGetObjectByHash getObject;
+        protocol::TMValidatorList validatorList;
+        protocol::TMValidatorListCollection validatorListCollection;
 
         // 4.5KB
         doTest(buildManifests(20), protocol::mtMANIFESTS, 4, "TMManifests20");
@@ -408,26 +408,26 @@ public:
                 false,
                 env->app().config().TX_REDUCE_RELAY_ENABLE,
                 env->app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE);
-            http_request_type http_request;
-            http_request.version(request.version());
-            http_request.base() = request.base();
+            http_request_type httpRequest;
+            httpRequest.version(request.version());
+            httpRequest.base() = request.base();
             // feature enabled on the peer's connection only if both sides are
             // enabled
             auto const peerEnabled = inboundEnable && outboundEnable;
             // inbound is enabled if the request's header has the feature
             // enabled and the peer's configuration is enabled
             auto const inboundEnabled =
-                peerFeatureEnabled(http_request, FEATURE_COMPR, "lz4", inboundEnable);
+                peerFeatureEnabled(httpRequest, FEATURE_COMPR, "lz4", inboundEnable);
             BEAST_EXPECT(!(peerEnabled ^ inboundEnabled));
 
             env.reset();
             env = getEnv(inboundEnable);
-            auto http_resp = xrpl::makeResponse(
-                true, http_request, addr, addr, uint256{1}, 1, {1, 0}, env->app());
+            auto httpResp = xrpl::makeResponse(
+                true, httpRequest, addr, addr, uint256{1}, 1, {1, 0}, env->app());
             // outbound is enabled if the response's header has the feature
             // enabled and the peer's configuration is enabled
             auto const outboundEnabled =
-                peerFeatureEnabled(http_resp, FEATURE_COMPR, "lz4", outboundEnable);
+                peerFeatureEnabled(httpResp, FEATURE_COMPR, "lz4", outboundEnable);
             BEAST_EXPECT(!(peerEnabled ^ outboundEnabled));
         };
         handshake(1, 1);

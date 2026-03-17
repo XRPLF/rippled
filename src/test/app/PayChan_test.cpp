@@ -65,7 +65,7 @@ struct PayChan_test : public beast::unit_test::suite
         Env env{*this, features};
         auto const alice = Account("alice");
         auto const bob = Account("bob");
-        auto USDA = alice["USD"];
+        auto usda = alice["USD"];
         env.fund(XRP(10000), alice, bob);
         auto const pk = alice.pk();
         auto const settleDelay = 100s;
@@ -88,8 +88,8 @@ struct PayChan_test : public beast::unit_test::suite
 
         {
             // bad amounts (non-xrp, negative amounts)
-            env(create(alice, bob, USDA(1000), settleDelay, pk), ter(temBAD_AMOUNT));
-            env(fund(alice, chan, USDA(1000)), ter(temBAD_AMOUNT));
+            env(create(alice, bob, usda(1000), settleDelay, pk), ter(temBAD_AMOUNT));
+            env(fund(alice, chan, usda(1000)), ter(temBAD_AMOUNT));
             env(create(alice, bob, XRP(-1000), settleDelay, pk), ter(temBAD_AMOUNT));
             env(fund(alice, chan, XRP(-1000)), ter(temBAD_AMOUNT));
         }
@@ -107,7 +107,7 @@ struct PayChan_test : public beast::unit_test::suite
 
         {
             // No signature claim with bad amounts (negative and non-xrp)
-            auto const iou = USDA(100).value();
+            auto const iou = usda(100).value();
             auto const negXRP = XRP(-100).value();
             auto const posXRP = XRP(100).value();
             env(claim(alice, chan, iou, iou), ter(temBAD_AMOUNT));
@@ -652,7 +652,7 @@ struct PayChan_test : public beast::unit_test::suite
         auto const alice = Account("alice");
         auto const bob = Account("bob");
         auto const carol = Account("carol");
-        auto USDA = alice["USD"];
+        auto usda = alice["USD"];
         {
             Env env{*this, features};
             env.fund(XRP(10000), alice, bob, carol);
@@ -1530,7 +1530,7 @@ struct PayChan_test : public beast::unit_test::suite
         Env env{*this, features};
         auto const alice = Account("alice");
         auto const bob = Account("bob");
-        auto USDA = alice["USD"];
+        auto usda = alice["USD"];
         env.fund(XRP(10000), alice, bob);
         auto const pk = alice.pk();
         auto const settleDelay = 100s;
@@ -1748,7 +1748,7 @@ struct PayChan_test : public beast::unit_test::suite
         Env env{*this, features};
         auto const alice = Account("alice");
         auto const bob = Account("bob");
-        auto USDA = alice["USD"];
+        auto usda = alice["USD"];
         env.fund(XRP(10000), alice, bob);
 
         // alice and bob grab enough tickets for all of the following

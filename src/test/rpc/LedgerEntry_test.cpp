@@ -1209,18 +1209,18 @@ class LedgerEntry_test : public beast::unit_test::suite
         Env env{*this};
         Account const alice{"alice"};
         Account const gw{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(10000), alice, gw);
         env.close();
 
-        env.trust(USD(1000), alice);
+        env.trust(usd(1000), alice);
         env.close();
 
         // Run up the number of directory entries so alice has two
         // directory nodes.
         for (int d = 1'000'032; d >= 1'000'000; --d)
         {
-            env(offer(alice, USD(1), drops(d)));
+            env(offer(alice, usd(1), drops(d)));
         }
         env.close();
 
@@ -1574,11 +1574,11 @@ class LedgerEntry_test : public beast::unit_test::suite
         Env env{*this};
         Account const alice{"alice"};
         Account const gw{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(10000), alice, gw);
         env.close();
 
-        env(offer(alice, USD(321), XRP(322)));
+        env(offer(alice, usd(321), XRP(322)));
         env.close();
 
         std::string const ledgerHash{to_string(env.closed()->header().hash)};
@@ -1682,14 +1682,14 @@ class LedgerEntry_test : public beast::unit_test::suite
         Env env{*this};
         Account const alice{"alice"};
         Account const gw{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(10000), alice, gw);
         env.close();
 
-        env.trust(USD(999), alice);
+        env.trust(usd(999), alice);
         env.close();
 
-        env(pay(gw, alice, USD(97)));
+        env(pay(gw, alice, usd(97)));
         env.close();
 
         // check both aliases
@@ -2655,7 +2655,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
         createBridgeObjects(mcEnv, scEnv);
 
         std::string const ledgerHash{to_string(mcEnv.closed()->header().hash)};
-        std::string bridge_index;
+        std::string bridgeIndex;
         Json::Value mcBridge;
         {
             // request the bridge via RPC
@@ -2685,13 +2685,13 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
             BEAST_EXPECT(r[sfXChainAccountClaimCount.jsonName].asInt() == 0);
 
             BEAST_EXPECT(r.isMember(jss::index));
-            bridge_index = r[jss::index].asString();
+            bridgeIndex = r[jss::index].asString();
             mcBridge = r;
         }
         {
             // request the bridge via RPC by index
             Json::Value jvParams;
-            jvParams[jss::index] = bridge_index;
+            jvParams[jss::index] = bridgeIndex;
             Json::Value const jrr =
                 mcEnv.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
 
@@ -2807,7 +2807,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
 
         // send less than quorum of attestations (otherwise funds are
         // immediately transferred and no "claim" object is created)
-        size_t constexpr num_attest_ = 3;
+        size_t constexpr numAttest = 3;
         auto attestations = create_account_attestations(
             scAttester,
             jvb,
@@ -2820,7 +2820,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
             scCarol,
             signers,
             UT_XCHAIN_DEFAULT_NUM_SIGNERS);
-        for (size_t i = 0; i < num_attest_; ++i)
+        for (size_t i = 0; i < numAttest; ++i)
         {
             scEnv(attestations[i]);
         }
@@ -2850,8 +2850,8 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
             BEAST_EXPECT(attest.size() == 3);
             BEAST_EXPECT(
                 attest[Json::Value::UInt(0)].isMember(sfXChainCreateAccountProofSig.jsonName));
-            Json::Value a[num_attest_];
-            for (size_t i = 0; i < num_attest_; ++i)
+            Json::Value a[numAttest];
+            for (size_t i = 0; i < numAttest; ++i)
             {
                 a[i] = attest[Json::Value::UInt(0)][sfXChainCreateAccountProofSig.jsonName];
                 BEAST_EXPECT(
@@ -2879,7 +2879,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
 
         // complete attestations quorum - CreateAccountClaimID should not be
         // present anymore
-        for (size_t i = num_attest_; i < UT_XCHAIN_DEFAULT_NUM_SIGNERS; ++i)
+        for (size_t i = numAttest; i < UT_XCHAIN_DEFAULT_NUM_SIGNERS; ++i)
         {
             scEnv(attestations[i]);
         }

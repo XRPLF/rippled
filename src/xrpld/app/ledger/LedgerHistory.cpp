@@ -171,21 +171,21 @@ log_metadata_difference(
         auto const& validNodes = validMetaData->getNodes();
         auto const& builtNodes = builtMetaData->getNodes();
 
-        bool const result_diff = validMetaData->getResultTER() != builtMetaData->getResultTER();
+        bool const resultDiff = validMetaData->getResultTER() != builtMetaData->getResultTER();
 
-        bool const index_diff = validMetaData->getIndex() != builtMetaData->getIndex();
+        bool const indexDiff = validMetaData->getIndex() != builtMetaData->getIndex();
 
-        bool const nodes_diff = validNodes != builtNodes;
+        bool const nodesDiff = validNodes != builtNodes;
 
-        if (!result_diff && !index_diff && !nodes_diff)
+        if (!resultDiff && !indexDiff && !nodesDiff)
         {
             JLOG(j.error()) << "MISMATCH on TX " << tx << ": No apparent mismatches detected!";
             return;
         }
 
-        if (!nodes_diff)
+        if (!nodesDiff)
         {
-            if (result_diff && index_diff)
+            if (resultDiff && indexDiff)
             {
                 JLOG(j.debug()) << "MISMATCH on TX " << tx << ": Different result and index!";
                 JLOG(j.debug()) << " Built:"
@@ -195,7 +195,7 @@ log_metadata_difference(
                                 << " Result: " << validMetaData->getResult()
                                 << " Index: " << validMetaData->getIndex();
             }
-            else if (result_diff)
+            else if (resultDiff)
             {
                 JLOG(j.debug()) << "MISMATCH on TX " << tx << ": Different result!";
                 JLOG(j.debug()) << " Built:"
@@ -203,7 +203,7 @@ log_metadata_difference(
                 JLOG(j.debug()) << " Valid:"
                                 << " Result: " << validMetaData->getResult();
             }
-            else if (index_diff)
+            else if (indexDiff)
             {
                 JLOG(j.debug()) << "MISMATCH on TX " << tx << ": Different index!";
                 JLOG(j.debug()) << " Built:"
@@ -214,14 +214,14 @@ log_metadata_difference(
         }
         else
         {
-            if (result_diff && index_diff)
+            if (resultDiff && indexDiff)
             {
                 JLOG(j.debug()) << "MISMATCH on TX " << tx
                                 << ": Different result, index and nodes!";
                 JLOG(j.debug()) << " Built:\n" << builtMetaData->getJson(JsonOptions::none);
                 JLOG(j.debug()) << " Valid:\n" << validMetaData->getJson(JsonOptions::none);
             }
-            else if (result_diff)
+            else if (resultDiff)
             {
                 JLOG(j.debug()) << "MISMATCH on TX " << tx << ": Different result and nodes!";
                 JLOG(j.debug()) << " Built:"
@@ -231,7 +231,7 @@ log_metadata_difference(
                                 << " Result: " << validMetaData->getResult() << " Nodes:\n"
                                 << validNodes.getJson(JsonOptions::none);
             }
-            else if (index_diff)
+            else if (indexDiff)
             {
                 JLOG(j.debug()) << "MISMATCH on TX " << tx << ": Different index and nodes!";
                 JLOG(j.debug()) << " Built:"

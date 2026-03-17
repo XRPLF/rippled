@@ -588,47 +588,47 @@ TEST(json_value, bad_json)
 
 TEST(json_value, edge_cases)
 {
-    std::uint32_t max_uint = std::numeric_limits<std::uint32_t>::max();
-    std::int32_t max_int = std::numeric_limits<std::int32_t>::max();
-    std::int32_t min_int = std::numeric_limits<std::int32_t>::min();
+    std::uint32_t maxUint = std::numeric_limits<std::uint32_t>::max();
+    std::int32_t maxInt = std::numeric_limits<std::int32_t>::max();
+    std::int32_t minInt = std::numeric_limits<std::int32_t>::min();
 
-    std::uint32_t a_uint = max_uint - 1978;
-    std::int32_t a_large_int = max_int - 1978;
-    std::int32_t a_small_int = min_int + 1978;
+    std::uint32_t aUint = maxUint - 1978;
+    std::int32_t aLargeInt = maxInt - 1978;
+    std::int32_t aSmallInt = minInt + 1978;
 
     {
-        std::string json = "{\"max_uint\":" + std::to_string(max_uint);
-        json += ",\"max_int\":" + std::to_string(max_int);
-        json += ",\"min_int\":" + std::to_string(min_int);
-        json += ",\"a_uint\":" + std::to_string(a_uint);
-        json += ",\"a_large_int\":" + std::to_string(a_large_int);
-        json += ",\"a_small_int\":" + std::to_string(a_small_int);
+        std::string json = "{\"max_uint\":" + std::to_string(maxUint);
+        json += ",\"max_int\":" + std::to_string(maxInt);
+        json += ",\"min_int\":" + std::to_string(minInt);
+        json += ",\"a_uint\":" + std::to_string(aUint);
+        json += ",\"a_large_int\":" + std::to_string(aLargeInt);
+        json += ",\"a_small_int\":" + std::to_string(aSmallInt);
         json += "}";
 
         Json::Value j1;
         Json::Reader r1;
 
         EXPECT_TRUE(r1.parse(json, j1));
-        EXPECT_EQ(j1["max_uint"].asUInt(), max_uint);
-        EXPECT_EQ(j1["max_uint"].asAbsUInt(), max_uint);
-        EXPECT_EQ(j1["max_int"].asInt(), max_int);
-        EXPECT_EQ(j1["max_int"].asAbsUInt(), max_int);
-        EXPECT_EQ(j1["min_int"].asInt(), min_int);
-        EXPECT_EQ(j1["min_int"].asAbsUInt(), static_cast<std::int64_t>(min_int) * -1);
-        EXPECT_EQ(j1["a_uint"].asUInt(), a_uint);
-        EXPECT_EQ(j1["a_uint"].asAbsUInt(), a_uint);
-        EXPECT_GT(j1["a_uint"], a_large_int);
-        EXPECT_GT(j1["a_uint"], a_small_int);
-        EXPECT_EQ(j1["a_large_int"].asInt(), a_large_int);
-        EXPECT_EQ(j1["a_large_int"].asAbsUInt(), a_large_int);
-        EXPECT_EQ(j1["a_large_int"].asUInt(), a_large_int);
-        EXPECT_LT(j1["a_large_int"], a_uint);
-        EXPECT_EQ(j1["a_small_int"].asInt(), a_small_int);
-        EXPECT_EQ(j1["a_small_int"].asAbsUInt(), static_cast<std::int64_t>(a_small_int) * -1);
-        EXPECT_LT(j1["a_small_int"], a_uint);
+        EXPECT_EQ(j1["max_uint"].asUInt(), maxUint);
+        EXPECT_EQ(j1["max_uint"].asAbsUInt(), maxUint);
+        EXPECT_EQ(j1["max_int"].asInt(), maxInt);
+        EXPECT_EQ(j1["max_int"].asAbsUInt(), maxInt);
+        EXPECT_EQ(j1["min_int"].asInt(), minInt);
+        EXPECT_EQ(j1["min_int"].asAbsUInt(), static_cast<std::int64_t>(minInt) * -1);
+        EXPECT_EQ(j1["a_uint"].asUInt(), aUint);
+        EXPECT_EQ(j1["a_uint"].asAbsUInt(), aUint);
+        EXPECT_GT(j1["a_uint"], aLargeInt);
+        EXPECT_GT(j1["a_uint"], aSmallInt);
+        EXPECT_EQ(j1["a_large_int"].asInt(), aLargeInt);
+        EXPECT_EQ(j1["a_large_int"].asAbsUInt(), aLargeInt);
+        EXPECT_EQ(j1["a_large_int"].asUInt(), aLargeInt);
+        EXPECT_LT(j1["a_large_int"], aUint);
+        EXPECT_EQ(j1["a_small_int"].asInt(), aSmallInt);
+        EXPECT_EQ(j1["a_small_int"].asAbsUInt(), static_cast<std::int64_t>(aSmallInt) * -1);
+        EXPECT_LT(j1["a_small_int"], aUint);
     }
 
-    std::uint64_t overflow = std::uint64_t(max_uint) + 1;
+    std::uint64_t overflow = std::uint64_t(maxUint) + 1;
     {
         std::string json = "{\"overflow\":";
         json += std::to_string(overflow);
@@ -640,7 +640,7 @@ TEST(json_value, edge_cases)
         EXPECT_FALSE(r2.parse(json, j2));
     }
 
-    std::int64_t underflow = std::int64_t(min_int) - 1;
+    std::int64_t underflow = std::int64_t(minInt) - 1;
     {
         std::string json = "{\"underflow\":";
         json += std::to_string(underflow);

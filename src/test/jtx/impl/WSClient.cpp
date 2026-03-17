@@ -27,7 +27,7 @@ class WSClientImpl : public WSClient
     {
         Json::Value jv;
 
-        explicit msg(Json::Value&& jv_) : jv(jv_)
+        explicit msg(Json::Value&& jv) : jv(jv)
         {
         }
     };
@@ -123,14 +123,14 @@ public:
     WSClientImpl(
         Config const& cfg,
         bool v2,
-        unsigned rpc_version,
+        unsigned rpcVersion,
         std::unordered_map<std::string, std::string> const& headers = {})
         : work_(std::in_place, boost::asio::make_work_guard(ios_))
         , strand_(boost::asio::make_strand(ios_))
         , thread_([&] { ios_.run(); })
         , stream_(ios_)
         , ws_(stream_)
-        , rpc_version_(rpc_version)
+        , rpc_version_(rpcVersion)
     {
         try
         {
@@ -292,10 +292,10 @@ std::unique_ptr<WSClient>
 makeWSClient(
     Config const& cfg,
     bool v2,
-    unsigned rpc_version,
+    unsigned rpcVersion,
     std::unordered_map<std::string, std::string> const& headers)
 {
-    return std::make_unique<WSClientImpl>(cfg, v2, rpc_version, headers);
+    return std::make_unique<WSClientImpl>(cfg, v2, rpcVersion, headers);
 }
 
 }  // namespace test

@@ -25,7 +25,7 @@ void
 getManifests(
     soci::session& session,
     std::string const& dbTable,
-    ManifestCache& cache_,
+    ManifestCache& cache,
     beast::Journal j)
 {
     // Load manifests stored in database
@@ -45,7 +45,7 @@ getManifests(
                 continue;
             }
 
-            cache_.applyManifest(std::move(*mo));
+            cache.applyManifest(std::move(*mo));
         }
         else
         {
@@ -223,8 +223,8 @@ void
 readAmendments(
     soci::session& session,
     std::function<void(
-        boost::optional<std::string> amendment_hash,
-        boost::optional<std::string> amendment_name,
+        boost::optional<std::string> amendmentHash,
+        boost::optional<std::string> amendmentName,
         boost::optional<AmendmentVote> vote)> const& callback)
 {
     // lambda that converts the internally stored int to an AmendmentVote.
@@ -239,18 +239,18 @@ readAmendments(
         "(  PARTITION BY AmendmentHash ORDER BY ROWID DESC ) "
         "as rnk FROM FeatureVotes ) WHERE rnk = 1";
     // SOCI requires boost::optional (not std::optional) as parameters.
-    boost::optional<std::string> amendment_hash;
-    boost::optional<std::string> amendment_name;
-    boost::optional<int> vote_to_veto;
+    boost::optional<std::string> amendmentHash;
+    boost::optional<std::string> amendmentName;
+    boost::optional<int> voteToVeto;
     soci::statement st =
         (session.prepare << sql,
-         soci::into(amendment_hash),
-         soci::into(amendment_name),
-         soci::into(vote_to_veto));
+         soci::into(amendmentHash),
+         soci::into(amendmentName),
+         soci::into(voteToVeto));
     st.execute();
     while (st.fetch())
     {
-        callback(amendment_hash, amendment_name, intToVote(vote_to_veto));
+        callback(amendmentHash, amendmentName, intToVote(voteToVeto));
     }
 }
 

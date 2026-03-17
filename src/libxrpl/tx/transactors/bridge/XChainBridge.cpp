@@ -337,7 +337,7 @@ enum class DepositAuthPolicy { normal, dstCanBypass };
 struct TransferHelperSubmittingAccountInfo
 {
     AccountID account;
-    STAmount preFeeBalance_;
+    STAmount preFeeBalance;
     STAmount postFeeBalance;
 };
 
@@ -423,7 +423,7 @@ transferHelper(
                 if (!submittingAccountInfo || submittingAccountInfo->account != src ||
                     submittingAccountInfo->postFeeBalance != curBal)
                     return curBal;
-                return submittingAccountInfo->preFeeBalance_;
+                return submittingAccountInfo->preFeeBalance;
             }();
 
             if (availableBalance < amt + reserve)
@@ -633,10 +633,10 @@ finalizeClaimHelper(
             // if the transfer failed, distribute the pool for "OnTransferFail"
             // cases (the attesters did their job)
             STAmount const share = [&] {
-                auto const round_mode = innerSb.rules().enabled(fixXChainRewardRounding)
+                auto const roundMode = innerSb.rules().enabled(fixXChainRewardRounding)
                     ? Number::rounding_mode::downward
                     : Number::getround();
-                saveNumberRoundMode _{Number::setround(round_mode)};
+                saveNumberRoundMode _{Number::setround(roundMode)};
 
                 STAmount const den{rewardAccounts.size()};
                 return divide(rewardPool, den, rewardPool.issue());

@@ -96,11 +96,11 @@ struct STInteger_test : public beast::unit_test::suite
         BEAST_EXPECT(jsonVal.isString());
         BEAST_EXPECT(jsonVal.asString() == "ffffffffffffffff");
 
-        STUInt64 u64_2(sfMaximumAmount, 0xFFFFFFFFFFFFFFFFull);
-        BEAST_EXPECT(u64_2.value() == 0xFFFFFFFFFFFFFFFFull);
-        BEAST_EXPECT(u64_2.getText() == "18446744073709551615");
-        BEAST_EXPECT(u64_2.getSType() == STI_UINT64);
-        BEAST_EXPECT(u64_2.getJson(JsonOptions::none) == "18446744073709551615");
+        STUInt64 u642(sfMaximumAmount, 0xFFFFFFFFFFFFFFFFull);
+        BEAST_EXPECT(u642.value() == 0xFFFFFFFFFFFFFFFFull);
+        BEAST_EXPECT(u642.getText() == "18446744073709551615");
+        BEAST_EXPECT(u642.getSType() == STI_UINT64);
+        BEAST_EXPECT(u642.getJson(JsonOptions::none) == "18446744073709551615");
     }
 
     void

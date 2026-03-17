@@ -83,14 +83,14 @@ bool
 checkConsensusReached(
     std::size_t agreeing,
     std::size_t total,
-    bool count_self,
+    bool countSelf,
     std::size_t minConsensusPct,
     bool reachedMax,
     bool stalled,
     std::unique_ptr<std::stringstream> const& clog)
 {
     CLOG(clog) << "checkConsensusReached params: agreeing: " << agreeing << ", total: " << total
-               << ", count_self: " << count_self << ", minConsensusPct: " << minConsensusPct
+               << ", count_self: " << countSelf << ", minConsensusPct: " << minConsensusPct
                << ", reachedMax: " << reachedMax << ". ";
 
     // If we are alone for too long, we have consensus.
@@ -125,7 +125,7 @@ checkConsensusReached(
         return true;
     }
 
-    if (count_self)
+    if (countSelf)
     {
         ++agreeing;
         ++total;

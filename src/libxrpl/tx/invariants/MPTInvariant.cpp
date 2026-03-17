@@ -42,7 +42,7 @@ bool
 ValidMPTIssuance::finalize(
     STTx const& tx,
     TER const result,
-    XRPAmount const _fee,
+    XRPAmount const fee,
     ReadView const& view,
     beast::Journal const& j)
 {

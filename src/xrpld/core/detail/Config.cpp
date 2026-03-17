@@ -511,34 +511,34 @@ Config::loadFromString(std::string const& fileContents)
     }
     else
     {
-        std::optional<std::size_t> peers_in_max{};
+        std::optional<std::size_t> peersInMax{};
         if (getSingleSection(secConfig, SECTION_PEERS_IN_MAX, strTemp, j_))
         {
-            peers_in_max = beast::lexicalCastThrow<std::size_t>(strTemp);
-            if (*peers_in_max > 1000)
+            peersInMax = beast::lexicalCastThrow<std::size_t>(strTemp);
+            if (*peersInMax > 1000)
                 Throw<std::runtime_error>("Invalid value specified in [" SECTION_PEERS_IN_MAX
                                           "] section; the value must be less or equal than 1000");
         }
 
-        std::optional<std::size_t> peers_out_max{};
+        std::optional<std::size_t> peersOutMax{};
         if (getSingleSection(secConfig, SECTION_PEERS_OUT_MAX, strTemp, j_))
         {
-            peers_out_max = beast::lexicalCastThrow<std::size_t>(strTemp);
-            if (*peers_out_max < 10 || *peers_out_max > 1000)
+            peersOutMax = beast::lexicalCastThrow<std::size_t>(strTemp);
+            if (*peersOutMax < 10 || *peersOutMax > 1000)
                 Throw<std::runtime_error>("Invalid value specified in [" SECTION_PEERS_OUT_MAX
                                           "] section; the value must be in range 10-1000");
         }
 
         // if one section is configured then the other must be configured too
-        if ((peers_in_max && !peers_out_max) || (peers_out_max && !peers_in_max))
+        if ((peersInMax && !peersOutMax) || (peersOutMax && !peersInMax))
             Throw<std::runtime_error>("Both sections [" SECTION_PEERS_IN_MAX
                                       "]"
                                       "and [" SECTION_PEERS_OUT_MAX "] must be configured");
 
-        if (peers_in_max && peers_out_max)
+        if (peersInMax && peersOutMax)
         {
-            PEERS_IN_MAX = *peers_in_max;
-            PEERS_OUT_MAX = *peers_out_max;
+            PEERS_IN_MAX = *peersInMax;
+            PEERS_OUT_MAX = *peersOutMax;
         }
     }
 
@@ -1005,35 +1005,35 @@ Config::loadFromString(std::string const& fileContents)
 boost::filesystem::path
 Config::getDebugLogFile() const
 {
-    auto log_file = DEBUG_LOGFILE;
+    auto logFile = DEBUG_LOGFILE;
 
-    if (!log_file.empty() && !log_file.is_absolute())
+    if (!logFile.empty() && !logFile.is_absolute())
     {
         // Unless an absolute path for the log file is specified, the
         // path is relative to the config file directory.
-        log_file = boost::filesystem::absolute(log_file, CONFIG_DIR);
+        logFile = boost::filesystem::absolute(logFile, CONFIG_DIR);
     }
 
-    if (!log_file.empty())
+    if (!logFile.empty())
     {
-        auto log_dir = log_file.parent_path();
+        auto logDir = logFile.parent_path();
 
-        if (!boost::filesystem::is_directory(log_dir))
+        if (!boost::filesystem::is_directory(logDir))
         {
             boost::system::error_code ec;
-            boost::filesystem::create_directories(log_dir, ec);
+            boost::filesystem::create_directories(logDir, ec);
 
             // If we fail, we warn but continue so that the calling code can
             // decide how to handle this situation.
             if (ec)
             {
-                std::cerr << "Unable to create log file path " << log_dir << ": " << ec.message()
+                std::cerr << "Unable to create log file path " << logDir << ": " << ec.message()
                           << '\n';
             }
         }
     }
 
-    return log_file;
+    return logFile;
 }
 
 int
@@ -1085,56 +1085,56 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
         result->reserve(3);
 
         // defaults
-        std::string safety_level;
-        std::string journal_mode = "wal";
+        std::string safetyLevel;
+        std::string journalMode = "wal";
         std::string synchronous = "normal";
-        std::string temp_store = "file";
+        std::string tempStore = "file";
         bool showRiskWarning = false;
 
-        if (set(safety_level, "safety_level", sqlite))
+        if (set(safetyLevel, "safety_level", sqlite))
         {
-            if (boost::iequals(safety_level, "low"))
+            if (boost::iequals(safetyLevel, "low"))
             {
                 // low safety defaults
-                journal_mode = "memory";
+                journalMode = "memory";
                 synchronous = "off";
-                temp_store = "memory";
+                tempStore = "memory";
                 showRiskWarning = true;
             }
-            else if (!boost::iequals(safety_level, "high"))
+            else if (!boost::iequals(safetyLevel, "high"))
             {
-                Throw<std::runtime_error>("Invalid safety_level value: " + safety_level);
+                Throw<std::runtime_error>("Invalid safety_level value: " + safetyLevel);
             }
         }
 
         {
             // #journal_mode Valid values : delete, truncate, persist,
             // memory, wal, off
-            if (set(journal_mode, "journal_mode", sqlite) && !safety_level.empty())
+            if (set(journalMode, "journal_mode", sqlite) && !safetyLevel.empty())
             {
                 Throw<std::runtime_error>(
                     "Configuration file may not define both "
                     "\"safety_level\" and \"journal_mode\"");
             }
             bool higherRisk =
-                boost::iequals(journal_mode, "memory") || boost::iequals(journal_mode, "off");
+                boost::iequals(journalMode, "memory") || boost::iequals(journalMode, "off");
             showRiskWarning = showRiskWarning || higherRisk;
-            if (higherRisk || boost::iequals(journal_mode, "delete") ||
-                boost::iequals(journal_mode, "truncate") ||
-                boost::iequals(journal_mode, "persist") || boost::iequals(journal_mode, "wal"))
+            if (higherRisk || boost::iequals(journalMode, "delete") ||
+                boost::iequals(journalMode, "truncate") || boost::iequals(journalMode, "persist") ||
+                boost::iequals(journalMode, "wal"))
             {
                 result->emplace_back(
-                    boost::str(boost::format(CommonDBPragmaJournal) % journal_mode));
+                    boost::str(boost::format(CommonDBPragmaJournal) % journalMode));
             }
             else
             {
-                Throw<std::runtime_error>("Invalid journal_mode value: " + journal_mode);
+                Throw<std::runtime_error>("Invalid journal_mode value: " + journalMode);
             }
         }
 
         {
             // #synchronous Valid values : off, normal, full, extra
-            if (set(synchronous, "synchronous", sqlite) && !safety_level.empty())
+            if (set(synchronous, "synchronous", sqlite) && !safetyLevel.empty())
             {
                 Throw<std::runtime_error>(
                     "Configuration file may not define both "
@@ -1155,22 +1155,22 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
 
         {
             // #temp_store Valid values : default, file, memory
-            if (set(temp_store, "temp_store", sqlite) && !safety_level.empty())
+            if (set(tempStore, "temp_store", sqlite) && !safetyLevel.empty())
             {
                 Throw<std::runtime_error>(
                     "Configuration file may not define both "
                     "\"safety_level\" and \"temp_store\"");
             }
-            bool higherRisk = boost::iequals(temp_store, "memory");
+            bool higherRisk = boost::iequals(tempStore, "memory");
             showRiskWarning = showRiskWarning || higherRisk;
-            if (higherRisk || boost::iequals(temp_store, "default") ||
-                boost::iequals(temp_store, "file"))
+            if (higherRisk || boost::iequals(tempStore, "default") ||
+                boost::iequals(tempStore, "file"))
             {
-                result->emplace_back(boost::str(boost::format(CommonDBPragmaTemp) % temp_store));
+                result->emplace_back(boost::str(boost::format(CommonDBPragmaTemp) % tempStore));
             }
             else
             {
-                Throw<std::runtime_error>("Invalid temp_store value: " + temp_store);
+                Throw<std::runtime_error>("Invalid temp_store value: " + tempStore);
             }
         }
 
@@ -1195,22 +1195,22 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
     setPragma(setup.lgrPragma[0], "journal_size_limit", 1582080);
 
     // TX Pragma
-    int64_t page_size = 4096;
-    int64_t journal_size_limit = 1582080;
+    int64_t pageSize = 4096;
+    int64_t journalSizeLimit = 1582080;
     if (c.exists("sqlite"))
     {
         auto& s = c.section("sqlite");
-        set(journal_size_limit, "journal_size_limit", s);
-        set(page_size, "page_size", s);
-        if (page_size < 512 || page_size > 65536)
+        set(journalSizeLimit, "journal_size_limit", s);
+        set(pageSize, "page_size", s);
+        if (pageSize < 512 || pageSize > 65536)
             Throw<std::runtime_error>("Invalid page_size. Must be between 512 and 65536.");
 
-        if (page_size & (page_size - 1))
+        if (pageSize & (pageSize - 1))
             Throw<std::runtime_error>("Invalid page_size. Must be a power of 2.");
     }
 
-    setPragma(setup.txPragma[0], "page_size", page_size);
-    setPragma(setup.txPragma[1], "journal_size_limit", journal_size_limit);
+    setPragma(setup.txPragma[0], "page_size", pageSize);
+    setPragma(setup.txPragma[1], "journal_size_limit", journalSizeLimit);
     setPragma(setup.txPragma[2], "max_page_count", 4294967294);
     setPragma(setup.txPragma[3], "mmap_size", 17179869184);
 

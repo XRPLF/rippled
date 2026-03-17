@@ -91,7 +91,7 @@ authorized(Port const& port, std::map<std::string, std::string> const& h)
 ServerHandler::ServerHandler(
     ServerHandlerCreator const&,
     Application& app,
-    boost::asio::io_context& io_context,
+    boost::asio::io_context& ioContext,
     JobQueue& jobQueue,
     NetworkOPs& networkOPs,
     Resource::Manager& resourceManager,
@@ -100,7 +100,7 @@ ServerHandler::ServerHandler(
     , resourceManager_(resourceManager)
     , journal_(app_.journal("Server"))
     , networkOPs_(networkOPs)
-    , server_(make_Server(*this, io_context, app_.journal("Server")))
+    , server_(make_Server(*this, ioContext, app_.journal("Server")))
     , jobQueue_(jobQueue)
 {
     auto const& group(cm.group("rpc"));
@@ -177,16 +177,16 @@ ServerHandler::onHandoff(
     Session& session,
     std::unique_ptr<stream_type>&& bundle,
     http_request_type&& request,
-    boost::asio::ip::tcp::endpoint const& remote_address)
+    boost::asio::ip::tcp::endpoint const& remoteAddress)
 {
     using namespace boost::beast;
     auto const& p{session.port().protocol};
-    bool const is_ws{
+    bool const isWs{
         p.count("ws") > 0 || p.count("ws2") > 0 || p.count("wss") > 0 || p.count("wss2") > 0};
 
     if (websocket::is_upgrade(request))
     {
-        if (!is_ws)
+        if (!isWs)
             return statusRequestResponse(request, http::status::unauthorized);
 
         std::shared_ptr<WSSession> ws;
@@ -201,12 +201,11 @@ ServerHandler::onHandoff(
         }
 
         auto is{std::make_shared<WSInfoSub>(networkOPs_, ws)};
-        auto const beast_remote_address = beast::IPAddressConversion::from_asio(remote_address);
+        auto const beastRemoteAddress = beast::IPAddressConversion::from_asio(remoteAddress);
         is->getConsumer() = requestInboundEndpoint(
             resourceManager_,
-            beast_remote_address,
-            requestRole(
-                Role::GUEST, session.port(), Json::Value(), beast_remote_address, is->user()),
+            beastRemoteAddress,
+            requestRole(Role::GUEST, session.port(), Json::Value(), beastRemoteAddress, is->user()),
             is->user(),
             is->forwarded_for());
         ws->appDefined = std::move(is);
@@ -218,9 +217,9 @@ ServerHandler::onHandoff(
     }
 
     if (bundle && p.count("peer") > 0)
-        return app_.overlay().onHandoff(std::move(bundle), std::move(request), remote_address);
+        return app_.overlay().onHandoff(std::move(bundle), std::move(request), remoteAddress);
 
-    if (is_ws && isStatusRequest(request))
+    if (isWs && isStatusRequest(request))
         return statusResponse(request);
 
     // Otherwise pass to legacy onRequest or websocket
@@ -1189,7 +1188,7 @@ setup_ServerHandler(Config const& config, std::ostream&& log)
 std::unique_ptr<ServerHandler>
 make_ServerHandler(
     Application& app,
-    boost::asio::io_context& io_context,
+    boost::asio::io_context& ioContext,
     JobQueue& jobQueue,
     NetworkOPs& networkOPs,
     Resource::Manager& resourceManager,
@@ -1198,7 +1197,7 @@ make_ServerHandler(
     return std::make_unique<ServerHandler>(
         ServerHandler::ServerHandlerCreator(),
         app,
-        io_context,
+        ioContext,
         jobQueue,
         networkOPs,
         resourceManager,

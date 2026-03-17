@@ -139,6 +139,7 @@ private:
     };
 
 public:
+    // NOLINTBEGIN(readability-identifier-naming)
     std::unique_ptr<Config> config_;
     std::unique_ptr<Logs> logs_;
     std::unique_ptr<TimeKeeper> timeKeeper_;
@@ -211,6 +212,7 @@ public:
     io_latency_sampler io_latency_sampler_;
 
     std::unique_ptr<GRPCServer> grpcServer_;
+    // NOLINTEND(readability-identifier-naming)
 
     //--------------------------------------------------------------------------
 

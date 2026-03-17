@@ -154,8 +154,8 @@ buildHandshake(
     boost::beast::http::fields& h,
     xrpl::uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
-    beast::IP::Address public_ip,
-    beast::IP::Address remote_ip,
+    beast::IP::Address publicIp,
+    beast::IP::Address remoteIp,
     Application& app)
 {
     if (networkID)
@@ -181,11 +181,11 @@ buildHandshake(
     if (!app.config().SERVER_DOMAIN.empty())
         h.insert("Server-Domain", app.config().SERVER_DOMAIN);
 
-    if (beast::IP::is_public(remote_ip))
-        h.insert("Remote-IP", remote_ip.to_string());
+    if (beast::IP::is_public(remoteIp))
+        h.insert("Remote-IP", remoteIp.to_string());
 
-    if (!public_ip.is_unspecified())
-        h.insert("Local-IP", public_ip.to_string());
+    if (!publicIp.is_unspecified())
+        h.insert("Local-IP", publicIp.to_string());
 
     if (auto const cl = app.getLedgerMaster().getClosedLedger())
     {
@@ -199,7 +199,7 @@ verifyHandshake(
     boost::beast::http::fields const& headers,
     xrpl::uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
-    beast::IP::Address public_ip,
+    beast::IP::Address publicIp,
     beast::IP::Address remote,
     Application& app)
 {
@@ -294,33 +294,32 @@ verifyHandshake(
     if (auto const iter = headers.find("Local-IP"); iter != headers.end())
     {
         boost::system::error_code ec;
-        auto const local_ip = boost::asio::ip::make_address(std::string_view(iter->value()), ec);
+        auto const localIp = boost::asio::ip::make_address(std::string_view(iter->value()), ec);
 
         if (ec)
             throw std::runtime_error("Invalid Local-IP");
 
-        if (beast::IP::is_public(remote) && remote != local_ip)
+        if (beast::IP::is_public(remote) && remote != localIp)
             throw std::runtime_error(
-                "Incorrect Local-IP: " + remote.to_string() + " instead of " +
-                local_ip.to_string());
+                "Incorrect Local-IP: " + remote.to_string() + " instead of " + localIp.to_string());
     }
 
     if (auto const iter = headers.find("Remote-IP"); iter != headers.end())
     {
         boost::system::error_code ec;
-        auto const remote_ip = boost::asio::ip::make_address(std::string_view(iter->value()), ec);
+        auto const remoteIp = boost::asio::ip::make_address(std::string_view(iter->value()), ec);
 
         if (ec)
             throw std::runtime_error("Invalid Remote-IP");
 
-        if (beast::IP::is_public(remote) && !beast::IP::is_unspecified(public_ip))
+        if (beast::IP::is_public(remote) && !beast::IP::is_unspecified(publicIp))
         {
             // We know our public IP and peer reports our connection came
             // from some other IP.
-            if (remote_ip != public_ip)
+            if (remoteIp != publicIp)
                 throw std::runtime_error(
-                    "Incorrect Remote-IP: " + public_ip.to_string() + " instead of " +
-                    remote_ip.to_string());
+                    "Incorrect Remote-IP: " + publicIp.to_string() + " instead of " +
+                    remoteIp.to_string());
         }
     }
 
@@ -355,8 +354,8 @@ http_response_type
 makeResponse(
     bool crawlPublic,
     http_request_type const& req,
-    beast::IP::Address public_ip,
-    beast::IP::Address remote_ip,
+    beast::IP::Address publicIp,
+    beast::IP::Address remoteIp,
     uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
     ProtocolVersion protocol,
@@ -379,7 +378,7 @@ makeResponse(
             app.config().TX_REDUCE_RELAY_ENABLE,
             app.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE));
 
-    buildHandshake(resp, sharedValue, networkID, public_ip, remote_ip, app);
+    buildHandshake(resp, sharedValue, networkID, publicIp, remoteIp, app);
 
     return resp;
 }

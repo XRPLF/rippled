@@ -32,22 +32,22 @@ struct RPCCallTestData
     std::vector<char const*> exp;
 
     RPCCallTestData(
-        char const* description_,
-        int line_,
-        std::initializer_list<char const*> const& args_,
-        Exception throwsWhat_,
-        char const* exp_)
-        : description(description_), line(line_), args(args_), throwsWhat(throwsWhat_), exp(1, exp_)
+        char const* description,
+        int line,
+        std::initializer_list<char const*> const& args,
+        Exception throwsWhat,
+        char const* exp)
+        : description(description), line(line), args(args), throwsWhat(throwsWhat), exp(1, exp)
     {
     }
 
     RPCCallTestData(
-        char const* description_,
-        int line_,
-        std::initializer_list<char const*> const& args_,
-        Exception throwsWhat_,
-        std::initializer_list<char const*> exp_)
-        : description(description_), line(line_), args(args_), throwsWhat(throwsWhat_), exp(exp_)
+        char const* description,
+        int line,
+        std::initializer_list<char const*> const& args,
+        Exception throwsWhat,
+        std::initializer_list<char const*> exp)
+        : description(description), line(line), args(args), throwsWhat(throwsWhat), exp(exp)
     {
     }
 
@@ -5825,10 +5825,10 @@ static RPCCallTestData const rpcCallTestArray[] = {
 std::string
 updateAPIVersionString(char const* const req, unsigned apiVersion)
 {
-    std::string const version_str = std::to_string(apiVersion);
-    static auto const place_holder = "%API_VER%";
+    std::string const versionStr = std::to_string(apiVersion);
+    static auto const placeHolder = "%API_VER%";
     std::string jr(req);
-    boost::replace_all(jr, place_holder, version_str);
+    boost::replace_all(jr, placeHolder, versionStr);
     return jr;
 }
 

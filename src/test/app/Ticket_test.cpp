@@ -333,7 +333,7 @@ class Ticket_test : public beast::unit_test::suite
         env(ticket::create(master, 251), ter(temINVALID_COUNT));
 
         // Exercise fees.
-        std::uint32_t const ticketSeq_A{env.seq(master) + 1};
+        std::uint32_t const ticketSeqA{env.seq(master) + 1};
         env(ticket::create(master, 1), fee(XRP(10)));
         checkTicketCreateMeta(env);
         env.close();
@@ -342,7 +342,7 @@ class Ticket_test : public beast::unit_test::suite
         env(ticket::create(master, 1), fee(XRP(-1)), ter(temBAD_FEE));
 
         // Exercise flags.
-        std::uint32_t const ticketSeq_B{env.seq(master) + 1};
+        std::uint32_t const ticketSeqB{env.seq(master) + 1};
         env(ticket::create(master, 1), txflags(tfFullyCanonicalSig));
         checkTicketCreateMeta(env);
         env.close();
@@ -354,12 +354,12 @@ class Ticket_test : public beast::unit_test::suite
 
         // We successfully created 1 ticket earlier.  Verify that we can
         // create 250 tickets in one shot.  We must consume one ticket first.
-        env(noop(master), ticket::use(ticketSeq_A));
+        env(noop(master), ticket::use(ticketSeqA));
         checkTicketConsumeMeta(env);
         env.close();
         env.require(owners(master, 1), tickets(master, 1));
 
-        env(ticket::create(master, 250), ticket::use(ticketSeq_B));
+        env(ticket::create(master, 250), ticket::use(ticketSeqB));
         checkTicketCreateMeta(env);
         env.close();
         env.require(owners(master, 250), tickets(master, 250));
@@ -425,7 +425,7 @@ class Ticket_test : public beast::unit_test::suite
             env.fund(XRP(100000), alice);
             env.close();
 
-            std::uint32_t ticketSeq_AB{env.seq(alice) + 1};
+            std::uint32_t ticketSeqAb{env.seq(alice) + 1};
             env(ticket::create(alice, 2));
             checkTicketCreateMeta(env);
             env.close();
@@ -433,7 +433,7 @@ class Ticket_test : public beast::unit_test::suite
 
             // Adding 250 tickets (while consuming one) will exceed the
             // threshold.
-            env(ticket::create(alice, 250), ticket::use(ticketSeq_AB + 0), ter(tecDIR_FULL));
+            env(ticket::create(alice, 250), ticket::use(ticketSeqAb + 0), ter(tecDIR_FULL));
             env.close();
             env.require(owners(alice, 1), tickets(alice, 1));
 
@@ -444,7 +444,7 @@ class Ticket_test : public beast::unit_test::suite
             env.require(owners(alice, 1), tickets(alice, 1));
 
             // Alice can now add 250 tickets while consuming one.
-            env(ticket::create(alice, 250), ticket::use(ticketSeq_AB + 1));
+            env(ticket::create(alice, 250), ticket::use(ticketSeqAb + 1));
             checkTicketCreateMeta(env);
             env.close();
             env.require(owners(alice, 250), tickets(alice, 250));
@@ -517,55 +517,55 @@ class Ticket_test : public beast::unit_test::suite
         env.close();
 
         // Successfully create tickets (using a sequence)
-        std::uint32_t const ticketSeq_AB{env.seq(alice) + 1};
+        std::uint32_t const ticketSeqAb{env.seq(alice) + 1};
         env(ticket::create(alice, 2));
         checkTicketCreateMeta(env);
         env.close();
         env.require(owners(alice, 2), tickets(alice, 2));
-        BEAST_EXPECT(ticketSeq_AB + 2 == env.seq(alice));
+        BEAST_EXPECT(ticketSeqAb + 2 == env.seq(alice));
 
         // You can use a ticket to create one ticket ...
-        std::uint32_t const ticketSeq_C{env.seq(alice)};
-        env(ticket::create(alice, 1), ticket::use(ticketSeq_AB + 0));
+        std::uint32_t const ticketSeqC{env.seq(alice)};
+        env(ticket::create(alice, 1), ticket::use(ticketSeqAb + 0));
         checkTicketCreateMeta(env);
         env.close();
         env.require(owners(alice, 2), tickets(alice, 2));
-        BEAST_EXPECT(ticketSeq_C + 1 == env.seq(alice));
+        BEAST_EXPECT(ticketSeqC + 1 == env.seq(alice));
 
         // ... you can use a ticket to create multiple tickets ...
-        std::uint32_t const ticketSeq_DE{env.seq(alice)};
-        env(ticket::create(alice, 2), ticket::use(ticketSeq_AB + 1));
+        std::uint32_t const ticketSeqDe{env.seq(alice)};
+        env(ticket::create(alice, 2), ticket::use(ticketSeqAb + 1));
         checkTicketCreateMeta(env);
         env.close();
         env.require(owners(alice, 3), tickets(alice, 3));
-        BEAST_EXPECT(ticketSeq_DE + 2 == env.seq(alice));
+        BEAST_EXPECT(ticketSeqDe + 2 == env.seq(alice));
 
         // ... and you can use a ticket for other things.
-        env(noop(alice), ticket::use(ticketSeq_DE + 0));
+        env(noop(alice), ticket::use(ticketSeqDe + 0));
         checkTicketConsumeMeta(env);
         env.close();
         env.require(owners(alice, 2), tickets(alice, 2));
-        BEAST_EXPECT(ticketSeq_DE + 2 == env.seq(alice));
+        BEAST_EXPECT(ticketSeqDe + 2 == env.seq(alice));
 
-        env(pay(alice, env.master, XRP(20)), ticket::use(ticketSeq_DE + 1));
+        env(pay(alice, env.master, XRP(20)), ticket::use(ticketSeqDe + 1));
         checkTicketConsumeMeta(env);
         env.close();
         env.require(owners(alice, 1), tickets(alice, 1));
-        BEAST_EXPECT(ticketSeq_DE + 2 == env.seq(alice));
+        BEAST_EXPECT(ticketSeqDe + 2 == env.seq(alice));
 
-        env(trust(alice, env.master["USD"](20)), ticket::use(ticketSeq_C));
+        env(trust(alice, env.master["USD"](20)), ticket::use(ticketSeqC));
         checkTicketConsumeMeta(env);
         env.close();
         env.require(owners(alice, 1), tickets(alice, 0));
-        BEAST_EXPECT(ticketSeq_DE + 2 == env.seq(alice));
+        BEAST_EXPECT(ticketSeqDe + 2 == env.seq(alice));
 
         // Attempt to use a ticket that has already been used.
-        env(noop(alice), ticket::use(ticketSeq_C), ter(tefNO_TICKET));
+        env(noop(alice), ticket::use(ticketSeqC), ter(tefNO_TICKET));
         env.close();
 
         // Attempt to use a ticket from the future.
-        std::uint32_t const ticketSeq_F{env.seq(alice) + 1};
-        env(noop(alice), ticket::use(ticketSeq_F), ter(terPRE_TICKET));
+        std::uint32_t const ticketSeqF{env.seq(alice) + 1};
+        env(noop(alice), ticket::use(ticketSeqF), ter(terPRE_TICKET));
         env.close();
 
         // Now create the ticket.  The retry will consume the new ticket.
@@ -573,17 +573,17 @@ class Ticket_test : public beast::unit_test::suite
         checkTicketCreateMeta(env);
         env.close();
         env.require(owners(alice, 1), tickets(alice, 0));
-        BEAST_EXPECT(ticketSeq_F + 1 == env.seq(alice));
+        BEAST_EXPECT(ticketSeqF + 1 == env.seq(alice));
 
         // Try a transaction that combines consuming a ticket with
         // AccountTxnID.
-        std::uint32_t const ticketSeq_G{env.seq(alice) + 1};
+        std::uint32_t const ticketSeqG{env.seq(alice) + 1};
         env(ticket::create(alice, 1));
         checkTicketCreateMeta(env);
         env.close();
 
         env(noop(alice),
-            ticket::use(ticketSeq_G),
+            ticket::use(ticketSeqG),
             json(R"({"AccountTxnID": "0"})"),
             ter(temINVALID));
         env.close();
@@ -633,34 +633,34 @@ class Ticket_test : public beast::unit_test::suite
         std::uint32_t ticketSeq{env.seq(alice)};
         static constexpr std::uint32_t ticketCount{10};
         env(ticket::create(alice, ticketCount));
-        uint256 const txHash_1{getTxID()};
+        uint256 const txHash1{getTxID()};
 
         // Just for grins use the tickets in reverse from largest to smallest.
         ticketSeq += ticketCount;
         env(noop(alice), ticket::use(--ticketSeq));
-        uint256 const txHash_2{getTxID()};
+        uint256 const txHash2{getTxID()};
 
         env(pay(alice, env.master, XRP(200)), ticket::use(--ticketSeq));
-        uint256 const txHash_3{getTxID()};
+        uint256 const txHash3{getTxID()};
 
         env(deposit::auth(alice, env.master), ticket::use(--ticketSeq));
-        uint256 const txHash_4{getTxID()};
+        uint256 const txHash4{getTxID()};
 
         // Close the ledger so we look at transactions from a couple of
         // different ledgers.
         env.close();
 
         env(pay(alice, env.master, XRP(300)), ticket::use(--ticketSeq));
-        uint256 const txHash_5{getTxID()};
+        uint256 const txHash5{getTxID()};
 
         env(pay(alice, env.master, XRP(400)), ticket::use(--ticketSeq));
-        uint256 const txHash_6{getTxID()};
+        uint256 const txHash6{getTxID()};
 
         env(deposit::unauth(alice, env.master), ticket::use(--ticketSeq));
-        uint256 const txHash_7{getTxID()};
+        uint256 const txHash7{getTxID()};
 
         env(noop(alice), ticket::use(--ticketSeq));
-        uint256 const txHash_8{getTxID()};
+        uint256 const txHash8{getTxID()};
 
         env.close();
 
@@ -700,15 +700,15 @@ class Ticket_test : public beast::unit_test::suite
         };
 
         //   txID ledgerSeq txSeq ticketSeq          txType
-        checkTxFromDB(txHash_1, 4, 4, {}, ttTICKET_CREATE);
-        checkTxFromDB(txHash_2, 4, 0, 13, ttACCOUNT_SET);
-        checkTxFromDB(txHash_3, 4, 0, 12, ttPAYMENT);
-        checkTxFromDB(txHash_4, 4, 0, 11, ttDEPOSIT_PREAUTH);
+        checkTxFromDB(txHash1, 4, 4, {}, ttTICKET_CREATE);
+        checkTxFromDB(txHash2, 4, 0, 13, ttACCOUNT_SET);
+        checkTxFromDB(txHash3, 4, 0, 12, ttPAYMENT);
+        checkTxFromDB(txHash4, 4, 0, 11, ttDEPOSIT_PREAUTH);
 
-        checkTxFromDB(txHash_5, 5, 0, 10, ttPAYMENT);
-        checkTxFromDB(txHash_6, 5, 0, 9, ttPAYMENT);
-        checkTxFromDB(txHash_7, 5, 0, 8, ttDEPOSIT_PREAUTH);
-        checkTxFromDB(txHash_8, 5, 0, 7, ttACCOUNT_SET);
+        checkTxFromDB(txHash5, 5, 0, 10, ttPAYMENT);
+        checkTxFromDB(txHash6, 5, 0, 9, ttPAYMENT);
+        checkTxFromDB(txHash7, 5, 0, 8, ttDEPOSIT_PREAUTH);
+        checkTxFromDB(txHash8, 5, 0, 7, ttACCOUNT_SET);
     }
 
     void

@@ -208,20 +208,20 @@ public:
         NetworkOPs::clock_type& clock,
         bool standalone,
         std::size_t minPeerCount,
-        bool start_valid,
-        JobQueue& job_queue,
+        bool startValid,
+        JobQueue& jobQueue,
         LedgerMaster& ledgerMaster,
         ValidatorKeys const& validatorKeys,
-        boost::asio::io_context& io_svc,
+        boost::asio::io_context& ioSvc,
         beast::Journal journal,
         beast::insight::Collector::ptr const& collector)
         : registry_(registry)
         , journal_(journal)
         , localTX_(make_LocalTxs())
-        , mode_(start_valid ? OperatingMode::FULL : OperatingMode::DISCONNECTED)
-        , heartbeatTimer_(io_svc)
-        , clusterTimer_(io_svc)
-        , accountHistoryTxTimer_(io_svc)
+        , mode_(startValid ? OperatingMode::FULL : OperatingMode::DISCONNECTED)
+        , heartbeatTimer_(ioSvc)
+        , clusterTimer_(ioSvc)
+        , accountHistoryTxTimer_(ioSvc)
         , consensus_(
               registry_.app(),
               make_FeeVote(
@@ -239,9 +239,9 @@ public:
               validatorKeys.keys ? validatorKeys.keys->masterPublicKey
                                  : decltype(validatorMasterPK_){})
         , ledgerMaster_(ledgerMaster)
-        , job_queue_(job_queue)
+        , job_queue_(jobQueue)
         , standalone_(standalone)
-        , minPeerCount_(start_valid ? 0 : minPeerCount)
+        , minPeerCount_(startValid ? 0 : minPeerCount)
         , stats_(std::bind(&NetworkOPsImp::collect_metrics, this), collector)
     {
     }
@@ -585,7 +585,7 @@ private:
     void
     setTimer(
         boost::asio::steady_timer& timer,
-        std::chrono::milliseconds const& expiry_time,
+        std::chrono::milliseconds const& expiryTime,
         std::function<void()> onExpire,
         std::function<void()> onError);
     void
@@ -646,37 +646,37 @@ private:
      */
     struct SubAccountHistoryIndex
     {
-        AccountID const accountId_;
+        AccountID const accountId;
         // forward
-        std::uint32_t forwardTxIndex_;
+        std::uint32_t forwardTxIndex;
         // separate backward and forward
-        std::uint32_t separationLedgerSeq_;
+        std::uint32_t separationLedgerSeq;
         // history, backward
-        std::uint32_t historyLastLedgerSeq_;
-        std::int32_t historyTxIndex_;
-        bool haveHistorical_;
-        std::atomic<bool> stopHistorical_;
+        std::uint32_t historyLastLedgerSeq;
+        std::int32_t historyTxIndex;
+        bool haveHistorical;
+        std::atomic<bool> stopHistorical;
 
         SubAccountHistoryIndex(AccountID const& accountId)
-            : accountId_(accountId)
-            , forwardTxIndex_(0)
-            , separationLedgerSeq_(0)
-            , historyLastLedgerSeq_(0)
-            , historyTxIndex_(-1)
-            , haveHistorical_(false)
-            , stopHistorical_(false)
+            : accountId(accountId)
+            , forwardTxIndex(0)
+            , separationLedgerSeq(0)
+            , historyLastLedgerSeq(0)
+            , historyTxIndex(-1)
+            , haveHistorical(false)
+            , stopHistorical(false)
         {
         }
     };
     struct SubAccountHistoryInfo
     {
-        InfoSub::pointer sink_;
-        std::shared_ptr<SubAccountHistoryIndex> index_;
+        InfoSub::pointer sink;
+        std::shared_ptr<SubAccountHistoryIndex> index;
     };
     struct SubAccountHistoryInfoWeak
     {
-        InfoSub::wptr sinkWptr_;
-        std::shared_ptr<SubAccountHistoryIndex> index_;
+        InfoSub::wptr sinkWptr;
+        std::shared_ptr<SubAccountHistoryIndex> index;
     };
     using SubAccountHistoryMapType =
         hash_map<AccountID, hash_map<std::uint64_t, SubAccountHistoryInfoWeak>>;
@@ -901,7 +901,7 @@ NetworkOPsImp::setStateTimer()
 void
 NetworkOPsImp::setTimer(
     boost::asio::steady_timer& timer,
-    std::chrono::milliseconds const& expiry_time,
+    std::chrono::milliseconds const& expiryTime,
     std::function<void()> onExpire,
     std::function<void()> onError)
 {
@@ -923,7 +923,7 @@ NetworkOPsImp::setTimer(
                 }
             }))
     {
-        timer.expires_after(expiry_time);
+        timer.expires_after(expiryTime);
         timer.async_wait(std::move(*optionalCountedHandler));
     }
 }
@@ -958,7 +958,7 @@ void
 NetworkOPsImp::setAccountHistoryJobTimer(SubAccountHistoryInfoWeak subInfo)
 {
     JLOG(journal_.debug()) << "Scheduling AccountHistory job for account "
-                           << toBase58(subInfo.index_->accountId_);
+                           << toBase58(subInfo.index->accountId);
     using namespace std::chrono_literals;
     setTimer(
         accountHistoryTxTimer_,
@@ -1386,7 +1386,7 @@ NetworkOPsImp::transactionBatch()
 void
 NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
 {
-    std::vector<TransactionStatus> submit_held;
+    std::vector<TransactionStatus> submitHeld;
     std::vector<TransactionStatus> transactions;
     transactions_.swap(transactions);
     XRPL_ASSERT(!transactions.empty(), "xrpl::NetworkOPsImp::apply : non-empty transactions");
@@ -1483,7 +1483,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     auto t = std::make_shared<Transaction>(trans, reason, registry_.app());
                     if (t->getApplying())
                         break;
-                    submit_held.emplace_back(t, false, false, FailHard::no);
+                    submitHeld.emplace_back(t, false, false, FailHard::no);
                     t->setApplying();
                 }
                 if (batchLock.owns_lock())
@@ -1609,14 +1609,14 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
     for (TransactionStatus& e : transactions)
         e.transaction->clearApplying();
 
-    if (!submit_held.empty())
+    if (!submitHeld.empty())
     {
         if (transactions_.empty())
-            transactions_.swap(submit_held);
+            transactions_.swap(submitHeld);
         else
         {
-            transactions_.reserve(transactions_.size() + submit_held.size());
-            for (auto& e : submit_held)
+            transactions_.reserve(transactions_.size() + submitHeld.size());
+            for (auto& e : submitHeld)
                 transactions_.push_back(std::move(e));
         }
     }
@@ -2992,7 +2992,7 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
                     for (auto& inner : outer.second)
                     {
                         auto& subInfo = inner.second;
-                        if (subInfo.index_->separationLedgerSeq_ == 0)
+                        if (subInfo.index->separationLedgerSeq == 0)
                         {
                             subAccountHistoryStart(alpAccepted->getLedger(), subInfo);
                         }
@@ -3264,16 +3264,16 @@ NetworkOPsImp::pubAccountTransaction(
                     while (it != subs.end())
                     {
                         SubAccountHistoryInfoWeak const& info = it->second;
-                        if (currLedgerSeq <= info.index_->separationLedgerSeq_)
+                        if (currLedgerSeq <= info.index->separationLedgerSeq)
                         {
                             ++it;
                             continue;
                         }
 
-                        if (auto isSptr = info.sinkWptr_.lock(); isSptr)
+                        if (auto isSptr = info.sinkWptr.lock(); isSptr)
                         {
                             accountHistoryNotify.emplace_back(
-                                SubAccountHistoryInfo{isSptr, info.index_});
+                                SubAccountHistoryInfo{isSptr, info.index});
                             ++it;
                         }
                         else
@@ -3316,15 +3316,15 @@ NetworkOPsImp::pubAccountTransaction(
             "account_history_tx_stream not set");
         for (auto& info : accountHistoryNotify)
         {
-            auto& index = info.index_;
-            if (index->forwardTxIndex_ == 0 && !index->haveHistorical_)
+            auto& index = info.index;
+            if (index->forwardTxIndex == 0 && !index->haveHistorical)
                 jvObj.set(jss::account_history_tx_first, true);
 
-            jvObj.set(jss::account_history_tx_index, index->forwardTxIndex_++);
+            jvObj.set(jss::account_history_tx_index, index->forwardTxIndex++);
 
             jvObj.visit(
-                info.sink_->getApiVersion(),  //
-                [&](Json::Value const& jv) { info.sink_->send(jv, true); });
+                info.sink->getApiVersion(),  //
+                [&](Json::Value const& jv) { info.sink->send(jv, true); });
         }
     }
 }
@@ -3391,13 +3391,13 @@ NetworkOPsImp::pubProposedAccountTransaction(
             "account_history_tx_stream not set");
         for (auto& info : accountHistoryNotify)
         {
-            auto& index = info.index_;
-            if (index->forwardTxIndex_ == 0 && !index->haveHistorical_)
+            auto& index = info.index;
+            if (index->forwardTxIndex == 0 && !index->haveHistorical)
                 jvObj.set(jss::account_history_tx_first, true);
-            jvObj.set(jss::account_history_tx_index, index->forwardTxIndex_++);
+            jvObj.set(jss::account_history_tx_index, index->forwardTxIndex++);
             jvObj.visit(
-                info.sink_->getApiVersion(),  //
-                [&](Json::Value const& jv) { info.sink_->send(jv, true); });
+                info.sink->getApiVersion(),  //
+                [&](Json::Value const& jv) { info.sink->send(jv, true); });
         }
     }
 }
@@ -3505,11 +3505,11 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::NetworkOPsImp::addAccountHistoryJob : no database");
         JLOG(journal_.error()) << "AccountHistory job for account "
-                               << toBase58(subInfo.index_->accountId_) << " no database";
-        if (auto sptr = subInfo.sinkWptr_.lock(); sptr)
+                               << toBase58(subInfo.index->accountId) << " no database";
+        if (auto sptr = subInfo.sinkWptr.lock(); sptr)
         {
             sptr->send(rpcError(rpcINTERNAL), true);
-            unsubAccountHistory(sptr, subInfo.index_->accountId_, false);
+            unsubAccountHistory(sptr, subInfo.index->accountId, false);
         }
         return;
         // LCOV_EXCL_STOP
@@ -3517,9 +3517,9 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 
     registry_.getJobQueue().addJob(
         jtCLIENT_ACCT_HIST, "HistTxStream", [this, dbType = databaseType, subInfo]() {
-            auto const& accountId = subInfo.index_->accountId_;
-            auto& lastLedgerSeq = subInfo.index_->historyLastLedgerSeq_;
-            auto& txHistoryIndex = subInfo.index_->historyTxIndex_;
+            auto const& accountId = subInfo.index->accountId;
+            auto& lastLedgerSeq = subInfo.index->historyLastLedgerSeq;
+            auto& txHistoryIndex = subInfo.index->historyTxIndex;
 
             JLOG(journal_.trace()) << "AccountHistory job for account " << toBase58(accountId)
                                    << " started. lastLedgerSeq=" << lastLedgerSeq;
@@ -3561,7 +3561,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
             };
 
             auto send = [&](Json::Value const& jvObj, bool unsubscribe) -> bool {
-                if (auto sptr = subInfo.sinkWptr_.lock())
+                if (auto sptr = subInfo.sinkWptr.lock())
                 {
                     sptr->send(jvObj, true);
                     if (unsubscribe)
@@ -3573,7 +3573,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
             };
 
             auto sendMultiApiJson = [&](MultiApiJson const& jvObj, bool unsubscribe) -> bool {
-                if (auto sptr = subInfo.sinkWptr_.lock())
+                if (auto sptr = subInfo.sinkWptr.lock())
                 {
                     jvObj.visit(
                         sptr->getApiVersion(),  //
@@ -3615,10 +3615,10 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
             /*
              * search backward until the genesis ledger or asked to stop
              */
-            while (lastLedgerSeq >= 2 && !subInfo.index_->stopHistorical_)
+            while (lastLedgerSeq >= 2 && !subInfo.index->stopHistorical)
             {
                 int feeChargeCount = 0;
-                if (auto sptr = subInfo.sinkWptr_.lock(); sptr)
+                if (auto sptr = subInfo.sinkWptr.lock(); sptr)
                 {
                     sptr->getConsumer().charge(Resource::feeMediumBurdenRPC);
                     ++feeChargeCount;
@@ -3657,7 +3657,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                 }
 
                 std::optional<RelationalDatabase::AccountTxMarker> marker{};
-                while (!subInfo.index_->stopHistorical_)
+                while (!subInfo.index->stopHistorical)
                 {
                     auto dbResult = getMoreTxns(startLedgerSeq, lastLedgerSeq, marker);
                     if (!dbResult)
@@ -3675,8 +3675,8 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 
                     auto const& txns = dbResult->first;
                     marker = dbResult->second;
-                    size_t num_txns_ = txns.size();
-                    for (size_t i = 0; i < num_txns_; ++i)
+                    size_t numTxns = txns.size();
+                    for (size_t i = 0; i < numTxns; ++i)
                     {
                         auto const& [tx, meta] = txns[i];
 
@@ -3716,12 +3716,12 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                             // LCOV_EXCL_STOP
                         }
 
-                        auto const ref_ = std::ref(*meta);
+                        auto const ref = std::ref(*meta);
                         auto const trR = meta->getResultTER();
-                        MultiApiJson jvTx = transJson(stTxn, trR, true, curTxLedger, ref_);
+                        MultiApiJson jvTx = transJson(stTxn, trR, true, curTxLedger, ref);
 
                         jvTx.set(jss::account_history_tx_index, txHistoryIndex--);
-                        if (i + 1 == num_txns_ || txns[i + 1].first->getLedger() != tx->getLedger())
+                        if (i + 1 == numTxns || txns[i + 1].first->getLedger() != tx->getLedger())
                             jvTx.set(jss::account_history_boundary, true);
 
                         if (isFirstTx(tx, meta))
@@ -3752,7 +3752,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                     }
                 }
 
-                if (!subInfo.index_->stopHistorical_)
+                if (!subInfo.index->stopHistorical)
                 {
                     lastLedgerSeq = startLedgerSeq - 1;
                     if (lastLedgerSeq <= 1)
@@ -3772,8 +3772,8 @@ NetworkOPsImp::subAccountHistoryStart(
     std::shared_ptr<ReadView const> const& ledger,
     SubAccountHistoryInfoWeak& subInfo)
 {
-    subInfo.index_->separationLedgerSeq_ = ledger->seq();
-    auto const& accountId = subInfo.index_->accountId_;
+    subInfo.index->separationLedgerSeq = ledger->seq();
+    auto const& accountId = subInfo.index->accountId;
     auto const accountKeylet = keylet::account(accountId);
     if (!ledger->exists(accountKeylet))
     {
@@ -3803,8 +3803,8 @@ NetworkOPsImp::subAccountHistoryStart(
             // LCOV_EXCL_STOP
         }
     }
-    subInfo.index_->historyLastLedgerSeq_ = ledger->seq();
-    subInfo.index_->haveHistorical_ = true;
+    subInfo.index->historyLastLedgerSeq = ledger->seq();
+    subInfo.index->haveHistorical = true;
 
     JLOG(journal_.debug()) << "subAccountHistoryStart, add AccountHistory job: accountId="
                            << toBase58(accountId) << ", currentLedgerSeq=" << ledger->seq();
@@ -3877,7 +3877,7 @@ NetworkOPsImp::unsubAccountHistoryInternal(
         auto subInfoIter = subInfoMap.find(seq);
         if (subInfoIter != subInfoMap.end())
         {
-            subInfoIter->second.index_->stopHistorical_ = true;
+            subInfoIter->second.index->stopHistorical = true;
         }
 
         if (!historyOnly)
@@ -4576,10 +4576,10 @@ make_NetworkOPs(
     bool standalone,
     std::size_t minPeerCount,
     bool startvalid,
-    JobQueue& job_queue,
+    JobQueue& jobQueue,
     LedgerMaster& ledgerMaster,
     ValidatorKeys const& validatorKeys,
-    boost::asio::io_context& io_svc,
+    boost::asio::io_context& ioSvc,
     beast::Journal journal,
     beast::insight::Collector::ptr const& collector)
 {
@@ -4589,10 +4589,10 @@ make_NetworkOPs(
         standalone,
         minPeerCount,
         startvalid,
-        job_queue,
+        jobQueue,
         ledgerMaster,
         validatorKeys,
-        io_svc,
+        ioSvc,
         journal,
         collector);
 }

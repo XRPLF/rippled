@@ -9,16 +9,13 @@ public:
     using Source = PropertyStream::Source;
 
     void
-    test_peel_name(
-        std::string s,
-        std::string const& expected,
-        std::string const& expected_remainder)
+    test_peel_name(std::string s, std::string const& expected, std::string const& expectedRemainder)
     {
         try
         {
-            std::string const peeled_name = Source::peel_name(&s);
-            BEAST_EXPECT(peeled_name == expected);
-            BEAST_EXPECT(s == expected_remainder);
+            std::string const peeledName = Source::peel_name(&s);
+            BEAST_EXPECT(peeledName == expected);
+            BEAST_EXPECT(s == expectedRemainder);
         }
         catch (...)
         {
@@ -28,12 +25,12 @@ public:
     }
 
     void
-    test_peel_leading_slash(std::string s, std::string const& expected, bool should_be_found)
+    test_peel_leading_slash(std::string s, std::string const& expected, bool shouldBeFound)
     {
         try
         {
             bool const found(Source::peel_leading_slash(&s));
-            BEAST_EXPECT(found == should_be_found);
+            BEAST_EXPECT(found == shouldBeFound);
             BEAST_EXPECT(s == expected);
         }
         catch (...)
@@ -46,14 +43,14 @@ public:
     void
     test_peel_trailing_slashstar(
         std::string s,
-        std::string const& expected_remainder,
-        bool should_be_found)
+        std::string const& expectedRemainder,
+        bool shouldBeFound)
     {
         try
         {
             bool const found(Source::peel_trailing_slashstar(&s));
-            BEAST_EXPECT(found == should_be_found);
-            BEAST_EXPECT(s == expected_remainder);
+            BEAST_EXPECT(found == shouldBeFound);
+            BEAST_EXPECT(s == expectedRemainder);
         }
         catch (...)
         {
@@ -108,13 +105,13 @@ public:
     }
 
     void
-    test_find(Source& root, std::string path, Source* expected, bool expected_star)
+    test_find(Source& root, std::string path, Source* expected, bool expectedStar)
     {
         try
         {
             auto const result(root.find(path));
             BEAST_EXPECT(result.first == expected);
-            BEAST_EXPECT(result.second == expected_star);
+            BEAST_EXPECT(result.second == expectedStar);
         }
         catch (...)
         {

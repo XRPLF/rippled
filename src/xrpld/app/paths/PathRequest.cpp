@@ -441,14 +441,14 @@ PathRequest::doAborting() const
 std::unique_ptr<Pathfinder> const&
 PathRequest::getPathFinder(
     std::shared_ptr<RippleLineCache> const& cache,
-    hash_map<Currency, std::unique_ptr<Pathfinder>>& currency_map,
+    hash_map<Currency, std::unique_ptr<Pathfinder>>& currencyMap,
     Currency const& currency,
-    STAmount const& dst_amount,
+    STAmount const& dstAmount,
     int const level,
     std::function<bool(void)> const& continueCallback)
 {
-    auto i = currency_map.find(currency);
-    if (i != currency_map.end())
+    auto i = currencyMap.find(currency);
+    if (i != currencyMap.end())
         return i->second;
     auto pathfinder = std::make_unique<Pathfinder>(
         cache,
@@ -456,7 +456,7 @@ PathRequest::getPathFinder(
         *raDstAccount,
         currency,
         std::nullopt,
-        dst_amount,
+        dstAmount,
         saSendMax,
         domain,
         app_);
@@ -464,7 +464,7 @@ PathRequest::getPathFinder(
         pathfinder->computePathRanks(max_paths_, continueCallback);
     else
         pathfinder.reset();  // It's a bad request - clear it.
-    return currency_map[currency] = std::move(pathfinder);
+    return currencyMap[currency] = std::move(pathfinder);
 }
 
 bool
@@ -494,8 +494,8 @@ PathRequest::findPaths(
         }
     }
 
-    auto const dst_amount = convertAmount(saDstAmount, convert_all_);
-    hash_map<Currency, std::unique_ptr<Pathfinder>> currency_map;
+    auto const dstAmount = convertAmount(saDstAmount, convert_all_);
+    hash_map<Currency, std::unique_ptr<Pathfinder>> currencyMap;
     for (auto const& issue : sourceCurrencies)
     {
         if (continueCallback && !continueCallback())
@@ -504,7 +504,7 @@ PathRequest::findPaths(
                                << " Trying to find paths: " << STAmount(issue, 1).getFullText();
 
         auto& pathfinder =
-            getPathFinder(cache, currency_map, issue.currency, dst_amount, level, continueCallback);
+            getPathFinder(cache, currencyMap, issue.currency, dstAmount, level, continueCallback);
         if (!pathfinder)
         {
             JLOG(journal_.debug()) << iIdentifier << " No paths found";
@@ -539,7 +539,7 @@ PathRequest::findPaths(
             *sandbox,
             saMaxAmount,    // --> Amount to send is unlimited
                             //     to get an estimate.
-            dst_amount,     // --> Amount to deliver.
+            dstAmount,      // --> Amount to deliver.
             *raDstAccount,  // --> Account to deliver to.
             *raSrcAccount,  // --> Account sending from.
             ps,             // --> Path set.
@@ -558,7 +558,7 @@ PathRequest::findPaths(
                 *sandbox,
                 saMaxAmount,    // --> Amount to send is unlimited
                                 //     to get an estimate.
-                dst_amount,     // --> Amount to deliver.
+                dstAmount,      // --> Amount to deliver.
                 *raDstAccount,  // --> Account to deliver to.
                 *raSrcAccount,  // --> Account sending from.
                 ps,             // --> Path set.

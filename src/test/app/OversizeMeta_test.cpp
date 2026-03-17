@@ -28,11 +28,11 @@ public:
         Env env(*this);
         env.disable_sigs();
         auto const gw = Account("gateway");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(billion), gw, "alice");
-        env.trust(USD(billion), "alice");
-        env(pay(gw, "alice", USD(billion)));
-        createOffers(env, USD, n);
+        env.trust(usd(billion), "alice");
+        env(pay(gw, "alice", usd(billion)));
+        createOffers(env, usd, n);
     }
 
     void
@@ -84,13 +84,13 @@ public:
         Env env(*this);
         env.disable_sigs();
         auto const gw = Account("gateway");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(billion), gw, "alice");
-        env.trust(USD(billion), "alice");
-        env(pay(gw, "alice", USD(billion)));
-        createOffers(env, USD, n);
-        env(pay("alice", gw, USD(billion)));
-        env(offer("alice", USD(1), XRP(1)));
+        env.trust(usd(billion), "alice");
+        env(pay(gw, "alice", usd(billion)));
+        createOffers(env, usd, n);
+        env(pay("alice", gw, usd(billion)));
+        env(offer("alice", usd(1), XRP(1)));
     }
 
     void
@@ -147,13 +147,13 @@ public:
         Env env(*this);
         env.disable_sigs();
         auto const gw = Account("gateway");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(billion), gw, "alice");
-        env.trust(USD(billion), "alice");
-        env(pay(gw, "alice", USD(billion)));
-        createOffers(env, USD, n);
-        env(pay("alice", gw, USD(billion)));
-        env(offer("alice", USD(1), XRP(1)), ter(std::ignore));
+        env.trust(usd(billion), "alice");
+        env(pay(gw, "alice", usd(billion)));
+        createOffers(env, usd, n);
+        env(pay("alice", gw, usd(billion)));
+        env(offer("alice", usd(1), XRP(1)), ter(std::ignore));
         return env.ter() == tecOVERSIZE;
     }
 

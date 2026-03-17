@@ -185,7 +185,7 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error)
 std::optional<std::pair<PublicKey, SecretKey>>
 keypairForSignature(Json::Value const& params, Json::Value& error, unsigned int apiVersion)
 {
-    bool const has_key_type = params.isMember(jss::key_type);
+    bool const hasKeyType = params.isMember(jss::key_type);
 
     // All of the secret types we allow, but only one at a time.
     static char const* const secretTypes[]{
@@ -221,7 +221,7 @@ keypairForSignature(Json::Value const& params, Json::Value& error, unsigned int 
     std::optional<KeyType> keyType;
     std::optional<Seed> seed;
 
-    if (has_key_type)
+    if (hasKeyType)
     {
         if (!params[jss::key_type].isString())
         {
@@ -278,7 +278,7 @@ keypairForSignature(Json::Value const& params, Json::Value& error, unsigned int 
 
     if (!seed)
     {
-        if (has_key_type)
+        if (hasKeyType)
             seed = getSeedFromRPC(params, error);
         else
         {

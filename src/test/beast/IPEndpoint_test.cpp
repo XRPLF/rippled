@@ -366,14 +366,14 @@ public:
         // test with hashed container
         std::unordered_set<Endpoint> eps;
         constexpr auto items{100};
-        float max_lf{0};
+        float maxLf{0};
         for (auto i = 0; i < items; ++i)
         {
             eps.insert(randomEP(xrpl::rand_int(0, 1) == 1));
-            max_lf = std::max(max_lf, eps.load_factor());
+            maxLf = std::max(maxLf, eps.load_factor());
         }
         BEAST_EXPECT(eps.bucket_count() >= items);
-        BEAST_EXPECT(max_lf > 0.90);
+        BEAST_EXPECT(maxLf > 0.90);
     }
 
     //--------------------------------------------------------------------------

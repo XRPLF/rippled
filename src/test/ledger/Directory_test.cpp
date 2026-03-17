@@ -65,7 +65,7 @@ struct Directory_test : public beast::unit_test::suite
         using namespace jtx;
 
         auto gw = Account("gw");
-        auto USD = gw["USD"];
+        auto usd = gw["USD"];
         auto alice = Account("alice");
         auto bob = Account("bob");
 
@@ -76,7 +76,7 @@ struct Directory_test : public beast::unit_test::suite
 
         std::uint32_t const firstOfferSeq{env.seq(alice)};
         for (std::size_t i = 1; i <= 400; ++i)
-            env(offer(alice, USD(i), XRP(i)));
+            env(offer(alice, usd(i), XRP(i)));
         env.close();
 
         // Check Alice's directory: it should contain one
@@ -114,13 +114,13 @@ struct Directory_test : public beast::unit_test::suite
 
         // Now check the orderbook: it should be in the order we placed
         // the offers.
-        auto book = BookDirs(*env.current(), Book({xrpIssue(), USD.issue(), std::nullopt}));
+        auto book = BookDirs(*env.current(), Book({xrpIssue(), usd.issue(), std::nullopt}));
         int count = 1;
 
         for (auto const& offer : book)
         {
             count++;
-            BEAST_EXPECT(offer->getFieldAmount(sfTakerPays) == USD(count));
+            BEAST_EXPECT(offer->getFieldAmount(sfTakerPays) == usd(count));
             BEAST_EXPECT(offer->getFieldAmount(sfTakerGets) == XRP(count));
         }
     }
@@ -243,19 +243,19 @@ struct Directory_test : public beast::unit_test::suite
 
         auto const gw = Account{"gateway"};
         auto const alice = Account{"alice"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         env.fund(XRP(10000), alice, gw);
         env.close();
-        env.trust(USD(1000), alice);
-        env(pay(gw, alice, USD(1000)));
+        env.trust(usd(1000), alice);
+        env(pay(gw, alice, usd(1000)));
 
         auto const firstOfferSeq = env.seq(alice);
 
         // Fill up three pages of offers
         for (int i = 0; i < 3; ++i)
             for (int j = 0; j < dirNodeMaxEntries; ++j)
-                env(offer(alice, XRP(1), USD(1)));
+                env(offer(alice, XRP(1), usd(1)));
         env.close();
 
         // remove all the offers. Remove the middle page last
@@ -272,7 +272,7 @@ struct Directory_test : public beast::unit_test::suite
         // should have no entries and be empty:
         {
             Sandbox sb(env.closed().get(), tapNONE);
-            uint256 const bookBase = getBookBase({xrpIssue(), USD.issue(), std::nullopt});
+            uint256 const bookBase = getBookBase({xrpIssue(), usd.issue(), std::nullopt});
 
             BEAST_EXPECT(dirIsEmpty(sb, keylet::page(bookBase)));
             BEAST_EXPECT(!sb.succ(bookBase, getQualityNext(bookBase)));
@@ -282,7 +282,7 @@ struct Directory_test : public beast::unit_test::suite
         // and removes her trust line. Her owner directory
         // should now be empty:
         {
-            env.trust(USD(0), alice);
+            env.trust(usd(0), alice);
             env(pay(alice, gw, alice["USD"](1000)));
             env.close();
             BEAST_EXPECT(dirIsEmpty(*env.closed(), keylet::ownerDir(alice)));
@@ -299,7 +299,7 @@ struct Directory_test : public beast::unit_test::suite
 
         auto const gw = Account{"gateway"};
         auto const alice = Account{"alice"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         env.fund(XRP(10000), alice);
         env.close();
@@ -383,9 +383,9 @@ struct Directory_test : public beast::unit_test::suite
 
         auto const gw = Account{"gateway"};
         auto const alice = Account{"alice"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
-        auto ledger_data = [this](Env& env) {
+        auto ledgerData = [this](Env& env) {
             Json::Value params;
             params[jss::type] = jss::directory;
             params[jss::ledger_index] = "validated";
@@ -398,12 +398,12 @@ struct Directory_test : public beast::unit_test::suite
         Env env(*this, testable_amendments() - fixPreviousTxnID);
         env.fund(XRP(10000), alice, gw);
         env.close();
-        env.trust(USD(1000), alice);
-        env(pay(gw, alice, USD(1000)));
+        env.trust(usd(1000), alice);
+        env(pay(gw, alice, usd(1000)));
         env.close();
 
         {
-            auto const jrr = ledger_data(env);
+            auto const jrr = ledgerData(env);
             auto const& jstate = jrr[jss::state];
             BEAST_EXPECTS(checkArraySize(jstate, 2), jrr.toStyledString());
             for (auto const& directory : jstate)
@@ -422,7 +422,7 @@ struct Directory_test : public beast::unit_test::suite
 
         // Make sure the `PreviousTxnID` and `PreviousTxnLgrSeq` fields now
         // exist
-        env(offer(alice, XRP(1), USD(1)));
+        env(offer(alice, XRP(1), usd(1)));
         auto const txID = to_string(env.tx()->getTransactionID());
         auto const ledgerSeq = env.current()->header().seq;
         env.close();
@@ -431,7 +431,7 @@ struct Directory_test : public beast::unit_test::suite
         env.close();
 
         {
-            auto const jrr = ledger_data(env);
+            auto const jrr = ledgerData(env);
             auto const& jstate = jrr[jss::state];
             BEAST_EXPECTS(checkArraySize(jstate, 3), jrr.toStyledString());
             for (auto const& directory : jstate)

@@ -86,10 +86,10 @@ ValidatorList::PublisherListStats::mergeDispositions(PublisherListStats const& s
 }
 
 ValidatorList::MessageWithHash::MessageWithHash(
-    std::shared_ptr<Message> const& message_,
-    uint256 hash_,
-    std::size_t num_)
-    : message(message_), hash(hash_), numVLs(num_)
+    std::shared_ptr<Message> const& message,
+    uint256 hash,
+    std::size_t num)
+    : message(message), hash(hash), numVLs(num)
 {
 }
 
@@ -1359,7 +1359,7 @@ ValidatorList::verify(
 bool
 ValidatorList::listed(PublicKey const& identity) const
 {
-    std::shared_lock read_lock{mutex_};
+    std::shared_lock readLock{mutex_};
 
     auto const pubKey = validatorManifests_.getMasterKey(identity);
     return keyListings_.find(pubKey) != keyListings_.end();
@@ -1375,14 +1375,14 @@ ValidatorList::trusted(ValidatorList::shared_lock const&, PublicKey const& ident
 bool
 ValidatorList::trusted(PublicKey const& identity) const
 {
-    std::shared_lock read_lock{mutex_};
-    return trusted(read_lock, identity);
+    std::shared_lock readLock{mutex_};
+    return trusted(readLock, identity);
 }
 
 std::optional<PublicKey>
 ValidatorList::getListedKey(PublicKey const& identity) const
 {
-    std::shared_lock read_lock{mutex_};
+    std::shared_lock readLock{mutex_};
 
     auto const pubKey = validatorManifests_.getMasterKey(identity);
     if (keyListings_.find(pubKey) != keyListings_.end())
@@ -1402,15 +1402,15 @@ ValidatorList::getTrustedKey(ValidatorList::shared_lock const&, PublicKey const&
 std::optional<PublicKey>
 ValidatorList::getTrustedKey(PublicKey const& identity) const
 {
-    std::shared_lock read_lock{mutex_};
+    std::shared_lock readLock{mutex_};
 
-    return getTrustedKey(read_lock, identity);
+    return getTrustedKey(readLock, identity);
 }
 
 bool
 ValidatorList::trustedPublisher(PublicKey const& identity) const
 {
-    std::shared_lock read_lock{mutex_};
+    std::shared_lock readLock{mutex_};
     return identity.size() && publisherLists_.count(identity) &&
         publisherLists_.at(identity).status < PublisherStatus::revoked;
 }
@@ -1418,7 +1418,7 @@ ValidatorList::trustedPublisher(PublicKey const& identity) const
 std::optional<PublicKey>
 ValidatorList::localPublicKey() const
 {
-    std::shared_lock read_lock{mutex_};
+    std::shared_lock readLock{mutex_};
     return localPubKey_;
 }
 
@@ -1464,8 +1464,8 @@ ValidatorList::count(ValidatorList::shared_lock const&) const
 std::size_t
 ValidatorList::count() const
 {
-    std::shared_lock read_lock{mutex_};
-    return count(read_lock);
+    std::shared_lock readLock{mutex_};
+    return count(readLock);
 }
 
 std::optional<TimeKeeper::time_point>
@@ -1520,8 +1520,8 @@ ValidatorList::expires(ValidatorList::shared_lock const&) const
 std::optional<TimeKeeper::time_point>
 ValidatorList::expires() const
 {
-    std::shared_lock read_lock{mutex_};
-    return expires(read_lock);
+    std::shared_lock readLock{mutex_};
+    return expires(readLock);
 }
 
 Json::Value
@@ -1529,16 +1529,16 @@ ValidatorList::getJson() const
 {
     Json::Value res(Json::objectValue);
 
-    std::shared_lock read_lock{mutex_};
+    std::shared_lock readLock{mutex_};
 
     res[jss::validation_quorum] = static_cast<Json::UInt>(quorum_);
 
     {
         auto& x = (res[jss::validator_list] = Json::objectValue);
 
-        x[jss::count] = static_cast<Json::UInt>(count(read_lock));
+        x[jss::count] = static_cast<Json::UInt>(count(readLock));
 
-        if (auto when = expires(read_lock))
+        if (auto when = expires(readLock))
         {
             if (*when == TimeKeeper::time_point::max())
             {
@@ -1653,10 +1653,10 @@ ValidatorList::getJson() const
 void
 ValidatorList::for_each_listed(std::function<void(PublicKey const&, bool)> func) const
 {
-    std::shared_lock read_lock{mutex_};
+    std::shared_lock readLock{mutex_};
 
     for (auto const& v : keyListings_)
-        func(v.first, trusted(read_lock, v.first));
+        func(v.first, trusted(readLock, v.first));
 }
 
 void
@@ -1669,7 +1669,7 @@ ValidatorList::for_each_available(
         std::size_t maxSequence,
         uint256 const& hash)> func) const
 {
-    std::shared_lock read_lock{mutex_};
+    std::shared_lock readLock{mutex_};
 
     for (auto const& [key, plCollection] : publisherLists_)
     {
@@ -1693,7 +1693,7 @@ ValidatorList::getAvailable(
     std::string_view pubKey,
     std::optional<std::uint32_t> forceVersion /* = {} */)
 {
-    std::shared_lock read_lock{mutex_};
+    std::shared_lock readLock{mutex_};
 
     auto const keyBlob = strViewUnHex(pubKey);
 
@@ -1989,21 +1989,21 @@ ValidatorList::updateTrusted(
 hash_set<PublicKey>
 ValidatorList::getTrustedMasterKeys() const
 {
-    std::shared_lock read_lock{mutex_};
+    std::shared_lock readLock{mutex_};
     return trustedMasterKeys_;
 }
 
 std::size_t
 ValidatorList::getListThreshold() const
 {
-    std::shared_lock read_lock{mutex_};
+    std::shared_lock readLock{mutex_};
     return listThreshold_;
 }
 
 hash_set<PublicKey>
 ValidatorList::getNegativeUNL() const
 {
-    std::shared_lock read_lock{mutex_};
+    std::shared_lock readLock{mutex_};
     return negativeUNL_;
 }
 
@@ -2020,7 +2020,7 @@ ValidatorList::negativeUNLFilter(std::vector<std::shared_ptr<STValidation>>&& va
     // Remove validations that are from validators on the negative UNL.
     auto ret = std::move(validations);
 
-    std::shared_lock read_lock{mutex_};
+    std::shared_lock readLock{mutex_};
     if (!negativeUNL_.empty())
     {
         ret.erase(
@@ -2028,7 +2028,7 @@ ValidatorList::negativeUNLFilter(std::vector<std::shared_ptr<STValidation>>&& va
                 ret.begin(),
                 ret.end(),
                 [&](auto const& v) -> bool {
-                    if (auto const masterKey = getTrustedKey(read_lock, v->getSignerPublic());
+                    if (auto const masterKey = getTrustedKey(readLock, v->getSignerPublic());
                         masterKey)
                     {
                         return negativeUNL_.count(*masterKey);

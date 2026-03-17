@@ -56,7 +56,7 @@ protected:
         TIn in;
         TOut out;
 
-        Cache(TIn const& in_, TOut const& out_) : in(in_), out(out_)
+        Cache(TIn const& in, TOut const& out) : in(in), out(out)
         {
         }
     };

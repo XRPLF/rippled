@@ -92,8 +92,8 @@ class AccountTx_test : public beast::unit_test::suite
             cfg->FEES.reference_fee = 10;
             return cfg;
         }));
-        Account A1{"A1"};
-        env.fund(XRP(10000), A1);
+        Account a1{"A1"};
+        env.fund(XRP(10000), a1);
         env.close();
 
         // Ledger 3 has the two txs associated with funding the account
@@ -164,7 +164,7 @@ class AccountTx_test : public beast::unit_test::suite
 
         BEAST_EXPECT(isErr(env.rpc("json", "account_tx", to_string(jParams)), rpcACT_MALFORMED));
 
-        jParams[jss::account] = A1.human();
+        jParams[jss::account] = a1.human();
         BEAST_EXPECT(hasTxs(env.rpc(apiVersion, "json", "account_tx", to_string(jParams))));
 
         // Ledger min/max index
@@ -270,7 +270,7 @@ class AccountTx_test : public beast::unit_test::suite
         // ERRORS out with invalid Parenthesis
         {
             jParams[jss::account] = "0xDEADBEEF";
-            jParams[jss::account] = A1.human();
+            jParams[jss::account] = a1.human();
             Json::Value p{jParams};
 
             p[jss::ledger_index_max] = -1;
@@ -428,7 +428,7 @@ class AccountTx_test : public beast::unit_test::suite
         Account const alice{"alice"};
         Account const alie{"alie"};
         Account const gw{"gw"};
-        auto const USD{gw["USD"]};
+        auto const usd{gw["USD"]};
 
         env.fund(XRP(1000000), alice, gw);
         env.close();
@@ -444,9 +444,9 @@ class AccountTx_test : public beast::unit_test::suite
         env.close();
 
         // Trust and Offers
-        env(trust(alice, USD(200)), sig(alie));
+        env(trust(alice, usd(200)), sig(alie));
         std::uint32_t const offerSeq{env.seq(alice)};
-        env(offer(alice, USD(50), XRP(150)), sig(alie));
+        env(offer(alice, usd(50), XRP(150)), sig(alie));
         env.close();
 
         env(offer_cancel(alice, offerSeq), sig(alie));

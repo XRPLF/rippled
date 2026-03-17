@@ -362,8 +362,8 @@ template <class T>
 void
 doNormalize(
     bool& negative,
-    T& mantissa_,
-    int& exponent_,
+    T& mantissa,
+    int& exponent,
     MantissaRange::rep const& minMantissa,
     MantissaRange::rep const& maxMantissa)
 {
@@ -374,34 +374,34 @@ doNormalize(
     using Guard = Number::Guard;
 
     constexpr Number zero = Number{};
-    if (mantissa_ == 0)
+    if (mantissa == 0)
     {
-        mantissa_ = zero.mantissa_;
-        exponent_ = zero.exponent_;
+        mantissa = zero.mantissa_;
+        exponent = zero.exponent_;
         negative = zero.negative_;
         return;
     }
-    auto m = mantissa_;
-    while ((m < minMantissa) && (exponent_ > minExponent))
+    auto m = mantissa;
+    while ((m < minMantissa) && (exponent > minExponent))
     {
         m *= 10;
-        --exponent_;
+        --exponent;
     }
     Guard g;
     if (negative)
         g.set_negative();
     while (m > maxMantissa)
     {
-        if (exponent_ >= maxExponent)
+        if (exponent >= maxExponent)
             throw std::overflow_error("Number::normalize 1");
         g.push(m % 10);
         m /= 10;
-        ++exponent_;
+        ++exponent;
     }
-    if ((exponent_ < minExponent) || (m < minMantissa))
+    if ((exponent < minExponent) || (m < minMantissa))
     {
-        mantissa_ = zero.mantissa_;
-        exponent_ = zero.exponent_;
+        mantissa = zero.mantissa_;
+        exponent = zero.exponent_;
         negative = zero.negative_;
         return;
     }
@@ -421,20 +421,20 @@ doNormalize(
     // exponent_ + 1.
     if (m > maxRep)
     {
-        if (exponent_ >= maxExponent)
+        if (exponent >= maxExponent)
             throw std::overflow_error("Number::normalize 1.5");
         g.push(m % 10);
         m /= 10;
-        ++exponent_;
+        ++exponent;
     }
     // Before modification, m should be within the min/max range. After
     // modification, it must be less than maxRep. In other words, the original
     // value should have been no more than maxRep * 10.
     // (maxRep * 10 > maxMantissa)
     XRPL_ASSERT_PARTS(m <= maxRep, "xrpl::doNormalize", "intermediate mantissa fits in int64");
-    mantissa_ = m;
+    mantissa = m;
 
-    g.doRoundUp(negative, mantissa_, exponent_, minMantissa, maxMantissa, "Number::normalize 2");
+    g.doRoundUp(negative, mantissa, exponent, minMantissa, maxMantissa, "Number::normalize 2");
     XRPL_ASSERT_PARTS(
         mantissa_ >= minMantissa && mantissa_ <= maxMantissa,
         "xrpl::doNormalize",
@@ -865,46 +865,46 @@ to_string(Number const& amount)
 
     XRPL_ASSERT(exponent + 43 > 0, "xrpl::to_string(Number) : minimum exponent");
 
-    ptrdiff_t const pad_prefix = rangeLog + 12;
-    ptrdiff_t const pad_suffix = rangeLog + 8;
+    ptrdiff_t const padPrefix = rangeLog + 12;
+    ptrdiff_t const padSuffix = rangeLog + 8;
 
-    std::string const raw_value(std::to_string(mantissa));
+    std::string const rawValue(std::to_string(mantissa));
     std::string val;
 
-    val.reserve(raw_value.length() + pad_prefix + pad_suffix);
-    val.append(pad_prefix, '0');
-    val.append(raw_value);
-    val.append(pad_suffix, '0');
+    val.reserve(rawValue.length() + padPrefix + padSuffix);
+    val.append(padPrefix, '0');
+    val.append(rawValue);
+    val.append(padSuffix, '0');
 
-    ptrdiff_t const offset(exponent + pad_prefix + rangeLog + 1);
+    ptrdiff_t const offset(exponent + padPrefix + rangeLog + 1);
 
-    auto pre_from(val.begin());
-    auto const pre_to(val.begin() + offset);
+    auto preFrom(val.begin());
+    auto const preTo(val.begin() + offset);
 
-    auto const post_from(val.begin() + offset);
-    auto post_to(val.end());
+    auto const postFrom(val.begin() + offset);
+    auto postTo(val.end());
 
     // Crop leading zeroes. Take advantage of the fact that there's always a
     // fixed amount of leading zeroes and skip them.
-    if (std::distance(pre_from, pre_to) > pad_prefix)
-        pre_from += pad_prefix;
+    if (std::distance(preFrom, preTo) > padPrefix)
+        preFrom += padPrefix;
 
     XRPL_ASSERT(post_to >= post_from, "xrpl::to_string(Number) : first distance check");
 
-    pre_from = std::find_if(pre_from, pre_to, [](char c) { return c != '0'; });
+    preFrom = std::find_if(preFrom, preTo, [](char c) { return c != '0'; });
 
     // Crop trailing zeroes. Take advantage of the fact that there's always a
     // fixed amount of trailing zeroes and skip them.
-    if (std::distance(post_from, post_to) > pad_suffix)
-        post_to -= pad_suffix;
+    if (std::distance(postFrom, postTo) > padSuffix)
+        postTo -= padSuffix;
 
     XRPL_ASSERT(post_to >= post_from, "xrpl::to_string(Number) : second distance check");
 
-    post_to = std::find_if(
-                  std::make_reverse_iterator(post_to),
-                  std::make_reverse_iterator(post_from),
-                  [](char c) { return c != '0'; })
-                  .base();
+    postTo = std::find_if(
+                 std::make_reverse_iterator(postTo),
+                 std::make_reverse_iterator(postFrom),
+                 [](char c) { return c != '0'; })
+                 .base();
 
     std::string ret;
 
@@ -912,15 +912,15 @@ to_string(Number const& amount)
         ret.append(1, '-');
 
     // Assemble the output:
-    if (pre_from == pre_to)
+    if (preFrom == preTo)
         ret.append(1, '0');
     else
-        ret.append(pre_from, pre_to);
+        ret.append(preFrom, preTo);
 
-    if (post_to != post_from)
+    if (postTo != postFrom)
     {
         ret.append(1, '.');
-        ret.append(post_from, post_to);
+        ret.append(postFrom, postTo);
     }
 
     return ret;
@@ -996,7 +996,7 @@ root(Number f, unsigned d)
     }
 
     // Quadratic least squares curve fit of f^(1/d) in the range [0, 1]
-    auto const D = ((6 * di + 11) * di + 6) * di + 1;
+    auto const D = ((6 * di + 11) * di + 6) * di + 1;  // NOLINT(readability-identifier-naming)
     auto const a0 = 3 * di * ((2 * di - 3) * di + 1);
     auto const a1 = 24 * di * (2 * di - 1);
     auto const a2 = -30 * (di - 1) * di;
@@ -1045,7 +1045,7 @@ root2(Number f)
     XRPL_ASSERT_PARTS(f.isnormal(), "xrpl::root2(Number)", "f is normalized");
 
     // Quadratic least squares curve fit of f^(1/d) in the range [0, 1]
-    auto const D = 105;
+    auto const D = 105;  // NOLINT(readability-identifier-naming)
     auto const a0 = 18;
     auto const a1 = 144;
     auto const a2 = -60;

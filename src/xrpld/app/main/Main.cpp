@@ -240,7 +240,7 @@ runUnitTests(
     bool log,
     bool child,
     bool ipv6,
-    std::size_t num_jobs_,
+    std::size_t numJobs,
     int argc,
     char** argv)
 {
@@ -249,25 +249,25 @@ runUnitTests(
 
     xrpl::test::envUseIPv4 = (!ipv6);
 
-    if (!child && num_jobs_ == 1)
+    if (!child && numJobs == 1)
     {
-        multi_runner_parent parent_runner;
+        multi_runner_parent parentRunner;
 
-        multi_runner_child child_runner{num_jobs_, quiet, log};
-        child_runner.arg(argument);
+        multi_runner_child childRunner{numJobs, quiet, log};
+        childRunner.arg(argument);
         multi_selector pred(pattern);
-        auto const any_failed = child_runner.run_multi(pred) || anyMissing(child_runner, pred);
+        auto const anyFailed = childRunner.run_multi(pred) || anyMissing(childRunner, pred);
 
-        if (any_failed)
+        if (anyFailed)
             return EXIT_FAILURE;
         return EXIT_SUCCESS;
     }
     if (!child)
     {
-        multi_runner_parent parent_runner;
+        multi_runner_parent parentRunner;
         std::vector<boost::process::v1::child> children;
 
-        std::string const exe_name = argv[0];
+        std::string const exeName = argv[0];
         std::vector<std::string> args;
         {
             args.reserve(argc);
@@ -276,39 +276,39 @@ runUnitTests(
             args.emplace_back("--unittest-child");
         }
 
-        for (std::size_t i = 0; i < num_jobs_; ++i)
+        for (std::size_t i = 0; i < numJobs; ++i)
             children.emplace_back(
-                boost::process::v1::exe = exe_name, boost::process::v1::args = args);
+                boost::process::v1::exe = exeName, boost::process::v1::args = args);
 
-        int bad_child_exits = 0;
-        int terminated_child_exits = 0;
+        int badChildExits = 0;
+        int terminatedChildExits = 0;
         for (auto& c : children)
         {
             try
             {
                 c.wait();
                 if (c.exit_code())
-                    ++bad_child_exits;
+                    ++badChildExits;
             }
             catch (...)
             {
                 // wait throws if process was terminated with a signal
-                ++bad_child_exits;
-                ++terminated_child_exits;
+                ++badChildExits;
+                ++terminatedChildExits;
             }
         }
 
-        parent_runner.add_failures(terminated_child_exits);
-        anyMissing(parent_runner, multi_selector(pattern));
+        parentRunner.add_failures(terminatedChildExits);
+        anyMissing(parentRunner, multi_selector(pattern));
 
-        if (parent_runner.any_failed() || bad_child_exits)
+        if (parentRunner.any_failed() || badChildExits)
             return EXIT_FAILURE;
         return EXIT_SUCCESS;
     }
     else
     {
         // child
-        multi_runner_child runner{num_jobs_, quiet, log};
+        multi_runner_child runner{numJobs, quiet, log};
         runner.arg(argument);
         auto const anyFailed = runner.run_multi(multi_selector(pattern));
 

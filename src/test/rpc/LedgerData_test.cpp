@@ -22,13 +22,13 @@ public:
         using namespace test::jtx;
         Env env{*this, asAdmin ? envconfig() : envconfig(no_admin)};
         Account const gw{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(100000), gw);
 
-        int const max_limit = 256;  // would be 2048 for binary requests, no
-                                    // need to test that here
+        int const maxLimit = 256;  // would be 2048 for binary requests, no
+                                   // need to test that here
 
-        for (auto i = 0; i < max_limit + 10; i++)
+        for (auto i = 0; i < maxLimit + 10; i++)
         {
             Account const bob{std::string("bob") + std::to_string(i)};
             env.fund(XRP(1000), bob);
@@ -48,16 +48,16 @@ public:
                 jrr[jss::ledger_current_index].isIntegral() &&
                 jrr[jss::ledger_current_index].asInt() > 0);
             BEAST_EXPECT(checkMarker(jrr));
-            BEAST_EXPECT(checkArraySize(jrr[jss::state], max_limit));
+            BEAST_EXPECT(checkArraySize(jrr[jss::state], maxLimit));
         }
 
         // check limits values around the max_limit (+/- 1)
         for (auto delta = -1; delta <= 1; delta++)
         {
-            jvParams[jss::limit] = max_limit + delta;
+            jvParams[jss::limit] = maxLimit + delta;
             auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
             BEAST_EXPECT(checkArraySize(
-                jrr[jss::state], (delta > 0 && !asAdmin) ? max_limit : max_limit + delta));
+                jrr[jss::state], (delta > 0 && !asAdmin) ? maxLimit : maxLimit + delta));
         }
     }
 
@@ -67,12 +67,12 @@ public:
         using namespace test::jtx;
         Env env{*this, envconfig(no_admin)};
         Account const gw{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(100000), gw);
 
-        int const num_accounts_ = 10;
+        int const numAccounts = 10;
 
-        for (auto i = 0; i < num_accounts_; i++)
+        for (auto i = 0; i < numAccounts; i++)
         {
             Account const bob{std::string("bob") + std::to_string(i)};
             env.fund(XRP(1000), bob);
@@ -88,7 +88,7 @@ public:
             jrr[jss::ledger_current_index].isIntegral() &&
             jrr[jss::ledger_current_index].asInt() > 0);
         BEAST_EXPECT(!jrr.isMember(jss::marker));
-        BEAST_EXPECT(checkArraySize(jrr[jss::state], num_accounts_ + 4));
+        BEAST_EXPECT(checkArraySize(jrr[jss::state], numAccounts + 4));
     }
 
     void
@@ -97,11 +97,11 @@ public:
         using namespace test::jtx;
         Env env{*this};
         Account const gw{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         Account const bob{"bob"};
 
         env.fund(XRP(10000), gw, bob);
-        env.trust(USD(1000), bob);
+        env.trust(usd(1000), bob);
 
         {
             // bad limit
@@ -150,12 +150,12 @@ public:
         using namespace test::jtx;
         Env env{*this, envconfig(no_admin)};
         Account const gw{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(100000), gw);
 
-        int const num_accounts_ = 20;
+        int const numAccounts = 20;
 
-        for (auto i = 0; i < num_accounts_; i++)
+        for (auto i = 0; i < numAccounts; i++)
         {
             Account const bob{std::string("bob") + std::to_string(i)};
             env.fund(XRP(1000), bob);
@@ -167,20 +167,20 @@ public:
         jvParams[jss::ledger_index] = "current";
         jvParams[jss::binary] = false;
         auto jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
-        auto const total_count = jrr[jss::state].size();
+        auto const totalCount = jrr[jss::state].size();
 
         // now make request with a limit and loop until we get all
         jvParams[jss::limit] = 5;
         jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
         BEAST_EXPECT(checkMarker(jrr));
-        auto running_total = jrr[jss::state].size();
+        auto runningTotal = jrr[jss::state].size();
         while (jrr.isMember(jss::marker))
         {
             jvParams[jss::marker] = jrr[jss::marker];
             jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
-            running_total += jrr[jss::state].size();
+            runningTotal += jrr[jss::state].size();
         }
-        BEAST_EXPECT(running_total == total_count);
+        BEAST_EXPECT(runningTotal == totalCount);
     }
 
     void
@@ -244,7 +244,7 @@ public:
             Env env{*this, envconfig(validator, ""), features};
 
             Account const gw{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             env.fund(XRP(100000), gw);
 
             auto makeRequest = [&env](Json::StaticString const& type) {
@@ -271,14 +271,14 @@ public:
                 BEAST_EXPECT(checkArraySize(jrr[jss::state], 0));
             }
 
-            int const num_accounts_ = 10;
+            int const numAccounts = 10;
 
-            for (auto i = 0; i < num_accounts_; i++)
+            for (auto i = 0; i < numAccounts; i++)
             {
                 Account const bob{std::string("bob") + std::to_string(i)};
                 env.fund(XRP(1000), bob);
             }
-            env(offer(Account{"bob0"}, USD(100), XRP(100)));
+            env(offer(Account{"bob0"}, usd(100), XRP(100)));
             env.trust(Account{"bob2"}["USD"](100), Account{"bob3"});
 
             auto majorities = getMajorityAmendments(*env.closed());

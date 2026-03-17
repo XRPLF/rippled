@@ -85,7 +85,7 @@ private:
             PublicKey const& publicKey,
             ProtocolVersion protocol,
             Resource::Consumer consumer,
-            std::unique_ptr<tx_reduce_relay_test::stream_type>&& stream_ptr_,
+            std::unique_ptr<tx_reduce_relay_test::stream_type>&& streamPtr,
             OverlayImpl& overlay)
             : PeerImp(
                   app,
@@ -95,7 +95,7 @@ private:
                   publicKey,
                   protocol,
                   consumer,
-                  std::move(stream_ptr_),
+                  std::move(streamPtr),
                   overlay)
         {
             sid_++;
@@ -149,7 +149,7 @@ private:
             ? (void)request.insert(
                   "X-Protocol-Ctl", makeFeaturesRequestHeader(false, false, true, false))
             : (void)nDisabled--;
-        auto stream_ptr_ = std::make_unique<stream_type>(
+        auto streamPtr = std::make_unique<stream_type>(
             socket_type(std::forward<boost::asio::io_context&>(env.app().getIOContext())),
             *context_);
         beast::IP::Endpoint local(boost::asio::ip::make_address("172.1.1." + std::to_string(lid_)));
@@ -165,7 +165,7 @@ private:
             key,
             protocolVersion_,
             consumer,
-            std::move(stream_ptr_),
+            std::move(streamPtr),
             overlay);
         BEAST_EXPECT(overlay.findPeerByPublicKey(key) == std::shared_ptr<PeerImp>{});
         overlay.add_active(peer);

@@ -16,6 +16,7 @@ namespace PeerFinder {
 class ManagerImp : public Manager
 {
 public:
+    // NOLINTBEGIN(readability-identifier-naming)
     boost::asio::io_context& io_context_;
     std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
     clock_type& clock_;
@@ -24,6 +25,7 @@ public:
     Checker<boost::asio::ip::tcp> checker_;
     Logic<decltype(checker_)> logic_;
     BasicConfig const& config_;
+    // NOLINTEND(readability-identifier-naming)
 
     //--------------------------------------------------------------------------
 

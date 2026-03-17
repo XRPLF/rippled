@@ -62,12 +62,12 @@ doTxHelp(RPC::Context& context, TxArgs args)
 
     if (args.ledgerRange)
     {
-        constexpr uint16_t MAX_RANGE = 1000;
+        constexpr uint16_t maxRange = 1000;
 
         if (args.ledgerRange->second < args.ledgerRange->first)
             return {result, rpcINVALID_LGR_RANGE};
 
-        if (args.ledgerRange->second - args.ledgerRange->first > MAX_RANGE)
+        if (args.ledgerRange->second - args.ledgerRange->first > maxRange)
             return {result, rpcEXCESSIVE_LGR_RANGE};
 
         range = ClosedInterval<uint32_t>(args.ledgerRange->first, args.ledgerRange->second);
@@ -224,8 +224,8 @@ populateJsonResponse(
         if (auto blob = std::get_if<Blob>(&result.meta))
         {
             XRPL_ASSERT(args.binary, "xrpl::populateJsonResponse : binary is set");
-            auto json_meta = (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
-            response[json_meta] = strHex(makeSlice(*blob));
+            auto jsonMeta = (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
+            response[jsonMeta] = strHex(makeSlice(*blob));
         }
         // populate meta data
         else if (auto m = std::get_if<std::shared_ptr<TxMeta>>(&result.meta))

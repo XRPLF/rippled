@@ -66,8 +66,8 @@ class JSONRPCClient : public AbstractClient
     unsigned rpc_version_;
 
 public:
-    explicit JSONRPCClient(Config const& cfg, unsigned rpc_version)
-        : ep_(getEndpoint(cfg)), stream_(ios_), rpc_version_(rpc_version)
+    explicit JSONRPCClient(Config const& cfg, unsigned rpcVersion)
+        : ep_(getEndpoint(cfg)), stream_(ios_), rpc_version_(rpcVersion)
     {
         stream_.connect(ep_);
     }
@@ -141,9 +141,9 @@ public:
 };
 
 std::unique_ptr<AbstractClient>
-makeJSONRPCClient(Config const& cfg, unsigned rpc_version)
+makeJSONRPCClient(Config const& cfg, unsigned rpcVersion)
 {
-    return std::make_unique<JSONRPCClient>(cfg, rpc_version);
+    return std::make_unique<JSONRPCClient>(cfg, rpcVersion);
 }
 
 }  // namespace test

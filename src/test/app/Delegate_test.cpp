@@ -497,14 +497,14 @@ class Delegate_test : public beast::unit_test::suite
             Account bob{"bob"};
             Account gw{"gateway"};
             Account gw2{"gateway2"};
-            auto const USD = gw["USD"];
-            auto const EUR = gw2["EUR"];
+            auto const usd = gw["USD"];
+            auto const eur = gw2["EUR"];
 
             env.fund(XRP(10000), alice);
             env.fund(XRP(20000), bob);
             env.fund(XRP(40000), gw, gw2);
-            env.trust(USD(200), alice);
-            env.trust(EUR(400), gw);
+            env.trust(usd(200), alice);
+            env.trust(eur(400), gw);
             env.close();
 
             XRPAmount const baseFee{env.current()->fees().base};
@@ -514,7 +514,7 @@ class Delegate_test : public beast::unit_test::suite
             auto gw2Balance = env.balance(gw2, XRP);
 
             // delegate ledger object is not created yet
-            env(pay(gw, alice, USD(50)), delegate::as(bob), ter(terNO_DELEGATE_PERMISSION));
+            env(pay(gw, alice, usd(50)), delegate::as(bob), ter(terNO_DELEGATE_PERMISSION));
             env.require(balance(bob, bobBalance));
 
             // gw gives bob burn permission
@@ -524,7 +524,7 @@ class Delegate_test : public beast::unit_test::suite
             gwBalance = env.balance(gw, XRP);
 
             // bob sends a payment transaction on behalf of gw
-            env(pay(gw, alice, USD(50)), delegate::as(bob), ter(terNO_DELEGATE_PERMISSION));
+            env(pay(gw, alice, usd(50)), delegate::as(bob), ter(terNO_DELEGATE_PERMISSION));
             env.close();
             env.require(balance(bob, bobBalance));
 
@@ -543,23 +543,23 @@ class Delegate_test : public beast::unit_test::suite
             env.require(balance(bob, bobBalance));
 
             // mint 50 USD
-            env(pay(gw, alice, USD(50)), delegate::as(bob));
+            env(pay(gw, alice, usd(50)), delegate::as(bob));
             env.close();
             env.require(balance(bob, bobBalance - drops(baseFee)));
             env.require(balance(gw, gwBalance));
             env.require(balance(gw, alice["USD"](-50)));
-            env.require(balance(alice, USD(50)));
-            BEAST_EXPECT(env.balance(bob, USD) == USD(0));
+            env.require(balance(alice, usd(50)));
+            BEAST_EXPECT(env.balance(bob, usd) == usd(0));
             bobBalance = env.balance(bob, XRP);
 
             // burn 30 USD
-            env(pay(alice, gw, USD(30)), delegate::as(bob));
+            env(pay(alice, gw, usd(30)), delegate::as(bob));
             env.close();
             env.require(balance(bob, bobBalance - drops(baseFee)));
             env.require(balance(gw, gwBalance));
             env.require(balance(gw, alice["USD"](-20)));
-            env.require(balance(alice, USD(20)));
-            BEAST_EXPECT(env.balance(bob, USD) == USD(0));
+            env.require(balance(alice, usd(20)));
+            BEAST_EXPECT(env.balance(bob, usd) == usd(0));
             bobBalance = env.balance(bob, XRP);
 
             // bob has both mint and burn permissions
@@ -569,26 +569,26 @@ class Delegate_test : public beast::unit_test::suite
             gwBalance = env.balance(gw, XRP);
 
             // mint 100 USD for gw
-            env(pay(gw, alice, USD(100)), delegate::as(bob));
+            env(pay(gw, alice, usd(100)), delegate::as(bob));
             env.close();
             env.require(balance(gw, alice["USD"](-120)));
-            env.require(balance(alice, USD(120)));
+            env.require(balance(alice, usd(120)));
             env.require(balance(bob, bobBalance - drops(baseFee)));
             bobBalance = env.balance(bob, XRP);
 
             // gw2 pays gw 200 EUR
-            env(pay(gw2, gw, EUR(200)));
+            env(pay(gw2, gw, eur(200)));
             env.close();
             env.require(balance(gw2, gw2Balance - drops(baseFee)));
             gw2Balance = env.balance(gw2, XRP);
             env.require(balance(gw2, gw["EUR"](-200)));
-            env.require(balance(gw, EUR(200)));
+            env.require(balance(gw, eur(200)));
 
             // burn 100 EUR for gw
-            env(pay(gw, gw2, EUR(100)), delegate::as(bob));
+            env(pay(gw, gw2, eur(100)), delegate::as(bob));
             env.close();
             env.require(balance(gw2, gw["EUR"](-100)));
-            env.require(balance(gw, EUR(100)));
+            env.require(balance(gw, eur(100)));
             env.require(balance(bob, bobBalance - drops(baseFee)));
             env.require(balance(gw, gwBalance));
             env.require(balance(gw2, gw2Balance));
@@ -601,12 +601,12 @@ class Delegate_test : public beast::unit_test::suite
             Account alice{"alice"};
             Account bob{"bob"};
             Account gw{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
 
             env.fund(XRP(10000), alice);
             env.fund(XRP(20000), bob);
             env.fund(XRP(40000), gw);
-            env.trust(USD(200), alice);
+            env.trust(usd(200), alice);
             env.close();
 
             XRPAmount const baseFee{env.current()->fees().base};
@@ -623,7 +623,7 @@ class Delegate_test : public beast::unit_test::suite
 
             // bob can not mint on behalf of gw because he only has burn
             // permission
-            env(pay(gw, alice, USD(50)), delegate::as(bob), ter(terNO_DELEGATE_PERMISSION));
+            env(pay(gw, alice, usd(50)), delegate::as(bob), ter(terNO_DELEGATE_PERMISSION));
             env.close();
             env.require(balance(bob, bobBalance));
 
@@ -634,14 +634,14 @@ class Delegate_test : public beast::unit_test::suite
             gwBalance = env.balance(gw, XRP);
 
             // bob now can mint on behalf of gw
-            env(pay(gw, alice, USD(50)), delegate::as(bob));
+            env(pay(gw, alice, usd(50)), delegate::as(bob));
             env.close();
             env.require(balance(bob, bobBalance - drops(baseFee)));
             env.require(balance(gw, gwBalance));
             env.require(balance(alice, aliceBalance));
             env.require(balance(gw, alice["USD"](-50)));
-            env.require(balance(alice, USD(50)));
-            BEAST_EXPECT(env.balance(bob, USD) == USD(0));
+            env.require(balance(alice, usd(50)));
+            BEAST_EXPECT(env.balance(bob, usd) == usd(0));
         }
 
         // disallow cross currency payment with only PaymentBurn/PaymentMint
@@ -652,35 +652,35 @@ class Delegate_test : public beast::unit_test::suite
             Account const bob{"bob"};
             Account const gw{"gateway"};
             Account const carol{"carol"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
 
             env.fund(XRP(10000), alice, bob, carol, gw);
             env.close();
-            env.trust(USD(50000), alice);
-            env.trust(USD(50000), bob);
-            env.trust(USD(50000), carol);
-            env(pay(gw, alice, USD(10000)));
-            env(pay(gw, bob, USD(10000)));
-            env(pay(gw, carol, USD(10000)));
+            env.trust(usd(50000), alice);
+            env.trust(usd(50000), bob);
+            env.trust(usd(50000), carol);
+            env(pay(gw, alice, usd(10000)));
+            env(pay(gw, bob, usd(10000)));
+            env(pay(gw, carol, usd(10000)));
             env.close();
 
             // PaymentMint
             {
-                env(offer(carol, XRP(100), USD(501)));
+                env(offer(carol, XRP(100), usd(501)));
                 BEAST_EXPECT(expectOffers(env, carol, 1));
                 env(delegate::set(gw, bob, {"PaymentMint"}));
                 env.close();
 
                 // bob can not send cross currency payment on behalf of the gw,
                 // even with PaymentMint permission and gw being the issuer.
-                env(pay(gw, alice, USD(5000)),
+                env(pay(gw, alice, usd(5000)),
                     sendmax(XRP(1001)),
                     txflags(tfPartialPayment),
                     delegate::as(bob),
                     ter(terNO_DELEGATE_PERMISSION));
                 BEAST_EXPECT(expectOffers(env, carol, 1));
 
-                env(pay(gw, alice, USD(5000)),
+                env(pay(gw, alice, usd(5000)),
                     path(~XRP),
                     txflags(tfPartialPayment),
                     delegate::as(bob),
@@ -688,27 +688,27 @@ class Delegate_test : public beast::unit_test::suite
                 BEAST_EXPECT(expectOffers(env, carol, 1));
 
                 // succeed with direct payment
-                env(pay(gw, alice, USD(100)), delegate::as(bob));
+                env(pay(gw, alice, usd(100)), delegate::as(bob));
                 env.close();
             }
 
             // PaymentBurn
             {
-                env(offer(bob, XRP(100), USD(501)));
+                env(offer(bob, XRP(100), usd(501)));
                 BEAST_EXPECT(expectOffers(env, bob, 1));
                 env(delegate::set(alice, bob, {"PaymentBurn"}));
                 env.close();
 
                 // bob can not send cross currency payment on behalf of alice,
                 // even with PaymentBurn permission and gw being the issuer.
-                env(pay(alice, gw, USD(5000)),
+                env(pay(alice, gw, usd(5000)),
                     sendmax(XRP(1001)),
                     txflags(tfPartialPayment),
                     delegate::as(bob),
                     ter(terNO_DELEGATE_PERMISSION));
                 BEAST_EXPECT(expectOffers(env, bob, 1));
 
-                env(pay(alice, gw, USD(5000)),
+                env(pay(alice, gw, usd(5000)),
                     path(~XRP),
                     txflags(tfPartialPayment),
                     delegate::as(bob),
@@ -716,7 +716,7 @@ class Delegate_test : public beast::unit_test::suite
                 BEAST_EXPECT(expectOffers(env, bob, 1));
 
                 // succeed with direct payment
-                env(pay(alice, gw, USD(100)), delegate::as(bob));
+                env(pay(alice, gw, usd(100)), delegate::as(bob));
                 env.close();
             }
         }
@@ -735,7 +735,7 @@ class Delegate_test : public beast::unit_test::suite
             mpt.authorize({.account = alice});
             mpt.authorize({.account = bob});
 
-            auto const MPT = mpt["MPT"];
+            auto const MPT = mpt["MPT"];  // NOLINT(readability-identifier-naming)
             env(pay(gw, alice, MPT(500)));
             env(pay(gw, bob, MPT(500)));
             env.close();

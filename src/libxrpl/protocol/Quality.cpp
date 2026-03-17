@@ -112,22 +112,22 @@ Quality::ceil_out_strict(Amounts const& amount, STAmount const& limit, bool roun
 Quality
 composed_quality(Quality const& lhs, Quality const& rhs)
 {
-    STAmount const lhs_rate(lhs.rate());
+    STAmount const lhsRate(lhs.rate());
     XRPL_ASSERT(lhs_rate != beast::zero, "xrpl::composed_quality : nonzero left input");
 
-    STAmount const rhs_rate(rhs.rate());
+    STAmount const rhsRate(rhs.rate());
     XRPL_ASSERT(rhs_rate != beast::zero, "xrpl::composed_quality : nonzero right input");
 
-    STAmount const rate(mulRound(lhs_rate, rhs_rate, lhs_rate.asset(), true));
+    STAmount const rate(mulRound(lhsRate, rhsRate, lhsRate.asset(), true));
 
-    std::uint64_t const stored_exponent(rate.exponent() + 100);
-    std::uint64_t const stored_mantissa(rate.mantissa());
+    std::uint64_t const storedExponent(rate.exponent() + 100);
+    std::uint64_t const storedMantissa(rate.mantissa());
 
     XRPL_ASSERT(
         (stored_exponent > 0) && (stored_exponent <= 255),
         "xrpl::composed_quality : valid exponent");
 
-    return Quality((stored_exponent << (64 - 8)) | stored_mantissa);
+    return Quality((storedExponent << (64 - 8)) | storedMantissa);
 }
 
 Quality

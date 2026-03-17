@@ -109,12 +109,12 @@ class Clawback_test : public beast::unit_test::suite
             env.fund(XRP(1000), alice, bob);
             env.close();
 
-            auto const USD = alice["USD"];
+            auto const usd = alice["USD"];
             env.require(nflags(alice, asfAllowTrustLineClawback));
 
             // alice issues 10 USD to bob
-            env.trust(USD(1000), bob);
-            env(pay(alice, bob, USD(10)));
+            env.trust(usd(1000), bob);
+            env(pay(alice, bob, usd(10)));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 0);
@@ -126,8 +126,8 @@ class Clawback_test : public beast::unit_test::suite
 
             // bob sets trustline to default limit and pays alice back to delete
             // the trustline
-            env(trust(bob, USD(0), 0));
-            env(pay(bob, alice, USD(10)));
+            env(trust(bob, usd(0), 0));
+            env(pay(bob, alice, usd(10)));
 
             BEAST_EXPECT(ownerCount(env, alice) == 0);
             BEAST_EXPECT(ownerCount(env, bob) == 0);
@@ -191,11 +191,11 @@ class Clawback_test : public beast::unit_test::suite
 
             env.require(nflags(alice, asfAllowTrustLineClawback));
 
-            auto const USD = alice["USD"];
+            auto const usd = alice["USD"];
 
             // alice issues 10 USD to bob
-            env.trust(USD(1000), bob);
-            env(pay(alice, bob, USD(10)));
+            env.trust(usd(1000), bob);
+            env(pay(alice, bob, usd(10)));
             env.close();
 
             env.require(balance(bob, alice["USD"](10)));
@@ -239,11 +239,11 @@ class Clawback_test : public beast::unit_test::suite
             env.close();
             env.require(flags(alice, asfAllowTrustLineClawback));
 
-            auto const USD = alice["USD"];
+            auto const usd = alice["USD"];
 
             // alice issues 10 USD to bob
-            env.trust(USD(1000), bob);
-            env(pay(alice, bob, USD(10)));
+            env.trust(usd(1000), bob);
+            env(pay(alice, bob, usd(10)));
             env.close();
 
             env.require(balance(bob, alice["USD"](10)));
@@ -271,7 +271,7 @@ class Clawback_test : public beast::unit_test::suite
             env.close();
 
             // bob pays alice back, trustline has a balance of 0
-            env(pay(bob, alice, USD(10)));
+            env(pay(bob, alice, usd(10)));
             env.close();
 
             // bob still owns the trustline that has 0 balance
@@ -285,7 +285,7 @@ class Clawback_test : public beast::unit_test::suite
             env.close();
 
             // set the limit to default, which should delete the trustline
-            env(trust(bob, USD(0), 0));
+            env(trust(bob, usd(0), 0));
             env.close();
 
             // bob no longer owns the trustline
@@ -339,7 +339,7 @@ class Clawback_test : public beast::unit_test::suite
             env.fund(XRP(1000), alice, bob, cindy);
             env.close();
 
-            auto const USD = alice["USD"];
+            auto const usd = alice["USD"];
 
             // alice sets asfAllowTrustLineClawback
             env(fset(alice, asfAllowTrustLineClawback));
@@ -352,8 +352,8 @@ class Clawback_test : public beast::unit_test::suite
             env.require(flags(cindy, asfAllowTrustLineClawback));
 
             // alice issues 1000 USD to bob
-            env.trust(USD(1000), bob);
-            env(pay(alice, bob, USD(1000)));
+            env.trust(usd(1000), bob);
+            env(pay(alice, bob, usd(1000)));
             env.close();
 
             env.require(balance(bob, alice["USD"](1000)));
@@ -381,8 +381,8 @@ class Clawback_test : public beast::unit_test::suite
             env.fund(XRP(1000), alice, bob);
             env.close();
 
-            auto const USD = alice["USD"];
-            auto const CAD = bob["CAD"];
+            auto const usd = alice["USD"];
+            auto const cad = bob["CAD"];
 
             // alice sets asfAllowTrustLineClawback
             env(fset(alice, asfAllowTrustLineClawback));
@@ -401,8 +401,8 @@ class Clawback_test : public beast::unit_test::suite
             {
                 // bob creates a trustline with alice, and alice sends 10 USD to
                 // bob
-                env.trust(USD(1000), bob);
-                env(pay(alice, bob, USD(10)));
+                env.trust(usd(1000), bob);
+                env(pay(alice, bob, usd(10)));
                 env.close();
 
                 env.require(balance(bob, alice["USD"](10)));
@@ -421,8 +421,8 @@ class Clawback_test : public beast::unit_test::suite
             {
                 // alice creates a trustline with bob, and bob sends 10 CAD to
                 // alice
-                env.trust(CAD(1000), alice);
-                env(pay(bob, alice, CAD(10)));
+                env.trust(cad(1000), alice);
+                env(pay(bob, alice, cad(10)));
                 env.close();
 
                 env.require(balance(bob, alice["CAD"](-10)));
@@ -451,7 +451,7 @@ class Clawback_test : public beast::unit_test::suite
         env.fund(XRP(1000), alice, bob);
         env.close();
 
-        auto const USD = alice["USD"];
+        auto const usd = alice["USD"];
 
         // alice sets asfAllowTrustLineClawback
         env(fset(alice, asfAllowTrustLineClawback));
@@ -459,8 +459,8 @@ class Clawback_test : public beast::unit_test::suite
         env.require(flags(alice, asfAllowTrustLineClawback));
 
         // alice issues 1000 USD to bob
-        env.trust(USD(1000), bob);
-        env(pay(alice, bob, USD(1000)));
+        env.trust(usd(1000), bob);
+        env(pay(alice, bob, usd(1000)));
         env.close();
 
         env.require(balance(bob, alice["USD"](1000)));
@@ -561,7 +561,7 @@ class Clawback_test : public beast::unit_test::suite
             env.fund(XRP(1000), alice, bob, cindy);
             env.close();
 
-            auto const USD = alice["USD"];
+            auto const usd = alice["USD"];
 
             // alice sets asfAllowTrustLineClawback
             env(fset(alice, asfAllowTrustLineClawback));
@@ -569,16 +569,16 @@ class Clawback_test : public beast::unit_test::suite
             env.require(flags(alice, asfAllowTrustLineClawback));
 
             // alice sends 600 USD to bob
-            env.trust(USD(1000), bob);
-            env(pay(alice, bob, USD(600)));
+            env.trust(usd(1000), bob);
+            env(pay(alice, bob, usd(600)));
             env.close();
 
             env.require(balance(alice, bob["USD"](-600)));
             env.require(balance(bob, alice["USD"](600)));
 
             // alice sends 1000 USD to cindy
-            env.trust(USD(1000), cindy);
-            env(pay(alice, cindy, USD(1000)));
+            env.trust(usd(1000), cindy);
+            env(pay(alice, cindy, usd(1000)));
             env.close();
 
             env.require(balance(alice, cindy["USD"](-1000)));
@@ -717,7 +717,7 @@ class Clawback_test : public beast::unit_test::suite
         env.fund(XRP(1000), alice, bob);
         env.close();
 
-        auto const USD = alice["USD"];
+        auto const usd = alice["USD"];
 
         // alice sets asfAllowTrustLineClawback
         env(fset(alice, asfAllowTrustLineClawback));
@@ -725,8 +725,8 @@ class Clawback_test : public beast::unit_test::suite
         env.require(flags(alice, asfAllowTrustLineClawback));
 
         // alice issues 1000 USD to bob
-        env.trust(USD(1000), bob);
-        env(pay(alice, bob, USD(1000)));
+        env.trust(usd(1000), bob);
+        env(pay(alice, bob, usd(1000)));
         env.close();
 
         BEAST_EXPECT(ownerCount(env, alice) == 0);
@@ -736,7 +736,7 @@ class Clawback_test : public beast::unit_test::suite
         env.require(balance(alice, bob["USD"](-1000)));
 
         // set limit to default,
-        env(trust(bob, USD(0), 0));
+        env(trust(bob, usd(0), 0));
         env.close();
 
         BEAST_EXPECT(ownerCount(env, alice) == 0);
@@ -767,7 +767,7 @@ class Clawback_test : public beast::unit_test::suite
         env.fund(XRP(1000), alice, bob);
         env.close();
 
-        auto const USD = alice["USD"];
+        auto const usd = alice["USD"];
 
         // alice sets asfAllowTrustLineClawback
         env(fset(alice, asfAllowTrustLineClawback));
@@ -775,8 +775,8 @@ class Clawback_test : public beast::unit_test::suite
         env.require(flags(alice, asfAllowTrustLineClawback));
 
         // alice issues 1000 USD to bob
-        env.trust(USD(1000), bob);
-        env(pay(alice, bob, USD(1000)));
+        env.trust(usd(1000), bob);
+        env(pay(alice, bob, usd(1000)));
         env.close();
 
         env.require(balance(bob, alice["USD"](1000)));
@@ -795,7 +795,7 @@ class Clawback_test : public beast::unit_test::suite
         env.require(balance(alice, bob["USD"](-800)));
 
         // trustline remains frozen
-        BEAST_EXPECT(getLineFreezeFlag(env, alice, bob, USD.currency));
+        BEAST_EXPECT(getLineFreezeFlag(env, alice, bob, usd.currency));
     }
 
     void
@@ -813,7 +813,7 @@ class Clawback_test : public beast::unit_test::suite
         env.fund(XRP(1000), alice, bob);
         env.close();
 
-        auto const USD = alice["USD"];
+        auto const usd = alice["USD"];
 
         // alice sets asfAllowTrustLineClawback
         env(fset(alice, asfAllowTrustLineClawback));
@@ -821,8 +821,8 @@ class Clawback_test : public beast::unit_test::suite
         env.require(flags(alice, asfAllowTrustLineClawback));
 
         // alice issues 1000 USD to bob
-        env.trust(USD(1000), bob);
-        env(pay(alice, bob, USD(1000)));
+        env.trust(usd(1000), bob);
+        env(pay(alice, bob, usd(1000)));
         env.close();
 
         env.require(balance(bob, alice["USD"](1000)));
@@ -843,7 +843,7 @@ class Clawback_test : public beast::unit_test::suite
         BEAST_EXPECT(ownerCount(env, bob) == 1);
 
         // set limit to default,
-        env(trust(bob, USD(0), 0));
+        env(trust(bob, usd(0), 0));
         env.close();
 
         // verify that bob's trustline was deleted
@@ -865,7 +865,7 @@ class Clawback_test : public beast::unit_test::suite
         env.fund(XRP(1000), alice, bob);
         env.close();
 
-        auto const USD = alice["USD"];
+        auto const usd = alice["USD"];
 
         // alice sets asfAllowTrustLineClawback
         env(fset(alice, asfAllowTrustLineClawback));
@@ -873,8 +873,8 @@ class Clawback_test : public beast::unit_test::suite
         env.require(flags(alice, asfAllowTrustLineClawback));
 
         // alice issues 100 USD to bob
-        env.trust(USD(1000), bob);
-        env(pay(alice, bob, USD(100)));
+        env.trust(usd(1000), bob);
+        env(pay(alice, bob, usd(100)));
         env.close();
 
         env.require(balance(bob, alice["USD"](100)));

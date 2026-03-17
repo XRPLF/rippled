@@ -305,26 +305,26 @@ public:
         // For a 1TB data file, a 32GB bucket buffer is suggested.
         // The larger the buffer, the faster the import.
         //
-        std::size_t const buffer_size = std::stoull(args.at("buffer"));
-        auto const fropath_ = args.at("from");
-        auto const to_path = args.at("to");
+        std::size_t const bufferSize = std::stoull(args.at("buffer"));
+        auto const fropath = args.at("from");
+        auto const toPath = args.at("to");
 
         using hash_type = nudb::xxhasher;
-        auto const bulk_size = 64 * 1024 * 1024;
-        float const load_factor = 0.5;
+        auto const bulkSize = 64 * 1024 * 1024;
+        float const loadFactor = 0.5;
 
-        auto const dp = to_path + ".dat";
-        auto const kp = to_path + ".key";
+        auto const dp = toPath + ".dat";
+        auto const kp = toPath + ".key";
 
         auto const start = std::chrono::steady_clock::now();
 
-        log << "from:    " << fropath_
+        log << "from:    " << fropath
             << "\n"
                "to:      "
-            << to_path
+            << toPath
             << "\n"
                "buffer:  "
-            << buffer_size;
+            << bufferSize;
 
         std::unique_ptr<rocksdb::DB> db;
         {
@@ -332,9 +332,9 @@ public:
             options.create_if_missing = false;
             options.max_open_files = 2000;  // 5000?
             rocksdb::DB* pdb = nullptr;
-            rocksdb::Status status = rocksdb::DB::OpenForReadOnly(options, fropath_, &pdb);
+            rocksdb::Status status = rocksdb::DB::OpenForReadOnly(options, fropath, &pdb);
             if (!status.ok() || !pdb)
-                Throw<std::runtime_error>("Can't open '" + fropath_ + "': " + status.ToString());
+                Throw<std::runtime_error>("Can't open '" + fropath + "': " + status.ToString());
             db.reset(pdb);
         }
         // Create data file with values
@@ -350,7 +350,7 @@ public:
         df.create(file_mode::append, dp, ec);
         if (ec)
             Throw<nudb::system_error>(ec);
-        bulk_writer<native_file> dw(df, 0, bulk_size);
+        bulk_writer<native_file> dw(df, 0, bulkSize);
         {
             {
                 auto os = dw.prepare(dat_file_header::size, ec);
@@ -402,7 +402,7 @@ public:
         }
         db.reset();
         log << "Import data: " << detail::fmtdur(std::chrono::steady_clock::now() - start);
-        auto const df_size = df.size(ec);
+        auto const dfSize = df.size(ec);
         if (ec)
             Throw<nudb::system_error>(ec);
         // Create key file
@@ -414,8 +414,8 @@ public:
         kh.salt = make_salt();
         kh.pepper = pepper<hash_type>(kh.salt);
         kh.block_size = block_size(kp);
-        kh.load_factor = std::min<std::size_t>(65536.0 * load_factor, 65535);
-        kh.buckets = std::ceil(nitems / (bucket_capacity(kh.block_size) * load_factor));
+        kh.load_factor = std::min<std::size_t>(65536.0 * loadFactor, 65535);
+        kh.buckets = std::ceil(nitems / (bucket_capacity(kh.block_size) * loadFactor));
         kh.modulus = ceil_pow2(kh.buckets);
         native_file kf;
         kf.create(file_mode::append, kp, ec);
@@ -433,7 +433,7 @@ public:
         // Build contiguous sequential sections of the
         // key file using multiple passes over the data.
         //
-        auto const buckets = std::max<std::size_t>(1, buffer_size / kh.block_size);
+        auto const buckets = std::max<std::size_t>(1, bufferSize / kh.block_size);
         buf.reserve(buckets * kh.block_size);
         auto const passes = (kh.buckets + buckets - 1) / buckets;
         log << "items:   " << nitems
@@ -442,11 +442,11 @@ public:
             << kh.buckets
             << "\n"
                "data:    "
-            << df_size
+            << dfSize
             << "\n"
                "passes:  "
             << passes;
-        progress p(df_size * passes);
+        progress p(dfSize * passes);
         std::size_t npass = 0;
         for (std::size_t b0 = 0; b0 < kh.buckets; b0 += buckets)
         {
@@ -460,7 +460,7 @@ public:
             }
             // Insert all keys into buckets
             // Iterate Data File
-            bulk_reader<native_file> r(df, dat_file_header::size, df_size, bulk_size);
+            bulk_reader<native_file> r(df, dat_file_header::size, dfSize, bulkSize);
             while (!r.eof())
             {
                 auto const offset = r.offset();
@@ -482,7 +482,7 @@ public:
                     std::uint8_t const* const key = is.data(dh.key_size);
                     auto const h = hash<hash_type>(key, kh.key_size, kh.salt);
                     auto const n = bucket_index(h, kh.buckets, kh.modulus);
-                    p(log, npass * df_size + r.offset());
+                    p(log, npass * dfSize + r.offset());
                     if (n < b0 || n >= b1)
                         continue;
                     bucket b(kh.block_size, buf.get() + (n - b0) * kh.block_size);

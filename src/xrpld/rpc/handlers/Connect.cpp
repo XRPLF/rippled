@@ -40,14 +40,14 @@ doConnect(RPC::JsonContext& context)
     else
         iPort = DEFAULT_PEER_PORT;
 
-    auto const ip_str = context.params[jss::ip].asString();
-    auto ip = beast::IP::Endpoint::from_string(ip_str);
+    auto const ipStr = context.params[jss::ip].asString();
+    auto ip = beast::IP::Endpoint::from_string(ipStr);
 
     if (!is_unspecified(ip))
         context.app.overlay().connect(ip.at_port(iPort));
 
     return RPC::makeObjectValue(
-        "attempting connection to IP:" + ip_str + " port: " + std::to_string(iPort));
+        "attempting connection to IP:" + ipStr + " port: " + std::to_string(iPort));
 }
 
 }  // namespace xrpl

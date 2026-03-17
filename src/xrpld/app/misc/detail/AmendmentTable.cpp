@@ -519,7 +519,7 @@ AmendmentTableImpl::AmendmentTableImpl(
                          << " voted by default if not enabled on the ledger.";
     }
 
-    hash_set<uint256> detect_conflict;
+    hash_set<uint256> detectConflict;
     // Parse enabled amendments from config
     for (std::pair<uint256, std::string> const& a : parseSection(enabled))
     {
@@ -531,7 +531,7 @@ AmendmentTableImpl::AmendmentTableImpl(
         }
         else
         {  // Otherwise transfer config data into the table
-            detect_conflict.insert(a.first);
+            detectConflict.insert(a.first);
             persistVote(a.first, a.second, AmendmentVote::up);
         }
     }
@@ -547,7 +547,7 @@ AmendmentTableImpl::AmendmentTableImpl(
         }
         else
         {  // Otherwise transfer config data into the table
-            if (detect_conflict.count(a.first) == 0)
+            if (detectConflict.count(a.first) == 0)
             {
                 persistVote(a.first, a.second, AmendmentVote::down);
             }
@@ -564,29 +564,29 @@ AmendmentTableImpl::AmendmentTableImpl(
     auto db = db_.checkoutDb();
     readAmendments(
         *db,
-        [&](boost::optional<std::string> amendment_hash,
-            boost::optional<std::string> amendment_name,
+        [&](boost::optional<std::string> amendmentHash,
+            boost::optional<std::string> amendmentName,
             boost::optional<AmendmentVote> vote) {
-            uint256 amend_hash;
-            if (!amendment_hash || !amendment_name || !vote)
+            uint256 amendHash;
+            if (!amendmentHash || !amendmentName || !vote)
             {
                 // These fields should never have nulls, but check
                 Throw<std::runtime_error>("Invalid FeatureVotes row in wallet.db");
             }
-            if (!amend_hash.parseHex(*amendment_hash))
+            if (!amendHash.parseHex(*amendmentHash))
             {
                 Throw<std::runtime_error>(
-                    "Invalid amendment ID '" + *amendment_hash + " in wallet.db");
+                    "Invalid amendment ID '" + *amendmentHash + " in wallet.db");
             }
             if (*vote == AmendmentVote::down)
             {
                 // Unknown amendments are effectively vetoed already
-                if (auto s = get(amend_hash, lock))
+                if (auto s = get(amendHash, lock))
                 {
-                    JLOG(j_.info()) << "Amendment {" << *amendment_name << ", " << amend_hash
+                    JLOG(j_.info()) << "Amendment {" << *amendmentName << ", " << amendHash
                                     << "} is downvoted.";
-                    if (!amendment_name->empty())
-                        s->name = *amendment_name;
+                    if (!amendmentName->empty())
+                        s->name = *amendmentName;
                     // An obsolete amendment's vote can never be changed
                     if (s->vote != AmendmentVote::obsolete)
                         s->vote = *vote;
@@ -594,12 +594,12 @@ AmendmentTableImpl::AmendmentTableImpl(
             }
             else  // up-vote
             {
-                AmendmentState& s = add(amend_hash, lock);
+                AmendmentState& s = add(amendHash, lock);
 
-                JLOG(j_.debug()) << "Amendment {" << *amendment_name << ", " << amend_hash
+                JLOG(j_.debug()) << "Amendment {" << *amendmentName << ", " << amendHash
                                  << "} is upvoted.";
-                if (!amendment_name->empty())
-                    s.name = *amendment_name;
+                if (!amendmentName->empty())
+                    s.name = *amendmentName;
                 // An obsolete amendment's vote can never be changed
                 if (s.vote != AmendmentVote::obsolete)
                     s.vote = *vote;

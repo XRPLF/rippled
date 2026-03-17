@@ -427,8 +427,8 @@ XChainBridgeObjects::XChainBridgeObjects()
 void
 XChainBridgeObjects::createMcBridgeObjects(Env& mcEnv)
 {
-    STAmount xrp_funds{XRP(10000)};
-    mcEnv.fund(xrp_funds, mcDoor, mcAlice, mcBob, mcCarol, mcGw);
+    STAmount xrpFunds{XRP(10000)};
+    mcEnv.fund(xrpFunds, mcDoor, mcAlice, mcBob, mcCarol, mcGw);
 
     // Signer's list must match the attestation signers
     mcEnv(jtx::signers(mcDoor, signers.size(), signers));
@@ -444,8 +444,8 @@ XChainBridgeObjects::createMcBridgeObjects(Env& mcEnv)
 void
 XChainBridgeObjects::createScBridgeObjects(Env& scEnv)
 {
-    STAmount xrp_funds{XRP(10000)};
-    scEnv.fund(xrp_funds, scDoor, scAlice, scBob, scCarol, scGw, scAttester, scReward);
+    STAmount xrpFunds{XRP(10000)};
+    scEnv.fund(xrpFunds, scDoor, scAlice, scBob, scCarol, scGw, scAttester, scReward);
 
     // Signer's list must match the attestation signers
     scEnv(jtx::signers(Account::master, signers.size(), signers));

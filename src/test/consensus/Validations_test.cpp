@@ -224,7 +224,7 @@ class Validations_test : public beast::unit_test::suite
         }
     };
 
-    Ledger const genesisLedger{Ledger::MakeGenesis{}};
+    Ledger const genesisLedger_{Ledger::MakeGenesis{}};
 
     void
     testAddValidation()
@@ -371,7 +371,7 @@ class Validations_test : public beast::unit_test::suite
         std::vector<Trigger> triggers = {
             [&](TestValidations& vals) { vals.currentTrusted(); },
             [&](TestValidations& vals) { vals.getCurrentNodeIDs(); },
-            [&](TestValidations& vals) { vals.getPreferred(genesisLedger); },
+            [&](TestValidations& vals) { vals.getPreferred(genesisLedger_); },
             [&](TestValidations& vals) { vals.getNodesAfter(ledgerA, ledgerA.id()); }};
         for (Trigger trigger : triggers)
         {
@@ -382,7 +382,7 @@ class Validations_test : public beast::unit_test::suite
             trigger(harness.vals());
             BEAST_EXPECT(harness.vals().getNodesAfter(ledgerA, ledgerA.id()) == 1);
             BEAST_EXPECT(
-                harness.vals().getPreferred(genesisLedger) ==
+                harness.vals().getPreferred(genesisLedger_) ==
                 std::make_pair(ledgerAB.seq(), ledgerAB.id()));
             harness.clock().advance(harness.parms().validationCURRENT_LOCAL);
 
@@ -390,7 +390,7 @@ class Validations_test : public beast::unit_test::suite
             trigger(harness.vals());
 
             BEAST_EXPECT(harness.vals().getNodesAfter(ledgerA, ledgerA.id()) == 0);
-            BEAST_EXPECT(harness.vals().getPreferred(genesisLedger) == std::nullopt);
+            BEAST_EXPECT(harness.vals().getPreferred(genesisLedger_) == std::nullopt);
         }
     }
 
@@ -842,20 +842,20 @@ class Validations_test : public beast::unit_test::suite
         // Validation is available
         BEAST_EXPECT(harness.vals().numTrustedForLedger(ID{2}) == 1);
         // but ledger based data is not
-        BEAST_EXPECT(harness.vals().getNodesAfter(genesisLedger, ID{0}) == 0);
+        BEAST_EXPECT(harness.vals().getNodesAfter(genesisLedger_, ID{0}) == 0);
         // Initial preferred branch falls back to the ledger we are trying to
         // acquire
-        BEAST_EXPECT(harness.vals().getPreferred(genesisLedger) == std::make_pair(Seq{2}, ID{2}));
+        BEAST_EXPECT(harness.vals().getPreferred(genesisLedger_) == std::make_pair(Seq{2}, ID{2}));
 
         // After adding another unavailable validation, the preferred ledger
         // breaks ties via higher ID
         BEAST_EXPECT(ValStatus::current == harness.add(b.validate(ID{3}, Seq{2}, 0s, 0s, true)));
-        BEAST_EXPECT(harness.vals().getPreferred(genesisLedger) == std::make_pair(Seq{2}, ID{3}));
+        BEAST_EXPECT(harness.vals().getPreferred(genesisLedger_) == std::make_pair(Seq{2}, ID{3}));
 
         // Create the ledger
         Ledger ledgerAB = h["ab"];
         // Now it should be available
-        BEAST_EXPECT(harness.vals().getNodesAfter(genesisLedger, ID{0}) == 1);
+        BEAST_EXPECT(harness.vals().getNodesAfter(genesisLedger_, ID{0}) == 1);
 
         // Create a validation that is not available
         harness.clock().advance(5s);
@@ -863,7 +863,7 @@ class Validations_test : public beast::unit_test::suite
         BEAST_EXPECT(ValStatus::current == harness.add(val2));
         BEAST_EXPECT(harness.vals().numTrustedForLedger(ID{4}) == 1);
         BEAST_EXPECT(
-            harness.vals().getPreferred(genesisLedger) ==
+            harness.vals().getPreferred(genesisLedger_) ==
             std::make_pair(ledgerAB.seq(), ledgerAB.id()));
 
         // Another node requesting that ledger still doesn't change things
@@ -871,7 +871,7 @@ class Validations_test : public beast::unit_test::suite
         BEAST_EXPECT(ValStatus::current == harness.add(val3));
         BEAST_EXPECT(harness.vals().numTrustedForLedger(ID{4}) == 2);
         BEAST_EXPECT(
-            harness.vals().getPreferred(genesisLedger) ==
+            harness.vals().getPreferred(genesisLedger_) ==
             std::make_pair(ledgerAB.seq(), ledgerAB.id()));
 
         // Switch to validation that is available
@@ -880,7 +880,7 @@ class Validations_test : public beast::unit_test::suite
         BEAST_EXPECT(ValStatus::current == harness.add(a.partial(ledgerABCDE)));
         BEAST_EXPECT(ValStatus::current == harness.add(b.partial(ledgerABCDE)));
         BEAST_EXPECT(
-            harness.vals().getPreferred(genesisLedger) ==
+            harness.vals().getPreferred(genesisLedger_) ==
             std::make_pair(ledgerABCDE.seq(), ledgerABCDE.id()));
     }
 
@@ -934,17 +934,18 @@ class Validations_test : public beast::unit_test::suite
                            hash_set<PeerID> const& listed,
                            std::vector<Validation> const& trustedVals) {
             Ledger::ID testID =
-                trustedVals.empty() ? this->genesisLedger.id() : trustedVals[0].ledgerID();
+                trustedVals.empty() ? this->genesisLedger_.id() : trustedVals[0].ledgerID();
             Ledger::Seq testSeq =
-                trustedVals.empty() ? this->genesisLedger.seq() : trustedVals[0].seq();
+                trustedVals.empty() ? this->genesisLedger_.seq() : trustedVals[0].seq();
             BEAST_EXPECT(vals.currentTrusted() == trustedVals);
             BEAST_EXPECT(vals.getCurrentNodeIDs() == listed);
             BEAST_EXPECT(
-                vals.getNodesAfter(this->genesisLedger, genesisLedger.id()) == trustedVals.size());
+                vals.getNodesAfter(this->genesisLedger_, genesisLedger_.id()) ==
+                trustedVals.size());
             if (trustedVals.empty())
-                BEAST_EXPECT(vals.getPreferred(this->genesisLedger) == std::nullopt);
+                BEAST_EXPECT(vals.getPreferred(this->genesisLedger_) == std::nullopt);
             else
-                BEAST_EXPECT(vals.getPreferred(this->genesisLedger)->second == testID);
+                BEAST_EXPECT(vals.getPreferred(this->genesisLedger_)->second == testID);
             BEAST_EXPECT(vals.getTrustedForLedger(testID, testSeq) == trustedVals);
             BEAST_EXPECT(vals.numTrustedForLedger(testID) == trustedVals.size());
         };
@@ -1000,16 +1001,16 @@ class Validations_test : public beast::unit_test::suite
             BEAST_EXPECT(vals.currentTrusted() == trustedVals);
 
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(vals.getPreferred(genesisLedger)->second == v.ledgerID());
-            BEAST_EXPECT(vals.getNodesAfter(genesisLedger, genesisLedger.id()) == 0);
+            BEAST_EXPECT(vals.getPreferred(genesisLedger_)->second == v.ledgerID());
+            BEAST_EXPECT(vals.getNodesAfter(genesisLedger_, genesisLedger_.id()) == 0);
 
             trustedVals.clear();
             harness.vals().trustChanged({}, {a.nodeID()});
             // make acquiring ledger available
             h["ab"];
             BEAST_EXPECT(vals.currentTrusted() == trustedVals);
-            BEAST_EXPECT(vals.getPreferred(genesisLedger) == std::nullopt);
-            BEAST_EXPECT(vals.getNodesAfter(genesisLedger, genesisLedger.id()) == 0);
+            BEAST_EXPECT(vals.getPreferred(genesisLedger_) == std::nullopt);
+            BEAST_EXPECT(vals.getNodesAfter(genesisLedger_, genesisLedger_.id()) == 0);
         }
     }
 

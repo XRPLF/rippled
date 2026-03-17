@@ -74,7 +74,7 @@ makeLedgerDBs(
         {
             // Check if AccountTransactions has primary key
             std::string cid, name, type;
-            std::size_t notnull, dflt_value, pk;
+            std::size_t notnull, dfltValue, pk;
             soci::indicator ind;
             soci::statement st =
                 (tx->getSession().prepare << ("PRAGMA table_info(AccountTransactions);"),
@@ -82,7 +82,7 @@ makeLedgerDBs(
                  soci::into(name),
                  soci::into(type),
                  soci::into(notnull),
-                 soci::into(dflt_value, ind),
+                 soci::into(dfltValue, ind),
                  soci::into(pk));
 
             st.execute();
@@ -642,8 +642,8 @@ transactionsSQL(
     bool count,
     beast::Journal j)
 {
-    constexpr std::uint32_t NONBINARY_PAGE_LENGTH = 200;
-    constexpr std::uint32_t BINARY_PAGE_LENGTH = 500;
+    constexpr std::uint32_t nonbinaryPageLength = 200;
+    constexpr std::uint32_t binaryPageLength = 500;
 
     std::uint32_t numberOfResults;
 
@@ -653,12 +653,11 @@ transactionsSQL(
     }
     else if (options.limit == UINT32_MAX)
     {
-        numberOfResults = binary ? BINARY_PAGE_LENGTH : NONBINARY_PAGE_LENGTH;
+        numberOfResults = binary ? binaryPageLength : nonbinaryPageLength;
     }
     else if (!options.bUnlimited)
     {
-        numberOfResults =
-            std::min(binary ? BINARY_PAGE_LENGTH : NONBINARY_PAGE_LENGTH, options.limit);
+        numberOfResults = std::min(binary ? binaryPageLength : nonbinaryPageLength, options.limit);
     }
     else
     {
@@ -946,7 +945,7 @@ accountTxPage(
     std::function<void(std::uint32_t)> const& onUnsavedLedger,
     std::function<void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const& onTransaction,
     RelationalDatabase::AccountTxPageOptions const& options,
-    std::uint32_t page_length,
+    std::uint32_t pageLength,
     bool forward)
 {
     int total = 0;
@@ -956,8 +955,8 @@ accountTxPage(
     std::uint32_t numberOfResults;
 
     if (options.limit == 0 || options.limit == UINT32_MAX ||
-        (options.limit > page_length && !options.bAdmin))
-        numberOfResults = page_length;
+        (options.limit > pageLength && !options.bAdmin))
+        numberOfResults = pageLength;
     else
         numberOfResults = options.limit;
 
@@ -1114,9 +1113,9 @@ oldestAccountTxPage(
     std::function<void(std::uint32_t)> const& onUnsavedLedger,
     std::function<void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const& onTransaction,
     RelationalDatabase::AccountTxPageOptions const& options,
-    std::uint32_t page_length)
+    std::uint32_t pageLength)
 {
-    return accountTxPage(session, onUnsavedLedger, onTransaction, options, page_length, true);
+    return accountTxPage(session, onUnsavedLedger, onTransaction, options, pageLength, true);
 }
 
 std::pair<std::optional<RelationalDatabase::AccountTxMarker>, int>
@@ -1125,9 +1124,9 @@ newestAccountTxPage(
     std::function<void(std::uint32_t)> const& onUnsavedLedger,
     std::function<void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const& onTransaction,
     RelationalDatabase::AccountTxPageOptions const& options,
-    std::uint32_t page_length)
+    std::uint32_t pageLength)
 {
-    return accountTxPage(session, onUnsavedLedger, onTransaction, options, page_length, false);
+    return accountTxPage(session, onUnsavedLedger, onTransaction, options, pageLength, false);
 }
 
 std::variant<RelationalDatabase::AccountTx, TxSearched>
@@ -1156,12 +1155,12 @@ getTransaction(
         session << sql, soci::into(ledgerSeq), soci::into(status), soci::into(sociRawTxnBlob, txn),
             soci::into(sociRawMetaBlob, meta);
 
-        auto const got_data = session.got_data();
+        auto const gotData = session.got_data();
 
-        if ((!got_data || txn != soci::i_ok || meta != soci::i_ok) && !range)
+        if ((!gotData || txn != soci::i_ok || meta != soci::i_ok) && !range)
             return TxSearched::unknown;
 
-        if (!got_data)
+        if (!gotData)
         {
             uint64_t count = 0;
             soci::indicator rti;

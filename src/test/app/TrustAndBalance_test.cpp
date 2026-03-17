@@ -147,10 +147,10 @@ class TrustAndBalance_test : public beast::unit_test::suite
     }
 
     void
-    testWithTransferFee(bool subscribe, bool with_rate, FeatureBitset features)
+    testWithTransferFee(bool subscribe, bool withRate, FeatureBitset features)
     {
         testcase(
-            std::string("Direct Payment: ") + (with_rate ? "With " : "Without ") + " Xfer Fee, " +
+            std::string("Direct Payment: ") + (withRate ? "With " : "Without ") + " Xfer Fee, " +
             (subscribe ? "With " : "Without ") + " Subscribe");
         using namespace test::jtx;
 
@@ -179,7 +179,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
         env.require(balance(bob, gw["AUD"](1)));
         env.require(balance(gw, bob["AUD"](-1)));
 
-        if (with_rate)
+        if (withRate)
         {
             // set a transfer rate
             env(rate(gw, 1.1));
@@ -194,8 +194,8 @@ class TrustAndBalance_test : public beast::unit_test::suite
         }
 
         env.require(balance(alice, gw["AUD"](0.5)));
-        env.require(balance(bob, gw["AUD"](with_rate ? 0.45 : 0.5)));
-        env.require(balance(gw, bob["AUD"](with_rate ? -0.45 : -0.5)));
+        env.require(balance(bob, gw["AUD"](withRate ? 0.45 : 0.5)));
+        env.require(balance(gw, bob["AUD"](withRate ? -0.45 : -0.5)));
 
         if (subscribe)
         {
@@ -311,10 +311,10 @@ class TrustAndBalance_test : public beast::unit_test::suite
     }
 
     void
-    testIndirectMultiPath(bool with_rate, FeatureBitset features)
+    testIndirectMultiPath(bool withRate, FeatureBitset features)
     {
         testcase(
-            std::string("Indirect Payment, Multi Path, ") + (with_rate ? "With " : "Without ") +
+            std::string("Indirect Payment, Multi Path, ") + (withRate ? "With " : "Without ") +
             " Xfer Fee, ");
         using namespace test::jtx;
 
@@ -334,7 +334,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
         env(trust(carol, alice["USD"](700)));
         env(trust(carol, gw["USD"](1000)));
 
-        if (with_rate)
+        if (withRate)
             env(rate(gw, 1.1));
 
         env(pay(gw, bob, bob["USD"](100)));
@@ -342,7 +342,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
         env.close();
 
         // alice pays amazon via multiple paths
-        if (with_rate)
+        if (withRate)
             env(pay(alice, amazon, gw["USD"](150)),
                 sendmax(alice["USD"](200)),
                 test::jtx::path(bob),
@@ -350,7 +350,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
         else
             env(pay(alice, amazon, gw["USD"](150)), test::jtx::path(bob), test::jtx::path(carol));
 
-        if (with_rate)
+        if (withRate)
         {
             env.require(balance(
                 alice,

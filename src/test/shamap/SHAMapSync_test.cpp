@@ -13,7 +13,7 @@ namespace tests {
 class SHAMapSync_test : public beast::unit_test::suite
 {
 public:
-    beast::xor_shift_engine eng_;
+    beast::xor_shift_engine eng;
 
     boost::intrusive_ptr<SHAMapItem>
     makeRandomAS()
@@ -21,7 +21,7 @@ public:
         Serializer s;
 
         for (int d = 0; d < 3; ++d)
-            s.add32(rand_int<std::uint32_t>(eng_));
+            s.add32(rand_int<std::uint32_t>(eng));
         return make_shamapitem(s.getSHA512Half(), s.slice());
     }
 
@@ -105,7 +105,7 @@ public:
         {
             std::vector<std::pair<SHAMapNodeID, Blob>> a;
 
-            BEAST_EXPECT(source.getNodeFat(SHAMapNodeID(), a, rand_bool(eng_), rand_int(eng_, 2)));
+            BEAST_EXPECT(source.getNodeFat(SHAMapNodeID(), a, rand_bool(eng), rand_int(eng, 2)));
 
             unexpected(a.size() < 1, "NodeSize");
 
@@ -131,7 +131,7 @@ public:
                 // Don't use BEAST_EXPECT here b/c it will be called a
                 // non-deterministic number of times and the number of tests run
                 // should be deterministic
-                if (!source.getNodeFat(it.first, b, rand_bool(eng_), rand_int(eng_, 2)))
+                if (!source.getNodeFat(it.first, b, rand_bool(eng), rand_int(eng, 2)))
                     fail("", __FILE__, __LINE__);
             }
 

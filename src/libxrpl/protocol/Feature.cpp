@@ -70,8 +70,8 @@ class FeatureCollections
         uint256 feature;
 
         Feature() = delete;
-        explicit Feature(std::string const& name_, uint256 const& feature_)
-            : name(name_), feature(feature_)
+        explicit Feature(std::string const& name, uint256 const& feature)
+            : name(name), feature(feature)
         {
         }
 
@@ -103,12 +103,12 @@ class FeatureCollections
 
     // This multi_index_container provides access to the features collection by
     // name, index, and uint256 feature identifier
-    boost::multi_index::multi_index_container<Feature, feature_indexing> features;
-    std::map<std::string, AmendmentSupport> all;
-    std::map<std::string, VoteBehavior> supported;
-    std::size_t upVotes = 0;
-    std::size_t downVotes = 0;
-    mutable std::atomic<bool> readOnly = false;
+    boost::multi_index::multi_index_container<Feature, feature_indexing> features_;
+    std::map<std::string, AmendmentSupport> all_;
+    std::map<std::string, VoteBehavior> supported_;
+    std::size_t upVotes_ = 0;
+    std::size_t downVotes_ = 0;
+    mutable std::atomic<bool> readOnly_ = false;
 
     // These helper functions provide access to the features collection by name,
     // index, and uint256 feature identifier, so the details of
@@ -116,31 +116,31 @@ class FeatureCollections
     Feature const&
     getByIndex(size_t i) const
     {
-        if (i >= features.size())
+        if (i >= features_.size())
             LogicError("Invalid FeatureBitset index");
-        auto const& sequence = features.get<Feature::byIndex>();
+        auto const& sequence = features_.get<Feature::byIndex>();
         return sequence[i];
     }
     size_t
     getIndex(Feature const& feature) const
     {
-        auto const& sequence = features.get<Feature::byIndex>();
-        auto const it_to = sequence.iterator_to(feature);
-        return it_to - sequence.begin();
+        auto const& sequence = features_.get<Feature::byIndex>();
+        auto const itTo = sequence.iterator_to(feature);
+        return itTo - sequence.begin();
     }
     Feature const*
     getByFeature(uint256 const& feature) const
     {
-        auto const& feature_index = features.get<Feature::byFeature>();
-        auto const feature_it = feature_index.find(feature);
-        return feature_it == feature_index.end() ? nullptr : &*feature_it;
+        auto const& featureIndex = features_.get<Feature::byFeature>();
+        auto const featureIt = featureIndex.find(feature);
+        return featureIt == featureIndex.end() ? nullptr : &*featureIt;
     }
     Feature const*
     getByName(std::string const& name) const
     {
-        auto const& name_index = features.get<Feature::byName>();
-        auto const name_it = name_index.find(name);
-        return name_it == name_index.end() ? nullptr : &*name_it;
+        auto const& nameIndex = features_.get<Feature::byName>();
+        auto const nameIt = nameIndex.find(name);
+        return nameIt == nameIndex.end() ? nullptr : &*nameIt;
     }
 
 public:
@@ -169,7 +169,7 @@ public:
     std::map<std::string, AmendmentSupport> const&
     allAmendments() const
     {
-        return all;
+        return all_;
     }
 
     /** Amendments that this server supports.
@@ -178,21 +178,21 @@ public:
     std::map<std::string, VoteBehavior> const&
     supportedAmendments() const
     {
-        return supported;
+        return supported_;
     }
 
     /** Amendments that this server WON'T vote for by default. */
     std::size_t
     numDownVotedAmendments() const
     {
-        return downVotes;
+        return downVotes_;
     }
 
     /** Amendments that this server WILL vote for by default. */
     std::size_t
     numUpVotedAmendments() const
     {
-        return upVotes;
+        return upVotes_;
     }
 };
 
@@ -200,7 +200,7 @@ public:
 
 FeatureCollections::FeatureCollections()
 {
-    features.reserve(xrpl::detail::numFeatures);
+    features_.reserve(xrpl::detail::numFeatures);
 }
 
 std::optional<uint256>
@@ -224,18 +224,18 @@ check(bool condition, char const* logicErrorMessage)
 uint256
 FeatureCollections::registerFeature(std::string const& name, Supported support, VoteBehavior vote)
 {
-    check(!readOnly, "Attempting to register a feature after startup.");
+    check(!readOnly_, "Attempting to register a feature after startup.");
     check(
         support == Supported::yes || vote == VoteBehavior::DefaultNo,
         "Invalid feature parameters. Must be supported to be up-voted.");
     Feature const* i = getByName(name);
     if (!i)
     {
-        check(features.size() < detail::numFeatures, "More features defined than allocated.");
+        check(features_.size() < detail::numFeatures, "More features defined than allocated.");
 
         auto const f = sha512Half(Slice(name.data(), name.size()));
 
-        features.emplace_back(name, f);
+        features_.emplace_back(name, f);
 
         auto const getAmendmentSupport = [=]() {
             if (vote == VoteBehavior::Obsolete)
@@ -243,20 +243,21 @@ FeatureCollections::registerFeature(std::string const& name, Supported support, 
             return support == Supported::yes ? AmendmentSupport::Supported
                                              : AmendmentSupport::Unsupported;
         };
-        all.emplace(name, getAmendmentSupport());
+        all_.emplace(name, getAmendmentSupport());
 
         if (support == Supported::yes)
         {
-            supported.emplace(name, vote);
+            supported_.emplace(name, vote);
 
             if (vote == VoteBehavior::DefaultYes)
-                ++upVotes;
+                ++upVotes_;
             else
-                ++downVotes;
+                ++downVotes_;
         }
-        check(upVotes + downVotes == supported.size(), "Feature counting logic broke");
-        check(supported.size() <= features.size(), "More supported features than defined features");
-        check(features.size() == all.size(), "The 'all' features list is populated incorrectly");
+        check(upVotes_ + downVotes_ == supported_.size(), "Feature counting logic broke");
+        check(
+            supported_.size() <= features_.size(), "More supported features than defined features");
+        check(features_.size() == all_.size(), "The 'all' features list is populated incorrectly");
         return f;
     }
     else
@@ -268,7 +269,7 @@ FeatureCollections::registerFeature(std::string const& name, Supported support, 
 bool
 FeatureCollections::registrationIsDone()
 {
-    readOnly = true;
+    readOnly_ = true;
     return true;
 }
 

@@ -24,7 +24,7 @@ class AMMCalc_test : public beast::unit_test::suite
     using steps = std::vector<std::pair<Amounts, bool>>;
     using transfer_rates = std::map<std::string, std::uint32_t>;
     using swapargs = std::tuple<steps, STAmount, transfer_rates, std::uint32_t>;
-    jtx::Account const gw{jtx::Account("gw")};
+    jtx::Account const gw_{jtx::Account("gw")};
     token_iter const end_;
 
     std::optional<STAmount>
@@ -47,7 +47,7 @@ class AMMCalc_test : public beast::unit_test::suite
             // drops
             else if (match[1] == "XRPA")
                 return XRPAmount{std::stoll(match[2])};
-            return amountFromString(gw[match[1]].asset(), match[2]);
+            return amountFromString(gw_[match[1]].asset(), match[2]);
         }
         return std::nullopt;
     }
@@ -369,8 +369,8 @@ class AMMCalc_test : public beast::unit_test::suite
                 if (auto const pool = getAmounts(++p); pool)
                 {
                     Account const amm("amm");
-                    auto const LPT = amm["LPT"];
-                    std::cout << to_string(ammLPTokens(pool->first.in, pool->first.out, LPT).iou())
+                    auto const lpt = amm["LPT"];
+                    std::cout << to_string(ammLPTokens(pool->first.in, pool->first.out, lpt).iou())
                               << std::endl;
                     return true;
                 }

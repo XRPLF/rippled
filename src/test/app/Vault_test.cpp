@@ -1309,9 +1309,9 @@ class Vault_test : public beast::unit_test::suite
             Account const gw("gateway");
             Account const alice("alice");
             Account const carol("carol");
-            IOU const USD = gw["USD"];
+            IOU const usd = gw["USD"];
 
-            auto const [asset1, asset2] = std::pair<STAmount, STAmount>(XRP(10000), USD(10000));
+            auto const [asset1, asset2] = std::pair<STAmount, STAmount>(XRP(10000), usd(10000));
             auto toFund = [&](STAmount const& a) -> STAmount {
                 if (a.native())
                 {
@@ -1464,8 +1464,8 @@ class Vault_test : public beast::unit_test::suite
                 .value();
         }();
 
-        auto const MptID = makeMptID(1, vaultAccount);
-        Asset shares = MptID;
+        auto const mptId = makeMptID(1, vaultAccount);
+        Asset shares = mptId;
 
         {
             testcase("nontransferable shares cannot be moved");
@@ -4731,29 +4731,29 @@ class Vault_test : public beast::unit_test::suite
         testCase(xrp, "XRP (depositor is owner)", owner, owner);
 
         // Test IOU
-        PrettyAsset IOU = issuer["IOU"];
+        PrettyAsset iou = issuer["IOU"];
         env(fset(issuer, asfAllowTrustLineClawback));
         env.close();
 
-        env.trust(IOU(1000), owner);
-        env.trust(IOU(1000), depositor);
-        env(pay(issuer, owner, IOU(100)));
-        env(pay(issuer, depositor, IOU(100)));
+        env.trust(iou(1000), owner);
+        env.trust(iou(1000), depositor);
+        env(pay(issuer, owner, iou(100)));
+        env(pay(issuer, depositor, iou(100)));
         env.close();
-        testCase(IOU, "IOU", owner, depositor);
-        testCase(IOU, "IOU (owner is issuer)", issuer, depositor);
+        testCase(iou, "IOU", owner, depositor);
+        testCase(iou, "IOU (owner is issuer)", issuer, depositor);
 
         // Test MPT
         MPTTester mptt{env, issuer, mptInitNoFund};
         mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
-        PrettyAsset MPT = mptt.issuanceID();
+        PrettyAsset mpt = mptt.issuanceID();
         mptt.authorize({.account = owner});
         mptt.authorize({.account = depositor});
-        env(pay(issuer, owner, MPT(1000)));
-        env(pay(issuer, depositor, MPT(1000)));
+        env(pay(issuer, owner, mpt(1000)));
+        env(pay(issuer, depositor, mpt(1000)));
         env.close();
-        testCase(MPT, "MPT", owner, depositor);
-        testCase(MPT, "MPT (owner is issuer)", issuer, depositor);
+        testCase(mpt, "MPT", owner, depositor);
+        testCase(mpt, "MPT (owner is issuer)", issuer, depositor);
     }
 
     void
@@ -4946,25 +4946,25 @@ class Vault_test : public beast::unit_test::suite
         testCase(xrp, "XRP", owner, depositor, issuer);
 
         // Test IOU
-        PrettyAsset IOU = issuer["IOU"];
+        PrettyAsset iou = issuer["IOU"];
         env(fset(issuer, asfAllowTrustLineClawback));
         env.close();
-        env.trust(IOU(1000), owner);
-        env.trust(IOU(1000), depositor);
-        env(pay(issuer, owner, IOU(1000)));
-        env(pay(issuer, depositor, IOU(1000)));
+        env.trust(iou(1000), owner);
+        env.trust(iou(1000), depositor);
+        env(pay(issuer, owner, iou(1000)));
+        env(pay(issuer, depositor, iou(1000)));
         env.close();
-        testCase(IOU, "IOU", owner, depositor, issuer);
+        testCase(iou, "IOU", owner, depositor, issuer);
 
         // Test MPT
         MPTTester mptt{env, issuer, mptInitNoFund};
         mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
-        PrettyAsset MPT = mptt.issuanceID();
+        PrettyAsset mpt = mptt.issuanceID();
         mptt.authorize({.account = owner});
         mptt.authorize({.account = depositor});
-        env(pay(issuer, depositor, MPT(1000)));
+        env(pay(issuer, depositor, mpt(1000)));
         env.close();
-        testCase(MPT, "MPT", owner, depositor, issuer);
+        testCase(mpt, "MPT", owner, depositor, issuer);
     }
 
     void

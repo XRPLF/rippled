@@ -1144,7 +1144,7 @@ class NFTokenBurn_test : public beast::unit_test::suite
     }
 
 protected:
-    FeatureBitset const allFeatures{test::jtx::testable_amendments()};
+    FeatureBitset const allFeatures_{test::jtx::testable_amendments()};
 
     void
     testWithFeats(FeatureBitset features)
@@ -1159,8 +1159,8 @@ public:
     void
     run() override
     {
-        testWithFeats(allFeatures - fixNFTokenPageLinks);
-        testWithFeats(allFeatures);
+        testWithFeats(allFeatures_ - fixNFTokenPageLinks);
+        testWithFeats(allFeatures_);
     }
 };
 

@@ -516,9 +516,9 @@ AMMWithdraw::withdraw(
     }
 
     // Check the reserve in case a trustline has to be created
-    bool const enabledFixAMMv1_2 = view.rules().enabled(fixAMMv1_2);
+    bool const enabledFixAmMv12 = view.rules().enabled(fixAMMv1_2);
     auto sufficientReserve = [&](Issue const& issue) -> TER {
-        if (!enabledFixAMMv1_2 || isXRP(issue))
+        if (!enabledFixAmMv12 || isXRP(issue))
             return tesSUCCESS;
         if (!view.exists(keylet::line(account, issue)))
         {

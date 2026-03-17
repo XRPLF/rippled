@@ -393,7 +393,7 @@ class DebugSink
 private:
     std::reference_wrapper<beast::Journal::Sink> sink_;
     std::unique_ptr<beast::Journal::Sink> holder_;
-    std::mutex mtx;
+    std::mutex mtx_;
 
 public:
     DebugSink() : sink_(beast::Journal::getNullSink())
@@ -411,7 +411,7 @@ public:
     std::unique_ptr<beast::Journal::Sink>
     set(std::unique_ptr<beast::Journal::Sink> sink)
     {
-        std::lock_guard _(mtx);
+        std::lock_guard _(mtx_);
 
         using std::swap;
         swap(holder_, sink);
@@ -427,7 +427,7 @@ public:
     beast::Journal::Sink&
     get()
     {
-        std::lock_guard _(mtx);
+        std::lock_guard _(mtx_);
         return sink_.get();
     }
 };

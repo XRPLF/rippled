@@ -47,16 +47,16 @@ public:
     {
         auto run = [&](TestCase const& tc) {
             testcase(tc.name);
-            TrafficCount traffic_;
+            TrafficCount traffic;
 
-            auto const counts = traffic_.getCounts();
+            auto const counts = traffic.getCounts();
             std::for_each(counts.begin(), counts.end(), [&](auto const& pair) {
                 for (auto i = 0; i < tc.messageCount; ++i)
-                    traffic_.addCount(pair.first, tc.inbound, tc.size);
+                    traffic.addCount(pair.first, tc.inbound, tc.size);
             });
 
-            auto const counts_new = traffic_.getCounts();
-            std::for_each(counts_new.begin(), counts_new.end(), [&](auto const& pair) {
+            auto const countsNew = traffic.getCounts();
+            std::for_each(countsNew.begin(), countsNew.end(), [&](auto const& pair) {
                 BEAST_EXPECT(pair.second.bytesIn.load() == tc.expectedBytesIn);
                 BEAST_EXPECT(pair.second.bytesOut.load() == tc.expectedBytesOut);
                 BEAST_EXPECT(pair.second.messagesIn.load() == tc.expectedMessagesIn);

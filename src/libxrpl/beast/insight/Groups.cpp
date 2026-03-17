@@ -21,12 +21,12 @@ namespace detail {
 
 class GroupImp : public std::enable_shared_from_this<GroupImp>, public Group
 {
-public:
     std::string const name_;
     Collector::ptr collector_;
 
-    GroupImp(std::string const& name_, Collector::ptr const& collector)
-        : name_(name_), collector_(collector)
+public:
+    GroupImp(std::string const& name, Collector::ptr const& collector)
+        : name_(name), collector_(collector)
     {
     }
 
@@ -86,10 +86,10 @@ class GroupsImp : public Groups
 public:
     using Items = std::unordered_map<std::string, std::shared_ptr<Group>, uhash<>>;
 
-    Collector::ptr collector_;
-    Items items_;
+    Collector::ptr collector;
+    Items items;
 
-    explicit GroupsImp(Collector::ptr const& collector) : collector_(collector)
+    explicit GroupsImp(Collector::ptr const& collector) : collector(collector)
     {
     }
 
@@ -98,10 +98,10 @@ public:
     Group::ptr const&
     get(std::string const& name) override
     {
-        std::pair<Items::iterator, bool> result(items_.emplace(name, Group::ptr()));
+        std::pair<Items::iterator, bool> result(items.emplace(name, Group::ptr()));
         Group::ptr& group(result.first->second);
         if (result.second)
-            group = std::make_shared<GroupImp>(name, collector_);
+            group = std::make_shared<GroupImp>(name, collector);
         return group;
     }
 };

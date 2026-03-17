@@ -453,7 +453,7 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
 void
 SHAMapStoreImp::clearSql(
     LedgerIndex lastRotated,
-    std::string const& TableName,
+    std::string const& tableName,
     std::function<std::optional<LedgerIndex>()> const& getMinSeq,
     std::function<void(LedgerIndex)> const& deleteBeforeSeq)
 {
@@ -461,9 +461,9 @@ SHAMapStoreImp::clearSql(
     LedgerIndex min = std::numeric_limits<LedgerIndex>::max();
 
     {
-        JLOG(journal_.trace()) << "Begin: Look up lowest value of: " << TableName;
+        JLOG(journal_.trace()) << "Begin: Look up lowest value of: " << tableName;
         auto m = getMinSeq();
-        JLOG(journal_.trace()) << "End: Look up lowest value of: " << TableName;
+        JLOG(journal_.trace()) << "End: Look up lowest value of: " << tableName;
         if (!m)
             return;
         min = *m;
@@ -474,20 +474,20 @@ SHAMapStoreImp::clearSql(
     if (min == lastRotated)
     {
         // Micro-optimization mainly to clarify logs
-        JLOG(journal_.trace()) << "Nothing to delete from " << TableName;
+        JLOG(journal_.trace()) << "Nothing to delete from " << tableName;
         return;
     }
 
-    JLOG(journal_.debug()) << "start deleting in: " << TableName << " from " << min << " to "
+    JLOG(journal_.debug()) << "start deleting in: " << tableName << " from " << min << " to "
                            << lastRotated;
     while (min < lastRotated)
     {
         min = std::min(lastRotated, min + deleteBatch_);
         JLOG(journal_.trace()) << "Begin: Delete up to " << deleteBatch_
-                               << " rows with LedgerSeq < " << min << " from: " << TableName;
+                               << " rows with LedgerSeq < " << min << " from: " << tableName;
         deleteBeforeSeq(min);
         JLOG(journal_.trace()) << "End: Delete up to " << deleteBatch_ << " rows with LedgerSeq < "
-                               << min << " from: " << TableName;
+                               << min << " from: " << tableName;
         if (healthWait() == stopping)
             return;
         if (min < lastRotated)
@@ -495,7 +495,7 @@ SHAMapStoreImp::clearSql(
         if (healthWait() == stopping)
             return;
     }
-    JLOG(journal_.debug()) << "finished deleting from: " << TableName;
+    JLOG(journal_.debug()) << "finished deleting from: " << tableName;
 }
 
 void

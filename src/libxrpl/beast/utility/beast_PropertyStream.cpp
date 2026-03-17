@@ -201,7 +201,7 @@ PropertyStream::Source::removeAll()
     std::lock_guard _(lock_);
     for (auto iter = children_.begin(); iter != children_.end();)
     {
-        std::lock_guard _cl((*iter)->lock_);
+        std::lock_guard cl((*iter)->lock_);
         remove(*(*iter));
     }
 }

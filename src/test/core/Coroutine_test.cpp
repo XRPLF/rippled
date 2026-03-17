@@ -23,10 +23,10 @@ public:
         // Returns `true` if signaled.
         template <class Rep, class Period>
         bool
-        wait_for(std::chrono::duration<Rep, Period> const& rel_time)
+        wait_for(std::chrono::duration<Rep, Period> const& relTime)
         {
             std::unique_lock<std::mutex> lk(mutex_);
-            auto b = cv_.wait_for(lk, rel_time, [this] { return signaled_; });
+            auto b = cv_.wait_for(lk, relTime, [this] { return signaled_; });
             signaled_ = false;
             return b;
         }
@@ -100,8 +100,8 @@ public:
 
         auto& jq = env.app().getJobQueue();
 
-        static int const N = 4;
-        std::array<std::shared_ptr<JobQueue::Coro>, N> a;
+        static int const n = 4;
+        std::array<std::shared_ptr<JobQueue::Coro>, n> a;
 
         LocalValue<int> lv(-1);
         BEAST_EXPECT(*lv == -1);
@@ -116,7 +116,7 @@ public:
         BEAST_EXPECT(g.wait_for(5s));
         BEAST_EXPECT(*lv == -1);
 
-        for (int i = 0; i < N; ++i)
+        for (int i = 0; i < n; ++i)
         {
             jq.postCoro(jtCLIENT, "CoroTest", [&, id = i](auto const& c) {
                 a[id] = c;

@@ -117,9 +117,9 @@ public:
     testHistogram()
     {
         testcase("Histogram");
-        constexpr auto num_eps_ = 40;
+        constexpr auto numEps = 40;
         Livecache<> c(clock_, journal_);
-        for (auto i = 0; i < num_eps_; ++i)
+        for (auto i = 0; i < numEps; ++i)
             add(beast::IP::randomEP(true), c, xrpl::rand_int<std::uint32_t>());
         auto h = c.hops.histogram();
         if (!BEAST_EXPECT(!h.empty()))
@@ -133,7 +133,7 @@ public:
             sum += val;
             BEAST_EXPECT(val >= 0);
         }
-        BEAST_EXPECT(sum == num_eps_);
+        BEAST_EXPECT(sum == numEps);
     }
 
     void
@@ -147,43 +147,43 @@ public:
         using at_hop = std::vector<xrpl::PeerFinder::Endpoint>;
         using all_hops = std::array<at_hop, 1 + Tuning::maxHops + 1>;
 
-        auto cmp_EP = [](Endpoint const& a, Endpoint const& b) {
+        auto cmpEp = [](Endpoint const& a, Endpoint const& b) {
             return (b.hops < a.hops || (b.hops == a.hops && b.address < a.address));
         };
         all_hops before;
-        all_hops before_sorted;
+        all_hops beforeSorted;
         for (auto i = std::make_pair(0, c.hops.begin()); i.second != c.hops.end();
              ++i.first, ++i.second)
         {
             std::copy((*i.second).begin(), (*i.second).end(), std::back_inserter(before[i.first]));
             std::copy(
-                (*i.second).begin(), (*i.second).end(), std::back_inserter(before_sorted[i.first]));
-            std::sort(before_sorted[i.first].begin(), before_sorted[i.first].end(), cmp_EP);
+                (*i.second).begin(), (*i.second).end(), std::back_inserter(beforeSorted[i.first]));
+            std::sort(beforeSorted[i.first].begin(), beforeSorted[i.first].end(), cmpEp);
         }
 
         c.hops.shuffle();
 
         all_hops after;
-        all_hops after_sorted;
+        all_hops afterSorted;
         for (auto i = std::make_pair(0, c.hops.begin()); i.second != c.hops.end();
              ++i.first, ++i.second)
         {
             std::copy((*i.second).begin(), (*i.second).end(), std::back_inserter(after[i.first]));
             std::copy(
-                (*i.second).begin(), (*i.second).end(), std::back_inserter(after_sorted[i.first]));
-            std::sort(after_sorted[i.first].begin(), after_sorted[i.first].end(), cmp_EP);
+                (*i.second).begin(), (*i.second).end(), std::back_inserter(afterSorted[i.first]));
+            std::sort(afterSorted[i.first].begin(), afterSorted[i.first].end(), cmpEp);
         }
 
         // each hop bucket should contain the same items
         // before and after sort, albeit in different order
-        bool all_match = true;
+        bool allMatch = true;
         for (auto i = 0; i < before.size(); ++i)
         {
             BEAST_EXPECT(before[i].size() == after[i].size());
-            all_match = all_match && (before[i] == after[i]);
-            BEAST_EXPECT(before_sorted[i] == after_sorted[i]);
+            allMatch = allMatch && (before[i] == after[i]);
+            BEAST_EXPECT(beforeSorted[i] == afterSorted[i]);
         }
-        BEAST_EXPECT(!all_match);
+        BEAST_EXPECT(!allMatch);
     }
 
     void

@@ -206,10 +206,10 @@ signDigest(PublicKey const& pk, SecretKey const& sk, uint256 const& digest)
         LogicError("sign: secp256k1 required for digest signing");
 
     BOOST_ASSERT(sk.size() == 32);
-    secp256k1_ecdsa_signature sig_imp;
+    secp256k1_ecdsa_signature sigImp;
     if (secp256k1_ecdsa_sign(
             secp256k1Context(),
-            &sig_imp,
+            &sigImp,
             reinterpret_cast<unsigned char const*>(digest.data()),
             reinterpret_cast<unsigned char const*>(sk.data()),
             secp256k1_nonce_function_rfc6979,
@@ -218,7 +218,7 @@ signDigest(PublicKey const& pk, SecretKey const& sk, uint256 const& digest)
 
     unsigned char sig[72];
     size_t len = sizeof(sig);
-    if (secp256k1_ecdsa_signature_serialize_der(secp256k1Context(), sig, &len, &sig_imp) != 1)
+    if (secp256k1_ecdsa_signature_serialize_der(secp256k1Context(), sig, &len, &sigImp) != 1)
         LogicError("sign: secp256k1_ecdsa_signature_serialize_der failed");
 
     return Buffer{sig, len};
@@ -242,10 +242,10 @@ sign(PublicKey const& pk, SecretKey const& sk, Slice const& m)
             h(m.data(), m.size());
             auto const digest = sha512_half_hasher::result_type(h);
 
-            secp256k1_ecdsa_signature sig_imp;
+            secp256k1_ecdsa_signature sigImp;
             if (secp256k1_ecdsa_sign(
                     secp256k1Context(),
-                    &sig_imp,
+                    &sigImp,
                     reinterpret_cast<unsigned char const*>(digest.data()),
                     reinterpret_cast<unsigned char const*>(sk.data()),
                     secp256k1_nonce_function_rfc6979,
@@ -254,7 +254,7 @@ sign(PublicKey const& pk, SecretKey const& sk, Slice const& m)
 
             unsigned char sig[72];
             size_t len = sizeof(sig);
-            if (secp256k1_ecdsa_signature_serialize_der(secp256k1Context(), sig, &len, &sig_imp) !=
+            if (secp256k1_ecdsa_signature_serialize_der(secp256k1Context(), sig, &len, &sigImp) !=
                 1)
                 LogicError("sign: secp256k1_ecdsa_signature_serialize_der failed");
 
@@ -303,17 +303,17 @@ derivePublicKey(KeyType type, SecretKey const& sk)
     switch (type)
     {
         case KeyType::secp256k1: {
-            secp256k1_pubkey pubkey_imp;
+            secp256k1_pubkey pubkeyImp;
             if (secp256k1_ec_pubkey_create(
                     secp256k1Context(),
-                    &pubkey_imp,
+                    &pubkeyImp,
                     reinterpret_cast<unsigned char const*>(sk.data())) != 1)
                 LogicError("derivePublicKey: secp256k1_ec_pubkey_create failed");
 
             unsigned char pubkey[33];
             std::size_t len = sizeof(pubkey);
             if (secp256k1_ec_pubkey_serialize(
-                    secp256k1Context(), pubkey, &len, &pubkey_imp, SECP256K1_EC_COMPRESSED) != 1)
+                    secp256k1Context(), pubkey, &len, &pubkeyImp, SECP256K1_EC_COMPRESSED) != 1)
                 LogicError("derivePublicKey: secp256k1_ec_pubkey_serialize failed");
 
             return PublicKey{Slice{pubkey, len}};

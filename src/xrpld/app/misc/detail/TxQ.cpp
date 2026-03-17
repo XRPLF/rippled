@@ -246,20 +246,20 @@ TxQ::FeeMetrics::escalatedSeriesFeeLevel(
 LedgerHash TxQ::MaybeTx::parentHashComp{};
 
 TxQ::MaybeTx::MaybeTx(
-    std::shared_ptr<STTx const> const& txn_,
-    TxID const& txID_,
-    FeeLevel64 feeLevel_,
-    ApplyFlags const flags_,
-    PreflightResult const& pfResult_)
-    : txn(txn_)
-    , feeLevel(feeLevel_)
-    , txID(txID_)
-    , account(txn_->getAccountID(sfAccount))
-    , lastValid(getLastLedgerSequence(*txn_))
-    , seqProxy(txn_->getSeqProxy())
+    std::shared_ptr<STTx const> const& txn,
+    TxID const& txId,
+    FeeLevel64 feeLevel,
+    ApplyFlags const flags,
+    PreflightResult const& pfResult)
+    : txn(txn)
+    , feeLevel(feeLevel)
+    , txID(txId)
+    , account(txn->getAccountID(sfAccount))
+    , lastValid(getLastLedgerSequence(*txn))
+    , seqProxy(txn->getSeqProxy())
     , retriesRemaining(retriesAllowed)
-    , flags(flags_)
-    , pfResult(pfResult_)
+    , flags(flags)
+    , pfResult(pfResult)
 {
 }
 
@@ -289,7 +289,7 @@ TxQ::TxQAccount::TxQAccount(std::shared_ptr<STTx const> const& txn)
 {
 }
 
-TxQ::TxQAccount::TxQAccount(AccountID const& account_) : account(account_)
+TxQ::TxQAccount::TxQAccount(AccountID const& account) : account(account)
 {
 }
 
@@ -743,8 +743,8 @@ TxQ::apply(
     // to individually check each queued ticket against the ledger.
     struct TxIter
     {
-        TxIter(TxQAccount::TxMap::iterator first_, TxQAccount::TxMap::iterator end_)
-            : first(first_), end(end_)
+        TxIter(TxQAccount::TxMap::iterator first, TxQAccount::TxMap::iterator end)
+            : first(first), end(end)
         {
         }
 

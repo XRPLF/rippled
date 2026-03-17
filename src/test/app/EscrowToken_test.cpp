@@ -79,21 +79,21 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             env.fund(XRP(5000), alice, bob, gw);
             env(fset(gw, asfAllowTrustLineLocking));
             env.close();
-            env.trust(USD(10'000), alice, bob);
+            env.trust(usd(10'000), alice, bob);
             env.close();
-            env(pay(gw, alice, USD(5000)));
-            env(pay(gw, bob, USD(5000)));
+            env(pay(gw, alice, usd(5000)));
+            env(pay(gw, bob, usd(5000)));
             env.close();
 
             auto const createResult = withTokenEscrow ? ter(tesSUCCESS) : ter(temBAD_AMOUNT);
             auto const finishResult = withTokenEscrow ? ter(tesSUCCESS) : ter(tecNO_TARGET);
 
             auto const seq1 = env.seq(alice);
-            env(escrow::create(alice, bob, USD(1'000)),
+            env(escrow::create(alice, bob, usd(1'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -107,7 +107,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
 
             auto const seq2 = env.seq(alice);
-            env(escrow::create(alice, bob, USD(1'000)),
+            env(escrow::create(alice, bob, usd(1'000)),
                 escrow::condition(escrow::cb2),
                 escrow::finish_time(env.now() + 1s),
                 escrow::cancel_time(env.now() + 2s),
@@ -126,14 +126,14 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             env.fund(XRP(5000), alice, bob, gw);
             env(fset(gw, asfAllowTrustLineLocking));
             env.close();
-            env.trust(USD(10'000), alice, bob);
+            env.trust(usd(10'000), alice, bob);
             env.close();
-            env(pay(gw, alice, USD(5000)));
-            env(pay(gw, bob, USD(5000)));
+            env(pay(gw, alice, usd(5000)));
+            env(pay(gw, bob, usd(5000)));
             env.close();
 
             auto const seq1 = env.seq(alice);
@@ -162,19 +162,19 @@ struct EscrowToken_test : public beast::unit_test::suite
         auto const alice = Account("alice");
         auto const bob = Account("bob");
         auto const gw = Account{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(5000), alice, bob, gw);
         env(fset(gw, asfAllowTrustLineLocking));
         env.close();
-        env.trust(USD(10'000), alice, bob);
+        env.trust(usd(10'000), alice, bob);
         env.close();
-        env(pay(gw, alice, USD(5000)));
-        env(pay(gw, bob, USD(5000)));
+        env(pay(gw, alice, usd(5000)));
+        env(pay(gw, bob, usd(5000)));
         env.close();
 
         // Create Escrow #1 & #2
         auto const seq1 = env.seq(alice);
-        env(escrow::create(alice, bob, USD(1'000)),
+        env(escrow::create(alice, bob, usd(1'000)),
             escrow::condition(escrow::cb1),
             escrow::finish_time(env.now() + 1s),
             fee(baseFee * 150),
@@ -182,7 +182,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         env.close();
 
         auto const seq2 = env.seq(alice);
-        env(escrow::create(alice, bob, USD(1'000)),
+        env(escrow::create(alice, bob, usd(1'000)),
             escrow::finish_time(env.now() + 1s),
             escrow::cancel_time(env.now() + 3s),
             fee(baseFee),
@@ -195,7 +195,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         env.require(nflags(gw, asfAllowTrustLineLocking));
 
         // Cannot Create Escrow without asfAllowTrustLineLocking
-        env(escrow::create(alice, bob, USD(1'000)),
+        env(escrow::create(alice, bob, usd(1'000)),
             escrow::condition(escrow::cb1),
             escrow::finish_time(env.now() + 1s),
             fee(baseFee * 150),
@@ -228,10 +228,10 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             env.fund(XRP(5000), alice, bob, gw);
 
-            env(escrow::create(alice, bob, USD(1)),
+            env(escrow::create(alice, bob, usd(1)),
                 escrow::finish_time(env.now() + 1s),
                 fee(XRP(-1)),
                 ter(temBAD_FEE));
@@ -245,10 +245,10 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             env.fund(XRP(5000), alice, bob, gw);
 
-            env(escrow::create(alice, bob, USD(-1)),
+            env(escrow::create(alice, bob, usd(-1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -263,10 +263,10 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const BAD = IOU(gw, badCurrency());
+            auto const bad = IOU(gw, badCurrency());
             env.fund(XRP(5000), alice, bob, gw);
 
-            env(escrow::create(alice, bob, BAD(1)),
+            env(escrow::create(alice, bob, bad(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -289,10 +289,10 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             env.fund(XRP(5000), alice, bob, gw);
 
-            env(escrow::create(gw, alice, USD(1)),
+            env(escrow::create(gw, alice, usd(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -307,12 +307,12 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             env.fund(XRP(5000), alice, bob);
             env.close();
             env.memoize(gw);
 
-            env(escrow::create(alice, bob, USD(1)),
+            env(escrow::create(alice, bob, usd(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -327,16 +327,16 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             env.fund(XRP(5000), alice, bob, gw);
             env.close();
-            env.trust(USD(10'000), alice, bob);
+            env.trust(usd(10'000), alice, bob);
             env.close();
-            env(pay(gw, alice, USD(5000)));
-            env(pay(gw, bob, USD(5000)));
+            env(pay(gw, alice, usd(5000)));
+            env(pay(gw, bob, usd(5000)));
             env.close();
 
-            env(escrow::create(gw, alice, USD(1)),
+            env(escrow::create(gw, alice, usd(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -351,11 +351,11 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             env.fund(XRP(5000), alice, bob, gw);
             env(fset(gw, asfAllowTrustLineLocking));
             env.close();
-            env(escrow::create(alice, bob, USD(1)),
+            env(escrow::create(alice, bob, usd(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -372,15 +372,15 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             env.fund(XRP(5000), alice, bob, gw);
             env(fset(gw, asfAllowTrustLineLocking));
             env(fset(gw, asfRequireAuth));
             env.close();
-            env.trust(USD(10'000), alice, bob);
+            env.trust(usd(10'000), alice, bob);
             env.close();
 
-            env(escrow::create(alice, bob, USD(1)),
+            env(escrow::create(alice, bob, usd(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -395,17 +395,17 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             auto const aliceUSD = alice["USD"];
             env.fund(XRP(5000), alice, bob, gw);
             env(fset(gw, asfAllowTrustLineLocking));
             env(fset(gw, asfRequireAuth));
             env.close();
             env(trust(gw, aliceUSD(10'000)), txflags(tfSetfAuth));
-            env.trust(USD(10'000), alice, bob);
+            env.trust(usd(10'000), alice, bob);
             env.close();
 
-            env(escrow::create(alice, bob, USD(1)),
+            env(escrow::create(alice, bob, usd(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -420,23 +420,23 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(10'000), alice, bob, gw);
             env(fset(gw, asfAllowTrustLineLocking));
             env.close();
-            env(trust(alice, USD(100'000)));
-            env(trust(bob, USD(100'000)));
+            env(trust(alice, usd(100'000)));
+            env(trust(bob, usd(100'000)));
             env.close();
-            env(pay(gw, alice, USD(10'000)));
-            env(pay(gw, bob, USD(10'000)));
+            env(pay(gw, alice, usd(10'000)));
+            env(pay(gw, bob, usd(10'000)));
             env.close();
 
             // set freeze on alice trustline
-            env(trust(gw, USD(10'000), alice, tfSetFreeze));
+            env(trust(gw, usd(10'000), alice, tfSetFreeze));
             env.close();
 
-            env(escrow::create(alice, bob, USD(1)),
+            env(escrow::create(alice, bob, usd(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -451,23 +451,23 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(10'000), alice, bob, gw);
             env(fset(gw, asfAllowTrustLineLocking));
             env.close();
-            env(trust(alice, USD(100'000)));
-            env(trust(bob, USD(100'000)));
+            env(trust(alice, usd(100'000)));
+            env(trust(bob, usd(100'000)));
             env.close();
-            env(pay(gw, alice, USD(10'000)));
-            env(pay(gw, bob, USD(10'000)));
+            env(pay(gw, alice, usd(10'000)));
+            env(pay(gw, bob, usd(10'000)));
             env.close();
 
             // set freeze on bob trustline
-            env(trust(gw, USD(10'000), bob, tfSetFreeze));
+            env(trust(gw, usd(10'000), bob, tfSetFreeze));
             env.close();
 
-            env(escrow::create(alice, bob, USD(1)),
+            env(escrow::create(alice, bob, usd(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -482,16 +482,16 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(10'000), alice, bob, gw);
             env(fset(gw, asfAllowTrustLineLocking));
             env.close();
-            env(trust(alice, USD(100'000)));
-            env(trust(bob, USD(100'000)));
+            env(trust(alice, usd(100'000)));
+            env(trust(bob, usd(100'000)));
             env.close();
 
-            env(escrow::create(alice, bob, USD(1)),
+            env(escrow::create(alice, bob, usd(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -506,19 +506,19 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(10'000), alice, bob, gw);
             env(fset(gw, asfAllowTrustLineLocking));
             env.close();
-            env(trust(alice, USD(100'000)));
-            env(trust(bob, USD(100'000)));
+            env(trust(alice, usd(100'000)));
+            env(trust(bob, usd(100'000)));
             env.close();
-            env(pay(gw, alice, USD(10'000)));
-            env(pay(gw, bob, USD(10'000)));
+            env(pay(gw, alice, usd(10'000)));
+            env(pay(gw, bob, usd(10'000)));
             env.close();
 
-            env(escrow::create(alice, bob, USD(10'001)),
+            env(escrow::create(alice, bob, usd(10'001)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -532,23 +532,23 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(10'000), alice, bob, gw);
             env(fset(gw, asfAllowTrustLineLocking));
             env.close();
-            env.trust(USD(100000000000000000), alice);
-            env.trust(USD(100000000000000000), bob);
+            env.trust(usd(100000000000000000), alice);
+            env.trust(usd(100000000000000000), bob);
             env.close();
-            env(pay(gw, alice, USD(10000000000000000)));
-            env(pay(gw, bob, USD(1)));
+            env(pay(gw, alice, usd(10000000000000000)));
+            env(pay(gw, bob, usd(1)));
             env.close();
 
             bool const largeMantissa =
                 features[featureSingleAssetVault] || features[featureLendingProtocol];
 
             // alice cannot create escrow for 1/10 iou - precision loss
-            env(escrow::create(alice, bob, USD(1)),
+            env(escrow::create(alice, bob, usd(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -571,7 +571,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             auto const aliceUSD = alice["USD"];
             auto const bobUSD = bob["USD"];
             env.fund(XRP(5000), alice, bob, gw);
@@ -580,26 +580,26 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
             env(trust(gw, aliceUSD(10'000)), txflags(tfSetfAuth));
             env(trust(gw, bobUSD(10'000)), txflags(tfSetfAuth));
-            env.trust(USD(10'000), alice, bob);
+            env.trust(usd(10'000), alice, bob);
             env.close();
-            env(pay(gw, alice, USD(10'000)));
-            env(pay(gw, bob, USD(10'000)));
+            env(pay(gw, alice, usd(10'000)));
+            env(pay(gw, bob, usd(10'000)));
             env.close();
 
             auto const seq1 = env.seq(alice);
-            env(escrow::create(alice, bob, USD(1)),
+            env(escrow::create(alice, bob, usd(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
                 ter(tesSUCCESS));
             env.close();
 
-            env(pay(bob, gw, USD(10'000)));
+            env(pay(bob, gw, usd(10'000)));
             env(trust(gw, bobUSD(0)), txflags(tfSetfAuth));
-            env(trust(bob, USD(0)));
+            env(trust(bob, usd(0)));
             env.close();
 
-            env.trust(USD(10'000), bob);
+            env.trust(usd(10'000), bob);
             env.close();
 
             // bob cannot finish because he is not authorized
@@ -618,18 +618,18 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             env.fund(XRP(5000), alice, bob, gw);
             env(fset(gw, asfAllowTrustLineLocking));
             env.close();
-            env.trust(USD(10'000), alice, bob);
+            env.trust(usd(10'000), alice, bob);
             env.close();
-            env(pay(gw, alice, USD(10'000)));
-            env(pay(gw, bob, USD(10'000)));
+            env(pay(gw, alice, usd(10'000)));
+            env(pay(gw, bob, usd(10'000)));
             env.close();
 
             auto const seq1 = env.seq(alice);
-            env(escrow::create(alice, bob, USD(1)),
+            env(escrow::create(alice, bob, usd(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -637,7 +637,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
 
             // set freeze on bob trustline
-            env(trust(gw, USD(10'000), bob, tfSetFreeze | tfSetDeepFreeze));
+            env(trust(gw, usd(10'000), bob, tfSetFreeze | tfSetDeepFreeze));
 
             // bob cannot finish because of deep freeze
             env(escrow::finish(bob, alice, seq1),
@@ -665,19 +665,19 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             env.fund(XRP(5000), alice, gw);
             env.fund(acctReserve + (incReserve - 1), bob);
             env.close();
             env(fset(gw, asfAllowTrustLineLocking));
             env.close();
-            env.trust(USD(10'000), alice);
+            env.trust(usd(10'000), alice);
             env.close();
-            env(pay(gw, alice, USD(10'000)));
+            env(pay(gw, alice, usd(10'000)));
             env.close();
 
             auto const seq1 = env.seq(alice);
-            env(escrow::create(alice, bob, USD(1)),
+            env(escrow::create(alice, bob, usd(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -700,18 +700,18 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             env.fund(XRP(5000), alice, bob, gw);
             env.close();
             env(fset(gw, asfAllowTrustLineLocking));
             env.close();
-            env.trust(USD(10'000), alice);
+            env.trust(usd(10'000), alice);
             env.close();
-            env(pay(gw, alice, USD(10'000)));
+            env(pay(gw, alice, usd(10'000)));
             env.close();
 
             auto const seq1 = env.seq(alice);
-            env(escrow::create(alice, bob, USD(1)),
+            env(escrow::create(alice, bob, usd(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -734,25 +734,25 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             env.fund(XRP(5000), alice, bob, gw);
             env.close();
             env(fset(gw, asfAllowTrustLineLocking));
             env.close();
-            env.trust(USD(1000), alice, bob);
+            env.trust(usd(1000), alice, bob);
             env.close();
-            env(pay(gw, alice, USD(1000)));
+            env(pay(gw, alice, usd(1000)));
             env.close();
 
             auto const seq1 = env.seq(alice);
-            env(escrow::create(alice, bob, USD(5)),
+            env(escrow::create(alice, bob, usd(5)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
                 ter(tesSUCCESS));
             env.close();
 
-            env.trust(USD(1), bob);
+            env.trust(usd(1), bob);
             env.close();
 
             // alice cannot finish because bob's limit is too low
@@ -771,29 +771,29 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             env.fund(XRP(5000), alice, bob, gw);
             env.close();
             env(fset(gw, asfAllowTrustLineLocking));
             env.close();
-            env.trust(USD(1000), alice, bob);
+            env.trust(usd(1000), alice, bob);
             env.close();
-            env(pay(gw, alice, USD(1000)));
+            env(pay(gw, alice, usd(1000)));
             env.close();
 
             auto const seq1 = env.seq(alice);
-            env(escrow::create(alice, bob, USD(5)),
+            env(escrow::create(alice, bob, usd(5)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
                 ter(tesSUCCESS));
             env.close();
 
-            env.trust(USD(1), bob);
+            env.trust(usd(1), bob);
             env.close();
 
             // bob can finish even if bob's limit is too low
-            auto const bobPreLimit = env.limit(bob, USD);
+            auto const bobPreLimit = env.limit(bob, usd);
 
             env(escrow::finish(bob, alice, seq1),
                 escrow::condition(escrow::cb1),
@@ -803,7 +803,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
 
             // bob's limit is not changed
-            BEAST_EXPECT(env.limit(bob, USD) == bobPreLimit);
+            BEAST_EXPECT(env.limit(bob, usd) == bobPreLimit);
         }
     }
 
@@ -821,7 +821,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             auto const aliceUSD = alice["USD"];
             auto const bobUSD = bob["USD"];
             env.fund(XRP(5000), alice, bob, gw);
@@ -830,26 +830,26 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
             env(trust(gw, aliceUSD(10'000)), txflags(tfSetfAuth));
             env(trust(gw, bobUSD(10'000)), txflags(tfSetfAuth));
-            env.trust(USD(10'000), alice, bob);
+            env.trust(usd(10'000), alice, bob);
             env.close();
-            env(pay(gw, alice, USD(10'000)));
-            env(pay(gw, bob, USD(10'000)));
+            env(pay(gw, alice, usd(10'000)));
+            env(pay(gw, bob, usd(10'000)));
             env.close();
 
             auto const seq1 = env.seq(alice);
-            env(escrow::create(alice, bob, USD(1)),
+            env(escrow::create(alice, bob, usd(1)),
                 escrow::finish_time(env.now() + 1s),
                 escrow::cancel_time(env.now() + 2s),
                 fee(baseFee),
                 ter(tesSUCCESS));
             env.close();
 
-            env(pay(alice, gw, USD(9'999)));
+            env(pay(alice, gw, usd(9'999)));
             env(trust(gw, aliceUSD(0)), txflags(tfSetfAuth));
-            env(trust(alice, USD(0)));
+            env(trust(alice, usd(0)));
             env.close();
 
-            env.trust(USD(10'000), alice);
+            env.trust(usd(10'000), alice);
             env.close();
 
             // alice cannot cancel because she is not authorized
@@ -871,38 +871,38 @@ struct EscrowToken_test : public beast::unit_test::suite
         auto const alice = Account("alice");
         auto const bob = Account("bob");
         auto const gw = Account{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(5000), alice, bob, gw);
         env(fset(gw, asfAllowTrustLineLocking));
         env.close();
-        env.trust(USD(10'000), alice, bob);
+        env.trust(usd(10'000), alice, bob);
         env.close();
-        env(pay(gw, alice, USD(5'000)));
-        env(pay(gw, bob, USD(5'000)));
+        env(pay(gw, alice, usd(5'000)));
+        env(pay(gw, bob, usd(5'000)));
         env.close();
 
-        auto const outstandingUSD = USD(10'000);
+        auto const outstandingUSD = usd(10'000);
 
         // Create & Finish Escrow
         auto const seq1 = env.seq(alice);
         {
-            auto const preAliceUSD = env.balance(alice, USD);
-            auto const preBobUSD = env.balance(bob, USD);
-            env(escrow::create(alice, bob, USD(1'000)),
+            auto const preAliceUSD = env.balance(alice, usd);
+            auto const preBobUSD = env.balance(bob, usd);
+            env(escrow::create(alice, bob, usd(1'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
                 ter(tesSUCCESS));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, USD) == preAliceUSD - USD(1'000));
-            BEAST_EXPECT(env.balance(bob, USD) == preBobUSD);
-            BEAST_EXPECT(issuerBalance(env, gw, USD) == outstandingUSD - USD(1'000));
-            BEAST_EXPECT(issuerEscrowed(env, gw, USD) == USD(1'000));
+            BEAST_EXPECT(env.balance(alice, usd) == preAliceUSD - usd(1'000));
+            BEAST_EXPECT(env.balance(bob, usd) == preBobUSD);
+            BEAST_EXPECT(issuerBalance(env, gw, usd) == outstandingUSD - usd(1'000));
+            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(1'000));
         }
         {
-            auto const preAliceUSD = env.balance(alice, USD);
-            auto const preBobUSD = env.balance(bob, USD);
+            auto const preAliceUSD = env.balance(alice, usd);
+            auto const preBobUSD = env.balance(bob, usd);
             env(escrow::finish(bob, alice, seq1),
                 escrow::condition(escrow::cb1),
                 escrow::fulfillment(escrow::fb1),
@@ -910,18 +910,18 @@ struct EscrowToken_test : public beast::unit_test::suite
                 ter(tesSUCCESS));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, USD) == preAliceUSD);
-            BEAST_EXPECT(env.balance(bob, USD) == preBobUSD + USD(1'000));
-            BEAST_EXPECT(issuerBalance(env, gw, USD) == outstandingUSD);
-            BEAST_EXPECT(issuerEscrowed(env, gw, USD) == USD(0));
+            BEAST_EXPECT(env.balance(alice, usd) == preAliceUSD);
+            BEAST_EXPECT(env.balance(bob, usd) == preBobUSD + usd(1'000));
+            BEAST_EXPECT(issuerBalance(env, gw, usd) == outstandingUSD);
+            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(0));
         }
 
         // Create & Cancel Escrow
         auto const seq2 = env.seq(alice);
         {
-            auto const preAliceUSD = env.balance(alice, USD);
-            auto const preBobUSD = env.balance(bob, USD);
-            env(escrow::create(alice, bob, USD(1'000)),
+            auto const preAliceUSD = env.balance(alice, usd);
+            auto const preBobUSD = env.balance(bob, usd);
+            env(escrow::create(alice, bob, usd(1'000)),
                 escrow::condition(escrow::cb2),
                 escrow::finish_time(env.now() + 1s),
                 escrow::cancel_time(env.now() + 2s),
@@ -929,21 +929,21 @@ struct EscrowToken_test : public beast::unit_test::suite
                 ter(tesSUCCESS));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, USD) == preAliceUSD - USD(1'000));
-            BEAST_EXPECT(env.balance(bob, USD) == preBobUSD);
-            BEAST_EXPECT(issuerBalance(env, gw, USD) == outstandingUSD - USD(1'000));
-            BEAST_EXPECT(issuerEscrowed(env, gw, USD) == USD(1'000));
+            BEAST_EXPECT(env.balance(alice, usd) == preAliceUSD - usd(1'000));
+            BEAST_EXPECT(env.balance(bob, usd) == preBobUSD);
+            BEAST_EXPECT(issuerBalance(env, gw, usd) == outstandingUSD - usd(1'000));
+            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(1'000));
         }
         {
-            auto const preAliceUSD = env.balance(alice, USD);
-            auto const preBobUSD = env.balance(bob, USD);
+            auto const preAliceUSD = env.balance(alice, usd);
+            auto const preBobUSD = env.balance(bob, usd);
             env(escrow::cancel(bob, alice, seq2), ter(tesSUCCESS));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, USD) == preAliceUSD + USD(1'000));
-            BEAST_EXPECT(env.balance(bob, USD) == preBobUSD);
-            BEAST_EXPECT(issuerBalance(env, gw, USD) == outstandingUSD);
-            BEAST_EXPECT(issuerEscrowed(env, gw, USD) == USD(0));
+            BEAST_EXPECT(env.balance(alice, usd) == preAliceUSD + usd(1'000));
+            BEAST_EXPECT(env.balance(bob, usd) == preBobUSD);
+            BEAST_EXPECT(issuerBalance(env, gw, usd) == outstandingUSD);
+            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(0));
         }
     }
 
@@ -957,7 +957,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         auto const bob = Account("bob");
         auto const carol = Account("carol");
         auto const gw = Account{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         {
             testcase("IOU Metadata to self");
 
@@ -965,16 +965,16 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.fund(XRP(5000), alice, bob, carol, gw);
             env(fset(gw, asfAllowTrustLineLocking));
             env.close();
-            env.trust(USD(10'000), alice, bob, carol);
+            env.trust(usd(10'000), alice, bob, carol);
             env.close();
-            env(pay(gw, alice, USD(5000)));
-            env(pay(gw, bob, USD(5000)));
-            env(pay(gw, carol, USD(5000)));
+            env(pay(gw, alice, usd(5000)));
+            env(pay(gw, bob, usd(5000)));
+            env(pay(gw, carol, usd(5000)));
             env.close();
             auto const aseq = env.seq(alice);
             auto const bseq = env.seq(bob);
 
-            env(escrow::create(alice, alice, USD(1'000)),
+            env(escrow::create(alice, alice, usd(1'000)),
                 escrow::finish_time(env.now() + 1s),
                 escrow::cancel_time(env.now() + 500s));
             BEAST_EXPECT(
@@ -994,7 +994,7 @@ struct EscrowToken_test : public beast::unit_test::suite
                 BEAST_EXPECT(std::find(iod.begin(), iod.end(), aa) != iod.end());
             }
 
-            env(escrow::create(bob, bob, USD(1'000)),
+            env(escrow::create(bob, bob, usd(1'000)),
                 escrow::finish_time(env.now() + 1s),
                 escrow::cancel_time(env.now() + 2s));
             BEAST_EXPECT(
@@ -1058,20 +1058,20 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.fund(XRP(5000), alice, bob, carol, gw);
             env(fset(gw, asfAllowTrustLineLocking));
             env.close();
-            env.trust(USD(10'000), alice, bob, carol);
+            env.trust(usd(10'000), alice, bob, carol);
             env.close();
-            env(pay(gw, alice, USD(5000)));
-            env(pay(gw, bob, USD(5000)));
-            env(pay(gw, carol, USD(5000)));
+            env(pay(gw, alice, usd(5000)));
+            env(pay(gw, bob, usd(5000)));
+            env(pay(gw, carol, usd(5000)));
             env.close();
             auto const aseq = env.seq(alice);
             auto const bseq = env.seq(bob);
 
-            env(escrow::create(alice, bob, USD(1'000)), escrow::finish_time(env.now() + 1s));
+            env(escrow::create(alice, bob, usd(1'000)), escrow::finish_time(env.now() + 1s));
             BEAST_EXPECT(
                 (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
             env.close(5s);
-            env(escrow::create(bob, carol, USD(1'000)),
+            env(escrow::create(bob, carol, usd(1'000)),
                 escrow::finish_time(env.now() + 1s),
                 escrow::cancel_time(env.now() + 2s));
             BEAST_EXPECT(
@@ -1160,19 +1160,19 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.fund(XRP(5000), alice, carol, gw);
             env(fset(gw, asfAllowTrustLineLocking));
             env.close();
-            env.trust(USD(10'000), alice, carol);
+            env.trust(usd(10'000), alice, carol);
             env.close();
-            env(pay(gw, alice, USD(5000)));
-            env(pay(gw, carol, USD(5000)));
+            env(pay(gw, alice, usd(5000)));
+            env(pay(gw, carol, usd(5000)));
             env.close();
             auto const aseq = env.seq(alice);
 
-            env(escrow::create(alice, gw, USD(1'000)), escrow::finish_time(env.now() + 1s));
+            env(escrow::create(alice, gw, usd(1'000)), escrow::finish_time(env.now() + 1s));
 
             BEAST_EXPECT(
                 (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
             env.close(5s);
-            env(escrow::create(gw, carol, USD(1'000)),
+            env(escrow::create(gw, carol, usd(1'000)),
                 escrow::finish_time(env.now() + 1s),
                 escrow::cancel_time(env.now() + 2s),
                 ter(tecNO_PERMISSION));
@@ -1252,25 +1252,25 @@ struct EscrowToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base;
-            auto const USD = t.gw["USD"];
+            auto const usd = t.gw["USD"];
             env.fund(XRP(5000), t.src, t.dst, t.gw);
             env(fset(t.gw, asfAllowTrustLineLocking));
             env.close();
 
             if (t.hasTrustline)
-                env.trust(USD(100'000), t.src, t.dst);
+                env.trust(usd(100'000), t.src, t.dst);
             else
-                env.trust(USD(100'000), t.src);
+                env.trust(usd(100'000), t.src);
             env.close();
 
-            env(pay(t.gw, t.src, USD(10'000)));
+            env(pay(t.gw, t.src, usd(10'000)));
             if (t.hasTrustline)
-                env(pay(t.gw, t.dst, USD(10'000)));
+                env(pay(t.gw, t.dst, usd(10'000)));
             env.close();
 
             // src can create escrow
             auto const seq1 = env.seq(t.src);
-            auto const delta = USD(1'000);
+            auto const delta = usd(1'000);
             env(escrow::create(t.src, t.dst, delta),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
@@ -1278,8 +1278,8 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
 
             // dst can finish escrow
-            auto const preSrc = env.balance(t.src, USD);
-            auto const preDst = env.balance(t.dst, USD);
+            auto const preSrc = env.balance(t.src, usd);
+            auto const preDst = env.balance(t.dst, usd);
 
             env(escrow::finish(t.dst, t.src, seq1),
                 escrow::condition(escrow::cb1),
@@ -1287,8 +1287,8 @@ struct EscrowToken_test : public beast::unit_test::suite
                 fee(baseFee * 150));
             env.close();
 
-            BEAST_EXPECT(env.balance(t.src, USD) == preSrc);
-            BEAST_EXPECT(env.balance(t.dst, USD) == preDst + delta);
+            BEAST_EXPECT(env.balance(t.src, usd) == preSrc);
+            BEAST_EXPECT(env.balance(t.dst, usd) == preDst + delta);
         }
     }
 
@@ -1312,18 +1312,18 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const alice = Account{"alice"};
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base;
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             env.fund(XRP(5000), alice, gw);
             env(fset(gw, asfAllowTrustLineLocking));
             env.close();
-            env.trust(USD(100'000), alice);
+            env.trust(usd(100'000), alice);
             env.close();
 
-            env(pay(gw, alice, USD(10'000)));
+            env(pay(gw, alice, usd(10'000)));
             env.close();
 
             // issuer cannot create escrow
-            env(escrow::create(gw, alice, USD(1'000)),
+            env(escrow::create(gw, alice, usd(1'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -1347,21 +1347,21 @@ struct EscrowToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base;
-            auto const USD = t.dst["USD"];
+            auto const usd = t.dst["USD"];
             env.fund(XRP(5000), t.dst, t.src);
             env(fset(t.dst, asfAllowTrustLineLocking));
             env.close();
 
-            env.trust(USD(100'000), t.src);
+            env.trust(usd(100'000), t.src);
             env.close();
 
-            env(pay(t.dst, t.src, USD(10'000)));
+            env(pay(t.dst, t.src, usd(10'000)));
             env.close();
 
             // issuer can receive escrow
             auto const seq1 = env.seq(t.src);
-            auto const preSrc = env.balance(t.src, USD);
-            env(escrow::create(t.src, t.dst, USD(1'000)),
+            auto const preSrc = env.balance(t.src, usd);
+            env(escrow::create(t.src, t.dst, usd(1'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150));
@@ -1374,16 +1374,16 @@ struct EscrowToken_test : public beast::unit_test::suite
                 fee(baseFee * 150));
             env.close();
             auto const preAmount = 10'000;
-            BEAST_EXPECT(preSrc == USD(preAmount));
+            BEAST_EXPECT(preSrc == usd(preAmount));
             auto const postAmount = 9000;
-            BEAST_EXPECT(env.balance(t.src, USD) == USD(postAmount));
-            BEAST_EXPECT(env.balance(t.dst, USD) == USD(0));
+            BEAST_EXPECT(env.balance(t.src, usd) == usd(postAmount));
+            BEAST_EXPECT(env.balance(t.dst, usd) == usd(0));
         }
 
         // issuer is source and destination
         {
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(5000), gw);
@@ -1391,7 +1391,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
 
             // issuer cannot receive escrow
-            env(escrow::create(gw, gw, USD(1'000)),
+            env(escrow::create(gw, gw, usd(1'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -1411,7 +1411,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         auto const bob = Account("bob");
         auto const carol = Account("carol");
         auto const gw = Account{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         // test locked rate
         {
@@ -1421,17 +1421,17 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(fset(gw, asfAllowTrustLineLocking));
             env(rate(gw, 1.25));
             env.close();
-            env.trust(USD(100'000), alice);
-            env.trust(USD(100'000), bob);
+            env.trust(usd(100'000), alice);
+            env.trust(usd(100'000), bob);
             env.close();
-            env(pay(gw, alice, USD(10'000)));
-            env(pay(gw, bob, USD(10'000)));
+            env(pay(gw, alice, usd(10'000)));
+            env(pay(gw, bob, usd(10'000)));
             env.close();
 
             // alice can create escrow w/ xfer rate
-            auto const preAlice = env.balance(alice, USD);
+            auto const preAlice = env.balance(alice, usd);
             auto const seq1 = env.seq(alice);
-            auto const delta = USD(125);
+            auto const delta = usd(125);
             env(escrow::create(alice, bob, delta),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
@@ -1447,8 +1447,8 @@ struct EscrowToken_test : public beast::unit_test::suite
                 fee(baseFee * 150));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, USD) == preAlice - delta);
-            BEAST_EXPECT(env.balance(bob, USD) == USD(10'100));
+            BEAST_EXPECT(env.balance(alice, usd) == preAlice - delta);
+            BEAST_EXPECT(env.balance(bob, usd) == usd(10'100));
         }
         // test rate change - higher
         {
@@ -1458,17 +1458,17 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(fset(gw, asfAllowTrustLineLocking));
             env(rate(gw, 1.25));
             env.close();
-            env.trust(USD(100'000), alice);
-            env.trust(USD(100'000), bob);
+            env.trust(usd(100'000), alice);
+            env.trust(usd(100'000), bob);
             env.close();
-            env(pay(gw, alice, USD(10'000)));
-            env(pay(gw, bob, USD(10'000)));
+            env(pay(gw, alice, usd(10'000)));
+            env(pay(gw, bob, usd(10'000)));
             env.close();
 
             // alice can create escrow w/ xfer rate
-            auto const preAlice = env.balance(alice, USD);
+            auto const preAlice = env.balance(alice, usd);
             auto const seq1 = env.seq(alice);
-            auto const delta = USD(125);
+            auto const delta = usd(125);
             env(escrow::create(alice, bob, delta),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
@@ -1488,8 +1488,8 @@ struct EscrowToken_test : public beast::unit_test::suite
                 fee(baseFee * 150));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, USD) == preAlice - delta);
-            BEAST_EXPECT(env.balance(bob, USD) == USD(10'100));
+            BEAST_EXPECT(env.balance(alice, usd) == preAlice - delta);
+            BEAST_EXPECT(env.balance(bob, usd) == usd(10'100));
         }
 
         // test rate change - lower
@@ -1500,17 +1500,17 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(fset(gw, asfAllowTrustLineLocking));
             env(rate(gw, 1.25));
             env.close();
-            env.trust(USD(100'000), alice);
-            env.trust(USD(100'000), bob);
+            env.trust(usd(100'000), alice);
+            env.trust(usd(100'000), bob);
             env.close();
-            env(pay(gw, alice, USD(10'000)));
-            env(pay(gw, bob, USD(10'000)));
+            env(pay(gw, alice, usd(10'000)));
+            env(pay(gw, bob, usd(10'000)));
             env.close();
 
             // alice can create escrow w/ xfer rate
-            auto const preAlice = env.balance(alice, USD);
+            auto const preAlice = env.balance(alice, usd);
             auto const seq1 = env.seq(alice);
-            auto const delta = USD(125);
+            auto const delta = usd(125);
             env(escrow::create(alice, bob, delta),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
@@ -1530,8 +1530,8 @@ struct EscrowToken_test : public beast::unit_test::suite
                 fee(baseFee * 150));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, USD) == preAlice - delta);
-            BEAST_EXPECT(env.balance(bob, USD) == USD(10125));
+            BEAST_EXPECT(env.balance(alice, usd) == preAlice - delta);
+            BEAST_EXPECT(env.balance(bob, usd) == usd(10125));
         }
 
         // test cancel doesn't charge rate
@@ -1542,17 +1542,17 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(fset(gw, asfAllowTrustLineLocking));
             env(rate(gw, 1.25));
             env.close();
-            env.trust(USD(100'000), alice);
-            env.trust(USD(100'000), bob);
+            env.trust(usd(100'000), alice);
+            env.trust(usd(100'000), bob);
             env.close();
-            env(pay(gw, alice, USD(10'000)));
-            env(pay(gw, bob, USD(10'000)));
+            env(pay(gw, alice, usd(10'000)));
+            env(pay(gw, bob, usd(10'000)));
             env.close();
 
             // alice can create escrow w/ xfer rate
-            auto const preAlice = env.balance(alice, USD);
+            auto const preAlice = env.balance(alice, usd);
             auto const seq1 = env.seq(alice);
-            auto const delta = USD(125);
+            auto const delta = usd(125);
             env(escrow::create(alice, bob, delta),
                 escrow::finish_time(env.now() + 1s),
                 escrow::cancel_time(env.now() + 3s),
@@ -1569,8 +1569,8 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::cancel(alice, alice, seq1), fee(baseFee));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, USD) == preAlice);
-            BEAST_EXPECT(env.balance(bob, USD) == USD(10000));
+            BEAST_EXPECT(env.balance(alice, usd) == preAlice);
+            BEAST_EXPECT(env.balance(bob, usd) == usd(10000));
         }
     }
 
@@ -1584,7 +1584,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         auto const alice = Account("alice");
         auto const bob = Account("bob");
         auto const gw = Account{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         // test LimitAmount
         {
@@ -1593,15 +1593,15 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.fund(XRP(1'000), alice, bob, gw);
             env(fset(gw, asfAllowTrustLineLocking));
             env.close();
-            env.trust(USD(10'000), alice, bob);
+            env.trust(usd(10'000), alice, bob);
             env.close();
-            env(pay(gw, alice, USD(1'000)));
-            env(pay(gw, bob, USD(1'000)));
+            env(pay(gw, alice, usd(1'000)));
+            env(pay(gw, bob, usd(1'000)));
             env.close();
 
             // alice can create escrow
             auto seq1 = env.seq(alice);
-            auto const delta = USD(125);
+            auto const delta = usd(125);
             env(escrow::create(alice, bob, delta),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
@@ -1609,13 +1609,13 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
 
             // bob can finish
-            auto const preBobLimit = env.limit(bob, USD);
+            auto const preBobLimit = env.limit(bob, usd);
             env(escrow::finish(bob, alice, seq1),
                 escrow::condition(escrow::cb1),
                 escrow::fulfillment(escrow::fb1),
                 fee(baseFee * 150));
             env.close();
-            auto const postBobLimit = env.limit(bob, USD);
+            auto const postBobLimit = env.limit(bob, usd);
             // bob's limit is NOT changed
             BEAST_EXPECT(postBobLimit == preBobLimit);
         }
@@ -1632,7 +1632,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         auto const bob = Account("bob");
         auto const carol = Account("carol");
         auto const gw = Account{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         auto const aliceUSD = alice["USD"];
         auto const bobUSD = bob["USD"];
@@ -1644,15 +1644,15 @@ struct EscrowToken_test : public beast::unit_test::suite
         env(fset(gw, asfRequireAuth));
         env.close();
         env(trust(gw, aliceUSD(10'000)), txflags(tfSetfAuth));
-        env(trust(alice, USD(10'000)));
-        env(trust(bob, USD(10'000)));
+        env(trust(alice, usd(10'000)));
+        env(trust(bob, usd(10'000)));
         env.close();
-        env(pay(gw, alice, USD(1'000)));
+        env(pay(gw, alice, usd(1'000)));
         env.close();
 
         // alice cannot create escrow - fails without auth
         auto seq1 = env.seq(alice);
-        auto const delta = USD(125);
+        auto const delta = usd(125);
         env(escrow::create(alice, bob, delta),
             escrow::condition(escrow::cb1),
             escrow::finish_time(env.now() + 1s),
@@ -1662,9 +1662,9 @@ struct EscrowToken_test : public beast::unit_test::suite
 
         // set auth on bob
         env(trust(gw, bobUSD(10'000)), txflags(tfSetfAuth));
-        env(trust(bob, USD(10'000)));
+        env(trust(bob, usd(10'000)));
         env.close();
-        env(pay(gw, bob, USD(1'000)));
+        env(pay(gw, bob, usd(1'000)));
         env.close();
 
         // alice can create escrow - bob has auth
@@ -1694,7 +1694,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         auto const bob = Account("bob");
         auto const carol = Account("carol");
         auto const gw = Account{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         // test Global Freeze
         {
@@ -1703,18 +1703,18 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.fund(XRP(10'000), alice, bob, gw);
             env(fset(gw, asfAllowTrustLineLocking));
             env.close();
-            env.trust(USD(100'000), alice);
-            env.trust(USD(100'000), bob);
+            env.trust(usd(100'000), alice);
+            env.trust(usd(100'000), bob);
             env.close();
-            env(pay(gw, alice, USD(10'000)));
-            env(pay(gw, bob, USD(10'000)));
+            env(pay(gw, alice, usd(10'000)));
+            env(pay(gw, bob, usd(10'000)));
             env.close();
             env(fset(gw, asfGlobalFreeze));
             env.close();
 
             // setup transaction
             auto seq1 = env.seq(alice);
-            auto const delta = USD(125);
+            auto const delta = usd(125);
 
             // create escrow fails - frozen trustline
             env(escrow::create(alice, bob, delta),
@@ -1776,20 +1776,20 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.fund(XRP(10'000), alice, bob, gw);
             env(fset(gw, asfAllowTrustLineLocking));
             env.close();
-            env(trust(alice, USD(100'000)));
-            env(trust(bob, USD(100'000)));
+            env(trust(alice, usd(100'000)));
+            env(trust(bob, usd(100'000)));
             env.close();
-            env(pay(gw, alice, USD(10'000)));
-            env(pay(gw, bob, USD(10'000)));
+            env(pay(gw, alice, usd(10'000)));
+            env(pay(gw, bob, usd(10'000)));
             env.close();
 
             // set freeze on alice trustline
-            env(trust(gw, USD(10'000), alice, tfSetFreeze));
+            env(trust(gw, usd(10'000), alice, tfSetFreeze));
             env.close();
 
             // setup transaction
             auto seq1 = env.seq(alice);
-            auto const delta = USD(125);
+            auto const delta = usd(125);
 
             // create escrow fails - frozen trustline
             env(escrow::create(alice, bob, delta),
@@ -1800,7 +1800,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
 
             // clear freeze on alice trustline
-            env(trust(gw, USD(10'000), alice, tfClearFreeze));
+            env(trust(gw, usd(10'000), alice, tfClearFreeze));
             env.close();
 
             // create escrow success
@@ -1812,7 +1812,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
 
             // set freeze on bob trustline
-            env(trust(gw, USD(10'000), bob, tfSetFreeze));
+            env(trust(gw, usd(10'000), bob, tfSetFreeze));
             env.close();
 
             // bob finish escrow success regardless of frozen assets
@@ -1823,8 +1823,8 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
 
             // reset freeze on bob and alice trustline
-            env(trust(gw, USD(10'000), alice, tfClearFreeze));
-            env(trust(gw, USD(10'000), bob, tfClearFreeze));
+            env(trust(gw, usd(10'000), alice, tfClearFreeze));
+            env(trust(gw, usd(10'000), bob, tfClearFreeze));
             env.close();
 
             // create escrow success
@@ -1836,7 +1836,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
 
             // set freeze on bob trustline
-            env(trust(gw, USD(10'000), bob, tfSetFreeze));
+            env(trust(gw, usd(10'000), bob, tfSetFreeze));
             env.close();
 
             // bob cancel escrow success regardless of frozen assets
@@ -1852,20 +1852,20 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.fund(XRP(10'000), alice, bob, gw);
             env(fset(gw, asfAllowTrustLineLocking));
             env.close();
-            env(trust(alice, USD(100'000)));
-            env(trust(bob, USD(100'000)));
+            env(trust(alice, usd(100'000)));
+            env(trust(bob, usd(100'000)));
             env.close();
-            env(pay(gw, alice, USD(10'000)));
-            env(pay(gw, bob, USD(10'000)));
+            env(pay(gw, alice, usd(10'000)));
+            env(pay(gw, bob, usd(10'000)));
             env.close();
 
             // set freeze on alice trustline
-            env(trust(gw, USD(10'000), alice, tfSetFreeze | tfSetDeepFreeze));
+            env(trust(gw, usd(10'000), alice, tfSetFreeze | tfSetDeepFreeze));
             env.close();
 
             // setup transaction
             auto seq1 = env.seq(alice);
-            auto const delta = USD(125);
+            auto const delta = usd(125);
 
             // create escrow fails - frozen trustline
             env(escrow::create(alice, bob, delta),
@@ -1876,7 +1876,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
 
             // clear freeze on alice trustline
-            env(trust(gw, USD(10'000), alice, tfClearFreeze | tfClearDeepFreeze));
+            env(trust(gw, usd(10'000), alice, tfClearFreeze | tfClearDeepFreeze));
             env.close();
 
             // create escrow success
@@ -1888,7 +1888,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
 
             // set freeze on bob trustline
-            env(trust(gw, USD(10'000), bob, tfSetFreeze | tfSetDeepFreeze));
+            env(trust(gw, usd(10'000), bob, tfSetFreeze | tfSetDeepFreeze));
             env.close();
 
             // bob finish escrow fails because of deep frozen assets
@@ -1900,8 +1900,8 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
 
             // reset freeze on alice and bob trustline
-            env(trust(gw, USD(10'000), alice, tfClearFreeze | tfClearDeepFreeze));
-            env(trust(gw, USD(10'000), bob, tfClearFreeze | tfClearDeepFreeze));
+            env(trust(gw, usd(10'000), alice, tfClearFreeze | tfClearDeepFreeze));
+            env(trust(gw, usd(10'000), bob, tfClearFreeze | tfClearDeepFreeze));
             env.close();
 
             // create escrow success
@@ -1913,7 +1913,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
 
             // set freeze on bob trustline
-            env(trust(gw, USD(10'000), bob, tfSetFreeze | tfSetDeepFreeze));
+            env(trust(gw, usd(10'000), bob, tfSetFreeze | tfSetDeepFreeze));
             env.close();
 
             // bob cancel escrow fails because of deep frozen assets
@@ -1932,7 +1932,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         auto const bob = Account("bob");
         auto const carol = Account("carol");
         auto const gw = Account{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         {
             // test tecPATH_PARTIAL
             // ie. has 10'000, escrow 1'000 then try to pay 10'000
@@ -1941,21 +1941,21 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.fund(XRP(10'000), alice, bob, gw);
             env(fset(gw, asfAllowTrustLineLocking));
             env.close();
-            env.trust(USD(100'000), alice);
-            env.trust(USD(100'000), bob);
+            env.trust(usd(100'000), alice);
+            env.trust(usd(100'000), bob);
             env.close();
-            env(pay(gw, alice, USD(10'000)));
-            env(pay(gw, bob, USD(10'000)));
+            env(pay(gw, alice, usd(10'000)));
+            env(pay(gw, bob, usd(10'000)));
             env.close();
 
             // create escrow success
-            auto const delta = USD(1'000);
+            auto const delta = usd(1'000);
             env(escrow::create(alice, bob, delta),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150));
             env.close();
-            env(pay(alice, gw, USD(10'000)), ter(tecPATH_PARTIAL));
+            env(pay(alice, gw, usd(10'000)), ter(tecPATH_PARTIAL));
         }
         {
             // test tecINSUFFICIENT_FUNDS
@@ -1965,21 +1965,21 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.fund(XRP(10'000), alice, bob, gw);
             env(fset(gw, asfAllowTrustLineLocking));
             env.close();
-            env.trust(USD(100'000), alice);
-            env.trust(USD(100'000), bob);
+            env.trust(usd(100'000), alice);
+            env.trust(usd(100'000), bob);
             env.close();
-            env(pay(gw, alice, USD(10'000)));
-            env(pay(gw, bob, USD(10'000)));
+            env(pay(gw, alice, usd(10'000)));
+            env(pay(gw, bob, usd(10'000)));
             env.close();
 
-            auto const delta = USD(1'000);
+            auto const delta = usd(1'000);
             env(escrow::create(alice, bob, delta),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150));
             env.close();
 
-            env(escrow::create(alice, bob, USD(10'000)),
+            env(escrow::create(alice, bob, usd(10'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -1998,7 +1998,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         auto const alice = Account("alice");
         auto const bob = Account("bob");
         auto const gw = Account{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         // test min create precision loss
         {
@@ -2007,18 +2007,18 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.fund(XRP(10'000), alice, bob, gw);
             env(fset(gw, asfAllowTrustLineLocking));
             env.close();
-            env.trust(USD(100000000000000000), alice);
-            env.trust(USD(100000000000000000), bob);
+            env.trust(usd(100000000000000000), alice);
+            env.trust(usd(100000000000000000), bob);
             env.close();
-            env(pay(gw, alice, USD(10000000000000000)));
-            env(pay(gw, bob, USD(1)));
+            env(pay(gw, alice, usd(10000000000000000)));
+            env(pay(gw, bob, usd(1)));
             env.close();
 
             bool const largeMantissa =
                 features[featureSingleAssetVault] || features[featureLendingProtocol];
 
             // alice cannot create escrow for 1/10 iou - precision loss
-            env(escrow::create(alice, bob, USD(1)),
+            env(escrow::create(alice, bob, usd(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -2027,7 +2027,7 @@ struct EscrowToken_test : public beast::unit_test::suite
 
             auto const seq1 = env.seq(alice);
             // alice can create escrow for 1'000 iou
-            env(escrow::create(alice, bob, USD(1'000)),
+            env(escrow::create(alice, bob, usd(1'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150));
@@ -2064,15 +2064,15 @@ struct EscrowToken_test : public beast::unit_test::suite
             mptGw.create(
                 {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
             env.close();
 
             auto const createResult = withTokenEscrow ? ter(tesSUCCESS) : ter(temBAD_AMOUNT);
             auto const finishResult = withTokenEscrow ? ter(tesSUCCESS) : ter(tecNO_TARGET);
 
             auto const seq1 = env.seq(alice);
-            env(escrow::create(alice, bob, MPT(1'000)),
+            env(escrow::create(alice, bob, mpt(1'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -2085,7 +2085,7 @@ struct EscrowToken_test : public beast::unit_test::suite
                 finishResult);
             env.close();
             auto const seq2 = env.seq(alice);
-            env(escrow::create(alice, bob, MPT(1'000)),
+            env(escrow::create(alice, bob, mpt(1'000)),
                 escrow::condition(escrow::cb2),
                 escrow::finish_time(env.now() + 1s),
                 escrow::cancel_time(env.now() + 2s),
@@ -2142,12 +2142,12 @@ struct EscrowToken_test : public beast::unit_test::suite
                 {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
-            env(pay(gw, bob, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env(pay(gw, bob, mpt(10'000)));
             env.close();
 
-            env(escrow::create(alice, bob, MPT(-1)),
+            env(escrow::create(alice, bob, mpt(-1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -2174,11 +2174,11 @@ struct EscrowToken_test : public beast::unit_test::suite
             mptGw.create(
                 {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
             env.close();
 
-            env(escrow::create(gw, alice, MPT(1)),
+            env(escrow::create(gw, alice, mpt(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -2220,12 +2220,12 @@ struct EscrowToken_test : public beast::unit_test::suite
             mptGw.create({.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
-            env(pay(gw, bob, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env(pay(gw, bob, mpt(10'000)));
             env.close();
 
-            env(escrow::create(alice, bob, MPT(3)),
+            env(escrow::create(alice, bob, mpt(3)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -2244,9 +2244,9 @@ struct EscrowToken_test : public beast::unit_test::suite
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
             mptGw.create(
                 {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
-            auto const MPT = mptGw["MPT"];
+            auto const mpt = mptGw["MPT"];
 
-            env(escrow::create(alice, bob, MPT(4)),
+            env(escrow::create(alice, bob, mpt(4)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -2269,14 +2269,14 @@ struct EscrowToken_test : public beast::unit_test::suite
                  .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth});
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = gw, .holder = alice});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
             env.close();
 
             // unauthorize account
             mptGw.authorize({.account = gw, .holder = alice, .flags = tfMPTUnauthorize});
 
-            env(escrow::create(alice, bob, MPT(5)),
+            env(escrow::create(alice, bob, mpt(5)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -2301,15 +2301,15 @@ struct EscrowToken_test : public beast::unit_test::suite
             mptGw.authorize({.account = gw, .holder = alice});
             mptGw.authorize({.account = bob});
             mptGw.authorize({.account = gw, .holder = bob});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
-            env(pay(gw, bob, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env(pay(gw, bob, mpt(10'000)));
             env.close();
 
             // unauthorize dest
             mptGw.authorize({.account = gw, .holder = bob, .flags = tfMPTUnauthorize});
 
-            env(escrow::create(alice, bob, MPT(6)),
+            env(escrow::create(alice, bob, mpt(6)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -2332,15 +2332,15 @@ struct EscrowToken_test : public beast::unit_test::suite
                  .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock});
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
-            env(pay(gw, bob, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env(pay(gw, bob, mpt(10'000)));
             env.close();
 
             // lock account
             mptGw.set({.account = gw, .holder = alice, .flags = tfMPTLock});
 
-            env(escrow::create(alice, bob, MPT(7)),
+            env(escrow::create(alice, bob, mpt(7)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -2363,15 +2363,15 @@ struct EscrowToken_test : public beast::unit_test::suite
                  .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock});
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
-            env(pay(gw, bob, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env(pay(gw, bob, mpt(10'000)));
             env.close();
 
             // lock dest
             mptGw.set({.account = gw, .holder = bob, .flags = tfMPTLock});
 
-            env(escrow::create(alice, bob, MPT(8)),
+            env(escrow::create(alice, bob, mpt(8)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -2391,12 +2391,12 @@ struct EscrowToken_test : public beast::unit_test::suite
             mptGw.create({.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow});
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
-            env(pay(gw, bob, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env(pay(gw, bob, mpt(10'000)));
             env.close();
 
-            env(escrow::create(alice, bob, MPT(9)),
+            env(escrow::create(alice, bob, mpt(9)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -2417,11 +2417,11 @@ struct EscrowToken_test : public beast::unit_test::suite
                 {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, bob, MPT(10)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, bob, mpt(10)));
             env.close();
 
-            env(escrow::create(alice, bob, MPT(11)),
+            env(escrow::create(alice, bob, mpt(11)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -2442,12 +2442,12 @@ struct EscrowToken_test : public beast::unit_test::suite
                 {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10)));
-            env(pay(gw, bob, MPT(10)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10)));
+            env(pay(gw, bob, mpt(10)));
             env.close();
 
-            env(escrow::create(alice, bob, MPT(11)),
+            env(escrow::create(alice, bob, mpt(11)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -2480,13 +2480,13 @@ struct EscrowToken_test : public beast::unit_test::suite
             mptGw.authorize({.account = gw, .holder = alice});
             mptGw.authorize({.account = bob});
             mptGw.authorize({.account = gw, .holder = bob});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
-            env(pay(gw, bob, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env(pay(gw, bob, mpt(10'000)));
             env.close();
 
             auto const seq1 = env.seq(alice);
-            env(escrow::create(alice, bob, MPT(10)),
+            env(escrow::create(alice, bob, mpt(10)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -2549,13 +2549,13 @@ struct EscrowToken_test : public beast::unit_test::suite
                  .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock});
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
-            env(pay(gw, bob, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env(pay(gw, bob, mpt(10'000)));
             env.close();
 
             auto const seq1 = env.seq(alice);
-            env(escrow::create(alice, bob, MPT(8)),
+            env(escrow::create(alice, bob, mpt(8)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -2598,12 +2598,12 @@ struct EscrowToken_test : public beast::unit_test::suite
             mptGw.create(
                 {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
             env.close();
 
             auto const seq1 = env.seq(alice);
-            env(escrow::create(alice, bob, MPT(10)),
+            env(escrow::create(alice, bob, mpt(10)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -2632,12 +2632,12 @@ struct EscrowToken_test : public beast::unit_test::suite
             mptGw.create(
                 {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
             env.close();
 
             auto const seq1 = env.seq(alice);
-            env(escrow::create(alice, bob, MPT(10)),
+            env(escrow::create(alice, bob, mpt(10)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -2667,12 +2667,12 @@ struct EscrowToken_test : public beast::unit_test::suite
             mptGw.create(
                 {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
             env.close();
 
             auto const seq1 = env.seq(alice);
-            env(escrow::create(alice, bob, MPT(10)),
+            env(escrow::create(alice, bob, mpt(10)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
@@ -2712,13 +2712,13 @@ struct EscrowToken_test : public beast::unit_test::suite
             mptGw.authorize({.account = gw, .holder = alice});
             mptGw.authorize({.account = bob});
             mptGw.authorize({.account = gw, .holder = bob});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
-            env(pay(gw, bob, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env(pay(gw, bob, mpt(10'000)));
             env.close();
 
             auto const seq1 = env.seq(alice);
-            env(escrow::create(alice, bob, MPT(10)),
+            env(escrow::create(alice, bob, mpt(10)),
                 escrow::cancel_time(env.now() + 2s),
                 escrow::condition(escrow::cb1),
                 fee(baseFee * 150),
@@ -2779,35 +2779,35 @@ struct EscrowToken_test : public beast::unit_test::suite
             {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
         mptGw.authorize({.account = alice});
         mptGw.authorize({.account = carol});
-        auto const MPT = mptGw["MPT"];
-        env(pay(gw, alice, MPT(10'000)));
-        env(pay(gw, carol, MPT(10'000)));
+        auto const mpt = mptGw["MPT"];
+        env(pay(gw, alice, mpt(10'000)));
+        env(pay(gw, carol, mpt(10'000)));
         env.close();
 
-        auto outstandingMPT = env.balance(gw, MPT);
+        auto outstandingMPT = env.balance(gw, mpt);
 
         // Create & Finish Escrow
         auto const seq1 = env.seq(alice);
         {
-            auto const preAliceMPT = env.balance(alice, MPT);
-            auto const preBobMPT = env.balance(bob, MPT);
-            env(escrow::create(alice, bob, MPT(1'000)),
+            auto const preAliceMPT = env.balance(alice, mpt);
+            auto const preBobMPT = env.balance(bob, mpt);
+            env(escrow::create(alice, bob, mpt(1'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
                 ter(tesSUCCESS));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, MPT) == preAliceMPT - MPT(1'000));
-            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 1'000);
-            BEAST_EXPECT(env.balance(bob, MPT) == preBobMPT);
-            BEAST_EXPECT(mptEscrowed(env, bob, MPT) == 0);
-            BEAST_EXPECT(env.balance(gw, MPT) == outstandingMPT);
-            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 1'000);
+            BEAST_EXPECT(env.balance(alice, mpt) == preAliceMPT - mpt(1'000));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 1'000);
+            BEAST_EXPECT(env.balance(bob, mpt) == preBobMPT);
+            BEAST_EXPECT(mptEscrowed(env, bob, mpt) == 0);
+            BEAST_EXPECT(env.balance(gw, mpt) == outstandingMPT);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 1'000);
         }
         {
-            auto const preAliceMPT = env.balance(alice, MPT);
-            auto const preBobMPT = env.balance(bob, MPT);
+            auto const preAliceMPT = env.balance(alice, mpt);
+            auto const preBobMPT = env.balance(bob, mpt);
             env(escrow::finish(bob, alice, seq1),
                 escrow::condition(escrow::cb1),
                 escrow::fulfillment(escrow::fb1),
@@ -2815,20 +2815,20 @@ struct EscrowToken_test : public beast::unit_test::suite
                 ter(tesSUCCESS));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, MPT) == preAliceMPT);
-            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 0);
-            BEAST_EXPECT(env.balance(bob, MPT) == preBobMPT + MPT(1'000));
-            BEAST_EXPECT(mptEscrowed(env, bob, MPT) == 0);
-            BEAST_EXPECT(env.balance(gw, MPT) == outstandingMPT);
-            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 0);
+            BEAST_EXPECT(env.balance(alice, mpt) == preAliceMPT);
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 0);
+            BEAST_EXPECT(env.balance(bob, mpt) == preBobMPT + mpt(1'000));
+            BEAST_EXPECT(mptEscrowed(env, bob, mpt) == 0);
+            BEAST_EXPECT(env.balance(gw, mpt) == outstandingMPT);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 0);
         }
 
         // Create & Cancel Escrow
         auto const seq2 = env.seq(alice);
         {
-            auto const preAliceMPT = env.balance(alice, MPT);
-            auto const preBobMPT = env.balance(bob, MPT);
-            env(escrow::create(alice, bob, MPT(1'000)),
+            auto const preAliceMPT = env.balance(alice, mpt);
+            auto const preBobMPT = env.balance(bob, mpt);
+            env(escrow::create(alice, bob, mpt(1'000)),
                 escrow::condition(escrow::cb2),
                 escrow::finish_time(env.now() + 1s),
                 escrow::cancel_time(env.now() + 2s),
@@ -2836,42 +2836,42 @@ struct EscrowToken_test : public beast::unit_test::suite
                 ter(tesSUCCESS));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, MPT) == preAliceMPT - MPT(1'000));
-            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 1'000);
-            BEAST_EXPECT(env.balance(bob, MPT) == preBobMPT);
-            BEAST_EXPECT(mptEscrowed(env, bob, MPT) == 0);
-            BEAST_EXPECT(env.balance(gw, MPT) == outstandingMPT);
-            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 1'000);
+            BEAST_EXPECT(env.balance(alice, mpt) == preAliceMPT - mpt(1'000));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 1'000);
+            BEAST_EXPECT(env.balance(bob, mpt) == preBobMPT);
+            BEAST_EXPECT(mptEscrowed(env, bob, mpt) == 0);
+            BEAST_EXPECT(env.balance(gw, mpt) == outstandingMPT);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 1'000);
         }
         {
-            auto const preAliceMPT = env.balance(alice, MPT);
-            auto const preBobMPT = env.balance(bob, MPT);
+            auto const preAliceMPT = env.balance(alice, mpt);
+            auto const preBobMPT = env.balance(bob, mpt);
             env(escrow::cancel(bob, alice, seq2), ter(tesSUCCESS));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, MPT) == preAliceMPT + MPT(1'000));
-            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 0);
-            BEAST_EXPECT(env.balance(bob, MPT) == preBobMPT);
-            BEAST_EXPECT(mptEscrowed(env, bob, MPT) == 0);
-            BEAST_EXPECT(env.balance(gw, MPT) == outstandingMPT);
-            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 0);
+            BEAST_EXPECT(env.balance(alice, mpt) == preAliceMPT + mpt(1'000));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 0);
+            BEAST_EXPECT(env.balance(bob, mpt) == preBobMPT);
+            BEAST_EXPECT(mptEscrowed(env, bob, mpt) == 0);
+            BEAST_EXPECT(env.balance(gw, mpt) == outstandingMPT);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 0);
         }
 
         // Self Escrow Create & Finish
         {
             auto const seq = env.seq(alice);
-            auto const preAliceMPT = env.balance(alice, MPT);
-            env(escrow::create(alice, alice, MPT(1'000)),
+            auto const preAliceMPT = env.balance(alice, mpt);
+            env(escrow::create(alice, alice, mpt(1'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
                 ter(tesSUCCESS));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, MPT) == preAliceMPT - MPT(1'000));
-            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 1'000);
-            BEAST_EXPECT(env.balance(gw, MPT) == outstandingMPT);
-            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 1'000);
+            BEAST_EXPECT(env.balance(alice, mpt) == preAliceMPT - mpt(1'000));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 1'000);
+            BEAST_EXPECT(env.balance(gw, mpt) == outstandingMPT);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 1'000);
 
             env(escrow::finish(alice, alice, seq),
                 escrow::condition(escrow::cb1),
@@ -2880,17 +2880,17 @@ struct EscrowToken_test : public beast::unit_test::suite
                 ter(tesSUCCESS));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, MPT) == preAliceMPT);
-            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 0);
-            BEAST_EXPECT(env.balance(gw, MPT) == outstandingMPT);
-            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 0);
+            BEAST_EXPECT(env.balance(alice, mpt) == preAliceMPT);
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 0);
+            BEAST_EXPECT(env.balance(gw, mpt) == outstandingMPT);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 0);
         }
 
         // Self Escrow Create & Cancel
         {
             auto const seq = env.seq(alice);
-            auto const preAliceMPT = env.balance(alice, MPT);
-            env(escrow::create(alice, alice, MPT(1'000)),
+            auto const preAliceMPT = env.balance(alice, mpt);
+            env(escrow::create(alice, alice, mpt(1'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 escrow::cancel_time(env.now() + 2s),
@@ -2898,47 +2898,47 @@ struct EscrowToken_test : public beast::unit_test::suite
                 ter(tesSUCCESS));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, MPT) == preAliceMPT - MPT(1'000));
-            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 1'000);
-            BEAST_EXPECT(env.balance(gw, MPT) == outstandingMPT);
-            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 1'000);
+            BEAST_EXPECT(env.balance(alice, mpt) == preAliceMPT - mpt(1'000));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 1'000);
+            BEAST_EXPECT(env.balance(gw, mpt) == outstandingMPT);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 1'000);
 
             env(escrow::cancel(alice, alice, seq), ter(tesSUCCESS));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, MPT) == preAliceMPT);
-            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 0);
-            BEAST_EXPECT(env.balance(gw, MPT) == outstandingMPT);
-            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 0);
+            BEAST_EXPECT(env.balance(alice, mpt) == preAliceMPT);
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 0);
+            BEAST_EXPECT(env.balance(gw, mpt) == outstandingMPT);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 0);
         }
 
         // Multiple Escrows
         {
-            auto const preAliceMPT = env.balance(alice, MPT);
-            auto const preBobMPT = env.balance(bob, MPT);
-            auto const preCarolMPT = env.balance(carol, MPT);
-            env(escrow::create(alice, bob, MPT(1'000)),
+            auto const preAliceMPT = env.balance(alice, mpt);
+            auto const preBobMPT = env.balance(bob, mpt);
+            auto const preCarolMPT = env.balance(carol, mpt);
+            env(escrow::create(alice, bob, mpt(1'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
                 ter(tesSUCCESS));
             env.close();
 
-            env(escrow::create(carol, bob, MPT(1'000)),
+            env(escrow::create(carol, bob, mpt(1'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
                 ter(tesSUCCESS));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, MPT) == preAliceMPT - MPT(1'000));
-            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 1'000);
-            BEAST_EXPECT(env.balance(bob, MPT) == preBobMPT);
-            BEAST_EXPECT(mptEscrowed(env, bob, MPT) == 0);
-            BEAST_EXPECT(env.balance(carol, MPT) == preCarolMPT - MPT(1'000));
-            BEAST_EXPECT(mptEscrowed(env, carol, MPT) == 1'000);
-            BEAST_EXPECT(env.balance(gw, MPT) == outstandingMPT);
-            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 2'000);
+            BEAST_EXPECT(env.balance(alice, mpt) == preAliceMPT - mpt(1'000));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 1'000);
+            BEAST_EXPECT(env.balance(bob, mpt) == preBobMPT);
+            BEAST_EXPECT(mptEscrowed(env, bob, mpt) == 0);
+            BEAST_EXPECT(env.balance(carol, mpt) == preCarolMPT - mpt(1'000));
+            BEAST_EXPECT(mptEscrowed(env, carol, mpt) == 1'000);
+            BEAST_EXPECT(env.balance(gw, mpt) == outstandingMPT);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 2'000);
         }
 
         // Max MPT Amount Issued (Escrow 1 MPT)
@@ -2954,27 +2954,27 @@ struct EscrowToken_test : public beast::unit_test::suite
                 {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(maxMPTokenAmount)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(maxMPTokenAmount)));
             env.close();
 
-            auto const preAliceMPT = env.balance(alice, MPT);
-            auto const preBobMPT = env.balance(bob, MPT);
-            auto const outstandingMPT = env.balance(gw, MPT);
+            auto const preAliceMPT = env.balance(alice, mpt);
+            auto const preBobMPT = env.balance(bob, mpt);
+            auto const outstandingMPT = env.balance(gw, mpt);
 
             auto const seq1 = env.seq(alice);
-            env(escrow::create(alice, bob, MPT(1)),
+            env(escrow::create(alice, bob, mpt(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, MPT) == preAliceMPT - MPT(1));
-            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 1);
-            BEAST_EXPECT(env.balance(bob, MPT) == preBobMPT);
-            BEAST_EXPECT(mptEscrowed(env, bob, MPT) == 0);
-            BEAST_EXPECT(env.balance(gw, MPT) == outstandingMPT);
-            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 1);
+            BEAST_EXPECT(env.balance(alice, mpt) == preAliceMPT - mpt(1));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 1);
+            BEAST_EXPECT(env.balance(bob, mpt) == preBobMPT);
+            BEAST_EXPECT(mptEscrowed(env, bob, mpt) == 0);
+            BEAST_EXPECT(env.balance(gw, mpt) == outstandingMPT);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 1);
 
             env(escrow::finish(bob, alice, seq1),
                 escrow::condition(escrow::cb1),
@@ -2983,15 +2983,15 @@ struct EscrowToken_test : public beast::unit_test::suite
                 ter(tesSUCCESS));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, MPT) == preAliceMPT - MPT(1));
-            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 0);
+            BEAST_EXPECT(env.balance(alice, mpt) == preAliceMPT - mpt(1));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 0);
             BEAST_EXPECT(
-                !env.le(keylet::mptoken(MPT.mpt(), alice))->isFieldPresent(sfLockedAmount));
-            BEAST_EXPECT(env.balance(bob, MPT) == preBobMPT + MPT(1));
-            BEAST_EXPECT(mptEscrowed(env, bob, MPT) == 0);
-            BEAST_EXPECT(env.balance(gw, MPT) == outstandingMPT);
-            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 0);
-            BEAST_EXPECT(!env.le(keylet::mptIssuance(MPT.mpt()))->isFieldPresent(sfLockedAmount));
+                !env.le(keylet::mptoken(mpt.mpt(), alice))->isFieldPresent(sfLockedAmount));
+            BEAST_EXPECT(env.balance(bob, mpt) == preBobMPT + mpt(1));
+            BEAST_EXPECT(mptEscrowed(env, bob, mpt) == 0);
+            BEAST_EXPECT(env.balance(gw, mpt) == outstandingMPT);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 0);
+            BEAST_EXPECT(!env.le(keylet::mptIssuance(mpt.mpt()))->isFieldPresent(sfLockedAmount));
         }
 
         // Max MPT Amount Issued (Escrow Max MPT)
@@ -3007,17 +3007,17 @@ struct EscrowToken_test : public beast::unit_test::suite
                 {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(maxMPTokenAmount)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(maxMPTokenAmount)));
             env.close();
 
-            auto const preAliceMPT = env.balance(alice, MPT);
-            auto const preBobMPT = env.balance(bob, MPT);
-            auto const outstandingMPT = env.balance(gw, MPT);
+            auto const preAliceMPT = env.balance(alice, mpt);
+            auto const preBobMPT = env.balance(bob, mpt);
+            auto const outstandingMPT = env.balance(gw, mpt);
 
             // Escrow Max MPT - 10
             auto const seq1 = env.seq(alice);
-            env(escrow::create(alice, bob, MPT(maxMPTokenAmount - 10)),
+            env(escrow::create(alice, bob, mpt(maxMPTokenAmount - 10)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150));
@@ -3025,18 +3025,18 @@ struct EscrowToken_test : public beast::unit_test::suite
 
             // Escrow 10 MPT
             auto const seq2 = env.seq(alice);
-            env(escrow::create(alice, bob, MPT(10)),
+            env(escrow::create(alice, bob, mpt(10)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, MPT) == preAliceMPT - MPT(maxMPTokenAmount));
-            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == maxMPTokenAmount);
-            BEAST_EXPECT(env.balance(bob, MPT) == preBobMPT);
-            BEAST_EXPECT(mptEscrowed(env, bob, MPT) == 0);
-            BEAST_EXPECT(env.balance(gw, MPT) == outstandingMPT);
-            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == maxMPTokenAmount);
+            BEAST_EXPECT(env.balance(alice, mpt) == preAliceMPT - mpt(maxMPTokenAmount));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == maxMPTokenAmount);
+            BEAST_EXPECT(env.balance(bob, mpt) == preBobMPT);
+            BEAST_EXPECT(mptEscrowed(env, bob, mpt) == 0);
+            BEAST_EXPECT(env.balance(gw, mpt) == outstandingMPT);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == maxMPTokenAmount);
 
             env(escrow::finish(bob, alice, seq1),
                 escrow::condition(escrow::cb1),
@@ -3052,12 +3052,12 @@ struct EscrowToken_test : public beast::unit_test::suite
                 ter(tesSUCCESS));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, MPT) == preAliceMPT - MPT(maxMPTokenAmount));
-            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 0);
-            BEAST_EXPECT(env.balance(bob, MPT) == preBobMPT + MPT(maxMPTokenAmount));
-            BEAST_EXPECT(mptEscrowed(env, bob, MPT) == 0);
-            BEAST_EXPECT(env.balance(gw, MPT) == outstandingMPT);
-            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 0);
+            BEAST_EXPECT(env.balance(alice, mpt) == preAliceMPT - mpt(maxMPTokenAmount));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 0);
+            BEAST_EXPECT(env.balance(bob, mpt) == preBobMPT + mpt(maxMPTokenAmount));
+            BEAST_EXPECT(mptEscrowed(env, bob, mpt) == 0);
+            BEAST_EXPECT(env.balance(gw, mpt) == outstandingMPT);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 0);
         }
     }
 
@@ -3080,14 +3080,14 @@ struct EscrowToken_test : public beast::unit_test::suite
                 {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
-            env(pay(gw, bob, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env(pay(gw, bob, mpt(10'000)));
             env.close();
             auto const aseq = env.seq(alice);
             auto const bseq = env.seq(bob);
 
-            env(escrow::create(alice, alice, MPT(1'000)),
+            env(escrow::create(alice, alice, mpt(1'000)),
                 escrow::finish_time(env.now() + 1s),
                 escrow::cancel_time(env.now() + 500s));
             BEAST_EXPECT(
@@ -3107,7 +3107,7 @@ struct EscrowToken_test : public beast::unit_test::suite
                 BEAST_EXPECT(std::find(iod.begin(), iod.end(), aa) == iod.end());
             }
 
-            env(escrow::create(bob, bob, MPT(1'000)),
+            env(escrow::create(bob, bob, mpt(1'000)),
                 escrow::finish_time(env.now() + 1s),
                 escrow::cancel_time(env.now() + 2s));
             BEAST_EXPECT(
@@ -3161,19 +3161,19 @@ struct EscrowToken_test : public beast::unit_test::suite
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             mptGw.authorize({.account = carol});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
-            env(pay(gw, bob, MPT(10'000)));
-            env(pay(gw, carol, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env(pay(gw, bob, mpt(10'000)));
+            env(pay(gw, carol, mpt(10'000)));
             env.close();
             auto const aseq = env.seq(alice);
             auto const bseq = env.seq(bob);
 
-            env(escrow::create(alice, bob, MPT(1'000)), escrow::finish_time(env.now() + 1s));
+            env(escrow::create(alice, bob, mpt(1'000)), escrow::finish_time(env.now() + 1s));
             BEAST_EXPECT(
                 (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
             env.close(5s);
-            env(escrow::create(bob, carol, MPT(1'000)),
+            env(escrow::create(bob, carol, mpt(1'000)),
                 escrow::finish_time(env.now() + 1s),
                 escrow::cancel_time(env.now() + 2s));
             BEAST_EXPECT(
@@ -3259,28 +3259,28 @@ struct EscrowToken_test : public beast::unit_test::suite
             mptGw.create(
                 {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
             env.close();
 
             // issuer can be destination
             auto const seq1 = env.seq(alice);
-            auto const preAliceMPT = env.balance(alice, MPT);
-            auto const preOutstanding = env.balance(gw, MPT);
-            auto const preEscrowed = issuerMPTEscrowed(env, MPT);
-            BEAST_EXPECT(preOutstanding == MPT(-10'000));
+            auto const preAliceMPT = env.balance(alice, mpt);
+            auto const preOutstanding = env.balance(gw, mpt);
+            auto const preEscrowed = issuerMPTEscrowed(env, mpt);
+            BEAST_EXPECT(preOutstanding == mpt(-10'000));
             BEAST_EXPECT(preEscrowed == 0);
 
-            env(escrow::create(alice, gw, MPT(1'000)),
+            env(escrow::create(alice, gw, mpt(1'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, MPT) == preAliceMPT - MPT(1'000));
-            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 1'000);
-            BEAST_EXPECT(env.balance(gw, MPT) == preOutstanding);
-            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == preEscrowed + 1'000);
+            BEAST_EXPECT(env.balance(alice, mpt) == preAliceMPT - mpt(1'000));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 1'000);
+            BEAST_EXPECT(env.balance(gw, mpt) == preOutstanding);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == preEscrowed + 1'000);
 
             // issuer (dest) can finish escrow
             env(escrow::finish(gw, alice, seq1),
@@ -3289,10 +3289,10 @@ struct EscrowToken_test : public beast::unit_test::suite
                 fee(baseFee * 150));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, MPT) == preAliceMPT - MPT(1'000));
-            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 0);
-            BEAST_EXPECT(env.balance(gw, MPT) == preOutstanding + MPT(1'000));
-            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == preEscrowed);
+            BEAST_EXPECT(env.balance(alice, mpt) == preAliceMPT - mpt(1'000));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 0);
+            BEAST_EXPECT(env.balance(gw, mpt) == preOutstanding + mpt(1'000));
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == preEscrowed);
         }
     }
 
@@ -3307,7 +3307,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         auto const bob = Account("bob");
         auto const carol = Account("carol");
         auto const gw = Account{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         // test locked rate: finish
         {
@@ -3325,16 +3325,16 @@ struct EscrowToken_test : public beast::unit_test::suite
                  .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
-            env(pay(gw, bob, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env(pay(gw, bob, mpt(10'000)));
             env.close();
 
             // alice can create escrow w/ xfer rate
-            auto const preAlice = env.balance(alice, MPT);
+            auto const preAlice = env.balance(alice, mpt);
             auto const seq1 = env.seq(alice);
-            auto const delta = MPT(125);
-            env(escrow::create(alice, bob, MPT(125)),
+            auto const delta = mpt(125);
+            env(escrow::create(alice, bob, mpt(125)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150));
@@ -3342,9 +3342,9 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const transferRate = escrow::rate(env, alice, seq1);
             BEAST_EXPECT(transferRate.value == std::uint32_t(1'000'000'000 * 1.25));
 
-            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 125);
-            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 125);
-            BEAST_EXPECT(env.balance(gw, MPT) == MPT(-20'000));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 125);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 125);
+            BEAST_EXPECT(env.balance(gw, mpt) == mpt(-20'000));
 
             // bob can finish escrow
             env(escrow::finish(bob, alice, seq1),
@@ -3353,15 +3353,15 @@ struct EscrowToken_test : public beast::unit_test::suite
                 fee(baseFee * 150));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, MPT) == preAlice - delta);
-            BEAST_EXPECT(env.balance(bob, MPT) == MPT(10'100));
+            BEAST_EXPECT(env.balance(alice, mpt) == preAlice - delta);
+            BEAST_EXPECT(env.balance(bob, mpt) == mpt(10'100));
 
             auto const escrowedWithFix = env.current()->rules().enabled(fixTokenEscrowV1) ? 0 : 25;
             auto const outstandingWithFix =
-                env.current()->rules().enabled(fixTokenEscrowV1) ? MPT(19'975) : MPT(20'000);
-            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == escrowedWithFix);
-            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == escrowedWithFix);
-            BEAST_EXPECT(env.balance(gw, MPT) == -outstandingWithFix);
+                env.current()->rules().enabled(fixTokenEscrowV1) ? mpt(19'975) : mpt(20'000);
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == escrowedWithFix);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == escrowedWithFix);
+            BEAST_EXPECT(env.balance(gw, mpt) == -outstandingWithFix);
         }
 
         // test locked rate: cancel
@@ -3380,17 +3380,17 @@ struct EscrowToken_test : public beast::unit_test::suite
                  .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
-            env(pay(gw, bob, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env(pay(gw, bob, mpt(10'000)));
             env.close();
 
             // alice can create escrow w/ xfer rate
-            auto const preAlice = env.balance(alice, MPT);
-            auto const preBob = env.balance(bob, MPT);
+            auto const preAlice = env.balance(alice, mpt);
+            auto const preBob = env.balance(bob, mpt);
             auto const seq1 = env.seq(alice);
-            auto const delta = MPT(125);
-            env(escrow::create(alice, bob, MPT(125)),
+            auto const delta = mpt(125);
+            env(escrow::create(alice, bob, mpt(125)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 escrow::cancel_time(env.now() + 3s),
@@ -3403,11 +3403,11 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::cancel(alice, alice, seq1), fee(baseFee));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, MPT) == preAlice);
-            BEAST_EXPECT(env.balance(bob, MPT) == preBob);
-            BEAST_EXPECT(env.balance(gw, MPT) == MPT(-20'000));
-            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 0);
-            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 0);
+            BEAST_EXPECT(env.balance(alice, mpt) == preAlice);
+            BEAST_EXPECT(env.balance(bob, mpt) == preBob);
+            BEAST_EXPECT(env.balance(gw, mpt) == mpt(-20'000));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 0);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 0);
         }
 
         // test locked rate: issuer is destination
@@ -3426,16 +3426,16 @@ struct EscrowToken_test : public beast::unit_test::suite
                  .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
-            env(pay(gw, bob, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env(pay(gw, bob, mpt(10'000)));
             env.close();
 
             // alice can create escrow w/ xfer rate
-            auto const preAlice = env.balance(alice, MPT);
+            auto const preAlice = env.balance(alice, mpt);
             auto const seq1 = env.seq(alice);
-            auto const delta = MPT(125);
-            env(escrow::create(alice, gw, MPT(125)),
+            auto const delta = mpt(125);
+            env(escrow::create(alice, gw, mpt(125)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150));
@@ -3443,9 +3443,9 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const transferRate = escrow::rate(env, alice, seq1);
             BEAST_EXPECT(transferRate.value == std::uint32_t(1'000'000'000 * 1.25));
 
-            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 125);
-            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 125);
-            BEAST_EXPECT(env.balance(gw, MPT) == MPT(-20'000));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 125);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 125);
+            BEAST_EXPECT(env.balance(gw, mpt) == mpt(-20'000));
 
             // bob can finish escrow
             env(escrow::finish(gw, alice, seq1),
@@ -3454,10 +3454,10 @@ struct EscrowToken_test : public beast::unit_test::suite
                 fee(baseFee * 150));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, MPT) == preAlice - delta);
-            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 0);
-            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 0);
-            BEAST_EXPECT(env.balance(gw, MPT) == MPT(-19'875));
+            BEAST_EXPECT(env.balance(alice, mpt) == preAlice - delta);
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 0);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 0);
+            BEAST_EXPECT(env.balance(gw, mpt) == mpt(-19'875));
         }
     }
 
@@ -3483,14 +3483,14 @@ struct EscrowToken_test : public beast::unit_test::suite
         mptGw.authorize({.account = gw, .holder = alice});
         mptGw.authorize({.account = bob});
         mptGw.authorize({.account = gw, .holder = bob});
-        auto const MPT = mptGw["MPT"];
-        env(pay(gw, alice, MPT(10'000)));
+        auto const mpt = mptGw["MPT"];
+        env(pay(gw, alice, mpt(10'000)));
         env.close();
 
         auto seq = env.seq(alice);
-        auto const delta = MPT(125);
+        auto const delta = mpt(125);
         // alice can create escrow - is authorized
-        env(escrow::create(alice, bob, MPT(100)),
+        env(escrow::create(alice, bob, mpt(100)),
             escrow::condition(escrow::cb1),
             escrow::finish_time(env.now() + 1s),
             fee(baseFee * 150));
@@ -3524,14 +3524,14 @@ struct EscrowToken_test : public beast::unit_test::suite
              .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock});
         mptGw.authorize({.account = alice});
         mptGw.authorize({.account = bob});
-        auto const MPT = mptGw["MPT"];
-        env(pay(gw, alice, MPT(10'000)));
-        env(pay(gw, bob, MPT(10'000)));
+        auto const mpt = mptGw["MPT"];
+        env(pay(gw, alice, mpt(10'000)));
+        env(pay(gw, bob, mpt(10'000)));
         env.close();
 
         // alice create escrow
         auto seq1 = env.seq(alice);
-        env(escrow::create(alice, bob, MPT(100)),
+        env(escrow::create(alice, bob, mpt(100)),
             escrow::condition(escrow::cb1),
             escrow::finish_time(env.now() + 1s),
             escrow::cancel_time(env.now() + 2s),
@@ -3572,13 +3572,13 @@ struct EscrowToken_test : public beast::unit_test::suite
         mptGw.create({.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow});
         mptGw.authorize({.account = alice});
         mptGw.authorize({.account = bob});
-        auto const MPT = mptGw["MPT"];
-        env(pay(gw, alice, MPT(10'000)));
-        env(pay(gw, bob, MPT(10'000)));
+        auto const mpt = mptGw["MPT"];
+        env(pay(gw, alice, mpt(10'000)));
+        env(pay(gw, bob, mpt(10'000)));
         env.close();
 
         // alice cannot create escrow to non issuer
-        env(escrow::create(alice, bob, MPT(100)),
+        env(escrow::create(alice, bob, mpt(100)),
             escrow::condition(escrow::cb1),
             escrow::finish_time(env.now() + 1s),
             escrow::cancel_time(env.now() + 2s),
@@ -3590,7 +3590,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         {
             // alice an create escrow to issuer
             auto seq = env.seq(alice);
-            env(escrow::create(alice, gw, MPT(100)),
+            env(escrow::create(alice, gw, mpt(100)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150));
@@ -3608,7 +3608,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         {
             // alice an create escrow to issuer
             auto seq = env.seq(alice);
-            env(escrow::create(alice, gw, MPT(100)),
+            env(escrow::create(alice, gw, mpt(100)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 escrow::cancel_time(env.now() + 2s),
@@ -3641,26 +3641,26 @@ struct EscrowToken_test : public beast::unit_test::suite
                 {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
-            env(pay(gw, bob, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env(pay(gw, bob, mpt(10'000)));
             env.close();
 
             auto const seq1 = env.seq(alice);
-            env(escrow::create(alice, bob, MPT(10)),
+            env(escrow::create(alice, bob, mpt(10)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150));
             env.close();
 
-            env(pay(alice, gw, MPT(10'000)), ter(tecPATH_PARTIAL));
-            env(pay(alice, gw, MPT(9'990)));
-            env(pay(bob, gw, MPT(10'000)));
-            BEAST_EXPECT(env.balance(alice, MPT) == MPT(0));
-            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 10);
-            BEAST_EXPECT(env.balance(bob, MPT) == MPT(0));
-            BEAST_EXPECT(mptEscrowed(env, bob, MPT) == 0);
-            BEAST_EXPECT(env.balance(gw, MPT) == MPT(-10));
+            env(pay(alice, gw, mpt(10'000)), ter(tecPATH_PARTIAL));
+            env(pay(alice, gw, mpt(9'990)));
+            env(pay(bob, gw, mpt(10'000)));
+            BEAST_EXPECT(env.balance(alice, mpt) == mpt(0));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 10);
+            BEAST_EXPECT(env.balance(bob, mpt) == mpt(0));
+            BEAST_EXPECT(mptEscrowed(env, bob, mpt) == 0);
+            BEAST_EXPECT(env.balance(gw, mpt) == mpt(-10));
             mptGw.authorize({.account = bob, .flags = tfMPTUnauthorize});
             mptGw.destroy({.id = mptGw.issuanceID(), .ownerCount = 1, .err = tecHAS_OBLIGATIONS});
 
@@ -3671,7 +3671,7 @@ struct EscrowToken_test : public beast::unit_test::suite
                 ter(tesSUCCESS));
             env.close();
 
-            env(pay(bob, gw, MPT(10)));
+            env(pay(bob, gw, mpt(10)));
             mptGw.destroy({.id = mptGw.issuanceID(), .ownerCount = 0});
         }
 
@@ -3689,23 +3689,23 @@ struct EscrowToken_test : public beast::unit_test::suite
             mptGw.create(
                 {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
             env.close();
 
             auto const seq1 = env.seq(alice);
-            env(escrow::create(alice, bob, MPT(10)),
+            env(escrow::create(alice, bob, mpt(10)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
                 ter(tesSUCCESS));
             env.close();
 
-            env(pay(alice, gw, MPT(9'990)));
+            env(pay(alice, gw, mpt(9'990)));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, MPT) == MPT(0));
-            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 10);
+            BEAST_EXPECT(env.balance(alice, mpt) == mpt(0));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 10);
             mptGw.authorize(
                 {.account = alice, .flags = tfMPTUnauthorize, .err = tecHAS_OBLIGATIONS});
 
@@ -3716,10 +3716,10 @@ struct EscrowToken_test : public beast::unit_test::suite
                 ter(tesSUCCESS));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, MPT) == MPT(0));
-            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 0);
+            BEAST_EXPECT(env.balance(alice, mpt) == mpt(0));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 0);
             mptGw.authorize({.account = alice, .flags = tfMPTUnauthorize});
-            BEAST_EXPECT(!env.le(keylet::mptoken(MPT.mpt(), alice)));
+            BEAST_EXPECT(!env.le(keylet::mptoken(mpt.mpt(), alice)));
         }
     }
 

@@ -101,18 +101,18 @@ class ResolverAsioImpl : public ResolverAsio, public AsyncObject<ResolverAsioImp
 public:
     using HostAndPort = std::pair<std::string, std::string>;
 
-    beast::Journal journal_;
+    beast::Journal journal;
 
-    boost::asio::io_context& io_context_;
-    boost::asio::strand<boost::asio::io_context::executor_type> strand_;
-    boost::asio::ip::tcp::resolver resolver_;
+    boost::asio::io_context& io_context;
+    boost::asio::strand<boost::asio::io_context::executor_type> strand;
+    boost::asio::ip::tcp::resolver resolver;
 
-    std::condition_variable cv_;
-    std::mutex mut_;
-    bool asyncHandlersCompleted_;
+    std::condition_variable cv;
+    std::mutex mut;
+    bool asyncHandlersCompleted;
 
-    std::atomic<bool> stop_called_;
-    std::atomic<bool> stopped_;
+    std::atomic<bool> stop_called;
+    std::atomic<bool> stopped;
 
     // Represents a unit of work for the resolver to do
     struct Work
@@ -121,24 +121,24 @@ public:
         HandlerType handler;
 
         template <class StringSequence>
-        Work(StringSequence const& names_, HandlerType const& handler_) : handler(handler_)
+        Work(StringSequence const& inNames, HandlerType const& handler) : handler(handler)
         {
-            names.reserve(names_.size());
+            names.reserve(inNames.size());
 
-            std::reverse_copy(names_.begin(), names_.end(), std::back_inserter(names));
+            std::reverse_copy(inNames.begin(), inNames.end(), std::back_inserter(names));
         }
     };
 
-    std::deque<Work> work_;
+    std::deque<Work> work;
 
-    ResolverAsioImpl(boost::asio::io_context& io_context, beast::Journal journal)
-        : journal_(journal)
-        , io_context_(io_context)
-        , strand_(boost::asio::make_strand(io_context))
-        , resolver_(io_context)
-        , asyncHandlersCompleted_(true)
-        , stop_called_(false)
-        , stopped_(true)
+    ResolverAsioImpl(boost::asio::io_context& ioContext, beast::Journal journal)
+        : journal(journal)
+        , io_context(ioContext)
+        , strand(boost::asio::make_strand(ioContext))
+        , resolver(ioContext)
+        , asyncHandlersCompleted(true)
+        , stop_called(false)
+        , stopped(true)
     {
     }
 
@@ -153,9 +153,9 @@ public:
     void
     asyncHandlersComplete()
     {
-        std::unique_lock<std::mutex> lk{mut_};
-        asyncHandlersCompleted_ = true;
-        cv_.notify_all();
+        std::unique_lock<std::mutex> lk{mut};
+        asyncHandlersCompleted = true;
+        cv.notify_all();
     }
 
     //--------------------------------------------------------------------------
@@ -170,11 +170,11 @@ public:
         XRPL_ASSERT(stopped_ == true, "xrpl::ResolverAsioImpl::start : stopped");
         XRPL_ASSERT(stop_called_ == false, "xrpl::ResolverAsioImpl::start : not stopping");
 
-        if (stopped_.exchange(false) == true)
+        if (stopped.exchange(false) == true)
         {
             {
-                std::lock_guard lk{mut_};
-                asyncHandlersCompleted_ = false;
+                std::lock_guard lk{mut};
+                asyncHandlersCompleted = false;
             }
             addReference();
         }
@@ -183,14 +183,14 @@ public:
     void
     stop_async() override
     {
-        if (stop_called_.exchange(true) == false)
+        if (stop_called.exchange(true) == false)
         {
             boost::asio::dispatch(
-                io_context_,
+                io_context,
                 boost::asio::bind_executor(
-                    strand_, std::bind(&ResolverAsioImpl::do_stop, this, CompletionCounter(this))));
+                    strand, std::bind(&ResolverAsioImpl::do_stop, this, CompletionCounter(this))));
 
-            JLOG(journal_.debug()) << "Queued a stop request";
+            JLOG(journal.debug()) << "Queued a stop request";
         }
     }
 
@@ -199,11 +199,11 @@ public:
     {
         stop_async();
 
-        JLOG(journal_.debug()) << "Waiting to stop";
-        std::unique_lock<std::mutex> lk{mut_};
-        cv_.wait(lk, [this] { return asyncHandlersCompleted_; });
+        JLOG(journal.debug()) << "Waiting to stop";
+        std::unique_lock<std::mutex> lk{mut};
+        cv.wait(lk, [this] { return asyncHandlersCompleted; });
         lk.unlock();
-        JLOG(journal_.debug()) << "Stopped";
+        JLOG(journal.debug()) << "Stopped";
     }
 
     void
@@ -215,9 +215,9 @@ public:
         // TODO NIKB use rvalue references to construct and move
         //           reducing cost.
         boost::asio::dispatch(
-            io_context_,
+            io_context,
             boost::asio::bind_executor(
-                strand_,
+                strand,
                 std::bind(
                     &ResolverAsioImpl::do_resolve, this, names, handler, CompletionCounter(this))));
     }
@@ -229,10 +229,10 @@ public:
     {
         XRPL_ASSERT(stop_called_ == true, "xrpl::ResolverAsioImpl::do_stop : stopping");
 
-        if (stopped_.exchange(true) == false)
+        if (stopped.exchange(true) == false)
         {
-            work_.clear();
-            resolver_.cancel();
+            work.clear();
+            resolver.cancel();
 
             removeReference();
         }
@@ -266,9 +266,9 @@ public:
         handler(name, addresses);
 
         boost::asio::post(
-            io_context_,
+            io_context,
             boost::asio::bind_executor(
-                strand_, std::bind(&ResolverAsioImpl::do_work, this, CompletionCounter(this))));
+                strand, std::bind(&ResolverAsioImpl::do_work, this, CompletionCounter(this))));
     }
 
     HostAndPort
@@ -287,19 +287,19 @@ public:
         // a port separator
 
         // Attempt to find the first and last non-whitespace
-        auto const find_whitespace =
+        auto const findWhitespace =
             std::bind(&std::isspace<std::string::value_type>, std::placeholders::_1, std::locale());
 
-        auto host_first = std::find_if_not(str.begin(), str.end(), find_whitespace);
+        auto hostFirst = std::find_if_not(str.begin(), str.end(), findWhitespace);
 
-        auto port_last = std::find_if_not(str.rbegin(), str.rend(), find_whitespace).base();
+        auto portLast = std::find_if_not(str.rbegin(), str.rend(), findWhitespace).base();
 
         // This should only happen for all-whitespace strings
-        if (host_first >= port_last)
+        if (hostFirst >= portLast)
             return std::make_pair(std::string(), std::string());
 
         // Attempt to find the first and last valid port separators
-        auto const find_port_separator = [](char const c) -> bool {
+        auto const findPortSeparator = [](char const c) -> bool {
             if (std::isspace(static_cast<unsigned char>(c)))
                 return true;
 
@@ -309,46 +309,46 @@ public:
             return false;
         };
 
-        auto host_last = std::find_if(host_first, port_last, find_port_separator);
+        auto hostLast = std::find_if(hostFirst, portLast, findPortSeparator);
 
-        auto port_first = std::find_if_not(host_last, port_last, find_port_separator);
+        auto portFirst = std::find_if_not(hostLast, portLast, findPortSeparator);
 
-        return make_pair(std::string(host_first, host_last), std::string(port_first, port_last));
+        return make_pair(std::string(hostFirst, hostLast), std::string(portFirst, portLast));
     }
 
     void
     do_work(CompletionCounter)
     {
-        if (stop_called_ == true)
+        if (stop_called == true)
             return;
 
         // We don't have any work to do at this time
-        if (work_.empty())
+        if (work.empty())
             return;
 
-        std::string const name(work_.front().names.back());
-        HandlerType handler(work_.front().handler);
+        std::string const name(work.front().names.back());
+        HandlerType handler(work.front().handler);
 
-        work_.front().names.pop_back();
+        work.front().names.pop_back();
 
-        if (work_.front().names.empty())
-            work_.pop_front();
+        if (work.front().names.empty())
+            work.pop_front();
 
         auto const [host, port] = parseName(name);
 
         if (host.empty())
         {
-            JLOG(journal_.error()) << "Unable to parse '" << name << "'";
+            JLOG(journal.error()) << "Unable to parse '" << name << "'";
 
             boost::asio::post(
-                io_context_,
+                io_context,
                 boost::asio::bind_executor(
-                    strand_, std::bind(&ResolverAsioImpl::do_work, this, CompletionCounter(this))));
+                    strand, std::bind(&ResolverAsioImpl::do_work, this, CompletionCounter(this))));
 
             return;
         }
 
-        resolver_.async_resolve(
+        resolver.async_resolve(
             host,
             port,
             std::bind(
@@ -366,19 +366,19 @@ public:
     {
         XRPL_ASSERT(!names.empty(), "xrpl::ResolverAsioImpl::do_resolve : names non-empty");
 
-        if (stop_called_ == false)
+        if (stop_called == false)
         {
-            work_.emplace_back(names, handler);
+            work.emplace_back(names, handler);
 
-            JLOG(journal_.debug()) << "Queued new job with " << names.size() << " tasks. "
-                                   << work_.size() << " jobs outstanding.";
+            JLOG(journal.debug()) << "Queued new job with " << names.size() << " tasks. "
+                                  << work.size() << " jobs outstanding.";
 
-            if (work_.size() > 0)
+            if (work.size() > 0)
             {
                 boost::asio::post(
-                    io_context_,
+                    io_context,
                     boost::asio::bind_executor(
-                        strand_,
+                        strand,
                         std::bind(&ResolverAsioImpl::do_work, this, CompletionCounter(this))));
             }
         }
@@ -388,9 +388,9 @@ public:
 //-----------------------------------------------------------------------------
 
 std::unique_ptr<ResolverAsio>
-ResolverAsio::New(boost::asio::io_context& io_context, beast::Journal journal)
+ResolverAsio::New(boost::asio::io_context& ioContext, beast::Journal journal)
 {
-    return std::make_unique<ResolverAsioImpl>(io_context, journal);
+    return std::make_unique<ResolverAsioImpl>(ioContext, journal);
 }
 
 //-----------------------------------------------------------------------------

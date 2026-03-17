@@ -86,20 +86,20 @@ results::merge(results const& r)
     failed += r.failed;
 
     // combine the two top collections
-    boost::container::static_vector<run_time, 2 * max_top> top_result;
-    top_result.resize(top.size() + r.top.size());
+    boost::container::static_vector<run_time, 2 * max_top> topResult;
+    topResult.resize(top.size() + r.top.size());
     std::merge(
         top.begin(),
         top.end(),
         r.top.begin(),
         r.top.end(),
-        top_result.begin(),
+        topResult.begin(),
         [](run_time const& t1, run_time const& t2) { return t1.second > t2.second; });
 
-    if (top_result.size() > max_top)
-        top_result.resize(max_top);
+    if (topResult.size() > max_top)
+        topResult.resize(max_top);
 
-    top = top_result;
+    top = topResult;
 }
 
 template <class S>
@@ -376,18 +376,18 @@ multi_runner_parent::multi_runner_parent() : os_(std::cout)
             }
             try
             {
-                std::size_t recvd_size = 0;
+                std::size_t recvdSize = 0;
                 unsigned int priority = 0;
-                this->message_queue_->receive(buf.data(), buf.size(), recvd_size, priority);
-                if (!recvd_size)
+                this->message_queue_->receive(buf.data(), buf.size(), recvdSize, priority);
+                if (!recvdSize)
                     continue;
                 assert(recvd_size == 1);
                 MessageType mt{*reinterpret_cast<MessageType*>(buf.data())};
 
-                this->message_queue_->receive(buf.data(), buf.size(), recvd_size, priority);
-                if (recvd_size)
+                this->message_queue_->receive(buf.data(), buf.size(), recvdSize, priority);
+                if (recvdSize)
                 {
-                    std::string s{buf.data(), recvd_size};
+                    std::string s{buf.data(), recvdSize};
                     switch (mt)
                     {
                         case MessageType::log:
@@ -462,29 +462,29 @@ multi_runner_parent::add_failures(std::size_t failures)
 
 //------------------------------------------------------------------------------
 
-multi_runner_child::multi_runner_child(std::size_t num_jobs_, bool quiet, bool print_log)
+multi_runner_child::multi_runner_child(std::size_t numJobs, bool quiet, bool printLog)
     : job_index_{checkout_job_index()}
-    , num_jobs__{num_jobs_}
+    , num_jobs__{numJobs}
     , quiet_{quiet}
-    , print_log_{!quiet || print_log}
+    , print_log_{!quiet || printLog}
 {
     if (num_jobs__ > 1)
     {
         keep_alive_thread_ = std::thread([this] {
-            std::size_t last_count = get_keep_alive_count();
+            std::size_t lastCount = get_keep_alive_count();
             while (this->continue_keep_alive_)
             {
                 // Use a small sleep time so in the normal case the child
                 // process may shutdown quickly. However, to protect against
                 // false alarms, use a longer sleep time later on.
                 std::this_thread::sleep_for(std::chrono::milliseconds(500));
-                auto cur_count = this->get_keep_alive_count();
-                if (cur_count == last_count)
+                auto curCount = this->get_keep_alive_count();
+                if (curCount == lastCount)
                 {
                     // longer sleep time to protect against false alarms
                     std::this_thread::sleep_for(std::chrono::seconds(2));
-                    cur_count = this->get_keep_alive_count();
-                    if (cur_count == last_count)
+                    curCount = this->get_keep_alive_count();
+                    if (curCount == lastCount)
                     {
                         // assume parent process is no longer alive
                         std::cerr << "multi_runner_child " << job_index_
@@ -492,7 +492,7 @@ multi_runner_child::multi_runner_child(std::size_t num_jobs_, bool quiet, bool p
                         std::exit(EXIT_FAILURE);
                     }
                 }
-                last_count = cur_count;
+                lastCount = curCount;
             }
         });
     }

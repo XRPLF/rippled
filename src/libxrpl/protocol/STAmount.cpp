@@ -494,8 +494,8 @@ canAdd(STAmount const& a, STAmount const& b)
     // XRP case (overflow & underflow check)
     if (isXRP(a) && isXRP(b))
     {
-        XRPAmount A = a.xrp();
-        XRPAmount B = b.xrp();
+        XRPAmount A = a.xrp();  // NOLINT(readability-identifier-naming)
+        XRPAmount B = b.xrp();  // NOLINT(readability-identifier-naming)
 
         if ((B > XRPAmount{0} &&
              A > XRPAmount{std::numeric_limits<XRPAmount::value_type>::max()} - B) ||
@@ -520,8 +520,8 @@ canAdd(STAmount const& a, STAmount const& b)
     // MPT (overflow & underflow check)
     if (a.holds<MPTIssue>() && b.holds<MPTIssue>())
     {
-        MPTAmount A = a.mpt();
-        MPTAmount B = b.mpt();
+        MPTAmount A = a.mpt();  // NOLINT(readability-identifier-naming)
+        MPTAmount B = b.mpt();  // NOLINT(readability-identifier-naming)
         if ((B > MPTAmount{0} &&
              A > MPTAmount{std::numeric_limits<MPTAmount::value_type>::max()} - B) ||
             (B < MPTAmount{0} &&
@@ -569,8 +569,8 @@ canSubtract(STAmount const& a, STAmount const& b)
     // XRP case (underflow & overflow check)
     if (isXRP(a) && isXRP(b))
     {
-        XRPAmount A = a.xrp();
-        XRPAmount B = b.xrp();
+        XRPAmount A = a.xrp();  // NOLINT(readability-identifier-naming)
+        XRPAmount B = b.xrp();  // NOLINT(readability-identifier-naming)
         // Check for underflow
         if (B > XRPAmount{0} && A < B)
             return false;
@@ -592,8 +592,8 @@ canSubtract(STAmount const& a, STAmount const& b)
     // MPT case (underflow & overflow check)
     if (a.holds<MPTIssue>() && b.holds<MPTIssue>())
     {
-        MPTAmount A = a.mpt();
-        MPTAmount B = b.mpt();
+        MPTAmount A = a.mpt();  // NOLINT(readability-identifier-naming)
+        MPTAmount B = b.mpt();  // NOLINT(readability-identifier-naming)
 
         // Underflow check
         if (B > MPTAmount{0} && A < B)
@@ -658,7 +658,7 @@ STAmount::getText() const
     if (*this == beast::zero)
         return "0";
 
-    std::string const raw_value(std::to_string(value_));
+    std::string const rawValue(std::to_string(value_));
     std::string ret;
 
     if (isNegative_)
@@ -668,7 +668,7 @@ STAmount::getText() const
 
     if (native() || asset_.holds<MPTIssue>() || scientific)
     {
-        ret.append(raw_value);
+        ret.append(rawValue);
 
         if (scientific)
         {
@@ -681,55 +681,55 @@ STAmount::getText() const
 
     XRPL_ASSERT(offset_ + 43 > 0, "xrpl::STAmount::getText : minimum offset");
 
-    size_t const pad_prefix = 27;
-    size_t const pad_suffix = 23;
+    size_t const padPrefix = 27;
+    size_t const padSuffix = 23;
 
     std::string val;
-    val.reserve(raw_value.length() + pad_prefix + pad_suffix);
-    val.append(pad_prefix, '0');
-    val.append(raw_value);
-    val.append(pad_suffix, '0');
+    val.reserve(rawValue.length() + padPrefix + padSuffix);
+    val.append(padPrefix, '0');
+    val.append(rawValue);
+    val.append(padSuffix, '0');
 
     size_t const offset(offset_ + 43);
 
-    auto pre_from(val.begin());
-    auto const pre_to(val.begin() + offset);
+    auto preFrom(val.begin());
+    auto const preTo(val.begin() + offset);
 
-    auto const post_from(val.begin() + offset);
-    auto post_to(val.end());
+    auto const postFrom(val.begin() + offset);
+    auto postTo(val.end());
 
     // Crop leading zeroes. Take advantage of the fact that there's always a
     // fixed amount of leading zeroes and skip them.
-    if (std::distance(pre_from, pre_to) > pad_prefix)
-        pre_from += pad_prefix;
+    if (std::distance(preFrom, preTo) > padPrefix)
+        preFrom += padPrefix;
 
     XRPL_ASSERT(post_to >= post_from, "xrpl::STAmount::getText : first distance check");
 
-    pre_from = std::find_if(pre_from, pre_to, [](char c) { return c != '0'; });
+    preFrom = std::find_if(preFrom, preTo, [](char c) { return c != '0'; });
 
     // Crop trailing zeroes. Take advantage of the fact that there's always a
     // fixed amount of trailing zeroes and skip them.
-    if (std::distance(post_from, post_to) > pad_suffix)
-        post_to -= pad_suffix;
+    if (std::distance(postFrom, postTo) > padSuffix)
+        postTo -= padSuffix;
 
     XRPL_ASSERT(post_to >= post_from, "xrpl::STAmount::getText : second distance check");
 
-    post_to = std::find_if(
-                  std::make_reverse_iterator(post_to),
-                  std::make_reverse_iterator(post_from),
-                  [](char c) { return c != '0'; })
-                  .base();
+    postTo = std::find_if(
+                 std::make_reverse_iterator(postTo),
+                 std::make_reverse_iterator(postFrom),
+                 [](char c) { return c != '0'; })
+                 .base();
 
     // Assemble the output:
-    if (pre_from == pre_to)
+    if (preFrom == preTo)
         ret.append(1, '0');
     else
-        ret.append(pre_from, pre_to);
+        ret.append(preFrom, preTo);
 
-    if (post_to != post_from)
+    if (postTo != postFrom)
     {
         ret.append(1, '.');
-        ret.append(post_from, post_to);
+        ret.append(postFrom, postTo);
     }
 
     return ret;

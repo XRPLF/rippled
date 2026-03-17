@@ -207,12 +207,12 @@ public:
     */
     template <class Body, class... Args>
     void
-    parallel_for(std::size_t const n, std::size_t number_of_threads, Args const&... args)
+    parallel_for(std::size_t const n, std::size_t numberOfThreads, Args const&... args)
     {
         std::atomic<std::size_t> c(0);
         std::vector<beast::unit_test::thread> t;
-        t.reserve(number_of_threads);
-        for (std::size_t id = 0; id < number_of_threads; ++id)
+        t.reserve(numberOfThreads);
+        for (std::size_t id = 0; id < numberOfThreads; ++id)
             t.emplace_back(*this, parallel_for_lambda<Body>(n, c), args...);
         for (auto& _ : t)
             _.join();
@@ -220,12 +220,12 @@ public:
 
     template <class Body, class... Args>
     void
-    parallel_for_id(std::size_t const n, std::size_t number_of_threads, Args const&... args)
+    parallel_for_id(std::size_t const n, std::size_t numberOfThreads, Args const&... args)
     {
         std::atomic<std::size_t> c(0);
         std::vector<beast::unit_test::thread> t;
-        t.reserve(number_of_threads);
-        for (std::size_t id = 0; id < number_of_threads; ++id)
+        t.reserve(numberOfThreads);
+        for (std::size_t id = 0; id < numberOfThreads; ++id)
             t.emplace_back(*this, parallel_for_lambda<Body>(n, c), id, args...);
         for (auto& _ : t)
             _.join();
@@ -616,7 +616,7 @@ public:
     do_tests(
         std::size_t threads,
         test_list const& tests,
-        std::vector<std::string> const& config_strings)
+        std::vector<std::string> const& configStrings)
     {
         using std::setw;
         int w = 8;
@@ -636,7 +636,7 @@ public:
         using namespace beast::severities;
         test::SuiteJournal journal("Timing_test", *this);
 
-        for (auto const& config_string : config_strings)
+        for (auto const& configString : configStrings)
         {
             Params params;
             params.items = default_items;
@@ -644,7 +644,7 @@ public:
             for (auto i = default_repeat; i--;)
             {
                 beast::temp_dir tempDir;
-                Section config = parse(config_string);
+                Section config = parse(configString);
                 config.set("path", tempDir.path());
                 std::stringstream ss;
                 ss << std::left << setw(10) << get(config, "type", std::string()) << std::right;
@@ -668,7 +668,7 @@ public:
             items           Number of objects to create in the database
 
         */
-        std::string default_args =
+        std::string defaultArgs =
             "type=nudb"
 #if XRPL_ROCKSDB_AVAILABLE
             ";type=rocksdb,open_files=2000,filter_bits=12,cache_mb=256,"
@@ -686,18 +686,18 @@ public:
             {"Mixed", &Timing_test::do_mixed},
             {"Work", &Timing_test::do_work}};
 
-        auto args = arg().empty() ? default_args : arg();
-        std::vector<std::string> config_strings;
-        boost::split(config_strings, args, boost::algorithm::is_any_of(";"));
-        for (auto iter = config_strings.begin(); iter != config_strings.end();)
+        auto args = arg().empty() ? defaultArgs : arg();
+        std::vector<std::string> configStrings;
+        boost::split(configStrings, args, boost::algorithm::is_any_of(";"));
+        for (auto iter = configStrings.begin(); iter != configStrings.end();)
             if (iter->empty())
-                iter = config_strings.erase(iter);
+                iter = configStrings.erase(iter);
             else
                 ++iter;
 
-        do_tests(1, tests, config_strings);
-        do_tests(4, tests, config_strings);
-        do_tests(8, tests, config_strings);
+        do_tests(1, tests, configStrings);
+        do_tests(4, tests, configStrings);
+        do_tests(8, tests, configStrings);
         // do_tests (16, tests, config_strings);
     }
 };

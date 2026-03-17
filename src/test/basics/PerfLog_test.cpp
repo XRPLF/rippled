@@ -33,11 +33,11 @@ class PerfLog_test : public beast::unit_test::suite
 
     struct Fixture
     {
-        Application& app_;
-        beast::Journal j_;
+        Application& app;
+        beast::Journal j;
         bool stopSignaled{false};
 
-        explicit Fixture(Application& app, beast::Journal j) : app_(app), j_(j)
+        explicit Fixture(Application& app, beast::Journal j) : app(app), j(j)
         {
         }
 
@@ -87,7 +87,7 @@ class PerfLog_test : public beast::unit_test::suite
         {
             perf::PerfLog::Setup const setup{
                 withFile == WithFile::no ? "" : logFile(), logInterval()};
-            return perf::make_PerfLog(setup, app_, j_, [this]() { return signalStop(); });
+            return perf::make_PerfLog(setup, app, j, [this]() { return signalStop(); });
         }
 
         // Block until the log file has grown in size, indicating that the
@@ -401,9 +401,9 @@ public:
 
         auto validateFinalCurrent = [this, &labels](Json::Value const& currentJson) {
             {
-                Json::Value const& job_queue = currentJson[jss::jobs];
-                BEAST_EXPECT(job_queue.isArray());
-                BEAST_EXPECT(job_queue.size() == 0);
+                Json::Value const& jobQueue = currentJson[jss::jobs];
+                BEAST_EXPECT(jobQueue.isArray());
+                BEAST_EXPECT(jobQueue.size() == 0);
             }
 
             Json::Value const& methods = currentJson[jss::methods];
@@ -499,14 +499,14 @@ public:
         for (int i = 0; i < jobs.size(); ++i)
         {
             perfLog->jobQueue(jobs[i].type);
-            Json::Value const jq_counters{perfLog->countersJson()[jss::job_queue]};
+            Json::Value const jqCounters{perfLog->countersJson()[jss::job_queue]};
 
-            BEAST_EXPECT(jq_counters.size() == i + 2);
+            BEAST_EXPECT(jqCounters.size() == i + 2);
             for (int j = 0; j <= i; ++j)
             {
                 // Verify all expected counters are present and contain
                 // expected values.
-                Json::Value const& counter{jq_counters[jobs[j].typeName]};
+                Json::Value const& counter{jqCounters[jobs[j].typeName]};
                 BEAST_EXPECT(counter.size() == 5);
                 BEAST_EXPECT(counter[jss::queued] == "1");
                 BEAST_EXPECT(counter[jss::started] == "0");
@@ -516,7 +516,7 @@ public:
             }
 
             // Verify jss::total is present and has expected values.
-            Json::Value const& total{jq_counters[jss::total]};
+            Json::Value const& total{jqCounters[jss::total]};
             BEAST_EXPECT(total.size() == 5);
             BEAST_EXPECT(jsonToUint64(total[jss::queued]) == i + 1);
             BEAST_EXPECT(total[jss::started] == "0");
@@ -550,25 +550,25 @@ public:
             std::this_thread::sleep_for(microseconds(10));
 
             // Check each jobType counter entry.
-            Json::Value const jq_counters{perfLog->countersJson()[jss::job_queue]};
+            Json::Value const jqCounters{perfLog->countersJson()[jss::job_queue]};
             for (int j = 0; j < jobs.size(); ++j)
             {
-                Json::Value const& counter{jq_counters[jobs[j].typeName]};
-                std::uint64_t const queued_dur_us{jsonToUint64(counter[jss::queued_duration_us])};
+                Json::Value const& counter{jqCounters[jobs[j].typeName]};
+                std::uint64_t const queuedDurUs{jsonToUint64(counter[jss::queued_duration_us])};
                 if (j < i)
                 {
                     BEAST_EXPECT(counter[jss::started] == "2");
-                    BEAST_EXPECT(queued_dur_us == j + 1);
+                    BEAST_EXPECT(queuedDurUs == j + 1);
                 }
                 else if (j == i)
                 {
                     BEAST_EXPECT(counter[jss::started] == "1");
-                    BEAST_EXPECT(queued_dur_us == j + 1);
+                    BEAST_EXPECT(queuedDurUs == j + 1);
                 }
                 else
                 {
                     BEAST_EXPECT(counter[jss::started] == "0");
-                    BEAST_EXPECT(queued_dur_us == 0);
+                    BEAST_EXPECT(queuedDurUs == 0);
                 }
 
                 BEAST_EXPECT(counter[jss::queued] == "1");
@@ -577,7 +577,7 @@ public:
             }
             {
                 // Verify values in jss::total are what we expect.
-                Json::Value const& total{jq_counters[jss::total]};
+                Json::Value const& total{jqCounters[jss::total]};
                 BEAST_EXPECT(jsonToUint64(total[jss::queued]) == jobs.size());
                 BEAST_EXPECT(jsonToUint64(total[jss::started]) == (i * 2) + 1);
                 BEAST_EXPECT(total[jss::finished] == "0");
@@ -619,35 +619,35 @@ public:
             perfLog->jobFinish(jobs[i].type, microseconds(finished), (i * 2) + 1);
             std::this_thread::sleep_for(microseconds(10));
 
-            Json::Value const jq_counters{perfLog->countersJson()[jss::job_queue]};
+            Json::Value const jqCounters{perfLog->countersJson()[jss::job_queue]};
             for (int j = 0; j < jobs.size(); ++j)
             {
-                Json::Value const& counter{jq_counters[jobs[j].typeName]};
-                std::uint64_t const running_dur_us{jsonToUint64(counter[jss::running_duration_us])};
+                Json::Value const& counter{jqCounters[jobs[j].typeName]};
+                std::uint64_t const runningDurUs{jsonToUint64(counter[jss::running_duration_us])};
                 if (j < i)
                 {
                     BEAST_EXPECT(counter[jss::finished] == "0");
-                    BEAST_EXPECT(running_dur_us == 0);
+                    BEAST_EXPECT(runningDurUs == 0);
                 }
                 else if (j == i)
                 {
                     BEAST_EXPECT(counter[jss::finished] == "1");
-                    BEAST_EXPECT(running_dur_us == ((jobs.size() - j) * 2) - 1);
+                    BEAST_EXPECT(runningDurUs == ((jobs.size() - j) * 2) - 1);
                 }
                 else
                 {
                     BEAST_EXPECT(counter[jss::finished] == "2");
-                    BEAST_EXPECT(running_dur_us == ((jobs.size() - j) * 4) - 1);
+                    BEAST_EXPECT(runningDurUs == ((jobs.size() - j) * 4) - 1);
                 }
 
-                std::uint64_t const queued_dur_us{jsonToUint64(counter[jss::queued_duration_us])};
-                BEAST_EXPECT(queued_dur_us == j + 1);
+                std::uint64_t const queuedDurUs{jsonToUint64(counter[jss::queued_duration_us])};
+                BEAST_EXPECT(queuedDurUs == j + 1);
                 BEAST_EXPECT(counter[jss::queued] == "1");
                 BEAST_EXPECT(counter[jss::started] == "2");
             }
             {
                 // Verify values in jss::total are what we expect.
-                Json::Value const& total{jq_counters[jss::total]};
+                Json::Value const& total{jqCounters[jss::total]};
                 BEAST_EXPECT(jsonToUint64(total[jss::queued]) == jobs.size());
                 BEAST_EXPECT(jsonToUint64(total[jss::started]) == jobs.size() * 2);
                 BEAST_EXPECT(jsonToUint64(total[jss::finished]) == finished);
@@ -695,11 +695,11 @@ public:
             for (int i = jobs.size() - 1; i >= 0; --i)
             {
                 Json::Value const& counter{jobQueue[jobs[i].typeName]};
-                std::uint64_t const running_dur_us{jsonToUint64(counter[jss::running_duration_us])};
-                BEAST_EXPECT(running_dur_us == ((jobs.size() - i) * 4) - 1);
+                std::uint64_t const runningDurUs{jsonToUint64(counter[jss::running_duration_us])};
+                BEAST_EXPECT(runningDurUs == ((jobs.size() - i) * 4) - 1);
 
-                std::uint64_t const queued_dur_us{jsonToUint64(counter[jss::queued_duration_us])};
-                BEAST_EXPECT(queued_dur_us == i + 1);
+                std::uint64_t const queuedDurUs{jsonToUint64(counter[jss::queued_duration_us])};
+                BEAST_EXPECT(queuedDurUs == i + 1);
 
                 BEAST_EXPECT(counter[jss::queued] == "1");
                 BEAST_EXPECT(counter[jss::started] == "2");
@@ -814,8 +814,8 @@ public:
                                   Json::Value const& countersJson,
                                   int started,
                                   int finished,
-                                  int queued_us,
-                                  int running_us) {
+                                  int queuedUs,
+                                  int runningUs) {
             BEAST_EXPECT(countersJson.isObject());
             BEAST_EXPECT(countersJson.size() == 2);
 
@@ -834,8 +834,8 @@ public:
                 BEAST_EXPECT(jsonToUint64(job[jss::started]) == started);
                 BEAST_EXPECT(jsonToUint64(job[jss::finished]) == finished);
 
-                BEAST_EXPECT(jsonToUint64(job[jss::queued_duration_us]) == queued_us);
-                BEAST_EXPECT(jsonToUint64(job[jss::running_duration_us]) == running_us);
+                BEAST_EXPECT(jsonToUint64(job[jss::queued_duration_us]) == queuedUs);
+                BEAST_EXPECT(jsonToUint64(job[jss::running_duration_us]) == runningUs);
             }
         };
 

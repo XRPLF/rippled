@@ -266,10 +266,10 @@ TOfferStreamBase<TIn, TOut>::step()
             // If the owner's balance in the pristine view is the same,
             // we haven't modified the balance and therefore the
             // offer is "found unfunded" versus "became unfunded"
-            auto const original_funds = accountFundsHelper(
+            auto const originalFunds = accountFundsHelper(
                 cancelView_, offer_.owner(), amount.out, offer_.issueOut(), fhZERO_IF_FROZEN, j_);
 
-            if (original_funds == *ownerFunds_)
+            if (originalFunds == *ownerFunds_)
             {
                 permRmOffer(entry->key());
                 JLOG(j_.trace()) << "Removing unfunded offer " << entry->key();
@@ -319,10 +319,10 @@ TOfferStreamBase<TIn, TOut>::step()
 
         if (rmSmallIncreasedQOffer)
         {
-            auto const original_funds = accountFundsHelper(
+            auto const originalFunds = accountFundsHelper(
                 cancelView_, offer_.owner(), amount.out, offer_.issueOut(), fhZERO_IF_FROZEN, j_);
 
-            if (original_funds == *ownerFunds_)
+            if (originalFunds == *ownerFunds_)
             {
                 permRmOffer(entry->key());
                 JLOG(j_.trace()) << "Removing tiny offer due to reduced quality " << entry->key();

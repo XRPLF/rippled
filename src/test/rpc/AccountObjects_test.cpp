@@ -184,8 +184,8 @@ public:
         {
             Account const gw{"G"};
             env.fund(XRP(1000), gw);
-            auto const USD = gw["USD"];
-            env.trust(USD(1000), bob);
+            auto const usd = gw["USD"];
+            env.trust(usd(1000), bob);
             env(pay(gw, bob, XRP(1)));
             env(offer(bob, XRP(100), bob["USD"](1)), txflags(tfPassive));
 
@@ -194,8 +194,8 @@ public:
             params[jss::limit] = 1;
             auto resp = env.rpc("json", "account_objects", to_string(params));
 
-            auto resume_marker = resp[jss::result][jss::marker];
-            std::string mark = to_string(resume_marker);
+            auto resumeMarker = resp[jss::result][jss::marker];
+            std::string mark = to_string(resumeMarker);
             params[jss::marker] = 10;
             resp = env.rpc("json", "account_objects", to_string(params));
             BEAST_EXPECT(
@@ -242,18 +242,18 @@ public:
         Account const gw2{"G2"};
         Account const bob{"bob"};
 
-        auto const USD1 = gw1["USD"];
-        auto const USD2 = gw2["USD"];
+        auto const usD1 = gw1["USD"];
+        auto const usD2 = gw2["USD"];
 
         env.fund(XRP(1000), gw1, gw2, bob);
-        env.trust(USD1(1000), bob);
-        env.trust(USD2(1000), bob);
+        env.trust(usD1(1000), bob);
+        env.trust(usD2(1000), bob);
 
-        env(pay(gw1, bob, USD1(1000)));
-        env(pay(gw2, bob, USD2(1000)));
+        env(pay(gw1, bob, usD1(1000)));
+        env(pay(gw2, bob, usD2(1000)));
 
         env(offer(bob, XRP(100), bob["USD"](1)), txflags(tfPassive));
-        env(offer(bob, XRP(100), USD1(1)), txflags(tfPassive));
+        env(offer(bob, XRP(100), usD1(1)), txflags(tfPassive));
 
         Json::Value bobj[4];
         for (int i = 0; i < 4; ++i)
@@ -334,8 +334,8 @@ public:
         Account const gw2{"G2"};
         Account const bob{"bob"};
 
-        auto const USD1 = gw1["USD"];
-        auto const USD2 = gw2["USD"];
+        auto const usD1 = gw1["USD"];
+        auto const usD2 = gw2["USD"];
 
         env.fund(XRP(1000), gw1, gw2, bob);
         env.close();
@@ -401,14 +401,14 @@ public:
         }
 
         // Add more objects in addition to the NFToken Page.
-        env.trust(USD1(1000), bob);
-        env.trust(USD2(1000), bob);
+        env.trust(usD1(1000), bob);
+        env.trust(usD2(1000), bob);
 
-        env(pay(gw1, bob, USD1(1000)));
-        env(pay(gw2, bob, USD2(1000)));
+        env(pay(gw1, bob, usD1(1000)));
+        env(pay(gw2, bob, usD2(1000)));
 
         env(offer(bob, XRP(100), bob["USD"](1)), txflags(tfPassive));
-        env(offer(bob, XRP(100), USD1(1)), txflags(tfPassive));
+        env(offer(bob, XRP(100), usD1(1)), txflags(tfPassive));
         env.close();
 
         // test 'unstepped'
@@ -527,7 +527,7 @@ public:
 
         Account const alice{"alice"};
         Account const gw{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         auto const features =
             testable_amendments() | featureXChainBridge | featurePermissionedDomains;
@@ -606,9 +606,9 @@ public:
         }
 
         // Set up a trust line so we can find it.
-        env.trust(USD(1000), alice);
+        env.trust(usd(1000), alice);
         env.close();
-        env(pay(gw, alice, USD(5)));
+        env(pay(gw, alice, usd(5)));
         env.close();
         {
             // Find the trustline and make sure it's the right one.
@@ -620,7 +620,7 @@ public:
             BEAST_EXPECT(state[sfHighLimit.jsonName][jss::value].asUInt() == 1000);
         }
         // gw writes a check for USD(10) to alice.
-        env(check::create(gw, alice, USD(10)));
+        env(check::create(gw, alice, usd(10)));
         env.close();
         {
             // Find the check.
@@ -719,15 +719,15 @@ public:
             Json::Value const resp = scEnvAcctObjs(Account::master, jss::bridge);
 
             BEAST_EXPECT(acctObjsIsSize(resp, 1));
-            auto const& acct_bridge = resp[jss::result][jss::account_objects][0u];
-            BEAST_EXPECT(acct_bridge[sfAccount.jsonName] == Account::master.human());
-            BEAST_EXPECT(acct_bridge[sfLedgerEntryType.getJsonName()] == "Bridge");
-            BEAST_EXPECT(acct_bridge[sfXChainClaimID.getJsonName()].asUInt() == 0);
-            BEAST_EXPECT(acct_bridge[sfXChainAccountClaimCount.getJsonName()].asUInt() == 0);
-            BEAST_EXPECT(acct_bridge[sfXChainAccountCreateCount.getJsonName()].asUInt() == 0);
-            BEAST_EXPECT(acct_bridge[sfMinAccountCreateAmount.getJsonName()].asUInt() == 20000000);
-            BEAST_EXPECT(acct_bridge[sfSignatureReward.getJsonName()].asUInt() == 1000000);
-            BEAST_EXPECT(acct_bridge[sfXChainBridge.getJsonName()] == x.jvb);
+            auto const& acctBridge = resp[jss::result][jss::account_objects][0u];
+            BEAST_EXPECT(acctBridge[sfAccount.jsonName] == Account::master.human());
+            BEAST_EXPECT(acctBridge[sfLedgerEntryType.getJsonName()] == "Bridge");
+            BEAST_EXPECT(acctBridge[sfXChainClaimID.getJsonName()].asUInt() == 0);
+            BEAST_EXPECT(acctBridge[sfXChainAccountClaimCount.getJsonName()].asUInt() == 0);
+            BEAST_EXPECT(acctBridge[sfXChainAccountCreateCount.getJsonName()].asUInt() == 0);
+            BEAST_EXPECT(acctBridge[sfMinAccountCreateAmount.getJsonName()].asUInt() == 20000000);
+            BEAST_EXPECT(acctBridge[sfSignatureReward.getJsonName()].asUInt() == 1000000);
+            BEAST_EXPECT(acctBridge[sfXChainBridge.getJsonName()] == x.jvb);
         }
         {
             // Alice and Bob create a xchain sequence number that we can look
@@ -754,18 +754,18 @@ public:
                 Json::Value const resp = scEnvAcctObjs(x.scAlice, jss::xchain_owned_claim_id);
                 BEAST_EXPECT(acctObjsIsSize(resp, 1));
 
-                auto const& xchain_seq = resp[jss::result][jss::account_objects][0u];
-                BEAST_EXPECT(xchain_seq[sfAccount.jsonName] == x.scAlice.human());
-                BEAST_EXPECT(xchain_seq[sfXChainClaimID.getJsonName()].asUInt() == 1);
+                auto const& xchainSeq = resp[jss::result][jss::account_objects][0u];
+                BEAST_EXPECT(xchainSeq[sfAccount.jsonName] == x.scAlice.human());
+                BEAST_EXPECT(xchainSeq[sfXChainClaimID.getJsonName()].asUInt() == 1);
             }
             {
                 // and the one for Bob
                 Json::Value const resp = scEnvAcctObjs(x.scBob, jss::xchain_owned_claim_id);
                 BEAST_EXPECT(acctObjsIsSize(resp, 1));
 
-                auto const& xchain_seq = resp[jss::result][jss::account_objects][0u];
-                BEAST_EXPECT(xchain_seq[sfAccount.jsonName] == x.scBob.human());
-                BEAST_EXPECT(xchain_seq[sfXChainClaimID.getJsonName()].asUInt() == 2);
+                auto const& xchainSeq = resp[jss::result][jss::account_objects][0u];
+                BEAST_EXPECT(xchainSeq[sfAccount.jsonName] == x.scBob.human());
+                BEAST_EXPECT(xchainSeq[sfXChainClaimID.getJsonName()].asUInt() == 2);
             }
         }
         {
@@ -806,18 +806,18 @@ public:
                     scEnvAcctObjs(Account::master, jss::xchain_owned_create_account_claim_id);
                 BEAST_EXPECT(acctObjsIsSize(resp, 1));
 
-                auto const& xchain_create_account_claim_id_ =
+                auto const& xchainCreateAccountClaimId =
                     resp[jss::result][jss::account_objects][0u];
                 BEAST_EXPECT(
-                    xchain_create_account_claim_id_[sfAccount.jsonName] == Account::master.human());
+                    xchainCreateAccountClaimId[sfAccount.jsonName] == Account::master.human());
                 BEAST_EXPECT(
-                    xchain_create_account_claim_id_[sfXChainAccountCreateCount.getJsonName()]
-                        .asUInt() == 1);
+                    xchainCreateAccountClaimId[sfXChainAccountCreateCount.getJsonName()].asUInt() ==
+                    1);
             }
         }
 
         // gw creates an offer that we can look for in the ledger.
-        env(offer(gw, USD(7), XRP(14)));
+        env(offer(gw, usd(7), XRP(14)));
         env.close();
         {
             // Find the offer.
@@ -971,8 +971,8 @@ public:
                 return types == typesOut;
             };
             // Find AMM objects
-            AMM amm(env, gw, XRP(1'000), USD(1'000));
-            amm.deposit(alice, USD(1));
+            AMM amm(env, gw, XRP(1'000), usd(1'000));
+            amm.deposit(alice, usd(1));
             // AMM account has 4 objects: AMM object and 3 trustlines
             auto const lines = getAccountLines(env, amm.ammAccount());
             BEAST_EXPECT(lines[jss::lines].size() == 3);
@@ -1015,7 +1015,7 @@ public:
         // directory nodes.
         for (int d = 1'000'032; d >= 1'000'000; --d)
         {
-            env(offer(gw, USD(1), drops(d)));
+            env(offer(gw, usd(1), drops(d)));
             env.close();
         }
 

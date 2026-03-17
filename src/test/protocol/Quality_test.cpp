@@ -41,22 +41,22 @@ public:
 
     template <class In1, class Out1, class Int, class In2, class Out2>
     void
-    ceil_in(Quality const& q, In1 in, Out1 out, Int limit, In2 in_expected, Out2 out_expected)
+    ceil_in(Quality const& q, In1 in, Out1 out, Int limit, In2 inExpected, Out2 outExpected)
     {
-        auto expect_result(amounts(in_expected, out_expected));
-        auto actual_result(q.ceil_in(amounts(in, out), amount(limit)));
+        auto expectResult(amounts(inExpected, outExpected));
+        auto actualResult(q.ceil_in(amounts(in, out), amount(limit)));
 
-        BEAST_EXPECT(actual_result == expect_result);
+        BEAST_EXPECT(actualResult == expectResult);
     }
 
     template <class In1, class Out1, class Int, class In2, class Out2>
     void
-    ceil_out(Quality const& q, In1 in, Out1 out, Int limit, In2 in_expected, Out2 out_expected)
+    ceil_out(Quality const& q, In1 in, Out1 out, Int limit, In2 inExpected, Out2 outExpected)
     {
-        auto const expect_result(amounts(in_expected, out_expected));
-        auto const actual_result(q.ceil_out(amounts(in, out), amount(limit)));
+        auto const expectResult(amounts(inExpected, outExpected));
+        auto const actualResult(q.ceil_out(amounts(in, out), amount(limit)));
 
-        BEAST_EXPECT(actual_result == expect_result);
+        BEAST_EXPECT(actualResult == expectResult);
     }
 
     void
@@ -337,11 +337,11 @@ public:
 
         BEAST_EXPECT(composed_quality(q12, q21) == q11);
 
-        Quality const q13_31(composed_quality(q13, q31));
-        Quality const q31_13(composed_quality(q31, q13));
+        Quality const q1331(composed_quality(q13, q31));
+        Quality const q3113(composed_quality(q31, q13));
 
-        BEAST_EXPECT(q13_31 == q31_13);
-        BEAST_EXPECT(q13_31 == q11);
+        BEAST_EXPECT(q1331 == q3113);
+        BEAST_EXPECT(q1331 == q11);
     }
 
     void

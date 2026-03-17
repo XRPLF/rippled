@@ -29,19 +29,19 @@ namespace test {
 //------------------------------------------------------------------------------
 
 Json::Value
-rpf(jtx::Account const& src, jtx::Account const& dst, std::uint32_t num_src_)
+rpf(jtx::Account const& src, jtx::Account const& dst, std::uint32_t numSrc)
 {
     Json::Value jv = Json::objectValue;
     jv[jss::command] = "ripple_path_find";
     jv[jss::source_account] = toBase58(src);
 
-    if (num_src_ > 0)
+    if (numSrc > 0)
     {
         auto& sc = (jv[jss::source_currencies] = Json::arrayValue);
         Json::Value j = Json::objectValue;
-        while (num_src_--)
+        while (numSrc--)
         {
-            j[jss::currency] = std::to_string(num_src_ + 100);
+            j[jss::currency] = std::to_string(numSrc + 100);
             sc.append(j);
         }
     }
@@ -89,10 +89,10 @@ public:
         // Returns `true` if signaled.
         template <class Rep, class Period>
         bool
-        wait_for(std::chrono::duration<Rep, Period> const& rel_time)
+        wait_for(std::chrono::duration<Rep, Period> const& relTime)
         {
             std::unique_lock<std::mutex> lk(mutex_);
-            auto b = cv_.wait_for(lk, rel_time, [this] { return signaled_; });
+            auto b = cv_.wait_for(lk, relTime, [this] { return signaled_; });
             signaled_ = false;
             return b;
         }
@@ -329,16 +329,16 @@ public:
         using namespace jtx;
         Env env = pathTestEnv();
         auto const gw = Account("gateway");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(10000), "alice", "bob", gw);
         env.close();
-        env.trust(USD(600), "alice");
-        env.trust(USD(700), "bob");
-        env(pay(gw, "alice", USD(70)));
-        env(pay("alice", "bob", USD(24)));
-        env.require(balance("alice", USD(46)));
+        env.trust(usd(600), "alice");
+        env.trust(usd(700), "bob");
+        env(pay(gw, "alice", usd(70)));
+        env(pay("alice", "bob", usd(24)));
+        env.require(balance("alice", usd(46)));
         env.require(balance(gw, Account("alice")["USD"](-46)));
-        env.require(balance("bob", USD(24)));
+        env.require(balance("bob", usd(24)));
         env.require(balance(gw, Account("bob")["USD"](-24)));
     }
 
@@ -349,13 +349,13 @@ public:
         using namespace jtx;
         Env env = pathTestEnv();
         auto const gw = Account("gateway");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(10000), "alice", "bob", gw);
         env.close();
-        env.trust(USD(600), "alice");
-        env.trust(USD(700), "bob");
-        env(pay(gw, "alice", USD(70)));
-        env(pay(gw, "bob", USD(50)));
+        env.trust(usd(600), "alice");
+        env.trust(usd(700), "bob");
+        env(pay(gw, "alice", usd(70)));
+        env(pay(gw, "bob", usd(50)));
 
         std::optional<uint256> domainID;
         if (domainEnabled)
@@ -427,23 +427,23 @@ public:
         {
             Env env = pathTestEnv();
             auto const gw = Account("gateway");
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             env.fund(XRP(10000), "alice", "bob", "carol", gw);
             env.close();
-            env.trust(USD(100), "bob", "carol");
+            env.trust(usd(100), "bob", "carol");
             env.close();
-            env(pay(gw, "carol", USD(100)));
+            env(pay(gw, "carol", usd(100)));
             env.close();
 
             std::optional<uint256> domainID;
             if (domainEnabled)
             {
                 domainID = setupDomain(env, {"alice", "bob", "carol", "gateway"});
-                env(offer("carol", XRP(100), USD(100)), domain(*domainID));
+                env(offer("carol", XRP(100), usd(100)), domain(*domainID));
             }
             else
             {
-                env(offer("carol", XRP(100), USD(100)));
+                env(offer("carol", XRP(100), usd(100)));
             }
             env.close();
 
@@ -496,37 +496,37 @@ public:
         using namespace jtx;
         Env env = pathTestEnv();
         auto const gw = Account("gateway");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         auto const gw2 = Account("gateway2");
-        auto const gw2_USD = gw2["USD"];
+        auto const gw2Usd = gw2["USD"];
         env.fund(XRP(10000), "alice", "bob", gw, gw2);
         env.close();
-        env.trust(USD(600), "alice");
-        env.trust(gw2_USD(800), "alice");
-        env.trust(USD(700), "bob");
-        env.trust(gw2_USD(900), "bob");
+        env.trust(usd(600), "alice");
+        env.trust(gw2Usd(800), "alice");
+        env.trust(usd(700), "bob");
+        env.trust(gw2Usd(900), "bob");
 
         std::optional<uint256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {"alice", "bob", "gateway", "gateway2"});
-            env(pay(gw, "alice", USD(70)), domain(*domainID));
-            env(pay(gw2, "alice", gw2_USD(70)), domain(*domainID));
+            env(pay(gw, "alice", usd(70)), domain(*domainID));
+            env(pay(gw2, "alice", gw2Usd(70)), domain(*domainID));
             env(pay("alice", "bob", Account("bob")["USD"](140)),
                 paths(Account("alice")["USD"]),
                 domain(*domainID));
         }
         else
         {
-            env(pay(gw, "alice", USD(70)));
-            env(pay(gw2, "alice", gw2_USD(70)));
+            env(pay(gw, "alice", usd(70)));
+            env(pay(gw2, "alice", gw2Usd(70)));
             env(pay("alice", "bob", Account("bob")["USD"](140)), paths(Account("alice")["USD"]));
         }
 
-        env.require(balance("alice", USD(0)));
-        env.require(balance("alice", gw2_USD(0)));
-        env.require(balance("bob", USD(70)));
-        env.require(balance("bob", gw2_USD(70)));
+        env.require(balance("alice", usd(0)));
+        env.require(balance("alice", gw2Usd(0)));
+        env.require(balance("bob", usd(70)));
+        env.require(balance("bob", gw2Usd(70)));
         env.require(balance(gw, Account("alice")["USD"](0)));
         env.require(balance(gw, Account("bob")["USD"](-70)));
         env.require(balance(gw2, Account("alice")["USD"](0)));
@@ -542,35 +542,35 @@ public:
         using namespace jtx;
         Env env = pathTestEnv();
         auto const gw = Account("gateway");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         auto const gw2 = Account("gateway2");
-        auto const gw2_USD = gw2["USD"];
+        auto const gw2Usd = gw2["USD"];
         env.fund(XRP(10000), "alice", "bob", gw, gw2);
         env.close();
         env(rate(gw2, 1.1));
-        env.trust(USD(600), "alice");
-        env.trust(gw2_USD(800), "alice");
-        env.trust(USD(700), "bob");
-        env.trust(gw2_USD(900), "bob");
+        env.trust(usd(600), "alice");
+        env.trust(gw2Usd(800), "alice");
+        env.trust(usd(700), "bob");
+        env.trust(gw2Usd(900), "bob");
 
         std::optional<uint256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {"alice", "bob", "gateway", "gateway2"});
-            env(pay(gw, "alice", USD(70)), domain(*domainID));
-            env(pay(gw2, "alice", gw2_USD(70)), domain(*domainID));
-            env(pay("alice", "bob", USD(70)), domain(*domainID));
+            env(pay(gw, "alice", usd(70)), domain(*domainID));
+            env(pay(gw2, "alice", gw2Usd(70)), domain(*domainID));
+            env(pay("alice", "bob", usd(70)), domain(*domainID));
         }
         else
         {
-            env(pay(gw, "alice", USD(70)));
-            env(pay(gw2, "alice", gw2_USD(70)));
-            env(pay("alice", "bob", USD(70)));
+            env(pay(gw, "alice", usd(70)));
+            env(pay(gw2, "alice", gw2Usd(70)));
+            env(pay("alice", "bob", usd(70)));
         }
-        env.require(balance("alice", USD(0)));
-        env.require(balance("alice", gw2_USD(70)));
-        env.require(balance("bob", USD(70)));
-        env.require(balance("bob", gw2_USD(0)));
+        env.require(balance("alice", usd(0)));
+        env.require(balance("alice", gw2Usd(70)));
+        env.require(balance("bob", usd(70)));
+        env.require(balance("bob", gw2Usd(0)));
         env.require(balance(gw, Account("alice")["USD"](0)));
         env.require(balance(gw, Account("bob")["USD"](-70)));
         env.require(balance(gw2, Account("alice")["USD"](-70)));
@@ -584,25 +584,25 @@ public:
         using namespace jtx;
         Env env = pathTestEnv();
         auto const gw = Account("gateway");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         auto const gw2 = Account("gateway2");
-        auto const gw2_USD = gw2["USD"];
+        auto const gw2Usd = gw2["USD"];
         env.fund(XRP(10000), "alice", "bob", gw, gw2);
         env.close();
         env(rate(gw2, 1.1));
-        env.trust(USD(600), "alice");
-        env.trust(gw2_USD(800), "alice");
-        env.trust(USD(700), "bob");
-        env.trust(gw2_USD(900), "bob");
-        env(pay(gw, "alice", USD(70)));
-        env(pay(gw2, "alice", gw2_USD(70)));
+        env.trust(usd(600), "alice");
+        env.trust(gw2Usd(800), "alice");
+        env.trust(usd(700), "bob");
+        env.trust(gw2Usd(900), "bob");
+        env(pay(gw, "alice", usd(70)));
+        env(pay(gw2, "alice", gw2Usd(70)));
         env(pay("alice", "bob", Account("bob")["USD"](77)),
             sendmax(Account("alice")["USD"](100)),
             paths(Account("alice")["USD"]));
-        env.require(balance("alice", USD(0)));
-        env.require(balance("alice", gw2_USD(62.3)));
-        env.require(balance("bob", USD(70)));
-        env.require(balance("bob", gw2_USD(7)));
+        env.require(balance("alice", usd(0)));
+        env.require(balance("alice", gw2Usd(62.3)));
+        env.require(balance("bob", usd(70)));
+        env.require(balance("bob", gw2Usd(7)));
         env.require(balance(gw, Account("alice")["USD"](0)));
         env.require(balance(gw, Account("bob")["USD"](-70)));
         env.require(balance(gw2, Account("alice")["USD"](-62.3)));
@@ -618,24 +618,24 @@ public:
         using namespace jtx;
         Env env = pathTestEnv();
         auto const gw = Account("gateway");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         auto const gw2 = Account("gateway2");
-        auto const gw2_USD = gw2["USD"];
+        auto const gw2Usd = gw2["USD"];
         env.fund(XRP(10000), "alice", "bob", "carol", "dan", gw, gw2);
         env.close();
         env(rate("carol", 1.1));
         env.trust(Account("carol")["USD"](800), "alice", "bob");
         env.trust(Account("dan")["USD"](800), "alice", "bob");
-        env.trust(USD(800), "alice", "bob");
-        env.trust(gw2_USD(800), "alice", "bob");
+        env.trust(usd(800), "alice", "bob");
+        env.trust(gw2Usd(800), "alice", "bob");
         env.trust(Account("alice")["USD"](800), "dan");
         env.trust(Account("bob")["USD"](800), "dan");
         env.close();
-        env(pay(gw2, "alice", gw2_USD(100)));
+        env(pay(gw2, "alice", gw2Usd(100)));
         env.close();
         env(pay("carol", "alice", Account("carol")["USD"](100)));
         env.close();
-        env(pay(gw, "alice", USD(100)));
+        env(pay(gw, "alice", usd(100)));
         env.close();
 
         std::optional<uint256> domainID;
@@ -755,35 +755,35 @@ public:
         using namespace jtx;
         Env env = pathTestEnv();
         auto const gw = Account("gateway");
-        auto const AUD = gw["AUD"];
+        auto const aud = gw["AUD"];
         env.fund(XRP(10000), "alice", "bob", "carol", gw);
         env.close();
         env(rate(gw, 1.1));
         env.close();
-        env.trust(AUD(100), "bob", "carol");
+        env.trust(aud(100), "bob", "carol");
         env.close();
-        env(pay(gw, "carol", AUD(50)));
+        env(pay(gw, "carol", aud(50)));
         env.close();
 
         std::optional<uint256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {"alice", "bob", "carol", gw});
-            env(offer("carol", XRP(50), AUD(50)), domain(*domainID));
+            env(offer("carol", XRP(50), aud(50)), domain(*domainID));
             env.close();
-            env(pay("alice", "bob", AUD(10)), sendmax(XRP(100)), paths(XRP), domain(*domainID));
+            env(pay("alice", "bob", aud(10)), sendmax(XRP(100)), paths(XRP), domain(*domainID));
             env.close();
         }
         else
         {
-            env(offer("carol", XRP(50), AUD(50)));
+            env(offer("carol", XRP(50), aud(50)));
             env.close();
-            env(pay("alice", "bob", AUD(10)), sendmax(XRP(100)), paths(XRP));
+            env(pay("alice", "bob", aud(10)), sendmax(XRP(100)), paths(XRP));
             env.close();
         }
 
-        env.require(balance("bob", AUD(10)));
-        env.require(balance("carol", AUD(39)));
+        env.require(balance("bob", aud(10)));
+        env.require(balance("carol", aud(39)));
 
         auto const result = find_paths(
             env, "alice", "bob", Account("bob")["USD"](25), std::nullopt, std::nullopt, domainID);
@@ -848,10 +848,10 @@ public:
             })",
             jv);
 
-        auto const jv_l = env.le(keylet::line(Account("bob").id(), Account("alice")["USD"].issue()))
-                              ->getJson(JsonOptions::none);
+        auto const jvL = env.le(keylet::line(Account("bob").id(), Account("alice")["USD"].issue()))
+                             ->getJson(JsonOptions::none);
         for (auto it = jv.begin(); it != jv.end(); ++it)
-            BEAST_EXPECT(*it == jv_l[it.memberName()]);
+            BEAST_EXPECT(*it == jvL[it.memberName()]);
     }
 
     void
@@ -890,10 +890,10 @@ public:
             })",
             jv);
 
-        auto const jv_l = env.le(keylet::line(Account("bob").id(), Account("alice")["USD"].issue()))
-                              ->getJson(JsonOptions::none);
+        auto const jvL = env.le(keylet::line(Account("bob").id(), Account("alice")["USD"].issue()))
+                             ->getJson(JsonOptions::none);
         for (auto it = jv.begin(); it != jv.end(); ++it)
-            BEAST_EXPECT(*it == jv_l[it.memberName()]);
+            BEAST_EXPECT(*it == jvL[it.memberName()]);
 
         env.trust(Account("bob")["USD"](0), "alice");
         env.trust(Account("alice")["USD"](0), "bob");
@@ -941,10 +941,10 @@ public:
             })",
             jv);
 
-        auto const jv_l = env.le(keylet::line(Account("alice").id(), Account("bob")["USD"].issue()))
-                              ->getJson(JsonOptions::none);
+        auto const jvL = env.le(keylet::line(Account("alice").id(), Account("bob")["USD"].issue()))
+                             ->getJson(JsonOptions::none);
         for (auto it = jv.begin(); it != jv.end(); ++it)
-            BEAST_EXPECT(*it == jv_l[it.memberName()]);
+            BEAST_EXPECT(*it == jvL[it.memberName()]);
 
         env(pay("alice", "bob", Account("alice")["USD"](50)));
         BEAST_EXPECT(
@@ -959,47 +959,47 @@ public:
             (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account A3{"A3"};
-        Account G1{"G1"};
-        Account G2{"G2"};
-        Account G3{"G3"};
-        Account M1{"M1"};
+        Account a1{"A1"};
+        Account a2{"A2"};
+        Account a3{"A3"};
+        Account g1{"G1"};
+        Account g2{"G2"};
+        Account g3{"G3"};
+        Account m1{"M1"};
 
-        env.fund(XRP(100000), A1);
-        env.fund(XRP(10000), A2);
-        env.fund(XRP(1000), A3, G1, G2, G3, M1);
+        env.fund(XRP(100000), a1);
+        env.fund(XRP(10000), a2);
+        env.fund(XRP(1000), a3, g1, g2, g3, m1);
         env.close();
 
-        env.trust(G1["XYZ"](5000), A1);
-        env.trust(G3["ABC"](5000), A1);
-        env.trust(G2["XYZ"](5000), A2);
-        env.trust(G3["ABC"](5000), A2);
-        env.trust(A2["ABC"](1000), A3);
-        env.trust(G1["XYZ"](100000), M1);
-        env.trust(G2["XYZ"](100000), M1);
-        env.trust(G3["ABC"](100000), M1);
+        env.trust(g1["XYZ"](5000), a1);
+        env.trust(g3["ABC"](5000), a1);
+        env.trust(g2["XYZ"](5000), a2);
+        env.trust(g3["ABC"](5000), a2);
+        env.trust(a2["ABC"](1000), a3);
+        env.trust(g1["XYZ"](100000), m1);
+        env.trust(g2["XYZ"](100000), m1);
+        env.trust(g3["ABC"](100000), m1);
         env.close();
 
-        env(pay(G1, A1, G1["XYZ"](3500)));
-        env(pay(G3, A1, G3["ABC"](1200)));
-        env(pay(G2, M1, G2["XYZ"](25000)));
-        env(pay(G3, M1, G3["ABC"](25000)));
+        env(pay(g1, a1, g1["XYZ"](3500)));
+        env(pay(g3, a1, g3["ABC"](1200)));
+        env(pay(g2, m1, g2["XYZ"](25000)));
+        env(pay(g3, m1, g3["ABC"](25000)));
         env.close();
 
         std::optional<uint256> domainID;
         if (domainEnabled)
         {
-            domainID = setupDomain(env, {A1, A2, A3, G1, G2, G3, M1});
-            env(offer(M1, G1["XYZ"](1000), G2["XYZ"](1000)), domain(*domainID));
-            env(offer(M1, XRP(10000), G3["ABC"](1000)), domain(*domainID));
+            domainID = setupDomain(env, {a1, a2, a3, g1, g2, g3, m1});
+            env(offer(m1, g1["XYZ"](1000), g2["XYZ"](1000)), domain(*domainID));
+            env(offer(m1, XRP(10000), g3["ABC"](1000)), domain(*domainID));
             env.close();
         }
         else
         {
-            env(offer(M1, G1["XYZ"](1000), G2["XYZ"](1000)));
-            env(offer(M1, XRP(10000), G3["ABC"](1000)));
+            env(offer(m1, g1["XYZ"](1000), g2["XYZ"](1000)));
+            env(offer(m1, XRP(10000), g3["ABC"](1000)));
             env.close();
         }
 
@@ -1007,48 +1007,48 @@ public:
         STAmount sa, da;
 
         {
-            auto const& send_amt = XRP(10);
+            auto const& sendAmt = XRP(10);
             std::tie(st, sa, da) =
-                find_paths(env, A1, A2, send_amt, std::nullopt, xrpCurrency(), domainID);
-            BEAST_EXPECT(equal(da, send_amt));
+                find_paths(env, a1, a2, sendAmt, std::nullopt, xrpCurrency(), domainID);
+            BEAST_EXPECT(equal(da, sendAmt));
             BEAST_EXPECT(st.empty());
         }
 
         {
             // no path should exist for this since dest account
             // does not exist.
-            auto const& send_amt = XRP(200);
+            auto const& sendAmt = XRP(200);
             std::tie(st, sa, da) =
-                find_paths(env, A1, Account{"A0"}, send_amt, std::nullopt, xrpCurrency(), domainID);
-            BEAST_EXPECT(equal(da, send_amt));
+                find_paths(env, a1, Account{"A0"}, sendAmt, std::nullopt, xrpCurrency(), domainID);
+            BEAST_EXPECT(equal(da, sendAmt));
             BEAST_EXPECT(st.empty());
         }
 
         {
-            auto const& send_amt = G3["ABC"](10);
+            auto const& sendAmt = g3["ABC"](10);
             std::tie(st, sa, da) =
-                find_paths(env, A2, G3, send_amt, std::nullopt, xrpCurrency(), domainID);
-            BEAST_EXPECT(equal(da, send_amt));
+                find_paths(env, a2, g3, sendAmt, std::nullopt, xrpCurrency(), domainID);
+            BEAST_EXPECT(equal(da, sendAmt));
             BEAST_EXPECT(equal(sa, XRP(100)));
-            BEAST_EXPECT(same(st, stpath(IPE(G3["ABC"]))));
+            BEAST_EXPECT(same(st, stpath(IPE(g3["ABC"]))));
         }
 
         {
-            auto const& send_amt = A2["ABC"](1);
+            auto const& sendAmt = a2["ABC"](1);
             std::tie(st, sa, da) =
-                find_paths(env, A1, A2, send_amt, std::nullopt, xrpCurrency(), domainID);
-            BEAST_EXPECT(equal(da, send_amt));
+                find_paths(env, a1, a2, sendAmt, std::nullopt, xrpCurrency(), domainID);
+            BEAST_EXPECT(equal(da, sendAmt));
             BEAST_EXPECT(equal(sa, XRP(10)));
-            BEAST_EXPECT(same(st, stpath(IPE(G3["ABC"]), G3)));
+            BEAST_EXPECT(same(st, stpath(IPE(g3["ABC"]), g3)));
         }
 
         {
-            auto const& send_amt = A3["ABC"](1);
+            auto const& sendAmt = a3["ABC"](1);
             std::tie(st, sa, da) =
-                find_paths(env, A1, A3, send_amt, std::nullopt, xrpCurrency(), domainID);
-            BEAST_EXPECT(equal(da, send_amt));
+                find_paths(env, a1, a3, sendAmt, std::nullopt, xrpCurrency(), domainID);
+            BEAST_EXPECT(equal(da, sendAmt));
             BEAST_EXPECT(equal(sa, XRP(10)));
-            BEAST_EXPECT(same(st, stpath(IPE(G3["ABC"]), G3, A2)));
+            BEAST_EXPECT(same(st, stpath(IPE(g3["ABC"]), g3, a2)));
         }
     }
 
@@ -1060,45 +1060,45 @@ public:
             "domain");
         using namespace jtx;
         Env env = pathTestEnv();
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account G3{"G3"};
-        Account M1{"M1"};
+        Account a1{"A1"};
+        Account a2{"A2"};
+        Account g3{"G3"};
+        Account m1{"M1"};
 
-        env.fund(XRP(1000), A1, A2, G3);
-        env.fund(XRP(11000), M1);
+        env.fund(XRP(1000), a1, a2, g3);
+        env.fund(XRP(11000), m1);
         env.close();
 
-        env.trust(G3["ABC"](1000), A1, A2);
-        env.trust(G3["ABC"](100000), M1);
+        env.trust(g3["ABC"](1000), a1, a2);
+        env.trust(g3["ABC"](100000), m1);
         env.close();
 
-        env(pay(G3, A1, G3["ABC"](1000)));
-        env(pay(G3, A2, G3["ABC"](1000)));
-        env(pay(G3, M1, G3["ABC"](1200)));
+        env(pay(g3, a1, g3["ABC"](1000)));
+        env(pay(g3, a2, g3["ABC"](1000)));
+        env(pay(g3, m1, g3["ABC"](1200)));
         env.close();
 
         std::optional<uint256> domainID;
         if (domainEnabled)
         {
-            domainID = setupDomain(env, {A1, A2, G3, M1});
-            env(offer(M1, G3["ABC"](1000), XRP(10000)), domain(*domainID));
+            domainID = setupDomain(env, {a1, a2, g3, m1});
+            env(offer(m1, g3["ABC"](1000), XRP(10000)), domain(*domainID));
         }
         else
         {
-            env(offer(M1, G3["ABC"](1000), XRP(10000)));
+            env(offer(m1, g3["ABC"](1000), XRP(10000)));
         }
 
         STPathSet st;
         STAmount sa, da;
-        auto const& send_amt = XRP(10);
+        auto const& sendAmt = XRP(10);
 
         {
             std::tie(st, sa, da) =
-                find_paths(env, A1, A2, send_amt, std::nullopt, A2["ABC"].currency, domainID);
-            BEAST_EXPECT(equal(da, send_amt));
-            BEAST_EXPECT(equal(sa, A1["ABC"](1)));
-            BEAST_EXPECT(same(st, stpath(G3, IPE(xrpIssue()))));
+                find_paths(env, a1, a2, sendAmt, std::nullopt, a2["ABC"].currency, domainID);
+            BEAST_EXPECT(equal(da, sendAmt));
+            BEAST_EXPECT(equal(sa, a1["ABC"](1)));
+            BEAST_EXPECT(same(st, stpath(g3, IPE(xrpIssue()))));
         }
 
         // domain offer will not be considered in pathfinding for non-domain
@@ -1106,8 +1106,8 @@ public:
         if (domainEnabled)
         {
             std::tie(st, sa, da) =
-                find_paths(env, A1, A2, send_amt, std::nullopt, A2["ABC"].currency);
-            BEAST_EXPECT(equal(da, send_amt));
+                find_paths(env, a1, a2, sendAmt, std::nullopt, a2["ABC"].currency);
+            BEAST_EXPECT(equal(da, sendAmt));
             BEAST_EXPECT(st.empty());
         }
     }
@@ -1120,81 +1120,81 @@ public:
             (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account G1BS{"G1BS"};
-        Account G2SW{"G2SW"};
-        Account M1{"M1"};
+        Account a1{"A1"};
+        Account a2{"A2"};
+        Account g1Bs{"G1BS"};
+        Account g2Sw{"G2SW"};
+        Account m1{"M1"};
 
-        env.fund(XRP(1000), G1BS, G2SW, A1, A2);
-        env.fund(XRP(11000), M1);
+        env.fund(XRP(1000), g1Bs, g2Sw, a1, a2);
+        env.fund(XRP(11000), m1);
         env.close();
 
-        env.trust(G1BS["HKD"](2000), A1);
-        env.trust(G2SW["HKD"](2000), A2);
-        env.trust(G1BS["HKD"](100000), M1);
-        env.trust(G2SW["HKD"](100000), M1);
+        env.trust(g1Bs["HKD"](2000), a1);
+        env.trust(g2Sw["HKD"](2000), a2);
+        env.trust(g1Bs["HKD"](100000), m1);
+        env.trust(g2Sw["HKD"](100000), m1);
         env.close();
 
-        env(pay(G1BS, A1, G1BS["HKD"](1000)));
-        env(pay(G2SW, A2, G2SW["HKD"](1000)));
+        env(pay(g1Bs, a1, g1Bs["HKD"](1000)));
+        env(pay(g2Sw, a2, g2Sw["HKD"](1000)));
         // SnapSwap wants to be able to set trust line quality settings so they
         // can charge a fee when transactions ripple across. Liquidity
         // provider, via trusting/holding both accounts
-        env(pay(G1BS, M1, G1BS["HKD"](1200)));
-        env(pay(G2SW, M1, G2SW["HKD"](5000)));
+        env(pay(g1Bs, m1, g1Bs["HKD"](1200)));
+        env(pay(g2Sw, m1, g2Sw["HKD"](5000)));
         env.close();
 
         std::optional<uint256> domainID;
         if (domainEnabled)
-            domainID = setupDomain(env, {A1, A2, G1BS, G2SW, M1});
+            domainID = setupDomain(env, {a1, a2, g1Bs, g2Sw, m1});
 
         STPathSet st;
         STAmount sa, da;
 
         {
-            auto const& send_amt = A2["HKD"](10);
+            auto const& sendAmt = a2["HKD"](10);
             std::tie(st, sa, da) =
-                find_paths(env, A1, A2, send_amt, std::nullopt, A2["HKD"].currency, domainID);
-            BEAST_EXPECT(equal(da, send_amt));
-            BEAST_EXPECT(equal(sa, A1["HKD"](10)));
-            BEAST_EXPECT(same(st, stpath(G1BS, M1, G2SW)));
+                find_paths(env, a1, a2, sendAmt, std::nullopt, a2["HKD"].currency, domainID);
+            BEAST_EXPECT(equal(da, sendAmt));
+            BEAST_EXPECT(equal(sa, a1["HKD"](10)));
+            BEAST_EXPECT(same(st, stpath(g1Bs, m1, g2Sw)));
         }
 
         {
-            auto const& send_amt = A1["HKD"](10);
+            auto const& sendAmt = a1["HKD"](10);
             std::tie(st, sa, da) =
-                find_paths(env, A2, A1, send_amt, std::nullopt, A1["HKD"].currency, domainID);
-            BEAST_EXPECT(equal(da, send_amt));
-            BEAST_EXPECT(equal(sa, A2["HKD"](10)));
-            BEAST_EXPECT(same(st, stpath(G2SW, M1, G1BS)));
+                find_paths(env, a2, a1, sendAmt, std::nullopt, a1["HKD"].currency, domainID);
+            BEAST_EXPECT(equal(da, sendAmt));
+            BEAST_EXPECT(equal(sa, a2["HKD"](10)));
+            BEAST_EXPECT(same(st, stpath(g2Sw, m1, g1Bs)));
         }
 
         {
-            auto const& send_amt = A2["HKD"](10);
+            auto const& sendAmt = a2["HKD"](10);
             std::tie(st, sa, da) =
-                find_paths(env, G1BS, A2, send_amt, std::nullopt, A1["HKD"].currency, domainID);
-            BEAST_EXPECT(equal(da, send_amt));
-            BEAST_EXPECT(equal(sa, G1BS["HKD"](10)));
-            BEAST_EXPECT(same(st, stpath(M1, G2SW)));
+                find_paths(env, g1Bs, a2, sendAmt, std::nullopt, a1["HKD"].currency, domainID);
+            BEAST_EXPECT(equal(da, sendAmt));
+            BEAST_EXPECT(equal(sa, g1Bs["HKD"](10)));
+            BEAST_EXPECT(same(st, stpath(m1, g2Sw)));
         }
 
         {
-            auto const& send_amt = M1["HKD"](10);
+            auto const& sendAmt = m1["HKD"](10);
             std::tie(st, sa, da) =
-                find_paths(env, M1, G1BS, send_amt, std::nullopt, A1["HKD"].currency, domainID);
-            BEAST_EXPECT(equal(da, send_amt));
-            BEAST_EXPECT(equal(sa, M1["HKD"](10)));
+                find_paths(env, m1, g1Bs, sendAmt, std::nullopt, a1["HKD"].currency, domainID);
+            BEAST_EXPECT(equal(da, sendAmt));
+            BEAST_EXPECT(equal(sa, m1["HKD"](10)));
             BEAST_EXPECT(st.empty());
         }
 
         {
-            auto const& send_amt = A1["HKD"](10);
+            auto const& sendAmt = a1["HKD"](10);
             std::tie(st, sa, da) =
-                find_paths(env, G2SW, A1, send_amt, std::nullopt, A1["HKD"].currency, domainID);
-            BEAST_EXPECT(equal(da, send_amt));
-            BEAST_EXPECT(equal(sa, G2SW["HKD"](10)));
-            BEAST_EXPECT(same(st, stpath(M1, G1BS)));
+                find_paths(env, g2Sw, a1, sendAmt, std::nullopt, a1["HKD"].currency, domainID);
+            BEAST_EXPECT(equal(da, sendAmt));
+            BEAST_EXPECT(equal(sa, g2Sw["HKD"](10)));
+            BEAST_EXPECT(same(st, stpath(m1, g1Bs)));
         }
     }
 
@@ -1206,53 +1206,53 @@ public:
             (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account A3{"A3"};
-        Account A4{"A4"};
-        Account G1{"G1"};
-        Account G2{"G2"};
-        Account G3{"G3"};
-        Account G4{"G4"};
-        Account M1{"M1"};
-        Account M2{"M2"};
+        Account a1{"A1"};
+        Account a2{"A2"};
+        Account a3{"A3"};
+        Account a4{"A4"};
+        Account g1{"G1"};
+        Account g2{"G2"};
+        Account g3{"G3"};
+        Account g4{"G4"};
+        Account m1{"M1"};
+        Account m2{"M2"};
 
-        env.fund(XRP(1000), A1, A2, A3, G1, G2, G3, G4);
-        env.fund(XRP(10000), A4);
-        env.fund(XRP(11000), M1, M2);
+        env.fund(XRP(1000), a1, a2, a3, g1, g2, g3, g4);
+        env.fund(XRP(10000), a4);
+        env.fund(XRP(11000), m1, m2);
         env.close();
 
-        env.trust(G1["HKD"](2000), A1);
-        env.trust(G2["HKD"](2000), A2);
-        env.trust(G1["HKD"](2000), A3);
-        env.trust(G1["HKD"](100000), M1);
-        env.trust(G2["HKD"](100000), M1);
-        env.trust(G1["HKD"](100000), M2);
-        env.trust(G2["HKD"](100000), M2);
+        env.trust(g1["HKD"](2000), a1);
+        env.trust(g2["HKD"](2000), a2);
+        env.trust(g1["HKD"](2000), a3);
+        env.trust(g1["HKD"](100000), m1);
+        env.trust(g2["HKD"](100000), m1);
+        env.trust(g1["HKD"](100000), m2);
+        env.trust(g2["HKD"](100000), m2);
         env.close();
 
-        env(pay(G1, A1, G1["HKD"](1000)));
-        env(pay(G2, A2, G2["HKD"](1000)));
-        env(pay(G1, A3, G1["HKD"](1000)));
-        env(pay(G1, M1, G1["HKD"](1200)));
-        env(pay(G2, M1, G2["HKD"](5000)));
-        env(pay(G1, M2, G1["HKD"](1200)));
-        env(pay(G2, M2, G2["HKD"](5000)));
+        env(pay(g1, a1, g1["HKD"](1000)));
+        env(pay(g2, a2, g2["HKD"](1000)));
+        env(pay(g1, a3, g1["HKD"](1000)));
+        env(pay(g1, m1, g1["HKD"](1200)));
+        env(pay(g2, m1, g2["HKD"](5000)));
+        env(pay(g1, m2, g1["HKD"](1200)));
+        env(pay(g2, m2, g2["HKD"](5000)));
         env.close();
 
         std::optional<uint256> domainID;
         if (domainEnabled)
         {
-            domainID = setupDomain(env, {A1, A2, A3, A4, G1, G2, G3, G4, M1, M2});
-            env(offer(M1, G1["HKD"](1000), G2["HKD"](1000)), domain(*domainID));
-            env(offer(M2, XRP(10000), G2["HKD"](1000)), domain(*domainID));
-            env(offer(M2, G1["HKD"](1000), XRP(10000)), domain(*domainID));
+            domainID = setupDomain(env, {a1, a2, a3, a4, g1, g2, g3, g4, m1, m2});
+            env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)), domain(*domainID));
+            env(offer(m2, XRP(10000), g2["HKD"](1000)), domain(*domainID));
+            env(offer(m2, g1["HKD"](1000), XRP(10000)), domain(*domainID));
         }
         else
         {
-            env(offer(M1, G1["HKD"](1000), G2["HKD"](1000)));
-            env(offer(M2, XRP(10000), G2["HKD"](1000)));
-            env(offer(M2, G1["HKD"](1000), XRP(10000)));
+            env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)));
+            env(offer(m2, XRP(10000), g2["HKD"](1000)));
+            env(offer(m2, g1["HKD"](1000), XRP(10000)));
         }
 
         STPathSet st;
@@ -1261,83 +1261,83 @@ public:
         {
             // A) Borrow or repay --
             //  Source -> Destination (repay source issuer)
-            auto const& send_amt = G1["HKD"](10);
+            auto const& sendAmt = g1["HKD"](10);
             std::tie(st, sa, da) =
-                find_paths(env, A1, G1, send_amt, std::nullopt, G1["HKD"].currency, domainID);
+                find_paths(env, a1, g1, sendAmt, std::nullopt, g1["HKD"].currency, domainID);
             BEAST_EXPECT(st.empty());
-            BEAST_EXPECT(equal(da, send_amt));
-            BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+            BEAST_EXPECT(equal(da, sendAmt));
+            BEAST_EXPECT(equal(sa, a1["HKD"](10)));
         }
 
         {
             // A2) Borrow or repay --
             //  Source -> Destination (repay destination issuer)
-            auto const& send_amt = A1["HKD"](10);
+            auto const& sendAmt = a1["HKD"](10);
             std::tie(st, sa, da) =
-                find_paths(env, A1, G1, send_amt, std::nullopt, G1["HKD"].currency, domainID);
+                find_paths(env, a1, g1, sendAmt, std::nullopt, g1["HKD"].currency, domainID);
             BEAST_EXPECT(st.empty());
-            BEAST_EXPECT(equal(da, send_amt));
-            BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+            BEAST_EXPECT(equal(da, sendAmt));
+            BEAST_EXPECT(equal(sa, a1["HKD"](10)));
         }
 
         {
             // B) Common gateway --
             //  Source -> AC -> Destination
-            auto const& send_amt = A3["HKD"](10);
+            auto const& sendAmt = a3["HKD"](10);
             std::tie(st, sa, da) =
-                find_paths(env, A1, A3, send_amt, std::nullopt, G1["HKD"].currency, domainID);
-            BEAST_EXPECT(equal(da, send_amt));
-            BEAST_EXPECT(equal(sa, A1["HKD"](10)));
-            BEAST_EXPECT(same(st, stpath(G1)));
+                find_paths(env, a1, a3, sendAmt, std::nullopt, g1["HKD"].currency, domainID);
+            BEAST_EXPECT(equal(da, sendAmt));
+            BEAST_EXPECT(equal(sa, a1["HKD"](10)));
+            BEAST_EXPECT(same(st, stpath(g1)));
         }
 
         {
             // C) Gateway to gateway --
             //  Source -> OB -> Destination
-            auto const& send_amt = G2["HKD"](10);
+            auto const& sendAmt = g2["HKD"](10);
             std::tie(st, sa, da) =
-                find_paths(env, G1, G2, send_amt, std::nullopt, G1["HKD"].currency, domainID);
-            BEAST_EXPECT(equal(da, send_amt));
-            BEAST_EXPECT(equal(sa, G1["HKD"](10)));
+                find_paths(env, g1, g2, sendAmt, std::nullopt, g1["HKD"].currency, domainID);
+            BEAST_EXPECT(equal(da, sendAmt));
+            BEAST_EXPECT(equal(sa, g1["HKD"](10)));
             BEAST_EXPECT(same(
                 st,
-                stpath(IPE(G2["HKD"])),
-                stpath(M1),
-                stpath(M2),
-                stpath(IPE(xrpIssue()), IPE(G2["HKD"]))));
+                stpath(IPE(g2["HKD"])),
+                stpath(m1),
+                stpath(m2),
+                stpath(IPE(xrpIssue()), IPE(g2["HKD"]))));
         }
 
         {
             // D) User to unlinked gateway via order book --
             //  Source -> AC -> OB -> Destination
-            auto const& send_amt = G2["HKD"](10);
+            auto const& sendAmt = g2["HKD"](10);
             std::tie(st, sa, da) =
-                find_paths(env, A1, G2, send_amt, std::nullopt, G1["HKD"].currency, domainID);
-            BEAST_EXPECT(equal(da, send_amt));
-            BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+                find_paths(env, a1, g2, sendAmt, std::nullopt, g1["HKD"].currency, domainID);
+            BEAST_EXPECT(equal(da, sendAmt));
+            BEAST_EXPECT(equal(sa, a1["HKD"](10)));
             BEAST_EXPECT(same(
                 st,
-                stpath(G1, M1),
-                stpath(G1, M2),
-                stpath(G1, IPE(G2["HKD"])),
-                stpath(G1, IPE(xrpIssue()), IPE(G2["HKD"]))));
+                stpath(g1, m1),
+                stpath(g1, m2),
+                stpath(g1, IPE(g2["HKD"])),
+                stpath(g1, IPE(xrpIssue()), IPE(g2["HKD"]))));
         }
 
         {
             // I4) XRP bridge" --
             //  Source -> AC -> OB to XRP -> OB from XRP -> AC ->
             //  Destination
-            auto const& send_amt = A2["HKD"](10);
+            auto const& sendAmt = a2["HKD"](10);
             std::tie(st, sa, da) =
-                find_paths(env, A1, A2, send_amt, std::nullopt, G1["HKD"].currency, domainID);
-            BEAST_EXPECT(equal(da, send_amt));
-            BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+                find_paths(env, a1, a2, sendAmt, std::nullopt, g1["HKD"].currency, domainID);
+            BEAST_EXPECT(equal(da, sendAmt));
+            BEAST_EXPECT(equal(sa, a1["HKD"](10)));
             BEAST_EXPECT(same(
                 st,
-                stpath(G1, M1, G2),
-                stpath(G1, M2, G2),
-                stpath(G1, IPE(G2["HKD"]), G2),
-                stpath(G1, IPE(xrpIssue()), IPE(G2["HKD"]), G2)));
+                stpath(g1, m1, g2),
+                stpath(g1, m2, g2),
+                stpath(g1, IPE(g2["HKD"]), g2),
+                stpath(g1, IPE(xrpIssue()), IPE(g2["HKD"]), g2)));
         }
     }
 
@@ -1349,51 +1349,51 @@ public:
             (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account A3{"A3"};
-        Account G1{"G1"};
-        Account G2{"G2"};
-        Account M1{"M1"};
+        Account a1{"A1"};
+        Account a2{"A2"};
+        Account a3{"A3"};
+        Account g1{"G1"};
+        Account g2{"G2"};
+        Account m1{"M1"};
 
-        env.fund(XRP(11000), M1);
-        env.fund(XRP(1000), A1, A2, A3, G1, G2);
+        env.fund(XRP(11000), m1);
+        env.fund(XRP(1000), a1, a2, a3, g1, g2);
         env.close();
 
-        env.trust(G1["HKD"](2000), A1);
-        env.trust(G2["HKD"](2000), A2);
-        env.trust(A2["HKD"](2000), A3);
-        env.trust(G1["HKD"](100000), M1);
-        env.trust(G2["HKD"](100000), M1);
+        env.trust(g1["HKD"](2000), a1);
+        env.trust(g2["HKD"](2000), a2);
+        env.trust(a2["HKD"](2000), a3);
+        env.trust(g1["HKD"](100000), m1);
+        env.trust(g2["HKD"](100000), m1);
         env.close();
 
-        env(pay(G1, A1, G1["HKD"](1000)));
-        env(pay(G2, A2, G2["HKD"](1000)));
-        env(pay(G1, M1, G1["HKD"](5000)));
-        env(pay(G2, M1, G2["HKD"](5000)));
+        env(pay(g1, a1, g1["HKD"](1000)));
+        env(pay(g2, a2, g2["HKD"](1000)));
+        env(pay(g1, m1, g1["HKD"](5000)));
+        env(pay(g2, m1, g2["HKD"](5000)));
         env.close();
 
         std::optional<uint256> domainID;
         if (domainEnabled)
         {
-            domainID = setupDomain(env, {A1, A2, A3, G1, G2, M1});
-            env(offer(M1, G1["HKD"](1000), G2["HKD"](1000)), domain(*domainID));
+            domainID = setupDomain(env, {a1, a2, a3, g1, g2, m1});
+            env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)), domain(*domainID));
         }
         else
         {
-            env(offer(M1, G1["HKD"](1000), G2["HKD"](1000)));
+            env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)));
         }
 
         // E) Gateway to user
         //  Source -> OB -> AC -> Destination
-        auto const& send_amt = A2["HKD"](10);
+        auto const& sendAmt = a2["HKD"](10);
         STPathSet st;
         STAmount sa, da;
         std::tie(st, sa, da) =
-            find_paths(env, G1, A2, send_amt, std::nullopt, G1["HKD"].currency, domainID);
-        BEAST_EXPECT(equal(da, send_amt));
-        BEAST_EXPECT(equal(sa, G1["HKD"](10)));
-        BEAST_EXPECT(same(st, stpath(M1, G2), stpath(IPE(G2["HKD"]), G2)));
+            find_paths(env, g1, a2, sendAmt, std::nullopt, g1["HKD"].currency, domainID);
+        BEAST_EXPECT(equal(da, sendAmt));
+        BEAST_EXPECT(equal(sa, g1["HKD"](10)));
+        BEAST_EXPECT(same(st, stpath(m1, g2), stpath(IPE(g2["HKD"]), g2)));
     }
 
     void
@@ -1406,40 +1406,40 @@ public:
         auto const bob = Account("bob");
         auto const charlie = Account("charlie");
         auto const gw = Account("gw");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         {
             // XRP -> IOU receive max
             Env env = pathTestEnv();
             env.fund(XRP(10000), alice, bob, charlie, gw);
             env.close();
-            env.trust(USD(100), alice, bob, charlie);
+            env.trust(usd(100), alice, bob, charlie);
             env.close();
-            env(pay(gw, charlie, USD(10)));
+            env(pay(gw, charlie, usd(10)));
             env.close();
 
             std::optional<uint256> domainID;
             if (domainEnabled)
             {
                 domainID = setupDomain(env, {alice, bob, charlie, gw});
-                env(offer(charlie, XRP(10), USD(10)), domain(*domainID));
+                env(offer(charlie, XRP(10), usd(10)), domain(*domainID));
                 env.close();
             }
             else
             {
-                env(offer(charlie, XRP(10), USD(10)));
+                env(offer(charlie, XRP(10), usd(10)));
                 env.close();
             }
 
             auto [st, sa, da] =
-                find_paths(env, alice, bob, USD(-1), XRP(100).value(), std::nullopt, domainID);
+                find_paths(env, alice, bob, usd(-1), XRP(100).value(), std::nullopt, domainID);
             BEAST_EXPECT(sa == XRP(10));
-            BEAST_EXPECT(equal(da, USD(10)));
+            BEAST_EXPECT(equal(da, usd(10)));
             if (BEAST_EXPECT(st.size() == 1 && st[0].size() == 1))
             {
                 auto const& pathElem = st[0][0];
                 BEAST_EXPECT(
                     pathElem.isOffer() && pathElem.getIssuerID() == gw.id() &&
-                    pathElem.getCurrency() == USD.currency);
+                    pathElem.getCurrency() == usd.currency);
             }
         }
         {
@@ -1447,27 +1447,27 @@ public:
             Env env = pathTestEnv();
             env.fund(XRP(10000), alice, bob, charlie, gw);
             env.close();
-            env.trust(USD(100), alice, bob, charlie);
+            env.trust(usd(100), alice, bob, charlie);
             env.close();
-            env(pay(gw, alice, USD(10)));
+            env(pay(gw, alice, usd(10)));
             env.close();
 
             std::optional<uint256> domainID;
             if (domainEnabled)
             {
                 domainID = setupDomain(env, {alice, bob, charlie, gw});
-                env(offer(charlie, USD(10), XRP(10)), domain(*domainID));
+                env(offer(charlie, usd(10), XRP(10)), domain(*domainID));
                 env.close();
             }
             else
             {
-                env(offer(charlie, USD(10), XRP(10)));
+                env(offer(charlie, usd(10), XRP(10)));
                 env.close();
             }
 
             auto [st, sa, da] =
-                find_paths(env, alice, bob, drops(-1), USD(100).value(), std::nullopt, domainID);
-            BEAST_EXPECT(sa == USD(10));
+                find_paths(env, alice, bob, drops(-1), usd(100).value(), std::nullopt, domainID);
+            BEAST_EXPECT(sa == usd(10));
             BEAST_EXPECT(equal(da, XRP(10)));
             if (BEAST_EXPECT(st.size() == 1 && st[0].size() == 1))
             {
@@ -1490,7 +1490,7 @@ public:
         auto const alice = Account("alice");
         auto const bob = Account("bob");
         auto const george = Account("george");
-        auto const USD = george["USD"];
+        auto const usd = george["USD"];
         auto test = [&](std::string casename, bool aliceRipple, bool bobRipple, bool expectPath) {
             testcase(casename);
 
@@ -1499,12 +1499,12 @@ public:
             env.close();
             // Set the same flags at both ends of the trustline, even though
             // only george's matter.
-            env(trust(alice, USD(100), aliceRipple ? tfClearNoRipple : tfSetNoRipple));
+            env(trust(alice, usd(100), aliceRipple ? tfClearNoRipple : tfSetNoRipple));
             env(trust(george, alice["USD"](100), aliceRipple ? tfClearNoRipple : tfSetNoRipple));
-            env(trust(bob, USD(100), bobRipple ? tfClearNoRipple : tfSetNoRipple));
+            env(trust(bob, usd(100), bobRipple ? tfClearNoRipple : tfSetNoRipple));
             env(trust(george, bob["USD"](100), bobRipple ? tfClearNoRipple : tfSetNoRipple));
             env.close();
-            env(pay(george, alice, USD(70)));
+            env(pay(george, alice, usd(70)));
             env.close();
 
             auto [st, sa, da] = find_paths(env, "alice", "bob", Account("bob")["USD"](5));
@@ -1539,45 +1539,45 @@ public:
         // lambda param that creates different types of offers
         auto testPathfind = [&](auto func, bool const domainEnabled = false) {
             Env env = pathTestEnv();
-            Account A1{"A1"};
-            Account A2{"A2"};
-            Account A3{"A3"};
-            Account A4{"A4"};
-            Account G1{"G1"};
-            Account G2{"G2"};
-            Account G3{"G3"};
-            Account G4{"G4"};
-            Account M1{"M1"};
-            Account M2{"M2"};
+            Account a1{"A1"};
+            Account a2{"A2"};
+            Account a3{"A3"};
+            Account a4{"A4"};
+            Account g1{"G1"};
+            Account g2{"G2"};
+            Account g3{"G3"};
+            Account g4{"G4"};
+            Account m1{"M1"};
+            Account m2{"M2"};
 
-            env.fund(XRP(1000), A1, A2, A3, G1, G2, G3, G4);
-            env.fund(XRP(10000), A4);
-            env.fund(XRP(11000), M1, M2);
+            env.fund(XRP(1000), a1, a2, a3, g1, g2, g3, g4);
+            env.fund(XRP(10000), a4);
+            env.fund(XRP(11000), m1, m2);
             env.close();
 
-            env.trust(G1["HKD"](2000), A1);
-            env.trust(G2["HKD"](2000), A2);
-            env.trust(G1["HKD"](2000), A3);
-            env.trust(G1["HKD"](100000), M1);
-            env.trust(G2["HKD"](100000), M1);
-            env.trust(G1["HKD"](100000), M2);
-            env.trust(G2["HKD"](100000), M2);
+            env.trust(g1["HKD"](2000), a1);
+            env.trust(g2["HKD"](2000), a2);
+            env.trust(g1["HKD"](2000), a3);
+            env.trust(g1["HKD"](100000), m1);
+            env.trust(g2["HKD"](100000), m1);
+            env.trust(g1["HKD"](100000), m2);
+            env.trust(g2["HKD"](100000), m2);
             env.close();
 
-            env(pay(G1, A1, G1["HKD"](1000)));
-            env(pay(G2, A2, G2["HKD"](1000)));
-            env(pay(G1, A3, G1["HKD"](1000)));
-            env(pay(G1, M1, G1["HKD"](1200)));
-            env(pay(G2, M1, G2["HKD"](5000)));
-            env(pay(G1, M2, G1["HKD"](1200)));
-            env(pay(G2, M2, G2["HKD"](5000)));
+            env(pay(g1, a1, g1["HKD"](1000)));
+            env(pay(g2, a2, g2["HKD"](1000)));
+            env(pay(g1, a3, g1["HKD"](1000)));
+            env(pay(g1, m1, g1["HKD"](1200)));
+            env(pay(g2, m1, g2["HKD"](5000)));
+            env(pay(g1, m2, g1["HKD"](1200)));
+            env(pay(g2, m2, g2["HKD"](5000)));
             env.close();
 
             std::optional<uint256> domainID =
-                setupDomain(env, {A1, A2, A3, A4, G1, G2, G3, G4, M1, M2});
+                setupDomain(env, {a1, a2, a3, a4, g1, g2, g3, g4, m1, m2});
             BEAST_EXPECT(domainID);
 
-            func(env, M1, M2, G1, G2, *domainID);
+            func(env, m1, m2, g1, g2, *domainID);
 
             STPathSet st;
             STAmount sa, da;
@@ -1585,119 +1585,119 @@ public:
             {
                 // A) Borrow or repay --
                 //  Source -> Destination (repay source issuer)
-                auto const& send_amt = G1["HKD"](10);
+                auto const& sendAmt = g1["HKD"](10);
                 std::tie(st, sa, da) = find_paths(
                     env,
-                    A1,
-                    G1,
-                    send_amt,
+                    a1,
+                    g1,
+                    sendAmt,
                     std::nullopt,
-                    G1["HKD"].currency,
+                    g1["HKD"].currency,
                     domainEnabled ? domainID : std::nullopt);
                 BEAST_EXPECT(st.empty());
-                BEAST_EXPECT(equal(da, send_amt));
-                BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+                BEAST_EXPECT(equal(da, sendAmt));
+                BEAST_EXPECT(equal(sa, a1["HKD"](10)));
             }
 
             {
                 // A2) Borrow or repay --
                 //  Source -> Destination (repay destination issuer)
-                auto const& send_amt = A1["HKD"](10);
+                auto const& sendAmt = a1["HKD"](10);
                 std::tie(st, sa, da) = find_paths(
                     env,
-                    A1,
-                    G1,
-                    send_amt,
+                    a1,
+                    g1,
+                    sendAmt,
                     std::nullopt,
-                    G1["HKD"].currency,
+                    g1["HKD"].currency,
                     domainEnabled ? domainID : std::nullopt);
                 BEAST_EXPECT(st.empty());
-                BEAST_EXPECT(equal(da, send_amt));
-                BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+                BEAST_EXPECT(equal(da, sendAmt));
+                BEAST_EXPECT(equal(sa, a1["HKD"](10)));
             }
 
             {
                 // B) Common gateway --
                 //  Source -> AC -> Destination
-                auto const& send_amt = A3["HKD"](10);
+                auto const& sendAmt = a3["HKD"](10);
                 std::tie(st, sa, da) = find_paths(
                     env,
-                    A1,
-                    A3,
-                    send_amt,
+                    a1,
+                    a3,
+                    sendAmt,
                     std::nullopt,
-                    G1["HKD"].currency,
+                    g1["HKD"].currency,
                     domainEnabled ? domainID : std::nullopt);
-                BEAST_EXPECT(equal(da, send_amt));
-                BEAST_EXPECT(equal(sa, A1["HKD"](10)));
-                BEAST_EXPECT(same(st, stpath(G1)));
+                BEAST_EXPECT(equal(da, sendAmt));
+                BEAST_EXPECT(equal(sa, a1["HKD"](10)));
+                BEAST_EXPECT(same(st, stpath(g1)));
             }
 
             {
                 // C) Gateway to gateway --
                 //  Source -> OB -> Destination
-                auto const& send_amt = G2["HKD"](10);
+                auto const& sendAmt = g2["HKD"](10);
                 std::tie(st, sa, da) = find_paths(
                     env,
-                    G1,
-                    G2,
-                    send_amt,
+                    g1,
+                    g2,
+                    sendAmt,
                     std::nullopt,
-                    G1["HKD"].currency,
+                    g1["HKD"].currency,
                     domainEnabled ? domainID : std::nullopt);
-                BEAST_EXPECT(equal(da, send_amt));
-                BEAST_EXPECT(equal(sa, G1["HKD"](10)));
+                BEAST_EXPECT(equal(da, sendAmt));
+                BEAST_EXPECT(equal(sa, g1["HKD"](10)));
                 BEAST_EXPECT(same(
                     st,
-                    stpath(IPE(G2["HKD"])),
-                    stpath(M1),
-                    stpath(M2),
-                    stpath(IPE(xrpIssue()), IPE(G2["HKD"]))));
+                    stpath(IPE(g2["HKD"])),
+                    stpath(m1),
+                    stpath(m2),
+                    stpath(IPE(xrpIssue()), IPE(g2["HKD"]))));
             }
 
             {
                 // D) User to unlinked gateway via order book --
                 //  Source -> AC -> OB -> Destination
-                auto const& send_amt = G2["HKD"](10);
+                auto const& sendAmt = g2["HKD"](10);
                 std::tie(st, sa, da) = find_paths(
                     env,
-                    A1,
-                    G2,
-                    send_amt,
+                    a1,
+                    g2,
+                    sendAmt,
                     std::nullopt,
-                    G1["HKD"].currency,
+                    g1["HKD"].currency,
                     domainEnabled ? domainID : std::nullopt);
-                BEAST_EXPECT(equal(da, send_amt));
-                BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+                BEAST_EXPECT(equal(da, sendAmt));
+                BEAST_EXPECT(equal(sa, a1["HKD"](10)));
                 BEAST_EXPECT(same(
                     st,
-                    stpath(G1, M1),
-                    stpath(G1, M2),
-                    stpath(G1, IPE(G2["HKD"])),
-                    stpath(G1, IPE(xrpIssue()), IPE(G2["HKD"]))));
+                    stpath(g1, m1),
+                    stpath(g1, m2),
+                    stpath(g1, IPE(g2["HKD"])),
+                    stpath(g1, IPE(xrpIssue()), IPE(g2["HKD"]))));
             }
 
             {
                 // I4) XRP bridge" --
                 //  Source -> AC -> OB to XRP -> OB from XRP -> AC ->
                 //  Destination
-                auto const& send_amt = A2["HKD"](10);
+                auto const& sendAmt = a2["HKD"](10);
                 std::tie(st, sa, da) = find_paths(
                     env,
-                    A1,
-                    A2,
-                    send_amt,
+                    a1,
+                    a2,
+                    sendAmt,
                     std::nullopt,
-                    G1["HKD"].currency,
+                    g1["HKD"].currency,
                     domainEnabled ? domainID : std::nullopt);
-                BEAST_EXPECT(equal(da, send_amt));
-                BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+                BEAST_EXPECT(equal(da, sendAmt));
+                BEAST_EXPECT(equal(sa, a1["HKD"](10)));
                 BEAST_EXPECT(same(
                     st,
-                    stpath(G1, M1, G2),
-                    stpath(G1, M2, G2),
-                    stpath(G1, IPE(G2["HKD"]), G2),
-                    stpath(G1, IPE(xrpIssue()), IPE(G2["HKD"]), G2)));
+                    stpath(g1, m1, g2),
+                    stpath(g1, m2, g2),
+                    stpath(g1, IPE(g2["HKD"]), g2),
+                    stpath(g1, IPE(xrpIssue()), IPE(g2["HKD"]), g2)));
             }
         };
 
@@ -1706,54 +1706,54 @@ public:
         // order book
         {
             testPathfind(
-                [](Env& env, Account M1, Account M2, Account G1, Account G2, uint256 domainID) {
-                    env(offer(M1, G1["HKD"](1000), G2["HKD"](1000)),
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                    env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)),
                         domain(domainID),
                         txflags(tfHybrid));
-                    env(offer(M2, XRP(10000), G2["HKD"](1000)));
-                    env(offer(M2, G1["HKD"](1000), XRP(10000)));
+                    env(offer(m2, XRP(10000), g2["HKD"](1000)));
+                    env(offer(m2, g1["HKD"](1000), XRP(10000)));
                 });
 
             testPathfind(
-                [](Env& env, Account M1, Account M2, Account G1, Account G2, uint256 domainID) {
-                    env(offer(M1, G1["HKD"](1000), G2["HKD"](1000)),
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                    env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)),
                         domain(domainID),
                         txflags(tfHybrid));
-                    env(offer(M2, XRP(10000), G2["HKD"](1000)),
+                    env(offer(m2, XRP(10000), g2["HKD"](1000)),
                         domain(domainID),
                         txflags(tfHybrid));
-                    env(offer(M2, G1["HKD"](1000), XRP(10000)));
+                    env(offer(m2, g1["HKD"](1000), XRP(10000)));
                 });
 
             testPathfind(
-                [](Env& env, Account M1, Account M2, Account G1, Account G2, uint256 domainID) {
-                    env(offer(M1, G1["HKD"](1000), G2["HKD"](1000)),
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                    env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)),
                         domain(domainID),
                         txflags(tfHybrid));
-                    env(offer(M2, XRP(10000), G2["HKD"](1000)),
+                    env(offer(m2, XRP(10000), g2["HKD"](1000)),
                         domain(domainID),
                         txflags(tfHybrid));
-                    env(offer(M2, G1["HKD"](1000), XRP(10000)),
-                        domain(domainID),
-                        txflags(tfHybrid));
-                });
-
-            testPathfind(
-                [](Env& env, Account M1, Account M2, Account G1, Account G2, uint256 domainID) {
-                    env(offer(M1, G1["HKD"](1000), G2["HKD"](1000)));
-                    env(offer(M2, XRP(10000), G2["HKD"](1000)));
-                    env(offer(M2, G1["HKD"](1000), XRP(10000)),
+                    env(offer(m2, g1["HKD"](1000), XRP(10000)),
                         domain(domainID),
                         txflags(tfHybrid));
                 });
 
             testPathfind(
-                [](Env& env, Account M1, Account M2, Account G1, Account G2, uint256 domainID) {
-                    env(offer(M1, G1["HKD"](1000), G2["HKD"](1000)));
-                    env(offer(M2, XRP(10000), G2["HKD"](1000)),
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                    env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)));
+                    env(offer(m2, XRP(10000), g2["HKD"](1000)));
+                    env(offer(m2, g1["HKD"](1000), XRP(10000)),
                         domain(domainID),
                         txflags(tfHybrid));
-                    env(offer(M2, G1["HKD"](1000), XRP(10000)),
+                });
+
+            testPathfind(
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                    env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)));
+                    env(offer(m2, XRP(10000), g2["HKD"](1000)),
+                        domain(domainID),
+                        txflags(tfHybrid));
+                    env(offer(m2, g1["HKD"](1000), XRP(10000)),
                         domain(domainID),
                         txflags(tfHybrid));
                 });
@@ -1764,44 +1764,44 @@ public:
         // order book
         {
             testPathfind(
-                [](Env& env, Account M1, Account M2, Account G1, Account G2, uint256 domainID) {
-                    env(offer(M1, G1["HKD"](1000), G2["HKD"](1000)),
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                    env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)),
                         domain(domainID),
                         txflags(tfHybrid));
-                    env(offer(M2, XRP(10000), G2["HKD"](1000)), domain(domainID));
-                    env(offer(M2, G1["HKD"](1000), XRP(10000)), domain(domainID));
+                    env(offer(m2, XRP(10000), g2["HKD"](1000)), domain(domainID));
+                    env(offer(m2, g1["HKD"](1000), XRP(10000)), domain(domainID));
                 },
                 true);
 
             testPathfind(
-                [](Env& env, Account M1, Account M2, Account G1, Account G2, uint256 domainID) {
-                    env(offer(M1, G1["HKD"](1000), G2["HKD"](1000)),
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                    env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)),
                         domain(domainID),
                         txflags(tfHybrid));
-                    env(offer(M2, XRP(10000), G2["HKD"](1000)),
+                    env(offer(m2, XRP(10000), g2["HKD"](1000)),
                         domain(domainID),
                         txflags(tfHybrid));
-                    env(offer(M2, G1["HKD"](1000), XRP(10000)), domain(domainID));
+                    env(offer(m2, g1["HKD"](1000), XRP(10000)), domain(domainID));
                 },
                 true);
 
             testPathfind(
-                [](Env& env, Account M1, Account M2, Account G1, Account G2, uint256 domainID) {
-                    env(offer(M1, G1["HKD"](1000), G2["HKD"](1000)), domain(domainID));
-                    env(offer(M2, XRP(10000), G2["HKD"](1000)), domain(domainID));
-                    env(offer(M2, G1["HKD"](1000), XRP(10000)),
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                    env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)), domain(domainID));
+                    env(offer(m2, XRP(10000), g2["HKD"](1000)), domain(domainID));
+                    env(offer(m2, g1["HKD"](1000), XRP(10000)),
                         domain(domainID),
                         txflags(tfHybrid));
                 },
                 true);
 
             testPathfind(
-                [](Env& env, Account M1, Account M2, Account G1, Account G2, uint256 domainID) {
-                    env(offer(M1, G1["HKD"](1000), G2["HKD"](1000)), domain(domainID));
-                    env(offer(M2, XRP(10000), G2["HKD"](1000)),
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                    env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)), domain(domainID));
+                    env(offer(m2, XRP(10000), g2["HKD"](1000)),
                         domain(domainID),
                         txflags(tfHybrid));
-                    env(offer(M2, G1["HKD"](1000), XRP(10000)),
+                    env(offer(m2, g1["HKD"](1000), XRP(10000)),
                         domain(domainID),
                         txflags(tfHybrid));
                 },
@@ -1822,15 +1822,15 @@ public:
         STPathSet st;
         STAmount sa, da;
 
-        auto const& send_amt = XRP(1);
+        auto const& sendAmt = XRP(1);
 
         // doing pathfind with domain won't include amm
         std::tie(st, sa, da) =
-            find_paths(env, bob, carol, send_amt, std::nullopt, USD.currency, domainID);
+            find_paths(env, bob, carol, sendAmt, std::nullopt, USD.currency, domainID);
         BEAST_EXPECT(st.empty());
 
         // a non-domain pathfind returns amm in the path
-        std::tie(st, sa, da) = find_paths(env, bob, carol, send_amt, std::nullopt, USD.currency);
+        std::tie(st, sa, da) = find_paths(env, bob, carol, sendAmt, std::nullopt, USD.currency);
         BEAST_EXPECT(same(st, stpath(gw, IPE(xrpIssue()))));
     }
 

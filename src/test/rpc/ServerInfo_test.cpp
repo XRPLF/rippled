@@ -105,12 +105,12 @@ admin = 127.0.0.1
             Env env(*this, makeValidatorConfig());
             auto const& config = env.app().config();
 
-            auto const rpc_port = config["port_rpc"].get<unsigned int>("port");
-            auto const grpc_port = config[SECTION_PORT_GRPC].get<unsigned int>("port");
-            auto const ws_port = config["port_ws"].get<unsigned int>("port");
-            BEAST_EXPECT(grpc_port);
-            BEAST_EXPECT(rpc_port);
-            BEAST_EXPECT(ws_port);
+            auto const rpcPort = config["port_rpc"].get<unsigned int>("port");
+            auto const grpcPort = config[SECTION_PORT_GRPC].get<unsigned int>("port");
+            auto const wsPort = config["port_ws"].get<unsigned int>("port");
+            BEAST_EXPECT(grpcPort);
+            BEAST_EXPECT(rpcPort);
+            BEAST_EXPECT(wsPort);
 
             auto const result = env.rpc("server_info");
             BEAST_EXPECT(!result[jss::result].isMember(jss::error));
@@ -127,19 +127,19 @@ admin = 127.0.0.1
                 auto const& proto = port[jss::protocol];
                 BEAST_EXPECT(proto.isArray());
                 auto const p = port[jss::port].asUInt();
-                BEAST_EXPECT(p == rpc_port || p == ws_port || p == grpc_port);
-                if (p == grpc_port)
+                BEAST_EXPECT(p == rpcPort || p == wsPort || p == grpcPort);
+                if (p == grpcPort)
                 {
                     BEAST_EXPECT(proto.size() == 1);
                     BEAST_EXPECT(proto[0u].asString() == "grpc");
                 }
-                if (p == rpc_port)
+                if (p == rpcPort)
                 {
                     BEAST_EXPECT(proto.size() == 2);
                     BEAST_EXPECT(proto[0u].asString() == "http");
                     BEAST_EXPECT(proto[1u].asString() == "ws2");
                 }
-                if (p == ws_port)
+                if (p == wsPort)
                 {
                     BEAST_EXPECT(proto.size() == 1);
                     BEAST_EXPECT(proto[0u].asString() == "ws");

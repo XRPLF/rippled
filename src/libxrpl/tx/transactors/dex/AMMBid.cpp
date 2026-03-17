@@ -147,15 +147,15 @@ AMMBid::preclaim(PreclaimContext const& ctx)
 }
 
 static std::pair<TER, bool>
-applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Journal j_)
+applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journal j)
 {
     using namespace std::chrono;
-    auto const ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
+    auto const ammSle = sb.peek(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
     if (!ammSle)
         return {tecINTERNAL, false};
     STAmount const lptAMMBalance = (*ammSle)[sfLPTokenBalance];
-    auto const lpTokens = ammLPHolds(sb, *ammSle, account_, ctx_.journal);
-    auto const& rules = ctx_.view().rules();
+    auto const lpTokens = ammLPHolds(sb, *ammSle, account, ctx.journal);
+    auto const& rules = ctx.view().rules();
     if (!rules.enabled(fixInnerObjTemplate))
     {
         if (!ammSle->isFieldPresent(sfAuctionSlot))
@@ -169,7 +169,7 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
     }
     auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
     auto const current =
-        duration_cast<seconds>(ctx_.view().header().parentCloseTime.time_since_epoch()).count();
+        duration_cast<seconds>(ctx.view().header().parentCloseTime.time_since_epoch()).count();
     // Auction slot discounted fee
     auto const discountedFee = (*ammSle)[sfTradingFee] / AUCTION_SLOT_DISCOUNTED_FEE_FRACTION;
     auto const tradingFee = getFee((*ammSle)[sfTradingFee]);
@@ -190,15 +190,15 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
     };
 
     auto updateSlot = [&](std::uint32_t fee, Number const& minPrice, Number const& burn) -> TER {
-        auctionSlot.setAccountID(sfAccount, account_);
+        auctionSlot.setAccountID(sfAccount, account);
         auctionSlot.setFieldU32(sfExpiration, current + TOTAL_TIME_SLOT_SECS);
         if (fee != 0)
             auctionSlot.setFieldU16(sfDiscountedFee, fee);
         else if (auctionSlot.isFieldPresent(sfDiscountedFee))
             auctionSlot.makeFieldAbsent(sfDiscountedFee);
         auctionSlot.setFieldAmount(sfPrice, toSTAmount(lpTokens.issue(), minPrice));
-        if (ctx_.tx.isFieldPresent(sfAuthAccounts))
-            auctionSlot.setFieldArray(sfAuthAccounts, ctx_.tx.getFieldArray(sfAuthAccounts));
+        if (ctx.tx.isFieldPresent(sfAuthAccounts))
+            auctionSlot.setFieldArray(sfAuthAccounts, ctx.tx.getFieldArray(sfAuthAccounts));
         else
             auctionSlot.makeFieldAbsent(sfAuthAccounts);
         // Burn the remaining bid amount
@@ -208,15 +208,15 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
         {
             // This error case should never occur.
             // LCOV_EXCL_START
-            JLOG(ctx_.journal.fatal())
+            JLOG(ctx.journal.fatal())
                 << "AMM Bid: LP Token burn exceeds AMM balance " << burn << " " << lptAMMBalance;
             return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
-        auto res = redeemIOU(sb, account_, saBurn, lpTokens.issue(), ctx_.journal);
+        auto res = redeemIOU(sb, account, saBurn, lpTokens.issue(), ctx.journal);
         if (res != tesSUCCESS)
         {
-            JLOG(ctx_.journal.debug()) << "AMM Bid: failed to redeem.";
+            JLOG(ctx.journal.debug()) << "AMM Bid: failed to redeem.";
             return res;
         }
         ammSle->setFieldAmount(sfLPTokenBalance, lptAMMBalance - saBurn);
@@ -226,8 +226,8 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
 
     TER res = tesSUCCESS;
 
-    auto const bidMin = ctx_.tx[~sfBidMin];
-    auto const bidMax = ctx_.tx[~sfBidMax];
+    auto const bidMin = ctx.tx[~sfBidMin];
+    auto const bidMax = ctx.tx[~sfBidMax];
 
     auto getPayPrice = [&](Number const& computedPrice) -> Expected<Number, TER> {
         auto const payPrice = [&]() -> std::optional<Number> {
@@ -236,8 +236,8 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
             {
                 if (computedPrice <= *bidMax)
                     return std::max(computedPrice, Number(*bidMin));
-                JLOG(ctx_.journal.debug()) << "AMM Bid: not in range " << computedPrice << " "
-                                           << *bidMin << " " << *bidMax;
+                JLOG(ctx.journal.debug()) << "AMM Bid: not in range " << computedPrice << " "
+                                          << *bidMin << " " << *bidMax;
                 return std::nullopt;
             }
             // Bidder pays max(bidPrice, computedPrice)
@@ -249,7 +249,7 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
             {
                 if (computedPrice <= *bidMax)
                     return computedPrice;
-                JLOG(ctx_.journal.debug())
+                JLOG(ctx.journal.debug())
                     << "AMM Bid: not in range " << computedPrice << " " << *bidMax;
                 return std::nullopt;
             }
@@ -279,12 +279,12 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
         auto const fractionUsed = (Number(*timeSlot) + 1) / AUCTION_SLOT_TIME_INTERVALS;
         auto const fractionRemaining = Number(1) - fractionUsed;
         auto const computedPrice = [&]() -> Number {
-            auto const p1_05 = Number(105, -2);
+            auto const p105 = Number(105, -2);
             // First interval slot price
             if (*timeSlot == 0)
-                return pricePurchased * p1_05 + minSlotPrice;
+                return pricePurchased * p105 + minSlotPrice;
             // Other intervals slot price
-            return pricePurchased * p1_05 * (1 - power(fractionUsed, 60)) + minSlotPrice;
+            return pricePurchased * p105 * (1 - power(fractionUsed, 60)) + minSlotPrice;
         }();
 
         auto const payPrice = getPayPrice(computedPrice);
@@ -298,19 +298,15 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
         if (refund > *payPrice)
         {
             // This error case should never occur.
-            JLOG(ctx_.journal.fatal())
+            JLOG(ctx.journal.fatal())
                 << "AMM Bid: refund exceeds payPrice " << refund << " " << *payPrice;
             return {tecINTERNAL, false};
         }
         res = accountSend(
-            sb,
-            account_,
-            auctionSlot[sfAccount],
-            toSTAmount(lpTokens.issue(), refund),
-            ctx_.journal);
+            sb, account, auctionSlot[sfAccount], toSTAmount(lpTokens.issue(), refund), ctx.journal);
         if (res != tesSUCCESS)
         {
-            JLOG(ctx_.journal.debug()) << "AMM Bid: failed to refund.";
+            JLOG(ctx.journal.debug()) << "AMM Bid: failed to refund.";
             return {res, false};
         }
 

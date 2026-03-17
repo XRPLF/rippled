@@ -850,72 +850,71 @@ public:
         {
             testcase("apply");
 
-            auto const sk_a = randomSecretKey();
-            auto const pk_a = derivePublicKey(KeyType::ed25519, sk_a);
-            auto const kp_a0 = randomKeyPair(KeyType::secp256k1);
-            auto const kp_a1 = randomKeyPair(KeyType::secp256k1);
-            auto const s_a0 =
-                makeManifest(sk_a, KeyType::ed25519, kp_a0.second, KeyType::secp256k1, 0);
-            auto const s_a1 =
-                makeManifest(sk_a, KeyType::ed25519, kp_a1.second, KeyType::secp256k1, 1);
-            auto const s_a2 =
-                makeManifest(sk_a, KeyType::ed25519, kp_a1.second, KeyType::secp256k1, 2);
-            auto const s_aMax = makeRevocation(sk_a, KeyType::ed25519);
+            auto const skA = randomSecretKey();
+            auto const pkA = derivePublicKey(KeyType::ed25519, skA);
+            auto const kpA0 = randomKeyPair(KeyType::secp256k1);
+            auto const kpA1 = randomKeyPair(KeyType::secp256k1);
+            auto const sA0 =
+                makeManifest(skA, KeyType::ed25519, kpA0.second, KeyType::secp256k1, 0);
+            auto const sA1 =
+                makeManifest(skA, KeyType::ed25519, kpA1.second, KeyType::secp256k1, 1);
+            auto const sA2 =
+                makeManifest(skA, KeyType::ed25519, kpA1.second, KeyType::secp256k1, 2);
+            auto const sAMax = makeRevocation(skA, KeyType::ed25519);
 
-            auto const sk_b = randomSecretKey();
-            auto const kp_b0 = randomKeyPair(KeyType::secp256k1);
-            auto const kp_b1 = randomKeyPair(KeyType::secp256k1);
-            auto const kp_b2 = randomKeyPair(KeyType::secp256k1);
-            auto const s_b0 =
-                makeManifest(sk_b, KeyType::ed25519, kp_b0.second, KeyType::secp256k1, 0);
-            auto const s_b1 = makeManifest(
-                sk_b,
+            auto const skB = randomSecretKey();
+            auto const kpB0 = randomKeyPair(KeyType::secp256k1);
+            auto const kpB1 = randomKeyPair(KeyType::secp256k1);
+            auto const kpB2 = randomKeyPair(KeyType::secp256k1);
+            auto const sB0 =
+                makeManifest(skB, KeyType::ed25519, kpB0.second, KeyType::secp256k1, 0);
+            auto const sB1 = makeManifest(
+                skB,
                 KeyType::ed25519,
-                kp_b1.second,
+                kpB1.second,
                 KeyType::secp256k1,
                 1,
                 true);  // invalidSig
-            auto const s_b2 =
-                makeManifest(sk_b, KeyType::ed25519, kp_b2.second, KeyType::ed25519, 2);
+            auto const sB2 = makeManifest(skB, KeyType::ed25519, kpB2.second, KeyType::ed25519, 2);
 
-            auto const fake = s_b2.serialized + '\0';
+            auto const fake = sB2.serialized + '\0';
 
             // applyManifest should accept new manifests with
             // higher sequence numbers
             auto const seq0 = cache.sequence();
-            BEAST_EXPECT(cache.applyManifest(clone(s_a0)) == ManifestDisposition::accepted);
+            BEAST_EXPECT(cache.applyManifest(clone(sA0)) == ManifestDisposition::accepted);
             BEAST_EXPECT(cache.sequence() > seq0);
 
             auto const seq1 = cache.sequence();
-            BEAST_EXPECT(cache.applyManifest(clone(s_a0)) == ManifestDisposition::stale);
+            BEAST_EXPECT(cache.applyManifest(clone(sA0)) == ManifestDisposition::stale);
             BEAST_EXPECT(cache.sequence() == seq1);
 
-            BEAST_EXPECT(cache.applyManifest(clone(s_a1)) == ManifestDisposition::accepted);
-            BEAST_EXPECT(cache.applyManifest(clone(s_a1)) == ManifestDisposition::stale);
-            BEAST_EXPECT(cache.applyManifest(clone(s_a0)) == ManifestDisposition::stale);
+            BEAST_EXPECT(cache.applyManifest(clone(sA1)) == ManifestDisposition::accepted);
+            BEAST_EXPECT(cache.applyManifest(clone(sA1)) == ManifestDisposition::stale);
+            BEAST_EXPECT(cache.applyManifest(clone(sA0)) == ManifestDisposition::stale);
 
-            BEAST_EXPECT(cache.applyManifest(clone(s_a2)) == ManifestDisposition::badEphemeralKey);
+            BEAST_EXPECT(cache.applyManifest(clone(sA2)) == ManifestDisposition::badEphemeralKey);
 
             // applyManifest should accept manifests with max sequence numbers
             // that revoke the master public key
-            BEAST_EXPECT(!cache.revoked(pk_a));
-            BEAST_EXPECT(s_aMax.revoked());
-            BEAST_EXPECT(cache.applyManifest(clone(s_aMax)) == ManifestDisposition::accepted);
-            BEAST_EXPECT(cache.applyManifest(clone(s_aMax)) == ManifestDisposition::stale);
-            BEAST_EXPECT(cache.applyManifest(clone(s_a1)) == ManifestDisposition::stale);
-            BEAST_EXPECT(cache.applyManifest(clone(s_a0)) == ManifestDisposition::stale);
-            BEAST_EXPECT(cache.revoked(pk_a));
+            BEAST_EXPECT(!cache.revoked(pkA));
+            BEAST_EXPECT(sAMax.revoked());
+            BEAST_EXPECT(cache.applyManifest(clone(sAMax)) == ManifestDisposition::accepted);
+            BEAST_EXPECT(cache.applyManifest(clone(sAMax)) == ManifestDisposition::stale);
+            BEAST_EXPECT(cache.applyManifest(clone(sA1)) == ManifestDisposition::stale);
+            BEAST_EXPECT(cache.applyManifest(clone(sA0)) == ManifestDisposition::stale);
+            BEAST_EXPECT(cache.revoked(pkA));
 
             // applyManifest should reject manifests with invalid signatures
-            BEAST_EXPECT(cache.applyManifest(clone(s_b0)) == ManifestDisposition::accepted);
-            BEAST_EXPECT(cache.applyManifest(clone(s_b0)) == ManifestDisposition::stale);
+            BEAST_EXPECT(cache.applyManifest(clone(sB0)) == ManifestDisposition::accepted);
+            BEAST_EXPECT(cache.applyManifest(clone(sB0)) == ManifestDisposition::stale);
             BEAST_EXPECT(!deserializeManifest(fake));
-            BEAST_EXPECT(cache.applyManifest(clone(s_b1)) == ManifestDisposition::invalid);
-            BEAST_EXPECT(cache.applyManifest(clone(s_b2)) == ManifestDisposition::accepted);
+            BEAST_EXPECT(cache.applyManifest(clone(sB1)) == ManifestDisposition::invalid);
+            BEAST_EXPECT(cache.applyManifest(clone(sB2)) == ManifestDisposition::accepted);
 
-            auto const s_c0 = makeManifest(
-                kp_b2.second, KeyType::ed25519, randomSecretKey(), KeyType::ed25519, 47);
-            BEAST_EXPECT(cache.applyManifest(clone(s_c0)) == ManifestDisposition::badMasterKey);
+            auto const sC0 = makeManifest(
+                kpB2.second, KeyType::ed25519, randomSecretKey(), KeyType::ed25519, 47);
+            BEAST_EXPECT(cache.applyManifest(clone(sC0)) == ManifestDisposition::badMasterKey);
         }
 
         testLoadStore(cache);

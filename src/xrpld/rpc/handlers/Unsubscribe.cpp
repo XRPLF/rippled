@@ -152,23 +152,23 @@ doUnsubscribe(RPC::JsonContext& context)
                 return rpcError(rpcINVALID_PARAMS);
             }
 
-            Json::Value taker_pays = jv[jss::taker_pays];
-            Json::Value taker_gets = jv[jss::taker_gets];
+            Json::Value takerPays = jv[jss::taker_pays];
+            Json::Value takerGets = jv[jss::taker_gets];
 
             Book book;
 
             // Parse mandatory currency.
-            if (!taker_pays.isMember(jss::currency) ||
-                !to_currency(book.in.currency, taker_pays[jss::currency].asString()))
+            if (!takerPays.isMember(jss::currency) ||
+                !to_currency(book.in.currency, takerPays[jss::currency].asString()))
             {
                 JLOG(context.j.info()) << "Bad taker_pays currency.";
                 return rpcError(rpcSRC_CUR_MALFORMED);
             }
             // Parse optional issuer.
             else if (
-                ((taker_pays.isMember(jss::issuer)) &&
-                 (!taker_pays[jss::issuer].isString() ||
-                  !to_issuer(book.in.account, taker_pays[jss::issuer].asString())))
+                ((takerPays.isMember(jss::issuer)) &&
+                 (!takerPays[jss::issuer].isString() ||
+                  !to_issuer(book.in.account, takerPays[jss::issuer].asString())))
                 // Don't allow illegal issuers.
                 || !isConsistent(book.in) || noAccount() == book.in.account)
             {
@@ -178,8 +178,8 @@ doUnsubscribe(RPC::JsonContext& context)
             }
 
             // Parse mandatory currency.
-            if (!taker_gets.isMember(jss::currency) ||
-                !to_currency(book.out.currency, taker_gets[jss::currency].asString()))
+            if (!takerGets.isMember(jss::currency) ||
+                !to_currency(book.out.currency, takerGets[jss::currency].asString()))
             {
                 JLOG(context.j.info()) << "Bad taker_gets currency.";
 
@@ -187,9 +187,9 @@ doUnsubscribe(RPC::JsonContext& context)
             }
             // Parse optional issuer.
             else if (
-                ((taker_gets.isMember(jss::issuer)) &&
-                 (!taker_gets[jss::issuer].isString() ||
-                  !to_issuer(book.out.account, taker_gets[jss::issuer].asString())))
+                ((takerGets.isMember(jss::issuer)) &&
+                 (!takerGets[jss::issuer].isString() ||
+                  !to_issuer(book.out.account, takerGets[jss::issuer].asString())))
                 // Don't allow illegal issuers.
                 || !isConsistent(book.out) || noAccount() == book.out.account)
             {

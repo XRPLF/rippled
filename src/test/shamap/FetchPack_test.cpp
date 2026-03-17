@@ -36,7 +36,7 @@ public:
 
     struct TestFilter : SHAMapSyncFilter
     {
-        TestFilter(Map& map, beast::Journal journal) : map_(map), journal_(journal)
+        TestFilter(Map& map, beast::Journal journal) : map(map), journal(journal)
         {
         }
 
@@ -53,17 +53,17 @@ public:
         std::optional<Blob>
         getNode(SHAMapHash const& nodeHash) const override
         {
-            Map::iterator it = map_.find(nodeHash);
-            if (it == map_.end())
+            Map::iterator it = map.find(nodeHash);
+            if (it == map.end())
             {
-                JLOG(journal_.fatal()) << "Test filter missing node";
+                JLOG(journal.fatal()) << "Test filter missing node";
                 return std::nullopt;
             }
             return it->second;
         }
 
-        Map& map_;
-        beast::Journal journal_;
+        Map& map;
+        beast::Journal journal;
     };
 
     boost::intrusive_ptr<Item>

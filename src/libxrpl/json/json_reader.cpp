@@ -345,7 +345,7 @@ Reader::readCppStyleComment()
 Reader::TokenType
 Reader::readNumber()
 {
-    static char const extended_tokens[] = {'.', 'e', 'E', '+', '-'};
+    static char const extendedTokens[] = {'.', 'e', 'E', '+', '-'};
 
     TokenType type = tokenInteger;
 
@@ -359,9 +359,9 @@ Reader::readNumber()
             if (!std::isdigit(static_cast<unsigned char>(*current_)))
             {
                 auto ret =
-                    std::find(std::begin(extended_tokens), std::end(extended_tokens), *current_);
+                    std::find(std::begin(extendedTokens), std::end(extendedTokens), *current_);
 
-                if (ret == std::end(extended_tokens))
+                if (ret == std::end(extendedTokens))
                     break;
 
                 type = tokenDouble;

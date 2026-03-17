@@ -527,40 +527,40 @@ toStrands(
 }
 
 StrandContext::StrandContext(
-    ReadView const& view_,
-    std::vector<std::unique_ptr<Step>> const& strand_,
+    ReadView const& view,
+    std::vector<std::unique_ptr<Step>> const& strand,
     // A strand may not include an inner node that
     // replicates the source or destination.
-    AccountID const& strandSrc_,
-    AccountID const& strandDst_,
-    Issue const& strandDeliver_,
-    std::optional<Quality> const& limitQuality_,
-    bool isLast_,
-    bool ownerPaysTransferFee_,
-    OfferCrossing offerCrossing_,
-    bool isDefaultPath_,
-    std::array<boost::container::flat_set<Issue>, 2>& seenDirectIssues_,
-    boost::container::flat_set<Issue>& seenBookOuts_,
-    AMMContext& ammContext_,
-    std::optional<uint256> const& domainID_,
-    beast::Journal j_)
-    : view(view_)
-    , strandSrc(strandSrc_)
-    , strandDst(strandDst_)
-    , strandDeliver(strandDeliver_)
-    , limitQuality(limitQuality_)
-    , isFirst(strand_.empty())
-    , isLast(isLast_)
-    , ownerPaysTransferFee(ownerPaysTransferFee_)
-    , offerCrossing(offerCrossing_)
-    , isDefaultPath(isDefaultPath_)
-    , strandSize(strand_.size())
-    , prevStep(!strand_.empty() ? strand_.back().get() : nullptr)
-    , seenDirectIssues(seenDirectIssues_)
-    , seenBookOuts(seenBookOuts_)
-    , ammContext(ammContext_)
-    , domainID(domainID_)
-    , j(j_)
+    AccountID const& strandSrc,
+    AccountID const& strandDst,
+    Issue const& strandDeliver,
+    std::optional<Quality> const& limitQuality,
+    bool isLast,
+    bool ownerPaysTransferFee,
+    OfferCrossing offerCrossing,
+    bool isDefaultPath,
+    std::array<boost::container::flat_set<Issue>, 2>& seenDirectIssues,
+    boost::container::flat_set<Issue>& seenBookOuts,
+    AMMContext& ammContext,
+    std::optional<uint256> const& domainId,
+    beast::Journal j)
+    : view(view)
+    , strandSrc(strandSrc)
+    , strandDst(strandDst)
+    , strandDeliver(strandDeliver)
+    , limitQuality(limitQuality)
+    , isFirst(strand.empty())
+    , isLast(isLast)
+    , ownerPaysTransferFee(ownerPaysTransferFee)
+    , offerCrossing(offerCrossing)
+    , isDefaultPath(isDefaultPath)
+    , strandSize(strand.size())
+    , prevStep(!strand.empty() ? strand.back().get() : nullptr)
+    , seenDirectIssues(seenDirectIssues)
+    , seenBookOuts(seenBookOuts)
+    , ammContext(ammContext)
+    , domainID(domainId)
+    , j(j)
 {
 }
 

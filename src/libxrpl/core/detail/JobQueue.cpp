@@ -334,7 +334,7 @@ JobQueue::processTask(int instance)
 
     {
         using namespace std::chrono;
-        Job::clock_type::time_point const start_time(Job::clock_type::now());
+        Job::clock_type::time_point const startTime(Job::clock_type::now());
         {
             Job job;
             {
@@ -347,20 +347,20 @@ JobQueue::processTask(int instance)
             JLOG(journal_.trace()) << "Doing " << data.name() << "job";
 
             // The amount of time that the job was in the queue
-            auto const q_time = ceil<microseconds>(start_time - job.queue_time());
-            perfLog_.jobStart(type, q_time, start_time, instance);
+            auto const qTime = ceil<microseconds>(startTime - job.queue_time());
+            perfLog_.jobStart(type, qTime, startTime, instance);
 
             job.doJob();
 
             // The amount of time it took to execute the job
-            auto const x_time = ceil<microseconds>(Job::clock_type::now() - start_time);
+            auto const xTime = ceil<microseconds>(Job::clock_type::now() - startTime);
 
-            if (x_time >= 10ms || q_time >= 10ms)
+            if (xTime >= 10ms || qTime >= 10ms)
             {
-                getJobTypeData(type).dequeue.notify(q_time);
-                getJobTypeData(type).execute.notify(x_time);
+                getJobTypeData(type).dequeue.notify(qTime);
+                getJobTypeData(type).execute.notify(xTime);
             }
-            perfLog_.jobFinish(type, x_time, instance);
+            perfLog_.jobFinish(type, xTime, instance);
         }
     }
 

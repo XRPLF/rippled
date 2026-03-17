@@ -233,13 +233,13 @@ public:
         Env env{*this, features};
         auto const gw = Account{"gateway"};
         auto const alice = Account{"alice"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         env.fund(XRP(10000), gw, alice);
         env.close();
 
         // Cannot pay alice without a trustline.
-        env(pay(gw, alice, USD(200)), ter(tecPATH_DRY));
+        env(pay(gw, alice, usd(200)), ter(tecPATH_DRY));
         env.close();
 
         // Create a ticket.
@@ -248,11 +248,11 @@ public:
         env.close();
 
         // Use that ticket to create a trust line.
-        env(trust(alice, USD(1000)), ticket::use(ticketSeq));
+        env(trust(alice, usd(1000)), ticket::use(ticketSeq));
         env.close();
 
         // Now the payment succeeds.
-        env(pay(gw, alice, USD(200)));
+        env(pay(gw, alice, usd(200)));
         env.close();
     }
 
@@ -431,7 +431,7 @@ public:
         auto& tx1 = createQuality ? txWithQuality : txWithoutQuality;
         auto& tx2 = createQuality ? txWithoutQuality : txWithQuality;
 
-        auto check_quality = [&](bool const exists) {
+        auto checkQuality = [&](bool const exists) {
             Json::Value jv;
             jv["account"] = toAcct.human();
             auto const lines = env.rpc("json", "account_lines", to_string(jv));
@@ -443,10 +443,10 @@ public:
         };
 
         env(tx1, require(lines(toAcct, 1)), require(lines(fromAcct, 1)));
-        check_quality(createQuality);
+        checkQuality(createQuality);
 
         env(tx2, require(lines(toAcct, 1)), require(lines(fromAcct, 1)));
-        check_quality(!createQuality);
+        checkQuality(!createQuality);
     }
 
     void
@@ -465,7 +465,7 @@ public:
                 Env env{*this, amend};
                 auto const dist = Account("dist");
                 auto const gw = Account("gw");
-                auto const USD = gw["USD"];
+                auto const usd = gw["USD"];
                 auto const distUSD = dist["USD"];
 
                 env.fund(XRP(1000), gw, dist);
@@ -477,7 +477,7 @@ public:
                 env(fset(dist, asfDisallowIncomingTrustline));
                 env.close();
 
-                env(trust(dist, USD(10000)));
+                env(trust(dist, usd(10000)));
                 env.close();
 
                 // withFix: can set trustline
@@ -487,7 +487,7 @@ public:
                 env.close();
 
                 auto const txResult = withFix ? ter(tesSUCCESS) : ter(tecPATH_DRY);
-                env(pay(gw, dist, USD(1000)), txResult);
+                env(pay(gw, dist, usd(1000)), txResult);
                 env.close();
             }
         }
@@ -497,7 +497,7 @@ public:
         auto const gw = Account{"gateway"};
         auto const alice = Account{"alice"};
         auto const bob = Account{"bob"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         env.fund(XRP(10000), gw, alice, bob);
         env.close();
@@ -507,7 +507,7 @@ public:
         env.close();
 
         // Create a trustline which will fail
-        env(trust(alice, USD(1000)), ter(tecNO_PERMISSION));
+        env(trust(alice, usd(1000)), ter(tecNO_PERMISSION));
         env.close();
 
         // Unset the flag
@@ -515,11 +515,11 @@ public:
         env.close();
 
         // Create a trustline which will now succeed
-        env(trust(alice, USD(1000)));
+        env(trust(alice, usd(1000)));
         env.close();
 
         // Now the payment succeeds.
-        env(pay(gw, alice, USD(200)));
+        env(pay(gw, alice, usd(200)));
         env.close();
 
         // Set flag on gateway again
@@ -527,12 +527,12 @@ public:
         env.close();
 
         // Destroy the balance by sending it back
-        env(pay(gw, alice, USD(200)));
+        env(pay(gw, alice, usd(200)));
         env.close();
 
         // The trustline still exists in default state
         // So a further payment should work
-        env(pay(gw, alice, USD(200)));
+        env(pay(gw, alice, usd(200)));
         env.close();
 
         // Also set the flag on bob
@@ -540,7 +540,7 @@ public:
         env.close();
 
         // But now bob can't open a trustline because he didn't already have one
-        env(trust(bob, USD(1000)), ter(tecNO_PERMISSION));
+        env(trust(bob, usd(1000)), ter(tecNO_PERMISSION));
         env.close();
 
         // The gateway also can't open this trustline because bob has the flag
@@ -553,11 +553,11 @@ public:
         env.close();
 
         // Now bob can open a trustline
-        env(trust(bob, USD(1000)));
+        env(trust(bob, usd(1000)));
         env.close();
 
         // And the gateway can send bob a balance
-        env(pay(gw, bob, USD(200)));
+        env(pay(gw, bob, usd(200)));
         env.close();
     }
 

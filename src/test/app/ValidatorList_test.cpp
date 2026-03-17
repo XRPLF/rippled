@@ -516,13 +516,13 @@ private:
                     {
                         BEAST_EXPECT(!a.isMember(jss::blob));
                         BEAST_EXPECT(!a.isMember(jss::signature));
-                        auto const& blobs_v2 = a[jss::blobs_v2];
-                        BEAST_EXPECT(blobs_v2.isArray() && blobs_v2.size() == expected.size());
+                        auto const& blobsV2 = a[jss::blobs_v2];
+                        BEAST_EXPECT(blobsV2.isArray() && blobsV2.size() == expected.size());
 
                         for (unsigned int i = 0; i < expected.size(); ++i)
                         {
-                            BEAST_EXPECT(blobs_v2[i][jss::blob] == expected[i].first);
-                            BEAST_EXPECT(blobs_v2[i][jss::signature] == expected[i].second);
+                            BEAST_EXPECT(blobsV2[i][jss::blob] == expected[i].first);
+                            BEAST_EXPECT(blobsV2[i][jss::signature] == expected[i].second);
                         }
                     }
                 }
@@ -844,11 +844,11 @@ private:
         // already valid Also try reprocessing the pending list with an
         // explicit manifest
         // - it is still invalid
-        auto const sig8_2 = signList(blob8, pubSigningKeys2);
+        auto const sig82 = signList(blob8, pubSigningKeys2);
 
         checkResult(
             trustedKeys->applyLists(
-                manifest2, version, {{blob8, sig8, manifest1}, {blob8, sig8_2, {}}}, siteUri),
+                manifest2, version, {{blob8, sig8, manifest1}, {blob8, sig82, {}}}, siteUri),
             publisherPublic,
             ListDisposition::invalid,
             ListDisposition::same_sequence);
@@ -1004,11 +1004,11 @@ private:
                 {
                     BEAST_EXPECT(!a.isMember(jss::blob));
                     BEAST_EXPECT(!a.isMember(jss::signature));
-                    auto const& blobs_v2 = a[jss::blobs_v2];
-                    BEAST_EXPECT(blobs_v2.isArray() && blobs_v2.size() == 1);
+                    auto const& blobsV2 = a[jss::blobs_v2];
+                    BEAST_EXPECT(blobsV2.isArray() && blobsV2.size() == 1);
 
-                    BEAST_EXPECT(blobs_v2[0u][jss::blob] == blob);
-                    BEAST_EXPECT(blobs_v2[0u][jss::signature] == sig);
+                    BEAST_EXPECT(blobsV2[0u][jss::blob] == blob);
+                    BEAST_EXPECT(blobsV2[0u][jss::signature] == sig);
                 }
             }
         }
@@ -1148,12 +1148,12 @@ private:
             auto const signingKeysMax = randomKeyPair(KeyType::secp256k1);
             auto const signingPublicMax = signingKeysMax.first;
             activeValidatorsOuter.emplace(calcNodeID(signingPublicMax));
-            auto max_ = deserializeManifest(makeRevocationString(masterPublic, masterPrivate));
+            auto max = deserializeManifest(makeRevocationString(masterPublic, masterPrivate));
 
             // NOLINTBEGIN(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(max_->revoked());
+            BEAST_EXPECT(max->revoked());
             BEAST_EXPECT(
-                manifestsOuter.applyManifest(std::move(*max_)) == ManifestDisposition::accepted);
+                manifestsOuter.applyManifest(std::move(*max)) == ManifestDisposition::accepted);
             // NOLINTEND(bugprone-unchecked-optional-access)
 
             BEAST_EXPECT(manifestsOuter.getSigningKey(masterPublic) == masterPublic);
@@ -2015,10 +2015,10 @@ private:
                             ++it;
                         }
                         validators->setNegativeUNL(nUnl);
-                        auto nUnl_temp = validators->getNegativeUNL();
-                        if (nUnl_temp.size() == nUnl.size())
+                        auto nUnlTemp = validators->getNegativeUNL();
+                        if (nUnlTemp.size() == nUnl.size())
                         {
-                            for (auto& n : nUnl_temp)
+                            for (auto& n : nUnlTemp)
                             {
                                 if (nUnl.find(n) == nUnl.end())
                                     return false;

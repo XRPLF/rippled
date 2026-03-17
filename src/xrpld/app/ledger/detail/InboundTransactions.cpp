@@ -26,16 +26,16 @@ class InboundTransactionSet
 {
     // A transaction set we generated, acquired, or are acquiring
 public:
-    std::uint32_t seq_;
-    TransactionAcquire::pointer acquire_;
-    std::shared_ptr<SHAMap> set_;
+    std::uint32_t seq;
+    TransactionAcquire::pointer acquire;
+    std::shared_ptr<SHAMap> set;
 
     InboundTransactionSet(std::uint32_t seq, std::shared_ptr<SHAMap> const& set)
-        : seq_(seq), set_(set)
+        : seq(seq), set(set)
     {
         ;
     }
-    InboundTransactionSet() : seq_(0)
+    InboundTransactionSet() : seq(0)
     {
         ;
     }
@@ -56,9 +56,9 @@ public:
         , peerSetBuilder_(std::move(peerSetBuilder))
         , j_(app_.journal("InboundTransactions"))
     {
-        zeroSet_.set_ =
+        zeroSet_.set =
             std::make_shared<SHAMap>(SHAMapType::TRANSACTION, uint256(), app_.getNodeFamily());
-        zeroSet_.set_->setUnbacked();
+        zeroSet_.set->setUnbacked();
     }
 
     TransactionAcquire::pointer
@@ -70,7 +70,7 @@ public:
             auto it = map_.find(hash);
 
             if (it != map_.end())
-                return it->second.acquire_;
+                return it->second.acquire;
         }
         return {};
     }
@@ -87,13 +87,13 @@ public:
             {
                 if (acquire)
                 {
-                    it->second.seq_ = seq_;
-                    if (it->second.acquire_)
+                    it->second.seq = seq_;
+                    if (it->second.acquire)
                     {
-                        it->second.acquire_->stillNeed();
+                        it->second.acquire->stillNeed();
                     }
                 }
-                return it->second.set_;
+                return it->second.set;
             }
 
             if (!acquire || stopping_)
@@ -102,8 +102,8 @@ public:
             ta = std::make_shared<TransactionAcquire>(app_, hash, peerSetBuilder_->build());
 
             auto& obj = map_[hash];
-            obj.acquire_ = ta;
-            obj.seq_ = seq_;
+            obj.acquire = ta;
+            obj.seq = seq_;
         }
 
         ta->init(startPeers);
@@ -117,9 +117,9 @@ public:
     gotData(
         LedgerHash const& hash,
         std::shared_ptr<Peer> peer,
-        std::shared_ptr<protocol::TMLedgerData> packet_ptr) override
+        std::shared_ptr<protocol::TMLedgerData> packetPtr) override
     {
-        protocol::TMLedgerData& packet = *packet_ptr;
+        protocol::TMLedgerData& packet = *packetPtr;
 
         JLOG(j_.trace()) << "Got data (" << packet.nodes().size()
                          << ") for acquiring ledger: " << hash;
@@ -168,15 +168,15 @@ public:
 
             auto& inboundSet = map_[hash];
 
-            if (inboundSet.seq_ < seq_)
-                inboundSet.seq_ = seq_;
+            if (inboundSet.seq < seq_)
+                inboundSet.seq = seq_;
 
-            if (inboundSet.set_)
+            if (inboundSet.set)
                 isNew = false;
             else
-                inboundSet.set_ = set;
+                inboundSet.set = set;
 
-            inboundSet.acquire_.reset();
+            inboundSet.acquire.reset();
         }
 
         if (isNew)
@@ -189,7 +189,7 @@ public:
         std::lock_guard lock(lock_);
 
         // Protect zero set from expiration
-        zeroSet_.seq_ = seq;
+        zeroSet_.seq = seq;
 
         if (seq_ != seq)
         {
@@ -202,7 +202,7 @@ public:
 
             while (it != map_.end())
             {
-                if (it->second.seq_ < minSeq || it->second.seq_ > maxSeq)
+                if (it->second.seq < minSeq || it->second.seq > maxSeq)
                     it = map_.erase(it);
                 else
                     ++it;

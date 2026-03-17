@@ -411,15 +411,15 @@ public:
             auto const carol = Account("carol" + iterAsStr);
             auto const dan = Account("dan" + iterAsStr);
             auto const oscar = Account("oscar" + iterAsStr);  // offer owner
-            auto const USDB = bob["USD"];
-            auto const EURC = carol["EUR"];
+            auto const usdb = bob["USD"];
+            auto const eurc = carol["EUR"];
             constexpr std::size_t const numAccounts = 5;
             std::array<Account, numAccounts> accounts{{alice, bob, carol, dan, oscar}};
 
             // sendmax should be in USDB and delivered amount should be in EURC
             // normalized path should be:
             // alice -> bob -> (USD/bob)|(EUR/carol) -> carol -> dan
-            path const bookPath(~EURC);
+            path const bookPath(~eurc);
 
             env.fund(XRP(10000), alice, bob, carol, dan, oscar);
             env.close();
@@ -440,7 +440,7 @@ public:
             rndAccParams.setInitialBalance(env, oscar, bob, usdCurrency);
             rndAccParams.setInitialBalance(env, oscar, carol, eurCurrency);
 
-            env(offer(oscar, USDB(50), EURC(50)));
+            env(offer(oscar, usdb(50), eurc(50)));
             env.close();
 
             // Accounts are set up, make the payment

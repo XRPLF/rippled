@@ -20,24 +20,24 @@ namespace xrpl {
 std::size_t
 STPathElement::get_hash(STPathElement const& element)
 {
-    std::size_t hash_account = 2654435761;
-    std::size_t hash_currency = 2654435761;
-    std::size_t hash_issuer = 2654435761;
+    std::size_t hashAccount = 2654435761;
+    std::size_t hashCurrency = 2654435761;
+    std::size_t hashIssuer = 2654435761;
 
     // NIKB NOTE: This doesn't have to be a secure hash as speed is more
     //            important. We don't even really need to fully hash the whole
     //            base_uint here, as a few bytes would do for our use.
 
     for (auto const x : element.getAccountID())
-        hash_account += (hash_account * 257) ^ x;
+        hashAccount += (hashAccount * 257) ^ x;
 
     for (auto const x : element.getCurrency())
-        hash_currency += (hash_currency * 509) ^ x;
+        hashCurrency += (hashCurrency * 509) ^ x;
 
     for (auto const x : element.getIssuerID())
-        hash_issuer += (hash_issuer * 911) ^ x;
+        hashIssuer += (hashIssuer * 911) ^ x;
 
-    return (hash_account ^ hash_currency ^ hash_issuer);
+    return (hashAccount ^ hashCurrency ^ hashIssuer);
 }
 
 STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)

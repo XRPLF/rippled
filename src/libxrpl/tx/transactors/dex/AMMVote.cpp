@@ -54,14 +54,14 @@ AMMVote::preclaim(PreclaimContext const& ctx)
 }
 
 static std::pair<TER, bool>
-applyVote(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Journal j_)
+applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journal j)
 {
-    auto const feeNew = ctx_.tx[sfTradingFee];
-    auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
+    auto const feeNew = ctx.tx[sfTradingFee];
+    auto ammSle = sb.peek(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
     if (!ammSle)
         return {tecINTERNAL, false};
     STAmount const lptAMMBalance = (*ammSle)[sfLPTokenBalance];
-    auto const lpTokensNew = ammLPHolds(sb, *ammSle, account_, ctx_.journal);
+    auto const lpTokensNew = ammLPHolds(sb, *ammSle, account, ctx.journal);
     std::optional<STAmount> minTokens;
     std::size_t minPos{0};
     AccountID minAccount{0};
@@ -79,16 +79,16 @@ applyVote(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jou
     for (auto const& entry : ammSle->getFieldArray(sfVoteSlots))
     {
         auto const account = entry[sfAccount];
-        auto lpTokens = ammLPHolds(sb, *ammSle, account, ctx_.journal);
+        auto lpTokens = ammLPHolds(sb, *ammSle, account, ctx.journal);
         if (lpTokens == beast::zero)
         {
-            JLOG(j_.debug()) << "AMMVote::applyVote, account " << account << " is not LP";
+            JLOG(j.debug()) << "AMMVote::applyVote, account " << account << " is not LP";
             continue;
         }
         auto feeVal = entry[sfTradingFee];
         STObject newEntry = STObject::makeInnerObject(sfVoteEntry);
         // The account already has the vote entry.
-        if (account == account_)
+        if (account == account)
         {
             lpTokens = lpTokensNew;
             feeVal = feeNew;
@@ -130,7 +130,7 @@ applyVote(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jou
                 sfVoteWeight,
                 static_cast<std::int64_t>(
                     Number(lpTokensNew) * VOTE_WEIGHT_SCALE_FACTOR / lptAMMBalance));
-            newEntry.setAccountID(sfAccount, account_);
+            newEntry.setAccountID(sfAccount, account);
             num += feeNew * lpTokensNew;
             den += lpTokensNew;
             if (minPos)
@@ -156,8 +156,8 @@ applyVote(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jou
         // Update anyway to refresh the slots.
         else
         {
-            JLOG(j_.debug()) << "AMMVote::applyVote, insufficient tokens to "
-                                "override other votes";
+            JLOG(j.debug()) << "AMMVote::applyVote, insufficient tokens to "
+                               "override other votes";
         }
     }
 

@@ -223,41 +223,41 @@ initAnonymous(boost::asio::ssl::context& context)
 static void
 initAuthenticated(
     boost::asio::ssl::context& context,
-    std::string const& key_file,
-    std::string const& cert_file,
-    std::string const& chain_file)
+    std::string const& keyFile,
+    std::string const& certFile,
+    std::string const& chainFile)
 {
-    auto fmt_error = [](boost::system::error_code ec) -> std::string {
+    auto fmtError = [](boost::system::error_code ec) -> std::string {
         return " [" + std::to_string(ec.value()) + ": " + ec.message() + "]";
     };
 
     SSL_CTX* const ssl = context.native_handle();
 
-    bool cert_set = false;
+    bool certSet = false;
 
-    if (!cert_file.empty())
+    if (!certFile.empty())
     {
         boost::system::error_code ec;
 
         // NOLINTNEXTLINE(bugprone-unused-return-value)
-        context.use_certificate_file(cert_file, boost::asio::ssl::context::pem, ec);
+        context.use_certificate_file(certFile, boost::asio::ssl::context::pem, ec);
 
         if (ec)
-            LogicError("Problem with SSL certificate file" + fmt_error(ec));
+            LogicError("Problem with SSL certificate file" + fmtError(ec));
 
-        cert_set = true;
+        certSet = true;
     }
 
-    if (!chain_file.empty())
+    if (!chainFile.empty())
     {
         // VFALCO Replace fopen() with RAII
-        FILE* f = fopen(chain_file.c_str(), "r");
+        FILE* f = fopen(chainFile.c_str(), "r");
 
         if (!f)
         {
             LogicError(
                 "Problem opening SSL chain file" +
-                fmt_error(boost::system::error_code(errno, boost::system::generic_category())));
+                fmtError(boost::system::error_code(errno, boost::system::generic_category())));
         }
 
         try
@@ -269,14 +269,14 @@ initAuthenticated(
                 if (x == nullptr)
                     break;
 
-                if (!cert_set)
+                if (!certSet)
                 {
                     if (SSL_CTX_use_certificate(ssl, x) != 1)
                         LogicError(
                             "Problem retrieving SSL certificate from chain "
                             "file.");
 
-                    cert_set = true;
+                    certSet = true;
                 }
                 else if (SSL_CTX_add_extra_chain_cert(ssl, x) != 1)
                 {
@@ -295,16 +295,16 @@ initAuthenticated(
         }
     }
 
-    if (!key_file.empty())
+    if (!keyFile.empty())
     {
         boost::system::error_code ec;
 
         // NOLINTNEXTLINE(bugprone-unused-return-value)
-        context.use_private_key_file(key_file, boost::asio::ssl::context::pem, ec);
+        context.use_private_key_file(keyFile, boost::asio::ssl::context::pem, ec);
 
         if (ec)
         {
-            LogicError("Problem using the SSL private key file" + fmt_error(ec));
+            LogicError("Problem using the SSL private key file" + fmtError(ec));
         }
     }
 

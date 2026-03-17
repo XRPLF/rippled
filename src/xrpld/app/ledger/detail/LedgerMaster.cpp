@@ -1063,7 +1063,7 @@ LedgerMaster::consensusBuilt(
     class valSeq
     {
     public:
-        valSeq() : valCount_(0), ledgerSeq_(0)
+        valSeq() : valCount(0), ledgerSeq(0)
         {
             ;
         }
@@ -1071,15 +1071,15 @@ LedgerMaster::consensusBuilt(
         void
         mergeValidation(LedgerIndex seq)
         {
-            valCount_++;
+            valCount++;
 
             // If we didn't already know the sequence, now we do
-            if (ledgerSeq_ == 0)
-                ledgerSeq_ = seq;
+            if (ledgerSeq == 0)
+                ledgerSeq = seq;
         }
 
-        std::size_t valCount_;
-        LedgerIndex ledgerSeq_;
+        std::size_t valCount;
+        LedgerIndex ledgerSeq;
     };
 
     // Count the number of current, trusted validations
@@ -1097,18 +1097,18 @@ LedgerMaster::consensusBuilt(
     // Of the ledgers with sufficient validations,
     // find the one with the highest sequence
     for (auto& v : count)
-        if (v.second.valCount_ > neededValidations)
+        if (v.second.valCount > neededValidations)
         {
             // If we still don't know the sequence, get it
-            if (v.second.ledgerSeq_ == 0)
+            if (v.second.ledgerSeq == 0)
             {
                 if (auto l = getLedgerByHash(v.first))
-                    v.second.ledgerSeq_ = l->header().seq;
+                    v.second.ledgerSeq = l->header().seq;
             }
 
-            if (v.second.ledgerSeq_ > maxSeq)
+            if (v.second.ledgerSeq > maxSeq)
             {
-                maxSeq = v.second.ledgerSeq_;
+                maxSeq = v.second.ledgerSeq;
                 maxLedger = v.first;
             }
         }

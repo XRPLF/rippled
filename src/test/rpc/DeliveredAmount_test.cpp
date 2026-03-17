@@ -168,7 +168,7 @@ class DeliveredAmount_test : public beast::unit_test::suite
         Account const bob("bob");
         Account const carol("carol");
         auto const gw = Account("gateway");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         for (bool const afterSwitchTime : {true, false})
         {
@@ -176,7 +176,7 @@ class DeliveredAmount_test : public beast::unit_test::suite
             cfg->FEES.reference_fee = 10;
             Env env(*this, std::move(cfg));
             env.fund(XRP(10000), alice, bob, carol, gw);
-            env.trust(USD(1000), alice, bob, carol);
+            env.trust(usd(1000), alice, bob, carol);
             if (afterSwitchTime)
                 env.close(NetClock::time_point{446000000s});
             else
@@ -187,20 +187,20 @@ class DeliveredAmount_test : public beast::unit_test::suite
                 // add payments, but do no close until subscribed
 
                 // normal payments
-                env(pay(gw, alice, USD(50)));
+                env(pay(gw, alice, usd(50)));
                 checkDeliveredAmount.adjCountersSuccess();
                 env(pay(gw, alice, XRP(50)));
                 checkDeliveredAmount.adjCountersSuccess();
 
                 // partial payment
-                env(pay(gw, bob, USD(9999999)), txflags(tfPartialPayment));
+                env(pay(gw, bob, usd(9999999)), txflags(tfPartialPayment));
                 checkDeliveredAmount.adjCountersPartialPayment();
-                env.require(balance(bob, USD(1000)));
+                env.require(balance(bob, usd(1000)));
 
                 // failed payment
-                env(pay(bob, carol, USD(9999999)), ter(tecPATH_PARTIAL));
+                env(pay(bob, carol, usd(9999999)), ter(tecPATH_PARTIAL));
                 checkDeliveredAmount.adjCountersFail();
-                env.require(balance(carol, USD(0)));
+                env.require(balance(carol, usd(0)));
             }
 
             auto wsc = makeWSClient(env.app().config());
@@ -255,7 +255,7 @@ class DeliveredAmount_test : public beast::unit_test::suite
         Account const bob("bob");
         Account const carol("carol");
         auto const gw = Account("gateway");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         for (bool const afterSwitchTime : {true, false})
         {
@@ -263,7 +263,7 @@ class DeliveredAmount_test : public beast::unit_test::suite
             cfg->FEES.reference_fee = 10;
             Env env(*this, std::move(cfg));
             env.fund(XRP(10000), alice, bob, carol, gw);
-            env.trust(USD(1000), alice, bob, carol);
+            env.trust(usd(1000), alice, bob, carol);
             if (afterSwitchTime)
                 env.close(NetClock::time_point{446000000s});
             else
@@ -271,20 +271,20 @@ class DeliveredAmount_test : public beast::unit_test::suite
 
             CheckDeliveredAmount checkDeliveredAmount{afterSwitchTime};
             // normal payments
-            env(pay(gw, alice, USD(50)));
+            env(pay(gw, alice, usd(50)));
             checkDeliveredAmount.adjCountersSuccess();
             env(pay(gw, alice, XRP(50)));
             checkDeliveredAmount.adjCountersSuccess();
 
             // partial payment
-            env(pay(gw, bob, USD(9999999)), txflags(tfPartialPayment));
+            env(pay(gw, bob, usd(9999999)), txflags(tfPartialPayment));
             checkDeliveredAmount.adjCountersPartialPayment();
-            env.require(balance(bob, USD(1000)));
+            env.require(balance(bob, usd(1000)));
 
             // failed payment
-            env(pay(gw, carol, USD(9999999)), ter(tecPATH_PARTIAL));
+            env(pay(gw, carol, usd(9999999)), ter(tecPATH_PARTIAL));
             checkDeliveredAmount.adjCountersFail();
-            env.require(balance(carol, USD(0)));
+            env.require(balance(carol, usd(0)));
 
             env.close();
             Json::Value jvParams;
@@ -314,7 +314,7 @@ class DeliveredAmount_test : public beast::unit_test::suite
 
         mptAlice.create(
             {.transferFee = 25000, .ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
-        auto const MPT = mptAlice["MPT"];
+        auto const mpt = mptAlice["MPT"];
 
         mptAlice.authorize({.account = bob});
         mptAlice.authorize({.account = carol});
@@ -333,9 +333,9 @@ class DeliveredAmount_test : public beast::unit_test::suite
         if (features[fixMPTDeliveredAmount])
         {
             BEAST_EXPECT(
-                meta[sfDeliveredAmount.jsonName] == STAmount{MPT(800)}.getJson(JsonOptions::none));
+                meta[sfDeliveredAmount.jsonName] == STAmount{mpt(800)}.getJson(JsonOptions::none));
             BEAST_EXPECT(
-                meta[jss::delivered_amount] == STAmount{MPT(800)}.getJson(JsonOptions::none));
+                meta[jss::delivered_amount] == STAmount{mpt(800)}.getJson(JsonOptions::none));
         }
         else
         {
@@ -343,7 +343,7 @@ class DeliveredAmount_test : public beast::unit_test::suite
             BEAST_EXPECT(meta[jss::delivered_amount] = Json::Value("unavailable"));
         }
 
-        env(pay(bob, carol, MPT(1000)), sendmax(MPT(1200)), txflags(tfPartialPayment));
+        env(pay(bob, carol, mpt(1000)), sendmax(mpt(1200)), txflags(tfPartialPayment));
         env.close();
 
         txHash = env.tx()->getJson(JsonOptions::none)[jss::hash].asString();
@@ -352,9 +352,9 @@ class DeliveredAmount_test : public beast::unit_test::suite
         if (features[fixMPTDeliveredAmount])
         {
             BEAST_EXPECT(
-                meta[sfDeliveredAmount.jsonName] == STAmount{MPT(960)}.getJson(JsonOptions::none));
+                meta[sfDeliveredAmount.jsonName] == STAmount{mpt(960)}.getJson(JsonOptions::none));
             BEAST_EXPECT(
-                meta[jss::delivered_amount] == STAmount{MPT(960)}.getJson(JsonOptions::none));
+                meta[jss::delivered_amount] == STAmount{mpt(960)}.getJson(JsonOptions::none));
         }
         else
         {

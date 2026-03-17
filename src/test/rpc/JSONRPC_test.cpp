@@ -32,11 +32,11 @@ struct TxnTestData
     std::array<char const* const, 4> const expMsg;
 
     constexpr TxnTestData(
-        char const* description_,
-        int line_,
-        char const* json_,
-        std::array<char const* const, 4> const& expMsg_)
-        : description(description_), line(line_), json(json_), expMsg{expMsg_}
+        char const* description,
+        int line,
+        char const* json,
+        std::array<char const* const, 4> const& expMsg)
+        : description(description), line(line), json(json), expMsg{expMsg}
     {
     }
 
@@ -2710,7 +2710,7 @@ public:
         // Use jtx to set up a ledger so the tests will do the right thing.
         Account const a{"a"};  // rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA
         Account const g{"g"};  // rLPwWB1itaUGMV8kbMLLysjGkEpTM2Soy4
-        auto const USD = g["USD"];
+        auto const usd = g["USD"];
 
         // Account: rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi
         // seed:    sh1yJfwoi98zCygwijUzuHmJDeVKd
@@ -2726,10 +2726,10 @@ public:
         env.fund(XRP(100000), a, ed, g);
         env.close();
 
-        env(trust(a, USD(1000)));
-        env(trust(env.master, USD(1000)));
-        env(pay(g, a, USD(50)));
-        env(pay(g, env.master, USD(50)));
+        env(trust(a, usd(1000)));
+        env(trust(env.master, usd(1000)));
+        env(pay(g, a, usd(50)));
+        env(pay(g, env.master, usd(50)));
         env.close();
 
         ProcessTransactionFn processTxn = fakeProcessTransaction;

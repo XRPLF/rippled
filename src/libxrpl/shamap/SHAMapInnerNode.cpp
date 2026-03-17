@@ -371,7 +371,7 @@ SHAMapInnerNode::canonicalizeChild(int branch, intr_ptr::SharedPtr<SHAMapTreeNod
 }
 
 void
-SHAMapInnerNode::invariants(bool is_root) const
+SHAMapInnerNode::invariants(bool isRoot) const
 {
     [[maybe_unused]] unsigned count = 0;
     auto [numAllocated, hashes, children] = hashesAndChildren_.getHashesAndChildren();
@@ -413,7 +413,7 @@ SHAMapInnerNode::invariants(bool is_root) const
         }
     }
 
-    if (!is_root)
+    if (!isRoot)
     {
         XRPL_ASSERT(hash_.isNonZero(), "xrpl::SHAMapInnerNode::invariants : nonzero hash");
         XRPL_ASSERT(count >= 1, "xrpl::SHAMapInnerNode::invariants : minimum count");

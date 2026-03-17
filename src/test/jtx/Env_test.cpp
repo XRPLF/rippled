@@ -44,7 +44,7 @@ public:
         Account("alice", KeyType::ed25519);    // NOLINT(bugprone-unused-raii)
         auto const gw = Account("gw");
         [](AccountID) {}(gw);
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         void(Account("alice") < gw);
         std::set<Account>().emplace(gw);
         std::unordered_set<Account, beast::uhash<>>().emplace("alice");
@@ -105,17 +105,17 @@ public:
         BEAST_EXPECT(STAmount(1000000) == XRP(1));
 
         auto const gw = Account("gw");
-        auto const USD = gw["USD"];
-        BEAST_EXPECT(to_string(USD(0)) == "0/USD(gw)");
-        BEAST_EXPECT(to_string(USD(10)) == "10/USD(gw)");
-        BEAST_EXPECT(to_string(USD(-10)) == "-10/USD(gw)");
-        BEAST_EXPECT(USD(0) == STAmount(USD, 0));
-        BEAST_EXPECT(USD(1) == STAmount(USD, 1));
-        BEAST_EXPECT(USD(-1) == STAmount(USD, -1));
+        auto const usd = gw["USD"];
+        BEAST_EXPECT(to_string(usd(0)) == "0/USD(gw)");
+        BEAST_EXPECT(to_string(usd(10)) == "10/USD(gw)");
+        BEAST_EXPECT(to_string(usd(-10)) == "-10/USD(gw)");
+        BEAST_EXPECT(usd(0) == STAmount(usd, 0));
+        BEAST_EXPECT(usd(1) == STAmount(usd, 1));
+        BEAST_EXPECT(usd(-1) == STAmount(usd, -1));
 
         auto const get = [](AnyAmount a) { return a; };
-        BEAST_EXPECT(!get(USD(10)).is_any);
-        BEAST_EXPECT(get(any(USD(10))).is_any);
+        BEAST_EXPECT(!get(usd(10)).is_any);
+        BEAST_EXPECT(get(any(usd(10))).is_any);
     }
 
     // Test Env
@@ -125,7 +125,7 @@ public:
         using namespace jtx;
         auto const n = XRP(10000);
         auto const gw = Account("gw");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         auto const alice = Account("alice");
 
         // unfunded
@@ -159,22 +159,22 @@ public:
             Env env(*this);
             env.fund(n, "alice", "bob", gw);
             env.close();
-            env(trust("alice", USD(100)), require(lines("alice", 1)));
+            env(trust("alice", usd(100)), require(lines("alice", 1)));
         }
 
         // balance
         {
             Env env(*this);
             BEAST_EXPECT(env.balance(alice) == 0);
-            BEAST_EXPECT(env.balance(alice, USD) != 0);
-            BEAST_EXPECT(env.balance(alice, USD) == USD(0));
+            BEAST_EXPECT(env.balance(alice, usd) != 0);
+            BEAST_EXPECT(env.balance(alice, usd) == usd(0));
             env.fund(n, alice, gw);
             env.close();
             BEAST_EXPECT(env.balance(alice) == n);
             BEAST_EXPECT(env.balance(gw) == n);
-            env.trust(USD(1000), alice);
-            env(pay(gw, alice, USD(10)));
-            BEAST_EXPECT(to_string(env.balance("alice", USD)) == "10/USD(gw)");
+            env.trust(usd(1000), alice);
+            env(pay(gw, alice, usd(10)));
+            BEAST_EXPECT(to_string(env.balance("alice", usd)) == "10/USD(gw)");
             BEAST_EXPECT(to_string(env.balance(gw, alice["USD"])) == "-10/USD(alice)");
         }
 
@@ -209,16 +209,16 @@ public:
         using namespace jtx;
         Env env(*this);
         auto const gw = Account("gw");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.require(balance("alice", none));
         env.require(balance("alice", XRP(none)));
         env.fund(XRP(10000), "alice", gw);
         env.close();
-        env.require(balance("alice", USD(none)));
-        env.trust(USD(100), "alice");
+        env.require(balance("alice", usd(none)));
+        env.trust(usd(100), "alice");
         env.require(balance("alice", XRP(10000)));  // fee refunded
-        env.require(balance("alice", USD(0)));
-        env(pay(gw, "alice", USD(10)), require(balance("alice", USD(10))));
+        env.require(balance("alice", usd(0)));
+        env(pay(gw, "alice", usd(10)), require(balance("alice", usd(10))));
 
         env.require(nflags("alice", asfRequireDest));
         env(fset("alice", asfRequireDest), require(flags("alice", asfRequireDest)));
@@ -268,7 +268,7 @@ public:
         using namespace jtx;
         Env env(*this);
         auto const gw = Account("gateway");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         env.fund(XRP(10000), "alice", "bob", "carol", gw);
         env.require(balance("alice", XRP(10000)));
@@ -285,20 +285,20 @@ public:
 
         env(pay(env.master, "dilbert", XRP(1000)), sig(env.master));
 
-        env.trust(USD(100), "alice", "bob", "carol");
+        env.trust(usd(100), "alice", "bob", "carol");
         env.require(owners("alice", 1), lines("alice", 1));
         env(rate(gw, 1.05));
 
-        env(pay(gw, "carol", USD(50)));
-        env.require(balance("carol", USD(50)));
+        env(pay(gw, "carol", usd(50)));
+        env.require(balance("carol", usd(50)));
         env.require(balance(gw, Account("carol")["USD"](-50)));
 
-        env(offer("carol", XRP(50), USD(50)), require(owners("carol", 2)));
-        env(pay("alice", "bob", any(USD(10))), ter(tecPATH_DRY));
-        env(pay("alice", "bob", any(USD(10))), paths(XRP), sendmax(XRP(10)), ter(tecPATH_PARTIAL));
-        env(pay("alice", "bob", any(USD(10))), paths(XRP), sendmax(XRP(20)));
-        env.require(balance("bob", USD(10)));
-        env.require(balance("carol", USD(39.5)));
+        env(offer("carol", XRP(50), usd(50)), require(owners("carol", 2)));
+        env(pay("alice", "bob", any(usd(10))), ter(tecPATH_DRY));
+        env(pay("alice", "bob", any(usd(10))), paths(XRP), sendmax(XRP(10)), ter(tecPATH_PARTIAL));
+        env(pay("alice", "bob", any(usd(10))), paths(XRP), sendmax(XRP(20)));
+        env.require(balance("bob", usd(10)));
+        env.require(balance("carol", usd(39.5)));
 
         env.memoize("eric");
         env(regkey("alice", "eric"));
@@ -334,7 +334,7 @@ public:
         using namespace jtx;
         Env env(*this);
         auto const gw = Account("gateway");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         auto const alice = Account{"alice"};
         env.fund(XRP(10000), alice);
@@ -378,7 +378,7 @@ public:
         BEAST_EXPECT(env.app().getOPs().getLocalTxCount() == localTxCnt);
         BEAST_EXPECT(env.current()->txCount() == openTxCount);
 
-        jr = applyTxn(offer(alice, XRP(1000), USD(1000)));
+        jr = applyTxn(offer(alice, XRP(1000), usd(1000)));
 
         BEAST_EXPECT(jr[jss::result][jss::engine_result] == "tecUNFUNDED_OFFER");
         BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == queueTxCount);
@@ -610,17 +610,17 @@ public:
         using namespace jtx;
         Env env(*this);
         auto const gw = Account("gw");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(10000), "alice", "bob");
         env.close();
         env.json(
-            pay("alice", "bob", USD(10)),
+            pay("alice", "bob", usd(10)),
             path(Account("alice")),
             path("bob"),
-            path(USD),
+            path(usd),
             path(~XRP),
-            path(~USD),
-            path("bob", USD, ~XRP, ~USD));
+            path(~usd),
+            path("bob", usd, ~XRP, ~usd));
     }
 
     // Test that jtx can re-sign a transaction that's already been signed.

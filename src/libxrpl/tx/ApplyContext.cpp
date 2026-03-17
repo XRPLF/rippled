@@ -8,19 +8,19 @@
 namespace xrpl {
 
 ApplyContext::ApplyContext(
-    ServiceRegistry& registry_,
+    ServiceRegistry& registry,
     OpenView& base,
     std::optional<uint256 const> const& parentBatchId,
-    STTx const& tx_,
-    TER preclaimResult_,
-    XRPAmount baseFee_,
+    STTx const& tx,
+    TER preclaimResult,
+    XRPAmount baseFee,
     ApplyFlags flags,
-    beast::Journal journal_)
-    : registry(registry_)
-    , tx(tx_)
-    , preclaimResult(preclaimResult_)
-    , baseFee(baseFee_)
-    , journal(journal_)
+    beast::Journal journal)
+    : registry(registry)
+    , tx(tx)
+    , preclaimResult(preclaimResult)
+    , baseFee(baseFee)
+    , journal(journal)
     , base_(base)
     , flags_(flags)
     , parentBatchId_(parentBatchId)

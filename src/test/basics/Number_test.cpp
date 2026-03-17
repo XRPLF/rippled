@@ -1039,8 +1039,8 @@ public:
                 BEAST_EXPECT(j == y);
             }
         }
-        auto prev_mode = Number::setround(Number::towards_zero);
-        BEAST_EXPECT(prev_mode == Number::to_nearest);
+        auto prevMode = Number::setround(Number::towards_zero);
+        BEAST_EXPECT(prevMode == Number::to_nearest);
         {
             Case c[]{
                 {Number{0}, 0},
@@ -1077,8 +1077,8 @@ public:
                 BEAST_EXPECT(j == y);
             }
         }
-        prev_mode = Number::setround(Number::downward);
-        BEAST_EXPECT(prev_mode == Number::towards_zero);
+        prevMode = Number::setround(Number::downward);
+        BEAST_EXPECT(prevMode == Number::towards_zero);
         {
             Case c[]{
                 {Number{0}, 0},
@@ -1115,8 +1115,8 @@ public:
                 BEAST_EXPECT(j == y);
             }
         }
-        prev_mode = Number::setround(Number::upward);
-        BEAST_EXPECT(prev_mode == Number::downward);
+        prevMode = Number::setround(Number::upward);
+        BEAST_EXPECT(prevMode == Number::downward);
         {
             Case c[]{
                 {Number{0}, 0},

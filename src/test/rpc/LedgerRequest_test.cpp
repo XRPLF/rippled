@@ -147,7 +147,7 @@ public:
         Env env{*this, std::move(cfg), FeatureBitset{}};  // the hashes being checked below
                                                           // assume no amendments
         Account const gw{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(100000), gw);
         env.close();
 
@@ -242,7 +242,7 @@ public:
         using namespace test::jtx;
         Env env{*this};
         Account const gw{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(100000), gw);
         env.close();
 
@@ -300,12 +300,12 @@ public:
                     return cfg;
                 })};
         Account const gw{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(100000), gw);
 
-        int const max_limit = 256;
+        int const maxLimit = 256;
 
-        for (auto i = 0; i < max_limit + 10; i++)
+        for (auto i = 0; i < maxLimit + 10; i++)
         {
             Account const bob{std::string("bob") + std::to_string(i)};
             env.fund(XRP(1000), bob);
@@ -328,7 +328,7 @@ public:
         using namespace test::jtx;
         Env env{*this, envconfig(no_admin)};
         Account const gw{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(100000), gw);
 
         env.set_retries(0);

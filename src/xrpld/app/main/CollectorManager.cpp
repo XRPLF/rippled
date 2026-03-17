@@ -7,9 +7,11 @@ namespace xrpl {
 class CollectorManagerImp : public CollectorManager
 {
 public:
+    // NOLINTBEGIN(readability-identifier-naming)
     beast::Journal journal_;
     beast::insight::Collector::ptr collector_;
     std::unique_ptr<beast::insight::Groups> groups_;
+    // NOLINTEND(readability-identifier-naming)
 
     CollectorManagerImp(Section const& params, beast::Journal journal) : journal_(journal)
     {

@@ -346,9 +346,9 @@ public:
         env(signers(alice, 2, {{bogie, 3}}));
         env.close();
 
-        auto const EUR = gw1["EUR"];
-        env(trust(alice, EUR(200)));
-        env(trust(becky, EUR(200)));
+        auto const eur = gw1["EUR"];
+        env(trust(alice, eur(200)));
+        env(trust(becky, eur(200)));
         env.close();
 
         // Get all account objects for alice and verify that her
@@ -427,25 +427,25 @@ public:
         env.fund(XRP(10000), alice, becky, cheri, gw1, gw2);
         env.close();
 
-        auto const USD = gw1["USD"];
-        auto const AUD = gw1["AUD"];
-        auto const EUR = gw2["EUR"];
-        env(trust(alice, USD(200)));
-        env(trust(alice, AUD(200)));
-        env(trust(becky, EUR(200)));
-        env(trust(cheri, EUR(200)));
+        auto const usd = gw1["USD"];
+        auto const aud = gw1["AUD"];
+        auto const eur = gw2["EUR"];
+        env(trust(alice, usd(200)));
+        env(trust(alice, aud(200)));
+        env(trust(becky, eur(200)));
+        env(trust(cheri, eur(200)));
         env.close();
 
         // becky gets 100 USD from gw1.
-        env(pay(gw2, becky, EUR(100)));
+        env(pay(gw2, becky, eur(100)));
         env.close();
 
         // alice offers to buy 100 EUR for 100 XRP.
-        env(offer(alice, EUR(100), XRP(100)));
+        env(offer(alice, eur(100), XRP(100)));
         env.close();
 
         // becky offers to buy 100 XRP for 100 EUR.
-        env(offer(becky, XRP(100), EUR(100)));
+        env(offer(becky, XRP(100), eur(100)));
         env.close();
 
         // Get account_lines for alice.  Limit at 1, so we get a marker.
@@ -457,7 +457,7 @@ public:
         BEAST_EXPECT(linesBeg[jss::result].isMember(jss::marker));
 
         // alice pays 100 EUR to cheri.
-        env(pay(alice, cheri, EUR(100)));
+        env(pay(alice, cheri, eur(100)));
         env.close();
 
         // Since alice paid all her EUR to cheri, alice should no longer
@@ -520,9 +520,9 @@ public:
         env.close();
 
         // Trust lines
-        auto const EUR = gw1["EUR"];
-        env(trust(alice, EUR(200)));
-        env(trust(becky, EUR(200)));
+        auto const eur = gw1["EUR"];
+        env(trust(alice, eur(200)));
+        env(trust(becky, eur(200)));
         env.close();
 
         // Escrow, in each direction
@@ -571,16 +571,16 @@ public:
 
         // Offers, one where alice is the owner, and one where alice is the
         // issuer
-        auto const USDalice = alice["USD"];
-        env(offer(alice, EUR(10), XRP(100)));
-        env(offer(becky, USDalice(10), XRP(100)));
+        auto const usDalice = alice["USD"];
+        env(offer(alice, eur(10), XRP(100)));
+        env(offer(becky, usDalice(10), XRP(100)));
 
         // Tickets
         env(ticket::create(alice, 2));
 
         // Add another trustline for good measure
-        auto const BTCbecky = becky["BTC"];
-        env(trust(alice, BTCbecky(200)));
+        auto const btCbecky = becky["BTC"];
+        env(trust(alice, btCbecky(200)));
 
         env.close();
 
@@ -1182,25 +1182,25 @@ public:
         env.fund(XRP(10000), alice, becky, cheri, gw1, gw2);
         env.close();
 
-        auto const USD = gw1["USD"];
-        auto const AUD = gw1["AUD"];
-        auto const EUR = gw2["EUR"];
-        env(trust(alice, USD(200)));
-        env(trust(alice, AUD(200)));
-        env(trust(becky, EUR(200)));
-        env(trust(cheri, EUR(200)));
+        auto const usd = gw1["USD"];
+        auto const aud = gw1["AUD"];
+        auto const eur = gw2["EUR"];
+        env(trust(alice, usd(200)));
+        env(trust(alice, aud(200)));
+        env(trust(becky, eur(200)));
+        env(trust(cheri, eur(200)));
         env.close();
 
         // becky gets 100 EUR from gw1.
-        env(pay(gw2, becky, EUR(100)));
+        env(pay(gw2, becky, eur(100)));
         env.close();
 
         // alice offers to buy 100 EUR for 100 XRP.
-        env(offer(alice, EUR(100), XRP(100)));
+        env(offer(alice, eur(100), XRP(100)));
         env.close();
 
         // becky offers to buy 100 XRP for 100 EUR.
-        env(offer(becky, XRP(100), EUR(100)));
+        env(offer(becky, XRP(100), eur(100)));
         env.close();
 
         // Get account_lines for alice.  Limit at 1, so we get a marker.
@@ -1221,7 +1221,7 @@ public:
         BEAST_EXPECT(linesBeg.isMember(jss::id) && linesBeg[jss::id] == 5);
 
         // alice pays 100 USD to cheri.
-        env(pay(alice, cheri, EUR(100)));
+        env(pay(alice, cheri, eur(100)));
         env.close();
 
         // Since alice paid all her EUR to cheri, alice should no longer

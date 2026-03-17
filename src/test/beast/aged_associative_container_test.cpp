@@ -638,7 +638,7 @@ aged_associative_container_test_base::checkUnorderedContentsRefRef(C&& c, Values
         TestTraits<Cont::is_unordered::value, Cont::is_multi::value, Cont::is_map::value>;
     using size_type = typename Cont::size_type;
     auto const hash(c.hash_function());
-    auto const key_eq(c.key_eq());
+    auto const keyEq(c.key_eq());
     for (size_type i(0); i < c.bucket_count(); ++i)
     {
         auto const last(c.end(i));
@@ -649,7 +649,7 @@ aged_associative_container_test_base::checkUnorderedContentsRefRef(C&& c, Values
                     return Traits::extract(*iter) == Traits::extract(e);
                 }));
             BEAST_EXPECT(match != v.end());
-            BEAST_EXPECT(key_eq(Traits::extract(*iter), Traits::extract(*match)));
+            BEAST_EXPECT(keyEq(Traits::extract(*iter), Traits::extract(*match)));
             BEAST_EXPECT(hash(Traits::extract(*iter)) == hash(Traits::extract(*match)));
         }
     }
@@ -1033,33 +1033,33 @@ aged_associative_container_test_base::testIterator()
     using const_iterator = decltype(c.cbegin());
 
     // Should be able to construct or assign an iterator from an iterator.
-    iterator nnIt_0{c.begin()};
-    iterator nnIt_1{nnIt_0};
-    BEAST_EXPECT(nnIt_0 == nnIt_1);
-    iterator nnIt_2;
-    nnIt_2 = nnIt_1;
-    BEAST_EXPECT(nnIt_1 == nnIt_2);
+    iterator nnIt0{c.begin()};
+    iterator nnIt1{nnIt0};
+    BEAST_EXPECT(nnIt0 == nnIt1);
+    iterator nnIt2;
+    nnIt2 = nnIt1;
+    BEAST_EXPECT(nnIt1 == nnIt2);
 
     // Should be able to construct or assign a const_iterator from a
     // const_iterator.
-    const_iterator ccIt_0{c.cbegin()};
-    const_iterator ccIt_1{ccIt_0};
-    BEAST_EXPECT(ccIt_0 == ccIt_1);
-    const_iterator ccIt_2;
-    ccIt_2 = ccIt_1;
-    BEAST_EXPECT(ccIt_1 == ccIt_2);
+    const_iterator ccIt0{c.cbegin()};
+    const_iterator ccIt1{ccIt0};
+    BEAST_EXPECT(ccIt0 == ccIt1);
+    const_iterator ccIt2;
+    ccIt2 = ccIt1;
+    BEAST_EXPECT(ccIt1 == ccIt2);
 
     // Comparison between iterator and const_iterator is okay
-    BEAST_EXPECT(nnIt_0 == ccIt_0);
-    BEAST_EXPECT(ccIt_1 == nnIt_1);
+    BEAST_EXPECT(nnIt0 == ccIt0);
+    BEAST_EXPECT(ccIt1 == nnIt1);
 
     // Should be able to construct a const_iterator from an iterator.
-    const_iterator ncIt_3{c.begin()};
-    const_iterator ncIt_4{nnIt_0};
-    BEAST_EXPECT(ncIt_3 == ncIt_4);
-    const_iterator ncIt_5;
-    ncIt_5 = nnIt_2;
-    BEAST_EXPECT(ncIt_5 == ncIt_4);
+    const_iterator ncIt3{c.begin()};
+    const_iterator ncIt4{nnIt0};
+    BEAST_EXPECT(ncIt3 == ncIt4);
+    const_iterator ncIt5;
+    ncIt5 = nnIt2;
+    BEAST_EXPECT(ncIt5 == ncIt4);
 
     // None of these should compile because they construct or assign to a
     // non-const iterator with a const_iterator.
@@ -1098,33 +1098,33 @@ aged_associative_container_test_base::testReverseIterator()
 
     // Should be able to construct or assign a reverse_iterator from a
     // reverse_iterator.
-    reverse_iterator rNrNit_0{c.rbegin()};
-    reverse_iterator rNrNit_1{rNrNit_0};
-    BEAST_EXPECT(rNrNit_0 == rNrNit_1);
-    reverse_iterator xXrNit_2;
-    xXrNit_2 = rNrNit_1;
-    BEAST_EXPECT(rNrNit_1 == xXrNit_2);
+    reverse_iterator rNrNit0{c.rbegin()};
+    reverse_iterator rNrNit1{rNrNit0};
+    BEAST_EXPECT(rNrNit0 == rNrNit1);
+    reverse_iterator xXrNit2;
+    xXrNit2 = rNrNit1;
+    BEAST_EXPECT(rNrNit1 == xXrNit2);
 
     // Should be able to construct or assign a const_reverse_iterator from a
     // const_reverse_iterator
-    const_reverse_iterator rCrCit_0{c.crbegin()};
-    const_reverse_iterator rCrCit_1{rCrCit_0};
-    BEAST_EXPECT(rCrCit_0 == rCrCit_1);
-    const_reverse_iterator xXrCit_2;
-    xXrCit_2 = rCrCit_1;
-    BEAST_EXPECT(rCrCit_1 == xXrCit_2);
+    const_reverse_iterator rCrCit0{c.crbegin()};
+    const_reverse_iterator rCrCit1{rCrCit0};
+    BEAST_EXPECT(rCrCit0 == rCrCit1);
+    const_reverse_iterator xXrCit2;
+    xXrCit2 = rCrCit1;
+    BEAST_EXPECT(rCrCit1 == xXrCit2);
 
     // Comparison between reverse_iterator and const_reverse_iterator is okay
-    BEAST_EXPECT(rNrNit_0 == rCrCit_0);
-    BEAST_EXPECT(rCrCit_1 == rNrNit_1);
+    BEAST_EXPECT(rNrNit0 == rCrCit0);
+    BEAST_EXPECT(rCrCit1 == rNrNit1);
 
     // Should be able to construct or assign a const_reverse_iterator from a
     // reverse_iterator
-    const_reverse_iterator rNrCit_0{c.rbegin()};
-    const_reverse_iterator rNrCit_1{rNrNit_0};
-    BEAST_EXPECT(rNrCit_0 == rNrCit_1);
-    xXrCit_2 = rNrNit_1;
-    BEAST_EXPECT(rNrCit_1 == xXrCit_2);
+    const_reverse_iterator rNrCit0{c.rbegin()};
+    const_reverse_iterator rNrCit1{rNrNit0};
+    BEAST_EXPECT(rNrCit0 == rNrCit1);
+    xXrCit2 = rNrNit1;
+    BEAST_EXPECT(rNrCit1 == xXrCit2);
 
     // The standard allows these conversions:
     //  o reverse_iterator is explicitly constructible from iterator.
@@ -1132,11 +1132,11 @@ aged_associative_container_test_base::testReverseIterator()
     //  const_iterator.
     // Should be able to construct or assign reverse_iterators from
     // non-reverse iterators.
-    reverse_iterator fNrNit_0{c.begin()};
-    const_reverse_iterator fNrCit_0{c.begin()};
-    BEAST_EXPECT(fNrNit_0 == fNrCit_0);
-    const_reverse_iterator fCrCit_0{c.cbegin()};
-    BEAST_EXPECT(fNrCit_0 == fCrCit_0);
+    reverse_iterator fNrNit0{c.begin()};
+    const_reverse_iterator fNrCit0{c.begin()};
+    BEAST_EXPECT(fNrNit0 == fNrCit0);
+    const_reverse_iterator fCrCit0{c.cbegin()};
+    BEAST_EXPECT(fNrCit0 == fCrCit0);
 
     // None of these should compile because they construct a non-reverse
     // iterator from a reverse_iterator.
@@ -1146,7 +1146,7 @@ aged_associative_container_test_base::testReverseIterator()
 
     // You should not be able to assign an iterator to a reverse_iterator or
     // vise-versa.  So the following lines should not compile.
-    iterator xXfNit_0;
+    iterator xXfNit0;
     //  xXfNit_0 = xXrNit_2;
     //  xXrNit_2 = xXfNit_0;
 }

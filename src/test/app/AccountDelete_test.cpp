@@ -318,17 +318,17 @@ public:
         {
             Account const gw1("gw1");
             Account const carol("carol");
-            auto const USD = gw1["USD"];
+            auto const usd = gw1["USD"];
             env.fund(XRP(100000), carol, gw1);
             env(fset(gw1, asfAllowTrustLineLocking));
             env.close();
-            env.trust(USD(10000), carol);
+            env.trust(usd(10000), carol);
             env.close();
-            env(pay(gw1, carol, USD(100)));
+            env(pay(gw1, carol, usd(100)));
             env.close();
 
             std::uint32_t const escrowSeq{env.seq(carol)};
-            env(escrow::create(carol, becky, USD(1)),
+            env(escrow::create(carol, becky, usd(1)),
                 escrow::finish_time(env.now() + 3s),
                 escrow::cancel_time(env.now() + 4s));
             env.close();
@@ -512,20 +512,20 @@ public:
         Env env{*this};
         Account const alice{"alice"};
         Account const gw{"gw"};
-        auto const BUX{gw["BUX"]};
+        auto const bux{gw["BUX"]};
 
         env.fund(XRP(10000), alice, gw);
         env.close();
 
         // alice creates an offer that, if crossed, will implicitly create
         // a trust line.
-        env(offer(alice, BUX(30), XRP(30)));
+        env(offer(alice, bux(30), XRP(30)));
         env.close();
 
         // gw crosses alice's offer.  alice should end up with BUX(30).
-        env(offer(gw, XRP(30), BUX(30)));
+        env(offer(gw, XRP(30), bux(30)));
         env.close();
-        env.require(balance(alice, BUX(30)));
+        env.require(balance(alice, bux(30)));
 
         // Close enough ledgers to be able to delete alice's account.
         incLgrSeqForAccDel(env, alice);

@@ -556,8 +556,8 @@ private:
     {
         Json::Reader reader;
         Json::Value jv;
-        bool valid_parse = reader.parse(jvParams[0u].asString(), jv);
-        if (valid_parse && isValidJson2(jv))
+        bool validParse = reader.parse(jvParams[0u].asString(), jv);
+        if (validParse && isValidJson2(jv))
         {
             if (jv.isObject())
             {
@@ -591,14 +591,14 @@ private:
             }
             return jv1;
         }
-        auto jv_error = rpcError(rpcINVALID_PARAMS);
+        auto jvError = rpcError(rpcINVALID_PARAMS);
         if (jv.isMember(jss::jsonrpc))
-            jv_error[jss::jsonrpc] = jv[jss::jsonrpc];
+            jvError[jss::jsonrpc] = jv[jss::jsonrpc];
         if (jv.isMember(jss::ripplerpc))
-            jv_error[jss::ripplerpc] = jv[jss::ripplerpc];
+            jvError[jss::ripplerpc] = jv[jss::ripplerpc];
         if (jv.isMember(jss::id))
-            jv_error[jss::id] = jv[jss::id];
-        return jv_error;
+            jvError[jss::id] = jv[jss::id];
+        return jvError;
     }
 
     // ledger [id|index|current|closed|validated] [full|tx]
@@ -1427,7 +1427,7 @@ rpcCmdToJson(
 
     jvRequest = rpParser.parseCommand(args[0], jvRpcParams, true);
 
-    auto insert_api_version = [apiVersion](Json::Value& jr) {
+    auto insertApiVersion = [apiVersion](Json::Value& jr) {
         if (jr.isObject() && !jr.isMember(jss::error) && !jr.isMember(jss::api_version))
         {
             jr[jss::api_version] = apiVersion;
@@ -1435,9 +1435,9 @@ rpcCmdToJson(
     };
 
     if (jvRequest.isObject())
-        insert_api_version(jvRequest);
+        insertApiVersion(jvRequest);
     else if (jvRequest.isArray())
-        std::for_each(jvRequest.begin(), jvRequest.end(), insert_api_version);
+        std::for_each(jvRequest.begin(), jvRequest.end(), insertApiVersion);
 
     JLOG(j.trace()) << "RPC Request: " << jvRequest << std::endl;
     return jvRequest;
@@ -1601,7 +1601,7 @@ fromCommandLine(Config const& config, std::vector<std::string> const& vCmd, Logs
 
 void
 fromNetwork(
-    boost::asio::io_context& io_context,
+    boost::asio::io_context& ioContext,
     std::string const& strIp,
     std::uint16_t const iPort,
     std::string const& strUsername,
@@ -1632,14 +1632,14 @@ fromNetwork(
 
     // Number of bytes to try to receive if no
     // Content-Length header received
-    constexpr auto RPC_REPLY_MAX_BYTES = megabytes(256);
+    constexpr auto rpcReplyMaxBytes = megabytes(256);
 
     using namespace std::chrono_literals;
-    auto constexpr RPC_WEBHOOK_TIMEOUT = 30s;
+    auto constexpr rpcWebhookTimeout = 30s;
 
     HTTPClient::request(
         bSSL,
-        io_context,
+        ioContext,
         strIp,
         iPort,
         std::bind(
@@ -1651,8 +1651,8 @@ fromNetwork(
             std::placeholders::_1,
             std::placeholders::_2,
             j),
-        RPC_REPLY_MAX_BYTES,
-        RPC_WEBHOOK_TIMEOUT,
+        rpcReplyMaxBytes,
+        rpcWebhookTimeout,
         std::bind(
             &RPCCallImp::onResponse,
             callbackFuncP,

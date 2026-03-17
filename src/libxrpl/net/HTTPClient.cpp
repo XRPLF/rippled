@@ -42,16 +42,16 @@ class HTTPClientImp : public std::enable_shared_from_this<HTTPClientImp>, public
 {
 public:
     HTTPClientImp(
-        boost::asio::io_context& io_context,
+        boost::asio::io_context& ioContext,
         unsigned short const port,
         std::size_t maxResponseSize,
         beast::Journal& j)
-        : socket_(io_context, httpClientSSLContext->context())
-        , resolver_(io_context)
+        : socket_(ioContext, httpClientSSLContext->context())
+        , resolver_(ioContext)
         , header_(maxClientHeaderBytes)
         , port_(port)
         , maxResponseSize_(maxResponseSize)
-        , deadline_(io_context)
+        , deadline_(ioContext)
         , j_(j)
     {
     }
@@ -313,7 +313,7 @@ public:
     }
 
     void
-    handleWrite(boost::system::error_code const& ecResult, std::size_t bytes_transferred)
+    handleWrite(boost::system::error_code const& ecResult, std::size_t bytesTransferred)
     {
         if (!shutdown_)
             shutdown_ = ecResult;
@@ -340,7 +340,7 @@ public:
     }
 
     void
-    handleHeader(boost::system::error_code const& ecResult, std::size_t bytes_transferred)
+    handleHeader(boost::system::error_code const& ecResult, std::size_t bytesTransferred)
     {
         std::string strHeader{
             {std::istreambuf_iterator<char>(&header_)}, std::istreambuf_iterator<char>()};
@@ -407,7 +407,7 @@ public:
     }
 
     void
-    handleData(boost::system::error_code const& ecResult, std::size_t bytes_transferred)
+    handleData(boost::system::error_code const& ecResult, std::size_t bytesTransferred)
     {
         if (!shutdown_)
             shutdown_ = ecResult;
@@ -426,7 +426,7 @@ public:
             }
             else
             {
-                response_.commit(bytes_transferred);
+                response_.commit(bytesTransferred);
                 std::string strBody{
                     {std::istreambuf_iterator<char>(&response_)}, std::istreambuf_iterator<char>()};
                 invokeComplete(ecResult, status_, body_ + strBody);
@@ -517,7 +517,7 @@ private:
 void
 HTTPClient::get(
     bool bSSL,
-    boost::asio::io_context& io_context,
+    boost::asio::io_context& ioContext,
     std::deque<std::string> deqSites,
     unsigned short const port,
     std::string const& strPath,
@@ -528,14 +528,14 @@ HTTPClient::get(
         complete,
     beast::Journal& j)
 {
-    auto client = std::make_shared<HTTPClientImp>(io_context, port, responseMax, j);
+    auto client = std::make_shared<HTTPClientImp>(ioContext, port, responseMax, j);
     client->get(bSSL, deqSites, strPath, timeout, complete);
 }
 
 void
 HTTPClient::get(
     bool bSSL,
-    boost::asio::io_context& io_context,
+    boost::asio::io_context& ioContext,
     std::string strSite,
     unsigned short const port,
     std::string const& strPath,
@@ -548,14 +548,14 @@ HTTPClient::get(
 {
     std::deque<std::string> deqSites(1, strSite);
 
-    auto client = std::make_shared<HTTPClientImp>(io_context, port, responseMax, j);
+    auto client = std::make_shared<HTTPClientImp>(ioContext, port, responseMax, j);
     client->get(bSSL, deqSites, strPath, timeout, complete);
 }
 
 void
 HTTPClient::request(
     bool bSSL,
-    boost::asio::io_context& io_context,
+    boost::asio::io_context& ioContext,
     std::string strSite,
     unsigned short const port,
     std::function<void(boost::asio::streambuf& sb, std::string const& strHost)> setRequest,
@@ -568,7 +568,7 @@ HTTPClient::request(
 {
     std::deque<std::string> deqSites(1, strSite);
 
-    auto client = std::make_shared<HTTPClientImp>(io_context, port, responseMax, j);
+    auto client = std::make_shared<HTTPClientImp>(ioContext, port, responseMax, j);
     client->request(bSSL, deqSites, setRequest, timeout, complete);
 }
 

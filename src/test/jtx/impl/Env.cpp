@@ -54,12 +54,12 @@ Env::AppBundle::AppBundle(
         // Use kFatal threshold to reduce noise from STObject.
         setDebugLogSink(std::make_unique<SuiteJournalSink>("Debug", kFatal, suite));
     }
-    auto timeKeeper_ = std::make_unique<ManualTimeKeeper>();
-    timeKeeper = timeKeeper_.get();
+    auto tk = std::make_unique<ManualTimeKeeper>();
+    timeKeeper = tk.get();
     // Hack so we don't have to call Config::setup
     HTTPClient::initializeSSLContext(
         config->SSL_VERIFY_DIR, config->SSL_VERIFY_FILE, config->SSL_VERIFY, debugLog());
-    owned = make_Application(std::move(config), std::move(logs), std::move(timeKeeper_));
+    owned = make_Application(std::move(config), std::move(logs), std::move(tk));
     app = owned.get();
     app->logs().threshold(thresh);
     if (!app->setup({}))

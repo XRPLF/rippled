@@ -20,11 +20,11 @@ class Loan_test : public beast::unit_test::suite
 protected:
     // Ensure that all the features needed for Lending Protocol are included,
     // even if they are set to unsupported.
-    FeatureBitset const all{
+    FeatureBitset const all_{
         jtx::testable_amendments() | featureMPTokensV1 | featureSingleAssetVault |
         featureLendingProtocol};
 
-    std::string const iouCurrency{"IOU"};
+    std::string const iouCurrency_{"IOU"};
 
     void
     testDisabled()
@@ -67,10 +67,10 @@ protected:
             // 4. LoanPay
             env(pay(alice, loanKeylet.key, XRP(500)), ter(temDISABLED));
         };
-        failAll(all - featureMPTokensV1);
-        failAll(all - featureSingleAssetVault - featureLendingProtocol);
-        failAll(all - featureSingleAssetVault);
-        failAll(all - featureLendingProtocol);
+        failAll(all_ - featureMPTokensV1);
+        failAll(all_ - featureSingleAssetVault - featureLendingProtocol);
+        failAll(all_ - featureSingleAssetVault);
+        failAll(all_ - featureLendingProtocol);
     }
 
     struct BrokerParameters
@@ -111,11 +111,11 @@ protected:
         uint256 vaultID;
         BrokerParameters params;
         BrokerInfo(
-            jtx::PrettyAsset const& asset_,
-            Keylet const& brokerKeylet_,
-            Keylet const& vaultKeylet_,
+            jtx::PrettyAsset const& asset,
+            Keylet const& brokerKeylet,
+            Keylet const& vaultKeylet,
             BrokerParameters const& p)
-            : asset(asset_), brokerID(brokerKeylet_.key), vaultID(vaultKeylet_.key), params(p)
+            : asset(asset), brokerID(brokerKeylet.key), vaultID(vaultKeylet.key), params(p)
         {
         }
 
@@ -257,11 +257,11 @@ protected:
         Keylet const& loanKeylet;
 
         VerifyLoanStatus(
-            jtx::Env const& env_,
-            BrokerInfo const& broker_,
-            jtx::Account const& pseudo_,
-            Keylet const& keylet_)
-            : env(env_), broker(broker_), pseudoAccount(pseudo_), loanKeylet(keylet_)
+            jtx::Env const& env,
+            BrokerInfo const& broker,
+            jtx::Account const& pseudo,
+            Keylet const& keylet)
+            : env(env), broker(broker), pseudoAccount(pseudo), loanKeylet(keylet)
         {
         }
 
@@ -582,7 +582,7 @@ protected:
                 return PrettyAsset{xrpIssue(), 1'000'000};
 
             case AssetType::IOU: {
-                PrettyAsset const asset{issuer[iouCurrency]};
+                PrettyAsset const asset{issuer[iouCurrency_]};
 
                 auto const limit =
                     asset(100 * (brokerParams.vaultDeposit + brokerParams.coverDeposit));
@@ -1123,7 +1123,7 @@ protected:
         Account const lender("lender");
         Account const borrower("borrower");
 
-        Env env(*this, all);
+        Env env(*this, all_);
 
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
@@ -1810,14 +1810,14 @@ protected:
                 else if (broker.asset.holds<Issue>())
                 {
                     auto freeze = [&](Account const& holder) {
-                        env(trust(issuer, holder[iouCurrency](0), tfSetFreeze));
+                        env(trust(issuer, holder[iouCurrency_](0), tfSetFreeze));
                     };
                     auto deepfreeze = [&](Account const& holder) {
-                        env(trust(issuer, holder[iouCurrency](0), tfSetFreeze | tfSetDeepFreeze));
+                        env(trust(issuer, holder[iouCurrency_](0), tfSetFreeze | tfSetDeepFreeze));
                     };
                     auto unfreeze = [&](Account const& holder) {
                         env(trust(
-                            issuer, holder[iouCurrency](0), tfClearFreeze | tfClearDeepFreeze));
+                            issuer, holder[iouCurrency_](0), tfClearFreeze | tfClearDeepFreeze));
                     };
                     return std::make_tuple(freeze, deepfreeze, unfreeze, tecFROZEN);
                 }
@@ -1869,7 +1869,7 @@ protected:
                 // freeze it. (Don't need to do this for the borrower,
                 // because LoanSet will create a line to the borrower
                 // automatically.)
-                env(trust(evan, issuer[iouCurrency](100'000)));
+                env(trust(evan, issuer[iouCurrency_](100'000)));
 
                 for (auto const& account : {// these accounts can't be frozen, which deep freeze
                                             // implies
@@ -2795,7 +2795,7 @@ protected:
                                   std::function<void(Env&, BrokerInfo const&, MPTTester&)> mptTest,
                                   std::function<void(Env&, BrokerInfo const&)> iouTest,
                                   CaseArgs args = {}) {
-            Env env(*this, all);
+            Env env(*this, all_);
             env.fund(XRP(args.initialXRP), issuer, lender, borrower);
             env.close();
             if (args.requireAuth)
@@ -2829,7 +2829,7 @@ protected:
             env.close();
 
             // Prepare IOU
-            PrettyAsset const iouAsset = issuer[iouCurrency];
+            PrettyAsset const iouAsset = issuer[iouCurrency_];
             env(trust(lender, iouAsset(10'000'000)));
             env(trust(borrower, iouAsset(10'000'000)));
             env.close();
@@ -3339,7 +3339,7 @@ protected:
 
         // Create 3 loan brokers: one for XRP, one for an IOU, and one for
         // an MPT. That'll require three corresponding SAVs.
-        Env env(*this, all);
+        Env env(*this, all_);
 
         Account const issuer{"issuer"};
         // For simplicity, lender will be the sole actor for the vault &
@@ -3359,7 +3359,7 @@ protected:
 
         // Create assets
         PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
-        PrettyAsset const iouAsset = issuer[iouCurrency];
+        PrettyAsset const iouAsset = issuer[iouCurrency_];
         env(trust(lender, iouAsset(10'000'000)));
         env(trust(borrower, iouAsset(10'000'000)));
         env(trust(evan, iouAsset(10'000'000)));
@@ -3433,7 +3433,7 @@ protected:
         using namespace std::chrono_literals;
         // Create 3 loan brokers: one for XRP, one for an IOU, and one for
         // an MPT. That'll require three corresponding SAVs.
-        Env env(*this, all);
+        Env env(*this, all_);
 
         Account const issuer{"issuer"};
         // For simplicity, lender will be the sole actor for the vault &
@@ -3572,7 +3572,7 @@ protected:
 
         using namespace jtx;
         using namespace std::chrono_literals;
-        Env env(*this, all);
+        Env env(*this, all_);
 
         Account const lender{"lender"};
         Account const borrower{"borrower"};
@@ -3635,7 +3635,7 @@ protected:
 
         using namespace jtx;
         using namespace std::chrono_literals;
-        Env env(*this, all);
+        Env env(*this, all_);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -3682,7 +3682,7 @@ protected:
 
         using namespace jtx;
         using namespace std::chrono_literals;
-        Env env(*this, all);
+        Env env(*this, all_);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -3750,7 +3750,7 @@ protected:
 
         using namespace jtx;
 
-        Env env(*this, all);
+        Env env(*this, all_);
 
         auto lowerFee = [&]() {
             // Run the local fee back down.
@@ -4054,7 +4054,7 @@ protected:
         Account const issuer("issuer");
         Account const borrower("borrower");
         Account const broker("broker");
-        auto const IOU = issuer["IOU"];
+        auto const iou = issuer["IOU"];
 
         for (bool const deepFreeze : {true, false})
         {
@@ -4065,7 +4065,7 @@ protected:
                     BEAST_EXPECT(le))
                 {
                     auto const account = le->at(accountField);
-                    if (auto const sleLine = env.le(keylet::line(account, IOU));
+                    if (auto const sleLine = env.le(keylet::line(account, iou));
                         BEAST_EXPECT(sleLine))
                     {
                         STAmount balance = sleLine->at(sfBalance);
@@ -4074,33 +4074,33 @@ protected:
                         return balance;
                     }
                 }
-                return STAmount{IOU};
+                return STAmount{iou};
             };
 
             env.fund(XRP(20'000), issuer, broker, borrower);
             env.close();
 
-            env(trust(broker, IOU(20'000'000)));
-            env(pay(issuer, broker, IOU(10'000'000)));
+            env(trust(broker, iou(20'000'000)));
+            env(pay(issuer, broker, iou(10'000'000)));
             env.close();
 
-            auto const brokerInfo = createVaultAndBroker(env, IOU, broker);
+            auto const brokerInfo = createVaultAndBroker(env, iou, broker);
 
-            BEAST_EXPECT(getCoverBalance(brokerInfo, sfAccount) == IOU(1'000));
+            BEAST_EXPECT(getCoverBalance(brokerInfo, sfAccount) == iou(1'000));
 
             auto const keylet = keylet::loan(brokerInfo.brokerID, 1);
 
             env(set(borrower, brokerInfo.brokerID, 10'000),
                 sig(sfCounterpartySignature, broker),
-                loanServiceFee(IOU(100).value()),
+                loanServiceFee(iou(100).value()),
                 paymentInterval(100),
                 fee(XRP(100)));
             env.close();
 
-            env(trust(borrower, IOU(20'000'000)));
+            env(trust(borrower, iou(20'000'000)));
             // The borrower increases their limit and acquires some IOU so
             // they can pay interest
-            env(pay(issuer, borrower, IOU(500)));
+            env(pay(issuer, borrower, iou(500)));
             env.close();
 
             if (auto const le = env.le(keylet::loan(keylet.key)); BEAST_EXPECT(le))
@@ -4111,20 +4111,20 @@ protected:
                     env.close();
                 }
 
-                env(pay(borrower, keylet.key, IOU(10'100)), fee(XRP(100)));
+                env(pay(borrower, keylet.key, iou(10'100)), fee(XRP(100)));
                 env.close();
 
                 if (deepFreeze)
                 {
                     // The fee goes to the broker pseudo-account
-                    BEAST_EXPECT(getCoverBalance(brokerInfo, sfAccount) == IOU(1'100));
-                    BEAST_EXPECT(getCoverBalance(brokerInfo, sfOwner) == IOU(8'999'000));
+                    BEAST_EXPECT(getCoverBalance(brokerInfo, sfAccount) == iou(1'100));
+                    BEAST_EXPECT(getCoverBalance(brokerInfo, sfOwner) == iou(8'999'000));
                 }
                 else
                 {
                     // The fee goes to the broker account
-                    BEAST_EXPECT(getCoverBalance(brokerInfo, sfOwner) == IOU(8'999'100));
-                    BEAST_EXPECT(getCoverBalance(brokerInfo, sfAccount) == IOU(1'000));
+                    BEAST_EXPECT(getCoverBalance(brokerInfo, sfOwner) == iou(8'999'100));
+                    BEAST_EXPECT(getCoverBalance(brokerInfo, sfAccount) == iou(1'000));
                 }
             }
         };
@@ -4210,13 +4210,13 @@ protected:
         Account const lender{"lender"};
         Account const issuer{"issuer"};
         Account const borrower{"borrower"};
-        auto const IOU = issuer["IOU"];
+        auto const iou = issuer["IOU"];
 
         // preclaim
         Env env(*this);
         env.fund(XRP(1'000), lender, issuer, borrower);
-        env(trust(lender, IOU(10'000'000)));
-        env(pay(issuer, lender, IOU(5'000'000)));
+        env(trust(lender, iou(10'000'000)));
+        env(pay(issuer, lender, iou(5'000'000)));
         BrokerInfo brokerInfo{createVaultAndBroker(env, issuer["IOU"], lender)};
 
         auto const loanSetFee = fee(env.current()->fees().base * 2);
@@ -4290,13 +4290,13 @@ protected:
         Account const lender{"lender"};
         Account const issuer{"issuer"};
         Account const borrower{"borrower"};
-        auto const IOU = issuer["IOU"];
+        auto const iou = issuer["IOU"];
 
         auto testWrapper = [&](auto&& test) {
             Env env(*this);
             env.fund(XRP(1'000), lender, issuer, borrower);
-            env(trust(lender, IOU(10'000'000)));
-            env(pay(issuer, lender, IOU(5'000'000)));
+            env(trust(lender, iou(10'000'000)));
+            env(pay(issuer, lender, iou(5'000'000)));
             BrokerInfo brokerInfo{createVaultAndBroker(env, issuer["IOU"], lender)};
 
             auto const loanSetFee = fee(env.current()->fees().base * 2);
@@ -4430,7 +4430,7 @@ protected:
 
         using namespace jtx;
         using namespace std::chrono_literals;
-        Env env(*this, all);
+        Env env(*this, all_);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -4491,7 +4491,7 @@ protected:
         using namespace jtx;
         using namespace std::chrono_literals;
         using namespace Lending;
-        Env env(*this, all);
+        Env env(*this, all_);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -4500,7 +4500,7 @@ protected:
         env.fund(XRP(1'000'000), issuer, lender, borrower);
         env.close();
 
-        PrettyAsset const iouAsset = issuer[iouCurrency];
+        PrettyAsset const iouAsset = issuer[iouCurrency_];
         auto trustLenderTx = env.json(trust(lender, iouAsset(1'000'000'000)));
         env(trustLenderTx);
         auto trustBorrowerTx = env.json(trust(borrower, iouAsset(1'000'000'000)));
@@ -4582,7 +4582,7 @@ protected:
 
         using namespace jtx;
         using namespace std::chrono_literals;
-        Env env(*this, all);
+        Env env(*this, all_);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -4591,7 +4591,7 @@ protected:
         env.fund(XRP(1'000'000), issuer, lender, borrower);
         env.close();
 
-        PrettyAsset const iouAsset = issuer[iouCurrency];
+        PrettyAsset const iouAsset = issuer[iouCurrency_];
         auto trustLenderTx = env.json(trust(lender, iouAsset(1'000'000'000)));
         env(trustLenderTx);
         auto trustBorrowerTx = env.json(trust(borrower, iouAsset(1'000'000'000)));
@@ -4648,7 +4648,7 @@ protected:
         using namespace jtx;
         using namespace std::chrono_literals;
         using namespace Lending;
-        Env env(*this, all);
+        Env env(*this, all_);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -4657,7 +4657,7 @@ protected:
         env.fund(XRP(1'000'000), issuer, lender, borrower);
         env.close();
 
-        PrettyAsset const iouAsset = issuer[iouCurrency];
+        PrettyAsset const iouAsset = issuer[iouCurrency_];
         env(trust(lender, iouAsset(100'000'000)));
         env(trust(borrower, iouAsset(100'000'000)));
         env(pay(issuer, lender, iouAsset(10'000'000)));
@@ -4726,7 +4726,7 @@ protected:
         using namespace jtx;
         using namespace std::chrono_literals;
         using namespace Lending;
-        Env env(*this, all);
+        Env env(*this, all_);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -4735,7 +4735,7 @@ protected:
         env.fund(XRP(1'000'000), issuer, lender, borrower);
         env.close();
 
-        PrettyAsset const iouAsset = issuer[iouCurrency];
+        PrettyAsset const iouAsset = issuer[iouCurrency_];
         auto trustLenderTx = env.json(trust(lender, iouAsset(1'000'000'000)));
         env(trustLenderTx);
         auto trustBorrowerTx = env.json(trust(borrower, iouAsset(1'000'000'000)));
@@ -4825,7 +4825,7 @@ protected:
         using namespace jtx;
         using namespace std::chrono_literals;
         using namespace Lending;
-        Env env(*this, all);
+        Env env(*this, all_);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -4834,7 +4834,7 @@ protected:
         env.fund(XRP(1'000'000), issuer, lender, borrower);
         env.close();
 
-        PrettyAsset const iouAsset = issuer[iouCurrency];
+        PrettyAsset const iouAsset = issuer[iouCurrency_];
         auto trustLenderTx = env.json(trust(lender, iouAsset(1'000'000'000)));
         env(trustLenderTx);
         auto trustBorrowerTx = env.json(trust(borrower, iouAsset(1'000'000'000)));
@@ -4910,7 +4910,7 @@ protected:
         using namespace jtx;
         using namespace std::chrono_literals;
         using namespace Lending;
-        Env env(*this, all);
+        Env env(*this, all_);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -4919,7 +4919,7 @@ protected:
         env.fund(XRP(1'000'000), issuer, lender, borrower);
         env.close();
 
-        PrettyAsset const iouAsset = issuer[iouCurrency];
+        PrettyAsset const iouAsset = issuer[iouCurrency_];
         auto trustLenderTx = env.json(trust(lender, iouAsset(1'000'000'000)));
         env(trustLenderTx);
         auto trustBorrowerTx = env.json(trust(borrower, iouAsset(1'000'000'000)));
@@ -5215,7 +5215,7 @@ protected:
         using namespace jtx;
         using namespace loanBroker;
 
-        Env env(*this, all);
+        Env env(*this, all_);
 
         Account const issuer{"issuer"};
         Account const alice{"alice"};
@@ -5565,7 +5565,7 @@ protected:
         using namespace loan;
         using namespace std::chrono_literals;
 
-        Env env(*this, all);
+        Env env(*this, all_);
 
         Account const lender{"poc_lender4"};
         Account const borrower{"poc_borrower4"};
@@ -5767,7 +5767,7 @@ protected:
 
         using namespace jtx;
         using namespace std::chrono_literals;
-        Env env(*this, all);
+        Env env(*this, all_);
 
         // Setup: Create accounts
         Account issuer{"issuer"};
@@ -5928,7 +5928,7 @@ protected:
 
         auto const assetType = AssetType::XRP;
 
-        Env env(*this, all);
+        Env env(*this, all_);
 
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
@@ -5999,7 +5999,7 @@ protected:
 
         auto const assetType = AssetType::MPT;
 
-        Env env(*this, all);
+        Env env(*this, all_);
 
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
@@ -6106,7 +6106,7 @@ protected:
         using namespace jtx;
         using namespace loanBroker;
 
-        Env env(*this, all);
+        Env env(*this, all_);
 
         Account const lender{"lender"};
         Account const borrower{"borrower"};
@@ -6205,7 +6205,7 @@ protected:
 
         auto const assetType = AssetType::IOU;
 
-        Env env(*this, all);
+        Env env(*this, all_);
 
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
@@ -6239,7 +6239,7 @@ protected:
         using namespace loan;
         Account const broker{"broker"};
         Account const issuer{"issuer"};
-        Account const borrower_{"borrower"};
+        Account const borrower{"borrower"};
         Account const depositor{"depositor"};
 
         auto testLoanAsset = [&](auto&& getMaxDebt, auto const& borrower) {
@@ -6316,19 +6316,19 @@ protected:
         };
         // Test when a borrower is the broker and is not to verify correct
         // service fee transfer in both cases.
-        for (auto const& borrowerAcct : {broker, borrower_})
+        for (auto const& borrowerAcct : {broker, borrower})
         {
             testLoanAsset(
                 [&](Env&) -> STAmount { return STAmount{XRPAmount{200'000}}; }, borrowerAcct);
             testLoanAsset(
                 [&](Env& env) -> STAmount {
-                    auto const IOU = issuer["USD"];
-                    env(trust(broker, IOU(1'000'000'000)));
-                    env(trust(depositor, IOU(1'000'000'000)));
-                    env(pay(issuer, broker, IOU(100'000'000)));
-                    env(pay(issuer, depositor, IOU(100'000'000)));
+                    auto const iou = issuer["USD"];
+                    env(trust(broker, iou(1'000'000'000)));
+                    env(trust(depositor, iou(1'000'000'000)));
+                    env(pay(issuer, broker, iou(100'000'000)));
+                    env(pay(issuer, depositor, iou(100'000'000)));
                     env.close();
-                    return IOU(200'000);
+                    return iou(200'000);
                 },
                 borrowerAcct);
             testLoanAsset(
@@ -6365,7 +6365,7 @@ protected:
 
         auto const assetType = AssetType::IOU;
 
-        Env env(*this, all);
+        Env env(*this, all_);
 
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, issuer);
@@ -6421,7 +6421,7 @@ protected:
 
         auto const assetType = AssetType::XRP;
 
-        Env env(*this, makeConfig(), all, nullptr, beast::severities::Severity::kWarning);
+        Env env(*this, makeConfig(), all_, nullptr, beast::severities::Severity::kWarning);
 
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
@@ -6469,7 +6469,7 @@ protected:
         using namespace jtx;
         using namespace loan;
 
-        Env env(*this, all);
+        Env env(*this, all_);
 
         Account const lender{"lender"}, borrower{"borrower"};
 
@@ -6523,23 +6523,23 @@ protected:
         Account const issuer("issuer");
         Account const borrower("borrower");
         Account const broker("broker");
-        auto const IOU = issuer["IOU"];
-        Env env(*this, all);
+        auto const iou = issuer["IOU"];
+        Env env(*this, all_);
         env.fund(XRP(20'000), issuer, broker, borrower);
         env.close();
         // Set up trustlines and fund accounts
-        env(trust(broker, IOU(20'000'000)));
-        env(trust(borrower, IOU(20'000'000)));
-        env(pay(issuer, broker, IOU(10'000'000)));
-        env(pay(issuer, borrower, IOU(1'000)));
+        env(trust(broker, iou(20'000'000)));
+        env(trust(borrower, iou(20'000'000)));
+        env(pay(issuer, broker, iou(10'000'000)));
+        env(pay(issuer, borrower, iou(1'000)));
         env.close();
         // Create vault and broker
-        auto const brokerInfo = createVaultAndBroker(env, IOU, broker);
+        auto const brokerInfo = createVaultAndBroker(env, iou, broker);
         // Create a loan first (this creates debt)
         auto const keylet = keylet::loan(brokerInfo.brokerID, 1);
         env(set(borrower, brokerInfo.brokerID, 10'000),
             sig(sfCounterpartySignature, broker),
-            loanServiceFee(IOU(100).value()),
+            loanServiceFee(iou(100).value()),
             paymentInterval(100),
             fee(XRP(100)));
         env.close();
@@ -6549,25 +6549,25 @@ protected:
         // The default coverRateMinimum is 10%, so for a 10,000 loan we need
         // at least 1,000 cover. Default cover is 1,000, so we add more to be
         // safe.
-        auto const additionalCover = IOU(50'000).value();
-        env(loanBroker::coverDeposit(broker, brokerInfo.brokerID, STAmount{IOU, additionalCover}));
+        auto const additionalCover = iou(50'000).value();
+        env(loanBroker::coverDeposit(broker, brokerInfo.brokerID, STAmount{iou, additionalCover}));
         env.close();
         // Verify broker owner has a trustline
-        auto const brokerTrustline = keylet::line(broker, IOU);
+        auto const brokerTrustline = keylet::line(broker, iou);
         BEAST_EXPECT(env.le(brokerTrustline) != nullptr);
         // Broker owner deletes their trustline
         // First, pay any positive balance to issuer to zero it out
-        auto const brokerBalance = env.balance(broker, IOU);
+        auto const brokerBalance = env.balance(broker, iou);
         env(pay(broker, issuer, brokerBalance));
         env.close();
         // Remove the trustline by setting limit to 0
-        env(trust(broker, IOU(0)));
+        env(trust(broker, iou(0)));
         env.close();
         // Verify trustline is deleted
         BEAST_EXPECT(env.le(brokerTrustline) == nullptr);
         // Now borrower tries to make a payment
         // We should get a tesSUCCESS instead of a tecNO_LINE.
-        env(pay(borrower, keylet.key, IOU(10'100)), fee(XRP(100)), ter(tesSUCCESS));
+        env(pay(borrower, keylet.key, iou(10'100)), fee(XRP(100)), ter(tesSUCCESS));
         env.close();
         // Verify trustline is still deleted
         BEAST_EXPECT(env.le(brokerTrustline) == nullptr);
@@ -6576,9 +6576,9 @@ protected:
             BEAST_EXPECT(brokerSle))
         {
             Account const pseudo("pseudo-account", brokerSle->at(sfAccount));
-            auto const balance = env.balance(pseudo, IOU);
+            auto const balance = env.balance(pseudo, iou);
             // 1,000 default + 50,000 extra + 100 service fee from LoanPay
-            BEAST_EXPECTS(balance == IOU(51'100), to_string(Json::Value(balance)));
+            BEAST_EXPECTS(balance == iou(51'100), to_string(Json::Value(balance)));
         }
     }
 
@@ -6593,14 +6593,14 @@ protected:
         Account const borrower("borrower");
         Account const broker("broker");
 
-        Env env(*this, all);
+        Env env(*this, all_);
         env.fund(XRP(20'000), issuer, broker, borrower);
         env.close();
 
         MPTTester mptt{env, issuer, mptInitNoFund};
         mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
 
-        PrettyAsset const MPT{mptt.issuanceID()};
+        PrettyAsset const mpt{mptt.issuanceID()};
 
         // Authorize broker and borrower
         mptt.authorize({.account = broker});
@@ -6609,17 +6609,17 @@ protected:
         env.close();
 
         // Fund accounts
-        env(pay(issuer, broker, MPT(10'000'000)));
-        env(pay(issuer, borrower, MPT(1'000)));
+        env(pay(issuer, broker, mpt(10'000'000)));
+        env(pay(issuer, borrower, mpt(1'000)));
         env.close();
 
         // Create vault and broker
-        auto const brokerInfo = createVaultAndBroker(env, MPT, broker);
+        auto const brokerInfo = createVaultAndBroker(env, mpt, broker);
         // Create a loan first (this creates debt)
         auto const keylet = keylet::loan(brokerInfo.brokerID, 1);
         env(set(borrower, brokerInfo.brokerID, 10'000),
             sig(sfCounterpartySignature, broker),
-            loanServiceFee(MPT(100).value()),
+            loanServiceFee(mpt(100).value()),
             paymentInterval(100),
             fee(XRP(100)));
         env.close();
@@ -6629,15 +6629,15 @@ protected:
         // The default coverRateMinimum is 10%, so for a 10,000 loan we need
         // at least 1,000 cover. Default cover is 1,000, so we add more to be
         // safe.
-        auto const additionalCover = MPT(50'000).value();
-        env(loanBroker::coverDeposit(broker, brokerInfo.brokerID, STAmount{MPT, additionalCover}));
+        auto const additionalCover = mpt(50'000).value();
+        env(loanBroker::coverDeposit(broker, brokerInfo.brokerID, STAmount{mpt, additionalCover}));
         env.close();
         // Verify broker owner is authorized
         auto const brokerMpt = keylet::mptoken(mptt.issuanceID(), broker);
         BEAST_EXPECT(env.le(brokerMpt) != nullptr);
         // Broker owner unauthorizes.
         // First, pay any positive balance to issuer to zero it out
-        auto const brokerBalance = env.balance(broker, MPT);
+        auto const brokerBalance = env.balance(broker, mpt);
         env(pay(broker, issuer, brokerBalance));
         env.close();
         // Then, unauthorize the MPT.
@@ -6647,8 +6647,8 @@ protected:
         BEAST_EXPECT(env.le(brokerMpt) == nullptr);
         // Now borrower tries to make a payment
         // We should get a tesSUCCESS instead of a tecNO_AUTH.
-        auto const borrowerBalance = env.balance(borrower, MPT);
-        env(pay(borrower, keylet.key, MPT(10'100)), fee(XRP(100)), ter(tesSUCCESS));
+        auto const borrowerBalance = env.balance(borrower, mpt);
+        env(pay(borrower, keylet.key, mpt(10'100)), fee(XRP(100)), ter(tesSUCCESS));
         env.close();
         // Verify the MPT is still unauthorized.
         BEAST_EXPECT(env.le(brokerMpt) == nullptr);
@@ -6657,9 +6657,9 @@ protected:
             BEAST_EXPECT(brokerSle))
         {
             Account const pseudo("pseudo-account", brokerSle->at(sfAccount));
-            auto const balance = env.balance(pseudo, MPT);
+            auto const balance = env.balance(pseudo, mpt);
             // 1,000 default + 50,000 extra + 100 service fee from LoanPay
-            BEAST_EXPECTS(balance == MPT(51'100), to_string(Json::Value(balance)));
+            BEAST_EXPECTS(balance == mpt(51'100), to_string(Json::Value(balance)));
         }
     }
 
@@ -6674,7 +6674,7 @@ protected:
         Account const borrower("borrower");
         Account const broker("broker");
 
-        Env env(*this, all);
+        Env env(*this, all_);
         env.fund(XRP(20'000), issuer, broker, borrower);
         env.close();
 
@@ -6700,7 +6700,7 @@ protected:
             .domainID = domainID,
         });
 
-        PrettyAsset const MPT{mptt.issuanceID()};
+        PrettyAsset const mpt{mptt.issuanceID()};
 
         // Authorize broker and borrower
         mptt.authorize({.account = broker});
@@ -6709,17 +6709,17 @@ protected:
         env.close();
 
         // Fund accounts
-        env(pay(issuer, broker, MPT(10'000'000)));
-        env(pay(issuer, borrower, MPT(1'000)));
+        env(pay(issuer, broker, mpt(10'000'000)));
+        env(pay(issuer, borrower, mpt(1'000)));
         env.close();
 
         // Create vault and broker
-        auto const brokerInfo = createVaultAndBroker(env, MPT, broker);
+        auto const brokerInfo = createVaultAndBroker(env, mpt, broker);
         // Create a loan first (this creates debt)
         auto const keylet = keylet::loan(brokerInfo.brokerID, 1);
         env(set(borrower, brokerInfo.brokerID, 10'000),
             sig(sfCounterpartySignature, broker),
-            loanServiceFee(MPT(100).value()),
+            loanServiceFee(mpt(100).value()),
             paymentInterval(100),
             fee(XRP(100)));
         env.close();
@@ -6729,15 +6729,15 @@ protected:
         // The default coverRateMinimum is 10%, so for a 10,000 loan we need
         // at least 1,000 cover. Default cover is 1,000, so we add more to be
         // safe.
-        auto const additionalCover = MPT(50'000).value();
-        env(loanBroker::coverDeposit(broker, brokerInfo.brokerID, STAmount{MPT, additionalCover}));
+        auto const additionalCover = mpt(50'000).value();
+        env(loanBroker::coverDeposit(broker, brokerInfo.brokerID, STAmount{mpt, additionalCover}));
         env.close();
         // Verify broker owner is authorized
         auto const brokerMpt = keylet::mptoken(mptt.issuanceID(), broker);
         BEAST_EXPECT(env.le(brokerMpt) != nullptr);
         // Remove the credentials for the Broker owner.
         // First, pay any positive balance to issuer to zero it out
-        auto const brokerBalance = env.balance(broker, MPT);
+        auto const brokerBalance = env.balance(broker, mpt);
         env(pay(broker, issuer, brokerBalance));
         env.close();
 
@@ -6746,23 +6746,23 @@ protected:
 
         // Make sure the broker is not authorized to hold the MPT after we
         // deleted the credentials
-        env(pay(issuer, broker, MPT(1'000)), ter(tecNO_AUTH));
+        env(pay(issuer, broker, mpt(1'000)), ter(tecNO_AUTH));
 
         // Now borrower tries to make a payment
         // We should get a tesSUCCESS instead of a tecNO_AUTH.
-        auto const borrowerBalance = env.balance(borrower, MPT);
-        env(pay(borrower, keylet.key, MPT(10'100)), fee(XRP(100)), ter(tesSUCCESS));
+        auto const borrowerBalance = env.balance(borrower, mpt);
+        env(pay(borrower, keylet.key, mpt(10'100)), fee(XRP(100)), ter(tesSUCCESS));
         env.close();
         // Verify broker is still not authorized
-        env(pay(issuer, broker, MPT(1'000)), ter(tecNO_AUTH));
+        env(pay(issuer, broker, mpt(1'000)), ter(tecNO_AUTH));
         // Verify the service fee went to the broker pseudo-account
         if (auto const brokerSle = env.le(keylet::loanbroker(brokerInfo.brokerID));
             BEAST_EXPECT(brokerSle))
         {
             Account const pseudo("pseudo-account", brokerSle->at(sfAccount));
-            auto const balance = env.balance(pseudo, MPT);
+            auto const balance = env.balance(pseudo, mpt);
             // 1,000 default + 50,000 extra + 100 service fee from LoanPay
-            BEAST_EXPECTS(balance == MPT(51'100), to_string(Json::Value(balance)));
+            BEAST_EXPECTS(balance == mpt(51'100), to_string(Json::Value(balance)));
         }
     }
 
@@ -6777,7 +6777,7 @@ protected:
         Account const borrower("borrower");
         Account const broker("broker");
 
-        Env env(*this, all);
+        Env env(*this, all_);
         env.fund(XRP(20'000), issuer, broker, borrower);
         env.close();
 
@@ -6804,7 +6804,7 @@ protected:
             .domainID = domainID,
         });
 
-        PrettyAsset const MPT{mptt.issuanceID()};
+        PrettyAsset const mpt{mptt.issuanceID()};
 
         // Authorize broker and borrower
         mptt.authorize({.account = broker});
@@ -6812,16 +6812,16 @@ protected:
         env.close();
 
         // Fund accounts
-        env(pay(issuer, broker, MPT(10'000'000)));
-        env(pay(issuer, borrower, MPT(1'000)));
+        env(pay(issuer, broker, mpt(10'000'000)));
+        env(pay(issuer, borrower, mpt(1'000)));
         env.close();
 
         // Create vault and broker
-        auto const brokerInfo = createVaultAndBroker(env, MPT, broker);
+        auto const brokerInfo = createVaultAndBroker(env, mpt, broker);
 
         // Remove the credentials for the Broker owner.
         // Clear the balance first.
-        auto const brokerBalance = env.balance(broker, MPT);
+        auto const brokerBalance = env.balance(broker, mpt);
         env(pay(broker, issuer, brokerBalance));
         env.close();
         // Delete the credentials
@@ -6831,7 +6831,7 @@ protected:
         // Create a loan, this should fail for tecNO_AUTH
         env(set(borrower, brokerInfo.brokerID, 10'000),
             sig(sfCounterpartySignature, broker),
-            loanServiceFee(MPT(100).value()),
+            loanServiceFee(mpt(100).value()),
             paymentInterval(100),
             fee(XRP(100)),
             ter(tecNO_AUTH));
@@ -6847,7 +6847,7 @@ protected:
         using namespace loan;
         using namespace loanBroker;
 
-        Env env(*this, all);
+        Env env(*this, all_);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -7018,13 +7018,13 @@ class LoanBatch_test : public Loan_test
 protected:
     beast::xor_shift_engine engine_;
 
-    std::uniform_int_distribution<> assetDist{0, 2};
-    std::uniform_int_distribution<std::int64_t> principalDist{100'000, 1'000'000'000};
-    std::uniform_int_distribution<std::uint32_t> interestRateDist{0, 10000};
-    std::uniform_int_distribution<> paymentTotalDist{12, 10000};
-    std::uniform_int_distribution<> paymentIntervalDist{60, 3600 * 24 * 30};
-    std::uniform_int_distribution<std::uint16_t> managementFeeRateDist{0, 10'000};
-    std::uniform_int_distribution<> serviceFeeDist{0, 20};
+    std::uniform_int_distribution<> assetDist_{0, 2};
+    std::uniform_int_distribution<std::int64_t> principalDist_{100'000, 1'000'000'000};
+    std::uniform_int_distribution<std::uint32_t> interestRateDist_{0, 10000};
+    std::uniform_int_distribution<> paymentTotalDist_{12, 10000};
+    std::uniform_int_distribution<> paymentIntervalDist_{60, 3600 * 24 * 30};
+    std::uniform_int_distribution<std::uint16_t> managementFeeRateDist_{0, 10'000};
+    std::uniform_int_distribution<> serviceFeeDist_{0, 20};
     /*
         # Generate parameters that are more likely to be valid
     principal = Decimal(str(rand.randint(100000,
@@ -7051,13 +7051,13 @@ protected:
         Account const borrower("borrower");
 
         // Determine all the random parameters at once
-        AssetType assetType = static_cast<AssetType>(assetDist(engine_));
-        auto const principalRequest = principalDist(engine_);
-        TenthBips16 managementFeeRate{managementFeeRateDist(engine_)};
-        auto const serviceFee = serviceFeeDist(engine_);
-        TenthBips32 interest{interestRateDist(engine_)};
-        auto const payTotal = paymentTotalDist(engine_);
-        auto const payInterval = paymentIntervalDist(engine_);
+        AssetType assetType = static_cast<AssetType>(assetDist_(engine_));
+        auto const principalRequest = principalDist_(engine_);
+        TenthBips16 managementFeeRate{managementFeeRateDist_(engine_)};
+        auto const serviceFee = serviceFeeDist_(engine_);
+        TenthBips32 interest{interestRateDist_(engine_)};
+        auto const payTotal = paymentTotalDist_(engine_);
+        auto const payInterval = paymentIntervalDist_(engine_);
 
         BrokerParameters brokerParams{
             .vaultDeposit = principalRequest * 10,

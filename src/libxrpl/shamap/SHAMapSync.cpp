@@ -663,22 +663,22 @@ SHAMap::deepCompare(SHAMap& other) const
         {
             if (!otherNode->isInner())
                 return false;
-            auto node_inner = static_cast<SHAMapInnerNode*>(node);
-            auto other_inner = static_cast<SHAMapInnerNode*>(otherNode);
+            auto nodeInner = static_cast<SHAMapInnerNode*>(node);
+            auto otherInner = static_cast<SHAMapInnerNode*>(otherNode);
             for (int i = 0; i < 16; ++i)
             {
-                if (node_inner->isEmptyBranch(i))
+                if (nodeInner->isEmptyBranch(i))
                 {
-                    if (!other_inner->isEmptyBranch(i))
+                    if (!otherInner->isEmptyBranch(i))
                         return false;
                 }
                 else
                 {
-                    if (other_inner->isEmptyBranch(i))
+                    if (otherInner->isEmptyBranch(i))
                         return false;
 
-                    auto next = descend(node_inner, i);
-                    auto otherNext = other.descend(other_inner, i);
+                    auto next = descend(nodeInner, i);
+                    auto otherNext = other.descend(otherInner, i);
                     if (!next || !otherNext)
                     {
                         JLOG(journal_.warn()) << "unable to fetch inner node";

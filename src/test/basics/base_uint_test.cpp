@@ -19,7 +19,7 @@ struct nonhash
     static constexpr auto const endian = boost::endian::order::big;
     static constexpr std::size_t WIDTH = Bits / 8;
 
-    std::array<std::uint8_t, WIDTH> data_;
+    std::array<std::uint8_t, WIDTH> data;
 
     nonhash() = default;
 
@@ -27,7 +27,7 @@ struct nonhash
     operator()(void const* key, std::size_t len) noexcept
     {
         assert(len == WIDTH);
-        memcpy(data_.data(), key, len);
+        memcpy(data.data(), key, len);
     }
 
     explicit
@@ -47,7 +47,7 @@ struct base_uint_test : beast::unit_test::suite
     testComparisons()
     {
         {
-            static constexpr std::array<std::pair<std::string_view, std::string_view>, 6> test_args{
+            static constexpr std::array<std::pair<std::string_view, std::string_view>, 6> testArgs{
                 {{"0000000000000000", "0000000000000001"},
                  {"0000000000000000", "ffffffffffffffff"},
                  {"1234567812345678", "2345678923456789"},
@@ -55,7 +55,7 @@ struct base_uint_test : beast::unit_test::suite
                  {"aaaaaaaaaaaaaaa9", "aaaaaaaaaaaaaaaa"},
                  {"fffffffffffffffe", "ffffffffffffffff"}}};
 
-            for (auto const& arg : test_args)
+            for (auto const& arg : testArgs)
             {
                 xrpl::base_uint<64> const u{arg.first}, v{arg.second};
                 BEAST_EXPECT(u < v);
@@ -76,17 +76,16 @@ struct base_uint_test : beast::unit_test::suite
         }
 
         {
-            static constexpr std::array<std::pair<std::string_view, std::string_view>, 6> test_args{
-                {
-                    {"000000000000000000000000", "000000000000000000000001"},
-                    {"000000000000000000000000", "ffffffffffffffffffffffff"},
-                    {"0123456789ab0123456789ab", "123456789abc123456789abc"},
-                    {"555555555555555555555555", "55555555555a555555555555"},
-                    {"aaaaaaaaaaaaaaa9aaaaaaaa", "aaaaaaaaaaaaaaaaaaaaaaaa"},
-                    {"fffffffffffffffffffffffe", "ffffffffffffffffffffffff"},
-                }};
+            static constexpr std::array<std::pair<std::string_view, std::string_view>, 6> testArgs{{
+                {"000000000000000000000000", "000000000000000000000001"},
+                {"000000000000000000000000", "ffffffffffffffffffffffff"},
+                {"0123456789ab0123456789ab", "123456789abc123456789abc"},
+                {"555555555555555555555555", "55555555555a555555555555"},
+                {"aaaaaaaaaaaaaaa9aaaaaaaa", "aaaaaaaaaaaaaaaaaaaaaaaa"},
+                {"fffffffffffffffffffffffe", "ffffffffffffffffffffffff"},
+            }};
 
-            for (auto const& arg : test_args)
+            for (auto const& arg : testArgs)
             {
                 xrpl::base_uint<96> const u{arg.first}, v{arg.second};
                 BEAST_EXPECT(u < v);
@@ -144,7 +143,7 @@ struct base_uint_test : beast::unit_test::suite
         // back into another base_uint (w) for comparison with the original
         nonhash<96> h;
         hash_append(h, u);
-        test96 w{std::vector<std::uint8_t>(h.data_.begin(), h.data_.end())};
+        test96 w{std::vector<std::uint8_t>(h.data.begin(), h.data.end())};
         BEAST_EXPECT(w == u);
 
         test96 v{~u};
