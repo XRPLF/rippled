@@ -737,8 +737,10 @@ DirectStepI<TDerived>::qualitiesSrcIssues(ReadView const& sb, DebtDirection prev
         "xrpl::DirectStepI::qualitiesSrcIssues : will prevStepDebtDirection "
         "issue");
 
+    WrappedAccountRoot issuer(src_, &sb);
+
     std::uint32_t const srcQOut =
-        redeems(prevStepDebtDirection) ? transferRate(sb, src_).value : QUALITY_ONE;
+        redeems(prevStepDebtDirection) ? issuer.transferRate().value : QUALITY_ONE;
     auto dstQIn = static_cast<TDerived const*>(this)->quality(sb, QualityDirection::in);
 
     if (isLast_ && dstQIn > QUALITY_ONE)

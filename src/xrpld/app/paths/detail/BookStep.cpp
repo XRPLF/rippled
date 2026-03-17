@@ -313,7 +313,8 @@ public:
         auto rate = [&](AccountID const& id) {
             if (isXRP(id) || id == this->strandDst_)
                 return parityRate;
-            return transferRate(v, id);
+            WrappedAccountRoot issuer(id, &v);
+            return issuer.transferRate();
         };
 
         auto const trIn = redeems(prevStepDir) ? rate(this->book_.in.account) : parityRate;
@@ -505,7 +506,8 @@ public:
         auto rate = [&](AccountID const& id) {
             if (isXRP(id) || id == this->strandDst_)
                 return parityRate;
-            return transferRate(v, id);
+            WrappedAccountRoot issuer(id, &v);
+            return issuer.transferRate();
         };
 
         auto const trIn = redeems(prevStepDir) ? rate(this->book_.in.account) : parityRate;
@@ -662,7 +664,8 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
     auto rate = [this, &sb](AccountID const& id) -> std::uint32_t {
         if (isXRP(id) || id == this->strandDst_)
             return QUALITY_ONE;
-        return transferRate(sb, id).value;
+        WrappedAccountRoot issuer(id, &sb);
+        return issuer.transferRate().value;
     };
 
     std::uint32_t const trIn = redeems(prevStepDir) ? rate(book_.in.account) : QUALITY_ONE;
