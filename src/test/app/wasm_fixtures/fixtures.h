@@ -79,3 +79,5 @@ extern std::string const locals10kHex;
 extern std::string const functions5kHex;
 
 extern std::string const opcReservedHex;
+
+extern std::string const impExpHex;
