@@ -95,7 +95,8 @@ class Feature_test : public beast::unit_test::suite
         {
             (void)vote;
             auto const registered = getRegisteredFeature(feature);
-            if (BEAST_EXPECT(registered))
+
+            if (BEAST_EXPECT(registered); registered.has_value())
             {
                 BEAST_EXPECT(featureToName(*registered) == feature);
                 BEAST_EXPECT(

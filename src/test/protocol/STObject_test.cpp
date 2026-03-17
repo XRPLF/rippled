@@ -169,8 +169,8 @@ public:
             BEAST_EXPECT(st[sf1Outer] == 1);
             BEAST_EXPECT(st[sf2Outer] == 2);
             except<STObject::FieldErr>([&]() { st[sf3Outer]; });
-            BEAST_EXPECT(*st[~sf1Outer] == 1);
-            BEAST_EXPECT(*st[~sf2Outer] == 2);
+            BEAST_EXPECT(*st[~sf1Outer] == 1);  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(*st[~sf2Outer] == 2);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(st[~sf3Outer] == std::nullopt);
             BEAST_EXPECT(!!st[~sf1Outer]);
             BEAST_EXPECT(!!st[~sf2Outer]);
@@ -200,9 +200,9 @@ public:
             BEAST_EXPECT(st[sf1Outer] == 1);
             BEAST_EXPECT(st[sf2Outer] == 2);
             BEAST_EXPECT(st[sf3Outer] == 0);
-            BEAST_EXPECT(*st[~sf1Outer] == 1);
-            BEAST_EXPECT(*st[~sf2Outer] == 2);
-            BEAST_EXPECT(*st[~sf3Outer] == 0);
+            BEAST_EXPECT(*st[~sf1Outer] == 1);  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(*st[~sf2Outer] == 2);  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(*st[~sf3Outer] == 0);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(!!st[~sf1Outer]);
             BEAST_EXPECT(!!st[~sf2Outer]);
             BEAST_EXPECT(!!st[~sf3Outer]);
@@ -399,7 +399,7 @@ public:
             st[sf] = std::move(v);
             auto const& cst = st;
             BEAST_EXPECT(cst[sf].size() == 2);
-            BEAST_EXPECT(cst[~sf]->size() == 2);
+            BEAST_EXPECT(cst[~sf]->size() == 2);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(cst[sf][0] == 1);
             BEAST_EXPECT(cst[sf][1] == 2);
             static_assert(
