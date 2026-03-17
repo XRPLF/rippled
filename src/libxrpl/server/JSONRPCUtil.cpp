@@ -68,6 +68,7 @@ HTTPReply(int nStatus, std::string const& content, Json::Output const& output, b
         return;
     }
 
+    // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
     switch (nStatus)
     {
         case 200:

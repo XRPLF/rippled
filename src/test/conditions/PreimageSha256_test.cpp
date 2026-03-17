@@ -22,7 +22,7 @@ class PreimageSha256_test : public beast::unit_test::suite
     {
         auto blob = strUnHex(s);
         BEAST_EXPECT(blob);
-        return {blob->data(), blob->size()};
+        return {blob->data(), blob->size()};  // NOLINT(bugprone-unchecked-optional-access)
     }
 
     void

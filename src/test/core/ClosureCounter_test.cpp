@@ -36,9 +36,9 @@ class ClosureCounter_test : public beast::unit_test::suite
             BEAST_EXPECT(wrapped);
 
             // wrapped() should be callable with no arguments.
-            (*wrapped)();
+            (*wrapped)();  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(evidence == 1);
-            (*wrapped)();
+            (*wrapped)();  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(evidence == 2);
 
             // Destroying the contents of wrapped should decrement voidCounter.
@@ -60,9 +60,9 @@ class ClosureCounter_test : public beast::unit_test::suite
             BEAST_EXPECT(wrapped);
 
             // wrapped() should be callable with one integer argument.
-            (*wrapped)(5);
+            (*wrapped)(5);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(evidence == 5);
-            (*wrapped)(11);
+            (*wrapped)(11);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(evidence == 11);
 
             // Destroying the contents of wrapped should decrement setCounter.
@@ -82,8 +82,8 @@ class ClosureCounter_test : public beast::unit_test::suite
             BEAST_EXPECT(wrapped);
 
             // wrapped() should be callable with two integers.
-            BEAST_EXPECT((*wrapped)(5, 2) == 7);
-            BEAST_EXPECT((*wrapped)(2, -8) == -6);
+            BEAST_EXPECT((*wrapped)(5, 2) == 7);    // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT((*wrapped)(2, -8) == -6);  // NOLINT(bugprone-unchecked-optional-access)
 
             // Destroying the contents of wrapped should decrement sumCounter.
             wrapped = std::nullopt;
@@ -154,7 +154,8 @@ class ClosureCounter_test : public beast::unit_test::suite
             BEAST_EXPECT(wrapped);
 
             TrackedString const strValue("value");
-            TrackedString const result = (*wrapped)(strValue);
+            TrackedString const result =
+                (*wrapped)(strValue);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(result.copies == 2);
             BEAST_EXPECT(result.moves == 1);
             BEAST_EXPECT(result.str == "value!");
@@ -171,7 +172,8 @@ class ClosureCounter_test : public beast::unit_test::suite
             BEAST_EXPECT(wrapped);
 
             TrackedString const strConstLValue("const lvalue");
-            TrackedString const result = (*wrapped)(strConstLValue);
+            TrackedString const result =
+                (*wrapped)(strConstLValue);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(result.copies == 1);
             // BEAST_EXPECT (result.moves == ?); // moves VS == 1, gcc == 0
             BEAST_EXPECT(result.str == "const lvalue!");
@@ -188,7 +190,8 @@ class ClosureCounter_test : public beast::unit_test::suite
             BEAST_EXPECT(wrapped);
 
             TrackedString strLValue("lvalue");
-            TrackedString const result = (*wrapped)(strLValue);
+            TrackedString const result =
+                (*wrapped)(strLValue);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(result.copies == 1);
             BEAST_EXPECT(result.moves == 0);
             BEAST_EXPECT(result.str == "lvalue!");
@@ -213,7 +216,8 @@ class ClosureCounter_test : public beast::unit_test::suite
             // Make the string big enough to (probably) avoid the small string
             // optimization.
             TrackedString strRValue("rvalue abcdefghijklmnopqrstuvwxyz");
-            TrackedString const result = (*wrapped)(std::move(strRValue));
+            TrackedString const result =
+                (*wrapped)(std::move(strRValue));  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(result.copies == 0);
             BEAST_EXPECT(result.moves == 1);
             BEAST_EXPECT(result.str == "rvalue abcdefghijklmnopqrstuvwxyz!");

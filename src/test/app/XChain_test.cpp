@@ -4011,12 +4011,12 @@ private:
     template <class T>
     class SmBase
     {
-    public:
         SmBase(std::shared_ptr<ChainStateTracker> const& chainstate, BridgeDef const& bridge)
             : bridge_(bridge), st_(chainstate)
         {
         }
 
+    public:
         ChainStateTrack&
         srcState()
         {
@@ -4044,6 +4044,8 @@ private:
     protected:
         BridgeDef const& bridge_;
         std::shared_ptr<ChainStateTracker> st_;
+
+        friend T;
     };
 
     // --------------------------------------------------

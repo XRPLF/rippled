@@ -1299,6 +1299,7 @@ r.ripple.com:51235
             s.append("online_delete = 3000");
             std::uint32_t od = 0;
             BEAST_EXPECT(set(od, "online_delete", s));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECTS(od == 3000, *(s.get<std::string>("online_delete")));
         }
 
@@ -1307,6 +1308,7 @@ r.ripple.com:51235
             s.append("online_delete = 2000 #my comment on this");
             std::uint32_t od = 0;
             BEAST_EXPECT(set(od, "online_delete", s));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECTS(od == 2000, *(s.get<std::string>("online_delete")));
         }
     }

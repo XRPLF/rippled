@@ -35,7 +35,6 @@ namespace xrpl {
 template <class Derived>
 class AsyncObject
 {
-protected:
     AsyncObject() : m_pending(0)
     {
     }
@@ -93,6 +92,8 @@ public:
 private:
     // The number of handlers pending.
     std::atomic<int> m_pending;
+
+    friend Derived;
 };
 
 class ResolverAsioImpl : public ResolverAsio, public AsyncObject<ResolverAsioImpl>

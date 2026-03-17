@@ -50,7 +50,7 @@ public:
         auto const seed2 = parseBase58<Seed>(toBase58(seed1));
 
         BEAST_EXPECT(static_cast<bool>(seed2));
-        BEAST_EXPECT(equal(seed1, *seed2));
+        BEAST_EXPECT(equal(seed1, *seed2));  // NOLINT(bugprone-unchecked-optional-access)
         return toBase58(seed1);
     }
 
@@ -93,7 +93,7 @@ public:
             auto const seed2 = parseBase58<Seed>(toBase58(seed1));
 
             BEAST_EXPECT(static_cast<bool>(seed2));
-            BEAST_EXPECT(equal(seed1, *seed2));
+            BEAST_EXPECT(equal(seed1, *seed2));  // NOLINT(bugprone-unchecked-optional-access)
         }
     }
 

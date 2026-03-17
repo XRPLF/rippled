@@ -1176,6 +1176,7 @@ makePath(char const* string)
 
     while (true)
     {
+        // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
         switch (*string++)
         {
             case 's':  // source
