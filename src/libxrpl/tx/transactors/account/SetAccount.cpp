@@ -584,14 +584,6 @@ SetAccount::doApply()
     else if (uClearFlag == asfDisallowIncomingTrustline)
         uFlagsOut &= ~lsfDisallowIncomingTrustline;
 
-    if (ctx_.view().rules().enabled(featureSponsor))
-    {
-        if (uSetFlag == asfDisallowIncomingSponsor)
-            uFlagsOut |= lsfDisallowIncomingSponsor;
-        else if (uClearFlag == asfDisallowIncomingSponsor)
-            uFlagsOut &= ~lsfDisallowIncomingSponsor;
-    }
-
     // Set or clear flags for disallowing escrow
     if (ctx_.view().rules().enabled(featureTokenEscrow))
     {

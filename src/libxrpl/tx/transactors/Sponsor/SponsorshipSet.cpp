@@ -150,10 +150,6 @@ SponsorshipSet::preclaim(PreclaimContext const& ctx)
     if (ctx.tx.isFlag(tfDeleteObject) && !sponsorObjSle)
         return tecNO_ENTRY;
 
-    if (sponseeSle->isFlag(lsfDisallowIncomingSponsor) && !sponsorObjSle)
-        // new sponsor creation is not allowed by disallowIncomingSponsor flag
-        return tecNO_PERMISSION;
-
     return tesSUCCESS;
 }
 

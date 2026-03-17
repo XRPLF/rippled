@@ -135,8 +135,7 @@ enum LedgerEntryType : std::uint16_t {
         LSF_FLAG(lsfDisallowIncomingPayChan, 0x10000000)        /* True, reject new paychans */                                    \
         LSF_FLAG(lsfDisallowIncomingTrustline, 0x20000000)      /* True, reject new trustlines (only if no issued assets) */       \
         LSF_FLAG(lsfAllowTrustLineLocking, 0x40000000)          /* True, enable trustline locking */                               \
-        LSF_FLAG(lsfAllowTrustLineClawback, 0x80000000)         /* True, enable clawback */                                        \
-        LSF_FLAG(lsfDisallowIncomingSponsor, 0x00004000))       /* True, reject new sponsor */                                     \
+        LSF_FLAG(lsfAllowTrustLineClawback, 0x80000000))         /* True, enable clawback */                                       \
                                                                                                                                    \
     LEDGER_OBJECT(Offer,                                                                                                           \
         LSF_FLAG(lsfPassive, 0x00010000)                                                                                           \

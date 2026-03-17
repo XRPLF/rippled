@@ -186,8 +186,6 @@ public:
         env(sponsor::set(sponsor, tfDeleteObject), sponsor::sponseeAcc(alice), ter(tecNO_ENTRY));
         env.close();
 
-        // DisallowIncomingSponsor: tested in other testcase
-
         // insufficent reserve to create sponsorship
         adjustAccountXRPBalance(env, sponsor, reserve(env, 1) - drops(1));
         env(sponsor::set(sponsor, 0, 100, XRP(100)), sponsor::sponseeAcc(alice), ter(tecUNFUNDED));
@@ -4833,48 +4831,6 @@ public:
     }
 
     void
-    testDisallowIncoming()
-    {
-        testcase("DisallowIncoming");
-        using namespace test::jtx;
-        Env env{*this, testable_amendments()};
-        Account const alice("alice");
-        Account const sponsor("sponsor");
-
-        env.fund(XRP(1000000), alice, sponsor);
-        env.close();
-
-        // set DisallowIncomingSponsor
-        env(fset(alice, asfDisallowIncomingSponsor));
-        env.close();
-
-        // Create sponsor should fail
-        env(sponsor::set(sponsor, 0, 100, XRP(100)),
-            sponsor::sponseeAcc(alice),
-            ter(tecNO_PERMISSION));
-        env.close();
-
-        // clear flag
-        env(fclear(alice, asfDisallowIncomingSponsor));
-        env.close();
-
-        // Create sponsor
-        env(sponsor::set(sponsor, 0, 100, XRP(100)), sponsor::sponseeAcc(alice), ter(tesSUCCESS));
-        env.close();
-
-        // set flag
-        env(fset(alice, asfDisallowIncomingSponsor));
-        env.close();
-
-        // Update sponsor should success
-        env(sponsor::set(sponsor, 0, 100, XRP(100)), sponsor::sponseeAcc(alice), ter(tesSUCCESS));
-        env.close();
-
-        // Delete sponsor should success
-        env(sponsor::set(sponsor, tfDeleteObject), sponsor::sponseeAcc(alice), ter(tesSUCCESS));
-        env.close();
-    }
-    void
     testAccountDelete()
     {
         testcase("AccountDelete");
@@ -5308,8 +5264,6 @@ protected:
         testTransferSponsor();
         testSponsorFee();
         testSponsorAccount();
-
-        testDisallowIncoming();
 
         testAccountDelete();
 
