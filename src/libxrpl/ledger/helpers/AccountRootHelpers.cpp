@@ -12,7 +12,7 @@
 namespace xrpl {
 
 bool
-WrappedAccountRoot::isGlobalFrozen() const
+AccountRoot::isGlobalFrozen() const
 {
     if (isXRP(id_))
         return false;
@@ -62,7 +62,7 @@ confineOwnerCount(
 }
 
 XRPAmount
-WrappedAccountRoot::xrpLiquid(std::int32_t ownerCountAdj, beast::Journal j) const
+AccountRoot::xrpLiquid(std::int32_t ownerCountAdj, beast::Journal j) const
 {
     // Return balance minus reserve
     std::uint32_t const ownerCount = confineOwnerCount(
@@ -88,7 +88,7 @@ WrappedAccountRoot::xrpLiquid(std::int32_t ownerCountAdj, beast::Journal j) cons
 }
 
 Rate
-WrappedAccountRoot::transferRate() const
+AccountRoot::transferRate() const
 {
     if (sle_ && sle_->isFieldPresent(sfTransferRate))
         return Rate{sle_->getFieldU32(sfTransferRate)};
@@ -97,7 +97,7 @@ WrappedAccountRoot::transferRate() const
 }
 
 void
-WrappedAccountRoot::adjustOwnerCount(std::int32_t amount, beast::Journal j)
+WritableAccountRoot::adjustOwnerCount(std::int32_t amount, beast::Journal j)
 {
     XRPL_ASSERT(canModify(), "xrpl::adjustOwnerCount : can modify");
     XRPL_ASSERT(amount, "xrpl::adjustOwnerCount : nonzero amount input");
@@ -218,7 +218,7 @@ createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const
 }
 
 [[nodiscard]] TER
-WrappedAccountRoot::checkDestinationAndTag(bool hasDestinationTag) const
+AccountRoot::checkDestinationAndTag(bool hasDestinationTag) const
 {
     if (sle_ == nullptr)
         return tecNO_DST;

@@ -247,7 +247,7 @@ insertToken(ApplyView& view, AccountID owner, STObject&& nft)
     // the NFT.
     std::shared_ptr<SLE> page =
         getPageForToken(view, owner, nft[sfNFTokenID], [](ApplyView& view, AccountID const& owner) {
-            WrappedAccountRoot wrappedOwner(owner, &view);
+            WritableAccountRoot wrappedOwner(owner, &view);
             wrappedOwner.adjustOwnerCount(1, beast::Journal{beast::Journal::getNullSink()});
         });
 
@@ -406,7 +406,7 @@ removeToken(
 
         if (cnt != 0)
         {
-            WrappedAccountRoot wrappedOwner(owner, &view);
+            WritableAccountRoot wrappedOwner(owner, &view);
             wrappedOwner.adjustOwnerCount(cnt, beast::Journal{beast::Journal::getNullSink()});
         }
 
@@ -442,7 +442,7 @@ removeToken(
                 curr->makeFieldAbsent(sfPreviousPageMin);
             }
 
-            WrappedAccountRoot wrappedOwner(owner, &view);
+            WritableAccountRoot wrappedOwner(owner, &view);
             wrappedOwner.adjustOwnerCount(-1, beast::Journal{beast::Journal::getNullSink()});
 
             view.update(curr);
@@ -498,7 +498,7 @@ removeToken(
             view.peek(Keylet(ltNFTOKEN_PAGE, next->key()))))
         cnt++;
 
-    WrappedAccountRoot wrappedOwner(owner, &view);
+    WritableAccountRoot wrappedOwner(owner, &view);
     wrappedOwner.adjustOwnerCount(-1 * cnt, beast::Journal{beast::Journal::getNullSink()});
 
     return tesSUCCESS;
@@ -642,7 +642,7 @@ deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer)
             false))
         return false;
 
-    WrappedAccountRoot wrappedOwner(owner, &view);
+    WritableAccountRoot wrappedOwner(owner, &view);
     wrappedOwner.adjustOwnerCount(-1, beast::Journal{beast::Journal::getNullSink()});
 
     view.erase(offer);
@@ -986,7 +986,7 @@ tokenOfferCreateApply(
     }
 
     // Update owner count.
-    WrappedAccountRoot wrappedOwner(acctID, &view);
+    WritableAccountRoot wrappedOwner(acctID, &view);
     wrappedOwner.adjustOwnerCount(1, j);
 
     return tesSUCCESS;

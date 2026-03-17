@@ -55,7 +55,7 @@ TicketCreate::preclaim(PreclaimContext const& ctx)
 TER
 TicketCreate::doApply()
 {
-    WrappedAccountRoot wrappedOwner(account_, &view());
+    WritableAccountRoot wrappedOwner(account_, &view());
     if (!wrappedOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

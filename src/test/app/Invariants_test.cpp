@@ -263,7 +263,7 @@ class Invariants_test : public beast::unit_test::suite
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 // Increment A1's owner count, then delete A1
                 auto const a1 = A1.id();
-                WrappedAccountRoot wrappedA1(a1, &ac.view());
+                WritableAccountRoot wrappedA1(a1, &ac.view());
                 if (!wrappedA1)
                     return false;
                 // Clear the balance so the "account deletion left behind a

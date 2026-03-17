@@ -314,7 +314,7 @@ public:
         auto rate = [&](AccountID const& id) {
             if (isXRP(id) || id == this->strandDst_)
                 return parityRate;
-            WrappedAccountRoot issuer(id, &v);
+            AccountRoot issuer(id, &v);
             return issuer.transferRate();
         };
 
@@ -507,7 +507,7 @@ public:
         auto rate = [&](AccountID const& id) {
             if (isXRP(id) || id == this->strandDst_)
                 return parityRate;
-            WrappedAccountRoot issuer(id, &v);
+            AccountRoot issuer(id, &v);
             return issuer.transferRate();
         };
 
@@ -665,7 +665,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
     auto rate = [this, &sb](AccountID const& id) -> std::uint32_t {
         if (isXRP(id) || id == this->strandDst_)
             return QUALITY_ONE;
-        WrappedAccountRoot issuer(id, &sb);
+        AccountRoot issuer(id, &sb);
         return issuer.transferRate().value;
     };
 

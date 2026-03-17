@@ -87,7 +87,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
         {
             // The currency may not be globally frozen
             AccountID const issuerId{sendMax.getIssuer()};
-            WrappedAccountRoot wrappedIssuer(issuerId, &ctx.view);
+            AccountRoot wrappedIssuer(issuerId, &ctx.view);
             if (wrappedIssuer.isGlobalFrozen())
             {
                 JLOG(ctx.j.warn()) << "Creating a check for frozen asset";
@@ -134,7 +134,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
 TER
 CheckCreate::doApply()
 {
-    WrappedAccountRoot wrappedAcct(account_, &view());
+    WritableAccountRoot wrappedAcct(account_, &view());
     if (!wrappedAcct)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

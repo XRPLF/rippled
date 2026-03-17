@@ -137,7 +137,7 @@ authorizeMPToken(
     std::uint32_t flags,
     std::optional<AccountID> holderID)
 {
-    WrappedAccountRoot wrappedAcct(account, &view);
+    WritableAccountRoot wrappedAcct(account, &view);
     if (!wrappedAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 

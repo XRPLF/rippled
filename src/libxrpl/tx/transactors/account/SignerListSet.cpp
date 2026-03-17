@@ -196,7 +196,7 @@ removeSignersFromLedger(
         // LCOV_EXCL_STOP
     }
 
-    WrappedAccountRoot wrappedAcct(account, &view);
+    WritableAccountRoot wrappedAcct(account, &view);
     wrappedAcct.adjustOwnerCount(removeFromOwnerCount, registry.journal("View"));
 
     view.erase(signers);
@@ -282,7 +282,7 @@ SignerListSet::replaceSignerList()
     if (TER const ter = removeSignersFromLedger(ctx_.registry, view(), account_, j_))
         return ter;
 
-    WrappedAccountRoot wrappedAcct(account_, &view());
+    WritableAccountRoot wrappedAcct(account_, &view());
     if (!wrappedAcct)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -331,7 +331,7 @@ SignerListSet::destroySignerList()
 {
     // Destroying the signer list is only allowed if either the master key
     // is enabled or there is a regular key.
-    WrappedAccountRoot wrappedAcct(account_, &view());
+    WritableAccountRoot wrappedAcct(account_, &view());
     if (!wrappedAcct)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

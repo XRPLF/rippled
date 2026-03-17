@@ -258,7 +258,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     auto const brokerPseudo = brokerSle->at(sfAccount);
 
     auto const borrower = counterparty == brokerOwner ? account : counterparty;
-    if (auto const wrappedBorrower = WrappedAccountRoot(borrower, &ctx.view); !wrappedBorrower)
+    if (auto const wrappedBorrower = AccountRoot(borrower, &ctx.view); !wrappedBorrower)
     {
         // It may not be possible to hit this case, because it'll fail the
         // signature check with terNO_ACCOUNT.
@@ -360,7 +360,7 @@ LoanSet::doApply()
 
     auto const counterparty = tx[~sfCounterparty].value_or(brokerOwner);
     auto const borrower = counterparty == brokerOwner ? account_ : counterparty;
-    WrappedAccountRoot wrappedBorrower(borrower, &view);
+    WritableAccountRoot wrappedBorrower(borrower, &view);
     if (!wrappedBorrower)
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE

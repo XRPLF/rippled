@@ -4259,8 +4259,8 @@ NetworkOPsImp::getBookPage(
 
     ReadView const& view = *lpLedger;
 
-    WrappedAccountRoot issuerOut(book.out.account, &view);
-    WrappedAccountRoot issuerIn(book.in.account, &view);
+    AccountRoot issuerOut(book.out.account, &view);
+    AccountRoot issuerIn(book.in.account, &view);
     bool const bGlobalFreeze = issuerOut.isGlobalFrozen() || issuerIn.isGlobalFrozen();
 
     bool bDone = false;
@@ -4270,7 +4270,7 @@ NetworkOPsImp::getBookPage(
     uint256 offerIndex;
     unsigned int uBookEntry = 0;
     STAmount saDirRate;
-    WrappedAccountRoot issuer(book.out.account, &view);
+    AccountRoot issuer(book.out.account, &view);
 
     auto const rate = issuer.transferRate();
     auto viewJ = registry_.journal("View");
