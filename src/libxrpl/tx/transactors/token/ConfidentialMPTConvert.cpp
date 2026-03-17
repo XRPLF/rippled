@@ -25,9 +25,9 @@ ConfidentialMPTConvert::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfBlindingFactor].size() != ecBlindingFactorLength)
         return temMALFORMED;
 
-    if (ctx.tx.isFieldPresent(sfHolderElGamalPublicKey))
+    if (ctx.tx.isFieldPresent(sfHolderEncryptionKey))
     {
-        if (!isValidCompressedECPoint(ctx.tx[sfHolderElGamalPublicKey]))
+        if (!isValidCompressedECPoint(ctx.tx[sfHolderEncryptionKey]))
             return temMALFORMED;
 
         // proof of knowledge of the secret key corresponding to the provided
@@ -66,7 +66,7 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if (!sleIssuance->isFlag(lsfMPTCanPrivacy))
+    if (!sleIssuance->isFlag(lsfMPTCanConfidentialAmount))
         return tecNO_PERMISSION;
 
     // already checked in preflight, but should also check that issuer on the
@@ -75,11 +75,11 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // issuer has not uploaded their pub key yet
-    if (!sleIssuance->isFieldPresent(sfIssuerElGamalPublicKey))
+    if (!sleIssuance->isFieldPresent(sfIssuerEncryptionKey))
         return tecNO_PERMISSION;
 
     bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
-    bool const requiresAuditor = sleIssuance->isFieldPresent(sfAuditorElGamalPublicKey);
+    bool const requiresAuditor = sleIssuance->isFieldPresent(sfAuditorEncryptionKey);
 
     // tx must include auditor ciphertext if the issuance has enabled
     // auditing, and must not include it if auditing is not enabled
@@ -104,8 +104,8 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
         return tecINSUFFICIENT_FUNDS;
     }
 
-    auto const hasHolderKeyOnLedger = sleMptoken->isFieldPresent(sfHolderElGamalPublicKey);
-    auto const hasHolderKeyInTx = ctx.tx.isFieldPresent(sfHolderElGamalPublicKey);
+    auto const hasHolderKeyOnLedger = sleMptoken->isFieldPresent(sfHolderEncryptionKey);
+    auto const hasHolderKeyInTx = ctx.tx.isFieldPresent(sfHolderEncryptionKey);
 
     // must have pk to convert
     if (!hasHolderKeyOnLedger && !hasHolderKeyInTx)
@@ -118,7 +118,7 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     Slice holderPubKey;
     if (hasHolderKeyInTx)
     {
-        holderPubKey = ctx.tx[sfHolderElGamalPublicKey];
+        holderPubKey = ctx.tx[sfHolderEncryptionKey];
 
         auto const contextHash =
             getConvertContextHash(account, issuanceID, ctx.tx.getSeqProxy().value());
@@ -131,7 +131,7 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     }
     else
     {
-        holderPubKey = (*sleMptoken)[sfHolderElGamalPublicKey];
+        holderPubKey = (*sleMptoken)[sfHolderEncryptionKey];
     }
 
     std::optional<ConfidentialRecipient> auditor;
@@ -139,14 +139,14 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     {
         auditor.emplace(
             ConfidentialRecipient{
-                (*sleIssuance)[sfAuditorElGamalPublicKey], ctx.tx[sfAuditorEncryptedAmount]});
+                (*sleIssuance)[sfAuditorEncryptionKey], ctx.tx[sfAuditorEncryptedAmount]});
     }
 
     return verifyRevealedAmount(
         amount,
         ctx.tx[sfBlindingFactor],
         {holderPubKey, ctx.tx[sfHolderEncryptedAmount]},
-        {(*sleIssuance)[sfIssuerElGamalPublicKey], ctx.tx[sfIssuerEncryptedAmount]},
+        {(*sleIssuance)[sfIssuerEncryptionKey], ctx.tx[sfIssuerEncryptedAmount]},
         auditor);
 }
 
@@ -166,8 +166,8 @@ ConfidentialMPTConvert::doApply()
     auto const amtToConvert = ctx_.tx[sfMPTAmount];
     auto const amt = (*sleMptoken)[~sfMPTAmount].value_or(0);
 
-    if (ctx_.tx.isFieldPresent(sfHolderElGamalPublicKey))
-        (*sleMptoken)[sfHolderElGamalPublicKey] = ctx_.tx[sfHolderElGamalPublicKey];
+    if (ctx_.tx.isFieldPresent(sfHolderEncryptionKey))
+        (*sleMptoken)[sfHolderEncryptionKey] = ctx_.tx[sfHolderEncryptionKey];
 
     // Converting decreases regular balance and increases confidential outstanding.
     // The confidential outstanding tracks total tokens in confidential form globally.
@@ -231,7 +231,7 @@ ConfidentialMPTConvert::doApply()
         // Spending balance starts at zero. Must use canonical zero encryption
         // (deterministic ciphertext) so the ledger state is reproducible.
         auto zeroBalance = encryptCanonicalZeroAmount(
-            (*sleMptoken)[sfHolderElGamalPublicKey], account_, mptIssuanceID);
+            (*sleMptoken)[sfHolderEncryptionKey], account_, mptIssuanceID);
 
         if (!zeroBalance)
             return tecINTERNAL;  // LCOV_EXCL_LINE

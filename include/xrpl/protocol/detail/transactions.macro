@@ -722,8 +722,8 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_SET, 56, MPTokenIssuanceSet,
     {sfMPTokenMetadata, soeOPTIONAL},
     {sfTransferFee, soeOPTIONAL},
     {sfMutableFlags, soeOPTIONAL},
-    {sfIssuerElGamalPublicKey, soeOPTIONAL},
-    {sfAuditorElGamalPublicKey, soeOPTIONAL},
+    {sfIssuerEncryptionKey, soeOPTIONAL},
+    {sfAuditorEncryptionKey, soeOPTIONAL},
 }))
 
 /** This transaction type authorizes a MPToken instance */
@@ -1071,7 +1071,7 @@ TRANSACTION(ttCONFIDENTIAL_MPT_CONVERT, 85, ConfidentialMPTConvert,
     ({
     {sfMPTokenIssuanceID, soeREQUIRED},
     {sfMPTAmount, soeREQUIRED},
-    {sfHolderElGamalPublicKey, soeOPTIONAL},
+    {sfHolderEncryptionKey, soeOPTIONAL},
     {sfHolderEncryptedAmount, soeREQUIRED},
     {sfIssuerEncryptedAmount, soeREQUIRED},
     {sfAuditorEncryptedAmount, soeOPTIONAL},

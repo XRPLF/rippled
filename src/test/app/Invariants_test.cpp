@@ -3807,7 +3807,7 @@ class Invariants_test : public beast::unit_test::suite
         auto const precloseConfidential =
             [&mptID](Account const& A1, Account const& A2, Env& env) -> bool {
             MPTTester mpt(env, A1, {.holders = {A2}, .fund = false});
-            mpt.create({.flags = tfMPTCanTransfer | tfMPTCanPrivacy});
+            mpt.create({.flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount});
             mptID = mpt.issuanceID();
 
             mpt.authorize({.account = A2});
@@ -3862,7 +3862,7 @@ class Invariants_test : public beast::unit_test::suite
         auto const precloseNoPrivacy = [&mptID](
                                            Account const& A1, Account const& A2, Env& env) -> bool {
             MPTTester mpt(env, A1, {.holders = {A2}, .fund = false});
-            // completely omitted the tfMPTCanPrivacy flag here.
+            // completely omitted the tfMPTCanConfidentialAmount flag here.
             mpt.create({.flags = tfMPTCanTransfer});
             mptID = mpt.issuanceID();
             mpt.authorize({.account = A2});
@@ -3871,7 +3871,8 @@ class Invariants_test : public beast::unit_test::suite
         };
 
         doInvariantCheck(
-            {"MPToken has encrypted fields but Issuance does not have lsfMPTCanPrivacy set"},
+            {"MPToken has encrypted fields but Issuance does not have lsfMPTCanConfidentialAmount "
+             "set"},
             [&mptID](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto sleToken = ac.view().peek(keylet::mptoken(mptID, A2.id()));
                 if (!sleToken)
@@ -3947,7 +3948,7 @@ class Invariants_test : public beast::unit_test::suite
         auto const precloseOrphan = [&mptID](
                                         Account const& A1, Account const& A2, Env& env) -> bool {
             MPTTester mpt(env, A1, {.holders = {A2}, .fund = false});
-            mpt.create({.flags = tfMPTCanTransfer | tfMPTCanPrivacy});
+            mpt.create({.flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount});
             mptID = mpt.issuanceID();
             mpt.authorize({.account = A2});
 

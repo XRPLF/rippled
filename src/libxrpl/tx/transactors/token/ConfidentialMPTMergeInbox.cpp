@@ -28,7 +28,7 @@ ConfidentialMPTMergeInbox::preclaim(PreclaimContext const& ctx)
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if (!sleIssuance->isFlag(lsfMPTCanPrivacy))
+    if (!sleIssuance->isFlag(lsfMPTCanConfidentialAmount))
         return tecNO_PERMISSION;
 
     // already checked in preflight, but should also check that issuer on the
@@ -43,7 +43,7 @@ ConfidentialMPTMergeInbox::preclaim(PreclaimContext const& ctx)
 
     if (!sleMptoken->isFieldPresent(sfConfidentialBalanceInbox) ||
         !sleMptoken->isFieldPresent(sfConfidentialBalanceSpending) ||
-        !sleMptoken->isFieldPresent(sfHolderElGamalPublicKey))
+        !sleMptoken->isFieldPresent(sfHolderEncryptionKey))
         return tecNO_PERMISSION;
 
     return tesSUCCESS;
@@ -60,7 +60,7 @@ ConfidentialMPTMergeInbox::doApply()
     // sanity check
     if (!sleMptoken->isFieldPresent(sfConfidentialBalanceSpending) ||
         !sleMptoken->isFieldPresent(sfConfidentialBalanceInbox) ||
-        !sleMptoken->isFieldPresent(sfHolderElGamalPublicKey))
+        !sleMptoken->isFieldPresent(sfHolderEncryptionKey))
     {
         return tecINTERNAL;  // LCOV_EXCL_LINE
     }
@@ -77,8 +77,8 @@ ConfidentialMPTMergeInbox::doApply()
 
     // Reset inbox to encrypted zero. Must use canonical zero encryption
     // (deterministic ciphertext) so the ledger state is reproducible.
-    auto zeroEncryption = encryptCanonicalZeroAmount(
-        (*sleMptoken)[sfHolderElGamalPublicKey], account_, mptIssuanceID);
+    auto zeroEncryption =
+        encryptCanonicalZeroAmount((*sleMptoken)[sfHolderEncryptionKey], account_, mptIssuanceID);
 
     if (!zeroEncryption)
         return tecINTERNAL;  // LCOV_EXCL_LINE

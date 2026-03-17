@@ -40,7 +40,11 @@ static constexpr std::array<MPTMutabilityFlags, 7> mptMutabilityFlags = {
      {tmfMPTSetCanTrade, tmfMPTClearCanTrade, lsmfMPTCanMutateCanTrade, lsfMPTCanTrade},
      {tmfMPTSetCanTransfer, tmfMPTClearCanTransfer, lsmfMPTCanMutateCanTransfer, lsfMPTCanTransfer},
      {tmfMPTSetCanClawback, tmfMPTClearCanClawback, lsmfMPTCanMutateCanClawback, lsfMPTCanClawback},
-     {tmfMPTSetPrivacy, tmfMPTClearPrivacy, lsmfMPTCannotMutatePrivacy, lsfMPTCanPrivacy, true}}};
+     {tmfMPTSetCanConfidentialAmount,
+      tmfMPTClearCanConfidentialAmount,
+      lsmfMPTCannotMutateCanConfidentialAmount,
+      lsfMPTCanConfidentialAmount,
+      true}}};
 
 NotTEC
 MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
@@ -49,12 +53,12 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     auto const metadata = ctx.tx[~sfMPTokenMetadata];
     auto const transferFee = ctx.tx[~sfTransferFee];
     auto const isMutate = mutableFlags || metadata || transferFee;
-    auto const hasIssuerElGamalKey = ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey);
-    auto const hasAuditorElGamalKey = ctx.tx.isFieldPresent(sfAuditorElGamalPublicKey);
+    auto const hasIssuerElGamalKey = ctx.tx.isFieldPresent(sfIssuerEncryptionKey);
+    auto const hasAuditorElGamalKey = ctx.tx.isFieldPresent(sfAuditorEncryptionKey);
     auto const txFlags = ctx.tx.getFlags();
 
-    auto const mutatePrivacy =
-        mutableFlags && ((*mutableFlags & (tmfMPTSetPrivacy | tmfMPTClearPrivacy)));
+    auto const mutatePrivacy = mutableFlags &&
+        ((*mutableFlags & (tmfMPTSetCanConfidentialAmount | tmfMPTClearCanConfidentialAmount)));
 
     auto const hasDomain = ctx.tx.isFieldPresent(sfDomainID);
     auto const hasHolder = ctx.tx.isFieldPresent(sfHolder);
@@ -133,10 +137,10 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     if (hasAuditorElGamalKey && !hasIssuerElGamalKey)
         return temMALFORMED;
 
-    if (hasIssuerElGamalKey && !isValidCompressedECPoint(ctx.tx[sfIssuerElGamalPublicKey]))
+    if (hasIssuerElGamalKey && !isValidCompressedECPoint(ctx.tx[sfIssuerEncryptionKey]))
         return temMALFORMED;
 
-    if (hasAuditorElGamalKey && !isValidCompressedECPoint(ctx.tx[sfAuditorElGamalPublicKey]))
+    if (hasAuditorElGamalKey && !isValidCompressedECPoint(ctx.tx[sfAuditorEncryptionKey]))
         return temMALFORMED;
 
     return tesSUCCESS;
@@ -244,13 +248,14 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
                 }))
             return tecNO_PERMISSION;
 
-        if ((*mutableFlags & tmfMPTSetPrivacy) || (*mutableFlags & tmfMPTClearPrivacy))
+        if ((*mutableFlags & tmfMPTSetCanConfidentialAmount) ||
+            (*mutableFlags & tmfMPTClearCanConfidentialAmount))
         {
             std::uint64_t const confidentialOA =
                 (*sleMptIssuance)[~sfConfidentialOutstandingAmount].value_or(0);
 
             // If there's any confidential outstanding amount, disallow toggling
-            // the lsfMPTCanPrivacy flag
+            // the lsfMPTCanConfidentialAmount flag
             if (confidentialOA > 0)
                 return tecNO_PERMISSION;
         }
@@ -273,34 +278,34 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     }
 
     // cannot update issuer public key
-    if (ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) &&
-        sleMptIssuance->isFieldPresent(sfIssuerElGamalPublicKey))
+    if (ctx.tx.isFieldPresent(sfIssuerEncryptionKey) &&
+        sleMptIssuance->isFieldPresent(sfIssuerEncryptionKey))
     {
         return tecNO_PERMISSION;
     }
 
     // cannot update auditor public key
-    if (ctx.tx.isFieldPresent(sfAuditorElGamalPublicKey) &&
-        sleMptIssuance->isFieldPresent(sfAuditorElGamalPublicKey))
+    if (ctx.tx.isFieldPresent(sfAuditorEncryptionKey) &&
+        sleMptIssuance->isFieldPresent(sfAuditorEncryptionKey))
     {
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
     }
 
-    if (ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) &&
-        !sleMptIssuance->isFlag(lsfMPTCanPrivacy))
+    if (ctx.tx.isFieldPresent(sfIssuerEncryptionKey) &&
+        !sleMptIssuance->isFlag(lsfMPTCanConfidentialAmount))
     {
         return tecNO_PERMISSION;
     }
 
-    if (ctx.tx.isFieldPresent(sfAuditorElGamalPublicKey) &&
-        !sleMptIssuance->isFlag(lsfMPTCanPrivacy))
+    if (ctx.tx.isFieldPresent(sfAuditorEncryptionKey) &&
+        !sleMptIssuance->isFlag(lsfMPTCanConfidentialAmount))
     {
         return tecNO_PERMISSION;
     }
 
     // cannot upload key if there's circulating supply of COA
-    if ((ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) ||
-         ctx.tx.isFieldPresent(sfAuditorElGamalPublicKey)) &&
+    if ((ctx.tx.isFieldPresent(sfIssuerEncryptionKey) ||
+         ctx.tx.isFieldPresent(sfAuditorEncryptionKey)) &&
         sleMptIssuance->isFieldPresent(sfConfidentialOutstandingAmount))
     {
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
@@ -393,24 +398,24 @@ MPTokenIssuanceSet::doApply()
         }
     }
 
-    if (auto const pubKey = ctx_.tx[~sfIssuerElGamalPublicKey])
+    if (auto const pubKey = ctx_.tx[~sfIssuerEncryptionKey])
     {
         // This is enforced in preflight.
         XRPL_ASSERT(
             sle->getType() == ltMPTOKEN_ISSUANCE,
             "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
 
-        sle->setFieldVL(sfIssuerElGamalPublicKey, *pubKey);
+        sle->setFieldVL(sfIssuerEncryptionKey, *pubKey);
     }
 
-    if (auto const pubKey = ctx_.tx[~sfAuditorElGamalPublicKey])
+    if (auto const pubKey = ctx_.tx[~sfAuditorEncryptionKey])
     {
         // This is enforced in preflight.
         XRPL_ASSERT(
             sle->getType() == ltMPTOKEN_ISSUANCE,
             "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
 
-        sle->setFieldVL(sfAuditorElGamalPublicKey, *pubKey);
+        sle->setFieldVL(sfAuditorEncryptionKey, *pubKey);
     }
 
     view().update(sle);

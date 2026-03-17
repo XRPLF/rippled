@@ -350,11 +350,11 @@ ValidConfidentialMPToken::finalize(
         // Privacy flag consistency
         if (checks.requiresPrivacyFlag)
         {
-            if (!issuance->isFlag(lsfMPTCanPrivacy))
+            if (!issuance->isFlag(lsfMPTCanConfidentialAmount))
             {
                 JLOG(j.fatal()) << "Invariant failed: MPToken has encrypted "
                                    "fields but Issuance does not have "
-                                   "lsfMPTCanPrivacy set";
+                                   "lsfMPTCanConfidentialAmount set";
                 return false;
             }
         }

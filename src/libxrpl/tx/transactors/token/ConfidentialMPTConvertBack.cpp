@@ -61,14 +61,14 @@ verifyProofs(
     std::shared_ptr<SLE const> const& issuance,
     std::shared_ptr<SLE const> const& mptoken)
 {
-    if (!mptoken->isFieldPresent(sfHolderElGamalPublicKey))
+    if (!mptoken->isFieldPresent(sfHolderEncryptionKey))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const mptIssuanceID = tx[sfMPTokenIssuanceID];
     auto const account = tx[sfAccount];
     auto const amount = tx[sfMPTAmount];
     auto const blindingFactor = tx[sfBlindingFactor];
-    auto const holderPubKey = (*mptoken)[sfHolderElGamalPublicKey];
+    auto const holderPubKey = (*mptoken)[sfHolderEncryptionKey];
 
     auto const contextHash = getConvertBackContextHash(
         account,
@@ -78,12 +78,12 @@ verifyProofs(
 
     // Prepare Auditor Info
     std::optional<ConfidentialRecipient> auditor;
-    bool const hasAuditor = issuance->isFieldPresent(sfAuditorElGamalPublicKey);
+    bool const hasAuditor = issuance->isFieldPresent(sfAuditorEncryptionKey);
     if (hasAuditor)
     {
         auditor.emplace(
             ConfidentialRecipient{
-                (*issuance)[sfAuditorElGamalPublicKey], tx[sfAuditorEncryptedAmount]});
+                (*issuance)[sfAuditorEncryptionKey], tx[sfAuditorEncryptedAmount]});
     }
 
     // Run all verifications before returning any error to prevent timing attacks
@@ -95,7 +95,7 @@ verifyProofs(
             amount,
             blindingFactor,
             {holderPubKey, tx[sfHolderEncryptedAmount]},
-            {(*issuance)[sfIssuerElGamalPublicKey], tx[sfIssuerEncryptedAmount]},
+            {(*issuance)[sfIssuerEncryptionKey], tx[sfIssuerEncryptedAmount]},
             auditor);
         !isTesSuccess(ter))
     {
@@ -176,11 +176,11 @@ ConfidentialMPTConvertBack::preclaim(PreclaimContext const& ctx)
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if (!sleIssuance->isFlag(lsfMPTCanPrivacy))
+    if (!sleIssuance->isFlag(lsfMPTCanConfidentialAmount))
         return tecNO_PERMISSION;
 
     bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
-    bool const requiresAuditor = sleIssuance->isFieldPresent(sfAuditorElGamalPublicKey);
+    bool const requiresAuditor = sleIssuance->isFieldPresent(sfAuditorEncryptionKey);
 
     // tx must include auditor ciphertext if the issuance has enabled
     // auditing
@@ -202,7 +202,7 @@ ConfidentialMPTConvertBack::preclaim(PreclaimContext const& ctx)
         return tecOBJECT_NOT_FOUND;
 
     if (!sleMptoken->isFieldPresent(sfConfidentialBalanceSpending) ||
-        !sleMptoken->isFieldPresent(sfHolderElGamalPublicKey))
+        !sleMptoken->isFieldPresent(sfHolderEncryptionKey))
     {
         return tecNO_PERMISSION;
     }

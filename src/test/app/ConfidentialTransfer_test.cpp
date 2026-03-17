@@ -103,7 +103,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -148,7 +148,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -183,7 +183,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -246,7 +246,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         mptAlice.create({
             .ownerCount = 1,
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
         });
 
         mptAlice.authorize({
@@ -294,7 +294,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             MPTTester mptAlice(env, alice);
 
             mptAlice.create({
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
             mptAlice.generateKeyPair(alice);
 
@@ -464,7 +464,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -513,7 +513,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -585,7 +585,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -657,7 +657,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Account const bob("bob");
             MPTTester mptAlice(env, alice, {.holders = {bob}});
 
-            // no tfMPTCanPrivacy flag enabled
+            // no tfMPTCanConfidentialAmount flag enabled
             mptAlice.create({
                 .ownerCount = 1,
                 .flags = tfMPTCanTransfer | tfMPTCanLock,
@@ -685,7 +685,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testcase("Convert preclaim");
         using namespace test::jtx;
 
-        // tfMPTCanPrivacy is not set on issuance
+        // tfMPTCanConfidentialAmount is not set on issuance
         {
             Env env{*this, features};
             Account const alice("alice");
@@ -713,7 +713,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             });
         }
 
-        // issuer has not uploaded their sfIssuerElGamalPublicKey
+        // issuer has not uploaded their sfIssuerEncryptionKey
         {
             Env env{*this, features};
             Account const alice("alice");
@@ -722,7 +722,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -750,7 +750,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -780,7 +780,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.generateKeyPair(alice);
@@ -805,7 +805,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -844,7 +844,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -875,7 +875,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -909,7 +909,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -958,7 +958,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTRequireAuth | tfMPTCanPrivacy,
+                .flags =
+                    tfMPTCanTransfer | tfMPTCanLock | tfMPTRequireAuth | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -1020,7 +1021,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -1057,7 +1058,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -1096,7 +1097,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 });
 
             mptAlice.create({
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -1131,7 +1132,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -1166,7 +1167,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         mptAlice.create({
             .ownerCount = 1,
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
         });
 
         mptAlice.authorize({
@@ -1203,7 +1204,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         mptAlice.create({
             .ownerCount = 1,
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
         });
 
         mptAlice.authorize({
@@ -1252,7 +1253,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -1271,7 +1272,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             });
         }
 
-        // tfMPTCanPrivacy is not set on issuance
+        // tfMPTCanConfidentialAmount is not set on issuance
         {
             Env env{*this, features};
             Account const alice("alice");
@@ -1306,7 +1307,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.generateKeyPair(alice);
@@ -1328,7 +1329,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -1362,7 +1363,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         mptAlice.create({
             .ownerCount = 1,
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
         });
 
         mptAlice.authorize({
@@ -1443,7 +1444,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         mptAlice.create({
             .ownerCount = 1,
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
         });
 
         mptAlice.authorize({
@@ -1550,7 +1551,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -1730,7 +1731,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -1805,7 +1806,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         // authorize bob, carol, dave (not eve)
         mptAlice.create({
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTRequireAuth | tfMPTCanPrivacy,
+            .flags =
+                tfMPTCanTransfer | tfMPTCanLock | tfMPTRequireAuth | tfMPTCanConfidentialAmount,
         });
         mptAlice.authorize({
             .account = bob,
@@ -1870,7 +1872,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
 
             mptAlice.create({
-                .flags = tfMPTCanTransfer | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
             });
             mptAlice.authorize({
                 .account = bob,
@@ -2106,7 +2108,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -2169,7 +2171,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanLock | tfMPTCanPrivacy | tfMPTCanTransfer,
+                .flags = tfMPTCanLock | tfMPTCanConfidentialAmount | tfMPTCanTransfer,
             });
 
             mptAlice.authorize({
@@ -2248,7 +2250,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -2308,7 +2310,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         mptAlice.create({
             .ownerCount = 1,
-            .flags = tfMPTCanLock | tfMPTCanPrivacy | tfMPTCanTransfer,
+            .flags = tfMPTCanLock | tfMPTCanConfidentialAmount | tfMPTCanTransfer,
         });
         mptAlice.authorize({
             .account = bob,
@@ -2417,7 +2419,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -2454,7 +2456,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -2501,7 +2503,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -2535,7 +2537,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -2570,7 +2572,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -2622,7 +2624,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -2666,7 +2668,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -2708,7 +2710,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -2738,7 +2740,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 jv[jss::TransactionType] = jss::ConfidentialMPTConvert;
                 jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
                 jv[sfMPTAmount.jsonName] = std::to_string(maxMPTokenAmount);
-                jv[sfHolderElGamalPublicKey.jsonName] = strHex(*mptAlice.getPubKey(bob));
+                jv[sfHolderEncryptionKey.jsonName] = strHex(*mptAlice.getPubKey(bob));
                 jv[sfHolderEncryptedAmount.jsonName] = strHex(convertHolderCiphertext);
                 jv[sfIssuerEncryptedAmount.jsonName] = strHex(convertIssuerCiphertext);
                 jv[sfBlindingFactor.jsonName] = strHex(convertBlindingFactor);
@@ -2834,7 +2836,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         mptAlice.create({
             .ownerCount = 1,
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
         });
 
         mptAlice.authorize({
@@ -2908,7 +2910,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -3040,7 +3042,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -3060,7 +3062,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             });
         }
 
-        // tfMPTCanPrivacy is not set on issuance
+        // tfMPTCanConfidentialAmount is not set on issuance
         {
             Env env{*this, features};
             Account const alice("alice");
@@ -3096,7 +3098,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.generateKeyPair(alice);
@@ -3120,7 +3122,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -3151,7 +3153,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -3202,7 +3204,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTRequireAuth | tfMPTCanPrivacy,
+                .flags =
+                    tfMPTCanTransfer | tfMPTCanLock | tfMPTRequireAuth | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -3285,7 +3288,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
             mptAlice.authorize({
                 .account = bob,
@@ -3331,7 +3334,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
             mptAlice.authorize({
                 .account = bob,
@@ -3373,7 +3376,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 });
 
             mptAlice.create({
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
             mptAlice.authorize({
                 .account = bob,
@@ -3449,7 +3452,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         auto setupMPT = [&](Env& env, MPTTester& mpt) {
             mpt.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
             mpt.authorize({
                 .account = bob,
@@ -3658,7 +3661,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         auto setupBasic = [&](Env& env, MPTTester& mpt) {
             mpt.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
             mpt.authorize({
                 .account = bob,
@@ -3824,7 +3827,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         MPTTester mptAlice(env, alice, {.holders = {bob, carol, dave}});
 
         mptAlice.create({
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback | tfMPTCanPrivacy,
+            .flags =
+                tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback | tfMPTCanConfidentialAmount,
         });
         mptAlice.authorize({
             .account = bob,
@@ -3933,7 +3937,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             });
 
         mptAlice.create({
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback | tfMPTCanPrivacy,
+            .flags =
+                tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback | tfMPTCanConfidentialAmount,
         });
         mptAlice.authorize({
             .account = bob,
@@ -4063,7 +4068,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -4147,7 +4152,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             MPTTester mptAlice(env, alice, {.holders = {bob, carol, dave}});
 
             mptAlice.create({
-                .flags = tfMPTCanTransfer | tfMPTCanClawback | tfMPTRequireAuth | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanClawback | tfMPTRequireAuth |
+                    tfMPTCanConfidentialAmount,
             });
             mptAlice.authorize({
                 .account = bob,
@@ -4220,7 +4226,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create({
-                .flags = tfMPTCanTransfer | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
             });
             mptAlice.authorize({
                 .account = bob,
@@ -4243,7 +4249,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Account const bob("bob");
             MPTTester mptAlice(env, alice, {.holders = {bob}});
             mptAlice.create({
-                .flags = tfMPTCanClawback | tfMPTCanPrivacy,
+                .flags = tfMPTCanClawback | tfMPTCanConfidentialAmount,
             });
             mptAlice.authorize({
                 .account = bob,
@@ -4265,7 +4271,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Account const bob("bob");
             MPTTester mptAlice(env, alice, {.holders = {bob}});
             mptAlice.create({
-                .flags = tfMPTCanClawback | tfMPTCanPrivacy,
+                .flags = tfMPTCanClawback | tfMPTCanConfidentialAmount,
             });
             mptAlice.authorize({
                 .account = bob,
@@ -4295,7 +4301,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .flags = tfMPTCanTransfer | tfMPTCanClawback | tfMPTRequireAuth | tfMPTCanLock |
-                    tfMPTCanPrivacy,
+                    tfMPTCanConfidentialAmount,
             });
             mptAlice.authorize({
                 .account = bob,
@@ -4410,7 +4416,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
 
             mptAlice.create({
-                .flags = tfMPTCanTransfer | tfMPTCanClawback | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanClawback | tfMPTCanConfidentialAmount,
             });
 
             for (auto const& [acct, amt] : {std::pair{bob, 1000}, {carol, 2000}})
@@ -4585,10 +4591,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     void
     testMutatePrivacy(FeatureBitset features)
     {
-        testcase("mutate lsfMPTCanPrivacy");
+        testcase("mutate lsfMPTCanConfidentialAmount");
         using namespace test::jtx;
 
-        // can not create mpt issuance with tmfMPTCannotMutatePrivacy
+        // can not create mpt issuance with tmfMPTCannotMutateCanConfidentialAmount
         // when featureDynamicMPT is disabled
         {
             Env env{*this, features - featureDynamicMPT};
@@ -4598,12 +4604,12 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 0,
-                .mutableFlags = tmfMPTCannotMutatePrivacy,
+                .mutableFlags = tmfMPTCannotMutateCanConfidentialAmount,
                 .err = temDISABLED,
             });
         }
 
-        // can not create mpt issuance with tmfMPTCannotMutatePrivacy when
+        // can not create mpt issuance with tmfMPTCannotMutateCanConfidentialAmount when
         // featureConfidentialTransfer is disabled
         {
             Env env{*this, features - featureConfidentialTransfer};
@@ -4613,13 +4619,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 0,
-                .mutableFlags = tmfMPTCannotMutatePrivacy,
+                .mutableFlags = tmfMPTCannotMutateCanConfidentialAmount,
                 .err = temDISABLED,
             });
         }
 
-        // if lsmfMPTCannotMutatePrivacy is set, can not set/clear
-        // lsfMPTCanPrivacy
+        // if lsmfMPTCannotMutateCanConfidentialAmount is set, can not set/clear
+        // lsfMPTCanConfidentialAmount
         {
             Env env{*this, features};
             Account const alice("alice");
@@ -4629,23 +4635,23 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.create({
                 .ownerCount = 1,
                 .flags = tfMPTCanTransfer,
-                .mutableFlags = tmfMPTCannotMutatePrivacy,
+                .mutableFlags = tmfMPTCannotMutateCanConfidentialAmount,
             });
 
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTSetPrivacy,
+                .mutableFlags = tmfMPTSetCanConfidentialAmount,
                 .err = tecNO_PERMISSION,
             });
 
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTClearPrivacy,
+                .mutableFlags = tmfMPTClearCanConfidentialAmount,
                 .err = tecNO_PERMISSION,
             });
         }
 
-        // Toggle lsfMPTCanPrivacy
+        // Toggle lsfMPTCanConfidentialAmount
         {
             Env env{*this, features};
             Account const alice("alice");
@@ -4654,7 +4660,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
                 .mutableFlags = tmfMPTCanMutateCanLock,
             });
 
@@ -4699,33 +4705,33 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 }
             };
 
-            // set lsfMPTCanPrivacy, but no effect because lsfMPTCanPrivacy
+            // set lsfMPTCanConfidentialAmount, but no effect because lsfMPTCanConfidentialAmount
             // was already set
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTSetPrivacy,
+                .mutableFlags = tmfMPTSetCanConfidentialAmount,
             });
             verifyToggle(tesSUCCESS, 10);
 
-            // clear lsfMPTCanPrivacy
+            // clear lsfMPTCanConfidentialAmount
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTClearPrivacy,
+                .mutableFlags = tmfMPTClearCanConfidentialAmount,
             });
             verifyToggle(tecNO_PERMISSION, 10);
 
-            // can clear lsfMPTCanPrivacy again but has no effect
+            // can clear lsfMPTCanConfidentialAmount again but has no effect
             // for privacy settings
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTClearPrivacy | tmfMPTSetCanLock,
+                .mutableFlags = tmfMPTClearCanConfidentialAmount | tmfMPTSetCanLock,
             });
             verifyToggle(tecNO_PERMISSION, 20);
 
-            // set lsfMPTCanPrivacy again
+            // set lsfMPTCanConfidentialAmount again
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTSetPrivacy,
+                .mutableFlags = tmfMPTSetCanConfidentialAmount,
             });
             verifyToggle(tesSUCCESS, 30);
         }
@@ -4738,11 +4744,11 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Account const bob("bob");
             MPTTester mptAlice(env, alice, {.holders = {bob}});
 
-            // lsmfMPTCannotMutatePrivacy is false by default,
-            // so that lsfMPTCanPrivacy can be mutated
+            // lsmfMPTCannotMutateCanConfidentialAmount is false by default,
+            // so that lsfMPTCanConfidentialAmount can be mutated
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanPrivacy,
+                .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.authorize({
@@ -4757,16 +4763,16 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             // bob convert 50 to confidential
             mptAlice.convert({.account = bob, .amt = 50, .holderPubKey = mptAlice.getPubKey(bob)});
 
-            // set or clear lsfMPTCanPrivacy should fail because of
+            // set or clear lsfMPTCanConfidentialAmount should fail because of
             // confidential outstanding balance
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTSetPrivacy,
+                .mutableFlags = tmfMPTSetCanConfidentialAmount,
                 .err = tecNO_PERMISSION,
             });
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTClearPrivacy,
+                .mutableFlags = tmfMPTClearCanConfidentialAmount,
                 .err = tecNO_PERMISSION,
             });
 
@@ -4781,14 +4787,14 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .amt = 50,
             });
 
-            // now clear lsfMPTCanPrivacy should succeed,
+            // now clear lsfMPTCanConfidentialAmount should succeed,
             // because there's no confidential outstanding balance
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTClearPrivacy,
+                .mutableFlags = tmfMPTClearCanConfidentialAmount,
             });
 
-            // bob can not convert because lsfMPTCanPrivacy was cleared
+            // bob can not convert because lsfMPTCanConfidentialAmount was cleared
             // successfully
             mptAlice.convert({
                 .account = bob,
@@ -4797,11 +4803,11 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .err = tecNO_PERMISSION,
             });
 
-            // can set lsfMPTCanPrivacy again when there's no confidential
+            // can set lsfMPTCanConfidentialAmount again when there's no confidential
             // outstanding balance
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTSetPrivacy,
+                .mutableFlags = tmfMPTSetCanConfidentialAmount,
             });
             mptAlice.convert({
                 .account = bob,
@@ -4824,7 +4830,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.create({
             .ownerCount = 1,
             .holderCount = 0,
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
         });
 
         mptAlice.authorize({
@@ -5090,7 +5096,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.create({
             .ownerCount = 1,
             .holderCount = 0,
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
         });
 
         mptAlice.authorize({
@@ -5297,7 +5303,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.create({
             .ownerCount = 1,
             .holderCount = 0,
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
         });
 
         mptAlice.authorize({
@@ -5456,7 +5462,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.create({
             .ownerCount = 1,
             .holderCount = 0,
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
         });
 
         mptAlice.authorize({
@@ -5540,7 +5546,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.create({
             .ownerCount = 1,
             .holderCount = 0,
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
         });
 
         mptAlice.authorize({
@@ -5639,7 +5645,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.create(
             {.ownerCount = 1,
              .holderCount = 0,
-             .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+             .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount});
 
         mptAlice.authorize({.account = bob});
         mptAlice.pay(alice, bob, 100);
@@ -5733,7 +5739,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
 
         mptAlice.create(
-            {.ownerCount = 1, .flags = tfMPTCanLock | tfMPTCanPrivacy | tfMPTCanTransfer});
+            {.ownerCount = 1,
+             .flags = tfMPTCanLock | tfMPTCanConfidentialAmount | tfMPTCanTransfer});
         mptAlice.authorize({.account = bob});
         mptAlice.authorize({.account = carol});
 
@@ -5812,7 +5819,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.create(
             {.ownerCount = 1,
              .holderCount = 0,
-             .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+             .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount});
 
         mptAlice.authorize({.account = bob});
         mptAlice.pay(alice, bob, 10);

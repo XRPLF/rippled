@@ -37,7 +37,7 @@ public:
  * Cannot delete if sfIssuerEncryptedBalance exists
  * Cannot delete if sfConfidentialBalanceInbox and sfConfidentialBalanceSpending exist
  * - Privacy flag consistency:
- * MPToken can only have encrypted fields if lsfMPTCanPrivacy is set on
+ * MPToken can only have encrypted fields if lsfMPTCanConfidentialAmount is set on
  * issuance.
  * - Encrypted field existence consistency:
  * If sfConfidentialBalanceSpending/sfConfidentialBalanceInbox exists, then

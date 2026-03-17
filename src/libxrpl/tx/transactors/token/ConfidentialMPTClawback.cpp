@@ -61,7 +61,7 @@ ConfidentialMPTClawback::preclaim(PreclaimContext const& ctx)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Check if issuance has issuer ElGamal public key
-    if (!sleIssuance->isFieldPresent(sfIssuerElGamalPublicKey))
+    if (!sleIssuance->isFieldPresent(sfIssuerEncryptionKey))
         return tecNO_PERMISSION;
 
     // Check if clawback is allowed
@@ -90,7 +90,7 @@ ConfidentialMPTClawback::preclaim(PreclaimContext const& ctx)
     return verifyClawbackEqualityProof(
         amount,
         ctx.tx[sfZKProof],
-        (*sleIssuance)[sfIssuerElGamalPublicKey],
+        (*sleIssuance)[sfIssuerEncryptionKey],
         (*sleHolderMPToken)[sfIssuerEncryptedBalance],
         contextHash);
 }
@@ -109,8 +109,8 @@ ConfidentialMPTClawback::doApply()
 
     auto const clawAmount = ctx_.tx[sfMPTAmount];
 
-    Slice const holderPubKey = (*sleHolderMPToken)[sfHolderElGamalPublicKey];
-    Slice const issuerPubKey = (*sleIssuance)[sfIssuerElGamalPublicKey];
+    Slice const holderPubKey = (*sleHolderMPToken)[sfHolderEncryptionKey];
+    Slice const issuerPubKey = (*sleIssuance)[sfIssuerEncryptionKey];
 
     // After clawback, the balance should be encrypted zero.
     auto const encZeroForHolder = encryptCanonicalZeroAmount(holderPubKey, holder, mptIssuanceID);
@@ -131,10 +131,10 @@ ConfidentialMPTClawback::doApply()
     {
         // Sanity check: the issuance must have an auditor public key if
         // auditing is enabled.
-        if (!sleIssuance->isFieldPresent(sfAuditorElGamalPublicKey))
+        if (!sleIssuance->isFieldPresent(sfAuditorEncryptionKey))
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        Slice const auditorPubKey = (*sleIssuance)[sfAuditorElGamalPublicKey];
+        Slice const auditorPubKey = (*sleIssuance)[sfAuditorEncryptionKey];
 
         auto encZeroForAuditor = encryptCanonicalZeroAmount(auditorPubKey, holder, mptIssuanceID);
 
