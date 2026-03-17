@@ -1900,4 +1900,68 @@ loanMakePayment(
         "xrpl::loanMakePayment : fee paid is valid");
     return totalParts;
 }
+
+// An owner count cannot be negative. If adjustment would cause a negative
+// owner count, clamp the owner count at 0. Similarly for overflow. This
+// adjustment allows the ownerCount to be adjusted up or down in multiple steps.
+// If id != std::nullopt, then do error reporting.
+//
+// Returns adjusted owner count.
+static std::uint32_t
+confineOwnerCount(
+    std::uint32_t current,
+    std::int32_t adjustment,
+    std::optional<AccountID> const& id = std::nullopt,
+    beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+{
+    std::uint32_t adjusted{current + adjustment};
+    if (adjustment > 0)
+    {
+        // Overflow is well defined on unsigned
+        if (adjusted < current)
+        {
+            if (id)
+            {
+                JLOG(j.fatal()) << "Account " << *id << " owner count exceeds max!";
+            }
+            adjusted = std::numeric_limits<std::uint32_t>::max();
+        }
+    }
+    else
+    {
+        // Underflow is well defined on unsigned
+        if (adjusted > current)
+        {
+            if (id)
+            {
+                JLOG(j.fatal()) << "Account " << *id << " owner count set below 0!";
+            }
+            adjusted = 0;
+            XRPL_ASSERT(!id, "xrpl::confineOwnerCount : id is not set");
+        }
+    }
+    return adjusted;
+}
+
+void
+adjustOwnerCount(
+    std::shared_ptr<SLE> const& sle,
+    ApplyView& view,
+    std::int32_t amount,
+    beast::Journal j)
+{
+    // This function is only used for LoanBrokers, so assert that
+    // AccountRoot should use WrappedAccountRoot.adjustOwnerCount instead
+    XRPL_ASSERT(sle->getType() == ltLOAN_BROKER, "xrpl::adjustOwnerCount : sle is loan broker");
+    if (!sle)
+        return;
+    XRPL_ASSERT(amount, "xrpl::adjustOwnerCount : nonzero amount input");
+    std::uint32_t const current{sle->getFieldU32(sfOwnerCount)};
+    AccountID const id = (*sle)[sfAccount];
+    std::uint32_t const adjusted = confineOwnerCount(current, amount, id, j);
+    view.adjustOwnerCountHook(id, current, adjusted);
+    sle->at(sfOwnerCount) = adjusted;
+    view.update(sle);
+}
+
 }  // namespace xrpl

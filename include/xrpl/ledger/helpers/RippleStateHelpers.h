@@ -3,6 +3,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Issue.h>
@@ -137,16 +138,16 @@ trustCreate(
     bool const bSrcHigh,
     AccountID const& uSrcAccountID,
     AccountID const& uDstAccountID,
-    uint256 const& uIndex,      // --> ripple state entry
-    SLE::ref sleAccount,        // --> the account being set.
-    bool const bAuth,           // --> authorize account.
-    bool const bNoRipple,       // --> others cannot ripple through
-    bool const bFreeze,         // --> funds cannot leave
-    bool bDeepFreeze,           // --> can neither receive nor send funds
-    STAmount const& saBalance,  // --> balance of account being set.
-                                // Issuer should be noAccount()
-    STAmount const& saLimit,    // --> limit for account being set.
-                                // Issuer should be the account being set.
+    uint256 const& uIndex,                  // --> ripple state entry
+    WrappedAccountRoot const& wrappedAcct,  // --> the account being set.
+    bool const bAuth,                       // --> authorize account.
+    bool const bNoRipple,                   // --> others cannot ripple through
+    bool const bFreeze,                     // --> funds cannot leave
+    bool bDeepFreeze,                       // --> can neither receive nor send funds
+    STAmount const& saBalance,              // --> balance of account being set.
+                                            // Issuer should be noAccount()
+    STAmount const& saLimit,                // --> limit for account being set.
+                                            // Issuer should be the account being set.
     std::uint32_t uQualityIn,
     std::uint32_t uQualityOut,
     beast::Journal j);

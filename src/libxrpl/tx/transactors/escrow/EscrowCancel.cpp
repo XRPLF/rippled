@@ -149,13 +149,13 @@ EscrowCancel::doApply()
         }
     }
 
-    auto const sle = ctx_.view().peek(keylet::account(account));
+    WrappedAccountRoot wrappedAcct(account, &ctx_.view());
     STAmount const amount = slep->getFieldAmount(sfAmount);
 
     // Transfer amount back to the owner
     if (isXRP(amount))
     {
-        (*sle)[sfBalance] = (*sle)[sfBalance] + amount;
+        (*wrappedAcct)[sfBalance] = (*wrappedAcct)[sfBalance] + amount;
     }
     else
     {
@@ -169,7 +169,7 @@ EscrowCancel::doApply()
                     return escrowUnlockApplyHelper<T>(
                         ctx_.view(),
                         parityRate,
-                        slep,
+                        slep,  // Bug: should be wrappedAcct, will be fixed by amendment in #6171
                         preFeeBalance_,
                         amount,
                         issuer,
@@ -195,8 +195,8 @@ EscrowCancel::doApply()
         }
     }
 
-    adjustOwnerCount(ctx_.view(), sle, -1, ctx_.journal);
-    ctx_.view().update(sle);
+    wrappedAcct.adjustOwnerCount(-1, ctx_.journal);
+    ctx_.view().update(wrappedAcct.mutableSle());
 
     // Remove escrow from ledger
     ctx_.view().erase(slep);

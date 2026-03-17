@@ -42,14 +42,16 @@ closeChannel(
 
     // Transfer amount back to owner, decrement owner count
     auto const sle = view.peek(keylet::account(src));
-    if (!sle)
+    WrappedAccountRoot wrappedOwner(src, &view);
+    if (!wrappedOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     XRPL_ASSERT(
         (*slep)[sfAmount] >= (*slep)[sfBalance], "xrpl::closeChannel : minimum channel amount");
-    (*sle)[sfBalance] = (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
-    adjustOwnerCount(view, sle, -1, j);
-    view.update(sle);
+    (*wrappedOwner)[sfBalance] =
+        (*wrappedOwner)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
+    wrappedOwner.adjustOwnerCount(-1, j);
+    view.update(wrappedOwner.mutableSle());
 
     // Remove PayChan from ledger
     view.erase(slep);

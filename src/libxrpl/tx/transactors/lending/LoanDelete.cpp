@@ -68,8 +68,8 @@ LoanDelete::doApply()
     if (!loanSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const borrower = loanSle->at(sfBorrower);
-    auto const borrowerSle = view.peek(keylet::account(borrower));
-    if (!borrowerSle)
+    WrappedAccountRoot wrappedBorrower(borrower, &view);
+    if (!wrappedBorrower)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     auto const brokerID = loanSle->at(sfLoanBrokerID);
@@ -97,7 +97,7 @@ LoanDelete::doApply()
     // Decrement the LoanBroker's owner count.
     // The broker's owner count is solely for the number of outstanding loans,
     // and is distinct from the broker's pseudo-account's owner count
-    adjustOwnerCount(view, brokerSle, -1, j_);
+    adjustOwnerCount(brokerSle, view, -1, j_);
     // If there are no loans left, then any remaining debt must be forgiven,
     // because there is no other way to pay it back.
     if (brokerSle->at(sfOwnerCount) == 0)
@@ -117,7 +117,7 @@ LoanDelete::doApply()
         }
     }
     // Decrement the borrower's owner count
-    adjustOwnerCount(view, borrowerSle, -1, j_);
+    wrappedBorrower.adjustOwnerCount(-1, j_);
 
     // These associations shouldn't do anything, but do them just to be safe
     associateAsset(*loanSle, vaultAsset);

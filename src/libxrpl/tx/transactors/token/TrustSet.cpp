@@ -324,11 +324,11 @@ TrustSet::doApply()
     // true, if current is high account.
     bool const bHigh = account_ > uDstAccountID;
 
-    auto const sle = view().peek(keylet::account(account_));
-    if (!sle)
+    WrappedAccountRoot wrappedAccount(account_, &view());
+    if (!wrappedAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    std::uint32_t const uOwnerCount = sle->getFieldU32(sfOwnerCount);
+    std::uint32_t const uOwnerCount = wrappedAccount->getFieldU32(sfOwnerCount);
 
     // The reserve that is required to create the line. Note
     // that although the reserve increases with every item
@@ -369,9 +369,9 @@ TrustSet::doApply()
 
     auto viewJ = ctx_.registry.journal("View");
 
-    SLE::pointer sleDst = view().peek(keylet::account(uDstAccountID));
+    WrappedAccountRoot wrappedDst(uDstAccountID, &view());
 
-    if (!sleDst)
+    if (!wrappedDst)
     {
         JLOG(j_.trace()) << "Delay transaction: Destination account does not exist.";
         return tecNO_DST;
@@ -394,8 +394,8 @@ TrustSet::doApply()
         std::uint32_t uHighQualityOut = 0;
         auto const& uLowAccountID = !bHigh ? account_ : uDstAccountID;
         auto const& uHighAccountID = bHigh ? account_ : uDstAccountID;
-        SLE::ref sleLowAccount = !bHigh ? sle : sleDst;
-        SLE::ref sleHighAccount = bHigh ? sle : sleDst;
+        auto lowAcct = !bHigh ? wrappedAccount : wrappedDst;
+        auto highAcct = bHigh ? wrappedAccount : wrappedDst;
 
         //
         // Balances
@@ -500,7 +500,7 @@ TrustSet::doApply()
         }
 
         // Have to use lsfNoFreeze to maintain pre-deep freeze behavior
-        bool const bNoFreeze = sle->isFlag(lsfNoFreeze);
+        bool const bNoFreeze = wrappedAccount->isFlag(lsfNoFreeze);
         uFlagsOut = computeFreezeFlags(
             uFlagsOut,
             bHigh,
@@ -516,8 +516,8 @@ TrustSet::doApply()
         if (QUALITY_ONE == uHighQualityOut)
             uHighQualityOut = 0;
 
-        bool const bLowDefRipple = (sleLowAccount->getFlags() & lsfDefaultRipple) != 0u;
-        bool const bHighDefRipple = (sleHighAccount->getFlags() & lsfDefaultRipple) != 0u;
+        bool const bLowDefRipple = lowAcct->getFlags() & lsfDefaultRipple;
+        bool const bHighDefRipple = highAcct->getFlags() & lsfDefaultRipple;
 
         bool const bLowReserveSet = (uLowQualityIn != 0u) || (uLowQualityOut != 0u) ||
             ((uFlagsOut & lsfLowNoRipple) == 0) != bLowDefRipple ||
@@ -544,7 +544,7 @@ TrustSet::doApply()
         if (bLowReserveSet && !bLowReserved)
         {
             // Set reserve for low account.
-            adjustOwnerCount(view(), sleLowAccount, 1, viewJ);
+            lowAcct.adjustOwnerCount(1, viewJ);
             uFlagsOut |= lsfLowReserve;
 
             if (!bHigh)
@@ -554,14 +554,14 @@ TrustSet::doApply()
         if (bLowReserveClear && bLowReserved)
         {
             // Clear reserve for low account.
-            adjustOwnerCount(view(), sleLowAccount, -1, viewJ);
+            lowAcct.adjustOwnerCount(-1, viewJ);
             uFlagsOut &= ~lsfLowReserve;
         }
 
         if (bHighReserveSet && !bHighReserved)
         {
             // Set reserve for high account.
-            adjustOwnerCount(view(), sleHighAccount, 1, viewJ);
+            highAcct.adjustOwnerCount(1, viewJ);
             uFlagsOut |= lsfHighReserve;
 
             if (bHigh)
@@ -571,7 +571,7 @@ TrustSet::doApply()
         if (bHighReserveClear && bHighReserved)
         {
             // Clear reserve for high account.
-            adjustOwnerCount(view(), sleHighAccount, -1, viewJ);
+            highAcct.adjustOwnerCount(-1, viewJ);
             uFlagsOut &= ~lsfHighReserve;
         }
 
@@ -639,7 +639,7 @@ TrustSet::doApply()
             account_,
             uDstAccountID,
             k.key,
-            sle,
+            wrappedAccount,
             bSetAuth,
             bSetNoRipple && !bClearNoRipple,
             bSetFreeze && !bClearFreeze,

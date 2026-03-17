@@ -12,6 +12,8 @@
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
 
+#include <variant>
+
 namespace xrpl {
 
 template <ValidIssueType T>
@@ -19,7 +21,7 @@ TER
 escrowUnlockApplyHelper(
     ApplyView& view,
     Rate lockedRate,
-    std::shared_ptr<SLE> const& sleDest,
+    std::variant<std::shared_ptr<SLE>, WrappedAccountRoot> sleDest,
     STAmount const& xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
@@ -33,7 +35,7 @@ inline TER
 escrowUnlockApplyHelper<Issue>(
     ApplyView& view,
     Rate lockedRate,
-    std::shared_ptr<SLE> const& sleDest,
+    std::variant<std::shared_ptr<SLE>, WrappedAccountRoot> sleDest,
     STAmount const& xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
@@ -55,8 +57,14 @@ escrowUnlockApplyHelper<Issue>(
 
     if (!view.exists(trustLineKey) && createAsset)
     {
+        // For backwards compatibility: if sleDest is not WrappedAccountRoot, return error
+        if (!std::holds_alternative<WrappedAccountRoot>(sleDest))
+            return tefEXCEPTION;
+
+        auto& wrappedDest = std::get<WrappedAccountRoot>(sleDest);
+
         // Can the account cover the trust line's reserve?
-        if (std::uint32_t const ownerCount = {sleDest->at(sfOwnerCount)};
+        if (std::uint32_t const ownerCount = {wrappedDest->at(sfOwnerCount)};
             xrpBalance < view.fees().accountReserve(ownerCount + 1))
         {
             JLOG(journal.trace()) << "Trust line does not exist. "
@@ -76,9 +84,9 @@ escrowUnlockApplyHelper<Issue>(
                 issuer,                         // source
                 receiver,                       // destination
                 trustLineKey.key,               // ledger index
-                sleDest,                        // Account to add to
+                wrappedDest,                    // Account to add to
                 false,                          // authorize account
-                (sleDest->getFlags() & lsfDefaultRipple) == 0,
+                (wrappedDest->getFlags() & lsfDefaultRipple) == 0,
                 false,                          // freeze trust line
                 false,                          // deep freeze trust line
                 initialBalance,                 // zero initial balance
@@ -92,7 +100,7 @@ escrowUnlockApplyHelper<Issue>(
         }
         // clang-format on
 
-        view.update(sleDest);
+        view.update(wrappedDest.mutableSle());
     }
 
     if (!view.exists(trustLineKey) && !receiverIssuer)
@@ -163,7 +171,7 @@ inline TER
 escrowUnlockApplyHelper<MPTIssue>(
     ApplyView& view,
     Rate lockedRate,
-    std::shared_ptr<SLE> const& sleDest,
+    std::variant<std::shared_ptr<SLE>, WrappedAccountRoot> sleDest,
     STAmount const& xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
@@ -179,7 +187,13 @@ escrowUnlockApplyHelper<MPTIssue>(
     auto const issuanceKey = keylet::mptIssuance(mptID);
     if (!view.exists(keylet::mptoken(issuanceKey.key, receiver)) && createAsset && !receiverIssuer)
     {
-        if (std::uint32_t const ownerCount = {sleDest->at(sfOwnerCount)};
+        // For backwards compatibility: if sleDest is not WrappedAccountRoot, return error
+        if (!std::holds_alternative<WrappedAccountRoot>(sleDest))
+            return tefEXCEPTION;
+
+        auto& wrappedDest = std::get<WrappedAccountRoot>(sleDest);
+
+        if (std::uint32_t const ownerCount = {wrappedDest->at(sfOwnerCount)};
             xrpBalance < view.fees().accountReserve(ownerCount + 1))
         {
             return tecINSUFFICIENT_RESERVE;
@@ -192,7 +206,7 @@ escrowUnlockApplyHelper<MPTIssue>(
         }
 
         // update owner count.
-        adjustOwnerCount(view, sleDest, 1, journal);
+        wrappedDest.adjustOwnerCount(1, journal);
     }
 
     if (!view.exists(keylet::mptoken(issuanceKey.key, receiver)) && !receiverIssuer)

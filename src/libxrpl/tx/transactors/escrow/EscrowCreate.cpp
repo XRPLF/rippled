@@ -389,14 +389,14 @@ EscrowCreate::doApply()
     if (ctx_.tx[~sfFinishAfter] && after(closeTime, ctx_.tx[sfFinishAfter]))
         return tecNO_PERMISSION;
 
-    auto const sle = ctx_.view().peek(keylet::account(account_));
-    if (!sle)
+    WrappedAccountRoot wrappedAcct(account_, &ctx_.view());
+    if (!wrappedAcct)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Check reserve and funds availability
     STAmount const amount{ctx_.tx[sfAmount]};
 
-    auto const reserve = ctx_.view().fees().accountReserve((*sle)[sfOwnerCount] + 1);
+    auto const reserve = ctx_.view().fees().accountReserve((*wrappedAcct)[sfOwnerCount] + 1);
 
     auto const balance = sle->getFieldAmount(sfBalance).xrp();
     if (balance < reserve)
@@ -481,7 +481,7 @@ EscrowCreate::doApply()
     // Deduct owner's balance
     if (isXRP(amount))
     {
-        (*sle)[sfBalance] = (*sle)[sfBalance] - amount;
+        (*wrappedAcct)[sfBalance] = (*wrappedAcct)[sfBalance] - amount;
     }
     else
     {
@@ -497,8 +497,8 @@ EscrowCreate::doApply()
     }
 
     // increment owner count
-    adjustOwnerCount(ctx_.view(), sle, 1, ctx_.journal);
-    ctx_.view().update(sle);
+    wrappedAcct.adjustOwnerCount(1, ctx_.journal);
+    ctx_.view().update(wrappedAcct.mutableSle());
     return tesSUCCESS;
 }
 

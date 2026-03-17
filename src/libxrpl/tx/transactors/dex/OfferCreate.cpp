@@ -145,8 +145,10 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
     std::uint32_t const uAccountSequence = sleCreator->getFieldU32(sfSequence);
 
     auto viewJ = ctx.registry.journal("View");
+    WrappedAccountRoot wrappedPays(uPaysIssuerID, &ctx.view);
+    WrappedAccountRoot wrappedGets(uGetsIssuerID, &ctx.view);
 
-    if (isGlobalFrozen(ctx.view, uPaysIssuerID) || isGlobalFrozen(ctx.view, uGetsIssuerID))
+    if (wrappedPays.isGlobalFrozen() || wrappedGets.isGlobalFrozen())
     {
         JLOG(ctx.j.debug()) << "Offer involves frozen asset";
         return tecFROZEN;
@@ -296,7 +298,8 @@ OfferCreate::flowCross(
         STAmount sendMax = takerAmount.in;
         if (!sendMax.native() && (account_ != sendMax.getIssuer()))
         {
-            gatewayXferRate = transferRate(psb, sendMax.getIssuer());
+            WrappedAccountRoot wrappedAcct(sendMax.getIssuer(), &psb);
+            gatewayXferRate = wrappedAcct.transferRate();
             if (gatewayXferRate.value != QUALITY_ONE)
             {
                 sendMax =
@@ -732,12 +735,12 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {tesSUCCESS, true};
     }
 
-    auto const sleCreator = sb.peek(keylet::account(account_));
-    if (!sleCreator)
+    WrappedAccountRoot wrappedCreator(account_, &sb);
+    if (!wrappedCreator)
         return {tefINTERNAL, false};
 
     {
-        XRPAmount reserve = sb.fees().accountReserve(sleCreator->getFieldU32(sfOwnerCount) + 1);
+        XRPAmount reserve = sb.fees().accountReserve(wrappedCreator->getFieldU32(sfOwnerCount) + 1);
 
         if (preFeeBalance_ < reserve)
         {
@@ -772,7 +775,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     // Update owner count.
-    adjustOwnerCount(sb, sleCreator, 1, viewJ);
+    wrappedCreator.adjustOwnerCount(1, viewJ);
 
     JLOG(j_.trace()) << "adding to book: " << to_string(saTakerPays.issue()) << " : "
                      << to_string(saTakerGets.issue())

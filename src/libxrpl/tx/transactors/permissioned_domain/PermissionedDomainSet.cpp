@@ -64,8 +64,8 @@ PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
 TER
 PermissionedDomainSet::doApply()
 {
-    auto const ownerSle = view().peek(keylet::account(account_));
-    if (!ownerSle)
+    WrappedAccountRoot wrappedOwner(account_, &view());
+    if (!wrappedOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sortedTxCredentials =
@@ -92,8 +92,8 @@ PermissionedDomainSet::doApply()
     {
         // Create new permissioned domain.
         // Check reserve availability for new object creation
-        auto const balance = STAmount((*ownerSle)[sfBalance]).xrp();
-        auto const reserve = ctx_.view().fees().accountReserve((*ownerSle)[sfOwnerCount] + 1);
+        auto const balance = STAmount((*wrappedOwner)[sfBalance]).xrp();
+        auto const reserve = ctx_.view().fees().accountReserve((*wrappedOwner)[sfOwnerCount] + 1);
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
 
@@ -113,7 +113,7 @@ PermissionedDomainSet::doApply()
 
         slePd->setFieldU64(sfOwnerNode, *page);
         // If we succeeded, the new entry counts against the creator's reserve.
-        adjustOwnerCount(view(), ownerSle, 1, ctx_.journal);
+        wrappedOwner.adjustOwnerCount(1, ctx_.journal);
         view().insert(slePd);
     }
 

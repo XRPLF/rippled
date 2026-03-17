@@ -46,7 +46,8 @@ MPTokenIssuanceDestroy::doApply()
 
     view().erase(mpt);
 
-    adjustOwnerCount(view(), view().peek(keylet::account(account_)), -1, j_);
+    WrappedAccountRoot acct(account_, &view());
+    acct.adjustOwnerCount(-1, j_);
 
     return tesSUCCESS;
 }

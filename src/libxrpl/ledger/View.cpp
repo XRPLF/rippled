@@ -357,17 +357,17 @@ canWithdraw(
     ReadView const& view,
     AccountID const& from,
     AccountID const& to,
-    SLE::const_ref toSle,
+    WrappedAccountRoot const& toWrapped,
     STAmount const& amount,
     bool hasDestinationTag)
 {
-    if (auto const ret = checkDestinationAndTag(toSle, hasDestinationTag))
+    if (auto const ret = toWrapped.checkDestinationAndTag(hasDestinationTag))
         return ret;
 
     if (from == to)
         return tesSUCCESS;
 
-    if (toSle->isFlag(lsfDepositAuth))
+    if (toWrapped->isFlag(lsfDepositAuth))
     {
         if (!view.exists(keylet::depositPreauth(to, from)))
             return tecNO_PERMISSION;
@@ -384,9 +384,9 @@ canWithdraw(
     STAmount const& amount,
     bool hasDestinationTag)
 {
-    auto const toSle = view.read(keylet::account(to));
+    auto const toWrapped = WrappedAccountRoot(to, &view);
 
-    return canWithdraw(view, from, to, toSle, amount, hasDestinationTag);
+    return canWithdraw(view, from, to, toWrapped, amount, hasDestinationTag);
 }
 
 [[nodiscard]] TER

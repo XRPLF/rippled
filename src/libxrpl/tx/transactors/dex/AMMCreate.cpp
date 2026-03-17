@@ -110,7 +110,8 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     }
 
     // Check the reserve for LPToken trustline
-    STAmount const xrpBalance = xrpLiquid(ctx.view, accountID, 1, ctx.j);
+    WrappedAccountRoot wrappedAcct(accountID, &ctx.view);
+    STAmount const xrpBalance = wrappedAcct.xrpLiquid(1, ctx.j);
     // Insufficient reserve
     if (xrpBalance <= beast::zero)
     {

@@ -39,7 +39,8 @@ isGlobalFrozen(ReadView const& view, Asset const& asset)
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
             {
-                return isGlobalFrozen(view, issue.getIssuer());
+                WrappedAccountRoot issuer(issue.getIssuer(), &view);
+                return issuer.isGlobalFrozen();
             }
             else
             {
@@ -256,7 +257,8 @@ accountHolds(
     STAmount amount;
     if (isXRP(currency))
     {
-        return {xrpLiquid(view, account, 0, j)};
+        WrappedAccountRoot accountRoot(account, &view);
+        return {accountRoot.xrpLiquid(0, j)};
     }
 
     bool const returnSpendable = (includeFullBalance == shFULL_BALANCE);
@@ -402,7 +404,8 @@ transferRate(ReadView const& view, STAmount const& amount)
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
             {
-                return transferRate(view, issue.getIssuer());
+                WrappedAccountRoot issuer(issue.getIssuer(), &view);
+                return issuer.transferRate();
             }
             else
             {
@@ -584,7 +587,8 @@ rippleCreditIOU(
         // Sender quality out is 0.
         {
             // Clear the reserve of the sender, possibly delete the line!
-            adjustOwnerCount(view, view.peek(keylet::account(uSenderID)), -1, j);
+            WrappedAccountRoot wrappedSender(uSenderID, &view);
+            wrappedSender.adjustOwnerCount(-1, j);
 
             // Clear reserve flag.
             sleRippleState->setFieldU32(
@@ -627,11 +631,11 @@ rippleCreditIOU(
                     << to_string(uSenderID) << " -> " << to_string(uReceiverID) << " : "
                     << saAmount.getFullText();
 
-    auto const sleAccount = view.peek(keylet::account(uReceiverID));
-    if (!sleAccount)
+    WrappedAccountRoot wrappedAccount(uReceiverID, &view);
+    if (!wrappedAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    bool const noRipple = (sleAccount->getFlags() & lsfDefaultRipple) == 0;
+    bool const noRipple = (wrappedAccount->getFlags() & lsfDefaultRipple) == 0;
 
     return trustCreate(
         view,
@@ -639,7 +643,7 @@ rippleCreditIOU(
         uSenderID,
         uReceiverID,
         index.key,
-        sleAccount,
+        wrappedAccount,
         false,
         noRipple,
         false,
@@ -685,8 +689,10 @@ rippleSendIOU(
 
     // Calculate the amount to transfer accounting
     // for any transfer fees if the fee is not waived:
-    saActual = (waiveFee == WaiveTransferFee::Yes) ? saAmount
-                                                   : multiply(saAmount, transferRate(view, issuer));
+    WrappedAccountRoot wrappedIssuer(issuer, &view);
+    saActual = (waiveFee == WaiveTransferFee::Yes)
+        ? saAmount
+        : multiply(saAmount, wrappedIssuer.transferRate());
 
     JLOG(j.debug()) << "rippleSendIOU> " << to_string(uSenderID) << " - > "
                     << to_string(uReceiverID) << " : deliver=" << saAmount.getFullText()
@@ -751,9 +757,10 @@ rippleSendMultiIOU(
 
         // Calculate the amount to transfer accounting
         // for any transfer fees if the fee is not waived:
+        WrappedAccountRoot wrappedIssuer(issuer, &view);
         STAmount actualSend = (waiveFee == WaiveTransferFee::Yes)
             ? amount
-            : multiply(amount, transferRate(view, issuer));
+            : multiply(amount, wrappedIssuer.transferRate());
         actual += actualSend;
         takeFromSender += actualSend;
 

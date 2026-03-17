@@ -56,8 +56,8 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
 TER
 DelegateSet::doApply()
 {
-    auto const sleOwner = ctx_.view().peek(keylet::account(account_));
-    if (!sleOwner)
+    WrappedAccountRoot wrappedOwner(account_, &ctx_.view());
+    if (!wrappedOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const& authAccount = ctx_.tx[sfAuthorize];
@@ -83,7 +83,7 @@ DelegateSet::doApply()
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     STAmount const reserve{
-        ctx_.view().fees().accountReserve(sleOwner->getFieldU32(sfOwnerCount) + 1)};
+        ctx_.view().fees().accountReserve(wrappedOwner->getFieldU32(sfOwnerCount) + 1)};
 
     if (preFeeBalance_ < reserve)
         return tecINSUFFICIENT_RESERVE;
@@ -101,7 +101,7 @@ DelegateSet::doApply()
 
     (*sle)[sfOwnerNode] = *page;
     ctx_.view().insert(sle);
-    adjustOwnerCount(ctx_.view(), sleOwner, 1, ctx_.journal);
+    wrappedOwner.adjustOwnerCount(1, ctx_.journal);
 
     return tesSUCCESS;
 }
@@ -124,11 +124,11 @@ DelegateSet::deleteDelegate(
         // LCOV_EXCL_STOP
     }
 
-    auto const sleOwner = view.peek(keylet::account(account));
-    if (!sleOwner)
+    WrappedAccountRoot wrappedOwner(account, &view);
+    if (!wrappedOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    adjustOwnerCount(view, sleOwner, -1, j);
+    wrappedOwner.adjustOwnerCount(-1, j);
 
     view.erase(sle);
 

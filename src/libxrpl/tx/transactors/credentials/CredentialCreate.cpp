@@ -111,13 +111,13 @@ CredentialCreate::doApply()
         sleCred->setFieldU32(sfExpiration, *optExp);
     }
 
-    auto const sleIssuer = view().peek(keylet::account(account_));
-    if (!sleIssuer)
+    WrappedAccountRoot wrappedIssuer(account_, &view());
+    if (!wrappedIssuer)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     {
         STAmount const reserve{
-            view().fees().accountReserve(sleIssuer->getFieldU32(sfOwnerCount) + 1)};
+            view().fees().accountReserve(wrappedIssuer->getFieldU32(sfOwnerCount) + 1)};
         if (preFeeBalance_ < reserve)
             return tecINSUFFICIENT_RESERVE;
     }
@@ -138,7 +138,7 @@ CredentialCreate::doApply()
             return tecDIR_FULL;
         sleCred->setFieldU64(sfIssuerNode, *page);
 
-        adjustOwnerCount(view(), sleIssuer, 1, j_);
+        wrappedIssuer.adjustOwnerCount(1, j_);
     }
 
     if (subject == account_)

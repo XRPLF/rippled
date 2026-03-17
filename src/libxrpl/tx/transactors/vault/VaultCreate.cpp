@@ -133,8 +133,8 @@ VaultCreate::doApply()
 
     auto const& tx = ctx_.tx;
     auto const sequence = tx.getSeqValue();
-    auto const owner = view().peek(keylet::account(account_));
-    if (owner == nullptr)
+    WrappedAccountRoot owner(account_, &view());
+    if (!owner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto vault = std::make_shared<SLE>(keylet::vault(account_, sequence));
@@ -142,7 +142,7 @@ VaultCreate::doApply()
     if (auto ter = dirLink(view(), account_, vault))
         return ter;
     // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
-    adjustOwnerCount(view(), owner, 2, j_);
+    owner.adjustOwnerCount(2, j_);
     auto const ownerCount = owner->at(sfOwnerCount);
     if (preFeeBalance_ < view().fees().accountReserve(ownerCount))
         return tecINSUFFICIENT_RESERVE;
