@@ -1321,7 +1321,7 @@ doWithdraw(
     }
     else
     {
-        auto dstSle = view.peek(keylet::account(dstAcct));
+        auto dstSle = view.read(keylet::account(dstAcct));
         if (auto err = verifyDepositPreauth(tx, view, senderAcct, dstAcct, dstSle, j))
             return err;
     }
