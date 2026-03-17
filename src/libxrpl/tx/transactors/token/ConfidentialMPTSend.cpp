@@ -183,28 +183,25 @@ verifySendProofs(
 
     // Verify Range Proof
     {
-        Buffer pcRem;
-
         // Derive PC_rem = PC_balance - PC_amount
-        if (auto const ter = computeSendRemainder(
-                ctx.tx[sfBalanceCommitment], ctx.tx[sfAmountCommitment], pcRem);
-            !isTesSuccess(ter))
-        {
-            valid = false;
-        }
-        else
+        if (auto pcRem =
+                computeSendRemainder(ctx.tx[sfBalanceCommitment], ctx.tx[sfAmountCommitment]))
         {
             // Aggregated commitments: [PC_amount, PC_rem]
             // Prove that both the transfer amount and the remaining balance are in range
             std::vector<Slice> commitments;
             commitments.push_back(ctx.tx[sfAmountCommitment]);
-            commitments.push_back(Slice{pcRem.data(), pcRem.size()});
+            commitments.push_back(Slice{pcRem->data(), pcRem->size()});
 
             if (auto const ter = verifyAggregatedBulletproof(rangeProof, commitments, contextHash);
                 !isTesSuccess(ter))
             {
                 valid = false;
             }
+        }
+        else
+        {
+            valid = false;
         }
     }
 

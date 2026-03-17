@@ -138,22 +138,20 @@ verifyProofs(
     // verify bullet proof
     {
         // Compute PC_rem = PC_balance - mG (the commitment to the remaining balance)
-        Buffer pcRem;
-        if (auto const ter = computeConvertBackRemainder(tx[sfBalanceCommitment], amount, pcRem);
-            !isTesSuccess(ter))
-        {
-            valid = false;
-        }
-        else
+        if (auto pcRem = computeConvertBackRemainder(tx[sfBalanceCommitment], amount))
         {
             // The bulletproof verifies that the remaining balance is non-negative
-            std::vector<Slice> commitments{Slice(pcRem.data(), pcRem.size())};
+            std::vector<Slice> commitments{Slice(pcRem->data(), pcRem->size())};
 
             if (auto const ter = verifyAggregatedBulletproof(bulletproof, commitments, contextHash);
                 !isTesSuccess(ter))
             {
                 valid = false;
             }
+        }
+        else
+        {
+            valid = false;
         }
     }
 

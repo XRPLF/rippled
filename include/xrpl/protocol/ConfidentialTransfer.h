@@ -462,11 +462,10 @@ verifyAggregatedBulletproof(
  *
  * @param balanceCommitment The compressed Pedersen commitment to the balance (33 bytes).
  * @param amountCommitment  The compressed Pedersen commitment to the amount (33 bytes).
- * @param out               Output buffer for the resulting remainder commitment (33 bytes).
- * @return tesSUCCESS on success, tecINTERNAL on failure.
+ * @return The remainder commitment (33 bytes), or std::nullopt on failure.
  */
-TER
-computeSendRemainder(Slice const& balanceCommitment, Slice const& amountCommitment, Buffer& out);
+std::optional<Buffer>
+computeSendRemainder(Slice const& balanceCommitment, Slice const& amountCommitment);
 
 /**
  * @brief Computes the remainder commitment for ConvertBack.
@@ -476,9 +475,8 @@ computeSendRemainder(Slice const& balanceCommitment, Slice const& amountCommitme
  *
  * @param commitment The compressed Pedersen commitment (33 bytes).
  * @param amount     The amount to subtract (must be non-zero).
- * @param out        Output buffer for the resulting commitment (33 bytes).
- * @return tesSUCCESS on success, tecINTERNAL on failure or if amount is 0.
+ * @return The remainder commitment (33 bytes), or std::nullopt on failure or if amount is 0.
  */
-TER
-computeConvertBackRemainder(Slice const& commitment, uint64_t amount, Buffer& out);
+std::optional<Buffer>
+computeConvertBackRemainder(Slice const& commitment, uint64_t amount);
 }  // namespace xrpl
