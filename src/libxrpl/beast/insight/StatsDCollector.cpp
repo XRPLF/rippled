@@ -104,8 +104,8 @@ private:
 
     std::shared_ptr<StatsDCollectorImp> m_impl;
     std::string m_name;
-    CounterImpl::value_type m_value;
-    bool m_dirty;
+    CounterImpl::value_type m_value{0};
+    bool m_dirty{false};
 };
 
 //------------------------------------------------------------------------------
@@ -162,9 +162,9 @@ private:
 
     std::shared_ptr<StatsDCollectorImp> m_impl;
     std::string m_name;
-    GaugeImpl::value_type m_last_value;
-    GaugeImpl::value_type m_value;
-    bool m_dirty;
+    GaugeImpl::value_type m_last_value{0};
+    GaugeImpl::value_type m_value{0};
+    bool m_dirty{false};
 };
 
 //------------------------------------------------------------------------------
@@ -194,8 +194,8 @@ private:
 
     std::shared_ptr<StatsDCollectorImp> m_impl;
     std::string m_name;
-    MeterImpl::value_type m_value;
-    bool m_dirty;
+    MeterImpl::value_type m_value{0};
+    bool m_dirty{false};
 };
 
 //------------------------------------------------------------------------------
@@ -505,7 +505,7 @@ StatsDHookImpl::do_process()
 StatsDCounterImpl::StatsDCounterImpl(
     std::string const& name,
     std::shared_ptr<StatsDCollectorImp> const& impl)
-    : m_impl(impl), m_name(name), m_value(0), m_dirty(false)
+    : m_impl(impl), m_name(name)
 {
     m_impl->add(*this);
 }
@@ -587,7 +587,7 @@ StatsDEventImpl::do_notify(EventImpl::value_type const& value)
 StatsDGaugeImpl::StatsDGaugeImpl(
     std::string const& name,
     std::shared_ptr<StatsDCollectorImp> const& impl)
-    : m_impl(impl), m_name(name), m_last_value(0), m_value(0), m_dirty(false)
+    : m_impl(impl), m_name(name)
 {
     m_impl->add(*this);
 }
@@ -676,7 +676,7 @@ StatsDGaugeImpl::do_process()
 StatsDMeterImpl::StatsDMeterImpl(
     std::string const& name,
     std::shared_ptr<StatsDCollectorImp> const& impl)
-    : m_impl(impl), m_name(name), m_value(0), m_dirty(false)
+    : m_impl(impl), m_name(name)
 {
     m_impl->add(*this);
 }

@@ -50,7 +50,6 @@ public:
         std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet,
         std::unique_ptr<PeerSetBuilder> peerSetBuilder)
         : app_(app)
-        , m_seq(0)
         , m_zeroSet(m_map[uint256()])
         , m_gotSet(std::move(gotSet))
         , m_peerSetBuilder(std::move(peerSetBuilder))
@@ -227,7 +226,7 @@ private:
 
     bool stopping_{false};
     MapType m_map;
-    std::uint32_t m_seq;
+    std::uint32_t m_seq{0};
 
     // The empty transaction set whose hash is zero
     InboundTransactionSet& m_zeroSet;

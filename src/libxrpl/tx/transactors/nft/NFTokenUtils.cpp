@@ -343,7 +343,7 @@ removeToken(
     ApplyView& view,
     AccountID const& owner,
     uint256 const& nftokenID,
-    std::shared_ptr<SLE>&& curr)
+    std::shared_ptr<SLE> const& curr)
 {
     // We found a page, but the given NFT may not be in it.
     auto arr = curr->getFieldArray(sfNFTokens);

@@ -1,5 +1,6 @@
 #include <xrpl/basics/IntrusivePointer.ipp>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/shamap/SHAMap.h>
 
 #include <array>
@@ -39,7 +40,7 @@ SHAMap::walkBranch(
         if (node->isInner())
         {
             // This is an inner node, add all non-empty branches
-            auto inner = static_cast<SHAMapInnerNode*>(node);
+            auto inner = safe_downcast<SHAMapInnerNode*>(node);
             for (int i = 0; i < 16; ++i)
                 if (!inner->isEmptyBranch(i))
                     nodeStack.push({descendThrow(inner, i)});
@@ -47,7 +48,7 @@ SHAMap::walkBranch(
         else
         {
             // This is a leaf node, process its item
-            auto item = static_cast<SHAMapLeafNode*>(node)->peekItem();
+            auto item = safe_downcast<SHAMapLeafNode*>(node)->peekItem();
 
             if (emptyBranch || (item->key() != otherMapItem->key()))
             {
@@ -132,8 +133,8 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
         if (ourNode->isLeaf() && otherNode->isLeaf())
         {
             // two leaves
-            auto ours = static_cast<SHAMapLeafNode*>(ourNode);
-            auto other = static_cast<SHAMapLeafNode*>(otherNode);
+            auto ours = safe_downcast<SHAMapLeafNode*>(ourNode);
+            auto other = safe_downcast<SHAMapLeafNode*>(otherNode);
             if (ours->peekItem()->key() == other->peekItem()->key())
             {
                 if (ours->peekItem()->slice() != other->peekItem()->slice())
@@ -161,22 +162,22 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
         }
         else if (ourNode->isInner() && otherNode->isLeaf())
         {
-            auto ours = static_cast<SHAMapInnerNode*>(ourNode);
-            auto other = static_cast<SHAMapLeafNode*>(otherNode);
+            auto ours = safe_downcast<SHAMapInnerNode*>(ourNode);
+            auto other = safe_downcast<SHAMapLeafNode*>(otherNode);
             if (!walkBranch(ours, other->peekItem(), true, differences, maxCount))
                 return false;
         }
         else if (ourNode->isLeaf() && otherNode->isInner())
         {
-            auto ours = static_cast<SHAMapLeafNode*>(ourNode);
-            auto other = static_cast<SHAMapInnerNode*>(otherNode);
+            auto ours = safe_downcast<SHAMapLeafNode*>(ourNode);
+            auto other = safe_downcast<SHAMapInnerNode*>(otherNode);
             if (!otherMap.walkBranch(other, ours->peekItem(), false, differences, maxCount))
                 return false;
         }
         else if (ourNode->isInner() && otherNode->isInner())
         {
-            auto ours = static_cast<SHAMapInnerNode*>(ourNode);
-            auto other = static_cast<SHAMapInnerNode*>(otherNode);
+            auto ours = safe_downcast<SHAMapInnerNode*>(ourNode);
+            auto other = safe_downcast<SHAMapInnerNode*>(otherNode);
             for (int i = 0; i < 16; ++i)
                 if (ours->getChildHash(i) != other->getChildHash(i))
                 {

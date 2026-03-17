@@ -376,10 +376,10 @@ SetTrust::doApply()
         STAmount saLowLimit;
         STAmount saHighBalance;
         STAmount saHighLimit;
-        std::uint32_t uLowQualityIn;
-        std::uint32_t uLowQualityOut;
-        std::uint32_t uHighQualityIn;
-        std::uint32_t uHighQualityOut;
+        std::uint32_t uLowQualityIn = 0;
+        std::uint32_t uLowQualityOut = 0;
+        std::uint32_t uHighQualityIn = 0;
+        std::uint32_t uHighQualityOut = 0;
         auto const& uLowAccountID = !bHigh ? account_ : uDstAccountID;
         auto const& uHighAccountID = bHigh ? account_ : uDstAccountID;
         SLE::ref sleLowAccount = !bHigh ? sle : sleDst;
