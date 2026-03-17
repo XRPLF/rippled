@@ -75,7 +75,8 @@ DelegateSet::doApply()
     }
 
     auto const& permissions = ctx_.tx.getFieldArray(sfPermissions);
-    XRPL_ASSERT(!permissions.empty(), "xrpl::DelegateSet::doApply : permission list not empty");
+    if (permissions.empty())
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     STAmount const reserve{
         ctx_.view().fees().accountReserve(sleOwner->getFieldU32(sfOwnerCount) + 1)};
