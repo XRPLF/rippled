@@ -180,9 +180,9 @@ escrowUnlockApplyHelper<MPTIssue>(
     bool const senderIssuer = issuer == sender;
     bool const receiverIssuer = issuer == receiver;
 
-    auto const mptID = amount.get<MPTIssue>().getMptID();
-    auto const issuanceKey = keylet::mptIssuance(mptID);
-    if (!view.exists(keylet::mptoken(issuanceKey.key, receiver)) && createAsset && !receiverIssuer)
+    auto const mptIssuance = MPToken(view, amount.get<MPTIssue>());
+    auto const mptID = mptIssuance.getMptID();
+    if (!view.exists(keylet::mptoken(mptID, receiver)) && createAsset && !receiverIssuer)
     {
         // For backwards compatibility: if dest is not WritableAccountRoot, return error
         if (!std::holds_alternative<WritableAccountRoot>(dest))
@@ -206,10 +206,10 @@ escrowUnlockApplyHelper<MPTIssue>(
         wrappedDest.adjustOwnerCount(1, journal);
     }
 
-    if (!view.exists(keylet::mptoken(issuanceKey.key, receiver)) && !receiverIssuer)
+    if (!view.exists(keylet::mptoken(mptID, receiver)) && !receiverIssuer)
         return tecNO_PERMISSION;
 
-    auto const xferRate = transferRate(view, amount);
+    auto const xferRate = mptIssuance.transferRate();
     // update if issuer rate is less than locked rate
     if (xferRate < lockedRate)
         lockedRate = xferRate;

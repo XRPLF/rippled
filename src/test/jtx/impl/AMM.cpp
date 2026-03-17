@@ -224,7 +224,8 @@ AMM::getLPTokensBalance(std::optional<AccountID> const& account) const
         return accountHolds(
                    *env_.current(),
                    *account,
-                   lptIssue_,
+                   lptIssue_.currency,
+                   lptIssue_.account,
                    FreezeHandling::fhZERO_IF_FROZEN,
                    env_.journal)
             .iou();

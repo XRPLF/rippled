@@ -73,21 +73,22 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         return tecDUPLICATE;
     }
 
-    if (auto const ter = requireAuth(ctx.view, amount.issue(), accountID); !isTesSuccess(ter))
+    // Globally or individually frozen
+    auto const token1 = IOUToken(ctx.view, amount.issue());
+    auto const token2 = IOUToken(ctx.view, amount2.issue());
+
+    if (auto const ter = token1.requireAuth(accountID); !isTesSuccess(ter))
     {
         JLOG(ctx.j.debug()) << "AMM Instance: account is not authorized, " << amount.issue();
         return ter;
     }
 
-    if (auto const ter = requireAuth(ctx.view, amount2.issue(), accountID); !isTesSuccess(ter))
+    if (auto const ter = token2.requireAuth(accountID); !isTesSuccess(ter))
     {
         JLOG(ctx.j.debug()) << "AMM Instance: account is not authorized, " << amount2.issue();
         return ter;
     }
-
-    // Globally or individually frozen
-    if (isFrozen(ctx.view, accountID, amount.issue()) ||
-        isFrozen(ctx.view, accountID, amount2.issue()))
+    if (token1.isFrozen(accountID) || token2.isFrozen(accountID))
     {
         JLOG(ctx.j.debug()) << "AMM Instance: involves frozen asset.";
         return tecFROZEN;
@@ -124,9 +125,9 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         if (isXRP(asset))
             return xrpBalance < asset;
         return accountID != asset.issue().account &&
-            accountHolds(
-                ctx.view, accountID, asset.issue(), FreezeHandling::fhZERO_IF_FROZEN, ctx.j) <
-            asset;
+            IOUToken(ctx.view, asset.issue())
+                .accountHolds(
+                    accountID, FreezeHandling::fhZERO_IF_FROZEN, ctx.j, shSIMPLE_BALANCE) < asset;
     };
 
     if (insufficientBalance(amount) || insufficientBalance(amount2))

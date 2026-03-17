@@ -2,6 +2,7 @@
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/ledger/AcceptedLedgerTx.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/TokenHelpers.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
@@ -44,12 +45,10 @@ AcceptedLedgerTx::AcceptedLedgerTx(
         // If the offer create is not self funded then add the owner balance
         if (account != amount.issue().account)
         {
-            auto const ownerFunds = accountFunds(
-                *ledger,
-                account,
-                amount,
-                fhIGNORE_FREEZE,
-                beast::Journal{beast::Journal::getNullSink()});
+            auto const ownerFunds =
+                makeTokenBase(*ledger, amount.asset())
+                    ->accountHolds(
+                        account, fhIGNORE_FREEZE, beast::Journal{beast::Journal::getNullSink()});
             mJson[jss::transaction][jss::owner_funds] = ownerFunds.getText();
         }
     }

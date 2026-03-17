@@ -187,19 +187,20 @@ escrowCreatePreclaimHelper<Issue>(
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
 
     // If the issuer has requireAuth set, check if the account is authorized
-    if (auto const ter = requireAuth(ctx.view, amount.issue(), account); !isTesSuccess(ter))
+    auto const token = IOUToken(ctx.view, amount.issue());
+    if (auto const ter = token.requireAuth(account); !isTesSuccess(ter))
         return ter;
 
     // If the issuer has requireAuth set, check if the destination is authorized
-    if (auto const ter = requireAuth(ctx.view, amount.issue(), dest); !isTesSuccess(ter))
+    if (auto const ter = token.requireAuth(dest); !isTesSuccess(ter))
         return ter;
 
     // If the issuer has frozen the account, return tecFROZEN
-    if (isFrozen(ctx.view, account, amount.issue()))
+    if (token.isFrozen(account))
         return tecFROZEN;
 
     // If the issuer has frozen the destination, return tecFROZEN
-    if (isFrozen(ctx.view, dest, amount.issue()))
+    if (token.isFrozen(dest))
         return tecFROZEN;
 
     STAmount const spendableAmount =
@@ -235,47 +236,43 @@ escrowCreatePreclaimHelper<MPTIssue>(
         return tecNO_PERMISSION;
 
     // If the mpt does not exist, return tecOBJECT_NOT_FOUND
-    auto const issuanceKey = keylet::mptIssuance(amount.get<MPTIssue>().getMptID());
-    auto const sleIssuance = ctx.view.read(issuanceKey);
-    if (!sleIssuance)
+    auto const mptIssuance = MPToken(ctx.view, amount.get<MPTIssue>());
+    if (!mptIssuance.exists())
         return tecOBJECT_NOT_FOUND;
 
     // If the lsfMPTCanEscrow is not enabled, return tecNO_PERMISSION
-    if (!sleIssuance->isFlag(lsfMPTCanEscrow))
+    if (!mptIssuance->isFlag(lsfMPTCanEscrow))
         return tecNO_PERMISSION;
 
     // If the issuer is not the same as the issuer of the mpt, return
     // tecNO_PERMISSION
-    if (sleIssuance->getAccountID(sfIssuer) != issuer)
+    if (mptIssuance->getAccountID(sfIssuer) != issuer)
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
 
     // If the account does not have the mpt, return tecOBJECT_NOT_FOUND
-    if (!ctx.view.exists(keylet::mptoken(issuanceKey.key, account)))
+    if (!ctx.view.exists(keylet::mptoken(mptIssuance.getMptID(), account)))
         return tecOBJECT_NOT_FOUND;
 
     // If the issuer has requireAuth set, check if the account is
     // authorized
-    auto const& mptIssue = amount.get<MPTIssue>();
-    if (auto const ter = requireAuth(ctx.view, mptIssue, account, AuthType::WeakAuth);
-        !isTesSuccess(ter))
+    if (auto const ter = mptIssuance.requireAuth(account, AuthType::WeakAuth); !isTesSuccess(ter))
         return ter;
 
     // If the issuer has requireAuth set, check if the destination is
     // authorized
-    if (auto const ter = requireAuth(ctx.view, mptIssue, dest, AuthType::WeakAuth);
-        !isTesSuccess(ter))
+    if (auto const ter = mptIssuance.requireAuth(dest, AuthType::WeakAuth); !isTesSuccess(ter))
         return ter;
 
     // If the issuer has frozen the account, return tecLOCKED
-    if (isFrozen(ctx.view, account, mptIssue))
+    if (mptIssuance.isFrozen(account))
         return tecLOCKED;
 
     // If the issuer has frozen the destination, return tecLOCKED
-    if (isFrozen(ctx.view, dest, mptIssue))
+    if (mptIssuance.isFrozen(dest))
         return tecLOCKED;
 
     // If the mpt cannot be transferred, return tecNO_AUTH
-    if (auto const ter = canTransfer(ctx.view, mptIssue, account, dest); !isTesSuccess(ter))
+    if (auto const ter = mptIssuance.canTransfer(account, dest); !isTesSuccess(ter))
         return ter;
 
     STAmount const spendableAmount = accountHolds(

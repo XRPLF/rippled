@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/entries/AccountRootHelpers.h>
+#include <xrpl/ledger/entries/TokenHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/STNumber.h>

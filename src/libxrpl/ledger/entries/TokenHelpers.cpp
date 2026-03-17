@@ -26,125 +26,62 @@ isLPTokenFrozen(
     Issue const& asset,
     Issue const& asset2);
 
-//------------------------------------------------------------------------------
-//
-// Freeze checking (Asset-based)
-//
-//------------------------------------------------------------------------------
+class IOUToken;
+class MPToken;
+class WritableIOUToken;
+class WritableMPToken;
 
-bool
-isGlobalFrozen(ReadView const& view, Asset const& asset)
+std::unique_ptr<TokenBase>
+makeTokenBase(ReadView const& view, Asset const& asset)
 {
     return std::visit(
-        [&]<ValidIssueType TIss>(TIss const& issue) {
-            if constexpr (std::is_same_v<TIss, Issue>)
+        [&]<typename T>(T const& issue) -> std::unique_ptr<TokenBase> {
+            if constexpr (std::is_same_v<T, Issue>)
             {
-                AccountRoot issuer(issue.getIssuer(), view);
-                return issuer.isGlobalFrozen();
+                return std::make_unique<IOUToken>(view, issue);
             }
             else
             {
-                return isGlobalFrozen(view, issue);
+                return std::make_unique<MPToken>(view, issue);
             }
         },
         asset.value());
 }
 
-bool
-isIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
+std::unique_ptr<WritableTokenBase>
+makeWritableTokenBase(ApplyView& view, Asset const& asset)
 {
     return std::visit(
-        [&](auto const& issue) { return isIndividualFrozen(view, account, issue); }, asset.value());
-}
-
-bool
-isFrozen(ReadView const& view, AccountID const& account, Asset const& asset, int depth)
-{
-    return std::visit(
-        [&](auto const& issue) { return isFrozen(view, account, issue, depth); }, asset.value());
-}
-
-TER
-checkFrozen(ReadView const& view, AccountID const& account, Issue const& issue)
-{
-    return isFrozen(view, account, issue) ? (TER)tecFROZEN : (TER)tesSUCCESS;
-}
-
-TER
-checkFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue)
-{
-    return isFrozen(view, account, mptIssue) ? (TER)tecLOCKED : (TER)tesSUCCESS;
-}
-
-TER
-checkFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
-{
-    return std::visit(
-        [&](auto const& issue) { return checkFrozen(view, account, issue); }, asset.value());
-}
-
-bool
-isAnyFrozen(
-    ReadView const& view,
-    std::initializer_list<AccountID> const& accounts,
-    Issue const& issue)
-{
-    for (auto const& account : accounts)
-    {
-        if (isFrozen(view, account, issue.currency, issue.account))
-            return true;
-    }
-    return false;
-}
-
-bool
-isAnyFrozen(
-    ReadView const& view,
-    std::initializer_list<AccountID> const& accounts,
-    Asset const& asset,
-    int depth)
-{
-    return std::visit(
-        [&]<ValidIssueType TIss>(TIss const& issue) {
-            if constexpr (std::is_same_v<TIss, Issue>)
+        [&]<typename T>(T const& issue) -> std::unique_ptr<WritableTokenBase> {
+            if constexpr (std::is_same_v<T, Issue>)
             {
-                return isAnyFrozen(view, accounts, issue);
+                return std::make_unique<WritableIOUToken>(view, issue);
             }
             else
             {
-                return isAnyFrozen(view, accounts, issue, depth);
+                return std::make_unique<WritableMPToken>(view, issue);
             }
         },
         asset.value());
 }
 
-bool
-isDeepFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue, int depth)
-{
-    // Unlike IOUs, frozen / locked MPTs are not allowed to send or receive
-    // funds, so checking "deep frozen" is the same as checking "frozen".
-    return isFrozen(view, account, mptIssue, depth);
-}
+//------------------------------------------------------------------------------
+//
+// TokenBase implementation
+//
+//------------------------------------------------------------------------------
 
 bool
-isDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset, int depth)
+TokenBase::isFrozen(AccountID const& account, int depth) const
 {
-    return std::visit(
-        [&](auto const& issue) { return isDeepFrozen(view, account, issue, depth); },
-        asset.value());
+    // Default implementation - subclasses should override
+    return isGlobalFrozen() || isIndividualFrozen(account);
 }
 
-TER
-checkDeepFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue)
+Rate
+transferRate(ReadView const& view, STAmount const& amount)
 {
-    return isDeepFrozen(view, account, mptIssue) ? (TER)tecLOCKED : (TER)tesSUCCESS;
-}
-
-TER
-checkDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
-{
-    return std::visit(
-        [&](auto const& issue) { return checkDeepFrozen(view, account, issue); }, asset.value());
+    return makeTokenBase(view, amount.asset())->transferRate();
 }
 
 //------------------------------------------------------------------------------
@@ -162,6 +99,7 @@ getLineIfUsable(
     FreezeHandling zeroIfFrozen,
     beast::Journal j)
 {
+    IOUToken token(view, issuer, currency);
     auto const sle = view.read(keylet::line(account, issuer, currency));
 
     if (!sle)
@@ -171,8 +109,7 @@ getLineIfUsable(
 
     if (zeroIfFrozen == fhZERO_IF_FROZEN)
     {
-        if (isFrozen(view, account, currency, issuer) ||
-            isDeepFrozen(view, account, currency, issuer))
+        if (token.isFrozen(account) || token.isDeepFrozen(account))
         {
             return nullptr;
         }
@@ -280,139 +217,14 @@ STAmount
 accountHolds(
     ReadView const& view,
     AccountID const& account,
-    Issue const& issue,
-    FreezeHandling zeroIfFrozen,
-    beast::Journal j,
-    SpendableHandling includeFullBalance)
-{
-    return accountHolds(
-        view, account, issue.currency, issue.account, zeroIfFrozen, j, includeFullBalance);
-}
-
-STAmount
-accountHolds(
-    ReadView const& view,
-    AccountID const& account,
-    MPTIssue const& mptIssue,
-    FreezeHandling zeroIfFrozen,
-    AuthHandling zeroIfUnauthorized,
-    beast::Journal j,
-    SpendableHandling includeFullBalance)
-{
-    bool const returnSpendable = (includeFullBalance == shFULL_BALANCE);
-
-    if (returnSpendable && account == mptIssue.getIssuer())
-    {
-        // if the account is the issuer, and the issuance exists, their limit is
-        // the issuance limit minus the outstanding value
-        auto const issuance = view.read(keylet::mptIssuance(mptIssue.getMptID()));
-
-        if (!issuance)
-        {
-            return STAmount{mptIssue};
-        }
-        return STAmount{
-            mptIssue,
-            issuance->at(~sfMaximumAmount).value_or(maxMPTokenAmount) -
-                issuance->at(sfOutstandingAmount)};
-    }
-
-    STAmount amount;
-
-    auto const sleMpt = view.read(keylet::mptoken(mptIssue.getMptID(), account));
-
-    if (!sleMpt)
-    {
-        amount.clear(mptIssue);
-    }
-    else if (zeroIfFrozen == fhZERO_IF_FROZEN && isFrozen(view, account, mptIssue))
-    {
-        amount.clear(mptIssue);
-    }
-    else
-    {
-        amount = STAmount{mptIssue, sleMpt->getFieldU64(sfMPTAmount)};
-
-        // Only if auth check is needed, as it needs to do an additional read
-        // operation. Note featureSingleAssetVault will affect error codes.
-        if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED &&
-            view.rules().enabled(featureSingleAssetVault))
-        {
-            if (auto const err = requireAuth(view, mptIssue, account, AuthType::StrongAuth);
-                !isTesSuccess(err))
-                amount.clear(mptIssue);
-        }
-        else if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED)
-        {
-            auto const sleIssuance = view.read(keylet::mptIssuance(mptIssue.getMptID()));
-
-            // if auth is enabled on the issuance and mpt is not authorized,
-            // clear amount
-            if (sleIssuance && sleIssuance->isFlag(lsfMPTRequireAuth) &&
-                !sleMpt->isFlag(lsfMPTAuthorized))
-                amount.clear(mptIssue);
-        }
-    }
-
-    return amount;
-}
-
-[[nodiscard]] STAmount
-accountHolds(
-    ReadView const& view,
-    AccountID const& account,
     Asset const& asset,
     FreezeHandling zeroIfFrozen,
     AuthHandling zeroIfUnauthorized,
     beast::Journal j,
     SpendableHandling includeFullBalance)
 {
-    return std::visit(
-        [&]<ValidIssueType TIss>(TIss const& value) {
-            if constexpr (std::is_same_v<TIss, Issue>)
-            {
-                return accountHolds(view, account, value, zeroIfFrozen, j, includeFullBalance);
-            }
-            else if constexpr (std::is_same_v<TIss, MPTIssue>)
-            {
-                return accountHolds(
-                    view, account, value, zeroIfFrozen, zeroIfUnauthorized, j, includeFullBalance);
-            }
-        },
-        asset.value());
-}
-
-STAmount
-accountFunds(
-    ReadView const& view,
-    AccountID const& id,
-    STAmount const& saDefault,
-    FreezeHandling freezeHandling,
-    beast::Journal j)
-{
-    if (!saDefault.native() && saDefault.getIssuer() == id)
-        return saDefault;
-
-    return accountHolds(
-        view, id, saDefault.getCurrency(), saDefault.getIssuer(), freezeHandling, j);
-}
-
-Rate
-transferRate(ReadView const& view, STAmount const& amount)
-{
-    return std::visit(
-        [&]<ValidIssueType TIss>(TIss const& issue) {
-            if constexpr (std::is_same_v<TIss, Issue>)
-            {
-                AccountRoot issuer(issue.getIssuer(), view);
-                return issuer.transferRate();
-            }
-            else
-            {
-                return transferRate(view, issue.getMptID());
-            }
-        },
-        amount.asset().value());
+    auto token = makeTokenBase(view, asset);
+    return token->accountHolds(account, zeroIfFrozen, zeroIfUnauthorized, j, includeFullBalance);
 }
 
 //------------------------------------------------------------------------------
@@ -446,9 +258,7 @@ canAddHolding(ReadView const& view, Issue const& issue)
 [[nodiscard]] TER
 canAddHolding(ReadView const& view, Asset const& asset)
 {
-    return std::visit(
-        [&]<ValidIssueType TIss>(TIss const& issue) -> TER { return canAddHolding(view, issue); },
-        asset.value());
+    return makeTokenBase(view, asset)->canAddHolding();
 }
 
 TER
@@ -459,11 +269,7 @@ addEmptyHolding(
     Asset const& asset,
     beast::Journal journal)
 {
-    return std::visit(
-        [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-            return addEmptyHolding(view, accountID, priorBalance, issue, journal);
-        },
-        asset.value());
+    return makeWritableTokenBase(view, asset)->addEmptyHolding(accountID, priorBalance, journal);
 }
 
 TER
@@ -473,37 +279,7 @@ removeEmptyHolding(
     Asset const& asset,
     beast::Journal journal)
 {
-    return std::visit(
-        [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-            return removeEmptyHolding(view, accountID, issue, journal);
-        },
-        asset.value());
-}
-
-//------------------------------------------------------------------------------
-//
-// Authorization and transfer checks
-//
-//------------------------------------------------------------------------------
-
-TER
-requireAuth(ReadView const& view, Asset const& asset, AccountID const& account, AuthType authType)
-{
-    return std::visit(
-        [&]<ValidIssueType TIss>(TIss const& issue_) {
-            return requireAuth(view, issue_, account, authType);
-        },
-        asset.value());
-}
-
-TER
-canTransfer(ReadView const& view, Asset const& asset, AccountID const& from, AccountID const& to)
-{
-    return std::visit(
-        [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-            return canTransfer(view, issue, from, to);
-        },
-        asset.value());
+    return makeWritableTokenBase(view, asset)->removeEmptyHolding(accountID, journal);
 }
 
 //------------------------------------------------------------------------------
@@ -1036,19 +812,18 @@ rippleCreditMPT(
     beast::Journal j)
 {
     // Do not check MPT authorization here - it must have been checked earlier
-    auto const mptID = keylet::mptIssuance(saAmount.get<MPTIssue>().getMptID());
+    WritableMPToken mptIssuance(view, saAmount.get<MPTIssue>().getMptID());
     auto const& issuer = saAmount.getIssuer();
-    auto sleIssuance = view.peek(mptID);
-    if (!sleIssuance)
+    if (!mptIssuance.exists())
         return tecOBJECT_NOT_FOUND;
     if (uSenderID == issuer)
     {
-        (*sleIssuance)[sfOutstandingAmount] += saAmount.mpt().value();
-        view.update(sleIssuance);
+        (*mptIssuance)[sfOutstandingAmount] += saAmount.mpt().value();
+        mptIssuance.update();
     }
     else
     {
-        auto const mptokenID = keylet::mptoken(mptID.key, uSenderID);
+        auto const mptokenID = keylet::mptoken(mptIssuance.getMptID(), uSenderID);
         if (auto sle = view.peek(mptokenID))
         {
             auto const amt = sle->getFieldU64(sfMPTAmount);
@@ -1066,12 +841,12 @@ rippleCreditMPT(
 
     if (uReceiverID == issuer)
     {
-        auto const outstanding = sleIssuance->getFieldU64(sfOutstandingAmount);
+        auto const outstanding = mptIssuance->getFieldU64(sfOutstandingAmount);
         auto const redeem = saAmount.mpt().value();
         if (outstanding >= redeem)
         {
-            sleIssuance->setFieldU64(sfOutstandingAmount, outstanding - redeem);
-            view.update(sleIssuance);
+            mptIssuance->setFieldU64(sfOutstandingAmount, outstanding - redeem);
+            mptIssuance.update();
         }
         else
         {
@@ -1080,7 +855,7 @@ rippleCreditMPT(
     }
     else
     {
-        auto const mptokenID = keylet::mptoken(mptID.key, uReceiverID);
+        auto const mptokenID = keylet::mptoken(mptIssuance.getMptID(), uReceiverID);
         if (auto sle = view.peek(mptokenID))
         {
             (*sle)[sfMPTAmount] += saAmount.mpt().value();
@@ -1109,9 +884,8 @@ rippleSendMPT(
 
     // Safe to get MPT since rippleSendMPT is only called by accountSendMPT
     auto const& issuer = saAmount.getIssuer();
-
-    auto const sle = view.read(keylet::mptIssuance(saAmount.get<MPTIssue>().getMptID()));
-    if (!sle)
+    WritableMPToken mptIssuance(view, saAmount.get<MPTIssue>().getMptID());
+    if (!mptIssuance.exists())
         return tecOBJECT_NOT_FOUND;
 
     if (uSenderID == issuer || uReceiverID == issuer)
@@ -1121,9 +895,9 @@ rippleSendMPT(
         if (uSenderID == issuer)
         {
             auto const sendAmount = saAmount.mpt().value();
-            auto const maximumAmount = sle->at(~sfMaximumAmount).value_or(maxMPTokenAmount);
+            auto const maximumAmount = mptIssuance->at(~sfMaximumAmount).value_or(maxMPTokenAmount);
             if (sendAmount > maximumAmount ||
-                sle->getFieldU64(sfOutstandingAmount) > maximumAmount - sendAmount)
+                mptIssuance->getFieldU64(sfOutstandingAmount) > maximumAmount - sendAmount)
                 return tecPATH_DRY;
         }
 
@@ -1136,9 +910,8 @@ rippleSendMPT(
     }
 
     // Sending 3rd party MPTs: transit.
-    saActual = (waiveFee == WaiveTransferFee::Yes)
-        ? saAmount
-        : multiply(saAmount, transferRate(view, saAmount.get<MPTIssue>().getMptID()));
+    saActual = (waiveFee == WaiveTransferFee::Yes) ? saAmount
+                                                   : multiply(saAmount, mptIssuance.transferRate());
 
     JLOG(j.debug()) << "rippleSendMPT> " << to_string(uSenderID) << " - > "
                     << to_string(uReceiverID) << " : deliver=" << saAmount.getFullText()
@@ -1164,9 +937,8 @@ rippleSendMultiMPT(
     // Safe to get MPT since rippleSendMultiMPT is only called by
     // accountSendMultiMPT
     auto const& issuer = mptIssue.getIssuer();
-
-    auto const sle = view.read(keylet::mptIssuance(mptIssue.getMptID()));
-    if (!sle)
+    auto mptIssuance = MPToken(view, mptIssue);
+    if (!mptIssuance.exists())
         return tecOBJECT_NOT_FOUND;
 
     // These may diverge
@@ -1200,9 +972,10 @@ rippleSendMultiMPT(
                     "xrpl::rippleSendMultiMPT",
                     "sender == issuer, takeFromSender == zero");
                 auto const sendAmount = amount.mpt().value();
-                auto const maximumAmount = sle->at(~sfMaximumAmount).value_or(maxMPTokenAmount);
+                auto const maximumAmount =
+                    mptIssuance->at(~sfMaximumAmount).value_or(maxMPTokenAmount);
                 if (sendAmount > maximumAmount ||
-                    sle->getFieldU64(sfOutstandingAmount) > maximumAmount - sendAmount)
+                    mptIssuance->getFieldU64(sfOutstandingAmount) > maximumAmount - sendAmount)
                     return tecPATH_DRY;
             }
 
@@ -1219,7 +992,7 @@ rippleSendMultiMPT(
         // Sending 3rd party MPTs: transit.
         STAmount actualSend = (waiveFee == WaiveTransferFee::Yes)
             ? amount
-            : multiply(amount, transferRate(view, amount.get<MPTIssue>().getMptID()));
+            : multiply(amount, mptIssuance.transferRate());
         actual += actualSend;
         takeFromSender += actualSend;
 

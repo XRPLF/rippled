@@ -1,5 +1,6 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/entries/AccountRootHelpers.h>
+#include <xrpl/ledger/entries/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -170,7 +171,14 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // own currency
         auto const needed = bo->at(sfAmount);
 
-        if (accountFunds(ctx.view, (*bo)[sfOwner], needed, fhZERO_IF_FROZEN, ctx.j) < needed)
+        auto const funds = [&]() -> STAmount {
+            auto const owner = (*bo)[sfOwner];
+            if (!needed.native() && needed.getIssuer() == owner)
+                return needed;
+            return makeTokenBase(ctx.view, needed.asset())
+                ->accountHolds(owner, fhZERO_IF_FROZEN, ctx.j);
+        }();
+        if (funds < needed)
             return tecINSUFFICIENT_FUNDS;
 
         // Check that the account accepting the buy offer (he's selling the NFT)
@@ -238,7 +246,14 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             // mode, because then we are confirming that the broker can
             // cover what the buyer will pay, which doesn't make sense, causes
             // an unnecessary tec, and is also resolved with this amendment.
-            if (accountFunds(ctx.view, ctx.tx[sfAccount], needed, fhZERO_IF_FROZEN, ctx.j) < needed)
+            auto const funds = [&]() -> STAmount {
+                auto const account = ctx.tx[sfAccount];
+                if (!needed.native() && needed.getIssuer() == account)
+                    return needed;
+                return makeTokenBase(ctx.view, needed.asset())
+                    ->accountHolds(account, fhZERO_IF_FROZEN, ctx.j);
+            }();
+            if (funds < needed)
                 return tecINSUFFICIENT_FUNDS;
         }
 
@@ -326,9 +341,14 @@ NFTokenAcceptOffer::pay(AccountID const& from, AccountID const& to, STAmount con
     // just confirm that the end state is OK.
     if (!isTesSuccess(result))
         return result;
-    if (accountFunds(view(), from, amount, fhZERO_IF_FROZEN, j_).signum() < 0)
+    auto const checkFunds = [&](AccountID const& account) -> STAmount {
+        if (!amount.native() && amount.getIssuer() == account)
+            return amount;
+        return makeTokenBase(view(), amount.asset())->accountHolds(account, fhZERO_IF_FROZEN, j_);
+    };
+    if (checkFunds(from).signum() < 0)
         return tecINSUFFICIENT_FUNDS;
-    if (accountFunds(view(), to, amount, fhZERO_IF_FROZEN, j_).signum() < 0)
+    if (checkFunds(to).signum() < 0)
         return tecINSUFFICIENT_FUNDS;
     return tesSUCCESS;
 }

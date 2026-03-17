@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/lending/LoanBrokerDelete.h>
 //
 #include <xrpl/ledger/entries/AccountRootHelpers.h>
+#include <xrpl/ledger/entries/TokenHelpers.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/tx/transactors/lending/LendingHelpers.h>
 
@@ -83,7 +84,7 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
     // So we need to check if the broker owner is deep frozen for that asset.
     if (coverAvailable > beast::zero)
     {
-        if (auto const ret = checkDeepFrozen(ctx.view, brokerOwner, asset))
+        if (auto const ret = makeTokenBase(ctx.view, asset)->checkDeepFrozen(brokerOwner))
         {
             JLOG(ctx.j.warn()) << "Broker owner account is frozen.";
             return ret;
@@ -131,7 +132,8 @@ LoanBrokerDelete::doApply()
             return ter;
     }
 
-    if (auto ter = removeEmptyHolding(view(), brokerPseudoID, vaultAsset, j_))
+    if (auto ter =
+            makeWritableTokenBase(view(), vaultAsset)->removeEmptyHolding(brokerPseudoID, j_))
         return ter;
 
     WritableAccountRoot brokerPseudo(brokerPseudoID, view());

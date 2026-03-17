@@ -49,8 +49,8 @@ isVaultPseudoAccountFrozen(
     if (depth >= maxAssetCheckDepth)
         return true;  // LCOV_EXCL_LINE
 
-    auto const mptIssuance = view.read(keylet::mptIssuance(mptShare.getMptID()));
-    if (mptIssuance == nullptr)
+    auto mptIssuance = MPToken(view, mptShare);
+    if (!mptIssuance.exists())
         return false;  // zero MPToken won't block deletion of MPTokenIssuance
 
     auto const issuer = mptIssuance->getAccountID(sfIssuer);
@@ -74,7 +74,7 @@ isVaultPseudoAccountFrozen(
         // LCOV_EXCL_STOP
     }
 
-    return isAnyFrozen(view, {issuer, account}, vault->at(sfAsset), depth + 1);
+    return mptIssuance.isAnyFrozen({issuer, account}, depth + 1);
 }
 
 bool
@@ -84,8 +84,9 @@ isLPTokenFrozen(
     Issue const& asset,
     Issue const& asset2)
 {
-    return isFrozen(view, account, asset.currency, asset.account) ||
-        isFrozen(view, account, asset2.currency, asset2.account);
+    auto assetToken = IOUToken(view, asset);
+    auto asset2Token = IOUToken(view, asset2);
+    return assetToken.isFrozen(account) || asset2Token.isFrozen(account);
 }
 
 bool
@@ -406,10 +407,11 @@ doWithdraw(
     STAmount const& amount,
     beast::Journal j)
 {
+    auto const asset = makeWritableTokenBase(view, amount.asset());
     // Create trust line or MPToken for the receiving account
     if (dstAcct == senderAcct)
     {
-        if (auto const ter = addEmptyHolding(view, senderAcct, priorBalance, amount.asset(), j);
+        if (auto const ter = asset->addEmptyHolding(senderAcct, priorBalance, j);
             !isTesSuccess(ter) && ter != tecDUPLICATE)
             return ter;
     }
@@ -421,13 +423,8 @@ doWithdraw(
     }
 
     // Sanity check
-    if (accountHolds(
-            view,
-            sourceAcct,
-            amount.asset(),
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
-            j) < amount)
+    if (asset->accountHolds(
+            sourceAcct, FreezeHandling::fhIGNORE_FREEZE, AuthHandling::ahIGNORE_AUTH, j) < amount)
     {
         // LCOV_EXCL_START
         JLOG(j.error()) << "LoanBrokerCoverWithdraw: negative balance of "

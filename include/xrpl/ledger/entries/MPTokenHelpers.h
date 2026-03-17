@@ -14,126 +14,196 @@
 
 namespace xrpl {
 
-//------------------------------------------------------------------------------
-//
-// Freeze checking (MPT-specific)
-//
-//------------------------------------------------------------------------------
+class MPToken : public virtual TokenBase
+{
+public:
+    MPToken(ReadView const& view, MPTIssue const& mptIssue)
+        : ReadOnlySLE(view.read(keylet::mptIssuance(mptIssue.getMptID())), view)
+        , TokenBase(view, view.read(keylet::mptIssuance(mptIssue.getMptID())))
+        , mptID_(mptIssue.getMptID())
+        , mptIssue_(mptIssue)
+    {
+    }
 
-[[nodiscard]] bool
-isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue);
+    MPToken(ReadView const& view, MPTID const& mptID)
+        : ReadOnlySLE(view.read(keylet::mptIssuance(mptID)), view)
+        , TokenBase(view, view.read(keylet::mptIssuance(mptID)))
+        , mptID_(mptID)
+        , mptIssue_(MPTIssue(mptID_))
+    {
+    }
 
-[[nodiscard]] bool
-isIndividualFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue);
+    MPTID const&
+    getMptID() const
+    {
+        return mptID_;
+    }
 
-[[nodiscard]] bool
-isFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue, int depth = 0);
+    MPTIssue const&
+    getMptIssue() const
+    {
+        return mptIssue_;
+    }
 
-[[nodiscard]] bool
-isAnyFrozen(
-    ReadView const& view,
-    std::initializer_list<AccountID> const& accounts,
-    MPTIssue const& mptIssue,
-    int depth = 0);
+    AccountID const&
+    getIssuer() const
+    {
+        return mptIssue_.getIssuer();
+    }
 
-//------------------------------------------------------------------------------
-//
-// Transfer rate (MPT-specific)
-//
-//------------------------------------------------------------------------------
+    //------------------------------------------------------------------------------
+    //
+    // Freeze checking (MPT-specific)
+    //
+    //------------------------------------------------------------------------------
 
-/** Returns MPT transfer fee as Rate. Rate specifies
- * the fee as fractions of 1 billion. For example, 1% transfer rate
- * is represented as 1,010,000,000.
- * @param issuanceID MPTokenIssuanceID of MPTTokenIssuance object
- */
-[[nodiscard]] Rate
-transferRate(ReadView const& view, MPTID const& issuanceID);
+    [[nodiscard]] bool
+    isGlobalFrozen() const override;
 
-//------------------------------------------------------------------------------
-//
-// Holding checks (MPT-specific)
-//
-//------------------------------------------------------------------------------
+    [[nodiscard]] bool
+    isIndividualFrozen(AccountID const& account) const override;
 
-[[nodiscard]] TER
-canAddHolding(ReadView const& view, MPTIssue const& mptIssue);
+    [[nodiscard]] bool
+    isFrozen(AccountID const& account, int depth = 0) const override;
 
-//------------------------------------------------------------------------------
-//
-// Authorization (MPT-specific)
-//
-//------------------------------------------------------------------------------
+    [[nodiscard]] TER
+    checkFrozen(AccountID const& account) const override;
 
-[[nodiscard]] TER
-authorizeMPToken(
-    ApplyView& view,
-    XRPAmount const& priorBalance,
-    MPTID const& mptIssuanceID,
-    AccountID const& account,
-    beast::Journal journal,
-    std::uint32_t flags = 0,
-    std::optional<AccountID> holderID = std::nullopt);
+    [[nodiscard]] bool
+    isAnyFrozen(std::initializer_list<AccountID> const& accounts, int depth = 0) const override;
 
-/** Check if the account lacks required authorization for MPT.
- *
- * requireAuth check is recursive for MPT shares in a vault, descending to
- * assets in the vault, up to maxAssetCheckDepth recursion depth. This is
- * purely defensive, as we currently do not allow such vaults to be created.
- */
-[[nodiscard]] TER
-requireAuth(
-    ReadView const& view,
-    MPTIssue const& mptIssue,
-    AccountID const& account,
-    AuthType authType = AuthType::Legacy,
-    int depth = 0);
+    [[nodiscard]] bool
+    isDeepFrozen(AccountID const& account, int depth = 0) const override;
 
-/** Enforce account has MPToken to match its authorization.
- *
- *   Called from doApply - it will check for expired (and delete if found any)
- *   credentials matching DomainID set in MPTokenIssuance. Must be called if
- *   requireAuth(...MPTIssue...) returned tesSUCCESS or tecEXPIRED in preclaim.
- */
-[[nodiscard]] TER
-enforceMPTokenAuthorization(
-    ApplyView& view,
-    MPTID const& mptIssuanceID,
-    AccountID const& account,
-    XRPAmount const& priorBalance,
-    beast::Journal j);
+    [[nodiscard]] TER
+    checkDeepFrozen(AccountID const& account) const override;
 
-/** Check if the destination account is allowed
- *  to receive MPT. Return tecNO_AUTH if it doesn't
- *  and tesSUCCESS otherwise.
- */
-[[nodiscard]] TER
-canTransfer(
-    ReadView const& view,
-    MPTIssue const& mptIssue,
-    AccountID const& from,
-    AccountID const& to);
+    //------------------------------------------------------------------------------
+    //
+    // Transfer rate (MPT-specific)
+    //
+    //------------------------------------------------------------------------------
 
-//------------------------------------------------------------------------------
-//
-// Empty holding operations (MPT-specific)
-//
-//------------------------------------------------------------------------------
+    /** Returns MPT transfer fee as Rate. Rate specifies
+     * the fee as fractions of 1 billion. For example, 1% transfer rate
+     * is represented as 1,010,000,000.
+     * @param issuanceID MPTokenIssuanceID of MPTTokenIssuance object
+     */
+    [[nodiscard]] Rate
+    transferRate() const override;
 
-[[nodiscard]] TER
-addEmptyHolding(
-    ApplyView& view,
-    AccountID const& accountID,
-    XRPAmount priorBalance,
-    MPTIssue const& mptIssue,
-    beast::Journal journal);
+    //------------------------------------------------------------------------------
+    //
+    // Holding checks (MPT-specific)
+    //
+    //------------------------------------------------------------------------------
 
-[[nodiscard]] TER
-removeEmptyHolding(
-    ApplyView& view,
-    AccountID const& accountID,
-    MPTIssue const& mptIssue,
-    beast::Journal journal);
+    [[nodiscard]] TER
+    canAddHolding() const override;
+
+    /** Check if the account lacks required authorization for MPT.
+     *
+     * requireAuth check is recursive for MPT shares in a vault, descending to
+     * assets in the vault, up to maxAssetCheckDepth recursion depth. This is
+     * purely defensive, as we currently do not allow such vaults to be created.
+     */
+    [[nodiscard]] TER
+    requireAuth(AccountID const& account, AuthType authType = AuthType::Legacy, int depth = 0)
+        const override;
+
+    /** Check if the destination account is allowed
+     *  to receive MPT. Return tecNO_AUTH if it doesn't
+     *  and tesSUCCESS otherwise.
+     */
+    [[nodiscard]] TER
+    canTransfer(AccountID const& from, AccountID const& to) const override;
+
+    STAmount
+    accountHolds(
+        AccountID const& account,
+        FreezeHandling zeroIfFrozen,
+        beast::Journal j,
+        SpendableHandling includeFullBalance = shSIMPLE_BALANCE) const override;
+
+    [[nodiscard]] STAmount
+    accountHolds(
+        AccountID const& account,
+        FreezeHandling zeroIfFrozen,
+        AuthHandling zeroIfUnauthorized,
+        beast::Journal j,
+        SpendableHandling includeFullBalance = shSIMPLE_BALANCE) const override;
+
+protected:
+    MPTID const mptID_;
+    MPTIssue const mptIssue_;
+};
+
+class WritableMPToken : public virtual WritableTokenBase, public virtual MPToken
+{
+public:
+    WritableMPToken(ApplyView& view, MPTIssue const& mptIssue)
+        : ReadOnlySLE(view.peek(keylet::mptIssuance(mptIssue.getMptID())), view)
+        , TokenBase(view, view.peek(keylet::mptIssuance(mptIssue.getMptID())))
+        , WritableSLE(view.peek(keylet::mptIssuance(mptIssue.getMptID())), view)
+        , WritableTokenBase(view, view.peek(keylet::mptIssuance(mptIssue.getMptID())))
+        , MPToken(view, mptIssue)
+    {
+    }
+
+    WritableMPToken(ApplyView& view, MPTID const& mptID)
+        : ReadOnlySLE(view.peek(keylet::mptIssuance(mptID)), view)
+        , TokenBase(view, view.peek(keylet::mptIssuance(mptID)))
+        , WritableSLE(view.peek(keylet::mptIssuance(mptID)), view)
+        , WritableTokenBase(view, view.peek(keylet::mptIssuance(mptID)))
+        , MPToken(view, mptID)
+    {
+    }
+
+    // Resolve ambiguity: use writable operator-> for non-const, read-only for const
+    using WritableSLE::operator->;
+    using MPToken::operator->;
+    using WritableSLE::operator*;
+    using MPToken::operator*;
+
+    //------------------------------------------------------------------------------
+    //
+    // Authorization (MPT-specific)
+    //
+    //------------------------------------------------------------------------------
+
+    [[nodiscard]] TER
+    authorizeMPToken(
+        XRPAmount const& priorBalance,
+        AccountID const& account,
+        beast::Journal journal,
+        std::uint32_t flags = 0,
+        std::optional<AccountID> holderID = std::nullopt);
+
+    /** Enforce account has MPToken to match its authorization.
+     *
+     *   Called from doApply - it will check for expired (and delete if found any)
+     *   credentials matching DomainID set in MPTokenIssuance. Must be called if
+     *   requireAuth(...MPTIssue...) returned tesSUCCESS or tecEXPIRED in preclaim.
+     */
+    [[nodiscard]] TER
+    enforceMPTokenAuthorization(
+        AccountID const& account,
+        XRPAmount const& priorBalance,
+        beast::Journal j);
+
+    //------------------------------------------------------------------------------
+    //
+    // Empty holding operations (MPT-specific)
+    //
+    //------------------------------------------------------------------------------
+
+    [[nodiscard]] TER
+    addEmptyHolding(AccountID const& accountID, XRPAmount priorBalance, beast::Journal journal)
+        override;
+
+    [[nodiscard]] TER
+    removeEmptyHolding(AccountID const& accountID, beast::Journal journal) override;
+};
 
 //------------------------------------------------------------------------------
 //

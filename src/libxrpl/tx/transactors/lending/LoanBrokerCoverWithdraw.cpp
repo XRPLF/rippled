@@ -79,8 +79,9 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
 
     // The broker's pseudo-account is the source of funds.
     auto const pseudoAccountID = sleBroker->at(sfAccount);
+    auto token = makeTokenBase(ctx.view, vaultAsset);
     // Cannot transfer a non-transferable Asset
-    if (auto const ret = canTransfer(ctx.view, vaultAsset, pseudoAccountID, dstAcct))
+    if (auto const ret = token->canTransfer(pseudoAccountID, dstAcct))
         return ret;
 
     // Withdrawal to a 3rd party destination account is essentially a transfer.
@@ -97,17 +98,17 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     }
 
     // Destination MPToken must exist (if asset is an MPT)
-    if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct, authType))
+    if (auto const ter = token->requireAuth(dstAcct, authType))
         return ter;
 
     // Check for freezes, unless sending directly to the issuer
     if (dstAcct != vaultAsset.getIssuer())
     {
         // Cannot send a frozen Asset
-        if (auto const ret = checkFrozen(ctx.view, pseudoAccountID, vaultAsset))
+        if (auto const ret = token->checkFrozen(pseudoAccountID))
             return ret;
         // Destination account cannot receive if asset is deep frozen
-        if (auto const ret = checkDeepFrozen(ctx.view, dstAcct, vaultAsset))
+        if (auto const ret = token->checkDeepFrozen(dstAcct))
             return ret;
     }
 

@@ -201,8 +201,9 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             return tecINSUF_RESERVE_LINE;
         }
         return (accountID == deposit.issue().account ||
-                accountHolds(
-                    ctx.view, accountID, deposit.issue(), FreezeHandling::fhIGNORE_FREEZE, ctx.j) >=
+                IOUToken(ctx.view, deposit.issue())
+                        .accountHolds(
+                            accountID, FreezeHandling::fhIGNORE_FREEZE, ctx.j, shSIMPLE_BALANCE) >=
                     deposit)
             ? TER(tesSUCCESS)
             : tecUNFUNDED_AMM;
@@ -213,13 +214,14 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         // Check if either of the assets is frozen, AMMDeposit is not allowed
         // if either asset is frozen
         auto checkAsset = [&](Issue const& asset) -> TER {
-            if (auto const ter = requireAuth(ctx.view, asset, accountID))
+            auto const token = IOUToken(ctx.view, asset);
+            if (auto const ter = token.requireAuth(accountID))
             {
                 JLOG(ctx.j.debug()) << "AMM Deposit: account is not authorized, " << asset;
                 return ter;
             }
 
-            if (isFrozen(ctx.view, accountID, asset))
+            if (token.isFrozen(accountID))
             {
                 JLOG(ctx.j.debug()) << "AMM Deposit: account or currency is frozen, "
                                     << to_string(accountID) << " " << to_string(asset.currency);
@@ -244,10 +246,12 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     auto checkAmount = [&](std::optional<STAmount> const& amount, bool checkBalance) -> TER {
         if (amount)
         {
+            // AMM account or currency frozen
+            auto const token = IOUToken(ctx.view, amount->issue());
             // This normally should not happen.
             // Account is not authorized to hold the assets it's depositing,
             // or it doesn't even have a trust line for them
-            if (auto const ter = requireAuth(ctx.view, amount->issue(), accountID))
+            if (auto const ter = token.requireAuth(accountID))
             {
                 // LCOV_EXCL_START
                 JLOG(ctx.j.debug())
@@ -255,15 +259,14 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
                 return ter;
                 // LCOV_EXCL_STOP
             }
-            // AMM account or currency frozen
-            if (isFrozen(ctx.view, ammAccountID, amount->issue()))
+            if (token.isFrozen(ammAccountID))
             {
                 JLOG(ctx.j.debug())
                     << "AMM Deposit: AMM account or currency is frozen, " << to_string(accountID);
                 return tecFROZEN;
             }
             // Account frozen
-            if (isIndividualFrozen(ctx.view, accountID, amount->issue()))
+            if (token.isIndividualFrozen(accountID))
             {
                 JLOG(ctx.j.debug()) << "AMM Deposit: account is frozen, " << to_string(accountID)
                                     << " " << to_string(amount->issue().currency);
@@ -469,13 +472,13 @@ AMMDeposit::deposit(
                 return tesSUCCESS;
         }
         else if (
-            accountID_ == depositAmount.issue().account ||
-            accountHolds(
-                view,
-                accountID_,
-                depositAmount.issue(),
-                FreezeHandling::fhIGNORE_FREEZE,
-                ctx_.journal) >= depositAmount)
+            account_ == depositAmount.issue().account ||
+            IOUToken(view, depositAmount.issue())
+                    .accountHolds(
+                        accountID_,
+                        FreezeHandling::fhIGNORE_FREEZE,
+                        ctx_.journal,
+                        shSIMPLE_BALANCE) >= depositAmount)
         {
             return tesSUCCESS;
         }

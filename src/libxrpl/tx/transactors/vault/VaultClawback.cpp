@@ -1,6 +1,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/entries/AccountRootHelpers.h>
+#include <xrpl/ledger/entries/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
@@ -379,7 +380,8 @@ VaultClawback::doApply()
     // Keep MPToken if holder is the vault owner.
     if (holder != vault->at(sfOwner))
     {
-        if (auto const ter = removeEmptyHolding(view(), holder, sharesDestroyed.asset(), j_);
+        if (auto const ter = makeWritableTokenBase(view(), sharesDestroyed.asset())
+                                 ->removeEmptyHolding(holder, j_);
             isTesSuccess(ter))
         {
             JLOG(j_.debug())  //

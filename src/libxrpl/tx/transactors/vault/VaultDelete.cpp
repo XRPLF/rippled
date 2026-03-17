@@ -1,5 +1,6 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/entries/AccountRootHelpers.h>
+#include <xrpl/ledger/entries/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/STNumber.h>
@@ -85,7 +86,9 @@ VaultDelete::doApply()
     // Destroy the asset holding.
     auto asset = vault->at(sfAsset);
 
-    if (auto ter = removeEmptyHolding(view(), vault->at(sfAccount), asset, j_); !isTesSuccess(ter))
+    if (auto ter =
+            makeWritableTokenBase(view(), asset)->removeEmptyHolding(vault->at(sfAccount), j_);
+        !isTesSuccess(ter))
         return ter;
 
     auto const& pseudoID = vault->at(sfAccount);
@@ -113,7 +116,8 @@ VaultDelete::doApply()
     // Try to remove MPToken for vault shares for the vault owner if it exists.
     if (auto const mptoken = view().peek(keylet::mptoken(shareMPTID, accountID_)))
     {
-        if (auto const ter = removeEmptyHolding(view(), accountID_, MPTIssue(shareMPTID), j_);
+        if (auto const ter = makeWritableTokenBase(view(), MPTIssue(shareMPTID))
+                                 ->removeEmptyHolding(accountID_, j_);
             !isTesSuccess(ter))
         {
             // LCOV_EXCL_START

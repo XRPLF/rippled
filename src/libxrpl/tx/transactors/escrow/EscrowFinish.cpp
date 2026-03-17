@@ -6,6 +6,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/entries/CredentialHelpers.h>
+#include <xrpl/ledger/entries/RippleStateHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -130,11 +131,12 @@ escrowFinishPreclaimHelper<Issue>(
         return tesSUCCESS;
 
     // If the issuer has requireAuth set, check if the destination is authorized
-    if (auto const ter = requireAuth(ctx.view, amount.issue(), dest); !isTesSuccess(ter))
+    IOUToken token(ctx.view, amount.issue());
+    if (auto const ter = token.requireAuth(dest); !isTesSuccess(ter))
         return ter;
 
     // If the issuer has deep frozen the destination, return tecFROZEN
-    if (isDeepFrozen(ctx.view, dest, amount.getCurrency(), amount.getIssuer()))
+    if (token.isDeepFrozen(dest))
         return tecFROZEN;
 
     return tesSUCCESS;
@@ -147,26 +149,22 @@ escrowFinishPreclaimHelper<MPTIssue>(
     AccountID const& dest,
     STAmount const& amount)
 {
-    AccountID issuer = amount.getIssuer();
+    auto const mptIssuance = MPToken(ctx.view, amount.get<MPTIssue>());
     // If the issuer is the same as the dest, return tesSUCCESS
-    if (issuer == dest)
+    if (mptIssuance.getIssuer() == dest)
         return tesSUCCESS;
 
     // If the mpt does not exist, return tecOBJECT_NOT_FOUND
-    auto const issuanceKey = keylet::mptIssuance(amount.get<MPTIssue>().getMptID());
-    auto const sleIssuance = ctx.view.read(issuanceKey);
-    if (!sleIssuance)
+    if (!mptIssuance.exists())
         return tecOBJECT_NOT_FOUND;
 
     // If the issuer has requireAuth set, check if the destination is
     // authorized
-    auto const& mptIssue = amount.get<MPTIssue>();
-    if (auto const ter = requireAuth(ctx.view, mptIssue, dest, AuthType::WeakAuth);
-        !isTesSuccess(ter))
+    if (auto const ter = mptIssuance.requireAuth(dest, AuthType::WeakAuth); !isTesSuccess(ter))
         return ter;
 
     // If the issuer has frozen the destination, return tecLOCKED
-    if (isFrozen(ctx.view, dest, mptIssue))
+    if (mptIssuance.isFrozen(dest))
         return tecLOCKED;
 
     return tesSUCCESS;

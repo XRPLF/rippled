@@ -2,6 +2,7 @@
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/entries/AccountRootHelpers.h>
+#include <xrpl/ledger/entries/RippleStateHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/tx/transactors/dex/AMMHelpers.h>
@@ -18,8 +19,10 @@ ammPoolHolds(
     FreezeHandling freezeHandling,
     beast::Journal const j)
 {
-    auto const assetInBalance = accountHolds(view, ammAccountID, issue1, freezeHandling, j);
-    auto const assetOutBalance = accountHolds(view, ammAccountID, issue2, freezeHandling, j);
+    auto const assetInBalance =
+        IOUToken(view, issue1).accountHolds(ammAccountID, freezeHandling, j, shSIMPLE_BALANCE);
+    auto const assetOutBalance =
+        IOUToken(view, issue2).accountHolds(ammAccountID, freezeHandling, j, shSIMPLE_BALANCE);
     return std::make_pair(assetInBalance, assetOutBalance);
 }
 
@@ -109,7 +112,7 @@ ammLPHolds(
                         << " lpAccount=" << to_string(lpAccount)
                         << " amount=" << amount.getFullText();
     }
-    else if (isFrozen(view, lpAccount, currency, ammAccount))
+    else if (IOUToken wrapped(view, Issue{currency, ammAccount}); wrapped.isFrozen(lpAccount))
     {
         amount.clear(Issue{currency, ammAccount});
         JLOG(j.trace()) << "ammLPHolds: frozen currency "
@@ -190,7 +193,7 @@ ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Issue const
     }
     else if (
         auto const sle = view.read(keylet::line(ammAccountID, issue.account, issue.currency));
-        sle && !isFrozen(view, ammAccountID, issue.currency, issue.account))
+        sle && !IOUToken(view, issue).isFrozen(ammAccountID))
     {
         auto amount = (*sle)[sfBalance];
         if (ammAccountID > issue.account)
