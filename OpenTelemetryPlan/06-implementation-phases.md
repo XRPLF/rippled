@@ -52,18 +52,16 @@ gantt
 
 ### Tasks
 
-| Task | Description                                           | Effort | Risk   |
-| ---- | ----------------------------------------------------- | ------ | ------ |
-| 1.1  | Add OpenTelemetry C++ SDK to Conan/CMake              | 2d     | Low    |
-| 1.2  | Implement `Telemetry` interface and factory           | 2d     | Low    |
-| 1.3  | Implement `SpanGuard` RAII wrapper                    | 1d     | Low    |
-| 1.4  | Implement configuration parser                        | 1d     | Low    |
-| 1.5  | Integrate into `ApplicationImp`                       | 1d     | Medium |
-| 1.6  | Add conditional compilation (`XRPL_ENABLE_TELEMETRY`) | 1d     | Low    |
-| 1.7  | Create `NullTelemetry` no-op implementation           | 0.5d   | Low    |
-| 1.8  | Unit tests for core infrastructure                    | 1.5d   | Low    |
-
-**Total Effort**: 10 days (2 developers)
+| Task | Description                                           |
+| ---- | ----------------------------------------------------- |
+| 1.1  | Add OpenTelemetry C++ SDK to Conan/CMake              |
+| 1.2  | Implement `Telemetry` interface and factory           |
+| 1.3  | Implement `SpanGuard` RAII wrapper                    |
+| 1.4  | Implement configuration parser                        |
+| 1.5  | Integrate into `ApplicationImp`                       |
+| 1.6  | Add conditional compilation (`XRPL_ENABLE_TELEMETRY`) |
+| 1.7  | Create `NullTelemetry` no-op implementation           |
+| 1.8  | Unit tests for core infrastructure                    |
 
 ### Exit Criteria
 
@@ -81,18 +79,16 @@ gantt
 
 ### Tasks
 
-| Task | Description                                        | Effort | Risk   |
-| ---- | -------------------------------------------------- | ------ | ------ |
-| 2.1  | Implement W3C Trace Context HTTP header extraction | 1d     | Low    |
-| 2.2  | Instrument `ServerHandler::onRequest()`            | 1d     | Low    |
-| 2.3  | Instrument `RPCHandler::doCommand()`               | 2d     | Medium |
-| 2.4  | Add RPC-specific attributes                        | 1d     | Low    |
-| 2.5  | Instrument WebSocket handler                       | 1d     | Medium |
-| 2.6  | Integration tests for RPC tracing                  | 2d     | Low    |
-| 2.7  | Performance benchmarks                             | 1d     | Low    |
-| 2.8  | Documentation                                      | 1d     | Low    |
-
-**Total Effort**: 10 days
+| Task | Description                                        |
+| ---- | -------------------------------------------------- |
+| 2.1  | Implement W3C Trace Context HTTP header extraction |
+| 2.2  | Instrument `ServerHandler::onRequest()`            |
+| 2.3  | Instrument `RPCHandler::doCommand()`               |
+| 2.4  | Add RPC-specific attributes                        |
+| 2.5  | Instrument WebSocket handler                       |
+| 2.6  | Integration tests for RPC tracing                  |
+| 2.7  | Performance benchmarks                             |
+| 2.8  | Documentation                                      |
 
 ### Exit Criteria
 
@@ -110,18 +106,16 @@ gantt
 
 ### Tasks
 
-| Task | Description                                   | Effort | Risk   |
-| ---- | --------------------------------------------- | ------ | ------ |
-| 3.1  | Define `TraceContext` Protocol Buffer message | 1d     | Low    |
-| 3.2  | Implement protobuf context serialization      | 1d     | Low    |
-| 3.3  | Instrument `PeerImp::handleTransaction()`     | 2d     | Medium |
-| 3.4  | Instrument `NetworkOPs::submitTransaction()`  | 1d     | Medium |
-| 3.5  | Instrument HashRouter integration             | 1d     | Medium |
-| 3.6  | Implement relay context propagation           | 2d     | High   |
-| 3.7  | Integration tests (multi-node)                | 2d     | Medium |
-| 3.8  | Performance benchmarks                        | 1d     | Low    |
-
-**Total Effort**: 11 days
+| Task | Description                                   |
+| ---- | --------------------------------------------- |
+| 3.1  | Define `TraceContext` Protocol Buffer message |
+| 3.2  | Implement protobuf context serialization      |
+| 3.3  | Instrument `PeerImp::handleTransaction()`     |
+| 3.4  | Instrument `NetworkOPs::submitTransaction()`  |
+| 3.5  | Instrument HashRouter integration             |
+| 3.6  | Implement relay context propagation           |
+| 3.7  | Integration tests (multi-node)                |
+| 3.8  | Performance benchmarks                        |
 
 ### Exit Criteria
 
@@ -139,18 +133,16 @@ gantt
 
 ### Tasks
 
-| Task | Description                                    | Effort | Risk   |
-| ---- | ---------------------------------------------- | ------ | ------ |
-| 4.1  | Instrument `RCLConsensusAdaptor::startRound()` | 1d     | Medium |
-| 4.2  | Instrument phase transitions                   | 2d     | Medium |
-| 4.3  | Instrument proposal handling                   | 2d     | High   |
-| 4.4  | Instrument validation handling                 | 1d     | Medium |
-| 4.5  | Add consensus-specific attributes              | 1d     | Low    |
-| 4.6  | Correlate with transaction traces              | 1d     | Medium |
-| 4.7  | Multi-validator integration tests              | 2d     | High   |
-| 4.8  | Performance validation                         | 1d     | Medium |
-
-**Total Effort**: 11 days
+| Task | Description                                    |
+| ---- | ---------------------------------------------- |
+| 4.1  | Instrument `RCLConsensusAdaptor::startRound()` |
+| 4.2  | Instrument phase transitions                   |
+| 4.3  | Instrument proposal handling                   |
+| 4.4  | Instrument validation handling                 |
+| 4.5  | Add consensus-specific attributes              |
+| 4.6  | Correlate with transaction traces              |
+| 4.7  | Multi-validator integration tests              |
+| 4.8  | Performance validation                         |
 
 ### Exit Criteria
 
@@ -187,17 +179,15 @@ See [Phase4_taskList.md](./Phase4_taskList.md) for the full spec and implementat
 
 ### Tasks
 
-| Task | Description                   | Effort | Risk |
-| ---- | ----------------------------- | ------ | ---- |
-| 5.1  | Operator runbook              | 1d     | Low  |
-| 5.2  | Grafana dashboards            | 1d     | Low  |
-| 5.3  | Alert definitions             | 0.5d   | Low  |
-| 5.4  | Collector deployment examples | 0.5d   | Low  |
-| 5.5  | Developer documentation       | 1d     | Low  |
-| 5.6  | Training materials            | 0.5d   | Low  |
-| 5.7  | Final integration testing     | 0.5d   | Low  |
-
-**Total Effort**: 5 days
+| Task | Description                   |
+| ---- | ----------------------------- |
+| 5.1  | Operator runbook              |
+| 5.2  | Grafana dashboards            |
+| 5.3  | Alert definitions             |
+| 5.4  | Collector deployment examples |
+| 5.5  | Developer documentation       |
+| 5.6  | Training materials            |
+| 5.7  | Final integration testing     |
 
 ---
 
@@ -245,42 +235,11 @@ quadrantChart
 
 ---
 
-## 6.9 Effort Summary
-
-<div align="center">
-
-```mermaid
-%%{init: {'pie': {'textPosition': 0.75}}}%%
-pie showData
-    "Phase 1: Core Infrastructure" : 10
-    "Phase 2: RPC Tracing" : 10
-    "Phase 3: Transaction Tracing" : 11
-    "Phase 4: Consensus Tracing" : 11
-    "Phase 5: Documentation" : 5
-```
-
-**Total Effort Distribution (47 developer-days)**
-
-</div>
-
-### Resource Requirements
-
-| Phase     | Developers | Duration    | Total Effort |
-| --------- | ---------- | ----------- | ------------ |
-| 1         | 2          | 2 weeks     | 10 days      |
-| 2         | 1-2        | 2 weeks     | 10 days      |
-| 3         | 2          | 2 weeks     | 11 days      |
-| 4         | 2          | 2 weeks     | 11 days      |
-| 5         | 1          | 1 week      | 5 days       |
-| **Total** | **2**      | **9 weeks** | **47 days**  |
-
----
-
-## 6.10 Quick Wins and Crawl-Walk-Run Strategy
+## 6.9 Quick Wins and Crawl-Walk-Run Strategy
 
 This section outlines a prioritized approach to maximize ROI with minimal initial investment.
 
-### 6.10.1 Crawl-Walk-Run Overview
+### 6.9.1 Crawl-Walk-Run Overview
 
 <div align="center">
 
@@ -319,17 +278,17 @@ flowchart TB
 
 </div>
 
-### 6.10.2 Quick Wins (Immediate Value)
+### 6.9.2 Quick Wins (Immediate Value)
 
-| Quick Win                      | Effort   | Value  | When to Deploy |
-| ------------------------------ | -------- | ------ | -------------- |
-| **RPC Command Tracing**        | 2 days   | High   | Week 2         |
-| **RPC Latency Histograms**     | 0.5 days | High   | Week 2         |
-| **Error Rate Dashboard**       | 0.5 days | Medium | Week 2         |
-| **Transaction Submit Tracing** | 1 day    | High   | Week 3         |
-| **Consensus Round Duration**   | 1 day    | Medium | Week 6         |
+| Quick Win                      | Value  | When to Deploy |
+| ------------------------------ | ------ | -------------- |
+| **RPC Command Tracing**        | High   | Week 2         |
+| **RPC Latency Histograms**     | High   | Week 2         |
+| **Error Rate Dashboard**       | Medium | Week 2         |
+| **Transaction Submit Tracing** | High   | Week 3         |
+| **Consensus Round Duration**   | Medium | Week 6         |
 
-### 6.10.3 CRAWL Phase (Weeks 1-2)
+### 6.9.3 CRAWL Phase (Weeks 1-2)
 
 **Goal**: Get basic tracing working with minimal code changes.
 
@@ -349,7 +308,7 @@ flowchart TB
 - No cross-node complexity
 - Single file modification to existing code
 
-### 6.10.4 WALK Phase (Weeks 3-5)
+### 6.9.4 WALK Phase (Weeks 3-5)
 
 **Goal**: Add transaction lifecycle tracing across nodes.
 
@@ -368,7 +327,7 @@ flowchart TB
 - Moderate complexity (requires context propagation)
 - High value for debugging transaction issues
 
-### 6.10.5 RUN Phase (Weeks 6-9)
+### 6.9.5 RUN Phase (Weeks 6-9)
 
 **Goal**: Full observability including consensus.
 
@@ -387,7 +346,7 @@ flowchart TB
 - Requires thorough testing
 - Lower relative value (consensus issues are rarer)
 
-### 6.10.6 ROI Prioritization Matrix
+### 6.9.6 ROI Prioritization Matrix
 
 ```mermaid
 quadrantChart
