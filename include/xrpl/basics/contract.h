@@ -24,6 +24,10 @@ LogThrow(std::string const& title);
     When called from within a catch block, it will pass
     control to the next matching exception handler, if any.
     Otherwise, std::terminate will be called.
+
+    ASAN can't handle sudden jumps in control flow very well. This
+    function is marked as XRPL_NO_SANITIZE_ADDRESS to prevent it from
+    triggering false positives, since it throws.
 */
 [[noreturn]] XRPL_NO_SANITIZE_ADDRESS inline void
 Rethrow()
@@ -31,6 +35,14 @@ Rethrow()
     LogThrow("Re-throwing exception");
     throw;
 }
+
+/*
+    Logs and throws an exception of type E.
+
+    ASAN can't handle sudden jumps in control flow very well. This
+    function is marked as XRPL_NO_SANITIZE_ADDRESS to prevent it from
+    triggering false positives, since it throws.
+*/
 
 template <class E, class... Args>
 [[noreturn]] XRPL_NO_SANITIZE_ADDRESS inline void
