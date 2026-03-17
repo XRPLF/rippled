@@ -24,9 +24,6 @@ ConfidentialMPTConvertBack::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfMPTAmount] == 0 || ctx.tx[sfMPTAmount] > maxMPTokenAmount)
         return temBAD_AMOUNT;
 
-    if (ctx.tx[sfBlindingFactor].size() != ecBlindingFactorLength)
-        return temMALFORMED;
-
     if (!isValidCompressedECPoint(ctx.tx[sfBalanceCommitment]))
         return temMALFORMED;
 
@@ -93,7 +90,7 @@ verifyProofs(
     // verify revealed amount
     if (auto const ter = verifyRevealedAmount(
             amount,
-            blindingFactor,
+            Slice(blindingFactor.data(), blindingFactor.size()),
             {holderPubKey, tx[sfHolderEncryptedAmount]},
             {(*issuance)[sfIssuerEncryptionKey], tx[sfIssuerEncryptedAmount]},
             auditor);
@@ -147,14 +144,16 @@ verifyProofs(
         {
             valid = false;
         }
-
-        // The bulletproof verifies that the remaining balance is non-negative
-        std::vector<Slice> commitments{Slice(pcRem.data(), pcRem.size())};
-
-        if (auto const ter = verifyAggregatedBulletproof(bulletproof, commitments, contextHash);
-            !isTesSuccess(ter))
+        else
         {
-            valid = false;
+            // The bulletproof verifies that the remaining balance is non-negative
+            std::vector<Slice> commitments{Slice(pcRem.data(), pcRem.size())};
+
+            if (auto const ter = verifyAggregatedBulletproof(bulletproof, commitments, contextHash);
+                !isTesSuccess(ter))
+            {
+                valid = false;
+            }
         }
     }
 

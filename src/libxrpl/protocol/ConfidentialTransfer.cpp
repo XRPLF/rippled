@@ -802,6 +802,7 @@ computeConvertBackRemainder(Slice const& commitment, uint64_t amount, Buffer& ou
             ctx, out.data(), &outLen, &pcRem, SECP256K1_EC_COMPRESSED);
         res != 1 || outLen != ecPedersenCommitmentLength)
     {
+        out.clear();
         return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 

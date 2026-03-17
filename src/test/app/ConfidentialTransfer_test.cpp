@@ -365,15 +365,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .err = temMALFORMED,
             });
 
-            // blinding factor length is invalid
-            mptAlice.convert({
-                .account = alice,
-                .amt = 10,
-                .holderPubKey = mptAlice.getPubKey(bob),
-                .blindingFactor = makeZeroBuffer(10),
-                .err = temMALFORMED,
-            });
-
             // Holder encrypted amount is empty (length 0)
             mptAlice.convert({
                 .account = bob,
@@ -2950,14 +2941,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .amt = maxMPTokenAmount + 1,
                 .err = temBAD_AMOUNT,
-            });
-
-            // invalid blinding factor length
-            mptAlice.convertBack({
-                .account = alice,
-                .amt = 30,
-                .blindingFactor = Buffer{},
-                .err = temMALFORMED,
             });
 
             // Balance commitment has correct length but invalid EC point data
