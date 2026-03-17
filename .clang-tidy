@@ -88,6 +88,7 @@ Checks: "-*,
   modernize-deprecated-headers,
   modernize-make-shared,
   modernize-make-unique,
+  readability-identifier-naming,
   performance-implicit-conversion-in-loop,
   performance-move-constructor-init,
   performance-trivially-destructible,
@@ -184,15 +185,15 @@ CheckOptions:
   #   readability-identifier-naming.StaticVariablePrefix: "k"
   #   readability-identifier-naming.ConstexprVariableCase: UPPER_CASE
   #   readability-identifier-naming.ConstexprVariablePrefix: "k"
-  #   readability-identifier-naming.LocalConstantCase: camelBack
-  #   readability-identifier-naming.LocalVariableCase: camelBack
+  readability-identifier-naming.LocalConstantCase: camelBack
+  readability-identifier-naming.LocalVariableCase: camelBack
   #   readability-identifier-naming.TemplateParameterCase: CamelCase
-  #   readability-identifier-naming.ParameterCase: camelBack
+  readability-identifier-naming.ParameterCase: camelBack
   #   readability-identifier-naming.FunctionCase: camelBack
   #   readability-identifier-naming.MemberCase: camelBack
-  #   readability-identifier-naming.PrivateMemberSuffix: _
-  #   readability-identifier-naming.ProtectedMemberSuffix: _
-  #   readability-identifier-naming.PublicMemberSuffix: ""
+  readability-identifier-naming.PrivateMemberSuffix: _
+  readability-identifier-naming.ProtectedMemberSuffix: _
+  readability-identifier-naming.PublicMemberSuffix: ""
   #   readability-identifier-naming.FunctionIgnoredRegexp: ".*tag_invoke.*"
   bugprone-unsafe-functions.ReportMoreUnsafeFunctions: true
   bugprone-unused-return-value.CheckedReturnTypes: ::std::error_code;::std::error_condition;::std::errc
