@@ -1833,7 +1833,6 @@ trustCreate(
 [[nodiscard]] TER
 removeEmptyHolding(
     ApplyView& view,
-    STTx const& tx,
     AccountID const& accountID,
     Issue const& issue,
     beast::Journal journal)

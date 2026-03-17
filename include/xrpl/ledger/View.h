@@ -803,7 +803,6 @@ trustCreate(
 [[nodiscard]] TER
 removeEmptyHolding(
     ApplyView& view,
-    STTx const& tx,
     AccountID const& accountID,
     Issue const& issue,
     beast::Journal journal);
@@ -826,7 +825,10 @@ removeEmptyHolding(
 {
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-            return removeEmptyHolding(view, tx, accountID, issue, journal);
+            if constexpr (std::is_same_v<TIss, Issue>)
+                return removeEmptyHolding(view, accountID, issue, journal);
+            else
+                return removeEmptyHolding(view, tx, accountID, issue, journal);
         },
         asset.value());
 }
