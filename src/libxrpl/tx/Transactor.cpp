@@ -1176,36 +1176,28 @@ Transactor::reset(XRPAmount fee)
 FeePayer
 Transactor::getFeePayer(ReadView const& view, STTx const& tx)
 {
-    auto const id = tx.getAccountID(sfAccount);
-    if (tx.isFieldPresent(sfSponsor) && tx.getFieldU32(sfSponsorFlags) & spfSponsorFee)
+    if (tx.isFieldPresent(sfSponsor) && (tx.getFieldU32(sfSponsorFlags) & spfSponsorFee))
     {
-        auto const sponsor = tx.getAccountID(sfSponsor);
-        auto const hasSignature = tx.isFieldPresent(sfSponsorSignature);
-        auto const sponsorKeylet = keylet::sponsor(sponsor, id);
+        auto const sponsorAccountID = tx.getAccountID(sfSponsor);
+        auto const sponseeAccountID = tx.getAccountID(sfAccount);
+        auto const hasSponsorSignature = tx.isFieldPresent(sfSponsorSignature);
+        auto const sponsorshipKeylet = keylet::sponsor(sponsorAccountID, sponseeAccountID);
 
-        if (hasSignature)
-        {
-            // if pre-funded sponsorship exists, prefer it
-            if (view.exists(sponsorKeylet))
-                return FeePayer{sponsorKeylet, sfFeeAmount, FeePayerType::SponsorPreFunded};
-
+        // if pre-funded sponsorship exists, prefer it
+        if (hasSponsorSignature && !view.exists(sponsorshipKeylet))
             // co-signed
-            auto const sponsorAccountKeylet = keylet::account(sponsor);
-            return FeePayer{sponsorAccountKeylet, sfBalance, FeePayerType::SponsorCoSigned};
-        }
+            return FeePayer{
+                keylet::account(sponsorAccountID), sfBalance, FeePayerType::SponsorCoSigned};
 
         // pre funded
-        return FeePayer{sponsorKeylet, sfFeeAmount, FeePayerType::SponsorPreFunded};
+        return FeePayer{sponsorshipKeylet, sfFeeAmount, FeePayerType::SponsorPreFunded};
     }
 
-    if (tx.isFieldPresent(sfDelegate))
-    {
-        auto const delegatorKeylet = keylet::account(tx.getAccountID(sfDelegate));
-        return FeePayer{delegatorKeylet, sfBalance, FeePayerType::Delegate};
-    }
+    auto const payerAccountKeylet = keylet::account(tx.getFeePayer());
+    auto const payerType =
+        tx.isFieldPresent(sfDelegate) ? FeePayerType::Delegate : FeePayerType::Account;
 
-    auto const accountKeylet = keylet::account(id);
-    return FeePayer{accountKeylet, sfBalance, FeePayerType::Account};
+    return FeePayer{payerAccountKeylet, sfBalance, payerType};
 }
 
 // The sole purpose of this function is to provide a convenient, named
