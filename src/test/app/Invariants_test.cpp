@@ -263,17 +263,17 @@ class Invariants_test : public beast::unit_test::suite
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 // Increment A1's owner count, then delete A1
                 auto const a1 = A1.id();
-                auto const sleA1 = ac.view().peek(keylet::account(a1));
-                if (!sleA1)
+                WrappedAccountRoot wrappedA1(a1, &ac.view());
+                if (!wrappedA1)
                     return false;
                 // Clear the balance so the "account deletion left behind a
                 // non-zero balance" check doesn't trip earlier than the desired
                 // check.
-                sleA1->at(sfBalance) = beast::zero;
-                BEAST_EXPECT(sleA1->at(sfOwnerCount) == 0);
-                adjustOwnerCount(ac.view(), sleA1, 1, ac.journal);
+                wrappedA1->at(sfBalance) = beast::zero;
+                BEAST_EXPECT(wrappedA1->at(sfOwnerCount) == 0);
+                wrappedA1.adjustOwnerCount(1, ac.journal);
 
-                ac.view().erase(sleA1);
+                ac.view().erase(wrappedA1.mutableSle());
 
                 return true;
             },

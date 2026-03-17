@@ -1,14 +1,13 @@
 #pragma once
 
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 
 #include <memory>
 #include <stdexcept>
 
 namespace xrpl {
-
-class ReadView;
-class ApplyView;
 
 /**
  * Base class for all ledger entry view classes.
@@ -78,7 +77,7 @@ public:
     bool
     canModify() const
     {
-        return applyView_ != nullptr;
+        return applyView_ != nullptr && mutableSle_ != nullptr;
     }
 
     /** Returns the apply view for write operations
@@ -98,6 +97,7 @@ public:
     STLedgerEntry*
     operator->()
     {
+        XRPL_ASSERT(canModify(), "xrpl::WrappedSLEBase::operator* : can modify");
         return mutableSle_.get();
     }
 
@@ -110,6 +110,7 @@ public:
     STLedgerEntry&
     operator*()
     {
+        XRPL_ASSERT(canModify(), "xrpl::WrappedSLEBase::operator* : can modify");
         return *mutableSle_;
     }
 
