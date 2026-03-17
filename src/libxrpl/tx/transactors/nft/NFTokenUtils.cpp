@@ -620,7 +620,7 @@ deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer)
 
     if (!view.dirRemove(
             ((*offer)[sfFlags] & lsfSellNFToken) ? keylet::nft_sells(nftokenID)
-                                                : keylet::nft_buys(nftokenID),
+                                                 : keylet::nft_buys(nftokenID),
             (*offer)[sfNFTokenOfferNode],
             offer->key(),
             false))
