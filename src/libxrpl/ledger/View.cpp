@@ -1518,7 +1518,7 @@ addEmptyHolding(
     auto const& dstId = accountID;
     auto const high = srcId > dstId;
     auto const index = keylet::line(srcId, dstId, currency);
-    auto const sleSrc = view.peek(keylet::account(srcId));
+    auto const sleSrc = view.read(keylet::account(srcId));
     auto const sleDst = view.peek(keylet::account(dstId));
     if (!sleDst || !sleSrc)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -1536,7 +1536,7 @@ addEmptyHolding(
             tx,
             sleDst,
             priorBalance,
-            sponsorAccountID ? view.peek(keylet::account(*sponsorAccountID))
+            sponsorAccountID ? view.read(keylet::account(*sponsorAccountID))
                              : std::shared_ptr<SLE>(),
             1);
         !isTesSuccess(ret))
@@ -1571,12 +1571,12 @@ addEmptyHolding(
     beast::Journal journal)
 {
     auto const& mptID = mptIssue.getMptID();
-    auto const mpt = view.peek(keylet::mptIssuance(mptID));
+    auto const mpt = view.read(keylet::mptIssuance(mptID));
     if (!mpt)
         return tefINTERNAL;  // LCOV_EXCL_LINE
     if (mpt->isFlag(lsfMPTLocked))
         return tefINTERNAL;  // LCOV_EXCL_LINE
-    if (view.peek(keylet::mptoken(mptID, accountID)))
+    if (view.exists(keylet::mptoken(mptID, accountID)))
         return tecDUPLICATE;
     if (accountID == mptIssue.getIssuer())
         return tesSUCCESS;

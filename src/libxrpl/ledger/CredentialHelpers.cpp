@@ -71,8 +71,8 @@ deleteSLE(ApplyView& view, std::shared_ptr<SLE> const& sleCredential, beast::Jou
 
         if (isOwner)
         {
-            auto const sponsor = getLedgerEntryReserveSponsor(view, sleCredential);
-            adjustOwnerCount(view, sleAccount, sponsor, -1, j);
+            auto const sponsorSle = getLedgerEntryReserveSponsor(view, sleCredential);
+            adjustOwnerCount(view, sleAccount, sponsorSle, -1, j);
         }
 
         return tesSUCCESS;
