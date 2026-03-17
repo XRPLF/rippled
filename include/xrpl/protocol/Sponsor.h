@@ -15,5 +15,3 @@ addSerializeSponsorData(Serializer& msg, AccountID const& sponsorID, std::uint32
 }
 
 }  // namespace xrpl
-
-#endif

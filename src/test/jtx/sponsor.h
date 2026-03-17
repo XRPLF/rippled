@@ -89,5 +89,3 @@ ledgerEntry(jtx::Env& env, jtx::Account const& sponsor, jtx::Account const& spon
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif
