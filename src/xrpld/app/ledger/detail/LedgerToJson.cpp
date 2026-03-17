@@ -7,6 +7,7 @@
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/ledger/helpersTokenHelpers.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/jss.h>
 
@@ -181,12 +182,10 @@ fillJsonTx(
         // owner balance
         if (account != amount.getIssuer())
         {
-            auto const ownerFunds = accountFunds(
-                fill.ledger,
-                account,
-                amount,
-                fhIGNORE_FREEZE,
-                beast::Journal{beast::Journal::getNullSink()});
+            auto const ownerFunds =
+                makeTokenBase(fill.ledger, amount.asset())
+                    ->accountHolds(
+                        account, fhIGNORE_FREEZE, beast::Journal{beast::Journal::getNullSink()});
             txJson[jss::owner_funds] = ownerFunds.getText();
         }
     }

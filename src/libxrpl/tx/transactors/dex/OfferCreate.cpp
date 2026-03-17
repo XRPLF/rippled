@@ -2,6 +2,7 @@
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/ledger/helpersTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
@@ -153,7 +154,14 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
         return tecFROZEN;
     }
 
-    if (accountFunds(ctx.view, id, saTakerGets, fhZERO_IF_FROZEN, viewJ) <= beast::zero)
+    // Check account funds: issuer can always afford their own currency
+    auto const funds = [&]() -> STAmount {
+        if (!saTakerGets.native() && saTakerGets.getIssuer() == id)
+            return saTakerGets;
+        return makeTokenBase(ctx.view, saTakerGets.asset())
+            ->accountHolds(id, fhZERO_IF_FROZEN, viewJ);
+    }();
+    if (funds <= beast::zero)
     {
         JLOG(ctx.j.debug()) << "delay: Offers must be at least partially funded.";
         return tecUNFUNDED_OFFER;
@@ -280,8 +288,12 @@ OfferCreate::flowCross(
         // We check this in preclaim, but when selling XRP charged fees can
         // cause a user's available balance to go to 0 (by causing it to dip
         // below the reserve) so we check this case again.
-        STAmount const inStartBalance =
-            accountFunds(psb, accountID_, takerAmount.in, fhZERO_IF_FROZEN, j_);
+        STAmount const inStartBalance = [&]() -> STAmount {
+            if (!takerAmount.in.native() && takerAmount.in.getIssuer() == accountID_)
+                return takerAmount.in;
+            return makeTokenBase(psb, takerAmount.in.asset())
+                ->accountHolds(accountID_, fhZERO_IF_FROZEN, j_);
+        }();
         if (inStartBalance <= beast::zero)
         {
             // The account balance can't cover even part of the offer.
@@ -383,8 +395,12 @@ OfferCreate::flowCross(
         auto afterCross = takerAmount;  // If !tesSUCCESS offer unchanged
         if (isTesSuccess(result.result()))
         {
-            STAmount const takerInBalance =
-                accountFunds(psb, accountID_, takerAmount.in, fhZERO_IF_FROZEN, j_);
+            STAmount const takerInBalance = [&]() -> STAmount {
+                if (!takerAmount.in.native() && takerAmount.in.getIssuer() == accountID_)
+                    return takerAmount.in;
+                return makeTokenBase(psb, takerAmount.in.asset())
+                    ->accountHolds(accountID_, fhZERO_IF_FROZEN, j_);
+            }();
 
             if (takerInBalance <= beast::zero)
             {

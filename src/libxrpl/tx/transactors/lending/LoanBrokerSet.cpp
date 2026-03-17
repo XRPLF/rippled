@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/lending/LoanBrokerSet.h>
 //
+#include <xrpl/ledger/helpersTokenHelpers.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/tx/transactors/lending/LendingHelpers.h>
 
@@ -124,10 +125,11 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
     }
     else
     {
-        if (auto const ter = canAddHolding(ctx.view, asset))
+        if (auto const ter = makeTokenBase(ctx.view, asset)->canAddHolding())
             return ter;
 
-        if (auto const ter = checkFrozen(ctx.view, sleVault->at(sfAccount), sleVault->at(sfAsset)))
+        if (auto const ter = makeTokenBase(ctx.view, sleVault->at(sfAsset))
+                                 ->checkFrozen(sleVault->at(sfAccount)))
         {
             JLOG(ctx.j.warn()) << "Vault pseudo-account is frozen.";
             return ter;
@@ -229,7 +231,8 @@ LoanBrokerSet::doApply()
         auto& pseudo = *maybePseudo;
         auto pseudoId = pseudo->at(sfAccount);
 
-        if (auto ter = addEmptyHolding(view, pseudoId, preFeeBalance_, sleVault->at(sfAsset), j_))
+        if (auto ter = makeWritableTokenBase(view, sleVault->at(sfAsset))
+                           ->addEmptyHolding(pseudoId, preFeeBalance_, j_))
             return ter;
 
         // Initialize data fields:

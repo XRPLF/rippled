@@ -2,6 +2,8 @@
 #include <xrpl/ledger/Dir.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -847,7 +849,8 @@ tokenOfferCreatePreclaim(
             return tecNO_LINE;
         }
 
-        if (isFrozen(view, nftIssuer, amount.getCurrency(), amount.getIssuer()))
+        IOUToken wrapped(view, amount.issue());
+        if (wrapped.isFrozen(nftIssuer))
             return tecFROZEN;
     }
 
@@ -860,7 +863,7 @@ tokenOfferCreatePreclaim(
             return tefNFTOKEN_IS_NOT_TRANSFERABLE;
     }
 
-    if (isFrozen(view, acctID, amount.getCurrency(), amount.getIssuer()))
+    if (IOUToken(view, amount.issue()).isFrozen(acctID))
         return tecFROZEN;
 
     // If this is an offer to buy the token, the account must have the
@@ -870,7 +873,13 @@ tokenOfferCreatePreclaim(
     {
         // We allow an IOU issuer to make a buy offer
         // using their own currency.
-        if (accountFunds(view, acctID, amount, FreezeHandling::fhZERO_IF_FROZEN, j).signum() <= 0)
+        auto const funds = [&]() -> STAmount {
+            if (!amount.native() && amount.getIssuer() == acctID)
+                return amount;
+            return makeTokenBase(view, amount.asset())
+                ->accountHolds(acctID, FreezeHandling::fhZERO_IF_FROZEN, j);
+        }();
+        if (funds.signum() <= 0)
             return tecUNFUNDED_OFFER;
     }
 

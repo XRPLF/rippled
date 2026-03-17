@@ -1,5 +1,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpersRippleStateHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/tx/paths/OfferStream.h>
@@ -78,11 +79,13 @@ accountFundsHelper(
     ReadView const& view,
     AccountID const& id,
     STAmount const& saDefault,
-    Issue const&,
+    Issue const& issue,
     FreezeHandling freezeHandling,
     beast::Journal j)
 {
-    return accountFunds(view, id, saDefault, freezeHandling, j);
+    if (!saDefault.native() && saDefault.getIssuer() == id)
+        return saDefault;
+    return IOUToken(view, issue).accountHolds(id, freezeHandling, j);
 }
 
 static IOUAmount
@@ -99,9 +102,7 @@ accountFundsHelper(
         // self funded
         return amtDefault;
     }
-
-    return toAmount<IOUAmount>(
-        accountHolds(view, id, issue.currency, issue.account, freezeHandling, j));
+    return toAmount<IOUAmount>(IOUToken(view, issue).accountHolds(id, freezeHandling, j));
 }
 
 static XRPAmount
@@ -113,8 +114,7 @@ accountFundsHelper(
     FreezeHandling freezeHandling,
     beast::Journal j)
 {
-    return toAmount<XRPAmount>(
-        accountHolds(view, id, issue.currency, issue.account, freezeHandling, j));
+    return toAmount<XRPAmount>(IOUToken(view, issue).accountHolds(id, freezeHandling, j));
 }
 
 template <class TIn, class TOut>
@@ -238,8 +238,8 @@ TOfferStreamBase<TIn, TOut>::step()
             continue;
         }
 
-        bool const deepFrozen = isDeepFrozen(
-            view_, offer_.owner(), offer_.issueIn().currency, offer_.issueIn().account);
+        IOUToken wrapped(view_, offer_.issueIn());
+        bool const deepFrozen = wrapped.isDeepFrozen(offer_.owner());
         if (deepFrozen)
         {
             JLOG(j_.trace()) << "Removing deep frozen unfunded offer " << entry->key();

@@ -6,6 +6,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/tx/transactors/dex/AMMUtils.h>
@@ -214,13 +215,11 @@ doAMMInfo(RPC::JsonContext& context)
 
     if (!isXRP(asset1Balance))
     {
-        ammResult[jss::asset_frozen] =
-            isFrozen(*ledger, ammAccountID, issue1.currency, issue1.account);
+        ammResult[jss::asset_frozen] = IOUToken(*ledger, issue1).isFrozen(ammAccountID);
     }
     if (!isXRP(asset2Balance))
     {
-        ammResult[jss::asset2_frozen] =
-            isFrozen(*ledger, ammAccountID, issue2.currency, issue2.account);
+        ammResult[jss::asset2_frozen] = IOUToken(*ledger, issue2).isFrozen(ammAccountID);
     }
 
     result[jss::amm] = std::move(ammResult);

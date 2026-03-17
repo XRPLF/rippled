@@ -1,4 +1,6 @@
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpersMPTokenHelpers.h>
+#include <xrpl/ledger/helpersTokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -90,7 +92,7 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
     auto const vaultAsset = ctx.tx[sfAsset];
     auto const account = ctx.tx[sfAccount];
 
-    if (auto const ter = canAddHolding(ctx.view, vaultAsset))
+    if (auto const ter = makeTokenBase(ctx.view, vaultAsset)->canAddHolding())
         return ter;
 
     // Check for pseudo-account issuers - we do not want a vault to hold such
@@ -103,8 +105,11 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
     }
 
     // Cannot create Vault for an Asset frozen for the vault owner
-    if (isFrozen(ctx.view, account, vaultAsset))
-        return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
+    if (auto token = makeTokenBase(ctx.view, vaultAsset))
+    {
+        if (token->isFrozen(account))
+            return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
+    }
 
     if (auto const domain = ctx.tx[~sfDomainID])
     {
@@ -151,7 +156,9 @@ VaultCreate::doApply()
     auto pseudoId = pseudo->at(sfAccount);
     auto asset = tx[sfAsset];
 
-    if (auto ter = addEmptyHolding(view(), pseudoId, preFeeBalance_, asset, j_); !isTesSuccess(ter))
+    if (auto ter =
+            makeWritableTokenBase(view(), asset)->addEmptyHolding(pseudoId, preFeeBalance_, j_);
+        !isTesSuccess(ter))
         return ter;
 
     std::uint8_t const scale = (asset.holds<MPTIssue>() || asset.native())
@@ -213,16 +220,16 @@ VaultCreate::doApply()
     view().insert(vault);
 
     // Explicitly create MPToken for the vault owner
-    if (auto const err =
-            authorizeMPToken(view(), preFeeBalance_, mptIssuanceID, accountID_, ctx_.journal);
+    WritableMPToken mptToken(view(), mptIssuanceID);
+    if (auto const err = mptToken.authorizeMPToken(preFeeBalance_, accountID_, ctx_.journal);
         !isTesSuccess(err))
         return err;
 
     // If the vault is private, set the authorized flag for the vault owner
     if (txFlags & tfVaultPrivate)
     {
-        if (auto const err = authorizeMPToken(
-                view(), preFeeBalance_, mptIssuanceID, pseudoId, ctx_.journal, {}, accountID_);
+        if (auto const err =
+                mptToken.authorizeMPToken(preFeeBalance_, pseudoId, ctx_.journal, {}, accountID_);
             !isTesSuccess(err))
             return err;
     }

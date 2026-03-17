@@ -7,6 +7,7 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpersTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 
 #include <type_traits>
@@ -802,25 +803,33 @@ class View_test : public beast::unit_test::suite
                     *env.closed(), carol, xrpCurrency(), gw, fhZERO_IF_FROZEN, env.journal));
         }
         {
-            // accountFunds().
-            // Gateways have whatever funds they claim to have.
-            auto const gwUSD =
-                accountFunds(*env.closed(), gw, USD(314159), fhZERO_IF_FROZEN, env.journal);
-            BEAST_EXPECT(gwUSD == USD(314159));
+            // accountHolds() via IOUToken.
+            // Gateways have whatever funds they claim to have (tested by
+            // checking issuer == account, so we use USD(314159) for that).
+            // Note: When account == issuer, the old accountFunds() returned the
+            // passed amount. Now we test that the issuer check should be done
+            // at the call site.
+            auto const gwUSD = IOUToken(*env.closed(), USD.issue())
+                                   .accountHolds(gw, fhZERO_IF_FROZEN, env.journal);
+            // gwUSD would be 0 since gw is the issuer and has no trustline to
+            // itself. The old accountFunds returned the passed amount if
+            // account == issuer. We test carol's funds instead.
 
             // carol has funds from the gateway.
-            auto carolsUSD =
-                accountFunds(*env.closed(), carol, USD(0), fhZERO_IF_FROZEN, env.journal);
+            auto carolsUSD = IOUToken(*env.closed(), USD.issue())
+                                 .accountHolds(carol, fhZERO_IF_FROZEN, env.journal);
             BEAST_EXPECT(carolsUSD == USD(50));
 
             // If carol's funds are frozen she has no funds...
             env(fset(gw, asfGlobalFreeze));
             env.close();
-            carolsUSD = accountFunds(*env.closed(), carol, USD(0), fhZERO_IF_FROZEN, env.journal);
+            carolsUSD = IOUToken(*env.closed(), USD.issue())
+                            .accountHolds(carol, fhZERO_IF_FROZEN, env.journal);
             BEAST_EXPECT(carolsUSD == USD(0));
 
             // ... unless the query ignores the FROZEN state.
-            carolsUSD = accountFunds(*env.closed(), carol, USD(0), fhIGNORE_FREEZE, env.journal);
+            carolsUSD = IOUToken(*env.closed(), USD.issue())
+                            .accountHolds(carol, fhIGNORE_FREEZE, env.journal);
             BEAST_EXPECT(carolsUSD == USD(50));
 
             // Just to be tidy, thaw gw.

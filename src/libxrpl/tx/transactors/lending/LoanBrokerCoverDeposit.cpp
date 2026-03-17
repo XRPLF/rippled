@@ -61,17 +61,18 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
         return tecWRONG_ASSET;
 
     auto const pseudoAccountID = sleBroker->at(sfAccount);
+    auto token = makeTokenBase(ctx.view, vaultAsset);
     // Cannot transfer a non-transferable Asset
-    if (auto const ret = canTransfer(ctx.view, vaultAsset, account, pseudoAccountID))
+    if (auto const ret = token->canTransfer(account, pseudoAccountID))
         return ret;
     // Cannot transfer a frozen Asset
-    if (auto const ret = checkFrozen(ctx.view, account, vaultAsset))
+    if (auto const ret = token->checkFrozen(account))
         return ret;
     // Pseudo-account cannot receive if asset is deep frozen
-    if (auto const ret = checkDeepFrozen(ctx.view, pseudoAccountID, vaultAsset))
+    if (auto const ret = token->checkDeepFrozen(pseudoAccountID))
         return ret;
     // Cannot transfer unauthorized asset
-    if (auto const ret = requireAuth(ctx.view, vaultAsset, account, AuthType::StrongAuth))
+    if (auto const ret = token->requireAuth(account, AuthType::StrongAuth))
         return ret;
 
     if (accountHolds(
