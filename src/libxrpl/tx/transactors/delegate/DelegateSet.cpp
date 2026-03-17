@@ -41,6 +41,13 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.exists(keylet::account(ctx.tx[sfAuthorize])))
         return tecNO_TARGET;
 
+    // Deleting the delegate object is invalid if it doesn’t exist.
+    if (ctx.tx.getFieldArray(sfPermissions).empty() &&
+        !ctx.view.exists(keylet::delegate(ctx.tx[sfAccount], ctx.tx[sfAuthorize])))
+    {
+        return tecNO_ENTRY;
+    }
+
     return tesSUCCESS;
 }
 
@@ -67,10 +74,8 @@ DelegateSet::doApply()
         return tesSUCCESS;
     }
 
-    // Deleting the delegate object is invalid if it doesn’t exist.
     auto const& permissions = ctx_.tx.getFieldArray(sfPermissions);
-    if (permissions.empty())
-        return tecNO_ENTRY;
+    XRPL_ASSERT(!permissions.empty(), "xrpl::DelegateSet::doApply : permission list not empty");
 
     STAmount const reserve{
         ctx_.view().fees().accountReserve(sleOwner->getFieldU32(sfOwnerCount) + 1)};
