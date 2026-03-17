@@ -24,6 +24,14 @@ class WrappedSLEBase
 public:
     virtual ~WrappedSLEBase() = default;
 
+    // Explicitly default copy/move operations
+    WrappedSLEBase(WrappedSLEBase const&) = default;
+    WrappedSLEBase(WrappedSLEBase&&) = default;
+    WrappedSLEBase&
+    operator=(WrappedSLEBase const&) = default;
+    WrappedSLEBase&
+    operator=(WrappedSLEBase&&) = default;
+
     /** Returns true if the ledger entry exists */
     bool
     exists() const
@@ -38,11 +46,25 @@ public:
         return exists();
     }
 
-    /** Returns the underlying SLE for raw access when needed */
+    /** Returns the underlying SLE for read access (always available) */
     std::shared_ptr<SLE const> const&
     sle() const
     {
         return sle_;
+    }
+
+    /** Returns a mutable SLE for write operations
+     *
+     * @throws std::logic_error if called in a read-only context
+     */
+    std::shared_ptr<SLE> const&
+    mutableSle() const
+    {
+        if (!mutableSle_)
+        {
+            throw std::logic_error("Cannot modify SLE in read-only context");
+        }
+        return mutableSle_;
     }
 
     /** Returns the read view (always available) */
@@ -73,10 +95,22 @@ public:
         return applyView_;
     }
 
+    STLedgerEntry*
+    operator->()
+    {
+        return mutableSle_.get();
+    }
+
     STLedgerEntry const*
     operator->() const
     {
         return sle_.get();
+    }
+
+    STLedgerEntry&
+    operator*()
+    {
+        return *mutableSle_;
     }
 
     STLedgerEntry const&
@@ -95,15 +129,16 @@ protected:
     }
 
     /** Constructor for read-write context (ApplyView) */
-    explicit WrappedSLEBase(std::shared_ptr<SLE const> sle, ApplyView* view)
-        : sle_(std::move(sle)), readView_(view), applyView_(view)
+    explicit WrappedSLEBase(std::shared_ptr<SLE> sle, ApplyView* view)
+        : sle_(sle), mutableSle_(std::move(sle)), readView_(view), applyView_(view)
     {
         // ApplyView inherits from ReadView, so we can use it for both
     }
 
-    std::shared_ptr<SLE const> sle_;
-    ReadView const* readView_;
-    ApplyView* applyView_;  // nullptr for read-only contexts
+    std::shared_ptr<SLE const> sle_;   // Always valid (const view)
+    std::shared_ptr<SLE> mutableSle_;  // nullptr for read-only contexts
+    ReadView const* readView_;         // Always valid
+    ApplyView* applyView_;             // nullptr for read-only contexts
 };
 
 }  // namespace xrpl

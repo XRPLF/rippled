@@ -51,8 +51,8 @@ deleteSLE(ApplyView& view, std::shared_ptr<SLE> const& sleCredential, beast::Jou
 
     auto delSLE = [&view, &sleCredential, j](
                       AccountID const& account, SField const& node, bool isOwner) -> TER {
-        auto const sleAccount = view.peek(keylet::account(account));
-        if (!sleAccount)
+        WrappedAccountRoot wrappedAccount(account, &view);
+        if (!wrappedAccount)
         {
             // LCOV_EXCL_START
             JLOG(j.fatal()) << "Internal error: can't retrieve Owner account.";
@@ -71,7 +71,7 @@ deleteSLE(ApplyView& view, std::shared_ptr<SLE> const& sleCredential, beast::Jou
         }
 
         if (isOwner)
-            adjustOwnerCount(view, sleAccount, -1, j);
+            wrappedAccount.adjustOwnerCount(-1, j);
 
         return tesSUCCESS;
     };

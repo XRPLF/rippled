@@ -160,13 +160,13 @@ LoanBrokerDelete::doApply()
     view().erase(broker);
 
     {
-        auto owner = view().peek(keylet::account(account_));
-        if (!owner)
+        WrappedAccountRoot wrappedOwner(account_, &view());
+        if (!wrappedOwner)
             return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
         // Decreases the owner count by two: one for the LoanBroker object, and
         // one for the pseudo-account.
-        adjustOwnerCount(view(), owner, -2, j_);
+        wrappedOwner.adjustOwnerCount(-2, j_);
     }
 
     associateAsset(*broker, vaultAsset);

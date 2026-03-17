@@ -38,12 +38,12 @@ DIDDelete::deleteSLE(
         // LCOV_EXCL_STOP
     }
 
-    auto const sleOwner = view.peek(keylet::account(owner));
-    if (!sleOwner)
+    WrappedAccountRoot wrappedOwner(owner, &view);
+    if (!wrappedOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    adjustOwnerCount(view, sleOwner, -1, j);
-    view.update(sleOwner);
+    wrappedOwner.adjustOwnerCount(-1, j);
+    view.update(wrappedOwner.mutableSle());
 
     // Remove object from ledger
     view.erase(sle);

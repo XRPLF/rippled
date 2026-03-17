@@ -186,6 +186,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     // Have to check again in deposit() because
     // amounts might be derived based on tokens or
     // limits.
+    WrappedAccountRoot wrappedAcct(accountID, &ctx.view);
     auto balance = [&](auto const& deposit) -> TER {
         if (isXRP(deposit))
         {
@@ -193,7 +194,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             // Adjust the reserve if LP doesn't have LPToken trustline
             auto const sle =
                 ctx.view.read(keylet::line(accountID, lpIssue.account, lpIssue.currency));
-            if (xrpLiquid(ctx.view, accountID, !sle, ctx.j) >= deposit)
+            if (wrappedAcct.xrpLiquid(!sle, ctx.j) >= deposit)
                 return TER(tesSUCCESS);
             if (sle)
                 return tecUNFUNDED_AMM;
@@ -310,7 +311,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     // We checked above but need to check again if depositing IOU only.
     if (ammLPHolds(ctx.view, *ammSle, accountID, ctx.j) == beast::zero)
     {
-        STAmount const xrpBalance = xrpLiquid(ctx.view, accountID, 1, ctx.j);
+        STAmount const xrpBalance = wrappedAcct.xrpLiquid(1, ctx.j);
         // Insufficient reserve
         if (xrpBalance <= beast::zero)
         {
@@ -455,6 +456,7 @@ AMMDeposit::deposit(
 {
     // Check account has sufficient funds.
     // Return true if it does, false otherwise.
+    WrappedAccountRoot wrappedAcct(account_, &view);
     auto checkBalance = [&](auto const& depositAmount) -> TER {
         if (depositAmount <= beast::zero)
             return temBAD_AMOUNT;
@@ -463,7 +465,7 @@ AMMDeposit::deposit(
             auto const& lpIssue = lpTokensDeposit.issue();
             // Adjust the reserve if LP doesn't have LPToken trustline
             auto const sle = view.read(keylet::line(account_, lpIssue.account, lpIssue.currency));
-            if (xrpLiquid(view, account_, !sle, j_) >= depositAmount)
+            if (wrappedAcct.xrpLiquid(!sle, j_) >= depositAmount)
                 return tesSUCCESS;
         }
         else if (

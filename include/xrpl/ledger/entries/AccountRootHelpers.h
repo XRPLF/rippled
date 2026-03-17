@@ -22,20 +22,34 @@ protected:
     AccountID const id_;
 
 public:
-    WrappedAccountRoot() = default;
+    WrappedAccountRoot(AccountID const& id, ReadView const* view)
+        : WrappedSLEBase(view->read(keylet::account(id)), view), id_(sle_ ? (*sle_)[sfAccount] : id)
+    {
+    }
+
+    WrappedAccountRoot(AccountID const& id, ApplyView* view)
+        : WrappedSLEBase(view->peek(keylet::account(id)), view), id_(sle_ ? (*sle_)[sfAccount] : id)
+    {
+    }
+
+    AccountID const&
+    id() const
+    {
+        return id_;
+    }
 
     /** Check if the issuer has the global freeze flag set.
         @return true if the account has global freeze set
     */
     [[nodiscard]] bool
-    isGlobalFrozen();
+    isGlobalFrozen() const;
 
     /** Returns IOU issuer transfer fee as Rate. Rate specifies
      * the fee as fractions of 1 billion. For example, 1% transfer rate
      * is represented as 1,010,000,000.
      */
     [[nodiscard]] Rate
-    transferRate();
+    transferRate() const;
 
     // Calculate liquid XRP balance for an account.
     // This function may be used to calculate the amount of XRP that
@@ -59,7 +73,7 @@ public:
        - If the SLE requires a destination tag, checks that there is a tag.
     */
     [[nodiscard]] TER
-    checkDestinationAndTag(SLE::const_ref toSle, bool hasDestinationTag);
+    checkDestinationAndTag(bool hasDestinationTag) const;
 };
 
 /** Generate a pseudo-account address from a pseudo owner key.

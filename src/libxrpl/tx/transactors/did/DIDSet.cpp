@@ -50,14 +50,14 @@ DIDSet::preflight(PreflightContext const& ctx)
 static TER
 addSLE(ApplyContext& ctx, std::shared_ptr<SLE> const& sle, AccountID const& owner)
 {
-    auto const sleAccount = ctx.view().peek(keylet::account(owner));
-    if (!sleAccount)
+    WrappedAccountRoot wrappedAcct(owner, &ctx.view());
+    if (!wrappedAcct)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Check reserve availability for new object creation
     {
-        auto const balance = STAmount((*sleAccount)[sfBalance]).xrp();
-        auto const reserve = ctx.view().fees().accountReserve((*sleAccount)[sfOwnerCount] + 1);
+        auto const balance = STAmount((*wrappedAcct)[sfBalance]).xrp();
+        auto const reserve = ctx.view().fees().accountReserve((*wrappedAcct)[sfOwnerCount] + 1);
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -74,8 +74,8 @@ addSLE(ApplyContext& ctx, std::shared_ptr<SLE> const& sle, AccountID const& owne
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*sle)[sfOwnerNode] = *page;
     }
-    adjustOwnerCount(ctx.view(), sleAccount, 1, ctx.journal);
-    ctx.view().update(sleAccount);
+    wrappedAcct.adjustOwnerCount(1, ctx.journal);
+    ctx.view().update(wrappedAcct.mutableSle());
 
     return tesSUCCESS;
 }

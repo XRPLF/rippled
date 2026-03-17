@@ -12,7 +12,7 @@
 namespace xrpl {
 
 bool
-WrappedAccountRoot::isGlobalFrozen()
+WrappedAccountRoot::isGlobalFrozen() const
 {
     if (isXRP(id_))
         return false;
@@ -66,19 +66,19 @@ WrappedAccountRoot::xrpLiquid(std::int32_t ownerCountAdj, beast::Journal j)
 {
     // Return balance minus reserve
     std::uint32_t const ownerCount = confineOwnerCount(
-        readView_.ownerCountHook(id, sle_->getFieldU32(sfOwnerCount)), ownerCountAdj);
+        readView_->ownerCountHook(id_, sle_->getFieldU32(sfOwnerCount)), ownerCountAdj);
 
     // Pseudo-accounts have no reserve requirement
     auto const reserve =
-        isPseudoAccount(sle_) ? XRPAmount{0} : readView_.fees().accountReserve(ownerCount);
+        isPseudoAccount(sle_) ? XRPAmount{0} : readView_->fees().accountReserve(ownerCount);
 
     auto const fullBalance = sle_->getFieldAmount(sfBalance);
 
-    auto const balance = readView_.balanceHook(id, xrpAccount(), fullBalance);
+    auto const balance = readView_->balanceHook(id_, xrpAccount(), fullBalance);
 
     STAmount const amount = (balance < reserve) ? STAmount{0} : balance - reserve;
 
-    JLOG(j.trace()) << "accountHolds:" << " account=" << to_string(id)
+    JLOG(j.trace()) << "accountHolds:" << " account=" << to_string(id_)
                     << " amount=" << amount.getFullText()
                     << " fullBalance=" << fullBalance.getFullText()
                     << " balance=" << balance.getFullText() << " reserve=" << reserve
@@ -88,7 +88,7 @@ WrappedAccountRoot::xrpLiquid(std::int32_t ownerCountAdj, beast::Journal j)
 }
 
 Rate
-WrappedAccountRoot::transferRate()
+WrappedAccountRoot::transferRate() const
 {
     if (sle_ && sle_->isFieldPresent(sfTransferRate))
         return Rate{sle_->getFieldU32(sfTransferRate)};
@@ -99,15 +99,16 @@ WrappedAccountRoot::transferRate()
 void
 WrappedAccountRoot::adjustOwnerCount(std::int32_t amount, beast::Journal j)
 {
-    if (!sle)
+    if (!sle_)
         return;
     XRPL_ASSERT(amount, "xrpl::adjustOwnerCount : nonzero amount input");
     std::uint32_t const current{sle_->getFieldU32(sfOwnerCount)};
     AccountID const id = (*sle_)[sfAccount];
     std::uint32_t const adjusted = confineOwnerCount(current, amount, id, j);
-    view.adjustOwnerCountHook(id, current, adjusted);
-    sle_->at(sfOwnerCount) = adjusted;
-    view.update(sle_);
+    applyView_->adjustOwnerCountHook(id_, current, adjusted);
+    auto mutable_sle = mutableSle();
+    mutable_sle->at(sfOwnerCount) = adjusted;
+    applyView_->update(mutable_sle);
 }
 
 AccountID
@@ -219,7 +220,7 @@ createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const
 }
 
 [[nodiscard]] TER
-WrappedAccountRoot::checkDestinationAndTag(bool hasDestinationTag)
+WrappedAccountRoot::checkDestinationAndTag(bool hasDestinationTag) const
 {
     if (sle_ == nullptr)
         return tecNO_DST;

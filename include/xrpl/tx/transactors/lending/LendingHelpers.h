@@ -475,4 +475,15 @@ loanMakePayment(
     LoanPaymentType const paymentType,
     beast::Journal j);
 
+// LoanBroker-specific `adjustOwnerCount` function (temporary, while the Wrapped classes are WIP)
+// Assert will check the type, so that we ensure it's not used by anything else
+// Order of parameters is different from the old `adjustOwnerCount` function to avoid anything
+// accidentally calling this with the wrong type.
+void
+adjustOwnerCount(
+    std::shared_ptr<SLE> const& sle,
+    ApplyView& view,
+    std::int32_t amount,
+    beast::Journal j);
+
 }  // namespace xrpl

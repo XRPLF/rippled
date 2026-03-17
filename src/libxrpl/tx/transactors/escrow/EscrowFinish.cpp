@@ -370,9 +370,9 @@ EscrowFinish::doApply()
     ctx_.view().update(sled);
 
     // Adjust source owner count
-    auto const sle = ctx_.view().peek(keylet::account(account));
-    adjustOwnerCount(ctx_.view(), sle, -1, ctx_.journal);
-    ctx_.view().update(sle);
+    WrappedAccountRoot wrappedAcct(account, &ctx_.view());
+    wrappedAcct.adjustOwnerCount(-1, ctx_.journal);
+    ctx_.view().update(wrappedAcct.mutableSle());
 
     // Remove escrow from ledger
     ctx_.view().erase(slep);

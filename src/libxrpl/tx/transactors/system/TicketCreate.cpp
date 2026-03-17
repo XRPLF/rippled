@@ -53,8 +53,8 @@ TicketCreate::preclaim(PreclaimContext const& ctx)
 TER
 TicketCreate::doApply()
 {
-    SLE::pointer const sleAccountRoot = view().peek(keylet::account(account_));
-    if (!sleAccountRoot)
+    WrappedAccountRoot wrappedOwner(account_, &view());
+    if (!wrappedOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Each ticket counts against the reserve of the issuing account, but we
@@ -63,7 +63,7 @@ TicketCreate::doApply()
     std::uint32_t const ticketCount = ctx_.tx[sfTicketCount];
     {
         XRPAmount const reserve =
-            view().fees().accountReserve(sleAccountRoot->getFieldU32(sfOwnerCount) + ticketCount);
+            view().fees().accountReserve(wrappedOwner->getFieldU32(sfOwnerCount) + ticketCount);
 
         if (preFeeBalance_ < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -75,7 +75,7 @@ TicketCreate::doApply()
     // root sequence.  Before we got here to doApply(), the transaction
     // machinery already incremented the account root sequence if that
     // was appropriate.
-    std::uint32_t const firstTicketSeq = (*sleAccountRoot)[sfSequence];
+    std::uint32_t const firstTicketSeq = (*wrappedOwner)[sfSequence];
 
     // Sanity check that the transaction machinery really did already
     // increment the account root Sequence.
@@ -106,16 +106,16 @@ TicketCreate::doApply()
     }
 
     // Update the record of the number of Tickets this account owns.
-    std::uint32_t const oldTicketCount = (*(sleAccountRoot))[~sfTicketCount].value_or(0u);
+    std::uint32_t const oldTicketCount = (*(wrappedOwner))[~sfTicketCount].value_or(0u);
 
-    sleAccountRoot->setFieldU32(sfTicketCount, oldTicketCount + ticketCount);
+    wrappedOwner->setFieldU32(sfTicketCount, oldTicketCount + ticketCount);
 
     // Every added Ticket counts against the creator's reserve.
-    adjustOwnerCount(view(), sleAccountRoot, ticketCount, viewJ);
+    wrappedOwner.adjustOwnerCount(ticketCount, viewJ);
 
     // TicketCreate is the only transaction that can cause an account root's
     // Sequence field to increase by more than one.  October 2018.
-    sleAccountRoot->setFieldU32(sfSequence, firstTicketSeq + ticketCount);
+    wrappedOwner->setFieldU32(sfSequence, firstTicketSeq + ticketCount);
 
     return tesSUCCESS;
 }

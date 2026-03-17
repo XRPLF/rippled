@@ -137,8 +137,8 @@ authorizeMPToken(
     std::uint32_t flags,
     std::optional<AccountID> holderID)
 {
-    auto const sleAcct = view.peek(keylet::account(account));
-    if (!sleAcct)
+    WrappedAccountRoot wrappedAcct(account, &view);
+    if (!wrappedAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // If the account that submitted the tx is a holder
@@ -160,7 +160,7 @@ authorizeMPToken(
                     keylet::ownerDir(account), (*sleMpt)[sfOwnerNode], sleMpt->key(), false))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
-            adjustOwnerCount(view, sleAcct, -1, journal);
+            wrappedAcct.adjustOwnerCount(-1, journal);
 
             view.erase(sleMpt);
             return tesSUCCESS;
@@ -175,7 +175,7 @@ authorizeMPToken(
         // an account owns, in the case of MPTokens we only
         // *enforce* a reserve if the user owns more than two
         // items. This is similar to the reserve requirements of trust lines.
-        std::uint32_t const uOwnerCount = sleAcct->getFieldU32(sfOwnerCount);
+        std::uint32_t const uOwnerCount = wrappedAcct->getFieldU32(sfOwnerCount);
         XRPAmount const reserveCreate(
             (uOwnerCount < 2) ? XRPAmount(beast::zero)
                               : view.fees().accountReserve(uOwnerCount + 1));
@@ -205,7 +205,7 @@ authorizeMPToken(
         view.insert(mptoken);
 
         // Update owner count.
-        adjustOwnerCount(view, sleAcct, 1, journal);
+        wrappedAcct.adjustOwnerCount(1, journal);
 
         return tesSUCCESS;
     }

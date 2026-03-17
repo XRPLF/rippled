@@ -136,8 +136,8 @@ DepositPreauth::doApply()
 {
     if (ctx_.tx.isFieldPresent(sfAuthorize))
     {
-        auto const sleOwner = view().peek(keylet::account(account_));
-        if (!sleOwner)
+        WrappedAccountRoot wrappedOwner(account_, &view());
+        if (!wrappedOwner)
             return {tefINTERNAL};
 
         // A preauth counts against the reserve of the issuing account, but we
@@ -145,7 +145,7 @@ DepositPreauth::doApply()
         // reserve to pay fees.
         {
             STAmount const reserve{
-                view().fees().accountReserve(sleOwner->getFieldU32(sfOwnerCount) + 1)};
+                view().fees().accountReserve(wrappedOwner->getFieldU32(sfOwnerCount) + 1)};
 
             if (preFeeBalance_ < reserve)
                 return tecINSUFFICIENT_RESERVE;
@@ -173,7 +173,7 @@ DepositPreauth::doApply()
         slePreauth->setFieldU64(sfOwnerNode, *page);
 
         // If we succeeded, the new entry counts against the creator's reserve.
-        adjustOwnerCount(view(), sleOwner, 1, j_);
+        wrappedOwner.adjustOwnerCount(1, j_);
     }
     else if (ctx_.tx.isFieldPresent(sfUnauthorize))
     {
@@ -183,8 +183,8 @@ DepositPreauth::doApply()
     }
     else if (ctx_.tx.isFieldPresent(sfAuthorizeCredentials))
     {
-        auto const sleOwner = view().peek(keylet::account(account_));
-        if (!sleOwner)
+        WrappedAccountRoot wrappedOwner(account_, &view());
+        if (!wrappedOwner)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
         // A preauth counts against the reserve of the issuing account, but we
@@ -192,7 +192,7 @@ DepositPreauth::doApply()
         // reserve to pay fees.
         {
             STAmount const reserve{
-                view().fees().accountReserve(sleOwner->getFieldU32(sfOwnerCount) + 1)};
+                view().fees().accountReserve(wrappedOwner->getFieldU32(sfOwnerCount) + 1)};
 
             if (preFeeBalance_ < reserve)
                 return tecINSUFFICIENT_RESERVE;
@@ -234,7 +234,7 @@ DepositPreauth::doApply()
         slePreauth->setFieldU64(sfOwnerNode, *page);
 
         // If we succeeded, the new entry counts against the creator's reserve.
-        adjustOwnerCount(view(), sleOwner, 1, j_);
+        wrappedOwner.adjustOwnerCount(1, j_);
     }
     else if (ctx_.tx.isFieldPresent(sfUnauthorizeCredentials))
     {
@@ -268,11 +268,11 @@ DepositPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, b
     }
 
     // If we succeeded, update the DepositPreauth owner's reserve.
-    auto const sleOwner = view.peek(keylet::account(account));
-    if (!sleOwner)
+    WrappedAccountRoot wrappedOwner(account, &view);
+    if (!wrappedOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    adjustOwnerCount(view, sleOwner, -1, j);
+    wrappedOwner.adjustOwnerCount(-1, j);
 
     // Remove DepositPreauth from ledger.
     view.erase(slePreauth);

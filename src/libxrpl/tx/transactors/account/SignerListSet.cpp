@@ -160,11 +160,11 @@ static TER
 removeSignersFromLedger(
     ServiceRegistry& registry,
     ApplyView& view,
-    Keylet const& accountKeylet,
-    Keylet const& ownerDirKeylet,
-    Keylet const& signerListKeylet,
+    AccountID const& account,
     beast::Journal j)
 {
+    auto const ownerDirKeylet = keylet::ownerDir(account);
+    auto const signerListKeylet = keylet::signers(account);
     // We have to examine the current SignerList so we know how much to
     // reduce the OwnerCount.
     SLE::pointer signers = view.peek(signerListKeylet);
@@ -195,8 +195,8 @@ removeSignersFromLedger(
         // LCOV_EXCL_STOP
     }
 
-    adjustOwnerCount(
-        view, view.peek(accountKeylet), removeFromOwnerCount, registry.journal("View"));
+    WrappedAccountRoot wrappedAcct(account, &view);
+    wrappedAcct.adjustOwnerCount(removeFromOwnerCount, registry.journal("View"));
 
     view.erase(signers);
 
@@ -210,12 +210,7 @@ SignerListSet::removeFromLedger(
     AccountID const& account,
     beast::Journal j)
 {
-    auto const accountKeylet = keylet::account(account);
-    auto const ownerDirKeylet = keylet::ownerDir(account);
-    auto const signerListKeylet = keylet::signers(account);
-
-    return removeSignersFromLedger(
-        registry, view, accountKeylet, ownerDirKeylet, signerListKeylet, j);
+    return removeSignersFromLedger(registry, view, account, j);
 }
 
 NotTEC
@@ -280,23 +275,18 @@ SignerListSet::validateQuorumAndSignerEntries(
 TER
 SignerListSet::replaceSignerList()
 {
-    auto const accountKeylet = keylet::account(account_);
-    auto const ownerDirKeylet = keylet::ownerDir(account_);
-    auto const signerListKeylet = keylet::signers(account_);
-
     // This may be either a create or a replace.  Preemptively remove any
     // old signer list.  May reduce the reserve, so this is done before
     // checking the reserve.
-    if (TER const ter = removeSignersFromLedger(
-            ctx_.registry, view(), accountKeylet, ownerDirKeylet, signerListKeylet, j_))
+    if (TER const ter = removeSignersFromLedger(ctx_.registry, view(), account_, j_))
         return ter;
 
-    auto const sle = view().peek(accountKeylet);
-    if (!sle)
+    WrappedAccountRoot wrappedAcct(account_, &view());
+    if (!wrappedAcct)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Compute new reserve.  Verify the account has funds to meet the reserve.
-    std::uint32_t const oldOwnerCount{(*sle)[sfOwnerCount]};
+    std::uint32_t const oldOwnerCount{(*wrappedAcct)[sfOwnerCount]};
 
     constexpr int addedOwnerCount = 1;
     std::uint32_t flags{lsfOneOwnerCount};
@@ -310,6 +300,8 @@ SignerListSet::replaceSignerList()
         return tecINSUFFICIENT_RESERVE;
 
     // Everything's ducky.  Add the ltSIGNER_LIST to the ledger.
+    Keylet const ownerDirKeylet = keylet::ownerDir(account_);
+    Keylet const signerListKeylet = keylet::signers(account_);
     auto signerList = std::make_shared<SLE>(signerListKeylet);
     view().insert(signerList);
     writeSignersToSLE(signerList, flags);
@@ -329,27 +321,23 @@ SignerListSet::replaceSignerList()
 
     // If we succeeded, the new entry counts against the
     // creator's reserve.
-    adjustOwnerCount(view(), sle, addedOwnerCount, viewJ);
+    wrappedAcct.adjustOwnerCount(addedOwnerCount, viewJ);
     return tesSUCCESS;
 }
 
 TER
 SignerListSet::destroySignerList()
 {
-    auto const accountKeylet = keylet::account(account_);
     // Destroying the signer list is only allowed if either the master key
     // is enabled or there is a regular key.
-    SLE::pointer ledgerEntry = view().peek(accountKeylet);
-    if (!ledgerEntry)
+    WrappedAccountRoot wrappedAcct(account_, &view());
+    if (!wrappedAcct)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    if ((ledgerEntry->isFlag(lsfDisableMaster)) && (!ledgerEntry->isFieldPresent(sfRegularKey)))
+    if ((wrappedAcct->isFlag(lsfDisableMaster)) && (!wrappedAcct->isFieldPresent(sfRegularKey)))
         return tecNO_ALTERNATIVE_KEY;
 
-    auto const ownerDirKeylet = keylet::ownerDir(account_);
-    auto const signerListKeylet = keylet::signers(account_);
-    return removeSignersFromLedger(
-        ctx_.registry, view(), accountKeylet, ownerDirKeylet, signerListKeylet, j_);
+    return removeSignersFromLedger(ctx_.registry, view(), account_, j_);
 }
 
 void

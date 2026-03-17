@@ -88,7 +88,7 @@ VaultDelete::doApply()
         return ter;
 
     auto const& pseudoID = vault->at(sfAccount);
-    auto const pseudoAcct = view().peek(keylet::account(pseudoID));
+    WrappedAccountRoot pseudoAcct(pseudoID, &view());
     if (!pseudoAcct)
     {
         // LCOV_EXCL_START
@@ -133,7 +133,7 @@ VaultDelete::doApply()
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
-    adjustOwnerCount(view(), pseudoAcct, -1, j_);
+    pseudoAcct.adjustOwnerCount(-1, j_);
 
     view().erase(mpt);
 
@@ -182,7 +182,7 @@ VaultDelete::doApply()
         // LCOV_EXCL_STOP
     }
 
-    auto const owner = view().peek(keylet::account(ownerID));
+    WrappedAccountRoot owner(ownerID, &view());
     if (!owner)
     {
         // LCOV_EXCL_START
@@ -192,7 +192,7 @@ VaultDelete::doApply()
     }
 
     // We are destroying Vault and PseudoAccount, hence decrease by 2
-    adjustOwnerCount(view(), owner, -2, j_);
+    owner.adjustOwnerCount(-2, j_);
 
     // Destroy the vault.
     view().erase(vault);
