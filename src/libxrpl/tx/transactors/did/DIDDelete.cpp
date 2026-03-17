@@ -33,7 +33,7 @@ DIDDelete::deleteSLE(
     if (!view.dirRemove(keylet::ownerDir(owner), (*sle)[sfOwnerNode], sle->key(), true))
     {
         // LCOV_EXCL_START
-        JLOG(j.fatal()) << "Unable to delete DID Token from owner.";
+        JLOG(j.fatal()) << "Unable to delete DID from owner.";
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }

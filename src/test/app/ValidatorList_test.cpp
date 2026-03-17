@@ -56,9 +56,11 @@ private:
         if (seq != std::numeric_limits<std::uint32_t>::max())
         {
             st[sfSigningPubKey] = spk;
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             sign(st, HashPrefix::manifest, *publicKeyType(spk), ssk);
         }
 
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         sign(st, HashPrefix::manifest, *publicKeyType(pk), sk, sfMasterSignature);
 
         Serializer s;
@@ -74,6 +76,7 @@ private:
         st[sfSequence] = std::numeric_limits<std::uint32_t>::max();
         st[sfPublicKey] = pk;
 
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         sign(st, HashPrefix::manifest, *publicKeyType(pk), sk, sfMasterSignature);
 
         Serializer s;
@@ -242,6 +245,7 @@ private:
                 trustedKeys->load(localSigningPublicOuter, emptyCfgKeys, emptyCfgPublishers));
             BEAST_EXPECT(trustedKeys->listed(localSigningPublicOuter));
 
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             manifests.applyManifest(*deserializeManifest(cfgManifest));
             BEAST_EXPECT(
                 trustedKeys->load(localSigningPublicOuter, emptyCfgKeys, emptyCfgPublishers));
@@ -298,8 +302,8 @@ private:
                 parseBase58<PublicKey>(TokenType::NodePublic, cfgKeys.front());
 
             BEAST_EXPECT(trustedKeys->load(localSigningPublic, cfgKeys, emptyCfgPublishers));
-
             BEAST_EXPECT(trustedKeys->localPublicKey() == localSigningPublic);
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(trustedKeys->listed(*localSigningPublic));
             for (auto const& n : configList)
                 BEAST_EXPECT(trustedKeys->listed(n));
@@ -332,6 +336,7 @@ private:
                 app.config().legacy("database_path"),
                 env.journal);
 
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             manifests.applyManifest(*deserializeManifest(cfgManifest));
 
             BEAST_EXPECT(trustedKeys->load(localSigningPublicOuter, cfgKeys, emptyCfgPublishers));
@@ -414,6 +419,7 @@ private:
             auto const pubRevokedSigning = randomKeyPair(KeyType::secp256k1);
             // make this manifest revoked (seq num = max)
             //  -- thus should not be loaded
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             pubManifests.applyManifest(*deserializeManifest(makeManifestString(
                 pubRevokedPublic,
                 pubRevokedSecret,
@@ -452,6 +458,7 @@ private:
             auto const pubRevokedSigning = randomKeyPair(KeyType::secp256k1);
             // make this manifest revoked (seq num = max)
             //  -- thus should not be loaded
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             pubManifests.applyManifest(*deserializeManifest(makeManifestString(
                 pubRevokedPublic,
                 pubRevokedSecret,
@@ -950,6 +957,7 @@ private:
             auto const available = trustedKeys->getAvailable(hexPublic, 0);
             if (BEAST_EXPECT(available))
             {
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 auto const& a = *available;
                 BEAST_EXPECT(!a);
             }
@@ -959,6 +967,7 @@ private:
             auto const available = trustedKeys->getAvailable(hexPublic, 3);
             if (BEAST_EXPECT(available))
             {
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 auto const& a = *available;
                 BEAST_EXPECT(!a);
             }
@@ -968,6 +977,7 @@ private:
             auto const available = trustedKeys->getAvailable(hexPublic, 1);
             if (BEAST_EXPECT(available))
             {
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 auto const& a = *available;
                 BEAST_EXPECT(a[jss::public_key] == hexPublic);
                 BEAST_EXPECT(a[jss::manifest] == manifest);
@@ -984,6 +994,7 @@ private:
             auto const available = trustedKeys->getAvailable(hexPublic, 2);
             if (BEAST_EXPECT(available))
             {
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 auto const& a = *available;
                 BEAST_EXPECT(a[jss::public_key] == hexPublic);
                 BEAST_EXPECT(a[jss::manifest] == manifest);
@@ -1110,6 +1121,7 @@ private:
                 masterPublic, masterPrivate, signingPublic1, signingKeys1.second, 1));
 
             BEAST_EXPECT(
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 manifestsOuter.applyManifest(std::move(*m1)) == ManifestDisposition::accepted);
             BEAST_EXPECT(trustedKeysOuter->listed(masterPublic));
             BEAST_EXPECT(trustedKeysOuter->trusted(masterPublic));
@@ -1123,6 +1135,7 @@ private:
             auto m2 = deserializeManifest(makeManifestString(
                 masterPublic, masterPrivate, signingPublic2, signingKeys2.second, 2));
             BEAST_EXPECT(
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 manifestsOuter.applyManifest(std::move(*m2)) == ManifestDisposition::accepted);
             BEAST_EXPECT(trustedKeysOuter->listed(masterPublic));
             BEAST_EXPECT(trustedKeysOuter->trusted(masterPublic));
@@ -1137,9 +1150,12 @@ private:
             activeValidatorsOuter.emplace(calcNodeID(signingPublicMax));
             auto mMax = deserializeManifest(makeRevocationString(masterPublic, masterPrivate));
 
+            // NOLINTBEGIN(bugprone-unchecked-optional-access)
             BEAST_EXPECT(mMax->revoked());
             BEAST_EXPECT(
                 manifestsOuter.applyManifest(std::move(*mMax)) == ManifestDisposition::accepted);
+            // NOLINTEND(bugprone-unchecked-optional-access)
+
             BEAST_EXPECT(manifestsOuter.getSigningKey(masterPublic) == masterPublic);
             BEAST_EXPECT(manifestsOuter.revoked(masterPublic));
 
@@ -2355,12 +2371,14 @@ private:
             if (BEAST_EXPECT(msg))
             {
                 BEAST_EXPECT(msg->version() == 1);
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 BEAST_EXPECT(msg->manifest() == *expected.manifest);
                 BEAST_EXPECT(msg->blob() == expected.blob);
                 BEAST_EXPECT(msg->signature() == expected.signature);
             }
             BEAST_EXPECT(
                 messageWithHash.hash ==
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 sha512Half(*expected.manifest, expected.blob, expected.signature, 1));
         }
 

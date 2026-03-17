@@ -544,16 +544,16 @@ Payment::doApply()
     // This is the total reserve in drops.
     auto const reserve = view().fees().accountReserve(ownerCount);
 
-    // mPriorBalance is the balance on the sending account BEFORE the
+    // preFeeBalance_ is the balance on the sending account BEFORE the
     // fees were charged. We want to make sure we have enough reserve
     // to send. Allow final spend to use reserve for fee.
     auto const mmm = std::max(reserve, ctx_.tx.getFieldAmount(sfFee).xrp());
 
-    if (mPriorBalance < dstAmount.xrp() + mmm)
+    if (preFeeBalance_ < dstAmount.xrp() + mmm)
     {
         // Vote no. However the transaction might succeed, if applied in
         // a different order.
-        JLOG(j_.trace()) << "Delay transaction: Insufficient funds: " << to_string(mPriorBalance)
+        JLOG(j_.trace()) << "Delay transaction: Insufficient funds: " << to_string(preFeeBalance_)
                          << " / " << to_string(dstAmount.xrp() + mmm) << " (" << to_string(reserve)
                          << ")";
 
@@ -601,7 +601,7 @@ Payment::doApply()
     }
 
     // Do the arithmetic for the transfer and make the ledger change.
-    sleSrc->setFieldAmount(sfBalance, mSourceBalance - dstAmount);
+    sleSrc->setFieldAmount(sfBalance, sleSrc->getFieldAmount(sfBalance) - dstAmount);
     sleDst->setFieldAmount(sfBalance, sleDst->getFieldAmount(sfBalance) + dstAmount);
 
     // Re-arm the password change fee if we can and need to.

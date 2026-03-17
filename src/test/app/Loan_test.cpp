@@ -1127,7 +1127,7 @@ protected:
 
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
-        if (!BEAST_EXPECT(loanResult))
+        if (BEAST_EXPECT(loanResult); !loanResult.has_value())
             return;
 
         auto broker = std::get<BrokerInfo>(*loanResult);
@@ -5336,7 +5336,7 @@ protected:
         auto const loanSetFee = fee(env.current()->fees().base * 2);
 
         auto const brokerPreLoan = env.le(keylet::loanbroker(broker.brokerID));
-        if (!BEAST_EXPECT(brokerPreLoan))
+        if (BEAST_EXPECT(brokerPreLoan); !brokerPreLoan.has_value())
             return;
 
         auto const loanSequence = brokerPreLoan->at(sfLoanSequence);
@@ -5933,7 +5933,7 @@ protected:
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
 
-        if (!BEAST_EXPECT(loanResult))
+        if (BEAST_EXPECT(loanResult); !loanResult.has_value())
             return;
 
         auto broker = std::get<BrokerInfo>(*loanResult);
@@ -6004,7 +6004,7 @@ protected:
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
 
-        if (!BEAST_EXPECT(loanResult))
+        if (BEAST_EXPECT(loanResult); !loanResult.has_value())
             return;
 
         auto broker = std::get<BrokerInfo>(*loanResult);
@@ -6210,7 +6210,7 @@ protected:
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
 
-        if (!BEAST_EXPECT(loanResult))
+        if (BEAST_EXPECT(loanResult); !loanResult.has_value())
             return;
 
         auto broker = std::get<BrokerInfo>(*loanResult);
@@ -6370,7 +6370,7 @@ protected:
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, issuer);
 
-        if (!BEAST_EXPECT(loanResult))
+        if (BEAST_EXPECT(loanResult); !loanResult.has_value())
             return;
 
         auto broker = std::get<BrokerInfo>(*loanResult);
@@ -6426,7 +6426,7 @@ protected:
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
 
-        if (!BEAST_EXPECT(loanResult))
+        if (BEAST_EXPECT(loanResult); !loanResult.has_value())
             return;
 
         auto broker = std::get<BrokerInfo>(*loanResult);

@@ -293,7 +293,7 @@ NFTokenMint::doApply()
                 ctx_.tx[~sfExpiration],
                 ctx_.tx.getSeqProxy(),
                 nftokenID,
-                mPriorBalance,
+                preFeeBalance_,
                 j_);
             !isTesSuccess(ter))
             return ter;
@@ -308,7 +308,7 @@ NFTokenMint::doApply()
         ownerCountAfter > ownerCountBefore)
     {
         if (auto const reserve = view().fees().accountReserve(ownerCountAfter);
-            mPriorBalance < reserve)
+            preFeeBalance_ < reserve)
             return tecINSUFFICIENT_RESERVE;
     }
     return tesSUCCESS;

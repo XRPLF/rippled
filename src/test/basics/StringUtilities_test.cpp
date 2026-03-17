@@ -13,6 +13,8 @@ public:
     {
         auto rv = strUnHex(strIn);
         BEAST_EXPECT(rv);
+
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         BEAST_EXPECT(makeSlice(*rv) == makeSlice(strExpected));
     }
 
@@ -92,7 +94,7 @@ public:
             BEAST_EXPECT(pUrl.username.empty());
             BEAST_EXPECT(pUrl.password.empty());
             BEAST_EXPECT(pUrl.domain == "domain");
-            BEAST_EXPECT(*pUrl.port == 234);
+            BEAST_EXPECT(*pUrl.port == 234);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(pUrl.path == "/");
         }
 
@@ -114,7 +116,7 @@ public:
             BEAST_EXPECT(pUrl.username.empty());
             BEAST_EXPECT(pUrl.password.empty());
             BEAST_EXPECT(pUrl.domain == "::1");
-            BEAST_EXPECT(*pUrl.port == 123);
+            BEAST_EXPECT(*pUrl.port == 123);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(pUrl.path == "/path");
         }
 
@@ -125,7 +127,7 @@ public:
             BEAST_EXPECT(pUrl.username == "user");
             BEAST_EXPECT(pUrl.password == "pass");
             BEAST_EXPECT(pUrl.domain == "domain");
-            BEAST_EXPECT(*pUrl.port == 123);
+            BEAST_EXPECT(*pUrl.port == 123);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(pUrl.path == "/abc:321");
         }
 
@@ -136,7 +138,7 @@ public:
             BEAST_EXPECT(pUrl.username == "user");
             BEAST_EXPECT(pUrl.password.empty());
             BEAST_EXPECT(pUrl.domain == "domain");
-            BEAST_EXPECT(*pUrl.port == 123);
+            BEAST_EXPECT(*pUrl.port == 123);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(pUrl.path == "/abc:321");
         }
 
@@ -147,7 +149,7 @@ public:
             BEAST_EXPECT(pUrl.username.empty());
             BEAST_EXPECT(pUrl.password == "pass");
             BEAST_EXPECT(pUrl.domain == "domain");
-            BEAST_EXPECT(*pUrl.port == 123);
+            BEAST_EXPECT(*pUrl.port == 123);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(pUrl.path == "/abc:321");
         }
 
@@ -158,7 +160,7 @@ public:
             BEAST_EXPECT(pUrl.username.empty());
             BEAST_EXPECT(pUrl.password.empty());
             BEAST_EXPECT(pUrl.domain == "domain");
-            BEAST_EXPECT(*pUrl.port == 123);
+            BEAST_EXPECT(*pUrl.port == 123);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(pUrl.path == "/abc:321");
         }
 

@@ -117,7 +117,7 @@ CredentialCreate::doApply()
     {
         STAmount const reserve{
             view().fees().accountReserve(sleIssuer->getFieldU32(sfOwnerCount) + 1)};
-        if (mPriorBalance < reserve)
+        if (preFeeBalance_ < reserve)
             return tecINSUFFICIENT_RESERVE;
     }
 

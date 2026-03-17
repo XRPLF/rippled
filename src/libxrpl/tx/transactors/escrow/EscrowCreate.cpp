@@ -394,13 +394,14 @@ EscrowCreate::doApply()
 
     auto const reserve = ctx_.view().fees().accountReserve((*sle)[sfOwnerCount] + 1);
 
-    if (mSourceBalance < reserve)
+    auto const balance = sle->getFieldAmount(sfBalance).xrp();
+    if (balance < reserve)
         return tecINSUFFICIENT_RESERVE;
 
     // Check reserve and funds availability
     if (isXRP(amount))
     {
-        if (mSourceBalance < reserve + STAmount(amount).xrp())
+        if (balance < reserve + STAmount(amount).xrp())
             return tecUNFUNDED;
     }
 

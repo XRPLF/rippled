@@ -998,6 +998,8 @@ class Validations_test : public beast::unit_test::suite
             std::vector<Validation> trustedVals({v});
             auto& vals = harness.vals();
             BEAST_EXPECT(vals.currentTrusted() == trustedVals);
+
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(vals.getPreferred(genesisLedger)->second == v.ledgerID());
             BEAST_EXPECT(vals.getNodesAfter(genesisLedger, genesisLedger.id()) == 0);
 
