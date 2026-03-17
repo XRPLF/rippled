@@ -422,12 +422,100 @@ public:
     }
 
     void
+    testDebugLogging()
+    {
+        testcase("debug logging");
+        using namespace jtx;
+        Env env(*this);
+        env.fund(XRP(10000), "alice", "bob");
+        env.close();
+
+        // Test 1: Submit with debug=true should include debug_log in response
+        {
+            // Create and sign a transaction
+            auto jt = env.jt(pay("alice", "bob", XRP(1)));
+            Serializer s;
+            jt.stx->add(s);
+            auto const txBlob = strHex(s.slice());
+
+            // Submit with debug=true using JSON RPC
+            Json::Value params;
+            params[jss::tx_blob] = txBlob;
+            params[jss::debug] = true;
+
+            auto const result = env.rpc("json", "submit", to_string(params));
+            auto const& jvResult = result[jss::result];
+
+            // Verify transaction was successful
+            BEAST_EXPECT(jvResult[jss::engine_result] == "tesSUCCESS");
+
+            // Verify debug_log is present and is an array
+            BEAST_EXPECT(jvResult.isMember(jss::debug_log));
+            BEAST_EXPECT(jvResult[jss::debug_log].isArray());
+
+            // The debug log should contain entries (at least some trace/debug info)
+            // Each entry should have "level" and "message" fields
+            if (jvResult[jss::debug_log].size() > 0)
+            {
+                auto const& firstEntry = jvResult[jss::debug_log][0u];
+                BEAST_EXPECT(firstEntry.isMember("level"));
+                BEAST_EXPECT(firstEntry.isMember("message"));
+                BEAST_EXPECT(firstEntry["level"].isString());
+                BEAST_EXPECT(firstEntry["message"].isString());
+            }
+        }
+
+        env.close();
+
+        // Test 2: Submit without debug flag should NOT include debug_log
+        {
+            auto jt = env.jt(pay("alice", "bob", XRP(1)));
+            Serializer s;
+            jt.stx->add(s);
+            auto const txBlob = strHex(s.slice());
+
+            Json::Value params;
+            params[jss::tx_blob] = txBlob;
+            // No debug flag
+
+            auto const result = env.rpc("json", "submit", to_string(params));
+            auto const& jvResult = result[jss::result];
+
+            BEAST_EXPECT(jvResult[jss::engine_result] == "tesSUCCESS");
+            // debug_log should NOT be present
+            BEAST_EXPECT(!jvResult.isMember(jss::debug_log));
+        }
+
+        env.close();
+
+        // Test 3: Submit with debug=false should NOT include debug_log
+        {
+            auto jt = env.jt(pay("alice", "bob", XRP(1)));
+            Serializer s;
+            jt.stx->add(s);
+            auto const txBlob = strHex(s.slice());
+
+            Json::Value params;
+            params[jss::tx_blob] = txBlob;
+            params[jss::debug] = false;
+
+            auto const result = env.rpc("json", "submit", to_string(params));
+            auto const& jvResult = result[jss::result];
+
+            BEAST_EXPECT(jvResult[jss::engine_result] == "tesSUCCESS");
+            // debug_log should NOT be present
+            BEAST_EXPECT(!jvResult.isMember(jss::debug_log));
+        }
+    }
+
+    void
     run() override
     {
         testSequenceRealignment();
         testReconnect();
         testReconnectAfterWait();
         testAccountsProposed();
+        testDebugLogging();
     }
 };
 

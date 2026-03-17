@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/basics/RangeSet.h>
+#include <xrpl/beast/utility/CapturingSink.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Protocol.h>
@@ -400,6 +401,54 @@ private:
     std::shared_ptr<STTx const> mTransaction;
     Application& mApp;
     beast::Journal j_;
+
+    /** Debug logging support */
+    std::unique_ptr<beast::CapturingSink> debugSink_;
+
+public:
+    /**
+     * @brief enableDebugLog Enable debug logging for this transaction
+     *
+     * When enabled, transaction processing logs will be captured and can
+     * be retrieved via getDebugLog() after processing completes.
+     */
+    void
+    enableDebugLog()
+    {
+        debugSink_ = std::make_unique<beast::CapturingSink>(nullptr, beast::severities::kTrace);
+    }
+
+    /**
+     * @brief isDebugEnabled Check if debug logging is enabled
+     * @return True if debug logging is enabled
+     */
+    bool
+    isDebugEnabled() const
+    {
+        return debugSink_ != nullptr;
+    }
+
+    /**
+     * @brief getDebugSink Get the capturing sink for debug logging
+     * @return Pointer to the capturing sink, or nullptr if not enabled
+     */
+    beast::CapturingSink*
+    getDebugSink()
+    {
+        return debugSink_.get();
+    }
+
+    /**
+     * @brief getDebugLog Get captured debug log entries
+     * @return Vector of captured log entries
+     */
+    std::vector<beast::CapturingSink::Entry>
+    getDebugLog() const
+    {
+        if (debugSink_)
+            return debugSink_->getEntries();
+        return {};
+    }
 };
 
 }  // namespace xrpl

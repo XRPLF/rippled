@@ -34,6 +34,7 @@
 #include <xrpl/basics/mulDiv.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/basics/scope.h>
+#include <xrpl/beast/utility/CapturingSink.h>
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/NetworkIDService.h>
@@ -1409,8 +1410,17 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     if (e.failType == FailHard::yes)
                         flags |= tapFAIL_HARD;
 
+                    // Use capturing journal if debug mode is enabled
+                    beast::Journal txJournal = j;
+                    if (auto* sink = e.transaction->getDebugSink())
+                    {
+                        // Set forward sink to also log to normal journal
+                        sink->setForwardSink(&j.sink());
+                        txJournal = beast::Journal(*sink);
+                    }
+
                     auto const result = registry_.getTxQ().apply(
-                        registry_.app(), view, e.transaction->getSTransaction(), flags, j);
+                        registry_.app(), view, e.transaction->getSTransaction(), flags, txJournal);
                     e.result = result.ter;
                     e.applied = result.applied;
                     changed = changed || result.applied;

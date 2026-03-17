@@ -99,6 +99,11 @@ doSubmit(RPC::JsonContext& context)
         return jvResult;
     }
 
+    // Enable debug logging if requested
+    bool const debug = context.params.isMember(jss::debug) && context.params[jss::debug].asBool();
+    if (debug)
+        transaction->enableDebugLog();
+
     try
     {
         auto const failType = getFailHard(context);
@@ -147,6 +152,20 @@ doSubmit(RPC::JsonContext& context)
                 jvResult[jss::validated_ledger_index] =
                     safe_cast<Json::Value::UInt>(currentLedgerState->validatedLedger);
             }
+        }
+
+        // Add debug log if enabled
+        if (debug)
+        {
+            Json::Value debugLog(Json::arrayValue);
+            for (auto const& entry : transaction->getDebugLog())
+            {
+                Json::Value logEntry(Json::objectValue);
+                logEntry["level"] = beast::CapturingSink::severityToString(entry.level);
+                logEntry["message"] = entry.text;
+                debugLog.append(logEntry);
+            }
+            jvResult[jss::debug_log] = debugLog;
         }
 
         return jvResult;
