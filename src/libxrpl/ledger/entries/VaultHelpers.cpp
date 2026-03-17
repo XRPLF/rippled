@@ -1,5 +1,6 @@
-#include <xrpl/basics/Number.h>
 #include <xrpl/ledger/entries/VaultHelpers.h>
+//
+#include <xrpl/basics/Number.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/st.h>
 

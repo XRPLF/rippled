@@ -1,9 +1,10 @@
+#include <xrpl/ledger/entries/RippleStateHelpers.h>
+//
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/AccountRootHelpers.h>
 #include <xrpl/ledger/entries/DirectoryHelpers.h>
-#include <xrpl/ledger/entries/RippleStateHelpers.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
