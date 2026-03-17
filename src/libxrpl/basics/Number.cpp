@@ -258,7 +258,7 @@ Number::Guard::doRoundUp(
     }
     bringIntoRange(negative, mantissa, exponent, minMantissa);
     if (exponent > maxExponent)
-        throw std::overflow_error(location);
+        Throw<std::overflow_error>(std::string(location));
 }
 
 template <UnsignedMantissa T>
@@ -298,7 +298,7 @@ Number::Guard::doRound(rep& drops, std::string location)
             // or "(maxRep + 1) / 10", neither of which will round up when
             // converting to rep, though the latter might overflow _before_
             // rounding.
-            throw std::overflow_error(location);  // LCOV_EXCL_LINE
+            Throw<std::overflow_error>(std::string(location));  // LCOV_EXCL_LINE
         }
         ++drops;
     }
