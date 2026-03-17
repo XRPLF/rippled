@@ -469,16 +469,10 @@ areCompatible(
     char const* reason);
 
 uint32_t
-ownerCount(std::shared_ptr<SLE const> const& sponsorSle);
+ownerCount(SLE::const_ref sponsorSle);
 
 XRPAmount
-calculateReserve(std::shared_ptr<SLE const> const& sle, Fees const& fees);
-
-// bool
-// isReserveSponsored(STTx const& tx);
-
-// bool
-// isSponsorReserveCoSigning(STTx const& tx);
+calculateReserve(SLE::const_ref sle, Fees const& fees);
 
 TER
 checkInsufficientReserve(
