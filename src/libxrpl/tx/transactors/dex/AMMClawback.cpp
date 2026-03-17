@@ -137,9 +137,6 @@ AMMClawback::applyGuts(Sandbox& sb)
             !res)
             return res.error();  // LCOV_EXCL_LINE
     }
-
-    // calling a second time on purpose since `verifyAndAdjustLPTokenBalance` rounds and may adjust
-    // the balance
     auto const expected =
         ammHolds(sb, *ammSle, asset, asset2, FreezeHandling::fhIGNORE_FREEZE, ctx_.journal);
 
@@ -152,6 +149,8 @@ AMMClawback::applyGuts(Sandbox& sb)
     STAmount amountWithdraw;
     std::optional<STAmount> amount2Withdraw;
 
+    // calling a second time on purpose since `verifyAndAdjustLPTokenBalance` rounds and may adjust
+    // the balance
     auto const holdLPtokens = ammLPHolds(sb, *ammSle, holder, j_);
     if (holdLPtokens == beast::zero)
         return tecAMM_BALANCE;
