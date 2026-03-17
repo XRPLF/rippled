@@ -1112,6 +1112,25 @@ checkInsufficientReserve(
 //------------------------------------------------------------------------------
 
 void
+adjustSponsorOwnerCountHlp(
+    ApplyView& view,
+    std::shared_ptr<SLE> const& sle,
+    SField const& sfield,
+    std::int32_t amount,
+    beast::Journal j)
+{
+    auto const accID = sle->getAccountID(sfAccount);
+    std::uint32_t const current{(sle)->getFieldU32(sfield)};
+    std::uint32_t const adjusted = confineOwnerCount(current, amount, accID, j);
+    view.adjustOwnerCountHook(accID, current, adjusted);
+    if (adjusted == 0)
+        sle->makeFieldAbsent(sfield);
+    else
+        sle->setFieldU32(sfield, adjusted);
+    view.update(sle);
+}
+
+void
 adjustOwnerCount(
     ApplyView& view,
     std::shared_ptr<SLE> const& accountSle,
@@ -1125,30 +1144,11 @@ adjustOwnerCount(
 
     if (sponsorSle)
     {
+        adjustSponsorOwnerCountHlp(view, sponsorSle, sfSponsoringOwnerCount, amount, j);
+        adjustSponsorOwnerCountHlp(view, accountSle, sfSponsoredOwnerCount, amount, j);
+
         auto const account = accountSle->getAccountID(sfAccount);
         auto const sponsorAccountID = (sponsorSle)->getAccountID(sfAccount);
-        {
-            // modify sponsor's SponsoringOwnerCount
-            std::uint32_t const current{(sponsorSle)->getFieldU32(sfSponsoringOwnerCount)};
-            std::uint32_t const adjusted = confineOwnerCount(current, amount, sponsorAccountID, j);
-            view.adjustOwnerCountHook(sponsorAccountID, current, adjusted);
-            if (adjusted == 0)
-                (sponsorSle)->makeFieldAbsent(sfSponsoringOwnerCount);
-            else
-                (sponsorSle)->setFieldU32(sfSponsoringOwnerCount, adjusted);
-            view.update(sponsorSle);
-        }
-        {
-            // modify account's SponsoredOwnerCount
-            std::uint32_t const current{accountSle->getFieldU32(sfSponsoredOwnerCount)};
-            std::uint32_t const adjusted = confineOwnerCount(current, amount, account, j);
-            view.adjustOwnerCountHook(account, current, adjusted);
-            if (adjusted == 0)
-                accountSle->makeFieldAbsent(sfSponsoredOwnerCount);
-            else
-                accountSle->setFieldU32(sfSponsoredOwnerCount, adjusted);
-            view.update(accountSle);
-        }
 
         auto sponsorObjSle = view.peek(keylet::sponsor(sponsorAccountID, account));
 
