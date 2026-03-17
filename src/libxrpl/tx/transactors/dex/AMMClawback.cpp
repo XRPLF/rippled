@@ -173,7 +173,7 @@ AMMClawback::applyGuts(Sandbox& sb)
                 0,
                 FreezeHandling::fhIGNORE_FREEZE,
                 WithdrawAll::Yes,
-                mPriorBalance,
+                preFeeBalance_,
                 ctx_.journal);
     else
         std::tie(result, newLPTokenBalance, amountWithdraw, amount2Withdraw) =
@@ -253,7 +253,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             0,
             FreezeHandling::fhIGNORE_FREEZE,
             WithdrawAll::Yes,
-            mPriorBalance,
+            preFeeBalance_,
             ctx_.journal);
 
     auto const& rules = sb.rules();
@@ -285,7 +285,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             0,
             FreezeHandling::fhIGNORE_FREEZE,
             WithdrawAll::No,
-            mPriorBalance,
+            preFeeBalance_,
             ctx_.journal);
     }
 
@@ -305,7 +305,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         0,
         FreezeHandling::fhIGNORE_FREEZE,
         WithdrawAll::No,
-        mPriorBalance,
+        preFeeBalance_,
         ctx_.journal);
 }
 

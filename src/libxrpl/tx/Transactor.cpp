@@ -484,7 +484,6 @@ Transactor::payFee()
     auto const feePaid = ctx_.tx[sfFee].xrp();
 
     auto const payer = getFeePayer(view(), ctx_.tx);
-
     auto const sle = view().peek(payer.entry);
 
     JLOG(j_.trace()) << "Fee payer: " + to_string(payer.entry.key);
@@ -502,13 +501,7 @@ Transactor::payFee()
 
     view().update(sle);
 
-    if (payer.type == FeePayerType::Account)
-        // Deduct the fee, so it's not available during the transaction.
-        // Will only write the account back if the transaction succeeds.
-        mSourceBalance -= feePaid;
-
     // VFALCO Should we call view().rawDestroyXRP() here as well?
-
     return tesSUCCESS;
 }
 
@@ -708,8 +701,7 @@ Transactor::apply()
 
     if (sle)
     {
-        mPriorBalance = STAmount{(*sle)[sfBalance]}.xrp();
-        mSourceBalance = mPriorBalance;
+        preFeeBalance_ = STAmount{(*sle)[sfBalance]}.xrp();
 
         TER result = consumeSeqProxy(sle);
         if (result != tesSUCCESS)

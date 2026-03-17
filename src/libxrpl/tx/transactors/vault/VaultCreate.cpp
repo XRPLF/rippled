@@ -140,14 +140,16 @@ VaultCreate::doApply()
     {
         adjustOwnerCount(view(), owner, sponsor, 2, j_);
         addSponsorToLedgerEntry(vault, sponsor);
-        if (auto const ret = checkInsufficientReserve(view(), tx, owner, mPriorBalance, sponsor, 0);
+        if (auto const ret =
+                checkInsufficientReserve(view(), tx, owner, preFeeBalance_, sponsor, 0);
             !isTesSuccess(ret))
             return ret;
     }
     else
     {
         // after Sponsor Amendment, check insufficient reserve first
-        if (auto const ret = checkInsufficientReserve(view(), tx, owner, mPriorBalance, sponsor, 2);
+        if (auto const ret =
+                checkInsufficientReserve(view(), tx, owner, preFeeBalance_, sponsor, 2);
             !isTesSuccess(ret))
             return ret;
         adjustOwnerCount(view(), owner, sponsor, 2, j_);
@@ -161,7 +163,7 @@ VaultCreate::doApply()
     auto pseudoId = pseudo->at(sfAccount);
     auto asset = tx[sfAsset];
 
-    if (auto ter = addEmptyHolding(view(), tx, pseudoId, mPriorBalance, asset, j_);
+    if (auto ter = addEmptyHolding(view(), tx, pseudoId, preFeeBalance_, asset, j_);
         !isTesSuccess(ter))
         return ter;
 
@@ -222,7 +224,7 @@ VaultCreate::doApply()
 
     // Explicitly create MPToken for the vault owner
     if (auto const err =
-            authorizeMPToken(view(), tx, mPriorBalance, mptIssuanceID, account_, ctx_.journal);
+            authorizeMPToken(view(), tx, preFeeBalance_, mptIssuanceID, account_, ctx_.journal);
         !isTesSuccess(err))
         return err;
 
@@ -230,7 +232,7 @@ VaultCreate::doApply()
     if (txFlags & tfVaultPrivate)
     {
         if (auto const err = authorizeMPToken(
-                view(), tx, mPriorBalance, mptIssuanceID, pseudoId, ctx_.journal, {}, account_);
+                view(), tx, preFeeBalance_, mptIssuanceID, pseudoId, ctx_.journal, {}, account_);
             !isTesSuccess(err))
             return err;
     }

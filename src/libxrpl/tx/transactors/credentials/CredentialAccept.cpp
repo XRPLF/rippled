@@ -84,7 +84,7 @@ CredentialAccept::doApply()
 
     auto const newSponsor = getTxReserveSponsor(view(), ctx_.tx);
     if (auto const ret =
-            checkInsufficientReserve(view(), ctx_.tx, sleSubject, mPriorBalance, newSponsor, 1);
+            checkInsufficientReserve(view(), ctx_.tx, sleSubject, preFeeBalance_, newSponsor, 1);
         !isTesSuccess(ret))
         return ret;
 

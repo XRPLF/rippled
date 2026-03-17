@@ -151,7 +151,7 @@ MPTokenIssuanceCreate::doApply()
         tx,
         j_,
         {
-            .priorBalance = mPriorBalance,
+            .priorBalance = preFeeBalance_,
             .account = account_,
             .sequence = tx.getSeqValue(),
             .flags = tx.getFlags(),

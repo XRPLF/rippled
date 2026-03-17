@@ -162,7 +162,7 @@ MPTokenAuthorize::doApply()
     return authorizeMPToken(
         ctx_.view(),
         tx,
-        mPriorBalance,
+        preFeeBalance_,
         tx[sfMPTokenIssuanceID],
         account_,
         ctx_.journal,

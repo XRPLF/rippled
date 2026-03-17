@@ -63,7 +63,7 @@ CreateTicket::doApply()
     std::uint32_t const ticketCount = ctx_.tx[sfTicketCount];
     auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
     if (auto const ret = checkInsufficientReserve(
-            view(), ctx_.tx, sleAccountRoot, mPriorBalance, sponsor, ticketCount);
+            view(), ctx_.tx, sleAccountRoot, preFeeBalance_, sponsor, ticketCount);
         !isTesSuccess(ret))
         return ret;
 

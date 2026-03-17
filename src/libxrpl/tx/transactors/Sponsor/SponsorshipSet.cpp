@@ -219,7 +219,7 @@ SponsorshipSet::doApply()
         auto newSle = std::make_shared<SLE>(sponsorKeylet);
 
         if (auto const ret = checkInsufficientReserve(
-                ctx_.view(), ctx_.tx, sponsorAccSle, mPriorBalance, reserveSponsorAccSle, 1);
+                ctx_.view(), ctx_.tx, sponsorAccSle, preFeeBalance_, reserveSponsorAccSle, 1);
             !isTesSuccess(ret))
             return tecUNFUNDED;
 

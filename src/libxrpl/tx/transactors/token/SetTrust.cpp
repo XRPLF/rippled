@@ -542,7 +542,7 @@ SetTrust::doApply()
         {
             // should be checked PreFunded Sponsor before adjustOwnerCount()
             if (auto const ret = checkInsufficientReserve(
-                    view(), ctx_.tx, sleLowAccount, mPriorBalance, txSponsorSle, 1);
+                    view(), ctx_.tx, sleLowAccount, preFeeBalance_, txSponsorSle, 1);
                 isSponsoredAndPreFunded && !isTesSuccess(ret))
                 return tecINSUF_RESERVE_LINE;
 
@@ -569,7 +569,7 @@ SetTrust::doApply()
         {
             // should be checked PreFunded Sponsor before adjustOwnerCount()
             if (auto const ret = checkInsufficientReserve(
-                    view(), ctx_.tx, sleHighAccount, mPriorBalance, txSponsorSle, 1);
+                    view(), ctx_.tx, sleHighAccount, preFeeBalance_, txSponsorSle, 1);
                 isSponsoredAndPreFunded && !isTesSuccess(ret))
                 return tecINSUF_RESERVE_LINE;
 
@@ -602,8 +602,8 @@ SetTrust::doApply()
             terResult = trustDelete(view(), sleRippleState, uLowAccountID, uHighAccountID, viewJ);
         }
         // Reserve is not scaled by load.
-        else if (auto const ret =
-                     checkInsufficientReserve(view(), ctx_.tx, sle, mPriorBalance, txSponsorSle, 0);
+        else if (auto const ret = checkInsufficientReserve(
+                     view(), ctx_.tx, sle, preFeeBalance_, txSponsorSle, 0);
                  !freeTrustLine && bReserveIncrease && !isTesSuccess(ret))
         {
             JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
@@ -636,7 +636,7 @@ SetTrust::doApply()
                  ctx_.view(),
                  ctx_.tx,
                  sle,
-                 mPriorBalance,
+                 preFeeBalance_,
                  txSponsorSle,
                  1);
              !freeTrustLine && !isTesSuccess(ret))  // Reserve is not scaled by load.

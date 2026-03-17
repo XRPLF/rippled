@@ -53,7 +53,7 @@ public:
     }
 };
 
-/** Sets the optional Attestation on a DIDSet. */
+/** Sets the optional Data on a DIDSet. */
 class data
 {
 private:

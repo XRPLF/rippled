@@ -400,10 +400,10 @@ DeleteAccount::doApply()
     // Use the current balance from the SLE, not mSourceBalance, because
     // the cleanup loop may have returned pre-funded sfFeeAmount from
     // ltSponsorship objects back to the account's sfBalance.
-    auto const srcCurrentBalance = STAmount{(*src)[sfBalance]}.xrp();
-    (*dst)[sfBalance] = (*dst)[sfBalance] + srcCurrentBalance;
-    (*src)[sfBalance] = (*src)[sfBalance] - srcCurrentBalance;
-    ctx_.deliver(srcCurrentBalance);
+    auto const remainingBalance = src->getFieldAmount(sfBalance).xrp();
+    (*dst)[sfBalance] = (*dst)[sfBalance] + remainingBalance;
+    (*src)[sfBalance] = (*src)[sfBalance] - remainingBalance;
+    ctx_.deliver(remainingBalance);
 
     if (src->isFieldPresent(sfSponsor))
     {
@@ -445,7 +445,7 @@ DeleteAccount::doApply()
     }
 
     // Re-arm the password change fee if we can and need to.
-    if (srcCurrentBalance > XRPAmount(0) && dst->isFlag(lsfPasswordSpent))
+    if (remainingBalance > XRPAmount(0) && dst->isFlag(lsfPasswordSpent))
         dst->clearFlag(lsfPasswordSpent);
 
     view().update(dst);

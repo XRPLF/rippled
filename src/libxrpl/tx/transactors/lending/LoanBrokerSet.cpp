@@ -219,14 +219,14 @@ LoanBrokerSet::doApply()
         auto const sponsor = getTxReserveSponsor(view, tx);
 
         if (auto const ret =
-                checkInsufficientReserve(view, tx, owner, mPriorBalance, {}, sponsor ? 1 : 2);
+                checkInsufficientReserve(view, tx, owner, preFeeBalance_, {}, sponsor ? 1 : 2);
             !isTesSuccess(ret))
             return ret;
 
         if (sponsor)
         {
             if (auto const ret =
-                    checkInsufficientReserve(view, tx, owner, mPriorBalance, sponsor, 1);
+                    checkInsufficientReserve(view, tx, owner, preFeeBalance_, sponsor, 1);
                 !isTesSuccess(ret))
                 return ret;
         }
@@ -245,7 +245,7 @@ LoanBrokerSet::doApply()
         auto pseudoId = pseudo->at(sfAccount);
 
         if (auto ter =
-                addEmptyHolding(view, tx, pseudoId, mPriorBalance, sleVault->at(sfAsset), j_))
+                addEmptyHolding(view, tx, pseudoId, preFeeBalance_, sleVault->at(sfAsset), j_))
             return ter;
 
         // Initialize data fields:

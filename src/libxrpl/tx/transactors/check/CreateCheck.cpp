@@ -138,7 +138,7 @@ CreateCheck::doApply()
     // check the starting balance because we want to allow dipping into the
     // reserve to pay fees.
     auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
-    if (auto const ret = checkInsufficientReserve(view(), ctx_.tx, sle, mPriorBalance, sponsor, 1);
+    if (auto const ret = checkInsufficientReserve(view(), ctx_.tx, sle, preFeeBalance_, sponsor, 1);
         !isTesSuccess(ret))
         return ret;
     // Note that we use the value from the sequence or ticket as the

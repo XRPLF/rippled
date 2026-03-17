@@ -304,7 +304,7 @@ SetSignerList::replaceSignerList()
     // with CreateTicket.
     auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
     if (auto const ret = checkInsufficientReserve(
-            ctx_.view(), ctx_.tx, sle, mPriorBalance, sponsor, addedOwnerCount);
+            ctx_.view(), ctx_.tx, sle, preFeeBalance_, sponsor, addedOwnerCount);
         !isTesSuccess(ret))
         return ret;
 

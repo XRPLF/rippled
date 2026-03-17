@@ -116,7 +116,7 @@ CredentialCreate::doApply()
 
     auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
     if (auto const ret =
-            checkInsufficientReserve(view(), ctx_.tx, sleIssuer, mPriorBalance, sponsor, 1);
+            checkInsufficientReserve(view(), ctx_.tx, sleIssuer, preFeeBalance_, sponsor, 1);
         !isTesSuccess(ret))
         return ret;
 

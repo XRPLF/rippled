@@ -69,7 +69,7 @@ DelegateSet::doApply()
 
     auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
     if (auto const ret =
-            checkInsufficientReserve(view(), ctx_.tx, sleOwner, mPriorBalance, sponsor, 1);
+            checkInsufficientReserve(view(), ctx_.tx, sleOwner, preFeeBalance_, sponsor, 1);
         !isTesSuccess(ret))
         return ret;
 

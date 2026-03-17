@@ -165,7 +165,7 @@ EscrowCancel::doApply()
                         ctx_.tx,
                         parityRate,
                         slep,
-                        mPriorBalance,
+                        preFeeBalance_,
                         amount,
                         issuer,
                         account,  // sender and receiver are the same

@@ -296,7 +296,7 @@ NFTokenMint::doApply()
                 ctx_.tx[~sfExpiration],
                 ctx_.tx.getSeqProxy(),
                 nftokenID,
-                mPriorBalance,
+                preFeeBalance_,
                 j_);
             !isTesSuccess(ter))
             return ter;
@@ -315,7 +315,7 @@ NFTokenMint::doApply()
                 ctx_.view(),
                 ctx_.tx,
                 view().read(keylet::account(account_)),
-                mPriorBalance,
+                preFeeBalance_,
                 sponsor,
                 0);
             !isTesSuccess(ret))
