@@ -703,7 +703,7 @@ STAmount::getText() const
     if (std::distance(preFrom, preTo) > padPrefix)
         preFrom += padPrefix;
 
-    XRPL_ASSERT(post_to >= post_from, "xrpl::STAmount::getText : first distance check");
+    XRPL_ASSERT(postTo >= postFrom, "xrpl::STAmount::getText : first distance check");
 
     preFrom = std::find_if(preFrom, preTo, [](char c) { return c != '0'; });
 
@@ -712,7 +712,7 @@ STAmount::getText() const
     if (std::distance(postFrom, postTo) > padSuffix)
         postTo -= padSuffix;
 
-    XRPL_ASSERT(post_to >= post_from, "xrpl::STAmount::getText : second distance check");
+    XRPL_ASSERT(postTo >= postFrom, "xrpl::STAmount::getText : second distance check");
 
     postTo = std::find_if(
                  std::make_reverse_iterator(postTo),

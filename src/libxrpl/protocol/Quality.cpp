@@ -113,10 +113,10 @@ Quality
 composed_quality(Quality const& lhs, Quality const& rhs)
 {
     STAmount const lhsRate(lhs.rate());
-    XRPL_ASSERT(lhs_rate != beast::zero, "xrpl::composed_quality : nonzero left input");
+    XRPL_ASSERT(lhsRate != beast::zero, "xrpl::composed_quality : nonzero left input");
 
     STAmount const rhsRate(rhs.rate());
-    XRPL_ASSERT(rhs_rate != beast::zero, "xrpl::composed_quality : nonzero right input");
+    XRPL_ASSERT(rhsRate != beast::zero, "xrpl::composed_quality : nonzero right input");
 
     STAmount const rate(mulRound(lhsRate, rhsRate, lhsRate.asset(), true));
 
@@ -124,8 +124,7 @@ composed_quality(Quality const& lhs, Quality const& rhs)
     std::uint64_t const storedMantissa(rate.mantissa());
 
     XRPL_ASSERT(
-        (stored_exponent > 0) && (stored_exponent <= 255),
-        "xrpl::composed_quality : valid exponent");
+        (storedExponent > 0) && (storedExponent <= 255), "xrpl::composed_quality : valid exponent");
 
     return Quality((storedExponent << (64 - 8)) | storedMantissa);
 }
