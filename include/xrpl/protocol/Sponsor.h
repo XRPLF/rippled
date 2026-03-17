@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_SPONSOR_H_INCLUDED
-#define XRPL_PROTOCOL_SPONSOR_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/HashPrefix.h>
