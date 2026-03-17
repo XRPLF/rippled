@@ -400,7 +400,7 @@ public:
         if (!BEAST_EXPECT(cfg.section(SECTION_VALIDATION_SEED).empty()))
             return;
         auto const parsedseed = parseBase58<Seed>(cfg.section(SECTION_VALIDATION_SEED).values()[0]);
-        if (!BEAST_EXPECT(parsedseed))
+        if (BEAST_EXPECT(parsedseed); not parsedseed.has_value())
             return;
 
         std::string const valPublicKey = toBase58(

@@ -468,10 +468,11 @@ public:
     {
         auto validator = m->getValidatorKey();
         assert(validator);
-        if (!squelch_.expireSquelch(*validator))
+        if (!squelch_.expireSquelch(*validator))  // NOLINT(bugprone-unchecked-optional-access)
             return;
 
-        overlay_.updateSlotAndSquelch({}, *validator, id(), f);
+        overlay_.updateSlotAndSquelch(
+            {}, *validator, id(), f);  // NOLINT(bugprone-unchecked-optional-access)
     }
 
     /** Remote Peer (Directly connected Peer) */
