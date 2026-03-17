@@ -121,7 +121,7 @@ public:
         // since some of them are templated, but not used anywhere else.
         auto make = [&](auto x) -> XRPAmount { return XRPAmount{x}; };
 
-        XRPAmount defaulted;
+        XRPAmount defaulted{};
         (void)defaulted;
         XRPAmount test{0};
         BEAST_EXPECT(test.drops() == 0);

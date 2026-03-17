@@ -249,7 +249,7 @@ public:
         Validator& validator,
         PeerSPtr peer,
         Latency const& latency = {milliseconds(5), milliseconds(15)})
-        : validator_(validator), peer_(peer), latency_(latency), up_(true)
+        : validator_(validator), peer_(peer), latency_(latency)
     {
         auto sp = peer_.lock();
         assert(sp);
@@ -294,7 +294,7 @@ private:
     Validator& validator_;
     PeerWPtr peer_;
     Latency latency_;
-    bool up_;
+    bool up_{true};
 };
 
 /** Simulate Validator */
@@ -553,7 +553,7 @@ public:
     addPeer(bool useCache = true)
     {
         PeerSPtr peer{};
-        Peer::id_t id;
+        Peer::id_t id = 0;
         if (peersCache_.empty() || !useCache)
         {
             peer = std::make_shared<PeerSim>(*this, logs_.journal("Squelch"));
@@ -901,8 +901,8 @@ protected:
         std::uint32_t cnt_ = 0;
         std::uint32_t handledCnt_ = 0;
         bool isSelected_ = false;
-        Peer::id_t peer_;
-        std::uint16_t validator_;
+        Peer::id_t peer_{};
+        std::uint16_t validator_{};
         std::optional<PublicKey> key_;
         time_point<ManualClock> time_;
         bool handled_ = false;
@@ -1449,7 +1449,7 @@ vp_base_squelch_max_selected_peers=2
 
     struct Handler : public reduce_relay::SquelchHandler
     {
-        Handler() : maxDuration_(0)
+        Handler()
         {
         }
         void
@@ -1462,7 +1462,7 @@ vp_base_squelch_max_selected_peers=2
         unsquelch(PublicKey const&, Peer::id_t) const override
         {
         }
-        mutable int maxDuration_;
+        mutable int maxDuration_{0};
     };
 
     void

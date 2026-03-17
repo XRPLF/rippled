@@ -243,7 +243,7 @@ class HashRouter_test : public beast::unit_test::suite
         HashRouter router(getSetup(5s, 1s), stopwatch);
         uint256 const key(1);
         HashRouter::PeerShortID peer = 1;
-        HashRouterFlags flags;
+        HashRouterFlags flags = HashRouterFlags::UNDEFINED;
 
         BEAST_EXPECT(router.shouldProcess(key, peer, flags, 1s));
         BEAST_EXPECT(!router.shouldProcess(key, peer, flags, 1s));

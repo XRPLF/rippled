@@ -207,7 +207,6 @@ class Xrpl(ConanFile):
             "boost::chrono",
             "boost::container",
             "boost::context",
-            "boost::coroutine2",
             "boost::date_time",
             "boost::filesystem",
             "boost::json",

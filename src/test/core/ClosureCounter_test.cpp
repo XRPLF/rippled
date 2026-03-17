@@ -207,7 +207,8 @@ class ClosureCounter_test : public beast::unit_test::suite
                 // leaving scope.  So, without intervention, they would
                 // do a copy for the return (June 2017).  An explicit
                 // std::move() was required.
-                return std::move(in += "!");
+                in += "!";
+                return std::move(in);
             });
 
             BEAST_EXPECT(strCounter.count() == 1);
