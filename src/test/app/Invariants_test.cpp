@@ -2260,14 +2260,16 @@ class Invariants_test : public beast::unit_test::suite
         };
         struct Adjustments
         {
-            std::optional<int> assetsTotal;
-            std::optional<int> assetsAvailable;
-            std::optional<int> lossUnrealized;
+            // NOLINTBEGIN(readability-redundant-member-init)
+            std::optional<int> assetsTotal = std::nullopt;
+            std::optional<int> assetsAvailable = std::nullopt;
+            std::optional<int> lossUnrealized = std::nullopt;
             std::optional<int> assetsMaximum = std::nullopt;
-            std::optional<int> sharesTotal;
-            std::optional<int> vaultAssets;
-            std::optional<AccountAmount> accountAssets;
-            std::optional<AccountAmount> accountShares;
+            std::optional<int> sharesTotal = std::nullopt;
+            std::optional<int> vaultAssets = std::nullopt;
+            std::optional<AccountAmount> accountAssets = std::nullopt;
+            std::optional<AccountAmount> accountShares = std::nullopt;
+            // NOLINTEND(readability-redundant-member-init)
         };
         auto constexpr adjust = [&](ApplyView& ac, xrpl::Keylet keylet, Adjustments args) {
             auto sleVault = ac.peek(keylet);

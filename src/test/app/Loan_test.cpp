@@ -150,20 +150,22 @@ protected:
         // only signs.
         bool counterpartyExplicit = true;
         Number principalRequest;
+        // NOLINTBEGIN(readability-redundant-member-init)
         std::optional<STAmount> setFee = std::nullopt;
-        std::optional<Number> originationFee;
-        std::optional<Number> serviceFee;
-        std::optional<Number> lateFee;
-        std::optional<Number> closeFee;
-        std::optional<TenthBips32> overFee;
-        std::optional<TenthBips32> interest;
-        std::optional<TenthBips32> lateInterest;
-        std::optional<TenthBips32> closeInterest;
-        std::optional<TenthBips32> overpaymentInterest;
-        std::optional<std::uint32_t> payTotal;
-        std::optional<std::uint32_t> payInterval;
-        std::optional<std::uint32_t> gracePd;
-        std::optional<std::uint32_t> flags;
+        std::optional<Number> originationFee = std::nullopt;
+        std::optional<Number> serviceFee = std::nullopt;
+        std::optional<Number> lateFee = std::nullopt;
+        std::optional<Number> closeFee = std::nullopt;
+        std::optional<TenthBips32> overFee = std::nullopt;
+        std::optional<TenthBips32> interest = std::nullopt;
+        std::optional<TenthBips32> lateInterest = std::nullopt;
+        std::optional<TenthBips32> closeInterest = std::nullopt;
+        std::optional<TenthBips32> overpaymentInterest = std::nullopt;
+        std::optional<std::uint32_t> payTotal = std::nullopt;
+        std::optional<std::uint32_t> payInterval = std::nullopt;
+        std::optional<std::uint32_t> gracePd = std::nullopt;
+        std::optional<std::uint32_t> flags = std::nullopt;
+        // NOLINTEND(readability-redundant-member-init)
 
         template <class... FN>
         jtx::JTx
