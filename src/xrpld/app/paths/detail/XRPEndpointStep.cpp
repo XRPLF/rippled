@@ -103,7 +103,8 @@ protected:
     XRPAmount
     xrpLiquidImpl(ReadView& sb, std::int32_t reserveReduction) const
     {
-        return xrpl::xrpLiquid(sb, acc_, reserveReduction, j_);
+        WrappedAccountRoot account(acc_, &sb);
+        return account.xrpLiquid(reserveReduction, j_);
     }
 
     std::string
