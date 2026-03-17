@@ -62,7 +62,7 @@ confineOwnerCount(
 }
 
 XRPAmount
-WrappedAccountRoot::xrpLiquid(std::int32_t ownerCountAdj, beast::Journal j)
+WrappedAccountRoot::xrpLiquid(std::int32_t ownerCountAdj, beast::Journal j) const
 {
     // Return balance minus reserve
     std::uint32_t const ownerCount = confineOwnerCount(
@@ -99,16 +99,14 @@ WrappedAccountRoot::transferRate() const
 void
 WrappedAccountRoot::adjustOwnerCount(std::int32_t amount, beast::Journal j)
 {
-    if (!sle_)
-        return;
+    XRPL_ASSERT(canModify(), "xrpl::adjustOwnerCount : can modify");
     XRPL_ASSERT(amount, "xrpl::adjustOwnerCount : nonzero amount input");
-    std::uint32_t const current{sle_->getFieldU32(sfOwnerCount)};
-    AccountID const id = (*sle_)[sfAccount];
+    std::uint32_t const current{mutableSle_->getFieldU32(sfOwnerCount)};
+    AccountID const id = (*mutableSle_)[sfAccount];
     std::uint32_t const adjusted = confineOwnerCount(current, amount, id, j);
     applyView_->adjustOwnerCountHook(id_, current, adjusted);
-    auto mutable_sle = mutableSle();
-    mutable_sle->at(sfOwnerCount) = adjusted;
-    applyView_->update(mutable_sle);
+    mutableSle_->at(sfOwnerCount) = adjusted;
+    applyView_->update(mutableSle_);
 }
 
 AccountID

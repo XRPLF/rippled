@@ -424,7 +424,7 @@ issueIOU(
 
     final_balance.setIssuer(noAccount());
 
-    WrappedAccountRoot const receiverAccount(account, &view);
+    WrappedAccountRoot receiverAccount(account, &view);
     if (!receiverAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

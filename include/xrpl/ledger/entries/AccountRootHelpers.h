@@ -61,7 +61,7 @@ public:
     //
     // @param ownerCountAdj positive to add to count, negative to reduce count.
     [[nodiscard]] XRPAmount
-    xrpLiquid(std::int32_t ownerCountAdj, beast::Journal j);
+    xrpLiquid(std::int32_t ownerCountAdj, beast::Journal j) const;
 
     /** Adjust the owner count up or down. */
     void
