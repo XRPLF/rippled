@@ -2535,6 +2535,9 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 
     if (admin)
     {
+        // Note: By default the node size is "tiny". When parsing it's an error if the final
+        // NODE_SIZE is over 4 so below code should be safe.
+        // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
         switch (registry_.app().config().NODE_SIZE)
         {
             case 0:

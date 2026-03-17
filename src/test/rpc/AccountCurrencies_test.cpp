@@ -142,7 +142,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
 
         // now form a payment for each currency
         for (auto const& c : gwCurrencies)
-            env(pay(gw, alice, c.value()(50)));
+            env(pay(gw, alice, c.value()(50)));  // NOLINT(bugprone-unchecked-optional-access)
 
         // send_currencies should be populated now
         result = env.rpc("json", "account_currencies", to_string(params))[jss::result];

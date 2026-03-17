@@ -550,6 +550,7 @@ public:
                     p[1] = 1 - p[0];
                     for (int q = 0; q < 2; ++q)
                     {
+                        // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
                         switch (p[q])
                         {
                             case 0: {

@@ -60,9 +60,11 @@ Checks: "-*,
   bugprone-suspicious-string-compare,
   bugprone-suspicious-stringview-data-usage,
   bugprone-swapped-arguments,
+  bugprone-switch-missing-default-case,
   bugprone-terminating-continue,
   bugprone-throw-keyword-missing,
   bugprone-too-small-loop-variable,
+  # bugprone-unchecked-optional-access, # see https://github.com/XRPLF/rippled/pull/6502
   bugprone-undefined-memory-manipulation,
   bugprone-undelegated-constructor,
   bugprone-unhandled-exception-at-new,
@@ -100,7 +102,6 @@ Checks: "-*,
 # checks that have some issues that need to be resolved:
 #
 # bugprone-move-forwarding-reference,
-# bugprone-switch-missing-default-case,
 # bugprone-use-after-move,
 #
 # cppcoreguidelines-misleading-capture-default-by-value,
