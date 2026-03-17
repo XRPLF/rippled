@@ -116,7 +116,7 @@ ecdsaCanonicality(Slice const& sig)
         boost::multiprecision::unchecked,
         void>>;
 
-    static uint264 const G(
+    static uint264 const g(
         "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");  // NOLINT(readability-identifier-naming)
 
     // The format of a signature should be:
@@ -132,16 +132,16 @@ ecdsaCanonicality(Slice const& sig)
         return std::nullopt;
 
     uint264 R(sliceToHex(*r));  // NOLINT(readability-identifier-naming)
-    if (R >= G)
+    if (R >= g)
         return std::nullopt;
 
     uint264 S(sliceToHex(*s));  // NOLINT(readability-identifier-naming)
-    if (S >= G)
+    if (S >= g)
         return std::nullopt;
 
     // (R,S) and (R,G-S) are canonical,
     // but is fully canonical when S <= G-S
-    auto const Sp = G - S;  // NOLINT(readability-identifier-naming)
+    auto const Sp = g - S;  // NOLINT(readability-identifier-naming)
     if (S > Sp)
         return ECDSACanonicality::canonical;
     return ECDSACanonicality::fullyCanonical;

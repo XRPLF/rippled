@@ -320,9 +320,9 @@ class Invariants_test : public beast::unit_test::suite
         // NFT special case
         doInvariantCheck(
             {{"account deletion left behind a NFTokenPage object"}},
-            [&](Account const& A1, Account const&, ApplyContext& ac) {
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
                 // remove an account from the view
-                auto sle = ac.view().peek(keylet::account(A1.id()));
+                auto sle = ac.view().peek(keylet::account(a1.id()));
                 if (!sle)
                     return false;
                 // Clear the balance so the "account deletion left behind a

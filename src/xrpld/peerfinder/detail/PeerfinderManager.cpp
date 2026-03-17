@@ -30,13 +30,13 @@ public:
     //--------------------------------------------------------------------------
 
     ManagerImp(
-        boost::asio::io_context& io_context,
+        boost::asio::io_context& ioContext,
         clock_type& clock,
         beast::Journal journal,
         BasicConfig const& config,
         beast::insight::Collector::ptr const& collector)
         : Manager()
-        , io_context_(io_context)
+        , io_context_(ioContext)
         , work_(std::in_place, boost::asio::make_work_guard(io_context_))
         , clock_(clock)
         , journal_(journal)
@@ -105,16 +105,16 @@ public:
 
     std::pair<std::shared_ptr<Slot>, Result>
     new_inbound_slot(
-        beast::IP::Endpoint const& local_endpoint,
-        beast::IP::Endpoint const& remote_endpoint) override
+        beast::IP::Endpoint const& localEndpoint,
+        beast::IP::Endpoint const& remoteEndpoint) override
     {
-        return logic_.new_inbound_slot(local_endpoint, remote_endpoint);
+        return logic_.new_inbound_slot(localEndpoint, remoteEndpoint);
     }
 
     std::pair<std::shared_ptr<Slot>, Result>
-    new_outbound_slot(beast::IP::Endpoint const& remote_endpoint) override
+    new_outbound_slot(beast::IP::Endpoint const& remoteEndpoint) override
     {
-        return logic_.new_outbound_slot(remote_endpoint);
+        return logic_.new_outbound_slot(remoteEndpoint);
     }
 
     void
@@ -140,20 +140,20 @@ public:
 
     void
     onRedirects(
-        boost::asio::ip::tcp::endpoint const& remote_address,
+        boost::asio::ip::tcp::endpoint const& remoteAddress,
         std::vector<boost::asio::ip::tcp::endpoint> const& eps) override
     {
-        logic_.onRedirects(eps.begin(), eps.end(), remote_address);
+        logic_.onRedirects(eps.begin(), eps.end(), remoteAddress);
     }
 
     //--------------------------------------------------------------------------
 
     bool
-    onConnected(std::shared_ptr<Slot> const& slot, beast::IP::Endpoint const& local_endpoint)
+    onConnected(std::shared_ptr<Slot> const& slot, beast::IP::Endpoint const& localEndpoint)
         override
     {
         SlotImp::ptr impl(std::dynamic_pointer_cast<SlotImp>(slot));
-        return logic_.onConnected(impl, local_endpoint);
+        return logic_.onConnected(impl, localEndpoint);
     }
 
     Result
@@ -243,13 +243,13 @@ Manager::Manager() noexcept : beast::PropertyStream::Source("peerfinder")
 
 std::unique_ptr<Manager>
 make_Manager(
-    boost::asio::io_context& io_context,
+    boost::asio::io_context& ioContext,
     clock_type& clock,
     beast::Journal journal,
     BasicConfig const& config,
     beast::insight::Collector::ptr const& collector)
 {
-    return std::make_unique<ManagerImp>(io_context, clock, journal, config, collector);
+    return std::make_unique<ManagerImp>(ioContext, clock, journal, config, collector);
 }
 
 }  // namespace PeerFinder

@@ -1133,15 +1133,15 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             signalStop("Signal: " + to_string(signum));
     });
 
-    auto debug_log = config_->getDebugLogFile();
+    auto debugLog = config_->getDebugLogFile();
 
-    if (!debug_log.empty())
+    if (!debugLog.empty())
     {
         // Let debug messages go to the file but only WARNING or higher to
         // regular output (unless verbose)
 
-        if (!logs_->open(debug_log))
-            std::cerr << "Can't open log file " << debug_log << '\n';
+        if (!logs_->open(debugLog))
+            std::cerr << "Can't open log file " << debugLog << '\n';
 
         using namespace beast::severities;
         if (logs_->threshold() > kDebug)
