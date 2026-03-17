@@ -2,7 +2,6 @@
 #include <test/jtx/utility.h>
 
 #include <xrpl/protocol/Sign.h>
-#include <xrpl/protocol/Sponsor.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
