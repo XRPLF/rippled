@@ -197,7 +197,7 @@ validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
 }
 
 TER
-authorizedDepositPreauth(ApplyView const& view, STVector256 const& credIDs, AccountID const& dst)
+authorizedDepositPreauth(ReadView const& view, STVector256 const& credIDs, AccountID const& dst)
 {
     std::set<std::pair<AccountID, Slice>> sorted;
     std::vector<std::shared_ptr<SLE const>> lifeExtender;
