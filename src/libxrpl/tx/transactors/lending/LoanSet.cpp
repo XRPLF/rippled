@@ -256,7 +256,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     auto const brokerPseudo = brokerSle->at(sfAccount);
 
     auto const borrower = counterparty == brokerOwner ? account : counterparty;
-    if (auto const borrowerSle = ctx.view.read(keylet::account(borrower)); !borrowerSle)
+    if (auto const wrappedBorrower = WrappedAccountRoot(borrower, &ctx.view); !wrappedBorrower)
     {
         // It may not be possible to hit this case, because it'll fail the
         // signature check with terNO_ACCOUNT.
@@ -358,8 +358,8 @@ LoanSet::doApply()
 
     auto const counterparty = tx[~sfCounterparty].value_or(brokerOwner);
     auto const borrower = counterparty == brokerOwner ? account_ : counterparty;
-    auto const borrowerSle = view.peek(keylet::account(borrower));
-    if (!borrowerSle)
+    WrappedAccountRoot wrappedBorrower(borrower, &view);
+    if (!wrappedBorrower)
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
@@ -472,11 +472,11 @@ LoanSet::doApply()
         }
     }
 
-    adjustOwnerCount(view, borrowerSle, 1, j_);
+    wrappedBorrower.adjustOwnerCount(1, j_);
     {
-        auto const ownerCount = borrowerSle->at(sfOwnerCount);
+        auto const ownerCount = wrappedBorrower->at(sfOwnerCount);
         auto const balance =
-            account_ == borrower ? preFeeBalance_ : borrowerSle->at(sfBalance).value().xrp();
+            account_ == borrower ? preFeeBalance_ : wrappedBorrower->at(sfBalance).value().xrp();
         if (balance < view.fees().accountReserve(ownerCount))
             return tecINSUFFICIENT_RESERVE;
     }
@@ -492,7 +492,7 @@ LoanSet::doApply()
         "xrpl::LoanSet::doApply",
         "borrower signed transaction");
     if (auto const ter = addEmptyHolding(
-            view, borrower, borrowerSle->at(sfBalance).value().xrp(), vaultAsset, j_);
+            view, borrower, wrappedBorrower->at(sfBalance).value().xrp(), vaultAsset, j_);
         ter && ter != tecDUPLICATE)
     {
         // ignore tecDUPLICATE. That means the holding already exists, and
@@ -593,7 +593,7 @@ LoanSet::doApply()
     adjustImpreciseNumber(brokerSle->at(sfDebtTotal), newDebtDelta, vaultAsset, vaultScale);
     // The broker's owner count is solely for the number of outstanding loans,
     // and is distinct from the broker's pseudo-account's owner count
-    adjustOwnerCount(view, brokerSle, 1, j_);
+    adjustOwnerCount(brokerSle, view, 1, j_);
     loanSequenceProxy += 1;
     // The sequence should be extremely unlikely to roll over, but fail if it
     // does

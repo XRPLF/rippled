@@ -83,8 +83,9 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
         if (!sendMax.native())
         {
             // The currency may not be globally frozen
-            AccountID const& issuerId{sendMax.getIssuer()};
-            if (isGlobalFrozen(ctx.view, issuerId))
+            AccountID const issuerId{sendMax.getIssuer()};
+            WrappedAccountRoot wrappedIssuer(issuerId, &ctx.view);
+            if (wrappedIssuer.isGlobalFrozen())
             {
                 JLOG(ctx.j.warn()) << "Creating a check for frozen asset";
                 return tecFROZEN;
@@ -130,15 +131,16 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
 TER
 CheckCreate::doApply()
 {
-    auto const sle = view().peek(keylet::account(account_));
-    if (!sle)
+    WrappedAccountRoot wrappedAcct(account_, &view());
+    if (!wrappedAcct)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // A check counts against the reserve of the issuing account, but we
     // check the starting balance because we want to allow dipping into the
     // reserve to pay fees.
     {
-        STAmount const reserve{view().fees().accountReserve(sle->getFieldU32(sfOwnerCount) + 1)};
+        STAmount const reserve{
+            view().fees().accountReserve(wrappedAcct->getFieldU32(sfOwnerCount) + 1)};
 
         if (preFeeBalance_ < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -196,7 +198,7 @@ CheckCreate::doApply()
         sleCheck->setFieldU64(sfOwnerNode, *page);
     }
     // If we succeeded, the new entry counts against the creator's reserve.
-    adjustOwnerCount(view(), sle, 1, viewJ);
+    wrappedAcct.adjustOwnerCount(1, viewJ);
     return tesSUCCESS;
 }
 

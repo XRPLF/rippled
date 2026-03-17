@@ -694,7 +694,7 @@ finalizeClaimHelper(
         auto const cidOwner = (*sleClaimID)[sfAccount];
         {
             // Remove the claim id
-            auto const sleOwner = outerSb.peek(keylet::account(cidOwner));
+            WrappedAccountRoot wrappedOwner(cidOwner, &outerSb);
             auto const page = (*sleClaimID)[sfOwnerNode];
             if (!outerSb.dirRemove(keylet::ownerDir(cidOwner), page, sleClaimID->key(), true))
             {
@@ -706,7 +706,7 @@ finalizeClaimHelper(
             // Remove the claim id from the ledger
             outerSb.erase(sleClaimID);
 
-            adjustOwnerCount(outerSb, sleOwner, -1, j);
+            wrappedOwner.adjustOwnerCount(-1, j);
         }
     }
 
@@ -1110,14 +1110,13 @@ applyCreateAccountAttestations(
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*createdSleClaimID)[sfOwnerNode] = *page;
 
-        auto const sleDoor = psb.peek(doorK);
-        if (!sleDoor)
+        WrappedAccountRoot wrappedDoor(doorAccount, &psb);
+        if (!wrappedDoor)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         // Reserve was already checked
-        adjustOwnerCount(psb, sleDoor, 1, j);
+        wrappedDoor.adjustOwnerCount(1, j);
         psb.insert(createdSleClaimID);
-        psb.update(sleDoor);
     }
 
     psb.apply(rawView);
@@ -1430,8 +1429,8 @@ XChainCreateBridge::doApply()
     auto const reward = ctx_.tx[sfSignatureReward];
     auto const minAccountCreate = ctx_.tx[~sfMinAccountCreateAmount];
 
-    auto const sleAcct = ctx_.view().peek(keylet::account(account));
-    if (!sleAcct)
+    WrappedAccountRoot wrappedAcct(account, &ctx_.view());
+    if (!wrappedAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     STXChainBridge::ChainType const chainType =
@@ -1458,10 +1457,10 @@ XChainCreateBridge::doApply()
         (*sleBridge)[sfOwnerNode] = *page;
     }
 
-    adjustOwnerCount(ctx_.view(), sleAcct, 1, ctx_.journal);
+    wrappedAcct.adjustOwnerCount(1, ctx_.journal);
 
     ctx_.view().insert(sleBridge);
-    ctx_.view().update(sleAcct);
+    ctx_.view().update(wrappedAcct.mutableSle());
 
     return tesSUCCESS;
 }
@@ -1976,8 +1975,8 @@ XChainCreateClaimID::doApply()
     auto const reward = ctx_.tx[sfSignatureReward];
     auto const otherChainSrc = ctx_.tx[sfOtherChainSource];
 
-    auto const sleAcct = ctx_.view().peek(keylet::account(account));
-    if (!sleAcct)
+    WrappedAccountRoot wrappedAcct(account, &ctx_.view());
+    if (!wrappedAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sleBridge = peekBridge(ctx_.view(), bridgeSpec);
@@ -2018,11 +2017,10 @@ XChainCreateClaimID::doApply()
         (*sleClaimID)[sfOwnerNode] = *page;
     }
 
-    adjustOwnerCount(ctx_.view(), sleAcct, 1, ctx_.journal);
+    wrappedAcct.adjustOwnerCount(1, ctx_.journal);
 
     ctx_.view().insert(sleClaimID);
     ctx_.view().update(sleBridge);
-    ctx_.view().update(sleAcct);
 
     return tesSUCCESS;
 }

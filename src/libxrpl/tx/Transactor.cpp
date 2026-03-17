@@ -537,8 +537,8 @@ Transactor::ticketDelete(
 
     // Update the account root's TicketCount.  If the ticket count drops to
     // zero remove the (optional) field.
-    auto sleAccount = view.peek(keylet::account(account));
-    if (!sleAccount)
+    WrappedAccountRoot wrappedAcct(account, &view);
+    if (!wrappedAcct)
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "Could not find Ticket owner account root.";
@@ -546,11 +546,11 @@ Transactor::ticketDelete(
         // LCOV_EXCL_STOP
     }
 
-    if (auto ticketCount = (*sleAccount)[~sfTicketCount])
+    if (auto ticketCount = (*wrappedAcct)[~sfTicketCount])
     {
         if (*ticketCount == 1)
         {
-            sleAccount->makeFieldAbsent(sfTicketCount);
+            wrappedAcct->makeFieldAbsent(sfTicketCount);
         }
         else
         {
@@ -566,7 +566,7 @@ Transactor::ticketDelete(
     }
 
     // Update the Ticket owner's reserve.
-    adjustOwnerCount(view, sleAccount, -1, j);
+    wrappedAcct.adjustOwnerCount(-1, j);
 
     // Remove Ticket from ledger.
     view.erase(sleTicket);

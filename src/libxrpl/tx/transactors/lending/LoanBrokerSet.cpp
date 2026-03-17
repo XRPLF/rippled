@@ -200,7 +200,7 @@ LoanBrokerSet::doApply()
         auto const vaultAsset = sleVault->at(sfAsset);
         auto const sequence = tx.getSeqValue();
 
-        auto owner = view.peek(keylet::account(account_));
+        WrappedAccountRoot owner(account_, &view);
         if (!owner)
         {
             // This should be impossible
@@ -218,7 +218,7 @@ LoanBrokerSet::doApply()
 
         // Increases the owner count by two: one for the LoanBroker object, and
         // one for the pseudo-account.
-        adjustOwnerCount(view, owner, 2, j_);
+        owner.adjustOwnerCount(2, j_);
         auto const ownerCount = owner->at(sfOwnerCount);
         if (preFeeBalance_ < view.fees().accountReserve(ownerCount))
             return tecINSUFFICIENT_RESERVE;

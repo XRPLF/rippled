@@ -76,15 +76,15 @@ CredentialAccept::doApply()
     AccountID const issuer{ctx_.tx[sfIssuer]};
 
     // Both exist as credential object exist itself (checked in preclaim)
-    auto const sleSubject = view().peek(keylet::account(account_));
-    auto const sleIssuer = view().peek(keylet::account(issuer));
+    WrappedAccountRoot wrappedSubject(account_, &view());
+    WrappedAccountRoot wrappedIssuer(issuer, &view());
 
-    if (!sleSubject || !sleIssuer)
+    if (!wrappedSubject || !wrappedIssuer)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     {
         STAmount const reserve{
-            view().fees().accountReserve(sleSubject->getFieldU32(sfOwnerCount) + 1)};
+            view().fees().accountReserve(wrappedSubject->getFieldU32(sfOwnerCount) + 1)};
         if (preFeeBalance_ < reserve)
             return tecINSUFFICIENT_RESERVE;
     }
@@ -104,8 +104,8 @@ CredentialAccept::doApply()
     sleCred->setFieldU32(sfFlags, lsfAccepted);
     view().update(sleCred);
 
-    adjustOwnerCount(view(), sleIssuer, -1, j_);
-    adjustOwnerCount(view(), sleSubject, 1, j_);
+    wrappedIssuer.adjustOwnerCount(-1, j_);
+    wrappedSubject.adjustOwnerCount(1, j_);
 
     return tesSUCCESS;
 }

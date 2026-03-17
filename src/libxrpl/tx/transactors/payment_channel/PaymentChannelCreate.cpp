@@ -105,9 +105,8 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
 TER
 PaymentChannelCreate::doApply()
 {
-    auto const account = ctx_.tx[sfAccount];
-    auto const sle = ctx_.view().peek(keylet::account(account));
-    if (!sle)
+    WrappedAccountRoot wrappedOwner(account_, &ctx_.view());
+    if (!wrappedOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if (ctx_.view().rules().enabled(fixPayChanCancelAfter))
@@ -123,14 +122,14 @@ PaymentChannelCreate::doApply()
     //
     // Note that we we use the value from the sequence or ticket as the
     // payChan sequence.  For more explanation see comments in SeqProxy.h.
-    Keylet const payChanKeylet = keylet::payChan(account, dst, ctx_.tx.getSeqValue());
+    Keylet const payChanKeylet = keylet::payChan(account_, dst, ctx_.tx.getSeqValue());
     auto const slep = std::make_shared<SLE>(payChanKeylet);
 
     // Funds held in this channel
     (*slep)[sfAmount] = ctx_.tx[sfAmount];
     // Amount channel has already paid
     (*slep)[sfBalance] = ctx_.tx[sfAmount].zeroed();
-    (*slep)[sfAccount] = account;
+    (*slep)[sfAccount] = account_;
     (*slep)[sfDestination] = dst;
     (*slep)[sfSettleDelay] = ctx_.tx[sfSettleDelay];
     (*slep)[sfPublicKey] = ctx_.tx[sfPublicKey];
@@ -147,7 +146,7 @@ PaymentChannelCreate::doApply()
     // Add PayChan to owner directory
     {
         auto const page = ctx_.view().dirInsert(
-            keylet::ownerDir(account), payChanKeylet, describeOwnerDir(account));
+            keylet::ownerDir(account_), payChanKeylet, describeOwnerDir(account_));
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*slep)[sfOwnerNode] = *page;
@@ -163,9 +162,9 @@ PaymentChannelCreate::doApply()
     }
 
     // Deduct owner's balance, increment owner count
-    (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
-    adjustOwnerCount(ctx_.view(), sle, 1, ctx_.journal);
-    ctx_.view().update(sle);
+    (*wrappedOwner)[sfBalance] = (*wrappedOwner)[sfBalance] - ctx_.tx[sfAmount];
+    wrappedOwner.adjustOwnerCount(1, ctx_.journal);
+    ctx_.view().update(wrappedOwner.mutableSle());
 
     return tesSUCCESS;
 }

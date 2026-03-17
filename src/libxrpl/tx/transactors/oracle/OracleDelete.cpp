@@ -55,13 +55,13 @@ OracleDelete::deleteOracle(
         // LCOV_EXCL_STOP
     }
 
-    auto const sleOwner = view.peek(keylet::account(account));
-    if (!sleOwner)
+    WrappedAccountRoot wrappedOwner(account, &view);
+    if (!wrappedOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const count = sle->getFieldArray(sfPriceDataSeries).size() > 5 ? -2 : -1;
 
-    adjustOwnerCount(view, sleOwner, count, j);
+    wrappedOwner.adjustOwnerCount(count, j);
 
     view.erase(sle);
 

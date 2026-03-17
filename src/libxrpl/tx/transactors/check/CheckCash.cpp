@@ -248,7 +248,8 @@ CheckCash::doApply()
             // from src's directory, we allow them to send that additional
             // incremental reserve amount in the transfer.  Hence the -1
             // argument.
-            STAmount const srcLiquid{xrpLiquid(psb, srcId, -1, viewJ)};
+            WrappedAccountRoot wrappedSrc(srcId, &psb);
+            STAmount const srcLiquid{wrappedSrc.xrpLiquid(-1, viewJ)};
 
             // Now, how much do they need in order to be successful?
             STAmount const xrpDeliver{
@@ -307,10 +308,10 @@ CheckCash::doApply()
                 //     a. this (destination) account and
                 //     b. issuing account (not sending account).
 
-                auto const sleDst = psb.peek(keylet::account(account_));
+                WrappedAccountRoot wrappedDst(account_, &psb);
 
                 // Can the account cover the trust line's reserve?
-                if (std::uint32_t const ownerCount = {sleDst->at(sfOwnerCount)};
+                if (std::uint32_t const ownerCount = {wrappedDst->at(sfOwnerCount)};
                     preFeeBalance_ < psb.fees().accountReserve(ownerCount + 1))
                 {
                     JLOG(j_.trace()) << "Trust line does not exist. "
@@ -330,9 +331,9 @@ CheckCash::doApply()
                         issuer,                         // source
                         account_,                       // destination
                         trustLineKey.key,               // ledger index
-                        sleDst,                         // Account to add to
+                        wrappedDst,                         // Account to add to
                         false,                          // authorize account
-                        (sleDst->getFlags() & lsfDefaultRipple) == 0,
+                        (wrappedDst->getFlags() & lsfDefaultRipple) == 0,
                         false,                          // freeze trust line
                         false,                          // deep freeze trust line
                         initialBalance,                 // zero initial balance
@@ -346,7 +347,7 @@ CheckCash::doApply()
                 }
                 // clang-format on
 
-                psb.update(sleDst);
+                psb.update(wrappedDst.mutableSle());
 
                 // Note that we _don't_ need to be careful about destroying
                 // the trust line if the check cashing fails.  The transaction
@@ -437,7 +438,8 @@ CheckCash::doApply()
     }
 
     // If we succeeded, update the check owner's reserve.
-    adjustOwnerCount(psb, psb.peek(keylet::account(srcId)), -1, viewJ);
+    WrappedAccountRoot wrappedSrc(srcId, &psb);
+    wrappedSrc.adjustOwnerCount(-1, viewJ);
 
     // Remove check from ledger.
     psb.erase(sleCheck);

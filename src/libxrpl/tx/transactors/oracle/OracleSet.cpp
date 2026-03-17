@@ -160,9 +160,9 @@ OracleSet::preclaim(PreclaimContext const& ctx)
 static bool
 adjustOwnerCount(ApplyContext& ctx, int count)
 {
-    if (auto const sleAccount = ctx.view().peek(keylet::account(ctx.tx[sfAccount])))
+    if (auto wrappedAccount = WrappedAccountRoot(ctx.tx.getAccountID(sfAccount), &ctx.view()))
     {
-        adjustOwnerCount(ctx.view(), sleAccount, count, ctx.journal);
+        wrappedAccount.adjustOwnerCount(count, ctx.journal);
         return true;
     }
 
