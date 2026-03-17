@@ -49,7 +49,7 @@ validDomain(ReadView const& view, uint256 domainID, AccountID const& subject);
 // This function is only called when we about to return tecNO_PERMISSION
 // because all the checks for the DepositPreauth authorization failed.
 TER
-authorizedDepositPreauth(ApplyView const& view, STVector256 const& ctx, AccountID const& dst);
+authorizedDepositPreauth(ReadView const& view, STVector256 const& ctx, AccountID const& dst);
 
 // Sort credentials array, return empty set if there are duplicates
 std::set<std::pair<AccountID, Slice>>
