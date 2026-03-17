@@ -7,11 +7,11 @@ namespace xrpl {
 class CollectorManagerImp : public CollectorManager
 {
 public:
-    beast::Journal m_journal;
-    beast::insight::Collector::ptr m_collector;
-    std::unique_ptr<beast::insight::Groups> m_groups;
+    beast::Journal journal_;
+    beast::insight::Collector::ptr collector_;
+    std::unique_ptr<beast::insight::Groups> groups_;
 
-    CollectorManagerImp(Section const& params, beast::Journal journal) : m_journal(journal)
+    CollectorManagerImp(Section const& params, beast::Journal journal) : journal_(journal)
     {
         std::string const& server = get(params, "server");
 
@@ -21,14 +21,14 @@ public:
                 beast::IP::Endpoint::from_string(get(params, "address")));
             std::string const& prefix(get(params, "prefix"));
 
-            m_collector = beast::insight::StatsDCollector::New(address, prefix, journal);
+            collector_ = beast::insight::StatsDCollector::New(address, prefix, journal);
         }
         else
         {
-            m_collector = beast::insight::NullCollector::New();
+            collector_ = beast::insight::NullCollector::New();
         }
 
-        m_groups = beast::insight::make_Groups(m_collector);
+        groups_ = beast::insight::make_Groups(collector_);
     }
 
     ~CollectorManagerImp() = default;
@@ -36,13 +36,13 @@ public:
     beast::insight::Collector::ptr const&
     collector() override
     {
-        return m_collector;
+        return collector_;
     }
 
     beast::insight::Group::ptr const&
     group(std::string const& name) override
     {
-        return m_groups->get(name);
+        return groups_->get(name);
     }
 };
 

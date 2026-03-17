@@ -35,7 +35,7 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
 
         std::vector<duration> elapsed_times_;
 
-        measure_asio_timers(duration interval = 100ms, size_t num_samples = 50)
+        measure_asio_timers(duration interval = 100ms, size_t nusamples_ = 50)
         {
             using namespace std::chrono;
             boost::asio::io_context ios;
@@ -43,14 +43,14 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
                 work{boost::asio::make_work_guard(ios)};
             std::thread worker{[&] { ios.run(); }};
             boost::asio::basic_waitable_timer<Clock> timer{ios};
-            elapsed_times_.reserve(num_samples);
+            elapsed_times_.reserve(nusamples_);
             std::mutex mtx;
             std::unique_lock<std::mutex> mainlock{mtx};
             std::condition_variable cv;
             bool done = false;
             boost::system::error_code wait_err;
 
-            while (--num_samples)
+            while (--nusamples_)
             {
                 auto const start{MeasureClock::now()};
                 done = false;

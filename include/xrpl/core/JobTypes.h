@@ -16,7 +16,7 @@ public:
 
 private:
     JobTypes()
-        : m_unknown(
+        : unknown_(
               jtINVALID,
               "invalid",
               0,
@@ -33,12 +33,11 @@ private:
                        std::chrono::milliseconds avgLatency,
                        std::chrono::milliseconds peakLatency) {
             XRPL_ASSERT(
-                m_map.find(jt) == m_map.end(),
+                map_.find(jt) == map_.end(),
                 "xrpl::JobTypes::JobTypes::add : unique job type input");
 
             [[maybe_unused]] auto const inserted =
-                m_map
-                    .emplace(
+                map_.emplace(
                         std::piecewise_construct,
                         std::forward_as_tuple(jt),
                         std::forward_as_tuple(jt, name, limit, avgLatency, peakLatency))
@@ -117,53 +116,53 @@ public:
     JobTypeInfo const&
     get(JobType jt) const
     {
-        Map::const_iterator const iter(m_map.find(jt));
-        XRPL_ASSERT(iter != m_map.end(), "xrpl::JobTypes::get : valid input");
+        Map::const_iterator const iter(map_.find(jt));
+        XRPL_ASSERT(iter != map_.end(), "xrpl::JobTypes::get : valid input");
 
-        if (iter != m_map.end())
+        if (iter != map_.end())
             return iter->second;
 
-        return m_unknown;
+        return unknown_;
     }
 
     JobTypeInfo const&
     getInvalid() const
     {
-        return m_unknown;
+        return unknown_;
     }
 
     Map::size_type
     size() const
     {
-        return m_map.size();
+        return map_.size();
     }
 
     const_iterator
     begin() const
     {
-        return m_map.cbegin();
+        return map_.cbegin();
     }
 
     const_iterator
     cbegin() const
     {
-        return m_map.cbegin();
+        return map_.cbegin();
     }
 
     const_iterator
     end() const
     {
-        return m_map.cend();
+        return map_.cend();
     }
 
     const_iterator
     cend() const
     {
-        return m_map.cend();
+        return map_.cend();
     }
 
-    JobTypeInfo m_unknown;
-    Map m_map;
+    JobTypeInfo unknown_;
+    Map map_;
 };
 
 }  // namespace xrpl

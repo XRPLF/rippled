@@ -216,7 +216,7 @@ make_error(error_code_i code, std::string const& message);
 /** Returns a new json object that indicates invalid parameters. */
 /** @{ */
 inline Json::Value
-make_param_error(std::string const& message)
+make_paraerror_(std::string const& message)
 {
     return make_error(rpcINVALID_PARAMS, message);
 }
@@ -230,7 +230,7 @@ missing_field_message(std::string const& name)
 inline Json::Value
 missing_field_error(std::string const& name)
 {
-    return make_param_error(missing_field_message(name));
+    return make_paraerror_(missing_field_message(name));
 }
 
 inline Json::Value
@@ -248,7 +248,7 @@ object_field_message(std::string const& name)
 inline Json::Value
 object_field_error(std::string const& name)
 {
-    return make_param_error(object_field_message(name));
+    return make_paraerror_(object_field_message(name));
 }
 
 inline Json::Value
@@ -272,7 +272,7 @@ invalid_field_message(Json::StaticString name)
 inline Json::Value
 invalid_field_error(std::string const& name)
 {
-    return make_param_error(invalid_field_message(name));
+    return make_paraerror_(invalid_field_message(name));
 }
 
 inline Json::Value
@@ -296,7 +296,7 @@ expected_field_message(Json::StaticString name, std::string const& type)
 inline Json::Value
 expected_field_error(std::string const& name, std::string const& type)
 {
-    return make_param_error(expected_field_message(name, type));
+    return make_paraerror_(expected_field_message(name, type));
 }
 
 inline Json::Value
@@ -308,7 +308,7 @@ expected_field_error(Json::StaticString name, std::string const& type)
 inline Json::Value
 not_validator_error()
 {
-    return make_param_error("not a validator");
+    return make_paraerror_("not a validator");
 }
 
 /** @} */

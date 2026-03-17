@@ -126,7 +126,7 @@ private:
         }
         else
         {
-            return RPC::make_param_error(
+            return RPC::make_paraerror_(
                 std::string("Invalid currency/issuer '") + strCurrencyIssuer + "'");
         }
     }
@@ -1118,7 +1118,7 @@ private:
 
         std::string param = jvParams[index++].asString();
         if (param.empty())
-            return RPC::make_param_error("Invalid first parameter");
+            return RPC::make_paraerror_("Invalid first parameter");
 
         if (param[0] != 'r')
         {
@@ -1128,7 +1128,7 @@ private:
                 jvRequest[jss::ledger_index] = param;
 
             if (size <= index)
-                return RPC::make_param_error("Invalid hotwallet");
+                return RPC::make_paraerror_("Invalid hotwallet");
 
             param = jvParams[index++].asString();
         }

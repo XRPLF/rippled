@@ -17,13 +17,13 @@ public:
     bool
     isOk() const
     {
-        return m_isOk;
+        return isOk_;
     }
 
 private:
     static std::atomic<int> inProgress;
 
-    bool m_isOk;
+    bool isOk_;
 };
 
 }  // namespace RPC

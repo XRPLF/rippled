@@ -75,7 +75,7 @@ adjustDescriptorLimit(int needed, beast::Journal j)
 
         if (available < needed)
         {
-            // Ignore the rlim_max, as the process may
+            // Ignore the rlimit_max_, as the process may
             // be configured to override it anyways. We
             // ask for the number descriptors we need.
             rl.rlim_cur = needed;
@@ -240,7 +240,7 @@ runUnitTests(
     bool log,
     bool child,
     bool ipv6,
-    std::size_t num_jobs,
+    std::size_t num_jobs_,
     int argc,
     char** argv)
 {
@@ -249,11 +249,11 @@ runUnitTests(
 
     xrpl::test::envUseIPv4 = (!ipv6);
 
-    if (!child && num_jobs == 1)
+    if (!child && num_jobs_ == 1)
     {
         multi_runner_parent parent_runner;
 
-        multi_runner_child child_runner{num_jobs, quiet, log};
+        multi_runner_child child_runner{num_jobs_, quiet, log};
         child_runner.arg(argument);
         multi_selector pred(pattern);
         auto const any_failed = child_runner.run_multi(pred) || anyMissing(child_runner, pred);
@@ -276,7 +276,7 @@ runUnitTests(
             args.emplace_back("--unittest-child");
         }
 
-        for (std::size_t i = 0; i < num_jobs; ++i)
+        for (std::size_t i = 0; i < num_jobs_; ++i)
             children.emplace_back(
                 boost::process::v1::exe = exe_name, boost::process::v1::args = args);
 
@@ -308,7 +308,7 @@ runUnitTests(
     else
     {
         // child
-        multi_runner_child runner{num_jobs, quiet, log};
+        multi_runner_child runner{num_jobs_, quiet, log};
         runner.arg(argument);
         auto const anyFailed = runner.run_multi(multi_selector(pattern));
 

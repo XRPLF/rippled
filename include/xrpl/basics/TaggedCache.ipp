@@ -30,15 +30,15 @@ inline TaggedCache<
         clock_type& clock,
         beast::Journal journal,
         beast::insight::Collector::ptr const& collector)
-    : m_journal(journal)
-    , m_clock(clock)
-    , m_stats(name, std::bind(&TaggedCache::collect_metrics, this), collector)
-    , m_name(name)
-    , m_target_size(size)
-    , m_target_age(expiration)
-    , m_cache_count(0)
-    , m_hits(0)
-    , m_misses(0)
+    : journal_(journal)
+    , clock_(clock)
+    , stats_(name, std::bind(&TaggedCache::collect_metrics, this), collector)
+    , name_(name)
+    , target_size_(size)
+    , target_age_(expiration)
+    , cache_count_(0)
+    , hits_(0)
+    , misses_(0)
 {
 }
 
@@ -55,7 +55,7 @@ inline auto
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     clock() -> clock_type&
 {
-    return m_clock;
+    return clock_;
 }
 
 template <
@@ -71,8 +71,8 @@ inline std::size_t
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     size() const
 {
-    std::lock_guard lock(m_mutex);
-    return m_cache.size();
+    std::lock_guard lock(mutex_);
+    return cache_.size();
 }
 
 template <
@@ -88,8 +88,8 @@ inline int
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     getCacheSize() const
 {
-    std::lock_guard lock(m_mutex);
-    return m_cache_count;
+    std::lock_guard lock(mutex_);
+    return cache_count_;
 }
 
 template <
@@ -105,8 +105,8 @@ inline int
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     getTrackSize() const
 {
-    std::lock_guard lock(m_mutex);
-    return m_cache.size();
+    std::lock_guard lock(mutex_);
+    return cache_.size();
 }
 
 template <
@@ -122,9 +122,9 @@ inline float
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     getHitRate()
 {
-    std::lock_guard lock(m_mutex);
-    auto const total = static_cast<float>(m_hits + m_misses);
-    return m_hits * (100.0f / std::max(1.0f, total));
+    std::lock_guard lock(mutex_);
+    auto const total = static_cast<float>(hits_ + misses_);
+    return hits_ * (100.0f / std::max(1.0f, total));
 }
 
 template <
@@ -140,9 +140,9 @@ inline void
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     clear()
 {
-    std::lock_guard lock(m_mutex);
-    m_cache.clear();
-    m_cache_count = 0;
+    std::lock_guard lock(mutex_);
+    cache_.clear();
+    cache_count_ = 0;
 }
 
 template <
@@ -158,11 +158,11 @@ inline void
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     reset()
 {
-    std::lock_guard lock(m_mutex);
-    m_cache.clear();
-    m_cache_count = 0;
-    m_hits = 0;
-    m_misses = 0;
+    std::lock_guard lock(mutex_);
+    cache_.clear();
+    cache_count_ = 0;
+    hits_ = 0;
+    misses_ = 0;
 }
 
 template <
@@ -179,15 +179,15 @@ inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     touch_if_exists(KeyComparable const& key)
 {
-    std::lock_guard lock(m_mutex);
-    auto const iter(m_cache.find(key));
-    if (iter == m_cache.end())
+    std::lock_guard lock(mutex_);
+    auto const iter(cache_.find(key));
+    if (iter == cache_.end())
     {
-        ++m_stats.misses;
+        ++stats_.misses;
         return false;
     }
-    iter->second.touch(m_clock.now());
-    ++m_stats.hits;
+    iter->second.touch(clock_.now());
+    ++stats_.hits;
     return true;
 }
 
@@ -207,53 +207,53 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     // Keep references to all the stuff we sweep
     // For performance, each worker thread should exit before the swept data
     // is destroyed but still within the main cache lock.
-    std::vector<SweptPointersVector> allStuffToSweep(m_cache.partitions());
+    std::vector<SweptPointersVector> allStuffToSweep(cache_.partitions());
 
-    clock_type::time_point const now(m_clock.now());
+    clock_type::time_point const now(clock_.now());
     clock_type::time_point when_expire;
 
     auto const start = std::chrono::steady_clock::now();
     {
-        std::lock_guard lock(m_mutex);
+        std::lock_guard lock(mutex_);
 
-        if (m_target_size == 0 || (static_cast<int>(m_cache.size()) <= m_target_size))
+        if (target_size_ == 0 || (static_cast<int>(cache_.size()) <= target_size_))
         {
-            when_expire = now - m_target_age;
+            when_expire = now - target_age_;
         }
         else
         {
-            when_expire = now - m_target_age * m_target_size / m_cache.size();
+            when_expire = now - target_age_ * target_size_ / cache_.size();
 
             clock_type::duration const minimumAge(std::chrono::seconds(1));
             if (when_expire > (now - minimumAge))
                 when_expire = now - minimumAge;
 
-            JLOG(m_journal.trace())
-                << m_name << " is growing fast " << m_cache.size() << " of " << m_target_size
-                << " aging at " << (now - when_expire).count() << " of " << m_target_age.count();
+            JLOG(journal_.trace())
+                << name_ << " is growing fast " << cache_.size() << " of " << target_size_
+                << " aging at " << (now - when_expire).count() << " of " << target_age_.count();
         }
 
         std::vector<std::thread> workers;
-        workers.reserve(m_cache.partitions());
+        workers.reserve(cache_.partitions());
         std::atomic<int> allRemovals = 0;
 
-        for (std::size_t p = 0; p < m_cache.partitions(); ++p)
+        for (std::size_t p = 0; p < cache_.partitions(); ++p)
         {
             workers.push_back(sweepHelper(
-                when_expire, now, m_cache.map()[p], allStuffToSweep[p], allRemovals, lock));
+                when_expire, now, cache_.map()[p], allStuffToSweep[p], allRemovals, lock));
         }
         for (std::thread& worker : workers)
             worker.join();
 
-        m_cache_count -= allRemovals;
+        cache_count_ -= allRemovals;
     }
     // At this point allStuffToSweep will go out of scope outside the lock
     // and decrement the reference count on each strong pointer.
-    JLOG(m_journal.debug()) << m_name << " TaggedCache sweep lock duration "
-                            << std::chrono::duration_cast<std::chrono::milliseconds>(
-                                   std::chrono::steady_clock::now() - start)
-                                   .count()
-                            << "ms";
+    JLOG(journal_.debug()) << name_ << " TaggedCache sweep lock duration "
+                           << std::chrono::duration_cast<std::chrono::milliseconds>(
+                                  std::chrono::steady_clock::now() - start)
+                                  .count()
+                           << "ms";
 }
 
 template <
@@ -271,11 +271,11 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 {
     // Remove from cache, if !valid, remove from map too. Returns true if
     // removed from cache
-    std::lock_guard lock(m_mutex);
+    std::lock_guard lock(mutex_);
 
-    auto cit = m_cache.find(key);
+    auto cit = cache_.find(key);
 
-    if (cit == m_cache.end())
+    if (cit == cache_.end())
         return false;
 
     Entry& entry = cit->second;
@@ -284,13 +284,13 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 
     if (entry.isCached())
     {
-        --m_cache_count;
+        --cache_count_;
         entry.ptr.convertToWeak();
         ret = true;
     }
 
     if (!valid || entry.isExpired())
-        m_cache.erase(cit);
+        cache_.erase(cit);
 
     return ret;
 }
@@ -311,22 +311,22 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 {
     // Return canonical value, store if needed, refresh in cache
     // Return values: true=we had the data already
-    std::lock_guard lock(m_mutex);
+    std::lock_guard lock(mutex_);
 
-    auto cit = m_cache.find(key);
+    auto cit = cache_.find(key);
 
-    if (cit == m_cache.end())
+    if (cit == cache_.end())
     {
-        m_cache.emplace(
+        cache_.emplace(
             std::piecewise_construct,
             std::forward_as_tuple(key),
-            std::forward_as_tuple(m_clock.now(), data));
-        ++m_cache_count;
+            std::forward_as_tuple(clock_.now(), data));
+        ++cache_count_;
         return false;
     }
 
     Entry& entry = cit->second;
-    entry.touch(m_clock.now());
+    entry.touch(clock_.now());
 
     auto shouldReplace = [&] {
         if constexpr (std::is_invocable_r_v<bool, R>)
@@ -370,12 +370,12 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
             data = cachedData;
         }
 
-        ++m_cache_count;
+        ++cache_count_;
         return true;
     }
 
     entry.ptr = data;
-    ++m_cache_count;
+    ++cache_count_;
 
     return false;
 }
@@ -425,10 +425,10 @@ inline SharedPointerType
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     fetch(key_type const& key)
 {
-    std::lock_guard<mutex_type> l(m_mutex);
+    std::lock_guard<mutex_type> l(mutex_);
     auto ret = initialFetch(key, l);
     if (!ret)
-        ++m_misses;
+        ++misses_;
     return ret;
 }
 
@@ -476,9 +476,9 @@ inline auto
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     insert(key_type const& key) -> std::enable_if_t<IsKeyCache, ReturnType>
 {
-    std::lock_guard lock(m_mutex);
-    clock_type::time_point const now(m_clock.now());
-    auto [it, inserted] = m_cache.emplace(
+    std::lock_guard lock(mutex_);
+    clock_type::time_point const now(clock_.now());
+    auto [it, inserted] = cache_.emplace(
         std::piecewise_construct, std::forward_as_tuple(key), std::forward_as_tuple(now));
     if (!inserted)
         it->second.last_access = now;
@@ -521,7 +521,7 @@ inline auto
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     peekMutex() -> mutex_type&
 {
-    return m_mutex;
+    return mutex_;
 }
 
 template <
@@ -540,9 +540,9 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     std::vector<key_type> v;
 
     {
-        std::lock_guard lock(m_mutex);
-        v.reserve(m_cache.size());
-        for (auto const& _ : m_cache)
+        std::lock_guard lock(mutex_);
+        v.reserve(cache_.size());
+        for (auto const& _ : cache_)
             v.push_back(_.first);
     }
 
@@ -562,11 +562,11 @@ inline double
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     rate() const
 {
-    std::lock_guard lock(m_mutex);
-    auto const tot = m_hits + m_misses;
+    std::lock_guard lock(mutex_);
+    auto const tot = hits_ + misses_;
     if (tot == 0)
         return 0;
-    return double(m_hits) / tot;
+    return double(hits_) / tot;
 }
 
 template <
@@ -584,7 +584,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     fetch(key_type const& digest, Handler const& h)
 {
     {
-        std::lock_guard l(m_mutex);
+        std::lock_guard l(mutex_);
         if (auto ret = initialFetch(digest, l))
             return ret;
     }
@@ -593,11 +593,11 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     if (!sle)
         return {};
 
-    std::lock_guard l(m_mutex);
-    ++m_misses;
-    auto const [it, inserted] = m_cache.emplace(digest, Entry(m_clock.now(), std::move(sle)));
+    std::lock_guard l(mutex_);
+    ++misses_;
+    auto const [it, inserted] = cache_.emplace(digest, Entry(clock_.now(), std::move(sle)));
     if (!inserted)
-        it->second.touch(m_clock.now());
+        it->second.touch(clock_.now());
     return it->second.ptr.getStrong();
 }
 // End CachedSLEs functions.
@@ -615,27 +615,27 @@ inline SharedPointerType
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     initialFetch(key_type const& key, std::lock_guard<mutex_type> const& l)
 {
-    auto cit = m_cache.find(key);
-    if (cit == m_cache.end())
+    auto cit = cache_.find(key);
+    if (cit == cache_.end())
         return {};
 
     Entry& entry = cit->second;
     if (entry.isCached())
     {
-        ++m_hits;
-        entry.touch(m_clock.now());
+        ++hits_;
+        entry.touch(clock_.now());
         return entry.ptr.getStrong();
     }
     entry.ptr = entry.lock();
     if (entry.isCached())
     {
         // independent of cache size, so not counted as a hit
-        ++m_cache_count;
-        entry.touch(m_clock.now());
+        ++cache_count_;
+        entry.touch(clock_.now());
         return entry.ptr.getStrong();
     }
 
-    m_cache.erase(cit);
+    cache_.erase(cit);
     return {};
 }
 
@@ -652,17 +652,17 @@ inline void
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     collect_metrics()
 {
-    m_stats.size.set(getCacheSize());
+    stats_.size.set(getCacheSize());
 
     {
         beast::insight::Gauge::value_type hit_rate(0);
         {
-            std::lock_guard lock(m_mutex);
-            auto const total(m_hits + m_misses);
+            std::lock_guard lock(mutex_);
+            auto const total(hits_ + misses_);
             if (total != 0)
-                hit_rate = (m_hits * 100) / total;
+                hit_rate = (hits_ * 100) / total;
         }
-        m_stats.hit_rate.set(hit_rate);
+        stats_.hit_rate.set(hit_rate);
     }
 }
 
@@ -737,8 +737,8 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 
         if (mapRemovals || cacheRemovals)
         {
-            JLOG(m_journal.debug())
-                << "TaggedCache partition sweep " << m_name << ": cache = " << partition.size()
+            JLOG(journal_.debug())
+                << "TaggedCache partition sweep " << name_ << ": cache = " << partition.size()
                 << "-" << cacheRemovals << ", map-=" << mapRemovals;
         }
 
@@ -793,8 +793,8 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 
         if (mapRemovals || cacheRemovals)
         {
-            JLOG(m_journal.debug())
-                << "TaggedCache partition sweep " << m_name << ": cache = " << partition.size()
+            JLOG(journal_.debug())
+                << "TaggedCache partition sweep " << name_ << ": cache = " << partition.size()
                 << "-" << cacheRemovals << ", map-=" << mapRemovals;
         }
 

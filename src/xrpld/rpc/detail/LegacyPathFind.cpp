@@ -9,12 +9,12 @@
 namespace xrpl {
 namespace RPC {
 
-LegacyPathFind::LegacyPathFind(bool isAdmin, Application& app) : m_isOk(false)
+LegacyPathFind::LegacyPathFind(bool isAdmin, Application& app) : isOk_(false)
 {
     if (isAdmin)
     {
         ++inProgress;
-        m_isOk = true;
+        isOk_ = true;
         return;
     }
 
@@ -31,7 +31,7 @@ LegacyPathFind::LegacyPathFind(bool isAdmin, Application& app) : m_isOk(false)
         if (inProgress.compare_exchange_strong(
                 prevVal, prevVal + 1, std::memory_order_release, std::memory_order_relaxed))
         {
-            m_isOk = true;
+            isOk_ = true;
             return;
         }
     }
@@ -39,7 +39,7 @@ LegacyPathFind::LegacyPathFind(bool isAdmin, Application& app) : m_isOk(false)
 
 LegacyPathFind::~LegacyPathFind()
 {
-    if (m_isOk)
+    if (isOk_)
         --inProgress;
 }
 

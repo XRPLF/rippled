@@ -235,7 +235,7 @@ class Simulate_test : public beast::unit_test::suite
         {
             // `seed` field included
             Json::Value params = Json::objectValue;
-            params[jss::seed] = "random_data";
+            params[jss::seed] = "randodata_";
             Json::Value tx_json = Json::objectValue;
             tx_json[jss::TransactionType] = jss::AccountSet;
             tx_json[jss::Account] = env.master.human();
@@ -246,7 +246,7 @@ class Simulate_test : public beast::unit_test::suite
         {
             // `secret` field included
             Json::Value params = Json::objectValue;
-            params[jss::secret] = "random_data";
+            params[jss::secret] = "randodata_";
             Json::Value tx_json = Json::objectValue;
             tx_json[jss::TransactionType] = jss::AccountSet;
             tx_json[jss::Account] = env.master.human();
@@ -257,7 +257,7 @@ class Simulate_test : public beast::unit_test::suite
         {
             // `seed_hex` field included
             Json::Value params = Json::objectValue;
-            params[jss::seed_hex] = "random_data";
+            params[jss::seed_hex] = "randodata_";
             Json::Value tx_json = Json::objectValue;
             tx_json[jss::TransactionType] = jss::AccountSet;
             tx_json[jss::Account] = env.master.human();
@@ -268,7 +268,7 @@ class Simulate_test : public beast::unit_test::suite
         {
             // `passphrase` field included
             Json::Value params = Json::objectValue;
-            params[jss::passphrase] = "random_data";
+            params[jss::passphrase] = "randodata_";
             Json::Value tx_json = Json::objectValue;
             tx_json[jss::TransactionType] = jss::AccountSet;
             tx_json[jss::Account] = env.master.human();
@@ -405,7 +405,7 @@ class Simulate_test : public beast::unit_test::suite
         using namespace jtx;
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->section("transaction_queue").set("minimum_txn_in_ledger_standalone", "3");
+            cfg->section("transaction_queue").set("minimum_txn_in_ledger_standalone_", "3");
             return cfg;
         }));
 

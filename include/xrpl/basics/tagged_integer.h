@@ -34,7 +34,7 @@ class tagged_integer : boost::totally_ordered<
                                        boost::shiftable<tagged_integer<Int, Tag>>>>>>
 {
 private:
-    Int m_value;
+    Int value_;
 
 public:
     using value_type = Int;
@@ -46,7 +46,7 @@ public:
         class OtherInt,
         class = typename std::enable_if<
             std::is_integral<OtherInt>::value && sizeof(OtherInt) <= sizeof(Int)>::type>
-    explicit constexpr tagged_integer(OtherInt value) noexcept : m_value(value)
+    explicit constexpr tagged_integer(OtherInt value) noexcept : value_(value)
     {
         static_assert(sizeof(tagged_integer) == sizeof(Int), "tagged_integer is adding padding");
     }
@@ -54,89 +54,89 @@ public:
     bool
     operator<(tagged_integer const& rhs) const noexcept
     {
-        return m_value < rhs.m_value;
+        return value_ < rhs.value_;
     }
 
     bool
     operator==(tagged_integer const& rhs) const noexcept
     {
-        return m_value == rhs.m_value;
+        return value_ == rhs.value_;
     }
 
     tagged_integer&
     operator+=(tagged_integer const& rhs) noexcept
     {
-        m_value += rhs.m_value;
+        value_ += rhs.value_;
         return *this;
     }
 
     tagged_integer&
     operator-=(tagged_integer const& rhs) noexcept
     {
-        m_value -= rhs.m_value;
+        value_ -= rhs.value_;
         return *this;
     }
 
     tagged_integer&
     operator*=(tagged_integer const& rhs) noexcept
     {
-        m_value *= rhs.m_value;
+        value_ *= rhs.value_;
         return *this;
     }
 
     tagged_integer&
     operator/=(tagged_integer const& rhs) noexcept
     {
-        m_value /= rhs.m_value;
+        value_ /= rhs.value_;
         return *this;
     }
 
     tagged_integer&
     operator%=(tagged_integer const& rhs) noexcept
     {
-        m_value %= rhs.m_value;
+        value_ %= rhs.value_;
         return *this;
     }
 
     tagged_integer&
     operator|=(tagged_integer const& rhs) noexcept
     {
-        m_value |= rhs.m_value;
+        value_ |= rhs.value_;
         return *this;
     }
 
     tagged_integer&
     operator&=(tagged_integer const& rhs) noexcept
     {
-        m_value &= rhs.m_value;
+        value_ &= rhs.value_;
         return *this;
     }
 
     tagged_integer&
     operator^=(tagged_integer const& rhs) noexcept
     {
-        m_value ^= rhs.m_value;
+        value_ ^= rhs.value_;
         return *this;
     }
 
     tagged_integer&
     operator<<=(tagged_integer const& rhs) noexcept
     {
-        m_value <<= rhs.m_value;
+        value_ <<= rhs.value_;
         return *this;
     }
 
     tagged_integer&
     operator>>=(tagged_integer const& rhs) noexcept
     {
-        m_value >>= rhs.m_value;
+        value_ >>= rhs.value_;
         return *this;
     }
 
     tagged_integer
     operator~() const noexcept
     {
-        return tagged_integer{~m_value};
+        return tagged_integer{~value_};
     }
 
     tagged_integer
@@ -148,47 +148,47 @@ public:
     tagged_integer
     operator-() const noexcept
     {
-        return tagged_integer{-m_value};
+        return tagged_integer{-value_};
     }
 
     tagged_integer&
     operator++() noexcept
     {
-        ++m_value;
+        ++value_;
         return *this;
     }
 
     tagged_integer&
     operator--() noexcept
     {
-        --m_value;
+        --value_;
         return *this;
     }
 
     explicit
     operator Int() const noexcept
     {
-        return m_value;
+        return value_;
     }
 
     friend std::ostream&
     operator<<(std::ostream& s, tagged_integer const& t)
     {
-        s << t.m_value;
+        s << t.value_;
         return s;
     }
 
     friend std::istream&
     operator>>(std::istream& s, tagged_integer& t)
     {
-        s >> t.m_value;
+        s >> t.value_;
         return s;
     }
 
     friend std::string
     to_string(tagged_integer const& t)
     {
-        return std::to_string(t.m_value);
+        return std::to_string(t.value_);
     }
 };
 

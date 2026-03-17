@@ -775,7 +775,7 @@ public:
             auto const amt = XRP(1000);
 
             // send first batch of account create attestations, so the
-            // xchain_create_account_claim_id should be present on the door
+            // xchain_create_account_claim_id_ should be present on the door
             // account (Account::master) to collect the signatures until a
             // quorum is reached
             scEnv(
@@ -801,17 +801,17 @@ public:
             };
 
             {
-                // Find the xchain_create_account_claim_id
+                // Find the xchain_create_account_claim_id_
                 Json::Value const resp =
                     scEnvAcctObjs(Account::master, jss::xchain_owned_create_account_claim_id);
                 BEAST_EXPECT(acctObjsIsSize(resp, 1));
 
-                auto const& xchain_create_account_claim_id =
+                auto const& xchain_create_account_claim_id_ =
                     resp[jss::result][jss::account_objects][0u];
                 BEAST_EXPECT(
-                    xchain_create_account_claim_id[sfAccount.jsonName] == Account::master.human());
+                    xchain_create_account_claim_id_[sfAccount.jsonName] == Account::master.human());
                 BEAST_EXPECT(
-                    xchain_create_account_claim_id[sfXChainAccountCreateCount.getJsonName()]
+                    xchain_create_account_claim_id_[sfXChainAccountCreateCount.getJsonName()]
                         .asUInt() == 1);
             }
         }

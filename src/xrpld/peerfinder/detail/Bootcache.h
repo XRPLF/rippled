@@ -36,20 +36,20 @@ private:
     class Entry
     {
     public:
-        Entry(int valence) : m_valence(valence)
+        Entry(int valence) : valence_(valence)
         {
         }
 
         int&
         valence()
         {
-            return m_valence;
+            return valence_;
         }
 
         int
         valence() const
         {
-            return m_valence;
+            return valence_;
         }
 
         friend bool
@@ -61,7 +61,7 @@ private:
         }
 
     private:
-        int m_valence;
+        int valence_;
     };
 
     using left_t = boost::bimaps::unordered_set_of<
@@ -87,17 +87,17 @@ private:
     };
 
 private:
-    map_type m_map;
+    map_type map_;
 
-    Store& m_store;
-    clock_type& m_clock;
-    beast::Journal m_journal;
+    Store& store_;
+    clock_type& clock_;
+    beast::Journal journal_;
 
     // Time after which we can update the database again
-    clock_type::time_point m_whenUpdate;
+    clock_type::time_point whenUpdate_;
 
     // Set to true when a database update is needed
-    bool m_needsUpdate;
+    bool needsUpdate_;
 
 public:
     static constexpr int staticValence = 32;

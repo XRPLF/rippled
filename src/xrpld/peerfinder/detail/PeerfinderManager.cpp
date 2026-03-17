@@ -18,12 +18,12 @@ class ManagerImp : public Manager
 public:
     boost::asio::io_context& io_context_;
     std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
-    clock_type& m_clock;
-    beast::Journal m_journal;
-    StoreSqdb m_store;
+    clock_type& clock_;
+    beast::Journal journal_;
+    StoreSqdb store_;
     Checker<boost::asio::ip::tcp> checker_;
-    Logic<decltype(checker_)> m_logic;
-    BasicConfig const& m_config;
+    Logic<decltype(checker_)> logic_;
+    BasicConfig const& config_;
 
     //--------------------------------------------------------------------------
 
@@ -36,13 +36,13 @@ public:
         : Manager()
         , io_context_(io_context)
         , work_(std::in_place, boost::asio::make_work_guard(io_context_))
-        , m_clock(clock)
-        , m_journal(journal)
-        , m_store(journal)
+        , clock_(clock)
+        , journal_(journal)
+        , store_(journal)
         , checker_(io_context_)
-        , m_logic(clock, m_store, checker_, journal)
-        , m_config(config)
-        , m_stats(std::bind(&ManagerImp::collect_metrics, this), collector)
+        , logic_(clock, store_, checker_, journal)
+        , config_(config)
+        , stats_(std::bind(&ManagerImp::collect_metrics, this), collector)
     {
     }
 
@@ -58,7 +58,7 @@ public:
         {
             work_.reset();
             checker_.stop();
-            m_logic.stop();
+            logic_.stop();
         }
     }
 
@@ -71,26 +71,26 @@ public:
     void
     setConfig(Config const& config) override
     {
-        m_logic.config(config);
+        logic_.config(config);
     }
 
     Config
     config() override
     {
-        return m_logic.config();
+        return logic_.config();
     }
 
     void
     addFixedPeer(std::string const& name, std::vector<beast::IP::Endpoint> const& addresses)
         override
     {
-        m_logic.addFixedPeer(name, addresses);
+        logic_.addFixedPeer(name, addresses);
     }
 
     void
     addFallbackStrings(std::string const& name, std::vector<std::string> const& strings) override
     {
-        m_logic.addStaticSource(SourceStrings::New(name, strings));
+        logic_.addStaticSource(SourceStrings::New(name, strings));
     }
 
     void
@@ -106,34 +106,34 @@ public:
         beast::IP::Endpoint const& local_endpoint,
         beast::IP::Endpoint const& remote_endpoint) override
     {
-        return m_logic.new_inbound_slot(local_endpoint, remote_endpoint);
+        return logic_.new_inbound_slot(local_endpoint, remote_endpoint);
     }
 
     std::pair<std::shared_ptr<Slot>, Result>
     new_outbound_slot(beast::IP::Endpoint const& remote_endpoint) override
     {
-        return m_logic.new_outbound_slot(remote_endpoint);
+        return logic_.new_outbound_slot(remote_endpoint);
     }
 
     void
     on_endpoints(std::shared_ptr<Slot> const& slot, Endpoints const& endpoints) override
     {
         SlotImp::ptr impl(std::dynamic_pointer_cast<SlotImp>(slot));
-        m_logic.on_endpoints(impl, endpoints);
+        logic_.on_endpoints(impl, endpoints);
     }
 
     void
     on_closed(std::shared_ptr<Slot> const& slot) override
     {
         SlotImp::ptr impl(std::dynamic_pointer_cast<SlotImp>(slot));
-        m_logic.on_closed(impl);
+        logic_.on_closed(impl);
     }
 
     void
     on_failure(std::shared_ptr<Slot> const& slot) override
     {
         SlotImp::ptr impl(std::dynamic_pointer_cast<SlotImp>(slot));
-        m_logic.on_failure(impl);
+        logic_.on_failure(impl);
     }
 
     void
@@ -141,7 +141,7 @@ public:
         boost::asio::ip::tcp::endpoint const& remote_address,
         std::vector<boost::asio::ip::tcp::endpoint> const& eps) override
     {
-        m_logic.onRedirects(eps.begin(), eps.end(), remote_address);
+        logic_.onRedirects(eps.begin(), eps.end(), remote_address);
     }
 
     //--------------------------------------------------------------------------
@@ -151,46 +151,46 @@ public:
         override
     {
         SlotImp::ptr impl(std::dynamic_pointer_cast<SlotImp>(slot));
-        return m_logic.onConnected(impl, local_endpoint);
+        return logic_.onConnected(impl, local_endpoint);
     }
 
     Result
     activate(std::shared_ptr<Slot> const& slot, PublicKey const& key, bool reserved) override
     {
         SlotImp::ptr impl(std::dynamic_pointer_cast<SlotImp>(slot));
-        return m_logic.activate(impl, key, reserved);
+        return logic_.activate(impl, key, reserved);
     }
 
     std::vector<Endpoint>
     redirect(std::shared_ptr<Slot> const& slot) override
     {
         SlotImp::ptr impl(std::dynamic_pointer_cast<SlotImp>(slot));
-        return m_logic.redirect(impl);
+        return logic_.redirect(impl);
     }
 
     std::vector<beast::IP::Endpoint>
     autoconnect() override
     {
-        return m_logic.autoconnect();
+        return logic_.autoconnect();
     }
 
     void
     once_per_second() override
     {
-        m_logic.once_per_second();
+        logic_.once_per_second();
     }
 
     std::vector<std::pair<std::shared_ptr<Slot>, std::vector<Endpoint>>>
     buildEndpointsForPeers() override
     {
-        return m_logic.buildEndpointsForPeers();
+        return logic_.buildEndpointsForPeers();
     }
 
     void
     start() override
     {
-        m_store.open(m_config);
-        m_logic.load();
+        store_.open(config_);
+        logic_.load();
     }
 
     //--------------------------------------------------------------------------
@@ -202,7 +202,7 @@ public:
     void
     onWrite(beast::PropertyStream::Map& map) override
     {
-        m_logic.onWrite(map);
+        logic_.onWrite(map);
     }
 
 private:
@@ -221,15 +221,15 @@ private:
         beast::insight::Gauge activeOutboundPeers;
     };
 
-    std::mutex m_statsMutex;
-    Stats m_stats;
+    std::mutex statsMutex_;
+    Stats stats_;
 
     void
     collect_metrics()
     {
-        std::lock_guard lock(m_statsMutex);
-        m_stats.activeInboundPeers = m_logic.counts_.inboundActive();
-        m_stats.activeOutboundPeers = m_logic.counts_.out_active();
+        std::lock_guard lock(statsMutex_);
+        stats_.activeInboundPeers = logic_.counts_.inboundActive();
+        stats_.activeOutboundPeers = logic_.counts_.out_active();
     }
 };
 

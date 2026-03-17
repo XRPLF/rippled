@@ -312,7 +312,7 @@ public:
         // `carol->dan`. There are four accounts. If we count the number of
         // combinations of parameters where a parameter is changed from its
         // default value, there are
-        // 2^(num_trust_lines*num_trust_qualities+numAccounts) combinations of
+        // 2^(nutrust_lines_*nutrust_qualities_+numAccounts) combinations of
         // values to test, or 2^13 combinations. Use this value to set the
         // number of iterations. Note however that many of these parameter
         // combinations run essentially the same test. For example, changing the

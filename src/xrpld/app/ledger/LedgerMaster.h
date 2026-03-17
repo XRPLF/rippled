@@ -276,7 +276,7 @@ private:
         InboundLedger::Reason reason,
         std::unique_lock<std::recursive_mutex>&);
     // Try to publish ledgers, acquire missing ledgers.  Always called with
-    // m_mutex locked.  The passed lock is a reminder to callers.
+    // mutex_ locked.  The passed lock is a reminder to callers.
     void
     doAdvance(std::unique_lock<std::recursive_mutex>&);
 
@@ -286,15 +286,15 @@ private:
     void
     updatePaths();
 
-    // Returns true if work started.  Always called with m_mutex locked.
+    // Returns true if work started.  Always called with mutex_ locked.
     // The passed lock is a reminder to callers.
     bool
     newPFWork(char const* name, std::unique_lock<std::recursive_mutex>&);
 
     Application& app_;
-    beast::Journal m_journal;
+    beast::Journal journal_;
 
-    std::recursive_mutex mutable m_mutex;
+    std::recursive_mutex mutable mutex_;
 
     // The ledger that most recently closed.
     LedgerHolder mClosedLedger;
@@ -380,15 +380,15 @@ private:
         beast::insight::Gauge publishedLedgerAge;
     };
 
-    Stats m_stats;
+    Stats stats_;
 
 private:
     void
     collect_metrics()
     {
-        std::lock_guard lock(m_mutex);
-        m_stats.validatedLedgerAge.set(getValidatedLedgerAge().count());
-        m_stats.publishedLedgerAge.set(getPublishedLedgerAge().count());
+        std::lock_guard lock(mutex_);
+        stats_.validatedLedgerAge.set(getValidatedLedgerAge().count());
+        stats_.publishedLedgerAge.set(getPublishedLedgerAge().count());
     }
 };
 

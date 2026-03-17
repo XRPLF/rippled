@@ -252,9 +252,9 @@ public:
     using list_type = std::vector<beast::IP::Endpoint>;
 
 private:
-    std::size_t m_needed;
-    Squelches& m_squelches;
-    list_type m_list;
+    std::size_t needed_;
+    Squelches& squelches_;
+    list_type list_;
 
 public:
     template <class = void>
@@ -267,13 +267,13 @@ public:
     bool
     empty() const
     {
-        return m_list.empty();
+        return list_.empty();
     }
 
     bool
     full() const
     {
-        return m_list.size() >= m_needed;
+        return list_.size() >= needed_;
     }
 
     bool
@@ -285,21 +285,21 @@ public:
     list_type&
     list()
     {
-        return m_list;
+        return list_;
     }
 
     list_type const&
     list() const
     {
-        return m_list;
+        return list_;
     }
 };
 
 template <class>
 ConnectHandouts::ConnectHandouts(std::size_t needed, Squelches& squelches)
-    : m_needed(needed), m_squelches(squelches)
+    : needed_(needed), squelches_(squelches)
 {
-    m_list.reserve(needed);
+    list_.reserve(needed);
 }
 
 template <class>
@@ -310,7 +310,7 @@ ConnectHandouts::try_insert(beast::IP::Endpoint const& endpoint)
         return false;
 
     // Make sure the address isn't already in our list
-    if (std::any_of(m_list.begin(), m_list.end(), [&endpoint](beast::IP::Endpoint const& other) {
+    if (std::any_of(list_.begin(), list_.end(), [&endpoint](beast::IP::Endpoint const& other) {
             // Ignore port for security reasons
             return other.address() == endpoint.address();
         }))
@@ -320,11 +320,11 @@ ConnectHandouts::try_insert(beast::IP::Endpoint const& endpoint)
 
     // Add to squelch list so we don't try it too often.
     // If its already there, then make try_insert fail.
-    auto const result(m_squelches.insert(endpoint.address()));
+    auto const result(squelches_.insert(endpoint.address()));
     if (!result.second)
         return false;
 
-    m_list.push_back(endpoint);
+    list_.push_back(endpoint);
 
     return true;
 }

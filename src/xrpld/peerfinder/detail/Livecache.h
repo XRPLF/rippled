@@ -77,49 +77,49 @@ public:
         iterator
         begin() const
         {
-            return iterator(m_list.get().cbegin(), Transform());
+            return iterator(list_.get().cbegin(), Transform());
         }
 
         iterator
         cbegin() const
         {
-            return iterator(m_list.get().cbegin(), Transform());
+            return iterator(list_.get().cbegin(), Transform());
         }
 
         iterator
         end() const
         {
-            return iterator(m_list.get().cend(), Transform());
+            return iterator(list_.get().cend(), Transform());
         }
 
         iterator
         cend() const
         {
-            return iterator(m_list.get().cend(), Transform());
+            return iterator(list_.get().cend(), Transform());
         }
 
         reverse_iterator
         rbegin() const
         {
-            return reverse_iterator(m_list.get().crbegin(), Transform());
+            return reverse_iterator(list_.get().crbegin(), Transform());
         }
 
         reverse_iterator
         crbegin() const
         {
-            return reverse_iterator(m_list.get().crbegin(), Transform());
+            return reverse_iterator(list_.get().crbegin(), Transform());
         }
 
         reverse_iterator
         rend() const
         {
-            return reverse_iterator(m_list.get().crend(), Transform());
+            return reverse_iterator(list_.get().crend(), Transform());
         }
 
         reverse_iterator
         crend() const
         {
-            return reverse_iterator(m_list.get().crend(), Transform());
+            return reverse_iterator(list_.get().crend(), Transform());
         }
 
         // move the element to the end of the container
@@ -127,18 +127,18 @@ public:
         move_back(const_iterator pos)
         {
             auto& e(const_cast<Element&>(*pos.base()));
-            m_list.get().erase(m_list.get().iterator_to(e));
-            m_list.get().push_back(e);
+            list_.get().erase(list_.get().iterator_to(e));
+            list_.get().push_back(e);
         }
 
     private:
-        explicit Hop(typename beast::maybe_const<IsConst, list_type>::type& list) : m_list(list)
+        explicit Hop(typename beast::maybe_const<IsConst, list_type>::type& list) : list_(list)
         {
         }
 
         friend class LivecacheBase;
 
-        std::reference_wrapper<typename beast::maybe_const<IsConst, list_type>::type> m_list;
+        std::reference_wrapper<typename beast::maybe_const<IsConst, list_type>::type> list_;
     };
 
 protected:
@@ -178,8 +178,8 @@ private:
         std::less<beast::IP::Endpoint>,
         Allocator>;
 
-    beast::Journal m_journal;
-    cache_type m_cache;
+    beast::Journal journal_;
+    cache_type cache_;
 
 public:
     using allocator_type = Allocator;
@@ -236,73 +236,73 @@ public:
         iterator
         begin()
         {
-            return iterator(m_lists.begin(), Transform<false>());
+            return iterator(lists_.begin(), Transform<false>());
         }
 
         const_iterator
         begin() const
         {
-            return const_iterator(m_lists.cbegin(), Transform<true>());
+            return const_iterator(lists_.cbegin(), Transform<true>());
         }
 
         const_iterator
         cbegin() const
         {
-            return const_iterator(m_lists.cbegin(), Transform<true>());
+            return const_iterator(lists_.cbegin(), Transform<true>());
         }
 
         iterator
         end()
         {
-            return iterator(m_lists.end(), Transform<false>());
+            return iterator(lists_.end(), Transform<false>());
         }
 
         const_iterator
         end() const
         {
-            return const_iterator(m_lists.cend(), Transform<true>());
+            return const_iterator(lists_.cend(), Transform<true>());
         }
 
         const_iterator
         cend() const
         {
-            return const_iterator(m_lists.cend(), Transform<true>());
+            return const_iterator(lists_.cend(), Transform<true>());
         }
 
         reverse_iterator
         rbegin()
         {
-            return reverse_iterator(m_lists.rbegin(), Transform<false>());
+            return reverse_iterator(lists_.rbegin(), Transform<false>());
         }
 
         const_reverse_iterator
         rbegin() const
         {
-            return const_reverse_iterator(m_lists.crbegin(), Transform<true>());
+            return const_reverse_iterator(lists_.crbegin(), Transform<true>());
         }
 
         const_reverse_iterator
         crbegin() const
         {
-            return const_reverse_iterator(m_lists.crbegin(), Transform<true>());
+            return const_reverse_iterator(lists_.crbegin(), Transform<true>());
         }
 
         reverse_iterator
         rend()
         {
-            return reverse_iterator(m_lists.rend(), Transform<false>());
+            return reverse_iterator(lists_.rend(), Transform<false>());
         }
 
         const_reverse_iterator
         rend() const
         {
-            return const_reverse_iterator(m_lists.crend(), Transform<true>());
+            return const_reverse_iterator(lists_.crend(), Transform<true>());
         }
 
         const_reverse_iterator
         crend() const
         {
-            return const_reverse_iterator(m_lists.crend(), Transform<true>());
+            return const_reverse_iterator(lists_.crend(), Transform<true>());
         }
 
         /** Shuffle each hop list. */
@@ -326,22 +326,22 @@ public:
         remove(Element& e);
 
         friend class Livecache;
-        lists_type m_lists;
-        Histogram m_hist;
+        lists_type lists_;
+        Histogram hist_;
     } hops;
 
     /** Returns `true` if the cache is empty. */
     bool
     empty() const
     {
-        return m_cache.empty();
+        return cache_.empty();
     }
 
     /** Returns the number of entries in the cache. */
     typename cache_type::size_type
     size() const
     {
-        return m_cache.size();
+        return cache_.size();
     }
 
     /** Erase entries whose time has expired. */
@@ -361,7 +361,7 @@ public:
 
 template <class Allocator>
 Livecache<Allocator>::Livecache(clock_type& clock, beast::Journal journal, Allocator alloc)
-    : m_journal(journal), m_cache(clock, alloc), hops(alloc)
+    : journal_(journal), cache_(clock, alloc), hops(alloc)
 {
 }
 
@@ -371,19 +371,19 @@ Livecache<Allocator>::expire()
 {
     std::size_t n(0);
     typename cache_type::time_point const expired(
-        m_cache.clock().now() - Tuning::liveCacheSecondsToLive);
-    for (auto iter(m_cache.chronological.begin());
-         iter != m_cache.chronological.end() && iter.when() <= expired;)
+        cache_.clock().now() - Tuning::liveCacheSecondsToLive);
+    for (auto iter(cache_.chronological.begin());
+         iter != cache_.chronological.end() && iter.when() <= expired;)
     {
         Element& e(iter->second);
         hops.remove(e);
-        iter = m_cache.erase(iter);
+        iter = cache_.erase(iter);
         ++n;
     }
     if (n > 0)
     {
-        JLOG(m_journal.debug()) << beast::leftw(18) << "Livecache expired " << n
-                                << ((n > 1) ? " entries" : " entry");
+        JLOG(journal_.debug()) << beast::leftw(18) << "Livecache expired " << n
+                               << ((n > 1) ? " entries" : " entry");
     }
 }
 
@@ -400,37 +400,37 @@ Livecache<Allocator>::insert(Endpoint const& ep)
     XRPL_ASSERT(
         ep.hops <= (Tuning::maxHops + 1),
         "xrpl::PeerFinder::Livecache::insert : maximum input hops");
-    auto result = m_cache.emplace(ep.address, ep);
+    auto result = cache_.emplace(ep.address, ep);
     Element& e(result.first->second);
     if (result.second)
     {
         hops.insert(e);
-        JLOG(m_journal.debug()) << beast::leftw(18) << "Livecache insert " << ep.address
-                                << " at hops " << ep.hops;
+        JLOG(journal_.debug()) << beast::leftw(18) << "Livecache insert " << ep.address
+                               << " at hops " << ep.hops;
         return;
     }
     else if (!result.second && (ep.hops > e.endpoint.hops))
     {
         // Drop duplicates at higher hops
         std::size_t const excess(ep.hops - e.endpoint.hops);
-        JLOG(m_journal.trace()) << beast::leftw(18) << "Livecache drop " << ep.address
-                                << " at hops +" << excess;
+        JLOG(journal_.trace()) << beast::leftw(18) << "Livecache drop " << ep.address
+                               << " at hops +" << excess;
         return;
     }
 
-    m_cache.touch(result.first);
+    cache_.touch(result.first);
 
     // Address already in the cache so update metadata
     if (ep.hops < e.endpoint.hops)
     {
         hops.reinsert(e, ep.hops);
-        JLOG(m_journal.debug()) << beast::leftw(18) << "Livecache update " << ep.address
-                                << " at hops " << ep.hops;
+        JLOG(journal_.debug()) << beast::leftw(18) << "Livecache update " << ep.address
+                               << " at hops " << ep.hops;
     }
     else
     {
-        JLOG(m_journal.trace()) << beast::leftw(18) << "Livecache refresh " << ep.address
-                                << " at hops " << ep.hops;
+        JLOG(journal_.trace()) << beast::leftw(18) << "Livecache refresh " << ep.address
+                               << " at hops " << ep.hops;
     }
 }
 
@@ -439,11 +439,11 @@ void
 Livecache<Allocator>::onWrite(beast::PropertyStream::Map& map)
 {
     typename cache_type::time_point const expired(
-        m_cache.clock().now() - Tuning::liveCacheSecondsToLive);
+        cache_.clock().now() - Tuning::liveCacheSecondsToLive);
     map["size"] = size();
     map["hist"] = hops.histogram();
     beast::PropertyStream::Set set("entries", map);
-    for (auto iter(m_cache.cbegin()); iter != m_cache.cend(); ++iter)
+    for (auto iter(cache_.cbegin()); iter != cache_.cend(); ++iter)
     {
         auto const& e(iter->second);
         beast::PropertyStream::Map item(set);
@@ -461,7 +461,7 @@ template <class Allocator>
 void
 Livecache<Allocator>::hops_t::shuffle()
 {
-    for (auto& list : m_lists)
+    for (auto& list : lists_)
     {
         std::vector<std::reference_wrapper<Element>> v;
         v.reserve(list.size());
@@ -478,7 +478,7 @@ std::string
 Livecache<Allocator>::hops_t::histogram() const
 {
     std::string s;
-    for (auto const& h : m_hist)
+    for (auto const& h : hist_)
     {
         if (!s.empty())
             s += ", ";
@@ -490,7 +490,7 @@ Livecache<Allocator>::hops_t::histogram() const
 template <class Allocator>
 Livecache<Allocator>::hops_t::hops_t(Allocator const& alloc)
 {
-    std::fill(m_hist.begin(), m_hist.end(), 0);
+    std::fill(hist_.begin(), hist_.end(), 0);
 }
 
 template <class Allocator>
@@ -501,8 +501,8 @@ Livecache<Allocator>::hops_t::insert(Element& e)
         e.endpoint.hops <= Tuning::maxHops + 1,
         "xrpl::PeerFinder::Livecache::hops_t::insert : maximum input hops");
     // This has security implications without a shuffle
-    m_lists[e.endpoint.hops].push_front(e);
-    ++m_hist[e.endpoint.hops];
+    lists_[e.endpoint.hops].push_front(e);
+    ++hist_[e.endpoint.hops];
 }
 
 template <class Allocator>
@@ -513,10 +513,10 @@ Livecache<Allocator>::hops_t::reinsert(Element& e, std::uint32_t numHops)
         numHops <= Tuning::maxHops + 1,
         "xrpl::PeerFinder::Livecache::hops_t::reinsert : maximum hops input");
 
-    auto& list = m_lists[e.endpoint.hops];
+    auto& list = lists_[e.endpoint.hops];
     list.erase(list.iterator_to(e));
 
-    --m_hist[e.endpoint.hops];
+    --hist_[e.endpoint.hops];
 
     e.endpoint.hops = numHops;
     insert(e);
@@ -526,9 +526,9 @@ template <class Allocator>
 void
 Livecache<Allocator>::hops_t::remove(Element& e)
 {
-    --m_hist[e.endpoint.hops];
+    --hist_[e.endpoint.hops];
 
-    auto& list = m_lists[e.endpoint.hops];
+    auto& list = lists_[e.endpoint.hops];
     list.erase(list.iterator_to(e));
 }
 

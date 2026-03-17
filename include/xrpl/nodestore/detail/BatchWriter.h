@@ -67,8 +67,8 @@ private:
     using LockType = std::recursive_mutex;
     using CondvarType = std::condition_variable_any;
 
-    Callback& m_callback;
-    Scheduler& m_scheduler;
+    Callback& callback_;
+    Scheduler& scheduler_;
     LockType mWriteMutex;
     CondvarType mWriteCondition;
     int mWriteLoad;

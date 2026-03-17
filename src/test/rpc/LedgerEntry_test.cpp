@@ -2737,7 +2737,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
     void
     testClaimID()
     {
-        testcase("ledger_entry: xchain_claim_id");
+        testcase("ledger_entry: xchain_claim_id_");
         using namespace test::jtx;
 
         Env mcEnv{*this, features};
@@ -2751,7 +2751,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
         scEnv.close();
 
         {
-            // request the xchain_claim_id via RPC
+            // request the xchain_claim_id_ via RPC
             Json::Value jvParams;
             jvParams[jss::xchain_owned_claim_id] = jvXRPBridgeRPC;
             jvParams[jss::xchain_owned_claim_id][jss::xchain_owned_claim_id] = 1;
@@ -2769,7 +2769,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
         }
 
         {
-            // request the xchain_claim_id via RPC
+            // request the xchain_claim_id_ via RPC
             Json::Value jvParams;
             jvParams[jss::xchain_owned_claim_id] = jvXRPBridgeRPC;
             jvParams[jss::xchain_owned_claim_id][jss::xchain_owned_claim_id] = 2;
@@ -2790,7 +2790,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
     void
     testCreateAccountClaimID()
     {
-        testcase("ledger_entry: xchain_create_account_claim_id");
+        testcase("ledger_entry: xchain_create_account_claim_id_");
         using namespace test::jtx;
 
         Env mcEnv{*this, features};
@@ -2807,7 +2807,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
 
         // send less than quorum of attestations (otherwise funds are
         // immediately transferred and no "claim" object is created)
-        size_t constexpr num_attest = 3;
+        size_t constexpr num_attest_ = 3;
         auto attestations = create_account_attestations(
             scAttester,
             jvb,
@@ -2820,14 +2820,14 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
             scCarol,
             signers,
             UT_XCHAIN_DEFAULT_NUM_SIGNERS);
-        for (size_t i = 0; i < num_attest; ++i)
+        for (size_t i = 0; i < num_attest_; ++i)
         {
             scEnv(attestations[i]);
         }
         scEnv.close();
 
         {
-            // request the create account claim_id via RPC
+            // request the create account claim_id_ via RPC
             Json::Value jvParams;
             jvParams[jss::xchain_owned_create_account_claim_id] = jvXRPBridgeRPC;
             jvParams[jss::xchain_owned_create_account_claim_id]
@@ -2850,8 +2850,8 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
             BEAST_EXPECT(attest.size() == 3);
             BEAST_EXPECT(
                 attest[Json::Value::UInt(0)].isMember(sfXChainCreateAccountProofSig.jsonName));
-            Json::Value a[num_attest];
-            for (size_t i = 0; i < num_attest; ++i)
+            Json::Value a[num_attest_];
+            for (size_t i = 0; i < num_attest_; ++i)
             {
                 a[i] = attest[Json::Value::UInt(0)][sfXChainCreateAccountProofSig.jsonName];
                 BEAST_EXPECT(
@@ -2879,13 +2879,13 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
 
         // complete attestations quorum - CreateAccountClaimID should not be
         // present anymore
-        for (size_t i = num_attest; i < UT_XCHAIN_DEFAULT_NUM_SIGNERS; ++i)
+        for (size_t i = num_attest_; i < UT_XCHAIN_DEFAULT_NUM_SIGNERS; ++i)
         {
             scEnv(attestations[i]);
         }
         scEnv.close();
         {
-            // request the create account claim_id via RPC
+            // request the create account claim_id_ via RPC
             Json::Value jvParams;
             jvParams[jss::xchain_owned_create_account_claim_id] = jvXRPBridgeRPC;
             jvParams[jss::xchain_owned_create_account_claim_id]

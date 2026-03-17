@@ -14,13 +14,13 @@ LedgerHistory::LedgerHistory(beast::insight::Collector::ptr const& collector, Ap
     : app_(app)
     , collector_(collector)
     , mismatch_counter_(collector->make_counter("ledger.history", "mismatch"))
-    , m_ledgers_by_hash(
+    , ledgers_by_hash_(
           "LedgerCache",
           app_.config().getValueFor(SizedItem::ledgerSize),
           std::chrono::seconds{app_.config().getValueFor(SizedItem::ledgerAge)},
           stopwatch(),
           app_.journal("TaggedCache"))
-    , m_consensus_validated(
+    , consensus_validated_(
           "ConsensusValidated",
           64,
           std::chrono::minutes{5},
@@ -39,10 +39,10 @@ LedgerHistory::insert(std::shared_ptr<Ledger const> const& ledger, bool validate
     XRPL_ASSERT(
         ledger->stateMap().getHash().isNonZero(), "xrpl::LedgerHistory::insert : nonzero hash");
 
-    std::unique_lock sl(m_ledgers_by_hash.peekMutex());
+    std::unique_lock sl(ledgers_by_hash_.peekMutex());
 
     bool const alreadyHad =
-        m_ledgers_by_hash.canonicalize_replace_cache(ledger->header().hash, ledger);
+        ledgers_by_hash_.canonicalize_replace_cache(ledger->header().hash, ledger);
     if (validated)
         mLedgersByIndex[ledger->header().seq] = ledger->header().hash;
 
@@ -52,7 +52,7 @@ LedgerHistory::insert(std::shared_ptr<Ledger const> const& ledger, bool validate
 LedgerHash
 LedgerHistory::getLedgerHash(LedgerIndex index)
 {
-    std::unique_lock sl(m_ledgers_by_hash.peekMutex());
+    std::unique_lock sl(ledgers_by_hash_.peekMutex());
     if (auto it = mLedgersByIndex.find(index); it != mLedgersByIndex.end())
         return it->second;
     return {};
@@ -62,7 +62,7 @@ std::shared_ptr<Ledger const>
 LedgerHistory::getLedgerBySeq(LedgerIndex index)
 {
     {
-        std::unique_lock sl(m_ledgers_by_hash.peekMutex());
+        std::unique_lock sl(ledgers_by_hash_.peekMutex());
         auto it = mLedgersByIndex.find(index);
 
         if (it != mLedgersByIndex.end())
@@ -83,11 +83,11 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
 
     {
         // Add this ledger to the local tracking by index
-        std::unique_lock sl(m_ledgers_by_hash.peekMutex());
+        std::unique_lock sl(ledgers_by_hash_.peekMutex());
 
         XRPL_ASSERT(
             ret->isImmutable(), "xrpl::LedgerHistory::getLedgerBySeq : immutable result ledger");
-        m_ledgers_by_hash.canonicalize_replace_client(ret->header().hash, ret);
+        ledgers_by_hash_.canonicalize_replace_client(ret->header().hash, ret);
         mLedgersByIndex[ret->header().seq] = ret->header().hash;
         return (ret->header().seq == index) ? ret : nullptr;
     }
@@ -96,7 +96,7 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
 std::shared_ptr<Ledger const>
 LedgerHistory::getLedgerByHash(LedgerHash const& hash)
 {
-    auto ret = m_ledgers_by_hash.fetch(hash);
+    auto ret = ledgers_by_hash_.fetch(hash);
 
     if (ret)
     {
@@ -121,7 +121,7 @@ LedgerHistory::getLedgerByHash(LedgerHash const& hash)
     XRPL_ASSERT(
         ret->header().hash == hash,
         "xrpl::LedgerHistory::getLedgerByHash : loaded ledger hash match");
-    m_ledgers_by_hash.canonicalize_replace_client(ret->header().hash, ret);
+    ledgers_by_hash_.canonicalize_replace_client(ret->header().hash, ret);
     XRPL_ASSERT(
         ret->header().hash == hash, "xrpl::LedgerHistory::getLedgerByHash : result hash match");
 
@@ -400,10 +400,10 @@ LedgerHistory::builtLedger(
     LedgerHash hash = ledger->header().hash;
     XRPL_ASSERT(!hash.isZero(), "xrpl::LedgerHistory::builtLedger : nonzero hash");
 
-    std::unique_lock sl(m_consensus_validated.peekMutex());
+    std::unique_lock sl(consensus_validated_.peekMutex());
 
     auto entry = std::make_shared<cv_entry>();
-    m_consensus_validated.canonicalize_replace_client(index, entry);
+    consensus_validated_.canonicalize_replace_client(index, entry);
 
     if (entry->validated && !entry->built)
     {
@@ -439,10 +439,10 @@ LedgerHistory::validatedLedger(
     LedgerHash hash = ledger->header().hash;
     XRPL_ASSERT(!hash.isZero(), "xrpl::LedgerHistory::validatedLedger : nonzero hash");
 
-    std::unique_lock sl(m_consensus_validated.peekMutex());
+    std::unique_lock sl(consensus_validated_.peekMutex());
 
     auto entry = std::make_shared<cv_entry>();
-    m_consensus_validated.canonicalize_replace_client(index, entry);
+    consensus_validated_.canonicalize_replace_client(index, entry);
 
     if (entry->built && !entry->validated)
     {
@@ -468,12 +468,12 @@ LedgerHistory::validatedLedger(
     entry->validatedConsensusHash = consensusHash;
 }
 
-/** Ensure m_ledgers_by_hash doesn't have the wrong hash for a particular index
+/** Ensure ledgers_by_hash_ doesn't have the wrong hash for a particular index
  */
 bool
 LedgerHistory::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
 {
-    std::unique_lock sl(m_ledgers_by_hash.peekMutex());
+    std::unique_lock sl(ledgers_by_hash_.peekMutex());
     auto it = mLedgersByIndex.find(ledgerIndex);
 
     if ((it != mLedgersByIndex.end()) && (it->second != ledgerHash))
@@ -487,11 +487,11 @@ LedgerHistory::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
 void
 LedgerHistory::clearLedgerCachePrior(LedgerIndex seq)
 {
-    for (LedgerHash it : m_ledgers_by_hash.getKeys())
+    for (LedgerHash it : ledgers_by_hash_.getKeys())
     {
         auto const ledger = getLedgerByHash(it);
         if (!ledger || ledger->header().seq < seq)
-            m_ledgers_by_hash.del(it, false);
+            ledgers_by_hash_.del(it, false);
     }
 }
 

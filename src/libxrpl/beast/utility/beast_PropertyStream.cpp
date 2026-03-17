@@ -15,14 +15,14 @@ namespace beast {
 //
 //------------------------------------------------------------------------------
 
-PropertyStream::Item::Item(Source* source) : m_source(source)
+PropertyStream::Item::Item(Source* source) : source_(source)
 {
 }
 
 PropertyStream::Source&
 PropertyStream::Item::source() const
 {
-    return *m_source;
+    return *source_;
 }
 
 PropertyStream::Source*
@@ -43,25 +43,25 @@ PropertyStream::Item::operator*() const
 //
 //------------------------------------------------------------------------------
 
-PropertyStream::Proxy::Proxy(Map const& map, std::string const& key) : m_map(&map), m_key(key)
+PropertyStream::Proxy::Proxy(Map const& map, std::string const& key) : map_(&map), key_(key)
 {
 }
 
-PropertyStream::Proxy::Proxy(Proxy const& other) : m_map(other.m_map), m_key(other.m_key)
+PropertyStream::Proxy::Proxy(Proxy const& other) : map_(other.map_), key_(other.key_)
 {
 }
 
 PropertyStream::Proxy::~Proxy()
 {
-    std::string const s(m_ostream.str());
+    std::string const s(ostream_.str());
     if (!s.empty())
-        m_map->add(m_key, s);
+        map_->add(key_, s);
 }
 
 std::ostream&
 PropertyStream::Proxy::operator<<(std::ostream& manip(std::ostream&)) const
 {
-    return m_ostream << manip;
+    return ostream_ << manip;
 }
 
 //------------------------------------------------------------------------------
@@ -70,40 +70,40 @@ PropertyStream::Proxy::operator<<(std::ostream& manip(std::ostream&)) const
 //
 //------------------------------------------------------------------------------
 
-PropertyStream::Map::Map(PropertyStream& stream) : m_stream(stream)
+PropertyStream::Map::Map(PropertyStream& stream) : stream_(stream)
 {
 }
 
-PropertyStream::Map::Map(Set& parent) : m_stream(parent.stream())
+PropertyStream::Map::Map(Set& parent) : stream_(parent.stream())
 {
-    m_stream.map_begin();
+    stream_.map_begin();
 }
 
-PropertyStream::Map::Map(std::string const& key, Map& map) : m_stream(map.stream())
+PropertyStream::Map::Map(std::string const& key, Map& map) : stream_(map.stream())
 {
-    m_stream.map_begin(key);
+    stream_.map_begin(key);
 }
 
-PropertyStream::Map::Map(std::string const& key, PropertyStream& stream) : m_stream(stream)
+PropertyStream::Map::Map(std::string const& key, PropertyStream& stream) : stream_(stream)
 {
-    m_stream.map_begin(key);
+    stream_.map_begin(key);
 }
 
 PropertyStream::Map::~Map()
 {
-    m_stream.map_end();
+    stream_.map_end();
 }
 
 PropertyStream&
 PropertyStream::Map::stream()
 {
-    return m_stream;
+    return stream_;
 }
 
 PropertyStream const&
 PropertyStream::Map::stream() const
 {
-    return m_stream;
+    return stream_;
 }
 
 PropertyStream::Proxy
@@ -118,31 +118,31 @@ PropertyStream::Map::operator[](std::string const& key)
 //
 //------------------------------------------------------------------------------
 
-PropertyStream::Set::Set(std::string const& key, Map& map) : m_stream(map.stream())
+PropertyStream::Set::Set(std::string const& key, Map& map) : stream_(map.stream())
 {
-    m_stream.array_begin(key);
+    stream_.array_begin(key);
 }
 
-PropertyStream::Set::Set(std::string const& key, PropertyStream& stream) : m_stream(stream)
+PropertyStream::Set::Set(std::string const& key, PropertyStream& stream) : stream_(stream)
 {
-    m_stream.array_begin(key);
+    stream_.array_begin(key);
 }
 
 PropertyStream::Set::~Set()
 {
-    m_stream.array_end();
+    stream_.array_end();
 }
 
 PropertyStream&
 PropertyStream::Set::stream()
 {
-    return m_stream;
+    return stream_;
 }
 
 PropertyStream const&
 PropertyStream::Set::stream() const
 {
-    return m_stream;
+    return stream_;
 }
 
 //------------------------------------------------------------------------------
@@ -151,8 +151,7 @@ PropertyStream::Set::stream() const
 //
 //------------------------------------------------------------------------------
 
-PropertyStream::Source::Source(std::string const& name)
-    : m_name(name), item_(this), parent_(nullptr)
+PropertyStream::Source::Source(std::string const& name) : name_(name), item_(this), parent_(nullptr)
 {
 }
 
@@ -167,7 +166,7 @@ PropertyStream::Source::~Source()
 std::string const&
 PropertyStream::Source::name() const
 {
-    return m_name;
+    return name_;
 }
 
 void
@@ -212,14 +211,14 @@ PropertyStream::Source::removeAll()
 void
 PropertyStream::Source::write_one(PropertyStream& stream)
 {
-    Map map(m_name, stream);
+    Map map(name_, stream);
     onWrite(map);
 }
 
 void
 PropertyStream::Source::write(PropertyStream& stream)
 {
-    Map map(m_name, stream);
+    Map map(name_, stream);
     onWrite(map);
 
     std::lock_guard _(lock_);
@@ -350,7 +349,7 @@ PropertyStream::Source::find_one(std::string const& name)
     std::lock_guard _(lock_);
     for (auto& s : children_)
     {
-        if (s.source().m_name == name)
+        if (s.source().name_ == name)
             return &s.source();
     }
     return nullptr;

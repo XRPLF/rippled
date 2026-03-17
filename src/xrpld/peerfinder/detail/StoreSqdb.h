@@ -12,8 +12,8 @@ namespace PeerFinder {
 class StoreSqdb : public Store
 {
 private:
-    beast::Journal m_journal;
-    soci::session m_sqlDb;
+    beast::Journal journal_;
+    soci::session sqlDb_;
 
 public:
     enum {
@@ -22,7 +22,7 @@ public:
     };
 
     explicit StoreSqdb(beast::Journal journal = beast::Journal{beast::Journal::getNullSink()})
-        : m_journal(journal)
+        : journal_(journal)
     {
     }
 
@@ -44,7 +44,7 @@ public:
     {
         std::size_t n(0);
 
-        readPeerFinderDB(m_sqlDb, [&](std::string const& s, int valence) {
+        readPeerFinderDB(sqlDb_, [&](std::string const& s, int valence) {
             beast::IP::Endpoint const endpoint(beast::IP::Endpoint::from_string(s));
 
             if (!is_unspecified(endpoint))
@@ -54,7 +54,7 @@ public:
             }
             else
             {
-                JLOG(m_journal.error()) << "Bad address string '" << s << "' in Bootcache table";
+                JLOG(journal_.error()) << "Bad address string '" << s << "' in Bootcache table";
             }
         });
 
@@ -66,7 +66,7 @@ public:
     void
     save(std::vector<Entry> const& v) override
     {
-        savePeerFinderDB(m_sqlDb, v);
+        savePeerFinderDB(sqlDb_, v);
     }
 
     // Convert any existing entries from an older schema to the
@@ -74,14 +74,14 @@ public:
     void
     update()
     {
-        updatePeerFinderDB(m_sqlDb, currentSchemaVersion, m_journal);
+        updatePeerFinderDB(sqlDb_, currentSchemaVersion, journal_);
     }
 
 private:
     void
     init(BasicConfig const& config)
     {
-        initPeerFinderDB(m_sqlDb, config, m_journal);
+        initPeerFinderDB(sqlDb_, config, journal_);
     }
 };
 

@@ -39,7 +39,7 @@ public:
         : app_(app)
         , fetchRate_(clock.now())
         , j_(app.journal("InboundLedger"))
-        , m_clock(clock)
+        , clock_(clock)
         , mRecentFailures(clock)
         , mCounter(collector->make_counter("ledger_fetches"))
         , mPeerSetBuilder(std::move(peerSetBuilder))
@@ -77,7 +77,7 @@ public:
                 else
                 {
                     inbound = std::make_shared<InboundLedger>(
-                        app_, hash, seq, reason, std::ref(m_clock), mPeerSetBuilder->build());
+                        app_, hash, seq, reason, std::ref(clock_), mPeerSetBuilder->build());
                     mLedgers.emplace(hash, inbound);
                     inbound->init(sl);
                     ++mCounter;
@@ -259,7 +259,7 @@ public:
     fetchRate() override
     {
         std::lock_guard lock(fetchRateMutex_);
-        return 60 * fetchRate_.value(m_clock.now());
+        return 60 * fetchRate_.value(clock_.now());
     }
 
     // Should only be called with an inboundledger that has
@@ -268,7 +268,7 @@ public:
     onLedgerFetched() override
     {
         std::lock_guard lock(fetchRateMutex_);
-        fetchRate_.add(1, m_clock.now());
+        fetchRate_.add(1, clock_.now());
     }
 
     Json::Value
@@ -336,7 +336,7 @@ public:
     void
     sweep() override
     {
-        auto const start = m_clock.now();
+        auto const start = clock_.now();
 
         // Make a list of things to sweep, while holding the lock
         std::vector<MapType::mapped_type> stuffToSweep;
@@ -377,7 +377,7 @@ public:
         JLOG(j_.debug())
             << "Swept " << stuffToSweep.size() << " out of " << total
             << " inbound ledgers. Duration: "
-            << std::chrono::duration_cast<std::chrono::milliseconds>(m_clock.now() - start).count()
+            << std::chrono::duration_cast<std::chrono::milliseconds>(clock_.now() - start).count()
             << "ms";
     }
 
@@ -398,7 +398,7 @@ public:
     }
 
 private:
-    clock_type& m_clock;
+    clock_type& clock_;
 
     using ScopedLockType = std::unique_lock<std::recursive_mutex>;
     std::recursive_mutex mLock;

@@ -157,7 +157,7 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error)
 
     if (count != 1)
     {
-        error = RPC::make_param_error(
+        error = RPC::make_paraerror_(
             "Exactly one of the following must be specified: " + std::string(jss::passphrase) +
             ", " + std::string(jss::seed) + " or " + std::string(jss::seed_hex));
         return std::nullopt;
@@ -211,7 +211,7 @@ keypairForSignature(Json::Value const& params, Json::Value& error, unsigned int 
 
     if (count > 1)
     {
-        error = RPC::make_param_error(
+        error = RPC::make_paraerror_(
             "Exactly one of the following must be specified: " + std::string(jss::passphrase) +
             ", " + std::string(jss::secret) + ", " + std::string(jss::seed) + " or " +
             std::string(jss::seed_hex));
@@ -244,7 +244,7 @@ keypairForSignature(Json::Value const& params, Json::Value& error, unsigned int 
         // https://developercommunity.visualstudio.com/t/assigning-constexpr-char--to-static-cha/10021357?entry=problem)
         if (strcmp(secretType, jss::secret.c_str()) == 0)
         {
-            error = RPC::make_param_error(
+            error = RPC::make_paraerror_(
                 "The secret field is not allowed if " + std::string(jss::key_type) + " is used.");
             return {};
         }

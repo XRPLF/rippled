@@ -1792,30 +1792,30 @@ setup_TxQ(Config const& config)
     TxQ::Setup setup;
     auto const& section = config.section("transaction_queue");
     set(setup.ledgersInQueue, "ledgers_in_queue", section);
-    set(setup.queueSizeMin, "minimum_queue_size", section);
+    set(setup.queueSizeMin, "minimum_queue_size_", section);
     set(setup.retrySequencePercent, "retry_sequence_percent", section);
-    set(setup.minimumEscalationMultiplier, "minimum_escalation_multiplier", section);
-    set(setup.minimumTxnInLedger, "minimum_txn_in_ledger", section);
-    set(setup.minimumTxnInLedgerSA, "minimum_txn_in_ledger_standalone", section);
+    set(setup.minimumEscalationMultiplier, "minimum_escalation_multiplier_", section);
+    set(setup.minimumTxnInLedger, "minimum_txn_in_ledger_", section);
+    set(setup.minimumTxnInLedgerSA, "minimum_txn_in_ledger_standalone_", section);
     set(setup.targetTxnInLedger, "target_txn_in_ledger", section);
     std::uint32_t max;
-    if (set(max, "maximum_txn_in_ledger", section))
+    if (set(max, "maximum_txn_in_ledger_", section))
     {
         if (max < setup.minimumTxnInLedger)
         {
             Throw<std::runtime_error>(
                 "The minimum number of low-fee transactions allowed "
-                "per ledger (minimum_txn_in_ledger) exceeds "
+                "per ledger (minimum_txn_in_ledger_) exceeds "
                 "the maximum number of low-fee transactions allowed per "
-                "ledger (maximum_txn_in_ledger).");
+                "ledger (maximum_txn_in_ledger_).");
         }
         if (max < setup.minimumTxnInLedgerSA)
         {
             Throw<std::runtime_error>(
                 "The minimum number of low-fee transactions allowed "
-                "per ledger (minimum_txn_in_ledger_standalone) exceeds "
+                "per ledger (minimum_txn_in_ledger_standalone_) exceeds "
                 "the maximum number of low-fee transactions allowed per "
-                "ledger (maximum_txn_in_ledger).");
+                "ledger (maximum_txn_in_ledger_).");
         }
 
         setup.maximumTxnInLedger.emplace(max);
@@ -1825,7 +1825,7 @@ setup_TxQ(Config const& config)
        MAXINT, but put a reasonable limit on this percentage so that
        the factor can't be configured to render escalation effectively
        moot. (There are other ways to do that, including
-       minimum_txn_in_ledger.)
+       minimum_txn_in_ledger_.)
     */
     set(setup.normalConsensusIncreasePercent, "normal_consensus_increase_percent", section);
     setup.normalConsensusIncreasePercent =
@@ -1838,8 +1838,8 @@ setup_TxQ(Config const& config)
     set(setup.slowConsensusDecreasePercent, "slow_consensus_decrease_percent", section);
     setup.slowConsensusDecreasePercent = std::clamp(setup.slowConsensusDecreasePercent, 0u, 100u);
 
-    set(setup.maximumTxnPerAccount, "maximum_txn_per_account", section);
-    set(setup.minimumLastLedgerBuffer, "minimum_last_ledger_buffer", section);
+    set(setup.maximumTxnPerAccount, "maximum_txn_per_account_", section);
+    set(setup.minimumLastLedgerBuffer, "minimum_last_ledger_buffer_", section);
 
     setup.standAlone = config.standalone();
     return setup;

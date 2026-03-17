@@ -67,8 +67,8 @@ Reader::parse(std::string const& document, Value& root)
 bool
 Reader::parse(std::istream& sin, Value& root)
 {
-    // std::istream_iterator<char> begin(sin);
-    // std::istream_iterator<char> end;
+    // std::istreaiterator_<char> begin(sin);
+    // std::istreaiterator_<char> end;
     // Those would allow streamed input from a file, if parse() were a
     // template function.
 

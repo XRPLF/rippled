@@ -88,7 +88,7 @@ public:
     void
     touch()
     {
-        mLastAction = m_clock.now();
+        mLastAction = clock_.now();
     }
 
     clock_type::time_point
@@ -148,7 +148,7 @@ private:
     std::vector<uint256>
     neededStateHashes(int max, SHAMapSyncFilter* filter) const;
 
-    clock_type& m_clock;
+    clock_type& clock_;
     clock_type::time_point mLastAction;
 
     std::shared_ptr<Ledger> mLedger;

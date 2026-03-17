@@ -13,42 +13,42 @@ namespace xrpl {
 // code assumes this node is synced (and will continue to do so until
 // there's a functional network.
 
-InfoSub::InfoSub(Source& source) : m_source(source), mSeq(assign_id())
+InfoSub::InfoSub(Source& source) : source_(source), mSeq(assign_id())
 {
 }
 
 InfoSub::InfoSub(Source& source, Consumer consumer)
-    : m_consumer(consumer), m_source(source), mSeq(assign_id())
+    : consumer_(consumer), source_(source), mSeq(assign_id())
 {
 }
 
 InfoSub::~InfoSub()
 {
-    m_source.unsubTransactions(mSeq);
-    m_source.unsubRTTransactions(mSeq);
-    m_source.unsubLedger(mSeq);
-    m_source.unsubManifests(mSeq);
-    m_source.unsubServer(mSeq);
-    m_source.unsubValidations(mSeq);
-    m_source.unsubPeerStatus(mSeq);
-    m_source.unsubConsensus(mSeq);
+    source_.unsubTransactions(mSeq);
+    source_.unsubRTTransactions(mSeq);
+    source_.unsubLedger(mSeq);
+    source_.unsubManifests(mSeq);
+    source_.unsubServer(mSeq);
+    source_.unsubValidations(mSeq);
+    source_.unsubPeerStatus(mSeq);
+    source_.unsubConsensus(mSeq);
 
     // Use the internal unsubscribe so that it won't call
     // back to us and modify its own parameter
     if (!realTimeSubscriptions_.empty())
-        m_source.unsubAccountInternal(mSeq, realTimeSubscriptions_, true);
+        source_.unsubAccountInternal(mSeq, realTimeSubscriptions_, true);
 
     if (!normalSubscriptions_.empty())
-        m_source.unsubAccountInternal(mSeq, normalSubscriptions_, false);
+        source_.unsubAccountInternal(mSeq, normalSubscriptions_, false);
 
     for (auto const& account : accountHistorySubscriptions_)
-        m_source.unsubAccountHistoryInternal(mSeq, account, false);
+        source_.unsubAccountHistoryInternal(mSeq, account, false);
 }
 
 Resource::Consumer&
 InfoSub::getConsumer()
 {
-    return m_consumer;
+    return consumer_;
 }
 
 std::uint64_t

@@ -12,7 +12,7 @@
 namespace xrpl {
 
 ConsensusTransSetSF::ConsensusTransSetSF(Application& app, NodeCache& nodeCache)
-    : app_(app), m_nodeCache(nodeCache), j_(app.journal("TransactionAcquire"))
+    : app_(app), nodeCache_(nodeCache), j_(app.journal("TransactionAcquire"))
 {
 }
 
@@ -27,7 +27,7 @@ ConsensusTransSetSF::gotNode(
     if (fromFilter)
         return;
 
-    m_nodeCache.insert(nodeHash, nodeData);
+    nodeCache_.insert(nodeHash, nodeData);
 
     if ((type == SHAMapNodeType::tnTRANSACTION_NM) && (nodeData.size() > 16))
     {
@@ -60,7 +60,7 @@ std::optional<Blob>
 ConsensusTransSetSF::getNode(SHAMapHash const& nodeHash) const
 {
     Blob nodeData;
-    if (m_nodeCache.retrieve(nodeHash, nodeData))
+    if (nodeCache_.retrieve(nodeHash, nodeData))
         return nodeData;
 
     auto txn = app_.getMasterTransaction().fetch_from_cache(nodeHash.as_uint256());

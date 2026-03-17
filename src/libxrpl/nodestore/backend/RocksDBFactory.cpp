@@ -64,16 +64,16 @@ public:
 class RocksDBBackend : public Backend, public BatchWriter::Callback
 {
 private:
-    std::atomic<bool> m_deletePath;
+    std::atomic<bool> deletePath_;
 
 public:
-    beast::Journal m_journal;
-    size_t const m_keyBytes;
-    BatchWriter m_batch;
-    std::string m_name;
-    std::unique_ptr<rocksdb::DB> m_db;
+    beast::Journal journal_;
+    size_t const keyBytes_;
+    BatchWriter batch_;
+    std::string name_;
+    std::unique_ptr<rocksdb::DB> db_;
     int fdRequired_ = 2048;
-    rocksdb::Options m_options;
+    rocksdb::Options options_;
 
     RocksDBBackend(
         int keyBytes,
@@ -81,13 +81,13 @@ public:
         Scheduler& scheduler,
         beast::Journal journal,
         RocksDBEnv* env)
-        : m_deletePath(false), m_journal(journal), m_keyBytes(keyBytes), m_batch(*this, scheduler)
+        : deletePath_(false), journal_(journal), keyBytes_(keyBytes), batch_(*this, scheduler)
     {
-        if (!get_if_exists(keyValues, "path", m_name))
+        if (!get_if_exists(keyValues, "path", name_))
             Throw<std::runtime_error>("Missing path in RocksDBFactory backend");
 
         rocksdb::BlockBasedTableOptions table_options;
-        m_options.env = env;
+        options_.env = env;
 
         bool hard_set = keyValues.exists("hard_set") && get<bool>(keyValues, "hard_set");
 
@@ -108,12 +108,12 @@ public:
             table_options.filter_policy.reset(rocksdb::NewBloomFilterPolicy(v, filter_blocks));
         }
 
-        if (get_if_exists(keyValues, "open_files", m_options.max_open_files))
+        if (get_if_exists(keyValues, "open_files", options_.max_open_files))
         {
-            if (!hard_set && m_options.max_open_files == 2000)
-                m_options.max_open_files = 8000;
+            if (!hard_set && options_.max_open_files == 2000)
+                options_.max_open_files = 8000;
 
-            fdRequired_ = m_options.max_open_files + 128;
+            fdRequired_ = options_.max_open_files + 128;
         }
 
         if (keyValues.exists("file_size_mb"))
@@ -123,41 +123,41 @@ public:
             if (!hard_set && file_size_mb == 8)
                 file_size_mb = 256;
 
-            m_options.target_file_size_base = megabytes(file_size_mb);
-            m_options.max_bytes_for_level_base = 5 * m_options.target_file_size_base;
-            m_options.write_buffer_size = 2 * m_options.target_file_size_base;
+            options_.target_file_size_base = megabytes(file_size_mb);
+            options_.max_bytes_for_level_base = 5 * options_.target_file_size_base;
+            options_.write_buffer_size = 2 * options_.target_file_size_base;
         }
 
-        get_if_exists(keyValues, "file_size_mult", m_options.target_file_size_multiplier);
+        get_if_exists(keyValues, "file_size_mult", options_.target_file_size_multiplier);
 
         if (keyValues.exists("bg_threads"))
         {
-            m_options.env->SetBackgroundThreads(
+            options_.env->SetBackgroundThreads(
                 get<int>(keyValues, "bg_threads"), rocksdb::Env::LOW);
         }
 
         if (keyValues.exists("high_threads"))
         {
             auto const highThreads = get<int>(keyValues, "high_threads");
-            m_options.env->SetBackgroundThreads(highThreads, rocksdb::Env::HIGH);
+            options_.env->SetBackgroundThreads(highThreads, rocksdb::Env::HIGH);
 
             // If we have high-priority threads, presumably we want to
             // use them for background flushes
             if (highThreads > 0)
-                m_options.max_background_flushes = highThreads;
+                options_.max_background_flushes = highThreads;
         }
 
-        m_options.compression = rocksdb::kSnappyCompression;
+        options_.compression = rocksdb::kSnappyCompression;
 
         get_if_exists(keyValues, "block_size", table_options.block_size);
 
         if (keyValues.exists("universal_compaction") &&
             (get<int>(keyValues, "universal_compaction") != 0))
         {
-            m_options.compaction_style = rocksdb::kCompactionStyleUniversal;
-            m_options.min_write_buffer_number_to_merge = 2;
-            m_options.max_write_buffer_number = 6;
-            m_options.write_buffer_size = 6 * m_options.target_file_size_base;
+            options_.compaction_style = rocksdb::kCompactionStyleUniversal;
+            options_.min_write_buffer_number_to_merge = 2;
+            options_.max_write_buffer_number = 6;
+            options_.write_buffer_size = 6 * options_.target_file_size_base;
         }
 
         if (keyValues.exists("bbt_options"))
@@ -170,22 +170,22 @@ public:
                     std::string("Unable to set RocksDB bbt_options: ") + s.ToString());
         }
 
-        m_options.table_factory.reset(NewBlockBasedTableFactory(table_options));
+        options_.table_factory.reset(NewBlockBasedTableFactory(table_options));
 
         if (keyValues.exists("options"))
         {
             auto const s =
-                rocksdb::GetOptionsFromString(m_options, get(keyValues, "options"), &m_options);
+                rocksdb::GetOptionsFromString(options_, get(keyValues, "options"), &options_);
             if (!s.ok())
                 Throw<std::runtime_error>(
                     std::string("Unable to set RocksDB options: ") + s.ToString());
         }
 
         std::string s1, s2;
-        rocksdb::GetStringFromDBOptions(&s1, m_options, "; ");
-        rocksdb::GetStringFromColumnFamilyOptions(&s2, m_options, "; ");
-        JLOG(m_journal.debug()) << "RocksDB DBOptions: " << s1;
-        JLOG(m_journal.debug()) << "RocksDB CFOptions: " << s2;
+        rocksdb::GetStringFromDBOptions(&s1, options_, "; ");
+        rocksdb::GetStringFromColumnFamilyOptions(&s2, options_, "; ");
+        JLOG(journal_.debug()) << "RocksDB DBOptions: " << s1;
+        JLOG(journal_.debug()) << "RocksDB CFOptions: " << s2;
     }
 
     ~RocksDBBackend() override
@@ -196,40 +196,40 @@ public:
     void
     open(bool createIfMissing) override
     {
-        if (m_db)
+        if (db_)
         {
             // LCOV_EXCL_START
             UNREACHABLE(
                 "xrpl::NodeStore::RocksDBBackend::open : database is already "
                 "open");
-            JLOG(m_journal.error()) << "database is already open";
+            JLOG(journal_.error()) << "database is already open";
             return;
             // LCOV_EXCL_STOP
         }
         rocksdb::DB* db = nullptr;
-        m_options.create_if_missing = createIfMissing;
-        rocksdb::Status status = rocksdb::DB::Open(m_options, m_name, &db);
+        options_.create_if_missing = createIfMissing;
+        rocksdb::Status status = rocksdb::DB::Open(options_, name_, &db);
         if (!status.ok() || !db)
             Throw<std::runtime_error>(
                 std::string("Unable to open/create RocksDB: ") + status.ToString());
-        m_db.reset(db);
+        db_.reset(db);
     }
 
     bool
     isOpen() override
     {
-        return static_cast<bool>(m_db);
+        return static_cast<bool>(db_);
     }
 
     void
     close() override
     {
-        if (m_db)
+        if (db_)
         {
-            m_db.reset();
-            if (m_deletePath)
+            db_.reset();
+            if (deletePath_)
             {
-                boost::filesystem::path dir = m_name;
+                boost::filesystem::path dir = name_;
                 boost::filesystem::remove_all(dir);
             }
         }
@@ -238,7 +238,7 @@ public:
     std::string
     getName() override
     {
-        return m_name;
+        return name_;
     }
 
     //--------------------------------------------------------------------------
@@ -246,17 +246,17 @@ public:
     Status
     fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pObject) override
     {
-        XRPL_ASSERT(m_db, "xrpl::NodeStore::RocksDBBackend::fetch : non-null database");
+        XRPL_ASSERT(db_, "xrpl::NodeStore::RocksDBBackend::fetch : non-null database");
         pObject->reset();
 
         Status status(ok);
 
         rocksdb::ReadOptions const options;
-        rocksdb::Slice const slice(std::bit_cast<char const*>(hash.data()), m_keyBytes);
+        rocksdb::Slice const slice(std::bit_cast<char const*>(hash.data()), keyBytes_);
 
         std::string string;
 
-        rocksdb::Status getStatus = m_db->Get(options, slice, &string);
+        rocksdb::Status getStatus = db_->Get(options, slice, &string);
 
         if (getStatus.ok())
         {
@@ -287,7 +287,7 @@ public:
             {
                 status = Status(customCode + unsafe_cast<int>(getStatus.code()));
 
-                JLOG(m_journal.error()) << getStatus.ToString();
+                JLOG(journal_.error()) << getStatus.ToString();
             }
         }
 
@@ -315,14 +315,14 @@ public:
     void
     store(std::shared_ptr<NodeObject> const& object) override
     {
-        m_batch.store(object);
+        batch_.store(object);
     }
 
     void
     storeBatch(Batch const& batch) override
     {
         XRPL_ASSERT(
-            m_db,
+            db_,
             "xrpl::NodeStore::RocksDBBackend::storeBatch : non-null "
             "database");
         rocksdb::WriteBatch wb;
@@ -332,13 +332,13 @@ public:
             EncodedBlob encoded(e);
 
             wb.Put(
-                rocksdb::Slice(std::bit_cast<char const*>(encoded.getKey()), m_keyBytes),
+                rocksdb::Slice(std::bit_cast<char const*>(encoded.getKey()), keyBytes_),
                 rocksdb::Slice(std::bit_cast<char const*>(encoded.getData()), encoded.getSize()));
         }
 
         rocksdb::WriteOptions const options;
 
-        auto ret = m_db->Write(options, &wb);
+        auto ret = db_->Write(options, &wb);
 
         if (!ret.ok())
             Throw<std::runtime_error>("storeBatch failed: " + ret.ToString());
@@ -352,14 +352,14 @@ public:
     void
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
-        XRPL_ASSERT(m_db, "xrpl::NodeStore::RocksDBBackend::for_each : non-null database");
+        XRPL_ASSERT(db_, "xrpl::NodeStore::RocksDBBackend::for_each : non-null database");
         rocksdb::ReadOptions const options;
 
-        std::unique_ptr<rocksdb::Iterator> it(m_db->NewIterator(options));
+        std::unique_ptr<rocksdb::Iterator> it(db_->NewIterator(options));
 
         for (it->SeekToFirst(); it->Valid(); it->Next())
         {
-            if (it->key().size() == m_keyBytes)
+            if (it->key().size() == keyBytes_)
             {
                 DecodedBlob decoded(it->key().data(), it->value().data(), it->value().size());
 
@@ -370,14 +370,14 @@ public:
                 else
                 {
                     // Uh oh, corrupted data!
-                    JLOG(m_journal.fatal()) << "Corrupt NodeObject #" << it->key().ToString(true);
+                    JLOG(journal_.fatal()) << "Corrupt NodeObject #" << it->key().ToString(true);
                 }
             }
             else
             {
                 // VFALCO NOTE What does it mean to find an
                 //             incorrectly sized key? Corruption?
-                JLOG(m_journal.fatal()) << "Bad key size = " << it->key().size();
+                JLOG(journal_.fatal()) << "Bad key size = " << it->key().size();
             }
         }
     }
@@ -385,13 +385,13 @@ public:
     int
     getWriteLoad() override
     {
-        return m_batch.getWriteLoad();
+        return batch_.getWriteLoad();
     }
 
     void
     setDeletePath() override
     {
-        m_deletePath = true;
+        deletePath_ = true;
     }
 
     //--------------------------------------------------------------------------
@@ -418,7 +418,7 @@ private:
     Manager& manager_;
 
 public:
-    RocksDBEnv m_env;
+    RocksDBEnv env_;
 
     RocksDBFactory(Manager& manager) : manager_(manager)
     {
@@ -439,7 +439,7 @@ public:
         Scheduler& scheduler,
         beast::Journal journal) override
     {
-        return std::make_unique<RocksDBBackend>(keyBytes, keyValues, scheduler, journal, &m_env);
+        return std::make_unique<RocksDBBackend>(keyBytes, keyValues, scheduler, journal, &env_);
     }
 };
 

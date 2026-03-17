@@ -746,21 +746,21 @@ parseVault(
 
 static Expected<uint256, Json::Value>
 parseXChainOwnedClaimID(
-    Json::Value const& claim_id,
+    Json::Value const& claim_id_,
     Json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
-    if (!claim_id.isObject())
+    if (!claim_id_.isObject())
     {
-        return parseObjectID(claim_id, fieldName);
+        return parseObjectID(claim_id_, fieldName);
     }
 
-    auto const bridge_spec = LedgerEntryHelpers::parseBridgeFields(claim_id);
+    auto const bridge_spec = LedgerEntryHelpers::parseBridgeFields(claim_id_);
     if (!bridge_spec)
         return Unexpected(bridge_spec.error());
 
     auto const seq = LedgerEntryHelpers::requiredUInt32(
-        claim_id, jss::xchain_owned_claim_id, "malformedXChainOwnedClaimID");
+        claim_id_, jss::xchain_owned_claim_id, "malformedXChainOwnedClaimID");
     if (!seq)
     {
         return Unexpected(seq.error());
@@ -772,21 +772,21 @@ parseXChainOwnedClaimID(
 
 static Expected<uint256, Json::Value>
 parseXChainOwnedCreateAccountClaimID(
-    Json::Value const& claim_id,
+    Json::Value const& claim_id_,
     Json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
-    if (!claim_id.isObject())
+    if (!claim_id_.isObject())
     {
-        return parseObjectID(claim_id, fieldName);
+        return parseObjectID(claim_id_, fieldName);
     }
 
-    auto const bridge_spec = LedgerEntryHelpers::parseBridgeFields(claim_id);
+    auto const bridge_spec = LedgerEntryHelpers::parseBridgeFields(claim_id_);
     if (!bridge_spec)
         return Unexpected(bridge_spec.error());
 
     auto const seq = LedgerEntryHelpers::requiredUInt32(
-        claim_id,
+        claim_id_,
         jss::xchain_owned_create_account_claim_id,
         "malformedXChainOwnedCreateAccountClaimID");
     if (!seq)
@@ -846,7 +846,7 @@ doLedgerEntry(RPC::JsonContext& context)
 
     if (hasMoreThanOneMember)
     {
-        return RPC::make_param_error("Too many fields provided.");
+        return RPC::make_paraerror_("Too many fields provided.");
     }
 
     std::shared_ptr<ReadView const> lpLedger;
@@ -890,7 +890,7 @@ doLedgerEntry(RPC::JsonContext& context)
                 jvResult[jss::error] = "unknownOption";
                 return jvResult;
             }
-            return RPC::make_param_error("No ledger_entry params provided.");
+            return RPC::make_paraerror_("No ledger_entry params provided.");
         }
     }
     catch (Json::error& e)

@@ -67,7 +67,7 @@ public:
     };
 
     boost::intrusive_ptr<Item>
-    make_random_item(beast::xor_shift_engine& r)
+    make_random_item_member(beast::xor_shift_engine& r)
     {
         Serializer s;
         for (int d = 0; d < 3; ++d)
@@ -76,11 +76,12 @@ public:
     }
 
     void
-    add_random_items(std::size_t n, Table& t, beast::xor_shift_engine& r)
+    add_random_items_(std::size_t n, Table& t, beast::xor_shift_engine& r)
     {
         while (n--)
         {
-            auto const result(t.addItem(SHAMapNodeType::tnACCOUNT_STATE, make_random_item(r)));
+            auto const result(
+                t.addItem(SHAMapNodeType::tnACCOUNT_STATE, make_random_item_member(r)));
             assert(result);
             (void)result;
         }
@@ -105,11 +106,11 @@ public:
         pass();
 
         //         beast::Random r;
-        //         add_random_items (tableItems, *t1, r);
+        //         add_random_items_ (tableItems, *t1, r);
         //         std::shared_ptr <Table> t2 (t1->snapShot (true));
         //
-        //         add_random_items (tableItemsExtra, *t1, r);
-        //         add_random_items (tableItemsExtra, *t2, r);
+        //         add_random_items_ (tableItemsExtra, *t1, r);
+        //         add_random_items_ (tableItemsExtra, *t2, r);
 
         // turn t1 into t2
         //         Map map;

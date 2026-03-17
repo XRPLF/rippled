@@ -35,52 +35,52 @@ class LocalTx
 {
 public:
     LocalTx(LedgerIndex index, std::shared_ptr<STTx const> const& txn)
-        : m_txn(txn)
-        , m_expire(index + LocalTxs::holdLedgers)
-        , m_id(txn->getTransactionID())
-        , m_account(txn->getAccountID(sfAccount))
-        , m_seqProxy(txn->getSeqProxy())
+        : txn_(txn)
+        , expire_(index + LocalTxs::holdLedgers)
+        , id_(txn->getTransactionID())
+        , account_(txn->getAccountID(sfAccount))
+        , seqProxy_(txn->getSeqProxy())
     {
         if (txn->isFieldPresent(sfLastLedgerSequence))
-            m_expire = std::min(m_expire, txn->getFieldU32(sfLastLedgerSequence) + 1);
+            expire_ = std::min(expire_, txn->getFieldU32(sfLastLedgerSequence) + 1);
     }
 
     uint256 const&
     getID() const
     {
-        return m_id;
+        return id_;
     }
 
     SeqProxy
     getSeqProxy() const
     {
-        return m_seqProxy;
+        return seqProxy_;
     }
 
     bool
     isExpired(LedgerIndex i) const
     {
-        return i > m_expire;
+        return i > expire_;
     }
 
     std::shared_ptr<STTx const> const&
     getTX() const
     {
-        return m_txn;
+        return txn_;
     }
 
     AccountID const&
     getAccount() const
     {
-        return m_account;
+        return account_;
     }
 
 private:
-    std::shared_ptr<STTx const> m_txn;
-    LedgerIndex m_expire;
-    uint256 m_id;
-    AccountID m_account;
-    SeqProxy m_seqProxy;
+    std::shared_ptr<STTx const> txn_;
+    LedgerIndex expire_;
+    uint256 id_;
+    AccountID account_;
+    SeqProxy seqProxy_;
 };
 
 //------------------------------------------------------------------------------
@@ -94,9 +94,9 @@ public:
     void
     push_back(LedgerIndex index, std::shared_ptr<STTx const> const& txn) override
     {
-        std::lock_guard lock(m_lock);
+        std::lock_guard lock(lock_);
 
-        m_txns.emplace_back(index, txn);
+        txns_.emplace_back(index, txn);
     }
 
     CanonicalTXSet
@@ -107,9 +107,9 @@ public:
         // Get the set of local transactions as a canonical
         // set (so they apply in a valid order)
         {
-            std::lock_guard lock(m_lock);
+            std::lock_guard lock(lock_);
 
-            for (auto const& it : m_txns)
+            for (auto const& it : txns_)
                 tset.insert(it.getTX());
         }
         return tset;
@@ -121,9 +121,9 @@ public:
     void
     sweep(ReadView const& view) override
     {
-        std::lock_guard lock(m_lock);
+        std::lock_guard lock(lock_);
 
-        m_txns.remove_if([&view](auto const& txn) {
+        txns_.remove_if([&view](auto const& txn) {
             if (txn.isExpired(view.header().seq))
                 return true;
             if (view.txExists(txn.getID()))
@@ -156,14 +156,14 @@ public:
     std::size_t
     size() override
     {
-        std::lock_guard lock(m_lock);
+        std::lock_guard lock(lock_);
 
-        return m_txns.size();
+        return txns_.size();
     }
 
 private:
-    std::mutex m_lock;
-    std::list<LocalTx> m_txns;
+    std::mutex lock_;
+    std::list<LocalTx> txns_;
 };
 
 std::unique_ptr<LocalTxs>

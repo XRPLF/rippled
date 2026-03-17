@@ -37,7 +37,7 @@ public:
             std::is_same<Iterator, OtherIterator>::value == false>::type>
     explicit aged_container_iterator(
         aged_container_iterator<other_is_const, OtherIterator> const& other)
-        : m_iter(other.m_iter)
+        : iter_(other.iter_)
     {
     }
 
@@ -46,7 +46,7 @@ public:
         bool other_is_const,
         class = typename std::enable_if<other_is_const == false || is_const == true>::type>
     aged_container_iterator(aged_container_iterator<other_is_const, Iterator> const& other)
-        : m_iter(other.m_iter)
+        : iter_(other.iter_)
     {
     }
 
@@ -56,7 +56,7 @@ public:
     operator=(aged_container_iterator<other_is_const, OtherIterator> const& other) -> typename std::
         enable_if<other_is_const == false || is_const == true, aged_container_iterator&>::type
     {
-        m_iter = other.m_iter;
+        iter_ = other.iter_;
         return *this;
     }
 
@@ -64,20 +64,20 @@ public:
     bool
     operator==(aged_container_iterator<other_is_const, OtherIterator> const& other) const
     {
-        return m_iter == other.m_iter;
+        return iter_ == other.iter_;
     }
 
     template <bool other_is_const, class OtherIterator>
     bool
     operator!=(aged_container_iterator<other_is_const, OtherIterator> const& other) const
     {
-        return m_iter != other.m_iter;
+        return iter_ != other.iter_;
     }
 
     aged_container_iterator&
     operator++()
     {
-        ++m_iter;
+        ++iter_;
         return *this;
     }
 
@@ -85,14 +85,14 @@ public:
     operator++(int)
     {
         aged_container_iterator const prev(*this);
-        ++m_iter;
+        ++iter_;
         return prev;
     }
 
     aged_container_iterator&
     operator--()
     {
-        --m_iter;
+        --iter_;
         return *this;
     }
 
@@ -100,26 +100,26 @@ public:
     operator--(int)
     {
         aged_container_iterator const prev(*this);
-        --m_iter;
+        --iter_;
         return prev;
     }
 
     reference
     operator*() const
     {
-        return m_iter->value;
+        return iter_->value;
     }
 
     pointer
     operator->() const
     {
-        return &m_iter->value;
+        return &iter_->value;
     }
 
     time_point const&
     when() const
     {
-        return m_iter->when;
+        return iter_->when;
     }
 
 private:
@@ -133,17 +133,17 @@ private:
     friend class aged_container_iterator;
 
     template <class OtherIterator>
-    aged_container_iterator(OtherIterator const& iter) : m_iter(iter)
+    aged_container_iterator(OtherIterator const& iter) : iter_(iter)
     {
     }
 
     Iterator const&
     iterator() const
     {
-        return m_iter;
+        return iter_;
     }
 
-    Iterator m_iter;
+    Iterator iter_;
 };
 
 }  // namespace detail

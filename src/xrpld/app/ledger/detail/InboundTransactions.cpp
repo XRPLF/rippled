@@ -50,15 +50,15 @@ public:
         std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet,
         std::unique_ptr<PeerSetBuilder> peerSetBuilder)
         : app_(app)
-        , m_seq(0)
-        , m_zeroSet(m_map[uint256()])
-        , m_gotSet(std::move(gotSet))
-        , m_peerSetBuilder(std::move(peerSetBuilder))
+        , seq_(0)
+        , zeroSet_(map_[uint256()])
+        , gotSet_(std::move(gotSet))
+        , peerSetBuilder_(std::move(peerSetBuilder))
         , j_(app_.journal("InboundTransactions"))
     {
-        m_zeroSet.mSet =
+        zeroSet_.mSet =
             std::make_shared<SHAMap>(SHAMapType::TRANSACTION, uint256(), app_.getNodeFamily());
-        m_zeroSet.mSet->setUnbacked();
+        zeroSet_.mSet->setUnbacked();
     }
 
     TransactionAcquire::pointer
@@ -67,9 +67,9 @@ public:
         {
             std::lock_guard sl(mLock);
 
-            auto it = m_map.find(hash);
+            auto it = map_.find(hash);
 
-            if (it != m_map.end())
+            if (it != map_.end())
                 return it->second.mAcquire;
         }
         return {};
@@ -83,11 +83,11 @@ public:
         {
             std::lock_guard sl(mLock);
 
-            if (auto it = m_map.find(hash); it != m_map.end())
+            if (auto it = map_.find(hash); it != map_.end())
             {
                 if (acquire)
                 {
-                    it->second.mSeq = m_seq;
+                    it->second.mSeq = seq_;
                     if (it->second.mAcquire)
                     {
                         it->second.mAcquire->stillNeed();
@@ -99,11 +99,11 @@ public:
             if (!acquire || stopping_)
                 return std::shared_ptr<SHAMap>();
 
-            ta = std::make_shared<TransactionAcquire>(app_, hash, m_peerSetBuilder->build());
+            ta = std::make_shared<TransactionAcquire>(app_, hash, peerSetBuilder_->build());
 
-            auto& obj = m_map[hash];
+            auto& obj = map_[hash];
             obj.mAcquire = ta;
-            obj.mSeq = m_seq;
+            obj.mSeq = seq_;
         }
 
         ta->init(startPeers);
@@ -166,10 +166,10 @@ public:
         {
             std::lock_guard sl(mLock);
 
-            auto& inboundSet = m_map[hash];
+            auto& inboundSet = map_[hash];
 
-            if (inboundSet.mSeq < m_seq)
-                inboundSet.mSeq = m_seq;
+            if (inboundSet.mSeq < seq_)
+                inboundSet.mSeq = seq_;
 
             if (inboundSet.mSet)
                 isNew = false;
@@ -180,7 +180,7 @@ public:
         }
 
         if (isNew)
-            m_gotSet(set, fromAcquire);
+            gotSet_(set, fromAcquire);
     }
 
     void
@@ -189,21 +189,21 @@ public:
         std::lock_guard lock(mLock);
 
         // Protect zero set from expiration
-        m_zeroSet.mSeq = seq;
+        zeroSet_.mSeq = seq;
 
-        if (m_seq != seq)
+        if (seq_ != seq)
         {
-            m_seq = seq;
+            seq_ = seq;
 
-            auto it = m_map.begin();
+            auto it = map_.begin();
 
             std::uint32_t const minSeq = (seq < setKeepRounds) ? 0 : (seq - setKeepRounds);
             std::uint32_t maxSeq = seq + setKeepRounds;
 
-            while (it != m_map.end())
+            while (it != map_.end())
             {
                 if (it->second.mSeq < minSeq || it->second.mSeq > maxSeq)
-                    it = m_map.erase(it);
+                    it = map_.erase(it);
                 else
                     ++it;
             }
@@ -215,7 +215,7 @@ public:
     {
         std::lock_guard lock(mLock);
         stopping_ = true;
-        m_map.clear();
+        map_.clear();
     }
 
 private:
@@ -226,15 +226,15 @@ private:
     std::recursive_mutex mLock;
 
     bool stopping_{false};
-    MapType m_map;
-    std::uint32_t m_seq;
+    MapType map_;
+    std::uint32_t seq_;
 
     // The empty transaction set whose hash is zero
-    InboundTransactionSet& m_zeroSet;
+    InboundTransactionSet& zeroSet_;
 
-    std::function<void(std::shared_ptr<SHAMap> const&, bool)> m_gotSet;
+    std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet_;
 
-    std::unique_ptr<PeerSetBuilder> m_peerSetBuilder;
+    std::unique_ptr<PeerSetBuilder> peerSetBuilder_;
 
     beast::Journal j_;
 };

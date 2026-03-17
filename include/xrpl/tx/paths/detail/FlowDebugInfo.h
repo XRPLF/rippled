@@ -262,7 +262,7 @@ struct FlowDebugInfo
                 writeXrpAmtList(passInfo.out);
             else
                 writeIouAmtList(passInfo.out);
-            ostr << ", num_active: ";
+            ostr << ", num_active_: ";
             writeIntList(passInfo.numActive);
             if (!passInfo.liquiditySrcIn.empty() && !passInfo.liquiditySrcIn.back().empty())
             {

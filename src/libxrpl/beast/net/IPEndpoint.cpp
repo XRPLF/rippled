@@ -16,11 +16,11 @@
 namespace beast {
 namespace IP {
 
-Endpoint::Endpoint() : m_port(0)
+Endpoint::Endpoint() : port_(0)
 {
 }
 
-Endpoint::Endpoint(Address const& addr, Port port) : m_addr(addr), m_port(port)
+Endpoint::Endpoint(Address const& addr, Port port) : addr_(addr), port_(port)
 {
 }
 

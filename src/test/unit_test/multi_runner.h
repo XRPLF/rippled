@@ -131,7 +131,7 @@ class multi_runner_base
         print_results(S& s);
     };
 
-    static constexpr char const* shared_mem_name_ = "RippledUnitTestSharedMem";
+    static constexpr char const* shared_mem_name__ = "RippledUnitTestSharedMem";
     // name of the message queue a multi_runner_child will use to communicate
     // with multi_runner_parent
     static constexpr char const* message_queue_name_ = "RippledUnitTestMessageQueue";
@@ -239,7 +239,7 @@ private:
     detail::results results_;
     detail::suite_results suite_results_;
     detail::case_results case_results_;
-    std::size_t num_jobs_{0};
+    std::size_t num_jobs__{0};
     bool quiet_{false};
     bool print_log_{true};
 
@@ -251,7 +251,7 @@ public:
     multi_runner_child&
     operator=(multi_runner_child const&) = delete;
 
-    multi_runner_child(std::size_t num_jobs, bool quiet, bool print_log);
+    multi_runner_child(std::size_t num_jobs_, bool quiet, bool print_log);
     ~multi_runner_child();
 
     std::size_t
@@ -297,12 +297,12 @@ bool
 multi_runner_child::run_multi(Pred pred)
 {
     auto const& suite = beast::unit_test::global_suites();
-    auto const num_tests = suite.size();
+    auto const num_tests_ = suite.size();
     bool failed = false;
 
     auto get_test = [&]() -> beast::unit_test::suite_info const* {
         auto const cur_test_index = checkout_test_index();
-        if (cur_test_index >= num_tests)
+        if (cur_test_index >= num_tests_)
             return nullptr;
         auto iter = suite.begin();
         std::advance(iter, cur_test_index);
@@ -318,7 +318,7 @@ multi_runner_child::run_multi(Pred pred)
         }
         catch (...)
         {
-            if (num_jobs_ <= 1)
+            if (num_jobs__ <= 1)
                 throw;  // a single process can die
 
             // inform the parent

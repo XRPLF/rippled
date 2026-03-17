@@ -38,11 +38,11 @@ public:
 
             do
             {
-                head = instance.m_head.load();
+                head = instance.head_.load();
                 next_ = head;
-            } while (instance.m_head.exchange(this) != head);
+            } while (instance.head_.exchange(this) != head);
 
-            ++instance.m_count;
+            ++instance.count_;
         }
 
         ~Counter() noexcept = default;
@@ -88,8 +88,8 @@ private:
     ~CountedObjects() noexcept = default;
 
 private:
-    std::atomic<int> m_count;
-    std::atomic<Counter*> m_head;
+    std::atomic<int> count_;
+    std::atomic<Counter*> head_;
 };
 
 //------------------------------------------------------------------------------

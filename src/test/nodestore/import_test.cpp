@@ -44,7 +44,7 @@ namespace xrpl {
 
 namespace detail {
 
-class save_stream_state
+class save_streastate_
 {
     std::ostream& os_;
     std::streamsize precision_;
@@ -52,16 +52,16 @@ class save_stream_state
     std::ios::char_type fill_;
 
 public:
-    ~save_stream_state()
+    ~save_streastate_()
     {
         os_.precision(precision_);
         os_.flags(flags_);
         os_.fill(fill_);
     }
-    save_stream_state(save_stream_state const&) = delete;
-    save_stream_state&
-    operator=(save_stream_state const&) = delete;
-    explicit save_stream_state(std::ostream& os)
+    save_streastate_(save_streastate_ const&) = delete;
+    save_streastate_&
+    operator=(save_streastate_ const&) = delete;
+    explicit save_streastate_(std::ostream& os)
         : os_(os), precision_(os.precision()), flags_(os.flags()), fill_(os.fill())
     {
     }
@@ -71,7 +71,7 @@ template <class Rep, class Period>
 std::ostream&
 pretty_time(std::ostream& os, std::chrono::duration<Rep, Period> d)
 {
-    save_stream_state _(os);
+    save_streastate_ _(os);
     using namespace std::chrono;
     if (d < microseconds{1})
     {
@@ -306,7 +306,7 @@ public:
         // The larger the buffer, the faster the import.
         //
         std::size_t const buffer_size = std::stoull(args.at("buffer"));
-        auto const from_path = args.at("from");
+        auto const fropath_ = args.at("from");
         auto const to_path = args.at("to");
 
         using hash_type = nudb::xxhasher;
@@ -318,7 +318,7 @@ public:
 
         auto const start = std::chrono::steady_clock::now();
 
-        log << "from:    " << from_path
+        log << "from:    " << fropath_
             << "\n"
                "to:      "
             << to_path
@@ -332,9 +332,9 @@ public:
             options.create_if_missing = false;
             options.max_open_files = 2000;  // 5000?
             rocksdb::DB* pdb = nullptr;
-            rocksdb::Status status = rocksdb::DB::OpenForReadOnly(options, from_path, &pdb);
+            rocksdb::Status status = rocksdb::DB::OpenForReadOnly(options, fropath_, &pdb);
             if (!status.ok() || !pdb)
-                Throw<std::runtime_error>("Can't open '" + from_path + "': " + status.ToString());
+                Throw<std::runtime_error>("Can't open '" + fropath_ + "': " + status.ToString());
             db.reset(pdb);
         }
         // Create data file with values

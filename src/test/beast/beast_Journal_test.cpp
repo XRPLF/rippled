@@ -9,36 +9,36 @@ public:
     class TestSink : public Journal::Sink
     {
     private:
-        int m_count;
+        int count_;
 
     public:
-        TestSink() : Sink(severities::kWarning, false), m_count(0)
+        TestSink() : Sink(severities::kWarning, false), count_(0)
         {
         }
 
         int
         count() const
         {
-            return m_count;
+            return count_;
         }
 
         void
         reset()
         {
-            m_count = 0;
+            count_ = 0;
         }
 
         void
         write(severities::Severity level, std::string const&) override
         {
             if (level >= threshold())
-                ++m_count;
+                ++count_;
         }
 
         void
         writeAlways(severities::Severity level, std::string const&) override
         {
-            ++m_count;
+            ++count_;
         }
     };
 

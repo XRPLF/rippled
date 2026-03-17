@@ -9,19 +9,19 @@
 
 namespace xrpl {
 
-Quality::Quality(std::uint64_t value) : m_value(value)
+Quality::Quality(std::uint64_t value) : value_(value)
 {
 }
 
-Quality::Quality(Amounts const& amount) : m_value(getRate(amount.out, amount.in))
+Quality::Quality(Amounts const& amount) : value_(getRate(amount.out, amount.in))
 {
 }
 
 Quality&
 Quality::operator++()
 {
-    XRPL_ASSERT(m_value > 0, "xrpl::Quality::operator++() : minimum value");
-    --m_value;
+    XRPL_ASSERT(value_ > 0, "xrpl::Quality::operator++() : minimum value");
+    --value_;
     return *this;
 }
 
@@ -37,9 +37,9 @@ Quality&
 Quality::operator--()
 {
     XRPL_ASSERT(
-        m_value < std::numeric_limits<value_type>::max(),
+        value_ < std::numeric_limits<value_type>::max(),
         "xrpl::Quality::operator--() : maximum value");
-    ++m_value;
+    ++value_;
     return *this;
 }
 
@@ -154,8 +154,8 @@ Quality::round(int digits) const
         /* 16 */ 1,
     };
 
-    auto exponent = m_value >> (64 - 8);
-    auto mantissa = m_value & 0x00ffffffffffffffULL;
+    auto exponent = value_ >> (64 - 8);
+    auto mantissa = value_ & 0x00ffffffffffffffULL;
     mantissa += mod[digits] - 1;
     mantissa -= (mantissa % mod[digits]);
 

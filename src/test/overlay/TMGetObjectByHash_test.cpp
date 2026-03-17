@@ -44,7 +44,7 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
             PublicKey const& publicKey,
             ProtocolVersion protocol,
             Resource::Consumer consumer,
-            std::unique_ptr<TMGetObjectByHash_test::stream_type>&& stream_ptr,
+            std::unique_ptr<TMGetObjectByHash_test::stream_type>&& stream_ptr_,
             OverlayImpl& overlay)
             : PeerImp(
                   app,
@@ -54,7 +54,7 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
                   publicKey,
                   protocol,
                   consumer,
-                  std::move(stream_ptr),
+                  std::move(stream_ptr_),
                   overlay)
         {
         }
@@ -97,7 +97,7 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
     {
         auto& overlay = dynamic_cast<OverlayImpl&>(env.app().overlay());
         boost::beast::http::request<boost::beast::http::dynamic_body> request;
-        auto stream_ptr =
+        auto stream_ptr_ =
             std::make_unique<stream_type>(socket_type(env.app().getIOContext()), *context_);
 
         beast::IP::Endpoint local(boost::asio::ip::make_address("172.1.1.1"), 51235);
@@ -114,7 +114,7 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
             key,
             protocolVersion_,
             consumer,
-            std::move(stream_ptr),
+            std::move(stream_ptr_),
             overlay);
 
         overlay.add_active(peer);

@@ -122,18 +122,18 @@ inplace_bigint_div_rem(std::span<uint64_t> numerator, std::uint64_t divisor)
         unsigned __int128 const low128 = low;
         return ((high128 << 64) | low128);
     };
-    auto div_rem_64 = [](unsigned __int128 num,
-                         std::uint64_t denom) -> std::tuple<std::uint64_t, std::uint64_t> {
+    auto div_re64_ = [](unsigned __int128 num,
+                        std::uint64_t denom) -> std::tuple<std::uint64_t, std::uint64_t> {
         unsigned __int128 const denom128 = denom;
         unsigned __int128 const d = num / denom128;
         unsigned __int128 const r = num - (denom128 * d);
         XRPL_ASSERT(
             d >> 64 == 0,
-            "xrpl::b58_fast::detail::inplace_bigint_div_rem::div_rem_64 : "
+            "xrpl::b58_fast::detail::inplace_bigint_div_rem::div_re64_ : "
             "valid division result");
         XRPL_ASSERT(
             r >> 64 == 0,
-            "xrpl::b58_fast::detail::inplace_bigint_div_rem::div_rem_64 : "
+            "xrpl::b58_fast::detail::inplace_bigint_div_rem::div_re64_ : "
             "valid remainder");
         return {static_cast<std::uint64_t>(d), static_cast<std::uint64_t>(r)};
     };
@@ -144,7 +144,7 @@ inplace_bigint_div_rem(std::span<uint64_t> numerator, std::uint64_t divisor)
     for (int i = last_index - 1; i >= 0; --i)
     {
         unsigned __int128 const cur_num = to_u128(prev_rem, numerator[i]);
-        std::tie(numerator[i], prev_rem) = div_rem_64(cur_num, divisor);
+        std::tie(numerator[i], prev_rem) = div_re64_(cur_num, divisor);
     }
     return prev_rem;
 }

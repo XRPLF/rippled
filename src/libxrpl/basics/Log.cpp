@@ -41,14 +41,14 @@ Logs::Sink::writeAlways(beast::severities::Severity level, std::string const& te
 
 //------------------------------------------------------------------------------
 
-Logs::File::File() : m_stream(nullptr)
+Logs::File::File() : stream_(nullptr)
 {
 }
 
 bool
 Logs::File::isOpen() const noexcept
 {
-    return m_stream != nullptr;
+    return stream_ != nullptr;
 }
 
 bool
@@ -63,9 +63,9 @@ Logs::File::open(boost::filesystem::path const& path)
 
     if (stream->good())
     {
-        m_path = path;
+        path_ = path;
 
-        m_stream = std::move(stream);
+        stream_ = std::move(stream);
 
         wasOpened = true;
     }
@@ -78,29 +78,29 @@ Logs::File::closeAndReopen()
 {
     close();
 
-    return open(m_path);
+    return open(path_);
 }
 
 void
 Logs::File::close()
 {
-    m_stream = nullptr;
+    stream_ = nullptr;
 }
 
 void
 Logs::File::write(char const* text)
 {
-    if (m_stream != nullptr)
-        (*m_stream) << text;
+    if (stream_ != nullptr)
+        (*stream_) << text;
 }
 
 void
 Logs::File::writeln(char const* text)
 {
-    if (m_stream != nullptr)
+    if (stream_ != nullptr)
     {
-        (*m_stream) << text;
-        (*m_stream) << std::endl;
+        (*stream_) << text;
+        (*stream_) << std::endl;
     }
 }
 
@@ -393,7 +393,7 @@ class DebugSink
 private:
     std::reference_wrapper<beast::Journal::Sink> sink_;
     std::unique_ptr<beast::Journal::Sink> holder_;
-    std::mutex m_;
+    std::mutex mtx;
 
 public:
     DebugSink() : sink_(beast::Journal::getNullSink())
@@ -411,7 +411,7 @@ public:
     std::unique_ptr<beast::Journal::Sink>
     set(std::unique_ptr<beast::Journal::Sink> sink)
     {
-        std::lock_guard _(m_);
+        std::lock_guard _(mtx);
 
         using std::swap;
         swap(holder_, sink);
@@ -427,7 +427,7 @@ public:
     beast::Journal::Sink&
     get()
     {
-        std::lock_guard _(m_);
+        std::lock_guard _(mtx);
         return sink_.get();
     }
 };

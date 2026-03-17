@@ -932,11 +932,11 @@ public:
         // (-10, "E5B8B...", true, 4
 
         auto checkBoundary = [](IdxHashVec const& vec, bool /* forward */) {
-            size_t num_tx = vec.size();
-            for (size_t i = 0; i < num_tx; ++i)
+            size_t nutx_ = vec.size();
+            for (size_t i = 0; i < nutx_; ++i)
             {
                 auto [idx, hash, boundary, ledger] = vec[i];
-                if ((i + 1 == num_tx || ledger != std::get<3>(vec[i + 1])) != boundary)
+                if ((i + 1 == nutx_ || ledger != std::get<3>(vec[i + 1])) != boundary)
                     return false;
             }
             return true;

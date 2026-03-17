@@ -87,7 +87,7 @@ private:
 
     static std::size_t const size = Bits / (8 * sizeof(UInt));
 
-    std::array<UInt, size> m_vec;
+    std::array<UInt, size> vec_;
 
 public:
     using value_type = UInt;
@@ -97,25 +97,25 @@ public:
 
     template <class Int>
     static unsigned_integer
-    from_number(Int v)
+    fronumber_(Int v)
     {
         unsigned_integer result;
         for (std::size_t i(1); i < size; ++i)
-            result.m_vec[i] = 0;
-        result.m_vec[0] = v;
+            result.vec_[i] = 0;
+        result.vec_[0] = v;
         return result;
     }
 
     void*
     data() noexcept
     {
-        return &m_vec[0];
+        return &vec_[0];
     }
 
     void const*
     data() const noexcept
     {
-        return &m_vec[0];
+        return &vec_[0];
     }
 
     template <class Hasher>
@@ -123,14 +123,14 @@ public:
     hash_append(Hasher& h, unsigned_integer const& a) noexcept
     {
         using beast::hash_append;
-        hash_append(h, a.m_vec);
+        hash_append(h, a.vec_);
     }
 
     friend std::ostream&
     operator<<(std::ostream& s, unsigned_integer const& v)
     {
         for (std::size_t i(0); i < size; ++i)
-            s << std::hex << std::setfill('0') << std::setw(2 * sizeof(UInt)) << v.m_vec[i];
+            s << std::hex << std::setfill('0') << std::setw(2 * sizeof(UInt)) << v.vec_[i];
         return s;
     }
 };

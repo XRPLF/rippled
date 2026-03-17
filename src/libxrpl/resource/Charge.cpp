@@ -8,27 +8,27 @@
 namespace xrpl {
 namespace Resource {
 
-Charge::Charge(value_type cost, std::string const& label) : m_cost(cost), m_label(label)
+Charge::Charge(value_type cost, std::string const& label) : cost_(cost), label_(label)
 {
 }
 
 std::string const&
 Charge::label() const
 {
-    return m_label;
+    return label_;
 }
 
 Charge::value_type
 Charge::cost() const
 {
-    return m_cost;
+    return cost_;
 }
 
 std::string
 Charge::to_string() const
 {
     std::stringstream ss;
-    ss << m_label << " ($" << m_cost << ")";
+    ss << label_ << " ($" << cost_ << ")";
     return ss.str();
 }
 
@@ -42,19 +42,19 @@ operator<<(std::ostream& os, Charge const& v)
 bool
 Charge::operator==(Charge const& c) const
 {
-    return c.m_cost == m_cost;
+    return c.cost_ == cost_;
 }
 
 std::strong_ordering
 Charge::operator<=>(Charge const& c) const
 {
-    return m_cost <=> c.m_cost;
+    return cost_ <=> c.cost_;
 }
 
 Charge
 Charge::operator*(value_type m) const
 {
-    return Charge(m_cost * m, m_label);
+    return Charge(cost_ * m, label_);
 }
 
 }  // namespace Resource

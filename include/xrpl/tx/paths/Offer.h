@@ -31,11 +31,11 @@ template <class TIn = STAmount, class TOut = STAmount>
 class TOffer : private TOfferBase<TIn, TOut>
 {
 private:
-    SLE::pointer m_entry;
-    Quality m_quality;
-    AccountID m_account;
+    SLE::pointer entry_;
+    Quality quality_;
+    AccountID account_;
 
-    TAmounts<TIn, TOut> m_amounts;
+    TAmounts<TIn, TOut> amounts_;
     void
     setFieldAmounts();
 
@@ -56,14 +56,14 @@ public:
     Quality
     quality() const noexcept
     {
-        return m_quality;
+        return quality_;
     }
 
     /** Returns the account id of the offer's owner. */
     AccountID const&
     owner() const
     {
-        return m_account;
+        return account_;
     }
 
     /** Returns the in and out amounts.
@@ -72,16 +72,16 @@ public:
     TAmounts<TIn, TOut> const&
     amount() const
     {
-        return m_amounts;
+        return amounts_;
     }
 
     /** Returns `true` if no more funds can flow through this offer. */
     bool
     fully_consumed() const
     {
-        if (m_amounts.in <= beast::zero)
+        if (amounts_.in <= beast::zero)
             return true;
-        if (m_amounts.out <= beast::zero)
+        if (amounts_.out <= beast::zero)
             return true;
         return false;
     }
@@ -90,27 +90,27 @@ public:
     void
     consume(ApplyView& view, TAmounts<TIn, TOut> const& consumed)
     {
-        if (consumed.in > m_amounts.in)
+        if (consumed.in > amounts_.in)
             Throw<std::logic_error>("can't consume more than is available.");
 
-        if (consumed.out > m_amounts.out)
+        if (consumed.out > amounts_.out)
             Throw<std::logic_error>("can't produce more than is available.");
 
-        m_amounts -= consumed;
+        amounts_ -= consumed;
         setFieldAmounts();
-        view.update(m_entry);
+        view.update(entry_);
     }
 
     std::string
     id() const
     {
-        return to_string(m_entry->key());
+        return to_string(entry_->key());
     }
 
     std::optional<uint256>
     key() const
     {
-        return m_entry->key();
+        return entry_->key();
     }
 
     Issue const&
@@ -132,7 +132,7 @@ public:
     isFunded() const
     {
         // Offer owner is issuer; they have unlimited funds
-        return m_account == issueOut().account;
+        return account_ == issueOut().account;
     }
 
     static std::pair<std::uint32_t, std::uint32_t>
@@ -151,13 +151,13 @@ public:
         if (!isFeatureEnabled(fixAMMv1_3))
             return true;
 
-        if (consumed.in > m_amounts.in || consumed.out > m_amounts.out)
+        if (consumed.in > amounts_.in || consumed.out > amounts_.out)
         {
             // LCOV_EXCL_START
             JLOG(j.error()) << "AMMOffer::checkInvariant failed: consumed "
                             << to_string(consumed.in) << " " << to_string(consumed.out)
-                            << " amounts " << to_string(m_amounts.in) << " "
-                            << to_string(m_amounts.out);
+                            << " amounts " << to_string(amounts_.in) << " "
+                            << to_string(amounts_.out);
 
             return false;
             // LCOV_EXCL_STOP
@@ -171,22 +171,22 @@ using Offer = TOffer<>;
 
 template <class TIn, class TOut>
 TOffer<TIn, TOut>::TOffer(SLE::pointer const& entry, Quality quality)
-    : m_entry(entry), m_quality(quality), m_account(m_entry->getAccountID(sfAccount))
+    : entry_(entry), quality_(quality), account_(entry_->getAccountID(sfAccount))
 {
-    auto const tp = m_entry->getFieldAmount(sfTakerPays);
-    auto const tg = m_entry->getFieldAmount(sfTakerGets);
-    m_amounts.in = toAmount<TIn>(tp);
-    m_amounts.out = toAmount<TOut>(tg);
+    auto const tp = entry_->getFieldAmount(sfTakerPays);
+    auto const tg = entry_->getFieldAmount(sfTakerGets);
+    amounts_.in = toAmount<TIn>(tp);
+    amounts_.out = toAmount<TOut>(tg);
     this->issIn_ = tp.issue();
     this->issOut_ = tg.issue();
 }
 
 template <>
 inline TOffer<STAmount, STAmount>::TOffer(SLE::pointer const& entry, Quality quality)
-    : m_entry(entry)
-    , m_quality(quality)
-    , m_account(m_entry->getAccountID(sfAccount))
-    , m_amounts(m_entry->getFieldAmount(sfTakerPays), m_entry->getFieldAmount(sfTakerGets))
+    : entry_(entry)
+    , quality_(quality)
+    , account_(entry_->getAccountID(sfAccount))
+    , amounts_(entry_->getFieldAmount(sfTakerPays), entry_->getFieldAmount(sfTakerGets))
 {
 }
 
@@ -225,7 +225,7 @@ TOffer<TIn, TOut>::limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& li
         // affects transaction outcomes, so the change must be made using
         // an amendment.
         return quality().ceil_in_strict(offerAmount, limit, roundUp);
-    return m_quality.ceil_in(offerAmount, limit);
+    return quality_.ceil_in(offerAmount, limit);
 }
 
 template <class TIn, class TOut>
@@ -240,32 +240,32 @@ template <>
 inline void
 TOffer<STAmount, STAmount>::setFieldAmounts()
 {
-    m_entry->setFieldAmount(sfTakerPays, m_amounts.in);
-    m_entry->setFieldAmount(sfTakerGets, m_amounts.out);
+    entry_->setFieldAmount(sfTakerPays, amounts_.in);
+    entry_->setFieldAmount(sfTakerGets, amounts_.out);
 }
 
 template <>
 inline void
 TOffer<IOUAmount, IOUAmount>::setFieldAmounts()
 {
-    m_entry->setFieldAmount(sfTakerPays, toSTAmount(m_amounts.in, issIn_));
-    m_entry->setFieldAmount(sfTakerGets, toSTAmount(m_amounts.out, issOut_));
+    entry_->setFieldAmount(sfTakerPays, toSTAmount(amounts_.in, issIn_));
+    entry_->setFieldAmount(sfTakerGets, toSTAmount(amounts_.out, issOut_));
 }
 
 template <>
 inline void
 TOffer<IOUAmount, XRPAmount>::setFieldAmounts()
 {
-    m_entry->setFieldAmount(sfTakerPays, toSTAmount(m_amounts.in, issIn_));
-    m_entry->setFieldAmount(sfTakerGets, toSTAmount(m_amounts.out));
+    entry_->setFieldAmount(sfTakerPays, toSTAmount(amounts_.in, issIn_));
+    entry_->setFieldAmount(sfTakerGets, toSTAmount(amounts_.out));
 }
 
 template <>
 inline void
 TOffer<XRPAmount, IOUAmount>::setFieldAmounts()
 {
-    m_entry->setFieldAmount(sfTakerPays, toSTAmount(m_amounts.in));
-    m_entry->setFieldAmount(sfTakerGets, toSTAmount(m_amounts.out, issOut_));
+    entry_->setFieldAmount(sfTakerPays, toSTAmount(amounts_.in));
+    entry_->setFieldAmount(sfTakerGets, toSTAmount(amounts_.out, issOut_));
 }
 
 template <class TIn, class TOut>
@@ -279,7 +279,7 @@ template <>
 inline Issue const&
 TOffer<STAmount, STAmount>::issueIn() const
 {
-    return m_amounts.in.issue();
+    return amounts_.in.issue();
 }
 
 template <class TIn, class TOut>
@@ -293,7 +293,7 @@ template <>
 inline Issue const&
 TOffer<STAmount, STAmount>::issueOut() const
 {
-    return m_amounts.out.issue();
+    return amounts_.out.issue();
 }
 
 template <class TIn, class TOut>

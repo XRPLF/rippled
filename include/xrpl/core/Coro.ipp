@@ -35,7 +35,7 @@ inline void
 JobQueue::Coro::yield() const
 {
     {
-        std::lock_guard lock(jq_.m_mutex);
+        std::lock_guard lock(jq_.mutex_);
         ++jq_.nSuspend_;
     }
     (*yield_)();
@@ -70,7 +70,7 @@ JobQueue::Coro::resume()
         running_ = true;
     }
     {
-        std::lock_guard lock(jq_.m_mutex);
+        std::lock_guard lock(jq_.mutex_);
         --jq_.nSuspend_;
     }
     auto saved = detail::getLocalValues().release();
@@ -104,7 +104,7 @@ JobQueue::Coro::expectEarlyExit()
         //
         // That said, since we're outside the Coro's stack, we need to
         // decrement the nSuspend that the Coro's call to yield caused.
-        std::lock_guard lock(jq_.m_mutex);
+        std::lock_guard lock(jq_.mutex_);
         --jq_.nSuspend_;
 #ifndef NDEBUG
         finished_ = true;

@@ -70,9 +70,9 @@ public:
         auto const USD = gw["USD"];
         env.fund(XRP(100000), gw);
 
-        int const num_accounts = 10;
+        int const num_accounts_ = 10;
 
-        for (auto i = 0; i < num_accounts; i++)
+        for (auto i = 0; i < num_accounts_; i++)
         {
             Account const bob{std::string("bob") + std::to_string(i)};
             env.fund(XRP(1000), bob);
@@ -88,7 +88,7 @@ public:
             jrr[jss::ledger_current_index].isIntegral() &&
             jrr[jss::ledger_current_index].asInt() > 0);
         BEAST_EXPECT(!jrr.isMember(jss::marker));
-        BEAST_EXPECT(checkArraySize(jrr[jss::state], num_accounts + 4));
+        BEAST_EXPECT(checkArraySize(jrr[jss::state], num_accounts_ + 4));
     }
 
     void
@@ -153,9 +153,9 @@ public:
         auto const USD = gw["USD"];
         env.fund(XRP(100000), gw);
 
-        int const num_accounts = 20;
+        int const num_accounts_ = 20;
 
-        for (auto i = 0; i < num_accounts; i++)
+        for (auto i = 0; i < num_accounts_; i++)
         {
             Account const bob{std::string("bob") + std::to_string(i)};
             env.fund(XRP(1000), bob);
@@ -271,9 +271,9 @@ public:
                 BEAST_EXPECT(checkArraySize(jrr[jss::state], 0));
             }
 
-            int const num_accounts = 10;
+            int const num_accounts_ = 10;
 
-            for (auto i = 0; i < num_accounts; i++)
+            for (auto i = 0; i < num_accounts_; i++)
             {
                 Account const bob{std::string("bob") + std::to_string(i)};
                 env.fund(XRP(1000), bob);

@@ -91,12 +91,12 @@ private:
     Setup setup_;
     beast::Journal const journal_;
     ServerHandler& serverHandler_;
-    Resource::Manager& m_resourceManager;
-    std::unique_ptr<PeerFinder::Manager> m_peerFinder;
-    TrafficCount m_traffic;
-    hash_map<std::shared_ptr<PeerFinder::Slot>, std::weak_ptr<PeerImp>> m_peers;
+    Resource::Manager& resourceManager_;
+    std::unique_ptr<PeerFinder::Manager> peerFinder_;
+    TrafficCount traffic_;
+    hash_map<std::shared_ptr<PeerFinder::Slot>, std::weak_ptr<PeerImp>> peers_;
     hash_map<Peer::id_t, std::weak_ptr<PeerImp>> ids_;
-    Resolver& m_resolver;
+    Resolver& resolver_;
     std::atomic<Peer::id_t> next_id_;
     int timer_count_;
     std::atomic<uint64_t> jqTransOverflow_{0};
@@ -141,13 +141,13 @@ public:
     PeerFinder::Manager&
     peerFinder()
     {
-        return *m_peerFinder;
+        return *peerFinder_;
     }
 
     Resource::Manager&
     resourceManager()
     {
-        return m_resourceManager;
+        return resourceManager_;
     }
 
     Setup const&
@@ -565,23 +565,23 @@ private:
         beast::insight::Hook hook;
     };
 
-    Stats m_stats;
-    std::mutex m_statsMutex;
+    Stats stats_;
+    std::mutex statsMutex_;
 
 private:
     void
     collect_metrics()
     {
-        auto counts = m_traffic.getCounts();
-        std::lock_guard lock(m_statsMutex);
+        auto counts = traffic_.getCounts();
+        std::lock_guard lock(statsMutex_);
         XRPL_ASSERT(
-            counts.size() == m_stats.trafficGauges.size(),
+            counts.size() == stats_.trafficGauges.size(),
             "xrpl::OverlayImpl::collect_metrics : counts size do match");
 
         for (auto const& [key, value] : counts)
         {
-            auto it = m_stats.trafficGauges.find(key);
-            if (it == m_stats.trafficGauges.end())
+            auto it = stats_.trafficGauges.find(key);
+            if (it == stats_.trafficGauges.end())
                 continue;
 
             auto& gauge = it->second;
@@ -597,7 +597,7 @@ private:
             gauge.messagesOut = value.messagesOut;
         }
 
-        m_stats.peerDisconnects = getPeerDisconnect();
+        stats_.peerDisconnects = getPeerDisconnect();
     }
 };
 

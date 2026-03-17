@@ -129,8 +129,8 @@ private:
         /** @} */
 
     private:
-        std::unique_ptr<std::ofstream> m_stream;
-        boost::filesystem::path m_path;
+        std::unique_ptr<std::ofstream> stream_;
+        boost::filesystem::path path_;
     };
 
     std::mutex mutable mutex_;

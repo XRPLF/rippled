@@ -210,8 +210,8 @@ protected:
     std::mutex mLock;
 
 private:
-    Consumer m_consumer;
-    Source& m_source;
+    Consumer consumer_;
+    Source& source_;
     hash_set<AccountID> realTimeSubscriptions_;
     hash_set<AccountID> normalSubscriptions_;
     std::shared_ptr<InfoSubRequest> request_;

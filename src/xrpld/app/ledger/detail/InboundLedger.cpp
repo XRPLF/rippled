@@ -67,7 +67,7 @@ InboundLedger::InboundLedger(
           ledgerAcquireTimeout,
           {jtLEDGER_DATA, "InboundLedger", 5},
           app.journal("InboundLedger"))
-    , m_clock(clock)
+    , clock_(clock)
     , mHaveHeader(false)
     , mHaveState(false)
     , mHaveTransactions(false)

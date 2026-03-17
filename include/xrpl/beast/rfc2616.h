@@ -59,7 +59,7 @@ is_white(char c)
 
 template <class FwdIter>
 FwdIter
-trim_right(FwdIter first, FwdIter last)
+triright_(FwdIter first, FwdIter last)
 {
     if (first == last)
         return last;
@@ -74,13 +74,13 @@ trim_right(FwdIter first, FwdIter last)
 
 template <class String>
 String
-trim_right(String const& s)
+triright_(String const& s)
 {
     using std::begin;
     using std::end;
     auto first(begin(s));
     auto last(end(s));
-    last = trim_right(first, last);
+    last = triright_(first, last);
     return {first, last};
 }
 
@@ -143,7 +143,7 @@ split(FwdIt first, FwdIt last, Char delim)
         }
         else if (*iter == delim)
         {
-            e = trim_right(e);
+            e = triright_(e);
             if (!e.empty())
             {
                 result.emplace_back(std::move(e));
@@ -163,7 +163,7 @@ split(FwdIt first, FwdIt last, Char delim)
 
     if (!e.empty())
     {
-        e = trim_right(e);
+        e = triright_(e);
         if (!e.empty())
             result.emplace_back(std::move(e));
     }

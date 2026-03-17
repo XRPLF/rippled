@@ -51,9 +51,9 @@ public:
     /** Convenience for setting the time in seconds from epoch. */
     template <class Integer>
     void
-    set(Integer seconds_from_epoch)
+    set(Integer seconds_froepoch_)
     {
-        set(time_point(duration(std::chrono::seconds(seconds_from_epoch))));
+        set(time_point(duration(std::chrono::seconds(seconds_froepoch_))));
     }
 
     /** Advance the clock by a duration. */

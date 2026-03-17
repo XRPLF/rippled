@@ -84,7 +84,7 @@ OverlayImpl::Timer::on_timer(error_code ec)
         return;
     }
 
-    overlay_.m_peerFinder->once_per_second();
+    overlay_.peerFinder_->once_per_second();
     overlay_.sendEndpoints();
     overlay_.autoConnect();
     if (overlay_.app_.config().TX_REDUCE_RELAY_ENABLE)
@@ -114,22 +114,22 @@ OverlayImpl::OverlayImpl(
     , setup_(setup)
     , journal_(app_.journal("Overlay"))
     , serverHandler_(serverHandler)
-    , m_resourceManager(resourceManager)
-    , m_peerFinder(
+    , resourceManager_(resourceManager)
+    , peerFinder_(
           PeerFinder::make_Manager(
               io_context,
               stopwatch(),
               app_.journal("PeerFinder"),
               config,
               collector))
-    , m_resolver(resolver)
+    , resolver_(resolver)
     , next_id_(1)
     , timer_count_(0)
     , slots_(app.logs(), *this, app.config())
-    , m_stats(
+    , stats_(
           std::bind(&OverlayImpl::collect_metrics, this),
           collector,
-          [counts = m_traffic.getCounts(), collector]() {
+          [counts = traffic_.getCounts(), collector]() {
               std::unordered_map<TrafficCount::category, TrafficGauges> ret;
 
               for (auto const& pair : counts)
@@ -138,7 +138,7 @@ OverlayImpl::OverlayImpl(
               return ret;
           }())
 {
-    beast::PropertyStream::Source::add(m_peerFinder.get());
+    beast::PropertyStream::Source::add(peerFinder_.get());
 }
 
 Handoff
@@ -169,12 +169,12 @@ OverlayImpl::onHandoff(
         return handoff;
     }
 
-    auto consumer = m_resourceManager.newInboundEndpoint(
-        beast::IPAddressConversion::from_asio(remote_endpoint));
+    auto consumer =
+        resourceManager_.newInboundEndpoint(beast::IPAddressConversion::from_asio(remote_endpoint));
     if (consumer.disconnect(journal))
         return handoff;
 
-    auto const [slot, result] = m_peerFinder->new_inbound_slot(
+    auto const [slot, result] = peerFinder_->new_inbound_slot(
         beast::IPAddressConversion::from_asio(local_endpoint),
         beast::IPAddressConversion::from_asio(remote_endpoint));
 
@@ -204,7 +204,7 @@ OverlayImpl::onHandoff(
     auto const negotiatedVersion = negotiateProtocolVersion(request["Upgrade"]);
     if (!negotiatedVersion)
     {
-        m_peerFinder->on_closed(slot);
+        peerFinder_->on_closed(slot);
         handoff.moved = false;
         handoff.response = makeErrorResponse(
             slot, request, remote_endpoint.address(), "Unable to agree on a protocol version");
@@ -215,7 +215,7 @@ OverlayImpl::onHandoff(
     auto const sharedValue = makeSharedValue(*stream_ptr, journal);
     if (!sharedValue)
     {
-        m_peerFinder->on_closed(slot);
+        peerFinder_->on_closed(slot);
         handoff.moved = false;
         handoff.response = makeErrorResponse(
             slot, request, remote_endpoint.address(), "Incorrect security cookie");
@@ -240,10 +240,10 @@ OverlayImpl::onHandoff(
             // or if it has a reservation.
             bool const reserved = static_cast<bool>(app_.cluster().member(publicKey)) ||
                 app_.peerReservations().contains(publicKey);
-            auto const result = m_peerFinder->activate(slot, publicKey, reserved);
+            auto const result = peerFinder_->activate(slot, publicKey, reserved);
             if (result != PeerFinder::Result::success)
             {
-                m_peerFinder->on_closed(slot);
+                peerFinder_->on_closed(slot);
                 JLOG(journal.debug())
                     << "Peer " << remote_endpoint << " redirected, " << to_string(result);
                 handoff.moved = false;
@@ -269,7 +269,7 @@ OverlayImpl::onHandoff(
             // queued after a call to stop().
             std::lock_guard<decltype(mutex_)> lock(mutex_);
             {
-                auto const result = m_peers.emplace(peer->slot(), peer);
+                auto const result = peers_.emplace(peer->slot(), peer);
                 XRPL_ASSERT(result.second, "xrpl::OverlayImpl::onHandoff : peer is inserted");
                 (void)result.second;
             }
@@ -285,7 +285,7 @@ OverlayImpl::onHandoff(
         JLOG(journal.debug()) << "Peer " << remote_endpoint << " fails handshake (" << e.what()
                               << ")";
 
-        m_peerFinder->on_closed(slot);
+        peerFinder_->on_closed(slot);
         handoff.moved = false;
         handoff.response = makeErrorResponse(slot, request, remote_endpoint.address(), e.what());
         handoff.keep_alive = false;
@@ -332,7 +332,7 @@ OverlayImpl::makeRedirectResponse(
     msg.body() = Json::objectValue;
     {
         Json::Value& ips = (msg.body()["peer-ips"] = Json::arrayValue);
-        for (auto const& _ : m_peerFinder->redirect(slot))
+        for (auto const& _ : peerFinder_->redirect(slot))
             ips.append(_.address.to_string());
     }
     msg.prepare_payload();
@@ -407,7 +407,7 @@ OverlayImpl::add_active(std::shared_ptr<PeerImp> const& peer)
     std::lock_guard lock(mutex_);
 
     {
-        auto const result = m_peers.emplace(peer->slot(), peer);
+        auto const result = peers_.emplace(peer->slot(), peer);
         XRPL_ASSERT(result.second, "xrpl::OverlayImpl::add_active : peer is inserted");
         (void)result.second;
     }
@@ -433,9 +433,9 @@ void
 OverlayImpl::remove(std::shared_ptr<PeerFinder::Slot> const& slot)
 {
     std::lock_guard lock(mutex_);
-    auto const iter = m_peers.find(slot);
-    XRPL_ASSERT(iter != m_peers.end(), "xrpl::OverlayImpl::remove : valid input");
-    m_peers.erase(iter);
+    auto const iter = peers_.find(slot);
+    XRPL_ASSERT(iter != peers_.end(), "xrpl::OverlayImpl::remove : valid input");
+    peers_.erase(iter);
 }
 
 void
@@ -447,8 +447,8 @@ OverlayImpl::start()
         app_.getValidationPublicKey().has_value(),
         setup_.ipLimit);
 
-    m_peerFinder->setConfig(config);
-    m_peerFinder->start();
+    peerFinder_->setConfig(config);
+    peerFinder_->start();
 
     // Populate our boot cache: if there are no entries in [ips] then we use
     // the entries in [ips_fixed].
@@ -471,7 +471,7 @@ OverlayImpl::start()
         bootstrapIps.push_back("hub.xrpl-commons.org 51235");
     }
 
-    m_resolver.resolve(
+    resolver_.resolve(
         bootstrapIps,
         [this](std::string const& name, std::vector<beast::IP::Endpoint> const& addresses) {
             std::vector<std::string> ips;
@@ -486,13 +486,13 @@ OverlayImpl::start()
 
             std::string const base("config: ");
             if (!ips.empty())
-                m_peerFinder->addFallbackStrings(base + name, ips);
+                peerFinder_->addFallbackStrings(base + name, ips);
         });
 
     // Add the ips_fixed from the xrpld.cfg file
     if (!app_.config().standalone() && !app_.config().IPS_FIXED.empty())
     {
-        m_resolver.resolve(
+        resolver_.resolve(
             app_.config().IPS_FIXED,
             [this](std::string const& name, std::vector<beast::IP::Endpoint> const& addresses) {
                 std::vector<beast::IP::Endpoint> ips;
@@ -507,7 +507,7 @@ OverlayImpl::start()
                 }
 
                 if (!ips.empty())
-                    m_peerFinder->addFixedPeer(name, ips);
+                    peerFinder_->addFixedPeer(name, ips);
             });
     }
     auto const timer = std::make_shared<Timer>(*this);
@@ -525,7 +525,7 @@ OverlayImpl::stop()
         std::unique_lock<decltype(mutex_)> lock(mutex_);
         cond_.wait(lock, [this] { return list_.empty(); });
     }
-    m_peerFinder->stop();
+    peerFinder_->stop();
 }
 
 //------------------------------------------------------------------------------
@@ -538,7 +538,7 @@ void
 OverlayImpl::onWrite(beast::PropertyStream::Map& stream)
 {
     beast::PropertyStream::Set set("traffic", stream);
-    auto const stats = m_traffic.getCounts();
+    auto const stats = traffic_.getCounts();
     for (auto const& pair : stats)
     {
         beast::PropertyStream::Map item(set);
@@ -641,13 +641,13 @@ OverlayImpl::onManifests(
 void
 OverlayImpl::reportInboundTraffic(TrafficCount::category cat, int size)
 {
-    m_traffic.addCount(cat, true, size);
+    traffic_.addCount(cat, true, size);
 }
 
 void
 OverlayImpl::reportOutboundTraffic(TrafficCount::category cat, int size)
 {
-    m_traffic.addCount(cat, false, size);
+    traffic_.addCount(cat, false, size);
 }
 /** The number of active peers on the network
     Active peers are only those peers that have completed the handshake
@@ -663,7 +663,7 @@ OverlayImpl::size() const
 int
 OverlayImpl::limit()
 {
-    return m_peerFinder->config().maxPeers;
+    return peerFinder_->config().maxPeers;
 }
 
 Json::Value
@@ -1273,7 +1273,7 @@ OverlayImpl::stopChildren()
 void
 OverlayImpl::autoConnect()
 {
-    auto const result = m_peerFinder->autoconnect();
+    auto const result = peerFinder_->autoconnect();
     for (auto addr : result)
         connect(addr);
 }
@@ -1281,14 +1281,14 @@ OverlayImpl::autoConnect()
 void
 OverlayImpl::sendEndpoints()
 {
-    auto const result = m_peerFinder->buildEndpointsForPeers();
+    auto const result = peerFinder_->buildEndpointsForPeers();
     for (auto const& e : result)
     {
         std::shared_ptr<PeerImp> peer;
         {
             std::lock_guard lock(mutex_);
-            auto const iter = m_peers.find(e.first);
-            if (iter != m_peers.end())
+            auto const iter = peers_.find(e.first);
+            if (iter != peers_.end())
                 peer = iter->second.lock();
         }
         if (peer)

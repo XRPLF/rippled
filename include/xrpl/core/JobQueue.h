@@ -222,27 +222,27 @@ private:
 
     using JobDataMap = std::map<JobType, JobTypeData>;
 
-    beast::Journal m_journal;
-    mutable std::mutex m_mutex;
-    std::uint64_t m_lastJob;
-    std::set<Job> m_jobSet;
+    beast::Journal journal_;
+    mutable std::mutex mutex_;
+    std::uint64_t lastJob_;
+    std::set<Job> jobSet_;
     JobCounter jobCounter_;
     std::atomic_bool stopping_{false};
     std::atomic_bool stopped_{false};
-    JobDataMap m_jobData;
-    JobTypeData m_invalidJobData;
+    JobDataMap jobData_;
+    JobTypeData invalidJobData_;
 
     // The number of jobs currently in processTask()
-    int m_processCount;
+    int processCount_;
 
     // The number of suspended coroutines
     int nSuspend_ = 0;
 
-    Workers m_workers;
+    Workers workers_;
 
     // Statistics tracking
     perf::PerfLog& perfLog_;
-    beast::insight::Collector::ptr m_collector;
+    beast::insight::Collector::ptr collector_;
     beast::insight::Gauge job_count;
     beast::insight::Hook hook;
 

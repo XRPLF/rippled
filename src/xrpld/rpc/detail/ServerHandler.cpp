@@ -97,11 +97,11 @@ ServerHandler::ServerHandler(
     Resource::Manager& resourceManager,
     CollectorManager& cm)
     : app_(app)
-    , m_resourceManager(resourceManager)
-    , m_journal(app_.journal("Server"))
-    , m_networkOPs(networkOPs)
-    , m_server(make_Server(*this, io_context, app_.journal("Server")))
-    , m_jobQueue(jobQueue)
+    , resourceManager_(resourceManager)
+    , journal_(app_.journal("Server"))
+    , networkOPs_(networkOPs)
+    , server_(make_Server(*this, io_context, app_.journal("Server")))
+    , jobQueue_(jobQueue)
 {
     auto const& group(cm.group("rpc"));
     rpc_requests_ = group->make_counter("requests");
@@ -111,14 +111,14 @@ ServerHandler::ServerHandler(
 
 ServerHandler::~ServerHandler()
 {
-    m_server = nullptr;
+    server_ = nullptr;
 }
 
 void
 ServerHandler::setup(Setup const& setup, beast::Journal journal)
 {
     setup_ = setup;
-    endpoints_ = m_server->ports(setup.ports);
+    endpoints_ = server_->ports(setup.ports);
 
     // fix auto ports
     for (auto& port : setup_.ports)
@@ -144,7 +144,7 @@ ServerHandler::setup(Setup const& setup, beast::Journal journal)
 void
 ServerHandler::stop()
 {
-    m_server->close();
+    server_->close();
     {
         std::unique_lock lock(mutex_);
         condition_.wait(lock, [this] { return stopped_; });
@@ -165,7 +165,7 @@ ServerHandler::onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoin
 
     if (port.limit && c >= port.limit)
     {
-        JLOG(m_journal.trace()) << port.name << " is full; dropping " << endpoint;
+        JLOG(journal_.trace()) << port.name << " is full; dropping " << endpoint;
         return false;
     }
 
@@ -196,14 +196,14 @@ ServerHandler::onHandoff(
         }
         catch (std::exception const& e)
         {
-            JLOG(m_journal.error()) << "Exception upgrading websocket: " << e.what() << "\n";
+            JLOG(journal_.error()) << "Exception upgrading websocket: " << e.what() << "\n";
             return statusRequestResponse(request, http::status::internal_server_error);
         }
 
-        auto is{std::make_shared<WSInfoSub>(m_networkOPs, ws)};
+        auto is{std::make_shared<WSInfoSub>(networkOPs_, ws)};
         auto const beast_remote_address = beast::IPAddressConversion::from_asio(remote_address);
         is->getConsumer() = requestInboundEndpoint(
-            m_resourceManager,
+            resourceManager_,
             beast_remote_address,
             requestRole(
                 Role::GUEST, session.port(), Json::Value(), beast_remote_address, is->user()),
@@ -284,7 +284,7 @@ ServerHandler::onRequest(Session& session)
     }
 
     std::shared_ptr<Session> detachedSession = session.detach();
-    auto const postResult = m_jobQueue.postCoro(
+    auto const postResult = jobQueue_.postCoro(
         jtCLIENT_RPC, "RPC-Client", [this, detachedSession](std::shared_ptr<JobQueue::Coro> coro) {
             processSession(detachedSession, coro);
         });
@@ -314,15 +314,15 @@ ServerHandler::onWSMessage(
         Json::stream(jvResult, [&sb](auto const p, auto const n) {
             sb.commit(boost::asio::buffer_copy(sb.prepare(n), boost::asio::buffer(p, n)));
         });
-        JLOG(m_journal.trace()) << "Websocket sending '" << jvResult << "'";
+        JLOG(journal_.trace()) << "Websocket sending '" << jvResult << "'";
         session->send(std::make_shared<StreambufWSMsg<decltype(sb)>>(std::move(sb)));
         session->complete();
         return;
     }
 
-    JLOG(m_journal.trace()) << "Websocket received '" << jv << "'";
+    JLOG(journal_.trace()) << "Websocket received '" << jv << "'";
 
-    auto const postResult = m_jobQueue.postCoro(
+    auto const postResult = jobQueue_.postCoro(
         jtCLIENT_WEBSOCKET,
         "WS-Client",
         [this, session, jv = std::move(jv)](std::shared_ptr<JobQueue::Coro> const& coro) {
@@ -379,7 +379,7 @@ ServerHandler::processSession(
     Json::Value const& jv)
 {
     auto is = std::static_pointer_cast<WSInfoSub>(session->appDefined);
-    if (is->getConsumer().disconnect(m_journal))
+    if (is->getConsumer().disconnect(journal_))
     {
         session->close({boost::beast::websocket::policy_error, "threshold exceeded"});
         // FIX: This rpcError is not delivered since the session
@@ -452,15 +452,15 @@ ServerHandler::processSession(
             auto start = std::chrono::system_clock::now();
             RPC::doCommand(context, jr[jss::result]);
             auto end = std::chrono::system_clock::now();
-            logDuration(jv, end - start, m_journal);
+            logDuration(jv, end - start, journal_);
         }
     }
     catch (std::exception const& ex)
     {
         // LCOV_EXCL_START
         jr[jss::result] = RPC::make_error(rpcINTERNAL);
-        JLOG(m_journal.error()) << "Exception while processing WS: " << ex.what() << "\n"
-                                << "Input JSON: " << Json::Compact{Json::Value{jv}};
+        JLOG(journal_.error()) << "Exception while processing WS: " << ex.what() << "\n"
+                               << "Input JSON: " << Json::Compact{Json::Value{jv}};
         // LCOV_EXCL_STOP
     }
 
@@ -660,13 +660,13 @@ ServerHandler::processRequest(
         Resource::Consumer usage;
         if (isUnlimited(role))
         {
-            usage = m_resourceManager.newUnlimitedEndpoint(remoteIPAddress);
+            usage = resourceManager_.newUnlimitedEndpoint(remoteIPAddress);
         }
         else
         {
-            usage = m_resourceManager.newInboundEndpoint(
+            usage = resourceManager_.newInboundEndpoint(
                 remoteIPAddress, role == Role::PROXY, forwardedFor);
-            if (usage.disconnect(m_journal))
+            if (usage.disconnect(journal_))
             {
                 if (!batch)
                 {
@@ -803,19 +803,19 @@ ServerHandler::processRequest(
             user.remove_suffix(user.size());
         }
 
-        JLOG(m_journal.debug()) << "Query: " << strMethod << params;
+        JLOG(journal_.debug()) << "Query: " << strMethod << params;
 
         // Provide the JSON-RPC method as the field "command" in the request.
         params[jss::command] = strMethod;
-        JLOG(m_journal.trace()) << "doRpcCommand:" << strMethod << ":" << params;
+        JLOG(journal_.trace()) << "doRpcCommand:" << strMethod << ":" << params;
 
         Resource::Charge loadType = Resource::feeReferenceRPC;
 
         RPC::JsonContext context{
-            {m_journal,
+            {journal_,
              app_,
              loadType,
-             m_networkOPs,
+             networkOPs_,
              app_.getLedgerMaster(),
              usage,
              role,
@@ -836,7 +836,7 @@ ServerHandler::processRequest(
         {
             // LCOV_EXCL_START
             result = RPC::make_error(rpcINTERNAL);
-            JLOG(m_journal.error())
+            JLOG(journal_.error())
                 << "Internal error : " << ex.what()
                 << " when processing request: " << Json::Compact{Json::Value{params}};
             // LCOV_EXCL_STOP
@@ -844,7 +844,7 @@ ServerHandler::processRequest(
 
         auto end = std::chrono::system_clock::now();
 
-        logDuration(params, end - start, m_journal);
+        logDuration(params, end - start, journal_);
 
         usage.charge(loadType);
         if (usage.warn())
@@ -859,7 +859,7 @@ ServerHandler::processRequest(
                 result["code"] = result[jss::error_code];
                 result["message"] = result[jss::error_message];
                 result.removeMember(jss::error_message);
-                JLOG(m_journal.debug())
+                JLOG(journal_.debug())
                     << "rpcError: " << result[jss::error] << ": " << result[jss::error_message];
                 r[jss::error] = std::move(result);
             }
@@ -892,7 +892,7 @@ ServerHandler::processRequest(
                 result[jss::status] = jss::error;
                 result[jss::request] = rq;
 
-                JLOG(m_journal.debug())
+                JLOG(journal_.debug())
                     << "rpcError: " << result[jss::error] << ": " << result[jss::error_message];
             }
             else
@@ -953,7 +953,7 @@ ServerHandler::processRequest(
 
     response += '\n';
 
-    if (auto stream = m_journal.debug())
+    if (auto stream = journal_.debug())
     {
         static int const maxSize = 10000;
         if (response.size() <= maxSize)

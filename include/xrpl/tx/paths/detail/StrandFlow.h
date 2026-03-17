@@ -46,20 +46,20 @@ struct StrandResult
         TInAmt const& in_,
         TOutAmt const& out_,
         PaymentSandbox&& sandbox_,
-        boost::container::flat_set<uint256> ofrsToRm_,
+        boost::container::flat_set<uint256> ofrsToRemoveMember,
         bool inactive_)
         : success(true)
         , in(in_)
         , out(out_)
         , sandbox(std::move(sandbox_))
-        , ofrsToRm(std::move(ofrsToRm_))
+        , ofrsToRm(std::move(ofrsToRemoveMember))
         , ofrsUsed(offersUsed(strand))
         , inactive(inactive_)
     {
     }
 
-    StrandResult(Strand const& strand, boost::container::flat_set<uint256> ofrsToRm_)
-        : success(false), ofrsToRm(std::move(ofrsToRm_)), ofrsUsed(offersUsed(strand))
+    StrandResult(Strand const& strand, boost::container::flat_set<uint256> ofrsToRemoveMember)
+        : success(false), ofrsToRm(std::move(ofrsToRemoveMember)), ofrsUsed(offersUsed(strand))
     {
     }
 };

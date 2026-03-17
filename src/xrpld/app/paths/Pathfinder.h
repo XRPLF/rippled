@@ -180,7 +180,7 @@ private:
     std::optional<uint256> mDomain;
 
     std::shared_ptr<ReadView const> mLedger;
-    std::unique_ptr<LoadEvent> m_loadEvent;
+    std::unique_ptr<LoadEvent> loadEvent_;
     std::shared_ptr<RippleLineCache> mRLCache;
 
     STPathElement mSource;

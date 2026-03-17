@@ -68,7 +68,7 @@ doSubscribe(RPC::JsonContext& context)
             }
             catch (std::runtime_error& ex)
             {
-                return RPC::make_param_error(ex.what());
+                return RPC::make_paraerror_(ex.what());
             }
         }
         else

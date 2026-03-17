@@ -12,31 +12,31 @@ JobQueue::JobQueue(
     beast::Journal journal,
     Logs& logs,
     perf::PerfLog& perfLog)
-    : m_journal(journal)
-    , m_lastJob(0)
-    , m_invalidJobData(JobTypes::instance().getInvalid(), collector, logs)
-    , m_processCount(0)
-    , m_workers(*this, &perfLog, "JobQueue", threadCount)
+    : journal_(journal)
+    , lastJob_(0)
+    , invalidJobData_(JobTypes::instance().getInvalid(), collector, logs)
+    , processCount_(0)
+    , workers_(*this, &perfLog, "JobQueue", threadCount)
     , perfLog_(perfLog)
-    , m_collector(collector)
+    , collector_(collector)
 {
-    JLOG(m_journal.info()) << "Using " << threadCount << "  threads";
+    JLOG(journal_.info()) << "Using " << threadCount << "  threads";
 
-    hook = m_collector->make_hook(std::bind(&JobQueue::collect, this));
-    job_count = m_collector->make_gauge("job_count");
+    hook = collector_->make_hook(std::bind(&JobQueue::collect, this));
+    job_count = collector_->make_gauge("job_count");
 
     {
-        std::lock_guard lock(m_mutex);
+        std::lock_guard lock(mutex_);
 
         for (auto const& x : JobTypes::instance())
         {
             JobTypeInfo const& jt = x.second;
 
             // And create dynamic information for all jobs
-            auto const result(m_jobData.emplace(
+            auto const result(jobData_.emplace(
                 std::piecewise_construct,
                 std::forward_as_tuple(jt.type()),
-                std::forward_as_tuple(jt, m_collector, logs)));
+                std::forward_as_tuple(jt, collector_, logs)));
             XRPL_ASSERT(result.second == true, "xrpl::JobQueue::JobQueue : jobs added");
             (void)result.second;
         }
@@ -52,8 +52,8 @@ JobQueue::~JobQueue()
 void
 JobQueue::collect()
 {
-    std::lock_guard lock(m_mutex);
-    job_count = m_jobSet.size();
+    std::lock_guard lock(mutex_);
+    job_count = jobSet_.size();
 }
 
 bool
@@ -61,38 +61,38 @@ JobQueue::addRefCountedJob(JobType type, std::string const& name, JobFunction co
 {
     XRPL_ASSERT(type != jtINVALID, "xrpl::JobQueue::addRefCountedJob : valid input job type");
 
-    auto iter(m_jobData.find(type));
+    auto iter(jobData_.find(type));
     XRPL_ASSERT(
-        iter != m_jobData.end(), "xrpl::JobQueue::addRefCountedJob : job type found in jobs");
-    if (iter == m_jobData.end())
+        iter != jobData_.end(), "xrpl::JobQueue::addRefCountedJob : job type found in jobs");
+    if (iter == jobData_.end())
         return false;
 
-    JLOG(m_journal.debug()) << __func__ << " : Adding job : " << name << " : " << type;
+    JLOG(journal_.debug()) << __func__ << " : Adding job : " << name << " : " << type;
     JobTypeData& data(iter->second);
 
     // FIXME: Workaround incorrect client shutdown ordering
     // do not add jobs to a queue with no threads
     XRPL_ASSERT(
-        (type >= jtCLIENT && type <= jtCLIENT_WEBSOCKET) || m_workers.getNumberOfThreads() > 0,
+        (type >= jtCLIENT && type <= jtCLIENT_WEBSOCKET) || workers_.getNumberOfThreads() > 0,
         "xrpl::JobQueue::addRefCountedJob : threads available or job "
         "requires no threads");
 
     {
-        std::lock_guard lock(m_mutex);
-        auto result = m_jobSet.emplace(type, name, ++m_lastJob, data.load(), func);
+        std::lock_guard lock(mutex_);
+        auto result = jobSet_.emplace(type, name, ++lastJob_, data.load(), func);
         auto const& job = *result.first;
 
         JobType const type(job.getType());
         XRPL_ASSERT(type != jtINVALID, "xrpl::JobQueue::addRefCountedJob : has valid job type");
         XRPL_ASSERT(
-            m_jobSet.find(job) != m_jobSet.end(), "xrpl::JobQueue::addRefCountedJob : job found");
+            jobSet_.find(job) != jobSet_.end(), "xrpl::JobQueue::addRefCountedJob : job found");
         perfLog_.jobQueue(type);
 
         JobTypeData& data(getJobTypeData(type));
 
         if (data.waiting + data.running < getJobLimit(type))
         {
-            m_workers.addTask();
+            workers_.addTask();
         }
         else
         {
@@ -107,21 +107,21 @@ JobQueue::addRefCountedJob(JobType type, std::string const& name, JobFunction co
 int
 JobQueue::getJobCount(JobType t) const
 {
-    std::lock_guard lock(m_mutex);
+    std::lock_guard lock(mutex_);
 
-    JobDataMap::const_iterator c = m_jobData.find(t);
+    JobDataMap::const_iterator c = jobData_.find(t);
 
-    return (c == m_jobData.end()) ? 0 : c->second.waiting;
+    return (c == jobData_.end()) ? 0 : c->second.waiting;
 }
 
 int
 JobQueue::getJobCountTotal(JobType t) const
 {
-    std::lock_guard lock(m_mutex);
+    std::lock_guard lock(mutex_);
 
-    JobDataMap::const_iterator c = m_jobData.find(t);
+    JobDataMap::const_iterator c = jobData_.find(t);
 
-    return (c == m_jobData.end()) ? 0 : (c->second.waiting + c->second.running);
+    return (c == jobData_.end()) ? 0 : (c->second.waiting + c->second.running);
 }
 
 int
@@ -130,9 +130,9 @@ JobQueue::getJobCountGE(JobType t) const
     // return the number of jobs at this priority level or greater
     int ret = 0;
 
-    std::lock_guard lock(m_mutex);
+    std::lock_guard lock(mutex_);
 
-    for (auto const& x : m_jobData)
+    for (auto const& x : jobData_)
     {
         if (x.first >= t)
             ret += x.second.waiting;
@@ -144,10 +144,10 @@ JobQueue::getJobCountGE(JobType t) const
 std::unique_ptr<LoadEvent>
 JobQueue::makeLoadEvent(JobType t, std::string const& name)
 {
-    JobDataMap::iterator iter(m_jobData.find(t));
-    XRPL_ASSERT(iter != m_jobData.end(), "xrpl::JobQueue::makeLoadEvent : valid job type input");
+    JobDataMap::iterator iter(jobData_.find(t));
+    XRPL_ASSERT(iter != jobData_.end(), "xrpl::JobQueue::makeLoadEvent : valid job type input");
 
-    if (iter == m_jobData.end())
+    if (iter == jobData_.end())
         return {};
 
     return std::make_unique<LoadEvent>(iter->second.load(), name, true);
@@ -159,17 +159,16 @@ JobQueue::addLoadEvents(JobType t, int count, std::chrono::milliseconds elapsed)
     if (isStopped())
         LogicError("JobQueue::addLoadEvents() called after JobQueue stopped");
 
-    JobDataMap::iterator iter(m_jobData.find(t));
-    XRPL_ASSERT(iter != m_jobData.end(), "xrpl::JobQueue::addLoadEvents : valid job type input");
+    JobDataMap::iterator iter(jobData_.find(t));
+    XRPL_ASSERT(iter != jobData_.end(), "xrpl::JobQueue::addLoadEvents : valid job type input");
     iter->second.load().addSamples(count, elapsed);
 }
 
 bool
 JobQueue::isOverloaded()
 {
-    return std::any_of(m_jobData.begin(), m_jobData.end(), [](auto& entry) {
-        return entry.second.load().isOver();
-    });
+    return std::any_of(
+        jobData_.begin(), jobData_.end(), [](auto& entry) { return entry.second.load().isOver(); });
 }
 
 Json::Value
@@ -178,13 +177,13 @@ JobQueue::getJson(int c)
     using namespace std::chrono_literals;
     Json::Value ret(Json::objectValue);
 
-    ret["threads"] = m_workers.getNumberOfThreads();
+    ret["threads"] = workers_.getNumberOfThreads();
 
     Json::Value priorities = Json::arrayValue;
 
-    std::lock_guard lock(m_mutex);
+    std::lock_guard lock(mutex_);
 
-    for (auto& x : m_jobData)
+    for (auto& x : jobData_)
     {
         XRPL_ASSERT(x.first != jtINVALID, "xrpl::JobQueue::getJson : valid job type");
 
@@ -232,20 +231,20 @@ JobQueue::getJson(int c)
 void
 JobQueue::rendezvous()
 {
-    std::unique_lock<std::mutex> lock(m_mutex);
-    cv_.wait(lock, [this] { return m_processCount == 0 && m_jobSet.empty(); });
+    std::unique_lock<std::mutex> lock(mutex_);
+    cv_.wait(lock, [this] { return processCount_ == 0 && jobSet_.empty(); });
 }
 
 JobTypeData&
 JobQueue::getJobTypeData(JobType type)
 {
-    JobDataMap::iterator c(m_jobData.find(type));
-    XRPL_ASSERT(c != m_jobData.end(), "xrpl::JobQueue::getJobTypeData : valid job type input");
+    JobDataMap::iterator c(jobData_.find(type));
+    XRPL_ASSERT(c != jobData_.end(), "xrpl::JobQueue::getJobTypeData : valid job type input");
 
     // NIKB: This is ugly and I hate it. We must remove jtINVALID completely
     //       and use something sane.
-    if (c == m_jobData.end())
-        return m_invalidJobData;
+    if (c == jobData_.end())
+        return invalidJobData_;
 
     return c->second;
 }
@@ -255,17 +254,17 @@ JobQueue::stop()
 {
     stopping_ = true;
     using namespace std::chrono_literals;
-    jobCounter_.join("JobQueue", 1s, m_journal);
+    jobCounter_.join("JobQueue", 1s, journal_);
     {
         // After the JobCounter is joined, all jobs have finished executing
         // (i.e. returned from `Job::doJob`) and no more are being accepted,
         // but there may still be some threads between the return of
         // `Job::doJob` and the return of `JobQueue::processTask`. That is why
         // we must wait on the condition variable to make these assertions.
-        std::unique_lock<std::mutex> lock(m_mutex);
-        cv_.wait(lock, [this] { return m_processCount == 0 && m_jobSet.empty(); });
-        XRPL_ASSERT(m_processCount == 0, "xrpl::JobQueue::stop : all processes completed");
-        XRPL_ASSERT(m_jobSet.empty(), "xrpl::JobQueue::stop : all jobs completed");
+        std::unique_lock<std::mutex> lock(mutex_);
+        cv_.wait(lock, [this] { return processCount_ == 0 && jobSet_.empty(); });
+        XRPL_ASSERT(processCount_ == 0, "xrpl::JobQueue::stop : all processes completed");
+        XRPL_ASSERT(jobSet_.empty(), "xrpl::JobQueue::stop : all jobs completed");
         XRPL_ASSERT(nSuspend_ == 0, "xrpl::JobQueue::stop : no coros suspended");
         stopped_ = true;
     }
@@ -280,10 +279,10 @@ JobQueue::isStopped() const
 void
 JobQueue::getNextJob(Job& job)
 {
-    XRPL_ASSERT(!m_jobSet.empty(), "xrpl::JobQueue::getNextJob : non-empty jobs");
+    XRPL_ASSERT(!jobSet_.empty(), "xrpl::JobQueue::getNextJob : non-empty jobs");
 
     std::set<Job>::const_iterator iter;
-    for (iter = m_jobSet.begin(); iter != m_jobSet.end(); ++iter)
+    for (iter = jobSet_.begin(); iter != jobSet_.end(); ++iter)
     {
         JobType const type = iter->getType();
         XRPL_ASSERT(type != jtINVALID, "xrpl::JobQueue::getNextJob : valid job type");
@@ -302,9 +301,9 @@ JobQueue::getNextJob(Job& job)
         }
     }
 
-    XRPL_ASSERT(iter != m_jobSet.end(), "xrpl::JobQueue::getNextJob : found next job");
+    XRPL_ASSERT(iter != jobSet_.end(), "xrpl::JobQueue::getNextJob : found next job");
     job = *iter;
-    m_jobSet.erase(iter);
+    jobSet_.erase(iter);
 }
 
 void
@@ -322,7 +321,7 @@ JobQueue::finishJob(JobType type)
             "xrpl::JobQueue::finishJob : job limit");
 
         --data.deferred;
-        m_workers.addTask();
+        workers_.addTask();
     }
 
     --data.running;
@@ -339,13 +338,13 @@ JobQueue::processTask(int instance)
         {
             Job job;
             {
-                std::lock_guard lock(m_mutex);
+                std::lock_guard lock(mutex_);
                 getNextJob(job);
-                ++m_processCount;
+                ++processCount_;
             }
             type = job.getType();
             JobTypeData& data(getJobTypeData(type));
-            JLOG(m_journal.trace()) << "Doing " << data.name() << "job";
+            JLOG(journal_.trace()) << "Doing " << data.name() << "job";
 
             // The amount of time that the job was in the queue
             auto const q_time = ceil<microseconds>(start_time - job.queue_time());
@@ -366,12 +365,12 @@ JobQueue::processTask(int instance)
     }
 
     {
-        std::lock_guard lock(m_mutex);
+        std::lock_guard lock(mutex_);
         // Job should be destroyed before stopping
         // otherwise destructors with side effects can access
         // parent objects that are already destroyed.
         finishJob(type);
-        if (--m_processCount == 0 && m_jobSet.empty())
+        if (--processCount_ == 0 && jobSet_.empty())
             cv_.notify_all();
     }
 

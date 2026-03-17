@@ -205,7 +205,7 @@ multi_runner_base<IsParent>::multi_runner_base()
         if (IsParent)
         {
             // cleanup any leftover state for any previous failed runs
-            boost::interprocess::shared_memory_object::remove(shared_mem_name_);
+            boost::interprocess::shared_memory_object::remove(shared_mem_name__);
             boost::interprocess::message_queue::remove(message_queue_name_);
         }
 
@@ -214,7 +214,7 @@ multi_runner_base<IsParent>::multi_runner_base()
                 IsParent,
                 boost::interprocess::create_only_t,
                 boost::interprocess::open_only_t>{},
-            shared_mem_name_,
+            shared_mem_name__,
             boost::interprocess::read_write};
 
         if (IsParent)
@@ -242,7 +242,7 @@ multi_runner_base<IsParent>::multi_runner_base()
     {
         if (IsParent)
         {
-            boost::interprocess::shared_memory_object::remove(shared_mem_name_);
+            boost::interprocess::shared_memory_object::remove(shared_mem_name__);
             boost::interprocess::message_queue::remove(message_queue_name_);
         }
         throw;
@@ -255,7 +255,7 @@ multi_runner_base<IsParent>::~multi_runner_base()
     if (IsParent)
     {
         inner_->~inner();
-        boost::interprocess::shared_memory_object::remove(shared_mem_name_);
+        boost::interprocess::shared_memory_object::remove(shared_mem_name__);
         boost::interprocess::message_queue::remove(message_queue_name_);
     }
 }
@@ -462,13 +462,13 @@ multi_runner_parent::add_failures(std::size_t failures)
 
 //------------------------------------------------------------------------------
 
-multi_runner_child::multi_runner_child(std::size_t num_jobs, bool quiet, bool print_log)
+multi_runner_child::multi_runner_child(std::size_t num_jobs_, bool quiet, bool print_log)
     : job_index_{checkout_job_index()}
-    , num_jobs_{num_jobs}
+    , num_jobs__{num_jobs_}
     , quiet_{quiet}
     , print_log_{!quiet || print_log}
 {
-    if (num_jobs_ > 1)
+    if (num_jobs__ > 1)
     {
         keep_alive_thread_ = std::thread([this] {
             std::size_t last_count = get_keep_alive_count();
@@ -500,7 +500,7 @@ multi_runner_child::multi_runner_child(std::size_t num_jobs, bool quiet, bool pr
 
 multi_runner_child::~multi_runner_child()
 {
-    if (num_jobs_ > 1)
+    if (num_jobs__ > 1)
     {
         continue_keep_alive_ = false;
         keep_alive_thread_.join();
@@ -541,7 +541,7 @@ multi_runner_child::on_suite_end()
     if (print_log_ || suite_results_.failed > 0)
     {
         std::stringstream s;
-        if (num_jobs_ > 1)
+        if (num_jobs__ > 1)
             s << job_index_ << "> ";
         s << (suite_results_.failed > 0 ? "failed: " : "") << suite_results_.name << " had "
           << suite_results_.failed << " failures." << std::endl;
@@ -560,7 +560,7 @@ multi_runner_child::on_case_begin(std::string const& name)
         return;
 
     std::stringstream s;
-    if (num_jobs_ > 1)
+    if (num_jobs__ > 1)
         s << job_index_ << "> ";
     s << suite_results_.name << (case_results_.name.empty() ? "" : (" " + case_results_.name))
       << '\n';
@@ -585,7 +585,7 @@ multi_runner_child::on_fail(std::string const& reason)
     ++case_results_.failed;
     ++case_results_.total;
     std::stringstream s;
-    if (num_jobs_ > 1)
+    if (num_jobs__ > 1)
         s << job_index_ << "> ";
     s << "#" << case_results_.total << " failed" << (reason.empty() ? "" : ": ") << reason << '\n';
     message_queue_send(MessageType::log, s.str());
@@ -598,7 +598,7 @@ multi_runner_child::on_log(std::string const& msg)
         return;
 
     std::stringstream s;
-    if (num_jobs_ > 1)
+    if (num_jobs__ > 1)
         s << job_index_ << "> ";
     s << msg;
     message_queue_send(MessageType::log, s.str());

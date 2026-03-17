@@ -29,43 +29,43 @@ public:
     bool
     inbound() const override
     {
-        return m_inbound;
+        return inbound_;
     }
 
     bool
     fixed() const override
     {
-        return m_fixed;
+        return fixed_;
     }
 
     bool
     reserved() const override
     {
-        return m_reserved;
+        return reserved_;
     }
 
     State
     state() const override
     {
-        return m_state;
+        return state_;
     }
 
     beast::IP::Endpoint const&
     remote_endpoint() const override
     {
-        return m_remote_endpoint;
+        return remote_endpoint_;
     }
 
     std::optional<beast::IP::Endpoint> const&
     local_endpoint() const override
     {
-        return m_local_endpoint;
+        return local_endpoint_;
     }
 
     std::optional<PublicKey> const&
     public_key() const override
     {
-        return m_public_key;
+        return public_key_;
     }
 
     std::string
@@ -77,7 +77,7 @@ public:
     std::optional<std::uint16_t>
     listening_port() const override
     {
-        std::uint32_t const value = m_listening_port;
+        std::uint32_t const value = listening_port_;
         if (value == unknownPort)
             return std::nullopt;
         return value;
@@ -86,31 +86,31 @@ public:
     void
     set_listening_port(std::uint16_t port)
     {
-        m_listening_port = port;
+        listening_port_ = port;
     }
 
     void
     local_endpoint(beast::IP::Endpoint const& endpoint)
     {
-        m_local_endpoint = endpoint;
+        local_endpoint_ = endpoint;
     }
 
     void
     remote_endpoint(beast::IP::Endpoint const& endpoint)
     {
-        m_remote_endpoint = endpoint;
+        remote_endpoint_ = endpoint;
     }
 
     void
     public_key(PublicKey const& key)
     {
-        m_public_key = key;
+        public_key_ = key;
     }
 
     void
-    reserved(bool reserved_)
+    reserved(bool reserved)
     {
-        m_reserved = reserved_;
+        reserved_ = reserved;
     }
 
     //--------------------------------------------------------------------------
@@ -157,16 +157,16 @@ public:
     }
 
 private:
-    bool const m_inbound;
-    bool const m_fixed;
-    bool m_reserved;
-    State m_state;
-    beast::IP::Endpoint m_remote_endpoint;
-    std::optional<beast::IP::Endpoint> m_local_endpoint;
-    std::optional<PublicKey> m_public_key;
+    bool const inbound_;
+    bool const fixed_;
+    bool reserved_;
+    State state_;
+    beast::IP::Endpoint remote_endpoint_;
+    std::optional<beast::IP::Endpoint> local_endpoint_;
+    std::optional<PublicKey> public_key_;
 
     static std::int32_t constexpr unknownPort = -1;
-    std::atomic<std::int32_t> m_listening_port;
+    std::atomic<std::int32_t> listening_port_;
 
 public:
     // DEPRECATED public data members

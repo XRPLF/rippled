@@ -29,19 +29,19 @@ namespace test {
 //------------------------------------------------------------------------------
 
 Json::Value
-rpf(jtx::Account const& src, jtx::Account const& dst, std::uint32_t num_src)
+rpf(jtx::Account const& src, jtx::Account const& dst, std::uint32_t num_src_)
 {
     Json::Value jv = Json::objectValue;
     jv[jss::command] = "ripple_path_find";
     jv[jss::source_account] = toBase58(src);
 
-    if (num_src > 0)
+    if (num_src_ > 0)
     {
         auto& sc = (jv[jss::source_currencies] = Json::arrayValue);
         Json::Value j = Json::objectValue;
-        while (num_src--)
+        while (num_src_--)
         {
-            j[jss::currency] = std::to_string(num_src + 100);
+            j[jss::currency] = std::to_string(num_src_ + 100);
             sc.append(j);
         }
     }
@@ -1810,7 +1810,7 @@ public:
     }
 
     void
-    amm_domain_path()
+    amm_domain_path_()
     {
         testcase("AMM not used in domain path");
         using namespace jtx;
@@ -1876,7 +1876,7 @@ public:
         }
 
         hybrid_offer_path();
-        amm_domain_path();
+        amm_domain_path_();
     }
 };
 

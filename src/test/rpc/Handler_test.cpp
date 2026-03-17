@@ -36,7 +36,7 @@ class Handler_test : public beast::unit_test::suite
         using clock = std::chrono::steady_clock;
         assert(n > 0);
         double sum = 0;
-        double sum_squared = 0;
+        double sum_squared_ = 0;
         std::size_t j = 0;
         while (j < n)
         {
@@ -62,14 +62,14 @@ class Handler_test : public beast::unit_test::suite
             {
                 j += 1;
                 sum += samples[k];
-                sum_squared += (samples[k] * samples[k]);
+                sum_squared_ += (samples[k] * samples[k]);
             }
         }
 
         double const mean_squared = (sum * sum) / (j * j);
         return std::make_tuple(
             clock::duration{static_cast<long>(sum / j)},
-            clock::duration{static_cast<long>(std::sqrt((sum_squared / j) - mean_squared))},
+            clock::duration{static_cast<long>(std::sqrt((sum_squared_ / j) - mean_squared))},
             j);
     }
 

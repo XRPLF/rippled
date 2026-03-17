@@ -72,12 +72,12 @@ template <class HashAlgorithm = beast::xxhasher>
 class hardened_hash
 {
 private:
-    detail::seed_pair m_seeds;
+    detail::seed_pair seeds_;
 
 public:
     using result_type = typename HashAlgorithm::result_type;
 
-    hardened_hash() : m_seeds(detail::make_seed_pair<>())
+    hardened_hash() : seeds_(detail::make_seed_pair<>())
     {
     }
 
@@ -85,7 +85,7 @@ public:
     result_type
     operator()(T const& t) const noexcept
     {
-        HashAlgorithm h(m_seeds.first, m_seeds.second);
+        HashAlgorithm h(seeds_.first, seeds_.second);
         hash_append(h, t);
         return static_cast<result_type>(h);
     }

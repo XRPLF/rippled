@@ -23,8 +23,8 @@ public:
         std::string const& strPassword,
         Logs& logs)
         : RPCSub(source)
-        , m_io_context(io_context)
-        , m_jobQueue(jobQueue)
+        , io_context_(io_context)
+        , jobQueue_(jobQueue)
         , mUrl(strUrl)
         , mSSL(false)
         , mUsername(strUsername)
@@ -70,7 +70,7 @@ public:
             JLOG(j_.info()) << "RPCCall::fromNetwork start";
 
             mSending =
-                m_jobQueue.addJob(jtCLIENT_SUBSCRIBE, "RPCSubSendThr", [this]() { sendThread(); });
+                jobQueue_.addJob(jtCLIENT_SUBSCRIBE, "RPCSubSendThr", [this]() { sendThread(); });
         }
     }
 
@@ -132,7 +132,7 @@ private:
                     JLOG(j_.info()) << "RPCCall::fromNetwork: " << mIp;
 
                     RPCCall::fromNetwork(
-                        m_io_context,
+                        io_context_,
                         mIp,
                         mPort,
                         mUsername,
@@ -153,8 +153,8 @@ private:
     }
 
 private:
-    boost::asio::io_context& m_io_context;
-    JobQueue& m_jobQueue;
+    boost::asio::io_context& io_context_;
+    JobQueue& jobQueue_;
 
     std::string mUrl;
     std::string mIp;

@@ -40,21 +40,21 @@ public:
     Port
     port() const
     {
-        return m_port;
+        return port_;
     }
 
     /** Returns a new Endpoint with a different port. */
     Endpoint
     at_port(Port port) const
     {
-        return Endpoint(m_addr, port);
+        return Endpoint(addr_, port);
     }
 
     /** Returns the address portion of this endpoint. */
     Address const&
     address() const
     {
-        return m_addr;
+        return addr_;
     }
 
     /** Convenience accessors for the address part. */
@@ -62,22 +62,22 @@ public:
     bool
     is_v4() const
     {
-        return m_addr.is_v4();
+        return addr_.is_v4();
     }
     bool
     is_v6() const
     {
-        return m_addr.is_v6();
+        return addr_.is_v6();
     }
     AddressV4 const
     to_v4() const
     {
-        return m_addr.to_v4();
+        return addr_.to_v4();
     }
     AddressV6 const
     to_v6() const
     {
-        return m_addr.to_v6();
+        return addr_.to_v6();
     }
     /** @} */
 
@@ -115,12 +115,12 @@ public:
     hash_append(Hasher& h, Endpoint const& endpoint)
     {
         using ::beast::hash_append;
-        hash_append(h, endpoint.m_addr, endpoint.m_port);
+        hash_append(h, endpoint.addr_, endpoint.port_);
     }
 
 private:
-    Address m_addr;
-    Port m_port;
+    Address addr_;
+    Port port_;
 };
 
 //------------------------------------------------------------------------------

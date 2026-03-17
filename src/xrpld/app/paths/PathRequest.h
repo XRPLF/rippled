@@ -115,7 +115,7 @@ private:
     parseJson(Json::Value const&);
 
     Application& app_;
-    beast::Journal m_journal;
+    beast::Journal journal_;
 
     std::recursive_mutex mLock;
 

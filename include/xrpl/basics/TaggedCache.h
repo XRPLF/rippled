@@ -278,26 +278,26 @@ private:
         std::atomic<int>& allRemovals,
         std::lock_guard<std::recursive_mutex> const&);
 
-    beast::Journal m_journal;
-    clock_type& m_clock;
-    Stats m_stats;
+    beast::Journal journal_;
+    clock_type& clock_;
+    Stats stats_;
 
-    mutex_type mutable m_mutex;
+    mutex_type mutable mutex_;
 
     // Used for logging
-    std::string m_name;
+    std::string name_;
 
     // Desired number of cache entries (0 = ignore)
-    int const m_target_size;
+    int const target_size_;
 
     // Desired maximum cache age
-    clock_type::duration const m_target_age;
+    clock_type::duration const target_age_;
 
     // Number of items cached
-    int m_cache_count;
-    cache_type m_cache;  // Hold strong reference to recent objects
-    std::uint64_t m_hits;
-    std::uint64_t m_misses;
+    int cache_count_;
+    cache_type cache_;  // Hold strong reference to recent objects
+    std::uint64_t hits_;
+    std::uint64_t misses_;
 };
 
 }  // namespace xrpl

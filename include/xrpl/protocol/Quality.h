@@ -101,7 +101,7 @@ private:
     // STAmount. However, this class does not always use the canonical
     // representation. In particular, the increment and decrement operators may
     // cause a non-canonical representation.
-    value_type m_value;
+    value_type value_;
 
 public:
     Quality() = default;
@@ -147,7 +147,7 @@ public:
     STAmount
     rate() const
     {
-        return amountFromQuality(m_value);
+        return amountFromQuality(value_);
     }
 
     /** Returns the quality rounded up to the specified number
@@ -219,13 +219,13 @@ public:
     friend bool
     operator<(Quality const& lhs, Quality const& rhs) noexcept
     {
-        return lhs.m_value > rhs.m_value;
+        return lhs.value_ > rhs.value_;
     }
 
     friend bool
     operator>(Quality const& lhs, Quality const& rhs) noexcept
     {
-        return lhs.m_value < rhs.m_value;
+        return lhs.value_ < rhs.value_;
     }
 
     friend bool
@@ -243,7 +243,7 @@ public:
     friend bool
     operator==(Quality const& lhs, Quality const& rhs) noexcept
     {
-        return lhs.m_value == rhs.m_value;
+        return lhs.value_ == rhs.value_;
     }
 
     friend bool
@@ -255,7 +255,7 @@ public:
     friend std::ostream&
     operator<<(std::ostream& os, Quality const& quality)
     {
-        os << quality.m_value;
+        os << quality.value_;
         return os;
     }
 
@@ -265,12 +265,12 @@ public:
     relativeDistance(Quality const& q1, Quality const& q2)
     {
         XRPL_ASSERT(
-            q1.m_value > 0 && q2.m_value > 0, "xrpl::Quality::relativeDistance : minimum inputs");
+            q1.value_ > 0 && q2.value_ > 0, "xrpl::Quality::relativeDistance : minimum inputs");
 
-        if (q1.m_value == q2.m_value)  // make expected common case fast
+        if (q1.value_ == q2.value_)  // make expected common case fast
             return 0;
 
-        auto const [minV, maxV] = std::minmax(q1.m_value, q2.m_value);
+        auto const [minV, maxV] = std::minmax(q1.value_, q2.value_);
 
         auto mantissa = [](std::uint64_t rate) { return rate & ~(255ull << (64 - 8)); };
         auto exponent = [](std::uint64_t rate) { return static_cast<int>(rate >> (64 - 8)) - 100; };

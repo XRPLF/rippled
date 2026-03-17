@@ -47,12 +47,12 @@ public:
         bool
         operator()(T const& lhs, T const& rhs) const
         {
-            return m_less(lhs, rhs);
+            return less_(lhs, rhs);
         }
 
     private:
         CompT() = delete;
-        std::less<T> m_less;
+        std::less<T> less_;
     };
 
     template <class T>
@@ -66,12 +66,12 @@ public:
         std::size_t
         operator()(T const& t) const
         {
-            return m_hash(t);
+            return hash_(t);
         }
 
     private:
         HashT() = delete;
-        std::hash<T> m_hash;
+        std::hash<T> hash_;
     };
 
     template <class T>
@@ -85,12 +85,12 @@ public:
         bool
         operator()(T const& lhs, T const& rhs) const
         {
-            return m_eq(lhs, rhs);
+            return eq_(lhs, rhs);
         }
 
     private:
         EqualT() = delete;
-        std::equal_to<T> m_eq;
+        std::equal_to<T> eq_;
     };
 
     template <class T>

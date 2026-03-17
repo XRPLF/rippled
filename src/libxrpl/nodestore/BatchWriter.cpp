@@ -4,7 +4,7 @@ namespace xrpl {
 namespace NodeStore {
 
 BatchWriter::BatchWriter(Callback& callback, Scheduler& scheduler)
-    : m_callback(callback), m_scheduler(scheduler), mWriteLoad(0), mWritePending(false)
+    : callback_(callback), scheduler_(scheduler), mWriteLoad(0), mWritePending(false)
 {
     mWriteSet.reserve(batchWritePreallocationSize);
 }
@@ -30,7 +30,7 @@ BatchWriter::store(std::shared_ptr<NodeObject> const& object)
     {
         mWritePending = true;
 
-        m_scheduler.scheduleTask(*this);
+        scheduler_.scheduleTask(*this);
     }
 }
 
@@ -79,12 +79,12 @@ BatchWriter::writeBatch()
         report.writeCount = set.size();
         auto const before = std::chrono::steady_clock::now();
 
-        m_callback.writeBatch(set);
+        callback_.writeBatch(set);
 
         report.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - before);
 
-        m_scheduler.onBatchWrite(report);
+        scheduler_.onBatchWrite(report);
     }
 }
 

@@ -123,9 +123,9 @@ private:
     JobType mType;
     std::uint64_t mJobIndex;
     std::function<void()> mJob;
-    std::shared_ptr<LoadEvent> m_loadEvent;
+    std::shared_ptr<LoadEvent> loadEvent_;
     std::string mName;
-    clock_type::time_point m_queue_time;
+    clock_type::time_point queue_time_;
 };
 
 using JobCounter = ClosureCounter<void>;

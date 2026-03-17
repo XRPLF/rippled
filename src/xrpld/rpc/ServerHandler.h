@@ -65,13 +65,13 @@ private:
     using stream_type = boost::beast::ssl_stream<socket_type>;
 
     Application& app_;
-    Resource::Manager& m_resourceManager;
-    beast::Journal m_journal;
-    NetworkOPs& m_networkOPs;
-    std::unique_ptr<Server> m_server;
+    Resource::Manager& resourceManager_;
+    beast::Journal journal_;
+    NetworkOPs& networkOPs_;
+    std::unique_ptr<Server> server_;
     Setup setup_;
     Endpoints endpoints_;
-    JobQueue& m_jobQueue;
+    JobQueue& jobQueue_;
     beast::insight::Counter rpc_requests_;
     beast::insight::Event rpc_size_;
     beast::insight::Event rpc_time_;
