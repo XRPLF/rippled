@@ -505,7 +505,7 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
     auto const numPartialCoeffs = partial_coeff_len ? 1 : 0;
     auto const numB5810Coeffs = num_full_coeffs + numPartialCoeffs;
     XRPL_ASSERT(
-        num_b_58_10_coeffs <= b_58_10_coeff.size(),
+        numB5810Coeffs <= b5810Coeff.size(),
         "xrpl::b58_fast::detail::b58_to_b256_be : maximum coeff");
     for (unsigned char c : input.substr(0, partial_coeff_len))
     {
