@@ -161,7 +161,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         {
             return tecNO_PERMISSION;
         }
-        else if (ctx.tx.isFlag(tfMPTLock) || ctx.tx.isFlag(tfMPTUnlock))
+        if (ctx.tx.isFlag(tfMPTLock) || ctx.tx.isFlag(tfMPTUnlock))
         {
             return tecNO_PERMISSION;
         }

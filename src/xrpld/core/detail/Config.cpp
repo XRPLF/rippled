@@ -1045,7 +1045,7 @@ Config::loadFromString(std::string const& fileContents)
             {
                 return std::nullopt;
             }
-            else if (listThreshold.values().size() == 1)
+            if (listThreshold.values().size() == 1)
             {
                 auto strTemp = listThreshold.values()[0];
                 auto const listThreshold = beast::lexicalCastThrow<std::size_t>(strTemp);

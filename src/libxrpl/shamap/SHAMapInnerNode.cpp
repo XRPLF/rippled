@@ -260,10 +260,8 @@ SHAMapInnerNode::setChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> child)
         {
             return isBranch_ | (1u << m);
         }
-        else
-        {
-            return isBranch_ & ~(1u << m);
-        }
+
+        return isBranch_ & ~(1u << m);
     }();
 
     auto const dstToAllocate = popcnt16(dstIsBranch);

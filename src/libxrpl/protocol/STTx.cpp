@@ -325,10 +325,8 @@ STTx::getJson(JsonOptions options, bool binary) const
             ret[jss::hash] = to_string(getTransactionID());
             return ret;
         }
-        else
-        {
-            return Json::Value{dataBin};
-        }
+
+        return Json::Value{dataBin};
     }
 
     Json::Value ret = STObject::getJson(JsonOptions::none);

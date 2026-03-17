@@ -102,10 +102,8 @@ ledgerFromRequest(T& ledger, JsonContext const& context)
         {
             return ledgerFromHash(ledger, legacyLedger, context, jss::ledger);
         }
-        else
-        {
-            return ledgerFromIndex(ledger, legacyLedger, context, jss::ledger);
-        }
+
+        return ledgerFromIndex(ledger, legacyLedger, context, jss::ledger);
     }
 
     if (hasHash)
@@ -188,17 +186,15 @@ ledgerFromSpecifier(
             {
                 return getLedger(ledger, LedgerShortcut::Validated, context);
             }
-            else
+
+            if (shortcut == org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_CURRENT ||
+                shortcut == org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_UNSPECIFIED)
             {
-                if (shortcut == org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_CURRENT ||
-                    shortcut == org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_UNSPECIFIED)
-                {
-                    return getLedger(ledger, LedgerShortcut::Current, context);
-                }
-                else if (shortcut == org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_CLOSED)
-                {
-                    return getLedger(ledger, LedgerShortcut::Closed, context);
-                }
+                return getLedger(ledger, LedgerShortcut::Current, context);
+            }
+            else if (shortcut == org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_CLOSED)
+            {
+                return getLedger(ledger, LedgerShortcut::Closed, context);
             }
         }
     }

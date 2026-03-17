@@ -26,7 +26,7 @@ public:
             {
                 return ammAlice.ammAccount();
             }
-            else if (v == Bogie)
+            if (v == Bogie)
             {
                 return bogie;
             }

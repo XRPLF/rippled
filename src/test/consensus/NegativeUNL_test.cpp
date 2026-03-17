@@ -1346,10 +1346,8 @@ class NegativeUNLVoteScoreTable_test : public beast::unit_test::suite
                             {
                                 return score == 256;
                             }
-                            else
-                            {
-                                return false;
-                            }
+
+                            return false;
                         };
                         for (; i < 2; ++i)
                         {
@@ -1769,10 +1767,8 @@ applyAndTestResult(jtx::Env& env, OpenView& view, STTx const& tx, bool pass)
     {
         return res.ter == tesSUCCESS;
     }
-    else
-    {
-        return res.ter == tefFAILURE || res.ter == temDISABLED;
-    }
+
+    return res.ter == tefFAILURE || res.ter == temDISABLED;
 }
 
 bool

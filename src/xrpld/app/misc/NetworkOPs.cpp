@@ -3798,10 +3798,8 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                                 << " done, found last tx.";
                             return;
                         }
-                        else
-                        {
-                            sendMultiApiJson(jvTx, false);
-                        }
+
+                        sendMultiApiJson(jvTx, false);
                     }
 
                     if (marker)

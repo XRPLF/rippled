@@ -195,8 +195,7 @@ NegativeUNLVote::buildScoreTable(
                          << " The reliability measurement could be wrong.";
         return {};
     }
-    else if (
-        myValidationCount > negativeUNLMinLocalValsToVote &&
+    if (myValidationCount > negativeUNLMinLocalValsToVote &&
         myValidationCount <= FLAG_LEDGER_INTERVAL)
     {
         return scoreTable;
@@ -212,7 +211,7 @@ NegativeUNLVote::buildScoreTable(
     }
 }
 
-NegativeUNLVote::Candidates const
+NegativeUNLVote::Candidates
 NegativeUNLVote::findAllCandidates(
     hash_set<NodeID> const& unl,
     hash_set<NodeID> const& negUnl,

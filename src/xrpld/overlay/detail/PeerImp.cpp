@@ -2362,7 +2362,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidatorListCollection> const& m
             fee_.update(Resource::feeUselessData, "unsupported peer");
             return;
         }
-        else if (m->version() < 2)
+        if (m->version() < 2)
         {
             JLOG(p_journal_.debug())
                 << "ValidatorListCollection: received invalid validator list "

@@ -192,10 +192,8 @@ Message::getBuffer(Compressed tryCompressed)
     {
         return bufferCompressed_;
     }
-    else
-    {
-        return buffer_;
-    }
+
+    return buffer_;
 }
 
 int

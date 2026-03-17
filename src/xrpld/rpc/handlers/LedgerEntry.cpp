@@ -905,10 +905,8 @@ doLedgerEntry(RPC::JsonContext& context)
             // this exception return an invalidParam error.
             return RPC::make_error(rpcINVALID_PARAMS);
         }
-        else
-        {
-            throw;
-        }
+
+        throw;
     }
 
     // Return the computed index regardless of whether the node exists.

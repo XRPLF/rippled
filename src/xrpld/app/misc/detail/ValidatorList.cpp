@@ -526,14 +526,12 @@ splitMessageParts(
             smallMsg.reset();
             return splitMessage(messages, largeMsg, maxSize, begin, end);
         }
-        else
-        {
-            messages.emplace_back(
-                std::make_shared<Message>(*smallMsg, protocol::mtVALIDATOR_LIST_COLLECTION),
-                sha512Half(*smallMsg),
-                smallMsg->blobs_size());
-            return messages.back().numVLs;
-        }
+
+        messages.emplace_back(
+            std::make_shared<Message>(*smallMsg, protocol::mtVALIDATOR_LIST_COLLECTION),
+            sha512Half(*smallMsg),
+            smallMsg->blobs_size());
+        return messages.back().numVLs;
     }
     return 0;
 }
@@ -608,14 +606,12 @@ buildValidatorListMessage(
         // split into smaller messages
         return splitMessage(messages, msg, maxSize);
     }
-    else
-    {
-        messages.emplace_back(
-            std::make_shared<Message>(msg, protocol::mtVALIDATOR_LIST_COLLECTION),
-            sha512Half(msg),
-            msg.blobs_size());
-        return messages.back().numVLs;
-    }
+
+    messages.emplace_back(
+        std::make_shared<Message>(msg, protocol::mtVALIDATOR_LIST_COLLECTION),
+        sha512Half(msg),
+        msg.blobs_size());
+    return messages.back().numVLs;
 }
 
 [[nodiscard]]
@@ -658,7 +654,7 @@ ValidatorList::buildValidatorListMessages(
         // Don't send it next time.
         return {maxSequence, numVLs};
     }
-    else if (messageVersion == 1 && peerSequence < currentSeq)
+    if (messageVersion == 1 && peerSequence < currentSeq)
     {
         // Version 1
         if (messages.empty())
@@ -1346,7 +1342,7 @@ ValidatorList::verify(
         {
             return {ListDisposition::invalid, masterPubKey};
         }
-        else if (sequence < listCollection.current.sequence)
+        if (sequence < listCollection.current.sequence)
         {
             return {ListDisposition::stale, masterPubKey};
         }
@@ -2074,10 +2070,8 @@ ValidatorList::negativeUNLFilter(std::vector<std::shared_ptr<STValidation>>&& va
                     {
                         return negativeUNL_.contains(*masterKey);
                     }
-                    else
-                    {
-                        return false;
-                    }
+
+                    return false;
                 }),
             ret.end());
     }

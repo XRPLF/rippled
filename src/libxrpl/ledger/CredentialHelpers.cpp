@@ -186,7 +186,7 @@ validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
                 foundExpired = true;
                 continue;
             }
-            else if (sleCredential->getFlags() & lsfAccepted)
+            if (sleCredential->getFlags() & lsfAccepted)
             {
                 return tesSUCCESS;
             }

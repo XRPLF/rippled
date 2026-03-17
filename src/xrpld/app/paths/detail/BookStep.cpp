@@ -489,8 +489,7 @@ public:
         {
             return ofrQ;
         }
-        else if (
-            offerType == OfferType::CLOB ||
+        if (offerType == OfferType::CLOB ||
             (this->ammLiquidity_ && this->ammLiquidity_->multiPath()))
         {
             return ofrQ;
@@ -886,11 +885,12 @@ auto
 BookStep<TIn, TOut, TDerived>::tipOfferQuality(ReadView const& view) const
     -> std::optional<std::pair<Quality, OfferType>>
 {
-    if (auto const res = tip(view); !res)
+    auto const res = tip(view);
+    if (!res)
     {
         return std::nullopt;
     }
-    else if (auto const q = std::get_if<Quality>(&(*res)))
+    if (auto const q = std::get_if<Quality>(&(*res)))
     {
         return std::make_pair(*q, OfferType::CLOB);
     }
@@ -904,11 +904,12 @@ template <class TIn, class TOut, class TDerived>
 std::optional<QualityFunction>
 BookStep<TIn, TOut, TDerived>::tipOfferQualityF(ReadView const& view) const
 {
-    if (auto const res = tip(view); !res)
+    auto const res = tip(view);
+    if (!res)
     {
         return std::nullopt;
     }
-    else if (auto const q = std::get_if<Quality>(&(*res)))
+    if (auto const q = std::get_if<Quality>(&(*res)))
     {
         return QualityFunction{*q, QualityFunction::CLOBLikeTag{}};
     }
@@ -971,33 +972,31 @@ BookStep<TIn, TOut, TDerived>::revImp(
             // we need to consume the offer
             return true;
         }
-        else
-        {
-            auto ofrAdjAmt = ofrAmt;
-            auto stpAdjAmt = stpAmt;
-            auto ownerGivesAdj = ownerGives;
-            limitStepOut(
-                offer,
-                ofrAdjAmt,
-                stpAdjAmt,
-                ownerGivesAdj,
-                transferRateIn,
-                transferRateOut,
-                remainingOut);
-            remainingOut = beast::zero;
-            savedIns.insert(stpAdjAmt.in);
-            savedOuts.insert(remainingOut);
-            result.in = sum(savedIns);
-            result.out = out;
-            this->consumeOffer(sb, offer, ofrAdjAmt, stpAdjAmt, ownerGivesAdj);
 
-            // Explicitly check whether the offer is funded.  Given that we have
-            // (stpAmt.out > remainingOut), it's natural to assume the offer
-            // will still be funded after consuming remainingOut but that is
-            // not always the case.  If the mantissas of two IOU amounts differ
-            // by less than ten, then subtracting them leaves a zero.
-            return offer.fully_consumed();
-        }
+        auto ofrAdjAmt = ofrAmt;
+        auto stpAdjAmt = stpAmt;
+        auto ownerGivesAdj = ownerGives;
+        limitStepOut(
+            offer,
+            ofrAdjAmt,
+            stpAdjAmt,
+            ownerGivesAdj,
+            transferRateIn,
+            transferRateOut,
+            remainingOut);
+        remainingOut = beast::zero;
+        savedIns.insert(stpAdjAmt.in);
+        savedOuts.insert(remainingOut);
+        result.in = sum(savedIns);
+        result.out = out;
+        this->consumeOffer(sb, offer, ofrAdjAmt, stpAdjAmt, ownerGivesAdj);
+
+        // Explicitly check whether the offer is funded.  Given that we have
+        // (stpAmt.out > remainingOut), it's natural to assume the offer
+        // will still be funded after consuming remainingOut but that is
+        // not always the case.  If the mantissas of two IOU amounts differ
+        // by less than ten, then subtracting them leaves a zero.
+        return offer.fully_consumed();
     };
 
     {

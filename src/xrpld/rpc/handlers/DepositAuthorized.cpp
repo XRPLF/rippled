@@ -88,7 +88,7 @@ doDepositAuthorized(RPC::JsonContext& context)
                 RPC::expected_field_message(
                     jss::credentials, "is non-empty array of CredentialID(hash256)"));
         }
-        else if (creds.size() > maxCredentialsArraySize)
+        if (creds.size() > maxCredentialsArraySize)
         {
             return RPC::make_error(
                 rpcINVALID_PARAMS, RPC::expected_field_message(jss::credentials, "array too long"));

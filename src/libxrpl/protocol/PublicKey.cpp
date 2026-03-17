@@ -272,7 +272,7 @@ verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
         {
             return verifyDigest(publicKey, sha512Half(m), sig);
         }
-        else if (*type == KeyType::ed25519)
+        if (*type == KeyType::ed25519)
         {
             if (!ed25519Canonical(sig))
                 return false;

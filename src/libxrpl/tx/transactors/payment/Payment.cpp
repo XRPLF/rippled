@@ -36,7 +36,7 @@ getMaxSourceAmount(
     {
         return *sendMax;
     }
-    else if (dstAmount.native() || dstAmount.holds<MPTIssue>())
+    if (dstAmount.native() || dstAmount.holds<MPTIssue>())
     {
         return dstAmount;
     }
@@ -288,7 +288,7 @@ Payment::preclaim(PreclaimContext const& ctx)
             // transaction would succeed.
             return tecNO_DST;
         }
-        else if (ctx.view.open() && partialPaymentAllowed)
+        if (ctx.view.open() && partialPaymentAllowed)
         {
             // You cannot fund an account with a partial payment.
             // Make retry work smaller, by rejecting this.
@@ -463,7 +463,7 @@ Payment::doApply()
             terResult = tecPATH_DRY;
         return terResult;
     }
-    else if (mptDirect)
+    if (mptDirect)
     {
         JLOG(j_.trace()) << " dstAmount=" << dstAmount.getFullText();
         auto const& mptIssue = dstAmount.get<MPTIssue>();

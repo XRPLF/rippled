@@ -406,10 +406,8 @@ PathRequest::parseJson(Json::Value const& jvParams)
             jvStatus = rpcError(rpcDOMAIN_MALFORMED);
             return PFR_PJ_INVALID;
         }
-        else
-        {
-            domain = num;
-        }
+
+        domain = num;
     }
 
     return PFR_PJ_NOCHANGE;

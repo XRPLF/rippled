@@ -47,7 +47,7 @@ class AMMCalc_test : public beast::unit_test::suite
                 return XRP(std::stoll(match[2]));
                 // drops
             }
-            else if (match[1] == "XRPA")
+            if (match[1] == "XRPA")
             {
                 return XRPAmount{std::stoll(match[2])};
             }

@@ -59,7 +59,7 @@ parseLedgerArgs(RPC::Context& context, Json::Value const& params)
 
         return LedgerRange{min, max};
     }
-    else if (params.isMember(jss::ledger_hash))
+    if (params.isMember(jss::ledger_hash))
     {
         auto& hashValue = params[jss::ledger_hash];
         if (!hashValue.isString())
@@ -414,10 +414,8 @@ doAccountTxJson(RPC::JsonContext& context)
     {
         return *jv;
     }
-    else
-    {
-        args.ledger = std::get<std::optional<LedgerSpecifier>>(parseRes);
-    }
+
+    args.ledger = std::get<std::optional<LedgerSpecifier>>(parseRes);
 
     if (params.isMember(jss::marker))
     {

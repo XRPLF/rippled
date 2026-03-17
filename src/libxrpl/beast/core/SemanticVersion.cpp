@@ -237,7 +237,7 @@ compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
     {
         return 1;
     }
-    else if (lhs.majorVersion < rhs.majorVersion)
+    if (lhs.majorVersion < rhs.majorVersion)
     {
         return -1;
     }
@@ -246,7 +246,7 @@ compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
     {
         return 1;
     }
-    else if (lhs.minorVersion < rhs.minorVersion)
+    if (lhs.minorVersion < rhs.minorVersion)
     {
         return -1;
     }
@@ -255,7 +255,7 @@ compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
     {
         return 1;
     }
-    else if (lhs.patchVersion < rhs.patchVersion)
+    if (lhs.patchVersion < rhs.patchVersion)
     {
         return -1;
     }
@@ -267,7 +267,7 @@ compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
         {
             return 1;
         }
-        else if (lhs.isPreRelease() && rhs.isRelease())
+        if (lhs.isPreRelease() && rhs.isRelease())
         {
             return -1;
         }
@@ -282,7 +282,7 @@ compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
             {
                 return 1;
             }
-            else if (i >= lhs.preReleaseIdentifiers.size())
+            if (i >= lhs.preReleaseIdentifiers.size())
             {
                 return -1;
             }
@@ -295,7 +295,7 @@ compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
             {
                 return 1;
             }
-            else if (isNumeric(left) && !isNumeric(right))
+            if (isNumeric(left) && !isNumeric(right))
             {
                 return -1;
             }
@@ -311,7 +311,7 @@ compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
                 {
                     return 1;
                 }
-                else if (iLeft < iRight)
+                if (iLeft < iRight)
                 {
                     return -1;
                 }

@@ -661,10 +661,8 @@ AMMWithdraw::deleteAMMAccountIfEmpty(
         {
             return {ter, false};  // LCOV_EXCL_LINE
         }
-        else
-        {
-            updateBalance = (ter == tecINCOMPLETE);
-        }
+
+        updateBalance = (ter == tecINCOMPLETE);
     }
 
     if (updateBalance)
@@ -876,10 +874,8 @@ AMMWithdraw::singleWithdraw(
         {
             return {tecAMM_FAILED, STAmount{}};  // LCOV_EXCL_LINE
         }
-        else
-        {
-            return {tecAMM_INVALID_TOKENS, STAmount{}};
-        }
+
+        return {tecAMM_INVALID_TOKENS, STAmount{}};
     }
     // factor in the adjusted tokens
     auto const [tokensAdj, amountWithdrawAdj] =
@@ -996,10 +992,8 @@ AMMWithdraw::singleWithdrawEPrice(
         {
             return {tecAMM_FAILED, STAmount{}};
         }
-        else
-        {
-            return {tecAMM_INVALID_TOKENS, STAmount{}};
-        }
+
+        return {tecAMM_INVALID_TOKENS, STAmount{}};
     }
     auto amtNoRoundCb = [&] { return tokensAdj / ePrice; };
     auto amtProdCb = [&] { return tokensAdj / ePrice; };

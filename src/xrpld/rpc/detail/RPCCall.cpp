@@ -124,11 +124,9 @@ private:
 
             return jvResult;
         }
-        else
-        {
-            return RPC::make_param_error(
-                std::string("Invalid currency/issuer '") + strCurrencyIssuer + "'");
-        }
+
+        return RPC::make_param_error(
+            std::string("Invalid currency/issuer '") + strCurrencyIssuer + "'");
     }
 
     static bool
@@ -298,19 +296,15 @@ private:
         {
             return jvTakerPays;
         }
-        else
-        {
-            jvRequest[jss::taker_pays] = jvTakerPays;
-        }
+
+        jvRequest[jss::taker_pays] = jvTakerPays;
 
         if (isRpcError(jvTakerGets))
         {
             return jvTakerGets;
         }
-        else
-        {
-            jvRequest[jss::taker_gets] = jvTakerGets;
-        }
+
+        jvRequest[jss::taker_gets] = jvTakerGets;
 
         if (jvParams.size() >= 3)
         {
@@ -977,8 +971,7 @@ private:
 
             return jvRequest;
         }
-        else if (
-            (jvParams.size() >= 2 || bOffline) && reader.parse(jvParams[1u].asString(), txJSON))
+        if ((jvParams.size() >= 2 || bOffline) && reader.parse(jvParams[1u].asString(), txJSON))
         {
             // Signing or submitting tx_json.
             Json::Value jvRequest{Json::objectValue};

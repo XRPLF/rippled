@@ -97,10 +97,8 @@ makeLedgerDBs(
 
         return {std::move(lgr), std::move(tx), true};
     }
-    else
-    {
-        return {std::move(lgr), {}, true};
-    }
+
+    return {std::move(lgr), {}, true};
 }
 
 std::optional<LedgerIndex>

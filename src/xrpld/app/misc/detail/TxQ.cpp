@@ -962,7 +962,7 @@ TxQ::apply(
                     {
                         return {tefPAST_SEQ, false};
                     }
-                    else if (txSeqProx > acctSeqProx)
+                    if (txSeqProx > acctSeqProx)
                     {
                         return {terPRE_SEQ, false};
                     }

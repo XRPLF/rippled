@@ -646,7 +646,7 @@ SHAMap::deepCompare(SHAMap& other) const
             JLOG(journal_.info()) << "unable to fetch node";
             return false;
         }
-        else if (otherNode->getHash() != node->getHash())
+        if (otherNode->getHash() != node->getHash())
         {
             JLOG(journal_.warn()) << "node hash mismatch";
             return false;

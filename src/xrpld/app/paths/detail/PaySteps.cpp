@@ -320,14 +320,12 @@ toStrand(
                     {
                         return {temBAD_PATH, Strand{}};
                     }
-                    else
-                    {
-                        // Last step. insert xrp endpoint step
-                        auto msr = make_XRPEndpointStep(ctx(), next->getAccountID());
-                        if (msr.first != tesSUCCESS)
-                            return {msr.first, Strand{}};
-                        result.push_back(std::move(msr.second));
-                    }
+
+                    // Last step. insert xrp endpoint step
+                    auto msr = make_XRPEndpointStep(ctx(), next->getAccountID());
+                    if (msr.first != tesSUCCESS)
+                        return {msr.first, Strand{}};
+                    result.push_back(std::move(msr.second));
                 }
                 else
                 {

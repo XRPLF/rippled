@@ -128,7 +128,7 @@ Permission::getGranularTxType(GranularPermissionType const& gpType) const
     return std::nullopt;
 }
 
-std::optional<std::reference_wrapper<uint256 const>> const
+std::optional<std::reference_wrapper<uint256 const>>
 Permission::getTxFeature(TxType txType) const
 {
     auto const txFeaturesIt = txFeatureMap_.find(txType);

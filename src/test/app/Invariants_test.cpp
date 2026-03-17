@@ -394,22 +394,21 @@ class Invariants_test : public beast::unit_test::suite
                 for (auto const& trustKeylet :
                      {keylet::line(ammAcctID, A1["USD"]), keylet::line(A1, ammIssue)})
                 {
-                    if (auto const line = ac.view().peek(trustKeylet); !line)
+                    auto const line = ac.view().peek(trustKeylet);
+                    if (!line)
                     {
                         return false;
                     }
-                    else
-                    {
-                        STAmount const lowLimit = line->at(sfLowLimit);
-                        STAmount const highLimit = line->at(sfHighLimit);
-                        BEAST_EXPECT(
-                            trustDelete(
-                                ac.view(),
-                                line,
-                                lowLimit.getIssuer(),
-                                highLimit.getIssuer(),
-                                ac.journal) == tesSUCCESS);
-                    }
+
+                    STAmount const lowLimit = line->at(sfLowLimit);
+                    STAmount const highLimit = line->at(sfHighLimit);
+                    BEAST_EXPECT(
+                        trustDelete(
+                            ac.view(),
+                            line,
+                            lowLimit.getIssuer(),
+                            highLimit.getIssuer(),
+                            ac.journal) == tesSUCCESS);
                 }
 
                 auto const ammSle = ac.view().peek(keylet::amm(ammKey));

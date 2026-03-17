@@ -60,10 +60,8 @@ getFieldType(Json::StaticString fieldName)
     {
         return it->second;
     }
-    else
-    {
-        Throw<std::runtime_error>("`mappings` is missing field " + std::string(fieldName.c_str()));
-    }
+
+    Throw<std::runtime_error>("`mappings` is missing field " + std::string(fieldName.c_str()));
 }
 
 std::string

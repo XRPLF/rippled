@@ -118,7 +118,7 @@ determineAsset(
     {
         return amount.asset();
     }
-    else if (holder == brokerPseudoAccountID)
+    if (holder == brokerPseudoAccountID)
     {
         // We want the asset to match the vault asset, so use the account as the
         // issuer

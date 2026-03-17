@@ -46,13 +46,13 @@ AMMBid::preflight(PreflightContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfAuthAccounts))
     {
-        if (auto const authAccounts = ctx.tx.getFieldArray(sfAuthAccounts);
-            authAccounts.size() > AUCTION_SLOT_MAX_AUTH_ACCOUNTS)
+        auto const authAccounts = ctx.tx.getFieldArray(sfAuthAccounts);
+        if (authAccounts.size() > AUCTION_SLOT_MAX_AUTH_ACCOUNTS)
         {
             JLOG(ctx.j.debug()) << "AMM Bid: Invalid number of AuthAccounts.";
             return temMALFORMED;
         }
-        else if (ctx.rules.enabled(fixAMMv1_3))
+        if (ctx.rules.enabled(fixAMMv1_3))
         {
             AccountID account = ctx.tx[sfAccount];
             std::set<AccountID> unique;
@@ -253,7 +253,7 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
             {
                 return std::max(computedPrice, Number(*bidMin));
             }
-            else if (bidMax)
+            if (bidMax)
             {
                 if (computedPrice <= *bidMax)
                     return computedPrice;
@@ -270,7 +270,7 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
         {
             return Unexpected(tecAMM_FAILED);
         }
-        else if (payPrice > lpTokens)
+        if (payPrice > lpTokens)
         {
             return Unexpected(tecAMM_INVALID_TOKENS);
         }
@@ -280,14 +280,13 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
     // No one owns the slot or expired slot.
     if (auto const acct = auctionSlot[~sfAccount]; !acct || !validOwner(*acct))
     {
-        if (auto const payPrice = getPayPrice(minSlotPrice); !payPrice)
+        auto const payPrice = getPayPrice(minSlotPrice);
+        if (!payPrice)
         {
             return {payPrice.error(), false};
         }
-        else
-        {
-            res = updateSlot(discountedFee, *payPrice, *payPrice);
-        }
+
+        res = updateSlot(discountedFee, *payPrice, *payPrice);
     }
     else
     {

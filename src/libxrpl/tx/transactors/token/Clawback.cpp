@@ -171,7 +171,7 @@ Clawback::preclaim(PreclaimContext const& ctx)
     {
         return tecPSEUDO_ACCOUNT;
     }
-    else if (sleHolder->isFieldPresent(sfAMMID))
+    if (sleHolder->isFieldPresent(sfAMMID))
     {
         return tecAMM_ACCOUNT;
     }

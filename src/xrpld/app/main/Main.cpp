@@ -313,17 +313,15 @@ runUnitTests(
             return EXIT_FAILURE;
         return EXIT_SUCCESS;
     }
-    else
-    {
-        // child
-        multi_runner_child runner{num_jobs, quiet, log};
-        runner.arg(argument);
-        auto const anyFailed = runner.run_multi(multi_selector(pattern));
 
-        if (anyFailed)
-            return EXIT_FAILURE;
-        return EXIT_SUCCESS;
-    }
+    // child
+    multi_runner_child runner{num_jobs, quiet, log};
+    runner.arg(argument);
+    auto const anyFailed = runner.run_multi(multi_selector(pattern));
+
+    if (anyFailed)
+        return EXIT_FAILURE;
+    return EXIT_SUCCESS;
 }
 
 #endif  // ENABLE_TESTS
@@ -526,18 +524,17 @@ run(int argc, char** argv)
             argv);
     }
     // LCOV_EXCL_START
-    else
+
+    if (vm.contains("unittest-jobs"))
     {
-        if (vm.contains("unittest-jobs"))
-        {
-            // unittest jobs only makes sense with `unittest`
-            std::cerr << "rippled: '--unittest-jobs' specified without "
-                         "'--unittest'.\n";
-            std::cerr << "To run the unit tests the '--unittest' option must "
-                         "be present.\n";
-            return 1;
-        }
+        // unittest jobs only makes sense with `unittest`
+        std::cerr << "rippled: '--unittest-jobs' specified without "
+                     "'--unittest'.\n";
+        std::cerr << "To run the unit tests the '--unittest' option must "
+                     "be present.\n";
+        return 1;
     }
+
 #endif  // ENABLE_TESTS
 
     auto config = std::make_unique<Config>();

@@ -66,10 +66,8 @@ ServerDefinitions::translate(std::string const& inp)
         {
             return replace("UINT", "Hash");
         }
-        else
-        {
-            return replace("UINT", "UInt");
-        }
+
+        return replace("UINT", "UInt");
     }
 
     static std::unordered_map<std::string_view, std::string_view> const replacements{

@@ -531,11 +531,10 @@ AmendmentTableImpl::AmendmentTableImpl(
                                " in favor of data in db/wallet.db.";
             break;
         }
-        else
-        {  // Otherwise transfer config data into the table
-            detect_conflict.insert(a.first);
-            persistVote(a.first, a.second, AmendmentVote::up);
-        }
+
+        // Otherwise transfer config data into the table
+        detect_conflict.insert(a.first);
+        persistVote(a.first, a.second, AmendmentVote::up);
     }
 
     // Parse vetoed amendments from config
@@ -547,18 +546,17 @@ AmendmentTableImpl::AmendmentTableImpl(
                                " in favor of data in db/wallet.db.";
             break;
         }
+
+        // Otherwise transfer config data into the table
+        if (!detect_conflict.contains(a.first))
+        {
+            persistVote(a.first, a.second, AmendmentVote::down);
+        }
         else
-        {  // Otherwise transfer config data into the table
-            if (!detect_conflict.contains(a.first))
-            {
-                persistVote(a.first, a.second, AmendmentVote::down);
-            }
-            else
-            {
-                JLOG(j_.warn()) << "[veto_amendments] section in config has amendment " << '('
-                                << a.first << ", " << a.second
-                                << ") both [veto_amendments] and [amendments].";
-            }
+        {
+            JLOG(j_.warn()) << "[veto_amendments] section in config has amendment " << '('
+                            << a.first << ", " << a.second
+                            << ") both [veto_amendments] and [amendments].";
         }
     }
 

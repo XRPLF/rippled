@@ -207,16 +207,14 @@ Env::balance(Account const& account, MPTIssue const& mptIssue) const
         STAmount const amount{mptIssue, sle->getFieldU64(sfOutstandingAmount), 0, true};
         return {amount, lookup(issuer).name()};
     }
-    else
-    {
-        // Holder balance
-        auto const sle = le(keylet::mptoken(id, account));
-        if (!sle)
-            return {STAmount(mptIssue, 0), account.name()};
 
-        STAmount const amount{mptIssue, sle->getFieldU64(sfMPTAmount)};
-        return {amount, lookup(issuer).name()};
-    }
+    // Holder balance
+    auto const sle = le(keylet::mptoken(id, account));
+    if (!sle)
+        return {STAmount(mptIssue, 0), account.name()};
+
+    STAmount const amount{mptIssue, sle->getFieldU64(sfMPTAmount)};
+    return {amount, lookup(issuer).name()};
 }
 
 PrettyAmount
@@ -374,14 +372,12 @@ Env::submit(JTx const& jt, std::source_location const& loc)
 
             return jr;
         }
-        else
-        {
-            // Parsing failed or the JTx is
-            // otherwise missing the stx field.
-            parsedResult.ter = ter_ = temMALFORMED;
 
-            return Json::Value();
-        }
+        // Parsing failed or the JTx is
+        // otherwise missing the stx field.
+        parsedResult.ter = ter_ = temMALFORMED;
+
+        return Json::Value();
     }();
     postconditions(jt, parsedResult, jr, loc);
 }

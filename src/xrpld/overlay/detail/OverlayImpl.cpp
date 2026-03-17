@@ -880,7 +880,7 @@ OverlayImpl::processValidatorList(http_request_type const& req, Handoff& handoff
         // 404 not found
         return fail(boost::beast::http::status::not_found);
     }
-    else if (!*vl)
+    if (!*vl)
     {
         return fail(boost::beast::http::status::bad_request);
     }

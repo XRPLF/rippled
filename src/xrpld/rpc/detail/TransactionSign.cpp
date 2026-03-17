@@ -228,10 +228,8 @@ checkPayment(
         {
             return RPC::make_error(rpcDOMAIN_MALFORMED, "Unable to parse 'DomainID'.");
         }
-        else
-        {
-            domain = num;
-        }
+
+        domain = num;
     }
 
     if (!tx_json.isMember(jss::Paths) && params.isMember(jss::build_path))

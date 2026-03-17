@@ -201,7 +201,7 @@ VaultDeposit::doApply()
         {
             return tecINTERNAL;  // LCOV_EXCL_LINE
         }
-        else if (*maybeAssets > amount)
+        if (*maybeAssets > amount)
         {
             // LCOV_EXCL_START
             JLOG(j_.error()) << "VaultDeposit: would take more than offered.";

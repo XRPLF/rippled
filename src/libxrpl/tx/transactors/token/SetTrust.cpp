@@ -235,12 +235,12 @@ SetTrust::preclaim(PreclaimContext const& ctx)
             }
             else if (auto const ammSle = ctx.view.read({ltAMM, sleDst->getFieldH256(sfAMMID)}))
             {
-                if (auto const lpTokens = ammSle->getFieldAmount(sfLPTokenBalance);
-                    lpTokens == beast::zero)
+                auto const lpTokens = ammSle->getFieldAmount(sfLPTokenBalance);
+                if (lpTokens == beast::zero)
                 {
                     return tecAMM_EMPTY;
                 }
-                else if (lpTokens.getCurrency() != saLimitAmount.getCurrency())
+                if (lpTokens.getCurrency() != saLimitAmount.getCurrency())
                 {
                     return tecNO_PERMISSION;
                 }

@@ -663,10 +663,8 @@ AMMDeposit::equalDepositLimit(
         {
             return {tecAMM_FAILED, STAmount{}};  // LCOV_EXCL_LINE
         }
-        else
-        {
-            return {tecAMM_INVALID_TOKENS, STAmount{}};
-        }
+
+        return {tecAMM_INVALID_TOKENS, STAmount{}};
     }
     // factor in the adjusted tokens
     frac = adjustFracByTokens(view.rules(), lptAMMBalance, tokensAdj, frac);
@@ -694,10 +692,8 @@ AMMDeposit::equalDepositLimit(
         {
             return {tecAMM_FAILED, STAmount{}};  // LCOV_EXCL_LINE
         }
-        else
-        {
-            return {tecAMM_INVALID_TOKENS, STAmount{}};  // LCOV_EXCL_LINE
-        }
+
+        return {tecAMM_INVALID_TOKENS, STAmount{}};  // LCOV_EXCL_LINE
     }
     // factor in the adjusted tokens
     frac = adjustFracByTokens(view.rules(), lptAMMBalance, tokensAdj, frac);
@@ -746,10 +742,8 @@ AMMDeposit::singleDeposit(
         {
             return {tecAMM_FAILED, STAmount{}};  // LCOV_EXCL_LINE
         }
-        else
-        {
-            return {tecAMM_INVALID_TOKENS, STAmount{}};
-        }
+
+        return {tecAMM_INVALID_TOKENS, STAmount{}};
     }
     // factor in the adjusted tokens
     auto const [tokensAdj, amountDepositAdj] =
@@ -853,10 +847,8 @@ AMMDeposit::singleDepositEPrice(
             {
                 return {tecAMM_FAILED, STAmount{}};  // LCOV_EXCL_LINE
             }
-            else
-            {
-                return {tecAMM_INVALID_TOKENS, STAmount{}};
-            }
+
+            return {tecAMM_INVALID_TOKENS, STAmount{}};
         }
         // factor in the adjusted tokens
         auto const [tokensAdj, amountDepositAdj] =

@@ -53,7 +53,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
         {
             return temMALFORMED;
         }
-        else if ((ctx.tx.getFlags() & tfVaultPrivate) == 0)
+        if ((ctx.tx.getFlags() & tfVaultPrivate) == 0)
         {
             return temMALFORMED;  // DomainID only allowed on private vaults
         }

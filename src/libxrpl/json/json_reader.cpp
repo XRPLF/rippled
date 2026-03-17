@@ -663,7 +663,7 @@ Reader::decodeString(Token& token, std::string& decoded)
         {
             break;
         }
-        else if (c == '\\')
+        if (c == '\\')
         {
             if (current == end)
                 return addError("Empty escape sequence in string", token, current);

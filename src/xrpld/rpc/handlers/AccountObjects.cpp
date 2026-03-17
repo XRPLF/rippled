@@ -437,7 +437,7 @@ doAccountObjects(RPC::JsonContext& context)
             rpcStatus.inject(result);
             return result;
         }
-        else if (type != ltANY)
+        if (type != ltANY)
         {
             typeFilter = std::vector<LedgerEntryType>({type});
         }

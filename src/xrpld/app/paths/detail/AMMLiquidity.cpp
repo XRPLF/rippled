@@ -114,14 +114,12 @@ AMMLiquidity<TIn, TOut>::maxOffer(TAmounts<TIn, TOut> const& balances, Rules con
             balances,
             Quality{balances});
     }
-    else
-    {
-        auto const out = maxOut<TOut>(balances.out, issueOut());
-        if (out <= TOut{0} || out >= balances.out)
-            return std::nullopt;
-        return AMMOffer<TIn, TOut>(
-            *this, {swapAssetOut(balances, out, tradingFee_), out}, balances, Quality{balances});
-    }
+
+    auto const out = maxOut<TOut>(balances.out, issueOut());
+    if (out <= TOut{0} || out >= balances.out)
+        return std::nullopt;
+    return AMMOffer<TIn, TOut>(
+        *this, {swapAssetOut(balances, out, tradingFee_), out}, balances, Quality{balances});
 }
 
 template <typename TIn, typename TOut>
@@ -172,7 +170,7 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
                     return std::nullopt;
                 return AMMOffer<TIn, TOut>(*this, amounts, balances, Quality{amounts});
             }
-            else if (!clobQuality)
+            if (!clobQuality)
             {
                 // If there is no CLOB to compare against, return the largest
                 // amount, which doesn't overflow. The size is going to be
@@ -201,10 +199,8 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
             {
                 return maxOffer(balances, view.rules());
             }
-            else
-            {
-                return std::nullopt;
-            }
+
+            return std::nullopt;
         }
         catch (std::exception const& e)
         {

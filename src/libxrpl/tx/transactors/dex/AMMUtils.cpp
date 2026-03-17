@@ -54,7 +54,7 @@ ammHolds(
             {
                 return std::make_optional(std::make_pair(issue1, issue2));
             }
-            else if (checkIssue == issue2)
+            if (checkIssue == issue2)
             {
                 return std::make_optional(std::make_pair(issue2, issue1));
             }
@@ -68,7 +68,7 @@ ammHolds(
         {
             return singleIssue(*optIssue1, "optIssue1");
         }
-        else if (optIssue2)
+        if (optIssue2)
         {
             // Cannot have Amount2 without Amount.
             return singleIssue(*optIssue2, "optIssue2");  // LCOV_EXCL_LINE

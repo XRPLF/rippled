@@ -14,10 +14,8 @@ doBlackList(RPC::JsonContext& context)
     {
         return rm.getJson(context.params[jss::threshold].asInt());
     }
-    else
-    {
-        return rm.getJson();
-    }
+
+    return rm.getJson();
 }
 
 }  // namespace xrpl

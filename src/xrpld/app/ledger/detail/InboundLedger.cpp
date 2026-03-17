@@ -644,10 +644,8 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
                         mPeerSet->sendRequest(tmGL, peer);
                         return;
                     }
-                    else
-                    {
-                        JLOG(journal_.trace()) << "All AS nodes filtered";
-                    }
+
+                    JLOG(journal_.trace()) << "All AS nodes filtered";
                 }
             }
         }
@@ -710,10 +708,8 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
                     mPeerSet->sendRequest(tmGL, peer);
                     return;
                 }
-                else
-                {
-                    JLOG(journal_.trace()) << "All TX nodes filtered";
-                }
+
+                JLOG(journal_.trace()) << "All TX nodes filtered";
             }
         }
     }

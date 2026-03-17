@@ -393,7 +393,7 @@ getLineIfUsable(
             {
                 return nullptr;  // LCOV_EXCL_LINE
             }
-            else if (sleIssuer->isFieldPresent(sfAMMID))
+            if (sleIssuer->isFieldPresent(sfAMMID))
             {
                 auto const sleAmm = view.read(keylet::amm((*sleIssuer)[sfAMMID]));
 
@@ -1195,7 +1195,7 @@ canAddHolding(ReadView const& view, Issue const& issue)
     {
         return terNO_ACCOUNT;
     }
-    else if (!issuer->isFlag(lsfDefaultRipple))
+    if (!issuer->isFlag(lsfDefaultRipple))
     {
         return terNO_RIPPLE;
     }
@@ -2351,15 +2351,13 @@ accountSendMultiIOU(
         {
             return TER{tecFAILED_PROCESSING};
         }
-        else
-        {
-            auto const sndBal = sender->getFieldAmount(sfBalance);
-            view.creditHook(senderID, xrpAccount(), takeFromSender, sndBal);
 
-            // Decrement XRP balance.
-            sender->setFieldAmount(sfBalance, sndBal - takeFromSender);
-            view.update(sender);
-        }
+        auto const sndBal = sender->getFieldAmount(sfBalance);
+        view.creditHook(senderID, xrpAccount(), takeFromSender, sndBal);
+
+        // Decrement XRP balance.
+        sender->setFieldAmount(sfBalance, sndBal - takeFromSender);
+        view.update(sender);
     }
 
     if (auto stream = j.trace())
@@ -3028,12 +3026,12 @@ requireAuth(
             sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth,
             "xrpl::requireAuth : issuance requires authorization");
         // ter = tefINTERNAL | tecOBJECT_NOT_FOUND | tecNO_AUTH | tecEXPIRED
-        if (auto const ter = credentials::validDomain(view, *maybeDomainID, account);
-            isTesSuccess(ter))
+        auto const ter = credentials::validDomain(view, *maybeDomainID, account);
+        if (isTesSuccess(ter))
         {
             return ter;  // Note: sleToken might be null
         }
-        else if (!sleToken)
+        if (!sleToken)
         {
             return ter;
         }
@@ -3103,7 +3101,7 @@ enforceMPTokenAuthorization(
         // Either way, return tecNO_AUTH and there is nothing else to do
         return expired ? tecEXPIRED : tecNO_AUTH;
     }
-    else if (!authorizedByDomain && maybeDomainID.has_value())
+    if (!authorizedByDomain && maybeDomainID.has_value())
     {
         // Found an MPToken but the account is not authorized and we expect
         // it to have been authorized by the domain. This could be because the

@@ -27,7 +27,7 @@ getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID)
         {
             return sle->getFieldU64(sfLowNode);
         }
-        else if (sle->getFieldAmount(sfHighLimit).getIssuer() == accountID)
+        if (sle->getFieldAmount(sfHighLimit).getIssuer() == accountID)
         {
             return sle->getFieldU64(sfHighNode);
         }
@@ -50,7 +50,7 @@ isRelatedToAccount(
         return (sle->getFieldAmount(sfLowLimit).getIssuer() == accountID) ||
             (sle->getFieldAmount(sfHighLimit).getIssuer() == accountID);
     }
-    else if (sle->isFieldPresent(sfAccount))
+    if (sle->isFieldPresent(sfAccount))
     {
         // If there's an sfAccount present, also test the sfDestination, if
         // present. This will match objects such as Escrows (ltESCROW), Payment

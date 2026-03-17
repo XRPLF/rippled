@@ -4611,7 +4611,7 @@ private:
                     {
                         return STAmount(USD, UINT64_C(30'443'43891402715), -11);
                     }
-                    else if (features[fixAMMv1_1] && !features[fixAMMv1_3])
+                    if (features[fixAMMv1_1] && !features[fixAMMv1_3])
                     {
                         return STAmount(USD, UINT64_C(30'443'43891402714), -11);
                     }
@@ -5879,7 +5879,7 @@ private:
                                     takerPays,
                                     swapAssetIn(Amounts{poolIn, poolOut}, takerPays, tfee)};
                             }
-                            else if (isXRP(poolOut))
+                            if (isXRP(poolOut))
                             {
                                 auto const takerGets = STAmount{xrpIssue(), 1};
                                 return Amounts{

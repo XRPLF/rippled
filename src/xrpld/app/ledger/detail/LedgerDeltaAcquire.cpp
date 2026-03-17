@@ -185,14 +185,12 @@ LedgerDeltaAcquire::tryBuild(std::shared_ptr<Ledger const> const& parent)
         onLedgerBuilt(sl);
         return fullLedger_;
     }
-    else
-    {
-        failed_ = true;
-        complete_ = false;
-        JLOG(journal_.error()) << "tryBuild failed " << hash_ << " with parent "
-                               << parent->header().hash;
-        Throw<std::runtime_error>("Cannot replay ledger");
-    }
+
+    failed_ = true;
+    complete_ = false;
+    JLOG(journal_.error()) << "tryBuild failed " << hash_ << " with parent "
+                           << parent->header().hash;
+    Throw<std::runtime_error>("Cannot replay ledger");
 }
 
 void

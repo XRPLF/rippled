@@ -182,7 +182,7 @@ Oracle::aggregatePrice(
         {
             return jr[jss::result];
         }
-        else if (jr.isMember(jss::error))
+        if (jr.isMember(jss::error))
         {
             return jr;
         }

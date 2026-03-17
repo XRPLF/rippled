@@ -97,7 +97,7 @@ public:
         {
             return sle0_;
         }
-        else if (!sle0_)
+        if (!sle0_)
         {
             return sle1_;
         }

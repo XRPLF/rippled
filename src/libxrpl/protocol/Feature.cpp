@@ -263,11 +263,9 @@ FeatureCollections::registerFeature(std::string const& name, Supported support, 
         check(features.size() == all.size(), "The 'all' features list is populated incorrectly");
         return f;
     }
-    else
-    {
-        // Each feature should only be registered once
-        LogicError("Duplicate feature registration");
-    }
+
+    // Each feature should only be registered once
+    LogicError("Duplicate feature registration");
 }
 
 /** Tell FeatureCollections when registration is complete. */

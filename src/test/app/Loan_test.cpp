@@ -1826,7 +1826,7 @@ protected:
                     // XRP can't be frozen
                     return std::make_tuple(empty, empty, empty, tesSUCCESS);
                 }
-                else if (broker.asset.holds<Issue>())
+                if (broker.asset.holds<Issue>())
                 {
                     auto freeze = [&](Account const& holder) {
                         env(trust(issuer, holder[iouCurrency](0), tfSetFreeze));
@@ -4269,10 +4269,8 @@ protected:
             {
                 return Account{"pseudo", brokerSle->at(sfAccount)};
             }
-            else
-            {
-                return std::nullopt;
-            }
+
+            return std::nullopt;
         }();
         if (!pseudoBroker)
             return;

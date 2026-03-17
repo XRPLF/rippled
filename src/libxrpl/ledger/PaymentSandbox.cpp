@@ -14,10 +14,8 @@ DeferredCredits::makeKey(AccountID const& a1, AccountID const& a2, Currency cons
     {
         return std::make_tuple(a1, a2, c);
     }
-    else
-    {
-        return std::make_tuple(a2, a1, c);
-    }
+
+    return std::make_tuple(a2, a1, c);
 }
 
 void
@@ -109,11 +107,9 @@ DeferredCredits::adjustments(
         result.emplace(v.highAcctCredits, v.lowAcctCredits, v.lowAcctOrigBalance);
         return result;
     }
-    else
-    {
-        result.emplace(v.lowAcctCredits, v.highAcctCredits, -v.lowAcctOrigBalance);
-        return result;
-    }
+
+    result.emplace(v.lowAcctCredits, v.highAcctCredits, -v.lowAcctOrigBalance);
+    return result;
 }
 
 void

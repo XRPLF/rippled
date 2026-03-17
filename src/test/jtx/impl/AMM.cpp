@@ -668,7 +668,7 @@ AMM::bid(BidArg const& arg)
         {
             return STAmount{lptIssue_, std::get<int>(bid)};
         }
-        else if (std::holds_alternative<IOUAmount>(bid))
+        if (std::holds_alternative<IOUAmount>(bid))
         {
             return toSTAmount(std::get<IOUAmount>(bid), lptIssue_);
         }

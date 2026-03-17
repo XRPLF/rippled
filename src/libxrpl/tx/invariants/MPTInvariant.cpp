@@ -128,7 +128,7 @@ ValidMPTIssuance::finalize(
                                    "succeeded but created MPT issuances";
                 return false;
             }
-            else if (mptIssuancesDeleted_ > 0)
+            if (mptIssuancesDeleted_ > 0)
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT authorize "
                                    "succeeded but deleted issuances";

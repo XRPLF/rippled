@@ -171,10 +171,8 @@ doBookOffers(RPC::JsonContext& context)
         {
             return RPC::make_error(rpcDOMAIN_MALFORMED, "Unable to parse domain.");
         }
-        else
-        {
-            domain = num;
-        }
+
+        domain = num;
     }
 
     if (pay_currency == get_currency && pay_issuer == get_issuer)

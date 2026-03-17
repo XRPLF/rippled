@@ -55,7 +55,7 @@ Section::append(std::vector<std::string> const& lines)
                     val = "";
                     break;
                 }
-                else if (val.at(comment - 1) == '\\')
+                if (val.at(comment - 1) == '\\')
                 {
                     // we have an escaped comment char. Erase the escape char
                     // and keep looking
