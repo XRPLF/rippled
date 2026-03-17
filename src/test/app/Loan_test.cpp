@@ -81,7 +81,7 @@ protected:
         int coverDeposit = 1000;
         TenthBips16 managementFeeRate{100};
         TenthBips32 coverRateLiquidation = percentageToTenthBips(25);
-        std::string data;
+        std::string data = {};  // NOLINT(readability-redundant-member-init)
         std::uint32_t flags = 0;
 
         Number
@@ -150,7 +150,7 @@ protected:
         // only signs.
         bool counterpartyExplicit = true;
         Number principalRequest;
-        std::optional<STAmount> setFee;
+        std::optional<STAmount> setFee = std::nullopt;
         std::optional<Number> originationFee;
         std::optional<Number> serviceFee;
         std::optional<Number> lateFee;

@@ -6007,7 +6007,7 @@ private:
             STAmount const goodUsdBIT;
             STAmount const goodUsdBITr;
             IOUAmount const lpTokenBalance;
-            std::optional<IOUAmount> const lpTokenBalanceAlt;
+            std::optional<IOUAmount> const lpTokenBalanceAlt = std::nullopt;
             double const offer1BtcGH = 0.1;
             double const offer2BtcGH = 0.1;
             double const offer2UsdGH = 1;

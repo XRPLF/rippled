@@ -2263,7 +2263,7 @@ class Invariants_test : public beast::unit_test::suite
             std::optional<int> assetsTotal;
             std::optional<int> assetsAvailable;
             std::optional<int> lossUnrealized;
-            std::optional<int> assetsMaximum;
+            std::optional<int> assetsMaximum = std::nullopt;
             std::optional<int> sharesTotal;
             std::optional<int> vaultAssets;
             std::optional<AccountAmount> accountAssets;

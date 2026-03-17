@@ -2527,7 +2527,7 @@ private:
             PublicKey pubKey;
             std::pair<PublicKey, SecretKey> signingKeys;
             std::string manifest;
-            NetClock::time_point expiry;
+            NetClock::time_point expiry = {};  // NOLINT(readability-redundant-member-init)
         };
 
         // Create ValidatorList with a set of countTotal publishers, of which

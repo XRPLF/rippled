@@ -36,10 +36,12 @@ class LedgerLoad_test : public beast::unit_test::suite
     struct SetupData
     {
         std::string const dbPath;
-        std::string ledgerFile;
-        Json::Value ledger;
-        Json::Value hashes;
-        uint256 trapTxHash;
+        // NOLINTBEGIN(readability-redundant-member-init)
+        std::string ledgerFile = {};
+        Json::Value ledger = {};
+        Json::Value hashes = {};
+        uint256 trapTxHash = {};
+        // NOLINTEND(readability-redundant-member-init)
     };
 
     SetupData
