@@ -639,10 +639,10 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
     std::uint32_t const ownerCount =
         confineOwnerCount(view.ownerCountHook(id, sle->getFieldU32(sfOwnerCount)), ownerCountAdj);
 
-    std::size_t sponsoredOwnerCount = sle->getFieldU32(sfSponsoredOwnerCount);
-    std::size_t sponsoringOwnerCount = sle->getFieldU32(sfSponsoringOwnerCount);
-    bool isAccountSponsored = sle->isFieldPresent(sfSponsor);
-    std::size_t sponsoringAccountCount = sle->getFieldU32(sfSponsoringAccountCount);
+    std::uint32_t const sponsoredOwnerCount = sle->getFieldU32(sfSponsoredOwnerCount);
+    std::uint32_t const sponsoringOwnerCount = sle->getFieldU32(sfSponsoringOwnerCount);
+    bool const isAccountSponsored = sle->isFieldPresent(sfSponsor);
+    std::uint32_t const sponsoringAccountCount = sle->getFieldU32(sfSponsoringAccountCount);
 
     // Pseudo-accounts have no reserve requirement
     auto const reserve = isPseudoAccount(sle) ? XRPAmount{0}
