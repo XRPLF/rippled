@@ -1,4 +1,7 @@
+#include <xrpl/tx/transactors/vault/VaultDeposit.h>
+//
 #include <xrpl/ledger/CredentialHelpers.h>
+#include <xrpl/ledger/VaultHelpers.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -10,7 +13,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
-#include <xrpl/tx/transactors/vault/VaultDeposit.h>
 
 namespace xrpl {
 
@@ -182,11 +184,13 @@ VaultDeposit::doApply()
     }
 
     STAmount sharesCreated = {vault->at(sfShareMPTID)}, assetsDeposited;
+    auto const& rules = ctx_.view().rules();
     try
     {
         // Compute exchange before transferring any amounts.
         {
-            auto const maybeShares = assetsToSharesDeposit(vault, sleIssuance, amount);
+            auto const maybeShares =
+                vault::assetsToSharesDeposit(rules, vault, sleIssuance, amount);
             if (!maybeShares)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             sharesCreated = *maybeShares;
@@ -194,7 +198,8 @@ VaultDeposit::doApply()
         if (sharesCreated == beast::zero)
             return tecPRECISION_LOSS;
 
-        auto const maybeAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
+        auto const maybeAssets =
+            vault::sharesToAssetsDeposit(rules, vault, sleIssuance, sharesCreated);
         if (!maybeAssets)
             return tecINTERNAL;  // LCOV_EXCL_LINE
         else if (*maybeAssets > amount)

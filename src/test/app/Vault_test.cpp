@@ -11,6 +11,7 @@
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/VaultHelpers.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>

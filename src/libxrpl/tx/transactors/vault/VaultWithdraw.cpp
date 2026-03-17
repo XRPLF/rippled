@@ -1,4 +1,5 @@
 #include <xrpl/ledger/CredentialHelpers.h>
+#include <xrpl/ledger/VaultHelpers.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -115,13 +116,15 @@ VaultWithdraw::doApply()
     MPTIssue const share{mptIssuanceID};
     STAmount sharesRedeemed = {share};
     STAmount assetsWithdrawn;
+    auto const& rules = ctx_.view().rules();
     try
     {
         if (amount.asset() == vaultAsset)
         {
             // Fixed assets, variable shares.
             {
-                auto const maybeShares = assetsToSharesWithdraw(vault, sleIssuance, amount);
+                auto const maybeShares =
+                    vault::assetsToSharesWithdraw(rules, vault, sleIssuance, amount);
                 if (!maybeShares)
                     return tecINTERNAL;  // LCOV_EXCL_LINE
                 sharesRedeemed = *maybeShares;
@@ -129,7 +132,8 @@ VaultWithdraw::doApply()
 
             if (sharesRedeemed == beast::zero)
                 return tecPRECISION_LOSS;
-            auto const maybeAssets = sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed);
+            auto const maybeAssets =
+                vault::sharesToAssetsWithdraw(rules, vault, sleIssuance, sharesRedeemed);
             if (!maybeAssets)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             assetsWithdrawn = *maybeAssets;
@@ -138,7 +142,8 @@ VaultWithdraw::doApply()
         {
             // Fixed shares, variable assets.
             sharesRedeemed = amount;
-            auto const maybeAssets = sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed);
+            auto const maybeAssets =
+                vault::sharesToAssetsWithdraw(rules, vault, sleIssuance, sharesRedeemed);
             if (!maybeAssets)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             assetsWithdrawn = *maybeAssets;
