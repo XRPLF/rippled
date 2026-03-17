@@ -25,15 +25,11 @@ CancelCheck::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
     }
 
-    using duration = NetClock::duration;
-    using timepoint = NetClock::time_point;
-    auto const optExpiry = (*sleCheck)[~sfExpiration];
-
     // Expiration is defined in terms of the close time of the parent
     // ledger, because we definitively know the time that it closed but
     // we do not know the closing time of the ledger that is under
     // construction.
-    if (!optExpiry || (ctx.view.parentCloseTime() < timepoint{duration{*optExpiry}}))
+    if (!hasExpired(ctx.view, (*sleCheck)[~sfExpiration]))
     {
         // If the check is not yet expired, then only the creator or the
         // destination may cancel the check.

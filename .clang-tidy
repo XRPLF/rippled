@@ -8,6 +8,7 @@ Checks: "-*,
   bugprone-chained-comparison,
   bugprone-compare-pointer-to-member-virtual-function,
   bugprone-copy-constructor-init,
+  bugprone-crtp-constructor-accessibility,
   bugprone-dangling-handle,
   bugprone-dynamic-static-initializers,
   bugprone-empty-catch,
@@ -59,9 +60,11 @@ Checks: "-*,
   bugprone-suspicious-string-compare,
   bugprone-suspicious-stringview-data-usage,
   bugprone-swapped-arguments,
+  bugprone-switch-missing-default-case,
   bugprone-terminating-continue,
   bugprone-throw-keyword-missing,
   bugprone-too-small-loop-variable,
+  # bugprone-unchecked-optional-access, # see https://github.com/XRPLF/rippled/pull/6502
   bugprone-undefined-memory-manipulation,
   bugprone-undelegated-constructor,
   bugprone-unhandled-exception-at-new,
@@ -69,6 +72,7 @@ Checks: "-*,
   bugprone-unique-ptr-array-mismatch,
   bugprone-unsafe-functions,
   bugprone-unused-raii,
+  bugprone-unused-return-value,
   bugprone-unused-local-non-trivial-variable,
   bugprone-virtual-near-miss,
   cppcoreguidelines-no-suspend-with-lock,
@@ -81,27 +85,23 @@ Checks: "-*,
   misc-throw-by-value-catch-by-reference,
   misc-unused-alias-decls,
   misc-unused-using-decls,
-  readability-duplicate-include,
-  readability-enum-initial-value,
-  readability-misleading-indentation,
-  readability-non-const-parameter,
-  readability-redundant-declaration,
-  readability-reference-to-constructed-temporary,
   modernize-deprecated-headers,
   modernize-make-shared,
   modernize-make-unique,
   performance-implicit-conversion-in-loop,
   performance-move-constructor-init,
-  performance-trivially-destructible
+  performance-trivially-destructible,
+  readability-duplicate-include,
+  readability-enum-initial-value,
+  readability-misleading-indentation,
+  readability-non-const-parameter,
+  readability-redundant-declaration,
+  readability-reference-to-constructed-temporary
   "
 # ---
 # checks that have some issues that need to be resolved:
 #
-# bugprone-crtp-constructor-accessibility,
 # bugprone-move-forwarding-reference,
-# bugprone-switch-missing-default-case,
-# bugprone-unused-raii,
-# bugprone-unused-return-value,
 # bugprone-use-after-move,
 #
 # cppcoreguidelines-misleading-capture-default-by-value,
@@ -195,7 +195,7 @@ CheckOptions:
   #   readability-identifier-naming.PublicMemberSuffix: ""
   #   readability-identifier-naming.FunctionIgnoredRegexp: ".*tag_invoke.*"
   bugprone-unsafe-functions.ReportMoreUnsafeFunctions: true
-#   bugprone-unused-return-value.CheckedReturnTypes: ::std::error_code;::std::error_condition;::std::errc
+  bugprone-unused-return-value.CheckedReturnTypes: ::std::error_code;::std::error_condition;::std::errc
 #   misc-include-cleaner.IgnoreHeaders: '.*/(detail|impl)/.*;.*(expected|unexpected).*;.*ranges_lower_bound\.h;time.h;stdlib.h;__chrono/.*;fmt/chrono.h;boost/uuid/uuid_hash.hpp'
 #
 # HeaderFilterRegex: '^.*/(src|tests)/.*\.(h|hpp)$'

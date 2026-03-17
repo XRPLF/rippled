@@ -214,8 +214,10 @@ CreateOffer::checkAcceptAsset(
         return (flags & tapRETRY) ? TER{terNO_ACCOUNT} : TER{tecNO_ISSUER};
     }
 
+    // An account cannot create a trustline to itself, so no line can exist
+    // to be frozen. Additionally, an issuer can always accept its own
+    // issuance.
     if (issue.account == id)
-        // An account can always accept its own issuance.
         return tesSUCCESS;
 
     if ((*issuerAccount)[sfFlags] & lsfRequireAuth)
@@ -240,14 +242,6 @@ CreateOffer::checkAcceptAsset(
 
             return (flags & tapRETRY) ? TER{terNO_AUTH} : TER{tecNO_AUTH};
         }
-    }
-
-    // An account can not create a trustline to itself, so no line can exist
-    // to be frozen. Additionally, an issuer can always accept its own
-    // issuance.
-    if (issue.account == id)
-    {
-        return tesSUCCESS;
     }
 
     auto const trustLine = view.read(keylet::line(id, issue.account, issue.currency));

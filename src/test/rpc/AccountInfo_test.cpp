@@ -529,7 +529,7 @@ public:
             env.close();
             auto const f1 = getAccountFlag(asf.first, alice);
             BEAST_EXPECT(f1.has_value());
-            BEAST_EXPECT(!f1.value());
+            BEAST_EXPECT(!f1.value());  // NOLINT(bugprone-unchecked-optional-access)
 
             // Set a flag and check that account_info returns results
             // as expected
@@ -537,7 +537,7 @@ public:
             env.close();
             auto const f2 = getAccountFlag(asf.first, alice);
             BEAST_EXPECT(f2.has_value());
-            BEAST_EXPECT(f2.value());
+            BEAST_EXPECT(f2.value());  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         static constexpr std::array<std::pair<std::string_view, std::uint32_t>, 4>
@@ -555,7 +555,7 @@ public:
             env.close();
             auto const f1 = getAccountFlag(asf.first, alice);
             BEAST_EXPECT(f1.has_value());
-            BEAST_EXPECT(!f1.value());
+            BEAST_EXPECT(!f1.value());  // NOLINT(bugprone-unchecked-optional-access)
 
             // Set a flag and check that account_info returns results
             // as expected
@@ -563,7 +563,7 @@ public:
             env.close();
             auto const f2 = getAccountFlag(asf.first, alice);
             BEAST_EXPECT(f2.has_value());
-            BEAST_EXPECT(f2.value());
+            BEAST_EXPECT(f2.value());  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         static constexpr std::pair<std::string_view, std::uint32_t> allowTrustLineClawbackFlag{
@@ -574,14 +574,14 @@ public:
             // must use bob's account because alice has noFreeze set
             auto const f1 = getAccountFlag(allowTrustLineClawbackFlag.first, bob);
             BEAST_EXPECT(f1.has_value());
-            BEAST_EXPECT(!f1.value());
+            BEAST_EXPECT(!f1.value());  // NOLINT(bugprone-unchecked-optional-access)
 
             // Set allowTrustLineClawback
             env(fset(bob, allowTrustLineClawbackFlag.second));
             env.close();
             auto const f2 = getAccountFlag(allowTrustLineClawbackFlag.first, bob);
             BEAST_EXPECT(f2.has_value());
-            BEAST_EXPECT(f2.value());
+            BEAST_EXPECT(f2.value());  // NOLINT(bugprone-unchecked-optional-access)
         }
         else
         {
@@ -595,14 +595,14 @@ public:
         {
             auto const f1 = getAccountFlag(allowTrustLineLockingFlag.first, bob);
             BEAST_EXPECT(f1.has_value());
-            BEAST_EXPECT(!f1.value());
+            BEAST_EXPECT(!f1.value());  // NOLINT(bugprone-unchecked-optional-access)
 
             // Set allowTrustLineLocking
             env(fset(bob, allowTrustLineLockingFlag.second));
             env.close();
             auto const f2 = getAccountFlag(allowTrustLineLockingFlag.first, bob);
             BEAST_EXPECT(f2.has_value());
-            BEAST_EXPECT(f2.value());
+            BEAST_EXPECT(f2.value());  // NOLINT(bugprone-unchecked-optional-access)
         }
         else
         {

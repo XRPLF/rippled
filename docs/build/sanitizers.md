@@ -89,8 +89,8 @@ cmake --build . --parallel 4
 **IMPORTANT**: ASAN with Boost produces many false positives. Use these options:
 
 ```bash
-export ASAN_OPTIONS="print_stacktrace=1:detect_container_overflow=0:suppressions=path/to/asan.supp:halt_on_error=0:log_path=asan.log"
-export LSAN_OPTIONS="suppressions=path/to/lsan.supp:halt_on_error=0:log_path=lsan.log"
+export ASAN_OPTIONS="include=sanitizers/suppressions/runtime-asan-options.txt:suppressions=sanitizers/suppressions/asan.supp"
+export LSAN_OPTIONS="include=sanitizers/suppressions/runtime-lsan-options.txt:suppressions=sanitizers/suppressions/lsan.supp"
 
 # Run tests
 ./xrpld --unittest --unittest-jobs=5
@@ -108,7 +108,7 @@ export LSAN_OPTIONS="suppressions=path/to/lsan.supp:halt_on_error=0:log_path=lsa
 ### ThreadSanitizer (TSan)
 
 ```bash
-export TSAN_OPTIONS="suppressions=path/to/tsan.supp halt_on_error=0 log_path=tsan.log"
+export TSAN_OPTIONS="include=sanitizers/suppressions/runtime-tsan-options.txt:suppressions=sanitizers/suppressions/tsan.supp"
 
 # Run tests
 ./xrpld --unittest --unittest-jobs=5
@@ -129,7 +129,7 @@ More details [here](https://github.com/google/sanitizers/wiki/AddressSanitizerLe
 ### UndefinedBehaviorSanitizer (UBSan)
 
 ```bash
-export UBSAN_OPTIONS="suppressions=path/to/ubsan.supp:print_stacktrace=1:halt_on_error=0:log_path=ubsan.log"
+export UBSAN_OPTIONS="include=sanitizers/suppressions/runtime-ubsan-options.txt:suppressions=sanitizers/suppressions/ubsan.supp"
 
 # Run tests
 ./xrpld --unittest --unittest-jobs=5
