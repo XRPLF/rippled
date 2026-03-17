@@ -138,6 +138,9 @@ public:
     /** Returns the number of file descriptors the backend expects to need. */
     virtual int
     fdRequired() const = 0;
+
+    /** The number of hardware threads to use for compression of a batch. */
+    static unsigned int const numHardwareThreads;
 };
 
 }  // namespace NodeStore

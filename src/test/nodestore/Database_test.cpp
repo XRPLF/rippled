@@ -520,6 +520,13 @@ public:
         srcParams.set("type", srcBackendType);
         srcParams.set("path", node_db.path());
 
+        beast::temp_dir dest_db;
+        Section destParams;
+        destParams.set("type", destBackendType);
+        destParams.set("path", dest_db.path());
+
+        testcase("import into '" + destBackendType + "' from '" + srcBackendType + "'");
+
         // Create a batch
         auto batch = createPredictableBatch(numObjectsToTest, seedValue);
 
@@ -538,15 +545,8 @@ public:
                 Manager::instance().make_Database(megabytes(4), scheduler, 2, srcParams, journal_);
 
             // Set up the destination database
-            beast::temp_dir dest_db;
-            Section destParams;
-            destParams.set("type", destBackendType);
-            destParams.set("path", dest_db.path());
-
             std::unique_ptr<Database> dest =
                 Manager::instance().make_Database(megabytes(4), scheduler, 2, destParams, journal_);
-
-            testcase("import into '" + destBackendType + "' from '" + srcBackendType + "'");
 
             // Do the import
             dest->importDatabase(*src);

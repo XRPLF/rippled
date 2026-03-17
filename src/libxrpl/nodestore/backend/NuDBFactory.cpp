@@ -7,15 +7,21 @@
 #include <xrpl/nodestore/detail/EncodedBlob.h>
 #include <xrpl/nodestore/detail/codec.h>
 
+#include <boost/asio/post.hpp>
+#include <boost/asio/thread_pool.hpp>
 #include <boost/filesystem.hpp>
 
 #include <nudb/nudb.hpp>
 
+#include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <exception>
+#include <latch>
 #include <memory>
+#include <thread>
+#include <vector>
 
 namespace xrpl {
 namespace NodeStore {
@@ -37,6 +43,7 @@ public:
     nudb::store db_;
     std::atomic<bool> deletePath_;
     Scheduler& scheduler_;
+    boost::asio::thread_pool threadPool_;
 
     NuDBBackend(
         size_t keyBytes,
@@ -51,6 +58,7 @@ public:
         , blockSize_(parseBlockSize(name_, keyValues, journal))
         , deletePath_(false)
         , scheduler_(scheduler)
+        , threadPool_(numHardwareThreads)
     {
         if (name_.empty())
             Throw<std::runtime_error>("nodestore: Missing path in NuDB backend");
@@ -71,6 +79,7 @@ public:
         , db_(context)
         , deletePath_(false)
         , scheduler_(scheduler)
+        , threadPool_(numHardwareThreads)
     {
         if (name_.empty())
             Throw<std::runtime_error>("nodestore: Missing path in NuDB backend");
@@ -184,6 +193,7 @@ public:
         Status status = ok;
         pno->reset();
         nudb::error_code ec;
+
         db_.fetch(
             hash.data(),
             [&hash, pno, &status](void const* data, std::size_t size) {
@@ -199,6 +209,7 @@ public:
                 status = ok;
             },
             ec);
+
         if (ec == nudb::error::key_not_found)
             return notFound;
         if (ec)
@@ -209,17 +220,61 @@ public:
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
     fetchBatch(std::vector<uint256> const& hashes) override
     {
-        std::vector<std::shared_ptr<NodeObject>> results;
-        results.reserve(hashes.size());
-        for (auto const& h : hashes)
+        std::vector<std::shared_ptr<NodeObject>> results(hashes.size());
+
+        // Determine the number of threads to use for data compression from the number of available
+        // cores and the size of the batch. We would like each thread to at least process 4 items,
+        // except for the last thread that might process fewer items.
+        auto const numThreads = std::min(
+            std::max(static_cast<unsigned int>(hashes.size()) / 4u, 1u), numHardwareThreads);
+
+        // If we need only one thread, just do it sequentially.
+        if (numThreads == 1u)
         {
-            std::shared_ptr<NodeObject> nObj;
-            Status status = fetch(h, &nObj);
-            if (status != ok)
-                results.push_back({});
-            else
-                results.push_back(nObj);
+            for (size_t i = 0; i < hashes.size(); ++i)
+            {
+                std::shared_ptr<NodeObject> nObj;
+                if (fetch(hashes[i], &nObj) == ok)
+                    results[i] = nObj;
+            }
+            return {results, ok};
         }
+
+        // Use a latch to synchronize task completion.
+        std::latch taskCompletion(numThreads);
+
+        // Submit fetch tasks to the thread pool.
+        auto const itemsPerThread = (hashes.size() + numThreads - 1) / numThreads;
+        for (unsigned int t = 0; t < numThreads; ++t)
+        {
+            auto const startIdx = t * itemsPerThread;
+            XRPL_ASSERT(
+                startIdx < hashes.size(),
+                "xrpl::NuDBFactory::fetchBatch : startIdx < hashes.size()");
+            if (startIdx >= hashes.size())
+            {
+                taskCompletion.count_down();
+                continue;
+            }
+            auto const endIdx = std::min(startIdx + itemsPerThread, hashes.size());
+
+            auto task = [this, &hashes, &results, &taskCompletion, startIdx, endIdx]() {
+                // Fetch the items assigned to this task.
+                for (size_t i = startIdx; i < endIdx; ++i)
+                {
+                    std::shared_ptr<NodeObject> nObj;
+                    if (fetch(hashes[i], &nObj) == ok)
+                        results[i] = nObj;
+                }
+                // Signal task completion.
+                taskCompletion.count_down();
+            };
+
+            boost::asio::post(threadPool_, std::move(task));
+        }
+
+        // Wait for all fetch tasks to complete.
+        taskCompletion.wait();
 
         return {results, ok};
     }
@@ -228,9 +283,11 @@ public:
     do_insert(std::shared_ptr<NodeObject> const& no)
     {
         EncodedBlob e(no);
-        nudb::error_code ec;
+
         nudb::detail::buffer bf;
         auto const result = nodeobject_compress(e.getData(), e.getSize(), bf);
+
+        nudb::error_code ec;
         db_.insert(e.getKey(), result.first, result.second, ec);
         if (ec && ec != nudb::error::key_exists)
             Throw<nudb::system_error>(ec);
@@ -242,7 +299,11 @@ public:
         BatchWriteReport report{};
         report.writeCount = 1;
         auto const start = std::chrono::steady_clock::now();
+
+        ++pendingWrites_;
         do_insert(no);
+        --pendingWrites_;
+
         report.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - start);
         scheduler_.onBatchWrite(report);
@@ -254,8 +315,109 @@ public:
         BatchWriteReport report{};
         report.writeCount = batch.size();
         auto const start = std::chrono::steady_clock::now();
-        for (auto const& e : batch)
-            do_insert(e);
+
+        pendingWrites_ += static_cast<int>(batch.size());
+
+        // Determine the number of threads to use for data compression from the number of available
+        // cores and the size of the batch. We would like each thread to at least process 4 items,
+        // except for the last thread that might process fewer items.
+        auto const numThreads = std::min(
+            std::max(static_cast<unsigned int>(batch.size()) / 4u, 1u), numHardwareThreads);
+
+        // If we need only one thread, just do it sequentially.
+        if (numThreads == 1u)
+        {
+            for (auto const& e : batch)
+                do_insert(e);
+            pendingWrites_ -= static_cast<int>(batch.size());
+
+            report.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - start);
+            scheduler_.onBatchWrite(report);
+            return;
+        }
+
+        // Helper struct that stores actual item data, not pointers, to avoid dangling references
+        // after EncodedBlob and buffer go out of scope in the thread.
+        struct CompressedData
+        {
+            std::vector<std::uint8_t> key;
+            std::vector<std::uint8_t> data;
+            std::exception_ptr eptr;
+        };
+        std::vector<CompressedData> compressed(batch.size());
+
+        // Use a latch to synchronize task completion.
+        std::latch taskCompletion(numThreads);
+
+        // Submit compression tasks to the thread pool.
+        auto const itemsPerThread = (batch.size() + numThreads - 1) / numThreads;
+        for (unsigned int t = 0; t < numThreads; ++t)
+        {
+            auto const startIdx = t * itemsPerThread;
+            XRPL_ASSERT(
+                startIdx < batch.size(), "xrpl::NuDBFactory::storeBatch : startIdx < batch.size()");
+            if (startIdx >= batch.size())
+            {
+                taskCompletion.count_down();
+                continue;
+            }
+            auto const endIdx = std::min(startIdx + itemsPerThread, batch.size());
+
+            auto task =
+                [&batch, &compressed, &taskCompletion, startIdx, endIdx, keyBytes = keyBytes_]() {
+                    // Compress the items assigned to this task.
+                    for (size_t i = startIdx; i < endIdx; ++i)
+                    {
+                        auto& item = compressed[i];
+                        try
+                        {
+                            EncodedBlob e(batch[i]);
+
+                            // Copy the key data to avoid dangling pointer.
+                            auto const* keyPtr = static_cast<std::uint8_t const*>(e.getKey());
+                            item.key.assign(keyPtr, keyPtr + keyBytes);
+
+                            // Compress and copy the data to avoid dangling pointer.
+                            nudb::detail::buffer bf;
+                            auto const comp = nodeobject_compress(e.getData(), e.getSize(), bf);
+                            auto const* dataPtr = static_cast<std::uint8_t const*>(comp.first);
+                            item.data.assign(dataPtr, dataPtr + comp.second);
+                        }
+                        catch (...)
+                        {
+                            // Store the exception so it can be rethrown in the sequential phase
+                            // below.
+                            item.eptr = std::current_exception();
+                        }
+                    }
+                    // Signal task completion.
+                    taskCompletion.count_down();
+                };
+
+            boost::asio::post(threadPool_, std::move(task));
+        }
+
+        // Wait for all compression tasks to complete.
+        taskCompletion.wait();
+
+        // Insert the compressed data sequentially, since NuDB is designed as an append-only data
+        // store that only supports one writer.
+        for (auto const& item : compressed)
+        {
+            if (item.eptr)
+            {
+                std::rethrow_exception(item.eptr);
+            }
+
+            nudb::error_code ec;
+            db_.insert(item.key.data(), item.data.data(), item.data.size(), ec);
+            if (ec && ec != nudb::error::key_exists)
+                Throw<nudb::system_error>(ec);
+        }
+
+        pendingWrites_ -= static_cast<int>(batch.size());
+
         report.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - start);
         scheduler_.onBatchWrite(report);
@@ -272,7 +434,7 @@ public:
         auto const dp = db_.dat_path();
         auto const kp = db_.key_path();
         auto const lp = db_.log_path();
-        // auto const appnum = db_.appnum();
+
         nudb::error_code ec;
         db_.close(ec);
         if (ec)
@@ -306,7 +468,7 @@ public:
     int
     getWriteLoad() override
     {
-        return 0;
+        return pendingWrites_.load();
     }
 
     void
@@ -341,6 +503,8 @@ public:
     }
 
 private:
+    std::atomic<int> pendingWrites_{0};
+
     static std::size_t
     parseBlockSize(std::string const& name, Section const& keyValues, beast::Journal journal)
     {

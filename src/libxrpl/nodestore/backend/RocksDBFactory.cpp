@@ -13,6 +13,7 @@
 
 #include <atomic>
 #include <memory>
+#include <thread>
 
 namespace xrpl {
 namespace NodeStore {
@@ -181,6 +182,41 @@ public:
                     std::string("Unable to set RocksDB options: ") + s.ToString());
         }
 
+        // Enable pipelined writes for better write concurrency.
+        m_options.enable_pipelined_write = true;
+
+        // Set background job parallelism for better compaction/flush performance to the number of
+        // hardware threads, unless the value is explicitly provided in the config. The default is
+        // 2 (see include/rocksdb/options.h in the Conan dependency directory), so don't use fewer
+        // than that.
+        if (auto v = get<unsigned int>(keyValues, "max_background_jobs", 0); v > 2)
+        {
+            m_options.max_background_jobs = v;
+        }
+        else if (v = numHardwareThreads; v > 2)
+        {
+            m_options.max_background_jobs = v;
+        }
+
+        // Set subcompactions for parallel compaction within a job to the number of hardware
+        // threads, unless the value is explicitly provided in the config. The default is 1 (see
+        // include/rocksdb/options.h in the Conan dependency directory), so don't use fewer
+        // than that if no value is explicitly provided.
+        if (auto v = get<unsigned int>(keyValues, "max_subcompactions", 0); v > 1)
+        {
+            m_options.max_subcompactions = v;
+        }
+        else if (v = numHardwareThreads / 2; v > 1)
+        {
+            m_options.max_subcompactions = v;
+        }
+
+        // Enable direct I/O by default unless explicitly disabled in the config. This bypasses the
+        // OS page cache for better predictable performance on SSDs.
+        m_options.use_direct_reads = get<bool>(keyValues, "use_direct_io", true);
+        m_options.use_direct_io_for_flush_and_compaction =
+            get<bool>(keyValues, "use_direct_io", true);
+
         std::string s1, s2;
         rocksdb::GetStringFromDBOptions(&s1, m_options, "; ");
         rocksdb::GetStringFromColumnFamilyOptions(&s2, m_options, "; ");
@@ -253,23 +289,19 @@ public:
 
         rocksdb::ReadOptions const options;
         rocksdb::Slice const slice(std::bit_cast<char const*>(hash.data()), m_keyBytes);
-
         std::string string;
-
         rocksdb::Status getStatus = m_db->Get(options, slice, &string);
 
         if (getStatus.ok())
         {
             DecodedBlob decoded(hash.data(), string.data(), string.size());
-
             if (decoded.wasOk())
             {
                 *pObject = decoded.createObject();
             }
             else
             {
-                // Decoding failed, probably corrupted!
-                //
+                // Decoding failed, probably corrupted.
                 status = dataCorrupt;
             }
         }
@@ -286,7 +318,6 @@ public:
             else
             {
                 status = Status(customCode + unsafe_cast<int>(getStatus.code()));
-
                 JLOG(m_journal.error()) << getStatus.ToString();
             }
         }
@@ -297,16 +328,43 @@ public:
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
     fetchBatch(std::vector<uint256> const& hashes) override
     {
-        std::vector<std::shared_ptr<NodeObject>> results;
-        results.reserve(hashes.size());
+        XRPL_ASSERT(m_db, "xrpl::NodeStore::RocksDBBackend::fetchBatch : non-null database");
+
+        if (hashes.empty())
+            return {{}, ok};
+
+        // Use MultiGet for parallel reads to allow RocksDB to fetch multiple keys concurrently,
+        // significantly improving throughput compared to sequential fetch() calls.
+
+        std::vector<rocksdb::Slice> keys;
+        keys.reserve(hashes.size());
         for (auto const& h : hashes)
         {
-            std::shared_ptr<NodeObject> nObj;
-            Status status = fetch(h, &nObj);
-            if (status != ok)
-                results.push_back({});
-            else
-                results.push_back(nObj);
+            keys.emplace_back(std::bit_cast<char const*>(h.data()), m_keyBytes);
+        }
+
+        rocksdb::ReadOptions options;
+        options.async_io = true;  // Enable for better concurrency on supported platforms.
+        std::vector<std::string> values(hashes.size());
+        auto statuses = m_db->MultiGet(options, keys, &values);
+
+        std::vector<std::shared_ptr<NodeObject>> results(hashes.size());
+        for (auto i = 0; i < hashes.size(); ++i)
+        {
+            if (statuses[i].ok())
+            {
+                DecodedBlob decoded(hashes[i].data(), values[i].data(), values[i].size());
+                if (decoded.wasOk())
+                {
+                    results[i] = decoded.createObject();
+                }
+            }
+            else if (!statuses[i].IsNotFound())
+            {
+                // Log other errors but continue processing.
+                JLOG(m_journal.warn()) << "fetchBatch: MultiGet error for key "
+                                       << keys[i].ToString() << ": " << statuses[i].ToString();
+            }
         }
 
         return {results, ok};
@@ -321,10 +379,7 @@ public:
     void
     storeBatch(Batch const& batch) override
     {
-        XRPL_ASSERT(
-            m_db,
-            "xrpl::NodeStore::RocksDBBackend::storeBatch : non-null "
-            "database");
+        XRPL_ASSERT(m_db, "xrpl::NodeStore::RocksDBBackend::storeBatch : non-null database");
         rocksdb::WriteBatch wb;
 
         for (auto const& e : batch)
@@ -336,7 +391,27 @@ public:
                 rocksdb::Slice(std::bit_cast<char const*>(encoded.getData()), encoded.getSize()));
         }
 
-        rocksdb::WriteOptions const options;
+        // Configure WriteOptions for high throughput.
+        // Note: no_slowdown is intentionally NOT set here. When set to true, RocksDB returns an
+        //       error instead of stalling when write buffers are full, which could cause write
+        //       failures during high load. We prefer to accept brief stalls over dropped writes.
+        rocksdb::WriteOptions options;
+
+        // Setting `sync = false` improves write throughput significantly by allowing the OS to
+        // batch fsync operations, rather than forcing immediate disk synchronization on every
+        // write. The Write-Ahead Log (WAL) is still written and flushed, so database consistency is
+        // maintained across clean restarts and crashes.
+        //
+        // Note: On hard shutdown up to a few seconds of recent writes (since the last OS-initiated
+        //       flush) may be lost from this node. However, since ledger data is replicated across
+        //       the network, lost writes can be re-synced from peers during startup.
+        options.sync = false;
+
+        // Keep WAL enabled for crash recovery consistency.
+        options.disableWAL = false;
+
+        // Ensure RocksDB will not aggressive throttle the writes.
+        options.low_pri = false;
 
         auto ret = m_db->Write(options, &wb);
 
