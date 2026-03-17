@@ -1453,16 +1453,26 @@ protected:
         // due
         env(manage(lender, keylet.key, tfLoanDefault), Ter(tecTOO_SOON));
 
-        // Check the vault
-        bool const canImpair = canImpairLoan(env, broker, state);
-        // Impair the loan, if possible
-        env(manage(lender, keylet.key, tfLoanImpair),
-            canImpair ? Ter(tesSUCCESS) : Ter(tecLIMIT_EXCEEDED));
-        // Unimpair the loan
-        env(manage(lender, keylet.key, tfLoanUnimpair),
-            canImpair ? Ter(tesSUCCESS) : Ter(tecNO_PERMISSION));
-
         auto const nextDueDate = startDate + *loanParams.payInterval;
+
+        if (env.enabled(fixCleanup3_2_0))
+        {
+            // With the amendment, impairment is only allowed when the
+            // payment is late. Impair/unimpair cycle is tested in the
+            // toEndOfLife callbacks.
+            env(manage(lender, keylet.key, tfLoanImpair), Ter(tecTOO_SOON));
+        }
+        else
+        {
+            // Check the vault
+            bool const canImpair = canImpairLoan(env, broker, state);
+            // Impair the loan, if possible
+            env(manage(lender, keylet.key, tfLoanImpair),
+                canImpair ? Ter(tesSUCCESS) : Ter(tecLIMIT_EXCEEDED));
+            // Unimpair the loan
+            env(manage(lender, keylet.key, tfLoanUnimpair),
+                canImpair ? Ter(tesSUCCESS) : Ter(tecNO_PERMISSION));
+        }
 
         env.close();
 
@@ -2054,6 +2064,19 @@ protected:
 
                 if (impair)
                 {
+                    auto const paymentDue = tp{d{state.nextPaymentDate}};
+                    bool const alreadyLate = env.now() > paymentDue;
+
+                    if (env.enabled(fixCleanup3_2_0) && !alreadyLate)
+                    {
+                        // With the amendment, impairment requires the
+                        // payment to be late
+                        env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tecTOO_SOON));
+
+                        // Advance time past the payment due date
+                        env.close(paymentDue + 1s);
+                    }
+
                     // Check the vault
                     bool const canImpair = canImpairLoan(env, broker, state);
                     // Impair the loan, if possible
@@ -2063,7 +2086,12 @@ protected:
                     if (canImpair)
                     {
                         state.flags |= tfLoanImpair;
-                        state.nextPaymentDate = env.now().time_since_epoch().count();
+                        if (!env.enabled(fixCleanup3_2_0))
+                        {
+                            // Without the amendment, impairment moves the
+                            // due date to now
+                            state.nextPaymentDate = env.now().time_since_epoch().count();
+                        }
 
                         // Once the loan is impaired, it can't be impaired again
                         env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tecNO_PERMISSION));
@@ -2072,14 +2100,27 @@ protected:
                 }
 
                 auto const nextDueDate = tp{d{state.nextPaymentDate}};
+                auto const gracePeriod = [&]() {
+                    auto const loanSle = env.le(loanKeylet);
+                    return loanSle ? loanSle->at(sfGracePeriod) : 60;
+                }();
+                auto const defaultableTime = nextDueDate + std::chrono::seconds{gracePeriod};
 
-                // Can't default the loan yet. The grace period hasn't
-                // expired
-                env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tecTOO_SOON));
+                if (env.now() <= defaultableTime)
+                {
+                    // Can't default the loan yet. The grace period hasn't
+                    // expired
+                    env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tecTOO_SOON));
 
-                // Let some time pass so that the loan can be
-                // defaulted
-                env.close(nextDueDate + 60s);
+                    // Let some time pass so that the loan can be
+                    // defaulted
+                    env.close(defaultableTime);
+                }
+                else
+                {
+                    // Grace period already expired
+                    env.close();
+                }
 
                 auto const [amountToBeCovered, brokerAcct] = getDefaultInfo(state, broker);
 
@@ -2678,7 +2719,9 @@ protected:
 
                     auto const borrowerBalanceBeforePayment = env.balance(borrower, broker.asset);
 
-                    if (canImpairLoan(env, broker, state))
+                    // With the amendment, on-time payments can't be
+                    // preceded by impairment (payment is not late)
+                    if (!env.enabled(fixCleanup3_2_0) && canImpairLoan(env, broker, state))
                     {
                         // Making a payment will unimpair the loan
                         env(manage(lender, loanKeylet.key, tfLoanImpair));
@@ -7084,6 +7127,229 @@ protected:
         BEAST_EXPECT(afterSecondCoverAvailable == 0);
     }
 
+    // Verify that with fixCleanup3_2_0:
+    // 1. A loan cannot be impaired before its payment is late.
+    // 2. Impairing a late loan does not change sfNextPaymentDueDate.
+    // 3. The unimpair operation does not change sfNextPaymentDueDate.
+    void
+    testImpairmentPaymentDateUnchanged()
+    {
+        using namespace jtx;
+        using namespace loan;
+        using namespace std::chrono_literals;
+
+        testcase("Impairment does not change payment due date");
+
+        Env env(*this, all_);
+        BEAST_EXPECT(env.enabled(fixCleanup3_2_0));
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(100'000'000), lender, borrower);
+        env.close();
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        auto const broker = createVaultAndBroker(env, xrpAsset, lender);
+
+        // Create a loan
+        auto const sleBroker = env.le(keylet::loanbroker(broker.brokerID));
+        if (!BEAST_EXPECT(sleBroker))
+            return;
+        auto const loanKeylet = keylet::loan(broker.brokerID, sleBroker->at(sfLoanSequence));
+
+        Number const principalRequest{1, 3};
+        env(set(borrower, broker.brokerID, broker.asset(principalRequest).value()),
+            Sig(sfCounterpartySignature, lender),
+            kPAYMENT_TOTAL(12),
+            kPAYMENT_INTERVAL(600),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+
+        auto const loanSle = env.le(loanKeylet);
+        if (!BEAST_EXPECT(loanSle))
+            return;
+        auto const originalNextDueDate = loanSle->at(sfNextPaymentDueDate);
+        BEAST_EXPECT(originalNextDueDate > 0);
+
+        // 1. Impairment must fail when payment is not yet late
+        env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tecTOO_SOON));
+
+        // Verify the due date was not changed by the failed impairment
+        {
+            auto const loan = env.le(loanKeylet);
+            BEAST_EXPECT(loan->at(sfNextPaymentDueDate) == originalNextDueDate);
+        }
+
+        // Advance time past the payment due date
+        env.close(NetClock::time_point{NetClock::duration{originalNextDueDate}} + 1s);
+
+        // 2. Impairment succeeds when payment is late
+        env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
+
+        // Verify sfNextPaymentDueDate is unchanged after impairment
+        {
+            auto const loan = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loan))
+                return;
+            BEAST_EXPECT(loan->isFlag(lsfLoanImpaired));
+            BEAST_EXPECT(loan->at(sfNextPaymentDueDate) == originalNextDueDate);
+        }
+
+        // 3. Unimpair also does not change sfNextPaymentDueDate
+        env(manage(lender, loanKeylet.key, tfLoanUnimpair), Ter(tesSUCCESS));
+
+        {
+            auto const loan = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loan))
+                return;
+            BEAST_EXPECT(!loan->isFlag(lsfLoanImpaired));
+            BEAST_EXPECT(loan->at(sfNextPaymentDueDate) == originalNextDueDate);
+        }
+    }
+
+    // Verify that without fixCleanup3_2_0, the pre-amendment
+    // impair/unimpair behaviour is preserved:
+    // 1. Impairing a loan before its payment is late moves
+    //    sfNextPaymentDueDate to "now".
+    // 2a. Unimpair within the original payment interval restores
+    //     sfNextPaymentDueDate to StartDate + PaymentInterval.
+    // 2b. Unimpair after the original due date sets
+    //     sfNextPaymentDueDate to now + PaymentInterval.
+    void
+    testImpairmentPaymentDatePreAmendment()
+    {
+        using namespace jtx;
+        using namespace loan;
+        using namespace std::chrono_literals;
+
+        testcase("Pre-amendment impair/unimpair date restoration");
+
+        Env env(*this, all_ - fixCleanup3_2_0);
+        BEAST_EXPECT(!env.enabled(fixCleanup3_2_0));
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(100'000'000), lender, borrower);
+        env.close();
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        auto const broker = createVaultAndBroker(env, xrpAsset, lender);
+
+        // Helper to create a loan and return its keylet
+        Number const principalRequest{1, 3};
+        auto createLoan = [&]() {
+            auto const sleBroker = env.le(keylet::loanbroker(broker.brokerID));
+            BEAST_EXPECT(sleBroker);
+            auto const lk = keylet::loan(broker.brokerID, sleBroker->at(sfLoanSequence));
+            env(set(borrower, broker.brokerID, broker.asset(principalRequest).value()),
+                Sig(sfCounterpartySignature, lender),
+                kPAYMENT_TOTAL(12),
+                kPAYMENT_INTERVAL(600),
+                Fee(env.current()->fees().base * 2));
+            env.close();
+            return lk;
+        };
+
+        // Helper to default + delete a loan and replenish first-loss capital
+        // so the broker is ready for the next loan.
+        auto cleanupLoan = [&](Keylet const& loanKeylet, std::uint32_t dueDate) {
+            env.close(NetClock::time_point{NetClock::duration{dueDate + 60}} + 1s);
+            env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tesSUCCESS));
+            env.close();
+
+            auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+            if (!BEAST_EXPECT(brokerSle))
+                return;
+            auto const coverNeeded =
+                broker.asset(broker.params.coverDeposit).value() - brokerSle->at(sfCoverAvailable);
+            if (coverNeeded > 0)
+            {
+                env(loanBroker::coverDeposit(
+                    lender, broker.brokerID, STAmount{broker.asset, coverNeeded}));
+                env.close();
+            }
+            env(del(lender, loanKeylet.key));
+            env.close();
+        };
+
+        // ---- Case A: impair before late, unimpair within original interval ----
+        {
+            auto const loanKeylet = createLoan();
+            auto const loanSle = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loanSle))
+                return;
+            auto const startDate = loanSle->at(sfStartDate);
+            auto const originalNextDueDate = loanSle->at(sfNextPaymentDueDate);
+            BEAST_EXPECT(originalNextDueDate == startDate + 600);
+
+            // Payment is not late yet — impair succeeds and moves due date
+            // to now (pre-amendment allows immediate impairment)
+            env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
+
+            {
+                auto const loan = env.le(loanKeylet);
+                if (!BEAST_EXPECT(loan))
+                    return;
+                BEAST_EXPECT(loan->isFlag(lsfLoanImpaired));
+                // Due date was moved to parentCloseTime
+                auto const movedDueDate = loan->at(sfNextPaymentDueDate);
+                BEAST_EXPECT(movedDueDate != originalNextDueDate);
+                BEAST_EXPECT(movedDueDate < originalNextDueDate);
+            }
+
+            // Unimpair while still within the original payment interval.
+            // The normal due date (startDate + 600) has not yet expired,
+            // so it should be restored.
+            env(manage(lender, loanKeylet.key, tfLoanUnimpair), Ter(tesSUCCESS));
+
+            {
+                auto const loan = env.le(loanKeylet);
+                if (!BEAST_EXPECT(loan))
+                    return;
+                BEAST_EXPECT(!loan->isFlag(lsfLoanImpaired));
+                BEAST_EXPECT(loan->at(sfNextPaymentDueDate) == originalNextDueDate);
+            }
+
+            cleanupLoan(loanKeylet, originalNextDueDate);
+        }
+
+        // ---- Case B: impair before late, unimpair after original due date ----
+        {
+            auto const loanKeylet = createLoan();
+            auto const loanSle = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loanSle))
+                return;
+            auto const startDate = loanSle->at(sfStartDate);
+            auto const originalNextDueDate = loanSle->at(sfNextPaymentDueDate);
+            BEAST_EXPECT(originalNextDueDate == startDate + 600);
+
+            // Payment is not late yet — impair moves due date to now
+            env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
+
+            // Advance time past the original due date before unimpair
+            env.close(NetClock::time_point{NetClock::duration{originalNextDueDate}} + 10s);
+
+            auto const timeBeforeUnimpair =
+                env.current()->header().parentCloseTime.time_since_epoch().count();
+
+            env(manage(lender, loanKeylet.key, tfLoanUnimpair), Ter(tesSUCCESS));
+
+            {
+                auto const loan = env.le(loanKeylet);
+                if (!BEAST_EXPECT(loan))
+                    return;
+                BEAST_EXPECT(!loan->isFlag(lsfLoanImpaired));
+                // Unimpaired after the original due date, so the new due
+                // date should be approximately now + paymentInterval
+                auto const newDueDate = loan->at(sfNextPaymentDueDate);
+                BEAST_EXPECT(newDueDate > originalNextDueDate);
+                BEAST_EXPECT(newDueDate == timeBeforeUnimpair + 600);
+            }
+        }
+    }
+
     // Tests that vault withdrawals work correctly when the vault has unrealized
     // loss from an impaired loan, ensuring the invariant check properly
     // accounts for the loss.
@@ -7167,6 +7433,15 @@ protected:
             Ter(tesSUCCESS));
         env.close();
 
+        // Advance time past the payment due date so the loan can be impaired
+        {
+            auto const loanSle = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loanSle))
+                return;
+            auto const nextDueDate = loanSle->at(sfNextPaymentDueDate);
+            env.close(NetClock::time_point{NetClock::duration{nextDueDate}} + 1s);
+        }
+
         // Impair the loan to create unrealized loss
         env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
         env.close();
@@ -7222,6 +7497,8 @@ public:
         testLoanPayLateFullPaymentBypassesPenalties();
         testLoanCoverMinimumRoundingExploit();
 #endif
+        testImpairmentPaymentDateUnchanged();
+        testImpairmentPaymentDatePreAmendment();
         testWithdrawReflectsUnrealizedLoss();
         testInvalidLoanSet();
 

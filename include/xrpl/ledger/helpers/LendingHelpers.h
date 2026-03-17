@@ -218,6 +218,10 @@ computeFullPaymentInterest(
     std::uint32_t startDate,
     TenthBips32 closeInterestRate);
 
+/// Returns true if the loan's next payment due date has passed.
+[[nodiscard]] bool
+isPaymentLate(ReadView const& view, SLE::const_ref loanSle);
+
 namespace detail {
 // These classes and functions should only be accessed by LendingHelper
 // functions and unit tests

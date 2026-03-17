@@ -305,6 +305,12 @@ LoanManage::impairLoan(
     Asset const& vaultAsset,
     beast::Journal j)
 {
+    if (view.rules().enabled(fixCleanup3_2_0) && !isPaymentLate(view, loanSle))
+    {
+        JLOG(j.warn()) << "Cannot impair a loan that is not late";
+        return tecTOO_SOON;
+    }
+
     Number const lossUnrealized = owedToVault(loanSle);
 
     // The vault may be at a different scale than the loan. Reduce rounding
@@ -319,20 +325,22 @@ LoanManage::impairLoan(
     {
         // Having a loss greater than the vault's unavailable assets
         // will leave the vault in an invalid / inconsistent state.
-        JLOG(j.warn()) << "Vault unrealized loss is too large, and will "
-                          "corrupt the vault.";
+        JLOG(j.warn()) << "Vault unrealized loss is too large, and will corrupt the vault.";
         return tecLIMIT_EXCEEDED;
     }
     view.update(vaultSle);
 
     // Update the Loan object
     loanSle->setFlag(lsfLoanImpaired);
-    auto loanNextDueProxy = loanSle->at(sfNextPaymentDueDate);
-    if (!hasExpired(view, loanNextDueProxy))
+
+    if (!view.rules().enabled(fixCleanup3_2_0))
     {
-        // loan payment is not yet late -
-        // move the next payment due date to now
-        loanNextDueProxy = view.parentCloseTime().time_since_epoch().count();
+        auto loanNextDueProxy = loanSle->at(sfNextPaymentDueDate);
+        if (!isPaymentLate(view, loanSle))
+        {
+            // loan payment is not yet late move the next payment due date to now
+            loanNextDueProxy = view.parentCloseTime().time_since_epoch().count();
+        }
     }
     view.update(loanSle);
 
@@ -369,19 +377,24 @@ LoanManage::unimpairLoan(
 
     // Update the Loan object
     loanSle->clearFlag(lsfLoanImpaired);
-    auto const paymentInterval = loanSle->at(sfPaymentInterval);
-    auto const normalPaymentDueDate =
-        std::max(loanSle->at(sfPreviousPaymentDueDate), loanSle->at(sfStartDate)) + paymentInterval;
-    if (!hasExpired(view, normalPaymentDueDate))
+    if (!view.rules().enabled(fixCleanup3_2_0))
     {
-        // loan was unimpaired within the payment interval
-        loanSle->at(sfNextPaymentDueDate) = normalPaymentDueDate;
-    }
-    else
-    {
-        // loan was unimpaired after the original payment due date
-        loanSle->at(sfNextPaymentDueDate) =
-            view.parentCloseTime().time_since_epoch().count() + paymentInterval;
+        auto const paymentInterval = loanSle->at(sfPaymentInterval);
+        auto const normalPaymentDueDate =
+            std::max(loanSle->at(sfPreviousPaymentDueDate), loanSle->at(sfStartDate)) +
+            paymentInterval;
+
+        if (!hasExpired(view, normalPaymentDueDate))
+        {
+            // loan was unimpaired within the payment interval
+            loanSle->at(sfNextPaymentDueDate) = normalPaymentDueDate;
+        }
+        else
+        {
+            // loan was unimpaired after the original payment due date
+            loanSle->at(sfNextPaymentDueDate) =
+                view.parentCloseTime().time_since_epoch().count() + paymentInterval;
+        }
     }
     view.update(loanSle);
 
