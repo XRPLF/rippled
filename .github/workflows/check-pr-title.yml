@@ -1,6 +1,9 @@
 name: Check PR title
 
 on:
+  merge_group:
+    types:
+      - checks_requested
   pull_request:
     types: [opened, edited, reopened, synchronize]
     branches: [develop]
