@@ -1,0 +1,17 @@
+name: Check signed commits
+
+# The use of `pull_request_target` allows the action to post comments on
+# external PRs created from forks.
+on: pull_request_target
+
+jobs:
+  check-signed-commits:
+    name: Check signed commits in PR
+    runs-on: ubuntu-latest
+    # The action needs write permissions to post comments on the PR.
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Check signed commits in PR
+        uses: 1Password/check-signed-commits-action@v1
