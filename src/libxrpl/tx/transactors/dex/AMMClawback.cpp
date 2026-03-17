@@ -128,8 +128,7 @@ AMMClawback::applyGuts(Sandbox& sb)
 
     if (sb.rules().enabled(fixAMMClawbackRounding))
     {
-        // retrieve LP token balance inside the amendment gate to avoid
-        // inconsistent error behavior
+        // retrieve LP token balance inside the amendment gate to avoid inconsistent error behavior
         auto const lpTokenBalance = ammLPHolds(sb, *ammSle, holder, j_);
         if (lpTokenBalance == beast::zero)
             return tecAMM_BALANCE;
@@ -139,6 +138,8 @@ AMMClawback::applyGuts(Sandbox& sb)
             return res.error();  // LCOV_EXCL_LINE
     }
 
+    // calling a second time on purpose since `verifyAndAdjustLPTokenBalance` rounds and may adjust
+    // the balance
     auto const expected =
         ammHolds(sb, *ammSle, asset, asset2, FreezeHandling::fhIGNORE_FREEZE, ctx_.journal);
 
