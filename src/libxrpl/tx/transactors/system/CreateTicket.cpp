@@ -111,7 +111,7 @@ CreateTicket::doApply()
     sleAccountRoot->setFieldU32(sfTicketCount, oldTicketCount + ticketCount);
 
     // Every added Ticket counts against the creator's reserve.
-    adjustOwnerCount(view(), ctx_.tx, sleAccountRoot, sponsor, ticketCount, viewJ);
+    adjustOwnerCount(view(), sleAccountRoot, sponsor, ticketCount, viewJ);
 
     // TicketCreate is the only transaction that can cause an account root's
     // Sequence field to increase by more than one.  October 2018.

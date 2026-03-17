@@ -543,19 +543,6 @@ adjustOwnerCount(
 inline void
 adjustOwnerCount(
     ApplyView& view,
-    STTx const& tx,
-    std::shared_ptr<SLE> const& accountSle,
-    std::shared_ptr<SLE> const& sponsorSle,
-    std::int32_t amount,
-    beast::Journal j)
-{
-    adjustOwnerCount(view, accountSle, sponsorSle, amount, j);
-}
-
-inline void
-adjustOwnerCount(
-    ApplyView& view,
-    STTx const& tx,
     AccountID const& account,
     std::optional<AccountID> const& sponsor,
     std::int32_t amount,
@@ -563,7 +550,6 @@ adjustOwnerCount(
 {
     return adjustOwnerCount(
         view,
-        tx,
         view.peek(keylet::account(account)),
         sponsor ? view.peek(keylet::account(*sponsor)) : std::shared_ptr<SLE>(),
         amount,

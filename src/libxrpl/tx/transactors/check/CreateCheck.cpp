@@ -194,7 +194,7 @@ CreateCheck::doApply()
     }
     // If we succeeded, the new entry counts against the creator's reserve.
 
-    adjustOwnerCount(view(), ctx_.tx, sle, sponsor, 1, viewJ);
+    adjustOwnerCount(view(), sle, sponsor, 1, viewJ);
     addSponsorToLedgerEntry(sleCheck, sponsor);
     return tesSUCCESS;
 }

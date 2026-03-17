@@ -266,7 +266,7 @@ SponsorshipSet::doApply()
 
         auto viewJ = ctx_.registry.journal("View");
 
-        adjustOwnerCount(view(), ctx_.tx, sponsorAccSle, reserveSponsorAccSle, 1, viewJ);
+        adjustOwnerCount(view(), sponsorAccSle, reserveSponsorAccSle, 1, viewJ);
         addSponsorToLedgerEntry(newSle, reserveSponsorAccSle);
 
         ctx_.view().insert(newSle);

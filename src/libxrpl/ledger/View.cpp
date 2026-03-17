@@ -1769,7 +1769,7 @@ authorizeMPToken(
         view.insert(mptoken);
 
         // Update owner count.
-        adjustOwnerCount(view, tx, sleAcct, sponsor, 1, journal);
+        adjustOwnerCount(view, sleAcct, sponsor, 1, journal);
         addSponsorToLedgerEntry(mptoken, sponsor);
 
         return tesSUCCESS;

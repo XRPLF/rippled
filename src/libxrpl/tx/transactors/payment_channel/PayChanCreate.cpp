@@ -167,7 +167,7 @@ PayChanCreate::doApply()
     // Deduct owner's balance, increment owner count
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
     auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
-    adjustOwnerCount(ctx_.view(), ctx_.tx, sle, sponsor, 1, ctx_.journal);
+    adjustOwnerCount(ctx_.view(), sle, sponsor, 1, ctx_.journal);
     addSponsorToLedgerEntry(slep, sponsor);
     ctx_.view().update(sle);
 

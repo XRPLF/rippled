@@ -197,7 +197,7 @@ escrowUnlockApplyHelper<MPTIssue>(
         }
 
         // update owner count.
-        adjustOwnerCount(view, tx, sleDest, sponsor, 1, journal);
+        adjustOwnerCount(view, sleDest, sponsor, 1, journal);
         auto mptSle = view.peek(mptKeylet);
         addSponsorToLedgerEntry(mptSle, sponsor);
     }

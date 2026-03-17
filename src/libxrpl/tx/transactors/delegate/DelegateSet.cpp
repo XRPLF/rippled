@@ -89,7 +89,7 @@ DelegateSet::doApply()
 
         (*sle)[sfOwnerNode] = *page;
         ctx_.view().insert(sle);
-        adjustOwnerCount(ctx_.view(), ctx_.tx, sleOwner, sponsor, 1, ctx_.journal);
+        adjustOwnerCount(ctx_.view(), sleOwner, sponsor, 1, ctx_.journal);
         addSponsorToLedgerEntry(sle, sponsor);
     }
 

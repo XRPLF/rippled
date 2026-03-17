@@ -1113,7 +1113,7 @@ applyCreateAccountAttestations(
 
         // Reserve was already checked
         auto const sponsor = getTxReserveSponsor(psb, tx);
-        adjustOwnerCount(psb, tx, sleDoor, sponsor, 1, j);
+        adjustOwnerCount(psb, sleDoor, sponsor, 1, j);
         addSponsorToLedgerEntry(createdSleClaimID, sponsor);
         psb.insert(createdSleClaimID);
         psb.update(sleDoor);
@@ -1452,7 +1452,7 @@ XChainCreateBridge::doApply()
     }
 
     auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
-    adjustOwnerCount(ctx_.view(), ctx_.tx, sleAcct, sponsor, 1, ctx_.journal);
+    adjustOwnerCount(ctx_.view(), sleAcct, sponsor, 1, ctx_.journal);
     addSponsorToLedgerEntry(sleBridge, sponsor);
 
     ctx_.view().insert(sleBridge);
@@ -1992,7 +1992,7 @@ XChainCreateClaimID::doApply()
     }
 
     auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
-    adjustOwnerCount(ctx_.view(), ctx_.tx, sleAcct, sponsor, 1, ctx_.journal);
+    adjustOwnerCount(ctx_.view(), sleAcct, sponsor, 1, ctx_.journal);
     addSponsorToLedgerEntry(sleClaimID, sponsor);
 
     ctx_.view().insert(sleClaimID);

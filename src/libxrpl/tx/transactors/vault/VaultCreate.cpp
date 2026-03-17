@@ -138,7 +138,7 @@ VaultCreate::doApply()
     auto const sponsor = getTxReserveSponsor(view(), tx);
     if (!ctx_.view().rules().enabled(featureSponsor))
     {
-        adjustOwnerCount(view(), tx, owner, sponsor, 2, j_);
+        adjustOwnerCount(view(), owner, sponsor, 2, j_);
         addSponsorToLedgerEntry(vault, sponsor);
         if (auto const ret = checkInsufficientReserve(view(), tx, owner, mPriorBalance, sponsor, 0);
             !isTesSuccess(ret))
@@ -150,7 +150,7 @@ VaultCreate::doApply()
         if (auto const ret = checkInsufficientReserve(view(), tx, owner, mPriorBalance, sponsor, 2);
             !isTesSuccess(ret))
             return ret;
-        adjustOwnerCount(view(), tx, owner, sponsor, 2, j_);
+        adjustOwnerCount(view(), owner, sponsor, 2, j_);
         addSponsorToLedgerEntry(vault, sponsor);
     }
 

@@ -73,7 +73,7 @@ addSLE(ApplyContext& ctx, std::shared_ptr<SLE> const& sle, AccountID const& owne
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*sle)[sfOwnerNode] = *page;
     }
-    adjustOwnerCount(ctx.view(), ctx.tx, sleAccount, sponsor, 1, ctx.journal);
+    adjustOwnerCount(ctx.view(), sleAccount, sponsor, 1, ctx.journal);
     addSponsorToLedgerEntry(sle, sponsor);
     ctx.view().update(sleAccount);
 

@@ -106,7 +106,7 @@ CredentialAccept::doApply()
 
     adjustOwnerCount(view(), sleIssuer, currentSponsor, -1, j_);
     removeSponsorFromLedgerEntry(sleCred);
-    adjustOwnerCount(view(), ctx_.tx, sleSubject, newSponsor, 1, j_);
+    adjustOwnerCount(view(), sleSubject, newSponsor, 1, j_);
     addSponsorToLedgerEntry(sleCred, newSponsor);
 
     return tesSUCCESS;

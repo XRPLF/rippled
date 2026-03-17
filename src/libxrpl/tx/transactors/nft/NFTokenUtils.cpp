@@ -275,7 +275,6 @@ insertToken(
             }
             adjustOwnerCount(
                 view,
-                tx,
                 view.peek(keylet::account(owner)),
                 sponsorSle,
                 1,
@@ -1033,7 +1032,7 @@ tokenOfferCreateApply(
     }
 
     // Update owner count.
-    adjustOwnerCount(view, tx, view.peek(acctKeylet), sponsor, 1, j);
+    adjustOwnerCount(view, view.peek(acctKeylet), sponsor, 1, j);
 
     return tesSUCCESS;
 }

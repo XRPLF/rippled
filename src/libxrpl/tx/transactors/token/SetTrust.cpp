@@ -547,7 +547,7 @@ SetTrust::doApply()
                 return tecINSUF_RESERVE_LINE;
 
             // Set reserve for low account.
-            adjustOwnerCount(view(), ctx_.tx, sleLowAccount, txSponsorSle, 1, viewJ);
+            adjustOwnerCount(view(), sleLowAccount, txSponsorSle, 1, viewJ);
             uFlagsOut |= lsfLowReserve;
 
             addSponsorToLedgerEntry(sleRippleState, txSponsorSle, sfLowSponsor);
@@ -574,7 +574,7 @@ SetTrust::doApply()
                 return tecINSUF_RESERVE_LINE;
 
             // Set reserve for high account.
-            adjustOwnerCount(view(), ctx_.tx, sleHighAccount, txSponsorSle, 1, viewJ);
+            adjustOwnerCount(view(), sleHighAccount, txSponsorSle, 1, viewJ);
             uFlagsOut |= lsfHighReserve;
 
             addSponsorToLedgerEntry(sleRippleState, txSponsorSle, sfHighSponsor);
@@ -602,10 +602,9 @@ SetTrust::doApply()
             terResult = trustDelete(view(), sleRippleState, uLowAccountID, uHighAccountID, viewJ);
         }
         // Reserve is not scaled by load.
-        else if (
-            auto const ret =
-                checkInsufficientReserve(view(), ctx_.tx, sle, mPriorBalance, txSponsorSle, 0);
-            !freeTrustLine && bReserveIncrease && !isTesSuccess(ret))
+        else if (auto const ret =
+                     checkInsufficientReserve(view(), ctx_.tx, sle, mPriorBalance, txSponsorSle, 0);
+                 !freeTrustLine && bReserveIncrease && !isTesSuccess(ret))
         {
             JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
                                 "add trust line.";
@@ -633,15 +632,14 @@ SetTrust::doApply()
         JLOG(j_.trace()) << "Redundant: Setting non-existent ripple line to defaults.";
         return tecNO_LINE_REDUNDANT;
     }
-    else if (
-        auto const ret = checkInsufficientReserve(
-            ctx_.view(),
-            ctx_.tx,
-            sle,
-            mPriorBalance,
-            txSponsorSle,
-            1);
-        !freeTrustLine && !isTesSuccess(ret))  // Reserve is not scaled by load.
+    else if (auto const ret = checkInsufficientReserve(
+                 ctx_.view(),
+                 ctx_.tx,
+                 sle,
+                 mPriorBalance,
+                 txSponsorSle,
+                 1);
+             !freeTrustLine && !isTesSuccess(ret))  // Reserve is not scaled by load.
     {
         JLOG(j_.trace()) << "Delay transaction: Line does not exist. "
                             "Insufficent reserve to create line.";
