@@ -4,6 +4,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/Transactor.h>
 
@@ -109,7 +110,7 @@ tokenOfferCreatePreclaim(
     std::uint16_t xferFee,
     beast::Journal j,
     std::optional<AccountID> const& owner = std::nullopt,
-    std::uint32_t txFlags = lsfSellNFToken);
+    std::uint32_t txFlags = tfSellNFToken);
 
 /** doApply implementation shared by NFTokenCreateOffer and NFTokenMint */
 TER
@@ -123,7 +124,7 @@ tokenOfferCreateApply(
     uint256 const& nftokenID,
     XRPAmount const& priorBalance,
     beast::Journal j,
-    std::uint32_t txFlags = lsfSellNFToken);
+    std::uint32_t txFlags = tfSellNFToken);
 
 TER
 checkTrustlineAuthorized(
