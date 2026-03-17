@@ -775,9 +775,10 @@ Transactor::checkSign(
         if (!sigObject.isFieldPresent(sfSponsor))
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        auto const sponsorAcc = sigObject.getAccountID(sfSponsor);
+        auto const sponsorAccountID = sigObject.getAccountID(sfSponsor);
         auto const sponsorSignature = sigObject.getFieldObject(sfSponsorSignature);
-        if (auto const ret = checkSign(view, flags, std::nullopt, sponsorAcc, sponsorSignature, j);
+        if (auto const ret =
+                checkSign(view, flags, std::nullopt, sponsorAccountID, sponsorSignature, j);
             !isTesSuccess(ret))
             return ret;
     }

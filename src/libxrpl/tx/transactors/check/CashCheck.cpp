@@ -309,10 +309,10 @@ CashCheck::doApply()
 
                 auto const sleDst = psb.peek(keylet::account(account_));
 
-                auto const sponsorAcc = getTxReserveSponsorAccountID(ctx_.tx);
+                auto const sponsorAccountID = getTxReserveSponsorAccountID(ctx_.tx);
                 std::shared_ptr<SLE> sponsorSle = {};
-                if (sponsorAcc)
-                    sponsorSle = psb.peek(keylet::account(*sponsorAcc));
+                if (sponsorAccountID)
+                    sponsorSle = psb.peek(keylet::account(*sponsorAccountID));
 
                 // Can the account cover the trust line's reserve?
                 if (auto const ret = checkInsufficientReserve(
@@ -345,7 +345,7 @@ CashCheck::doApply()
                         Issue(currency, account_),      // limit of zero
                         0,                              // quality in
                         0,                              // quality out
-                        sponsorAcc,                     // sponsor
+                        sponsorAccountID,                     // sponsor
                         viewJ);                         // journal
                     !isTesSuccess(ter))
                 {

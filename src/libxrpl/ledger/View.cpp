@@ -1226,12 +1226,12 @@ adjustOwnerCount(
     if (sponsorSle)
     {
         auto const account = accountSle->getAccountID(sfAccount);
-        auto const sponsorAcc = (sponsorSle)->getAccountID(sfAccount);
+        auto const sponsorAccountID = (sponsorSle)->getAccountID(sfAccount);
         {
             // modify sponsor's SponsoringOwnerCount
             std::uint32_t const current{(sponsorSle)->getFieldU32(sfSponsoringOwnerCount)};
-            std::uint32_t const adjusted = confineOwnerCount(current, amount, sponsorAcc, j);
-            view.adjustOwnerCountHook(sponsorAcc, current, adjusted);
+            std::uint32_t const adjusted = confineOwnerCount(current, amount, sponsorAccountID, j);
+            view.adjustOwnerCountHook(sponsorAccountID, current, adjusted);
             if (adjusted == 0)
                 (sponsorSle)->makeFieldAbsent(sfSponsoringOwnerCount);
             else
@@ -1250,7 +1250,7 @@ adjustOwnerCount(
             view.update(accountSle);
         }
 
-        auto sponsorObjSle = view.peek(keylet::sponsor(sponsorAcc, account));
+        auto sponsorObjSle = view.peek(keylet::sponsor(sponsorAccountID, account));
 
         if (sponsorObjSle)
         {
@@ -1261,7 +1261,7 @@ adjustOwnerCount(
             // Reserve count moves opposite to amount: +amount => consume reserve (-), -amount =>
             // payback (+)
             std::uint32_t const adjusted =
-                confineOwnerCount(currentReserveCount, -amount, sponsorAcc, j);
+                confineOwnerCount(currentReserveCount, -amount, sponsorAccountID, j);
             if (adjusted == 0)
                 sponsorObjSle->makeFieldAbsent(sfReserveCount);
             else
@@ -1588,11 +1588,12 @@ doWithdraw(
         // LCOV_EXCL_STOP
     }
 
-    auto const sponsorAcc = getTxReserveSponsorAccountID(tx);
+    auto const sponsorAccountID = getTxReserveSponsorAccountID(tx);
 
     // Move the funds directly from the broker's pseudo-account to the
     // dstAcct
-    return accountSend(view, sourceAcct, dstAcct, amount, j, sponsorAcc, WaiveTransferFee::Yes);
+    return accountSend(
+        view, sourceAcct, dstAcct, amount, j, sponsorAccountID, WaiveTransferFee::Yes);
 }
 
 [[nodiscard]] TER
@@ -2128,7 +2129,7 @@ rippleCreditIOU(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     bool bCheckIssuer,
-    std::optional<AccountID> const& sponsorAccount,
+    std::optional<AccountID> const& sponsorAccountID,
     beast::Journal j)
 {
     AccountID const& issuer = saAmount.getIssuer();
@@ -2263,7 +2264,7 @@ rippleCreditIOU(
         saReceiverLimit,
         0,
         0,
-        sponsorAccount,
+        sponsorAccountID,
         j);
 }
 
@@ -2278,7 +2279,7 @@ rippleSendIOU(
     STAmount const& saAmount,
     STAmount& saActual,
     beast::Journal j,
-    std::optional<AccountID> const& sponsorAccount,
+    std::optional<AccountID> const& sponsorAccountID,
     WaiveTransferFee waiveFee)
 {
     auto const& issuer = saAmount.getIssuer();
@@ -2292,7 +2293,7 @@ rippleSendIOU(
     {
         // Direct send: redeeming IOUs and/or sending own IOUs.
         auto const ter =
-            rippleCreditIOU(view, uSenderID, uReceiverID, saAmount, false, sponsorAccount, j);
+            rippleCreditIOU(view, uSenderID, uReceiverID, saAmount, false, sponsorAccountID, j);
         if (ter != tesSUCCESS)
             return ter;
         saActual = saAmount;
@@ -2310,10 +2311,10 @@ rippleSendIOU(
                     << to_string(uReceiverID) << " : deliver=" << saAmount.getFullText()
                     << " cost=" << saActual.getFullText();
 
-    TER terResult = rippleCreditIOU(view, issuer, uReceiverID, saAmount, true, sponsorAccount, j);
+    TER terResult = rippleCreditIOU(view, issuer, uReceiverID, saAmount, true, sponsorAccountID, j);
 
     if (tesSUCCESS == terResult)
-        terResult = rippleCreditIOU(view, uSenderID, issuer, saActual, true, sponsorAccount, j);
+        terResult = rippleCreditIOU(view, uSenderID, issuer, saActual, true, sponsorAccountID, j);
 
     return terResult;
 }
@@ -2329,7 +2330,7 @@ rippleSendMultiIOU(
     MultiplePaymentDestinations const& receivers,
     STAmount& actual,
     beast::Journal j,
-    std::optional<AccountID> const& sponsorAccount,
+    std::optional<AccountID> const& sponsorAccountID,
     WaiveTransferFee waiveFee)
 {
     auto const& issuer = issue.getIssuer();
@@ -2358,7 +2359,7 @@ rippleSendMultiIOU(
         {
             // Direct send: redeeming IOUs and/or sending own IOUs.
             if (auto const ter =
-                    rippleCreditIOU(view, senderID, receiverID, amount, false, sponsorAccount, j))
+                    rippleCreditIOU(view, senderID, receiverID, amount, false, sponsorAccountID, j))
                 return ter;
             actual += amount;
             // Do not add amount to takeFromSender, because rippleCreditIOU took
@@ -2382,14 +2383,14 @@ rippleSendMultiIOU(
                         << " cost=" << actual.getFullText();
 
         if (TER const terResult =
-                rippleCreditIOU(view, issuer, receiverID, amount, true, sponsorAccount, j))
+                rippleCreditIOU(view, issuer, receiverID, amount, true, sponsorAccountID, j))
             return terResult;
     }
 
     if (senderID != issuer && takeFromSender)
     {
         if (TER const terResult =
-                rippleCreditIOU(view, senderID, issuer, takeFromSender, true, sponsorAccount, j))
+                rippleCreditIOU(view, senderID, issuer, takeFromSender, true, sponsorAccountID, j))
             return terResult;
     }
 
@@ -2403,7 +2404,7 @@ accountSendIOU(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     beast::Journal j,
-    std::optional<AccountID> const& sponsorAccount,
+    std::optional<AccountID> const& sponsorAccountID,
     WaiveTransferFee waiveFee)
 {
     if (view.rules().enabled(fixAMMv1_1))
@@ -2436,7 +2437,7 @@ accountSendIOU(
                         << to_string(uReceiverID) << " : " << saAmount.getFullText();
 
         return rippleSendIOU(
-            view, uSenderID, uReceiverID, saAmount, saActual, j, sponsorAccount, waiveFee);
+            view, uSenderID, uReceiverID, saAmount, saActual, j, sponsorAccountID, waiveFee);
     }
 
     /* XRP send which does not check reserve and can do pure adjustment.
@@ -2524,7 +2525,7 @@ accountSendMultiIOU(
     Issue const& issue,
     MultiplePaymentDestinations const& receivers,
     beast::Journal j,
-    std::optional<AccountID> const& sponsorAccount,
+    std::optional<AccountID> const& sponsorAccountID,
     WaiveTransferFee waiveFee)
 {
     XRPL_ASSERT_PARTS(
@@ -2537,7 +2538,7 @@ accountSendMultiIOU(
                         << receivers.size() << " IOUs";
 
         return rippleSendMultiIOU(
-            view, senderID, issue, receivers, actual, j, sponsorAccount, waiveFee);
+            view, senderID, issue, receivers, actual, j, sponsorAccountID, waiveFee);
     }
 
     /* XRP send which does not check reserve and can do pure adjustment.
@@ -2900,14 +2901,14 @@ accountSend(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     beast::Journal j,
-    std::optional<AccountID> const& sponsorAcc,
+    std::optional<AccountID> const& sponsorAccountID,
     WaiveTransferFee waiveFee)
 {
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
                 return accountSendIOU(
-                    view, uSenderID, uReceiverID, saAmount, j, sponsorAcc, waiveFee);
+                    view, uSenderID, uReceiverID, saAmount, j, sponsorAccountID, waiveFee);
             else
                 return accountSendMPT(view, uSenderID, uReceiverID, saAmount, j, waiveFee);
         },
@@ -2921,7 +2922,7 @@ accountSendMulti(
     Asset const& asset,
     MultiplePaymentDestinations const& receivers,
     beast::Journal j,
-    std::optional<AccountID> const& sponsorAccount,
+    std::optional<AccountID> const& sponsorAccountID,
     WaiveTransferFee waiveFee)
 {
     XRPL_ASSERT_PARTS(
@@ -2930,7 +2931,7 @@ accountSendMulti(
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
                 return accountSendMultiIOU(
-                    view, senderID, issue, receivers, j, sponsorAccount, waiveFee);
+                    view, senderID, issue, receivers, j, sponsorAccountID, waiveFee);
             else
                 return accountSendMultiMPT(view, senderID, issue, receivers, j, waiveFee);
         },

@@ -934,7 +934,7 @@ accountSend(
     AccountID const& to,
     STAmount const& saAmount,
     beast::Journal j,
-    std::optional<AccountID> const& sponsorAcc = std::nullopt,
+    std::optional<AccountID> const& sponsorAcccountID = std::nullopt,
     WaiveTransferFee waiveFee = WaiveTransferFee::No);
 
 using MultiplePaymentDestinations = std::vector<std::pair<AccountID, Number>>;
@@ -951,7 +951,7 @@ accountSendMulti(
     Asset const& asset,
     MultiplePaymentDestinations const& receivers,
     beast::Journal j,
-    std::optional<AccountID> const& sponsorAccount,
+    std::optional<AccountID> const& sponsorAccountID,
     WaiveTransferFee waiveFee = WaiveTransferFee::No);
 
 [[nodiscard]] TER

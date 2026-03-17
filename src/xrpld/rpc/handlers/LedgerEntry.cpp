@@ -755,17 +755,17 @@ parseSponsorship(
         return parseObjectID(params, fieldName);
     }
 
-    auto const sponsor =
+    auto const sponsorAccountID =
         LedgerEntryHelpers::requiredAccountID(params, jss::sponsor, "malformedSponsor");
-    if (!sponsor)
-        return Unexpected(sponsor.error());
+    if (!sponsorAccountID)
+        return Unexpected(sponsorAccountID.error());
 
-    auto const sponsee =
+    auto const sponseeAccountID =
         LedgerEntryHelpers::requiredAccountID(params, jss::sponsee, "malformedSponsee");
-    if (!sponsee)
-        return Unexpected(sponsee.error());
+    if (!sponseeAccountID)
+        return Unexpected(sponseeAccountID.error());
 
-    return keylet::sponsor(*sponsor, *sponsee).key;
+    return keylet::sponsor(*sponsorAccountID, *sponseeAccountID).key;
 }
 
 static Expected<uint256, Json::Value>

@@ -55,10 +55,10 @@ escrowUnlockApplyHelper<Issue>(
     if (!view.exists(trustLineKey) && createAsset && !receiverIssuer)
     {
         // Can the account cover the trust line's reserve?
-        auto const sponsorAcc = getTxReserveSponsorAccountID(tx);
+        auto const sponsorAccountID = getTxReserveSponsorAccountID(tx);
         std::shared_ptr<SLE> sponsorSle = {};
-        if (sponsorAcc)
-            sponsorSle = view.peek(keylet::account(*sponsorAcc));
+        if (sponsorAccountID)
+            sponsorSle = view.peek(keylet::account(*sponsorAccountID));
         if (auto const ret = checkInsufficientReserve(view, tx, sleDest, xrpBalance, sponsorSle, 1);
             !isTesSuccess(ret))
         {
@@ -88,7 +88,7 @@ escrowUnlockApplyHelper<Issue>(
                 Issue(currency, receiver),      // limit of zero
                 0,                              // quality in
                 0,                              // quality out
-sponsorAcc,                     // sponsor
+                sponsorAccountID,                     // sponsor
                 journal);                       // journal
             !isTesSuccess(ter))
         {
