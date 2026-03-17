@@ -104,6 +104,7 @@ public:
     STLedgerEntry const*
     operator->() const
     {
+        XRPL_ASSERT(exists(), "xrpl::WrappedSLEBase::operator* : exists");
         return sle_.get();
     }
 
@@ -117,6 +118,7 @@ public:
     STLedgerEntry const&
     operator*() const
     {
+        XRPL_ASSERT(exists(), "xrpl::WrappedSLEBase::operator* : exists");
         return *sle_;
     }
 
@@ -125,7 +127,7 @@ protected:
 
     /** Constructor for read-only context (ReadView) */
     explicit WrappedSLEBase(std::shared_ptr<SLE const> sle, ReadView const* view)
-        : sle_(std::move(sle)), readView_(view), applyView_(nullptr)
+        : sle_(std::move(sle)), readView_(view), applyView_(nullptr), mutableSle_(nullptr)
     {
     }
 
