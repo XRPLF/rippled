@@ -223,6 +223,7 @@ TYPED_SFIELD(sfPrincipalRequested,       NUMBER,     14)
 TYPED_SFIELD(sfTotalValueOutstanding,    NUMBER,     15, SField::sMD_NeedsAsset | SField::sMD_Default)
 TYPED_SFIELD(sfPeriodicPayment,          NUMBER,     16)
 TYPED_SFIELD(sfManagementFeeOutstanding, NUMBER,     17, SField::sMD_NeedsAsset | SField::sMD_Default)
+TYPED_SFIELD(sfInterestUnrealized,       NUMBER,     18, SField::sMD_NeedsAsset | SField::sMD_Default)
 
 // int32
 TYPED_SFIELD(sfLoanScale,                INT32,      1)

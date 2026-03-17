@@ -13,55 +13,61 @@ namespace math::v2 {
 [[nodiscard]] Number
 assetsToSharesDeposit(
     Number const& assetTotal,
+    Number const& interestUnrealized,
     Number const& shareTotal,
     std::int32_t scale,
     Number const& assets)
 {
     if (assetTotal == 0)
         return Number(assets.mantissa(), assets.exponent() + scale).truncate();
-    return ((shareTotal * assets) / assetTotal).truncate();
+
+    auto const netAssetValue = assetTotal - interestUnrealized;
+    return ((shareTotal * assets) / netAssetValue).truncate();
 }
 
 [[nodiscard]] Number
 sharesToAssetsDeposit(
     Number const& assetTotal,
+    Number const& interestUnrealized,
     Number const& shareTotal,
     std::int32_t scale,
     STAmount const& shares)
 {
     if (assetTotal == 0)
         return Number(shares.mantissa(), shares.exponent() - scale);
-    return (assetTotal * shares) / shareTotal;
+
+    auto const netAssetValue = assetTotal - interestUnrealized;
+    return (netAssetValue * shares) / shareTotal;
 }
 
 [[nodiscard]] Number
 assetsToSharesWithdraw(
     Number const& assetTotal,
+    Number const& interestUnrealized,
     Number const& lossUnrealized,
     Number const& shareTotal,
-    Number const& assets,
-    TruncateShares truncate)
+    Number const& assets)
 {
-    Number effectiveAssets = assetTotal - lossUnrealized;
-    if (effectiveAssets == 0)
+    Number netAssetValue = assetTotal - interestUnrealized - lossUnrealized;
+    if (netAssetValue == 0)
         return Number(0);
-    Number result = (shareTotal * assets) / effectiveAssets;
-    if (truncate == TruncateShares::yes)
-        result = result.truncate();
-    return result;
+
+    return (shareTotal * assets) / netAssetValue;
 }
 
 [[nodiscard]] Number
 sharesToAssetsWithdraw(
     Number const& assetTotal,
+    Number const& interestUnrealized,
     Number const& lossUnrealized,
     Number const& shareTotal,
     STAmount const& shares)
 {
-    Number effectiveAssets = assetTotal - lossUnrealized;
-    if (effectiveAssets == 0)
+    Number netAssetValue = assetTotal - interestUnrealized - lossUnrealized;
+    if (netAssetValue == 0)
         return Number(0);
-    return (effectiveAssets * shares) / shareTotal;
+
+    return (netAssetValue * shares) / shareTotal;
 }
 
 }  // namespace math::v2
@@ -83,7 +89,11 @@ assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
 
     STAmount shares{vault->at(sfShareMPTID)};
     shares = math::v2::assetsToSharesDeposit(
-        vault->at(sfAssetsTotal), issuance->at(sfOutstandingAmount), vault->at(sfScale), assets);
+        vault->at(sfAssetsTotal),
+        vault->at(sfInterestUnrealized),
+        issuance->at(sfOutstandingAmount),
+        vault->at(sfScale),
+        assets);
     return shares;
 }
 
@@ -99,7 +109,11 @@ sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
 
     STAmount assets{vault->at(sfAsset)};
     assets = math::v2::sharesToAssetsDeposit(
-        vault->at(sfAssetsTotal), issuance->at(sfOutstandingAmount), vault->at(sfScale), shares);
+        vault->at(sfAssetsTotal),
+        vault->at(sfInterestUnrealized),
+        issuance->at(sfOutstandingAmount),
+        vault->at(sfScale),
+        shares);
     return assets;
 }
 
@@ -119,12 +133,15 @@ assetsToSharesWithdraw(
         return std::nullopt;  // LCOV_EXCL_LINE
 
     STAmount shares{vault->at(sfShareMPTID)};
-    shares = math::v2::assetsToSharesWithdraw(
+    Number result = math::v2::assetsToSharesWithdraw(
         vault->at(sfAssetsTotal),
+        vault->at(sfInterestUnrealized),
         vault->at(sfLossUnrealized),
         issuance->at(sfOutstandingAmount),
-        assets,
-        truncate);
+        assets);
+    if (truncate == TruncateShares::yes)
+        result = result.truncate();
+    shares = result;
     return shares;
 }
 
@@ -142,6 +159,7 @@ sharesToAssetsWithdraw(SLE::const_ref vault, SLE::const_ref issuance, STAmount c
     STAmount assets{vault->at(sfAsset)};
     assets = math::v2::sharesToAssetsWithdraw(
         vault->at(sfAssetsTotal),
+        vault->at(sfInterestUnrealized),
         vault->at(sfLossUnrealized),
         issuance->at(sfOutstandingAmount),
         shares);

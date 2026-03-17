@@ -49,6 +49,7 @@ namespace math::v2 {
 [[nodiscard]] Number
 assetsToSharesDeposit(
     Number const& assetTotal,
+    Number const& interestUnrealized,
     Number const& shareTotal,
     std::int32_t scale,
     Number const& assets);
@@ -56,6 +57,7 @@ assetsToSharesDeposit(
 [[nodiscard]] Number
 sharesToAssetsDeposit(
     Number const& assetTotal,
+    Number const& interestUnrealized,
     Number const& shareTotal,
     std::int32_t scale,
     STAmount const& shares);
@@ -63,14 +65,15 @@ sharesToAssetsDeposit(
 [[nodiscard]] Number
 assetsToSharesWithdraw(
     Number const& assetTotal,
+    Number const& interestUnrealized,
     Number const& lossUnrealized,
     Number const& shareTotal,
-    Number const& assets,
-    TruncateShares truncate = TruncateShares::no);
+    Number const& assets);
 
 [[nodiscard]] Number
 sharesToAssetsWithdraw(
     Number const& assetTotal,
+    Number const& interestUnrealized,
     Number const& lossUnrealized,
     Number const& shareTotal,
     STAmount const& shares);
