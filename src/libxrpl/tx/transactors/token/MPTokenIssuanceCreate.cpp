@@ -77,7 +77,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 Expected<MPTID, TER>
 MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreateArgs const& args)
 {
-    WrappedAccountRoot acct(args.account, &view);
+    WritableAccountRoot acct(args.account, &view);
     if (!acct)
         return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 

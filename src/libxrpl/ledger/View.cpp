@@ -354,7 +354,7 @@ canWithdraw(
     ReadView const& view,
     AccountID const& from,
     AccountID const& to,
-    WrappedAccountRoot const& toWrapped,
+    AccountRoot const& toWrapped,
     STAmount const& amount,
     bool hasDestinationTag)
 {
@@ -381,7 +381,7 @@ canWithdraw(
     STAmount const& amount,
     bool hasDestinationTag)
 {
-    auto const toWrapped = WrappedAccountRoot(to, &view);
+    auto const toWrapped = AccountRoot(to, &view);
 
     return canWithdraw(view, from, to, toWrapped, amount, hasDestinationTag);
 }

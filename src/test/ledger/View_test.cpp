@@ -844,14 +844,14 @@ class View_test : public beast::unit_test::suite
 
         auto rdView = env.closed();
         // Test with no rate set on gw1.
-        WrappedAccountRoot issuer(gw1, rdView.get());
+        AccountRoot issuer(gw1, rdView.get());
         BEAST_EXPECT(issuer.transferRate() == parityRate);
 
         env(rate(gw1, 1.02));
         env.close();
 
         rdView = env.closed();
-        WrappedAccountRoot issuerV2(gw1, rdView.get());
+        AccountRoot issuerV2(gw1, rdView.get());
         BEAST_EXPECT(issuerV2.transferRate() == Rate{1020000000});
     }
 

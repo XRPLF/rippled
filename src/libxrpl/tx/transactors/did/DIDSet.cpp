@@ -50,7 +50,7 @@ DIDSet::preflight(PreflightContext const& ctx)
 static TER
 addSLE(ApplyContext& ctx, std::shared_ptr<SLE> const& sle, AccountID const& owner)
 {
-    WrappedAccountRoot wrappedAcct(owner, &ctx.view());
+    WritableAccountRoot wrappedAcct(owner, &ctx.view());
     if (!wrappedAcct)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

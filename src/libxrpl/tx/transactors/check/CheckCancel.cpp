@@ -84,7 +84,7 @@ CheckCancel::doApply()
     }
 
     // If we succeeded, update the check owner's reserve.
-    WrappedAccountRoot wrappedSrc(srcId, &view());
+    WritableAccountRoot wrappedSrc(srcId, &view());
     wrappedSrc.adjustOwnerCount(-1, viewJ);
 
     // Remove check from ledger.

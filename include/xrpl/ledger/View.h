@@ -166,7 +166,7 @@ canWithdraw(
     ReadView const& view,
     AccountID const& from,
     AccountID const& to,
-    WrappedAccountRoot const& toWrapped,
+    AccountRoot const& toWrapped,
     STAmount const& amount,
     bool hasDestinationTag);
 

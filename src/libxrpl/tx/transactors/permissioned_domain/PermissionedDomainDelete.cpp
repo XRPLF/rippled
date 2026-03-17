@@ -51,7 +51,7 @@ PermissionedDomainDelete::doApply()
         // LCOV_EXCL_STOP
     }
 
-    auto wrappedOwner = WrappedAccountRoot(account_, &view());
+    auto wrappedOwner = WritableAccountRoot(account_, &view());
     XRPL_ASSERT(
         wrappedOwner && wrappedOwner->getFieldU32(sfOwnerCount) > 0,
         "xrpl::PermissionedDomainDelete::doApply : nonzero owner count");

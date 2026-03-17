@@ -38,7 +38,7 @@ DIDDelete::deleteSLE(
         // LCOV_EXCL_STOP
     }
 
-    WrappedAccountRoot wrappedOwner(owner, &view);
+    WritableAccountRoot wrappedOwner(owner, &view);
     if (!wrappedOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 

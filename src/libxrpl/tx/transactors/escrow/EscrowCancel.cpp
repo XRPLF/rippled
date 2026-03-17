@@ -145,7 +145,7 @@ EscrowCancel::doApply()
         }
     }
 
-    WrappedAccountRoot wrappedAcct(account, &ctx_.view());
+    WritableAccountRoot wrappedAcct(account, &ctx_.view());
     STAmount const amount = slep->getFieldAmount(sfAmount);
 
     // Transfer amount back to the owner
