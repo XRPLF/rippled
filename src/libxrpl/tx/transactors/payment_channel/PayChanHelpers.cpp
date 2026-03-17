@@ -1,4 +1,5 @@
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/SponsorHelpers.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Indexes.h>
 

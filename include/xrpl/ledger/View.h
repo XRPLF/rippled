@@ -474,11 +474,11 @@ ownerCount(std::shared_ptr<SLE const> const& sponsorSle);
 XRPAmount
 calculateReserve(std::shared_ptr<SLE const> const& sle, Fees const& fees);
 
-bool
-isReserveSponsored(STTx const& tx);
+// bool
+// isReserveSponsored(STTx const& tx);
 
-bool
-isSponsorReserveCoSigning(STTx const& tx);
+// bool
+// isSponsorReserveCoSigning(STTx const& tx);
 
 TER
 checkInsufficientReserve(
@@ -489,41 +489,6 @@ checkInsufficientReserve(
     std::shared_ptr<SLE const> const& sponsorSle,
     std::int32_t ownerCountDelta,
     std::int32_t accountCountDelta = 0);
-
-std::optional<AccountID>
-getTxReserveSponsorAccountID(STTx const& tx);
-
-std::shared_ptr<SLE>
-getTxReserveSponsor(ApplyView& view, STTx const& tx);
-
-std::shared_ptr<SLE const>
-getTxReserveSponsor(ReadView const& view, STTx const& tx);
-
-std::optional<AccountID>
-getLedgerEntryReserveSponsorAccountID(
-    std::shared_ptr<SLE const> const& sle,
-    SF_ACCOUNT const& field = sfSponsor);
-
-std::shared_ptr<SLE>
-getLedgerEntryReserveSponsor(
-    ApplyView& view,
-    std::shared_ptr<SLE> const& sle,
-    SF_ACCOUNT const& field = sfSponsor);
-
-std::shared_ptr<SLE const>
-getLedgerEntryReserveSponsor(
-    ReadView const& view,
-    std::shared_ptr<SLE const> const& sle,
-    SF_ACCOUNT const& field = sfSponsor);
-
-void
-addSponsorToLedgerEntry(
-    std::shared_ptr<SLE> const& sle,
-    std::shared_ptr<SLE> const& sponsorSle,
-    SF_ACCOUNT const& field = sfSponsor);
-
-void
-removeSponsorFromLedgerEntry(std::shared_ptr<SLE> const& sle, SF_ACCOUNT const& field = sfSponsor);
 
 //------------------------------------------------------------------------------
 //

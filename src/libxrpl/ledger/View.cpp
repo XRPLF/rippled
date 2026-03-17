@@ -5,6 +5,7 @@
 #include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/ledger/Credit.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/SponsorHelpers.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -1040,20 +1041,6 @@ calculateReserve(std::shared_ptr<SLE const> const& sle, Fees const& fees)
         sle->getFieldU32(sfSponsoringAccountCount));
 }
 
-bool
-isReserveSponsored(STTx const& tx)
-{
-    return tx.getFieldU32(sfSponsorFlags) & spfSponsorReserve;
-}
-
-bool
-isSponsorReserveCoSigning(STTx const& tx)
-{
-    if (!tx.isFieldPresent(sfSponsorSignature))
-        return false;
-    return isReserveSponsored(tx);
-}
-
 TER
 checkInsufficientReserve(
     ReadView const& view,
@@ -1116,93 +1103,6 @@ checkInsufficientReserve(
             return tecINSUFFICIENT_RESERVE;
     }
     return tesSUCCESS;
-}
-
-std::optional<AccountID>
-getTxReserveSponsorAccountID(STTx const& tx)
-{
-    if (tx.isFieldPresent(sfSponsor) && isReserveSponsored(tx))
-    {
-        return tx.getAccountID(sfSponsor);
-    }
-    return {};
-}
-
-std::shared_ptr<SLE>
-getTxReserveSponsor(ApplyView& view, STTx const& tx)
-{
-    auto const sponsorID = getTxReserveSponsorAccountID(tx);
-    if (sponsorID)
-        return view.peek(keylet::account(*sponsorID));
-    return {};
-}
-
-std::shared_ptr<SLE const>
-getTxReserveSponsor(ReadView const& view, STTx const& tx)
-{
-    auto const sponsorID = getTxReserveSponsorAccountID(tx);
-    if (sponsorID)
-        return view.read(keylet::account(*sponsorID));
-    return {};
-}
-
-std::optional<AccountID>
-getLedgerEntryReserveSponsorAccountID(
-    std::shared_ptr<SLE const> const& sle,
-    SF_ACCOUNT const& field)
-{
-    if (sle->isFieldPresent(field))
-        return sle->getAccountID(field);
-    return {};
-}
-
-std::shared_ptr<SLE>
-getLedgerEntryReserveSponsor(
-    ApplyView& view,
-    std::shared_ptr<SLE> const& sle,
-    SF_ACCOUNT const& field)
-{
-    auto const sponsorID = getLedgerEntryReserveSponsorAccountID(sle, field);
-    if (sponsorID)
-        return view.peek(keylet::account(*sponsorID));
-    return {};
-}
-
-std::shared_ptr<SLE const>
-getLedgerEntryReserveSponsor(
-    ReadView const& view,
-    std::shared_ptr<SLE const> const& sle,
-    SF_ACCOUNT const& field)
-{
-    auto const sponsorID = getLedgerEntryReserveSponsorAccountID(sle, field);
-    if (sponsorID)
-        return view.read(keylet::account(*sponsorID));
-    return {};
-}
-
-void
-addSponsorToLedgerEntry(
-    std::shared_ptr<SLE> const& sle,
-    std::shared_ptr<SLE> const& sponsorSle,
-    SF_ACCOUNT const& field)
-{
-    XRPL_ASSERT(
-        (sle->getType() == ltRIPPLE_STATE && (field == sfHighSponsor || field == sfLowSponsor)) ||
-            (sle->getType() != ltRIPPLE_STATE && field == sfSponsor),
-        "addSponsorToLedgerEntry : Invalid field to the LedgerEntry");
-    if (sponsorSle)
-        sle->setAccountID(field, sponsorSle->getAccountID(sfAccount));
-}
-
-void
-removeSponsorFromLedgerEntry(std::shared_ptr<SLE> const& sle, SF_ACCOUNT const& field)
-{
-    XRPL_ASSERT(
-        (sle->getType() == ltRIPPLE_STATE && (field == sfHighSponsor || field == sfLowSponsor)) ||
-            (sle->getType() != ltRIPPLE_STATE && field == sfSponsor),
-        "removeSponsorFromLedgerEntry : Invalid field to the LedgerEntry");
-    if (sle->isFieldPresent(field))
-        sle->makeFieldAbsent(field);
 }
 
 //------------------------------------------------------------------------------
