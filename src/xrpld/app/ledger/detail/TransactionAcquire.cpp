@@ -6,6 +6,7 @@
 
 #include <xrpl/server/NetworkOPs.h>
 
+#include <algorithm>
 #include <memory>
 
 namespace xrpl {
@@ -242,8 +243,7 @@ TransactionAcquire::stillNeed()
 {
     ScopedLockType sl(mtx_);
 
-    if (timeouts_ > NORM_TIMEOUTS)
-        timeouts_ = NORM_TIMEOUTS;
+    timeouts_ = std::min<int>(timeouts_, NORM_TIMEOUTS);
     failed_ = false;
 }
 

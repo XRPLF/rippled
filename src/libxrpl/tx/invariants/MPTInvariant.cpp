@@ -50,7 +50,7 @@ ValidMPTIssuance::finalize(
     TER const result,
     XRPAmount const _fee,
     ReadView const& view,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     if (result == tesSUCCESS)
     {

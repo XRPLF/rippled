@@ -306,7 +306,7 @@ FeatureCollections::featureToName(uint256 const& f) const
     return feature ? feature->name : to_string(f);
 }
 
-static FeatureCollections featureCollections;
+FeatureCollections featureCollections;
 
 }  // namespace
 

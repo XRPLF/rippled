@@ -689,8 +689,7 @@ Config::loadFromString(std::string const& fileContents)
             FETCH_DEPTH = beast::lexicalCastThrow<std::uint32_t>(strTemp);
         }
 
-        if (FETCH_DEPTH < 10)
-            FETCH_DEPTH = 10;
+        FETCH_DEPTH = std::max<uint32_t>(FETCH_DEPTH, 10);
     }
 
     // By default, validators don't have pathfinding enabled, unless it is

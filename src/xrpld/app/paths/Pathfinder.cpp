@@ -95,7 +95,7 @@ struct PathCost
 };
 using PathCostList = std::vector<PathCost>;
 
-static PathTable mPathTable;
+PathTable mPathTable;
 
 std::string
 pathTypeToString(Pathfinder::PathType const& type)

@@ -273,7 +273,7 @@ STObject::set(SerialIter& sit, int depth)
 }
 
 bool
-STObject::hasMatchingEntry(STBase const& t)
+STObject::hasMatchingEntry(STBase const& t) const
 {
     STBase const* o = peekAtPField(t.getFName());
 

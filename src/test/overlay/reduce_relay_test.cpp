@@ -14,6 +14,7 @@
 
 #include <boost/thread.hpp>
 
+#include <algorithm>
 #include <chrono>
 #include <iostream>
 #include <numeric>
@@ -404,7 +405,7 @@ public:
     }
 
     std::uint16_t
-    id()
+    id() const
     {
         return id_;
     }
@@ -605,8 +606,7 @@ public:
         for (auto& [id, _] : peers_)
         {
             (void)_;
-            if (id > maxId)
-                maxId = id;
+            maxId = std::max<unsigned int>(id, maxId);
         }
 
         deletePeer(maxId, false);
@@ -1469,8 +1469,7 @@ vp_base_squelch_max_selected_peers=2
         void
         squelch(PublicKey const&, Peer::id_t, std::uint32_t duration) const override
         {
-            if (duration > maxDuration_)
-                maxDuration_ = duration;
+            maxDuration_ = std::max<uint32_t>(duration, maxDuration_);
         }
         void
         unsquelch(PublicKey const&, Peer::id_t) const override

@@ -147,7 +147,7 @@ XRPNotCreated::finalize(
     TER const,
     XRPAmount const fee,
     ReadView const&,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     // The net change should never be positive, as this would mean that the
     // transaction created XRP out of thin air. That's not possible.
@@ -207,7 +207,7 @@ XRPBalanceChecks::finalize(
     TER const,
     XRPAmount const,
     ReadView const&,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     if (bad_)
     {
@@ -251,7 +251,7 @@ NoBadOffers::finalize(
     TER const,
     XRPAmount const,
     ReadView const&,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     if (bad_)
     {
@@ -344,7 +344,7 @@ NoZeroEscrow::finalize(
     TER const,
     XRPAmount const,
     ReadView const& rv,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     if (bad_)
     {
@@ -373,7 +373,7 @@ AccountRootsNotDeleted::finalize(
     TER const result,
     XRPAmount const,
     ReadView const&,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     // AMM account root can be deleted as the result of AMM withdraw/delete
     // transaction when the total AMM LP Tokens balance goes to 0.
@@ -567,7 +567,7 @@ LedgerEntryTypesMatch::finalize(
     TER const,
     XRPAmount const,
     ReadView const&,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     if ((!typeMismatch_) && (!invalidTypeAdded_))
         return true;
@@ -609,7 +609,7 @@ NoXRPTrustLines::finalize(
     TER const,
     XRPAmount const,
     ReadView const&,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     if (!xrpTrustLine_)
         return true;
@@ -645,7 +645,7 @@ NoDeepFreezeTrustLinesWithoutFreeze::finalize(
     TER const,
     XRPAmount const,
     ReadView const&,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     if (!deepFreezeWithoutFreeze_)
         return true;
@@ -678,7 +678,7 @@ ValidNewAccountRoot::finalize(
     TER const result,
     XRPAmount const,
     ReadView const& view,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     if (accountsCreated_ == 0)
         return true;
@@ -753,7 +753,7 @@ ValidClawback::finalize(
     TER const result,
     XRPAmount const,
     ReadView const& view,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     if (tx.getTxnType() != ttCLAWBACK)
         return true;

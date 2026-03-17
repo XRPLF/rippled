@@ -52,7 +52,7 @@ InfoSub::getConsumer()
 }
 
 std::uint64_t
-InfoSub::getSeq()
+InfoSub::getSeq() const
 {
     return mSeq;
 }

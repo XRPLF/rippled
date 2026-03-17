@@ -13,6 +13,7 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <iterator>
@@ -622,8 +623,7 @@ public:
         int w = 8;
         for (auto const& test : tests)
         {
-            if (w < test.first.size())
-                w = test.first.size();
+            w = std::max<std::basic_string<char>::size_type>(w, test.first.size());
         }
         log << threads << " Thread" << (threads > 1 ? "s" : "") << ", " << default_items
             << " Objects" << std::endl;

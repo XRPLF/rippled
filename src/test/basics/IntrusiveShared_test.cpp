@@ -144,7 +144,7 @@ public:
     }
 
     void
-    partialDestructor()
+    partialDestructor() const
     {
         using enum TrackedState;
 

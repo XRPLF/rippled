@@ -606,7 +606,7 @@ public:
     }
 
     void
-    gotTXSet(std::shared_ptr<SHAMap> const& set, bool fromAcquire)
+    gotTXSet(std::shared_ptr<SHAMap> const& set, bool fromAcquire) const
     {
         if (set)
             m_networkOPs->mapComplete(set, fromAcquire);
@@ -829,7 +829,7 @@ public:
     }
 
     bool
-    initNodeStore()
+    initNodeStore() const
     {
         if (config_->doImport)
         {

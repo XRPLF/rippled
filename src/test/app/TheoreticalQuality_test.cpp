@@ -153,7 +153,7 @@ public:
         jtx::Env& env,
         jtx::Account const& acc,
         jtx::Account const& peer,
-        Currency const& currency)
+        Currency const& currency) const
     {
         using namespace jtx;
         IOU const iou{acc, currency};

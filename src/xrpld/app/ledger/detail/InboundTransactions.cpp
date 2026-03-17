@@ -9,6 +9,7 @@
 #include <xrpl/resource/Fees.h>
 #include <xrpl/server/NetworkOPs.h>
 
+#include <algorithm>
 #include <memory>
 #include <mutex>
 
@@ -168,8 +169,7 @@ public:
 
             auto& inboundSet = m_map[hash];
 
-            if (inboundSet.mSeq < m_seq)
-                inboundSet.mSeq = m_seq;
+            inboundSet.mSeq = std::max(inboundSet.mSeq, m_seq);
 
             if (inboundSet.mSet)
             {

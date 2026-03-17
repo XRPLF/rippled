@@ -24,6 +24,8 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/executor_work_guard.hpp>
 
+#include <algorithm>
+
 namespace xrpl {
 
 namespace CrawlOptions {
@@ -677,7 +679,7 @@ OverlayImpl::limit()
 }
 
 Json::Value
-OverlayImpl::getOverlayInfo()
+OverlayImpl::getOverlayInfo() const
 {
     using namespace std::chrono;
     Json::Value jv;
@@ -919,10 +921,7 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
 
     enum class HealthState { healthy, warning, critical };
     auto health = HealthState::healthy;
-    auto set_health = [&health](HealthState state) {
-        if (health < state)
-            health = state;
-    };
+    auto set_health = [&health](HealthState state) { health = std::max(health, state); };
 
     msg.body()[jss::info] = Json::objectValue;
     if (last_validated_ledger_age >= 7 || last_validated_ledger_age < 0)
@@ -1325,7 +1324,7 @@ OverlayImpl::sendEndpoints()
 }
 
 void
-OverlayImpl::sendTxQueue()
+OverlayImpl::sendTxQueue() const
 {
     for_each([](auto const& p) {
         if (p->txReduceRelayEnabled())

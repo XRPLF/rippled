@@ -210,6 +210,7 @@ private:
     // account_tx accountID [ledger_min [ledger_max [limit [offset]]]] [binary]
     // [count] [descending]
     Json::Value
+    // NOLINTNEXTLINE(readability-make-member-function-const)
     parseAccountTransactions(Json::Value const& jvParams)
     {
         Json::Value jvRequest(Json::objectValue);

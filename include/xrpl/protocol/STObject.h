@@ -401,7 +401,7 @@ public:
     getStyle(SField const& field) const;
 
     bool
-    hasMatchingEntry(STBase const&);
+    hasMatchingEntry(STBase const&) const;
 
     bool
     operator==(STObject const& o) const;
