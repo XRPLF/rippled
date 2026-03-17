@@ -1343,10 +1343,11 @@ public:
         }
 
         STParsedJSONObject parsed("test", j.getJson(JsonOptions::none));
-        if (!parsed.object)
+        if (!parsed.object.has_value())
+        {
             fail("Unable to build object from json");
-
-        if (STObject(j) != parsed.object)
+        }
+        else if (STObject(j) != parsed.object)
         {
             log << "ORIG: " << j.getJson(JsonOptions::none) << '\n'
                 << "BUILT " << parsed.object->getJson(JsonOptions::none) << std::endl;

@@ -414,7 +414,7 @@ AMMWithdraw::withdraw(
         tfee,
         FreezeHandling::fhZERO_IF_FROZEN,
         isWithdrawAll(ctx_.tx),
-        mPriorBalance,
+        preFeeBalance_,
         j_);
     return {ter, newLPTokenBalance};
 }
@@ -628,7 +628,7 @@ AMMWithdraw::equalWithdrawTokens(
         tfee,
         FreezeHandling::fhZERO_IF_FROZEN,
         isWithdrawAll(ctx_.tx),
-        mPriorBalance,
+        preFeeBalance_,
         ctx_.journal);
     return {ter, newLPTokenBalance};
 }
@@ -676,7 +676,7 @@ AMMWithdraw::equalWithdrawTokens(
     STAmount const& lpTokens,
     STAmount const& lpTokensWithdraw,
     std::uint16_t tfee,
-    FreezeHandling freezeHanding,
+    FreezeHandling freezeHandling,
     WithdrawAll withdrawAll,
     XRPAmount const& priorBalance,
     beast::Journal const& journal)
@@ -697,7 +697,7 @@ AMMWithdraw::equalWithdrawTokens(
                 lptAMMBalance,
                 lpTokensWithdraw,
                 tfee,
-                freezeHanding,
+                freezeHandling,
                 WithdrawAll::Yes,
                 priorBalance,
                 journal);
@@ -731,7 +731,7 @@ AMMWithdraw::equalWithdrawTokens(
             lptAMMBalance,
             tokensAdj,
             tfee,
-            freezeHanding,
+            freezeHandling,
             withdrawAll,
             priorBalance,
             journal);

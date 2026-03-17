@@ -449,7 +449,7 @@ parseLeaf(
                 {
                     auto const str = value.asString();
 
-                    std::uint64_t val;
+                    std::uint64_t val = 0;
 
                     bool const useBase10 = field.shouldMeta(SField::sMD_BaseTen);
 
