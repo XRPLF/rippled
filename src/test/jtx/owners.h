@@ -16,7 +16,11 @@ std::uint32_t
 owned_count_of(ReadView const& view, AccountID const& id, LedgerEntryType type);
 
 void
-owned_count_helper(test::jtx::Env& env, AccountID const& id, LedgerEntryType type, std::uint32_t value);
+owned_count_helper(
+    test::jtx::Env& env,
+    AccountID const& id,
+    LedgerEntryType type,
+    std::uint32_t value);
 
 }  // namespace detail
 

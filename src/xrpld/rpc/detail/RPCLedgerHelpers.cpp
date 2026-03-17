@@ -24,7 +24,11 @@ isValidatedOld(LedgerMaster& ledgerMaster, bool standalone)
 
 template <class T>
 Status
-ledgerFromHash(T& ledger, Json::Value hash, Context const& context, Json::StaticString const fieldName)
+ledgerFromHash(
+    T& ledger,
+    Json::Value hash,
+    Context const& context,
+    Json::StaticString const fieldName)
 {
     uint256 ledgerHash;
     if (!ledgerHash.parseHex(hash.asString()))
@@ -34,7 +38,11 @@ ledgerFromHash(T& ledger, Json::Value hash, Context const& context, Json::Static
 
 template <class T>
 Status
-ledgerFromIndex(T& ledger, Json::Value indexValue, Context const& context, Json::StaticString const fieldName)
+ledgerFromIndex(
+    T& ledger,
+    Json::Value indexValue,
+    Context const& context,
+    Json::StaticString const fieldName)
 {
     auto const index = indexValue.asString();
 
@@ -107,7 +115,8 @@ ledgerFromRequest(T& ledger, JsonContext const& context)
         auto const& ledgerIndex = params[jss::ledger_index];
         if (!ledgerIndex.isString() && !ledgerIndex.isUInt() && !ledgerIndex.isInt())
         {
-            return {rpcINVALID_PARAMS, expected_field_message(jss::ledger_index, "string or number")};
+            return {
+                rpcINVALID_PARAMS, expected_field_message(jss::ledger_index, "string or number")};
         }
         return ledgerFromIndex(ledger, ledgerIndex, context, jss::ledger_index);
     }
@@ -127,19 +136,28 @@ ledgerFromRequest(T& ledger, GRPCContext<R> const& context)
 
 // explicit instantiation of above function
 template Status
-ledgerFromRequest<>(std::shared_ptr<ReadView const>&, GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest> const&);
+ledgerFromRequest<>(
+    std::shared_ptr<ReadView const>&,
+    GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest> const&);
 
 // explicit instantiation of above function
 template Status
-ledgerFromRequest<>(std::shared_ptr<ReadView const>&, GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest> const&);
+ledgerFromRequest<>(
+    std::shared_ptr<ReadView const>&,
+    GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest> const&);
 
 // explicit instantiation of above function
 template Status
-ledgerFromRequest<>(std::shared_ptr<ReadView const>&, GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest> const&);
+ledgerFromRequest<>(
+    std::shared_ptr<ReadView const>&,
+    GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest> const&);
 
 template <class T>
 Status
-ledgerFromSpecifier(T& ledger, org::xrpl::rpc::v1::LedgerSpecifier const& specifier, Context const& context)
+ledgerFromSpecifier(
+    T& ledger,
+    org::xrpl::rpc::v1::LedgerSpecifier const& specifier,
+    Context const& context)
 {
     ledger.reset();
 
@@ -311,7 +329,10 @@ getLedger<>(std::shared_ptr<ReadView const>&, uint256 const&, Context const&);
 // optionally the fields "ledger_hash", "ledger_index" and
 // "ledger_current_index", if they are defined.
 Status
-lookupLedger(std::shared_ptr<ReadView const>& ledger, JsonContext const& context, Json::Value& result)
+lookupLedger(
+    std::shared_ptr<ReadView const>& ledger,
+    JsonContext const& context,
+    Json::Value& result)
 {
     if (auto status = ledgerFromRequest(ledger, context))
         return status;
@@ -355,8 +376,9 @@ getOrAcquireLedger(RPC::JsonContext const& context)
     if ((hasHash + hasIndex) != 1)
     {
         return Unexpected(
-            RPC::make_param_error("Exactly one of 'ledger_hash' or "
-                                  "'ledger_index' can be specified."));
+            RPC::make_param_error(
+                "Exactly one of 'ledger_hash' or "
+                "'ledger_index' can be specified."));
     }
 
     if (hasHash)
@@ -405,19 +427,19 @@ getOrAcquireLedger(RPC::JsonContext const& context)
                 // We don't have the ledger we need to figure out which
                 // ledger they want. Try to get it.
 
-                if (auto il =
-                        context.app.getInboundLedgers().acquire(*refHash, refIndex, InboundLedger::Reason::GENERIC))
+                if (auto il = context.app.getInboundLedgers().acquire(
+                        *refHash, refIndex, InboundLedger::Reason::GENERIC))
                 {
-                    Json::Value jvResult =
-                        RPC::make_error(rpcLGR_NOT_FOUND, "acquiring ledger containing requested index");
+                    Json::Value jvResult = RPC::make_error(
+                        rpcLGR_NOT_FOUND, "acquiring ledger containing requested index");
                     jvResult[jss::acquiring] = getJson(LedgerFill(*il, &context));
                     return Unexpected(jvResult);
                 }
 
                 if (auto il = context.app.getInboundLedgers().find(*refHash))
                 {
-                    Json::Value jvResult =
-                        RPC::make_error(rpcLGR_NOT_FOUND, "acquiring ledger containing requested index");
+                    Json::Value jvResult = RPC::make_error(
+                        rpcLGR_NOT_FOUND, "acquiring ledger containing requested index");
                     jvResult[jss::acquiring] = il->getJson(0);
                     return Unexpected(jvResult);
                 }
@@ -434,7 +456,8 @@ getOrAcquireLedger(RPC::JsonContext const& context)
 
     // Try to get the desired ledger
     // Verify all nodes even if we think we have it
-    auto ledger = context.app.getInboundLedgers().acquire(ledgerHash, ledgerIndex, InboundLedger::Reason::GENERIC);
+    auto ledger = context.app.getInboundLedgers().acquire(
+        ledgerHash, ledgerIndex, InboundLedger::Reason::GENERIC);
 
     // In standalone mode, accept the ledger from the ledger cache
     if (!ledger && context.app.config().standalone())
@@ -446,7 +469,8 @@ getOrAcquireLedger(RPC::JsonContext const& context)
     if (auto il = context.app.getInboundLedgers().find(ledgerHash))
         return Unexpected(il->getJson(0));
 
-    return Unexpected(RPC::make_error(rpcNOT_READY, "findCreate failed to return an inbound ledger"));
+    return Unexpected(
+        RPC::make_error(rpcNOT_READY, "findCreate failed to return an inbound ledger"));
 }
 
 }  // namespace RPC

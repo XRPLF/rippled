@@ -74,7 +74,8 @@ public:
         using namespace jtx;
 
         FeatureBitset const all{
-            jtx::testable_amendments() | featurePermissionedDomains | featureCredentials | featurePermissionedDEX};
+            jtx::testable_amendments() | featurePermissionedDomains | featureCredentials |
+            featurePermissionedDEX};
 
         Env env(*this, all);
         PermissionedDEX permDex(env);

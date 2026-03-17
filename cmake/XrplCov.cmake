@@ -2,14 +2,17 @@
    coverage report target
 #]===================================================================]
 
-if (NOT coverage)
+if(NOT coverage)
     message(FATAL_ERROR "Code coverage not enabled! Aborting ...")
-endif ()
+endif()
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    message(WARNING "Code coverage on Windows is not supported, ignoring 'coverage' flag")
+if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    message(
+        WARNING
+        "Code coverage on Windows is not supported, ignoring 'coverage' flag"
+    )
     return()
-endif ()
+endif()
 
 include(ProcessorCount)
 ProcessorCount(PROCESSOR_COUNT)
@@ -21,32 +24,30 @@ include(CodeCoverage)
 # `CodeCoverage.cmake`)
 
 set(GCOVR_ADDITIONAL_ARGS ${coverage_extra_args})
-if (NOT GCOVR_ADDITIONAL_ARGS STREQUAL "")
+if(NOT GCOVR_ADDITIONAL_ARGS STREQUAL "")
     separate_arguments(GCOVR_ADDITIONAL_ARGS)
-endif ()
+endif()
 
-list(APPEND
-     GCOVR_ADDITIONAL_ARGS
-     --exclude-throw-branches
-     --exclude-noncode-lines
-     --exclude-unreachable-branches
-     -s
-     -j
-     ${PROCESSOR_COUNT})
+list(
+    APPEND GCOVR_ADDITIONAL_ARGS
+    --exclude-throw-branches
+    --exclude-noncode-lines
+    --exclude-unreachable-branches
+    -s
+    -j
+    ${PROCESSOR_COUNT}
+)
 
 setup_target_for_coverage_gcovr(
-    NAME
-    coverage
-    FORMAT
-    ${coverage_format}
+    NAME coverage
+    FORMAT ${coverage_format}
     EXCLUDE
-    "src/test"
-    "src/tests"
-    "include/xrpl/beast/test"
-    "include/xrpl/beast/unit_test"
-    "${CMAKE_BINARY_DIR}/pb-xrpl.libpb"
-    DEPENDENCIES
-    xrpld
-    xrpl.tests)
+        "src/test"
+        "src/tests"
+        "include/xrpl/beast/test"
+        "include/xrpl/beast/unit_test"
+        "${CMAKE_BINARY_DIR}/pb-xrpl.libpb"
+    DEPENDENCIES xrpld xrpl.tests
+)
 
 add_code_coverage_to_target(opts INTERFACE)

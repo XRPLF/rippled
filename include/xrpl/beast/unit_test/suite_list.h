@@ -39,7 +39,12 @@ public:
 
 template <class Suite>
 void
-suite_list::insert(char const* name, char const* module, char const* library, bool manual, int priority)
+suite_list::insert(
+    char const* name,
+    char const* module,
+    char const* library,
+    bool manual,
+    int priority)
 {
 #ifndef NDEBUG
     {

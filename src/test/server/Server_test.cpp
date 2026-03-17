@@ -35,7 +35,8 @@ public:
     {
     private:
         boost::asio::io_context io_context_;
-        std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
+        std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>>
+            work_;
         std::thread thread_;
 
     public:
@@ -65,7 +66,8 @@ public:
         beast::unit_test::suite& suite_;
 
     public:
-        explicit TestSink(beast::unit_test::suite& suite) : Sink(beast::severities::kWarning, false), suite_(suite)
+        explicit TestSink(beast::unit_test::suite& suite)
+            : Sink(beast::severities::kWarning, false), suite_(suite)
         {
         }
 
@@ -106,7 +108,10 @@ public:
         }
 
         Handoff
-        onHandoff(Session& session, http_request_type&& request, boost::asio::ip::tcp::endpoint remote_address)
+        onHandoff(
+            Session& session,
+            http_request_type&& request,
+            boost::asio::ip::tcp::endpoint remote_address)
         {
             return Handoff{};
         }
@@ -122,7 +127,9 @@ public:
         }
 
         void
-        onWSMessage(std::shared_ptr<WSSession> session, std::vector<boost::asio::const_buffer> const&)
+        onWSMessage(
+            std::shared_ptr<WSSession> session,
+            std::vector<boost::asio::const_buffer> const&)
         {
         }
 
@@ -275,7 +282,8 @@ public:
         TestHandler handler;
         auto s = make_Server(handler, thread.get_io_context(), journal);
         std::vector<Port> serverPort(1);
-        serverPort.back().ip = boost::asio::ip::make_address(getEnvLocalhostAddr()), serverPort.back().port = 0;
+        serverPort.back().ip = boost::asio::ip::make_address(getEnvLocalhostAddr()),
+        serverPort.back().port = 0;
         serverPort.back().protocol.insert("http");
         auto eps = s->ports(serverPort);
         test_request(eps.begin()->second);
@@ -308,7 +316,10 @@ public:
             }
 
             Handoff
-            onHandoff(Session& session, http_request_type&& request, boost::asio::ip::tcp::endpoint remote_address)
+            onHandoff(
+                Session& session,
+                http_request_type&& request,
+                boost::asio::ip::tcp::endpoint remote_address)
             {
                 return Handoff{};
             }
@@ -319,7 +330,9 @@ public:
             }
 
             void
-            onWSMessage(std::shared_ptr<WSSession> session, std::vector<boost::asio::const_buffer> const& buffers)
+            onWSMessage(
+                std::shared_ptr<WSSession> session,
+                std::vector<boost::asio::const_buffer> const& buffers)
             {
             }
 
@@ -343,7 +356,8 @@ public:
             TestThread thread;
             auto s = make_Server(h, thread.get_io_context(), journal);
             std::vector<Port> serverPort(1);
-            serverPort.back().ip = boost::asio::ip::make_address(getEnvLocalhostAddr()), serverPort.back().port = 0;
+            serverPort.back().ip = boost::asio::ip::make_address(getEnvLocalhostAddr()),
+            serverPort.back().port = 0;
             serverPort.back().protocol.insert("http");
             s->ports(serverPort);
         }
@@ -392,7 +406,8 @@ public:
                 }),
                 std::make_unique<CaptureLogs>(&messages)};
         });
-        BEAST_EXPECT(messages.find("Invalid value '0' for key 'port' in [port_rpc]") == std::string::npos);
+        BEAST_EXPECT(
+            messages.find("Invalid value '0' for key 'port' in [port_rpc]") == std::string::npos);
 
         except([&] {
             Env env{
@@ -403,7 +418,8 @@ public:
                 }),
                 std::make_unique<CaptureLogs>(&messages)};
         });
-        BEAST_EXPECT(messages.find("Invalid value '0' for key 'port' in [server]") != std::string::npos);
+        BEAST_EXPECT(
+            messages.find("Invalid value '0' for key 'port' in [server]") != std::string::npos);
 
         except([&] {
             Env env{

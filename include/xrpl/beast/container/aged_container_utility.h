@@ -14,7 +14,8 @@ expire(AgedContainer& c, std::chrono::duration<Rep, Period> const& age)
 {
     std::size_t n(0);
     auto const expired(c.clock().now() - age);
-    for (auto iter(c.chronological.cbegin()); iter != c.chronological.cend() && iter.when() <= expired;)
+    for (auto iter(c.chronological.cbegin());
+         iter != c.chronological.cend() && iter.when() <= expired;)
     {
         iter = c.erase(iter);
         ++n;

@@ -42,7 +42,9 @@ doChannelAuthorize(RPC::JsonContext& context)
     std::optional<std::pair<PublicKey, SecretKey>> const keyPair =
         RPC::keypairForSignature(params, result, context.apiVersion);
 
-    XRPL_ASSERT(keyPair || RPC::contains_error(result), "xrpl::doChannelAuthorize : valid keyPair or an error");
+    XRPL_ASSERT(
+        keyPair || RPC::contains_error(result),
+        "xrpl::doChannelAuthorize : valid keyPair or an error");
     if (!keyPair || RPC::contains_error(result))
         return result;
 
@@ -72,7 +74,8 @@ doChannelAuthorize(RPC::JsonContext& context)
     catch (std::exception const& ex)
     {
         // LCOV_EXCL_START
-        result = RPC::make_error(rpcINTERNAL, "Exception occurred during signing: " + std::string(ex.what()));
+        result = RPC::make_error(
+            rpcINTERNAL, "Exception occurred during signing: " + std::string(ex.what()));
         // LCOV_EXCL_STOP
     }
     return result;

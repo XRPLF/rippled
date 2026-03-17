@@ -254,7 +254,8 @@ sign(PublicKey const& pk, SecretKey const& sk, Slice const& m)
 
             unsigned char sig[72];
             size_t len = sizeof(sig);
-            if (secp256k1_ecdsa_signature_serialize_der(secp256k1Context(), sig, &len, &sig_imp) != 1)
+            if (secp256k1_ecdsa_signature_serialize_der(secp256k1Context(), sig, &len, &sig_imp) !=
+                1)
                 LogicError("sign: secp256k1_ecdsa_signature_serialize_der failed");
 
             return Buffer{sig, len};
@@ -304,13 +305,15 @@ derivePublicKey(KeyType type, SecretKey const& sk)
         case KeyType::secp256k1: {
             secp256k1_pubkey pubkey_imp;
             if (secp256k1_ec_pubkey_create(
-                    secp256k1Context(), &pubkey_imp, reinterpret_cast<unsigned char const*>(sk.data())) != 1)
+                    secp256k1Context(),
+                    &pubkey_imp,
+                    reinterpret_cast<unsigned char const*>(sk.data())) != 1)
                 LogicError("derivePublicKey: secp256k1_ec_pubkey_create failed");
 
             unsigned char pubkey[33];
             std::size_t len = sizeof(pubkey);
-            if (secp256k1_ec_pubkey_serialize(secp256k1Context(), pubkey, &len, &pubkey_imp, SECP256K1_EC_COMPRESSED) !=
-                1)
+            if (secp256k1_ec_pubkey_serialize(
+                    secp256k1Context(), pubkey, &len, &pubkey_imp, SECP256K1_EC_COMPRESSED) != 1)
                 LogicError("derivePublicKey: secp256k1_ec_pubkey_serialize failed");
 
             return PublicKey{Slice{pubkey, len}};

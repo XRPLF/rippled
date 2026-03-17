@@ -73,6 +73,8 @@ std::unique_ptr<Config> admin_localnet(std::unique_ptr<Config>);
 
 std::unique_ptr<Config> secure_gateway_localnet(std::unique_ptr<Config>);
 
+std::unique_ptr<Config> single_thread_io(std::unique_ptr<Config>);
+
 /// @brief adjust configuration with params needed to be a validator
 ///
 /// this is intended for use with envconfig, as in
@@ -106,7 +108,9 @@ std::unique_ptr<Config>
 addGrpcConfigWithSecureGateway(std::unique_ptr<Config>, std::string const& secureGateway);
 
 std::unique_ptr<Config>
-makeConfig(std::map<std::string, std::string> extraTxQ = {}, std::map<std::string, std::string> extraVoting = {});
+makeConfig(
+    std::map<std::string, std::string> extraTxQ = {},
+    std::map<std::string, std::string> extraVoting = {});
 
 }  // namespace jtx
 }  // namespace test

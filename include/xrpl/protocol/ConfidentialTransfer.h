@@ -25,8 +25,15 @@ namespace xrpl {
  */
 struct ConfidentialRecipient
 {
-    Slice const publicKey;        ///< The recipient's ElGamal public key (64 bytes).
-    Slice const encryptedAmount;  ///< The encrypted amount ciphertext (128 bytes).
+    Slice publicKey;        ///< The recipient's ElGamal public key (64 bytes).
+    Slice encryptedAmount;  ///< The encrypted amount ciphertext (128 bytes).
+};
+
+/// Holds two secp256k1 public key components representing an ElGamal ciphertext (C1, C2).
+struct EcPair
+{
+    secp256k1_pubkey c1;
+    secp256k1_pubkey c2;
 };
 
 /**
@@ -44,21 +51,22 @@ incrementConfidentialVersion(STObject& mptoken)
     // Retrieve current version and increment.
     // Unsigned integer overflow is defined behavior in C++ (wraps to 0),
     // which is acceptable here.
-    mptoken[sfConfidentialBalanceVersion] = mptoken[~sfConfidentialBalanceVersion].value_or(0u) + 1u;
+    mptoken[sfConfidentialBalanceVersion] =
+        mptoken[~sfConfidentialBalanceVersion].value_or(0u) + 1u;
 }
 
 /**
  * @brief Adds common fields to a serializer for ZKP context hash generation.
  *
- * Serializes the transaction type, account, sequence number, and issuance ID
+ * Serializes the transaction type, account, issuance ID and sequence/ticket number
  * into the provided serializer. These fields form the base of all context
  * hashes used in zero-knowledge proofs.
  *
  * @param s          The serializer to append fields to.
  * @param txType     The transaction type identifier.
  * @param account    The account ID of the transaction sender.
- * @param sequence   The transaction sequence number.
  * @param issuanceID The MPToken Issuance ID.
+ * @param sequence   The transaction sequence number or ticket number.
  */
 void
 addCommonZKPFields(
@@ -75,8 +83,8 @@ addCommonZKPFields(
  * this specific send transaction, preventing proof reuse across transactions.
  *
  * @param account     The sender's account ID.
- * @param sequence    The transaction sequence number.
  * @param issuanceID  The MPToken Issuance ID.
+ * @param sequence    The transaction sequence number or ticket number.
  * @param destination The destination account ID.
  * @param version     The sender's confidential balance version.
  * @return A 256-bit context hash unique to this transaction.
@@ -84,8 +92,8 @@ addCommonZKPFields(
 uint256
 getSendContextHash(
     AccountID const& account,
-    std::uint32_t sequence,
     uint192 const& issuanceID,
+    std::uint32_t sequence,
     AccountID const& destination,
     std::uint32_t version);
 
@@ -96,18 +104,16 @@ getSendContextHash(
  * specific clawback transaction.
  *
  * @param account    The issuer's account ID.
- * @param sequence   The transaction sequence number.
  * @param issuanceID The MPToken Issuance ID.
- * @param amount     The amount being clawed back.
+ * @param sequence   The transaction sequence number or ticket number.
  * @param holder     The holder's account ID being clawed back from.
  * @return A 256-bit context hash unique to this transaction.
  */
 uint256
 getClawbackContextHash(
     AccountID const& account,
-    std::uint32_t sequence,
     uint192 const& issuanceID,
-    std::uint64_t amount,
+    std::uint32_t sequence,
     AccountID const& holder);
 
 /**
@@ -117,17 +123,12 @@ getClawbackContextHash(
  * registration) to this specific convert transaction.
  *
  * @param account    The holder's account ID.
- * @param sequence   The transaction sequence number.
  * @param issuanceID The MPToken Issuance ID.
- * @param amount     The amount being converted to confidential.
+ * @param sequence   The transaction sequence number or a ticket number.
  * @return A 256-bit context hash unique to this transaction.
  */
 uint256
-getConvertContextHash(
-    AccountID const& account,
-    std::uint32_t sequence,
-    uint192 const& issuanceID,
-    std::uint64_t amount);
+getConvertContextHash(AccountID const& account, uint192 const& issuanceID, std::uint32_t sequence);
 
 /**
  * @brief Generates the context hash for ConfidentialMPTConvertBack transactions.
@@ -136,47 +137,41 @@ getConvertContextHash(
  * this specific convert-back transaction.
  *
  * @param account    The holder's account ID.
- * @param sequence   The transaction sequence number.
  * @param issuanceID The MPToken Issuance ID.
- * @param amount     The amount being converted back to public.
+ * @param sequence   The transaction sequence number or a ticket number.
  * @param version    The holder's confidential balance version.
  * @return A 256-bit context hash unique to this transaction.
  */
 uint256
 getConvertBackContextHash(
     AccountID const& account,
-    std::uint32_t sequence,
     uint192 const& issuanceID,
-    std::uint64_t amount,
+    std::uint32_t sequence,
     std::uint32_t version);
 
 /**
  * @brief Parses an ElGamal ciphertext into two secp256k1 public key components.
  *
  * Breaks a 66-byte encrypted amount (two 33-byte compressed EC points) into
- * two secp256k1_pubkey structures (C1, C2) for use in cryptographic operations.
+ * a pair containing (C1, C2) for use in cryptographic operations.
  *
  * @param buffer The 66-byte buffer containing the compressed ciphertext.
- * @param out1   Output: The C1 component of the ElGamal ciphertext.
- * @param out2   Output: The C2 component of the ElGamal ciphertext.
- * @return true if parsing succeeds, false if the buffer is invalid.
+ * @return The parsed pair (c1, c2) if successful, std::nullopt if the buffer is invalid.
  */
-bool
-makeEcPair(Slice const& buffer, secp256k1_pubkey& out1, secp256k1_pubkey& out2);
+std::optional<EcPair>
+makeEcPair(Slice const& buffer);
 
 /**
- * @brief Serializes two secp256k1 public key components into compressed form.
+ * @brief Serializes an EcPair into compressed form.
  *
- * Converts two secp256k1_pubkey structures (C1, C2) back into a 66-byte
- * buffer containing two 33-byte compressed EC points.
+ * Converts an EcPair (C1, C2) back into a 66-byte buffer containing
+ * two 33-byte compressed EC points.
  *
- * @param in1    The C1 component to serialize.
- * @param in2    The C2 component to serialize.
- * @param buffer Output: The 66-byte buffer to write the compressed ciphertext.
- * @return true if serialization succeeds, false otherwise.
+ * @param pair The EcPair to serialize.
+ * @return The 66-byte buffer, or std::nullopt if serialization fails.
  */
-bool
-serializeEcPair(secp256k1_pubkey const& in1, secp256k1_pubkey const& in2, Buffer& buffer);
+std::optional<Buffer>
+serializeEcPair(EcPair const& pair);
 
 /**
  * @brief Verifies that a buffer contains two valid, parsable EC public keys.
@@ -205,13 +200,12 @@ isValidCompressedECPoint(Slice const& buffer);
  * Uses the additive homomorphic property of ElGamal encryption to compute
  * Enc(a + b) from Enc(a) and Enc(b) without decryption.
  *
- * @param a   The first ciphertext (66 bytes).
- * @param b   The second ciphertext (66 bytes).
- * @param out Output: The resulting ciphertext Enc(a + b).
- * @return tesSUCCESS on success, or an error code if parsing fails.
+ * @param a The first ciphertext (66 bytes).
+ * @param b The second ciphertext (66 bytes).
+ * @return The resulting ciphertext Enc(a + b), or std::nullopt on failure.
  */
-TER
-homomorphicAdd(Slice const& a, Slice const& b, Buffer& out);
+std::optional<Buffer>
+homomorphicAdd(Slice const& a, Slice const& b);
 
 /**
  * @brief Homomorphically subtracts two ElGamal ciphertexts.
@@ -219,13 +213,12 @@ homomorphicAdd(Slice const& a, Slice const& b, Buffer& out);
  * Uses the additive homomorphic property of ElGamal encryption to compute
  * Enc(a - b) from Enc(a) and Enc(b) without decryption.
  *
- * @param a   The minuend ciphertext (66 bytes).
- * @param b   The subtrahend ciphertext (66 bytes).
- * @param out Output: The resulting ciphertext Enc(a - b).
- * @return tesSUCCESS on success, or an error code if parsing fails.
+ * @param a The minuend ciphertext (66 bytes).
+ * @param b The subtrahend ciphertext (66 bytes).
+ * @return The resulting ciphertext Enc(a - b), or std::nullopt on failure.
  */
-TER
-homomorphicSubtract(Slice const& a, Slice const& b, Buffer& out);
+std::optional<Buffer>
+homomorphicSubtract(Slice const& a, Slice const& b);
 
 /**
  * @brief Encrypts an amount using ElGamal encryption.
@@ -283,7 +276,7 @@ verifySchnorrProof(Slice const& pubKeySlice, Slice const& proofSlice, uint256 co
  */
 TER
 verifyElGamalEncryption(
-    std::uint64_t const amount,
+    uint64_t const amount,
     Slice const& blindingFactor,
     Slice const& pubKeySlice,
     Slice const& ciphertext);
@@ -317,7 +310,7 @@ checkEncryptedAmountFormat(STObject const& object);
  */
 TER
 verifyRevealedAmount(
-    std::uint64_t const amount,
+    uint64_t const amount,
     Slice const& blindingFactor,
     ConfidentialRecipient const& holder,
     ConfidentialRecipient const& issuer,
@@ -337,18 +330,6 @@ getConfidentialRecipientCount(bool hasAuditor)
 {
     return hasAuditor ? 4 : 3;
 }
-
-/**
- * @brief Calculates the size of a multi-ciphertext equality proof.
- *
- * The proof size varies based on the number of recipients because each
- * additional recipient requires additional proof components.
- *
- * @param nRecipients The number of recipients in the transfer.
- * @return The size in bytes of the equality proof.
- */
-std::size_t
-getMultiCiphertextEqualityProofSize(std::size_t nRecipients);
 
 /**
  * @brief Verifies a multi-ciphertext equality proof.
@@ -499,5 +480,5 @@ computeSendRemainder(Slice const& balanceCommitment, Slice const& amountCommitme
  * @return tesSUCCESS on success, tecINTERNAL on failure or if amount is 0.
  */
 TER
-computeConvertBackRemainder(Slice const& commitment, std::uint64_t amount, Buffer& out);
+computeConvertBackRemainder(Slice const& commitment, uint64_t amount, Buffer& out);
 }  // namespace xrpl

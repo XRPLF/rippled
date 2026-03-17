@@ -9,18 +9,24 @@ std::unique_ptr<DatabaseCon>
 makeWalletDB(DatabaseCon::Setup const& setup, beast::Journal j)
 {
     // wallet database
-    return std::make_unique<DatabaseCon>(setup, WalletDBName, std::array<std::string, 0>(), WalletDBInit, j);
+    return std::make_unique<DatabaseCon>(
+        setup, WalletDBName, std::array<std::string, 0>(), WalletDBInit, j);
 }
 
 std::unique_ptr<DatabaseCon>
 makeTestWalletDB(DatabaseCon::Setup const& setup, std::string const& dbname, beast::Journal j)
 {
     // wallet database
-    return std::make_unique<DatabaseCon>(setup, dbname.data(), std::array<std::string, 0>(), WalletDBInit, j);
+    return std::make_unique<DatabaseCon>(
+        setup, dbname.data(), std::array<std::string, 0>(), WalletDBInit, j);
 }
 
 void
-getManifests(soci::session& session, std::string const& dbTable, ManifestCache& mCache, beast::Journal j)
+getManifests(
+    soci::session& session,
+    std::string const& dbTable,
+    ManifestCache& mCache,
+    beast::Journal j)
 {
     // Load manifests stored in database
     std::string const sql = "SELECT RawData FROM " + dbTable + ";";
@@ -124,9 +130,11 @@ getNodeIdentity(soci::session& session)
     auto [newpublicKey, newsecretKey] = randomKeyPair(KeyType::secp256k1);
 
     session << str(
-        boost::format("INSERT INTO NodeIdentity (PublicKey,PrivateKey) "
-                      "VALUES ('%s','%s');") %
-        toBase58(TokenType::NodePublic, newpublicKey) % toBase58(TokenType::NodePrivate, newsecretKey));
+        boost::format(
+            "INSERT INTO NodeIdentity (PublicKey,PrivateKey) "
+            "VALUES ('%s','%s');") %
+        toBase58(TokenType::NodePublic, newpublicKey) %
+        toBase58(TokenType::NodePrivate, newsecretKey));
 
     return {newpublicKey, newsecretKey};
 }
@@ -167,7 +175,10 @@ getPeerReservationTable(soci::session& session, beast::Journal j)
 }
 
 void
-insertPeerReservation(soci::session& session, PublicKey const& nodeId, std::string const& description)
+insertPeerReservation(
+    soci::session& session,
+    PublicKey const& nodeId,
+    std::string const& description)
 {
     auto const sNodeId = toBase58(TokenType::NodePublic, nodeId);
     session << "INSERT INTO PeerReservations (PublicKey, Description) "
@@ -232,7 +243,10 @@ readAmendments(
     boost::optional<std::string> amendment_name;
     boost::optional<int> vote_to_veto;
     soci::statement st =
-        (session.prepare << sql, soci::into(amendment_hash), soci::into(amendment_name), soci::into(vote_to_veto));
+        (session.prepare << sql,
+         soci::into(amendment_hash),
+         soci::into(amendment_name),
+         soci::into(vote_to_veto));
     st.execute();
     while (st.fetch())
     {
@@ -241,7 +255,11 @@ readAmendments(
 }
 
 void
-voteAmendment(soci::session& session, uint256 const& amendment, std::string const& name, AmendmentVote vote)
+voteAmendment(
+    soci::session& session,
+    uint256 const& amendment,
+    std::string const& name,
+    AmendmentVote vote)
 {
     soci::transaction tr(session);
     std::string sql =

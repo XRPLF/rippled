@@ -16,7 +16,8 @@ passwordUnrequiredOrSentCorrect(Port const& port, Json::Value const& params)
     bool const passwordRequired = (!port.admin_user.empty() || !port.admin_password.empty());
 
     return !passwordRequired ||
-        ((params["admin_password"].isString() && params["admin_password"].asString() == port.admin_password) &&
+        ((params["admin_password"].isString() &&
+          params["admin_password"].asString() == port.admin_password) &&
          (params["admin_user"].isString() && params["admin_user"].asString() == port.admin_user));
 }
 
@@ -62,7 +63,8 @@ ipAllowed(
 bool
 isAdmin(Port const& port, Json::Value const& params, beast::IP::Address const& remoteIp)
 {
-    return ipAllowed(remoteIp, port.admin_nets_v4, port.admin_nets_v6) && passwordUnrequiredOrSentCorrect(port, params);
+    return ipAllowed(remoteIp, port.admin_nets_v4, port.admin_nets_v6) &&
+        passwordUnrequiredOrSentCorrect(port, params);
 }
 
 Role
@@ -207,8 +209,8 @@ extractIpAddrFromField(std::string_view field)
     // then there cannot be an appended port.  In that case we're done.
     {
         // Skip any leading hex digits.
-        auto const colon =
-            std::find_if_not(ret.begin(), ret.end(), [](unsigned char c) { return std::isxdigit(c) || c == ' '; });
+        auto const colon = std::find_if_not(
+            ret.begin(), ret.end(), [](unsigned char c) { return std::isxdigit(c) || c == ' '; });
 
         // If the string starts with optional hex digits followed by a colon
         // it's an IVv6 address.  We're done.
@@ -230,14 +232,18 @@ forwardedFor(http_request_type const& request)
     // Look for the Forwarded field in the request.
     if (auto it = request.find(boost::beast::http::field::forwarded); it != request.end())
     {
-        auto ascii_tolower = [](char c) -> char { return ((static_cast<unsigned>(c) - 65U) < 26) ? c + 'a' - 'A' : c; };
+        auto ascii_tolower = [](char c) -> char {
+            return ((static_cast<unsigned>(c) - 65U) < 26) ? c + 'a' - 'A' : c;
+        };
 
         // Look for the first (case insensitive) "for="
         static std::string const forStr{"for="};
         char const* found = std::search(
-            it->value().begin(), it->value().end(), forStr.begin(), forStr.end(), [&ascii_tolower](char c1, char c2) {
-                return ascii_tolower(c1) == ascii_tolower(c2);
-            });
+            it->value().begin(),
+            it->value().end(),
+            forStr.begin(),
+            forStr.end(),
+            [&ascii_tolower](char c1, char c2) { return ascii_tolower(c1) == ascii_tolower(c2); });
 
         if (found == it->value().end())
             return {};
@@ -246,7 +252,8 @@ forwardedFor(http_request_type const& request)
 
         // We found a "for=".  Scan for the end of the IP address.
         std::size_t const pos = [&found, &it]() {
-            std::size_t pos = std::string_view(found, it->value().end() - found).find_first_of(",;");
+            std::size_t pos =
+                std::string_view(found, it->value().end() - found).find_first_of(",;");
             if (pos != std::string_view::npos)
                 return pos;
 

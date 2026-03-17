@@ -18,7 +18,8 @@ class DeferredCredits
 public:
     struct Adjustment
     {
-        Adjustment(STAmount const& d, STAmount const& c, STAmount const& b) : debits(d), credits(c), origBalance(b)
+        Adjustment(STAmount const& d, STAmount const& c, STAmount const& b)
+            : debits(d), credits(c), origBalance(b)
         {
         }
         STAmount debits;
@@ -119,7 +120,8 @@ public:
     //        or a PaymentSandbox-derived class, we MUST go through
     //        one of these constructors or invariants will be broken.
     /** @{ */
-    explicit PaymentSandbox(PaymentSandbox const* base) : ApplyViewBase(base, base->flags()), ps_(base)
+    explicit PaymentSandbox(PaymentSandbox const* base)
+        : ApplyViewBase(base, base->flags()), ps_(base)
     {
     }
 
@@ -129,11 +131,15 @@ public:
     /** @} */
 
     STAmount
-    balanceHook(AccountID const& account, AccountID const& issuer, STAmount const& amount) const override;
+    balanceHook(AccountID const& account, AccountID const& issuer, STAmount const& amount)
+        const override;
 
     void
-    creditHook(AccountID const& from, AccountID const& to, STAmount const& amount, STAmount const& preCreditBalance)
-        override;
+    creditHook(
+        AccountID const& from,
+        AccountID const& to,
+        STAmount const& amount,
+        STAmount const& preCreditBalance) override;
 
     void
     adjustOwnerCountHook(AccountID const& account, std::uint32_t cur, std::uint32_t next) override;

@@ -105,7 +105,8 @@ class StreamSink : public beast::Journal::Sink
     std::stringstream strm_;
 
 public:
-    StreamSink(beast::severities::Severity threshold = beast::severities::kDebug) : Sink(threshold, false)
+    StreamSink(beast::severities::Severity threshold = beast::severities::kDebug)
+        : Sink(threshold, false)
     {
     }
 

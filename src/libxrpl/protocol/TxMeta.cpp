@@ -89,7 +89,8 @@ TxMeta::getAffectedAccounts() const
     // Meta#getAffectedAccounts
     for (auto const& node : nodes_)
     {
-        int index = node.getFieldIndex((node.getFName() == sfCreatedNode) ? sfNewFields : sfFinalFields);
+        int index =
+            node.getFieldIndex((node.getFName() == sfCreatedNode) ? sfNewFields : sfFinalFields);
 
         if (index != -1)
         {
@@ -154,7 +155,8 @@ TxMeta::getAffectedNode(SLE::ref node, SField const& type)
     nodes_.push_back(STObject(type));
     STObject& obj = nodes_.back();
 
-    XRPL_ASSERT(obj.getFName() == type, "xrpl::TxMeta::getAffectedNode(SLE::ref) : field type match");
+    XRPL_ASSERT(
+        obj.getFName() == type, "xrpl::TxMeta::getAffectedNode(SLE::ref) : field type match");
     obj.setFieldH256(sfLedgerIndex, index);
     obj.setFieldU16(sfLedgerEntryType, node->getFieldU16(sfLedgerEntryType));
 
@@ -198,7 +200,9 @@ TxMeta::addRaw(Serializer& s, TER result, std::uint32_t index)
 {
     result_ = TERtoInt(result);
     index_ = index;
-    XRPL_ASSERT((result_ == 0) || ((result_ > 100) && (result_ <= 255)), "xrpl::TxMeta::addRaw : valid TER input");
+    XRPL_ASSERT(
+        (result_ == 0) || ((result_ > 100) && (result_ <= 255)),
+        "xrpl::TxMeta::addRaw : valid TER input");
 
     nodes_.sort([](STObject const& o1, STObject const& o2) {
         return o1.getFieldH256(sfLedgerIndex) < o2.getFieldH256(sfLedgerIndex);
