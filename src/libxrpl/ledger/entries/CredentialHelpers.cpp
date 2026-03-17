@@ -199,7 +199,7 @@ validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
 }
 
 TER
-authorizedDepositPreauth(ApplyView const& view, STVector256 const& credIDs, AccountID const& dst)
+authorizedDepositPreauth(ReadView const& view, STVector256 const& credIDs, AccountID const& dst)
 {
     std::set<std::pair<AccountID, Slice>> sorted;
     std::vector<std::shared_ptr<SLE const>> lifeExtender;
@@ -320,7 +320,7 @@ verifyDepositPreauth(
     ApplyView& view,
     AccountID const& src,
     AccountID const& dst,
-    std::shared_ptr<SLE> const& sleDst,
+    std::shared_ptr<SLE const> const& sleDst,
     beast::Journal j)
 {
     // If depositPreauth is enabled, then an account that requires

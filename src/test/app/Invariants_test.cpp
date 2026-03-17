@@ -110,6 +110,7 @@ class Invariants_test : public beast::unit_test::suite
 
     void
     doInvariantCheck(
+        // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
         test::jtx::Env&& env,
         test::jtx::Account const& A1,
         test::jtx::Account const& A2,

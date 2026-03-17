@@ -230,7 +230,7 @@ VaultWithdraw::doApply()
     associateAsset(*vault, vaultAsset);
 
     return doWithdraw(
-        view(), ctx_.tx, account_, dstAcct, vaultAccount, mPriorBalance, assetsWithdrawn, j_);
+        view(), ctx_.tx, account_, dstAcct, vaultAccount, preFeeBalance_, assetsWithdrawn, j_);
 }
 
 }  // namespace xrpl

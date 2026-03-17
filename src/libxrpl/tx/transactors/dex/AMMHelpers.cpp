@@ -257,9 +257,9 @@ multiply(STAmount const& amount, Number const& frac, Number::rounding_mode rm)
 STAmount
 getRoundedAsset(
     Rules const& rules,
-    std::function<Number()>&& noRoundCb,
+    std::function<Number()> const& noRoundCb,
     STAmount const& balance,
-    std::function<Number()>&& productCb,
+    std::function<Number()> const& productCb,
     IsDeposit isDeposit)
 {
     if (!rules.enabled(fixAMMv1_3))
@@ -290,9 +290,9 @@ getRoundedLPTokens(
 STAmount
 getRoundedLPTokens(
     Rules const& rules,
-    std::function<Number()>&& noRoundCb,
+    std::function<Number()> const& noRoundCb,
     STAmount const& lptAMMBalance,
-    std::function<Number()>&& productCb,
+    std::function<Number()> const& productCb,
     IsDeposit isDeposit)
 {
     if (!rules.enabled(fixAMMv1_3))

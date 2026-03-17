@@ -421,7 +421,7 @@ private:
         ObjectValues* map_{nullptr};
     } value_;
     ValueType type_ : 8;
-    int allocated_ : 1;  // Notes: if declared as bool, bitfield is useless.
+    int allocated_ : 1 {};  // Notes: if declared as bool, bitfield is useless.
 };
 
 inline Value

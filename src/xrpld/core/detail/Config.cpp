@@ -51,7 +51,7 @@ namespace detail {
 [[nodiscard]] std::uint64_t
 getMemorySize()
 {
-    if (struct sysinfo si; sysinfo(&si) == 0)
+    if (struct sysinfo si{}; sysinfo(&si) == 0)
         return static_cast<std::uint64_t>(si.totalram) * si.mem_unit;
 
     return 0;
@@ -1050,13 +1050,13 @@ setup_FeeVote(Section const& section)
 {
     FeeSetup setup;
     {
-        std::uint64_t temp;
+        std::uint64_t temp = 0;
         if (set(temp, "reference_fee", section) &&
             temp <= std::numeric_limits<XRPAmount::value_type>::max())
             setup.reference_fee = temp;
     }
     {
-        std::uint32_t temp;
+        std::uint32_t temp = 0;
         if (set(temp, "account_reserve", section))
             setup.account_reserve = temp;
         if (set(temp, "owner_reserve", section))

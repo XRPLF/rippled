@@ -100,7 +100,10 @@ public:
         st[sfPublicKey] = pk;
         st[sfSigningPubKey] = spk;
 
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         sign(st, HashPrefix::manifest, *publicKeyType(spk), ssk);
+
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         sign(st, HashPrefix::manifest, *publicKeyType(pk), sk, sfMasterSignature);
 
         Serializer s;
@@ -348,7 +351,9 @@ public:
         ss.add32(HashPrefix::manifest);
         st.addWithoutSigningFields(ss);
         auto const sig = sign(KeyType::secp256k1, kp.second, ss.slice());
-        BEAST_EXPECT(strHex(sig) == strHex(*m.getSignature()));
+        BEAST_EXPECT(
+            strHex(sig) ==
+            strHex(*m.getSignature()));  // NOLINT(bugprone-unchecked-optional-access)
 
         auto const masterSig = sign(KeyType::ed25519, sk, ss.slice());
         BEAST_EXPECT(strHex(masterSig) == strHex(m.getMasterSignature()));
@@ -447,7 +452,9 @@ public:
 
             auto const token = loadValidatorToken(tokenBlob);
             BEAST_EXPECT(token);
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(test::equal(token->validationSecret, *valSecret));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(token->manifest == manifest);
         }
         {
@@ -575,12 +582,14 @@ public:
                         auto const manifest = deserializeManifest(m);
 
                         BEAST_EXPECT(manifest);
+                        // NOLINTBEGIN(bugprone-unchecked-optional-access)
                         BEAST_EXPECT(manifest->masterKey == pk);
                         BEAST_EXPECT(manifest->signingKey == spk);
                         BEAST_EXPECT(manifest->sequence == sequence);
                         BEAST_EXPECT(manifest->serialized == m);
                         BEAST_EXPECT(manifest->domain.empty());
                         BEAST_EXPECT(manifest->verify());
+                        // NOLINTEND(bugprone-unchecked-optional-access)
                     }
 
                     {  // invalid manifest (empty domain)
@@ -612,12 +621,14 @@ public:
                         auto const manifest = deserializeManifest(m);
 
                         BEAST_EXPECT(manifest);
+                        // NOLINTBEGIN(bugprone-unchecked-optional-access)
                         BEAST_EXPECT(manifest->masterKey == pk);
                         BEAST_EXPECT(manifest->signingKey == spk);
                         BEAST_EXPECT(manifest->sequence == sequence);
                         BEAST_EXPECT(manifest->serialized == m);
                         BEAST_EXPECT(manifest->domain == "example.com");
                         BEAST_EXPECT(manifest->verify());
+                        // NOLINTEND(bugprone-unchecked-optional-access)
                     }
                     {
                         // valid manifest with invalid signature
@@ -628,12 +639,14 @@ public:
                         auto const manifest = deserializeManifest(m);
 
                         BEAST_EXPECT(manifest);
+                        // NOLINTBEGIN(bugprone-unchecked-optional-access)
                         BEAST_EXPECT(manifest->masterKey == pk);
                         BEAST_EXPECT(manifest->signingKey == spk);
                         BEAST_EXPECT(manifest->sequence == sequence + 1);
                         BEAST_EXPECT(manifest->serialized == m);
                         BEAST_EXPECT(manifest->domain == "example.com");
                         BEAST_EXPECT(!manifest->verify());
+                        // NOLINTEND(bugprone-unchecked-optional-access)
                     }
                     {
                         // reject missing sequence
@@ -717,15 +730,16 @@ public:
                         auto const manifest = deserializeManifest(m);
 
                         BEAST_EXPECT(manifest);
+                        // NOLINTBEGIN(bugprone-unchecked-optional-access)
                         BEAST_EXPECT(manifest->masterKey == pk);
 
-                        // Since this manifest is revoked, it should not have
-                        // a signingKey
+                        // Since this manifest is revoked, it should not have a signingKey
                         BEAST_EXPECT(!manifest->signingKey);
                         BEAST_EXPECT(manifest->revoked());
                         BEAST_EXPECT(manifest->domain.empty());
                         BEAST_EXPECT(manifest->serialized == m);
                         BEAST_EXPECT(manifest->verify());
+                        // NOLINTEND(bugprone-unchecked-optional-access)
                     }
 
                     {  // can't specify an ephemeral signing key

@@ -24,7 +24,7 @@ STAccount::STAccount(SField const& n) : STBase(n), value_(beast::zero), default_
 {
 }
 
-STAccount::STAccount(SField const& n, Buffer&& v) : STAccount(n)
+STAccount::STAccount(SField const& n, Buffer const& v) : STAccount(n)
 {
     if (v.empty())
         return;  // Zero is a valid size for a defaulted STAccount.

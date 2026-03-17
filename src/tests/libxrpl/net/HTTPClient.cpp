@@ -33,7 +33,7 @@ private:
     boost::asio::ip::tcp::endpoint endpoint_;
     bool running_{true};
     bool finished_{false};
-    unsigned short port_;
+    unsigned short port_{0};
 
     // Custom headers to return
     std::map<std::string, std::string> customHeaders_;
@@ -43,7 +43,7 @@ private:
     beast::Journal j_;
 
 public:
-    TestHTTPServer() : acceptor_(ioc_), port_(0), j_(TestSink::instance())
+    TestHTTPServer() : acceptor_(ioc_), j_(TestSink::instance())
     {
         // Bind to any available port
         endpoint_ = {boost::asio::ip::tcp::v4(), 0};

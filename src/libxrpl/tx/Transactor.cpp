@@ -352,8 +352,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
     if (feePaid == beast::zero)
         return tesSUCCESS;
 
-    auto const id = ctx.tx.isFieldPresent(sfDelegate) ? ctx.tx.getAccountID(sfDelegate)
-                                                      : ctx.tx.getAccountID(sfAccount);
+    auto const id = ctx.tx.getFeePayer();
     auto const sle = ctx.view.read(keylet::account(id));
     if (!sle)
         return terNO_ACCOUNT;
@@ -382,32 +381,18 @@ Transactor::payFee()
 {
     auto const feePaid = ctx_.tx[sfFee].xrp();
 
-    if (ctx_.tx.isFieldPresent(sfDelegate))
-    {
-        // Delegated transactions are paid by the delegated account.
-        auto const delegate = ctx_.tx.getAccountID(sfDelegate);
-        auto const delegatedSle = view().peek(keylet::account(delegate));
-        if (!delegatedSle)
-            return tefINTERNAL;  // LCOV_EXCL_LINE
+    auto const feePayer = ctx_.tx.getFeePayer();
+    auto const sle = view().peek(keylet::account(feePayer));
+    if (!sle)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        delegatedSle->setFieldAmount(sfBalance, delegatedSle->getFieldAmount(sfBalance) - feePaid);
-        view().update(delegatedSle);
-    }
-    else
-    {
-        auto const sle = view().peek(keylet::account(account_));
-        if (!sle)
-            return tefINTERNAL;  // LCOV_EXCL_LINE
+    // Deduct the fee, so it's not available during the transaction.
+    // Will only write the account back if the transaction succeeds.
+    sle->setFieldAmount(sfBalance, sle->getFieldAmount(sfBalance) - feePaid);
+    if (feePayer != account_)
+        view().update(sle);  // done in `apply()` for the account
 
-        // Deduct the fee, so it's not available during the transaction.
-        // Will only write the account back if the transaction succeeds.
-
-        mSourceBalance -= feePaid;
-        sle->setFieldAmount(sfBalance, mSourceBalance);
-
-        // VFALCO Should we call view().rawDestroyXRP() here as well?
-    }
-
+    // VFALCO Should we call view().rawDestroyXRP() here as well?
     return tesSUCCESS;
 }
 
@@ -606,8 +591,7 @@ Transactor::apply()
 
     if (sle)
     {
-        mPriorBalance = STAmount{(*sle)[sfBalance]}.xrp();
-        mSourceBalance = mPriorBalance;
+        preFeeBalance_ = STAmount{(*sle)[sfBalance]}.xrp();
 
         TER result = consumeSeqProxy(sle);
         if (result != tesSUCCESS)
@@ -1023,9 +1007,7 @@ Transactor::reset(XRPAmount fee)
     if (!txnAcct)
         return {tefINTERNAL, beast::zero};
 
-    auto const payerSle = ctx_.tx.isFieldPresent(sfDelegate)
-        ? view().peek(keylet::account(ctx_.tx.getAccountID(sfDelegate)))
-        : txnAcct;
+    auto const payerSle = view().peek(keylet::account(ctx_.tx.getFeePayer()));
     if (!payerSle)
         return {tefINTERNAL, beast::zero};  // LCOV_EXCL_LINE
 
