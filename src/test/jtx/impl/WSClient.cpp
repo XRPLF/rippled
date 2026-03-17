@@ -55,7 +55,7 @@ class WSClientImpl : public WSClient
             if (!pp.port)
                 Throw<std::runtime_error>("Use fixConfigPorts with auto ports");
 
-            return {*pp.ip, *pp.port};
+            return {*pp.ip, *pp.port};  // NOLINT(bugprone-unchecked-optional-access)
         }
         Throw<std::runtime_error>("Missing WebSocket port");
         return {};  // Silence compiler control paths return value warning
@@ -107,6 +107,7 @@ class WSClientImpl : public WSClient
                                           {
                                               stream_.cancel();
                                           }
+                                          // NOLINTNEXTLINE(bugprone-empty-catch)
                                           catch (boost::system::system_error const&)
                                           {
                                               // ignored

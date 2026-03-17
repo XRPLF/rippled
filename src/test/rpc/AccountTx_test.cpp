@@ -844,7 +844,7 @@ class AccountTx_test : public beast::unit_test::suite
         };
 
         // fee sponsorship
-        env(noop(alice), sponsor::as(sponsor, tfSponsorFee), sig(sfSponsorSignature, sponsor));
+        env(noop(alice), sponsor::as(sponsor, spfSponsorFee), sig(sfSponsorSignature, sponsor));
         env.close();
         checkTx(alice, jss::AccountSet);
         checkTx(sponsor, jss::AccountSet);
@@ -857,14 +857,14 @@ class AccountTx_test : public beast::unit_test::suite
 
         // create a ticket with sponsor
         auto const seq = env.seq(alice);
-        env(ticket::create(alice, 1), sponsor::as(sponsor, tfSponsorReserve));
+        env(ticket::create(alice, 1), sponsor::as(sponsor, spfSponsorReserve));
         env.close();
         checkTx(alice, jss::TicketCreate);
         checkTx(sponsor, jss::TicketCreate);
 
         // transfer object sponsorship
         env(sponsor::transfer(alice, tfSponsorshipReassign, keylet::ticket(alice, seq + 1).key),
-            sponsor::as(sponsor2, tfSponsorReserve),
+            sponsor::as(sponsor2, spfSponsorReserve),
             sig(sfSponsorSignature, sponsor2));
         env.close();
         checkTx(alice, jss::SponsorshipTransfer);
@@ -874,7 +874,7 @@ class AccountTx_test : public beast::unit_test::suite
         // use a ticket
         env(noop(alice),
             ticket::use(seq + 1),
-            sponsor::as(sponsor, tfSponsorFee),
+            sponsor::as(sponsor, spfSponsorFee),
             sig(sfSponsorSignature, sponsor));
         env.close();
         checkTx(alice, jss::AccountSet);
@@ -883,7 +883,7 @@ class AccountTx_test : public beast::unit_test::suite
 
         // account sponsorship
         env(sponsor::transfer(alice, tfSponsorshipCreate),
-            sponsor::as(sponsor, tfSponsorReserve),
+            sponsor::as(sponsor, spfSponsorReserve),
             sig(sfSponsorSignature, sponsor));
         env.close();
         checkTx(alice, jss::SponsorshipTransfer);

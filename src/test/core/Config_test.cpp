@@ -1280,7 +1280,7 @@ r.ripple.com:51235
         for (auto const& t : tests)
         {
             Section s;
-            s.append(t.line.data());
+            s.append(std::string(t.line));
             BEAST_EXPECT(s.had_trailing_comments() == t.had_comment);
             if (t.field.empty())
             {
@@ -1289,7 +1289,7 @@ r.ripple.com:51235
             else
             {
                 std::string field;
-                BEAST_EXPECTS(set(field, t.field.data(), s), t.line);
+                BEAST_EXPECTS(set(field, std::string(t.field), s), t.line);
                 BEAST_EXPECTS(field == t.expect, t.line);
             }
         }
@@ -1299,6 +1299,7 @@ r.ripple.com:51235
             s.append("online_delete = 3000");
             std::uint32_t od = 0;
             BEAST_EXPECT(set(od, "online_delete", s));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECTS(od == 3000, *(s.get<std::string>("online_delete")));
         }
 
@@ -1307,6 +1308,7 @@ r.ripple.com:51235
             s.append("online_delete = 2000 #my comment on this");
             std::uint32_t od = 0;
             BEAST_EXPECT(set(od, "online_delete", s));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECTS(od == 2000, *(s.get<std::string>("online_delete")));
         }
     }

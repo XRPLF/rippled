@@ -7,8 +7,8 @@
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/SetOracle.h>
-#include <xrpl/tx/transactors/Sponsor/SponsorshipTransfer.h>
+#include <xrpl/tx/transactors/oracle/SetOracle.h>
+#include <xrpl/tx/transactors/sponsor/SponsorshipTransfer.h>
 
 namespace xrpl {
 
@@ -34,7 +34,7 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
         if (!isReserveSponsored(ctx.tx))
         {
             JLOG(ctx.j.debug())
-                << "preflight: tfSponsorReserve should not be set when creating sponsorship";
+                << "preflight: spfSponsorReserve should not be set when creating sponsorship";
             return temINVALID_FLAG;
         }
         if (ctx.tx.isFieldPresent(sfSponsee))
@@ -49,7 +49,7 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
         if (!isReserveSponsored(ctx.tx))
         {
             JLOG(ctx.j.debug())
-                << "preflight: tfSponsorReserve should be set when reassigning sponsorship";
+                << "preflight: spfSponsorReserve should be set when reassigning sponsorship";
             return temINVALID_FLAG;
         }
         if (ctx.tx.isFieldPresent(sfSponsee))
@@ -64,7 +64,7 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
         if (isReserveSponsored(ctx.tx))
         {
             JLOG(ctx.j.debug())
-                << "preflight: tfSponsorReserve should not be set when ending sponsorship";
+                << "preflight: spfSponsorReserve should not be set when ending sponsorship";
             return temINVALID_FLAG;
         }
 

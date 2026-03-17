@@ -15,8 +15,8 @@
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/apply.h>
-#include <xrpl/tx/transactors/Delegate/DelegateUtils.h>
-#include <xrpl/tx/transactors/NFT/NFTokenUtils.h>
+#include <xrpl/tx/transactors/delegate/DelegateUtils.h>
+#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 namespace xrpl {
 
@@ -153,7 +153,8 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
     if ((hasSponsor || hasSponsorFlags || hasSponsorSig) && !ctx.rules.enabled(featureSponsor))
         return temDISABLED;
 
-    if (hasSponsorFlags && ctx.tx.getFieldU32(sfSponsorFlags) & tfSponsorMask)
+    if (hasSponsorFlags &&
+        ctx.tx.getFieldU32(sfSponsorFlags) & ~(spfSponsorFee | spfSponsorReserve))
     {
         JLOG(ctx.j.debug()) << "preflight1: invalid sponsor flags";
         return temINVALID_FLAG;
@@ -321,10 +322,10 @@ Transactor::checkSponsor(ReadView const& view, STTx const& tx)
 
     auto const sponsorFlags = tx.getFieldU32(sfSponsorFlags);
 
-    if (sponsorFlags & tfSponsorFee && sponsorSle->isFlag(lsfSponsorshipRequireSignForFee))
+    if (sponsorFlags & spfSponsorFee && sponsorSle->isFlag(lsfSponsorshipRequireSignForFee))
         return terNO_SPONSORSHIP;
 
-    if (sponsorFlags & tfSponsorReserve && sponsorSle->isFlag(lsfSponsorshipRequireSignForReserve))
+    if (sponsorFlags & spfSponsorReserve && sponsorSle->isFlag(lsfSponsorshipRequireSignForReserve))
         return terNO_SPONSORSHIP;
 
     return tesSUCCESS;
@@ -1183,7 +1184,7 @@ FeePayer
 Transactor::getFeePayer(ReadView const& view, STTx const& tx)
 {
     auto const id = tx.getAccountID(sfAccount);
-    if (tx.isFieldPresent(sfSponsor) && tx.getFieldU32(sfSponsorFlags) & tfSponsorFee)
+    if (tx.isFieldPresent(sfSponsor) && tx.getFieldU32(sfSponsorFlags) & spfSponsorFee)
     {
         auto const sponsor = tx.getAccountID(sfSponsor);
         auto const hasSignature = tx.isFieldPresent(sfSponsorSignature);

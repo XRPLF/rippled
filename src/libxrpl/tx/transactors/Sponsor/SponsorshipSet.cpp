@@ -1,7 +1,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/Delegate/DelegateUtils.h>
-#include <xrpl/tx/transactors/Sponsor/SponsorshipSet.h>
+#include <xrpl/tx/transactors/delegate/DelegateUtils.h>
+#include <xrpl/tx/transactors/sponsor/SponsorshipSet.h>
 
 namespace xrpl {
 

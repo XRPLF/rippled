@@ -3,7 +3,7 @@
 #include <xrpl/basics/random.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/tx/transactors/NFT/NFTokenUtils.h>
+#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 #include <initializer_list>
 
@@ -394,18 +394,18 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             env(did::set(alice),
                 did::uri("uri"),
-                sponsor::as(bob, tfSponsorReserve),
+                sponsor::as(bob, spfSponsorReserve),
                 sig(sfSponsorSignature, bob));
             env.close();
 
             env(did::set(bob),
                 did::uri("uri"),
-                sponsor::as(alice, tfSponsorReserve),
+                sponsor::as(alice, spfSponsorReserve),
                 sig(sfSponsorSignature, alice));
             env.close();
 
             env(sponsor::transfer(bob, tfSponsorshipCreate),
-                sponsor::as(alice, tfSponsorReserve),
+                sponsor::as(alice, spfSponsorReserve),
                 sig(sfSponsorSignature, alice));
             env.close();
         }

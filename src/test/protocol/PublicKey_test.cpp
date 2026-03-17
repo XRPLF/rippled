@@ -370,7 +370,8 @@ public:
                 auto const skj = parseBase58<PublicKey>(TokenType::NodePublic, sj);
                 BEAST_EXPECT(skj && (keys[j] == *skj));
 
-                BEAST_EXPECT((*ski == *skj) == (i == j));
+                BEAST_EXPECT(
+                    (*ski == *skj) == (i == j));  // NOLINT(bugprone-unchecked-optional-access)
             }
         }
     }
@@ -389,7 +390,7 @@ public:
                 TokenType::NodePublic, "n94a1u4jAz288pZLtw6yFWVbi89YamiC6JBXPVUj5zmExe5fTVg9");
             BEAST_EXPECT(pk2);
 
-            BEAST_EXPECT(pk1 == *pk2);
+            BEAST_EXPECT(pk1 == *pk2);  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         testBase58(KeyType::secp256k1);
@@ -405,7 +406,7 @@ public:
                 TokenType::NodePublic, "nHUeeJCSY2dM71oxM8Cgjouf5ekTuev2mwDpc374aLMxzDLXNmjf");
             BEAST_EXPECT(pk2);
 
-            BEAST_EXPECT(pk1 == *pk2);
+            BEAST_EXPECT(pk1 == *pk2);  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         testBase58(KeyType::ed25519);

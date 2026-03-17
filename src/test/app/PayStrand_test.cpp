@@ -10,7 +10,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/paths/RippleCalc.h>
 #include <xrpl/tx/paths/detail/Steps.h>
-#include <xrpl/tx/transactors/AMM/AMMContext.h>
+#include <xrpl/tx/transactors/dex/AMMContext.h>
 
 #include <optional>
 
@@ -262,7 +262,7 @@ public:
             if (has(SB::sameAccIss))
                 return acc;
             if (has(SB::existingIss) && existingIss)
-                return *existingIss;
+                return existingIss;
             return issF().id();
         }();
         auto const cur = [&]() -> std::optional<Currency> {
@@ -271,7 +271,7 @@ public:
             if (has(SB::xrp))
                 return xrpCurrency();
             if (has(SB::existingCur) && existingCur)
-                return *existingCur;
+                return existingCur;
             return currencyF();
         }();
         if (!has(SB::boundary))

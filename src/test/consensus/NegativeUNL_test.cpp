@@ -1470,6 +1470,7 @@ class NegativeUNLVoteOffline_test : public beast::unit_test::suite
             if (history.goodHistory)
             {
                 NodeID n1 = calcNodeID(*history.lastLedger()->negativeUNL().begin());
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 NodeID n2 = calcNodeID(*history.lastLedger()->validatorToDisable());
                 history.walkHistoryAndAddValidations(
                     [&](std::shared_ptr<Ledger const> const& l, std::size_t idx) -> bool {

@@ -233,6 +233,7 @@ public:
                 Oracle oracle(
                     env,
                     {.owner = oracles[i].first,
+                     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                      .documentID = asUInt(*oracles[i].second),
                      .fee = baseFee},
                     false);
@@ -247,6 +248,7 @@ public:
                 Oracle oracle(
                     env,
                     {.owner = oracles[i].first,
+                     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                      .documentID = asUInt(*oracles[i].second),
                      .fee = baseFee},
                     false);
@@ -286,6 +288,7 @@ public:
                 Oracle oracle(
                     env,
                     {.owner = oracles[i].first,
+                     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                      .documentID = asUInt(*oracles[i].second),
                      .fee = baseFee},
                     false);

@@ -1043,7 +1043,7 @@ calculateReserve(std::shared_ptr<SLE const> const& sle, Fees const& fees)
 bool
 isReserveSponsored(STTx const& tx)
 {
-    return tx.getFieldU32(sfSponsorFlags) & tfSponsorReserve;
+    return tx.getFieldU32(sfSponsorFlags) & spfSponsorReserve;
 }
 
 bool
@@ -2639,7 +2639,6 @@ accountSendMultiIOU(
     if (auto stream = j.trace())
     {
         std::string sender_bal("-");
-        std::string receiver_bal("-");
 
         if (sender)
             sender_bal = sender->getFieldAmount(sfBalance).getFullText();

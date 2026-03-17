@@ -10,10 +10,10 @@
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/tx/transactors/AMM/AMMBid.h>
-#include <xrpl/tx/transactors/AMM/AMMContext.h>
-#include <xrpl/tx/transactors/AMM/AMMHelpers.h>
-#include <xrpl/tx/transactors/AMM/AMMUtils.h>
+#include <xrpl/tx/transactors/dex/AMMBid.h>
+#include <xrpl/tx/transactors/dex/AMMContext.h>
+#include <xrpl/tx/transactors/dex/AMMHelpers.h>
+#include <xrpl/tx/transactors/dex/AMMUtils.h>
 
 #include <boost/regex.hpp>
 
@@ -2342,7 +2342,7 @@ private:
             // The vote is not added to the slots
             ammAlice.vote(carol, 1'000);
             auto const info = ammAlice.ammRpcInfo()[jss::amm][jss::vote_slots];
-            for (std::uint16_t i = 0; i < info.size(); ++i)
+            for (std::uint32_t i = 0; i < info.size(); ++i)
                 BEAST_EXPECT(info[i][jss::account] != carol.human());
             // But the slots are refreshed and the fee is changed
             BEAST_EXPECT(ammAlice.expectTradingFee(82));
@@ -6117,9 +6117,13 @@ private:
                 auto const failUsdBIT = features[fixAMMv1_1] ? input.failUsdBITr : input.failUsdBIT;
                 auto const goodUsdGH = features[fixAMMv1_1] ? input.goodUsdGHr : input.goodUsdGH;
                 auto const goodUsdBIT = features[fixAMMv1_1] ? input.goodUsdBITr : input.goodUsdBIT;
-                auto const lpTokenBalance = env.enabled(fixAMMv1_3) && input.lpTokenBalanceAlt
-                    ? *input.lpTokenBalanceAlt
-                    : input.lpTokenBalance;
+                auto const lpTokenBalance = [&] {
+                    if (not env.enabled(fixAMMv1_3))
+                        return input.lpTokenBalance;
+
+                    return input.lpTokenBalanceAlt.value_or(input.lpTokenBalance);
+                }();
+
                 if (!features[fixAMMOverflowOffer])
                 {
                     BEAST_EXPECT(amm.expectBalances(failUsdGH, failUsdBIT, lpTokenBalance));
