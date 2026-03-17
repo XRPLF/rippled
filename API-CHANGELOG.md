@@ -84,6 +84,12 @@ This release contains bug fixes only and no API changes.
 
 This release contains bug fixes only and no API changes.
 
+## Unreleased
+
+### Additions and bugfixes
+
+- `simulate`: There is now additional support for simulating transactions in past ledgers, by providing the `ledger_index` or `ledger_hash`.
+
 ## XRP Ledger server version 2.5.0
 
 [Version 2.5.0](https://github.com/XRPLF/rippled/releases/tag/2.5.0) was released on Jun 24, 2025.

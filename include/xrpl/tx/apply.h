@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/tx/applySteps.h>
@@ -114,6 +115,14 @@ enum class ApplyTransactionResult {
     /// Should be retried in this ledger
     Retry
 };
+
+std::optional<std::vector<ApplyResult>>
+applyBatchTransactions(
+    ServiceRegistry& registry,
+    OpenView& batchView,
+    STTx const& batchTxn,
+    ApplyFlags flags,
+    beast::Journal j);
 
 /** Transaction application helper
 
