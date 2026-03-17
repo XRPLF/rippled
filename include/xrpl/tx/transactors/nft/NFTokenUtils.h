@@ -95,7 +95,7 @@ tokenOfferCreatePreflight(
     std::uint16_t nftFlags,
     Rules const& rules,
     std::optional<AccountID> const& owner = std::nullopt,
-    std::uint32_t txFlags = lsfSellNFToken);
+    std::uint32_t txFlags = tfSellNFToken);
 
 /** Preclaim checks shared by NFTokenCreateOffer and NFTokenMint */
 TER
