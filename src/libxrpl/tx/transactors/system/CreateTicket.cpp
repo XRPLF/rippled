@@ -65,7 +65,7 @@ CreateTicket::doApply()
         XRPAmount const reserve =
             view().fees().accountReserve(sleAccountRoot->getFieldU32(sfOwnerCount) + ticketCount);
 
-        if (mPriorBalance < reserve)
+        if (preFeeBalance_ < reserve)
             return tecINSUFFICIENT_RESERVE;
     }
 
