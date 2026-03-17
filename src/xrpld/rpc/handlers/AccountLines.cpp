@@ -98,7 +98,7 @@ doAccountLines(RPC::JsonContext& context)
         return result;
     }
 
-    unsigned int limit;
+    unsigned int limit = 0;
     if (auto err = readLimitField(limit, RPC::Tuning::accountLines, context))
         return *err;
 
