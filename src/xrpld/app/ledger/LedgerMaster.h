@@ -58,7 +58,7 @@ public:
     std::shared_ptr<Ledger const>
     getClosedLedger()
     {
-        return mClosedLedger.get();
+        return closedLedger_.get();
     }
 
     // The validated ledger is the last fully validated ledger.
@@ -241,7 +241,7 @@ public:
     bool
     haveValidated()
     {
-        return !mValidLedger.empty();
+        return !validLedger_.empty();
     }
 
     // Returns the minimum ledger sequence in SQL database, if any.
@@ -297,50 +297,50 @@ private:
     std::recursive_mutex mutable mutex_;
 
     // The ledger that most recently closed.
-    LedgerHolder mClosedLedger;
+    LedgerHolder closedLedger_;
 
     // The highest-sequence ledger we have fully accepted.
-    LedgerHolder mValidLedger;
+    LedgerHolder validLedger_;
 
     // The last ledger we have published.
-    std::shared_ptr<Ledger const> mPubLedger;
+    std::shared_ptr<Ledger const> pubLedger_;
 
     // The last ledger we did pathfinding against.
-    std::shared_ptr<Ledger const> mPathLedger;
+    std::shared_ptr<Ledger const> pathLedger_;
 
     // The last ledger we handled fetching history
-    std::shared_ptr<Ledger const> mHistLedger;
+    std::shared_ptr<Ledger const> histLedger_;
 
     // Fully validated ledger, whether or not we have the ledger resident.
-    std::pair<uint256, LedgerIndex> mLastValidLedger{uint256(), 0};
+    std::pair<uint256, LedgerIndex> lastValidLedger_{uint256(), 0};
 
-    LedgerHistory mLedgerHistory;
+    LedgerHistory ledgerHistory_;
 
-    CanonicalTXSet mHeldTransactions{uint256()};
+    CanonicalTXSet heldTransactions_{uint256()};
 
     // A set of transactions to replay during the next close
     std::unique_ptr<LedgerReplay> replayData;
 
-    std::recursive_mutex mCompleteLock;
-    RangeSet<std::uint32_t> mCompleteLedgers;
+    std::recursive_mutex completeLock_;
+    RangeSet<std::uint32_t> completeLedgers_;
 
     // Publish thread is running.
-    bool mAdvanceThread{false};
+    bool advanceThread_{false};
 
     // Publish thread has work to do.
-    bool mAdvanceWork{false};
-    int mFillInProgress{0};
+    bool advanceWork_{false};
+    int fillInProgress_{0};
 
-    int mPathFindThread{0};  // Pathfinder jobs dispatched
-    bool mPathFindNewRequest{false};
+    int pathFindThread_{0};  // Pathfinder jobs dispatched
+    bool pathFindNewRequest_{false};
 
-    std::atomic_flag mGotFetchPackThread = ATOMIC_FLAG_INIT;  // GotFetchPack jobs dispatched
+    std::atomic_flag gotFetchPackThread_ = ATOMIC_FLAG_INIT;  // GotFetchPack jobs dispatched
 
-    std::atomic<std::uint32_t> mPubLedgerClose{0};
-    std::atomic<LedgerIndex> mPubLedgerSeq{0};
-    std::atomic<std::uint32_t> mValidLedgerSign{0};
-    std::atomic<LedgerIndex> mValidLedgerSeq{0};
-    std::atomic<LedgerIndex> mBuildingLedgerSeq{0};
+    std::atomic<std::uint32_t> pubLedgerClose_{0};
+    std::atomic<LedgerIndex> pubLedgerSeq_{0};
+    std::atomic<std::uint32_t> validLedgerSign_{0};
+    std::atomic<LedgerIndex> validLedgerSeq_{0};
+    std::atomic<LedgerIndex> buildingLedgerSeq_{0};
 
     // The server is in standalone mode
     bool const standalone_;

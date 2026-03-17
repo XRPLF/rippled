@@ -1148,12 +1148,12 @@ private:
             auto const signingKeysMax = randomKeyPair(KeyType::secp256k1);
             auto const signingPublicMax = signingKeysMax.first;
             activeValidatorsOuter.emplace(calcNodeID(signingPublicMax));
-            auto mMax = deserializeManifest(makeRevocationString(masterPublic, masterPrivate));
+            auto max_ = deserializeManifest(makeRevocationString(masterPublic, masterPrivate));
 
             // NOLINTBEGIN(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(mMax->revoked());
+            BEAST_EXPECT(max_->revoked());
             BEAST_EXPECT(
-                manifestsOuter.applyManifest(std::move(*mMax)) == ManifestDisposition::accepted);
+                manifestsOuter.applyManifest(std::move(*max_)) == ManifestDisposition::accepted);
             // NOLINTEND(bugprone-unchecked-optional-access)
 
             BEAST_EXPECT(manifestsOuter.getSigningKey(masterPublic) == masterPublic);

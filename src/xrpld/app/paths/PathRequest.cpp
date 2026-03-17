@@ -28,12 +28,12 @@ PathRequest::PathRequest(
     beast::Journal journal)
     : app_(app)
     , journal_(journal)
-    , mOwner(owner)
+    , owner_(owner)
     , wpSubscriber(subscriber)
     , consumer_(subscriber->getConsumer())
     , jvStatus(Json::objectValue)
-    , mLastIndex(0)
-    , mInProgress(false)
+    , lastIndex_(0)
+    , inProgress_(false)
     , iLevel(0)
     , bLastSuccess(false)
     , iIdentifier(id)
@@ -51,12 +51,12 @@ PathRequest::PathRequest(
     beast::Journal journal)
     : app_(app)
     , journal_(journal)
-    , mOwner(owner)
+    , owner_(owner)
     , fCompletion(completion)
     , consumer_(consumer)
     , jvStatus(Json::objectValue)
-    , mLastIndex(0)
-    , mInProgress(false)
+    , lastIndex_(0)
+    , inProgress_(false)
     , iLevel(0)
     , bLastSuccess(false)
     , iIdentifier(id)
@@ -93,35 +93,35 @@ PathRequest::~PathRequest()
 bool
 PathRequest::isNew()
 {
-    std::lock_guard sl(mIndexLock);
+    std::lock_guard sl(indexLock_);
 
     // does this path request still need its first full path
-    return mLastIndex == 0;
+    return lastIndex_ == 0;
 }
 
 bool
 PathRequest::needsUpdate(bool newOnly, LedgerIndex index)
 {
-    std::lock_guard sl(mIndexLock);
+    std::lock_guard sl(indexLock_);
 
-    if (mInProgress)
+    if (inProgress_)
     {
         // Another thread is handling this
         return false;
     }
 
-    if (newOnly && (mLastIndex != 0))
+    if (newOnly && (lastIndex_ != 0))
     {
         // Only handling new requests, this isn't new
         return false;
     }
 
-    if (mLastIndex >= index)
+    if (lastIndex_ >= index)
     {
         return false;
     }
 
-    mInProgress = true;
+    inProgress_ = true;
     return true;
 }
 
@@ -134,10 +134,10 @@ PathRequest::hasCompletion()
 void
 PathRequest::updateComplete()
 {
-    std::lock_guard sl(mIndexLock);
+    std::lock_guard sl(indexLock_);
 
-    XRPL_ASSERT(mInProgress, "xrpl::PathRequest::updateComplete : in progress");
-    mInProgress = false;
+    XRPL_ASSERT(inProgress_, "xrpl::PathRequest::updateComplete : in progress");
+    inProgress_ = false;
 
     if (fCompletion)
     {
@@ -419,7 +419,7 @@ Json::Value
 PathRequest::doClose()
 {
     JLOG(journal_.debug()) << iIdentifier << " closed";
-    std::lock_guard sl(mLock);
+    std::lock_guard sl(lock_);
     jvStatus[jss::closed] = true;
     return jvStatus;
 }
@@ -427,7 +427,7 @@ PathRequest::doClose()
 Json::Value
 PathRequest::doStatus(Json::Value const&)
 {
-    std::lock_guard sl(mLock);
+    std::lock_guard sl(lock_);
     jvStatus[jss::status] = jss::success;
     return jvStatus;
 }
@@ -513,8 +513,8 @@ PathRequest::findPaths(
 
         STPath fullLiquidityPath;
         auto ps = pathfinder->getBestPaths(
-            max_paths_, fullLiquidityPath, mContext[issue], issue.account, continueCallback);
-        mContext[issue] = ps;
+            max_paths_, fullLiquidityPath, context_[issue], issue.account, continueCallback);
+        context_[issue] = ps;
 
         auto const& sourceAccount = [&] {
             if (!isXRP(issue.account))
@@ -621,7 +621,7 @@ PathRequest::doUpdate(
     JLOG(journal_.debug()) << iIdentifier << " update " << (fast ? "fast" : "normal");
 
     {
-        std::lock_guard sl(mLock);
+        std::lock_guard sl(lock_);
 
         if (!isValid(cache))
             return jvStatus;
@@ -696,16 +696,16 @@ PathRequest::doUpdate(
     if (fast && quick_reply_ == steady_clock::time_point{})
     {
         quick_reply_ = steady_clock::now();
-        mOwner.reportFast(duration_cast<milliseconds>(quick_reply_ - created_));
+        owner_.reportFast(duration_cast<milliseconds>(quick_reply_ - created_));
     }
     else if (!fast && full_reply_ == steady_clock::time_point{})
     {
         full_reply_ = steady_clock::now();
-        mOwner.reportFull(duration_cast<milliseconds>(full_reply_ - created_));
+        owner_.reportFull(duration_cast<milliseconds>(full_reply_ - created_));
     }
 
     {
-        std::lock_guard sl(mLock);
+        std::lock_guard sl(lock_);
         jvStatus = newStatus;
     }
 

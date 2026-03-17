@@ -88,7 +88,7 @@ SkipListAcquire::trigger(std::size_t limit, ScopedLockType& sl)
 void
 SkipListAcquire::onTimer(bool progress, ScopedLockType& sl)
 {
-    JLOG(journal_.trace()) << "mTimeouts=" << timeouts_ << " for " << hash_;
+    JLOG(journal_.trace()) << "timeouts_=" << timeouts_ << " for " << hash_;
     if (timeouts_ > LedgerReplayParameters::SUB_TASK_MAX_TIMEOUTS)
     {
         failed_ = true;

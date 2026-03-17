@@ -33,39 +33,39 @@ public:
     std::shared_ptr<STTx const> const&
     getTxn() const
     {
-        return mTxn;
+        return txn_;
     }
     TxMeta const&
     getMeta() const
     {
-        return mMeta;
+        return meta_;
     }
 
     boost::container::flat_set<AccountID> const&
     getAffected() const
     {
-        return mAffected;
+        return affected_;
     }
 
     TxID
     getTransactionID() const
     {
-        return mTxn->getTransactionID();
+        return txn_->getTransactionID();
     }
     TxType
     getTxnType() const
     {
-        return mTxn->getTxnType();
+        return txn_->getTxnType();
     }
     TER
     getResult() const
     {
-        return mMeta.getResultTER();
+        return meta_.getResultTER();
     }
     std::uint32_t
     getTxnSeq() const
     {
-        return mMeta.getIndex();
+        return meta_.getIndex();
     }
     std::string
     getEscMeta() const;
@@ -73,15 +73,15 @@ public:
     Json::Value const&
     getJson() const
     {
-        return mJson;
+        return json_;
     }
 
 private:
-    std::shared_ptr<STTx const> mTxn;
-    TxMeta mMeta;
-    boost::container::flat_set<AccountID> mAffected;
-    Blob mRawMeta;
-    Json::Value mJson;
+    std::shared_ptr<STTx const> txn_;
+    TxMeta meta_;
+    boost::container::flat_set<AccountID> affected_;
+    Blob rawMeta_;
+    Json::Value json_;
 };
 
 }  // namespace xrpl

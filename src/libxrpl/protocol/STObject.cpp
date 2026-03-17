@@ -42,11 +42,11 @@
 namespace xrpl {
 
 STObject::STObject(STObject&& other)
-    : STBase(other.getFName()), v_(std::move(other.v_)), mType(other.mType)
+    : STBase(other.getFName()), v_(std::move(other.v_)), type_(other.type_)
 {
 }
 
-STObject::STObject(SField const& name) : STBase(name), mType(nullptr)
+STObject::STObject(SField const& name) : STBase(name), type_(nullptr)
 {
 }
 
@@ -63,7 +63,7 @@ STObject::STObject(SOTemplate const& type, SerialIter& sit, SField const& name) 
 }
 
 STObject::STObject(SerialIter& sit, SField const& name, int depth) noexcept(false)
-    : STBase(name), mType(nullptr)
+    : STBase(name), type_(nullptr)
 {
     if (depth > 10)
         Throw<std::runtime_error>("Maximum nesting depth of STObject exceeded");
@@ -126,7 +126,7 @@ STObject&
 STObject::operator=(STObject&& other)
 {
     setFName(other.getFName());
-    mType = other.mType;
+    type_ = other.type_;
     v_ = std::move(other.v_);
     return *this;
 }
@@ -136,7 +136,7 @@ STObject::set(SOTemplate const& type)
 {
     v_.clear();
     v_.reserve(type.size());
-    mType = &type;
+    type_ = &type;
 
     for (auto const& elem : type)
     {
@@ -158,7 +158,7 @@ STObject::applyTemplate(SOTemplate const& type)
         Throw<FieldErr>(text);
     };
 
-    mType = &type;
+    type_ = &type;
     decltype(v_) v;
     v.reserve(type.size());
     for (auto const& e : type)
@@ -337,7 +337,7 @@ STObject::isEquivalent(STBase const& t) const
     if (!v)
         return false;
 
-    if (mType != nullptr && v->mType == mType)
+    if (type_ != nullptr && v->type_ == type_)
     {
         return std::equal(
             begin(), end(), v->begin(), v->end(), [](STBase const& st1, STBase const& st2) {
@@ -375,8 +375,8 @@ STObject::getSigningHash(HashPrefix prefix) const
 int
 STObject::getFieldIndex(SField const& field) const
 {
-    if (mType != nullptr)
-        return mType->getIndex(field);
+    if (type_ != nullptr)
+        return type_->getIndex(field);
 
     int i = 0;
     for (auto const& elem : v_)
@@ -565,7 +565,7 @@ STObject::delField(int index)
 SOEStyle
 STObject::getStyle(SField const& field) const
 {
-    return mType ? mType->style(field) : soeINVALID;
+    return type_ ? type_->style(field) : soeINVALID;
 }
 
 unsigned char

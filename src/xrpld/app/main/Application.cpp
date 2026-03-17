@@ -186,9 +186,9 @@ public:
     std::unique_ptr<ValidatorSite> validatorSites_;
     std::unique_ptr<ServerHandler> serverHandler_;
     std::unique_ptr<AmendmentTable> amendmentTable_;
-    std::unique_ptr<LoadFeeTrack> mFeeTrack;
+    std::unique_ptr<LoadFeeTrack> feeTrack_;
     std::unique_ptr<HashRouter> hashRouter_;
-    RCLValidations mValidations;
+    RCLValidations validations_;
     std::unique_ptr<LoadManager> loadManager_;
     std::unique_ptr<TxQ> txQ_;
     ClosureCounter<void, boost::system::error_code const&> waitHandlerCounter_;
@@ -196,7 +196,7 @@ public:
     boost::asio::steady_timer entropyTimer_;
 
     std::optional<SQLiteDatabase> relationalDatabase_;
-    std::unique_ptr<DatabaseCon> mWalletDB;
+    std::unique_ptr<DatabaseCon> walletDB_;
     std::unique_ptr<Overlay> overlay_;
     std::optional<uint256> trapTxID_;
 
@@ -401,11 +401,11 @@ public:
               *resourceManager_,
               *collectorManager_))
 
-        , mFeeTrack(std::make_unique<LoadFeeTrack>(logs_->journal("LoadManager")))
+        , feeTrack_(std::make_unique<LoadFeeTrack>(logs_->journal("LoadManager")))
 
         , hashRouter_(std::make_unique<HashRouter>(setup_HashRouter(*config_), stopwatch()))
 
-        , mValidations(ValidationParms(), stopwatch(), *this, logs_->journal("Validations"))
+        , validations_(ValidationParms(), stopwatch(), *this, logs_->journal("Validations"))
 
         , loadManager_(make_LoadManager(*this, logs_->journal("LoadManager")))
 
@@ -677,7 +677,7 @@ public:
     LoadFeeTrack&
     getFeeTrack() override
     {
-        return *mFeeTrack;
+        return *feeTrack_;
     }
 
     HashRouter&
@@ -689,7 +689,7 @@ public:
     RCLValidations&
     getValidations() override
     {
-        return mValidations;
+        return validations_;
     }
 
     ValidatorList&
@@ -779,8 +779,8 @@ public:
     DatabaseCon&
     getWalletDB() override
     {
-        XRPL_ASSERT(mWalletDB, "xrpl::ApplicationImp::getWalletDB : non-null wallet database");
-        return *mWalletDB;
+        XRPL_ASSERT(walletDB_, "xrpl::ApplicationImp::getWalletDB : non-null wallet database");
+        return *walletDB_;
     }
 
     bool
@@ -795,7 +795,7 @@ public:
     initRelationalDatabase()
     {
         XRPL_ASSERT(
-            mWalletDB.get() == nullptr,
+            walletDB_.get() == nullptr,
             "xrpl::ApplicationImp::initRelationalDatabase : null wallet "
             "database");
 
@@ -807,7 +807,7 @@ public:
             auto setup = setup_DatabaseCon(*config_, journal_);
             setup.useGlobalPragma = false;
 
-            mWalletDB = makeWalletDB(setup, journal_);
+            walletDB_ = makeWalletDB(setup, journal_);
         }
         catch (std::exception const& e)
         {
@@ -1528,7 +1528,7 @@ ApplicationImp::run()
 
     waitHandlerCounter_.join("Application", 1s, journal_);
 
-    mValidations.flush();
+    validations_.flush();
 
     validatorSites_->stop();
 

@@ -117,9 +117,9 @@ private:
     Application& app_;
     beast::Journal journal_;
 
-    std::recursive_mutex mLock;
+    std::recursive_mutex lock_;
 
-    PathRequests& mOwner;
+    PathRequests& owner_;
 
     std::weak_ptr<InfoSub> wpSubscriber;  // Who this request came from
     std::function<void(void)> fCompletion;
@@ -135,15 +135,15 @@ private:
     std::optional<STAmount> saSendMax;
 
     std::set<Issue> sciSourceCurrencies;
-    std::map<Issue, STPathSet> mContext;
+    std::map<Issue, STPathSet> context_;
 
     std::optional<uint256> domain;
 
     bool convert_all_;
 
-    std::recursive_mutex mIndexLock;
-    LedgerIndex mLastIndex;
-    bool mInProgress;
+    std::recursive_mutex indexLock_;
+    LedgerIndex lastIndex_;
+    bool inProgress_;
 
     int iLevel;
     bool bLastSuccess;

@@ -57,7 +57,7 @@ class STObject : public STBase, public CountedObject<STObject>
     using list_type = std::vector<detail::STVar>;
 
     list_type v_;
-    SOTemplate const* mType;
+    SOTemplate const* type_;
 
 public:
     using iterator = boost::transform_iterator<Transform, STObject::list_type::const_iterator>;
@@ -702,12 +702,12 @@ class STObject::FieldErr : public std::runtime_error
 template <class T>
 STObject::Proxy<T>::Proxy(STObject* st, TypedField<T> const* f) : st_(st), f_(f)
 {
-    if (st_->mType)
+    if (st_->type_)
     {
         // STObject has associated template
         if (!st_->peekAtPField(*f_))
             Throw<STObject::FieldErr>("Template field error '" + this->f_->getName() + "'");
-        style_ = st_->mType->style(*f_);
+        style_ = st_->type_->style(*f_);
     }
     else
     {
@@ -961,7 +961,7 @@ STObject::reserve(std::size_t n)
 inline bool
 STObject::isFree() const
 {
-    return mType == nullptr;
+    return type_ == nullptr;
 }
 
 inline void
@@ -1060,15 +1060,15 @@ STObject::at(TypedField<T> const& f) const
     if (auto const u = dynamic_cast<T const*>(b))
         return u->value();
 
-    XRPL_ASSERT(mType, "xrpl::STObject::at(TypedField auto) : field template non-null");
+    XRPL_ASSERT(type_, "xrpl::STObject::at(TypedField auto) : field template non-null");
     XRPL_ASSERT(
         b->getSType() == STI_NOTPRESENT, "xrpl::STObject::at(TypedField auto) : type not present");
 
-    if (mType->style(f) == soeOPTIONAL)
+    if (type_->style(f) == soeOPTIONAL)
         Throw<STObject::FieldErr>("Missing optional field: " + f.getName());
 
     XRPL_ASSERT(
-        mType->style(f) == soeDEFAULT,
+        type_->style(f) == soeDEFAULT,
         "xrpl::STObject::at(TypedField auto) : template style is default");
 
     // Used to help handle the case where value_type is a const reference,
@@ -1088,16 +1088,16 @@ STObject::at(OptionaledField<T> const& of) const
     if (!u)
     {
         XRPL_ASSERT(
-            mType,
+            type_,
             "xrpl::STObject::at(OptionaledField auto) : field template "
             "non-null");
         XRPL_ASSERT(
             b->getSType() == STI_NOTPRESENT,
             "xrpl::STObject::at(OptionaledField auto) : type not present");
-        if (mType->style(*of.f) == soeOPTIONAL)
+        if (type_->style(*of.f) == soeOPTIONAL)
             return std::nullopt;
         XRPL_ASSERT(
-            mType->style(*of.f) == soeDEFAULT,
+            type_->style(*of.f) == soeDEFAULT,
             "xrpl::STObject::at(OptionaledField auto) : template style is "
             "default");
         return typename T::value_type{};

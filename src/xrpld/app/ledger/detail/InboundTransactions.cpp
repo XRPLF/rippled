@@ -26,16 +26,16 @@ class InboundTransactionSet
 {
     // A transaction set we generated, acquired, or are acquiring
 public:
-    std::uint32_t mSeq;
-    TransactionAcquire::pointer mAcquire;
-    std::shared_ptr<SHAMap> mSet;
+    std::uint32_t seq_;
+    TransactionAcquire::pointer acquire_;
+    std::shared_ptr<SHAMap> set_;
 
     InboundTransactionSet(std::uint32_t seq, std::shared_ptr<SHAMap> const& set)
-        : mSeq(seq), mSet(set)
+        : seq_(seq), set_(set)
     {
         ;
     }
-    InboundTransactionSet() : mSeq(0)
+    InboundTransactionSet() : seq_(0)
     {
         ;
     }
@@ -56,21 +56,21 @@ public:
         , peerSetBuilder_(std::move(peerSetBuilder))
         , j_(app_.journal("InboundTransactions"))
     {
-        zeroSet_.mSet =
+        zeroSet_.set_ =
             std::make_shared<SHAMap>(SHAMapType::TRANSACTION, uint256(), app_.getNodeFamily());
-        zeroSet_.mSet->setUnbacked();
+        zeroSet_.set_->setUnbacked();
     }
 
     TransactionAcquire::pointer
     getAcquire(uint256 const& hash)
     {
         {
-            std::lock_guard sl(mLock);
+            std::lock_guard sl(lock_);
 
             auto it = map_.find(hash);
 
             if (it != map_.end())
-                return it->second.mAcquire;
+                return it->second.acquire_;
         }
         return {};
     }
@@ -81,19 +81,19 @@ public:
         TransactionAcquire::pointer ta;
 
         {
-            std::lock_guard sl(mLock);
+            std::lock_guard sl(lock_);
 
             if (auto it = map_.find(hash); it != map_.end())
             {
                 if (acquire)
                 {
-                    it->second.mSeq = seq_;
-                    if (it->second.mAcquire)
+                    it->second.seq_ = seq_;
+                    if (it->second.acquire_)
                     {
-                        it->second.mAcquire->stillNeed();
+                        it->second.acquire_->stillNeed();
                     }
                 }
-                return it->second.mSet;
+                return it->second.set_;
             }
 
             if (!acquire || stopping_)
@@ -102,8 +102,8 @@ public:
             ta = std::make_shared<TransactionAcquire>(app_, hash, peerSetBuilder_->build());
 
             auto& obj = map_[hash];
-            obj.mAcquire = ta;
-            obj.mSeq = seq_;
+            obj.acquire_ = ta;
+            obj.seq_ = seq_;
         }
 
         ta->init(startPeers);
@@ -164,19 +164,19 @@ public:
         bool isNew = true;
 
         {
-            std::lock_guard sl(mLock);
+            std::lock_guard sl(lock_);
 
             auto& inboundSet = map_[hash];
 
-            if (inboundSet.mSeq < seq_)
-                inboundSet.mSeq = seq_;
+            if (inboundSet.seq_ < seq_)
+                inboundSet.seq_ = seq_;
 
-            if (inboundSet.mSet)
+            if (inboundSet.set_)
                 isNew = false;
             else
-                inboundSet.mSet = set;
+                inboundSet.set_ = set;
 
-            inboundSet.mAcquire.reset();
+            inboundSet.acquire_.reset();
         }
 
         if (isNew)
@@ -186,10 +186,10 @@ public:
     void
     newRound(std::uint32_t seq) override
     {
-        std::lock_guard lock(mLock);
+        std::lock_guard lock(lock_);
 
         // Protect zero set from expiration
-        zeroSet_.mSeq = seq;
+        zeroSet_.seq_ = seq;
 
         if (seq_ != seq)
         {
@@ -202,7 +202,7 @@ public:
 
             while (it != map_.end())
             {
-                if (it->second.mSeq < minSeq || it->second.mSeq > maxSeq)
+                if (it->second.seq_ < minSeq || it->second.seq_ > maxSeq)
                     it = map_.erase(it);
                 else
                     ++it;
@@ -213,7 +213,7 @@ public:
     void
     stop() override
     {
-        std::lock_guard lock(mLock);
+        std::lock_guard lock(lock_);
         stopping_ = true;
         map_.clear();
     }
@@ -223,7 +223,7 @@ private:
 
     Application& app_;
 
-    std::recursive_mutex mLock;
+    std::recursive_mutex lock_;
 
     bool stopping_{false};
     MapType map_;

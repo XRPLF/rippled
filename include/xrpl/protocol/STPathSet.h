@@ -14,10 +14,10 @@ namespace xrpl {
 
 class STPathElement final : public CountedObject<STPathElement>
 {
-    unsigned int mType;
-    AccountID mAccountID;
-    Currency mCurrencyID;
-    AccountID mIssuerID;
+    unsigned int type_;
+    AccountID accountID_;
+    Currency currencyID_;
+    AccountID issuerID_;
 
     bool is_offer_;
     std::size_t hash_value_;
@@ -97,7 +97,7 @@ private:
 
 class STPath final : public CountedObject<STPath>
 {
-    std::vector<STPathElement> mPath;
+    std::vector<STPathElement> path_;
 
 public:
     STPath() = default;
@@ -214,7 +214,7 @@ private:
 
 // ------------ STPathElement ------------
 
-inline STPathElement::STPathElement() : mType(typeNone), is_offer_(true)
+inline STPathElement::STPathElement() : type_(typeNone), is_offer_(true)
 {
     hash_value_ = get_hash(*this);
 }
@@ -223,7 +223,7 @@ inline STPathElement::STPathElement(
     std::optional<AccountID> const& account,
     std::optional<Currency> const& currency,
     std::optional<AccountID> const& issuer)
-    : mType(typeNone)
+    : type_(typeNone)
 {
     if (!account)
     {
@@ -232,23 +232,23 @@ inline STPathElement::STPathElement(
     else
     {
         is_offer_ = false;
-        mAccountID = *account;
-        mType |= typeAccount;
+        accountID_ = *account;
+        type_ |= typeAccount;
         XRPL_ASSERT(
-            mAccountID != noAccount(), "xrpl::STPathElement::STPathElement : account is set");
+            accountID_ != noAccount(), "xrpl::STPathElement::STPathElement : account is set");
     }
 
     if (currency)
     {
-        mCurrencyID = *currency;
-        mType |= typeCurrency;
+        currencyID_ = *currency;
+        type_ |= typeCurrency;
     }
 
     if (issuer)
     {
-        mIssuerID = *issuer;
-        mType |= typeIssuer;
-        XRPL_ASSERT(mIssuerID != noAccount(), "xrpl::STPathElement::STPathElement : issuer is set");
+        issuerID_ = *issuer;
+        type_ |= typeIssuer;
+        XRPL_ASSERT(issuerID_ != noAccount(), "xrpl::STPathElement::STPathElement : issuer is set");
     }
 
     hash_value_ = get_hash(*this);
@@ -259,20 +259,20 @@ inline STPathElement::STPathElement(
     Currency const& currency,
     AccountID const& issuer,
     bool forceCurrency)
-    : mType(typeNone)
-    , mAccountID(account)
-    , mCurrencyID(currency)
-    , mIssuerID(issuer)
-    , is_offer_(isXRP(mAccountID))
+    : type_(typeNone)
+    , accountID_(account)
+    , currencyID_(currency)
+    , issuerID_(issuer)
+    , is_offer_(isXRP(accountID_))
 {
     if (!is_offer_)
-        mType |= typeAccount;
+        type_ |= typeAccount;
 
     if (forceCurrency || !isXRP(currency))
-        mType |= typeCurrency;
+        type_ |= typeCurrency;
 
     if (!isXRP(issuer))
-        mType |= typeIssuer;
+        type_ |= typeIssuer;
 
     hash_value_ = get_hash(*this);
 }
@@ -282,11 +282,11 @@ inline STPathElement::STPathElement(
     AccountID const& account,
     Currency const& currency,
     AccountID const& issuer)
-    : mType(uType)
-    , mAccountID(account)
-    , mCurrencyID(currency)
-    , mIssuerID(issuer)
-    , is_offer_(isXRP(mAccountID))
+    : type_(uType)
+    , accountID_(account)
+    , currencyID_(currency)
+    , issuerID_(issuer)
+    , is_offer_(isXRP(accountID_))
 {
     hash_value_ = get_hash(*this);
 }
@@ -294,7 +294,7 @@ inline STPathElement::STPathElement(
 inline auto
 STPathElement::getNodeType() const
 {
-    return mType;
+    return type_;
 }
 
 inline bool
@@ -332,26 +332,26 @@ STPathElement::isNone() const
 inline AccountID const&
 STPathElement::getAccountID() const
 {
-    return mAccountID;
+    return accountID_;
 }
 
 inline Currency const&
 STPathElement::getCurrency() const
 {
-    return mCurrencyID;
+    return currencyID_;
 }
 
 inline AccountID const&
 STPathElement::getIssuerID() const
 {
-    return mIssuerID;
+    return issuerID_;
 }
 
 inline bool
 STPathElement::operator==(STPathElement const& t) const
 {
-    return (mType & typeAccount) == (t.mType & typeAccount) && hash_value_ == t.hash_value_ &&
-        mAccountID == t.mAccountID && mCurrencyID == t.mCurrencyID && mIssuerID == t.mIssuerID;
+    return (type_ & typeAccount) == (t.type_ & typeAccount) && hash_value_ == t.hash_value_ &&
+        accountID_ == t.accountID_ && currencyID_ == t.currencyID_ && issuerID_ == t.issuerID_;
 }
 
 inline bool
@@ -362,81 +362,81 @@ STPathElement::operator!=(STPathElement const& t) const
 
 // ------------ STPath ------------
 
-inline STPath::STPath(std::vector<STPathElement> p) : mPath(std::move(p))
+inline STPath::STPath(std::vector<STPathElement> p) : path_(std::move(p))
 {
 }
 
 inline std::vector<STPathElement>::size_type
 STPath::size() const
 {
-    return mPath.size();
+    return path_.size();
 }
 
 inline bool
 STPath::empty() const
 {
-    return mPath.empty();
+    return path_.empty();
 }
 
 inline void
 STPath::push_back(STPathElement const& e)
 {
-    mPath.push_back(e);
+    path_.push_back(e);
 }
 
 template <typename... Args>
 inline void
 STPath::emplace_back(Args&&... args)
 {
-    mPath.emplace_back(std::forward<Args>(args)...);
+    path_.emplace_back(std::forward<Args>(args)...);
 }
 
 inline std::vector<STPathElement>::const_iterator
 STPath::begin() const
 {
-    return mPath.begin();
+    return path_.begin();
 }
 
 inline std::vector<STPathElement>::const_iterator
 STPath::end() const
 {
-    return mPath.end();
+    return path_.end();
 }
 
 inline bool
 STPath::operator==(STPath const& t) const
 {
-    return mPath == t.mPath;
+    return path_ == t.path_;
 }
 
 inline std::vector<STPathElement>::const_reference
 STPath::back() const
 {
-    return mPath.back();
+    return path_.back();
 }
 
 inline std::vector<STPathElement>::const_reference
 STPath::front() const
 {
-    return mPath.front();
+    return path_.front();
 }
 
 inline STPathElement&
 STPath::operator[](int i)
 {
-    return mPath[i];
+    return path_[i];
 }
 
 inline STPathElement const&
 STPath::operator[](int i) const
 {
-    return mPath[i];
+    return path_[i];
 }
 
 inline void
 STPath::reserve(size_t s)
 {
-    mPath.reserve(s);
+    path_.reserve(s);
 }
 
 // ------------ STPathSet ------------

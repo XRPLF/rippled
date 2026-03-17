@@ -139,7 +139,7 @@ STPathSet::isDefault() const
 bool
 STPath::hasSeen(AccountID const& account, Currency const& currency, AccountID const& issuer) const
 {
-    for (auto& p : mPath)
+    for (auto& p : path_)
     {
         if (p.getAccountID() == account && p.getCurrency() == currency && p.getIssuerID() == issuer)
             return true;
@@ -153,7 +153,7 @@ STPath::getJson(JsonOptions) const
 {
     Json::Value ret(Json::arrayValue);
 
-    for (auto it : mPath)
+    for (auto it : path_)
     {
         Json::Value elem(Json::objectValue);
         auto const iType = it.getNodeType();

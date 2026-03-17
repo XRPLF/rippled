@@ -82,11 +82,11 @@ private:
     // does an order book to XRP exist
     hash_set<std::pair<Issue, Domain>> xrpDomainBooks_;
 
-    std::recursive_mutex mLock;
+    std::recursive_mutex lock_;
 
     using BookToListenersMap = hash_map<Book, BookListeners::pointer>;
 
-    BookToListenersMap mListeners;
+    BookToListenersMap listeners_;
 
     std::atomic<std::uint32_t> seq_;
 

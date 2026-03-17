@@ -44,7 +44,7 @@ LedgerHistory::insert(std::shared_ptr<Ledger const> const& ledger, bool validate
     bool const alreadyHad =
         ledgers_by_hash_.canonicalize_replace_cache(ledger->header().hash, ledger);
     if (validated)
-        mLedgersByIndex[ledger->header().seq] = ledger->header().hash;
+        ledgersByIndex_[ledger->header().seq] = ledger->header().hash;
 
     return alreadyHad;
 }
@@ -53,7 +53,7 @@ LedgerHash
 LedgerHistory::getLedgerHash(LedgerIndex index)
 {
     std::unique_lock sl(ledgers_by_hash_.peekMutex());
-    if (auto it = mLedgersByIndex.find(index); it != mLedgersByIndex.end())
+    if (auto it = ledgersByIndex_.find(index); it != ledgersByIndex_.end())
         return it->second;
     return {};
 }
@@ -63,9 +63,9 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
 {
     {
         std::unique_lock sl(ledgers_by_hash_.peekMutex());
-        auto it = mLedgersByIndex.find(index);
+        auto it = ledgersByIndex_.find(index);
 
-        if (it != mLedgersByIndex.end())
+        if (it != ledgersByIndex_.end())
         {
             uint256 hash = it->second;
             sl.unlock();
@@ -88,7 +88,7 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
         XRPL_ASSERT(
             ret->isImmutable(), "xrpl::LedgerHistory::getLedgerBySeq : immutable result ledger");
         ledgers_by_hash_.canonicalize_replace_client(ret->header().hash, ret);
-        mLedgersByIndex[ret->header().seq] = ret->header().hash;
+        ledgersByIndex_[ret->header().seq] = ret->header().hash;
         return (ret->header().seq == index) ? ret : nullptr;
     }
 }
@@ -474,9 +474,9 @@ bool
 LedgerHistory::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
 {
     std::unique_lock sl(ledgers_by_hash_.peekMutex());
-    auto it = mLedgersByIndex.find(ledgerIndex);
+    auto it = ledgersByIndex_.find(ledgerIndex);
 
-    if ((it != mLedgersByIndex.end()) && (it->second != ledgerHash))
+    if ((it != ledgersByIndex_.end()) && (it->second != ledgerHash))
     {
         it->second = ledgerHash;
         return false;

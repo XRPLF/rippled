@@ -25,11 +25,11 @@ public:
         : RPCSub(source)
         , io_context_(io_context)
         , jobQueue_(jobQueue)
-        , mUrl(strUrl)
-        , mSSL(false)
-        , mUsername(strUsername)
-        , mPassword(strPassword)
-        , mSending(false)
+        , url_(strUrl)
+        , sSL_(false)
+        , username_(strUsername)
+        , password_(strPassword)
+        , sending_(false)
         , j_(logs.journal("RPCSub"))
         , logs_(logs)
     {
@@ -38,18 +38,18 @@ public:
         if (!parseUrl(pUrl, strUrl))
             Throw<std::runtime_error>("Failed to parse url.");
         else if (pUrl.scheme == "https")
-            mSSL = true;
+            sSL_ = true;
         else if (pUrl.scheme != "http")
             Throw<std::runtime_error>("Only http and https is supported.");
 
-        mSeq = 1;
+        seq_ = 1;
 
-        mIp = pUrl.domain;
-        mPort = (!pUrl.port) ? (mSSL ? 443 : 80) : *pUrl.port;
-        mPath = pUrl.path;
+        ip_ = pUrl.domain;
+        port_ = (!pUrl.port) ? (sSL_ ? 443 : 80) : *pUrl.port;
+        path_ = pUrl.path;
 
-        JLOG(j_.info()) << "RPCCall::fromNetwork sub: ip=" << mIp << " port=" << mPort
-                        << " ssl= " << (mSSL ? "yes" : "no") << " path='" << mPath << "'";
+        JLOG(j_.info()) << "RPCCall::fromNetwork sub: ip=" << ip_ << " port=" << port_
+                        << " ssl= " << (sSL_ ? "yes" : "no") << " path='" << path_ << "'";
     }
 
     ~RPCSubImp() = default;
@@ -57,19 +57,19 @@ public:
     void
     send(Json::Value const& jvObj, bool broadcast) override
     {
-        std::lock_guard sl(mLock);
+        std::lock_guard sl(lock_);
 
         auto jm = broadcast ? j_.debug() : j_.info();
         JLOG(jm) << "RPCCall::fromNetwork push: " << jvObj;
 
-        mDeque.push_back(std::make_pair(mSeq++, jvObj));
+        deque_.push_back(std::make_pair(seq_++, jvObj));
 
-        if (!mSending)
+        if (!sending_)
         {
             // Start a sending thread.
             JLOG(j_.info()) << "RPCCall::fromNetwork start";
 
-            mSending =
+            sending_ =
                 jobQueue_.addJob(jtCLIENT_SUBSCRIBE, "RPCSubSendThr", [this]() { sendThread(); });
         }
     }
@@ -77,17 +77,17 @@ public:
     void
     setUsername(std::string const& strUsername) override
     {
-        std::lock_guard sl(mLock);
+        std::lock_guard sl(lock_);
 
-        mUsername = strUsername;
+        username_ = strUsername;
     }
 
     void
     setPassword(std::string const& strPassword) override
     {
-        std::lock_guard sl(mLock);
+        std::lock_guard sl(lock_);
 
-        mPassword = strPassword;
+        password_ = strPassword;
     }
 
 private:
@@ -103,18 +103,18 @@ private:
         {
             {
                 // Obtain the lock to manipulate the queue and change sending.
-                std::lock_guard sl(mLock);
+                std::lock_guard sl(lock_);
 
-                if (mDeque.empty())
+                if (deque_.empty())
                 {
-                    mSending = false;
+                    sending_ = false;
                     bSend = false;
                 }
                 else
                 {
-                    auto const [seq, env] = mDeque.front();
+                    auto const [seq, env] = deque_.front();
 
-                    mDeque.pop_front();
+                    deque_.pop_front();
 
                     jvEvent = env;
                     jvEvent["seq"] = seq;
@@ -129,18 +129,18 @@ private:
                 // XXX Might not need this in a try.
                 try
                 {
-                    JLOG(j_.info()) << "RPCCall::fromNetwork: " << mIp;
+                    JLOG(j_.info()) << "RPCCall::fromNetwork: " << ip_;
 
                     RPCCall::fromNetwork(
                         io_context_,
-                        mIp,
-                        mPort,
-                        mUsername,
-                        mPassword,
-                        mPath,
+                        ip_,
+                        port_,
+                        username_,
+                        password_,
+                        path_,
                         "event",
                         jvEvent,
-                        mSSL,
+                        sSL_,
                         true,
                         logs_);
                 }
@@ -156,19 +156,19 @@ private:
     boost::asio::io_context& io_context_;
     JobQueue& jobQueue_;
 
-    std::string mUrl;
-    std::string mIp;
-    std::uint16_t mPort;
-    bool mSSL;
-    std::string mUsername;
-    std::string mPassword;
-    std::string mPath;
+    std::string url_;
+    std::string ip_;
+    std::uint16_t port_;
+    bool sSL_;
+    std::string username_;
+    std::string password_;
+    std::string path_;
 
-    int mSeq;  // Next id to allocate.
+    int seq_;  // Next id to allocate.
 
-    bool mSending;  // Sending thread is active.
+    bool sending_;  // Sending thread is active.
 
-    std::deque<std::pair<int, Json::Value>> mDeque;
+    std::deque<std::pair<int, Json::Value>> deque_;
 
     beast::Journal const j_;
     Logs& logs_;

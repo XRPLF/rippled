@@ -65,8 +65,8 @@ public:
     getCache();
 
 private:
-    Application& mApp;
-    TaggedCache<uint256, Transaction> mCache;
+    Application& app_;
+    TaggedCache<uint256, Transaction> cache_;
 };
 
 }  // namespace xrpl

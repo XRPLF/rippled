@@ -257,7 +257,7 @@ public:
     bool
     isImmutable() const
     {
-        return mImmutable;
+        return immutable_;
     }
 
     /*  Mark this ledger as "should be full".
@@ -382,7 +382,7 @@ private:
     void
     defaultFees(Config const& config);
 
-    bool mImmutable;
+    bool immutable_;
 
     // A SHAMap containing the transactions associated with this ledger.
     SHAMap mutable txMap_;

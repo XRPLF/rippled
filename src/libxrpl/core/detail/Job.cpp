@@ -3,11 +3,11 @@
 
 namespace xrpl {
 
-Job::Job() : mType(jtINVALID), mJobIndex(0)
+Job::Job() : type_(jtINVALID), jobIndex_(0)
 {
 }
 
-Job::Job(JobType type, std::uint64_t index) : mType(type), mJobIndex(index)
+Job::Job(JobType type, std::uint64_t index) : type_(type), jobIndex_(index)
 {
 }
 
@@ -17,7 +17,7 @@ Job::Job(
     std::uint64_t index,
     LoadMonitor& lm,
     std::function<void()> const& job)
-    : mType(type), mJobIndex(index), mJob(job), mName(name), queue_time_(clock_type::now())
+    : type_(type), jobIndex_(index), job_(job), name_(name), queue_time_(clock_type::now())
 {
     loadEvent_ = std::make_shared<LoadEvent>(std::ref(lm), name, false);
 }
@@ -25,7 +25,7 @@ Job::Job(
 JobType
 Job::getType() const
 {
-    return mType;
+    return type_;
 }
 
 Job::clock_type::time_point const&
@@ -37,63 +37,63 @@ Job::queue_time() const
 void
 Job::doJob()
 {
-    beast::setCurrentThreadName("j:" + mName);
+    beast::setCurrentThreadName("j:" + name_);
     loadEvent_->start();
-    loadEvent_->setName(mName);
+    loadEvent_->setName(name_);
 
-    mJob();
+    job_();
 
     // Destroy the lambda, otherwise we won't include
     // its duration in the time measurement
-    mJob = nullptr;
+    job_ = nullptr;
 }
 
 bool
 Job::operator>(Job const& j) const
 {
-    if (mType < j.mType)
+    if (type_ < j.type_)
         return true;
 
-    if (mType > j.mType)
+    if (type_ > j.type_)
         return false;
 
-    return mJobIndex > j.mJobIndex;
+    return jobIndex_ > j.jobIndex_;
 }
 
 bool
 Job::operator>=(Job const& j) const
 {
-    if (mType < j.mType)
+    if (type_ < j.type_)
         return true;
 
-    if (mType > j.mType)
+    if (type_ > j.type_)
         return false;
 
-    return mJobIndex >= j.mJobIndex;
+    return jobIndex_ >= j.jobIndex_;
 }
 
 bool
 Job::operator<(Job const& j) const
 {
-    if (mType < j.mType)
+    if (type_ < j.type_)
         return false;
 
-    if (mType > j.mType)
+    if (type_ > j.type_)
         return true;
 
-    return mJobIndex < j.mJobIndex;
+    return jobIndex_ < j.jobIndex_;
 }
 
 bool
 Job::operator<=(Job const& j) const
 {
-    if (mType < j.mType)
+    if (type_ < j.type_)
         return false;
 
-    if (mType > j.mType)
+    if (type_ > j.type_)
         return true;
 
-    return mJobIndex <= j.mJobIndex;
+    return jobIndex_ <= j.jobIndex_;
 }
 
 }  // namespace xrpl

@@ -270,12 +270,12 @@ private:
     //  A Job in the JobSet whose slots count for its type is greater than zero.
     //
     // Pre-conditions:
-    //  mJobSet must not be empty.
-    //  mJobSet holds at least one RunnableJob
+    //  jobSet_ must not be empty.
+    //  jobSet_ holds at least one RunnableJob
     //
     // Post-conditions:
     //  job is a valid Job object.
-    //  job is removed from mJobQueue.
+    //  job is removed from jobQueue_.
     //  Waiting job count of its type is decremented
     //  Running job count of its type is incremented
     //
@@ -287,7 +287,7 @@ private:
     // Indicates that a running Job has completed its task.
     //
     // Pre-conditions:
-    //  Job must not exist in mJobSet.
+    //  Job must not exist in jobSet_.
     //  The JobType must not be invalid.
     //
     // Post-conditions:

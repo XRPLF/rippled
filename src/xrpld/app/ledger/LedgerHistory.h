@@ -124,7 +124,7 @@ private:
     ConsensusValidated consensus_validated_;
 
     // Maps ledger indexes to the corresponding hash.
-    std::map<LedgerIndex, LedgerHash> mLedgersByIndex;  // validated ledgers
+    std::map<LedgerIndex, LedgerHash> ledgersByIndex_;  // validated ledgers
 
     beast::Journal j_;
 };

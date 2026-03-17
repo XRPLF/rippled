@@ -56,38 +56,38 @@ public:
     AccountID const&
     getAccountID() const
     {
-        return mViewLowest ? mLowLimit.getIssuer() : mHighLimit.getIssuer();
+        return viewLowest_ ? lowLimit_.getIssuer() : highLimit_.getIssuer();
     }
 
     AccountID const&
     getAccountIDPeer() const
     {
-        return !mViewLowest ? mLowLimit.getIssuer() : mHighLimit.getIssuer();
+        return !viewLowest_ ? lowLimit_.getIssuer() : highLimit_.getIssuer();
     }
 
     // True, Provided auth to peer.
     bool
     getAuth() const
     {
-        return mFlags & (mViewLowest ? lsfLowAuth : lsfHighAuth);
+        return flags_ & (viewLowest_ ? lsfLowAuth : lsfHighAuth);
     }
 
     bool
     getAuthPeer() const
     {
-        return mFlags & (!mViewLowest ? lsfLowAuth : lsfHighAuth);
+        return flags_ & (!viewLowest_ ? lsfLowAuth : lsfHighAuth);
     }
 
     bool
     getNoRipple() const
     {
-        return mFlags & (mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
+        return flags_ & (viewLowest_ ? lsfLowNoRipple : lsfHighNoRipple);
     }
 
     bool
     getNoRipplePeer() const
     {
-        return mFlags & (!mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
+        return flags_ & (!viewLowest_ ? lsfLowNoRipple : lsfHighNoRipple);
     }
 
     LineDirection
@@ -106,46 +106,46 @@ public:
     bool
     getFreeze() const
     {
-        return mFlags & (mViewLowest ? lsfLowFreeze : lsfHighFreeze);
+        return flags_ & (viewLowest_ ? lsfLowFreeze : lsfHighFreeze);
     }
 
     /** Have we set the deep freeze flag on our peer */
     bool
     getDeepFreeze() const
     {
-        return mFlags & (mViewLowest ? lsfLowDeepFreeze : lsfHighDeepFreeze);
+        return flags_ & (viewLowest_ ? lsfLowDeepFreeze : lsfHighDeepFreeze);
     }
 
     /** Has the peer set the freeze flag on us */
     bool
     getFreezePeer() const
     {
-        return mFlags & (!mViewLowest ? lsfLowFreeze : lsfHighFreeze);
+        return flags_ & (!viewLowest_ ? lsfLowFreeze : lsfHighFreeze);
     }
 
     /** Has the peer set the deep freeze flag on us */
     bool
     getDeepFreezePeer() const
     {
-        return mFlags & (!mViewLowest ? lsfLowDeepFreeze : lsfHighDeepFreeze);
+        return flags_ & (!viewLowest_ ? lsfLowDeepFreeze : lsfHighDeepFreeze);
     }
 
     STAmount const&
     getBalance() const
     {
-        return mBalance;
+        return balance_;
     }
 
     STAmount const&
     getLimit() const
     {
-        return mViewLowest ? mLowLimit : mHighLimit;
+        return viewLowest_ ? lowLimit_ : highLimit_;
     }
 
     STAmount const&
     getLimitPeer() const
     {
-        return !mViewLowest ? mLowLimit : mHighLimit;
+        return !viewLowest_ ? lowLimit_ : highLimit_;
     }
 
     Json::Value
@@ -154,14 +154,14 @@ public:
 protected:
     uint256 key_;
 
-    STAmount const mLowLimit;
-    STAmount const mHighLimit;
+    STAmount const lowLimit_;
+    STAmount const highLimit_;
 
-    STAmount mBalance;
+    STAmount balance_;
 
-    std::uint32_t mFlags;
+    std::uint32_t flags_;
 
-    bool mViewLowest;
+    bool viewLowest_;
 };
 
 // This wrapper is used for the path finder
@@ -193,13 +193,13 @@ public:
     Rate const&
     getQualityIn() const
     {
-        return mViewLowest ? lowQualityIn_ : highQualityIn_;
+        return viewLowest_ ? lowQualityIn_ : highQualityIn_;
     }
 
     Rate const&
     getQualityOut() const
     {
-        return mViewLowest ? lowQualityOut_ : highQualityOut_;
+        return viewLowest_ ? lowQualityOut_ : highQualityOut_;
     }
 
     static std::optional<RPCTrustLine>

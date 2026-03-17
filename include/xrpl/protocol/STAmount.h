@@ -34,10 +34,10 @@ public:
     using rep = std::pair<mantissa_type, exponent_type>;
 
 private:
-    Asset mAsset;
-    mantissa_type mValue;
-    exponent_type mOffset;
-    bool mIsNegative;
+    Asset asset_;
+    mantissa_type value_;
+    exponent_type offset_;
+    bool isNegative_;
 
 public:
     using value_type = STAmount;
@@ -106,7 +106,7 @@ public:
 
     template <AssetType A>
     STAmount(A const& asset, std::uint64_t mantissa = 0, int exponent = 0, bool negative = false)
-        : mAsset(asset), mValue(mantissa), mOffset(exponent), mIsNegative(negative)
+        : asset_(asset), value_(mantissa), offset_(exponent), isNegative_(negative)
     {
         canonicalize();
     }
@@ -300,7 +300,7 @@ STAmount::STAmount(
     exponent_type exponent,
     bool negative,
     unchecked)
-    : STBase(name), mAsset(asset), mValue(mantissa), mOffset(exponent), mIsNegative(negative)
+    : STBase(name), asset_(asset), value_(mantissa), offset_(exponent), isNegative_(negative)
 {
 }
 
@@ -311,7 +311,7 @@ STAmount::STAmount(
     exponent_type exponent,
     bool negative,
     unchecked)
-    : mAsset(asset), mValue(mantissa), mOffset(exponent), mIsNegative(negative)
+    : asset_(asset), value_(mantissa), offset_(exponent), isNegative_(negative)
 {
 }
 
@@ -322,19 +322,19 @@ STAmount::STAmount(
     std::uint64_t mantissa,
     int exponent,
     bool negative)
-    : STBase(name), mAsset(asset), mValue(mantissa), mOffset(exponent), mIsNegative(negative)
+    : STBase(name), asset_(asset), value_(mantissa), offset_(exponent), isNegative_(negative)
 {
-    // mValue is uint64, but needs to fit in the range of int64
+    // value_ is uint64, but needs to fit in the range of int64
     if (Number::getMantissaScale() == MantissaRange::small)
     {
         XRPL_ASSERT(
-            mValue <= std::numeric_limits<std::int64_t>::max(),
+            value_ <= std::numeric_limits<std::int64_t>::max(),
             "xrpl::STAmount::STAmount(SField, A, std::uint64_t, int, bool) : "
             "maximum mantissa input");
     }
     else
     {
-        if (integral() && mValue > std::numeric_limits<std::int64_t>::max())
+        if (integral() && value_ > std::numeric_limits<std::int64_t>::max())
             throw std::overflow_error("STAmount mantissa is too large " + std::to_string(mantissa));
     }
     canonicalize();
@@ -342,7 +342,7 @@ STAmount::STAmount(
 
 template <AssetType A>
 STAmount::STAmount(A const& asset, std::int64_t mantissa, int exponent)
-    : mAsset(asset), mOffset(exponent)
+    : asset_(asset), offset_(exponent)
 {
     set(mantissa);
     canonicalize();
@@ -362,23 +362,23 @@ STAmount::STAmount(A const& asset, int mantissa, int exponent)
 
 // Legacy support for new-style amounts
 inline STAmount::STAmount(IOUAmount const& amount, Issue const& issue)
-    : mAsset(issue), mOffset(amount.exponent()), mIsNegative(amount < beast::zero)
+    : asset_(issue), offset_(amount.exponent()), isNegative_(amount < beast::zero)
 {
-    if (mIsNegative)
-        mValue = unsafe_cast<std::uint64_t>(-amount.mantissa());
+    if (isNegative_)
+        value_ = unsafe_cast<std::uint64_t>(-amount.mantissa());
     else
-        mValue = unsafe_cast<std::uint64_t>(amount.mantissa());
+        value_ = unsafe_cast<std::uint64_t>(amount.mantissa());
 
     canonicalize();
 }
 
 inline STAmount::STAmount(MPTAmount const& amount, MPTIssue const& mptIssue)
-    : mAsset(mptIssue), mOffset(0), mIsNegative(amount < beast::zero)
+    : asset_(mptIssue), offset_(0), isNegative_(amount < beast::zero)
 {
-    if (mIsNegative)
-        mValue = unsafe_cast<std::uint64_t>(-amount.value());
+    if (isNegative_)
+        value_ = unsafe_cast<std::uint64_t>(-amount.value());
     else
-        mValue = unsafe_cast<std::uint64_t>(amount.value());
+        value_ = unsafe_cast<std::uint64_t>(amount.value());
 
     canonicalize();
 }
@@ -419,51 +419,51 @@ toSTAmount(STAmount const& a)
 inline int
 STAmount::exponent() const noexcept
 {
-    return mOffset;
+    return offset_;
 }
 
 inline bool
 STAmount::integral() const noexcept
 {
-    return mAsset.integral();
+    return asset_.integral();
 }
 
 inline bool
 STAmount::native() const noexcept
 {
-    return mAsset.native();
+    return asset_.native();
 }
 
 template <ValidIssueType TIss>
 constexpr bool
 STAmount::holds() const noexcept
 {
-    return mAsset.holds<TIss>();
+    return asset_.holds<TIss>();
 }
 
 inline bool
 STAmount::negative() const noexcept
 {
-    return mIsNegative;
+    return isNegative_;
 }
 
 inline std::uint64_t
 STAmount::mantissa() const noexcept
 {
-    return mValue;
+    return value_;
 }
 
 inline Asset const&
 STAmount::asset() const
 {
-    return mAsset;
+    return asset_;
 }
 
 template <ValidIssueType TIss>
 constexpr TIss const&
 STAmount::get() const
 {
-    return mAsset.get<TIss>();
+    return asset_.get<TIss>();
 }
 
 inline Issue const&
@@ -475,25 +475,25 @@ STAmount::issue() const
 inline Currency const&
 STAmount::getCurrency() const
 {
-    return mAsset.get<Issue>().currency;
+    return asset_.get<Issue>().currency;
 }
 
 inline AccountID const&
 STAmount::getIssuer() const
 {
-    return mAsset.getIssuer();
+    return asset_.getIssuer();
 }
 
 inline int
 STAmount::signum() const noexcept
 {
-    return mValue ? (mIsNegative ? -1 : 1) : 0;
+    return value_ ? (isNegative_ ? -1 : 1) : 0;
 }
 
 inline STAmount
 STAmount::zeroed() const
 {
-    return STAmount(mAsset);
+    return STAmount(asset_);
 }
 
 inline STAmount::
@@ -507,7 +507,7 @@ operator Number() const
 {
     if (native())
         return xrp();
-    if (mAsset.holds<MPTIssue>())
+    if (asset_.holds<MPTIssue>())
         return mpt();
     return iou();
 }
@@ -548,7 +548,7 @@ inline void
 STAmount::negate()
 {
     if (*this != beast::zero)
-        mIsNegative = !mIsNegative;
+        isNegative_ = !isNegative_;
 }
 
 inline void
@@ -556,9 +556,9 @@ STAmount::clear()
 {
     // The -100 is used to allow 0 to sort less than a small positive values
     // which have a negative exponent.
-    mOffset = integral() ? 0 : -100;
-    mValue = 0;
-    mIsNegative = false;
+    offset_ = integral() ? 0 : -100;
+    value_ = 0;
+    isNegative_ = false;
 }
 
 inline void
@@ -571,7 +571,7 @@ STAmount::clear(Asset const& asset)
 inline void
 STAmount::setIssuer(AccountID const& uIssuer)
 {
-    mAsset.get<Issue>().account = uIssuer;
+    asset_.get<Issue>().account = uIssuer;
 }
 
 inline STAmount const&

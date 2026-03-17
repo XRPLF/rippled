@@ -18,10 +18,10 @@ public:
         Application& app,
         beast::Journal journal,
         beast::insight::Collector::ptr const& collector)
-        : app_(app), mJournal(journal), mLastIdentifier(0)
+        : app_(app), journal_(journal), lastIdentifier_(0)
     {
-        mFast = collector->make_event("pathfind_fast");
-        mFull = collector->make_event("pathfind_full");
+        fast_ = collector->make_event("pathfind_fast");
+        full_ = collector->make_event("pathfind_full");
     }
 
     /** Update all of the contained PathRequest instances.
@@ -67,13 +67,13 @@ public:
     void
     reportFast(std::chrono::milliseconds ms)
     {
-        mFast.notify(ms);
+        fast_.notify(ms);
     }
 
     void
     reportFull(std::chrono::milliseconds ms)
     {
-        mFull.notify(ms);
+        full_.notify(ms);
     }
 
 private:
@@ -81,10 +81,10 @@ private:
     insertPathRequest(PathRequest::pointer const&);
 
     Application& app_;
-    beast::Journal mJournal;
+    beast::Journal journal_;
 
-    beast::insight::Event mFast;
-    beast::insight::Event mFull;
+    beast::insight::Event fast_;
+    beast::insight::Event full_;
 
     // Track all requests
     std::vector<PathRequest::wptr> requests_;
@@ -92,9 +92,9 @@ private:
     // Use a RippleLineCache
     std::weak_ptr<RippleLineCache> lineCache_;
 
-    std::atomic<int> mLastIdentifier;
+    std::atomic<int> lastIdentifier_;
 
-    std::recursive_mutex mutable mLock;
+    std::recursive_mutex mutable lock_;
 };
 
 }  // namespace xrpl

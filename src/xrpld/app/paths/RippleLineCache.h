@@ -41,7 +41,7 @@ public:
     getRippleLines(AccountID const& accountID, LineDirection direction);
 
 private:
-    std::mutex mLock;
+    std::mutex lock_;
 
     xrpl::hardened_hash<> hasher_;
     std::shared_ptr<ReadView const> ledger_;

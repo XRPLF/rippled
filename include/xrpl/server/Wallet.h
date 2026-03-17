@@ -31,14 +31,14 @@ makeTestWalletDB(DatabaseCon::Setup const& setup, std::string const& dbname, bea
  * @param session Session with the database.
  * @param dbTable Name of the database table from which the manifest will be
  *        extracted.
- * @param mCache Cache for storing the manifest.
+ * @param cache_ Cache for storing the manifest.
  * @param j Journal.
  */
 void
 getManifests(
     soci::session& session,
     std::string const& dbTable,
-    ManifestCache& mCache,
+    ManifestCache& cache_,
     beast::Journal j);
 
 /**

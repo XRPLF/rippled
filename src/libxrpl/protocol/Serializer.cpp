@@ -23,9 +23,9 @@ namespace xrpl {
 int
 Serializer::add16(std::uint16_t i)
 {
-    int ret = mData.size();
-    mData.push_back(static_cast<unsigned char>(i >> 8));
-    mData.push_back(static_cast<unsigned char>(i & 0xff));
+    int ret = data_.size();
+    data_.push_back(static_cast<unsigned char>(i >> 8));
+    data_.push_back(static_cast<unsigned char>(i & 0xff));
     return ret;
 }
 
@@ -73,39 +73,39 @@ Serializer::addInteger(std::int32_t i)
 int
 Serializer::addRaw(Blob const& vector)
 {
-    int ret = mData.size();
-    mData.insert(mData.end(), vector.begin(), vector.end());
+    int ret = data_.size();
+    data_.insert(data_.end(), vector.begin(), vector.end());
     return ret;
 }
 
 int
 Serializer::addRaw(Slice slice)
 {
-    int ret = mData.size();
-    mData.insert(mData.end(), slice.begin(), slice.end());
+    int ret = data_.size();
+    data_.insert(data_.end(), slice.begin(), slice.end());
     return ret;
 }
 
 int
 Serializer::addRaw(Serializer const& s)
 {
-    int ret = mData.size();
-    mData.insert(mData.end(), s.begin(), s.end());
+    int ret = data_.size();
+    data_.insert(data_.end(), s.begin(), s.end());
     return ret;
 }
 
 int
 Serializer::addRaw(void const* ptr, int len)
 {
-    int ret = mData.size();
-    mData.insert(mData.end(), (char const*)ptr, ((char const*)ptr) + len);
+    int ret = data_.size();
+    data_.insert(data_.end(), (char const*)ptr, ((char const*)ptr) + len);
     return ret;
 }
 
 int
 Serializer::addFieldID(int type, int name)
 {
-    int ret = mData.size();
+    int ret = data_.size();
     XRPL_ASSERT(
         (type > 0) && (type < 256) && (name > 0) && (name < 256),
         "xrpl::Serializer::addFieldID : inputs inside range");
@@ -113,26 +113,26 @@ Serializer::addFieldID(int type, int name)
     if (type < 16)
     {
         if (name < 16)  // common type, common name
-            mData.push_back(static_cast<unsigned char>((type << 4) | name));
+            data_.push_back(static_cast<unsigned char>((type << 4) | name));
         else
         {
             // common type, uncommon name
-            mData.push_back(static_cast<unsigned char>(type << 4));
-            mData.push_back(static_cast<unsigned char>(name));
+            data_.push_back(static_cast<unsigned char>(type << 4));
+            data_.push_back(static_cast<unsigned char>(name));
         }
     }
     else if (name < 16)
     {
         // uncommon type, common name
-        mData.push_back(static_cast<unsigned char>(name));
-        mData.push_back(static_cast<unsigned char>(type));
+        data_.push_back(static_cast<unsigned char>(name));
+        data_.push_back(static_cast<unsigned char>(type));
     }
     else
     {
         // uncommon type, uncommon name
-        mData.push_back(static_cast<unsigned char>(0));
-        mData.push_back(static_cast<unsigned char>(type));
-        mData.push_back(static_cast<unsigned char>(name));
+        data_.push_back(static_cast<unsigned char>(0));
+        data_.push_back(static_cast<unsigned char>(type));
+        data_.push_back(static_cast<unsigned char>(name));
     }
 
     return ret;
@@ -141,35 +141,35 @@ Serializer::addFieldID(int type, int name)
 int
 Serializer::add8(unsigned char byte)
 {
-    int ret = mData.size();
-    mData.push_back(byte);
+    int ret = data_.size();
+    data_.push_back(byte);
     return ret;
 }
 
 bool
 Serializer::get8(int& byte, int offset) const
 {
-    if (offset >= mData.size())
+    if (offset >= data_.size())
         return false;
 
-    byte = mData[offset];
+    byte = data_[offset];
     return true;
 }
 
 bool
 Serializer::chop(int bytes)
 {
-    if (bytes > mData.size())
+    if (bytes > data_.size())
         return false;
 
-    mData.resize(mData.size() - bytes);
+    data_.resize(data_.size() - bytes);
     return true;
 }
 
 uint256
 Serializer::getSHA512Half() const
 {
-    return sha512Half(makeSlice(mData));
+    return sha512Half(makeSlice(data_));
 }
 
 int
@@ -178,7 +178,7 @@ Serializer::addVL(Blob const& vector)
     int ret = addEncoded(vector.size());
     addRaw(vector);
     XRPL_ASSERT(
-        mData.size() == (ret + vector.size() + encodeLengthLength(vector.size())),
+        data_.size() == (ret + vector.size() + encodeLengthLength(vector.size())),
         "xrpl::Serializer::addVL : size matches expected");
     return ret;
 }

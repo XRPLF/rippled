@@ -8,22 +8,22 @@ namespace xrpl {
 
 TrustLineBase::TrustLineBase(std::shared_ptr<SLE const> const& sle, AccountID const& viewAccount)
     : key_(sle->key())
-    , mLowLimit(sle->getFieldAmount(sfLowLimit))
-    , mHighLimit(sle->getFieldAmount(sfHighLimit))
-    , mBalance(sle->getFieldAmount(sfBalance))
-    , mFlags(sle->getFieldU32(sfFlags))
-    , mViewLowest(mLowLimit.getIssuer() == viewAccount)
+    , lowLimit_(sle->getFieldAmount(sfLowLimit))
+    , highLimit_(sle->getFieldAmount(sfHighLimit))
+    , balance_(sle->getFieldAmount(sfBalance))
+    , flags_(sle->getFieldU32(sfFlags))
+    , viewLowest_(lowLimit_.getIssuer() == viewAccount)
 {
-    if (!mViewLowest)
-        mBalance.negate();
+    if (!viewLowest_)
+        balance_.negate();
 }
 
 Json::Value
 TrustLineBase::getJson(int)
 {
     Json::Value ret(Json::objectValue);
-    ret["low_id"] = to_string(mLowLimit.getIssuer());
-    ret["high_id"] = to_string(mHighLimit.getIssuer());
+    ret["low_id"] = to_string(lowLimit_.getIssuer());
+    ret["high_id"] = to_string(highLimit_.getIssuer());
     return ret;
 }
 

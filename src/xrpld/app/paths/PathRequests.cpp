@@ -18,13 +18,13 @@ namespace xrpl {
 std::shared_ptr<RippleLineCache>
 PathRequests::getLineCache(std::shared_ptr<ReadView const> const& ledger, bool authoritative)
 {
-    std::lock_guard sl(mLock);
+    std::lock_guard sl(lock_);
 
     auto lineCache = lineCache_.lock();
 
     std::uint32_t const lineSeq = lineCache ? lineCache->getLedger()->seq() : 0;
     std::uint32_t const lgrSeq = ledger->seq();
-    JLOG(mJournal.debug()) << "getLineCache has cache for " << lineSeq << ", considering "
+    JLOG(journal_.debug()) << "getLineCache has cache for " << lineSeq << ", considering "
                            << lgrSeq;
 
     if ((lineSeq == 0) ||                               // no ledger
@@ -32,7 +32,7 @@ PathRequests::getLineCache(std::shared_ptr<ReadView const> const& ledger, bool a
         (authoritative && ((lgrSeq + 8) < lineSeq)) ||  // we jumped way back for some reason
         (lgrSeq > (lineSeq + 8)))                       // we jumped way forward for some reason
     {
-        JLOG(mJournal.debug()) << "getLineCache creating new cache for " << lgrSeq;
+        JLOG(journal_.debug()) << "getLineCache creating new cache for " << lgrSeq;
         // Assign to the local before the member, because the member is a
         // weak_ptr, and will immediately discard it if there are no other
         // references.
@@ -52,7 +52,7 @@ PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 
     // Get the ledger and cache we should be using
     {
-        std::lock_guard sl(mLock);
+        std::lock_guard sl(lock_);
         requests = requests_;
         cache = getLineCache(inLedger, true);
     }
@@ -60,7 +60,7 @@ PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
     bool newRequests = app_.getLedgerMaster().isNewPathRequest();
     bool mustBreak = false;
 
-    JLOG(mJournal.trace()) << "updateAll seq=" << cache->getLedger()->seq() << ", "
+    JLOG(journal_.trace()) << "updateAll seq=" << cache->getLedger()->seq() << ", "
                            << requests.size() << " requests";
 
     int processed = 0, removed = 0;
@@ -76,7 +76,7 @@ PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 
     do
     {
-        JLOG(mJournal.trace()) << "updateAll looping";
+        JLOG(journal_.trace()) << "updateAll looping";
         for (auto const& wr : requests)
         {
             if (app_.getJobQueue().isStopping())
@@ -84,7 +84,7 @@ PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 
             auto request = wr.lock();
             bool remove = true;
-            JLOG(mJournal.trace()) << "updateAll request " << (request ? "" : "not ") << "found";
+            JLOG(journal_.trace()) << "updateAll request " << (request ? "" : "not ") << "found";
 
             if (request)
             {
@@ -129,7 +129,7 @@ PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 
             if (remove)
             {
-                std::lock_guard sl(mLock);
+                std::lock_guard sl(lock_);
 
                 // Remove any dangling weak pointers or weak
                 // pointers that refer to this path request.
@@ -174,7 +174,7 @@ PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
         std::shared_ptr<RippleLineCache> lastCache;
         {
             // Get the latest requests, cache, and ledger for next pass
-            std::lock_guard sl(mLock);
+            std::lock_guard sl(lock_);
 
             if (requests_.empty())
                 break;
@@ -184,21 +184,21 @@ PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
         }
     } while (!app_.getJobQueue().isStopping());
 
-    JLOG(mJournal.debug()) << "updateAll complete: " << processed << " processed and " << removed
+    JLOG(journal_.debug()) << "updateAll complete: " << processed << " processed and " << removed
                            << " removed";
 }
 
 bool
 PathRequests::requestsPending() const
 {
-    std::lock_guard sl(mLock);
+    std::lock_guard sl(lock_);
     return !requests_.empty();
 }
 
 void
 PathRequests::insertPathRequest(PathRequest::pointer const& req)
 {
-    std::lock_guard sl(mLock);
+    std::lock_guard sl(lock_);
 
     // Insert after any older unserviced requests but before
     // any serviced requests
@@ -219,7 +219,7 @@ PathRequests::makePathRequest(
     std::shared_ptr<ReadView const> const& inLedger,
     Json::Value const& requestJson)
 {
-    auto req = std::make_shared<PathRequest>(app_, subscriber, ++mLastIdentifier, *this, mJournal);
+    auto req = std::make_shared<PathRequest>(app_, subscriber, ++lastIdentifier_, *this, journal_);
 
     auto [valid, jvRes] = req->doCreate(getLineCache(inLedger, false), requestJson);
 
@@ -244,7 +244,7 @@ PathRequests::makeLegacyPathRequest(
     // This assignment must take place before the
     // completion function is called
     req = std::make_shared<PathRequest>(
-        app_, completion, consumer, ++mLastIdentifier, *this, mJournal);
+        app_, completion, consumer, ++lastIdentifier_, *this, journal_);
 
     auto [valid, jvRes] = req->doCreate(getLineCache(inLedger, false), request);
 
@@ -275,7 +275,7 @@ PathRequests::doLegacyPathRequest(
     auto cache = std::make_shared<RippleLineCache>(inLedger, app_.journal("RippleLineCache"));
 
     auto req =
-        std::make_shared<PathRequest>(app_, [] {}, consumer, ++mLastIdentifier, *this, mJournal);
+        std::make_shared<PathRequest>(app_, [] {}, consumer, ++lastIdentifier_, *this, journal_);
 
     auto [valid, jvRes] = req->doCreate(cache, request);
     if (valid)

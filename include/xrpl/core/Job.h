@@ -120,11 +120,11 @@ public:
     operator>=(Job const& j) const;
 
 private:
-    JobType mType;
-    std::uint64_t mJobIndex;
-    std::function<void()> mJob;
+    JobType type_;
+    std::uint64_t jobIndex_;
+    std::function<void()> job_;
     std::shared_ptr<LoadEvent> loadEvent_;
-    std::string mName;
+    std::string name_;
     clock_type::time_point queue_time_;
 };
 

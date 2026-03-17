@@ -16,11 +16,11 @@ Transaction::Transaction(
     std::shared_ptr<STTx const> const& stx,
     std::string& reason,
     Application& app) noexcept
-    : mTransaction(stx), mApp(app), j_(app.journal("Ledger"))
+    : transaction_(stx), app_(app), j_(app.journal("Ledger"))
 {
     try
     {
-        mTransactionID = mTransaction->getTransactionID();
+        transactionID_ = transaction_->getTransactionID();
     }
     catch (std::exception& e)
     {
@@ -28,7 +28,7 @@ Transaction::Transaction(
         return;
     }
 
-    mStatus = NEW;
+    status_ = NEW;
 }
 
 //
@@ -42,12 +42,12 @@ Transaction::setStatus(
     std::optional<std::uint32_t> tseq,
     std::optional<std::uint32_t> netID)
 {
-    mStatus = ts;
-    mLedgerIndex = lseq;
+    status_ = ts;
+    ledgerIndex_ = lseq;
     if (tseq)
-        mTxnSeq = tseq;
+        txnSeq_ = tseq;
     if (netID)
-        mNetworkID = netID;
+        networkID_ = netID;
 }
 
 TransStatus
@@ -130,37 +130,37 @@ Json::Value
 Transaction::getJson(JsonOptions options, bool binary) const
 {
     // Note, we explicitly suppress `include_date` option here
-    Json::Value ret(mTransaction->getJson(options & ~JsonOptions::include_date, binary));
+    Json::Value ret(transaction_->getJson(options & ~JsonOptions::include_date, binary));
 
     // NOTE Binary STTx::getJson output might not be a JSON object
-    if (ret.isObject() && mLedgerIndex)
+    if (ret.isObject() && ledgerIndex_)
     {
         if (!(options & JsonOptions::disable_API_prior_V2))
         {
             // Behaviour before API version 2
-            ret[jss::inLedger] = mLedgerIndex;
+            ret[jss::inLedger] = ledgerIndex_;
         }
 
         // TODO: disable_API_prior_V3 to disable output of both `date` and
         // `ledger_index` elements (taking precedence over include_date)
-        ret[jss::ledger_index] = mLedgerIndex;
+        ret[jss::ledger_index] = ledgerIndex_;
 
         if (options & JsonOptions::include_date)
         {
-            auto ct = mApp.getLedgerMaster().getCloseTimeBySeq(mLedgerIndex);
+            auto ct = app_.getLedgerMaster().getCloseTimeBySeq(ledgerIndex_);
             if (ct)
                 ret[jss::date] = ct->time_since_epoch().count();
         }
 
         // compute outgoing CTID
         // override local network id if it's explicitly in the txn
-        std::optional netID = mNetworkID;
-        if (mTransaction->isFieldPresent(sfNetworkID))
-            netID = mTransaction->getFieldU32(sfNetworkID);
+        std::optional netID = networkID_;
+        if (transaction_->isFieldPresent(sfNetworkID))
+            netID = transaction_->getFieldU32(sfNetworkID);
 
-        if (mTxnSeq && netID)
+        if (txnSeq_ && netID)
         {
-            std::optional<std::string> const ctid = RPC::encodeCTID(mLedgerIndex, *mTxnSeq, *netID);
+            std::optional<std::string> const ctid = RPC::encodeCTID(ledgerIndex_, *txnSeq_, *netID);
             if (ctid)
                 ret[jss::ctid] = *ctid;
         }

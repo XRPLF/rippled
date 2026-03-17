@@ -71,9 +71,9 @@ public:
     getData() const;
 
 private:
-    NodeObjectType const mType;
-    uint256 const mHash;
-    Blob const mData;
+    NodeObjectType const type_;
+    uint256 const hash_;
+    Blob const data_;
 };
 
 }  // namespace xrpl

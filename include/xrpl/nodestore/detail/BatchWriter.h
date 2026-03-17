@@ -69,11 +69,11 @@ private:
 
     Callback& callback_;
     Scheduler& scheduler_;
-    LockType mWriteMutex;
-    CondvarType mWriteCondition;
-    int mWriteLoad;
-    bool mWritePending;
-    Batch mWriteSet;
+    LockType writeMutex_;
+    CondvarType writeCondition_;
+    int writeLoad_;
+    bool writePending_;
+    Batch writeSet_;
 };
 
 }  // namespace NodeStore

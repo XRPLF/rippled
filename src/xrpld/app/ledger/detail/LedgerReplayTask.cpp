@@ -222,7 +222,7 @@ LedgerReplayTask::updateSkipList(
 void
 LedgerReplayTask::onTimer(bool progress, ScopedLockType& sl)
 {
-    JLOG(journal_.trace()) << "mTimeouts=" << timeouts_ << " for " << hash_;
+    JLOG(journal_.trace()) << "timeouts_=" << timeouts_ << " for " << hash_;
     if (timeouts_ > maxTimeouts_)
     {
         failed_ = true;

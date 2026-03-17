@@ -30,11 +30,11 @@ TransactionAcquire::TransactionAcquire(
           TX_ACQUIRE_TIMEOUT,
           {jtTXN_DATA, "TxAcq", {}},
           app.journal("TransactionAcquire"))
-    , mHaveRoot(false)
-    , mPeerSet(std::move(peerSet))
+    , haveRoot_(false)
+    , peerSet_(std::move(peerSet))
 {
-    mMap = std::make_shared<SHAMap>(SHAMapType::TRANSACTION, hash, app_.getNodeFamily());
-    mMap->setUnbacked();
+    map_ = std::make_shared<SHAMap>(SHAMapType::TRANSACTION, hash, app_.getNodeFamily());
+    map_->setUnbacked();
 }
 
 void
@@ -49,10 +49,10 @@ TransactionAcquire::done()
     else
     {
         JLOG(journal_.debug()) << "Acquired TX set " << hash_;
-        mMap->setImmutable();
+        map_->setImmutable();
 
         uint256 const& hash(hash_);
-        std::shared_ptr<SHAMap> const& map(mMap);
+        std::shared_ptr<SHAMap> const& map(map_);
         auto const pap = &app_;
         // Note that, when we're in the process of shutting down, addJob()
         // may reject the request.  If that happens then giveSet() will
@@ -101,7 +101,7 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
         return;
     }
 
-    if (!mHaveRoot)
+    if (!haveRoot_)
     {
         JLOG(journal_.trace()) << "TransactionAcquire::trigger " << (peer ? "havePeer" : "noPeer")
                                << " no root";
@@ -114,9 +114,9 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
             tmGL.set_querytype(protocol::qtINDIRECT);
 
         *(tmGL.add_nodeids()) = SHAMapNodeID().getRawString();
-        mPeerSet->sendRequest(tmGL, peer);
+        peerSet_->sendRequest(tmGL, peer);
     }
-    else if (!mMap->isValid())
+    else if (!map_->isValid())
     {
         failed_ = true;
         done();
@@ -124,11 +124,11 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
     else
     {
         ConsensusTransSetSF sf(app_, app_.getTempNodeCache());
-        auto nodes = mMap->getMissingNodes(256, &sf);
+        auto nodes = map_->getMissingNodes(256, &sf);
 
         if (nodes.empty())
         {
-            if (mMap->isValid())
+            if (map_->isValid())
                 complete_ = true;
             else
                 failed_ = true;
@@ -148,7 +148,7 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
         {
             *tmGL.add_nodeids() = node.first.getRawString();
         }
-        mPeerSet->sendRequest(tmGL, peer);
+        peerSet_->sendRequest(tmGL, peer);
     }
 }
 
@@ -182,16 +182,16 @@ TransactionAcquire::takeNodes(
         {
             if (d.first.isRoot())
             {
-                if (mHaveRoot)
+                if (haveRoot_)
                     JLOG(journal_.debug()) << "Got root TXS node, already have it";
-                else if (!mMap->addRootNode(SHAMapHash{hash_}, d.second, nullptr).isGood())
+                else if (!map_->addRootNode(SHAMapHash{hash_}, d.second, nullptr).isGood())
                 {
                     JLOG(journal_.warn()) << "TX acquire got bad root node";
                 }
                 else
-                    mHaveRoot = true;
+                    haveRoot_ = true;
             }
-            else if (!mMap->addKnownNode(d.first, d.second, &sf).isGood())
+            else if (!map_->addKnownNode(d.first, d.second, &sf).isGood())
             {
                 JLOG(journal_.warn()) << "TX acquire got bad non-root node";
                 return SHAMapAddNode::invalid();
@@ -213,7 +213,7 @@ TransactionAcquire::takeNodes(
 void
 TransactionAcquire::addPeers(std::size_t limit)
 {
-    mPeerSet->addPeers(
+    peerSet_->addPeers(
         limit,
         [this](auto peer) { return peer->hasTxSet(hash_); },
         [this](auto peer) { trigger(peer); });

@@ -59,13 +59,13 @@ public:
     std::shared_ptr<Ledger const>
     getLedger() const
     {
-        return mLedger;
+        return ledger_;
     }
 
     std::uint32_t
     getSeq() const
     {
-        return mSeq;
+        return seq_;
     }
 
     bool
@@ -88,13 +88,13 @@ public:
     void
     touch()
     {
-        mLastAction = clock_.now();
+        lastAction_ = clock_.now();
     }
 
     clock_type::time_point
     getLastAction() const
     {
-        return mLastAction;
+        return lastAction_;
     }
 
 private:
@@ -149,27 +149,27 @@ private:
     neededStateHashes(int max, SHAMapSyncFilter* filter) const;
 
     clock_type& clock_;
-    clock_type::time_point mLastAction;
+    clock_type::time_point lastAction_;
 
-    std::shared_ptr<Ledger> mLedger;
-    bool mHaveHeader;
-    bool mHaveState;
-    bool mHaveTransactions;
-    bool mSignaled;
-    bool mByHash;
-    std::uint32_t mSeq;
-    Reason const mReason;
+    std::shared_ptr<Ledger> ledger_;
+    bool haveHeader_;
+    bool haveState_;
+    bool haveTransactions_;
+    bool signaled_;
+    bool byHash_;
+    std::uint32_t seq_;
+    Reason const reason_;
 
-    std::set<uint256> mRecentNodes;
+    std::set<uint256> recentNodes_;
 
-    SHAMapAddNode mStats;
+    SHAMapAddNode stats_;
 
     // Data we have received from peers
-    std::mutex mReceivedDataLock;
+    std::mutex receivedDataLock_;
     std::vector<std::pair<std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData>>>
-        mReceivedData;
-    bool mReceiveDispatched;
-    std::unique_ptr<PeerSet> mPeerSet;
+        receivedData_;
+    bool receiveDispatched_;
+    std::unique_ptr<PeerSet> peerSet_;
 };
 
 }  // namespace xrpl

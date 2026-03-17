@@ -64,43 +64,43 @@ public:
     std::shared_ptr<STTx const> const&
     getSTransaction()
     {
-        return mTransaction;
+        return transaction_;
     }
 
     uint256 const&
     getID() const
     {
-        return mTransactionID;
+        return transactionID_;
     }
 
     LedgerIndex
     getLedger() const
     {
-        return mLedgerIndex;
+        return ledgerIndex_;
     }
 
     bool
     isValidated() const
     {
-        return mLedgerIndex != 0;
+        return ledgerIndex_ != 0;
     }
 
     TransStatus
     getStatus() const
     {
-        return mStatus;
+        return status_;
     }
 
     TER
     getResult()
     {
-        return mResult;
+        return result_;
     }
 
     void
     setResult(TER terResult)
     {
-        mResult = terResult;
+        result_ = terResult;
     }
 
     void
@@ -113,13 +113,13 @@ public:
     void
     setStatus(TransStatus status)
     {
-        mStatus = status;
+        status_ = status;
     }
 
     void
     setLedger(LedgerIndex ledger)
     {
-        mLedgerIndex = ledger;
+        ledgerIndex_ = ledger;
     }
 
     /**
@@ -128,9 +128,9 @@ public:
     void
     setApplying()
     {
-        // Note that all access to mApplying are made by NetworkOPsImp, and must
+        // Note that all access to applying_ are made by NetworkOPsImp, and must
         // be done under that class's lock.
-        mApplying = true;
+        applying_ = true;
     }
 
     /**
@@ -141,9 +141,9 @@ public:
     bool
     getApplying()
     {
-        // Note that all access to mApplying are made by NetworkOPsImp, and must
+        // Note that all access to applying_ are made by NetworkOPsImp, and must
         // be done under that class's lock.
-        return mApplying;
+        return applying_;
     }
 
     /**
@@ -152,9 +152,9 @@ public:
     void
     clearApplying()
     {
-        // Note that all access to mApplying are made by NetworkOPsImp, and must
+        // Note that all access to applying_ are made by NetworkOPsImp, and must
         // be done under that class's lock.
-        mApplying = false;
+        applying_ = false;
     }
 
     struct SubmitResult
@@ -365,14 +365,14 @@ private:
             std::optional<ClosedInterval<uint32_t>> const& range,
             error_code_i& ec);
 
-    uint256 mTransactionID;
+    uint256 transactionID_;
 
-    LedgerIndex mLedgerIndex = 0;
-    std::optional<uint32_t> mTxnSeq;
-    std::optional<uint32_t> mNetworkID;
-    TransStatus mStatus = INVALID;
-    TER mResult = temUNCERTAIN;
-    /* Note that all access to mApplying are made by NetworkOPsImp,
+    LedgerIndex ledgerIndex_ = 0;
+    std::optional<uint32_t> txnSeq_;
+    std::optional<uint32_t> networkID_;
+    TransStatus status_ = INVALID;
+    TER result_ = temUNCERTAIN;
+    /* Note that all access to applying_ are made by NetworkOPsImp,
         and must be done under that class's lock. This avoids the overhead of
         taking a separate lock, and the consequences of a race condition are
         nearly-zero.
@@ -390,15 +390,15 @@ private:
             cleared, then it might get attempted again later as is the case with
             item 1.
     */
-    bool mApplying = false;
+    bool applying_ = false;
 
     /** different ways for transaction to be accepted */
     SubmitResult submitResult_;
 
     std::optional<CurrentLedgerState> currentLedgerState_;
 
-    std::shared_ptr<STTx const> mTransaction;
-    Application& mApp;
+    std::shared_ptr<STTx const> transaction_;
+    Application& app_;
     beast::Journal j_;
 };
 

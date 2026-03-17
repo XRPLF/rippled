@@ -150,7 +150,7 @@ Ledger::Ledger(
     Config const& config,
     std::vector<uint256> const& amendments,
     Family& family)
-    : mImmutable(false)
+    : immutable_(false)
     , txMap_(SHAMapType::TRANSACTION, family)
     , stateMap_(SHAMapType::STATE, family)
     , rules_{config.features}
@@ -210,7 +210,7 @@ Ledger::Ledger(
     Config const& config,
     Family& family,
     beast::Journal j)
-    : mImmutable(true)
+    : immutable_(true)
     , txMap_(SHAMapType::TRANSACTION, info.txHash, family)
     , stateMap_(SHAMapType::STATE, info.accountHash, family)
     , rules_(config.features)
@@ -249,7 +249,7 @@ Ledger::Ledger(
 
 // Create a new ledger that follows this one
 Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
-    : mImmutable(false)
+    : immutable_(false)
     , txMap_(SHAMapType::TRANSACTION, prevLedger.txMap_.family())
     , stateMap_(prevLedger.stateMap_, true)
     , fees_(prevLedger.fees_)
@@ -276,7 +276,7 @@ Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
 }
 
 Ledger::Ledger(LedgerHeader const& info, Config const& config, Family& family)
-    : mImmutable(true)
+    : immutable_(true)
     , txMap_(SHAMapType::TRANSACTION, info.txHash, family)
     , stateMap_(SHAMapType::STATE, info.accountHash, family)
     , rules_{config.features}
@@ -291,7 +291,7 @@ Ledger::Ledger(
     NetClock::time_point closeTime,
     Config const& config,
     Family& family)
-    : mImmutable(false)
+    : immutable_(false)
     , txMap_(SHAMapType::TRANSACTION, family)
     , stateMap_(SHAMapType::STATE, family)
     , rules_{config.features}
@@ -309,7 +309,7 @@ Ledger::setImmutable(bool rehash)
 {
     // Force update, since this is the only
     // place the hash transitions to valid
-    if (!mImmutable && rehash)
+    if (!immutable_ && rehash)
     {
         header_.txHash = txMap_.getHash().as_uint256();
         header_.accountHash = stateMap_.getHash().as_uint256();
@@ -318,7 +318,7 @@ Ledger::setImmutable(bool rehash)
     if (rehash)
         header_.hash = calculateLedgerHash(header_);
 
-    mImmutable = true;
+    immutable_ = true;
     txMap_.setImmutable();
     stateMap_.setImmutable();
     setup();

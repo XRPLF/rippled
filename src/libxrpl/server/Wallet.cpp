@@ -25,7 +25,7 @@ void
 getManifests(
     soci::session& session,
     std::string const& dbTable,
-    ManifestCache& mCache,
+    ManifestCache& cache_,
     beast::Journal j)
 {
     // Load manifests stored in database
@@ -45,7 +45,7 @@ getManifests(
                 continue;
             }
 
-            mCache.applyManifest(std::move(*mo));
+            cache_.applyManifest(std::move(*mo));
         }
         else
         {

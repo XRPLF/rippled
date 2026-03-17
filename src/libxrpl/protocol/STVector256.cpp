@@ -24,10 +24,10 @@ STVector256::STVector256(SerialIter& sit, SField const& name) : STBase(name)
 
     auto const cnt = slice.size() / uint256::size();
 
-    mValue.reserve(cnt);
+    value_.reserve(cnt);
 
     for (std::size_t i = 0; i != cnt; ++i)
-        mValue.emplace_back(slice.substr(i * uint256::size(), uint256::size()));
+        value_.emplace_back(slice.substr(i * uint256::size(), uint256::size()));
 }
 
 STBase*
@@ -51,7 +51,7 @@ STVector256::getSType() const
 bool
 STVector256::isDefault() const
 {
-    return mValue.empty();
+    return value_.empty();
 }
 
 void
@@ -59,14 +59,14 @@ STVector256::add(Serializer& s) const
 {
     XRPL_ASSERT(getFName().isBinary(), "xrpl::STVector256::add : field is binary");
     XRPL_ASSERT(getFName().fieldType == STI_VECTOR256, "xrpl::STVector256::add : valid field type");
-    s.addVL(mValue.begin(), mValue.end(), mValue.size() * (256 / 8));
+    s.addVL(value_.begin(), value_.end(), value_.size() * (256 / 8));
 }
 
 bool
 STVector256::isEquivalent(STBase const& t) const
 {
     STVector256 const* v = dynamic_cast<STVector256 const*>(&t);
-    return v && (mValue == v->mValue);
+    return v && (value_ == v->value_);
 }
 
 Json::Value
@@ -74,7 +74,7 @@ STVector256::getJson(JsonOptions) const
 {
     Json::Value ret(Json::arrayValue);
 
-    for (auto const& vEntry : mValue)
+    for (auto const& vEntry : value_)
         ret.append(to_string(vEntry));
 
     return ret;

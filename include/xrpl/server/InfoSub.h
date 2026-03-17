@@ -207,7 +207,7 @@ public:
     getApiVersion() const noexcept;
 
 protected:
-    std::mutex mLock;
+    std::mutex lock_;
 
 private:
     Consumer consumer_;
@@ -215,7 +215,7 @@ private:
     hash_set<AccountID> realTimeSubscriptions_;
     hash_set<AccountID> normalSubscriptions_;
     std::shared_ptr<InfoSubRequest> request_;
-    std::uint64_t mSeq;
+    std::uint64_t seq_;
     hash_set<AccountID> accountHistorySubscriptions_;
     unsigned int apiVersion_ = 0;
 

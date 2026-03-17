@@ -23,7 +23,7 @@ constexpr std::uint32_t vfFullyCanonicalSig = 0x80000000;
 
 class STValidation final : public STObject, public CountedObject<STValidation>
 {
-    bool mTrusted = false;
+    bool trusted_ = false;
 
     // Determines the validity of the signature in this validation; unseated
     // optional if we haven't yet checked it, a boolean otherwise.
@@ -234,19 +234,19 @@ STValidation::getNodeID() const noexcept
 inline bool
 STValidation::isTrusted() const noexcept
 {
-    return mTrusted;
+    return trusted_;
 }
 
 inline void
 STValidation::setTrusted()
 {
-    mTrusted = true;
+    trusted_ = true;
 }
 
 inline void
 STValidation::setUntrusted()
 {
-    mTrusted = false;
+    trusted_ = false;
 }
 
 inline void

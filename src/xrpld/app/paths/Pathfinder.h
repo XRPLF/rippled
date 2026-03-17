@@ -45,7 +45,7 @@ public:
     void
     computePathRanks(int maxPaths, std::function<bool(void)> const& continueCallback = {});
 
-    /* Get the best paths, up to maxPaths in number, from mCompletePaths.
+    /* Get the best paths, up to maxPaths in number, from completePaths_.
 
        On return, if fullLiquidityPath is not empty, then it contains the best
        additional single path which can consume all the liquidity.
@@ -109,7 +109,7 @@ private:
       getBestPaths
      */
 
-    // Add all paths of one type to mCompletePaths.
+    // Add all paths of one type to completePaths_.
     STPathSet&
     addPathsForType(PathType const& type, std::function<bool(void)> const& continueCallback);
 
@@ -166,29 +166,29 @@ private:
         std::vector<PathRank>& rankedPaths,
         std::function<bool(void)> const& continueCallback);
 
-    AccountID mSrcAccount;
-    AccountID mDstAccount;
-    AccountID mEffectiveDst;  // The account the paths need to end at
-    STAmount mDstAmount;
-    Currency mSrcCurrency;
-    std::optional<AccountID> mSrcIssuer;
-    STAmount mSrcAmount;
-    /** The amount remaining from mSrcAccount after the default liquidity has
+    AccountID srcAccount_;
+    AccountID dstAccount_;
+    AccountID effectiveDst_;  // The account the paths need to end at
+    STAmount dstAmount_;
+    Currency srcCurrency_;
+    std::optional<AccountID> srcIssuer_;
+    STAmount srcAmount_;
+    /** The amount remaining from srcAccount_ after the default liquidity has
         been removed. */
-    STAmount mRemainingAmount;
+    STAmount remainingAmount_;
     bool convert_all_;
-    std::optional<uint256> mDomain;
+    std::optional<uint256> domain_;
 
-    std::shared_ptr<ReadView const> mLedger;
+    std::shared_ptr<ReadView const> ledger_;
     std::unique_ptr<LoadEvent> loadEvent_;
-    std::shared_ptr<RippleLineCache> mRLCache;
+    std::shared_ptr<RippleLineCache> rLCache_;
 
-    STPathElement mSource;
-    STPathSet mCompletePaths;
-    std::vector<PathRank> mPathRanks;
-    std::map<PathType, STPathSet> mPaths;
+    STPathElement source_;
+    STPathSet completePaths_;
+    std::vector<PathRank> pathRanks_;
+    std::map<PathType, STPathSet> paths_;
 
-    hash_map<Issue, int> mPathsOutCountMap;
+    hash_map<Issue, int> pathsOutCountMap_;
 
     Application& app_;
     beast::Journal const j_;
