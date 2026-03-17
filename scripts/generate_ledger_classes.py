@@ -97,7 +97,7 @@ def parse_macro_file(file_path):
         c_code = f.read()
 
     # Step 1: Clean the C++ code using pcpp
-    cleaner = CppCleaner("LEDGER_ENTRY_INCLUDE")
+    cleaner = CppCleaner("LEDGER_ENTRY_INCLUDE", "LEDGER_ENTRY")
     cleaner.parse(c_code)
 
     out = io.StringIO()

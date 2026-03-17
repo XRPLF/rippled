@@ -100,7 +100,7 @@ def parse_macro_file(filepath):
         c_code = f.read()
 
     # Step 1: Clean the C++ code using pcpp
-    cleaner = CppCleaner("TRANSACTION_INCLUDE")
+    cleaner = CppCleaner("TRANSACTION_INCLUDE", "TRANSACTION")
     cleaner.parse(c_code)
 
     out = io.StringIO()
