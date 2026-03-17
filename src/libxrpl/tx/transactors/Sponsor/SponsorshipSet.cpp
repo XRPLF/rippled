@@ -80,14 +80,6 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
 
         if (auto const ret = checkOptionalAmountField(sfMaxFee); !isTesSuccess(ret))
             return ret;
-
-        // Check ReserveCount
-        if (ctx.tx.isFieldPresent(sfReserveCount))
-        {
-            auto const reserveCount = ctx.tx.getFieldU32(sfReserveCount);
-            if (reserveCount < 0)
-                return temMALFORMED;  // LCOV_EXCL_LINE
-        }
     }
 
     return tesSUCCESS;
