@@ -155,7 +155,7 @@ getTxJsonFromParams(Json::Value const& params)
     {
         if (params.isMember(jss::tx_json))
         {
-            return RPC::make_paraerror_("Can only include one of `tx_blob` and `tx_json`.");
+            return RPC::make_param_error("Can only include one of `tx_blob` and `tx_json`.");
         }
 
         auto const txBlob = params[jss::tx_blob];
@@ -188,7 +188,7 @@ getTxJsonFromParams(Json::Value const& params)
     }
     else
     {
-        return RPC::make_paraerror_("Neither `tx_blob` nor `tx_json` included.");
+        return RPC::make_param_error("Neither `tx_blob` nor `tx_json` included.");
     }
 
     // basic sanity checks for transaction shape

@@ -376,7 +376,7 @@ getOrAcquireLedger(RPC::JsonContext const& context)
     if ((hasHash + hasIndex) != 1)
     {
         return Unexpected(
-            RPC::make_paraerror_(
+            RPC::make_param_error(
                 "Exactly one of 'ledger_hash' or "
                 "'ledger_index' can be specified."));
     }
@@ -405,9 +405,9 @@ getOrAcquireLedger(RPC::JsonContext const& context)
         auto ledger = ledgerMaster.getValidatedLedger();
 
         if (ledgerIndex >= ledger->header().seq)
-            return Unexpected(RPC::make_paraerror_("Ledger index too large"));
+            return Unexpected(RPC::make_param_error("Ledger index too large"));
         if (ledgerIndex <= 0)
-            return Unexpected(RPC::make_paraerror_("Ledger index too small"));
+            return Unexpected(RPC::make_param_error("Ledger index too small"));
 
         auto const j = context.app.journal("RPCHandler");
         // Try to get the hash of the desired ledger from the validated

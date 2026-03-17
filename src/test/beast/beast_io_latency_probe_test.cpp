@@ -33,7 +33,7 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
         using duration = typename Clock::duration;
         using rep = typename MeasureClock::duration::rep;
 
-        std::vector<duration> elapsedTimes_;
+        std::vector<duration> elapsedTimes;
 
         measure_asio_timers(duration interval = 100ms, size_t numSamples = 50)
         {
@@ -43,7 +43,7 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
                 work{boost::asio::make_work_guard(ios)};
             std::thread worker{[&] { ios.run(); }};
             boost::asio::basic_waitable_timer<Clock> timer{ios};
-            elapsedTimes_.reserve(numSamples);
+            elapsedTimes.reserve(numSamples);
             std::mutex mtx;
             std::unique_lock<std::mutex> mainlock{mtx};
             std::condition_variable cv;
@@ -59,7 +59,7 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
                     if (ec)
                         waitErr = ec;
                     auto const end{MeasureClock::now()};
-                    elapsedTimes_.emplace_back(end - start);
+                    elapsedTimes.emplace_back(end - start);
                     std::lock_guard lk{mtx};
                     done = true;
                     cv.notify_one();
@@ -77,11 +77,11 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
         getMean()
         {
             double sum = {0};
-            for (auto const& v : elapsedTimes_)
+            for (auto const& v : elapsedTimes)
             {
                 sum += static_cast<double>(std::chrono::duration_cast<D>(v).count());
             }
-            return sum / elapsedTimes_.size();
+            return sum / elapsedTimes.size();
         }
 
         template <class D>
@@ -89,7 +89,7 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
         getMax()
         {
             return std::chrono::duration_cast<D>(
-                       *std::max_element(elapsedTimes_.begin(), elapsedTimes_.end()))
+                       *std::max_element(elapsedTimes.begin(), elapsedTimes.end()))
                 .count();
         }
 
@@ -98,7 +98,7 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
         getMin()
         {
             return std::chrono::duration_cast<D>(
-                       *std::min_element(elapsedTimes_.begin(), elapsedTimes_.end()))
+                       *std::min_element(elapsedTimes.begin(), elapsedTimes.end()))
                 .count();
         }
     };

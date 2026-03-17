@@ -1037,7 +1037,7 @@ static Json::Value
 sortAndValidateSigners(STArray& signers, AccountID const& signingForID)
 {
     if (signers.empty())
-        return RPC::make_paraerror_("Signers array may not be empty.");
+        return RPC::make_param_error("Signers array may not be empty.");
 
     // Signers must be sorted by Account.
     std::sort(signers.begin(), signers.end(), [](STObject const& a, STObject const& b) {
@@ -1055,7 +1055,7 @@ sortAndValidateSigners(STArray& signers, AccountID const& signingForID)
         std::ostringstream err;
         err << "Duplicate Signers:Signer:Account entries (" << toBase58((*dupIter)[sfAccount])
             << ") are not allowed.";
-        return RPC::make_paraerror_(err.str());
+        return RPC::make_param_error(err.str());
     }
 
     // An account may not sign for itself.
@@ -1066,7 +1066,7 @@ sortAndValidateSigners(STArray& signers, AccountID const& signingForID)
     {
         std::ostringstream err;
         err << "A Signer may not be the transaction's Account (" << toBase58(signingForID) << ").";
-        return RPC::make_paraerror_(err.str());
+        return RPC::make_param_error(err.str());
     }
     return {};
 }
@@ -1321,7 +1321,7 @@ transactionSubmitMultiSigned(
     auto& signers = stTx->peekFieldArray(sfSigners);
 
     if (signers.empty())
-        return RPC::make_paraerror_("tx_json.Signers array may not be empty.");
+        return RPC::make_param_error("tx_json.Signers array may not be empty.");
 
     // The Signers array may only contain Signer objects.
     if (std::find_if_not(signers.begin(), signers.end(), [](STObject const& obj) {
@@ -1332,7 +1332,7 @@ transactionSubmitMultiSigned(
                 obj.isFieldPresent(sfTxnSignature) && obj.getCount() == 3);
         }) != signers.end())
     {
-        return RPC::make_paraerror_("Signers array may only contain Signer entries.");
+        return RPC::make_param_error("Signers array may only contain Signer entries.");
     }
 
     // The array must be sorted and validated.

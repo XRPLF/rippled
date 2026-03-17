@@ -44,7 +44,7 @@ namespace xrpl {
 
 namespace detail {
 
-class save_streastate_
+class save_stream_state
 {
     std::ostream& os_;
     std::streamsize precision_;
@@ -52,16 +52,16 @@ class save_streastate_
     std::ios::char_type fill_;
 
 public:
-    ~save_streastate_()
+    ~save_stream_state()
     {
         os_.precision(precision_);
         os_.flags(flags_);
         os_.fill(fill_);
     }
-    save_streastate_(save_streastate_ const&) = delete;
-    save_streastate_&
-    operator=(save_streastate_ const&) = delete;
-    explicit save_streastate_(std::ostream& os)
+    save_stream_state(save_stream_state const&) = delete;
+    save_stream_state&
+    operator=(save_stream_state const&) = delete;
+    explicit save_stream_state(std::ostream& os)
         : os_(os), precision_(os.precision()), flags_(os.flags()), fill_(os.fill())
     {
     }
@@ -71,7 +71,7 @@ template <class Rep, class Period>
 std::ostream&
 pretty_time(std::ostream& os, std::chrono::duration<Rep, Period> d)
 {
-    save_streastate_ _(os);
+    save_stream_state _(os);
     using namespace std::chrono;
     if (d < microseconds{1})
     {

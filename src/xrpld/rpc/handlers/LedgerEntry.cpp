@@ -846,7 +846,7 @@ doLedgerEntry(RPC::JsonContext& context)
 
     if (hasMoreThanOneMember)
     {
-        return RPC::make_paraerror_("Too many fields provided.");
+        return RPC::make_param_error("Too many fields provided.");
     }
 
     std::shared_ptr<ReadView const> lpLedger;
@@ -890,7 +890,7 @@ doLedgerEntry(RPC::JsonContext& context)
                 jvResult[jss::error] = "unknownOption";
                 return jvResult;
             }
-            return RPC::make_paraerror_("No ledger_entry params provided.");
+            return RPC::make_param_error("No ledger_entry params provided.");
         }
     }
     catch (Json::error& e)
