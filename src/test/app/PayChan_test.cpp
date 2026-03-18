@@ -401,18 +401,23 @@ struct PayChan_test : public beast::unit_test::suite
         // Owner closes, will close after settleDelay
         env(claim(alice, chan), txflags(tfClose));
         auto counts = [](auto const& t) { return t.time_since_epoch().count(); };
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         BEAST_EXPECT(*channelExpiration(*env.current(), chan) == counts(minExpiration));
         // increase the expiration time
         env(fund(alice, chan, XRP(1), NetClock::time_point{minExpiration + 100s}));
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         BEAST_EXPECT(*channelExpiration(*env.current(), chan) == counts(minExpiration) + 100);
         // decrease the expiration, but still above minExpiration
         env(fund(alice, chan, XRP(1), NetClock::time_point{minExpiration + 50s}));
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         BEAST_EXPECT(*channelExpiration(*env.current(), chan) == counts(minExpiration) + 50);
         // decrease the expiration below minExpiration
         env(fund(alice, chan, XRP(1), NetClock::time_point{minExpiration - 50s}),
             ter(temBAD_EXPIRATION));
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         BEAST_EXPECT(*channelExpiration(*env.current(), chan) == counts(minExpiration) + 50);
         env(claim(bob, chan), txflags(tfRenew), ter(tecNO_PERMISSION));
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         BEAST_EXPECT(*channelExpiration(*env.current(), chan) == counts(minExpiration) + 50);
         env(claim(alice, chan), txflags(tfRenew));
         BEAST_EXPECT(!channelExpiration(*env.current(), chan));

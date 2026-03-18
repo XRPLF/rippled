@@ -2,11 +2,12 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Issue.h>
-#include <xrpl/tx/transactors/AMM/AMMUtils.h>
+#include <xrpl/tx/transactors/dex/AMMUtils.h>
 
 #include <grpcpp/support/status.h>
 
@@ -175,7 +176,7 @@ doAMMInfo(RPC::JsonContext& context)
         "xrpl::doAMMInfo : auction slot is set");
     if (amm->isFieldPresent(sfAuctionSlot))
     {
-        auto const& auctionSlot = static_cast<STObject const&>(amm->peekAtField(sfAuctionSlot));
+        auto const& auctionSlot = safe_downcast<STObject const&>(amm->peekAtField(sfAuctionSlot));
         if (auctionSlot.isFieldPresent(sfAccount))
         {
             Json::Value auction;

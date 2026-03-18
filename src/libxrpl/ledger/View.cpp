@@ -1321,7 +1321,7 @@ doWithdraw(
     }
     else
     {
-        auto dstSle = view.peek(keylet::account(dstAcct));
+        auto dstSle = view.read(keylet::account(dstAcct));
         if (auto err = verifyDepositPreauth(tx, view, senderAcct, dstAcct, dstSle, j))
             return err;
     }
@@ -2333,7 +2333,6 @@ accountSendMultiIOU(
     if (auto stream = j.trace())
     {
         std::string sender_bal("-");
-        std::string receiver_bal("-");
 
         if (sender)
             sender_bal = sender->getFieldAmount(sfBalance).getFullText();

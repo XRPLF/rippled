@@ -40,6 +40,7 @@
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/crypto/RFC1751.h>
 #include <xrpl/crypto/csprng.h>
+#include <xrpl/git/Git.h>
 #include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/protocol/BuildInfo.h>
@@ -164,9 +165,9 @@ class NetworkOPsImp final : public NetworkOPs
         struct CounterData
         {
             decltype(counters_) counters;
-            decltype(mode_) mode;
+            decltype(mode_) mode = OperatingMode::DISCONNECTED;
             decltype(start_) start;
-            decltype(initialSyncUs_) initialSyncUs;
+            decltype(initialSyncUs_) initialSyncUs{};
         };
 
         CounterData
@@ -647,23 +648,16 @@ private:
     {
         AccountID const accountId_;
         // forward
-        std::uint32_t forwardTxIndex_;
+        std::uint32_t forwardTxIndex_{0};
         // separate backward and forward
-        std::uint32_t separationLedgerSeq_;
+        std::uint32_t separationLedgerSeq_{0};
         // history, backward
-        std::uint32_t historyLastLedgerSeq_;
-        std::int32_t historyTxIndex_;
-        bool haveHistorical_;
-        std::atomic<bool> stopHistorical_;
+        std::uint32_t historyLastLedgerSeq_{0};
+        std::int32_t historyTxIndex_{-1};
+        bool haveHistorical_{false};
+        std::atomic<bool> stopHistorical_{false};
 
-        SubAccountHistoryIndex(AccountID const& accountId)
-            : accountId_(accountId)
-            , forwardTxIndex_(0)
-            , separationLedgerSeq_(0)
-            , historyLastLedgerSeq_(0)
-            , historyTxIndex_(-1)
-            , haveHistorical_(false)
-            , stopHistorical_(false)
+        SubAccountHistoryIndex(AccountID const& accountId) : accountId_(accountId)
         {
         }
     };
@@ -716,7 +710,7 @@ private:
     std::optional<PublicKey> const validatorPK_;
     std::optional<PublicKey> const validatorMasterPK_;
 
-    ConsensusPhase mLastConsensusPhase;
+    ConsensusPhase mLastConsensusPhase{ConsensusPhase::open};
 
     LedgerMaster& m_ledgerMaster;
 
@@ -1639,7 +1633,7 @@ NetworkOPsImp::getOwnerInfo(std::shared_ptr<ReadView const> lpLedger, AccountID 
     auto sleNode = lpLedger->read(keylet::page(root));
     if (sleNode)
     {
-        std::uint64_t uNodeDir;
+        std::uint64_t uNodeDir = 0;
 
         do
         {
@@ -2535,6 +2529,9 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 
     if (admin)
     {
+        // Note: By default the node size is "tiny". When parsing it's an error if the final
+        // NODE_SIZE is over 4 so below code should be safe.
+        // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
         switch (registry_.app().config().NODE_SIZE)
         {
             case 0:
@@ -2594,17 +2591,14 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             }
         }
 
-#if defined(GIT_COMMIT_HASH) || defined(GIT_BRANCH)
+        if (!xrpl::git::getCommitHash().empty() || !xrpl::git::getBuildBranch().empty())
         {
             auto& x = (info[jss::git] = Json::objectValue);
-#ifdef GIT_COMMIT_HASH
-            x[jss::hash] = GIT_COMMIT_HASH;
-#endif
-#ifdef GIT_BRANCH
-            x[jss::branch] = GIT_BRANCH;
-#endif
+            if (!xrpl::git::getCommitHash().empty())
+                x[jss::hash] = xrpl::git::getCommitHash();
+            if (!xrpl::git::getBuildBranch().empty())
+                x[jss::branch] = xrpl::git::getBuildBranch();
         }
-#endif
     }
     info[jss::io_latency_ms] = static_cast<Json::UInt>(registry_.app().getIOLatency().count());
 
@@ -3597,7 +3591,8 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                 switch (dbType)
                 {
                     case Sqlite: {
-                        auto db = static_cast<SQLiteDatabase*>(&registry_.getRelationalDatabase());
+                        auto db =
+                            safe_downcast<SQLiteDatabase*>(&registry_.getRelationalDatabase());
                         RelationalDatabase::AccountTxPageOptions options{
                             accountId, minLedger, maxLedger, marker, 0, true};
                         return db->newestAccountTxPage(options);
@@ -4203,7 +4198,7 @@ NetworkOPsImp::getBookPage(
 
     std::shared_ptr<SLE const> sleOfferDir;
     uint256 offerIndex;
-    unsigned int uBookEntry;
+    unsigned int uBookEntry = 0;
     STAmount saDirRate;
 
     auto const rate = transferRate(view, book.out.account);

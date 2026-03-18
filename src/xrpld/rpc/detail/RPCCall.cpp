@@ -1476,10 +1476,10 @@ rpcClient(
             xrpl::ServerHandler::Setup setup;
             try
             {
-                setup = setup_ServerHandler(
-                    config, beast::logstream{logs.journal("HTTPClient").warn()});
+                beast::logstream rpcCallLog{logs.journal("HTTPClient").warn()};
+                setup = setup_ServerHandler(config, rpcCallLog);
             }
-            catch (std::exception const&)
+            catch (std::exception const&)  // NOLINT(bugprone-empty-catch)
             {
                 // ignore any exceptions, so the command
                 // line client works without a config file

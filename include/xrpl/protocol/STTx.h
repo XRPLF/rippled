@@ -15,7 +15,7 @@
 
 namespace xrpl {
 
-enum TxnSql : char {
+enum class TxnSql : char {
     txnSqlNew = 'N',
     txnSqlConflict = 'C',
     txnSqlHeld = 'H',
@@ -83,6 +83,9 @@ public:
     std::uint32_t
     getSeqValue() const;
 
+    AccountID
+    getFeePayer() const;
+
     boost::container::flat_set<AccountID>
     getMentionedAccounts() const;
 
@@ -122,7 +125,7 @@ public:
     getMetaSQL(
         Serializer rawTxn,
         std::uint32_t inLedger,
-        char status,
+        TxnSql status,
         std::string const& escapedMetaData) const;
 
     std::vector<uint256> const&

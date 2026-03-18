@@ -3,7 +3,7 @@
 #include <xrpl/basics/random.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/tx/transactors/NFT/NFTokenUtils.h>
+#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 #include <initializer_list>
 
@@ -2930,7 +2930,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         uint256 const nftokenID1 = token::getNextID(env, issuer, 0, tfTransferable);
         env(token::mint(minter, 0), token::issuer(issuer), txflags(tfTransferable));
         env.close();
-        uint8_t issuerCount, minterCount, buyerCount;
+        uint8_t issuerCount = 0, minterCount = 0, buyerCount = 0;
 
         // Test how adding an Expiration field to an offer affects permissions
         // for cancelling offers.

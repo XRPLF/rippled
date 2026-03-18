@@ -210,7 +210,7 @@ public:
             if (BEAST_EXPECT(jrr.isMember(jss::ledger)))
             {
                 auto data = strUnHex(jrr[jss::ledger][jss::ledger_data].asString());
-                if (BEAST_EXPECT(data))
+                if (BEAST_EXPECT(data); data.has_value())
                 {
                     Serializer s(data->data(), data->size());
                     std::uint32_t seq = 0;

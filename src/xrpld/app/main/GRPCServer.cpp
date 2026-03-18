@@ -29,7 +29,7 @@ getEndpoint(std::string const& peer)
         if (endpoint)
             return beast::IP::to_asio_endpoint(endpoint.value());
     }
-    catch (std::exception const&)
+    catch (std::exception const&)  // NOLINT(bugprone-empty-catch)
     {
     }
     return {};
@@ -383,8 +383,8 @@ GRPCServerImpl::handleRpcs()
         requests.pop_back();
     };
 
-    void* tag;  // uniquely identifies a request.
-    bool ok;
+    void* tag = nullptr;  // uniquely identifies a request.
+    bool ok = false;
     // Block waiting to read the next event from the completion queue. The
     // event is uniquely identified by its tag, which in this case is the
     // memory address of a CallData instance.

@@ -331,7 +331,7 @@ JobQueue::finishJob(JobType type)
 void
 JobQueue::processTask(int instance)
 {
-    JobType type;
+    JobType type = jtINVALID;
 
     {
         using namespace std::chrono;

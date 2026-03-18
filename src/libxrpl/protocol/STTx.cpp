@@ -214,6 +214,20 @@ STTx::getSeqValue() const
     return getSeqProxy().value();
 }
 
+AccountID
+STTx::getFeePayer() const
+{
+    // If sfDelegate is present, the delegate account is the payer
+    // note: if a delegate is specified, its authorization to act on behalf of the account is
+    // enforced in `Transactor::checkPermission`
+    // cryptographic signature validity is checked separately (e.g., in `Transactor::checkSign`)
+    if (isFieldPresent(sfDelegate))
+        return getAccountID(sfDelegate);
+
+    // Default payer
+    return getAccountID(sfAccount);
+}
+
 void
 STTx::sign(
     PublicKey const& publicKey,
@@ -249,10 +263,10 @@ STTx::checkSign(Rules const& rules, STObject const& sigObject) const
         return signingPubKey.empty() ? checkMultiSign(rules, sigObject)
                                      : checkSingleSign(sigObject);
     }
-    catch (std::exception const&)
+    catch (...)
     {
+        return Unexpected("Internal signature check failure.");
     }
-    return Unexpected("Internal signature check failure.");
 }
 
 Expected<void, std::string>
@@ -355,7 +369,7 @@ STTx::getMetaSQL(std::uint32_t inLedger, std::string const& escapedMetaData) con
 {
     Serializer s;
     add(s);
-    return getMetaSQL(s, inLedger, txnSqlValidated, escapedMetaData);
+    return getMetaSQL(s, inLedger, TxnSql::txnSqlValidated, escapedMetaData);
 }
 
 // VFALCO This could be a free function elsewhere
@@ -363,7 +377,7 @@ std::string
 STTx::getMetaSQL(
     Serializer rawTxn,
     std::uint32_t inLedger,
-    char status,
+    TxnSql status,
     std::string const& escapedMetaData) const
 {
     static boost::format bfTrans("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
@@ -374,8 +388,8 @@ STTx::getMetaSQL(
 
     return str(
         boost::format(bfTrans) % to_string(getTransactionID()) % format->getName() %
-        toBase58(getAccountID(sfAccount)) % getFieldU32(sfSequence) % inLedger % status % rTxn %
-        escapedMetaData);
+        toBase58(getAccountID(sfAccount)) % getFieldU32(sfSequence) % inLedger %
+        safe_cast<char>(status) % rTxn % escapedMetaData);
 }
 
 static Expected<void, std::string>
@@ -682,9 +696,9 @@ invalidMPTAmountInTx(STObject const& tx)
             {
                 if (auto const& field = tx.peekAtField(e.sField());
                     (field.getSType() == STI_AMOUNT &&
-                     static_cast<STAmount const&>(field).holds<MPTIssue>()) ||
+                     safe_downcast<STAmount const&>(field).holds<MPTIssue>()) ||
                     (field.getSType() == STI_ISSUE &&
-                     static_cast<STIssue const&>(field).holds<MPTIssue>()))
+                     safe_downcast<STIssue const&>(field).holds<MPTIssue>()))
                 {
                     if (e.supportMPT() != soeMPTSupported)
                         return true;

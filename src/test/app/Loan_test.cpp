@@ -6,9 +6,9 @@
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/server/LoadFeeTrack.h>
-#include <xrpl/tx/transactors/Batch.h>
-#include <xrpl/tx/transactors/Lending/LendingHelpers.h>
-#include <xrpl/tx/transactors/Lending/LoanSet.h>
+#include <xrpl/tx/transactors/lending/LendingHelpers.h>
+#include <xrpl/tx/transactors/lending/LoanSet.h>
+#include <xrpl/tx/transactors/system/Batch.h>
 
 #include <chrono>
 
@@ -1127,7 +1127,7 @@ protected:
 
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
-        if (!BEAST_EXPECT(loanResult))
+        if (BEAST_EXPECT(loanResult); !loanResult.has_value())
             return;
 
         auto broker = std::get<BrokerInfo>(*loanResult);
@@ -1903,7 +1903,6 @@ protected:
         }
 
         // Finally! Create a loan
-        std::string testData;
 
         auto coverAvailable = [&env, this](uint256 const& brokerID, Number const& expected) {
             if (auto const brokerSle = env.le(keylet::loanbroker(brokerID));
@@ -3304,8 +3303,7 @@ protected:
                     interestRate(TenthBips32(10'000)),
                     sig(sfCounterpartySignature, lender),
                     fee(env.current()->fees().base * 5),
-                    ter(tecLIMIT_EXCEEDED),
-                    THISLINE);
+                    ter(tecLIMIT_EXCEEDED));
             },
             nullptr);
 
@@ -3328,8 +3326,7 @@ protected:
                     fee(env.current()->fees().base * 5),
                     paymentTotal(2),
                     paymentInterval(3600 * 24),
-                    ter(tecLIMIT_EXCEEDED),
-                    THISLINE);
+                    ter(tecLIMIT_EXCEEDED));
             },
             nullptr);
     }
@@ -3728,7 +3725,7 @@ protected:
         createJson = env.json(createJson, sig(sfCounterpartySignature, lender));
         // Fails in preclaim because principal requested can't be
         // represented as XRP
-        env(createJson, ter(tecPRECISION_LOSS), THISLINE);
+        env(createJson, ter(tecPRECISION_LOSS));
         env.close();
 
         BEAST_EXPECT(!env.le(keylet));
@@ -3740,7 +3737,7 @@ protected:
         createJson = env.json(createJson, sig(sfCounterpartySignature, lender));
         // Fails in doApply because the payment is too small to be
         // represented as XRP.
-        env(createJson, ter(tecPRECISION_LOSS), THISLINE);
+        env(createJson, ter(tecPRECISION_LOSS));
         env.close();
     }
 
@@ -3765,10 +3762,8 @@ protected:
 
         Account const alice{"alice"};
         std::string const borrowerPass = "borrower";
-        std::string const borrowerSeed = "ssBRAsLpH4778sLNYC4ik1JBJsBVf";
         Account borrower{borrowerPass, KeyType::ed25519};
         auto const lenderPass = "lender";
-        std::string const lenderSeed = "shPTCZGwTEhJrYT8NbcNkeaa8pzPM";
         Account lender{lenderPass, KeyType::ed25519};
 
         env.fund(XRP(1'000'000), alice, lender, borrower);
@@ -4220,8 +4215,8 @@ protected:
         // preclaim
         Env env(*this);
         env.fund(XRP(1'000), lender, issuer, borrower);
-        env(trust(lender, IOU(10'000'000)), THISLINE);
-        env(pay(issuer, lender, IOU(5'000'000)), THISLINE);
+        env(trust(lender, IOU(10'000'000)));
+        env(pay(issuer, lender, IOU(5'000'000)));
         BrokerInfo brokerInfo{createVaultAndBroker(env, issuer["IOU"], lender)};
 
         auto const loanSetFee = fee(env.current()->fees().base * 2);
@@ -4229,22 +4224,21 @@ protected:
 
         env(set(borrower, brokerInfo.brokerID, debtMaximumRequest),
             sig(sfCounterpartySignature, lender),
-            loanSetFee,
-            THISLINE);
+            loanSetFee);
 
         env.close();
 
         std::uint32_t const loanSequence = 1;
         auto const loanKeylet = keylet::loan(brokerInfo.brokerID, loanSequence);
 
-        env(fset(issuer, asfGlobalFreeze), THISLINE);
+        env(fset(issuer, asfGlobalFreeze));
         env.close();
 
         // preclaim: tecFROZEN
-        env(pay(borrower, loanKeylet.key, debtMaximumRequest), ter(tecFROZEN), THISLINE);
+        env(pay(borrower, loanKeylet.key, debtMaximumRequest), ter(tecFROZEN));
         env.close();
 
-        env(fclear(issuer, asfGlobalFreeze), THISLINE);
+        env(fclear(issuer, asfGlobalFreeze));
         env.close();
 
         auto const pseudoBroker = [&]() -> std::optional<Account> {
@@ -4262,33 +4256,29 @@ protected:
             return;
 
         // Lender and pseudoaccount must both be frozen
-        env(trust(issuer, lender["IOU"](1'000), lender, tfSetFreeze | tfSetDeepFreeze), THISLINE);
+        env(trust(issuer, lender["IOU"](1'000), lender, tfSetFreeze | tfSetDeepFreeze));
         env(trust(
-                issuer,
-                (*pseudoBroker)["IOU"](1'000),
-                *pseudoBroker,
-                tfSetFreeze | tfSetDeepFreeze),
-            THISLINE);
+            issuer, (*pseudoBroker)["IOU"](1'000), *pseudoBroker, tfSetFreeze | tfSetDeepFreeze));
         env.close();
 
         // preclaim: tecFROZEN due to deep frozen
-        env(pay(borrower, loanKeylet.key, debtMaximumRequest), ter(tecFROZEN), THISLINE);
+        env(pay(borrower, loanKeylet.key, debtMaximumRequest), ter(tecFROZEN));
         env.close();
 
         // Only one needs to be unfrozen
-        env(trust(issuer, lender["IOU"](1'000), tfClearFreeze | tfClearDeepFreeze), THISLINE);
+        env(trust(issuer, lender["IOU"](1'000), tfClearFreeze | tfClearDeepFreeze));
         env.close();
 
         // The payment is late by this point
-        env(pay(borrower, loanKeylet.key, debtMaximumRequest), ter(tecEXPIRED), THISLINE);
+        env(pay(borrower, loanKeylet.key, debtMaximumRequest), ter(tecEXPIRED));
         env.close();
-        env(pay(borrower, loanKeylet.key, debtMaximumRequest, tfLoanLatePayment), THISLINE);
+        env(pay(borrower, loanKeylet.key, debtMaximumRequest, tfLoanLatePayment));
         env.close();
 
         // preclaim: tecKILLED
         // note that tecKILLED in loanMakePayment()
         // doesn't happen because of the preclaim check.
-        env(pay(borrower, loanKeylet.key, debtMaximumRequest), ter(tecKILLED), THISLINE);
+        env(pay(borrower, loanKeylet.key, debtMaximumRequest), ter(tecKILLED));
     }
 
     void
@@ -4640,12 +4630,12 @@ protected:
         auto const keylet = keylet::loan(broker.brokerID, loanSequence);
 
         createJson = env.json(createJson, sig(sfCounterpartySignature, lender));
-        env(createJson, THISLINE);
+        env(createJson);
         env.close();
 
         auto loanPayTx = env.json(pay(borrower, keylet.key, STAmount{broker.asset, Number{}}));
         loanPayTx["Amount"]["value"] = "0.000281284125490196";
-        env(loanPayTx, ter(tecINSUFFICIENT_PAYMENT), THISLINE);
+        env(loanPayTx, ter(tecINSUFFICIENT_PAYMENT));
         env.close();
     }
 
@@ -5346,7 +5336,7 @@ protected:
         auto const loanSetFee = fee(env.current()->fees().base * 2);
 
         auto const brokerPreLoan = env.le(keylet::loanbroker(broker.brokerID));
-        if (!BEAST_EXPECT(brokerPreLoan))
+        if (BEAST_EXPECT(brokerPreLoan); !brokerPreLoan.has_value())
             return;
 
         auto const loanSequence = brokerPreLoan->at(sfLoanSequence);
@@ -5943,7 +5933,7 @@ protected:
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
 
-        if (!BEAST_EXPECT(loanResult))
+        if (BEAST_EXPECT(loanResult); !loanResult.has_value())
             return;
 
         auto broker = std::get<BrokerInfo>(*loanResult);
@@ -6014,7 +6004,7 @@ protected:
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
 
-        if (!BEAST_EXPECT(loanResult))
+        if (BEAST_EXPECT(loanResult); !loanResult.has_value())
             return;
 
         auto broker = std::get<BrokerInfo>(*loanResult);
@@ -6220,7 +6210,7 @@ protected:
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
 
-        if (!BEAST_EXPECT(loanResult))
+        if (BEAST_EXPECT(loanResult); !loanResult.has_value())
             return;
 
         auto broker = std::get<BrokerInfo>(*loanResult);
@@ -6380,7 +6370,7 @@ protected:
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, issuer);
 
-        if (!BEAST_EXPECT(loanResult))
+        if (BEAST_EXPECT(loanResult); !loanResult.has_value())
             return;
 
         auto broker = std::get<BrokerInfo>(*loanResult);
@@ -6436,7 +6426,7 @@ protected:
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
 
-        if (!BEAST_EXPECT(loanResult))
+        if (BEAST_EXPECT(loanResult); !loanResult.has_value())
             return;
 
         auto broker = std::get<BrokerInfo>(*loanResult);
@@ -7091,14 +7081,13 @@ public:
     void
     run() override
     {
-        auto const argument = arg();
         auto const numIterations = [s = arg()]() -> int {
             int defaultNum = 5;
             if (s.empty())
                 return defaultNum;
             try
             {
-                std::size_t pos;
+                std::size_t pos = 0;
                 auto const r = stoi(s, &pos);
                 if (pos != s.size())
                     return defaultNum;
