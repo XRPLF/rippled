@@ -752,7 +752,7 @@ private:
     DispatchState mDispatchState = DispatchState::none;
     std::vector<TransactionStatus> mTransactions;
 
-    StateAccounting accounting_{};
+    StateAccounting accounting_;
 
     std::set<uint256> pendingValidations_;
     std::mutex validationsMutex_;
