@@ -101,6 +101,7 @@ Workers::stop()
     // so m_allPaused can momentarily be true while a task is still finishing.
     std::unique_lock<std::mutex> lk{m_mut};
     m_cv.wait(lk, [this] { return m_allPaused && numberOfCurrentlyRunningTasks() == 0; });
+    lk.unlock();
 }
 
 void
