@@ -214,7 +214,7 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
             // LCOV_EXCL_STOP
         }
         auto res = redeemIOU(sb, account_, saBurn, lpTokens.issue(), ctx_.journal);
-        if (res != tesSUCCESS)
+        if (!isTesSuccess(res))
         {
             JLOG(ctx_.journal.debug()) << "AMM Bid: failed to redeem.";
             return res;
@@ -308,7 +308,7 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
             auctionSlot[sfAccount],
             toSTAmount(lpTokens.issue(), refund),
             ctx_.journal);
-        if (res != tesSUCCESS)
+        if (!isTesSuccess(res))
         {
             JLOG(ctx_.journal.debug()) << "AMM Bid: failed to refund.";
             return {res, false};
@@ -318,7 +318,7 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
         res = updateSlot(discountedFee, *payPrice, burn);
     }
 
-    return {res, res == tesSUCCESS};
+    return {res, isTesSuccess(res)};
 }
 
 TER

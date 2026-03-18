@@ -55,7 +55,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
             #   fee to 500.
             # - Bookworm using GCC 15: Debug on linux/amd64, enable code
             #   coverage (which will be done below).
-            # - Bookworm using Clang 16: Debug on linux/arm64, enable voidstar.
+            # - Bookworm using Clang 16: Debug on linux/amd64, enable voidstar.
             # - Bookworm using Clang 17: Release on linux/amd64, set the
             #   reference fee to 1000.
             # - Bookworm using Clang 20: Debug on linux/amd64.
@@ -78,7 +78,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                     if (
                         f"{os['compiler_name']}-{os['compiler_version']}" == "clang-16"
                         and build_type == "Debug"
-                        and architecture["platform"] == "linux/arm64"
+                        and architecture["platform"] == "linux/amd64"
                     ):
                         cmake_args = f"-Dvoidstar=ON {cmake_args}"
                         skip = False

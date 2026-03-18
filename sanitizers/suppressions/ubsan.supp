@@ -182,6 +182,17 @@ signed-integer-overflow:src/test/beast/LexicalCast_test.cpp
 # External library suppressions
 unsigned-integer-overflow:nudb/detail/xxhash.hpp
 
+# Loan_test.cpp intentional underflow in test arithmetic
+unsigned-integer-overflow:src/test/app/Loan_test.cpp
+undefined:src/test/app/Loan_test.cpp
+
+# Source tree restructured paths (libxrpl/tx/transactors/)
+# These duplicate the xrpld/app/tx/detail entries above for the new layout
+unsigned-integer-overflow:src/libxrpl/tx/transactors/oracle/SetOracle.cpp
+undefined:src/libxrpl/tx/transactors/oracle/SetOracle.cpp
+unsigned-integer-overflow:src/libxrpl/tx/transactors/nft/NFTokenMint.cpp
+undefined:src/libxrpl/tx/transactors/nft/NFTokenMint.cpp
+
 # Protobuf intentional overflows in hash functions
 # Protobuf uses intentional unsigned overflow for hash computation (stringpiece.h:393)
 unsigned-integer-overflow:google/protobuf/stubs/stringpiece.h

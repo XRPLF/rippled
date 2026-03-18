@@ -178,7 +178,7 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
     {
         auto result =
             checkAcceptAsset(ctx.view, ctx.flags, id, ctx.j, Issue(uPaysCurrency, uPaysIssuerID));
-        if (result != tesSUCCESS)
+        if (!isTesSuccess(result))
             return result;
     }
 
@@ -214,8 +214,10 @@ CreateOffer::checkAcceptAsset(
         return (flags & tapRETRY) ? TER{terNO_ACCOUNT} : TER{tecNO_ISSUER};
     }
 
+    // An account cannot create a trustline to itself, so no line can exist
+    // to be frozen. Additionally, an issuer can always accept its own
+    // issuance.
     if (issue.account == id)
-        // An account can always accept its own issuance.
         return tesSUCCESS;
 
     if ((*issuerAccount)[sfFlags] & lsfRequireAuth)
@@ -240,14 +242,6 @@ CreateOffer::checkAcceptAsset(
 
             return (flags & tapRETRY) ? TER{terNO_AUTH} : TER{tecNO_AUTH};
         }
-    }
-
-    // An account can not create a trustline to itself, so no line can exist
-    // to be frozen. Additionally, an issuer can always accept its own
-    // issuance.
-    if (issue.account == id)
-    {
-        return tesSUCCESS;
     }
 
     auto const trustLine = view.read(keylet::line(id, issue.account, issue.currency));
@@ -563,7 +557,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     bool const bOpenLedger = sb.open();
     bool crossed = false;
 
-    if (result == tesSUCCESS)
+    if (isTesSuccess(result))
     {
         // If a tick size applies, round the offer to the tick size
         auto const& uPaysIssuerID = saTakerPays.getIssuer();
@@ -635,7 +629,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         // We expect the implementation of cross to succeed
         // or give a tec.
         XRPL_ASSERT(
-            result == tesSUCCESS || isTecClaim(result),
+            isTesSuccess(result) || isTecClaim(result),
             "xrpl::CreateOffer::applyGuts : result is tesSUCCESS or "
             "tecCLAIM");
 
@@ -649,7 +643,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         if (result == tecFAILED_PROCESSING && bOpenLedger)
             result = telFAILED_PROCESSING;
 
-        if (result != tesSUCCESS)
+        if (!isTesSuccess(result))
         {
             JLOG(j_.debug()) << "final result: " << transToken(result);
             return {result, true};
@@ -692,7 +686,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         saTakerPays > zero && saTakerGets > zero,
         "xrpl::CreateOffer::applyGuts : taker pays and gets positive");
 
-    if (result != tesSUCCESS)
+    if (!isTesSuccess(result))
     {
         JLOG(j_.debug()) << "final result: " << transToken(result);
         return {result, true};
@@ -733,7 +727,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     {
         XRPAmount reserve = sb.fees().accountReserve(sleCreator->getFieldU32(sfOwnerCount) + 1);
 
-        if (mPriorBalance < reserve)
+        if (preFeeBalance_ < reserve)
         {
             // If we are here, the signing account had an insufficient reserve
             // *prior* to our processing. If something actually crossed, then
@@ -741,7 +735,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             if (!crossed)
                 result = tecINSUF_RESERVE_OFFER;
 
-            if (result != tesSUCCESS)
+            if (!isTesSuccess(result))
             {
                 JLOG(j_.debug()) << "final result: " << transToken(result);
             }
@@ -833,7 +827,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     {
         auto const res =
             applyHybrid(sb, sleOffer, offer_index, saTakerPays, saTakerGets, setBookDir);
-        if (res != tesSUCCESS)
+        if (!isTesSuccess(res))
             return {res, true};  // LCOV_EXCL_LINE
     }
 

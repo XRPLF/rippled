@@ -20,7 +20,7 @@ SHAMapInnerNode::~SHAMapInnerNode() = default;
 void
 SHAMapInnerNode::partialDestructor()
 {
-    intr_ptr::SharedPtr<SHAMapTreeNode>* children;
+    intr_ptr::SharedPtr<SHAMapTreeNode>* children = nullptr;
     // structured bindings can't be captured in c++ 17; use tie instead
     std::tie(std::ignore, std::ignore, children) = hashesAndChildren_.getHashesAndChildren();
     iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) { children[indexNum].reset(); });
@@ -61,8 +61,8 @@ SHAMapInnerNode::clone(std::uint32_t cowid) const
     p->hash_ = hash_;
     p->isBranch_ = isBranch_;
     p->fullBelowGen_ = fullBelowGen_;
-    SHAMapHash *cloneHashes, *thisHashes;
-    intr_ptr::SharedPtr<SHAMapTreeNode>*cloneChildren, *thisChildren;
+    SHAMapHash *cloneHashes = nullptr, *thisHashes = nullptr;
+    intr_ptr::SharedPtr<SHAMapTreeNode>*cloneChildren = nullptr, *thisChildren = nullptr;
     // structured bindings can't be captured in c++ 17; use tie instead
     std::tie(std::ignore, cloneHashes, cloneChildren) =
         p->hashesAndChildren_.getHashesAndChildren();
@@ -185,8 +185,8 @@ SHAMapInnerNode::updateHash()
 void
 SHAMapInnerNode::updateHashDeep()
 {
-    SHAMapHash* hashes;
-    intr_ptr::SharedPtr<SHAMapTreeNode>* children;
+    SHAMapHash* hashes = nullptr;
+    intr_ptr::SharedPtr<SHAMapTreeNode>* children = nullptr;
     // structured bindings can't be captured in c++ 17; use tie instead
     std::tie(std::ignore, hashes, children) = hashesAndChildren_.getHashesAndChildren();
     iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) {

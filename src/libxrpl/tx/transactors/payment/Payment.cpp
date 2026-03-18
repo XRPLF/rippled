@@ -231,7 +231,7 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
     if (!sle)
         return terNO_DELEGATE_PERMISSION;
 
-    if (checkTxPermission(sle, tx) == tesSUCCESS)
+    if (isTesSuccess(checkTxPermission(sle, tx)))
         return tesSUCCESS;
 
     std::unordered_set<GranularPermissionType> granularPermissions;
@@ -435,7 +435,7 @@ Payment::doApply()
 
         // TODO: is this right?  If the amount is the correct amount, was
         // the delivered amount previously set?
-        if (rc.result() == tesSUCCESS && rc.actualAmountOut != dstAmount)
+        if (isTesSuccess(rc.result()) && rc.actualAmountOut != dstAmount)
         {
             if (deliverMin && rc.actualAmountOut < *deliverMin)
                 rc.setResult(tecPATH_PARTIAL);
@@ -458,14 +458,14 @@ Payment::doApply()
         JLOG(j_.trace()) << " dstAmount=" << dstAmount.getFullText();
         auto const& mptIssue = dstAmount.get<MPTIssue>();
 
-        if (auto const ter = requireAuth(view(), mptIssue, account_); ter != tesSUCCESS)
+        if (auto const ter = requireAuth(view(), mptIssue, account_); !isTesSuccess(ter))
             return ter;
 
-        if (auto const ter = requireAuth(view(), mptIssue, dstAccountID); ter != tesSUCCESS)
+        if (auto const ter = requireAuth(view(), mptIssue, dstAccountID); !isTesSuccess(ter))
             return ter;
 
         if (auto const ter = canTransfer(view(), mptIssue, account_, dstAccountID);
-            ter != tesSUCCESS)
+            !isTesSuccess(ter))
             return ter;
 
         if (auto err = verifyDepositPreauth(
@@ -513,7 +513,7 @@ Payment::doApply()
 
         PaymentSandbox pv(&view());
         auto res = accountSend(pv, account_, dstAccountID, amountDeliver, ctx_.journal);
-        if (res == tesSUCCESS)
+        if (isTesSuccess(res))
         {
             pv.apply(ctx_.rawView());
 
@@ -544,16 +544,16 @@ Payment::doApply()
     // This is the total reserve in drops.
     auto const reserve = view().fees().accountReserve(ownerCount);
 
-    // mPriorBalance is the balance on the sending account BEFORE the
+    // preFeeBalance_ is the balance on the sending account BEFORE the
     // fees were charged. We want to make sure we have enough reserve
     // to send. Allow final spend to use reserve for fee.
     auto const mmm = std::max(reserve, ctx_.tx.getFieldAmount(sfFee).xrp());
 
-    if (mPriorBalance < dstAmount.xrp() + mmm)
+    if (preFeeBalance_ < dstAmount.xrp() + mmm)
     {
         // Vote no. However the transaction might succeed, if applied in
         // a different order.
-        JLOG(j_.trace()) << "Delay transaction: Insufficient funds: " << to_string(mPriorBalance)
+        JLOG(j_.trace()) << "Delay transaction: Insufficient funds: " << to_string(preFeeBalance_)
                          << " / " << to_string(dstAmount.xrp() + mmm) << " (" << to_string(reserve)
                          << ")";
 
@@ -601,7 +601,7 @@ Payment::doApply()
     }
 
     // Do the arithmetic for the transfer and make the ledger change.
-    sleSrc->setFieldAmount(sfBalance, mSourceBalance - dstAmount);
+    sleSrc->setFieldAmount(sfBalance, sleSrc->getFieldAmount(sfBalance) - dstAmount);
     sleDst->setFieldAmount(sfBalance, sleDst->getFieldAmount(sfBalance) + dstAmount);
 
     // Re-arm the password change fee if we can and need to.

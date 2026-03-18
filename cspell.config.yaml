@@ -100,6 +100,7 @@ words:
   - eventfd
   - exceptioned
   - Falco
+  - fcontext
   - finalizers
   - firewalled
   - fmtdur
@@ -112,6 +113,7 @@ words:
   - gpgcheck
   - gpgkey
   - hotwallet
+  - hwaddress
   - hwrap
   - ifndef
   - inequation

@@ -30,7 +30,7 @@ canHaveNFTokenID(std::shared_ptr<STTx const> const& serializedTx, TxMeta const& 
         return false;
 
     // if the transaction failed nothing could have been delivered.
-    if (transactionMeta.getResultTER() != tesSUCCESS)
+    if (!isTesSuccess(transactionMeta.getResultTER()))
         return false;
 
     return true;

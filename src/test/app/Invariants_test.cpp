@@ -110,6 +110,7 @@ class Invariants_test : public beast::unit_test::suite
 
     void
     doInvariantCheck(
+        // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
         test::jtx::Env&& env,
         test::jtx::Account const& A1,
         test::jtx::Account const& A2,
@@ -139,7 +140,7 @@ class Invariants_test : public beast::unit_test::suite
             BEAST_EXPECTS(terExpect == terActual, std::to_string(TERtoInt(terActual)));
             auto const messages = sink.messages().str();
 
-            if (terActual != tesSUCCESS)
+            if (!isTesSuccess(terActual))
             {
                 BEAST_EXPECTS(
                     messages.starts_with("Invariant failed:") ||

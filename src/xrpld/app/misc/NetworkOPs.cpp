@@ -165,9 +165,9 @@ class NetworkOPsImp final : public NetworkOPs
         struct CounterData
         {
             decltype(counters_) counters;
-            decltype(mode_) mode;
+            decltype(mode_) mode = OperatingMode::DISCONNECTED;
             decltype(start_) start;
-            decltype(initialSyncUs_) initialSyncUs;
+            decltype(initialSyncUs_) initialSyncUs{};
         };
 
         CounterData
@@ -648,23 +648,16 @@ private:
     {
         AccountID const accountId_;
         // forward
-        std::uint32_t forwardTxIndex_;
+        std::uint32_t forwardTxIndex_{0};
         // separate backward and forward
-        std::uint32_t separationLedgerSeq_;
+        std::uint32_t separationLedgerSeq_{0};
         // history, backward
-        std::uint32_t historyLastLedgerSeq_;
-        std::int32_t historyTxIndex_;
-        bool haveHistorical_;
-        std::atomic<bool> stopHistorical_;
+        std::uint32_t historyLastLedgerSeq_{0};
+        std::int32_t historyTxIndex_{-1};
+        bool haveHistorical_{false};
+        std::atomic<bool> stopHistorical_{false};
 
-        SubAccountHistoryIndex(AccountID const& accountId)
-            : accountId_(accountId)
-            , forwardTxIndex_(0)
-            , separationLedgerSeq_(0)
-            , historyLastLedgerSeq_(0)
-            , historyTxIndex_(-1)
-            , haveHistorical_(false)
-            , stopHistorical_(false)
+        SubAccountHistoryIndex(AccountID const& accountId) : accountId_(accountId)
         {
         }
     };
@@ -717,7 +710,7 @@ private:
     std::optional<PublicKey> const validatorPK_;
     std::optional<PublicKey> const validatorMasterPK_;
 
-    ConsensusPhase mLastConsensusPhase;
+    ConsensusPhase mLastConsensusPhase{ConsensusPhase::open};
 
     LedgerMaster& m_ledgerMaster;
 
@@ -1449,7 +1442,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                 registry_.getHashRouter().setFlags(e.transaction->getID(), HashRouterFlags::BAD);
 
 #ifdef DEBUG
-            if (e.result != tesSUCCESS)
+            if (!isTesSuccess(e.result))
             {
                 std::string token, human;
 
@@ -1462,7 +1455,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
 
             bool addLocal = e.local;
 
-            if (e.result == tesSUCCESS)
+            if (isTesSuccess(e.result))
             {
                 JLOG(m_journal.debug()) << "Transaction is now included in open ledger";
                 e.transaction->setStatus(INCLUDED);
@@ -1639,7 +1632,7 @@ NetworkOPsImp::getOwnerInfo(std::shared_ptr<ReadView const> lpLedger, AccountID 
     auto sleNode = lpLedger->read(keylet::page(root));
     if (sleNode)
     {
-        std::uint64_t uNodeDir;
+        std::uint64_t uNodeDir = 0;
 
         do
         {
@@ -2535,6 +2528,9 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 
     if (admin)
     {
+        // Note: By default the node size is "tiny". When parsing it's an error if the final
+        // NODE_SIZE is over 4 so below code should be safe.
+        // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
         switch (registry_.app().config().NODE_SIZE)
         {
             case 0:
@@ -3594,7 +3590,8 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                 switch (dbType)
                 {
                     case Sqlite: {
-                        auto db = static_cast<SQLiteDatabase*>(&registry_.getRelationalDatabase());
+                        auto db =
+                            safe_downcast<SQLiteDatabase*>(&registry_.getRelationalDatabase());
                         RelationalDatabase::AccountTxPageOptions options{
                             accountId, minLedger, maxLedger, marker, 0, true};
                         return db->newestAccountTxPage(options);
@@ -4200,7 +4197,7 @@ NetworkOPsImp::getBookPage(
 
     std::shared_ptr<SLE const> sleOfferDir;
     uint256 offerIndex;
-    unsigned int uBookEntry;
+    unsigned int uBookEntry = 0;
     STAmount saDirRate;
 
     auto const rate = transferRate(view, book.out.account);

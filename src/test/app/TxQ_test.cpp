@@ -722,6 +722,7 @@ public:
             auto aliceStat = txQ.getAccountTxs(alice.id());
             BEAST_EXPECT(aliceStat.size() == 1);
             BEAST_EXPECT(aliceStat.begin()->feeLevel == baseFeeLevel);
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(aliceStat.begin()->lastValid && *aliceStat.begin()->lastValid == 8);
             BEAST_EXPECT(!aliceStat.begin()->consequences.isBlocker());
 
@@ -2309,7 +2310,7 @@ public:
             auto const jtx = env.jt(offer_cancel(alice, 3), seq(5), fee(10));
             auto const pf =
                 preflight(env.app(), env.current()->rules(), *jtx.stx, tapNONE, env.journal);
-            BEAST_EXPECT(pf.ter == tesSUCCESS);
+            BEAST_EXPECT(isTesSuccess(pf.ter));
             BEAST_EXPECT(!pf.consequences.isBlocker());
             BEAST_EXPECT(pf.consequences.fee() == drops(10));
             BEAST_EXPECT(pf.consequences.potentialSpend() == XRP(0));
@@ -2321,7 +2322,7 @@ public:
             auto const jtx = env.jt(trust("carol", USD(50000000)), seq(1), fee(10));
             auto const pf =
                 preflight(env.app(), env.current()->rules(), *jtx.stx, tapNONE, env.journal);
-            BEAST_EXPECT(pf.ter == tesSUCCESS);
+            BEAST_EXPECT(isTesSuccess(pf.ter));
             BEAST_EXPECT(!pf.consequences.isBlocker());
             BEAST_EXPECT(pf.consequences.fee() == drops(10));
             BEAST_EXPECT(pf.consequences.potentialSpend() == XRP(0));
@@ -2331,7 +2332,7 @@ public:
             auto const jtx = env.jt(ticket::create(alice, 1), seq(1), fee(10));
             auto const pf =
                 preflight(env.app(), env.current()->rules(), *jtx.stx, tapNONE, env.journal);
-            BEAST_EXPECT(pf.ter == tesSUCCESS);
+            BEAST_EXPECT(isTesSuccess(pf.ter));
             BEAST_EXPECT(!pf.consequences.isBlocker());
             BEAST_EXPECT(pf.consequences.fee() == drops(10));
             BEAST_EXPECT(pf.consequences.potentialSpend() == XRP(0));
@@ -3871,7 +3872,7 @@ public:
         env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
             auto const tx = env.jt(noop(alice), seq(aliceSeq), fee(openLedgerCost(env)));
             auto const result = xrpl::apply(env.app(), view, *tx.stx, tapUNLIMITED, j);
-            BEAST_EXPECT(result.ter == tesSUCCESS && result.applied);
+            BEAST_EXPECT(isTesSuccess(result.ter) && result.applied);
             return result.applied;
         });
         // the queued transaction is still there
@@ -3939,7 +3940,7 @@ public:
         env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
             auto const tx = env.jt(noop(alice), ticket::use(tktSeq0 + 1), fee(openLedgerCost(env)));
             auto const result = xrpl::apply(env.app(), view, *tx.stx, tapUNLIMITED, j);
-            BEAST_EXPECT(result.ter == tesSUCCESS && result.applied);
+            BEAST_EXPECT(isTesSuccess(result.ter) && result.applied);
             return result.applied;
         });
         // the queued transaction is still there

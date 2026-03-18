@@ -46,7 +46,7 @@ ValidPermissionedDEX::finalize(
     beast::Journal const& j)
 {
     auto const txType = tx.getTxnType();
-    if ((txType != ttPAYMENT && txType != ttOFFER_CREATE) || result != tesSUCCESS)
+    if ((txType != ttPAYMENT && txType != ttOFFER_CREATE) || !isTesSuccess(result))
         return true;
 
     // For each offercreate transaction, check if

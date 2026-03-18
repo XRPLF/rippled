@@ -1304,7 +1304,7 @@ class NegativeUNLVoteScoreTable_test : public beast::unit_test::suite
                     NodeID myId = history.UNLNodeIDs[3];
                     history.walkHistoryAndAddValidations(
                         [&](std::shared_ptr<Ledger const> const& l, std::size_t idx) -> bool {
-                            std::size_t k;
+                            std::size_t k = 0;
                             if (idx < 2)
                                 k = 0;
                             else if (idx < 4)
@@ -1470,6 +1470,7 @@ class NegativeUNLVoteOffline_test : public beast::unit_test::suite
             if (history.goodHistory)
             {
                 NodeID n1 = calcNodeID(*history.lastLedger()->negativeUNL().begin());
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 NodeID n2 = calcNodeID(*history.lastLedger()->validatorToDisable());
                 history.walkHistoryAndAddValidations(
                     [&](std::shared_ptr<Ledger const> const& l, std::size_t idx) -> bool {
@@ -1752,7 +1753,7 @@ applyAndTestResult(jtx::Env& env, OpenView& view, STTx const& tx, bool pass)
 {
     auto const res = apply(env.app(), view, tx, ApplyFlags::tapNONE, env.journal);
     if (pass)
-        return res.ter == tesSUCCESS;
+        return isTesSuccess(res.ter);
     else
         return res.ter == tefFAILURE || res.ter == temDISABLED;
 }

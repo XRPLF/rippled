@@ -272,7 +272,7 @@ class Check_test : public beast::unit_test::suite
             env(check::create(from, to, USD(50)), ter(expected));
             env.close();
 
-            if (expected == tesSUCCESS)
+            if (isTesSuccess(expected))
             {
                 BEAST_EXPECT(checksOnAccount(env, from).size() == fromCkCount + 2);
                 BEAST_EXPECT(checksOnAccount(env, to).size() == toCkCount + 2);

@@ -225,9 +225,10 @@ Oracle::set(UpdateArg const& arg)
         price[jss::BaseAsset] = assetToStr(std::get<0>(data));
         price[jss::QuoteAsset] = assetToStr(std::get<1>(data));
         if (std::get<2>(data))
-            price[jss::AssetPrice] = *std::get<2>(data);
+            price[jss::AssetPrice] =
+                *std::get<2>(data);  // NOLINT(bugprone-unchecked-optional-access)
         if (std::get<3>(data))
-            price[jss::Scale] = *std::get<3>(data);
+            price[jss::Scale] = *std::get<3>(data);  // NOLINT(bugprone-unchecked-optional-access)
         priceData[jss::PriceData] = price;
         dataSeries.append(priceData);
     }
@@ -272,7 +273,7 @@ Oracle::ledgerEntry(
         toJson(jvParams[jss::oracle][jss::oracle_document_id], *documentID);
     if (index)
     {
-        std::uint32_t i;
+        std::uint32_t i = 0;
         if (boost::conversion::try_lexical_convert(*index, i))
             jvParams[jss::oracle][jss::ledger_index] = i;
         else

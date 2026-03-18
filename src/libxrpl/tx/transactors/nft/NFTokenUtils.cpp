@@ -343,7 +343,7 @@ removeToken(
     ApplyView& view,
     AccountID const& owner,
     uint256 const& nftokenID,
-    std::shared_ptr<SLE>&& curr)
+    std::shared_ptr<SLE> const& curr)
 {
     // We found a page, but the given NFT may not be in it.
     auto arr = curr->getFieldArray(sfNFTokens);
@@ -619,8 +619,8 @@ deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer)
     auto const nftokenID = (*offer)[sfNFTokenID];
 
     if (!view.dirRemove(
-            ((*offer)[sfFlags] & tfSellNFToken) ? keylet::nft_sells(nftokenID)
-                                                : keylet::nft_buys(nftokenID),
+            ((*offer)[sfFlags] & lsfSellNFToken) ? keylet::nft_sells(nftokenID)
+                                                 : keylet::nft_buys(nftokenID),
             (*offer)[sfNFTokenOfferNode],
             offer->key(),
             false))
@@ -891,7 +891,7 @@ tokenOfferCreatePreclaim(
         // unauthorized trustlines with balance
         auto const res =
             nft::checkTrustlineAuthorized(view, acctID, j, amount.asset().get<Issue>());
-        if (res != tesSUCCESS)
+        if (!isTesSuccess(res))
             return res;
     }
     return tesSUCCESS;

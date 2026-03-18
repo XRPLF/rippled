@@ -39,9 +39,9 @@ public:
             a = std::move(b);
             Account c(std::move(a));
         }
-        Account("alice");
-        Account("alice", KeyType::secp256k1);
-        Account("alice", KeyType::ed25519);
+        Account("alice");                      // NOLINT(bugprone-unused-raii)
+        Account("alice", KeyType::secp256k1);  // NOLINT(bugprone-unused-raii)
+        Account("alice", KeyType::ed25519);    // NOLINT(bugprone-unused-raii)
         auto const gw = Account("gw");
         [](AccountID) {}(gw);
         auto const USD = gw["USD"];
@@ -56,11 +56,11 @@ public:
     {
         using namespace jtx;
 
-        PrettyAmount(0);
-        PrettyAmount(1);
-        PrettyAmount(0u);
-        PrettyAmount(1u);
-        PrettyAmount(-1);
+        PrettyAmount(0);   // NOLINT(bugprone-unused-raii)
+        PrettyAmount(1);   // NOLINT(bugprone-unused-raii)
+        PrettyAmount(0u);  // NOLINT(bugprone-unused-raii)
+        PrettyAmount(1u);  // NOLINT(bugprone-unused-raii)
+        PrettyAmount(-1);  // NOLINT(bugprone-unused-raii)
         static_assert(!std::is_trivially_constructible<PrettyAmount, char>::value, "");
         static_assert(!std::is_trivially_constructible<PrettyAmount, unsigned char>::value, "");
         static_assert(!std::is_trivially_constructible<PrettyAmount, short>::value, "");
@@ -533,14 +533,14 @@ public:
         BEAST_EXPECT(*jt1.get<int>() == 7);
         BEAST_EXPECT(!jt1.get<UDT>());
         JTx jt2(std::move(jt1));
-        BEAST_EXPECT(!jt1.get<int>());
-        BEAST_EXPECT(!jt1.get<UDT>());
+        BEAST_EXPECT(!jt1.get<int>());  // NOLINT(bugprone-use-after-move)
+        BEAST_EXPECT(!jt1.get<UDT>());  // NOLINT(bugprone-use-after-move)
         BEAST_EXPECT(jt2.get<int>());
         BEAST_EXPECT(*jt2.get<int>() == 7);
         BEAST_EXPECT(!jt2.get<UDT>());
         jt1 = std::move(jt2);
-        BEAST_EXPECT(!jt2.get<int>());
-        BEAST_EXPECT(!jt2.get<UDT>());
+        BEAST_EXPECT(!jt2.get<int>());  // NOLINT(bugprone-use-after-move)
+        BEAST_EXPECT(!jt2.get<UDT>());  // NOLINT(bugprone-use-after-move)
         BEAST_EXPECT(jt1.get<int>());
         BEAST_EXPECT(*jt1.get<int>() == 7);
         BEAST_EXPECT(!jt1.get<UDT>());

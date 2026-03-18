@@ -134,6 +134,7 @@ class Hooks_test : public beast::unit_test::suite
                 }
 
                 case STI_ACCOUNT: {
+                    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                     AccountID id = *parseBase58<AccountID>("rwfSjJNK2YQuN64bSWn7T2eY9FJAyAPYJT");
                     dummy.setAccountID(f, id);
                     BEAST_EXPECT(dummy.getAccountID(f) == id);

@@ -690,7 +690,7 @@ TxQ::apply(
     // etc. before doing potentially expensive queue
     // replace and multi-transaction operations.
     auto const pfResult = preflight(app, view.rules(), *tx, flags, j);
-    if (pfResult.ter != tesSUCCESS)
+    if (!isTesSuccess(pfResult.ter))
         return {pfResult.ter, false};
 
     // See if the transaction paid a high enough fee that it can go straight
@@ -1798,7 +1798,7 @@ setup_TxQ(Config const& config)
     set(setup.minimumTxnInLedger, "minimum_txn_in_ledger", section);
     set(setup.minimumTxnInLedgerSA, "minimum_txn_in_ledger_standalone", section);
     set(setup.targetTxnInLedger, "target_txn_in_ledger", section);
-    std::uint32_t max;
+    std::uint32_t max = 0;
     if (set(max, "maximum_txn_in_ledger", section))
     {
         if (max < setup.minimumTxnInLedger)

@@ -118,7 +118,7 @@ SetTrust::checkPermission(ReadView const& view, STTx const& tx)
     if (!sle)
         return terNO_DELEGATE_PERMISSION;
 
-    if (checkTxPermission(sle, tx) == tesSUCCESS)
+    if (isTesSuccess(checkTxPermission(sle, tx)))
         return tesSUCCESS;
 
     std::uint32_t const txFlags = tx.getFlags();
@@ -376,10 +376,10 @@ SetTrust::doApply()
         STAmount saLowLimit;
         STAmount saHighBalance;
         STAmount saHighLimit;
-        std::uint32_t uLowQualityIn;
-        std::uint32_t uLowQualityOut;
-        std::uint32_t uHighQualityIn;
-        std::uint32_t uHighQualityOut;
+        std::uint32_t uLowQualityIn = 0;
+        std::uint32_t uLowQualityOut = 0;
+        std::uint32_t uHighQualityIn = 0;
+        std::uint32_t uHighQualityOut = 0;
         auto const& uLowAccountID = !bHigh ? account_ : uDstAccountID;
         auto const& uHighAccountID = bHigh ? account_ : uDstAccountID;
         SLE::ref sleLowAccount = !bHigh ? sle : sleDst;
@@ -570,7 +570,7 @@ SetTrust::doApply()
             terResult = trustDelete(view(), sleRippleState, uLowAccountID, uHighAccountID, viewJ);
         }
         // Reserve is not scaled by load.
-        else if (bReserveIncrease && mPriorBalance < reserveCreate)
+        else if (bReserveIncrease && preFeeBalance_ < reserveCreate)
         {
             JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
                                 "add trust line.";
@@ -598,8 +598,8 @@ SetTrust::doApply()
         JLOG(j_.trace()) << "Redundant: Setting non-existent ripple line to defaults.";
         return tecNO_LINE_REDUNDANT;
     }
-    else if (mPriorBalance < reserveCreate)  // Reserve is not scaled by
-                                             // load.
+    else if (preFeeBalance_ < reserveCreate)  // Reserve is not scaled by
+                                              // load.
     {
         JLOG(j_.trace()) << "Delay transaction: Line does not exist. "
                             "Insufficent reserve to create line.";

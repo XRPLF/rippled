@@ -67,7 +67,7 @@ LedgerReplayTask::LedgerReplayTask(
     InboundLedgers& inboundLedgers,
     LedgerReplayer& replayer,
     std::shared_ptr<SkipListAcquire>& skipListAcquirer,
-    TaskParameter&& parameter)
+    TaskParameter const& parameter)
     : TimeoutCounter(
           app,
           parameter.finishHash_,

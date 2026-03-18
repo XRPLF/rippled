@@ -102,7 +102,7 @@ AMMClawback::doApply()
     Sandbox sb(&ctx_.view());
 
     auto const ter = applyGuts(sb);
-    if (ter == tesSUCCESS)
+    if (isTesSuccess(ter))
         sb.apply(ctx_.rawView());
 
     return ter;
@@ -128,8 +128,7 @@ AMMClawback::applyGuts(Sandbox& sb)
 
     if (sb.rules().enabled(fixAMMClawbackRounding))
     {
-        // retrieve LP token balance inside the amendment gate to avoid
-        // inconsistent error behavior
+        // retrieve LP token balance inside the amendment gate to avoid inconsistent error behavior
         auto const lpTokenBalance = ammLPHolds(sb, *ammSle, holder, j_);
         if (lpTokenBalance == beast::zero)
             return tecAMM_BALANCE;
@@ -138,7 +137,6 @@ AMMClawback::applyGuts(Sandbox& sb)
             !res)
             return res.error();  // LCOV_EXCL_LINE
     }
-
     auto const expected =
         ammHolds(sb, *ammSle, asset, asset2, FreezeHandling::fhIGNORE_FREEZE, ctx_.journal);
 
@@ -151,6 +149,8 @@ AMMClawback::applyGuts(Sandbox& sb)
     STAmount amountWithdraw;
     std::optional<STAmount> amount2Withdraw;
 
+    // calling a second time on purpose since `verifyAndAdjustLPTokenBalance` rounds and may adjust
+    // the balance
     auto const holdLPtokens = ammLPHolds(sb, *ammSle, holder, j_);
     if (holdLPtokens == beast::zero)
         return tecAMM_BALANCE;
@@ -172,7 +172,7 @@ AMMClawback::applyGuts(Sandbox& sb)
                 0,
                 FreezeHandling::fhIGNORE_FREEZE,
                 WithdrawAll::Yes,
-                mPriorBalance,
+                preFeeBalance_,
                 ctx_.journal);
     else
         std::tie(result, newLPTokenBalance, amountWithdraw, amount2Withdraw) =
@@ -187,7 +187,7 @@ AMMClawback::applyGuts(Sandbox& sb)
                 holdLPtokens,
                 *clawAmount);
 
-    if (result != tesSUCCESS)
+    if (!isTesSuccess(result))
         return result;  // LCOV_EXCL_LINE
 
     auto const res =
@@ -200,7 +200,7 @@ AMMClawback::applyGuts(Sandbox& sb)
                                << " old balance: " << to_string(lptAMMBalance.iou());
 
     auto const ter = rippleCredit(sb, holder, issuer, amountWithdraw, true, j_);
-    if (ter != tesSUCCESS)
+    if (!isTesSuccess(ter))
         return ter;  // LCOV_EXCL_LINE
 
     // if the issuer issues both assets and sets flag tfClawTwoAssets, we
@@ -251,7 +251,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             0,
             FreezeHandling::fhIGNORE_FREEZE,
             WithdrawAll::Yes,
-            mPriorBalance,
+            preFeeBalance_,
             ctx_.journal);
 
     auto const& rules = sb.rules();
@@ -282,7 +282,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             0,
             FreezeHandling::fhIGNORE_FREEZE,
             WithdrawAll::No,
-            mPriorBalance,
+            preFeeBalance_,
             ctx_.journal);
     }
 
@@ -301,7 +301,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         0,
         FreezeHandling::fhIGNORE_FREEZE,
         WithdrawAll::No,
-        mPriorBalance,
+        preFeeBalance_,
         ctx_.journal);
 }
 

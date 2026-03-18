@@ -270,7 +270,7 @@ CashCheck::doApply()
 
             // The source account has enough XRP so make the ledger change.
             if (TER const ter{transferXRP(psb, srcId, account_, xrpDeliver, viewJ)};
-                ter != tesSUCCESS)
+                !isTesSuccess(ter))
             {
                 // The transfer failed.  Return the error code.
                 return ter;
@@ -309,7 +309,7 @@ CashCheck::doApply()
 
                 // Can the account cover the trust line's reserve?
                 if (std::uint32_t const ownerCount = {sleDst->at(sfOwnerCount)};
-                    mPriorBalance < psb.fees().accountReserve(ownerCount + 1))
+                    preFeeBalance_ < psb.fees().accountReserve(ownerCount + 1))
                 {
                     JLOG(j_.trace()) << "Trust line does not exist. "
                                         "Insufficent reserve to create line.";
@@ -389,7 +389,7 @@ CashCheck::doApply()
                 std::nullopt,  // check does not support domain
                 viewJ);
 
-            if (result.result() != tesSUCCESS)
+            if (!isTesSuccess(result.result()))
             {
                 JLOG(ctx_.journal.warn()) << "flow failed when cashing check.";
                 return result.result();

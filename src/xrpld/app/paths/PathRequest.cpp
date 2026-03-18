@@ -565,7 +565,7 @@ PathRequest::findPaths(
                 domain,         // --> Domain.
                 app_.logs());
 
-            if (rc.result() != tesSUCCESS)
+            if (!isTesSuccess(rc.result()))
             {
                 JLOG(m_journal.warn())
                     << iIdentifier << " Failed with covering path " << transHuman(rc.result());

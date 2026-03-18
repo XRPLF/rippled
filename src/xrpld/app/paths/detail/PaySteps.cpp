@@ -283,7 +283,7 @@ toStrand(
                 JLOG(j.trace()) << "Inserting implied account";
                 auto msr = make_DirectStepI(
                     ctx(), cur->getAccountID(), curIssue.account, curIssue.currency);
-                if (msr.first != tesSUCCESS)
+                if (!isTesSuccess(msr.first))
                     return {msr.first, Strand{}};
                 result.push_back(std::move(msr.second));
                 impliedPE.emplace(
@@ -298,7 +298,7 @@ toStrand(
                 JLOG(j.trace()) << "Inserting implied account before offer";
                 auto msr = make_DirectStepI(
                     ctx(), cur->getAccountID(), curIssue.account, curIssue.currency);
-                if (msr.first != tesSUCCESS)
+                if (!isTesSuccess(msr.first))
                     return {msr.first, Strand{}};
                 result.push_back(std::move(msr.second));
                 impliedPE.emplace(
@@ -318,7 +318,7 @@ toStrand(
                     {
                         // Last step. insert xrp endpoint step
                         auto msr = make_XRPEndpointStep(ctx(), next->getAccountID());
-                        if (msr.first != tesSUCCESS)
+                        if (!isTesSuccess(msr.first))
                             return {msr.first, Strand{}};
                         result.push_back(std::move(msr.second));
                     }
@@ -328,7 +328,7 @@ toStrand(
                     JLOG(j.trace()) << "Inserting implied account after offer";
                     auto msr = make_DirectStepI(
                         ctx(), curIssue.account, next->getAccountID(), curIssue.currency);
-                    if (msr.first != tesSUCCESS)
+                    if (!isTesSuccess(msr.first))
                         return {msr.first, Strand{}};
                     result.push_back(std::move(msr.second));
                 }
@@ -346,7 +346,7 @@ toStrand(
         }
 
         auto s = toStep(ctx(/*isLast*/ i == normPath.size() - 2), cur, next, curIssue);
-        if (s.first == tesSUCCESS)
+        if (isTesSuccess(s.first))
             result.emplace_back(std::move(s.second));
         else
         {
@@ -457,7 +457,7 @@ toStrands(
         auto const ter = sp.first;
         auto& strand = sp.second;
 
-        if (ter != tesSUCCESS)
+        if (!isTesSuccess(ter))
         {
             JLOG(j.trace()) << "failed to add default path";
             if (isTemMalformed(ter) || paths.empty())
@@ -501,7 +501,7 @@ toStrands(
         auto ter = sp.first;
         auto& strand = sp.second;
 
-        if (ter != tesSUCCESS)
+        if (!isTesSuccess(ter))
         {
             lastFailTer = ter;
             JLOG(j.trace()) << "failed to add path: ter: " << ter

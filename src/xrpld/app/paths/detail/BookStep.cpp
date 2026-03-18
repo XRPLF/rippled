@@ -63,7 +63,7 @@ protected:
 
     std::optional<Cache> cache_;
 
-public:
+private:
     BookStep(StrandContext const& ctx, Issue const& in, Issue const& out)
         : book_(in, out, ctx.domainID)
         , strandSrc_(ctx.strandSrc)
@@ -84,6 +84,7 @@ public:
                 ctx.j);
     }
 
+public:
     Book const&
     book() const
     {
@@ -223,6 +224,8 @@ private:
     // whichever is a better quality.
     std::optional<QualityFunction>
     tipOfferQualityF(ReadView const& view) const;
+
+    friend TDerived;
 };
 
 //------------------------------------------------------------------------------
@@ -240,7 +243,11 @@ class BookPaymentStep : public BookStep<TIn, TOut, BookPaymentStep<TIn, TOut>>
 public:
     explicit BookPaymentStep() = default;
 
-    using BookStep<TIn, TOut, BookPaymentStep<TIn, TOut>>::BookStep;
+    BookPaymentStep(StrandContext const& ctx, Issue const& in, Issue const& out)
+        : BookStep<TIn, TOut, BookPaymentStep<TIn, TOut>>(ctx, in, out)
+    {
+    }
+
     using BookStep<TIn, TOut, BookPaymentStep<TIn, TOut>>::qualityUpperBound;
     using typename BookStep<TIn, TOut, BookPaymentStep<TIn, TOut>>::OfferType;
 
@@ -804,7 +811,7 @@ BookStep<TIn, TOut, TDerived>::consumeOffer(
     {
         auto const dr =
             offer.send(sb, book_.in.account, offer.owner(), toSTAmount(ofrAmt.in, book_.in), j_);
-        if (dr != tesSUCCESS)
+        if (!isTesSuccess(dr))
             Throw<FlowException>(dr);
     }
 
@@ -813,7 +820,7 @@ BookStep<TIn, TOut, TDerived>::consumeOffer(
     {
         auto const cr =
             offer.send(sb, offer.owner(), book_.out.account, toSTAmount(ownerGives, book_.out), j_);
-        if (cr != tesSUCCESS)
+        if (!isTesSuccess(cr))
             Throw<FlowException>(cr);
     }
 
@@ -1329,7 +1336,7 @@ make_BookStepHelper(StrandContext const& ctx, Issue const& in, Issue const& out)
         ter = paymentStep->check(ctx);
         r = std::move(paymentStep);
     }
-    if (ter != tesSUCCESS)
+    if (!isTesSuccess(ter))
         return {ter, nullptr};
 
     return {tesSUCCESS, std::move(r)};
