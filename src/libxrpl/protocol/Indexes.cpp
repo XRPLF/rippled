@@ -137,7 +137,7 @@ getQuality(uint256 const& uBase)
 uint256
 getTicketIndex(AccountID const& account, std::uint32_t ticketSeq)
 {
-    return indexHash(LedgerNameSpace::TICKET, account, std::uint32_t(ticketSeq));
+    return indexHash(LedgerNameSpace::TICKET, account, ticketSeq);
 }
 
 uint256

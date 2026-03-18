@@ -1,10 +1,13 @@
 name: Check PR title
 
 on:
+  merge_group:
+    types:
+      - checks_requested
   pull_request:
     types: [opened, edited, reopened, synchronize]
     branches: [develop]
 
 jobs:
   check_title:
-    uses: XRPLF/actions/.github/workflows/check-pr-title.yml@943eb8277e8f4b010fde0c826ce4154c36c39509
+    uses: XRPLF/actions/.github/workflows/check-pr-title.yml@c6311685db43aa07971c4a6764320fecbc2acdcd

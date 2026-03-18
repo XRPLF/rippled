@@ -107,7 +107,7 @@ ApplyStateTable::apply(
         Mods newMod;
         for (auto& item : items_)
         {
-            SField const* type;
+            SField const* type = nullptr;
             switch (item.second.first)
             {
                 default:
@@ -169,9 +169,11 @@ ApplyStateTable::apply(
                     "xrpl::detail::ApplyStateTable::apply : valid nodes for "
                     "modification");
 
-                if (curNode->isThreadedType(to.rules()))  // thread transaction to node
-                                                          // item modified
+                if (curNode->isThreadedType(to.rules()))
+                {  // thread transaction to node
+                   // item modified
                     threadItem(meta, curNode);
+                }
 
                 STObject prevs(sfPreviousFields);
                 for (auto const& obj : *origNode)
@@ -513,7 +515,7 @@ void
 ApplyStateTable::threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
 {
     key_type prevTxID;
-    LedgerIndex prevLgrID;
+    LedgerIndex prevLgrID = 0;
 
     if (!sle->thread(meta.getTxID(), meta.getLgrSeq(), prevTxID, prevLgrID))
         return;

@@ -87,7 +87,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
             std::random_device rd;
             std::mt19937 e{rd()};
             std::uniform_int_distribution<> d(0, 255);
-            std::array<std::uint8_t, 16> key;
+            std::array<std::uint8_t, 16> key{};
             for (auto& v : key)
                 v = d(e);
             req.insert("Sec-WebSocket-Key", base64_encode(key.data(), key.size()));
@@ -132,7 +132,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
     void
     doRequest(
         boost::asio::yield_context& yield,
-        boost::beast::http::request<boost::beast::http::string_body>&& req,
+        boost::beast::http::request<boost::beast::http::string_body> const& req,
         std::string const& host,
         uint16_t port,
         bool secure,
@@ -616,9 +616,8 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         boost::system::error_code ec;
         doRequest(yield, makeWSUpgrade(ip, port), ip, port, true, resp, ec);
         BEAST_EXPECT(resp.result() == boost::beast::http::status::switching_protocols);
-        BEAST_EXPECT(resp.find("Upgrade") != resp.end() && resp["Upgrade"] == "websocket");
-        BEAST_EXPECT(
-            resp.find("Connection") != resp.end() && boost::iequals(resp["Connection"], "upgrade"));
+        BEAST_EXPECT(resp.contains("Upgrade") && resp["Upgrade"] == "websocket");
+        BEAST_EXPECT(resp.contains("Connection") && boost::iequals(resp["Connection"], "upgrade"));
     }
 
     void

@@ -135,8 +135,10 @@ PayChanClaim::doApply()
             return tecUNFUNDED_PAYMENT;
 
         if (reqBalance <= chanBalance)
+        {
             // nothing requested
             return tecUNFUNDED_PAYMENT;
+        }
 
         auto const sled = ctx_.view().peek(keylet::account(dst));
         if (!sled)

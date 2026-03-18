@@ -172,7 +172,7 @@ private:
      * @param scoreTable the score table
      * @return the candidates to disable and the candidates to re-enable
      */
-    Candidates const
+    Candidates
     findAllCandidates(
         hash_set<NodeID> const& unl,
         hash_set<NodeID> const& negUnl,

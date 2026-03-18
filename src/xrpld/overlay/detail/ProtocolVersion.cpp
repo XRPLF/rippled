@@ -81,8 +81,8 @@ parseProtocolVersions(boost::beast::string_view const& value)
 
         if (boost::regex_match(s, m, re))
         {
-            std::uint16_t major;
-            std::uint16_t minor;
+            std::uint16_t major = 0;
+            std::uint16_t minor = 0;
             if (!beast::lexicalCastChecked(major, std::string(m[1])))
                 continue;
 
