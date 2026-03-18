@@ -58,6 +58,8 @@ Message::compress()
     bool const compressible = [&] {
         if (messageBytes <= 70)
             return false;
+
+        // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
         switch (type)
         {
             case protocol::mtMANIFESTS:

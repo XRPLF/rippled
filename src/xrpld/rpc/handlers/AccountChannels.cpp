@@ -81,7 +81,7 @@ doAccountChannels(RPC::JsonContext& context)
     if (!strDst.empty() && !raDstAccount)
         return rpcError(rpcACT_MALFORMED);
 
-    unsigned int limit;
+    unsigned int limit = 0;
     if (auto err = readLimitField(limit, RPC::Tuning::accountChannels, context))
         return *err;
 

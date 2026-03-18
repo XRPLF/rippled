@@ -146,7 +146,7 @@ VaultDeposit::doApply()
     if (vault->isFlag(lsfVaultPrivate) && account_ != vault->at(sfOwner))
     {
         if (auto const err = enforceMPTokenAuthorization(
-                ctx_.view(), mptIssuanceID, account_, mPriorBalance, j_);
+                ctx_.view(), mptIssuanceID, account_, preFeeBalance_, j_);
             !isTesSuccess(err))
             return err;
     }
@@ -156,7 +156,7 @@ VaultDeposit::doApply()
         if (!view().exists(keylet::mptoken(mptIssuanceID, account_)))
         {
             if (auto const err = authorizeMPToken(
-                    view(), mPriorBalance, mptIssuanceID->value(), account_, ctx_.journal);
+                    view(), preFeeBalance_, mptIssuanceID->value(), account_, ctx_.journal);
                 !isTesSuccess(err))
                 return err;
         }
@@ -169,7 +169,7 @@ VaultDeposit::doApply()
                 account_ == vault->at(sfOwner), "xrpl::VaultDeposit::doApply : account is owner");
             if (auto const err = authorizeMPToken(
                     view(),
-                    mPriorBalance,              // priorBalance
+                    preFeeBalance_,             // priorBalance
                     mptIssuanceID->value(),     // mptIssuanceID
                     sleIssuance->at(sfIssuer),  // account
                     ctx_.journal,

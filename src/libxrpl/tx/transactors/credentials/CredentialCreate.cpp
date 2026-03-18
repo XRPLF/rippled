@@ -107,7 +107,7 @@ CredentialCreate::doApply()
             return tecEXPIRED;
         }
 
-        sleCred->setFieldU32(sfExpiration, ctx_.tx.getFieldU32(sfExpiration));
+        sleCred->setFieldU32(sfExpiration, *optExp);
     }
 
     auto const sleIssuer = view().peek(keylet::account(account_));
@@ -117,7 +117,7 @@ CredentialCreate::doApply()
     {
         STAmount const reserve{
             view().fees().accountReserve(sleIssuer->getFieldU32(sfOwnerCount) + 1)};
-        if (mPriorBalance < reserve)
+        if (preFeeBalance_ < reserve)
             return tecINSUFFICIENT_RESERVE;
     }
 

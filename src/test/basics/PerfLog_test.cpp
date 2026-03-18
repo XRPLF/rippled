@@ -793,7 +793,7 @@ public:
         perfLog->start();
 
         // Randomly select a job type and its name.
-        JobType jobType;
+        JobType jobType = jtINVALID;
         std::string jobTypeName;
         {
             auto const& jobTypes = JobTypes::instance();

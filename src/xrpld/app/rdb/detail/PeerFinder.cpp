@@ -83,7 +83,7 @@ updatePeerFinderDB(soci::session& session, int currentSchemaVersion, beast::Jour
                    "    PeerFinder_BootstrapCache_Next "
                    "  ( address ); ";
 
-        std::size_t count;
+        std::size_t count = 0;
         session << "SELECT COUNT(*) FROM PeerFinder_BootstrapCache;", soci::into(count);
 
         std::vector<PeerFinder::Store::Entry> list;
@@ -91,7 +91,7 @@ updatePeerFinderDB(soci::session& session, int currentSchemaVersion, beast::Jour
         {
             list.reserve(count);
             std::string s;
-            int valence;
+            int valence = 0;
             soci::statement st =
                 (session.prepare << "SELECT "
                                     " address, "
@@ -187,7 +187,7 @@ void
 readPeerFinderDB(soci::session& session, std::function<void(std::string const&, int)> const& func)
 {
     std::string s;
-    int valence;
+    int valence = 0;
     soci::statement st =
         (session.prepare << "SELECT "
                             " address, "

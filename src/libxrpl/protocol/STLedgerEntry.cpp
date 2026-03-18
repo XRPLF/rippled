@@ -43,14 +43,14 @@ STLedgerEntry::STLedgerEntry(Keylet const& k) : STObject(sfLedgerEntry), key_(k.
 }
 
 STLedgerEntry::STLedgerEntry(SerialIter& sit, uint256 const& index)
-    : STObject(sfLedgerEntry), key_(index)
+    : STObject(sfLedgerEntry), key_(index), type_(ltANY)
 {
     set(sit);
     setSLEType();
 }
 
 STLedgerEntry::STLedgerEntry(STObject const& object, uint256 const& index)
-    : STObject(object), key_(index)
+    : STObject(object), key_(index), type_(ltANY)
 {
     setSLEType();
 }

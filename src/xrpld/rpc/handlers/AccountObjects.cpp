@@ -53,7 +53,7 @@ doAccountNFTs(RPC::JsonContext& context)
     if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
 
-    unsigned int limit;
+    unsigned int limit = 0;
     if (auto err = readLimitField(limit, RPC::Tuning::accountNFTokens, context))
         return *err;
 
@@ -435,7 +435,7 @@ doAccountObjects(RPC::JsonContext& context)
         }
     }
 
-    unsigned int limit;
+    unsigned int limit = 0;
     if (auto err = readLimitField(limit, RPC::Tuning::accountObjects, context))
         return *err;
 

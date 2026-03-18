@@ -198,10 +198,10 @@ char const* RFC1751::s_dictionary[2048] = {
 unsigned long
 RFC1751::extract(char const* s, int start, int length)
 {
-    unsigned char cl;
-    unsigned char cc;
-    unsigned char cr;
-    unsigned long x;
+    unsigned char cl = 0;
+    unsigned char cc = 0;
+    unsigned char cr = 0;
+    unsigned long x = 0;
 
     XRPL_ASSERT(length <= 11, "xrpl::RFC1751::extract : maximum length");
     XRPL_ASSERT(start >= 0, "xrpl::RFC1751::extract : minimum start");
@@ -226,7 +226,7 @@ void
 RFC1751::btoe(std::string& strHuman, std::string const& strData)
 {
     char caBuffer[9]; /* add in room for the parity 2 bits*/
-    int p, i;
+    int p = 0, i = 0;
 
     memcpy(caBuffer, strData.c_str(), 8);
 
@@ -245,11 +245,11 @@ RFC1751::btoe(std::string& strHuman, std::string const& strData)
 void
 RFC1751::insert(char* s, int x, int start, int length)
 {
-    unsigned char cl;
-    unsigned char cc;
-    unsigned char cr;
-    unsigned long y;
-    int shift;
+    unsigned char cl = 0;
+    unsigned char cc = 0;
+    unsigned char cr = 0;
+    unsigned long y = 0;
+    int shift = 0;
 
     XRPL_ASSERT(length <= 11, "xrpl::RFC1751::insert : maximum length");
     XRPL_ASSERT(start >= 0, "xrpl::RFC1751::insert : minimum start");
@@ -336,7 +336,7 @@ RFC1751::etob(std::string& strData, std::vector<std::string> vsHuman)
     if (6 != vsHuman.size())
         return -1;
 
-    int i, p = 0;
+    int i = 0, p = 0;
     char b[9] = {0};
 
     for (auto& strWord : vsHuman)

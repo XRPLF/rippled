@@ -550,6 +550,7 @@ public:
                     p[1] = 1 - p[0];
                     for (int q = 0; q < 2; ++q)
                     {
+                        // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
                         switch (p[q])
                         {
                             case 0: {
@@ -637,7 +638,7 @@ public:
 
         for (auto const& config_string : config_strings)
         {
-            Params params;
+            Params params{};
             params.items = default_items;
             params.threads = threads;
             for (auto i = default_repeat; i--;)

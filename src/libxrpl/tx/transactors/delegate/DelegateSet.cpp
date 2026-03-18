@@ -81,7 +81,7 @@ DelegateSet::doApply()
     STAmount const reserve{
         ctx_.view().fees().accountReserve(sleOwner->getFieldU32(sfOwnerCount) + 1)};
 
-    if (mPriorBalance < reserve)
+    if (preFeeBalance_ < reserve)
         return tecINSUFFICIENT_RESERVE;
 
     sle = std::make_shared<SLE>(delegateKey);

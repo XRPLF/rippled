@@ -294,7 +294,7 @@ public:
 
                 auto ret = keypairForSignature(params, error);
                 BEAST_EXPECT(!contains_error(error));
-                if (BEAST_EXPECT(ret))
+                if (BEAST_EXPECT(ret); ret.has_value())
                 {
                     BEAST_EXPECT(ret->first.size() != 0);
                     BEAST_EXPECT(ret->first == publicKey);
@@ -308,7 +308,7 @@ public:
 
                 auto ret = keypairForSignature(params, error);
                 BEAST_EXPECT(!contains_error(error));
-                if (BEAST_EXPECT(ret))
+                if (BEAST_EXPECT(ret); ret.has_value())
                 {
                     BEAST_EXPECT(ret->first.size() != 0);
                     BEAST_EXPECT(ret->first == publicKey);
@@ -322,7 +322,7 @@ public:
 
                 auto ret = keypairForSignature(params, error);
                 BEAST_EXPECT(!contains_error(error));
-                if (BEAST_EXPECT(ret))
+                if (BEAST_EXPECT(ret); ret.has_value())
                 {
                     BEAST_EXPECT(ret->first.size() != 0);
                     BEAST_EXPECT(ret->first == publicKey);
@@ -341,7 +341,7 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(!contains_error(error));
-            if (BEAST_EXPECT(ret))
+            if (BEAST_EXPECT(ret); ret.has_value())
             {
                 BEAST_EXPECT(ret->first.size() != 0);
                 BEAST_EXPECT(ret->first == publicKey);
@@ -357,7 +357,7 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(!contains_error(error));
-            if (BEAST_EXPECT(ret))
+            if (BEAST_EXPECT(ret); ret.has_value())
             {
                 BEAST_EXPECT(ret->first.size() != 0);
                 BEAST_EXPECT(ret->first == publicKey);
@@ -373,7 +373,7 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(!contains_error(error));
-            if (BEAST_EXPECT(ret))
+            if (BEAST_EXPECT(ret); ret.has_value())
             {
                 BEAST_EXPECT(ret->first.size() != 0);
                 BEAST_EXPECT(ret->first == publicKey);
@@ -695,7 +695,7 @@ public:
                 auto ret = keypairForSignature(params, error);
 
                 BEAST_EXPECT(!contains_error(error));
-                if (BEAST_EXPECT(ret))
+                if (BEAST_EXPECT(ret); ret.has_value())
                 {
                     BEAST_EXPECT(ret->first.size() != 0);
                     BEAST_EXPECT(toBase58(calcAccountID(ret->first)) == addr);
@@ -726,7 +726,7 @@ public:
                 auto ret = keypairForSignature(params, error);
 
                 BEAST_EXPECT(!contains_error(error));
-                if (BEAST_EXPECT(ret))
+                if (BEAST_EXPECT(ret); ret.has_value())
                 {
                     BEAST_EXPECT(ret->first.size() != 0);
                     BEAST_EXPECT(toBase58(calcAccountID(ret->first)) == addr);

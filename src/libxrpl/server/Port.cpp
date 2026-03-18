@@ -98,7 +98,7 @@ populate(
     while (std::getline(ss, ip, ','))
     {
         boost::algorithm::trim(ip);
-        bool v4;
+        bool v4 = false;
         boost::asio::ip::network_v4 v4Net;
         boost::asio::ip::network_v6 v6Net;
 
