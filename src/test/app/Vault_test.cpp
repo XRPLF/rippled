@@ -3348,7 +3348,7 @@ class Vault_test : public beast::unit_test::suite
             MPTIssue shares(issuanceId);
             env.memoize(vaultAccount);
 
-            auto const peek = [=, &env, this](std::function<bool(SLE&, SLE&)> fn) -> bool {
+            auto const peek = [keylet, &env, this](std::function<bool(SLE&, SLE&)> fn) -> bool {
                 return env.app().openLedger().modify([&](OpenView& view, beast::Journal j) -> bool {
                     Sandbox sb(&view, tapNONE);
                     auto vault = sb.peek(keylet::vault(keylet.key));

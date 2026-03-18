@@ -54,7 +54,7 @@ removeToken(
     ApplyView& view,
     AccountID const& owner,
     uint256 const& nftokenID,
-    std::shared_ptr<SLE>&& page);
+    std::shared_ptr<SLE> const& page);
 
 /** Deletes the given token offer.
 

@@ -638,7 +638,7 @@ public:
 
         for (auto const& config_string : config_strings)
         {
-            Params params;
+            Params params{};
             params.items = default_items;
             params.threads = threads;
             for (auto i = default_repeat; i--;)
