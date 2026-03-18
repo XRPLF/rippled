@@ -1,6 +1,7 @@
 #include <test/jtx/AMM.h>
 #include <test/jtx/Env.h>
 
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/ApiVersion.h>
@@ -627,7 +628,8 @@ AMM::bid(BidArg const& arg)
             amm->isFieldPresent(sfAuctionSlot));
         if (amm->isFieldPresent(sfAuctionSlot))
         {
-            auto const& auctionSlot = static_cast<STObject const&>(amm->peekAtField(sfAuctionSlot));
+            auto const& auctionSlot =
+                safe_downcast<STObject const&>(amm->peekAtField(sfAuctionSlot));
             lastPurchasePrice_ = auctionSlot[sfPrice].iou();
         }
     }
@@ -719,7 +721,8 @@ AMM::expectAuctionSlot(auto&& cb) const
             amm->isFieldPresent(sfAuctionSlot));
         if (amm->isFieldPresent(sfAuctionSlot))
         {
-            auto const& auctionSlot = static_cast<STObject const&>(amm->peekAtField(sfAuctionSlot));
+            auto const& auctionSlot =
+                safe_downcast<STObject const&>(amm->peekAtField(sfAuctionSlot));
             if (auctionSlot.isFieldPresent(sfAccount))
             {
                 // This could fail in pre-fixInnerObjTemplate tests

@@ -117,7 +117,8 @@ if(MSVC)
             WIN32_LEAN_AND_MEAN
             NOMINMAX
             # TODO: Resolve these warnings, don't just silence them
-            _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS>
+            _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS
+            $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:Debug>,$<NOT:$<BOOL:${is_ci}>>>:_CRTDBG_MAP_ALLOC>
     )
     target_link_libraries(common INTERFACE -errorreport:none -machine:X64)
 else()

@@ -196,7 +196,7 @@ private:
         explicit Collection() = default;
 
         /** What type of collection are we in? */
-        Writer::CollectionType type;
+        Writer::CollectionType type = Writer::CollectionType::array;
 
         /** Is this the first entry in a collection?
          *  If false, we have to emit a , before we write the next entry. */

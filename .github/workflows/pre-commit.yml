@@ -1,6 +1,9 @@
 name: Run pre-commit hooks
 
 on:
+  merge_group:
+    types:
+      - checks_requested
   pull_request:
   push:
     branches:

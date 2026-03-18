@@ -207,21 +207,21 @@ class ClosureCounter_test : public beast::unit_test::suite
                 // leaving scope.  So, without intervention, they would
                 // do a copy for the return (June 2017).  An explicit
                 // std::move() was required.
-                return std::move(in += "!");
+                in += "!";
+                return std::move(in);
             });
 
             BEAST_EXPECT(strCounter.count() == 1);
             BEAST_EXPECT(wrapped);
 
-            // Make the string big enough to (probably) avoid the small string
-            // optimization.
+            // Make the string big enough to (probably) avoid the small string optimization.
             TrackedString strRValue("rvalue abcdefghijklmnopqrstuvwxyz");
             TrackedString const result =
                 (*wrapped)(std::move(strRValue));  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(result.copies == 0);
             BEAST_EXPECT(result.moves == 1);
             BEAST_EXPECT(result.str == "rvalue abcdefghijklmnopqrstuvwxyz!");
-            BEAST_EXPECT(strRValue.str.size() == 0);
+            BEAST_EXPECT(strRValue.str.size() == 0);  // NOLINT(bugprone-use-after-move)
         }
     }
 
