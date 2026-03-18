@@ -50,7 +50,7 @@ closeChannel(
     (*wrappedOwner)[sfBalance] =
         (*wrappedOwner)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
     wrappedOwner.adjustOwnerCount(-1, j);
-    view.update(wrappedOwner.mutableSle());
+    wrappedOwner.update();
 
     // Remove PayChan from ledger
     view.erase(slep);

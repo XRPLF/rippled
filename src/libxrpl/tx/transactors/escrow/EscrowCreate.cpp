@@ -494,7 +494,7 @@ EscrowCreate::doApply()
 
     // increment owner count
     wrappedAcct.adjustOwnerCount(1, ctx_.journal);
-    ctx_.view().update(wrappedAcct.mutableSle());
+    wrappedAcct.update();
     return tesSUCCESS;
 }
 

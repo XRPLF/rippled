@@ -143,6 +143,27 @@ public:
         return *mutableSle_;
     }
 
+    void
+    insert()
+    {
+        XRPL_ASSERT(canModify(), "xrpl::WritableSLE::insert : can modify");
+        applyView_->insert(mutableSle_);
+    }
+
+    void
+    erase()
+    {
+        XRPL_ASSERT(canModify(), "xrpl::WritableSLE::erase : can modify");
+        applyView_->erase(mutableSle_);
+    }
+
+    void
+    update()
+    {
+        XRPL_ASSERT(canModify(), "xrpl::WritableSLE::update : can modify");
+        applyView_->update(mutableSle_);
+    }
+
 protected:
     WritableSLE() = default;
 

@@ -43,7 +43,7 @@ DIDDelete::deleteSLE(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     wrappedOwner.adjustOwnerCount(-1, j);
-    view.update(wrappedOwner.mutableSle());
+    wrappedOwner.update();
 
     // Remove object from ledger
     view.erase(sle);
